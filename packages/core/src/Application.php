@@ -6,6 +6,9 @@ namespace Marko\Core;
 
 use Marko\Core\Attributes\Plugin;
 use Marko\Core\Attributes\Preference;
+use Marko\Core\Command\CommandDiscovery;
+use Marko\Core\Command\CommandRegistry;
+use Marko\Core\Command\CommandRunner;
 use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
@@ -19,6 +22,7 @@ use Marko\Core\Event\ObserverRegistry;
 use Marko\Core\Exceptions\BindingConflictException;
 use Marko\Core\Exceptions\BindingException;
 use Marko\Core\Exceptions\CircularDependencyException;
+use Marko\Core\Exceptions\CommandException;
 use Marko\Core\Exceptions\EventException;
 use Marko\Core\Exceptions\ModuleException;
 use Marko\Core\Exceptions\PluginException;
@@ -51,6 +55,10 @@ class Application
 
     public private(set) EventDispatcherInterface $eventDispatcher;
 
+    public private(set) CommandRegistry $commandRegistry;
+
+    public private(set) CommandRunner $commandRunner;
+
     private ?Router $_router = null;
 
     public Router $router {
@@ -66,7 +74,7 @@ class Application
     ) {}
 
     /**
-     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException
      */
     public function boot(): void
     {
@@ -109,6 +117,9 @@ class Application
         // Create event dispatcher and register in container
         $this->eventDispatcher = new EventDispatcher($this->container, $this->observerRegistry);
         $this->container->instance(EventDispatcherInterface::class, $this->eventDispatcher);
+
+        // Discover and register commands
+        $this->discoverCommands();
 
         // Discover and register routes (if routing package is available)
         $this->discoverRoutes();
@@ -243,6 +254,23 @@ class Application
         foreach ($observers as $definition) {
             $this->observerRegistry->register($definition);
         }
+    }
+
+    /**
+     * @throws CommandException
+     */
+    private function discoverCommands(): void
+    {
+        $this->commandRegistry = new CommandRegistry();
+        $commandDiscovery = new CommandDiscovery($this->classFileParser);
+
+        $commands = $commandDiscovery->discover($this->modules);
+
+        foreach ($commands as $definition) {
+            $this->commandRegistry->register($definition);
+        }
+
+        $this->commandRunner = new CommandRunner($this->container, $this->commandRegistry);
     }
 
     /**

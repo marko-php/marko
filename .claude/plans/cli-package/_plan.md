@@ -4,7 +4,7 @@
 2025-01-20
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Create the marko/cli package - a global thin-client CLI tool that discovers and executes commands from modules, plus add command infrastructure to marko/core.
@@ -48,7 +48,7 @@ Create the marko/cli package - a global thin-client CLI tool that discovers and 
 | 004 | CommandDiscovery | 001, 002 | completed |
 | 005 | CommandRegistry | 002 | completed |
 | 006 | CommandRunner | 003, 005 | completed |
-| 007 | Core Application Integration | 004, 005, 006 | pending |
+| 007 | Core Application Integration | 004, 005, 006 | completed |
 | 008 | ListCommand | 001, 003, 005 | completed |
 | 009 | ModuleListCommand | 001, 003 | completed |
 | 010 | CLI Package Foundation | - | completed |

@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use Marko\Core\Application;
+use Marko\Core\Command\CommandRegistry;
+use Marko\Core\Command\CommandRunner;
+use Marko\Core\Command\Input;
+use Marko\Core\Command\Output;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Exceptions\CircularDependencyException;
@@ -826,6 +830,324 @@ PHP;
     // Actually instantiate and use the class
     $service = new $serviceClass();
     expect($service->getTotal())->toBe(99.99);
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('discovers commands during application boot', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    // Create a module with a command class
+    $modulePath = $vendorDir . '/acme/core';
+    appTestCreateModule($modulePath, 'acme/core');
+
+    mkdir($modulePath . '/src', 0755, true);
+
+    // Create command class
+    $commandCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmeCommand$uniqueId;
+
+use Marko\\Core\\Attributes\\Command;
+use Marko\\Core\\Command\\CommandInterface;
+use Marko\\Core\\Command\\Input;
+use Marko\\Core\\Command\\Output;
+
+#[Command(name: 'test:hello', description: 'A test command')]
+class HelloCommand implements CommandInterface
+{
+    public function execute(
+        Input \$input,
+        Output \$output,
+    ): int {
+        return 0;
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/src/HelloCommand.php', $commandCode);
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    // The command registry should have the command registered
+    $commandRegistry = $app->commandRegistry;
+    expect($commandRegistry->has('test:hello'))->toBeTrue();
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('exposes commandRegistry property on Application', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $vendorDir = $baseDir . '/vendor';
+
+    appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    expect($app->commandRegistry)->toBeInstanceOf(CommandRegistry::class);
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('exposes commandRunner property on Application', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $vendorDir = $baseDir . '/vendor';
+
+    appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    expect($app->commandRunner)->toBeInstanceOf(CommandRunner::class);
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('registers commands from all enabled modules', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+    $modulesDir = $baseDir . '/modules';
+    $appDir = $baseDir . '/app';
+
+    // Create a vendor module with a command
+    $vendorModulePath = $vendorDir . '/acme/core';
+    appTestCreateModule($vendorModulePath, 'acme/core');
+    mkdir($vendorModulePath . '/src', 0755, true);
+
+    $vendorCommandCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmeVendorCmd$uniqueId;
+
+use Marko\\Core\\Attributes\\Command;
+use Marko\\Core\\Command\\CommandInterface;
+use Marko\\Core\\Command\\Input;
+use Marko\\Core\\Command\\Output;
+
+#[Command(name: 'vendor:cmd', description: 'Vendor command')]
+class VendorCommand implements CommandInterface
+{
+    public function execute(
+        Input \$input,
+        Output \$output,
+    ): int {
+        return 0;
+    }
+}
+PHP;
+    file_put_contents($vendorModulePath . '/src/VendorCommand.php', $vendorCommandCode);
+
+    // Create a modules module with a command
+    $modulesModulePath = $modulesDir . '/custom/checkout';
+    appTestCreateModule($modulesModulePath, 'custom/checkout', '1.0.0', ['acme/core' => '^1.0']);
+    mkdir($modulesModulePath . '/src', 0755, true);
+
+    $modulesCommandCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace CustomModulesCmd$uniqueId;
+
+use Marko\\Core\\Attributes\\Command;
+use Marko\\Core\\Command\\CommandInterface;
+use Marko\\Core\\Command\\Input;
+use Marko\\Core\\Command\\Output;
+
+#[Command(name: 'modules:cmd', description: 'Modules command')]
+class ModulesCommand implements CommandInterface
+{
+    public function execute(
+        Input \$input,
+        Output \$output,
+    ): int {
+        return 0;
+    }
+}
+PHP;
+    file_put_contents($modulesModulePath . '/src/ModulesCommand.php', $modulesCommandCode);
+
+    // Create an app module with a command
+    $appModulePath = $appDir . '/blog';
+    appTestCreateModule($appModulePath, 'app/blog', '1.0.0', ['acme/core' => '^1.0']);
+    mkdir($appModulePath . '/src', 0755, true);
+
+    $appCommandCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AppBlogCmd$uniqueId;
+
+use Marko\\Core\\Attributes\\Command;
+use Marko\\Core\\Command\\CommandInterface;
+use Marko\\Core\\Command\\Input;
+use Marko\\Core\\Command\\Output;
+
+#[Command(name: 'app:cmd', description: 'App command')]
+class AppCommand implements CommandInterface
+{
+    public function execute(
+        Input \$input,
+        Output \$output,
+    ): int {
+        return 0;
+    }
+}
+PHP;
+    file_put_contents($appModulePath . '/src/AppCommand.php', $appCommandCode);
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: $modulesDir,
+        appPath: $appDir,
+    );
+
+    $app->boot();
+
+    // All commands from all modules should be registered
+    $commandRegistry = $app->commandRegistry;
+    expect($commandRegistry->has('vendor:cmd'))->toBeTrue()
+        ->and($commandRegistry->has('modules:cmd'))->toBeTrue()
+        ->and($commandRegistry->has('app:cmd'))->toBeTrue();
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('skips modules without src directory during command discovery', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $vendorDir = $baseDir . '/vendor';
+
+    // Create a module without src directory
+    appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    // Should not throw, and registry should be empty
+    $app->boot();
+
+    expect($app->commandRegistry->all())->toBeEmpty();
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('skips modules without command classes', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    // Create a module with src directory but no command classes
+    $modulePath = $vendorDir . '/acme/core';
+    appTestCreateModule($modulePath, 'acme/core');
+    mkdir($modulePath . '/src', 0755, true);
+
+    // Create a regular class (not a command)
+    $regularClassCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmeRegular$uniqueId;
+
+class RegularService
+{
+    public function doSomething(): void {}
+}
+PHP;
+    file_put_contents($modulePath . '/src/RegularService.php', $regularClassCode);
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    expect($app->commandRegistry->all())->toBeEmpty();
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('makes commandRunner available after boot', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    // Create a module with a command
+    $modulePath = $vendorDir . '/acme/core';
+    appTestCreateModule($modulePath, 'acme/core');
+    mkdir($modulePath . '/src', 0755, true);
+
+    $commandCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmeRunnerTest$uniqueId;
+
+use Marko\\Core\\Attributes\\Command;
+use Marko\\Core\\Command\\CommandInterface;
+use Marko\\Core\\Command\\Input;
+use Marko\\Core\\Command\\Output;
+
+#[Command(name: 'test:runner', description: 'Test runner command')]
+class TestRunnerCommand implements CommandInterface
+{
+    public function execute(
+        Input \$input,
+        Output \$output,
+    ): int {
+        \$output->writeLine('Command executed!');
+        return 42;
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/src/TestRunnerCommand.php', $commandCode);
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    // commandRunner should be available and functional
+    $input = new Input([]);
+    $output = new Output();
+
+    $exitCode = $app->commandRunner->run('test:runner', $input, $output);
+
+    expect($exitCode)->toBe(42);
 
     appTestCleanupDirectory($baseDir);
 });
