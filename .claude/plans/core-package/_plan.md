@@ -50,7 +50,7 @@ Build the foundational `marko/core` package containing the DI container, module 
 | 002 | Exception classes | 001 | completed |
 | 003 | Container interface and autowiring | 002 | completed |
 | 004 | Module manifest and discovery | 002 | completed |
-| 005 | Dependency resolution and module loading | 004 | pending |
+| 005 | Dependency resolution and module loading | 004 | completed |
 | 006 | Binding registration from modules | 003, 005 | pending |
 | 007 | Preference attribute and resolution | 006 | pending |
 | 008 | Plugin attributes and discovery | 002, 005 | pending |

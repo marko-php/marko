@@ -16,4 +16,15 @@ class ModuleException extends MarkoException
             suggestion: 'Check your module.php file for proper structure and required keys',
         );
     }
+
+    public static function missingDependency(
+        string $moduleName,
+        string $dependencyName,
+    ): self {
+        return new self(
+            message: "Module '$moduleName' requires '$dependencyName' which is not installed",
+            context: "While resolving dependencies for '$moduleName'",
+            suggestion: "Install the missing package with: composer require $dependencyName",
+        );
+    }
 }
