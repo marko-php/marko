@@ -51,11 +51,11 @@ Build the `marko/routing` package providing attribute-based routing with HTTP me
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
 | 001 | Package structure and composer.json | - | completed |
-| 002 | Exception classes (RouteException, RouteConflictException) | 001 | pending |
-| 003 | HTTP Request/Response value objects | 001 | pending |
-| 004 | Route attributes (#[Get], #[Post], etc.) | 001 | pending |
-| 005 | Middleware attribute and interface | 001 | pending |
-| 006 | DisableRoute attribute | 001 | pending |
+| 002 | Exception classes (RouteException, RouteConflictException) | 001 | completed |
+| 003 | HTTP Request/Response value objects | 001 | completed |
+| 004 | Route attributes (#[Get], #[Post], etc.) | 001 | completed |
+| 005 | Middleware attribute and interface | 001 | completed |
+| 006 | DisableRoute attribute | 001 | completed |
 | 007 | RouteDefinition value object | 004, 005 | pending |
 | 008 | Route discovery from controllers | 004, 006, 007 | pending |
 | 009 | Route collection and conflict detection | 002, 007, 008 | pending |
