@@ -45,8 +45,7 @@ class Request
     public function query(
         ?string $key = null,
         mixed $default = null,
-    ): mixed
-    {
+    ): mixed {
         if ($key === null) {
             return $this->query;
         }
@@ -60,8 +59,7 @@ class Request
     public function post(
         ?string $key = null,
         mixed $default = null,
-    ): mixed
-    {
+    ): mixed {
         if ($key === null) {
             return $this->post;
         }
@@ -72,8 +70,7 @@ class Request
     public function header(
         string $name,
         ?string $default = null,
-    ): ?string
-    {
+    ): ?string {
         $serverKey = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
 
         return $this->server[$serverKey] ?? $default;

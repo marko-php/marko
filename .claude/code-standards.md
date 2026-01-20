@@ -155,7 +155,41 @@ class OrderId
 }
 ```
 
-### 5. Avoid Final (Blocks Extensibility)
+### 5. Property Hooks Over Getters/Setters (PHP 8.4+)
+Use property hooks instead of traditional getter/setter methods. This is cleaner and more idiomatic PHP 8.4+.
+
+```php
+// CORRECT - property hooks with asymmetric visibility
+class Application
+{
+    public private(set) ContainerInterface $container;
+    public private(set) PreferenceRegistry $preferenceRegistry;
+
+    // For computed/validated access
+    public Router $router {
+        get => $this->_router ?? throw new RuntimeException('Call boot() first');
+    }
+}
+
+// WRONG - traditional getters
+class Application
+{
+    private ContainerInterface $container;
+
+    public function getContainer(): ContainerInterface
+    {
+        return $this->container;
+    }
+}
+```
+
+**Rules:**
+- Use `{ get; }` for simple read-only property access
+- Use `{ get => expr; }` for computed or validated access
+- Use `{ set => expr; }` when validation/transformation is needed on write
+- Asymmetric visibility: `public private(set)` for public read, private write (keep explicit `public` - explicit over implicit)
+
+### 6. Avoid Final (Blocks Extensibility)
 `final` prevents Preferences from extending classes. Avoid it.
 
 ```php
@@ -171,7 +205,7 @@ class ProductService { }
 - Security-critical methods that must not be overridden
 - Always document WHY something is final
 
-### 6. Type Declarations Required
+### 7. Type Declarations Required
 All parameters, return types, and properties must have type declarations:
 ```php
 public function resolve(string $abstract): object
@@ -180,11 +214,12 @@ public function resolve(string $abstract): object
 }
 ```
 
-### 7. No Magic Methods
+### 8. No Magic Methods
 Avoid `__get`, `__set`, `__call`, `__callStatic`. Be explicit.
 
-### 8. String Interpolation (No Unnecessary Curly Braces)
-When interpolating simple variables in double-quoted strings, do NOT use curly braces:
+### 9. String Interpolation (No Unnecessary Curly Braces)
+When interpolating simple variables in double-quoted strings, do NOT use curly braces.
+**Enforced by:** PhpStorm `PhpUnnecessaryCurlyVarSyntaxInspection`
 
 ```php
 // CORRECT - no curly braces for simple variables
@@ -208,7 +243,7 @@ $message = "Order {$order->id} processed";
 $message = "Found {$count}items"; // Without braces: $countitems would be a different variable
 ```
 
-### 9. Use #[\NoDiscard] for Important Returns
+### 10. Use #[\NoDiscard] for Important Returns
 ```php
 #[\NoDiscard]
 public function validate(): ValidationResult
@@ -217,15 +252,14 @@ public function validate(): ValidationResult
 }
 ```
 
-### 10. Multiline Method Signatures (2+ Parameters)
-Methods with 2 or more parameters MUST have each parameter on its own line with a trailing comma:
+### 11. Multiline Method Signatures (Always)
+**ALL method parameters MUST be on their own line with a trailing comma**, regardless of parameter count:
 
 ```php
-// CORRECT - each parameter on its own line with trailing comma
-public static function multipleBindings(
-    string $interface,
-    array $modules,
-): self {
+// CORRECT - parameter on its own line with trailing comma
+public function registerModule(
+    ModuleManifest $module,
+): void {
     // ...
 }
 
@@ -234,18 +268,53 @@ public function __construct(
     private EventDispatcher $events,
 ) {}
 
-// WRONG - multiple parameters on single line
-public static function multipleBindings(string $interface, array $modules): self
+public function extractClassName(
+    string $filePath,
+): ?string {
+    // ...
+}
+
+// WRONG - parameter on same line as method name
+public function registerModule(ModuleManifest $module): void
+{
+    // ...
+}
+
+// WRONG - opening brace on new line
+public function registerModule(
+    ModuleManifest $module,
+): void
 {
     // ...
 }
 ```
 
 **Rules:**
-- Each parameter on its own line
+- Each parameter on its own line (even if only one parameter)
 - Trailing comma after last parameter
 - Opening brace `{` on same line as closing parenthesis/return type
-- Single-parameter methods may remain on one line
+- Only zero-parameter methods stay on one line: `public function getName(): string {`
+
+### 12. Anonymous Class Braces (Next Line)
+Anonymous classes follow the same brace placement as regular classes - opening brace on the **next line**.
+**Enforced by:** php-cs-fixer `braces_position.anonymous_classes_opening_brace`
+
+```php
+// CORRECT - opening brace on next line
+$controller = new #[Preference(replaces: PostController::class)]
+class extends PostController
+{
+    public function show(): Response
+    {
+        return new Response('Custom');
+    }
+};
+
+// WRONG - opening brace on same line
+$controller = new class extends PostController {
+    // ...
+};
+```
 
 ## Attribute Standards
 
@@ -292,40 +361,75 @@ public function show(int $id): Response
 - Developers understanding what exceptions to catch
 
 ```php
-// CORRECT - @throws tag for each exception type
+// CORRECT - use short class names (import at top of file) with pipe operator
 /**
- * Resolve module dependencies and return modules in load order.
- *
- * @param ModuleManifest[] $modules
- * @return ModuleManifest[]
- * @throws ModuleException When a required module dependency is not found
- * @throws CircularDependencyException When modules have circular dependencies
+ * @throws ModuleException|CircularDependencyException|BindingConflictException
  */
-public function resolve(array $modules): array
+public function boot(): void
+
+// CORRECT - single exception
+/**
+ * @throws PluginException
+ */
+private function discoverPlugins(): void
+
+// CORRECT - use interface exception types when calling interface methods
+// ContainerInterface::get() declares @throws ContainerExceptionInterface
+/**
+ * @throws ContainerExceptionInterface|EventException
+ */
+private function discoverObservers(): void
+{
+    $observerDiscovery = $this->container->get(ObserverDiscovery::class); // throws ContainerExceptionInterface
+    $observers = $observerDiscovery->discover($this->modules);            // throws EventException
+}
+
+// WRONG - using fully qualified class names
+/**
+ * @throws \Marko\Core\Exceptions\PluginException
+ */
 
 // WRONG - missing @throws tags
-/**
- * Resolve module dependencies and return modules in load order.
- */
 public function resolve(array $modules): array  // Throws exceptions without documenting them!
 ```
 
 **Rules:**
-- One `@throws` tag per exception type
-- Include brief description after the class name
+- Import exception classes at top of file, use short names in `@throws`
+- Use pipe operator (`|`) to combine multiple exceptions on one line
+- **Never use multiple `@throws` tags** - consolidate into a single tag with pipe-delimited exceptions
 - Document ALL thrown exceptions, including those from called methods if not caught
+- When calling methods on interfaces, use the exception types declared by the interface (e.g., `ContainerExceptionInterface` not `BindingException`)
 - Private methods that throw should also be documented if the exception propagates
+- Description after exception name is optional (omit if exception name is self-explanatory)
+- **Test files are exempt** from `@throws` requirements (inspection disabled for `packages/*/tests/`)
 
-### PHPDoc Format
-```php
-/**
- * Resolves a class or interface from the container.
- *
- * @throws BindingException When no binding exists for an interface
- * @throws CircularDependencyException When circular dependency detected
- */
-public function resolve(string $abstract): object
+**Enforced by:** Custom php-cs-fixer rule `Marko/phpdoc_consolidate_throws` automatically consolidates multiple `@throws` tags into one.
+
+## Git Hooks
+
+**Location:** `.githooks/pre-commit`
+
+The pre-commit hook runs automatically on commit (when configured via `git config core.hooksPath .githooks`). It performs the following in order:
+
+1. **Rector** - Auto-fixes code quality issues (`rector.php` config)
+2. **Multiline params fixer** - Forces params on separate lines (`tools/fix-multiline-params.php`)
+3. **PHP-CS-Fixer** - Auto-fixes formatting (`.php-cs-fixer.php` config)
+4. **PHPCBF** - Auto-fixes phpcs violations (`phpcs.xml` config)
+5. **PHPCS** - Final validation (fails commit if violations remain)
+
+Each tool auto-stages its fixes before the next tool runs.
+
+### Setup Git Hooks
+```bash
+git config core.hooksPath .githooks
 ```
+
+### Related Config Files
+- `.githooks/pre-commit` - The hook script
+- `rector.php` - Rector rules (code modernization)
+- `.php-cs-fixer.php` - PHP-CS-Fixer rules (formatting)
+- `phpcs.xml` - PHP_CodeSniffer rules (style validation)
+- `tools/fix-multiline-params.php` - Custom multiline params script
 
 ## Pre-commit Checks
 Before committing, ensure:

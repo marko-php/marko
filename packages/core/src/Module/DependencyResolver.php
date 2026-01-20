@@ -16,11 +16,11 @@ class DependencyResolver
      *
      * @param ModuleManifest[] $modules
      * @return ModuleManifest[]
-     * @throws ModuleException When a required module dependency is not found
-     * @throws CircularDependencyException When modules have circular dependencies
+     * @throws ModuleException|CircularDependencyException
      */
-    public function resolve(array $modules): array
-    {
+    public function resolve(
+        array $modules,
+    ): array {
         // Filter out disabled modules first
         $enabledModules = array_filter($modules, fn (ModuleManifest $m) => $m->enabled);
 
@@ -124,10 +124,16 @@ class DependencyResolver
         $recursionStack = [];
         $path = [];
 
-        foreach ($modules as $module) {
-            if ($this->detectCycleDfs($module->name, $dependents, $visited, $recursionStack, $path)) {
-                return $path;
-            }
+        // Use regular closure with use() to capture by reference - arrow functions capture by value
+        $hasCycle = array_any(
+            $modules,
+            function ($module) use ($dependents, &$visited, &$recursionStack, &$path) {
+                return $this->detectCycleDfs($module->name, $dependents, $visited, $recursionStack, $path);
+            },
+        );
+
+        if ($hasCycle) {
+            return $path;
         }
 
         return [];

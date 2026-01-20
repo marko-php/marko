@@ -9,8 +9,9 @@ use Marko\Core\Container\PreferenceRegistry;
 use Marko\Core\Module\ModuleManifest;
 
 // Helper function for recursive directory cleanup
-function cleanupPreferenceTestDirectory(string $dir): void
-{
+function cleanupPreferenceTestDirectory(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
@@ -28,37 +29,6 @@ function cleanupPreferenceTestDirectory(string $dir): void
         }
     }
     rmdir($dir);
-}
-
-// Helper to create a test preference class file
-function createPreferenceClass(
-    string $path,
-    string $className,
-    string $namespace,
-    string $replacesClass,
-): void {
-    $dir = dirname($path);
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
-    }
-
-    $content = <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace $namespace;
-
-use Marko\Core\Attributes\Preference;
-
-#[Preference(replaces: $replacesClass::class)]
-class $className extends $replacesClass
-{
-}
-
-PHP;
-
-    file_put_contents($path, $content);
 }
 
 it('creates Preference attribute with replaces parameter', function (): void {

@@ -30,8 +30,9 @@ readonly class RouteMatcher
         return null;
     }
 
-    private function normalizePath(string $path): string
-    {
+    private function normalizePath(
+        string $path,
+    ): string {
         // Remove trailing slash, except for root path
         if ($path !== '/' && str_ends_with($path, '/')) {
             return rtrim($path, '/');

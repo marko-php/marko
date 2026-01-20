@@ -33,7 +33,8 @@ it('handle returns Response', function () {
 });
 
 it('middleware can call next to continue pipeline', function () {
-    $middleware = new class () implements MiddlewareInterface {
+    $middleware = new class () implements MiddlewareInterface
+    {
         public function handle(
             Request $request,
             callable $next,
@@ -54,7 +55,8 @@ it('middleware can call next to continue pipeline', function () {
 it('middleware can return early to short-circuit', function () {
     $nextCalled = false;
 
-    $middleware = new class () implements MiddlewareInterface {
+    $middleware = new class () implements MiddlewareInterface
+    {
         public function handle(
             Request $request,
             callable $next,

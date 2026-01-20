@@ -9,8 +9,9 @@ class CircularDependencyException extends MarkoException
     /**
      * @param string[] $chain
      */
-    public static function detected(array $chain): self
-    {
+    public static function detected(
+        array $chain,
+    ): self {
         $chainPath = implode(' -> ', $chain);
 
         return new self(

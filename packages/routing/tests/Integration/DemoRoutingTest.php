@@ -30,7 +30,8 @@ it('demo index.php creates Request from globals', function (): void {
 });
 
 it('demo index.php routes request through Router', function (): void {
-    $controller = new class () {
+    $controller = new class ()
+    {
         public function index(): Response
         {
             return new Response('Blog Index: Route matched successfully');
@@ -75,7 +76,8 @@ it('demo index.php sends Response to client', function (): void {
 });
 
 it('demo index.php returns 404 for unmatched routes', function (): void {
-    $controller = new class () {
+    $controller = new class ()
+    {
         public function index(): Response
         {
             return new Response('Blog Index');

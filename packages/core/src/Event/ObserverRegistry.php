@@ -12,8 +12,9 @@ class ObserverRegistry
     /** @var array<string, array<ObserverDefinition>> */
     private array $observers = [];
 
-    public function register(ObserverDefinition $definition): void
-    {
+    public function register(
+        ObserverDefinition $definition,
+    ): void {
         $this->observers[$definition->eventClass][] = $definition;
     }
 
@@ -22,8 +23,9 @@ class ObserverRegistry
      *
      * @return array<ObserverDefinition>
      */
-    public function getObserversFor(string $eventClass): array
-    {
+    public function getObserversFor(
+        string $eventClass,
+    ): array {
         return $this->observers[$eventClass] ?? [];
     }
 }

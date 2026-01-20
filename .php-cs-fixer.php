@@ -1,8 +1,15 @@
 <?php
 
 declare(strict_types=1);
+
+use Marko\DevTools\PhpCsFixer\PhpdocConsolidateThrowsFixer;
+use Marko\DevTools\PhpCsFixer\SimpleStringVariableFixer;
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
+
+// Load custom fixers
+require_once __DIR__ . '/dev/php-cs-fixer/PhpdocConsolidateThrowsFixer.php';
+require_once __DIR__ . '/dev/php-cs-fixer/SimpleStringVariableFixer.php';
 
 $finder = Finder::create()
     ->in([
@@ -18,6 +25,9 @@ $finder = Finder::create()
 
 $rules = [
     '@PSR12' => true,
+    'braces_position' => [
+        'anonymous_classes_opening_brace' => 'next_line_unless_newline_at_signature_end',
+    ],
     'fully_qualified_strict_types' => ['import_symbols' => true],
     'global_namespace_import' => ['import_classes' => true, 'import_constants' => false, 'import_functions' => false],
     'array_syntax' => ['syntax' => 'short'],
@@ -31,10 +41,16 @@ $rules = [
     'single_quote' => true,
     'no_extra_blank_lines' => true,
     'no_whitespace_in_blank_line' => true,
+    'Marko/phpdoc_consolidate_throws' => true,
+    'Marko/simple_string_variable' => true,
 ];
 
 return (new Config())
     ->setRules($rules)
     ->setFinder($finder)
     ->setRiskyAllowed(true)
-    ->setCacheFile(__DIR__ . '/.php-cs-fixer.cache');
+    ->setCacheFile(__DIR__ . '/.php-cs-fixer.cache')
+    ->registerCustomFixers([
+        new PhpdocConsolidateThrowsFixer(),
+        new SimpleStringVariableFixer(),
+    ]);

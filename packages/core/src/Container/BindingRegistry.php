@@ -21,14 +21,15 @@ class BindingRegistry
     private array $bindings = [];
 
     public function __construct(
-        private Container $container,
+        private readonly Container $container,
     ) {}
 
     /**
      * @throws BindingConflictException When same-priority modules bind the same interface
      */
-    public function registerModule(ModuleManifest $module): void
-    {
+    public function registerModule(
+        ModuleManifest $module,
+    ): void {
         $sourcePriority = self::SOURCE_PRIORITY[$module->source] ?? 0;
 
         foreach ($module->bindings as $interface => $implementation) {

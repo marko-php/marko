@@ -36,8 +36,7 @@ class Response
     public static function json(
         mixed $data,
         int $statusCode = 200,
-    ): self
-    {
+    ): self {
         return new self(
             body: json_encode($data, JSON_THROW_ON_ERROR),
             statusCode: $statusCode,
@@ -48,8 +47,7 @@ class Response
     public static function html(
         string $html,
         int $statusCode = 200,
-    ): self
-    {
+    ): self {
         return new self(
             body: $html,
             statusCode: $statusCode,
@@ -60,8 +58,7 @@ class Response
     public static function redirect(
         string $url,
         int $statusCode = 302,
-    ): self
-    {
+    ): self {
         return new self(
             body: '',
             statusCode: $statusCode,

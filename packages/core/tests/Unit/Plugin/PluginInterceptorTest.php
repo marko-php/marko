@@ -94,6 +94,7 @@ class ArgLoggingPlugin
 {
     public static array $receivedArgs = [];
 
+    /** @noinspection PhpUnused - Invoked via reflection */
     public function beforeProcess(
         string $name,
         int $count,
@@ -276,8 +277,9 @@ class AfterTargetService
 
 class FirstAfterPlugin
 {
-    public function afterDoAction(mixed $result): mixed
-    {
+    public function afterDoAction(
+        mixed $result,
+    ): mixed {
         AfterTargetService::$callLog[] = 'FirstAfterPlugin::afterDoAction';
 
         return $result;
@@ -286,8 +288,9 @@ class FirstAfterPlugin
 
 class SecondAfterPlugin
 {
-    public function afterDoAction(mixed $result): mixed
-    {
+    public function afterDoAction(
+        mixed $result,
+    ): mixed {
         AfterTargetService::$callLog[] = 'SecondAfterPlugin::afterDoAction';
 
         return $result;
@@ -346,6 +349,7 @@ class AfterArgInspectorPlugin
 {
     public static array $receivedArgs = [];
 
+    /** @noinspection PhpUnused - Invoked via reflection */
     public function afterCalculate(
         mixed $result,
         int $a,
@@ -405,8 +409,10 @@ class DoublerPlugin
 {
     public static ?int $receivedResult = null;
 
-    public function afterGetValue(mixed $result): int
-    {
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function afterGetValue(
+        mixed $result,
+    ): int {
         self::$receivedResult = $result;
         ModifyResultService::$callLog[] = "DoublerPlugin::afterGetValue(received=$result)";
 
@@ -418,8 +424,10 @@ class AdderPlugin
 {
     public static ?int $receivedResult = null;
 
-    public function afterGetValue(mixed $result): int
-    {
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function afterGetValue(
+        mixed $result,
+    ): int {
         self::$receivedResult = $result;
         ModifyResultService::$callLog[] = "AdderPlugin::afterGetValue(received=$result)";
 
@@ -470,8 +478,9 @@ class CompleteFlowService
 {
     public static array $callLog = [];
 
-    public function process(string $input): string
-    {
+    public function process(
+        string $input,
+    ): string {
         self::$callLog[] = "CompleteFlowService::process($input)";
 
         return "processed: $input";
@@ -480,8 +489,10 @@ class CompleteFlowService
 
 class CompleteFlowBeforePlugin
 {
-    public function beforeProcess(string $input): ?string
-    {
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function beforeProcess(
+        string $input,
+    ): ?string {
         CompleteFlowService::$callLog[] = "CompleteFlowBeforePlugin::beforeProcess($input)";
 
         return null;
@@ -490,6 +501,7 @@ class CompleteFlowBeforePlugin
 
 class CompleteFlowAfterPlugin
 {
+    /** @noinspection PhpUnused - Invoked via reflection */
     public function afterProcess(
         mixed $result,
         string $input,
@@ -543,8 +555,9 @@ class NoPluginsService
         return 'result';
     }
 
-    public function anotherMethod(int $value): int
-    {
+    public function anotherMethod(
+        int $value,
+    ): int {
         self::$callLog[] = "NoPluginsService::anotherMethod($value)";
 
         return $value * 2;
@@ -578,8 +591,9 @@ class PluginLoggerDependency
 {
     public static array $messages = [];
 
-    public function log(string $message): void
-    {
+    public function log(
+        string $message,
+    ): void {
         self::$messages[] = $message;
     }
 }
@@ -588,28 +602,32 @@ class DependencyInjectionService
 {
     public static array $callLog = [];
 
-    public function save(string $data): string
-    {
+    public function save(
+        string $data,
+    ): string {
         self::$callLog[] = "DependencyInjectionService::save($data)";
 
         return "saved: $data";
     }
 }
 
-class PluginWithDependency
+readonly class PluginWithDependency
 {
     public function __construct(
         private PluginLoggerDependency $logger,
     ) {}
 
-    public function beforeSave(string $data): ?string
-    {
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function beforeSave(
+        string $data,
+    ): ?string {
         $this->logger->log("About to save: $data");
         DependencyInjectionService::$callLog[] = 'PluginWithDependency::beforeSave';
 
         return null;
     }
 
+    /** @noinspection PhpUnused - Invoked via reflection */
     public function afterSave(
         mixed $result,
         string $data,

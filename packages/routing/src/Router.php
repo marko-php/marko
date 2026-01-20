@@ -23,8 +23,9 @@ readonly class Router
         $this->pipeline = new MiddlewarePipeline($container);
     }
 
-    public function handle(Request $request): Response
-    {
+    public function handle(
+        Request $request,
+    ): Response {
         $matched = $this->matcher->match($request->method(), $request->path());
 
         if ($matched === null) {
@@ -45,8 +46,9 @@ readonly class Router
         );
     }
 
-    private function wrapResult(mixed $result): Response
-    {
+    private function wrapResult(
+        mixed $result,
+    ): Response {
         if ($result instanceof Response) {
             return $result;
         }

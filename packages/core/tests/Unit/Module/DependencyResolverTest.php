@@ -302,14 +302,12 @@ it('returns ModuleManifest objects in final load order', function (): void {
     $resolver = new DependencyResolver();
     $sorted = $resolver->resolve([$moduleB, $moduleA]);
 
-    // Verify return type is array of ModuleManifest objects
+    // Verify return type is array of ModuleManifest objects with their original data
     expect($sorted)->toBeArray()
         ->and($sorted)->toHaveCount(2)
         ->and($sorted[0])->toBeInstanceOf(ModuleManifest::class)
-        ->and($sorted[1])->toBeInstanceOf(ModuleManifest::class);
-
-    // Verify the manifests contain their original data
-    expect($sorted[0]->name)->toBe('vendor/module-a')
+        ->and($sorted[1])->toBeInstanceOf(ModuleManifest::class)
+        ->and($sorted[0]->name)->toBe('vendor/module-a')
         ->and($sorted[0]->version)->toBe('1.0.0')
         ->and($sorted[0]->path)->toBe('/path/to/module-a')
         ->and($sorted[0]->source)->toBe('vendor')

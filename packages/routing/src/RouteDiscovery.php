@@ -18,8 +18,9 @@ class RouteDiscovery
      *
      * @return array<RouteDefinition>
      */
-    public function discoverInModule(ModuleManifest $manifest): array
-    {
+    public function discoverInModule(
+        ModuleManifest $manifest,
+    ): array {
         return [];
     }
 
@@ -29,8 +30,9 @@ class RouteDiscovery
      * @param class-string $className
      * @return array<RouteDefinition>
      */
-    public function discoverFromClass(string $className): array
-    {
+    public function discoverFromClass(
+        string $className,
+    ): array {
         $routes = [];
         $reflection = new ReflectionClass($className);
         $classMiddleware = $this->getClassMiddleware($reflection);
@@ -63,8 +65,9 @@ class RouteDiscovery
      *
      * @return array<string>
      */
-    private function getClassMiddleware(ReflectionClass $reflection): array
-    {
+    private function getClassMiddleware(
+        ReflectionClass $reflection,
+    ): array {
         $middlewareAttributes = $reflection->getAttributes(Middleware::class);
         if (empty($middlewareAttributes)) {
             return [];
@@ -80,8 +83,9 @@ class RouteDiscovery
      *
      * @return array<string>
      */
-    private function getMethodMiddleware(ReflectionMethod $method): array
-    {
+    private function getMethodMiddleware(
+        ReflectionMethod $method,
+    ): array {
         $middlewareAttributes = $method->getAttributes(Middleware::class);
         if (empty($middlewareAttributes)) {
             return [];
@@ -95,8 +99,9 @@ class RouteDiscovery
     /**
      * Check if a method has the DisableRoute attribute.
      */
-    private function isRouteDisabled(ReflectionMethod $method): bool
-    {
+    private function isRouteDisabled(
+        ReflectionMethod $method,
+    ): bool {
         return !empty($method->getAttributes(DisableRoute::class));
     }
 }

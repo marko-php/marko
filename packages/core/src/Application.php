@@ -11,49 +11,62 @@ use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Container\PreferenceDiscovery;
 use Marko\Core\Container\PreferenceRegistry;
+use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Event\EventDispatcher;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Event\ObserverDiscovery;
 use Marko\Core\Event\ObserverRegistry;
+use Marko\Core\Exceptions\BindingConflictException;
+use Marko\Core\Exceptions\BindingException;
 use Marko\Core\Exceptions\CircularDependencyException;
+use Marko\Core\Exceptions\EventException;
 use Marko\Core\Exceptions\ModuleException;
+use Marko\Core\Exceptions\PluginException;
 use Marko\Core\Module\DependencyResolver;
 use Marko\Core\Module\ManifestParser;
 use Marko\Core\Module\ModuleDiscovery;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginRegistry;
+use Marko\Routing\Exceptions\RouteConflictException;
+use Marko\Routing\Exceptions\RouteException;
 use Marko\Routing\Router;
 use Marko\Routing\RoutingBootstrapper;
+use Psr\Container\ContainerExceptionInterface;
 use ReflectionClass;
 use RuntimeException;
 
 class Application
 {
     /** @var array<ModuleManifest> */
-    private array $modules = [];
+    public private(set) array $modules = [];
 
-    private ContainerInterface $container;
+    public private(set) ContainerInterface $container;
 
-    private PreferenceRegistry $preferenceRegistry;
+    public private(set) PreferenceRegistry $preferenceRegistry;
 
-    private PluginRegistry $pluginRegistry;
+    public private(set) PluginRegistry $pluginRegistry;
 
-    private ObserverRegistry $observerRegistry;
+    public private(set) ObserverRegistry $observerRegistry;
 
-    private EventDispatcherInterface $eventDispatcher;
+    public private(set) EventDispatcherInterface $eventDispatcher;
 
-    private ?Router $router = null;
+    private ?Router $_router = null;
+
+    public Router $router {
+        get => $this->_router ?? throw new RuntimeException('Router not available. Call boot() first.');
+    }
+
+    private ClassFileParser $classFileParser;
 
     public function __construct(
-        private string $vendorPath = '',
-        private string $modulesPath = '',
-        private string $appPath = '',
+        public private(set) readonly string $vendorPath = '',
+        public private(set) readonly string $modulesPath = '',
+        public private(set) readonly string $appPath = '',
     ) {}
 
     /**
-     * @throws ModuleException When a required module dependency is not found
-     * @throws CircularDependencyException When modules have circular dependencies
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException
      */
     public function boot(): void
     {
@@ -74,6 +87,7 @@ class Application
         $this->registerAutoloaders();
 
         // Initialize container and registries
+        $this->classFileParser = new ClassFileParser();
         $this->preferenceRegistry = new PreferenceRegistry();
         $this->container = new Container($this->preferenceRegistry);
         $bindingRegistry = new BindingRegistry($this->container);
@@ -127,7 +141,9 @@ class Application
         string $namespace,
         string $basePath,
     ): void {
-        spl_autoload_register(function (string $class) use ($namespace, $basePath): void {
+        spl_autoload_register(function (
+            string $class,
+        ) use ($namespace, $basePath): void {
             // Check if class uses the registered namespace
             if (!str_starts_with($class, $namespace)) {
                 return;
@@ -153,7 +169,7 @@ class Application
             $files = $preferenceDiscovery->discoverInModule($module);
 
             foreach ($files as $file) {
-                $className = $this->extractClassName($file);
+                $className = $this->classFileParser->extractClassName($file);
                 if ($className === null) {
                     continue;
                 }
@@ -177,32 +193,9 @@ class Application
         }
     }
 
-    private function extractClassName(string $filePath): ?string
-    {
-        $contents = file_get_contents($filePath);
-
-        if ($contents === false) {
-            return null;
-        }
-
-        $namespace = null;
-        $class = null;
-
-        if (preg_match('/namespace\s+([^;]+);/', $contents, $matches)) {
-            $namespace = $matches[1];
-        }
-
-        if (preg_match('/class\s+(\w+)/', $contents, $matches)) {
-            $class = $matches[1];
-        }
-
-        if ($class === null) {
-            return null;
-        }
-
-        return $namespace !== null ? $namespace . '\\' . $class : $class;
-    }
-
+    /**
+     * @throws PluginException
+     */
     private function discoverPlugins(): void
     {
         $this->pluginRegistry = new PluginRegistry();
@@ -212,7 +205,7 @@ class Application
             $files = $pluginDiscovery->discoverInModule($module);
 
             foreach ($files as $file) {
-                $className = $this->extractClassName($file);
+                $className = $this->classFileParser->extractClassName($file);
                 if ($className === null) {
                     continue;
                 }
@@ -238,37 +231,12 @@ class Application
     }
 
     /**
-     * @return array<ModuleManifest>
+     * @throws ContainerExceptionInterface|EventException
      */
-    public function getModules(): array
-    {
-        return $this->modules;
-    }
-
-    public function getContainer(): ContainerInterface
-    {
-        return $this->container;
-    }
-
-    public function getPluginRegistry(): PluginRegistry
-    {
-        return $this->pluginRegistry;
-    }
-
-    public function getObserverRegistry(): ObserverRegistry
-    {
-        return $this->observerRegistry;
-    }
-
-    public function getEventDispatcher(): EventDispatcherInterface
-    {
-        return $this->eventDispatcher;
-    }
-
     private function discoverObservers(): void
     {
         $this->observerRegistry = new ObserverRegistry();
-        $observerDiscovery = new ObserverDiscovery();
+        $observerDiscovery = $this->container->get(ObserverDiscovery::class);
 
         $observers = $observerDiscovery->discover($this->modules);
 
@@ -277,30 +245,9 @@ class Application
         }
     }
 
-    public function getVendorPath(): string
-    {
-        return $this->vendorPath;
-    }
-
-    public function getModulesPath(): string
-    {
-        return $this->modulesPath;
-    }
-
-    public function getAppPath(): string
-    {
-        return $this->appPath;
-    }
-
-    public function getRouter(): Router
-    {
-        if ($this->router === null) {
-            throw new RuntimeException('Router not available. Call boot() first.');
-        }
-
-        return $this->router;
-    }
-
+    /**
+     * @throws RouteException|RouteConflictException
+     */
     private function discoverRoutes(): void
     {
         // Only bootstrap routing if the routing package is available
@@ -312,8 +259,9 @@ class Application
             $this->modules,
             $this->container,
             $this->preferenceRegistry,
+            new ClassFileParser(),
         );
 
-        $this->router = $bootstrapper->boot();
+        $this->_router = $bootstrapper->boot();
     }
 }

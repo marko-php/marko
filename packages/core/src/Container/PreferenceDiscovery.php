@@ -16,8 +16,9 @@ class PreferenceDiscovery
      *
      * @return array<string> List of absolute paths to PHP files containing preferences
      */
-    public function discoverInModule(ModuleManifest $manifest): array
-    {
+    public function discoverInModule(
+        ModuleManifest $manifest,
+    ): array {
         $srcDir = $manifest->path . '/src';
 
         if (!is_dir($srcDir)) {

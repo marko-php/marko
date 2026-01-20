@@ -30,8 +30,9 @@ class PreferenceRegistry
      * @param class-string $original
      * @return class-string|null
      */
-    public function getPreference(string $original): ?string
-    {
+    public function getPreference(
+        string $original,
+    ): ?string {
         if (!isset($this->preferences[$original])) {
             return null;
         }

@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace Marko\Core\Event;
 
 use Marko\Core\Attributes\Observer;
+use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Exceptions\EventException;
 use Marko\Core\Module\ModuleManifest;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use ReflectionClass;
 
 /**
  * Discovers observer classes in module src directories.
  */
-class ObserverDiscovery
+readonly class ObserverDiscovery
 {
+    public function __construct(
+        private ClassFileParser $classFileParser,
+    ) {}
+
     /**
      * Discover observers from the given module manifests.
      *
@@ -23,8 +26,9 @@ class ObserverDiscovery
      * @return array<ObserverDefinition>
      * @throws EventException When an observer class is missing the handle method
      */
-    public function discover(array $modules): array
-    {
+    public function discover(
+        array $modules,
+    ): array {
         $observers = [];
 
         foreach ($modules as $manifest) {
@@ -42,27 +46,23 @@ class ObserverDiscovery
 
     /**
      * @return array<ObserverDefinition>
+     * @throws EventException
      */
-    private function discoverInDirectory(string $directory): array
-    {
+    private function discoverInDirectory(
+        string $directory,
+    ): array {
         $observers = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($directory),
-        );
 
-        foreach ($iterator as $file) {
-            if ($file->isDir() || $file->getExtension() !== 'php') {
-                continue;
-            }
-
-            $className = $this->extractClassName($file->getPathname());
+        foreach ($this->classFileParser->findPhpFiles($directory) as $file) {
+            $filePath = $file->getPathname();
+            $className = $this->classFileParser->extractClassName($filePath);
 
             if ($className === null) {
                 continue;
             }
 
             // Load the file so class is available for reflection
-            require_once $file->getPathname();
+            require_once $filePath;
 
             if (!class_exists($className)) {
                 continue;
@@ -89,33 +89,5 @@ class ObserverDiscovery
         }
 
         return $observers;
-    }
-
-    private function extractClassName(string $filePath): ?string
-    {
-        $contents = file_get_contents($filePath);
-
-        if ($contents === false) {
-            return null;
-        }
-
-        $namespace = null;
-        $class = null;
-
-        // Extract namespace
-        if (preg_match('/namespace\s+([^;]+);/', $contents, $matches)) {
-            $namespace = $matches[1];
-        }
-
-        // Extract class name
-        if (preg_match('/class\s+(\w+)/', $contents, $matches)) {
-            $class = $matches[1];
-        }
-
-        if ($class === null) {
-            return null;
-        }
-
-        return $namespace !== null ? $namespace . '\\' . $class : $class;
     }
 }

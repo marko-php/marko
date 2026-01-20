@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Marko\Core\Attributes\Observer;
+use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Event\Event;
 use Marko\Core\Event\ObserverDiscovery;
 use Marko\Core\Exceptions\EventException;
@@ -42,7 +42,7 @@ PHP;
         path: $tempDir,
     );
 
-    $discovery = new ObserverDiscovery();
+    $discovery = new ObserverDiscovery(new ClassFileParser());
     $observers = $discovery->discover([$manifest]);
 
     expect($observers)->toHaveCount(1)
@@ -84,7 +84,7 @@ PHP;
         path: $tempDir,
     );
 
-    $discovery = new ObserverDiscovery();
+    $discovery = new ObserverDiscovery(new ClassFileParser());
     $observers = $discovery->discover([$manifest]);
 
     expect($observers)->toHaveCount(1)
@@ -127,7 +127,7 @@ PHP;
         path: $tempDir,
     );
 
-    $discovery = new ObserverDiscovery();
+    $discovery = new ObserverDiscovery(new ClassFileParser());
 
     expect(fn () => $discovery->discover([$manifest]))
         ->toThrow(EventException::class, 'must have a handle method');

@@ -16,40 +16,45 @@ class DispatcherTestEvent extends Event
 
 class FirstObserver
 {
-    public function handle(DispatcherTestEvent $event): void
-    {
+    public function handle(
+        DispatcherTestEvent $event,
+    ): void {
         $event->handledBy[] = 'first';
     }
 }
 
 class SecondObserver
 {
-    public function handle(DispatcherTestEvent $event): void
-    {
+    public function handle(
+        DispatcherTestEvent $event,
+    ): void {
         $event->handledBy[] = 'second';
     }
 }
 
 class LowPriorityObserver
 {
-    public function handle(DispatcherTestEvent $event): void
-    {
+    public function handle(
+        DispatcherTestEvent $event,
+    ): void {
         $event->handledBy[] = 'low';
     }
 }
 
 class HighPriorityObserver
 {
-    public function handle(DispatcherTestEvent $event): void
-    {
+    public function handle(
+        DispatcherTestEvent $event,
+    ): void {
         $event->handledBy[] = 'high';
     }
 }
 
 class MediumPriorityObserver
 {
-    public function handle(DispatcherTestEvent $event): void
-    {
+    public function handle(
+        DispatcherTestEvent $event,
+    ): void {
         $event->handledBy[] = 'medium';
     }
 }
@@ -57,8 +62,9 @@ class MediumPriorityObserver
 // Dependency for testing DI
 class LoggerDependency
 {
-    public function log(string $message): string
-    {
+    public function log(
+        string $message,
+    ): string {
         return "logged: $message";
     }
 }
@@ -69,16 +75,18 @@ class ObserverWithDependency
         private readonly LoggerDependency $logger,
     ) {}
 
-    public function handle(DispatcherTestEvent $event): void
-    {
+    public function handle(
+        DispatcherTestEvent $event,
+    ): void {
         $event->handledBy[] = $this->logger->log('handled');
     }
 }
 
 class StoppingObserver
 {
-    public function handle(DispatcherTestEvent $event): void
-    {
+    public function handle(
+        DispatcherTestEvent $event,
+    ): void {
         $event->handledBy[] = 'stopping';
         $event->stopPropagation();
     }
@@ -86,8 +94,9 @@ class StoppingObserver
 
 class AfterStopObserver
 {
-    public function handle(DispatcherTestEvent $event): void
-    {
+    public function handle(
+        DispatcherTestEvent $event,
+    ): void {
         $event->handledBy[] = 'after-stop';
     }
 }
@@ -150,12 +159,13 @@ it('passes event object to observer handle method', function (): void {
     $registry = new ObserverRegistry();
 
     // Observer that captures the event
-    $capturedEvent = null;
-    $observerClass = new class () {
+    $observerClass = new class ()
+    {
         public static ?Event $capturedEvent = null;
 
-        public function handle(DispatcherTestEvent $event): void
-        {
+        public function handle(
+            DispatcherTestEvent $event,
+        ): void {
             self::$capturedEvent = $event;
         }
     };
@@ -214,5 +224,5 @@ it('supports stopping event propagation from observer', function (): void {
 
     // Only the stopping observer ran, not the one after
     expect($event->handledBy)->toBe(['stopping'])
-        ->and($event->isPropagationStopped())->toBeTrue();
+        ->and($event->propagationStopped)->toBeTrue();
 });

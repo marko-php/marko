@@ -16,8 +16,9 @@ class PostController
     }
 
     #[Get('/blog/{slug}')]
-    public function show(string $slug): Response
-    {
+    public function show(
+        string $slug,
+    ): Response {
         return new Response("Blog Post: {$slug}");
     }
 }

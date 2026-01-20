@@ -6,7 +6,7 @@ namespace Marko\Core\Plugin;
 
 use Marko\Core\Container\ContainerInterface;
 
-class PluginInterceptor
+readonly class PluginInterceptor
 {
     public function __construct(
         private ContainerInterface $container,

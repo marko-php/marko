@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Marko\Core\Exceptions;
 
-class BindingException extends MarkoException
+use Psr\Container\ContainerExceptionInterface;
+
+class BindingException extends MarkoException implements ContainerExceptionInterface
 {
-    public static function noImplementation(string $interface): self
-    {
+    public static function noImplementation(
+        string $interface,
+    ): self {
         return new self(
             message: "No implementation bound for interface: $interface",
             context: "Attempted to resolve '$interface' from the container",

@@ -11,8 +11,9 @@ class RouteCollection
     /** @var array<string, RouteDefinition> */
     private array $routes = [];
 
-    public function add(RouteDefinition $route): void
-    {
+    public function add(
+        RouteDefinition $route,
+    ): void {
         $key = $this->buildKey($route->method, $route->path);
 
         if (isset($this->routes[$key])) {
@@ -64,8 +65,9 @@ class RouteCollection
     /**
      * @return array<int, RouteDefinition>
      */
-    public function byMethod(string $method): array
-    {
+    public function byMethod(
+        string $method,
+    ): array {
         return array_values(
             array_filter(
                 $this->routes,

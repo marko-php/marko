@@ -17,8 +17,9 @@ class PluginException extends MarkoException
         );
     }
 
-    public static function missingPluginAttribute(string $className): self
-    {
+    public static function missingPluginAttribute(
+        string $className,
+    ): self {
         return new self(
             message: "Class '$className' is not a valid plugin: missing #[Plugin] attribute",
             context: "While parsing plugin class '$className'",

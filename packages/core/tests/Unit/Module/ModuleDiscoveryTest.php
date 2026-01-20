@@ -8,8 +8,9 @@ use Marko\Core\Module\ModuleDiscovery;
 use Marko\Core\Module\ModuleManifest;
 
 // Helper function for recursive directory cleanup
-function cleanupDirectory(string $dir): void
-{
+function cleanupDirectory(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
@@ -58,7 +59,7 @@ function createTestModule(
 
 it('parses a module with composer.json into ModuleManifest object', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
-    createTestModule($tempDir, 'acme/blog', '1.0.0');
+    createTestModule($tempDir, 'acme/blog');
 
     $parser = new ManifestParser();
     $manifest = $parser->parse($tempDir);
@@ -96,7 +97,7 @@ it('works without module.php file using sensible defaults', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
 
     // Create module with ONLY composer.json, no module.php
-    createTestModule($tempDir, 'acme/minimal', '1.0.0');
+    createTestModule($tempDir, 'acme/minimal');
 
     $parser = new ManifestParser();
     $manifest = $parser->parse($tempDir);
@@ -393,16 +394,12 @@ it('returns discovered modules with their source directory (vendor/modules/app)'
     $customModules = $discovery->discoverInModules($modulesDir);
     $appModules = $discovery->discoverInApp($appDir);
 
-    // Check vendor module has correct source and path
+    // Check all modules have correct source and path
     expect($vendorModules[0]->source)->toBe('vendor')
-        ->and($vendorModules[0]->path)->toBe($vendorDir . '/marko/core');
-
-    // Check modules module has correct source and path
-    expect($customModules[0]->source)->toBe('modules')
-        ->and($customModules[0]->path)->toBe($modulesDir . '/custom/checkout');
-
-    // Check app module has correct source and path
-    expect($appModules[0]->source)->toBe('app')
+        ->and($vendorModules[0]->path)->toBe($vendorDir . '/marko/core')
+        ->and($customModules[0]->source)->toBe('modules')
+        ->and($customModules[0]->path)->toBe($modulesDir . '/custom/checkout')
+        ->and($appModules[0]->source)->toBe('app')
         ->and($appModules[0]->path)->toBe($appDir . '/blog');
 
     cleanupDirectory($baseDir);

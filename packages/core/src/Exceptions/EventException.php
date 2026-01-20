@@ -6,8 +6,9 @@ namespace Marko\Core\Exceptions;
 
 class EventException extends MarkoException
 {
-    public static function missingHandleMethod(string $observerClass): self
-    {
+    public static function missingHandleMethod(
+        string $observerClass,
+    ): self {
         return new self(
             message: "Observer '$observerClass' must have a handle method",
             context: "While validating observer '$observerClass'",

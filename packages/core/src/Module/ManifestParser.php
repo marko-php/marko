@@ -21,8 +21,9 @@ class ManifestParser
      * @param string $modulePath Path to the module directory
      * @throws ModuleException If composer.json is missing or invalid
      */
-    public function parse(string $modulePath): ModuleManifest
-    {
+    public function parse(
+        string $modulePath,
+    ): ModuleManifest {
         $composerData = $this->parseComposerJson($modulePath);
         $moduleData = $this->parseModulePhp($modulePath);
 
@@ -46,8 +47,9 @@ class ManifestParser
      * @return array<string, mixed>
      * @throws ModuleException If composer.json is missing or invalid
      */
-    private function parseComposerJson(string $modulePath): array
-    {
+    private function parseComposerJson(
+        string $modulePath,
+    ): array {
         $composerPath = $modulePath . '/composer.json';
 
         if (!is_file($composerPath)) {
@@ -91,8 +93,9 @@ class ManifestParser
      * @return array<string, mixed>
      * @throws ModuleException If module.php exists but has syntax errors
      */
-    private function parseModulePhp(string $modulePath): array
-    {
+    private function parseModulePhp(
+        string $modulePath,
+    ): array {
         $modulePhpPath = $modulePath . '/module.php';
 
         if (!is_file($modulePhpPath)) {
@@ -126,8 +129,9 @@ class ManifestParser
      * @param array<string, string> $require
      * @return array<string, string>
      */
-    private function extractMarkoRequirements(array $require): array
-    {
+    private function extractMarkoRequirements(
+        array $require,
+    ): array {
         return array_filter(
             $require,
             fn (string $package) => !str_starts_with($package, 'php')

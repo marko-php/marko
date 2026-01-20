@@ -28,15 +28,17 @@ readonly class RouteDefinition
     /**
      * @return array<int, string>
      */
-    private function extractParameters(string $path): array
-    {
+    private function extractParameters(
+        string $path,
+    ): array {
         preg_match_all('/\{([^}]+)\}/', $path, $matches);
 
         return $matches[1];
     }
 
-    private function buildRegex(string $path): string
-    {
+    private function buildRegex(
+        string $path,
+    ): string {
         $pattern = preg_replace('/\{([^}]+)\}/', '(?P<$1>[^/]+)', $path);
 
         return '#^' . $pattern . '$#';

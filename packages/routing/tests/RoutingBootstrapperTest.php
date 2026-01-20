@@ -8,8 +8,9 @@ use Marko\Routing\RouteCollection;
 use Marko\Routing\Router;
 
 // Helper function for recursive directory cleanup
-function routingTestCleanupDirectory(string $dir): void
-{
+function routingTestCleanupDirectory(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
@@ -76,7 +77,7 @@ it('registers Router in container during boot', function (): void {
 
     $app->boot();
 
-    $container = $app->getContainer();
+    $container = $app->container;
 
     expect($container->has(Router::class))->toBeTrue();
 
@@ -129,8 +130,8 @@ PHP;
 
     $app->boot();
 
-    $router = $app->getRouter();
-    $routes = $app->getContainer()->get(RouteCollection::class);
+    $router = $app->router;
+    $routes = $app->container->get(RouteCollection::class);
 
     expect($routes->count())->toBeGreaterThan(0)
         ->and($routes->has('GET', '/posts'))->toBeTrue();
@@ -153,7 +154,7 @@ it('resolves RouteCollection through container', function (): void {
 
     $app->boot();
 
-    $container = $app->getContainer();
+    $container = $app->container;
     $routes = $container->get(RouteCollection::class);
 
     expect($routes)->toBeInstanceOf(RouteCollection::class);
@@ -247,7 +248,7 @@ PHP;
 
     $app->boot();
 
-    $routes = $app->getContainer()->get(RouteCollection::class);
+    $routes = $app->container->get(RouteCollection::class);
     $route = $routes->get('GET', '/blog');
 
     // The route should use the app controller (the Preference)
@@ -272,7 +273,7 @@ it('provides getRouter method on Application', function (): void {
 
     $app->boot();
 
-    $router = $app->getRouter();
+    $router = $app->router;
 
     expect($router)->toBeInstanceOf(Router::class);
 
@@ -294,7 +295,7 @@ it('returns Router as singleton in container', function (): void {
 
     $app->boot();
 
-    $container = $app->getContainer();
+    $container = $app->container;
     $router1 = $container->get(Router::class);
     $router2 = $container->get(Router::class);
 
@@ -381,7 +382,7 @@ PHP;
 
     $app->boot();
 
-    $routes = $app->getContainer()->get(RouteCollection::class);
+    $routes = $app->container->get(RouteCollection::class);
 
     // Both routes should be discovered
     expect($routes->has('GET', '/module-a'))->toBeTrue()
@@ -581,7 +582,7 @@ PHP;
 
     $app->boot();
 
-    $routes = $app->getContainer()->get(RouteCollection::class);
+    $routes = $app->container->get(RouteCollection::class);
 
     // All three routes should be discovered
     expect($routes->has('GET', '/core'))->toBeTrue()

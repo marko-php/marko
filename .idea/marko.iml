@@ -2,6 +2,8 @@
 <module type="WEB_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/packages/blog/src" isTestSource="false" packagePrefix="Marko\Blog\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/blog/tests" isTestSource="true" packagePrefix="Marko\Blog\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/core/src" isTestSource="false" packagePrefix="Marko\Core\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/core/tests" isTestSource="true" packagePrefix="Marko\Core\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/routing/src" isTestSource="false" packagePrefix="Marko\Routing\" />

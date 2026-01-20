@@ -21,14 +21,15 @@ it('accepts base paths for vendor, modules, and app directories', function (): v
         appPath: '/path/to/app',
     );
 
-    expect($app->getVendorPath())->toBe('/path/to/vendor')
-        ->and($app->getModulesPath())->toBe('/path/to/modules')
-        ->and($app->getAppPath())->toBe('/path/to/app');
+    expect($app->vendorPath)->toBe('/path/to/vendor')
+        ->and($app->modulesPath)->toBe('/path/to/modules')
+        ->and($app->appPath)->toBe('/path/to/app');
 });
 
 // Helper function for recursive directory cleanup
-function appTestCleanupDirectory(string $dir): void
-{
+function appTestCleanupDirectory(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
@@ -94,7 +95,7 @@ it('scans all three directories for modules during boot', function (): void {
 
     $app->boot();
 
-    $modules = $app->getModules();
+    $modules = $app->modules;
     $moduleNames = array_map(fn ($m) => $m->name, $modules);
 
     expect($moduleNames)
@@ -174,7 +175,7 @@ it('sorts modules in correct load order', function (): void {
 
     $app->boot();
 
-    $modules = $app->getModules();
+    $modules = $app->modules;
     $moduleNames = array_map(fn ($m) => $m->name, $modules);
 
     // A must come before B, B must come before C
@@ -213,7 +214,7 @@ it('registers bindings from all modules', function (): void {
 
     $app->boot();
 
-    $container = $app->getContainer();
+    $container = $app->container;
 
     // The container should have the binding registered
     expect($container->has('Acme\Core\Contracts\LoggerInterface'))->toBeTrue();
@@ -262,7 +263,7 @@ namespace AcmePrefs$uniqueId;
 
 use Marko\\Core\\Attributes\\Preference;
 
-#[Preference(replaces: OriginalClass{$uniqueId}::class)]
+#[Preference(replaces: OriginalClass$uniqueId::class)]
 class ReplacementClass$uniqueId extends OriginalClass$uniqueId
 {
     public function getValue(): string
@@ -285,10 +286,10 @@ PHP;
     $app->boot();
 
     // The container should resolve the original class to the replacement
-    $container = $app->getContainer();
+    $container = $app->container;
 
-    $originalClass = "AcmePrefs{$uniqueId}\\OriginalClass$uniqueId";
-    $replacementClass = "AcmePrefs{$uniqueId}\\ReplacementClass$uniqueId";
+    $originalClass = "AcmePrefs$uniqueId\\OriginalClass$uniqueId";
+    $replacementClass = "AcmePrefs$uniqueId\\ReplacementClass$uniqueId";
     $instance = $container->get($originalClass);
 
     expect($instance)->toBeInstanceOf($replacementClass);
@@ -338,7 +339,7 @@ namespace AcmePlugin$uniqueId;
 use Marko\\Core\\Attributes\\Plugin;
 use Marko\\Core\\Attributes\\Before;
 
-#[Plugin(target: TargetClass{$uniqueId}::class)]
+#[Plugin(target: TargetClass$uniqueId::class)]
 class TargetPlugin$uniqueId
 {
     #[Before]
@@ -362,8 +363,8 @@ PHP;
     $app->boot();
 
     // The plugin registry should have the plugin registered
-    $pluginRegistry = $app->getPluginRegistry();
-    $targetClass = "AcmePlugin{$uniqueId}\\TargetClass$uniqueId";
+    $pluginRegistry = $app->pluginRegistry;
+    $targetClass = "AcmePlugin$uniqueId\\TargetClass$uniqueId";
 
     expect($pluginRegistry->hasPluginsFor($targetClass))->toBeTrue();
 
@@ -409,11 +410,12 @@ namespace AcmeObserver$uniqueId;
 
 use Marko\\Core\\Attributes\\Observer;
 
-#[Observer(event: UserCreatedEvent{$uniqueId}::class)]
+#[Observer(event: UserCreatedEvent$uniqueId::class)]
 class UserCreatedObserver$uniqueId
 {
-    public function handle(UserCreatedEvent$uniqueId \$event): void
-    {
+    public function handle(
+        UserCreatedEvent$uniqueId \$event,
+    ): void {
         // Observer logic
     }
 }
@@ -432,8 +434,8 @@ PHP;
     $app->boot();
 
     // The observer registry should have observers for the event
-    $observerRegistry = $app->getObserverRegistry();
-    $eventClass = "AcmeObserver{$uniqueId}\\UserCreatedEvent$uniqueId";
+    $observerRegistry = $app->observerRegistry;
+    $eventClass = "AcmeObserver$uniqueId\\UserCreatedEvent$uniqueId";
     $observers = $observerRegistry->getObserversFor($eventClass);
 
     expect($observers)->toHaveCount(1);
@@ -455,7 +457,7 @@ it('provides access to configured container', function (): void {
 
     $app->boot();
 
-    $container = $app->getContainer();
+    $container = $app->container;
 
     expect($container)->toBeInstanceOf(ContainerInterface::class);
 
@@ -476,7 +478,7 @@ it('provides access to event dispatcher', function (): void {
 
     $app->boot();
 
-    $dispatcher = $app->getEventDispatcher();
+    $dispatcher = $app->eventDispatcher;
 
     expect($dispatcher)->toBeInstanceOf(EventDispatcherInterface::class);
 
@@ -511,7 +513,7 @@ it('bootstrap.php creates and boots Application instance', function (): void {
     );
 
     expect($app)->toBeInstanceOf(Application::class)
-        ->and($app->getModules())->toHaveCount(1);
+        ->and($app->modules)->toHaveCount(1);
 
     appTestCleanupDirectory($baseDir);
 });
@@ -538,7 +540,7 @@ it('parses all discovered module manifests', function (): void {
 
     $app->boot();
 
-    $modules = $app->getModules();
+    $modules = $app->modules;
 
     expect($modules)->toHaveCount(1)
         ->and($modules[0]->name)->toBe('marko/core')
@@ -566,7 +568,7 @@ it('registers PSR-4 autoloaders for modules source during boot', function (): vo
         'version' => '1.0.0',
         'autoload' => [
             'psr-4' => [
-                "CustomBlog{$uniqueId}\\" => 'lib/',
+                "CustomBlog$uniqueId\\" => 'lib/',
             ],
         ],
     ];
@@ -578,7 +580,7 @@ it('registers PSR-4 autoloaders for modules source during boot', function (): vo
 
 declare(strict_types=1);
 
-namespace CustomBlog{$uniqueId};
+namespace CustomBlog$uniqueId;
 
 class BlogService
 {
@@ -591,9 +593,9 @@ PHP;
     file_put_contents($modulePath . '/lib/BlogService.php', $classContent);
 
     // Verify class doesn't exist BEFORE boot
-    $className = "CustomBlog{$uniqueId}\\BlogService";
+    $className = "CustomBlog$uniqueId\\BlogService";
     expect(class_exists($className, false))->toBeFalse()
-        ->and(class_exists($className, true))->toBeFalse('Class should NOT be autoloadable before boot');
+        ->and(class_exists($className))->toBeFalse('Class should NOT be autoloadable before boot');
 
     $app = new Application(
         vendorPath: '',
@@ -604,7 +606,7 @@ PHP;
     $app->boot();
 
     // The class should now be autoloadable via the PSR-4 autoloader
-    expect(class_exists($className, true))->toBeTrue('Class should be autoloadable after boot');
+    expect(class_exists($className))->toBeTrue('Class should be autoloadable after boot');
 
     // Instantiate the class to confirm it truly works
     $instance = new $className();
@@ -629,7 +631,7 @@ it('skips autoloader registration for vendor modules', function (): void {
         'version' => '1.0.0',
         'autoload' => [
             'psr-4' => [
-                "AcmeCore{$uniqueId}\\" => 'lib/',
+                "AcmeCore$uniqueId\\" => 'lib/',
             ],
         ],
     ];
@@ -641,7 +643,7 @@ it('skips autoloader registration for vendor modules', function (): void {
 
 declare(strict_types=1);
 
-namespace AcmeCore{$uniqueId};
+namespace AcmeCore$uniqueId;
 
 class CoreService
 {
@@ -669,9 +671,9 @@ PHP;
     expect($autoloaderCountAfter)->toBe($autoloaderCountBefore);
 
     // The class should NOT be autoloadable (Composer didn't know about this test module)
-    $className = "AcmeCore{$uniqueId}\\CoreService";
-    expect(class_exists($className, true))->toBeFalse(
-        'Vendor module class should not be autoloadable without Composer'
+    $className = "AcmeCore$uniqueId\\CoreService";
+    expect(class_exists($className))->toBeFalse(
+        'Vendor module class should not be autoloadable without Composer',
     );
 
     appTestCleanupDirectory($baseDir);
@@ -693,7 +695,7 @@ it('resolves class from app module without explicit require in root composer.jso
         'version' => '1.0.0',
         'autoload' => [
             'psr-4' => [
-                "App\\Blog{$uniqueId}\\" => 'src/',
+                "App\\Blog$uniqueId\\" => 'src/',
             ],
         ],
     ];
@@ -705,7 +707,7 @@ it('resolves class from app module without explicit require in root composer.jso
 
 declare(strict_types=1);
 
-namespace App\\Blog{$uniqueId}\\Controller;
+namespace App\\Blog$uniqueId\\Controller;
 
 class BlogController
 {
@@ -724,7 +726,7 @@ PHP;
 
 declare(strict_types=1);
 
-namespace App\\Blog{$uniqueId}\\Model;
+namespace App\\Blog$uniqueId\\Model;
 
 class Post
 {
@@ -737,11 +739,11 @@ PHP;
     file_put_contents($modulePath . '/src/Model/Post.php', $modelContent);
 
     // Verify classes don't exist before boot
-    $controllerClass = "App\\Blog{$uniqueId}\\Controller\\BlogController";
-    $modelClass = "App\\Blog{$uniqueId}\\Model\\Post";
+    $controllerClass = "App\\Blog$uniqueId\\Controller\\BlogController";
+    $modelClass = "App\\Blog$uniqueId\\Model\\Post";
 
-    expect(class_exists($controllerClass, true))->toBeFalse()
-        ->and(class_exists($modelClass, true))->toBeFalse();
+    expect(class_exists($controllerClass))->toBeFalse()
+        ->and(class_exists($modelClass))->toBeFalse();
 
     $app = new Application(
         vendorPath: '',
@@ -752,8 +754,8 @@ PHP;
     $app->boot();
 
     // Classes should now be autoloadable
-    expect(class_exists($controllerClass, true))->toBeTrue('Controller should be autoloadable')
-        ->and(class_exists($modelClass, true))->toBeTrue('Model should be autoloadable');
+    expect(class_exists($controllerClass))->toBeTrue('Controller should be autoloadable')
+        ->and(class_exists($modelClass))->toBeTrue('Model should be autoloadable');
 
     // Actually instantiate and use the classes
     $controller = new $controllerClass();
@@ -781,7 +783,7 @@ it('resolves class from modules directory without explicit require in root compo
         'version' => '1.0.0',
         'autoload' => [
             'psr-4' => [
-                "Custom\\Checkout{$uniqueId}\\" => 'src/',
+                "Custom\\Checkout$uniqueId\\" => 'src/',
             ],
         ],
     ];
@@ -793,7 +795,7 @@ it('resolves class from modules directory without explicit require in root compo
 
 declare(strict_types=1);
 
-namespace Custom\\Checkout{$uniqueId}\\Service;
+namespace Custom\\Checkout$uniqueId\\Service;
 
 class CartService
 {
@@ -807,8 +809,8 @@ PHP;
     file_put_contents($modulePath . '/src/Service/CartService.php', $classContent);
 
     // Verify class doesn't exist before boot
-    $serviceClass = "Custom\\Checkout{$uniqueId}\\Service\\CartService";
-    expect(class_exists($serviceClass, true))->toBeFalse();
+    $serviceClass = "Custom\\Checkout$uniqueId\\Service\\CartService";
+    expect(class_exists($serviceClass))->toBeFalse();
 
     $app = new Application(
         vendorPath: '',
@@ -819,7 +821,7 @@ PHP;
     $app->boot();
 
     // Class should now be autoloadable
-    expect(class_exists($serviceClass, true))->toBeTrue('Service should be autoloadable');
+    expect(class_exists($serviceClass))->toBeTrue('Service should be autoloadable');
 
     // Actually instantiate and use the class
     $service = new $serviceClass();

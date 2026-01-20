@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Marko\Core\Plugin;
 
 use Marko\Core\Container\ContainerInterface;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
-class PluginProxy
+readonly class PluginProxy
 {
     /**
      * @param object $target The target instance to wrap
@@ -22,7 +24,10 @@ class PluginProxy
     /**
      * Intercept method calls and apply plugins.
      *
-     * @param array<mixed> $arguments
+     * @param string $method
+     * @param array $arguments
+     * @return mixed
+     * @throws ContainerExceptionInterface|NotFoundExceptionInterface
      */
     public function __call(
         string $method,

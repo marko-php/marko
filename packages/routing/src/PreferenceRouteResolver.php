@@ -39,8 +39,9 @@ class PreferenceRouteResolver
      * @return array<RouteDefinition>
      * @throws RouteException When a method is overridden without a route attribute
      */
-    public function resolveRoutes(string $className): array
-    {
+    public function resolveRoutes(
+        string $className,
+    ): array {
         $reflection = new ReflectionClass($className);
         $parentClass = $reflection->getParentClass();
 

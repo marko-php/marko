@@ -277,6 +277,33 @@ expect('hello-world')->toBeSlug();
 expect($text)->not->toHaveSuspiciousCharacters();
 ```
 
+## Reflection-Invoked Test Fixtures
+
+When test fixtures contain methods that are invoked via reflection (e.g., plugin `beforeXxx`/`afterXxx` methods, observer `handle` methods), PhpStorm cannot trace the usage and flags them as unused.
+
+**Add `@noinspection PhpUnused` to each reflection-invoked method:**
+
+```php
+#[Plugin(target: TargetService::class)]
+class TargetServicePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    #[Before(sortOrder: 10)]
+    public function beforeDoSomething(): void {}
+
+    /** @noinspection PhpUnused - Invoked via reflection */
+    #[After(sortOrder: 20)]
+    public function afterDoSomething(): void {}
+}
+```
+
+This applies to:
+- Plugin methods with `#[Before]` or `#[After]` attributes
+- Observer `handle()` methods with `#[Observer]` attribute
+- Any method discovered and invoked via reflection by the framework
+
+**Do NOT disable the `PhpUnused` inspection globally for tests** - it catches legitimate unused code. Only suppress it on specific methods that are genuinely used via reflection.
+
 ## Common Test Patterns
 
 ### Testing Exceptions

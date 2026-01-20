@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Marko\Core\Event;
 
 use Marko\Core\Container\ContainerInterface;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 readonly class EventDispatcher implements EventDispatcherInterface
 {
@@ -13,8 +15,12 @@ readonly class EventDispatcher implements EventDispatcherInterface
         private ObserverRegistry $registry,
     ) {}
 
-    public function dispatch(Event $event): void
-    {
+    /**
+     * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+     */
+    public function dispatch(
+        Event $event,
+    ): void {
         $eventClass = $event::class;
         $observers = $this->registry->getObserversFor($eventClass);
 
@@ -22,7 +28,7 @@ readonly class EventDispatcher implements EventDispatcherInterface
         usort($observers, fn (ObserverDefinition $a, ObserverDefinition $b) => $b->priority <=> $a->priority);
 
         foreach ($observers as $definition) {
-            if ($event->isPropagationStopped()) {
+            if ($event->propagationStopped) {
                 break;
             }
 

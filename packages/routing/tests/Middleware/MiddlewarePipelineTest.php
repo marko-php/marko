@@ -11,7 +11,8 @@ use Marko\Routing\Middleware\MiddlewarePipeline;
 it('executes single middleware', function () {
     $executed = false;
 
-    $middleware = new class ($executed) implements MiddlewareInterface {
+    $middleware = new class ($executed) implements MiddlewareInterface
+    {
         public function __construct(
             private bool &$executed,
         ) {}
@@ -46,7 +47,8 @@ it('executes single middleware', function () {
 it('executes multiple middleware in order', function () {
     $executionOrder = [];
 
-    $middleware1 = new class ($executionOrder) implements MiddlewareInterface {
+    $middleware1 = new class ($executionOrder) implements MiddlewareInterface
+    {
         public function __construct(
             private array &$executionOrder,
         ) {}
@@ -61,7 +63,8 @@ it('executes multiple middleware in order', function () {
         }
     };
 
-    $middleware2 = new class ($executionOrder) implements MiddlewareInterface {
+    $middleware2 = new class ($executionOrder) implements MiddlewareInterface
+    {
         public function __construct(
             private array &$executionOrder,
         ) {}
@@ -99,7 +102,8 @@ it('executes multiple middleware in order', function () {
 it('passes request through middleware chain', function () {
     $receivedRequest = null;
 
-    $middleware = new class ($receivedRequest) implements MiddlewareInterface {
+    $middleware = new class ($receivedRequest) implements MiddlewareInterface
+    {
         public function __construct(
             private ?Request &$receivedRequest,
         ) {}
@@ -144,7 +148,8 @@ it('passes request through middleware chain', function () {
 it('executes final handler after all middleware', function () {
     $executionOrder = [];
 
-    $middleware1 = new class ($executionOrder) implements MiddlewareInterface {
+    $middleware1 = new class ($executionOrder) implements MiddlewareInterface
+    {
         public function __construct(
             private array &$executionOrder,
         ) {}
@@ -159,7 +164,8 @@ it('executes final handler after all middleware', function () {
         }
     };
 
-    $middleware2 = new class ($executionOrder) implements MiddlewareInterface {
+    $middleware2 = new class ($executionOrder) implements MiddlewareInterface
+    {
         public function __construct(
             private array &$executionOrder,
         ) {}
@@ -201,7 +207,8 @@ it('allows middleware to short-circuit by returning early', function () {
     $middleware2Called = false;
     $handlerCalled = false;
 
-    $middleware1 = new class () implements MiddlewareInterface {
+    $middleware1 = new class () implements MiddlewareInterface
+    {
         public function handle(
             Request $request,
             callable $next,
@@ -211,7 +218,8 @@ it('allows middleware to short-circuit by returning early', function () {
         }
     };
 
-    $middleware2 = new class ($middleware2Called) implements MiddlewareInterface {
+    $middleware2 = new class ($middleware2Called) implements MiddlewareInterface
+    {
         public function __construct(
             private bool &$middleware2Called,
         ) {}
@@ -256,7 +264,8 @@ it('allows middleware to modify request before passing', function () {
     $handlerRequest = null;
 
     // Middleware creates a new request with modified query parameters
-    $middleware = new class () implements MiddlewareInterface {
+    $middleware = new class () implements MiddlewareInterface
+    {
         public function handle(
             Request $request,
             callable $next,
@@ -300,7 +309,8 @@ it('allows middleware to modify request before passing', function () {
 
 it('allows middleware to modify response after receiving', function () {
     // Middleware wraps the response body with modified content
-    $middleware = new class () implements MiddlewareInterface {
+    $middleware = new class () implements MiddlewareInterface
+    {
         public function handle(
             Request $request,
             callable $next,
@@ -335,7 +345,8 @@ it('allows middleware to modify response after receiving', function () {
 it('resolves middleware classes through container', function () {
     $resolvedClasses = [];
 
-    $middleware = new class () implements MiddlewareInterface {
+    $middleware = new class () implements MiddlewareInterface
+    {
         public function handle(
             Request $request,
             callable $next,
@@ -393,7 +404,8 @@ it('handles empty middleware array (just runs handler)', function () {
 });
 
 it('propagates exceptions from middleware', function () {
-    $middleware = new class () implements MiddlewareInterface {
+    $middleware = new class () implements MiddlewareInterface
+    {
         public function handle(
             Request $request,
             callable $next,
@@ -417,7 +429,8 @@ it('propagates exceptions from middleware', function () {
 });
 
 it('propagates exceptions from handler', function () {
-    $middleware = new class () implements MiddlewareInterface {
+    $middleware = new class () implements MiddlewareInterface
+    {
         public function handle(
             Request $request,
             callable $next,

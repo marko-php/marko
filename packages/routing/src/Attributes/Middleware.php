@@ -17,8 +17,9 @@ readonly class Middleware
     /**
      * @param class-string|array<class-string> $middleware
      */
-    public function __construct(string|array $middleware)
-    {
+    public function __construct(
+        string|array $middleware,
+    ) {
         $this->middleware = is_array($middleware) ? $middleware : [$middleware];
     }
 }

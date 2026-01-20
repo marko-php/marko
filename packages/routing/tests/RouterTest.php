@@ -31,7 +31,8 @@ it('matches request to route', function (): void {
         action: 'index',
     ));
 
-    $controller = new class () {
+    $controller = new class ()
+    {
         public function index(): Response
         {
             return new Response('Hello World');
@@ -88,7 +89,8 @@ it('resolves controller through container', function (): void {
         action: 'index',
     ));
 
-    $controller = new class () {
+    $controller = new class ()
+    {
         public function index(): Response
         {
             return new Response('Resolved');
@@ -127,7 +129,8 @@ it('invokes controller method', function (): void {
         action: 'store',
     ));
 
-    $controller = new class ($methodCalled) {
+    $controller = new class ($methodCalled)
+    {
         public function __construct(
             private bool &$methodCalled,
         ) {}
@@ -169,13 +172,15 @@ it('passes route parameters to controller method', function (): void {
     ));
 
     $receivedId = null;
-    $controller = new class ($receivedId) {
+    $controller = new class ($receivedId)
+    {
         public function __construct(
             private ?string &$receivedId,
         ) {}
 
-        public function show(string $id): Response
-        {
+        public function show(
+            string $id,
+        ): Response {
             $this->receivedId = $id;
 
             return new Response("User: {$id}");
@@ -214,14 +219,16 @@ it('executes middleware pipeline', function (): void {
         middleware: ['App\\Middleware\\AuthMiddleware'],
     ));
 
-    $controller = new class () {
+    $controller = new class ()
+    {
         public function index(): Response
         {
             return new Response('Protected content');
         }
     };
 
-    $middleware = new class ($middlewareExecuted) implements MiddlewareInterface {
+    $middleware = new class ($middlewareExecuted) implements MiddlewareInterface
+    {
         public function __construct(
             private bool &$middlewareExecuted,
         ) {}
@@ -268,7 +275,8 @@ it('returns response from controller', function (): void {
         action: 'getData',
     ));
 
-    $controller = new class () {
+    $controller = new class ()
+    {
         public function getData(): Response
         {
             return new Response(
@@ -313,7 +321,8 @@ it('returns response from middleware short-circuit', function (): void {
         middleware: ['App\\Middleware\\AuthMiddleware'],
     ));
 
-    $controller = new class ($controllerCalled) {
+    $controller = new class ($controllerCalled)
+    {
         public function __construct(
             private bool &$controllerCalled,
         ) {}
@@ -327,7 +336,8 @@ it('returns response from middleware short-circuit', function (): void {
     };
 
     // Middleware short-circuits by returning 401 without calling $next
-    $middleware = new class () implements MiddlewareInterface {
+    $middleware = new class () implements MiddlewareInterface
+    {
         public function handle(
             Request $request,
             callable $next,
@@ -369,7 +379,8 @@ it('handles controller returning Response object', function (): void {
         action: 'redirectHome',
     ));
 
-    $controller = new class () {
+    $controller = new class ()
+    {
         public function redirectHome(): Response
         {
             return Response::redirect('/home', 302);
@@ -406,7 +417,8 @@ it('wraps string return in Response object', function (): void {
         action: 'index',
     ));
 
-    $controller = new class () {
+    $controller = new class ()
+    {
         public function index(): string
         {
             return 'Plain text response';
@@ -443,7 +455,8 @@ it('wraps array return in JSON Response', function (): void {
         action: 'list',
     ));
 
-    $controller = new class () {
+    $controller = new class ()
+    {
         /**
          * @return array<string, mixed>
          */

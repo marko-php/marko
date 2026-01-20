@@ -8,12 +8,13 @@ it('creates Event base class for type-safe events', function (): void {
     $event = new class () extends Event {};
 
     expect($event)->toBeInstanceOf(Event::class)
-        ->and($event->isPropagationStopped())->toBeFalse();
+        ->and($event->propagationStopped)->toBeFalse();
 });
 
 it('allows event to carry data accessible by observers', function (): void {
     // Event can carry any data through properties
-    $event = new class ('John Doe', 'john@example.com') extends Event {
+    $event = new class ('John Doe', 'john@example.com') extends Event
+    {
         public function __construct(
             public readonly string $name,
             public readonly string $email,

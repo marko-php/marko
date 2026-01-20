@@ -12,6 +12,7 @@ use Marko\Core\Module\ModuleManifest;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
+use ReflectionException;
 use RegexIterator;
 
 class PluginDiscovery
@@ -21,8 +22,9 @@ class PluginDiscovery
      *
      * @return array<string> List of absolute paths to PHP files containing plugins
      */
-    public function discoverInModule(ModuleManifest $manifest): array
-    {
+    public function discoverInModule(
+        ModuleManifest $manifest,
+    ): array {
         $srcDir = $manifest->path . '/src';
 
         if (!is_dir($srcDir)) {
@@ -49,10 +51,11 @@ class PluginDiscovery
      * Parse a plugin class and extract its definition.
      *
      * @param class-string $pluginClass
-     * @throws PluginException When the class is missing the Plugin attribute
+     * @throws PluginException|ReflectionException
      */
-    public function parsePluginClass(string $pluginClass): PluginDefinition
-    {
+    public function parsePluginClass(
+        string $pluginClass,
+    ): PluginDefinition {
         $reflection = new ReflectionClass($pluginClass);
         $pluginAttributes = $reflection->getAttributes(Plugin::class);
 
@@ -90,10 +93,11 @@ class PluginDiscovery
      * Validate that a class with #[Before]/#[After] methods also has #[Plugin] attribute.
      *
      * @param class-string $className
-     * @throws PluginException if methods have plugin attributes but class doesn't
+     * @throws PluginException|ReflectionException
      */
-    public function validatePluginMethods(string $className): void
-    {
+    public function validatePluginMethods(
+        string $className,
+    ): void {
         $reflection = new ReflectionClass($className);
         $hasPluginAttribute = !empty($reflection->getAttributes(Plugin::class));
 

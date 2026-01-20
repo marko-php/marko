@@ -7,7 +7,6 @@ use Marko\Core\Attributes\Preference;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\PreferenceRegistry;
 use Marko\Routing\Attributes\DisableRoute;
-use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\InheritRoute;
 use Marko\Routing\Http\Response;
 use Marko\Routing\PreferenceRouteResolver;
@@ -21,10 +20,12 @@ use Marko\Routing\RouteDiscovery;
 it('demo app/blog overrides PostController via Preference', function (): void {
     // Test fixture simulating demo/app/blog/Controllers/PostController
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class extends PostController {
-        public function show(string $slug): Response
-        {
-            return new Response("Custom Blog Post: {$slug} - with app customizations");
+    class extends PostController
+    {
+        public function show(
+            string $slug,
+        ): Response {
+            return new Response("Custom Blog Post: $slug - with app customizations");
         }
     };
 
@@ -42,10 +43,12 @@ it('demo app/blog overrides PostController via Preference', function (): void {
 it('app PostController modifies show method response', function (): void {
     // Test fixture simulating demo/app/blog/Controllers/PostController
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class extends PostController {
-        public function show(string $slug): Response
-        {
-            return new Response("Custom Blog Post: {$slug} - with app customizations");
+    class extends PostController
+    {
+        public function show(
+            string $slug,
+        ): Response {
+            return new Response("Custom Blog Post: $slug - with app customizations");
         }
     };
 
@@ -59,7 +62,8 @@ it('app PostController modifies show method response', function (): void {
 it('DisableRoute attribute removes route from Preference override', function (): void {
     // Test fixture: child controller disables parent route
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class extends PostController {
+    class extends PostController
+    {
         #[DisableRoute]
         public function index(): Response
         {
@@ -67,9 +71,10 @@ it('DisableRoute attribute removes route from Preference override', function ():
         }
 
         #[InheritRoute]
-        public function show(string $slug): Response
-        {
-            return new Response("Custom Blog Post: {$slug}");
+        public function show(
+            string $slug,
+        ): Response {
+            return new Response("Custom Blog Post: $slug");
         }
     };
 

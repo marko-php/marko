@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Core\Module;
 
+use Marko\Core\Exceptions\ModuleException;
+
 /**
  * Discovers Marko modules in configured directories.
  *
@@ -16,7 +18,7 @@ namespace Marko\Core\Module;
  * - modules: Recursive at any depth
  * - app: One level deep (app/module-name/)
  */
-class ModuleDiscovery
+readonly class ModuleDiscovery
 {
     public function __construct(
         private ManifestParser $parser,
@@ -26,9 +28,11 @@ class ModuleDiscovery
      * Discover modules in vendor directory (two levels deep: vendor/vendor-name/package-name/)
      *
      * @return array<ModuleManifest>
+     * @throws ModuleException
      */
-    public function discoverInVendor(string $vendorDir): array
-    {
+    public function discoverInVendor(
+        string $vendorDir,
+    ): array {
         $modules = [];
 
         if (!is_dir($vendorDir)) {
@@ -65,9 +69,11 @@ class ModuleDiscovery
      * Discover modules in modules directory (recursive, any depth)
      *
      * @return array<ModuleManifest>
+     * @throws ModuleException
      */
-    public function discoverInModules(string $modulesDir): array
-    {
+    public function discoverInModules(
+        string $modulesDir,
+    ): array {
         $modules = [];
 
         if (!is_dir($modulesDir)) {
@@ -83,9 +89,11 @@ class ModuleDiscovery
      * Discover modules in app directory (one level deep: app/module-name/)
      *
      * @return array<ModuleManifest>
+     * @throws ModuleException
      */
-    public function discoverInApp(string $appDir): array
-    {
+    public function discoverInApp(
+        string $appDir,
+    ): array {
         $modules = [];
 
         if (!is_dir($appDir)) {
@@ -113,8 +121,9 @@ class ModuleDiscovery
      * A Marko module must have composer.json (required for all modules).
      * module.php is optional but commonly present for Marko-specific config.
      */
-    private function isMarkoModule(string $path): bool
-    {
+    private function isMarkoModule(
+        string $path,
+    ): bool {
         // composer.json is required for all modules
         return is_file($path . '/composer.json');
     }
@@ -143,6 +152,7 @@ class ModuleDiscovery
 
     /**
      * @param array<ModuleManifest> $modules
+     * @throws ModuleException
      */
     private function discoverRecursively(
         string $dir,
@@ -171,8 +181,9 @@ class ModuleDiscovery
     /**
      * @return array<string>
      */
-    private function scanDirectory(string $dir): array
-    {
+    private function scanDirectory(
+        string $dir,
+    ): array {
         $items = scandir($dir);
 
         if ($items === false) {

@@ -11,8 +11,9 @@ use Marko\Core\Plugin\PluginDefinition;
 use Marko\Core\Plugin\PluginDiscovery;
 
 // Helper function for recursive directory cleanup
-function cleanupPluginTestDirectory(string $dir): void
-{
+function cleanupPluginTestDirectory(
+    string $dir,
+): void {
     if (!is_dir($dir)) {
         return;
     }
@@ -135,9 +136,11 @@ class TargetService
 #[Plugin(target: TargetService::class)]
 class TargetServicePlugin
 {
+    /** @noinspection PhpUnused - Discovered via reflection */
     #[Before(sortOrder: 10)]
     public function beforeDoSomething(): void {}
 
+    /** @noinspection PhpUnused - Discovered via reflection */
     #[After(sortOrder: 20)]
     public function afterDoSomething(): void {}
 }
@@ -187,9 +190,11 @@ it('throws PluginException when Plugin attribute missing target', function (): v
 // Test fixture for class with Before/After attributes but no Plugin attribute
 class InvalidPluginWithBeforeAfter
 {
+    /** @noinspection PhpUnused - Discovered via reflection */
     #[Before]
     public function beforeSomething(): void {}
 
+    /** @noinspection PhpUnused - Discovered via reflection */
     #[After]
     public function afterSomething(): void {}
 }

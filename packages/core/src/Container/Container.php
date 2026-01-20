@@ -6,6 +6,7 @@ namespace Marko\Core\Container;
 
 use Marko\Core\Exceptions\BindingException;
 use ReflectionClass;
+use ReflectionException;
 use ReflectionNamedType;
 
 class Container implements ContainerInterface
@@ -20,7 +21,7 @@ class Container implements ContainerInterface
     private array $bindings = [];
 
     public function __construct(
-        private ?PreferenceRegistry $preferenceRegistry = null,
+        private readonly ?PreferenceRegistry $preferenceRegistry = null,
     ) {}
 
     public function bind(
@@ -30,18 +31,24 @@ class Container implements ContainerInterface
         $this->bindings[$interface] = $implementation;
     }
 
-    public function get(string $id): mixed
-    {
+    /**
+     * @throws BindingException|ReflectionException
+     */
+    public function get(
+        string $id,
+    ): mixed {
         return $this->resolve($id);
     }
 
-    public function has(string $id): bool
-    {
+    public function has(
+        string $id,
+    ): bool {
         return isset($this->bindings[$id]) || class_exists($id);
     }
 
-    public function singleton(string $id): void
-    {
+    public function singleton(
+        string $id,
+    ): void {
         $this->shared[$id] = true;
     }
 
@@ -51,16 +58,16 @@ class Container implements ContainerInterface
     public function instance(
         string $id,
         object $instance,
-    ): void
-    {
+    ): void {
         $this->instances[$id] = $instance;
     }
 
     /**
-     * @throws BindingException
+     * @throws BindingException|ReflectionException
      */
-    private function resolve(string $id): object
-    {
+    private function resolve(
+        string $id,
+    ): object {
         if (isset($this->instances[$id])) {
             return $this->instances[$id];
         }

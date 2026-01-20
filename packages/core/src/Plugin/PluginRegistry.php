@@ -14,8 +14,9 @@ class PluginRegistry
     /**
      * Register a plugin definition.
      */
-    public function register(PluginDefinition $plugin): void
-    {
+    public function register(
+        PluginDefinition $plugin,
+    ): void {
         $targetClass = $plugin->targetClass;
 
         if (!isset($this->plugins[$targetClass])) {
@@ -30,8 +31,9 @@ class PluginRegistry
      *
      * @param class-string $targetClass
      */
-    public function hasPluginsFor(string $targetClass): bool
-    {
+    public function hasPluginsFor(
+        string $targetClass,
+    ): bool {
         return isset($this->plugins[$targetClass]) && count($this->plugins[$targetClass]) > 0;
     }
 
@@ -41,8 +43,9 @@ class PluginRegistry
      * @param class-string $targetClass
      * @return array<PluginDefinition>
      */
-    public function getPluginsFor(string $targetClass): array
-    {
+    public function getPluginsFor(
+        string $targetClass,
+    ): array {
         return $this->plugins[$targetClass] ?? [];
     }
 
@@ -75,6 +78,8 @@ class PluginRegistry
     /**
      * Get sorted plugin methods for a specific target method.
      *
+     * @param string $targetClass
+     * @param string $targetMethod
      * @param 'before'|'after' $type
      * @return array<array{pluginClass: class-string, method: string, sortOrder: int}>
      */

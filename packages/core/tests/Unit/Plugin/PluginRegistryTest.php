@@ -11,6 +11,7 @@ use Marko\Core\Plugin\PluginRegistry;
 // Test fixtures
 class OrderService
 {
+    /** @noinspection PhpUnused - Test fixture */
     public function placeOrder(): string
     {
         return 'order placed';
@@ -20,6 +21,7 @@ class OrderService
 #[Plugin(target: OrderService::class)]
 class OrderValidationPlugin
 {
+    /** @noinspection PhpUnused - Invoked via reflection */
     #[Before(sortOrder: 10)]
     public function beforePlaceOrder(): void {}
 }
@@ -27,12 +29,14 @@ class OrderValidationPlugin
 #[Plugin(target: OrderService::class)]
 class OrderLoggingPlugin
 {
+    /** @noinspection PhpUnused - Invoked via reflection */
     #[After(sortOrder: 20)]
     public function afterPlaceOrder(): void {}
 }
 
 class PaymentService
 {
+    /** @noinspection PhpUnused - Test fixture */
     public function processPayment(): string
     {
         return 'payment processed';
@@ -42,6 +46,7 @@ class PaymentService
 #[Plugin(target: PaymentService::class)]
 class PaymentAuditPlugin
 {
+    /** @noinspection PhpUnused - Invoked via reflection */
     #[After(sortOrder: 5)]
     public function afterProcessPayment(): void {}
 }
