@@ -8,27 +8,26 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
-use Marko\Core\Module\ModuleManifest;
+use Marko\Core\Module\ModuleRepositoryInterface;
 
 #[Command(name: 'module:list', description: 'Show all modules and their status')]
 class ModuleListCommand implements CommandInterface
 {
-    /**
-     * @param array<ModuleManifest> $modules
-     */
     public function __construct(
-        private array $modules,
+        private ModuleRepositoryInterface $moduleRepository,
     ) {}
 
     public function execute(
         Input $input,
         Output $output,
     ): int {
+        $modules = $this->moduleRepository->all();
+
         // Calculate column widths based on data
         $nameWidth = strlen('NAME');
         $sourceWidth = strlen('SOURCE');
 
-        foreach ($this->modules as $module) {
+        foreach ($modules as $module) {
             $nameWidth = max($nameWidth, strlen($module->name));
             $sourceWidth = max($sourceWidth, strlen($module->source));
         }
@@ -45,7 +44,7 @@ class ModuleListCommand implements CommandInterface
         );
 
         // Output rows
-        foreach ($this->modules as $module) {
+        foreach ($modules as $module) {
             $enabled = $module->enabled ? 'yes' : 'no';
             $output->writeLine(
                 str_pad($module->name, $nameWidth) .

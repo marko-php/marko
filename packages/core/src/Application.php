@@ -30,6 +30,8 @@ use Marko\Core\Module\DependencyResolver;
 use Marko\Core\Module\ManifestParser;
 use Marko\Core\Module\ModuleDiscovery;
 use Marko\Core\Module\ModuleManifest;
+use Marko\Core\Module\ModuleRepository;
+use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginRegistry;
 use Marko\Routing\Exceptions\RouteConflictException;
@@ -117,6 +119,10 @@ class Application
         // Create event dispatcher and register in container
         $this->eventDispatcher = new EventDispatcher($this->container, $this->observerRegistry);
         $this->container->instance(EventDispatcherInterface::class, $this->eventDispatcher);
+
+        // Create module repository and register in container
+        $moduleRepository = new ModuleRepository($this->modules);
+        $this->container->instance(ModuleRepositoryInterface::class, $moduleRepository);
 
         // Discover and register commands
         $this->discoverCommands();
@@ -269,6 +275,9 @@ class Application
         foreach ($commands as $definition) {
             $this->commandRegistry->register($definition);
         }
+
+        // Bind registry in container so commands can inject it
+        $this->container->instance(CommandRegistry::class, $this->commandRegistry);
 
         $this->commandRunner = new CommandRunner($this->container, $this->commandRegistry);
     }

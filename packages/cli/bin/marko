@@ -3,10 +3,11 @@
 
 declare(strict_types=1);
 
-// Autoloader for CLI package (when installed globally)
+// Autoloader for CLI package
 $autoloaders = [
-    __DIR__ . '/../vendor/autoload.php',        // Local development
-    __DIR__ . '/../../../autoload.php',          // Installed as dependency
+    __DIR__ . '/../vendor/autoload.php',        // CLI package has own vendor (installed globally)
+    __DIR__ . '/../../../autoload.php',          // Installed as dependency in project
+    __DIR__ . '/../../../vendor/autoload.php',   // Monorepo development (packages/cli/bin -> root/vendor)
 ];
 
 foreach ($autoloaders as $autoloader) {

@@ -8,6 +8,28 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Core\Commands\ModuleListCommand;
 use Marko\Core\Module\ModuleManifest;
+use Marko\Core\Module\ModuleRepositoryInterface;
+
+/**
+ * Create a simple test implementation of ModuleRepositoryInterface.
+ *
+ * @param array<ModuleManifest> $modules
+ */
+function createModuleRepository(
+    array $modules,
+): ModuleRepositoryInterface {
+    return new class ($modules) implements ModuleRepositoryInterface
+    {
+        public function __construct(
+            private array $modules,
+        ) {}
+
+        public function all(): array
+        {
+            return $this->modules;
+        }
+    };
+}
 
 it('has Command attribute with name module:list', function (): void {
     $reflection = new ReflectionClass(ModuleListCommand::class);
@@ -42,7 +64,7 @@ it('outputs all discovered modules', function (): void {
         new ModuleManifest(name: 'app/blog', version: '1.0.0', source: 'app'),
     ];
 
-    $command = new ModuleListCommand($modules);
+    $command = new ModuleListCommand(createModuleRepository($modules));
 
     $stream = fopen('php://memory', 'r+');
     $input = new Input([]);
@@ -64,7 +86,7 @@ it('displays module name for each module', function (): void {
         new ModuleManifest(name: 'custom/module', version: '1.0.0', source: 'modules'),
     ];
 
-    $command = new ModuleListCommand($modules);
+    $command = new ModuleListCommand(createModuleRepository($modules));
 
     $stream = fopen('php://memory', 'r+');
     $input = new Input([]);
@@ -87,7 +109,7 @@ it('displays module source for each module', function (): void {
         new ModuleManifest(name: 'app/blog', version: '1.0.0', source: 'app'),
     ];
 
-    $command = new ModuleListCommand($modules);
+    $command = new ModuleListCommand(createModuleRepository($modules));
 
     $stream = fopen('php://memory', 'r+');
     $input = new Input([]);
@@ -110,7 +132,7 @@ it('displays enabled status for each module', function (): void {
         new ModuleManifest(name: 'disabled/module', version: '1.0.0', source: 'vendor', enabled: false),
     ];
 
-    $command = new ModuleListCommand($modules);
+    $command = new ModuleListCommand(createModuleRepository($modules));
 
     $stream = fopen('php://memory', 'r+');
     $input = new Input([]);
@@ -131,7 +153,7 @@ it('returns exit code 0 on success', function (): void {
         new ModuleManifest(name: 'marko/core', version: '1.0.0', source: 'vendor'),
     ];
 
-    $command = new ModuleListCommand($modules);
+    $command = new ModuleListCommand(createModuleRepository($modules));
 
     $stream = fopen('php://memory', 'r+');
     $input = new Input([]);
@@ -149,7 +171,7 @@ it('formats output with aligned columns', function (): void {
         new ModuleManifest(name: 'custom/blog', version: '1.0.0', source: 'app', enabled: false),
     ];
 
-    $command = new ModuleListCommand($modules);
+    $command = new ModuleListCommand(createModuleRepository($modules));
 
     $stream = fopen('php://memory', 'r+');
     $input = new Input([]);
