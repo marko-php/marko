@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<ruleset name="Marko Framework Coding Standard">
+    <description>Marko Framework Coding Standard</description>
+
+    <file>packages</file>
+    <file>demo/app</file>
+    <file>demo/modules</file>
+
+    <arg name="colors"/>
+    <arg value="sp"/>
+
+    <!-- Require multiline method signatures -->
+    <rule ref="SlevomatCodingStandard.Functions.RequireMultiLineCall">
+        <properties>
+            <property name="minLineLength" value="1"/>
+        </properties>
+    </rule>
+
+    <!-- Require trailing commas in multiline -->
+    <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInDeclaration"/>
+
+    <!-- Disallow useless parentheses -->
+    <rule ref="SlevomatCodingStandard.PHP.UselessParentheses">
+        <properties>
+            <property name="ignoreComplexTernaryConditions" value="true"/>
+        </properties>
+    </rule>
+
+    <!-- Require blank line before return -->
+    <rule ref="SlevomatCodingStandard.ControlStructures.JumpStatementsSpacing">
+        <properties>
+            <property name="linesCountBeforeControlStructure" value="1"/>
+            <property name="tokensToCheck" type="array">
+                <element value="T_RETURN"/>
+            </property>
+        </properties>
+    </rule>
+</ruleset>

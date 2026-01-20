@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Get list of staged PHP files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "\.php$")
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+# Run php-cs-fixer
+./vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --quiet $STAGED_FILES
+
+# Re-stage fixed files
+echo "$STAGED_FILES" | xargs git add
+
+# Run phpcbf (suppress errors as it returns non-zero when it fixes things)
+./vendor/bin/phpcbf --standard=phpcs.xml $STAGED_FILES 2>/dev/null
+
+# Re-stage fixed files
+echo "$STAGED_FILES" | xargs git add
+
+# Run phpcs for final validation
+./vendor/bin/phpcs --standard=phpcs.xml $STAGED_FILES
+PHPCS_EXIT=$?
+
+if [ $PHPCS_EXIT -ne 0 ]; then
+    echo ""
+    echo "PHPCS found violations that couldn't be auto-fixed. Please fix manually."
+    exit 1
+fi
+
+exit 0

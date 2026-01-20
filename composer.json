@@ -1,0 +1,37 @@
+{
+    "name": "marko/marko",
+    "description": "Marko Framework - Enterprise-grade extensibility with modern developer experience",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.92",
+        "rector/rector": "^2.3",
+        "squizlabs/php_codesniffer": "^4.0",
+        "slevomat/coding-standard": "^8.26"
+    },
+    "autoload": {
+        "psr-4": {}
+    },
+    "autoload-dev": {
+        "psr-4": {}
+    },
+    "scripts": {
+        "cs:check": "phpcs --standard=phpcs.xml",
+        "cs:fix": [
+            "php-cs-fixer fix --config=.php-cs-fixer.php",
+            "phpcbf --standard=phpcs.xml || true"
+        ],
+        "rector": "rector process"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
