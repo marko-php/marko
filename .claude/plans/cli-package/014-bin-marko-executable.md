@@ -1,6 +1,6 @@
 # Task 014: bin/marko Executable
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 013
 **Retry count**: 0
 

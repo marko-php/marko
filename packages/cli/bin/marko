@@ -1,3 +1,31 @@
 #!/usr/bin/env php
 <?php
-// CLI executable - implementation in later task
+
+declare(strict_types=1);
+
+// Autoloader for CLI package (when installed globally)
+$autoloaders = [
+    __DIR__ . '/../vendor/autoload.php',        // Local development
+    __DIR__ . '/../../../autoload.php',          // Installed as dependency
+];
+
+foreach ($autoloaders as $autoloader) {
+    if (file_exists($autoloader)) {
+        require $autoloader;
+        break;
+    }
+}
+
+use Marko\Cli\CliKernel;
+use Marko\Cli\ProjectFinder;
+
+try {
+    $kernel = new CliKernel(
+        projectFinder: new ProjectFinder(),
+    );
+    $exitCode = $kernel->run($argv);
+    exit($exitCode);
+} catch (Throwable $e) {
+    fwrite(STDERR, "Error: " . $e->getMessage() . PHP_EOL);
+    exit(1);
+}

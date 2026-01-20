@@ -35,4 +35,14 @@ class CommandException extends MarkoException
             suggestion: 'Ensure each command has a unique name. If you need to override an existing command, use a Preference on the command class instead.',
         );
     }
+
+    public static function commandNotFound(
+        string $name,
+    ): self {
+        return new self(
+            message: "Command '$name' not found",
+            context: "While looking up command '$name'",
+            suggestion: 'Run the list command to see available commands.',
+        );
+    }
 }

@@ -1,6 +1,6 @@
 # Task 008: ListCommand
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001, 003, 005
 **Retry count**: 0
 
