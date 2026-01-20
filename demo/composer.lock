@@ -4,8 +4,34 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "16fcc2c77b92db85dbd8493771019744",
+    "content-hash": "7f2d5b789375646dc43dc2161bbe4562",
     "packages": [
+        {
+            "name": "marko/blog",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "../packages/blog",
+                "reference": "0584af089a2480689d7257733b1e1fd07f82b636"
+            },
+            "require": {
+                "marko/core": "*",
+                "php": "^8.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Blog\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Blog module for Marko Framework",
+            "transport-options": {
+                "relative": true
+            }
+        },
         {
             "name": "marko/core",
             "version": "dev-develop",

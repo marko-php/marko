@@ -84,8 +84,9 @@ class Application
         // Discover and register observers
         $this->discoverObservers();
 
-        // Create event dispatcher
+        // Create event dispatcher and register in container
         $this->eventDispatcher = new EventDispatcher($this->container, $this->observerRegistry);
+        $this->container->instance(EventDispatcherInterface::class, $this->eventDispatcher);
     }
 
     private function discoverPreferences(): void

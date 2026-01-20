@@ -1,0 +1,9 @@
+{
+    "name": "app/blog",
+    "description": "Application-level customizations of marko/blog",
+    "type": "library",
+    "version": "1.0.0",
+    "require": {
+        "marko/blog": "*"
+    }
+}

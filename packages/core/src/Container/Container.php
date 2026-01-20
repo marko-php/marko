@@ -46,6 +46,17 @@ class Container implements ContainerInterface
     }
 
     /**
+     * Register a pre-built instance for an interface or class.
+     */
+    public function instance(
+        string $id,
+        object $instance,
+    ): void
+    {
+        $this->instances[$id] = $instance;
+    }
+
+    /**
      * @throws BindingException
      */
     private function resolve(string $id): object

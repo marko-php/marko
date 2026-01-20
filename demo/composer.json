@@ -6,18 +6,22 @@
     "prefer-stable": true,
     "require": {
         "php": "^8.5",
-        "marko/core": "*"
+        "marko/core": "*",
+        "marko/blog": "*"
     },
     "autoload": {
         "psr-4": {
-            "Demo\\Greeter\\": "app/greeter/src/",
-            "Demo\\Custom\\": "app/custom/src/"
+            "App\\Blog\\": "app/blog/src/"
         }
     },
     "repositories": [
         {
             "type": "path",
             "url": "../packages/core"
+        },
+        {
+            "type": "path",
+            "url": "../packages/blog"
         }
     ],
     "config": {

@@ -1,0 +1,16 @@
+{
+    "name": "marko/blog",
+    "description": "Blog module for Marko Framework",
+    "type": "library",
+    "license": "MIT",
+    "version": "1.0.0",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Blog\\": "src/"
+        }
+    }
+}

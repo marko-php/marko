@@ -61,6 +61,7 @@ When deciding whether functionality belongs in `marko/core` or a separate packag
 ```
 packages/
   core/           # Bootstrap, DI, module loader
+  blog/           # Blog module (built alongside core)
   routing/        # Route attributes, router
   database/       # Database interfaces
   database-mysql/ # MySQL driver
@@ -68,22 +69,51 @@ packages/
 demo/             # Development test application (not a package)
 ```
 
+### Blog Module (Lockstep Development)
+
+The `marko/blog` package is built **in lockstep with core** - we only add blog features when the corresponding core features exist. This ensures:
+
+1. **Real-world validation** - Core features are tested against actual use cases
+2. **No premature abstractions** - Blog only uses what's actually available
+3. **Living documentation** - Shows how to use each core feature properly
+
+| Core Feature | Blog Feature |
+|--------------|--------------|
+| Module loading | Package structure, composer.json |
+| DI + Bindings | `FormatterInterface` → `MarkdownFormatter` |
+| Events | `ContentFormatted` event |
+| Observers | React to formatting events |
+| Plugins | Modify formatter behavior |
+| Preferences | Replace default formatter |
+| *Database (future)* | *Post entity, PostRepository* |
+| *Routing (future)* | *Post controllers, routes* |
+
 ### Demo Application
 
-The `demo/` directory contains a working application for testing framework features during development. It uses the three-directory module structure:
+The `demo/` directory shows **realistic customization** of `marko/blog` from `app/`. This demonstrates the real-world pattern: install a vendor package, customize it for your needs.
 
 ```
 demo/
-  vendor/         # Third-party modules (via Composer)
-  modules/        # Custom/project modules
-  app/            # Application-level overrides
+  vendor/         # marko/core, marko/blog (via Composer path repos)
+  modules/        # Empty (for manually-installed third-party modules)
+  app/
+    blog/         # Customizations of marko/blog (same name = customization)
   public/         # Web root (index.php)
 ```
 
+**Naming convention for app/ modules:**
+- `app/blog` - Customizes `marko/blog` (same name indicates override/extension)
+- `app/my-feature` - New app-only module (different name = standalone)
+
+**Demo scenarios (matching current core capabilities):**
+- Observe events from marko/blog
+- Plugin to modify blog behavior
+- Preference to replace a blog class
+
 **Requirements:**
-- Update the demo app as each framework feature is completed
-- Demo should exercise new functionality to verify it works end-to-end
-- Will be split to its own repository (e.g., `marko/demo`) before public release
+- Update blog and demo as each core feature is completed
+- Demo should show realistic app-level customization, not artificial examples
+- Never build blog features that require core features we don't have yet
 
 ## Feature Development
 
