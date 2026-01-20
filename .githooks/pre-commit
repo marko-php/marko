@@ -7,13 +7,19 @@ if [ -z "$STAGED_FILES" ]; then
     exit 0
 fi
 
-# Run php-cs-fixer
+# Run Rector (auto-fixes code quality)
+./vendor/bin/rector process --no-progress-bar $STAGED_FILES 2>/dev/null
+
+# Re-stage fixed files
+echo "$STAGED_FILES" | xargs git add
+
+# Run php-cs-fixer (auto-fixes formatting)
 ./vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --quiet $STAGED_FILES
 
 # Re-stage fixed files
 echo "$STAGED_FILES" | xargs git add
 
-# Run phpcbf (suppress errors as it returns non-zero when it fixes things)
+# Run phpcbf (auto-fixes phpcs violations)
 ./vendor/bin/phpcbf --standard=phpcs.xml $STAGED_FILES 2>/dev/null
 
 # Re-stage fixed files
