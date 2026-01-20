@@ -1,0 +1,22 @@
+{
+    "name": "marko/errors-simple",
+    "description": "Simple error handling and display for the Marko framework",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.5"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\ErrorsSimple\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\ErrorsSimple\\Tests\\": "tests/"
+        }
+    }
+}

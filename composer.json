@@ -18,6 +18,8 @@
             "Marko\\Blog\\": "packages/blog/src/",
             "Marko\\Cli\\": "packages/cli/src/",
             "Marko\\Core\\": "packages/core/src/",
+            "Marko\\Errors\\": "packages/errors/src/",
+            "Marko\\ErrorsSimple\\": "packages/errors-simple/src/",
             "Marko\\Routing\\": "packages/routing/src/"
         }
     },
@@ -26,6 +28,8 @@
             "Marko\\Blog\\Tests\\": "packages/blog/tests/",
             "Marko\\Cli\\Tests\\": "packages/cli/tests/",
             "Marko\\Core\\Tests\\": "packages/core/tests/",
+            "Marko\\Errors\\Tests\\": "packages/errors/tests/",
+            "Marko\\ErrorsSimple\\Tests\\": "packages/errors-simple/tests/",
             "Marko\\Routing\\Tests\\": "packages/routing/tests/"
         }
     },
