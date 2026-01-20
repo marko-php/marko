@@ -48,7 +48,7 @@ Create `marko/errors` (interface package) and `marko/errors-simple` (reliable fa
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
 | 001 | Severity enum | - | completed |
-| 002 | ErrorReport value object | 001 | pending |
+| 002 | ErrorReport value object | 001 | completed |
 | 003 | ErrorHandlerInterface contract | 002 | pending |
 | 004 | ErrorReporterInterface contract | 002 | pending |
 | 005 | errors package setup | 001, 002, 003, 004 | pending |
