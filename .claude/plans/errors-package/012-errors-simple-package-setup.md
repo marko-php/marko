@@ -1,6 +1,6 @@
 # Task 012: errors-simple Package Setup
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 005, 010, 011
 **Retry count**: 0
 
