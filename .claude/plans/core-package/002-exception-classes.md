@@ -1,7 +1,7 @@
 # Task 002: Exception Classes
 
 **Status**: pending
-**Depends on**: none
+**Depends on**: 001
 **Retry count**: 0
 
 ## Description

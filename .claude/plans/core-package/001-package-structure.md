@@ -1,6 +1,6 @@
 # Task 001: Package Structure
 
-**Status**: pending
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 
@@ -21,6 +21,8 @@ Create the foundational package structure for `marko/core` including composer.js
 - [ ] `it has tests/Unit directory for unit tests`
 - [ ] `it has tests/Feature directory for feature tests`
 - [ ] `it requires PHP 8.5 or higher`
+- [ ] `it requires psr/container for PSR-11 ContainerInterface`
+- [ ] `it requires pestphp/pest as dev dependency for testing`
 
 ## Acceptance Criteria
 - All requirements have passing tests

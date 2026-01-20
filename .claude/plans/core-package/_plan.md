@@ -4,7 +4,7 @@
 2026-01-19
 
 ## Status
-ready
+in_progress
 
 ## Objective
 Build the foundational `marko/core` package containing the DI container, module system, plugin system, event system, and bootstrap - the unified extensibility engine that makes Marko, Marko.
@@ -46,8 +46,8 @@ Build the foundational `marko/core` package containing the DI container, module 
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | Package structure and composer.json | - | pending |
-| 002 | Exception classes | - | pending |
+| 001 | Package structure and composer.json | - | completed |
+| 002 | Exception classes | 001 | pending |
 | 003 | Container interface and autowiring | 002 | pending |
 | 004 | Module manifest and discovery | 002 | pending |
 | 005 | Dependency resolution and module loading | 004 | pending |

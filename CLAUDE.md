@@ -93,6 +93,8 @@ Use this workflow for: new features, multi-file changes, anything requiring mult
 
 Skip for: quick bug fixes, single-line changes, questions, documentation.
 
+**Important:** Every feature implementation must include updates to the `demo/` directory that exercise the new functionality. This serves as both validation that the feature works end-to-end and living documentation of how to use it.
+
 ## Documentation
 
 See `.claude/` for detailed documentation:

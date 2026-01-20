@@ -10,10 +10,12 @@ Create a working demo application that exercises all core features: module loadi
 ## Context
 - Location: `demo/`
 - Uses the three-directory structure (vendor/, modules/, app/)
+- Uses Composer path repository to load marko/core from ../packages/core
 - Should demonstrate each core feature clearly
 - Acts as both validation and documentation
 
 ## Requirements (Test Descriptions)
+- [ ] `demo has composer.json with path repository pointing to packages/core`
 - [ ] `demo has public/index.php entry point that bootstraps application`
 - [ ] `demo has app/greeter module with module.php manifest`
 - [ ] `demo greeter module defines GreeterInterface and DefaultGreeter binding`
@@ -35,6 +37,7 @@ Create a working demo application that exercises all core features: module loadi
 ## Files to Create
 ```
 demo/
+  composer.json             # Path repository to ../packages/core
   public/
     index.php               # Web entry point
   app/

@@ -29,9 +29,11 @@
     <!-- Require blank line before return -->
     <rule ref="SlevomatCodingStandard.ControlStructures.JumpStatementsSpacing">
         <properties>
-            <property name="linesCountBeforeControlStructure" value="1"/>
-            <property name="tokensToCheck" type="array">
-                <element value="T_RETURN"/>
+            <property name="linesCountBeforeWhenFirstInCaseOrDefault" value="0"/>
+            <property name="linesCountAfterWhenLastInCaseOrDefault" value="0"/>
+            <property name="linesCountAfterWhenLastInLastCaseOrDefault" value="0"/>
+            <property name="jumpStatements" type="array">
+                <element value="return"/>
             </property>
         </properties>
     </rule>
