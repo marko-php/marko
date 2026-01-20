@@ -1,0 +1,28 @@
+{
+    "name": "marko/cli",
+    "description": "Marko Framework CLI",
+    "license": "MIT",
+    "type": "library",
+    "require": {
+        "php": "^8.5"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Cli\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Cli\\Tests\\": "tests/"
+        }
+    },
+    "bin": ["bin/marko"],
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}
