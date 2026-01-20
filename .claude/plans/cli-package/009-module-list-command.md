@@ -1,6 +1,6 @@
 # Task 009: ModuleListCommand
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001, 003
 **Retry count**: 0
 

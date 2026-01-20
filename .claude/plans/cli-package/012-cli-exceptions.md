@@ -1,6 +1,6 @@
 # Task 012: CLI Exceptions
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 010
 **Retry count**: 0
 

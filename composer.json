@@ -16,6 +16,7 @@
     "autoload": {
         "psr-4": {
             "Marko\\Blog\\": "packages/blog/src/",
+            "Marko\\Cli\\": "packages/cli/src/",
             "Marko\\Core\\": "packages/core/src/",
             "Marko\\Routing\\": "packages/routing/src/"
         }
@@ -23,6 +24,7 @@
     "autoload-dev": {
         "psr-4": {
             "Marko\\Blog\\Tests\\": "packages/blog/tests/",
+            "Marko\\Cli\\Tests\\": "packages/cli/tests/",
             "Marko\\Core\\Tests\\": "packages/core/tests/",
             "Marko\\Routing\\Tests\\": "packages/routing/tests/"
         }
