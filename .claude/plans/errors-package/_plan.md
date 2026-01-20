@@ -57,10 +57,10 @@ Create `marko/errors` (interface package) and `marko/errors-simple` (reliable fa
 | 008 | BasicHtmlFormatter for web | 001, 002, 006 | completed |
 | 009 | Environment detection | - | completed |
 | 010 | SimpleErrorHandler | 003, 007, 008, 009 | completed |
-| 011 | PHP error/exception registration | 010 | pending |
+| 011 | PHP error/exception registration | 010 | completed |
 | 012 | errors-simple package setup | 005, 010, 011 | pending |
 | 013 | Integration testing | 012 | pending |
-| 014 | errors package README | 005 | pending |
+| 014 | errors package README | 005 | completed |
 | 015 | errors-simple package README | 012 | pending |
 
 ## Architecture Notes

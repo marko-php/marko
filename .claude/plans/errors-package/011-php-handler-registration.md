@@ -1,6 +1,6 @@
 # Task 011: PHP Error/Exception Handler Registration
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 010
 **Retry count**: 0
 

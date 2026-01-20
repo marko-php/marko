@@ -18,6 +18,14 @@ class SimpleErrorHandler implements ErrorHandlerInterface
 
     private BasicHtmlFormatter $htmlFormatter;
 
+    protected bool $registered = false;
+
+    protected mixed $previousExceptionHandler = null;
+
+    protected mixed $previousErrorHandler = null;
+
+    protected bool $handledFatalError = false;
+
     public function __construct(
         private Environment $environment,
         ?TextFormatter $textFormatter = null,
@@ -93,7 +101,58 @@ class SimpleErrorHandler implements ErrorHandlerInterface
         return true;
     }
 
-    public function register(): void {}
+    public function register(): void
+    {
+        if ($this->registered) {
+            return;
+        }
 
-    public function unregister(): void {}
+        $this->previousExceptionHandler = set_exception_handler([$this, 'handleException']);
+        $this->previousErrorHandler = set_error_handler([$this, 'handleError']);
+        register_shutdown_function([$this, 'handleShutdown']);
+        $this->registered = true;
+    }
+
+    public function handleShutdown(): void
+    {
+        $error = error_get_last();
+
+        if ($error === null) {
+            return;
+        }
+
+        $fatalTypes = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR;
+
+        if (!($error['type'] & $fatalTypes)) {
+            return;
+        }
+
+        if ($this->handledFatalError) {
+            return;
+        }
+
+        $this->handledFatalError = true;
+        $this->handleError($error['type'], $error['message'], $error['file'], $error['line']);
+    }
+
+    public function unregister(): void
+    {
+        if (!$this->registered) {
+            return;
+        }
+
+        // Restore previous exception handler
+        restore_exception_handler();
+        if ($this->previousExceptionHandler !== null) {
+            set_exception_handler($this->previousExceptionHandler);
+        }
+
+        // Restore previous error handler
+        restore_error_handler();
+        if ($this->previousErrorHandler !== null) {
+            set_error_handler($this->previousErrorHandler);
+        }
+
+        $this->registered = false;
+    }
 }
