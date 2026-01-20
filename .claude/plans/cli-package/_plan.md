@@ -45,8 +45,8 @@ Create the marko/cli package - a global thin-client CLI tool that discovers and 
 | 001 | Command Attribute and Interface | - | completed |
 | 002 | CommandDefinition value object | 001 | completed |
 | 003 | Input and Output classes | - | completed |
-| 004 | CommandDiscovery | 001, 002 | pending |
-| 005 | CommandRegistry | 002 | pending |
+| 004 | CommandDiscovery | 001, 002 | completed |
+| 005 | CommandRegistry | 002 | completed |
 | 006 | CommandRunner | 003, 005 | pending |
 | 007 | Core Application Integration | 004, 005, 006 | pending |
 | 008 | ListCommand | 001, 003, 005 | pending |
@@ -54,7 +54,7 @@ Create the marko/cli package - a global thin-client CLI tool that discovers and 
 | 010 | CLI Package Foundation | - | completed |
 | 011 | ProjectFinder | 010 | completed |
 | 012 | CLI Exceptions | 010 | completed |
-| 013 | CliKernel | 011, 012 | pending |
+| 013 | CliKernel | 011, 012 | completed |
 | 014 | bin/marko executable | 013 | pending |
 
 ## Architecture Notes
