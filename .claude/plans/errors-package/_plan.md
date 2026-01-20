@@ -4,7 +4,7 @@
 2026-01-20
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Create `marko/errors` (interface package) and `marko/errors-simple` (reliable fallback implementation) to provide error handling infrastructure for the Marko framework.
@@ -59,9 +59,9 @@ Create `marko/errors` (interface package) and `marko/errors-simple` (reliable fa
 | 010 | SimpleErrorHandler | 003, 007, 008, 009 | completed |
 | 011 | PHP error/exception registration | 010 | completed |
 | 012 | errors-simple package setup | 005, 010, 011 | completed |
-| 013 | Integration testing | 012 | pending |
+| 013 | Integration testing | 012 | completed |
 | 014 | errors package README | 005 | completed |
-| 015 | errors-simple package README | 012 | pending |
+| 015 | errors-simple package README | 012 | completed |
 
 ## Architecture Notes
 
