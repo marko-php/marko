@@ -4,7 +4,8 @@
     "license": "MIT",
     "type": "library",
     "require": {
-        "php": "^8.5"
+        "php": "^8.5",
+        "marko/core": "^0.1"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"
