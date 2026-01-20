@@ -14,4 +14,15 @@ class BindingException extends MarkoException
             suggestion: "Register a binding in your module.php: 'bindings' => ['$interface' => YourImplementation::class]",
         );
     }
+
+    public static function unresolvableParameter(
+        string $parameter,
+        string $class,
+    ): self {
+        return new self(
+            message: "Cannot resolve parameter '\$$parameter' in class '$class'",
+            context: 'Parameter has no type declaration or is a built-in type that cannot be autowired',
+            suggestion: "Add a class or interface type hint, or register a factory for '$class'",
+        );
+    }
 }

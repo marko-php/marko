@@ -4,7 +4,7 @@
 2026-01-19
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Build the foundational `marko/core` package containing the DI container, module system, plugin system, event system, and bootstrap - the unified extensibility engine that makes Marko, Marko.
@@ -31,17 +31,17 @@ Build the foundational `marko/core` package containing the DI container, module 
 - Configuration file loading beyond module manifests
 
 ## Success Criteria
-- [ ] Container resolves dependencies via autowiring
-- [ ] Container respects interface → implementation bindings
-- [ ] Container applies class → class preferences
-- [ ] Modules discovered from vendor/, modules/, app/ directories
-- [ ] Module dependencies resolved and loaded in correct order
-- [ ] Binding conflicts throw loud, helpful errors
-- [ ] Plugins intercept method calls with before/after hooks
-- [ ] Events dispatch to registered observers
-- [ ] Demo app boots and exercises all features
-- [ ] All tests passing
-- [ ] Code follows project standards (strict types, no final, etc.)
+- [x] Container resolves dependencies via autowiring
+- [x] Container respects interface → implementation bindings
+- [x] Container applies class → class preferences
+- [x] Modules discovered from vendor/, modules/, app/ directories
+- [x] Module dependencies resolved and loaded in correct order
+- [x] Binding conflicts throw loud, helpful errors
+- [x] Plugins intercept method calls with before/after hooks
+- [x] Events dispatch to registered observers
+- [x] Demo app boots and exercises all features
+- [x] All tests passing
+- [x] Code follows project standards (strict types, no final, etc.)
 
 ## Task Overview
 | Task | Description | Depends On | Status |
@@ -51,13 +51,13 @@ Build the foundational `marko/core` package containing the DI container, module 
 | 003 | Container interface and autowiring | 002 | completed |
 | 004 | Module manifest and discovery | 002 | completed |
 | 005 | Dependency resolution and module loading | 004 | completed |
-| 006 | Binding registration from modules | 003, 005 | pending |
-| 007 | Preference attribute and resolution | 006 | pending |
-| 008 | Plugin attributes and discovery | 002, 005 | pending |
-| 009 | Plugin interceptor (method wrapping) | 003, 008 | pending |
-| 010 | Event system (Observer, Dispatcher) | 002, 005 | pending |
-| 011 | Bootstrap sequence | 006, 007, 009, 010 | pending |
-| 012 | Demo application | 011 | pending |
+| 006 | Binding registration from modules | 003, 005 | completed |
+| 007 | Preference attribute and resolution | 006 | completed |
+| 008 | Plugin attributes and discovery | 002, 005 | completed |
+| 009 | Plugin interceptor (method wrapping) | 003, 008 | completed |
+| 010 | Event system (Observer, Dispatcher) | 002, 005 | completed |
+| 011 | Bootstrap sequence | 006, 007, 009, 010 | completed |
+| 012 | Demo application | 011 | completed |
 
 ## Architecture Notes
 

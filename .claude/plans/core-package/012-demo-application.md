@@ -1,6 +1,6 @@
 # Task 012: Demo Application
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 011
 **Retry count**: 0
 
@@ -15,18 +15,18 @@ Create a working demo application that exercises all core features: module loadi
 - Acts as both validation and documentation
 
 ## Requirements (Test Descriptions)
-- [ ] `demo has composer.json with path repository pointing to packages/core`
-- [ ] `demo has public/index.php entry point that bootstraps application`
-- [ ] `demo has app/greeter module with module.php manifest`
-- [ ] `demo greeter module defines GreeterInterface and DefaultGreeter binding`
-- [ ] `demo resolves GreeterInterface to DefaultGreeter via container`
-- [ ] `demo has app/custom module with preference for DefaultGreeter`
-- [ ] `demo preference CustomGreeter replaces DefaultGreeter`
-- [ ] `demo has plugin that modifies greeter output with Before hook`
-- [ ] `demo has plugin that modifies greeter output with After hook`
-- [ ] `demo dispatches GreetingCreated event after greeting`
-- [ ] `demo has observer that logs when GreetingCreated fires`
-- [ ] `demo index.php outputs result demonstrating all features working`
+- [x] `demo has composer.json with path repository pointing to packages/core`
+- [x] `demo has public/index.php entry point that bootstraps application`
+- [x] `demo has app/greeter module with module.php manifest`
+- [x] `demo greeter module defines GreeterInterface and DefaultGreeter binding`
+- [x] `demo resolves GreeterInterface to DefaultGreeter via container`
+- [x] `demo has app/custom module with preference for DefaultGreeter`
+- [x] `demo preference CustomGreeter replaces DefaultGreeter`
+- [x] `demo has plugin that modifies greeter output with Before hook`
+- [x] `demo has plugin that modifies greeter output with After hook`
+- [x] `demo dispatches GreetingCreated event after greeting`
+- [x] `demo has observer that logs when GreetingCreated fires`
+- [x] `demo index.php outputs result demonstrating all features working`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -62,4 +62,21 @@ demo/
 ```
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+Demo application created successfully. Key implementation details:
+
+1. **composer.json**: Uses path repository to symlink packages/core, with PSR-4 autoload for Demo\Greeter\ and Demo\Custom\ namespaces.
+
+2. **app/greeter module**: Contains GreeterInterface, DefaultGreeter, and GreetingCreated event. Binding registered in module.php.
+
+3. **app/custom module**: Contains CustomGreeter preference (#[Preference]), GreeterPlugin with #[Before] and #[After] hooks, and GreetingLogger observer (#[Observer]).
+
+4. **public/index.php**: Bootstraps Application, demonstrates all features with clear output sections for each.
+
+5. **Bug fix**: Application.php needed to check for #[Plugin] attribute before calling parsePluginClass() because files containing the string "#[Plugin" were being discovered (including PluginDiscovery.php itself).
+
+Output shows all features working:
+- 4 modules discovered (psr/container, marko/core, demo/greeter, demo/custom)
+- Interface bindings resolved
+- Preferences replaced DefaultGreeter with CustomGreeter
+- Plugins enhanced output with "[plugin enhanced]"
+- Events dispatched and logged by observer

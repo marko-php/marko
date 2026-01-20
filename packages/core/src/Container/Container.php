@@ -6,6 +6,7 @@ namespace Marko\Core\Container;
 
 use Marko\Core\Exceptions\BindingException;
 use ReflectionClass;
+use ReflectionNamedType;
 
 class Container implements ContainerInterface
 {
@@ -15,6 +16,20 @@ class Container implements ContainerInterface
     /** @var array<string, object> */
     private array $instances = [];
 
+    /** @var array<string, string> */
+    private array $bindings = [];
+
+    public function __construct(
+        private ?PreferenceRegistry $preferenceRegistry = null,
+    ) {}
+
+    public function bind(
+        string $interface,
+        string $implementation,
+    ): void {
+        $this->bindings[$interface] = $implementation;
+    }
+
     public function get(string $id): mixed
     {
         return $this->resolve($id);
@@ -22,7 +37,7 @@ class Container implements ContainerInterface
 
     public function has(string $id): bool
     {
-        return class_exists($id);
+        return isset($this->bindings[$id]) || class_exists($id);
     }
 
     public function singleton(string $id): void
@@ -30,10 +45,26 @@ class Container implements ContainerInterface
         $this->shared[$id] = true;
     }
 
+    /**
+     * @throws BindingException
+     */
     private function resolve(string $id): object
     {
         if (isset($this->instances[$id])) {
             return $this->instances[$id];
+        }
+
+        // Check if there's a preference for this class (class → class replacement)
+        if ($this->preferenceRegistry !== null) {
+            $preference = $this->preferenceRegistry->getPreference($id);
+            if ($preference !== null) {
+                $id = $preference;
+            }
+        }
+
+        // Check if there's a binding for this interface
+        if (isset($this->bindings[$id])) {
+            $id = $this->bindings[$id];
         }
 
         if (interface_exists($id) && !class_exists($id)) {
@@ -51,6 +82,11 @@ class Container implements ContainerInterface
 
             foreach ($parameters as $parameter) {
                 $type = $parameter->getType();
+
+                if (!$type instanceof ReflectionNamedType || $type->isBuiltin()) {
+                    throw BindingException::unresolvableParameter($parameter->getName(), $id);
+                }
+
                 $dependencies[] = $this->resolve($type->getName());
             }
 

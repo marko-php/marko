@@ -16,6 +16,8 @@ class DependencyResolver
      *
      * @param ModuleManifest[] $modules
      * @return ModuleManifest[]
+     * @throws ModuleException When a required module dependency is not found
+     * @throws CircularDependencyException When modules have circular dependencies
      */
     public function resolve(array $modules): array
     {

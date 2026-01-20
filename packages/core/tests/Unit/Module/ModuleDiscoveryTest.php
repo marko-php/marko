@@ -92,6 +92,26 @@ it('extracts module version from composer.json', function (): void {
     cleanupDirectory($tempDir);
 });
 
+it('works without module.php file using sensible defaults', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+
+    // Create module with ONLY composer.json, no module.php
+    createTestModule($tempDir, 'acme/minimal', '1.0.0');
+
+    $parser = new ManifestParser();
+    $manifest = $parser->parse($tempDir);
+
+    // All defaults should be applied
+    expect($manifest->name)->toBe('acme/minimal')
+        ->and($manifest->version)->toBe('1.0.0')
+        ->and($manifest->enabled)->toBeTrue()
+        ->and($manifest->after)->toBe([])
+        ->and($manifest->before)->toBe([])
+        ->and($manifest->bindings)->toBe([]);
+
+    cleanupDirectory($tempDir);
+});
+
 it('extracts enabled state from module.php defaulting to true', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
 
@@ -211,15 +231,19 @@ it('throws ModuleException when composer.json missing required name field', func
 
     $parser = new ManifestParser();
 
+    $exception = null;
+
     try {
         $parser->parse($tempDir);
-        $this->fail('Expected ModuleException was not thrown');
     } catch (ModuleException $e) {
-        expect($e)->toBeInstanceOf(ModuleException::class)
-            ->and($e->getMessage())->toContain('name');
-    } finally {
-        cleanupDirectory($tempDir);
+        $exception = $e;
     }
+
+    cleanupDirectory($tempDir);
+
+    expect($exception)->not->toBeNull()
+        ->and($exception)->toBeInstanceOf(ModuleException::class)
+        ->and($exception->getMessage())->toContain('name');
 });
 
 it('throws ModuleException when module.php has syntax errors', function (): void {

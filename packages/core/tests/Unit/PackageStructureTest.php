@@ -24,16 +24,19 @@ it('has PSR-4 autoloading configured for Marko\Core namespace', function () {
         ->and($composer['autoload']['psr-4']['Marko\\Core\\'])->toBe('src/');
 });
 
-it('has a module.php manifest with name marko/core', function () {
+it('has an optional module.php for Marko-specific config', function () {
     $modulePath = dirname(__DIR__, 2) . '/module.php';
 
-    expect(file_exists($modulePath))->toBeTrue('module.php should exist');
+    // module.php is optional but if present must return an array
+    if (file_exists($modulePath)) {
+        $manifest = require $modulePath;
+        expect($manifest)->toBeArray();
+    }
 
-    $manifest = require $modulePath;
-
-    expect($manifest)->toBeArray()
-        ->toHaveKey('name')
-        ->and($manifest['name'])->toBe('marko/core');
+    // Name and version come from composer.json, not module.php
+    $composerPath = dirname(__DIR__, 2) . '/composer.json';
+    $composer = json_decode(file_get_contents($composerPath), true);
+    expect($composer['name'])->toBe('marko/core');
 });
 
 it('has src directory for source code', function () {

@@ -285,6 +285,37 @@ public function show(int $id): Response
   - Private implementation details
   - Obvious getters/setters
 
+### @throws Tags (Required)
+**All methods that throw exceptions MUST have `@throws` PHPDoc tags.** This is critical for:
+- IDE autocompletion and warnings
+- Static analysis tools (PHPStan)
+- Developers understanding what exceptions to catch
+
+```php
+// CORRECT - @throws tag for each exception type
+/**
+ * Resolve module dependencies and return modules in load order.
+ *
+ * @param ModuleManifest[] $modules
+ * @return ModuleManifest[]
+ * @throws ModuleException When a required module dependency is not found
+ * @throws CircularDependencyException When modules have circular dependencies
+ */
+public function resolve(array $modules): array
+
+// WRONG - missing @throws tags
+/**
+ * Resolve module dependencies and return modules in load order.
+ */
+public function resolve(array $modules): array  // Throws exceptions without documenting them!
+```
+
+**Rules:**
+- One `@throws` tag per exception type
+- Include brief description after the class name
+- Document ALL thrown exceptions, including those from called methods if not caught
+- Private methods that throw should also be documented if the exception propagates
+
 ### PHPDoc Format
 ```php
 /**

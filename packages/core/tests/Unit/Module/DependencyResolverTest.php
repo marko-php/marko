@@ -131,17 +131,21 @@ it('includes cycle path in CircularDependencyException message', function (): vo
 
     $resolver = new DependencyResolver();
 
+    $exception = null;
+
     try {
         $resolver->resolve([$moduleA, $moduleB, $moduleC]);
-        $this->fail('Expected CircularDependencyException');
     } catch (CircularDependencyException $e) {
-        // Message should contain the cycle path with arrows
-        expect($e->getMessage())
-            ->toContain('vendor/module-a')
-            ->toContain('vendor/module-b')
-            ->toContain('vendor/module-c')
-            ->toContain('->');
+        $exception = $e;
     }
+
+    // Message should contain the cycle path with arrows
+    expect($exception)->not->toBeNull()
+        ->and($exception->getMessage())
+        ->toContain('vendor/module-a')
+        ->toContain('vendor/module-b')
+        ->toContain('vendor/module-c')
+        ->toContain('->');
 });
 
 it('throws ModuleException when required module is not found', function (): void {
@@ -203,14 +207,18 @@ it('throws ModuleException when enabled module requires disabled module', functi
 
     $resolver = new DependencyResolver();
 
+    $exception = null;
+
     try {
         $resolver->resolve([$moduleA, $moduleB]);
-        $this->fail('Expected ModuleException');
     } catch (ModuleException $e) {
-        expect($e->getMessage())
-            ->toContain('vendor/module-a')
-            ->toContain('vendor/module-b');
+        $exception = $e;
     }
+
+    expect($exception)->not->toBeNull()
+        ->and($exception->getMessage())
+        ->toContain('vendor/module-a')
+        ->toContain('vendor/module-b');
 });
 
 it('handles complex dependency graphs correctly', function (): void {

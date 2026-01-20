@@ -1,0 +1,15 @@
+{
+    "name": "demo/custom",
+    "description": "Custom module demonstrating preferences, plugins, and observers",
+    "version": "1.0.0",
+    "type": "marko-module",
+    "require": {
+        "marko/core": "^1.0",
+        "demo/greeter": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Demo\\Custom\\": "src/"
+        }
+    }
+}

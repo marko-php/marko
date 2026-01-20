@@ -1,0 +1,28 @@
+{
+    "name": "marko/demo",
+    "description": "Demo application for Marko Framework",
+    "type": "project",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": "^8.5",
+        "marko/core": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Demo\\Greeter\\": "app/greeter/src/",
+            "Demo\\Custom\\": "app/custom/src/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../packages/core"
+        }
+    ],
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

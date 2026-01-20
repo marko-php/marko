@@ -158,11 +158,13 @@ Contains third-party modules not installed via Composer. Use this for:
 modules/
   our-shared-module/
     custom-checkout/
-      module.php
+      composer.json
+      module.php      # Optional
       src/
   internal/
     company-auth/
-      module.php
+      composer.json
+      module.php      # Optional
       src/
 ```
 
@@ -173,13 +175,15 @@ Contains your application modules. `app` is your vendor namespace.
 ```
 app/
   blog/
-    module.php
+    composer.json
+    module.php        # Optional
     src/
   admin/
-    module.php
+    composer.json
     src/
   rest-api/
-    module.php
+    composer.json
+    module.php        # Optional
     src/
 ```
 
@@ -197,7 +201,8 @@ Each module follows the same structure:
 
 ```
 module-name/
-  module.php           # Module manifest (required)
+  composer.json        # Package metadata (required) - name, version, require
+  module.php           # Marko-specific config (optional) - enabled, sequence, bindings
   src/                 # PHP source code
     Controllers/
     Models/
@@ -218,23 +223,29 @@ module-name/
 
 There is no distinction between "framework code," "vendor packages," and "application code." Everything is a module. Your application is modules. Vendor code is modules. Even the core code for Marko is a module. The same rules apply everywhere.
 
-### Module Manifest
+### Module Configuration Split
 
-Every module has a `module.php` file that declares everything about the module:
+Module configuration is split between two files with clear responsibilities:
 
-- Name and version
-- Dependencies (what it requires)
-- Sequence (load order hints)
-- Bindings (interface to implementation mappings)
-- Enabled/disabled state
+**composer.json (required)** - Standard Composer package metadata:
+- `name` - Package name (vendor/package format)
+- `version` - Semantic version
+- `require` - Dependencies
+
+**module.php (optional)** - Marko-specific configuration:
+- `enabled` - Whether module is active (default: true)
+- `sequence` - Load order hints (after/before other modules)
+- `bindings` - Interface → implementation mappings
+
+This split keeps standard PHP metadata in the standard location (composer.json) while Marko-specific config lives in module.php. A minimal module only needs a composer.json with a `name` field.
 
 ### Module Discovery
 
-The framework automatically discovers modules by scanning for `module.php` files:
+The framework automatically discovers modules by scanning for `composer.json` files:
 
-1. `vendor/*/` - Two levels deep (e.g., `vendor/marko/core/module.php`)
+1. `vendor/*/` - Two levels deep (e.g., `vendor/marko/core/composer.json`)
 2. `modules/**/` - Recursive (any depth)
-3. `app/*/` - One level deep (e.g., `app/blog/module.php`)
+3. `app/*/` - One level deep (e.g., `app/blog/composer.json`)
 
 No manual registration required. Just drop a module in the right place and it's discovered.
 
@@ -275,8 +286,8 @@ package-name/
   tests/
     Unit/                 # Unit tests (mirrors src/ structure)
     Feature/              # Integration tests
-  composer.json           # Package composer.json
-  module.php              # Module manifest
+  composer.json           # Package metadata (required) - name, version, require
+  module.php              # Marko config (optional) - enabled, sequence, bindings
 ```
 
 ### Interface/Implementation Split
@@ -662,13 +673,13 @@ Every Marko application starts with `vendor/marko/core/bootstrap.php`. This is t
 
 ### marko/core Special Status
 
-`marko/core` is both a module (has `module.php`) and the bootstrap (has `bootstrap.php`). It's the only package with this dual role because it's the foundation that loads everything else.
+`marko/core` is both a module (has `composer.json`) and the bootstrap (has `bootstrap.php`). It's the only package with this dual role because it's the foundation that loads everything else.
 
 ### Boot Sequence
 
 1. **Autoload**: Composer autoloader is loaded
 2. **Bootstrap**: `bootstrap.php` is executed
-3. **Scan**: Module loader scans `vendor/`, `modules/`, and `app/` for `module.php` files
+3. **Scan**: Module loader scans `vendor/`, `modules/`, and `app/` for `composer.json` files
 4. **Parse**: All module manifests are read
 5. **Validate**: Dependencies are checked, conflicts detected
 6. **Sort**: Topological sort determines load order
