@@ -77,38 +77,24 @@ The `marko/blog` package is built **in lockstep with core** - we only add blog f
 2. **No premature abstractions** - Blog only uses what's actually available
 3. **Living documentation** - Shows how to use each core feature properly
 
-| Core Feature | Blog Feature |
-|--------------|--------------|
-| Module loading | Package structure, composer.json |
-| DI + Bindings | `FormatterInterface` → `MarkdownFormatter` |
-| Events | `ContentFormatted` event |
-| Observers | React to formatting events |
-| Plugins | Modify formatter behavior |
-| Preferences | Replace default formatter |
-| *Database (future)* | *Post entity, PostRepository* |
-| *Routing (future)* | *Post controllers, routes* |
+**Current state:** Skeleton package with composer.json and empty src/ directory. Real functionality will be added as core features are built.
 
 ### Demo Application
 
-The `demo/` directory shows **realistic customization** of `marko/blog` from `app/`. This demonstrates the real-world pattern: install a vendor package, customize it for your needs.
+The `demo/` directory contains a minimal bootstrap application for testing framework features during development.
 
 ```
 demo/
   vendor/         # marko/core, marko/blog (via Composer path repos)
   modules/        # Empty (for manually-installed third-party modules)
   app/
-    blog/         # Customizations of marko/blog (same name = customization)
-  public/         # Web root (index.php)
+    blog/         # Future customizations of marko/blog
+  public/         # Web root (index.php - minimal bootstrap)
 ```
 
 **Naming convention for app/ modules:**
 - `app/blog` - Customizes `marko/blog` (same name indicates override/extension)
 - `app/my-feature` - New app-only module (different name = standalone)
-
-**Demo scenarios (matching current core capabilities):**
-- Observe events from marko/blog
-- Plugin to modify blog behavior
-- Preference to replace a blog class
 
 **Requirements:**
 - Update blog and demo as each core feature is completed
@@ -139,3 +125,4 @@ See `.claude/` for detailed documentation:
 2. **Explicit over implicit** - No magic, everything discoverable
 3. **Opinionated, not restrictive** - Guide toward better patterns
 4. **True modularity** - Interface/implementation split, clean boundaries
+5. **No pseudo-functionality** - Don't build fake features to demonstrate concepts; only build real functionality when core supports it. If there's nothing meaningful to build, build nothing.

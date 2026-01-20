@@ -42,6 +42,7 @@ Build the foundational `marko/core` package containing the DI container, module 
 - [x] Demo app boots and exercises all features
 - [x] All tests passing
 - [x] Code follows project standards (strict types, no final, etc.)
+- [x] Non-vendor modules (modules/, app/) autoload without explicit require in root composer.json
 
 ## Task Overview
 | Task | Description | Depends On | Status |
@@ -58,6 +59,7 @@ Build the foundational `marko/core` package containing the DI container, module 
 | 010 | Event system (Observer, Dispatcher) | 002, 005 | completed |
 | 011 | Bootstrap sequence | 006, 007, 009, 010 | completed |
 | 012 | Demo application | 011 | completed |
+| 013 | Autoloader registration for non-vendor modules | 004, 011 | completed |
 
 ## Architecture Notes
 

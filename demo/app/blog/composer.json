@@ -1,9 +1,14 @@
 {
     "name": "app/blog",
-    "description": "Application-level customizations of marko/blog",
+    "description": "Demo blog module for testing non-vendor autoloading",
     "type": "library",
     "version": "1.0.0",
     "require": {
-        "marko/blog": "*"
+        "php": "^8.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\Blog\\": "src/"
+        }
     }
 }

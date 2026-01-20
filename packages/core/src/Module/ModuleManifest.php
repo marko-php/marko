@@ -22,6 +22,7 @@ readonly class ModuleManifest
      * @param array<string, string> $bindings Interface to implementation bindings (from module.php)
      * @param string $path Absolute path to module directory
      * @param string $source Discovery source: vendor, modules, or app
+     * @param array<string, string> $autoload PSR-4 autoload configuration from composer.json (namespace => path)
      */
     public function __construct(
         public string $name,
@@ -33,5 +34,6 @@ readonly class ModuleManifest
         public array $bindings = [],
         public string $path = '',
         public string $source = '',
+        public array $autoload = [],
     ) {}
 }

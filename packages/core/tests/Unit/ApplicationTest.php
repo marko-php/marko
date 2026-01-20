@@ -547,3 +547,283 @@ it('parses all discovered module manifests', function (): void {
 
     appTestCleanupDirectory($baseDir);
 });
+
+it('registers PSR-4 autoloaders for modules source during boot', function (): void {
+    // Use unique namespace to avoid conflicts between test runs
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $modulesDir = $baseDir . '/modules';
+
+    // Create module with autoload configuration
+    $modulePath = $modulesDir . '/custom-blog';
+    // Note: we use a 'lib/' directory (not 'src/') to avoid the file being
+    // loaded by preference/plugin discovery which scans only 'src/'
+    mkdir($modulePath . '/lib', 0755, true);
+
+    // Create composer.json with autoload.psr-4
+    $composerData = [
+        'name' => 'custom/blog',
+        'version' => '1.0.0',
+        'autoload' => [
+            'psr-4' => [
+                "CustomBlog{$uniqueId}\\" => 'lib/',
+            ],
+        ],
+    ];
+    file_put_contents($modulePath . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
+
+    // Create a class file in the module's lib/ directory
+    $classContent = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace CustomBlog{$uniqueId};
+
+class BlogService
+{
+    public function getName(): string
+    {
+        return 'BlogService';
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/lib/BlogService.php', $classContent);
+
+    // Verify class doesn't exist BEFORE boot
+    $className = "CustomBlog{$uniqueId}\\BlogService";
+    expect(class_exists($className, false))->toBeFalse()
+        ->and(class_exists($className, true))->toBeFalse('Class should NOT be autoloadable before boot');
+
+    $app = new Application(
+        vendorPath: '',
+        modulesPath: $modulesDir,
+        appPath: '',
+    );
+
+    $app->boot();
+
+    // The class should now be autoloadable via the PSR-4 autoloader
+    expect(class_exists($className, true))->toBeTrue('Class should be autoloadable after boot');
+
+    // Instantiate the class to confirm it truly works
+    $instance = new $className();
+    expect($instance->getName())->toBe('BlogService');
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('skips autoloader registration for vendor modules', function (): void {
+    // Count autoloaders before and after boot to verify vendor modules don't add autoloaders
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    // Create a vendor module with autoload configuration
+    $modulePath = $vendorDir . '/acme/core';
+    mkdir($modulePath . '/lib', 0755, true);
+
+    // Create composer.json with autoload.psr-4
+    $composerData = [
+        'name' => 'acme/core',
+        'version' => '1.0.0',
+        'autoload' => [
+            'psr-4' => [
+                "AcmeCore{$uniqueId}\\" => 'lib/',
+            ],
+        ],
+    ];
+    file_put_contents($modulePath . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
+
+    // Create a class file in the vendor module
+    $classContent = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmeCore{$uniqueId};
+
+class CoreService
+{
+    public function getName(): string
+    {
+        return 'CoreService';
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/lib/CoreService.php', $classContent);
+
+    $autoloaderCountBefore = count(spl_autoload_functions());
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    $autoloaderCountAfter = count(spl_autoload_functions());
+
+    // Should not have registered any new autoloaders for vendor modules
+    expect($autoloaderCountAfter)->toBe($autoloaderCountBefore);
+
+    // The class should NOT be autoloadable (Composer didn't know about this test module)
+    $className = "AcmeCore{$uniqueId}\\CoreService";
+    expect(class_exists($className, true))->toBeFalse(
+        'Vendor module class should not be autoloadable without Composer'
+    );
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('resolves class from app module without explicit require in root composer.json', function (): void {
+    // This simulates app/blog working without being in demo/composer.json require
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $appDir = $baseDir . '/app';
+
+    // Create an app module (like demo/app/blog)
+    $modulePath = $appDir . '/blog';
+    mkdir($modulePath . '/src', 0755, true);
+
+    // Create composer.json with PSR-4 autoload
+    $composerData = [
+        'name' => 'app/blog',
+        'version' => '1.0.0',
+        'autoload' => [
+            'psr-4' => [
+                "App\\Blog{$uniqueId}\\" => 'src/',
+            ],
+        ],
+    ];
+    file_put_contents($modulePath . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
+
+    // Create the module's controller class
+    $classContent = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\\Blog{$uniqueId}\\Controller;
+
+class BlogController
+{
+    public function index(): string
+    {
+        return 'Blog index';
+    }
+}
+PHP;
+    mkdir($modulePath . '/src/Controller', 0755, true);
+    file_put_contents($modulePath . '/src/Controller/BlogController.php', $classContent);
+
+    // Also create a model class to test nested namespaces
+    $modelContent = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\\Blog{$uniqueId}\\Model;
+
+class Post
+{
+    public function __construct(
+        public string \$title = 'Default Title',
+    ) {}
+}
+PHP;
+    mkdir($modulePath . '/src/Model', 0755, true);
+    file_put_contents($modulePath . '/src/Model/Post.php', $modelContent);
+
+    // Verify classes don't exist before boot
+    $controllerClass = "App\\Blog{$uniqueId}\\Controller\\BlogController";
+    $modelClass = "App\\Blog{$uniqueId}\\Model\\Post";
+
+    expect(class_exists($controllerClass, true))->toBeFalse()
+        ->and(class_exists($modelClass, true))->toBeFalse();
+
+    $app = new Application(
+        vendorPath: '',
+        modulesPath: '',
+        appPath: $appDir,
+    );
+
+    $app->boot();
+
+    // Classes should now be autoloadable
+    expect(class_exists($controllerClass, true))->toBeTrue('Controller should be autoloadable')
+        ->and(class_exists($modelClass, true))->toBeTrue('Model should be autoloadable');
+
+    // Actually instantiate and use the classes
+    $controller = new $controllerClass();
+    $post = new $modelClass('Test Post');
+
+    expect($controller->index())->toBe('Blog index')
+        ->and($post->title)->toBe('Test Post');
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('resolves class from modules directory without explicit require in root composer.json', function (): void {
+    // This simulates modules/custom-checkout working without being in root composer.json
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $modulesDir = $baseDir . '/modules';
+
+    // Create a modules directory module
+    $modulePath = $modulesDir . '/custom-checkout';
+    mkdir($modulePath . '/src', 0755, true);
+
+    // Create composer.json with PSR-4 autoload
+    $composerData = [
+        'name' => 'custom/checkout',
+        'version' => '1.0.0',
+        'autoload' => [
+            'psr-4' => [
+                "Custom\\Checkout{$uniqueId}\\" => 'src/',
+            ],
+        ],
+    ];
+    file_put_contents($modulePath . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
+
+    // Create the module's service class
+    $classContent = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace Custom\\Checkout{$uniqueId}\\Service;
+
+class CartService
+{
+    public function getTotal(): float
+    {
+        return 99.99;
+    }
+}
+PHP;
+    mkdir($modulePath . '/src/Service', 0755, true);
+    file_put_contents($modulePath . '/src/Service/CartService.php', $classContent);
+
+    // Verify class doesn't exist before boot
+    $serviceClass = "Custom\\Checkout{$uniqueId}\\Service\\CartService";
+    expect(class_exists($serviceClass, true))->toBeFalse();
+
+    $app = new Application(
+        vendorPath: '',
+        modulesPath: $modulesDir,
+        appPath: '',
+    );
+
+    $app->boot();
+
+    // Class should now be autoloadable
+    expect(class_exists($serviceClass, true))->toBeTrue('Service should be autoloadable');
+
+    // Actually instantiate and use the class
+    $service = new $serviceClass();
+    expect($service->getTotal())->toBe(99.99);
+
+    appTestCleanupDirectory($baseDir);
+});

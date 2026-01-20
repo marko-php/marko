@@ -137,6 +137,7 @@ class ModuleDiscovery
             bindings: $manifest->bindings,
             path: $path,
             source: $source,
+            autoload: $manifest->autoload,
         );
     }
 

@@ -9,11 +9,6 @@
         "marko/core": "*",
         "marko/blog": "*"
     },
-    "autoload": {
-        "psr-4": {
-            "App\\Blog\\": "app/blog/src/"
-        }
-    },
     "repositories": [
         {
             "type": "path",

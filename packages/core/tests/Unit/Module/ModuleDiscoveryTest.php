@@ -432,3 +432,51 @@ it('filters out php and extension requirements from dependencies', function (): 
 
     cleanupDirectory($tempDir);
 });
+
+it('extracts psr-4 autoload configuration from composer.json into ModuleManifest', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    mkdir($tempDir, 0755, true);
+
+    // Create composer.json with autoload.psr-4 configuration
+    $composerData = [
+        'name' => 'acme/blog',
+        'version' => '1.0.0',
+        'autoload' => [
+            'psr-4' => [
+                'Acme\\Blog\\' => 'src/',
+            ],
+        ],
+    ];
+    file_put_contents($tempDir . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
+
+    $parser = new ManifestParser();
+    $manifest = $parser->parse($tempDir);
+
+    expect($manifest->autoload)
+        ->toBeArray()
+        ->toHaveKey('Acme\\Blog\\')
+        ->and($manifest->autoload['Acme\\Blog\\'])->toBe('src/');
+
+    cleanupDirectory($tempDir);
+});
+
+it('stores autoload as empty array when composer.json has no autoload section', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    mkdir($tempDir, 0755, true);
+
+    // Create composer.json WITHOUT autoload section
+    $composerData = [
+        'name' => 'acme/simple',
+        'version' => '1.0.0',
+    ];
+    file_put_contents($tempDir . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
+
+    $parser = new ManifestParser();
+    $manifest = $parser->parse($tempDir);
+
+    expect($manifest->autoload)
+        ->toBeArray()
+        ->toBeEmpty();
+
+    cleanupDirectory($tempDir);
+});
