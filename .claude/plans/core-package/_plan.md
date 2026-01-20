@@ -48,8 +48,8 @@ Build the foundational `marko/core` package containing the DI container, module 
 |------|-------------|------------|--------|
 | 001 | Package structure and composer.json | - | completed |
 | 002 | Exception classes | 001 | completed |
-| 003 | Container interface and autowiring | 002 | pending |
-| 004 | Module manifest and discovery | 002 | pending |
+| 003 | Container interface and autowiring | 002 | completed |
+| 004 | Module manifest and discovery | 002 | completed |
 | 005 | Dependency resolution and module loading | 004 | pending |
 | 006 | Binding registration from modules | 003, 005 | pending |
 | 007 | Preference attribute and resolution | 006 | pending |
@@ -75,18 +75,23 @@ Build the foundational `marko/core` package containing the DI container, module 
 ### Bootstrap Sequence
 1. Autoload (Composer)
 2. Bootstrap (execute bootstrap.php)
-3. Scan (find module.php files)
-4. Parse (read manifests)
+3. Scan (find modules via composer.json)
+4. Parse (read composer.json + module.php)
 5. Validate (check dependencies, detect conflicts)
 6. Sort (topological sort for load order)
 7. Boot (load modules, register bindings/plugins/observers)
 8. Ready (container ready)
+
+### Module Configuration Split
+- **composer.json** (required): name, version, require - standard PHP package metadata
+- **module.php** (optional): enabled, sequence, bindings - Marko-specific config
 
 ### Key Design Decisions
 - Plugins wrap container resolution - when resolving a class with plugins, return a proxy
 - Preferences are resolved before autowiring
 - Binding conflicts are loud errors, not silent overwrites
 - Everything is discovered via PHP 8 attributes, not configuration
+- All modules require composer.json (enforces good PHP practices)
 
 ## Risks & Mitigations
 - **Plugin proxy generation complexity**: Start with simple closure-based wrapping, optimize later if needed
