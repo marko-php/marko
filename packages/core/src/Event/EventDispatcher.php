@@ -6,11 +6,11 @@ namespace Marko\Core\Event;
 
 use Marko\Core\Container\ContainerInterface;
 
-class EventDispatcher implements EventDispatcherInterface
+readonly class EventDispatcher implements EventDispatcherInterface
 {
     public function __construct(
-        private readonly ContainerInterface $container,
-        private readonly ObserverRegistry $registry,
+        private ContainerInterface $container,
+        private ObserverRegistry $registry,
     ) {}
 
     public function dispatch(Event $event): void

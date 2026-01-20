@@ -1,5 +1,5 @@
 .DS_Store
 .php-cs-fixer.cache
-vendor/
 .phpstan-cache/
-.php-cs-fixer.cache
+.phpunit.cache/
+vendor/

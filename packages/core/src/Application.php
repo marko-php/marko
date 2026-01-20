@@ -23,7 +23,10 @@ use Marko\Core\Module\ModuleDiscovery;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginRegistry;
+use Marko\Routing\Router;
+use Marko\Routing\RoutingBootstrapper;
 use ReflectionClass;
+use RuntimeException;
 
 class Application
 {
@@ -39,6 +42,8 @@ class Application
     private ObserverRegistry $observerRegistry;
 
     private EventDispatcherInterface $eventDispatcher;
+
+    private ?Router $router = null;
 
     public function __construct(
         private string $vendorPath = '',
@@ -90,6 +95,9 @@ class Application
         // Create event dispatcher and register in container
         $this->eventDispatcher = new EventDispatcher($this->container, $this->observerRegistry);
         $this->container->instance(EventDispatcherInterface::class, $this->eventDispatcher);
+
+        // Discover and register routes (if routing package is available)
+        $this->discoverRoutes();
     }
 
     /**
@@ -282,5 +290,30 @@ class Application
     public function getAppPath(): string
     {
         return $this->appPath;
+    }
+
+    public function getRouter(): Router
+    {
+        if ($this->router === null) {
+            throw new RuntimeException('Router not available. Call boot() first.');
+        }
+
+        return $this->router;
+    }
+
+    private function discoverRoutes(): void
+    {
+        // Only bootstrap routing if the routing package is available
+        if (!class_exists(RoutingBootstrapper::class)) {
+            return;
+        }
+
+        $bootstrapper = new RoutingBootstrapper(
+            $this->modules,
+            $this->container,
+            $this->preferenceRegistry,
+        );
+
+        $this->router = $bootstrapper->boot();
     }
 }

@@ -1,6 +1,6 @@
 # Task 014: Application Integration
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 012, 013
 **Retry count**: 0
 

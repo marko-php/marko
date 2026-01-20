@@ -7,10 +7,10 @@ namespace Marko\Core\Attributes;
 use Attribute;
 
 #[Attribute(Attribute::TARGET_CLASS)]
-class Observer
+readonly class Observer
 {
     public function __construct(
-        public readonly string $event,
-        public readonly int $priority = 0,
+        public string $event,
+        public int $priority = 0,
     ) {}
 }

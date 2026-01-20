@@ -8,10 +8,10 @@ use Marko\Core\Container\ContainerInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
-class MiddlewarePipeline
+readonly class MiddlewarePipeline
 {
     public function __construct(
-        private readonly ContainerInterface $container,
+        private ContainerInterface $container,
     ) {}
 
     /**

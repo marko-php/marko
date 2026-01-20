@@ -7,12 +7,17 @@
     "require": {
         "php": "^8.5",
         "marko/core": "*",
+        "marko/routing": "*",
         "marko/blog": "*"
     },
     "repositories": [
         {
             "type": "path",
             "url": "../packages/core"
+        },
+        {
+            "type": "path",
+            "url": "../packages/routing"
         },
         {
             "type": "path",

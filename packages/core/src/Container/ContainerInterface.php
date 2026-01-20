@@ -12,4 +12,12 @@ interface ContainerInterface extends PsrContainerInterface
      * Register a class as a singleton (shared instance).
      */
     public function singleton(string $id): void;
+
+    /**
+     * Register a pre-built instance for an interface or class.
+     */
+    public function instance(
+        string $id,
+        object $instance,
+    ): void;
 }

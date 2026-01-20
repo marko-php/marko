@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7f2d5b789375646dc43dc2161bbe4562",
+    "content-hash": "414c7d02cb882863793f7dbf0f46f1cf",
     "packages": [
         {
             "name": "marko/blog",
@@ -12,16 +12,25 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/blog",
-                "reference": "0584af089a2480689d7257733b1e1fd07f82b636"
+                "reference": "eee1fdf9b98262624edf12c9e56468fc8209173b"
             },
             "require": {
-                "marko/core": "*",
+                "marko/core": "@dev",
+                "marko/routing": "@dev",
                 "php": "^8.5"
+            },
+            "require-dev": {
+                "pestphp/pest": "^4.0"
             },
             "type": "library",
             "autoload": {
                 "psr-4": {
                     "Marko\\Blog\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Marko\\Blog\\Tests\\": "tests/"
                 }
             },
             "license": [
@@ -62,6 +71,40 @@
                 "MIT"
             ],
             "description": "Marko Framework Core",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "marko/routing",
+            "version": "dev-develop",
+            "dist": {
+                "type": "path",
+                "url": "../packages/routing",
+                "reference": "d1afac053d77d201a039beae2cba43b70c8f6235"
+            },
+            "require": {
+                "marko/core": "@dev",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "pestphp/pest": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Routing\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Marko\\Routing\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Marko Framework Routing",
             "transport-options": {
                 "relative": true
             }

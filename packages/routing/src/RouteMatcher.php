@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Marko\Routing;
 
-class RouteMatcher
+readonly class RouteMatcher
 {
     public function __construct(
-        private readonly RouteCollection $routes,
+        private RouteCollection $routes,
     ) {}
 
     public function match(

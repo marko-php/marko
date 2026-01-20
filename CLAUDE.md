@@ -81,25 +81,47 @@ The `marko/blog` package is built **in lockstep with core** - we only add blog f
 
 ### Demo Application
 
-The `demo/` directory contains a minimal bootstrap application for testing framework features during development.
+The `demo/` directory contains minimal bootstrap infrastructure for testing that packages integrate correctly.
 
 ```
 demo/
   vendor/         # marko/core, marko/blog (via Composer path repos)
   modules/        # Empty (for manually-installed third-party modules)
   app/
-    blog/         # Future customizations of marko/blog
+    blog/         # Empty until real customization needed
   public/         # Web root (index.php - minimal bootstrap)
 ```
 
-**Naming convention for app/ modules:**
-- `app/blog` - Customizes `marko/blog` (same name indicates override/extension)
-- `app/my-feature` - New app-only module (different name = standalone)
+**What belongs in demo/:**
+- `demo/public/index.php` - Bootstrap infrastructure that wires packages together
+- `demo/app/*/module.php` - Module structure scaffolding (can be empty)
+- Integration that proves packages work together
 
-**Requirements:**
-- Update blog and demo as each core feature is completed
-- Demo should show realistic app-level customization, not artificial examples
-- Never build blog features that require core features we don't have yet
+**What does NOT belong in demo/:**
+- Code that "demonstrates" or "shows" a feature works
+- Overrides that exist only to prove Preferences/Plugins/etc. function
+- Any customization without a real, practical purpose
+
+> **⚠️ CRITICAL: Plans must NEVER include demo/app/ customization requirements**
+>
+> This is the #1 source of pseudo-functionality. When writing plans:
+>
+> **NEVER write requirements like:**
+> - "demo/app/blog overrides PostController via Preference"
+> - "app PostController uses DisableRoute to demonstrate route removal"
+> - "demo/app/ shows how to customize X"
+>
+> **Tests verify features work, not demo code.** The packages have comprehensive tests. Adding demo/app/ code that duplicates what tests already verify is pseudo-functionality.
+>
+> **The word "demonstrate" is a red flag.** If a plan requirement uses "demonstrate," "show," or "prove" in relation to demo/, delete that requirement. Tests prove things work. Demo code uses things for real purposes.
+>
+> **When is demo/app/ customization appropriate?**
+> Almost never at this stage. Only when:
+> 1. There's real data to work with (database, files, external APIs)
+> 2. There's a genuine business reason to customize behavior
+> 3. The customization would exist in a real application
+>
+> Until then, demo/app/ modules remain empty scaffolding. That's the correct state.
 
 ## Feature Development
 
@@ -108,8 +130,6 @@ For any feature beyond a simple fix or quick change, use the `plan-create` skill
 Use this workflow for: new features, multi-file changes, anything requiring multiple steps or tests.
 
 Skip for: quick bug fixes, single-line changes, questions, documentation.
-
-**Important:** Every feature implementation must include updates to the `demo/` directory that exercise the new functionality. This serves as both validation that the feature works end-to-end and living documentation of how to use it.
 
 ## Documentation
 

@@ -15,17 +15,20 @@
     },
     "autoload": {
         "psr-4": {
+            "Marko\\Blog\\": "packages/blog/src/",
             "Marko\\Core\\": "packages/core/src/",
             "Marko\\Routing\\": "packages/routing/src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
+            "Marko\\Blog\\Tests\\": "packages/blog/tests/",
             "Marko\\Core\\Tests\\": "packages/core/tests/",
             "Marko\\Routing\\Tests\\": "packages/routing/tests/"
         }
     },
     "scripts": {
+        "test": "pest -c phpunit.xml --test-directory=packages/core/tests",
         "cs:check": "phpcs --standard=phpcs.xml",
         "cs:fix": [
             "php-cs-fixer fix --config=.php-cs-fixer.php",

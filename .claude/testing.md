@@ -103,6 +103,15 @@ test('module loader discovers modules in all directories', function () {
 - Use present tense: "resolves", "throws", "returns"
 - Be specific about behavior being tested
 - Include the condition: "when", "with", "without"
+- **Never use "demonstrate" in test names** - tests verify behavior, they don't demonstrate it
+
+```php
+// WRONG - "demonstrate" implies pseudo-functionality
+it('uses DisableRoute to demonstrate route removal', ...);
+
+// RIGHT - describes what the feature does
+it('removes route when method has DisableRoute attribute', ...);
+```
 
 ## Expectation Chaining (Required)
 

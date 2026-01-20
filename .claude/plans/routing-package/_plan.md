@@ -4,7 +4,7 @@
 2026-01-20
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Build the `marko/routing` package providing attribute-based routing with HTTP method attributes (#[Get], #[Post], etc.), route parameters, middleware support, route conflict detection, and DisableRoute for explicit route removal - all integrating cleanly with the core extensibility system.
@@ -61,10 +61,10 @@ Build the `marko/routing` package providing attribute-based routing with HTTP me
 | 009 | Route collection and conflict detection | 002, 007, 008 | completed |
 | 010 | Route matching and parameter extraction | 007, 009 | completed |
 | 011 | Middleware pipeline | 003, 005 | completed |
-| 012 | Router class (orchestrates everything) | 009, 010, 011 | pending |
+| 012 | Router class (orchestrates everything) | 009, 010, 011 | completed |
 | 013 | Preference route inheritance | 002, 008 | completed |
-| 014 | Application integration | 012, 013 | pending |
-| 015 | Demo app with blog routes | 014 | pending |
+| 014 | Application integration | 012, 013 | completed |
+| 015 | Demo app with blog routes | 014 | completed |
 
 ## Architecture Notes
 

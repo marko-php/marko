@@ -6,6 +6,7 @@ namespace Marko\Routing;
 
 use Marko\Core\Container\PreferenceRegistry;
 use Marko\Routing\Attributes\DisableRoute;
+use Marko\Routing\Attributes\InheritRoute;
 use Marko\Routing\Exceptions\RouteException;
 use ReflectionClass;
 
@@ -74,6 +75,18 @@ class PreferenceRouteResolver
                     continue;
                 }
 
+                // Check if method has InheritRoute - explicitly inherit parent's route
+                if ($this->hasInheritRoute($reflection, $parentRoute->action)) {
+                    $resolvedRoutes[] = new RouteDefinition(
+                        method: $parentRoute->method,
+                        path: $parentRoute->path,
+                        controller: $className,
+                        action: $parentRoute->action,
+                        middleware: $parentRoute->middleware,
+                    );
+                    continue;
+                }
+
                 // Check if method is overridden without any route attribute
                 if ($this->isMethodOverriddenWithoutRouteAttribute($reflection, $parentRoute->action)) {
                     throw RouteException::ambiguousOverride(
@@ -121,6 +134,27 @@ class PreferenceRouteResolver
         }
 
         return !empty($method->getAttributes(DisableRoute::class));
+    }
+
+    /**
+     * Check if a method has the InheritRoute attribute.
+     */
+    private function hasInheritRoute(
+        ReflectionClass $reflection,
+        string $methodName,
+    ): bool {
+        if (!$reflection->hasMethod($methodName)) {
+            return false;
+        }
+
+        $method = $reflection->getMethod($methodName);
+
+        // Only check if method is declared in this class (overridden)
+        if ($method->getDeclaringClass()->getName() !== $reflection->getName()) {
+            return false;
+        }
+
+        return !empty($method->getAttributes(InheritRoute::class));
     }
 
     /**
