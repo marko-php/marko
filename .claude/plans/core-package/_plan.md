@@ -47,7 +47,7 @@ Build the foundational `marko/core` package containing the DI container, module 
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
 | 001 | Package structure and composer.json | - | completed |
-| 002 | Exception classes | 001 | pending |
+| 002 | Exception classes | 001 | completed |
 | 003 | Container interface and autowiring | 002 | pending |
 | 004 | Module manifest and discovery | 002 | pending |
 | 005 | Dependency resolution and module loading | 004 | pending |

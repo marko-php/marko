@@ -1,13 +1,17 @@
 <?php
 
 declare(strict_types=1);
+use PhpCsFixer\Config;
+use PhpCsFixer\Finder;
 
-$finder = PhpCsFixer\Finder::create()
+$finder = Finder::create()
     ->in([
         __DIR__ . '/packages',
         __DIR__ . '/demo/app',
         __DIR__ . '/demo/modules',
     ])
+    ->exclude('vendor')
+    ->exclude('.phpunit.cache')
     ->name('*.php')
     ->ignoreDotFiles(true)
     ->ignoreVCS(true);
@@ -29,7 +33,7 @@ $rules = [
     'no_whitespace_in_blank_line' => true,
 ];
 
-return (new PhpCsFixer\Config())
+return (new Config())
     ->setRules($rules)
     ->setFinder($finder)
     ->setRiskyAllowed(true)

@@ -6,13 +6,24 @@
     <file>demo/app</file>
     <file>demo/modules</file>
 
+    <!-- Exclude vendor directories -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/.phpunit.cache/*</exclude-pattern>
+
     <arg name="colors"/>
     <arg value="sp"/>
 
-    <!-- Require multiline method signatures -->
+    <!-- Require multiline for function/method calls when line is long -->
     <rule ref="SlevomatCodingStandard.Functions.RequireMultiLineCall">
         <properties>
-            <property name="minLineLength" value="1"/>
+            <property name="minLineLength" value="120"/>
+        </properties>
+    </rule>
+
+    <!-- Force multiline method signatures when 2+ parameters -->
+    <rule ref="SlevomatCodingStandard.Classes.RequireMultiLineMethodSignature">
+        <properties>
+            <property name="minParametersCount" value="2"/>
         </properties>
     </rule>
 

@@ -104,6 +104,68 @@ test('module loader discovers modules in all directories', function () {
 - Be specific about behavior being tested
 - Include the condition: "when", "with", "without"
 
+## Expectation Chaining (Required)
+
+**Always chain expectations** using `->and()` to switch subjects. Never use consecutive `expect()` calls when they can be chained.
+
+### Same Subject - Chain Directly
+```php
+// CORRECT - chain assertions on the same subject
+expect($exception)
+    ->toBeInstanceOf(BindingException::class)
+    ->toBeInstanceOf(MarkoException::class);
+
+// WRONG - separate expect() calls on same subject
+expect($exception)->toBeInstanceOf(BindingException::class);
+expect($exception)->toBeInstanceOf(MarkoException::class);
+```
+
+### Different Subjects - Use ->and()
+```php
+// CORRECT - use ->and() to switch subjects
+expect($exception)
+    ->toBeInstanceOf(BindingException::class)
+    ->and($exception->getMessage())
+    ->toContain('No implementation bound')
+    ->toContain($interface);
+
+// WRONG - separate expect() calls
+expect($exception)->toBeInstanceOf(BindingException::class);
+expect($exception->getMessage())->toContain('No implementation bound');
+expect($exception->getMessage())->toContain($interface);
+```
+
+### Complex Example
+```php
+it('has PSR-4 autoloading configured', function () {
+    $composer = json_decode(file_get_contents($path), true);
+
+    // Chain everything with ->and()
+    expect($composer)->toHaveKey('autoload')
+        ->and($composer['autoload'])->toHaveKey('psr-4')
+        ->and($composer['autoload']['psr-4'])->toHaveKey('Marko\\Core\\')
+        ->and($composer['autoload']['psr-4']['Marko\\Core\\'])->toBe('src/');
+});
+```
+
+### When Separate expect() is Acceptable
+Only use separate `expect()` calls when there's a logical break (setup, action, different phase):
+
+```php
+it('creates user and sends welcome email', function () {
+    // Setup phase
+    expect(User::count())->toBe(0);
+
+    // Action
+    $user = UserService::create(['email' => 'test@example.com']);
+
+    // Assertions - chain these together
+    expect($user)->toBeInstanceOf(User::class)
+        ->and($user->email)->toBe('test@example.com')
+        ->and(Mail::sent(WelcomeEmail::class))->toBeTrue();
+});
+```
+
 ## Testing Principles
 
 ### 1. Test Behavior, Not Implementation

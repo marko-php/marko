@@ -183,7 +183,32 @@ public function resolve(string $abstract): object
 ### 7. No Magic Methods
 Avoid `__get`, `__set`, `__call`, `__callStatic`. Be explicit.
 
-### 8. Use #[\NoDiscard] for Important Returns
+### 8. String Interpolation (No Unnecessary Curly Braces)
+When interpolating simple variables in double-quoted strings, do NOT use curly braces:
+
+```php
+// CORRECT - no curly braces for simple variables
+$message = "No implementation bound for interface: $interface";
+$context = "While loading module '$moduleName'";
+
+// WRONG - unnecessary curly braces
+$message = "No implementation bound for interface: {$interface}";
+$context = "While loading module '{$moduleName}'";
+```
+
+**Only use curly braces when required** for complex expressions:
+```php
+// Curly braces required for array access
+$message = "User {$user['name']} not found";
+
+// Curly braces required for object properties
+$message = "Order {$order->id} processed";
+
+// Curly braces required to disambiguate
+$message = "Found {$count}items"; // Without braces: $countitems would be a different variable
+```
+
+### 9. Use #[\NoDiscard] for Important Returns
 ```php
 #[\NoDiscard]
 public function validate(): ValidationResult
@@ -191,6 +216,36 @@ public function validate(): ValidationResult
     // Return value should not be ignored
 }
 ```
+
+### 10. Multiline Method Signatures (2+ Parameters)
+Methods with 2 or more parameters MUST have each parameter on its own line with a trailing comma:
+
+```php
+// CORRECT - each parameter on its own line with trailing comma
+public static function multipleBindings(
+    string $interface,
+    array $modules,
+): self {
+    // ...
+}
+
+public function __construct(
+    private LoggerInterface $logger,
+    private EventDispatcher $events,
+) {}
+
+// WRONG - multiple parameters on single line
+public static function multipleBindings(string $interface, array $modules): self
+{
+    // ...
+}
+```
+
+**Rules:**
+- Each parameter on its own line
+- Trailing comma after last parameter
+- Opening brace `{` on same line as closing parenthesis/return type
+- Single-parameter methods may remain on one line
 
 ## Attribute Standards
 
