@@ -56,11 +56,11 @@ Build the `marko/routing` package providing attribute-based routing with HTTP me
 | 004 | Route attributes (#[Get], #[Post], etc.) | 001 | completed |
 | 005 | Middleware attribute and interface | 001 | completed |
 | 006 | DisableRoute attribute | 001 | completed |
-| 007 | RouteDefinition value object | 004, 005 | pending |
-| 008 | Route discovery from controllers | 004, 006, 007 | pending |
+| 007 | RouteDefinition value object | 004, 005 | completed |
+| 008 | Route discovery from controllers | 004, 006, 007 | completed |
 | 009 | Route collection and conflict detection | 002, 007, 008 | pending |
 | 010 | Route matching and parameter extraction | 007, 009 | pending |
-| 011 | Middleware pipeline | 003, 005 | pending |
+| 011 | Middleware pipeline | 003, 005 | completed |
 | 012 | Router class (orchestrates everything) | 009, 010, 011 | pending |
 | 013 | Preference route inheritance | 002, 008 | pending |
 | 014 | Application integration | 012, 013 | pending |
