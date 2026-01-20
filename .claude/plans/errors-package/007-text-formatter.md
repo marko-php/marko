@@ -1,6 +1,6 @@
 # Task 007: TextFormatter for CLI
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001, 002, 006
 **Retry count**: 0
 

@@ -49,12 +49,12 @@ Create `marko/errors` (interface package) and `marko/errors-simple` (reliable fa
 |------|-------------|------------|--------|
 | 001 | Severity enum | - | completed |
 | 002 | ErrorReport value object | 001 | completed |
-| 003 | ErrorHandlerInterface contract | 002 | pending |
-| 004 | ErrorReporterInterface contract | 002 | pending |
+| 003 | ErrorHandlerInterface contract | 002 | completed |
+| 004 | ErrorReporterInterface contract | 002 | completed |
 | 005 | errors package setup | 001, 002, 003, 004 | pending |
 | 006 | CodeSnippetExtractor | - | completed |
-| 007 | TextFormatter for CLI | 001, 002, 006 | pending |
-| 008 | BasicHtmlFormatter for web | 001, 002, 006 | pending |
+| 007 | TextFormatter for CLI | 001, 002, 006 | completed |
+| 008 | BasicHtmlFormatter for web | 001, 002, 006 | completed |
 | 009 | Environment detection | - | completed |
 | 010 | SimpleErrorHandler | 003, 007, 008, 009 | pending |
 | 011 | PHP error/exception registration | 010 | pending |
