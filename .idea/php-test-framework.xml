@@ -6,6 +6,7 @@
         <settings>
           <configurations>
             <local_configuration configuration_file_path="$PROJECT_DIR$/packages/core/phpunit.xml" executable_path="$PROJECT_DIR$/packages/core/vendor/pestphp/pest/bin/pest" use_configuration_file="true" />
+            <local_configuration configuration_file_path="$PROJECT_DIR$/demo/vendor/marko/core/phpunit.xml" executable_path="$PROJECT_DIR$/vendor/pestphp/pest/bin/pest" use_configuration_file="true" />
           </configurations>
         </settings>
       </tool>
