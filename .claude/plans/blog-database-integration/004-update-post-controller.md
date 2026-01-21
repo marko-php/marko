@@ -1,6 +1,6 @@
 # Task 004: Update PostController to Use Repository
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 003
 **Retry count**: 0
 
@@ -15,11 +15,11 @@ Update the existing PostController to inject PostRepository and use it to fetch 
 - Patterns to follow: Constructor injection, Response usage from routing package
 
 ## Requirements (Test Descriptions)
-- [ ] `it injects PostRepository via constructor`
-- [ ] `it returns response with all posts data on index route`
-- [ ] `it returns response with single post data on show route`
-- [ ] `it returns 404 response when post slug not found`
-- [ ] `it maintains existing route attributes for GET /blog and GET /blog/{slug}`
+- [x] `it injects PostRepository via constructor`
+- [x] `it returns response with all posts data on index route`
+- [x] `it returns response with single post data on show route`
+- [x] `it returns 404 response when post slug not found`
+- [x] `it maintains existing route attributes for GET /blog and GET /blog/{slug}`
 
 ## Acceptance Criteria
 - All requirements have passing tests

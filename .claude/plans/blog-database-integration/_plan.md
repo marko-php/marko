@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Update the marko/blog package to use the database layer for Post entity and repository, enabling database-driven blog functionality that works with any database driver (MySQL, PostgreSQL, or future drivers).
@@ -28,12 +28,12 @@ Update the marko/blog package to use the database layer for Post entity and repo
 - demo/app customization (tests verify functionality)
 
 ## Success Criteria
-- [ ] Post entity defines table schema via attributes
-- [ ] PostRepository provides data access methods
-- [ ] PostController uses repository to fetch posts from database
-- [ ] Blog depends only on marko/database (not specific drivers)
-- [ ] All tests passing
-- [ ] Code follows project standards
+- [x] Post entity defines table schema via attributes
+- [x] PostRepository provides data access methods
+- [x] PostController uses repository to fetch posts from database
+- [x] Blog depends only on marko/database (not specific drivers)
+- [x] All tests passing
+- [x] Code follows project standards
 
 ## Task Overview
 | Task | Description | Depends On | Status |
@@ -41,7 +41,7 @@ Update the marko/blog package to use the database layer for Post entity and repo
 | 001 | Update composer.json dependencies | - | completed |
 | 002 | Create Post entity with attributes | 001 | completed |
 | 003 | Create PostRepository | 002 | completed |
-| 004 | Update PostController to use repository | 003 | pending |
+| 004 | Update PostController to use repository | 003 | completed |
 
 ## Architecture Notes
 
