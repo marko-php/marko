@@ -450,106 +450,96 @@ Before committing, ensure:
 
 ## Package README Standards
 
-Every package in `packages/` must have a README.md that follows this structure:
+Every package in `packages/` must have a README.md. Keep it concise—developers want to quickly understand what it is, why they'd use it, and how to use it.
 
-### Required Sections
+### Structure
 
-1. **Title + One-Line Description**
-   ```markdown
-   # Package Name
+| Section | Purpose |
+|---------|---------|
+| **Title + One-Liner** | What it does + practical benefit |
+| **Overview** | 2-4 sentences expanding on the benefit |
+| **Installation** | Composer command |
+| **Usage** | How module developers use it (THE KEY SECTION) |
+| **Customization** | Extending via Preferences (if applicable) |
+| **API Reference** | Public signatures only |
 
-   One sentence describing what it does AND the practical benefit.
-   ```
+### Interface vs Implementation Packages
 
-   Example: "Error handling contracts that capture not just what went wrong, but the context and how to fix it."
+Marko uses an interface/implementation split. Make the distinction clear:
 
-   Not: "Error handling contracts for the Marko Framework." (no benefit stated)
+**Interface packages** (e.g., `marko/errors`):
+- One-liner: Describe what it defines, note it has no implementation
+- Overview: Explain the contracts it provides
+- Usage: Show how to type-hint against interfaces
+- Note which implementation packages exist
 
-2. **Overview** (2-4 sentences max)
-   - Lead with the benefit—what does the developer gain?
-   - Be concrete, not marketing speak
-   - Keep it brief—details come later
+**Implementation packages** (e.g., `marko/errors-simple`):
+- One-liner: Describe what it does (the actual behavior)
+- Overview: Explain the concrete benefit
+- Usage: Show it works automatically, plus customization options
 
-3. **Installation**
-   ```markdown
-   ## Installation
+### Writing the One-Liner
 
-   ```bash
-   composer require marko/package-name
-   ```
-   ```
-
-4. **Usage** (THE KEY SECTION)
-   - Focus on developers building modules in `app/` or `modules/`
-   - Show practical examples of how to USE the package
-   - Include code snippets showing common use cases
-   - Structure as subsections: "For Module Developers", "Type-Hinting", etc.
-
-5. **Customization/Extension** (if applicable)
-   - How to extend or customize behavior
-   - Creating custom implementations via Preferences
-
-6. **API Reference**
-   - Public interfaces and classes with method signatures
-   - Keep it concise—just signatures, not explanations
-   - Group related classes together
-
-### Guidelines
-
-**Do:**
-- Lead with "how to use it" for module developers
-- Include code examples for common scenarios
-- Show Preference usage for customization
-- Keep prose minimal—let code speak
-- Use bullet points over paragraphs
-
-**Don't:**
-- Write long explanatory paragraphs
-- Repeat information from code comments
-- Include internal implementation details
-- Over-explain obvious things
-
-### Example Structure
+The one-liner must include the **practical benefit**—what developers gain.
 
 ```markdown
-# Marko Package Name
+# Good
+Interfaces for error handling—defines how errors are captured and structured, not how they're displayed.
 
-Brief description of what this package does.
+The default error handler—catches exceptions and displays them with full context and fix suggestions.
 
-## Overview
+# Bad (no benefit)
+Error handling contracts for the Marko Framework.
 
-2-4 sentences about purpose and key benefit.
+A simple error handler implementation.
+```
 
-## Installation
+### Writing the Usage Section
 
-\`\`\`bash
-composer require marko/package-name
-\`\`\`
+This is the most important section. Focus on developers building modules in `app/` or `modules/`.
 
+**Lead with the common case:**
+- Most packages "just work"—show that first
+- Then show how to interact with it directly if needed
+
+**Include practical code examples:**
+```markdown
 ## Usage
 
 ### For Module Developers
 
-[Most common use case with code example]
-
-### [Other Use Case]
-
-[Code example]
-
-## Customization
-
-### Creating Custom [Thing]
-
-[Code showing Preference pattern]
-
-## API Reference
-
-### InterfaceName
+You don't need to do anything special—just throw exceptions:
 
 \`\`\`php
-interface InterfaceName
-{
-    public function method(): ReturnType;
-}
+throw new MarkoException(
+    message: 'User not found',
+    context: 'Loading user profile',
+    suggestion: 'Verify the user ID exists',
+);
+\`\`\`
+
+### Type-Hinting the Handler
+
+If you need direct access:
+
+\`\`\`php
+public function __construct(
+    private ErrorHandlerInterface $handler,
+) {}
 \`\`\`
 ```
+
+### Guidelines
+
+**Do:**
+- State the benefit upfront
+- Show code examples for common scenarios
+- Keep prose minimal—let code speak
+- Use bullet points over paragraphs
+- Make interface vs implementation distinction clear
+
+**Don't:**
+- Write long explanatory paragraphs
+- Use marketing speak ("designed to never fail")
+- Include internal implementation details
+- Repeat what's obvious from the code
