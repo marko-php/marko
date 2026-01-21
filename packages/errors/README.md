@@ -1,12 +1,12 @@
 # Marko Errors
 
-Error handling contracts that capture not just what went wrong, but the context and how to fix it.
+Interfaces for error handling—defines how errors are captured and structured, not how they're displayed.
 
 ## Overview
 
-When errors happen, you need more than a stack trace. This package provides a standardized way to capture the full picture: what the code was doing, why it failed, and what to do about it. `MarkoException` errors automatically include context and suggestions that flow through to your error output.
+This package provides the contracts (`ErrorHandlerInterface`, `ErrorReporterInterface`) and data structures (`ErrorReport`, `Severity`) that error handlers implement. It standardizes how errors are captured: not just the exception, but the context of what was happening and suggestions for how to fix it.
 
-This package defines interfaces only—implementations like `marko/errors-simple` handle the actual display.
+**This package has no implementation.** Install `marko/errors-simple` (or another driver) for actual error handling.
 
 ## Installation
 

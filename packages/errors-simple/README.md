@@ -1,10 +1,10 @@
 # Marko Errors Simple
 
-A zero-dependency error handler that shows you exactly what went wrong and how to fix it.
+The default error handler—catches exceptions and displays them with full context and fix suggestions.
 
 ## Overview
 
-When an error occurs, you see the full context: exception message, the code that caused it, and actionable suggestions for fixing it. In production, sensitive details are hidden while still providing an error ID for log correlation.
+This is the implementation of `ErrorHandlerInterface` that actually catches and displays errors. When something breaks, you see the exception message, the code that caused it, and suggestions for fixing it. Zero external dependencies means it works even when other parts of your application fail.
 
 - **CLI**: Colored output with code snippets around the error
 - **Web**: Clean HTML page with stack trace and context
