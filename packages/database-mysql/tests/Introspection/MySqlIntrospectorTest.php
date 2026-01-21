@@ -402,6 +402,7 @@ describe('MySqlIntrospector', function (): void {
         $connection = new class ($capturedQueries) implements ConnectionInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$capturedQueries,
             ) {}
 
@@ -472,6 +473,10 @@ describe('MySqlIntrospector', function (): void {
 
         $connection = new class ($queryResults, $callOrder) implements ConnectionInterface
         {
+            /**
+             * @noinspection PhpPropertyOnlyWrittenInspection, PhpPropertyCanBeReadonlyInspection
+             *     Reference properties modify external variables and cannot be readonly
+             */
             public function __construct(
                 private array &$queryResults,
                 private array &$callOrder,

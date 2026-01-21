@@ -49,11 +49,10 @@ describe('MySqlConnection', function (): void {
             password: '',
         );
 
-        // Not connected yet - lazy connection
-        expect($connection->isConnected())->toBeFalse();
-
-        // Should only throw when we actually try to query
-        expect(fn () => $connection->query('SELECT 1'))->toThrow(ConnectionException::class);
+        // Not connected yet - lazy connection, should only throw when we actually try to query
+        expect($connection->isConnected())
+            ->toBeFalse()
+            ->and(fn () => $connection->query('SELECT 1'))->toThrow(ConnectionException::class);
     });
 
     it('sets PDO error mode to exceptions', function (): void {
@@ -75,6 +74,7 @@ describe('MySqlConnection', function (): void {
                 string $database,
                 string $username,
                 string $password,
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$capturedOptions,
             ) {
                 parent::__construct($host, $port, $database, $username, $password);
@@ -119,6 +119,7 @@ describe('MySqlConnection', function (): void {
                 string $username,
                 string $password,
                 string $charset,
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private string &$capturedDsn,
             ) {
                 parent::__construct($host, $port, $database, $username, $password, $charset);
@@ -248,11 +249,12 @@ describe('MySqlConnection', function (): void {
             expect(true)->toBeFalse('Should have thrown ConnectionException');
         } catch (ConnectionException $e) {
             // Verify the exception has helpful information
-            expect($e->getMessage())->toContain('testdb');
-            expect($e->getMessage())->toContain('nonexistent.invalid.host');
-            expect($e->getMessage())->toContain('3306');
-            expect($e->getContext())->not->toBeEmpty();
-            expect($e->getSuggestion())->toContain('MySQL');
+            expect($e->getMessage())
+                ->toContain('testdb')
+                ->and($e->getMessage())->toContain('nonexistent.invalid.host')
+                ->and($e->getMessage())->toContain('3306')
+                ->and($e->getContext())->not->toBeEmpty()
+                ->and($e->getSuggestion())->toContain('MySQL');
         }
     });
 

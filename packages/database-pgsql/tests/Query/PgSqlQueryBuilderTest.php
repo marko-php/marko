@@ -2,100 +2,88 @@
 
 declare(strict_types=1);
 
+namespace Marko\Database\PgSql\Tests\Query;
+
+use Closure;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilder;
 use Marko\Database\Query\QueryBuilderInterface;
+use ReflectionClass;
+use RuntimeException;
 
 /**
- * Create a mock connection that records queries and returns expected results.
- *
- * @param array<array<string, mixed>> $queryReturn
- * @param int $executeReturn
- * @param callable|null $queryCallback
- * @param callable|null $executeCallback
+ * Mock connection that records queries and returns expected results.
  */
-function createMockConnection(
-    array $queryReturn = [],
-    int $executeReturn = 0,
-    ?callable $queryCallback = null,
-    ?callable $executeCallback = null,
-): ConnectionInterface {
-    return new class (
-        $queryReturn,
-        $executeReturn,
-        $queryCallback,
-        $executeCallback,
-    ) implements ConnectionInterface
+class MockConnection implements ConnectionInterface
+{
+    public string $lastQuerySql = '';
+
+    /** @var array */
+    public array $lastQueryBindings = [];
+
+    public string $lastExecuteSql = '';
+
+    /** @var array */
+    public array $lastExecuteBindings = [];
+
+    /**
+     * @param array<array<string, mixed>> $queryReturn
+     */
+    public function __construct(
+        private readonly array $queryReturn = [],
+        private readonly int $executeReturn = 0,
+        private readonly ?Closure $queryCallback = null,
+        private readonly ?Closure $executeCallback = null,
+    ) {}
+
+    public function connect(): void {}
+
+    public function disconnect(): void {}
+
+    public function isConnected(): bool
     {
-        public string $lastQuerySql = '';
+        return true;
+    }
 
-        /** @var array<mixed> */
-        public array $lastQueryBindings = [];
+    public function query(
+        string $sql,
+        array $bindings = [],
+    ): array {
+        $this->lastQuerySql = $sql;
+        $this->lastQueryBindings = $bindings;
 
-        public string $lastExecuteSql = '';
-
-        /** @var array<mixed> */
-        public array $lastExecuteBindings = [];
-
-        /**
-         * @param array<array<string, mixed>> $queryReturn
-         */
-        public function __construct(
-            private readonly array $queryReturn,
-            private readonly int $executeReturn,
-            private readonly ?Closure $queryCallback,
-            private readonly ?Closure $executeCallback,
-        ) {}
-
-        public function connect(): void {}
-
-        public function disconnect(): void {}
-
-        public function isConnected(): bool
-        {
-            return true;
+        if ($this->queryCallback !== null) {
+            ($this->queryCallback)($sql, $bindings);
         }
 
-        public function query(
-            string $sql,
-            array $bindings = [],
-        ): array {
-            $this->lastQuerySql = $sql;
-            $this->lastQueryBindings = $bindings;
+        return $this->queryReturn;
+    }
 
-            if ($this->queryCallback !== null) {
-                ($this->queryCallback)($sql, $bindings);
-            }
+    public function execute(
+        string $sql,
+        array $bindings = [],
+    ): int {
+        $this->lastExecuteSql = $sql;
+        $this->lastExecuteBindings = $bindings;
 
-            return $this->queryReturn;
+        if ($this->executeCallback !== null) {
+            ($this->executeCallback)($sql, $bindings);
         }
 
-        public function execute(
-            string $sql,
-            array $bindings = [],
-        ): int {
-            $this->lastExecuteSql = $sql;
-            $this->lastExecuteBindings = $bindings;
+        return $this->executeReturn;
+    }
 
-            if ($this->executeCallback !== null) {
-                ($this->executeCallback)($sql, $bindings);
-            }
+    public function prepare(
+        string $sql,
+    ): StatementInterface {
+        throw new RuntimeException('Not implemented');
+    }
 
-            return $this->executeReturn;
-        }
-
-        public function prepare(
-            string $sql,
-        ): StatementInterface {
-            throw new RuntimeException('Not implemented');
-        }
-
-        public function lastInsertId(): int
-        {
-            return 0;
-        }
-    };
+    public function lastInsertId(): int
+    {
+        return 0;
+    }
 }
 
 describe('PgSqlQueryBuilder', function (): void {
@@ -106,7 +94,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('quotes identifiers with double quotes', function (): void {
-        $connection = createMockConnection();
+        $connection = new MockConnection();
         $builder = new PgSqlQueryBuilder($connection);
 
         $reflection = new ReflectionClass($builder);
@@ -118,7 +106,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('builds SELECT queries with column selection', function (): void {
-        $connection = createMockConnection(
+        $connection = new MockConnection(
             queryReturn: [['id' => 1, 'name' => 'John', 'email' => 'john@example.com']],
         );
 
@@ -136,7 +124,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('builds WHERE clauses with parameter binding', function (): void {
-        $connection = createMockConnection(
+        $connection = new MockConnection(
             queryReturn: [['id' => 1, 'status' => 'active']],
         );
 
@@ -154,7 +142,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('builds WHERE IN clauses correctly', function (): void {
-        $connection = createMockConnection(
+        $connection = new MockConnection(
             queryReturn: [
                 ['id' => 1, 'name' => 'John'],
                 ['id' => 2, 'name' => 'Jane'],
@@ -174,7 +162,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('builds JOIN clauses with proper syntax', function (): void {
-        $connection = createMockConnection();
+        $connection = new MockConnection();
 
         $builder = new PgSqlQueryBuilder($connection);
         $builder
@@ -188,7 +176,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('builds ORDER BY with ASC/DESC', function (): void {
-        $connection = createMockConnection();
+        $connection = new MockConnection();
 
         $builder = new PgSqlQueryBuilder($connection);
         $builder
@@ -200,7 +188,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('builds LIMIT and OFFSET clauses', function (): void {
-        $connection = createMockConnection();
+        $connection = new MockConnection();
 
         $builder = new PgSqlQueryBuilder($connection);
         $builder
@@ -213,7 +201,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('builds INSERT statements with RETURNING id', function (): void {
-        $connection = createMockConnection(
+        $connection = new MockConnection(
             queryReturn: [['id' => 42]],
         );
 
@@ -233,7 +221,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('builds UPDATE statements with WHERE clause', function (): void {
-        $connection = createMockConnection(executeReturn: 1);
+        $connection = new MockConnection(executeReturn: 1);
 
         $builder = new PgSqlQueryBuilder($connection);
         $affected = $builder
@@ -252,7 +240,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('builds DELETE statements with WHERE clause', function (): void {
-        $connection = createMockConnection(executeReturn: 1);
+        $connection = new MockConnection(executeReturn: 1);
 
         $builder = new PgSqlQueryBuilder($connection);
         $affected = $builder
@@ -266,7 +254,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('returns last insert ID using RETURNING', function (): void {
-        $connection = createMockConnection(
+        $connection = new MockConnection(
             queryReturn: [['id' => 123]],
         );
 
@@ -282,7 +270,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('returns affected row count after update/delete', function (): void {
-        $connection = createMockConnection(executeReturn: 5);
+        $connection = new MockConnection(executeReturn: 5);
 
         $builder = new PgSqlQueryBuilder($connection);
         $affected = $builder
@@ -298,7 +286,7 @@ describe('PgSqlQueryBuilder', function (): void {
     });
 
     it('executes raw queries with parameter binding', function (): void {
-        $connection = createMockConnection(
+        $connection = new MockConnection(
             queryReturn: [['id' => 1, 'name' => 'John', 'age' => 25]],
         );
 

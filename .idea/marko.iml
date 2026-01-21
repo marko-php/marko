@@ -14,6 +14,12 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/errors-simple/tests" isTestSource="true" packagePrefix="Marko\ErrorsSimple\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/errors/src" isTestSource="false" packagePrefix="Marko\Errors\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/errors/tests" isTestSource="true" packagePrefix="Marko\Errors\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database-mysql/src" isTestSource="false" packagePrefix="Marko\Database\MySql\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database-mysql/tests" isTestSource="true" packagePrefix="Marko\Database\MySql\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database-pgsql/src" isTestSource="false" packagePrefix="Marko\Database\PgSql\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database-pgsql/tests" isTestSource="true" packagePrefix="Marko\Database\PgSql\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database/src" isTestSource="false" packagePrefix="Marko\Database\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database/tests" isTestSource="true" packagePrefix="Marko\Database\Tests\" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/brianium/paratest" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/composer" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/doctrine/deprecations" />

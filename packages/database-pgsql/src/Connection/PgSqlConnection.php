@@ -53,7 +53,7 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
 
     private function buildDsn(): string
     {
-        return "pgsql:host={$this->host};port={$this->port};dbname={$this->database}";
+        return "pgsql:host=$this->host;port=$this->port;dbname=$this->database";
     }
 
     /**
@@ -68,7 +68,7 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
 
     private function getSetEncodingQuery(): string
     {
-        return "SET NAMES '{$this->charset}'";
+        return "SET NAMES '$this->charset'";
     }
 
     public function disconnect(): void

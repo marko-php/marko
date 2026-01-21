@@ -148,7 +148,7 @@ describe('PgSqlGenerator', function (): void {
             $sql = $this->generator->generateAddColumn('test_table', $column);
 
             expect(str_contains($sql, $type['expected']))->toBeTrue(
-                "Type '{$type['type']}' should map to '{$type['expected']}', got: {$sql}",
+                "Type '{$type['type']}' should map to '{$type['expected']}', got: $sql",
             );
         }
     });

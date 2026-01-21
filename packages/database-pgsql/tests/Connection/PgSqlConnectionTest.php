@@ -9,6 +9,7 @@ use Marko\Database\Exceptions\TransactionException;
 use Marko\Database\PgSql\Connection\PgSqlConnection;
 use Marko\Database\PgSql\Connection\PgSqlStatement;
 use Marko\Database\PgSql\Exceptions\ConnectionException;
+use Marko\Database\Tests\Query\Helpers;
 
 describe('PgSqlConnection', function (): void {
     it('implements ConnectionInterface', function (): void {
@@ -28,7 +29,6 @@ describe('PgSqlConnection', function (): void {
 
         $reflection = new ReflectionClass($connection);
         $method = $reflection->getMethod('buildDsn');
-        $method->setAccessible(true);
 
         $dsn = $method->invoke($connection);
 
@@ -107,16 +107,8 @@ describe('PgSqlConnection', function (): void {
         $queryMethod = $reflection->getMethod('query');
 
         // Verify method signature
-        $params = $queryMethod->getParameters();
-        expect($params)->toHaveCount(2)
-            ->and($params[0]->getName())->toBe('sql')
-            ->and($params[0]->getType()?->getName())->toBe('string')
-            ->and($params[1]->getName())->toBe('bindings')
-            ->and($params[1]->getType()?->getName())->toBe('array')
-            ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[1]->getDefaultValue())->toBe([])
-            // Verify return type
-            ->and($queryMethod->getReturnType()?->getName())->toBe('array');
+        Helpers::assertSqlBindingsParams($queryMethod->getParameters());
+        expect($queryMethod->getReturnType()?->getName())->toBe('array');
 
         // Verify ensureConnected is called internally by inspecting method body
         $method = $reflection->getMethod('ensureConnected');
@@ -172,10 +164,8 @@ describe('PgSqlConnection', function (): void {
         // Simulate a connected state by setting PDO to a mock
         $mockPdo = new class () extends PDO
         {
-            public function __construct()
-            {
-                // Don't call parent to avoid actual connection
-            }
+            /** @noinspection PhpMissingParentConstructorInspection - Intentionally skip to avoid real connection */
+            public function __construct() {}
         };
         $pdoProperty->setValue($connection, $mockPdo);
 
@@ -274,7 +264,7 @@ describe('PgSqlConnection', function (): void {
         expect($connection->inTransaction())->toBeFalse();
 
         $results = $connection->query('SELECT * FROM test_data');
-        expect($results)->toHaveCount(0);
+        expect($results)->toBeEmpty();
     });
 
     it('implements inTransaction() method returning boolean', function (): void {
@@ -397,7 +387,7 @@ describe('PgSqlConnection', function (): void {
 
         // Verify data was rolled back
         $results = $connection->query('SELECT * FROM test_data');
-        expect($results)->toHaveCount(0);
+        expect($results)->toBeEmpty();
     });
 
     it('re-throws exception after rollback', function (): void {

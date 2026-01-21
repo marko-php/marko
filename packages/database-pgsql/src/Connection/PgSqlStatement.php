@@ -8,10 +8,10 @@ use Marko\Database\Connection\StatementInterface;
 use PDO;
 use PDOStatement;
 
-class PgSqlStatement implements StatementInterface
+readonly class PgSqlStatement implements StatementInterface
 {
     public function __construct(
-        private readonly PDOStatement $statement,
+        private PDOStatement $statement,
     ) {}
 
     public function execute(

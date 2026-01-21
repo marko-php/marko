@@ -6,7 +6,8 @@
     "require": {
         "php": "^8.5",
         "marko/core": "^0.1",
-        "marko/database": "^0.1"
+        "marko/database": "^0.1",
+        "ext-pdo": "*"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

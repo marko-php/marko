@@ -353,27 +353,18 @@ describe('MySqlGenerator', function (): void {
 
         $upSql = $generator->generateUp($diff);
 
-        // Should contain create table
-        expect(array_filter($upSql, fn ($s) => str_contains($s, 'CREATE TABLE `categories`')))->not->toBeEmpty();
-
-        // Should contain drop table
-        expect($upSql)->toContain('DROP TABLE `old_table`');
-
-        // Should contain add column
-        expect(array_filter($upSql, fn ($s) => str_contains($s, 'ADD COLUMN `category_id`')))->not->toBeEmpty();
-
-        // Should contain drop column
-        expect(array_filter($upSql, fn ($s) => str_contains($s, 'DROP COLUMN `old_column`')))->not->toBeEmpty();
-
-        // Should contain create index
-        expect(
-            array_filter($upSql, fn ($s) => str_contains($s, 'CREATE INDEX `idx_posts_category`')),
-        )->not->toBeEmpty();
-
-        // Should contain add foreign key
-        expect(
-            array_filter($upSql, fn ($s) => str_contains($s, 'ADD CONSTRAINT `fk_posts_category`')),
-        )->not->toBeEmpty();
+        // Should contain: create table, drop table, add column, drop column, create index, add foreign key
+        expect(array_filter($upSql, fn ($s) => str_contains($s, 'CREATE TABLE `categories`')))
+            ->not->toBeEmpty()
+            ->and($upSql)->toContain('DROP TABLE `old_table`')
+            ->and(array_filter($upSql, fn ($s) => str_contains($s, 'ADD COLUMN `category_id`')))->not->toBeEmpty()
+            ->and(array_filter($upSql, fn ($s) => str_contains($s, 'DROP COLUMN `old_column`')))->not->toBeEmpty()
+            ->and(
+                array_filter($upSql, fn ($s) => str_contains($s, 'CREATE INDEX `idx_posts_category`')),
+            )->not->toBeEmpty()
+            ->and(
+                array_filter($upSql, fn ($s) => str_contains($s, 'ADD CONSTRAINT `fk_posts_category`')),
+            )->not->toBeEmpty();
     });
 
     it('generates down SQL that reverses table alterations', function (): void {
@@ -412,23 +403,16 @@ describe('MySqlGenerator', function (): void {
 
         $downSql = $generator->generateDown($diff);
 
-        // Adding a column is reversed by dropping it
-        expect(array_filter($downSql, fn ($s) => str_contains($s, 'DROP COLUMN `new_column`')))->not->toBeEmpty();
-
-        // Dropping a column is reversed by adding it back
-        expect(array_filter($downSql, fn ($s) => str_contains($s, 'ADD COLUMN `dropped_column`')))->not->toBeEmpty();
-
-        // Adding an index is reversed by dropping it
-        expect(array_filter($downSql, fn ($s) => str_contains($s, 'DROP INDEX `idx_new`')))->not->toBeEmpty();
-
-        // Dropping an index is reversed by creating it
-        expect(array_filter($downSql, fn ($s) => str_contains($s, 'CREATE INDEX `idx_dropped`')))->not->toBeEmpty();
-
-        // Adding a foreign key is reversed by dropping it
-        expect(array_filter($downSql, fn ($s) => str_contains($s, 'DROP FOREIGN KEY `fk_new`')))->not->toBeEmpty();
-
-        // Dropping a foreign key is reversed by adding it back
-        expect(array_filter($downSql, fn ($s) => str_contains($s, 'ADD CONSTRAINT `fk_dropped`')))->not->toBeEmpty();
+        // Verify all reversals: add→drop, drop→add for columns, indexes, and foreign keys
+        expect(array_filter($downSql, fn ($s) => str_contains($s, 'DROP COLUMN `new_column`')))
+            ->not->toBeEmpty()
+            ->and(array_filter($downSql, fn ($s) => str_contains($s, 'ADD COLUMN `dropped_column`')))->not->toBeEmpty()
+            ->and(array_filter($downSql, fn ($s) => str_contains($s, 'DROP INDEX `idx_new`')))->not->toBeEmpty()
+            ->and(array_filter($downSql, fn ($s) => str_contains($s, 'CREATE INDEX `idx_dropped`')))->not->toBeEmpty()
+            ->and(array_filter($downSql, fn ($s) => str_contains($s, 'DROP FOREIGN KEY `fk_new`')))->not->toBeEmpty()
+            ->and(
+                array_filter($downSql, fn ($s) => str_contains($s, 'ADD CONSTRAINT `fk_dropped`')),
+            )->not->toBeEmpty();
     });
 
     it('generates multi-column index SQL', function (): void {

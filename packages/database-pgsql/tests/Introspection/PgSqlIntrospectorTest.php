@@ -82,10 +82,6 @@ describe('PgSqlIntrospector', function (): void {
             }
 
             // Unique constraint query
-            if (str_contains($sql, 'pg_constraint') && str_contains($sql, "'u'")) {
-                return [];
-            }
-
             return [];
         });
 
@@ -107,7 +103,7 @@ describe('PgSqlIntrospector', function (): void {
     });
 
     it('maps PostgreSQL data types to Column value objects', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'information_schema.columns')) {
                 return [
                     ['column_name' => 'int_col', 'data_type' => 'integer', 'character_maximum_length' => null, 'is_nullable' => 'NO', 'column_default' => null, 'is_identity' => 'NO', 'identity_generation' => null],
@@ -160,7 +156,7 @@ describe('PgSqlIntrospector', function (): void {
     });
 
     it('detects nullable columns', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'information_schema.columns')) {
                 return [
                     ['column_name' => 'required_col', 'data_type' => 'character varying', 'character_maximum_length' => 255, 'is_nullable' => 'NO', 'column_default' => null, 'is_identity' => 'NO', 'identity_generation' => null],
@@ -174,12 +170,12 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->nullable)->toBe(false)
-            ->and($columns[1]->nullable)->toBe(true);
+        expect($columns[0]->nullable)->toBeFalse()
+            ->and($columns[1]->nullable)->toBeTrue();
     });
 
     it('detects default values including sequences', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'information_schema.columns')) {
                 return [
                     ['column_name' => 'status', 'data_type' => 'character varying', 'character_maximum_length' => 50, 'is_nullable' => 'NO', 'column_default' => "'active'::character varying", 'is_identity' => 'NO', 'identity_generation' => null],
@@ -202,15 +198,15 @@ describe('PgSqlIntrospector', function (): void {
             ->and($columns[1]->default)->toBe(0)
             ->and($columns[2]->default)->toBe('CURRENT_TIMESTAMP')
             // Sequence defaults should be treated as auto_increment, not as regular defaults
-            ->and($columns[3]->autoIncrement)->toBe(true)
+            ->and($columns[3]->autoIncrement)->toBeTrue()
             ->and($columns[3]->default)->toBeNull()
-            ->and($columns[4]->default)->toBe(true)
-            ->and($columns[5]->default)->toBe(false)
+            ->and($columns[4]->default)->toBeTrue()
+            ->and($columns[5]->default)->toBeFalse()
             ->and($columns[6]->default)->toBe(10.50);
     });
 
     it('detects serial/identity columns', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'information_schema.columns')) {
                 return [
                     ['column_name' => 'id', 'data_type' => 'integer', 'character_maximum_length' => null, 'is_nullable' => 'NO', 'column_default' => "nextval('users_id_seq'::regclass)", 'is_identity' => 'NO', 'identity_generation' => null],
@@ -230,10 +226,10 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->autoIncrement)->toBe(true)
-            ->and($columns[1]->autoIncrement)->toBe(true)
-            ->and($columns[2]->autoIncrement)->toBe(true)
-            ->and($columns[3]->autoIncrement)->toBe(false);
+        expect($columns[0]->autoIncrement)->toBeTrue()
+            ->and($columns[1]->autoIncrement)->toBeTrue()
+            ->and($columns[2]->autoIncrement)->toBeTrue()
+            ->and($columns[3]->autoIncrement)->toBeFalse();
     });
 
     it('reads indexes from pg_indexes', function (): void {
@@ -272,7 +268,7 @@ describe('PgSqlIntrospector', function (): void {
     });
 
     it('detects unique indexes', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'pg_indexes')) {
                 return [
                     ['indexname' => 'users_email_unique', 'indexdef' => 'CREATE UNIQUE INDEX users_email_unique ON public.users USING btree (email)'],
@@ -332,7 +328,7 @@ describe('PgSqlIntrospector', function (): void {
     });
 
     it('detects ON DELETE and ON UPDATE actions', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'information_schema.table_constraints')) {
                 return [
                     [
@@ -397,8 +393,8 @@ describe('PgSqlIntrospector', function (): void {
 
         $introspector = new PgSqlIntrospector($connection);
 
-        expect($introspector->tableExists('users'))->toBe(true)
-            ->and($introspector->tableExists('nonexistent'))->toBe(false);
+        expect($introspector->tableExists('users'))->toBeTrue()
+            ->and($introspector->tableExists('nonexistent'))->toBeFalse();
     });
 
     it('gets primary key columns', function (): void {
@@ -428,7 +424,7 @@ describe('PgSqlIntrospector', function (): void {
     });
 
     it('gets composite primary key columns', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'pg_constraint')) {
                 return [
                     ['column_name' => 'post_id'],
@@ -446,7 +442,7 @@ describe('PgSqlIntrospector', function (): void {
     });
 
     it('gets full table schema', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'information_schema.columns')) {
                 return [
                     ['column_name' => 'id', 'data_type' => 'integer', 'character_maximum_length' => null, 'is_nullable' => 'NO', 'column_default' => "nextval('users_id_seq'::regclass)", 'is_identity' => 'NO', 'identity_generation' => null],
@@ -481,7 +477,7 @@ describe('PgSqlIntrospector', function (): void {
     });
 
     it('returns null for nonexistent table', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (): array {
             return [];
         });
 
@@ -492,7 +488,7 @@ describe('PgSqlIntrospector', function (): void {
     });
 
     it('handles multi-column foreign keys', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'information_schema.table_constraints')) {
                 return [
                     ['constraint_name' => 'order_items_fkey', 'column_name' => 'order_id', 'referenced_table' => 'orders', 'referenced_column' => 'id', 'delete_rule' => 'CASCADE', 'update_rule' => 'NO ACTION'],
@@ -512,7 +508,7 @@ describe('PgSqlIntrospector', function (): void {
     });
 
     it('detects unique constraint columns', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'information_schema.columns')) {
                 return [
                     ['column_name' => 'id', 'data_type' => 'integer', 'character_maximum_length' => null, 'is_nullable' => 'NO', 'column_default' => null, 'is_identity' => 'NO', 'identity_generation' => null],
@@ -534,12 +530,12 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->unique)->toBe(false) // Primary key column is not marked unique separately
-            ->and($columns[1]->unique)->toBe(true); // email has unique constraint
+        expect($columns[0]->unique)->toBeFalse() // Primary key column is not marked unique separately
+            ->and($columns[1]->unique)->toBeTrue(); // email has unique constraint
     });
 
     it('marks primary key columns correctly', function (): void {
-        $connection = createTestConnection(function (string $sql, array $bindings): array {
+        $connection = createTestConnection(function (string $sql): array {
             if (str_contains($sql, 'information_schema.columns')) {
                 return [
                     ['column_name' => 'id', 'data_type' => 'integer', 'character_maximum_length' => null, 'is_nullable' => 'NO', 'column_default' => null, 'is_identity' => 'NO', 'identity_generation' => null],
@@ -557,15 +553,15 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->primaryKey)->toBe(true)
-            ->and($columns[1]->primaryKey)->toBe(false);
+        expect($columns[0]->primaryKey)->toBeTrue()
+            ->and($columns[1]->primaryKey)->toBeFalse();
     });
 });
 
 /**
  * Helper function to create a test connection with a custom query callback.
  *
- * @param callable(string, array<mixed>): array<array<string, mixed>> $queryCallback
+ * @param callable(string, array): array<array<string, mixed>> $queryCallback
  */
 function createTestConnection(
     callable $queryCallback,
@@ -573,7 +569,7 @@ function createTestConnection(
     return new class ($queryCallback) implements ConnectionInterface
     {
         /**
-         * @param callable(string, array<mixed>): array<array<string, mixed>> $queryCallback
+         * @param callable(string, array): array<array<string, mixed>> $queryCallback
          */
         public function __construct(
             private readonly mixed $queryCallback,
@@ -595,7 +591,8 @@ function createTestConnection(
         }
 
         /**
-         * @param array<mixed> $bindings
+         * @param string $sql
+         * @param array $bindings
          * @return array<array<string, mixed>>
          */
         public function query(

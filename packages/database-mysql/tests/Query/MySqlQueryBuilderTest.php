@@ -183,7 +183,7 @@ describe('MySqlQueryBuilder', function (): void {
         $resultsWithOffset = $builder2
             ->table('users')
             ->select('name')
-            ->orderBy('name', 'ASC')
+            ->orderBy('name')
             ->limit(2)
             ->offset(1)
             ->get();
