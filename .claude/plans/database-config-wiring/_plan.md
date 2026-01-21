@@ -35,8 +35,8 @@ Fix the database driver packages so that ConnectionInterface can be autowired wi
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
 | 001 | Make DatabaseConfig injectable | - | completed |
-| 002 | Create MySqlConnectionFactory | 001 | pending |
-| 003 | Create PgSqlConnectionFactory | 001 | pending |
+| 002 | Create MySqlConnectionFactory | 001 | completed |
+| 003 | Create PgSqlConnectionFactory | 001 | completed |
 | 004 | Update driver module.php bindings | 002, 003 | pending |
 
 ## Architecture Notes

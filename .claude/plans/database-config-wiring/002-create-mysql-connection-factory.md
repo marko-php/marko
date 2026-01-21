@@ -1,6 +1,6 @@
 # Task 002: Create MySqlConnectionFactory
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001
 **Retry count**: 0
 
@@ -16,13 +16,13 @@ Create a factory class in marko/database-mysql that receives DatabaseConfig via 
 - Patterns to follow: Factory pattern, constructor injection
 
 ## Requirements (Test Descriptions)
-- [ ] `it receives DatabaseConfig via constructor injection`
-- [ ] `it creates MySqlConnection with host from config`
-- [ ] `it creates MySqlConnection with port from config`
-- [ ] `it creates MySqlConnection with database from config`
-- [ ] `it creates MySqlConnection with username from config`
-- [ ] `it creates MySqlConnection with password from config`
-- [ ] `it returns ConnectionInterface from create method`
+- [x] `it receives DatabaseConfig via constructor injection`
+- [x] `it creates MySqlConnection with host from config`
+- [x] `it creates MySqlConnection with port from config`
+- [x] `it creates MySqlConnection with database from config`
+- [x] `it creates MySqlConnection with username from config`
+- [x] `it creates MySqlConnection with password from config`
+- [x] `it returns ConnectionInterface from create method`
 
 ## Acceptance Criteria
 - All requirements have passing tests
