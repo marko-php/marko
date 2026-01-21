@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use Marko\DevTools\PhpCsFixer\PhpdocConsolidateThrowsFixer;
-use Marko\DevTools\PhpCsFixer\SimpleStringVariableFixer;
+use Marko\DevTools\PhpCsFixer\RemoveUnnecessaryCurlyBracesFixer;
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
 
 // Load custom fixers
 require_once __DIR__ . '/dev/php-cs-fixer/PhpdocConsolidateThrowsFixer.php';
-require_once __DIR__ . '/dev/php-cs-fixer/SimpleStringVariableFixer.php';
+require_once __DIR__ . '/dev/php-cs-fixer/RemoveUnnecessaryCurlyBracesFixer.php';
 
 $finder = Finder::create()
     ->in([
@@ -42,7 +42,7 @@ $rules = [
     'no_extra_blank_lines' => true,
     'no_whitespace_in_blank_line' => true,
     'Marko/phpdoc_consolidate_throws' => true,
-    'Marko/simple_string_variable' => true,
+    'Marko/remove_unnecessary_curly_braces' => true,
 ];
 
 return (new Config())
@@ -52,5 +52,5 @@ return (new Config())
     ->setCacheFile(__DIR__ . '/.php-cs-fixer.cache')
     ->registerCustomFixers([
         new PhpdocConsolidateThrowsFixer(),
-        new SimpleStringVariableFixer(),
+        new RemoveUnnecessaryCurlyBracesFixer(),
     ]);

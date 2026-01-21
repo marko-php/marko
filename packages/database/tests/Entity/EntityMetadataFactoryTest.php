@@ -11,7 +11,6 @@ use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Exceptions\EntityException;
-use Marko\Database\Tests\Entity\Fixtures\UntypedPropertyEntity;
 
 beforeEach(function (): void {
     $this->factory = new EntityMetadataFactory();
@@ -275,9 +274,9 @@ it('throws EntityException for auto-increment on non-primary key', function (): 
 })->throws(EntityException::class, 'autoIncrement');
 
 it('throws EntityException for property without type declaration', function (): void {
-    // @phpstan-ignore-next-line
-    // @noinspection PhpUndefinedNamespaceInspection,PhpUndefinedClassInspection - Class created by eval()
-    if (!class_exists(UntypedPropertyEntity::class)) {
+    $className = 'Marko\Database\Tests\Entity\Fixtures\UntypedPropertyEntity';
+
+    if (!class_exists($className)) {
         eval('
             namespace Marko\Database\Tests\Entity\Fixtures;
 
@@ -294,8 +293,7 @@ it('throws EntityException for property without type declaration', function (): 
         ');
     }
 
-    /** @noinspection PhpUndefinedNamespaceInspection,PhpUndefinedClassInspection - Class created by eval() */
-    $this->factory->parse(UntypedPropertyEntity::class);
+    $this->factory->parse($className);
 })->throws(EntityException::class, 'must have a type declaration');
 
 it('clears cached metadata', function (): void {

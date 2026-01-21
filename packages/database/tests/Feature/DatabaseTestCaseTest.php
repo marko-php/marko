@@ -9,10 +9,12 @@ use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Testing\DatabaseTestCase;
 use RuntimeException;
-use Throwable;
 
-// Anonymous class that uses the trait for testing
+require_once __DIR__ . '/Helpers.php';
 
+/**
+ * Test wrapper class that uses the DatabaseTestCase trait.
+ */
 class TestDatabaseTestCase
 {
     use DatabaseTestCase;
@@ -61,6 +63,66 @@ class TestDatabaseTestCase
     }
 }
 
+/**
+ * Create a stub connection that tracks executed SQL for testing.
+ *
+ * @param array $executedData Reference to array for tracking operations
+ * @param bool $trackBindings Whether to track SQL with bindings (true) or just SQL (false)
+ */
+function createTrackingConnectionStub(
+    array &$executedData,
+    bool $trackBindings = false,
+): ConnectionInterface {
+    return new class ($executedData, $trackBindings) implements ConnectionInterface
+    {
+        public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+            private array &$data,
+            private readonly bool $trackBindings,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            return [];
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            if ($this->trackBindings) {
+                $this->data[] = ['sql' => $sql, 'bindings' => $bindings];
+            } else {
+                $this->data[] = $sql;
+            }
+
+            return 1;
+        }
+
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 1;
+        }
+    };
+}
+
 describe('DatabaseTestCase Trait', function (): void {
     it('provides test helpers for database testing', function (): void {
         $testCase = new TestDatabaseTestCase();
@@ -71,90 +133,7 @@ describe('DatabaseTestCase Trait', function (): void {
 
     it('supports test database isolation via transactions', function (): void {
         $transactionLog = [];
-
-        $connection = new class ($transactionLog) implements ConnectionInterface, TransactionInterface
-        {
-            private bool $inTransaction = false;
-
-            public function __construct(
-                private array &$log,
-            ) {}
-
-            public function connect(): void {}
-
-            public function disconnect(): void {}
-
-            public function isConnected(): bool
-            {
-                return true;
-            }
-
-            public function query(
-                string $sql,
-                array $bindings = [],
-            ): array {
-                return [];
-            }
-
-            public function execute(
-                string $sql,
-                array $bindings = [],
-            ): int {
-                return 1;
-            }
-
-            public function prepare(
-                string $sql,
-            ): StatementInterface {
-                throw new RuntimeException('Not implemented');
-            }
-
-            public function lastInsertId(): int
-            {
-                return 1;
-            }
-
-            public function beginTransaction(): void
-            {
-                $this->inTransaction = true;
-                $this->log[] = 'BEGIN';
-            }
-
-            public function commit(): void
-            {
-                $this->inTransaction = false;
-                $this->log[] = 'COMMIT';
-            }
-
-            public function rollback(): void
-            {
-                $this->inTransaction = false;
-                $this->log[] = 'ROLLBACK';
-            }
-
-            public function inTransaction(): bool
-            {
-                return $this->inTransaction;
-            }
-
-            public function transaction(
-                callable $callback,
-            ): mixed {
-                $this->beginTransaction();
-
-                try {
-                    $result = $callback($this);
-                    $this->commit();
-
-                    return $result;
-                } catch (Throwable $e) {
-                    $this->rollback();
-
-                    throw $e;
-                }
-            }
-        };
-
+        $connection = createLoggingTransactionConnection($transactionLog);
         $testCase = new TestDatabaseTestCase();
 
         // Begin transaction
@@ -172,91 +151,9 @@ describe('DatabaseTestCase Trait', function (): void {
 
     it('can commit transaction when needed', function (): void {
         $transactionLog = [];
-
-        $connection = new class ($transactionLog) implements ConnectionInterface, TransactionInterface
-        {
-            private bool $inTransaction = false;
-
-            public function __construct(
-                private array &$log,
-            ) {}
-
-            public function connect(): void {}
-
-            public function disconnect(): void {}
-
-            public function isConnected(): bool
-            {
-                return true;
-            }
-
-            public function query(
-                string $sql,
-                array $bindings = [],
-            ): array {
-                return [];
-            }
-
-            public function execute(
-                string $sql,
-                array $bindings = [],
-            ): int {
-                return 1;
-            }
-
-            public function prepare(
-                string $sql,
-            ): StatementInterface {
-                throw new RuntimeException('Not implemented');
-            }
-
-            public function lastInsertId(): int
-            {
-                return 1;
-            }
-
-            public function beginTransaction(): void
-            {
-                $this->inTransaction = true;
-                $this->log[] = 'BEGIN';
-            }
-
-            public function commit(): void
-            {
-                $this->inTransaction = false;
-                $this->log[] = 'COMMIT';
-            }
-
-            public function rollback(): void
-            {
-                $this->inTransaction = false;
-                $this->log[] = 'ROLLBACK';
-            }
-
-            public function inTransaction(): bool
-            {
-                return $this->inTransaction;
-            }
-
-            public function transaction(
-                callable $callback,
-            ): mixed {
-                $this->beginTransaction();
-
-                try {
-                    $result = $callback($this);
-                    $this->commit();
-
-                    return $result;
-                } catch (Throwable $e) {
-                    $this->rollback();
-
-                    throw $e;
-                }
-            }
-        };
-
+        $connection = createLoggingTransactionConnection($transactionLog);
         $testCase = new TestDatabaseTestCase();
+
         $testCase->testBeginTransaction($connection);
         $testCase->testCommit();
 
@@ -267,51 +164,9 @@ describe('DatabaseTestCase Trait', function (): void {
 
     it('seeds table with test data', function (): void {
         $insertedData = [];
-
-        $connection = new class ($insertedData) implements ConnectionInterface
-        {
-            public function __construct(
-                private array &$data,
-            ) {}
-
-            public function connect(): void {}
-
-            public function disconnect(): void {}
-
-            public function isConnected(): bool
-            {
-                return true;
-            }
-
-            public function query(
-                string $sql,
-                array $bindings = [],
-            ): array {
-                return [];
-            }
-
-            public function execute(
-                string $sql,
-                array $bindings = [],
-            ): int {
-                $this->data[] = ['sql' => $sql, 'bindings' => $bindings];
-
-                return 1;
-            }
-
-            public function prepare(
-                string $sql,
-            ): StatementInterface {
-                throw new RuntimeException('Not implemented');
-            }
-
-            public function lastInsertId(): int
-            {
-                return 1;
-            }
-        };
-
+        $connection = createTrackingConnectionStub($insertedData, trackBindings: true);
         $testCase = new TestDatabaseTestCase();
+
         $testCase->testSeedTable($connection, 'users', [
             ['name' => 'John', 'email' => 'john@example.com'],
             ['name' => 'Jane', 'email' => 'jane@example.com'],
@@ -326,51 +181,9 @@ describe('DatabaseTestCase Trait', function (): void {
 
     it('truncates table for test cleanup', function (): void {
         $executedSql = [];
-
-        $connection = new class ($executedSql) implements ConnectionInterface
-        {
-            public function __construct(
-                private array &$sql,
-            ) {}
-
-            public function connect(): void {}
-
-            public function disconnect(): void {}
-
-            public function isConnected(): bool
-            {
-                return true;
-            }
-
-            public function query(
-                string $sql,
-                array $bindings = [],
-            ): array {
-                return [];
-            }
-
-            public function execute(
-                string $sql,
-                array $bindings = [],
-            ): int {
-                $this->sql[] = $sql;
-
-                return 1;
-            }
-
-            public function prepare(
-                string $sql,
-            ): StatementInterface {
-                throw new RuntimeException('Not implemented');
-            }
-
-            public function lastInsertId(): int
-            {
-                return 1;
-            }
-        };
-
+        $connection = createTrackingConnectionStub($executedSql);
         $testCase = new TestDatabaseTestCase();
+
         $testCase->testTruncateTable($connection, 'users');
 
         expect($executedSql)

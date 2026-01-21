@@ -7,7 +7,6 @@ namespace Marko\Database\Tests\Feature;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Exceptions\MigrationException;
-use Marko\Database\Migration\Migration;
 use Marko\Database\Migration\MigrationRepository;
 use Marko\Database\Migration\Migrator;
 use RuntimeException;
@@ -55,7 +54,9 @@ PHP;
         $connection = new class ($appliedMigrations, $rolledBackMigrations) implements ConnectionInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$applied,
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$rolledBack,
             ) {}
 
@@ -165,6 +166,7 @@ PHP;
         $connection = new class ($executionOrder) implements ConnectionInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$order,
             ) {}
 
@@ -243,6 +245,7 @@ PHP;
         $connection = new class ($executedMigrations) implements ConnectionInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$executed,
             ) {}
 
@@ -372,6 +375,7 @@ PHP;
         $connection = new class ($rollbackOrder) implements ConnectionInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$order,
             ) {}
 

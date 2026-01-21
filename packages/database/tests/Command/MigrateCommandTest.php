@@ -146,21 +146,21 @@ function createMigrateSqlGenerator(
         public function generateDropTable(
             string $tableName,
         ): string {
-            return "DROP TABLE {$tableName}";
+            return "DROP TABLE $tableName";
         }
 
         public function generateAddColumn(
             string $table,
             Column $column,
         ): string {
-            return "ALTER TABLE {$table} ADD COLUMN {$column->name}";
+            return "ALTER TABLE $table ADD COLUMN $column->name";
         }
 
         public function generateDropColumn(
             string $table,
             string $columnName,
         ): string {
-            return "ALTER TABLE {$table} DROP COLUMN {$columnName}";
+            return "ALTER TABLE $table DROP COLUMN $columnName";
         }
 
         public function generateModifyColumn(
@@ -168,35 +168,35 @@ function createMigrateSqlGenerator(
             Column $column,
             Column $oldColumn,
         ): string {
-            return "ALTER TABLE {$table} MODIFY COLUMN {$column->name}";
+            return "ALTER TABLE $table MODIFY COLUMN $column->name";
         }
 
         public function generateAddIndex(
             string $table,
             Index $index,
         ): string {
-            return "CREATE INDEX {$index->name} ON {$table}";
+            return "CREATE INDEX $index->name ON $table";
         }
 
         public function generateDropIndex(
             string $table,
             string $indexName,
         ): string {
-            return "DROP INDEX {$indexName}";
+            return "DROP INDEX $indexName";
         }
 
         public function generateAddForeignKey(
             string $table,
             ForeignKey $foreignKey,
         ): string {
-            return "ALTER TABLE {$table} ADD FOREIGN KEY";
+            return "ALTER TABLE $table ADD FOREIGN KEY";
         }
 
         public function generateDropForeignKey(
             string $table,
             string $keyName,
         ): string {
-            return "ALTER TABLE {$table} DROP FOREIGN KEY {$keyName}";
+            return "ALTER TABLE $table DROP FOREIGN KEY $keyName";
         }
     };
 }
@@ -295,6 +295,7 @@ it('implements CommandInterface', function (): void {
 });
 
 it('applies pending migration files', function (): void {
+    /** @var Migrator&object{migrateApplied: array<string>, migrateCallCount: int, rollbackCalled: bool} $migrator */
     $migrator = createMigratorStub(
         pendingMigrations: [
             '2024_01_01_000000_create_users_table',
@@ -329,6 +330,7 @@ it('generates new migration files from entity diff in development', function ():
         ],
     );
 
+    /** @var MigrationGenerator&object{generateCalled: bool} $generator */
     $generator = createMigrationGeneratorStub(
         generatedPaths: ['/app/database/migrations/2024_01_01_000000_create_posts.php'],
     );
@@ -360,6 +362,7 @@ it('does not generate migrations in production mode', function (): void {
         ],
     );
 
+    /** @var MigrationGenerator&object{generateCalled: bool} $generator */
     $generator = createMigrationGeneratorStub(
         generatedPaths: ['/app/database/migrations/2024_01_01_000000_create_posts.php'],
     );
@@ -426,6 +429,7 @@ it('shows SQL statements being executed with --verbose', function (): void {
 });
 
 it('groups applied migrations into a batch', function (): void {
+    /** @var Migrator&object{migrateApplied: array<string>, migrateCallCount: int, rollbackCalled: bool} $migrator */
     $migrator = createMigratorStub(
         pendingMigrations: [
             '2024_01_01_000000_create_users_table',

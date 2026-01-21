@@ -51,6 +51,7 @@ describe('Repository CRUD Operations', function (): void {
             public function __construct(
                 private array &$storage,
                 private int &$lastId,
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$queries,
             ) {}
 
@@ -174,6 +175,7 @@ describe('Repository CRUD Operations', function (): void {
         expect($product->id)->toBe(1);
 
         // READ
+        /** @var CrudProduct $found */
         $found = $repository->find(1);
 
         expect($found)
@@ -185,6 +187,7 @@ describe('Repository CRUD Operations', function (): void {
         $found->name = 'Updated Product';
         $repository->save($found);
 
+        /** @var CrudProduct $updated */
         $updated = $repository->find(1);
         expect($updated->name)->toBe('Updated Product');
 
@@ -205,7 +208,7 @@ describe('Repository CRUD Operations', function (): void {
         $connection = new class ($storage) implements ConnectionInterface
         {
             public function __construct(
-                private array $storage,
+                private readonly array $storage,
             ) {}
 
             public function connect(): void {}
@@ -257,6 +260,7 @@ describe('Repository CRUD Operations', function (): void {
         $hydrator = new EntityHydrator();
         $repository = new ProductRepository($connection, $metadataFactory, $hydrator);
 
+        /** @var array<CrudProduct> $activeProducts */
         $activeProducts = $repository->findBy(['isAvailable' => true]);
 
         expect($activeProducts)
@@ -369,7 +373,7 @@ describe('Repository CRUD Operations', function (): void {
         $connection = new class ($storage) implements ConnectionInterface
         {
             public function __construct(
-                private array $storage,
+                private readonly array $storage,
             ) {}
 
             public function connect(): void {}

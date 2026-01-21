@@ -227,6 +227,12 @@ it('creates user and sends welcome email', function () {
 
 ### Before Committing Any Test File
 
+- [ ] **No unused imports** - Remove any `use` statements for classes that aren't actually used in the file.
+  ```php
+  // WRONG - import not used anywhere
+  use Marko\Database\Migration\Migration;  // Appears in heredoc strings but not in code
+  ```
+
 - [ ] **All classes imported with `use` statements** - Never use inline fully-qualified class names. Import at the top of the file.
   ```php
   // CORRECT
@@ -260,6 +266,60 @@ it('creates user and sends welcome email', function () {
 - [ ] **Reflection-invoked methods have `@noinspection PhpUnused`** - Plugin methods, observer handlers, etc.
 
 - [ ] **Anonymous class properties accessed via reflection have `@noinspection PhpUnused`** - When properties are only accessed through ORM/reflection
+
+- [ ] **Reference properties have `@noinspection PhpPropertyOnlyWrittenInspection`** - When using reference properties (`private array &$log`) to track state from anonymous classes:
+  ```php
+  public function __construct(
+      /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+      private array &$log,
+  ) {}
+  ```
+
+- [ ] **Use `@var` annotations for polymorphic call warnings** - When accessing properties/methods on nullable or generic return types:
+  ```php
+  // CORRECT - annotate the type before accessing properties
+  /** @var User $user */
+  $user = $repository->find(1);
+  expect($user->name)->toBe('Alice');
+
+  // CORRECT - annotate array element types
+  /** @var array<Product> $products */
+  $products = $repository->findBy(['active' => true]);
+  expect($products[0]->isActive)->toBeTrue();
+  ```
+
+- [ ] **Remove unused properties from test fixtures** - Delete declared properties that are never used:
+  ```php
+  // WRONG - property declared but never used
+  class UserSeeder implements SeederInterface
+  {
+      public array $executedInserts = [];  // Never populated or read
+      public function run(...) { ... }
+  }
+  ```
+
+- [ ] **Use `readonly` on appropriate properties** - Constructor-promoted properties that aren't reassigned should be `readonly`:
+  ```php
+  // CORRECT
+  public function __construct(
+      private readonly array $storage,
+  ) {}
+  ```
+
+- [ ] **Narrow return types when possible** - If a method always returns `null`, use `null` not `mixed`:
+  ```php
+  // CORRECT - specific return type
+  public function transaction(callable $callback): null
+  {
+      return null;
+  }
+
+  // WRONG - overly broad return type
+  public function transaction(callable $callback): mixed
+  {
+      return null;
+  }
+  ```
 
 - [ ] **Extract repeated code into helper functions** - If a setup pattern repeats 3+ times, extract it to `Helpers.php`:
   ```php

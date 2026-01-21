@@ -88,6 +88,7 @@ it('implements CommandInterface', function (): void {
 });
 
 it('blocks execution in production environment', function (): void {
+    /** @var Migrator&object{rolledBack: array<string>, rollbackCallCount: int} $migrator */
     $migrator = createStubMigrator(
         lastBatchMigrations: ['2024_01_01_000000_test'],
     );
@@ -154,6 +155,7 @@ it('does NOT support --force flag (rollback is never allowed in production)', fu
 });
 
 it('rolls back last batch of migrations in development', function (): void {
+    /** @var Migrator&object{rolledBack: array<string>, rollbackCallCount: int} $migrator */
     $migrator = createStubMigrator(
         lastBatchMigrations: [
             '2024_01_02_000000_second',
@@ -183,6 +185,7 @@ it('rolls back last batch of migrations in development', function (): void {
 it('executes down() in reverse order within batch', function (): void {
     // The Migrator already handles reverse order via MigrationRepository
     // This test verifies the command uses the migrator correctly
+    /** @var Migrator&object{rolledBack: array<string>, rollbackCallCount: int} $migrator */
     $migrator = createStubMigrator(
         lastBatchMigrations: [
             '2024_01_03_000000_third',  // rolled back first
@@ -238,6 +241,7 @@ it('shows each migration being rolled back', function (): void {
 it('removes migration records from tracking table', function (): void {
     // This is handled by Migrator.rollback() internally
     // The command test verifies rollback() is called
+    /** @var Migrator&object{rolledBack: array<string>, rollbackCallCount: int} $migrator */
     $migrator = createStubMigrator(
         lastBatchMigrations: ['2024_01_01_000000_test'],
     );
@@ -257,6 +261,7 @@ it('removes migration records from tracking table', function (): void {
 });
 
 it('supports --step option to rollback multiple batches', function (): void {
+    /** @var Migrator&object{rolledBack: array<string>, rollbackCallCount: int} $migrator */
     $migrator = createStubMigrator(
         batchesMigrations: [
             ['2024_01_03_000000_third'],

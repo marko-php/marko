@@ -160,7 +160,7 @@ it('runs seeders in specified order', function (): void {
     $seeder1 = new class ($executionOrder) implements SeederInterface
     {
         public function __construct(
-            /** @noinspection PhpUnused - Reference property used to track execution */
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$order,
         ) {}
 
@@ -174,7 +174,7 @@ it('runs seeders in specified order', function (): void {
     $seeder2 = new class ($executionOrder) implements SeederInterface
     {
         public function __construct(
-            /** @noinspection PhpUnused - Reference property used to track execution */
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$order,
         ) {}
 
@@ -229,7 +229,7 @@ it('supports --class option to run specific seeder', function (): void {
     $userSeeder = new class ($userSeederRan) implements SeederInterface
     {
         public function __construct(
-            /** @noinspection PhpUnused - Reference property used to track execution */
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private bool &$ran,
         ) {}
 
@@ -243,7 +243,7 @@ it('supports --class option to run specific seeder', function (): void {
     $postSeeder = new class ($postSeederRan) implements SeederInterface
     {
         public function __construct(
-            /** @noinspection PhpUnused - Reference property used to track execution */
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private bool &$ran,
         ) {}
 

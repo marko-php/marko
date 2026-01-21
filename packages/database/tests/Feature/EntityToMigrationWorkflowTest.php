@@ -49,6 +49,7 @@ class WorkflowPost extends Entity
     #[Column(type: 'TEXT')]
     public string $content;
 
+    /** @noinspection PhpUnused - Accessed via reflection */
     #[Column]
     public int $authorId;
 }
@@ -103,7 +104,7 @@ describe('Entity to Migration Workflow', function (): void {
             ): array {
                 $statements = [];
                 foreach ($diff->tablesToCreate as $table) {
-                    $statements[] = "DROP TABLE {$table->name}";
+                    $statements[] = "DROP TABLE $table->name";
                 }
 
                 return $statements;
@@ -112,27 +113,27 @@ describe('Entity to Migration Workflow', function (): void {
             public function generateCreateTable(
                 SchemaTable $table,
             ): string {
-                return "CREATE TABLE {$table->name}";
+                return "CREATE TABLE $table->name";
             }
 
             public function generateDropTable(
                 string $tableName,
             ): string {
-                return "DROP TABLE {$tableName}";
+                return "DROP TABLE $tableName";
             }
 
             public function generateAddColumn(
                 string $table,
                 SchemaColumn $column,
             ): string {
-                return "ALTER TABLE {$table} ADD COLUMN {$column->name}";
+                return "ALTER TABLE $table ADD COLUMN $column->name";
             }
 
             public function generateDropColumn(
                 string $table,
                 string $columnName,
             ): string {
-                return "ALTER TABLE {$table} DROP COLUMN {$columnName}";
+                return "ALTER TABLE $table DROP COLUMN $columnName";
             }
 
             public function generateModifyColumn(
@@ -140,35 +141,35 @@ describe('Entity to Migration Workflow', function (): void {
                 SchemaColumn $column,
                 SchemaColumn $oldColumn,
             ): string {
-                return "ALTER TABLE {$table} MODIFY COLUMN {$column->name}";
+                return "ALTER TABLE $table MODIFY COLUMN $column->name";
             }
 
             public function generateAddIndex(
                 string $table,
                 \Marko\Database\Schema\Index $index,
             ): string {
-                return "CREATE INDEX {$index->name} ON {$table}";
+                return "CREATE INDEX $index->name ON $table";
             }
 
             public function generateDropIndex(
                 string $table,
                 string $indexName,
             ): string {
-                return "DROP INDEX {$indexName}";
+                return "DROP INDEX $indexName";
             }
 
             public function generateAddForeignKey(
                 string $table,
                 ForeignKey $foreignKey,
             ): string {
-                return "ALTER TABLE {$table} ADD FOREIGN KEY";
+                return "ALTER TABLE $table ADD FOREIGN KEY";
             }
 
             public function generateDropForeignKey(
                 string $table,
                 string $keyName,
             ): string {
-                return "ALTER TABLE {$table} DROP FOREIGN KEY {$keyName}";
+                return "ALTER TABLE $table DROP FOREIGN KEY $keyName";
             }
         };
 
@@ -216,25 +217,18 @@ describe('Entity to Migration Workflow', function (): void {
         $userTable = $schemaBuilder->build($userMetadata);
         $postTable = $schemaBuilder->build($postMetadata);
 
-        // Verify user table structure
+        // Verify table structures
         expect($userTable->name)
             ->toBe('workflow_users')
-            ->and($userTable->columns)->toHaveCount(4);
-
-        $columnNames = array_map(fn ($col) => $col->name, $userTable->columns);
-        expect($columnNames)
+            ->and($userTable->columns)->toHaveCount(4)
+            ->and(array_map(fn ($col) => $col->name, $userTable->columns))
             ->toContain('id')
             ->toContain('name')
             ->toContain('email')
-            ->toContain('isActive');
-
-        // Verify post table structure
-        expect($postTable->name)
-            ->toBe('workflow_posts')
-            ->and($postTable->columns)->toHaveCount(4);
-
-        $postColumnNames = array_map(fn ($col) => $col->name, $postTable->columns);
-        expect($postColumnNames)
+            ->toContain('isActive')
+            ->and($postTable->name)->toBe('workflow_posts')
+            ->and($postTable->columns)->toHaveCount(4)
+            ->and(array_map(fn ($col) => $col->name, $postTable->columns))
             ->toContain('id')
             ->toContain('title')
             ->toContain('content')

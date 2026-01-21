@@ -16,8 +16,6 @@ use RuntimeException;
 
 class UserSeeder implements SeederInterface
 {
-    public array $executedInserts = [];
-
     public function run(
         ConnectionInterface $connection,
     ): void {
@@ -63,6 +61,7 @@ describe('Seeder Execution', function (): void {
         $connection = new class ($insertedData) implements ConnectionInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$inserts,
             ) {}
 
@@ -131,6 +130,7 @@ describe('Seeder Execution', function (): void {
         $connection = new class ($executionOrder) implements ConnectionInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$order,
             ) {}
 
@@ -212,6 +212,7 @@ describe('Seeder Execution', function (): void {
         $connection = new class ($ran) implements ConnectionInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$ran,
             ) {}
 
