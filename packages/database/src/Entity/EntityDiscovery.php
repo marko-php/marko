@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Database\Entity;
 
+use Marko\Core\Discovery\ClassFileParser;
 use Marko\Database\Attributes\Table;
-use Marko\Database\Discovery\PhpFileDiscoveryTrait;
 use ReflectionClass;
 
 /**
@@ -13,7 +13,9 @@ use ReflectionClass;
  */
 class EntityDiscovery
 {
-    use PhpFileDiscoveryTrait;
+    public function __construct(
+        private ClassFileParser $classFileParser,
+    ) {}
 
     /**
      * Discover entities in vendor/vendor-name/package-name/src/Entity directories.
@@ -92,9 +94,9 @@ class EntityDiscovery
 
         $entities = [];
 
-        foreach ($this->findPhpFiles($path) as $file) {
+        foreach ($this->classFileParser->findPhpFiles($path) as $file) {
             $filePath = $file->getPathname();
-            $className = $this->extractClassName($filePath);
+            $className = $this->classFileParser->extractClassName($filePath);
 
             if ($className === null) {
                 continue;

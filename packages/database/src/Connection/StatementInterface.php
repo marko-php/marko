@@ -12,7 +12,7 @@ interface StatementInterface
     /**
      * Execute the prepared statement with bindings.
      *
-     * @param array<mixed> $bindings Parameter bindings
+     * @param array $bindings Parameter bindings
      * @return bool True on success
      */
     public function execute(array $bindings = []): bool;

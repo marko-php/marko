@@ -824,10 +824,12 @@ When a release is made, all interdependencies are automatically updated to requi
 
 ### Explicit Over Implicit
 
-- Explicit dependencies
-- Explicit overrides
-- Explicit configuration
+- Explicit dependencies via constructor injection
+- Explicit overrides via Preferences
+- Explicit configuration via PHP files
 - No silent failures
+- No traits (use composition instead)
+- No magic methods
 
 ### True Modularity
 

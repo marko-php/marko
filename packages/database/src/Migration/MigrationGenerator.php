@@ -6,7 +6,6 @@ namespace Marko\Database\Migration;
 
 use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\SqlGeneratorInterface;
-use Marko\Database\Schema\Table;
 
 /**
  * Generates migration PHP files from SchemaDiff objects.
@@ -16,11 +15,11 @@ use Marko\Database\Schema\Table;
  */
 class MigrationGenerator
 {
-    private const MIGRATIONS_SUBDIR = 'database/migrations';
+    private const string MIGRATIONS_SUBDIR = 'database/migrations';
 
     public function __construct(
-        private SqlGeneratorInterface $sqlGenerator,
-        private string $basePath,
+        private readonly SqlGeneratorInterface $sqlGenerator,
+        private readonly string $basePath,
     ) {}
 
     /**

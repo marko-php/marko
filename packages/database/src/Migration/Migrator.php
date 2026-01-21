@@ -16,9 +16,9 @@ class Migrator
     private bool $tableCreated = false;
 
     public function __construct(
-        private ConnectionInterface $connection,
-        private MigrationRepository $repository,
-        private string $migrationsPath,
+        private readonly ConnectionInterface $connection,
+        private readonly MigrationRepository $repository,
+        private readonly string $migrationsPath,
     ) {}
 
     /**

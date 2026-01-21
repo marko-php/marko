@@ -12,6 +12,7 @@ use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\SchemaBuilder;
 use Marko\Database\Exceptions\MigrationException;
+use Marko\Database\Migration\DataMigrator;
 use Marko\Database\Migration\MigrationGenerator;
 use Marko\Database\Migration\Migrator;
 use Marko\Database\Schema\Column;
@@ -226,13 +227,71 @@ function createMigrationGeneratorStub(
 }
 
 /**
+ * Create a stub DataMigrator for testing.
+ *
+ * @param array<array{name: string, path: string, source: string}> $pendingMigrations
+ * @param array<string> $appliedMigrations
+ *
+ * @return DataMigrator&object{migrateApplied: array<string>, migrateCallCount: int}
+ */
+function createDataMigratorStub(
+    array $pendingMigrations = [],
+    array $appliedMigrations = [],
+    bool $shouldFail = false,
+    string $failMessage = 'Data migration failed',
+): DataMigrator {
+    /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
+    return new class ($pendingMigrations, $appliedMigrations, $shouldFail, $failMessage) extends DataMigrator
+    {
+        /** @var array<string> */
+        public array $migrateApplied = [];
+
+        public int $migrateCallCount = 0;
+
+        /** @noinspection PhpMissingParentConstructorInspection */
+        public function __construct(
+            private readonly array $pendingMigrations,
+            private readonly array $appliedMigrations,
+            private readonly bool $shouldFail,
+            private readonly string $failMessage,
+        ) {}
+
+        public function migrate(): array
+        {
+            $this->migrateCallCount++;
+
+            if ($this->shouldFail) {
+                throw new MigrationException($this->failMessage);
+            }
+
+            $names = array_column($this->pendingMigrations, 'name');
+            $this->migrateApplied = $names;
+
+            return $names;
+        }
+
+        public function getPending(): array
+        {
+            return $this->pendingMigrations;
+        }
+
+        public function getApplied(): array
+        {
+            return $this->appliedMigrations;
+        }
+    };
+}
+
+/**
  * Helper to create a MigrateCommand with standard dependencies.
  *
  * @param Migrator&object{migrateApplied: array<string>, migrateCallCount: int, rollbackCalled: bool}|null $migrator
+ * @param DataMigrator&object{migrateApplied: array<string>, migrateCallCount: int}|null $dataMigrator
  * @param MigrationGenerator&object{generateCalled: bool}|null $generator
  */
 function createMigrateCommand(
     ?Migrator $migrator = null,
+    ?DataMigrator $dataMigrator = null,
     ?MigrationGenerator $generator = null,
     ?SchemaDiff $diff = null,
     ?SqlGeneratorInterface $sqlGenerator = null,
@@ -240,6 +299,7 @@ function createMigrateCommand(
 ): MigrateCommand {
     return new MigrateCommand(
         migrator: $migrator ?? createMigratorStub(),
+        dataMigrator: $dataMigrator ?? createDataMigratorStub(),
         migrationGenerator: $generator ?? createMigrationGeneratorStub(),
         entityDiscovery: Helpers::createStubEntityDiscovery(),
         introspector: Helpers::createStubIntrospector(),
@@ -339,6 +399,43 @@ it('generates new migration files from entity diff in development', function ():
 
     expect($generator->generateCalled)->toBeTrue()
         ->and($output)->toContain('Generated');
+});
+
+it('shows SQL statements when generating migrations with --verbose', function (): void {
+    $migrator = createMigratorStub();
+
+    $diff = new SchemaDiff(
+        tablesToCreate: [
+            new Table(
+                name: 'posts',
+                columns: [
+                    new Column(name: 'id', type: 'INT', primaryKey: true),
+                ],
+                indexes: [],
+            ),
+        ],
+    );
+
+    $generator = createMigrationGeneratorStub(
+        generatedPaths: ['/app/database/migrations/2024_01_01_000000_create_posts.php'],
+    );
+
+    $sqlGenerator = createMigrateSqlGenerator(
+        upStatements: ['CREATE TABLE posts (id INT PRIMARY KEY);'],
+    );
+
+    $command = createMigrateCommand(
+        migrator: $migrator,
+        generator: $generator,
+        diff: $diff,
+        sqlGenerator: $sqlGenerator,
+    );
+
+    ['output' => $output] = executeMigrateCommand($command, ['marko', 'db:migrate', '--verbose']);
+
+    expect($output)->toContain('Generated')
+        ->and($output)->toContain('SQL statements:')
+        ->and($output)->toContain('CREATE TABLE posts');
 });
 
 it('does not generate migrations in production mode', function (): void {
@@ -452,7 +549,7 @@ it('shows success message with count of applied migrations', function (): void {
 
     ['output' => $output] = executeMigrateCommand($command);
 
-    expect($output)->toContain('3 migration(s)');
+    expect($output)->toContain('3 schema migration(s)');
 });
 
 it('shows "Nothing to migrate" when no pending changes', function (): void {
@@ -504,4 +601,64 @@ it('returns 0 on success, 1 on failure', function (): void {
     ['exitCode' => $exitCode2] = executeMigrateCommand($failCommand);
 
     expect($exitCode2)->toBe(1);
+});
+
+it('applies pending data migrations', function (): void {
+    /** @var DataMigrator&object{migrateApplied: array<string>, migrateCallCount: int} $dataMigrator */
+    $dataMigrator = createDataMigratorStub(
+        pendingMigrations: [
+            ['name' => '001_seed_countries', 'path' => '/app/Data/001_seed_countries.php', 'source' => 'app/core'],
+            ['name' => '002_seed_currencies', 'path' => '/app/Data/002_seed_currencies.php', 'source' => 'app/core'],
+        ],
+    );
+
+    $command = createMigrateCommand(dataMigrator: $dataMigrator);
+
+    ['output' => $output, 'exitCode' => $exitCode] = executeMigrateCommand($command);
+
+    expect($exitCode)->toBe(0)
+        ->and($dataMigrator->migrateCallCount)->toBe(1)
+        ->and($dataMigrator->migrateApplied)->toBe(['001_seed_countries', '002_seed_currencies'])
+        ->and($output)->toContain('Data migrating: 001_seed_countries')
+        ->and($output)->toContain('Data migrating: 002_seed_currencies')
+        ->and($output)->toContain('2 data migration(s)');
+});
+
+it('applies both schema and data migrations', function (): void {
+    $migrator = createMigratorStub(
+        pendingMigrations: ['2024_01_01_000000_create_users_table'],
+    );
+
+    $dataMigrator = createDataMigratorStub(
+        pendingMigrations: [
+            ['name' => '001_seed_countries', 'path' => '/app/Data/001_seed_countries.php', 'source' => 'app/core'],
+        ],
+    );
+
+    $command = createMigrateCommand(migrator: $migrator, dataMigrator: $dataMigrator);
+
+    ['output' => $output, 'exitCode' => $exitCode] = executeMigrateCommand($command);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('1 schema migration(s)')
+        ->and($output)->toContain('1 data migration(s)')
+        ->and($output)->toContain('Migration complete');
+});
+
+it('handles data migration failure', function (): void {
+    $dataMigrator = createDataMigratorStub(
+        pendingMigrations: [
+            ['name' => '001_seed_countries', 'path' => '/app/Data/001_seed_countries.php', 'source' => 'app/core'],
+        ],
+        shouldFail: true,
+        failMessage: 'Failed to insert country data',
+    );
+
+    $command = createMigrateCommand(dataMigrator: $dataMigrator);
+
+    ['output' => $output, 'exitCode' => $exitCode] = executeMigrateCommand($command);
+
+    expect($exitCode)->toBe(1)
+        ->and($output)->toContain('Error')
+        ->and($output)->toContain('Failed to insert country data');
 });

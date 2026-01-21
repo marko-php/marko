@@ -16,7 +16,7 @@ interface ConnectionInterface
      * Execute a SELECT query and return results.
      *
      * @param string $sql The SQL query
-     * @param array<mixed> $bindings Parameter bindings
+     * @param array $bindings Parameter bindings
      * @return array<array<string, mixed>> Query results
      */
     public function query(
@@ -28,7 +28,7 @@ interface ConnectionInterface
      * Execute a non-SELECT statement (INSERT, UPDATE, DELETE).
      *
      * @param string $sql The SQL statement
-     * @param array<mixed> $bindings Parameter bindings
+     * @param array $bindings Parameter bindings
      * @return int Number of affected rows
      */
     public function execute(

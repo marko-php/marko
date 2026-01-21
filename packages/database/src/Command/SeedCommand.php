@@ -15,7 +15,7 @@ use Marko\Database\Seed\SeederDiscovery;
 use Marko\Database\Seed\SeederRunner;
 
 #[Command(name: 'db:seed', description: 'Run database seeders')]
-class SeedCommand implements CommandInterface
+readonly class SeedCommand implements CommandInterface
 {
     public function __construct(
         private SeederDiscovery $discovery,

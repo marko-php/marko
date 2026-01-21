@@ -11,8 +11,6 @@ use Marko\Database\Connection\ConnectionInterface;
  */
 class MigrationRepository
 {
-    private const TABLE_NAME = 'migrations';
-
     /**
      * Create the migrations table if it doesn't exist.
      */

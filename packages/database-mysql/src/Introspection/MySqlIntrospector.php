@@ -12,11 +12,11 @@ use Marko\Database\Schema\Index;
 use Marko\Database\Schema\IndexType;
 use Marko\Database\Schema\Table;
 
-class MySqlIntrospector implements IntrospectorInterface
+readonly class MySqlIntrospector implements IntrospectorInterface
 {
     public function __construct(
-        private readonly ConnectionInterface $connection,
-        private readonly string $database,
+        private ConnectionInterface $connection,
+        private string $database,
     ) {}
 
     /**

@@ -22,7 +22,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
     private array $wheres = [];
 
     /**
-     * @var array<array{column: string, values: array<mixed>}>
+     * @var array<array{column: string, values: array}>
      */
     private array $whereIns = [];
 
@@ -51,7 +51,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
     private ?int $offsetValue = null;
 
     /**
-     * @var array<mixed>
+     * @var array
      */
     private array $bindings = [];
 

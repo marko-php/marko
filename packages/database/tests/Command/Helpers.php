@@ -57,8 +57,10 @@ final class Helpers
     public static function createStubEntityDiscovery(
         array $entities = [],
     ): EntityDiscovery {
+        /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
         return new class ($entities) extends EntityDiscovery
         {
+            /** @noinspection PhpMissingParentConstructorInspection */
             public function __construct(
                 private readonly array $entities,
             ) {}

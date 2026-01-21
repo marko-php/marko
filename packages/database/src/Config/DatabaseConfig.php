@@ -9,20 +9,23 @@ use Marko\Database\Exceptions\ConfigurationException;
 /**
  * Database configuration loaded from config/database.php.
  */
-class DatabaseConfig
+readonly class DatabaseConfig
 {
-    public readonly string $driver;
+    public string $driver;
 
-    public readonly string $host;
+    public string $host;
 
-    public readonly int $port;
+    public int $port;
 
-    public readonly string $database;
+    public string $database;
 
-    public readonly string $username;
+    public string $username;
 
-    public readonly string $password;
+    public string $password;
 
+    /**
+     * @throws ConfigurationException
+     */
     public function __construct(
         string $basePath,
     ) {

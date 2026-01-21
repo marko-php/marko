@@ -255,6 +255,55 @@ it('returns null when entity not found', function (): void {
     expect($user)->toBeNull();
 });
 
+it('defines RepositoryInterface with findOrFail(id) method', function (): void {
+    $reflection = new ReflectionClass(RepositoryInterface::class);
+
+    expect($reflection->hasMethod('findOrFail'))->toBeTrue();
+
+    $method = $reflection->getMethod('findOrFail');
+    expect($method->isPublic())->toBeTrue();
+
+    $parameters = $method->getParameters();
+    $returnType = $method->getReturnType();
+    expect($parameters)->toHaveCount(1)
+        ->and($parameters[0]->getName())->toBe('id')
+        ->and($parameters[0]->getType()->getName())->toBe('int')
+        ->and($returnType->allowsNull())->toBeFalse()
+        ->and($returnType->getName())->toBe(Entity::class);
+});
+
+it('finds entity by primary key with findOrFail(id)', function (): void {
+    $connection = createMockConnection([
+        [
+            'id' => 42,
+            'name' => 'Jane Doe',
+            'email_address' => 'jane@example.com',
+            'isActive' => 1,
+        ],
+    ]);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+
+    $repository = new UserRepository($connection, $metadataFactory, $hydrator);
+    $user = $repository->findOrFail(42);
+
+    expect($user)->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($user->id)->toBe(42)
+        ->and($user->name)->toBe('Jane Doe');
+});
+
+it('throws RepositoryException when findOrFail() entity not found', function (): void {
+    $connection = createMockConnection([]);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+
+    $repository = new UserRepository($connection, $metadataFactory, $hydrator);
+    $repository->findOrFail(999);
+})->throws(
+    RepositoryException::class,
+    "Entity 'Marko\\Database\\Tests\\Repository\\RepositoryTestUser' with ID 999 not found"
+);
+
 it('finds all entities with findAll()', function (): void {
     $connection = createMockConnection([
         ['id' => 1, 'name' => 'Alice', 'email_address' => 'alice@example.com', 'isActive' => 1],

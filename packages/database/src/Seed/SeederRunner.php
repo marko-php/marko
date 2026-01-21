@@ -10,7 +10,7 @@ use Marko\Database\Exceptions\SeederException;
 /**
  * Executes seeders in the correct order.
  */
-class SeederRunner
+readonly class SeederRunner
 {
     /**
      * @param array<string, SeederInterface> $seeders Map of class names to seeder instances

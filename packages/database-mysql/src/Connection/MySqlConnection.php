@@ -37,6 +37,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         );
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function connect(): void
     {
         if ($this->pdo !== null) {
@@ -92,6 +95,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         return $this->pdo !== null;
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function query(
         string $sql,
         array $bindings = [],
@@ -104,6 +110,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function execute(
         string $sql,
         array $bindings = [],
@@ -116,6 +125,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         return $statement->rowCount();
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function prepare(
         string $sql,
     ): StatementInterface {
@@ -126,6 +138,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         return new MySqlStatement($pdoStatement);
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function lastInsertId(): int
     {
         $this->connect();
@@ -133,6 +148,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         return (int) $this->pdo->lastInsertId();
     }
 
+    /**
+     * @throws ConnectionException|TransactionException
+     */
     public function beginTransaction(): void
     {
         $this->connect();
@@ -144,6 +162,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         $this->pdo->beginTransaction();
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function commit(): void
     {
         $this->connect();
@@ -151,6 +172,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         $this->pdo->commit();
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function rollback(): void
     {
         $this->connect();
@@ -158,6 +182,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         $this->pdo->rollBack();
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function inTransaction(): bool
     {
         $this->connect();
@@ -165,6 +192,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         return $this->pdo->inTransaction();
     }
 
+    /**
+     * @throws Throwable
+     */
     public function transaction(
         callable $callback,
     ): mixed {

@@ -26,6 +26,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         private readonly string $charset = 'utf8',
     ) {}
 
+    /**
+     * @throws ConnectionException
+     */
     public function connect(): void
     {
         if ($this->pdo !== null) {
@@ -81,6 +84,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         return $this->pdo !== null;
     }
 
+    /**
+     * @throws ConnectionException
+     */
     private function ensureConnected(): void
     {
         if ($this->pdo === null) {
@@ -88,6 +94,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         }
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function query(
         string $sql,
         array $bindings = [],
@@ -100,6 +109,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function execute(
         string $sql,
         array $bindings = [],
@@ -112,6 +124,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         return $statement->rowCount();
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function prepare(
         string $sql,
     ): StatementInterface {
@@ -122,6 +137,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         return new PgSqlStatement($pdoStatement);
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function lastInsertId(): int
     {
         $this->ensureConnected();
@@ -129,6 +147,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         return (int) $this->pdo->lastInsertId();
     }
 
+    /**
+     * @throws TransactionException|ConnectionException
+     */
     public function beginTransaction(): void
     {
         $this->ensureConnected();
@@ -140,6 +161,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         $this->pdo->beginTransaction();
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function commit(): void
     {
         $this->ensureConnected();
@@ -147,6 +171,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         $this->pdo->commit();
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function rollback(): void
     {
         $this->ensureConnected();
@@ -154,6 +181,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         $this->pdo->rollBack();
     }
 
+    /**
+     * @throws ConnectionException
+     */
     public function inTransaction(): bool
     {
         $this->ensureConnected();
@@ -161,6 +191,9 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         return $this->pdo->inTransaction();
     }
 
+    /**
+     * @throws ConnectionException|Throwable|TransactionException
+     */
     public function transaction(
         callable $callback,
     ): mixed {

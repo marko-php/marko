@@ -134,7 +134,8 @@ abstract class DataMigration extends Migration
     /**
      * Check if the data represents multiple rows.
      *
-     * @param array<mixed> $data
+     * @param array $data
+     * @return bool
      */
     private function isMultipleRows(
         array $data,

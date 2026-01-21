@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Marko\Database\Seed;
 
-use Marko\Database\Discovery\PhpFileDiscoveryTrait;
+use Marko\Core\Discovery\ClassFileParser;
 use ReflectionClass;
 
 /**
  * Discovers seeder classes in Seed directories.
  */
-class SeederDiscovery
+readonly class SeederDiscovery
 {
-    use PhpFileDiscoveryTrait;
+    public function __construct(
+        private ClassFileParser $classFileParser,
+    ) {}
 
     /**
      * Discover seeders in vendor/vendor-name/package-name/Seed directories.
@@ -91,9 +93,9 @@ class SeederDiscovery
 
         $seeders = [];
 
-        foreach ($this->findPhpFiles($path) as $file) {
+        foreach ($this->classFileParser->findPhpFiles($path) as $file) {
             $filePath = $file->getPathname();
-            $className = $this->extractClassName($filePath);
+            $className = $this->classFileParser->extractClassName($filePath);
 
             if ($className === null) {
                 continue;

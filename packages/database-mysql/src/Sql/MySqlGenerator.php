@@ -26,7 +26,7 @@ class MySqlGenerator implements SqlGeneratorInterface
      *
      * @var array<string, string>
      */
-    private const TYPE_MAP = [
+    private const array TYPE_MAP = [
         'integer' => 'INT',
         'int' => 'INT',
         'bigint' => 'BIGINT',
@@ -53,7 +53,7 @@ class MySqlGenerator implements SqlGeneratorInterface
      *
      * @var array<string>
      */
-    private const SQL_EXPRESSIONS = [
+    private const array SQL_EXPRESSIONS = [
         'CURRENT_TIMESTAMP',
         'CURRENT_DATE',
         'CURRENT_TIME',
@@ -284,7 +284,7 @@ class MySqlGenerator implements SqlGeneratorInterface
 
         // DEFAULT value
         if ($column->default !== null && !$column->autoIncrement) {
-            $parts[] = 'DEFAULT ' . $this->formatDefault($column->default, $column->type);
+            $parts[] = 'DEFAULT ' . $this->formatDefault($column->default);
         }
 
         // UNIQUE constraint (inline)
@@ -318,7 +318,6 @@ class MySqlGenerator implements SqlGeneratorInterface
      */
     private function formatDefault(
         mixed $default,
-        string $type,
     ): string {
         // Check if it's a SQL expression
         if (is_string($default) && $this->isSqlExpression($default)) {
@@ -356,13 +355,10 @@ class MySqlGenerator implements SqlGeneratorInterface
     ): bool {
         $upperValue = strtoupper($value);
 
-        foreach (self::SQL_EXPRESSIONS as $expression) {
-            if ($upperValue === $expression || str_starts_with($upperValue, $expression)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any(
+            self::SQL_EXPRESSIONS,
+            fn ($expression) => $upperValue === $expression || str_starts_with($upperValue, $expression),
+        );
     }
 
     /**

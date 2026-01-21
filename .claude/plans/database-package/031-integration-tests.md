@@ -43,7 +43,7 @@ Created comprehensive feature tests using mocks/stubs to verify integration betw
 - `RepositoryCrudTest.php` - Tests full CRUD operations, criteria-based queries, count, and existence checks
 - `TransactionTest.php` - Tests transaction commit/rollback, nested transactions, and automatic rollback on exceptions
 - `DriverErrorHandlingTest.php` - Tests loud error messages for missing drivers and configuration issues
-- `DatabaseTestCaseTest.php` - Tests the DatabaseTestCase trait functionality
+- `DatabaseTestHelperTest.php` - Tests the DatabaseTestHelper class functionality
 - `DriverParityTest.php` - Tests that MySQL and PostgreSQL generators produce equivalent behavior
 
 **packages/database-mysql/tests/Feature/**
@@ -54,15 +54,16 @@ Created comprehensive feature tests using mocks/stubs to verify integration betw
 
 ### Test Helper Created
 
-**packages/database/src/Testing/DatabaseTestCase.php**
-A trait providing:
-- `beginDatabaseTransaction()` - Start a transaction for test isolation
-- `rollbackDatabaseTransaction()` - Rollback after test (for isolation)
-- `commitDatabaseTransaction()` - Commit when needed
-- `hasDatabaseTransaction()` - Check transaction state
+**packages/database/src/Testing/DatabaseTestHelper.php**
+A helper class (not a trait - explicit composition over implicit injection) providing:
+- `beginTransaction()` - Start a transaction for test isolation
+- `rollback()` - Rollback after test (for isolation)
+- `commit()` - Commit when needed
+- `hasTransaction()` - Check transaction state
 - `seedTable()` - Insert test data
 - `truncateTable()` - Clear table data
 - `getTableRowCount()` - Get row count
+- `getConnection()` - Get the underlying connection
 
 ### Test Results
 All 69 new feature tests pass (261 assertions):

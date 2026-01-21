@@ -14,17 +14,20 @@ use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Entity\EntityDiscovery;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\SchemaBuilder;
+use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Introspection\IntrospectorInterface;
+use Marko\Database\Migration\DataMigrator;
 use Marko\Database\Migration\MigrationGenerator;
 use Marko\Database\Migration\Migrator;
 use Marko\Database\Schema\Table;
 
 #[Command(name: 'db:migrate', description: 'Apply database migrations')]
-class MigrateCommand implements CommandInterface
+readonly class MigrateCommand implements CommandInterface
 {
     public function __construct(
         private Migrator $migrator,
+        private DataMigrator $dataMigrator,
         private MigrationGenerator $migrationGenerator,
         private EntityDiscovery $entityDiscovery,
         private IntrospectorInterface $introspector,
@@ -38,6 +41,9 @@ class MigrateCommand implements CommandInterface
         private bool $isProduction = false,
     ) {}
 
+    /**
+     * @throws EntityException
+     */
     public function execute(
         Input $input,
         Output $output,
@@ -50,10 +56,11 @@ class MigrateCommand implements CommandInterface
         }
 
         // Get pending migrations
-        $pending = $this->migrator->getPending();
+        $schemaPending = $this->migrator->getPending();
+        $dataPending = $this->dataMigrator->getPending();
 
         // Nothing to do
-        if (empty($pending)) {
+        if (empty($schemaPending) && empty($dataPending)) {
             // Check if there are entity diffs in production mode
             if ($this->isProduction) {
                 $diff = $this->calculateDiff();
@@ -68,47 +75,82 @@ class MigrateCommand implements CommandInterface
             return 0;
         }
 
-        // Show migrations being applied
-        foreach ($pending as $migration) {
-            $output->writeLine("Migrating: $migration");
-        }
+        $schemaCount = 0;
+        $dataCount = 0;
 
-        // Show SQL statements in verbose mode
-        if ($verbose) {
-            $diff = $this->calculateDiff();
-            $statements = $this->sqlGenerator->generateUp($diff);
+        // Apply schema migrations
+        if (!empty($schemaPending)) {
+            foreach ($schemaPending as $migration) {
+                $output->writeLine("Migrating: $migration");
+            }
 
-            if (!empty($statements)) {
-                $output->writeLine('');
-                $output->writeLine('SQL statements:');
+            // Show SQL statements in verbose mode
+            if ($verbose) {
+                $diff = $this->calculateDiff();
+                $statements = $this->sqlGenerator->generateUp($diff);
 
-                foreach ($statements as $sql) {
-                    $output->writeLine("  $sql");
+                if (!empty($statements)) {
+                    $output->writeLine('');
+                    $output->writeLine('SQL statements:');
+
+                    foreach ($statements as $sql) {
+                        $output->writeLine("  $sql");
+                    }
+
+                    $output->writeLine('');
                 }
+            }
 
+            try {
+                $applied = $this->migrator->migrate();
+                $schemaCount = count($applied);
+
+                if ($schemaCount > 0) {
+                    $output->writeLine("Applied $schemaCount schema migration(s).");
+                }
+            } catch (MigrationException $e) {
                 $output->writeLine('');
+                $output->writeLine("Error: {$e->getMessage()}");
+
+                return 1;
             }
         }
 
-        // Apply migrations
-        try {
-            $applied = $this->migrator->migrate();
+        // Apply data migrations
+        if (!empty($dataPending)) {
+            if ($schemaCount > 0) {
+                $output->writeLine('');
+            }
 
-            $count = count($applied);
-            $output->writeLine('');
-            $output->writeLine("Applied $count migration(s) successfully.");
+            foreach ($dataPending as $migration) {
+                $output->writeLine("Data migrating: {$migration['name']}");
+            }
 
-            return 0;
-        } catch (MigrationException $e) {
-            $output->writeLine('');
-            $output->writeLine("Error: {$e->getMessage()}");
+            try {
+                $dataApplied = $this->dataMigrator->migrate();
+                $dataCount = count($dataApplied);
 
-            return 1;
+                if ($dataCount > 0) {
+                    $output->writeLine("Applied $dataCount data migration(s).");
+                }
+            } catch (MigrationException $e) {
+                $output->writeLine('');
+                $output->writeLine("Error: {$e->getMessage()}");
+
+                return 1;
+            }
         }
+
+        $output->writeLine('');
+        $output->writeLine('Migration complete.');
+
+        return 0;
     }
 
     /**
      * Generate migrations from entity/database diff in development mode.
+     *
+     * @throws EntityException
      */
     private function generateMigrationsFromDiff(
         Output $output,
@@ -128,12 +170,27 @@ class MigrateCommand implements CommandInterface
                 $output->writeLine("Generated: $filename");
             }
 
+            if ($verbose) {
+                $statements = $this->sqlGenerator->generateUp($diff);
+
+                if (!empty($statements)) {
+                    $output->writeLine('');
+                    $output->writeLine('SQL statements:');
+
+                    foreach ($statements as $sql) {
+                        $output->writeLine("  $sql");
+                    }
+                }
+            }
+
             $output->writeLine('');
         }
     }
 
     /**
      * Calculate the diff between entities and database.
+     *
+     * @throws EntityException
      */
     private function calculateDiff(): SchemaDiff
     {
@@ -159,6 +216,7 @@ class MigrateCommand implements CommandInterface
      *
      * @param array<class-string> $entityClasses
      * @return array<string, Table>
+     * @throws EntityException
      */
     private function buildEntitySchema(
         array $entityClasses,
@@ -199,12 +257,6 @@ class MigrateCommand implements CommandInterface
     private function isVerbose(
         Input $input,
     ): bool {
-        foreach ($input->getArguments() as $arg) {
-            if ($arg === '--verbose' || $arg === '-v') {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($input->getArguments(), fn ($arg) => $arg === '--verbose' || $arg === '-v');
     }
 }

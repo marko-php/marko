@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\Tests\Entity;
 
+use Marko\Core\Discovery\ClassFileParser;
 use Marko\Database\Entity\EntityDiscovery;
 
 /**
@@ -82,7 +83,7 @@ function cleanupDir(
 }
 
 beforeEach(function (): void {
-    $this->discovery = new EntityDiscovery();
+    $this->discovery = new EntityDiscovery(new ClassFileParser());
     $this->uniqueId = uniqid();
     $this->tempDir = sys_get_temp_dir() . '/entity-discovery-' . $this->uniqueId;
     mkdir($this->tempDir, 0777, true);

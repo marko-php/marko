@@ -17,7 +17,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     /** @var array<array{column: string, operator: string, value: mixed, boolean: string}> */
     private array $wheres = [];
 
-    /** @var array<array{column: string, values: array<mixed>}> */
+    /** @var array<array{column: string, values: array}> */
     private array $whereIns = [];
 
     /** @var array<string> */
@@ -36,7 +36,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 
     private ?int $offsetValue = null;
 
-    /** @var array<mixed> */
+    /** @var array */
     private array $bindings = [];
 
     public function __construct(

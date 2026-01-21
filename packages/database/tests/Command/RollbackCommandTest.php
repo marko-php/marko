@@ -91,7 +91,6 @@ it('blocks execution in production environment', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: true,
     );
 
@@ -111,7 +110,6 @@ it('shows error message when blocked in production', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: true,
     );
 
@@ -133,7 +131,6 @@ it('does NOT support --force flag (rollback is never allowed in production)', fu
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: true,
     );
 
@@ -161,7 +158,6 @@ it('rolls back last batch of migrations in development', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: false,
     );
 
@@ -192,7 +188,6 @@ it('executes down() in reverse order within batch', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: false,
     );
 
@@ -219,7 +214,6 @@ it('shows each migration being rolled back', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: false,
     );
 
@@ -244,7 +238,6 @@ it('removes migration records from tracking table', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: false,
     );
 
@@ -268,7 +261,6 @@ it('supports --step option to rollback multiple batches', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: false,
     );
 
@@ -291,7 +283,6 @@ it('offers to delete uncommitted migration files', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: false,
     );
 
@@ -311,7 +302,6 @@ it('shows "Nothing to rollback" when no applied migrations', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: false,
     );
 
@@ -332,7 +322,6 @@ it('warns about entity sync after rollback', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: false,
     );
 
@@ -355,7 +344,6 @@ it('returns 0 on success, 1 on failure', function (): void {
 
     $command = new RollbackCommand(
         migrator: $migrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: false,
     );
 
@@ -375,7 +363,6 @@ it('returns 0 on success, 1 on failure', function (): void {
 
     $failingCommand = new RollbackCommand(
         migrator: $failingMigrator,
-        migrationsPath: '/app/database/migrations',
         isProduction: false,
     );
 

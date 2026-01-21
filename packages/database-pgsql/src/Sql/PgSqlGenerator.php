@@ -28,7 +28,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
      *
      * @var array<string, string>
      */
-    private const TYPE_MAP = [
+    private const array TYPE_MAP = [
         'integer' => 'INTEGER',
         'bigint' => 'BIGINT',
         'smallint' => 'SMALLINT',
@@ -157,7 +157,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
             if ($column->default === null) {
                 $alterations[] = "ALTER COLUMN \"$column->name\" DROP DEFAULT";
             } else {
-                $defaultValue = $this->formatDefaultValue($column->default, $column->type);
+                $defaultValue = $this->formatDefaultValue($column->default);
                 $alterations[] = "ALTER COLUMN \"$column->name\" SET DEFAULT $defaultValue";
             }
         }
@@ -244,7 +244,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
 
         // DEFAULT value
         if ($column->default !== null) {
-            $parts[] = 'DEFAULT ' . $this->formatDefaultValue($column->default, $column->type);
+            $parts[] = 'DEFAULT ' . $this->formatDefaultValue($column->default);
         }
 
         // UNIQUE constraint
@@ -294,7 +294,6 @@ class PgSqlGenerator implements SqlGeneratorInterface
      */
     private function formatDefaultValue(
         mixed $value,
-        string $type,
     ): string {
         if (is_bool($value)) {
             return $value ? 'TRUE' : 'FALSE';

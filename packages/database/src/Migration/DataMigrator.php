@@ -19,9 +19,9 @@ class DataMigrator
     private bool $tableCreated = false;
 
     public function __construct(
-        private ConnectionInterface $connection,
-        private MigrationRepository $repository,
-        private DataMigrationDiscovery $discovery,
+        private readonly ConnectionInterface $connection,
+        private readonly MigrationRepository $repository,
+        private readonly DataMigrationDiscovery $discovery,
     ) {}
 
     /**

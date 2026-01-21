@@ -14,6 +14,7 @@ use Marko\Database\Diff\TableDiff;
 use Marko\Database\Entity\EntityDiscovery;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\SchemaBuilder;
+use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\Schema\Table;
 
@@ -31,6 +32,9 @@ readonly class DiffCommand implements CommandInterface
         private string $appPath,
     ) {}
 
+    /**
+     * @throws EntityException
+     */
     public function execute(
         Input $input,
         Output $output,
@@ -68,6 +72,7 @@ readonly class DiffCommand implements CommandInterface
      *
      * @param array<class-string> $entityClasses
      * @return array<string, Table>
+     * @throws EntityException
      */
     private function buildEntitySchema(
         array $entityClasses,

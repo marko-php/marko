@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Database\Repository;
 
 use Marko\Database\Entity\Entity;
+use Marko\Database\Exceptions\RepositoryException;
 
 /**
  * Interface for entity repositories providing data access methods.
@@ -18,6 +19,15 @@ interface RepositoryInterface
      * @return Entity|null The entity or null if not found
      */
     public function find(int $id): ?Entity;
+
+    /**
+     * Find an entity by its primary key or throw an exception.
+     *
+     * @param int $id The entity ID
+     * @return Entity The entity
+     * @throws RepositoryException When entity is not found
+     */
+    public function findOrFail(int $id): Entity;
 
     /**
      * Find all entities in the repository.

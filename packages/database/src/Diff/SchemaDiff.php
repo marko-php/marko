@@ -32,13 +32,7 @@ readonly class SchemaDiff
             return true;
         }
 
-        foreach ($this->tablesToAlter as $tableDiff) {
-            if ($tableDiff->hasDestructiveChanges()) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($this->tablesToAlter, fn ($tableDiff) => $tableDiff->hasDestructiveChanges());
     }
 
     /**

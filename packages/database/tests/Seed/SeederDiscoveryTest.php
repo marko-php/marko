@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Discovery\ClassFileParser;
 use Marko\Database\Seed\SeederDefinition;
 use Marko\Database\Seed\SeederDiscovery;
 
@@ -89,7 +90,7 @@ PHP;
         file_put_contents($tempDir . '/Seed/UserSeeder.php', $seederCode);
 
         try {
-            $discovery = new SeederDiscovery();
+            $discovery = new SeederDiscovery(new ClassFileParser());
             $seeders = $discovery->discoverInPath($tempDir . '/Seed');
 
             expect($seeders)->toHaveCount(1)
@@ -123,7 +124,7 @@ PHP;
         file_put_contents($tempDir . '/Seed/NotASeeder.php', $classCode);
 
         try {
-            $discovery = new SeederDiscovery();
+            $discovery = new SeederDiscovery(new ClassFileParser());
             $seeders = $discovery->discoverInPath($tempDir . '/Seed');
 
             expect($seeders)->toBeEmpty();
@@ -162,7 +163,7 @@ PHP;
         file_put_contents($tempDir . '/Seed/PostSeeder.php', $seederCode);
 
         try {
-            $discovery = new SeederDiscovery();
+            $discovery = new SeederDiscovery(new ClassFileParser());
             $seeders = $discovery->discoverInPath($tempDir . '/Seed');
 
             expect($seeders)->toHaveCount(1)
@@ -188,7 +189,7 @@ PHP;
         );
 
         try {
-            $discovery = new SeederDiscovery();
+            $discovery = new SeederDiscovery(new ClassFileParser());
             $seeders = $discovery->discoverInVendor($tempDir . '/vendor');
 
             expect($seeders)->toHaveCount(1)
@@ -211,7 +212,7 @@ PHP;
         );
 
         try {
-            $discovery = new SeederDiscovery();
+            $discovery = new SeederDiscovery(new ClassFileParser());
             $seeders = $discovery->discoverInModules($tempDir . '/modules');
 
             expect($seeders)->toHaveCount(1)
@@ -234,7 +235,7 @@ PHP;
         );
 
         try {
-            $discovery = new SeederDiscovery();
+            $discovery = new SeederDiscovery(new ClassFileParser());
             $seeders = $discovery->discoverInApp($tempDir . '/app');
 
             expect($seeders)->toHaveCount(1)

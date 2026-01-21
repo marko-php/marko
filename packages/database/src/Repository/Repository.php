@@ -78,6 +78,23 @@ abstract class Repository implements RepositoryInterface
     }
 
     /**
+     * Find an entity by its primary key or throw an exception.
+     *
+     * @throws RepositoryException When entity is not found
+     */
+    public function findOrFail(
+        int $id,
+    ): Entity {
+        $entity = $this->find($id);
+
+        if ($entity === null) {
+            throw RepositoryException::entityNotFound(static::ENTITY_CLASS, $id);
+        }
+
+        return $entity;
+    }
+
+    /**
      * Find all entities in the repository.
      *
      * @return array<Entity>

@@ -12,11 +12,10 @@ use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Migration\Migrator;
 
 #[Command(name: 'db:rollback', description: 'Rollback the last batch of migrations')]
-class RollbackCommand implements CommandInterface
+readonly class RollbackCommand implements CommandInterface
 {
     public function __construct(
         private Migrator $migrator,
-        private string $migrationsPath,
         private bool $isProduction = false,
     ) {}
 
