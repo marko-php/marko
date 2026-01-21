@@ -1,0 +1,467 @@
+<?php
+
+declare(strict_types=1);
+
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Exceptions\MigrationException;
+use Marko\Database\Migration\Migration;
+use Marko\Database\Migration\MigrationRepository;
+use Marko\Database\Migration\Migrator;
+
+describe('Migrator', function (): void {
+    beforeEach(function (): void {
+        // Create a temp directory for migration files
+        $this->migrationsPath = sys_get_temp_dir() . '/marko_test_migrations_' . uniqid();
+        mkdir($this->migrationsPath, 0777, true);
+    });
+
+    afterEach(function (): void {
+        // Clean up temp directory
+        if (is_dir($this->migrationsPath)) {
+            array_map('unlink', glob($this->migrationsPath . '/*.php'));
+            rmdir($this->migrationsPath);
+        }
+    });
+
+    it('creates migrations table if not exists', function (): void {
+        $tableCreated = false;
+
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->expects($this->once())
+            ->method('createTable')
+            ->with($connection)
+            ->willReturnCallback(function () use (&$tableCreated): void {
+                $tableCreated = true;
+            });
+        $repository->method('getApplied')->willReturn([]);
+        $repository->method('getNextBatchNumber')->willReturn(1);
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator->migrate();
+
+        expect($tableCreated)->toBeTrue();
+    });
+
+    it('finds pending migration files in database/migrations/', function (): void {
+        // Create test migration files
+        $migration1Content = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+
+return new class () extends Migration {
+    public function up(ConnectionInterface $connection): void {}
+    public function down(ConnectionInterface $connection): void {}
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_create_users_table.php', $migration1Content);
+        file_put_contents($this->migrationsPath . '/2024_01_02_000000_create_posts_table.php', $migration1Content);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getApplied')->willReturn([]);
+        $repository->method('getNextBatchNumber')->willReturn(1);
+        $repository->method('record');
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $pending = $migrator->getPending();
+
+        expect($pending)->toHaveCount(2);
+        expect($pending[0])->toBe('2024_01_01_000000_create_users_table');
+        expect($pending[1])->toBe('2024_01_02_000000_create_posts_table');
+    });
+
+    it('applies migrations in filename order', function (): void {
+        $appliedOrder = [];
+
+        // Create migration files out of order
+        $migration1Content = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(
+        ConnectionInterface $connection,
+    ): void {
+        $connection->execute('CREATE TABLE users');
+    }
+    public function down(ConnectionInterface $connection): void {}
+};
+PHP;
+
+        $migration2Content = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(
+        ConnectionInterface $connection,
+    ): void {
+        $connection->execute('CREATE TABLE posts');
+    }
+    public function down(ConnectionInterface $connection): void {}
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_02_000000_create_posts_table.php', $migration2Content);
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_create_users_table.php', $migration1Content);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+        $connection->method('execute')
+            ->willReturnCallback(function (string $sql) use (&$appliedOrder): int {
+                $appliedOrder[] = $sql;
+
+                return 1;
+            });
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getApplied')->willReturn([]);
+        $repository->method('getNextBatchNumber')->willReturn(1);
+        $repository->method('record');
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator->migrate();
+
+        expect($appliedOrder)->toBe([
+            'CREATE TABLE users',
+            'CREATE TABLE posts',
+        ]);
+    });
+
+    it('executes migration up() method', function (): void {
+        $upExecuted = false;
+
+        $migrationContent = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(
+        ConnectionInterface $connection,
+    ): void {
+        $connection->execute('EXECUTED');
+    }
+    public function down(ConnectionInterface $connection): void {}
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', $migrationContent);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+        $connection->method('execute')
+            ->willReturnCallback(function (string $sql) use (&$upExecuted): int {
+                if ($sql === 'EXECUTED') {
+                    $upExecuted = true;
+                }
+
+                return 1;
+            });
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getApplied')->willReturn([]);
+        $repository->method('getNextBatchNumber')->willReturn(1);
+        $repository->method('record');
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator->migrate();
+
+        expect($upExecuted)->toBeTrue();
+    });
+
+    it('records applied migration with batch number', function (): void {
+        $recordedMigrations = [];
+
+        $migrationContent = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(ConnectionInterface $connection): void {}
+    public function down(ConnectionInterface $connection): void {}
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', $migrationContent);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getApplied')->willReturn([]);
+        $repository->method('getNextBatchNumber')->willReturn(5);
+        $repository->method('record')
+            ->willReturnCallback(function ($conn, $name, $batch) use (&$recordedMigrations): void {
+                $recordedMigrations[] = ['name' => $name, 'batch' => $batch];
+            });
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator->migrate();
+
+        expect($recordedMigrations)->toHaveCount(1);
+        expect($recordedMigrations[0]['name'])->toBe('2024_01_01_000000_test');
+        expect($recordedMigrations[0]['batch'])->toBe(5);
+    });
+
+    it('groups migrations applied together in same batch', function (): void {
+        $recordedBatches = [];
+
+        $migrationContent = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(ConnectionInterface $connection): void {}
+    public function down(ConnectionInterface $connection): void {}
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_first.php', $migrationContent);
+        file_put_contents($this->migrationsPath . '/2024_01_02_000000_second.php', $migrationContent);
+        file_put_contents($this->migrationsPath . '/2024_01_03_000000_third.php', $migrationContent);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getApplied')->willReturn([]);
+        $repository->method('getNextBatchNumber')->willReturn(2);
+        $repository->method('record')
+            ->willReturnCallback(function ($conn, $name, $batch) use (&$recordedBatches): void {
+                $recordedBatches[] = $batch;
+            });
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator->migrate();
+
+        expect($recordedBatches)->toBe([2, 2, 2]);
+    });
+
+    it('rolls back last batch of migrations', function (): void {
+        $rolledBack = [];
+
+        $migrationContent = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(ConnectionInterface $connection): void {}
+    public function down(
+        ConnectionInterface $connection,
+    ): void {
+        $connection->execute('ROLLBACK');
+    }
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_first.php', $migrationContent);
+        file_put_contents($this->migrationsPath . '/2024_01_02_000000_second.php', $migrationContent);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+        $connection->method('execute')
+            ->willReturnCallback(function (string $sql) use (&$rolledBack): int {
+                if ($sql === 'ROLLBACK') {
+                    $rolledBack[] = 'rolled';
+                }
+
+                return 1;
+            });
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getLastBatchMigrations')->willReturn([
+            '2024_01_02_000000_second',
+            '2024_01_01_000000_first',
+        ]);
+        $repository->method('delete');
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator->rollback();
+
+        expect($rolledBack)->toHaveCount(2);
+    });
+
+    it('executes migration down() method on rollback', function (): void {
+        $downExecuted = false;
+
+        $migrationContent = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(ConnectionInterface $connection): void {}
+    public function down(
+        ConnectionInterface $connection,
+    ): void {
+        $connection->execute('DOWN_EXECUTED');
+    }
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', $migrationContent);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+        $connection->method('execute')
+            ->willReturnCallback(function (string $sql) use (&$downExecuted): int {
+                if ($sql === 'DOWN_EXECUTED') {
+                    $downExecuted = true;
+                }
+
+                return 1;
+            });
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getLastBatchMigrations')->willReturn(['2024_01_01_000000_test']);
+        $repository->method('delete');
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator->rollback();
+
+        expect($downExecuted)->toBeTrue();
+    });
+
+    it('removes migration record after rollback', function (): void {
+        $deletedMigrations = [];
+
+        $migrationContent = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(ConnectionInterface $connection): void {}
+    public function down(ConnectionInterface $connection): void {}
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', $migrationContent);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getLastBatchMigrations')->willReturn(['2024_01_01_000000_test']);
+        $repository->method('delete')
+            ->willReturnCallback(function ($conn, $name) use (&$deletedMigrations): void {
+                $deletedMigrations[] = $name;
+            });
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator->rollback();
+
+        expect($deletedMigrations)->toBe(['2024_01_01_000000_test']);
+    });
+
+    it('returns list of applied migrations', function (): void {
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getApplied')->willReturn([
+            '2024_01_01_000000_create_users_table',
+            '2024_01_02_000000_create_posts_table',
+        ]);
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $applied = $migrator->getApplied();
+
+        expect($applied)->toBe([
+            '2024_01_01_000000_create_users_table',
+            '2024_01_02_000000_create_posts_table',
+        ]);
+    });
+
+    it('returns list of pending migrations', function (): void {
+        $migrationContent = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(ConnectionInterface $connection): void {}
+    public function down(ConnectionInterface $connection): void {}
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_first.php', $migrationContent);
+        file_put_contents($this->migrationsPath . '/2024_01_02_000000_second.php', $migrationContent);
+        file_put_contents($this->migrationsPath . '/2024_01_03_000000_third.php', $migrationContent);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getApplied')->willReturn([
+            '2024_01_01_000000_first',
+        ]);
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $pending = $migrator->getPending();
+
+        expect($pending)->toBe([
+            '2024_01_02_000000_second',
+            '2024_01_03_000000_third',
+        ]);
+    });
+
+    it('throws MigrationException on failure', function (): void {
+        $migrationContent = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(
+        ConnectionInterface $connection,
+    ): void {
+        throw new \RuntimeException('Database error');
+    }
+    public function down(ConnectionInterface $connection): void {}
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', $migrationContent);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getApplied')->willReturn([]);
+        $repository->method('getNextBatchNumber')->willReturn(1);
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+
+        expect(fn () => $migrator->migrate())
+            ->toThrow(MigrationException::class, '2024_01_01_000000_test');
+    });
+
+    it('throws MigrationException when migration file not found', function (): void {
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getLastBatchMigrations')->willReturn(['2024_01_01_000000_nonexistent']);
+
+        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+
+        expect(fn () => $migrator->rollback())
+            ->toThrow(MigrationException::class, 'not found');
+    });
+});

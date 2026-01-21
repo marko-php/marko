@@ -67,9 +67,9 @@ Implement the database layer for Marko framework with entity-driven schema defin
 | 013 | Entity metadata parser and schema builder | 012 | completed |
 | 014 | Diff engine | 005, 009, 013 | completed |
 | 015 | SQL generator interface | 014 | completed |
-| 016 | MySQL SQL generator | 010, 015 | pending |
-| 017 | PostgreSQL SQL generator | 011, 015 | pending |
-| 018 | Migration system core | 014, 015 | pending |
+| 016 | MySQL SQL generator | 010, 015 | completed |
+| 017 | PostgreSQL SQL generator | 011, 015 | completed |
+| 018 | Migration system core | 014, 015 | completed |
 | 019 | Migration file generator (nowdoc syntax) | 018 | pending |
 | 020 | Data migrations system | 018 | pending |
 | 021 | CLI: db:status command | 018 | pending |
