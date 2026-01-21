@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Make database-mysql and database-pgsql packages coherent by standardizing naming conventions, code style, and patterns. These official driver packages should read as if written by the same person.
@@ -46,7 +46,7 @@ Make database-mysql and database-pgsql packages coherent by standardizing naming
 | 005 | Harmonize PHPDoc style in MySQL package | - | completed |
 | 006 | Add namespaces to PostgreSQL tests | - | completed |
 | 007 | Harmonize Connection test approach | 003, 006 | completed |
-| 008 | Run tests and verify all changes | 001, 002, 003, 004, 005, 006, 007 | pending |
+| 008 | Run tests and verify all changes | 001, 002, 003, 004, 005, 006, 007 | completed |
 
 ## Architecture Notes
 
