@@ -1,7 +1,7 @@
 # Task 005: ConfigRepositoryInterface
 
 ## Status
-pending
+completed
 
 ## Depends On
 001

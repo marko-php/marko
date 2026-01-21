@@ -47,10 +47,10 @@ Create the `marko/config` package providing a centralized, type-safe configurati
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
 | 001 | Package scaffolding (composer.json, module.php) | - | completed |
-| 002 | Exception classes | 001 | pending |
-| 003 | ConfigMerger (deep array merge logic) | 001 | pending |
+| 002 | Exception classes | 001 | completed |
+| 003 | ConfigMerger (deep array merge logic) | 001 | completed |
 | 004 | ConfigLoader (load and validate PHP config files) | 002 | pending |
-| 005 | ConfigRepositoryInterface | 001 | pending |
+| 005 | ConfigRepositoryInterface | 001 | completed |
 | 006 | ConfigRepository implementation | 003, 004, 005 | pending |
 | 007 | ConfigDiscovery (scan module config/ directories) | 004 | pending |
 | 008 | Scoped configuration support | 006 | pending |

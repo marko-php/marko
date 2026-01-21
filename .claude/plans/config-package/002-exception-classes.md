@@ -1,7 +1,7 @@
 # Task 002: Exception Classes
 
 ## Status
-pending
+completed
 
 ## Depends On
 001

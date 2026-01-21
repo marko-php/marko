@@ -18,6 +18,7 @@
         "psr-4": {
             "Marko\\Blog\\": "packages/blog/src/",
             "Marko\\Cli\\": "packages/cli/src/",
+            "Marko\\Config\\": "packages/config/src/",
             "Marko\\Core\\": "packages/core/src/",
             "Marko\\Database\\": "packages/database/src/",
             "Marko\\Database\\MySql\\": "packages/database-mysql/src/",
@@ -31,6 +32,7 @@
         "psr-4": {
             "Marko\\Blog\\Tests\\": "packages/blog/tests/",
             "Marko\\Cli\\Tests\\": "packages/cli/tests/",
+            "Marko\\Config\\Tests\\": "packages/config/tests/",
             "Marko\\Core\\Tests\\": "packages/core/tests/",
             "Marko\\Database\\Tests\\": "packages/database/tests/",
             "Marko\\Database\\MySql\\Tests\\": "packages/database-mysql/tests/",
