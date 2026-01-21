@@ -447,3 +447,105 @@ Before committing, ensure:
 - [ ] Tests written for new functionality
 - [ ] Loud errors with helpful messages
 - [ ] No silent failures or fallbacks
+
+## Package README Standards
+
+Every package in `packages/` must have a README.md that follows this structure:
+
+### Required Sections
+
+1. **Title + One-Line Description**
+   ```markdown
+   # Package Name
+
+   One sentence describing what this package does.
+   ```
+
+2. **Overview** (2-4 sentences max)
+   - What it is
+   - Why it exists / key benefit
+   - Keep it brief—details come later
+
+3. **Installation**
+   ```markdown
+   ## Installation
+
+   ```bash
+   composer require marko/package-name
+   ```
+   ```
+
+4. **Usage** (THE KEY SECTION)
+   - Focus on developers building modules in `app/` or `modules/`
+   - Show practical examples of how to USE the package
+   - Include code snippets showing common use cases
+   - Structure as subsections: "For Module Developers", "Type-Hinting", etc.
+
+5. **Customization/Extension** (if applicable)
+   - How to extend or customize behavior
+   - Creating custom implementations via Preferences
+
+6. **API Reference**
+   - Public interfaces and classes with method signatures
+   - Keep it concise—just signatures, not explanations
+   - Group related classes together
+
+### Guidelines
+
+**Do:**
+- Lead with "how to use it" for module developers
+- Include code examples for common scenarios
+- Show Preference usage for customization
+- Keep prose minimal—let code speak
+- Use bullet points over paragraphs
+
+**Don't:**
+- Write long explanatory paragraphs
+- Repeat information from code comments
+- Include internal implementation details
+- Over-explain obvious things
+
+### Example Structure
+
+```markdown
+# Marko Package Name
+
+Brief description of what this package does.
+
+## Overview
+
+2-4 sentences about purpose and key benefit.
+
+## Installation
+
+\`\`\`bash
+composer require marko/package-name
+\`\`\`
+
+## Usage
+
+### For Module Developers
+
+[Most common use case with code example]
+
+### [Other Use Case]
+
+[Code example]
+
+## Customization
+
+### Creating Custom [Thing]
+
+[Code showing Preference pattern]
+
+## API Reference
+
+### InterfaceName
+
+\`\`\`php
+interface InterfaceName
+{
+    public function method(): ReturnType;
+}
+\`\`\`
+```
