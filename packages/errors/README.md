@@ -82,8 +82,9 @@ use Marko\Errors\Contracts\ErrorHandlerInterface;
 #[Preference(replaces: ErrorHandlerInterface::class)]
 class MyErrorHandler implements ErrorHandlerInterface
 {
-    public function handle(ErrorReport $report): void
-    {
+    public function handle(
+        ErrorReport $report,
+    ): void {
         // Your handling logic
     }
 
@@ -100,13 +101,15 @@ use Marko\Errors\Contracts\ErrorReporterInterface;
 
 class SentryReporter implements ErrorReporterInterface
 {
-    public function shouldReport(ErrorReport $report): bool
-    {
+    public function shouldReport(
+        ErrorReport $report,
+    ): bool {
         return $report->severity === Severity::Error;
     }
 
-    public function report(ErrorReport $report): void
-    {
+    public function report(
+        ErrorReport $report,
+    ): void {
         \Sentry\captureException($report->throwable);
     }
 }

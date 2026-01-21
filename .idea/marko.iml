@@ -8,6 +8,12 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/core/tests" isTestSource="true" packagePrefix="Marko\Core\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/routing/src" isTestSource="false" packagePrefix="Marko\Routing\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/routing/tests" isTestSource="true" packagePrefix="Marko\Routing\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cli/src" isTestSource="false" packagePrefix="Marko\Cli\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cli/tests" isTestSource="true" packagePrefix="Marko\Cli\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors-simple/src" isTestSource="false" packagePrefix="Marko\ErrorsSimple\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors-simple/tests" isTestSource="true" packagePrefix="Marko\ErrorsSimple\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors/src" isTestSource="false" packagePrefix="Marko\Errors\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors/tests" isTestSource="true" packagePrefix="Marko\Errors\Tests\" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/brianium/paratest" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/composer" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/doctrine/deprecations" />

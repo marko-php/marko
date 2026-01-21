@@ -529,6 +529,32 @@ public function __construct(
 \`\`\`
 ```
 
+### Code Examples in READMEs
+
+**Usage/Customization sections:** Follow full code standards—parameters on their own lines with trailing commas:
+
+```php
+// CORRECT - full code standards
+public function handle(
+    ErrorReport $report,
+): void {
+    // implementation
+}
+
+// WRONG - single line params
+public function handle(ErrorReport $report): void
+```
+
+**API Reference sections:** Single-line signatures are acceptable for readability:
+
+```php
+// OK in API Reference only
+public function handle(ErrorReport $report): void;
+public function format(ErrorReport $report, bool $isDevelopment): string;
+```
+
+Zero-parameter methods stay on one line everywhere: `public function index(): Response`
+
 ### Guidelines
 
 **Do:**
@@ -537,6 +563,7 @@ public function __construct(
 - Keep prose minimal—let code speak
 - Use bullet points over paragraphs
 - Make interface vs implementation distinction clear
+- Follow code standards in Usage/Customization examples
 
 **Don't:**
 - Write long explanatory paragraphs

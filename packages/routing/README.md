@@ -32,8 +32,9 @@ class ProductController
     }
 
     #[Get('/products/{id}')]
-    public function show(int $id): Response
-    {
+    public function show(
+        int $id,
+    ): Response {
         return new Response("Product $id");
     }
 
@@ -73,6 +74,28 @@ class AdminController
 }
 ```
 
+Middleware classes implement `MiddlewareInterface`:
+
+```php
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
+use Marko\Routing\MiddlewareInterface;
+
+class AuthMiddleware implements MiddlewareInterface
+{
+    public function handle(
+        Request $request,
+        callable $next,
+    ): Response {
+        if (!$this->isAuthenticated($request)) {
+            return new Response('Unauthorized', 401);
+        }
+
+        return $next($request);
+    }
+}
+```
+
 ### Overriding Vendor Routes
 
 Use Preferences to replace a vendor's controller:
@@ -104,8 +127,9 @@ use Marko\Routing\Attributes\DisableRoute;
 class MyPostController extends PostController
 {
     #[DisableRoute]  // Removes /blog/{slug} route
-    public function show(string $slug): Response
-    {
+    public function show(
+        string $slug,
+    ): Response {
         // Method still exists but has no route
     }
 }

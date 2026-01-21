@@ -49,15 +49,17 @@ use Marko\Core\Attributes\After;
 class PaymentPlugin
 {
     #[Before]
-    public function beforeCharge(float $amount): ?float
-    {
+    public function beforeCharge(
+        float $amount,
+    ): ?float {
         // Modify input or return early
         return $amount * 1.1; // Add 10% fee
     }
 
     #[After]
-    public function afterCharge(Receipt $result): Receipt
-    {
+    public function afterCharge(
+        Receipt $result,
+    ): Receipt {
         // Modify output
         return $result->withTax();
     }
@@ -75,8 +77,9 @@ use Marko\Core\Event\Event;
 #[Observer(event: 'user.created')]
 class SendWelcomeEmail
 {
-    public function handle(Event $event): void
-    {
+    public function handle(
+        Event $event,
+    ): void {
         $user = $event->data['user'];
         // Send email...
     }

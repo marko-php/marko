@@ -108,14 +108,17 @@ class FancyErrorHandler implements ErrorHandlerInterface
         private SimpleErrorHandler $fallback,
     ) {}
 
-    public function handle(ErrorReport $report): void
-    {
+    public function handle(
+        ErrorReport $report,
+    ): void {
         try {
             $this->sendToSlack($report);
             $this->renderPrettyHtml($report);
         } catch (Throwable $e) {
             // Fancy failed—use the reliable fallback
-            $this->fallback->handle(ErrorReport::fromThrowable($e, Severity::Error));
+            $this->fallback->handle(
+                ErrorReport::fromThrowable($e, Severity::Error),
+            );
         }
     }
 }
