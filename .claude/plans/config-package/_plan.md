@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-pending
+in_progress
 
 ## Objective
 Create the `marko/config` package providing a centralized, type-safe configuration system for Marko applications. The package will load PHP configuration files from modules and application directories, merge them with proper priority ordering, support environment variable integration, and provide scoped configuration for multi-tenant applications.
@@ -46,7 +46,7 @@ Create the `marko/config` package providing a centralized, type-safe configurati
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | Package scaffolding (composer.json, module.php) | - | pending |
+| 001 | Package scaffolding (composer.json, module.php) | - | completed |
 | 002 | Exception classes | 001 | pending |
 | 003 | ConfigMerger (deep array merge logic) | 001 | pending |
 | 004 | ConfigLoader (load and validate PHP config files) | 002 | pending |
