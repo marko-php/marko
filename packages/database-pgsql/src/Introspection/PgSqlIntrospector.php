@@ -12,7 +12,7 @@ use Marko\Database\Schema\Index;
 use Marko\Database\Schema\IndexType;
 use Marko\Database\Schema\Table;
 
-class PgSqlIntrospector implements IntrospectorInterface
+readonly class PgSqlIntrospector implements IntrospectorInterface
 {
     private const string DEFAULT_SCHEMA = 'public';
 
@@ -57,8 +57,8 @@ class PgSqlIntrospector implements IntrospectorInterface
     ];
 
     public function __construct(
-        private readonly ConnectionInterface $connection,
-        private readonly string $schema = self::DEFAULT_SCHEMA,
+        private ConnectionInterface $connection,
+        private string $schema = self::DEFAULT_SCHEMA,
     ) {}
 
     public function getTables(): array

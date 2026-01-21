@@ -188,9 +188,14 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         string $column,
         string $direction = 'ASC',
     ): static {
+        $direction = strtoupper($direction);
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'ASC';
+        }
+
         $this->orders[] = [
             'column' => $column,
-            'direction' => strtoupper($direction),
+            'direction' => $direction,
         ];
 
         return $this;

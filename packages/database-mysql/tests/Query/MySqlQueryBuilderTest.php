@@ -8,6 +8,7 @@ use Marko\Database\MySql\Connection\MySqlConnection;
 use Marko\Database\MySql\Query\MySqlQueryBuilder;
 use Marko\Database\Query\QueryBuilderInterface;
 use PDO;
+use ReflectionClass;
 
 describe('MySqlQueryBuilder', function (): void {
     beforeEach(function (): void {
@@ -81,11 +82,14 @@ describe('MySqlQueryBuilder', function (): void {
     it('quotes identifiers with backticks', function (): void {
         $builder = new MySqlQueryBuilder($this->connection);
 
-        // Test the quoteIdentifier method
-        expect($builder->quoteIdentifier('users'))
+        // Test the quoteIdentifier method via reflection (protected method)
+        $reflection = new ReflectionClass($builder);
+        $method = $reflection->getMethod('quoteIdentifier');
+
+        expect($method->invoke($builder, 'users'))
             ->toBe('`users`')
-            ->and($builder->quoteIdentifier('table.column'))->toBe('`table`.`column`')
-            ->and($builder->quoteIdentifier('column'))->toBe('`column`');
+            ->and($method->invoke($builder, 'table.column'))->toBe('`table`.`column`')
+            ->and($method->invoke($builder, 'column'))->toBe('`column`');
     });
 
     it('builds SELECT queries with column selection', function (): void {

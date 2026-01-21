@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace Marko\Database\PgSql\Tests\Connection;
+
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionInterface;
@@ -10,6 +12,10 @@ use Marko\Database\PgSql\Connection\PgSqlConnection;
 use Marko\Database\PgSql\Connection\PgSqlStatement;
 use Marko\Database\PgSql\Exceptions\ConnectionException;
 use Marko\Database\Tests\Query\Helpers;
+use PDO;
+use ReflectionClass;
+use ReflectionMethod;
+use RuntimeException;
 
 describe('PgSqlConnection', function (): void {
     it('implements ConnectionInterface', function (): void {

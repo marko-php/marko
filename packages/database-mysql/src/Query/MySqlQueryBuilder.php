@@ -11,32 +11,48 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 {
     private string $table = '';
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     private array $columns = ['*'];
 
-    /** @var array<array{column: string, operator: string, value: mixed, boolean: string}> */
+    /**
+     * @var array<array{column: string, operator: string, value: mixed, boolean: string}>
+     */
     private array $wheres = [];
 
-    /** @var array<array{column: string, values: array}> */
+    /**
+     * @var array<array{column: string, values: array}>
+     */
     private array $whereIns = [];
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     private array $whereNulls = [];
 
-    /** @var array<string> */
+    /**
+     * @var array<string>
+     */
     private array $whereNotNulls = [];
 
-    /** @var array<array{type: string, table: string, first: string, operator: string, second: string}> */
+    /**
+     * @var array<array{type: string, table: string, first: string, operator: string, second: string}>
+     */
     private array $joins = [];
 
-    /** @var array<array{column: string, direction: string}> */
+    /**
+     * @var array<array{column: string, direction: string}>
+     */
     private array $orders = [];
 
     private ?int $limitValue = null;
 
     private ?int $offsetValue = null;
 
-    /** @var array */
+    /**
+     * @var array
+     */
     private array $bindings = [];
 
     public function __construct(
@@ -211,7 +227,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 
     public function first(): ?array
     {
-        $this->limitValue = 1;
+        $this->limit(1);
         $results = $this->get();
 
         return $results[0] ?? null;
@@ -256,7 +272,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
             implode(', ', $sets),
         );
 
-        $sql .= $this->buildWhereSql();
+        $sql .= $this->buildWhereClause();
 
         return $this->connection->execute($sql, $this->bindings);
     }
@@ -270,7 +286,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
             $this->quoteIdentifier($this->table),
         );
 
-        $sql .= $this->buildWhereSql();
+        $sql .= $this->buildWhereClause();
 
         return $this->connection->execute($sql, $this->bindings);
     }
@@ -279,14 +295,14 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     {
         $this->bindings = [];
         $originalColumns = $this->columns;
-        $this->columns = ['COUNT(*) as aggregate'];
+        $this->columns = ['COUNT(*) as count'];
 
         $sql = $this->buildSelectSql();
         $result = $this->connection->query($sql, $this->bindings);
 
         $this->columns = $originalColumns;
 
-        return (int) ($result[0]['aggregate'] ?? 0);
+        return (int) ($result[0]['count'] ?? 0);
     }
 
     public function raw(
@@ -302,7 +318,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
      * @param string $identifier The identifier to quote
      * @return string The quoted identifier
      */
-    public function quoteIdentifier(
+    protected function quoteIdentifier(
         string $identifier,
     ): string {
         // Handle table.column format
@@ -338,15 +354,15 @@ class MySqlQueryBuilder implements QueryBuilderInterface
             $this->quoteIdentifier($this->table),
         );
 
-        $sql .= $this->buildJoinsSql();
-        $sql .= $this->buildWhereSql();
-        $sql .= $this->buildOrderBySql();
-        $sql .= $this->buildLimitOffsetSql();
+        $sql .= $this->buildJoinClause();
+        $sql .= $this->buildWhereClause();
+        $sql .= $this->buildOrderByClause();
+        $sql .= $this->buildLimitOffsetClause();
 
         return $sql;
     }
 
-    private function buildJoinsSql(): string
+    private function buildJoinClause(): string
     {
         if (empty($this->joins)) {
             return '';
@@ -367,7 +383,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $sql;
     }
 
-    private function buildWhereSql(): string
+    private function buildWhereClause(): string
     {
         $conditions = [];
 
@@ -429,7 +445,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return ' WHERE ' . implode(' ', $conditions);
     }
 
-    private function buildOrderBySql(): string
+    private function buildOrderByClause(): string
     {
         if (empty($this->orders)) {
             return '';
@@ -447,7 +463,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return ' ORDER BY ' . implode(', ', $orders);
     }
 
-    private function buildLimitOffsetSql(): string
+    private function buildLimitOffsetClause(): string
     {
         $sql = '';
 

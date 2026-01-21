@@ -78,7 +78,7 @@ class MySqlGenerator implements SqlGeneratorInterface
 
         // Alter existing tables
         foreach ($diff->tablesToAlter as $tableDiff) {
-            $statements = [...$statements, ...$this->generateTableAlterStatements($tableDiff)];
+            $statements = [...$statements, ...$this->generateTableAlterations($tableDiff)];
         }
 
         return $statements;
@@ -101,7 +101,7 @@ class MySqlGenerator implements SqlGeneratorInterface
 
         // Reverse table alterations
         foreach ($diff->tablesToAlter as $tableDiff) {
-            $statements = [...$statements, ...$this->generateReverseTableAlterStatements($tableDiff)];
+            $statements = [...$statements, ...$this->generateReverseTableAlterations($tableDiff)];
         }
 
         return $statements;
@@ -416,7 +416,7 @@ class MySqlGenerator implements SqlGeneratorInterface
      *
      * @return array<string>
      */
-    private function generateTableAlterStatements(
+    private function generateTableAlterations(
         TableDiff $tableDiff,
     ): array {
         $statements = [];
@@ -466,7 +466,7 @@ class MySqlGenerator implements SqlGeneratorInterface
      *
      * @return array<string>
      */
-    private function generateReverseTableAlterStatements(
+    private function generateReverseTableAlterations(
         TableDiff $tableDiff,
     ): array {
         $statements = [];

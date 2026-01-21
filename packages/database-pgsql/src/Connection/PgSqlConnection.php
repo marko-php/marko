@@ -26,6 +26,11 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         private readonly string $charset = 'utf8',
     ) {}
 
+    public function getDsn(): string
+    {
+        return $this->buildDsn();
+    }
+
     /**
      * @throws ConnectionException
      */
@@ -36,7 +41,7 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         }
 
         try {
-            $this->pdo = new PDO(
+            $this->pdo = $this->createPdo(
                 $this->buildDsn(),
                 $this->username,
                 $this->password,
@@ -52,6 +57,24 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
                 $e,
             );
         }
+    }
+
+    /**
+     * Create a PDO instance. Override in tests.
+     *
+     * @param string $dsn The DSN string
+     * @param string $username Database username
+     * @param string $password Database password
+     * @param array<int, mixed> $options PDO options
+     * @return PDO The PDO instance
+     */
+    protected function createPdo(
+        string $dsn,
+        string $username,
+        string $password,
+        array $options,
+    ): PDO {
+        return new PDO($dsn, $username, $password, $options);
     }
 
     private function buildDsn(): string

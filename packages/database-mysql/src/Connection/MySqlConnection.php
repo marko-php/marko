@@ -98,11 +98,21 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
     /**
      * @throws ConnectionException
      */
+    private function ensureConnected(): void
+    {
+        if ($this->pdo === null) {
+            $this->connect();
+        }
+    }
+
+    /**
+     * @throws ConnectionException
+     */
     public function query(
         string $sql,
         array $bindings = [],
     ): array {
-        $this->connect();
+        $this->ensureConnected();
 
         $statement = $this->pdo->prepare($sql);
         $statement->execute($bindings);
@@ -117,7 +127,7 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         string $sql,
         array $bindings = [],
     ): int {
-        $this->connect();
+        $this->ensureConnected();
 
         $statement = $this->pdo->prepare($sql);
         $statement->execute($bindings);
@@ -131,7 +141,7 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
     public function prepare(
         string $sql,
     ): StatementInterface {
-        $this->connect();
+        $this->ensureConnected();
 
         $pdoStatement = $this->pdo->prepare($sql);
 
@@ -143,7 +153,7 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
      */
     public function lastInsertId(): int
     {
-        $this->connect();
+        $this->ensureConnected();
 
         return (int) $this->pdo->lastInsertId();
     }
@@ -153,7 +163,7 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
      */
     public function beginTransaction(): void
     {
-        $this->connect();
+        $this->ensureConnected();
 
         if ($this->pdo->inTransaction()) {
             throw TransactionException::nestedTransactionNotSupported();
@@ -167,7 +177,7 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
      */
     public function commit(): void
     {
-        $this->connect();
+        $this->ensureConnected();
 
         $this->pdo->commit();
     }
@@ -177,7 +187,7 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
      */
     public function rollback(): void
     {
-        $this->connect();
+        $this->ensureConnected();
 
         $this->pdo->rollBack();
     }
@@ -187,7 +197,7 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
      */
     public function inTransaction(): bool
     {
-        $this->connect();
+        $this->ensureConnected();
 
         return $this->pdo->inTransaction();
     }

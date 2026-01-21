@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace Marko\Database\PgSql\Tests\Introspection;
+
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Introspection\IntrospectorInterface;
@@ -11,6 +13,8 @@ use Marko\Database\Schema\ForeignKey;
 use Marko\Database\Schema\Index;
 use Marko\Database\Schema\IndexType;
 use Marko\Database\Schema\Table;
+use ReflectionClass;
+use RuntimeException;
 
 describe('PgSqlIntrospector', function (): void {
     it('implements IntrospectorInterface', function (): void {
