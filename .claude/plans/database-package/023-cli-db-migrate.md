@@ -1,6 +1,6 @@
 # Task 023: CLI db:migrate Command
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 019
 **Retry count**: 0
 
@@ -13,18 +13,18 @@ Create the db:migrate CLI command that generates migration files from entity/dat
 - Behavior differs based on environment
 
 ## Requirements (Test Descriptions)
-- [ ] `it registers as db:migrate command via #[Command] attribute`
-- [ ] `it implements CommandInterface`
-- [ ] `it applies pending migration files`
-- [ ] `it generates new migration files from entity diff in development`
-- [ ] `it does not generate migrations in production mode`
-- [ ] `it shows each migration being applied`
-- [ ] `it shows SQL statements being executed with --verbose`
-- [ ] `it groups applied migrations into a batch`
-- [ ] `it shows success message with count of applied migrations`
-- [ ] `it shows "Nothing to migrate" when no pending changes`
-- [ ] `it rolls back on failure and shows error`
-- [ ] `it returns 0 on success, 1 on failure`
+- [x] `it registers as db:migrate command via #[Command] attribute`
+- [x] `it implements CommandInterface`
+- [x] `it applies pending migration files`
+- [x] `it generates new migration files from entity diff in development`
+- [x] `it does not generate migrations in production mode`
+- [x] `it shows each migration being applied`
+- [x] `it shows SQL statements being executed with --verbose`
+- [x] `it groups applied migrations into a batch`
+- [x] `it shows success message with count of applied migrations`
+- [x] `it shows "Nothing to migrate" when no pending changes`
+- [x] `it rolls back on failure and shows error`
+- [x] `it returns 0 on success, 1 on failure`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -33,4 +33,19 @@ Create the db:migrate CLI command that generates migration files from entity/dat
 - Proper error handling with rollback
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created MigrateCommand at packages/database/src/Command/MigrateCommand.php
+- Uses #[Command(name: 'db:migrate', description: 'Apply database migrations')] attribute
+- Implements CommandInterface
+- In development mode (isProduction=false):
+  - Calculates diff between entities and database using DiffCalculator
+  - Auto-generates migration files using MigrationGenerator
+  - Then applies pending migrations
+- In production mode (isProduction=true):
+  - Only applies existing migration files
+  - Does NOT auto-generate migrations
+  - Shows warning if entity schema differs from database
+- Shows each migration as "Migrating: {name}"
+- With --verbose flag, shows SQL statements being executed
+- Returns 0 on success, 1 on failure
+- Shows count of applied migrations on success
+- Shows "Nothing to migrate" when no pending changes

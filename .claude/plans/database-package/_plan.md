@@ -74,7 +74,7 @@ Implement the database layer for Marko framework with entity-driven schema defin
 | 020 | Data migrations system | 018 | completed |
 | 021 | CLI: db:status command | 018 | completed |
 | 022 | CLI: db:diff command | 014 | completed |
-| 023 | CLI: db:migrate command | 019, 020 | pending |
+| 023 | CLI: db:migrate command | 019, 020 | completed |
 | 024 | CLI: db:rollback command | 018 | completed |
 | 025 | Seeder system | 002 | completed |
 | 026 | CLI: db:seed command | 025 | completed |
