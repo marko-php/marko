@@ -1,0 +1,151 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Marko\Database\Tests\Schema;
+
+use Marko\Database\Schema\Column;
+use ReflectionClass;
+
+describe('Column', function (): void {
+    it('creates readonly Column class with name, type, and constraints', function (): void {
+        $column = new Column(
+            name: 'email',
+            type: 'varchar',
+            length: 255,
+            nullable: true,
+            default: null,
+        );
+
+        expect($column->name)->toBe('email');
+        expect($column->type)->toBe('varchar');
+        expect($column->length)->toBe(255);
+        expect($column->nullable)->toBeTrue();
+        expect($column->default)->toBeNull();
+
+        // Verify it's a readonly class
+        $reflection = new ReflectionClass($column);
+        expect($reflection->isReadOnly())->toBeTrue();
+    });
+
+    it('supports column properties: nullable, default, unique, primaryKey, autoIncrement', function (): void {
+        $idColumn = new Column(
+            name: 'id',
+            type: 'int',
+            primaryKey: true,
+            autoIncrement: true,
+        );
+
+        expect($idColumn->primaryKey)->toBeTrue();
+        expect($idColumn->autoIncrement)->toBeTrue();
+        expect($idColumn->unique)->toBeFalse();
+        expect($idColumn->nullable)->toBeFalse();
+
+        $slugColumn = new Column(
+            name: 'slug',
+            type: 'varchar',
+            length: 255,
+            unique: true,
+        );
+
+        expect($slugColumn->unique)->toBeTrue();
+        expect($slugColumn->primaryKey)->toBeFalse();
+
+        $statusColumn = new Column(
+            name: 'status',
+            type: 'varchar',
+            default: 'draft',
+        );
+
+        expect($statusColumn->default)->toBe('draft');
+
+        $createdColumn = new Column(
+            name: 'created_at',
+            type: 'timestamp',
+            nullable: true,
+            default: null,
+        );
+
+        expect($createdColumn->nullable)->toBeTrue();
+        expect($createdColumn->default)->toBeNull();
+    });
+
+    it('supports column foreign key reference with onDelete/onUpdate', function (): void {
+        $column = new Column(
+            name: 'author_id',
+            type: 'int',
+            references: 'users.id',
+            onDelete: 'CASCADE',
+            onUpdate: 'CASCADE',
+        );
+
+        expect($column->references)->toBe('users.id');
+        expect($column->onDelete)->toBe('CASCADE');
+        expect($column->onUpdate)->toBe('CASCADE');
+
+        // Column without foreign key reference
+        $simpleColumn = new Column(
+            name: 'title',
+            type: 'varchar',
+        );
+
+        expect($simpleColumn->references)->toBeNull();
+        expect($simpleColumn->onDelete)->toBeNull();
+        expect($simpleColumn->onUpdate)->toBeNull();
+
+        // Column with reference and default actions
+        $columnWithDefaults = new Column(
+            name: 'category_id',
+            type: 'int',
+            references: 'categories.id',
+        );
+
+        expect($columnWithDefaults->references)->toBe('categories.id');
+        expect($columnWithDefaults->onDelete)->toBeNull();
+        expect($columnWithDefaults->onUpdate)->toBeNull();
+    });
+
+    it('provides Column::withConstraint() style methods', function (): void {
+        $column = new Column(name: 'id', type: 'int');
+
+        // Original column is unchanged
+        $columnWithPk = $column->withPrimaryKey();
+        expect($column->primaryKey)->toBeFalse();
+        expect($columnWithPk->primaryKey)->toBeTrue();
+        expect($columnWithPk->name)->toBe('id');
+        expect($columnWithPk->type)->toBe('int');
+
+        // Chain multiple constraints
+        $columnFull = $column
+            ->withPrimaryKey()
+            ->withAutoIncrement();
+        expect($columnFull->primaryKey)->toBeTrue();
+        expect($columnFull->autoIncrement)->toBeTrue();
+
+        // withNullable
+        $emailColumn = new Column(name: 'email', type: 'varchar');
+        $nullableEmail = $emailColumn->withNullable();
+        expect($emailColumn->nullable)->toBeFalse();
+        expect($nullableEmail->nullable)->toBeTrue();
+
+        // withUnique
+        $slugColumn = new Column(name: 'slug', type: 'varchar');
+        $uniqueSlug = $slugColumn->withUnique();
+        expect($slugColumn->unique)->toBeFalse();
+        expect($uniqueSlug->unique)->toBeTrue();
+
+        // withDefault
+        $statusColumn = new Column(name: 'status', type: 'varchar');
+        $statusWithDefault = $statusColumn->withDefault('draft');
+        expect($statusColumn->default)->toBeNull();
+        expect($statusWithDefault->default)->toBe('draft');
+
+        // withReference
+        $authorColumn = new Column(name: 'author_id', type: 'int');
+        $authorWithRef = $authorColumn->withReference('users.id', 'CASCADE', 'SET NULL');
+        expect($authorColumn->references)->toBeNull();
+        expect($authorWithRef->references)->toBe('users.id');
+        expect($authorWithRef->onDelete)->toBe('CASCADE');
+        expect($authorWithRef->onUpdate)->toBe('SET NULL');
+    });
+});

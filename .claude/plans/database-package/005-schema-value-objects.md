@@ -1,6 +1,6 @@
 # Task 005: Schema Value Objects
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001
 **Retry count**: 0
 
@@ -13,16 +13,16 @@ Create the internal schema value objects: Table, Column, Index, and ForeignKey. 
 - These objects are built FROM entity metadata, not written directly by users
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates readonly Table class with name and columns`
-- [ ] `it creates readonly Column class with name, type, and constraints`
-- [ ] `it supports column properties: nullable, default, unique, primaryKey, autoIncrement`
-- [ ] `it supports column foreign key reference with onDelete/onUpdate`
-- [ ] `it creates readonly Index class with name, columns, and type (btree, unique, fulltext)`
-- [ ] `it creates readonly ForeignKey class with columns, references, and actions`
-- [ ] `it provides Table::withColumn() for immutable building`
-- [ ] `it provides Table::withIndex() for immutable building`
-- [ ] `it provides Column::withConstraint() style methods`
-- [ ] `it implements equals() method for diff comparison`
+- [x] `it creates readonly Table class with name and columns`
+- [x] `it creates readonly Column class with name, type, and constraints`
+- [x] `it supports column properties: nullable, default, unique, primaryKey, autoIncrement`
+- [x] `it supports column foreign key reference with onDelete/onUpdate`
+- [x] `it creates readonly Index class with name, columns, and type (btree, unique, fulltext)`
+- [x] `it creates readonly ForeignKey class with columns, references, and actions`
+- [x] `it provides Table::withColumn() for immutable building`
+- [x] `it provides Table::withIndex() for immutable building`
+- [x] `it provides Column::withConstraint() style methods`
+- [x] `it implements equals() method for diff comparison`
 
 ## Acceptance Criteria
 - All requirements have passing tests

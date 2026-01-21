@@ -53,10 +53,10 @@ Implement the database layer for Marko framework with entity-driven schema defin
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
 | 001 | Package scaffolding (composer.json, module.php) | - | completed |
-| 002 | Connection interfaces and config | 001 | pending |
+| 002 | Connection interfaces and config | 001 | completed |
 | 003 | MySQL connection implementation | 002 | pending |
 | 004 | PostgreSQL connection implementation | 002 | pending |
-| 005 | Schema value objects (Table, Column, Index, ForeignKey) | 001 | pending |
+| 005 | Schema value objects (Table, Column, Index, ForeignKey) | 001 | completed |
 | 006 | Query builder interface | 002 | pending |
 | 007 | MySQL query builder | 003, 006 | pending |
 | 008 | PostgreSQL query builder | 004, 006 | pending |
