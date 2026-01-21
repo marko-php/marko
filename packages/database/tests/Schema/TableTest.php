@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Database\Tests\Schema;
 
 use Marko\Database\Schema\Column;
+use Marko\Database\Schema\ForeignKey;
 use Marko\Database\Schema\Index;
 use Marko\Database\Schema\IndexType;
 use Marko\Database\Schema\Table;
@@ -86,5 +87,67 @@ describe('Table', function (): void {
         // All are different instances
         expect($table)->not->toBe($tableWithSlugIdx);
         expect($tableWithSlugIdx)->not->toBe($tableWithBoth);
+    });
+
+    it('provides Table::withForeignKey() for immutable building', function (): void {
+        $table = new Table(name: 'posts');
+
+        $userFk = new ForeignKey(
+            name: 'fk_posts_user',
+            columns: ['user_id'],
+            referencedTable: 'users',
+            referencedColumns: ['id'],
+            onDelete: 'CASCADE',
+        );
+        $categoryFk = new ForeignKey(
+            name: 'fk_posts_category',
+            columns: ['category_id'],
+            referencedTable: 'categories',
+            referencedColumns: ['id'],
+        );
+
+        $tableWithUserFk = $table->withForeignKey($userFk);
+        $tableWithBoth = $tableWithUserFk->withForeignKey($categoryFk);
+
+        // Original table is unchanged (immutable)
+        expect($table->foreignKeys)->toHaveCount(0);
+
+        // First addition
+        expect($tableWithUserFk->foreignKeys)->toHaveCount(1);
+        expect($tableWithUserFk->foreignKeys[0]->name)->toBe('fk_posts_user');
+
+        // Second addition
+        expect($tableWithBoth->foreignKeys)->toHaveCount(2);
+        expect($tableWithBoth->foreignKeys[0]->name)->toBe('fk_posts_user');
+        expect($tableWithBoth->foreignKeys[1]->name)->toBe('fk_posts_category');
+
+        // All are different instances
+        expect($table)->not->toBe($tableWithUserFk);
+        expect($tableWithUserFk)->not->toBe($tableWithBoth);
+    });
+
+    it('supports foreignKeys array in constructor', function (): void {
+        $foreignKeys = [
+            new ForeignKey(
+                name: 'fk_posts_user',
+                columns: ['user_id'],
+                referencedTable: 'users',
+                referencedColumns: ['id'],
+            ),
+        ];
+
+        $table = new Table(
+            name: 'posts',
+            columns: [
+                new Column(name: 'id', type: 'int'),
+                new Column(name: 'user_id', type: 'int'),
+            ],
+            indexes: [],
+            foreignKeys: $foreignKeys,
+        );
+
+        expect($table->foreignKeys)->toBe($foreignKeys);
+        expect($table->foreignKeys)->toHaveCount(1);
+        expect($table->foreignKeys[0]->name)->toBe('fk_posts_user');
     });
 });

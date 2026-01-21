@@ -9,11 +9,13 @@ readonly class Table
     /**
      * @param array<Column> $columns
      * @param array<Index> $indexes
+     * @param array<ForeignKey> $foreignKeys
      */
     public function __construct(
         public string $name,
         public array $columns = [],
         public array $indexes = [],
+        public array $foreignKeys = [],
     ) {}
 
     public function withColumn(
@@ -23,6 +25,7 @@ readonly class Table
             name: $this->name,
             columns: [...$this->columns, $column],
             indexes: $this->indexes,
+            foreignKeys: $this->foreignKeys,
         );
     }
 
@@ -33,6 +36,18 @@ readonly class Table
             name: $this->name,
             columns: $this->columns,
             indexes: [...$this->indexes, $index],
+            foreignKeys: $this->foreignKeys,
+        );
+    }
+
+    public function withForeignKey(
+        ForeignKey $foreignKey,
+    ): self {
+        return new self(
+            name: $this->name,
+            columns: $this->columns,
+            indexes: $this->indexes,
+            foreignKeys: [...$this->foreignKeys, $foreignKey],
         );
     }
 
@@ -59,6 +74,16 @@ readonly class Table
 
         foreach ($this->indexes as $i => $index) {
             if (!$index->equals($other->indexes[$i])) {
+                return false;
+            }
+        }
+
+        if (count($this->foreignKeys) !== count($other->foreignKeys)) {
+            return false;
+        }
+
+        foreach ($this->foreignKeys as $i => $foreignKey) {
+            if (!$foreignKey->equals($other->foreignKeys[$i])) {
                 return false;
             }
         }
