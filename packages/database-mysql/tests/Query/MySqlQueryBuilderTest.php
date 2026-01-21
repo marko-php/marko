@@ -31,34 +31,34 @@ describe('MySqlQueryBuilder', function (): void {
                 $this->testPdo = new PDO('sqlite::memory:', options: $options);
                 // Create test tables using SQLite syntax
                 $this->testPdo->exec(
-                    'CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, status TEXT)'
+                    'CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, status TEXT)',
                 );
                 $this->testPdo->exec(
-                    'CREATE TABLE posts (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, title TEXT, content TEXT)'
+                    'CREATE TABLE posts (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, title TEXT, content TEXT)',
                 );
                 $this->testPdo->exec(
-                    'CREATE TABLE comments (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER, body TEXT)'
+                    'CREATE TABLE comments (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER, body TEXT)',
                 );
 
                 // Seed some data
                 $this->testPdo->exec(
-                    "INSERT INTO users (name, email, status) VALUES ('Alice', 'alice@example.com', 'active')"
+                    "INSERT INTO users (name, email, status) VALUES ('Alice', 'alice@example.com', 'active')",
                 );
                 $this->testPdo->exec(
-                    "INSERT INTO users (name, email, status) VALUES ('Bob', 'bob@example.com', 'inactive')"
+                    "INSERT INTO users (name, email, status) VALUES ('Bob', 'bob@example.com', 'inactive')",
                 );
                 $this->testPdo->exec(
-                    "INSERT INTO users (name, email, status) VALUES ('Charlie', 'charlie@example.com', 'active')"
+                    "INSERT INTO users (name, email, status) VALUES ('Charlie', 'charlie@example.com', 'active')",
                 );
 
                 $this->testPdo->exec(
-                    "INSERT INTO posts (user_id, title, content) VALUES (1, 'First Post', 'Hello World')"
+                    "INSERT INTO posts (user_id, title, content) VALUES (1, 'First Post', 'Hello World')",
                 );
                 $this->testPdo->exec(
-                    "INSERT INTO posts (user_id, title, content) VALUES (1, 'Second Post', 'More content')"
+                    "INSERT INTO posts (user_id, title, content) VALUES (1, 'Second Post', 'More content')",
                 );
                 $this->testPdo->exec(
-                    "INSERT INTO posts (user_id, title, content) VALUES (2, 'Bobs Post', 'Bobs content')"
+                    "INSERT INTO posts (user_id, title, content) VALUES (2, 'Bobs Post', 'Bobs content')",
                 );
 
                 return $this->testPdo;
@@ -82,9 +82,10 @@ describe('MySqlQueryBuilder', function (): void {
         $builder = new MySqlQueryBuilder($this->connection);
 
         // Test the quoteIdentifier method
-        expect($builder->quoteIdentifier('users'))->toBe('`users`');
-        expect($builder->quoteIdentifier('table.column'))->toBe('`table`.`column`');
-        expect($builder->quoteIdentifier('column'))->toBe('`column`');
+        expect($builder->quoteIdentifier('users'))
+            ->toBe('`users`')
+            ->and($builder->quoteIdentifier('table.column'))->toBe('`table`.`column`')
+            ->and($builder->quoteIdentifier('column'))->toBe('`column`');
     });
 
     it('builds SELECT queries with column selection', function (): void {
@@ -93,9 +94,10 @@ describe('MySqlQueryBuilder', function (): void {
             ->select('name', 'email')
             ->get();
 
-        expect($results)->toHaveCount(3);
-        expect($results[0])->toHaveKeys(['name', 'email']);
-        expect($results[0]['name'])->toBe('Alice');
+        expect($results)
+            ->toHaveCount(3)
+            ->and($results[0])->toHaveKeys(['name', 'email'])
+            ->and($results[0]['name'])->toBe('Alice');
     });
 
     it('builds WHERE clauses with parameter binding', function (): void {
@@ -105,9 +107,10 @@ describe('MySqlQueryBuilder', function (): void {
             ->where('status', '=', 'active')
             ->get();
 
-        expect($results)->toHaveCount(2);
-        expect($results[0]['name'])->toBe('Alice');
-        expect($results[1]['name'])->toBe('Charlie');
+        expect($results)
+            ->toHaveCount(2)
+            ->and($results[0]['name'])->toBe('Alice')
+            ->and($results[1]['name'])->toBe('Charlie');
     });
 
     it('builds WHERE IN clauses correctly', function (): void {
@@ -117,10 +120,11 @@ describe('MySqlQueryBuilder', function (): void {
             ->whereIn('name', ['Alice', 'Charlie'])
             ->get();
 
-        expect($results)->toHaveCount(2);
         $names = array_column($results, 'name');
-        expect($names)->toContain('Alice');
-        expect($names)->toContain('Charlie');
+        expect($results)
+            ->toHaveCount(2)
+            ->and($names)->toContain('Alice')
+            ->and($names)->toContain('Charlie');
     });
 
     it('builds JOIN clauses with proper syntax', function (): void {
@@ -130,8 +134,9 @@ describe('MySqlQueryBuilder', function (): void {
             ->join('users', 'posts.user_id', '=', 'users.id')
             ->get();
 
-        expect($results)->toHaveCount(3);
-        expect($results[0])->toHaveKeys(['title', 'name']);
+        expect($results)
+            ->toHaveCount(3)
+            ->and($results[0])->toHaveKeys(['title', 'name']);
     });
 
     it('builds ORDER BY with ASC/DESC', function (): void {
@@ -141,9 +146,10 @@ describe('MySqlQueryBuilder', function (): void {
             ->orderBy('name', 'ASC')
             ->get();
 
-        expect($resultsAsc[0]['name'])->toBe('Alice');
-        expect($resultsAsc[1]['name'])->toBe('Bob');
-        expect($resultsAsc[2]['name'])->toBe('Charlie');
+        expect($resultsAsc[0]['name'])
+            ->toBe('Alice')
+            ->and($resultsAsc[1]['name'])->toBe('Bob')
+            ->and($resultsAsc[2]['name'])->toBe('Charlie');
 
         // Need a fresh builder for the second query
         $builder2 = new MySqlQueryBuilder($this->connection);
@@ -153,9 +159,10 @@ describe('MySqlQueryBuilder', function (): void {
             ->orderBy('name', 'DESC')
             ->get();
 
-        expect($resultsDesc[0]['name'])->toBe('Charlie');
-        expect($resultsDesc[1]['name'])->toBe('Bob');
-        expect($resultsDesc[2]['name'])->toBe('Alice');
+        expect($resultsDesc[0]['name'])
+            ->toBe('Charlie')
+            ->and($resultsDesc[1]['name'])->toBe('Bob')
+            ->and($resultsDesc[2]['name'])->toBe('Alice');
     });
 
     it('builds LIMIT and OFFSET clauses', function (): void {
@@ -166,9 +173,10 @@ describe('MySqlQueryBuilder', function (): void {
             ->limit(2)
             ->get();
 
-        expect($results)->toHaveCount(2);
-        expect($results[0]['name'])->toBe('Alice');
-        expect($results[1]['name'])->toBe('Bob');
+        expect($results)
+            ->toHaveCount(2)
+            ->and($results[0]['name'])->toBe('Alice')
+            ->and($results[1]['name'])->toBe('Bob');
 
         // Test with offset
         $builder2 = new MySqlQueryBuilder($this->connection);
@@ -180,9 +188,10 @@ describe('MySqlQueryBuilder', function (): void {
             ->offset(1)
             ->get();
 
-        expect($resultsWithOffset)->toHaveCount(2);
-        expect($resultsWithOffset[0]['name'])->toBe('Bob');
-        expect($resultsWithOffset[1]['name'])->toBe('Charlie');
+        expect($resultsWithOffset)
+            ->toHaveCount(2)
+            ->and($resultsWithOffset[0]['name'])->toBe('Bob')
+            ->and($resultsWithOffset[1]['name'])->toBe('Charlie');
     });
 
     it('builds INSERT statements with parameter binding', function (): void {
@@ -203,8 +212,9 @@ describe('MySqlQueryBuilder', function (): void {
             ->where('name', '=', 'David')
             ->first();
 
-        expect($result)->not->toBeNull();
-        expect($result['email'])->toBe('david@example.com');
+        expect($result)
+            ->not->toBeNull()
+            ->and($result['email'])->toBe('david@example.com');
     });
 
     it('builds UPDATE statements with WHERE clause', function (): void {
@@ -279,9 +289,10 @@ describe('MySqlQueryBuilder', function (): void {
             ['active'],
         );
 
-        expect($results)->toHaveCount(2);
         $names = array_column($results, 'name');
-        expect($names)->toContain('Alice');
-        expect($names)->toContain('Charlie');
+        expect($results)
+            ->toHaveCount(2)
+            ->and($names)->toContain('Alice')
+            ->and($names)->toContain('Charlie');
     });
 });

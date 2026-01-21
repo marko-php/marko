@@ -74,9 +74,10 @@ PHP;
         $migrator = new Migrator($connection, $repository, $this->migrationsPath);
         $pending = $migrator->getPending();
 
-        expect($pending)->toHaveCount(2);
-        expect($pending[0])->toBe('2024_01_01_000000_create_users_table');
-        expect($pending[1])->toBe('2024_01_02_000000_create_posts_table');
+        expect($pending)
+            ->toHaveCount(2)
+            ->and($pending[0])->toBe('2024_01_01_000000_create_users_table')
+            ->and($pending[1])->toBe('2024_01_02_000000_create_posts_table');
     });
 
     it('applies migrations in filename order', function (): void {
@@ -211,9 +212,10 @@ PHP;
         $migrator = new Migrator($connection, $repository, $this->migrationsPath);
         $migrator->migrate();
 
-        expect($recordedMigrations)->toHaveCount(1);
-        expect($recordedMigrations[0]['name'])->toBe('2024_01_01_000000_test');
-        expect($recordedMigrations[0]['batch'])->toBe(5);
+        expect($recordedMigrations)
+            ->toHaveCount(1)
+            ->and($recordedMigrations[0]['name'])->toBe('2024_01_01_000000_test')
+            ->and($recordedMigrations[0]['batch'])->toBe(5);
     });
 
     it('groups migrations applied together in same batch', function (): void {

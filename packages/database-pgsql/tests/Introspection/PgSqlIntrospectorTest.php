@@ -39,11 +39,11 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $tables = $introspector->getTables();
 
-        expect($tables)->toBe(['users', 'posts', 'comments']);
-        expect($queriedSql)->toContain('information_schema.tables');
-        expect($queriedSql)->toContain('table_schema');
-        expect($queriedSql)->toContain("table_type = 'BASE TABLE'");
-        expect($queriedBindings)->toBe(['public']);
+        expect($tables)->toBe(['users', 'posts', 'comments'])
+            ->and($queriedSql)->toContain('information_schema.tables')
+            ->and($queriedSql)->toContain('table_schema')
+            ->and($queriedSql)->toContain("table_type = 'BASE TABLE'")
+            ->and($queriedBindings)->toBe(['public']);
     });
 
     it('reads column definitions from information_schema.columns', function (): void {
@@ -97,14 +97,13 @@ describe('PgSqlIntrospector', function (): void {
         expect($columnQuery)->not->toBeEmpty();
 
         $firstColumnQuery = array_values($columnQuery)[0];
-        expect($firstColumnQuery['bindings'])->toContain('users');
-        expect($firstColumnQuery['bindings'])->toContain('public');
-
-        // Verify results
-        expect($columns)->toHaveCount(2);
-        expect($columns[0])->toBeInstanceOf(Column::class);
-        expect($columns[0]->name)->toBe('id');
-        expect($columns[1]->name)->toBe('name');
+        expect($firstColumnQuery['bindings'])->toContain('users')
+            ->and($firstColumnQuery['bindings'])->toContain('public')
+            // Verify results
+            ->and($columns)->toHaveCount(2)
+            ->and($columns[0])->toBeInstanceOf(Column::class)
+            ->and($columns[0]->name)->toBe('id')
+            ->and($columns[1]->name)->toBe('name');
     });
 
     it('maps PostgreSQL data types to Column value objects', function (): void {
@@ -138,26 +137,26 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $columns = $introspector->getColumns('test_types');
 
-        expect($columns[0]->type)->toBe('integer');
-        expect($columns[1]->type)->toBe('bigint');
-        expect($columns[2]->type)->toBe('varchar');
-        expect($columns[2]->length)->toBe(100);
-        expect($columns[3]->type)->toBe('text');
-        expect($columns[4]->type)->toBe('boolean');
-        expect($columns[5]->type)->toBe('timestamp');
-        expect($columns[6]->type)->toBe('timestamptz');
-        expect($columns[7]->type)->toBe('decimal');
-        expect($columns[8]->type)->toBe('smallint');
-        expect($columns[9]->type)->toBe('float');
-        expect($columns[10]->type)->toBe('double');
-        expect($columns[11]->type)->toBe('date');
-        expect($columns[12]->type)->toBe('time');
-        expect($columns[13]->type)->toBe('json');
-        expect($columns[14]->type)->toBe('jsonb');
-        expect($columns[15]->type)->toBe('uuid');
-        expect($columns[16]->type)->toBe('char');
-        expect($columns[16]->length)->toBe(10);
-        expect($columns[17]->type)->toBe('blob');
+        expect($columns[0]->type)->toBe('integer')
+            ->and($columns[1]->type)->toBe('bigint')
+            ->and($columns[2]->type)->toBe('varchar')
+            ->and($columns[2]->length)->toBe(100)
+            ->and($columns[3]->type)->toBe('text')
+            ->and($columns[4]->type)->toBe('boolean')
+            ->and($columns[5]->type)->toBe('timestamp')
+            ->and($columns[6]->type)->toBe('timestamptz')
+            ->and($columns[7]->type)->toBe('decimal')
+            ->and($columns[8]->type)->toBe('smallint')
+            ->and($columns[9]->type)->toBe('float')
+            ->and($columns[10]->type)->toBe('double')
+            ->and($columns[11]->type)->toBe('date')
+            ->and($columns[12]->type)->toBe('time')
+            ->and($columns[13]->type)->toBe('json')
+            ->and($columns[14]->type)->toBe('jsonb')
+            ->and($columns[15]->type)->toBe('uuid')
+            ->and($columns[16]->type)->toBe('char')
+            ->and($columns[16]->length)->toBe(10)
+            ->and($columns[17]->type)->toBe('blob');
     });
 
     it('detects nullable columns', function (): void {
@@ -175,8 +174,8 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->nullable)->toBe(false);
-        expect($columns[1]->nullable)->toBe(true);
+        expect($columns[0]->nullable)->toBe(false)
+            ->and($columns[1]->nullable)->toBe(true);
     });
 
     it('detects default values including sequences', function (): void {
@@ -199,15 +198,15 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->default)->toBe('active');
-        expect($columns[1]->default)->toBe(0);
-        expect($columns[2]->default)->toBe('CURRENT_TIMESTAMP');
-        // Sequence defaults should be treated as auto_increment, not as regular defaults
-        expect($columns[3]->autoIncrement)->toBe(true);
-        expect($columns[3]->default)->toBeNull();
-        expect($columns[4]->default)->toBe(true);
-        expect($columns[5]->default)->toBe(false);
-        expect($columns[6]->default)->toBe(10.50);
+        expect($columns[0]->default)->toBe('active')
+            ->and($columns[1]->default)->toBe(0)
+            ->and($columns[2]->default)->toBe('CURRENT_TIMESTAMP')
+            // Sequence defaults should be treated as auto_increment, not as regular defaults
+            ->and($columns[3]->autoIncrement)->toBe(true)
+            ->and($columns[3]->default)->toBeNull()
+            ->and($columns[4]->default)->toBe(true)
+            ->and($columns[5]->default)->toBe(false)
+            ->and($columns[6]->default)->toBe(10.50);
     });
 
     it('detects serial/identity columns', function (): void {
@@ -231,10 +230,10 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->autoIncrement)->toBe(true);
-        expect($columns[1]->autoIncrement)->toBe(true);
-        expect($columns[2]->autoIncrement)->toBe(true);
-        expect($columns[3]->autoIncrement)->toBe(false);
+        expect($columns[0]->autoIncrement)->toBe(true)
+            ->and($columns[1]->autoIncrement)->toBe(true)
+            ->and($columns[2]->autoIncrement)->toBe(true)
+            ->and($columns[3]->autoIncrement)->toBe(false);
     });
 
     it('reads indexes from pg_indexes', function (): void {
@@ -260,17 +259,16 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $indexes = $introspector->getIndexes('users');
 
-        expect($queriedSql)->toContain('pg_indexes');
-        expect($queriedSql)->toContain('tablename');
-        expect($queriedBindings)->toBe(['users', 'public']);
-
-        expect($indexes)->toHaveCount(2);
-        expect($indexes[0])->toBeInstanceOf(Index::class);
-        expect($indexes[0]->name)->toBe('users_email_idx');
-        expect($indexes[0]->columns)->toBe(['email']);
-        expect($indexes[0]->type)->toBe(IndexType::Btree);
-        expect($indexes[1]->name)->toBe('users_name_status_idx');
-        expect($indexes[1]->columns)->toBe(['name', 'status']);
+        expect($queriedSql)->toContain('pg_indexes')
+            ->and($queriedSql)->toContain('tablename')
+            ->and($queriedBindings)->toBe(['users', 'public'])
+            ->and($indexes)->toHaveCount(2)
+            ->and($indexes[0])->toBeInstanceOf(Index::class)
+            ->and($indexes[0]->name)->toBe('users_email_idx')
+            ->and($indexes[0]->columns)->toBe(['email'])
+            ->and($indexes[0]->type)->toBe(IndexType::Btree)
+            ->and($indexes[1]->name)->toBe('users_name_status_idx')
+            ->and($indexes[1]->columns)->toBe(['name', 'status']);
     });
 
     it('detects unique indexes', function (): void {
@@ -288,8 +286,8 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $indexes = $introspector->getIndexes('users');
 
-        expect($indexes[0]->type)->toBe(IndexType::Unique);
-        expect($indexes[1]->type)->toBe(IndexType::Btree);
+        expect($indexes[0]->type)->toBe(IndexType::Unique)
+            ->and($indexes[1]->type)->toBe(IndexType::Btree);
     });
 
     it('reads foreign keys from information_schema.table_constraints', function (): void {
@@ -321,17 +319,16 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $foreignKeys = $introspector->getForeignKeys('posts');
 
-        expect($queriedSql)->toContain('information_schema.table_constraints');
-        expect($queriedSql)->toContain('key_column_usage');
-        expect($queriedSql)->toContain('referential_constraints');
-        expect($queriedBindings)->toBe(['posts', 'public']);
-
-        expect($foreignKeys)->toHaveCount(1);
-        expect($foreignKeys[0])->toBeInstanceOf(ForeignKey::class);
-        expect($foreignKeys[0]->name)->toBe('posts_user_id_fkey');
-        expect($foreignKeys[0]->columns)->toBe(['user_id']);
-        expect($foreignKeys[0]->referencedTable)->toBe('users');
-        expect($foreignKeys[0]->referencedColumns)->toBe(['id']);
+        expect($queriedSql)->toContain('information_schema.table_constraints')
+            ->and($queriedSql)->toContain('key_column_usage')
+            ->and($queriedSql)->toContain('referential_constraints')
+            ->and($queriedBindings)->toBe(['posts', 'public'])
+            ->and($foreignKeys)->toHaveCount(1)
+            ->and($foreignKeys[0])->toBeInstanceOf(ForeignKey::class)
+            ->and($foreignKeys[0]->name)->toBe('posts_user_id_fkey')
+            ->and($foreignKeys[0]->columns)->toBe(['user_id'])
+            ->and($foreignKeys[0]->referencedTable)->toBe('users')
+            ->and($foreignKeys[0]->referencedColumns)->toBe(['id']);
     });
 
     it('detects ON DELETE and ON UPDATE actions', function (): void {
@@ -363,10 +360,10 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $foreignKeys = $introspector->getForeignKeys('posts');
 
-        expect($foreignKeys[0]->onDelete)->toBe('CASCADE');
-        expect($foreignKeys[0]->onUpdate)->toBe('SET NULL');
-        expect($foreignKeys[1]->onDelete)->toBe('SET NULL');
-        expect($foreignKeys[1]->onUpdate)->toBe('CASCADE');
+        expect($foreignKeys[0]->onDelete)->toBe('CASCADE')
+            ->and($foreignKeys[0]->onUpdate)->toBe('SET NULL')
+            ->and($foreignKeys[1]->onDelete)->toBe('SET NULL')
+            ->and($foreignKeys[1]->onUpdate)->toBe('CASCADE');
     });
 
     it('filters to public schema by default', function (): void {
@@ -385,8 +382,8 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $tables = $introspector->getTables();
 
-        expect($queriedBindings)->toBe(['public']);
-        expect($tables)->toBe(['users']);
+        expect($queriedBindings)->toBe(['public'])
+            ->and($tables)->toBe(['users']);
     });
 
     it('checks table existence correctly', function (): void {
@@ -400,8 +397,8 @@ describe('PgSqlIntrospector', function (): void {
 
         $introspector = new PgSqlIntrospector($connection);
 
-        expect($introspector->tableExists('users'))->toBe(true);
-        expect($introspector->tableExists('nonexistent'))->toBe(false);
+        expect($introspector->tableExists('users'))->toBe(true)
+            ->and($introspector->tableExists('nonexistent'))->toBe(false);
     });
 
     it('gets primary key columns', function (): void {
@@ -424,10 +421,10 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $primaryKey = $introspector->getPrimaryKey('users');
 
-        expect($queriedSql)->toContain('pg_constraint');
-        expect($queriedSql)->toContain("contype = 'p'");
-        expect($queriedBindings)->toBe(['users', 'public']);
-        expect($primaryKey)->toBe(['id']);
+        expect($queriedSql)->toContain('pg_constraint')
+            ->and($queriedSql)->toContain("contype = 'p'")
+            ->and($queriedBindings)->toBe(['users', 'public'])
+            ->and($primaryKey)->toBe(['id']);
     });
 
     it('gets composite primary key columns', function (): void {
@@ -477,10 +474,10 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $table = $introspector->getTable('users');
 
-        expect($table)->toBeInstanceOf(Table::class);
-        expect($table->name)->toBe('users');
-        expect($table->columns)->toHaveCount(2);
-        expect($table->indexes)->toHaveCount(1);
+        expect($table)->toBeInstanceOf(Table::class)
+            ->and($table->name)->toBe('users')
+            ->and($table->columns)->toHaveCount(2)
+            ->and($table->indexes)->toHaveCount(1);
     });
 
     it('returns null for nonexistent table', function (): void {
@@ -509,9 +506,9 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $foreignKeys = $introspector->getForeignKeys('order_items');
 
-        expect($foreignKeys)->toHaveCount(1);
-        expect($foreignKeys[0]->columns)->toBe(['order_id', 'item_id']);
-        expect($foreignKeys[0]->referencedColumns)->toBe(['id', 'item_num']);
+        expect($foreignKeys)->toHaveCount(1)
+            ->and($foreignKeys[0]->columns)->toBe(['order_id', 'item_id'])
+            ->and($foreignKeys[0]->referencedColumns)->toBe(['id', 'item_num']);
     });
 
     it('detects unique constraint columns', function (): void {
@@ -537,8 +534,8 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->unique)->toBe(false); // Primary key column is not marked unique separately
-        expect($columns[1]->unique)->toBe(true); // email has unique constraint
+        expect($columns[0]->unique)->toBe(false) // Primary key column is not marked unique separately
+            ->and($columns[1]->unique)->toBe(true); // email has unique constraint
     });
 
     it('marks primary key columns correctly', function (): void {
@@ -560,8 +557,8 @@ describe('PgSqlIntrospector', function (): void {
         $introspector = new PgSqlIntrospector($connection);
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->primaryKey)->toBe(true);
-        expect($columns[1]->primaryKey)->toBe(false);
+        expect($columns[0]->primaryKey)->toBe(true)
+            ->and($columns[1]->primaryKey)->toBe(false);
     });
 });
 

@@ -107,8 +107,9 @@ it('discovers entities in vendor path', function (): void {
 
     $entities = $this->discovery->discoverInVendor($this->tempDir . '/vendor');
 
-    expect($entities)->toHaveCount(1);
-    expect($entities[0])->toBe($expected);
+    expect($entities)
+        ->toHaveCount(1)
+        ->and($entities[0])->toBe($expected);
 });
 
 it('discovers entities in modules path', function (): void {
@@ -122,8 +123,9 @@ it('discovers entities in modules path', function (): void {
 
     $entities = $this->discovery->discoverInModules($this->tempDir . '/modules');
 
-    expect($entities)->toHaveCount(1);
-    expect($entities[0])->toBe($expected);
+    expect($entities)
+        ->toHaveCount(1)
+        ->and($entities[0])->toBe($expected);
 });
 
 it('discovers entities in app path', function (): void {
@@ -137,8 +139,9 @@ it('discovers entities in app path', function (): void {
 
     $entities = $this->discovery->discoverInApp($this->tempDir . '/app');
 
-    expect($entities)->toHaveCount(1);
-    expect($entities[0])->toBe($expected);
+    expect($entities)
+        ->toHaveCount(1)
+        ->and($entities[0])->toBe($expected);
 });
 
 it('discovers entities in a specific path', function (): void {
@@ -152,8 +155,9 @@ it('discovers entities in a specific path', function (): void {
 
     $entities = $this->discovery->discoverInPath($this->tempDir . '/entity');
 
-    expect($entities)->toHaveCount(1);
-    expect($entities[0])->toBe($expected);
+    expect($entities)
+        ->toHaveCount(1)
+        ->and($entities[0])->toBe($expected);
 });
 
 it('discovers multiple entities in same module', function (): void {
@@ -175,9 +179,10 @@ it('discovers multiple entities in same module', function (): void {
 
     $entities = $this->discovery->discoverInApp($this->tempDir . '/app');
 
-    expect($entities)->toHaveCount(2);
-    expect($entities)->toContain($expected1);
-    expect($entities)->toContain($expected2);
+    expect($entities)
+        ->toHaveCount(2)
+        ->toContain($expected1)
+        ->toContain($expected2);
 });
 
 it('ignores classes without #[Table] attribute', function (): void {
@@ -266,8 +271,9 @@ it('discovers all entities across all paths', function (): void {
         appPath: $this->tempDir . '/app',
     );
 
-    expect($entities)->toHaveCount(3);
-    expect($entities)->toContain($expected1);
-    expect($entities)->toContain($expected2);
-    expect($entities)->toContain($expected3);
+    expect($entities)
+        ->toHaveCount(3)
+        ->toContain($expected1)
+        ->toContain($expected2)
+        ->toContain($expected3);
 });

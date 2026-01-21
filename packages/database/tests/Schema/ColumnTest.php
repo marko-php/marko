@@ -17,11 +17,11 @@ describe('Column', function (): void {
             default: null,
         );
 
-        expect($column->name)->toBe('email');
-        expect($column->type)->toBe('varchar');
-        expect($column->length)->toBe(255);
-        expect($column->nullable)->toBeTrue();
-        expect($column->default)->toBeNull();
+        expect($column->name)->toBe('email')
+            ->and($column->type)->toBe('varchar')
+            ->and($column->length)->toBe(255)
+            ->and($column->nullable)->toBeTrue()
+            ->and($column->default)->toBeNull();
 
         // Verify it's a readonly class
         $reflection = new ReflectionClass($column);
@@ -36,10 +36,10 @@ describe('Column', function (): void {
             autoIncrement: true,
         );
 
-        expect($idColumn->primaryKey)->toBeTrue();
-        expect($idColumn->autoIncrement)->toBeTrue();
-        expect($idColumn->unique)->toBeFalse();
-        expect($idColumn->nullable)->toBeFalse();
+        expect($idColumn->primaryKey)->toBeTrue()
+            ->and($idColumn->autoIncrement)->toBeTrue()
+            ->and($idColumn->unique)->toBeFalse()
+            ->and($idColumn->nullable)->toBeFalse();
 
         $slugColumn = new Column(
             name: 'slug',
@@ -48,8 +48,8 @@ describe('Column', function (): void {
             unique: true,
         );
 
-        expect($slugColumn->unique)->toBeTrue();
-        expect($slugColumn->primaryKey)->toBeFalse();
+        expect($slugColumn->unique)->toBeTrue()
+            ->and($slugColumn->primaryKey)->toBeFalse();
 
         $statusColumn = new Column(
             name: 'status',
@@ -66,8 +66,8 @@ describe('Column', function (): void {
             default: null,
         );
 
-        expect($createdColumn->nullable)->toBeTrue();
-        expect($createdColumn->default)->toBeNull();
+        expect($createdColumn->nullable)->toBeTrue()
+            ->and($createdColumn->default)->toBeNull();
     });
 
     it('supports column foreign key reference with onDelete/onUpdate', function (): void {
@@ -79,9 +79,9 @@ describe('Column', function (): void {
             onUpdate: 'CASCADE',
         );
 
-        expect($column->references)->toBe('users.id');
-        expect($column->onDelete)->toBe('CASCADE');
-        expect($column->onUpdate)->toBe('CASCADE');
+        expect($column->references)->toBe('users.id')
+            ->and($column->onDelete)->toBe('CASCADE')
+            ->and($column->onUpdate)->toBe('CASCADE');
 
         // Column without foreign key reference
         $simpleColumn = new Column(
@@ -89,9 +89,9 @@ describe('Column', function (): void {
             type: 'varchar',
         );
 
-        expect($simpleColumn->references)->toBeNull();
-        expect($simpleColumn->onDelete)->toBeNull();
-        expect($simpleColumn->onUpdate)->toBeNull();
+        expect($simpleColumn->references)->toBeNull()
+            ->and($simpleColumn->onDelete)->toBeNull()
+            ->and($simpleColumn->onUpdate)->toBeNull();
 
         // Column with reference and default actions
         $columnWithDefaults = new Column(
@@ -100,9 +100,9 @@ describe('Column', function (): void {
             references: 'categories.id',
         );
 
-        expect($columnWithDefaults->references)->toBe('categories.id');
-        expect($columnWithDefaults->onDelete)->toBeNull();
-        expect($columnWithDefaults->onUpdate)->toBeNull();
+        expect($columnWithDefaults->references)->toBe('categories.id')
+            ->and($columnWithDefaults->onDelete)->toBeNull()
+            ->and($columnWithDefaults->onUpdate)->toBeNull();
     });
 
     it('provides Column::withConstraint() style methods', function (): void {
@@ -110,42 +110,42 @@ describe('Column', function (): void {
 
         // Original column is unchanged
         $columnWithPk = $column->withPrimaryKey();
-        expect($column->primaryKey)->toBeFalse();
-        expect($columnWithPk->primaryKey)->toBeTrue();
-        expect($columnWithPk->name)->toBe('id');
-        expect($columnWithPk->type)->toBe('int');
+        expect($column->primaryKey)->toBeFalse()
+            ->and($columnWithPk->primaryKey)->toBeTrue()
+            ->and($columnWithPk->name)->toBe('id')
+            ->and($columnWithPk->type)->toBe('int');
 
         // Chain multiple constraints
         $columnFull = $column
             ->withPrimaryKey()
             ->withAutoIncrement();
-        expect($columnFull->primaryKey)->toBeTrue();
-        expect($columnFull->autoIncrement)->toBeTrue();
+        expect($columnFull->primaryKey)->toBeTrue()
+            ->and($columnFull->autoIncrement)->toBeTrue();
 
         // withNullable
         $emailColumn = new Column(name: 'email', type: 'varchar');
         $nullableEmail = $emailColumn->withNullable();
-        expect($emailColumn->nullable)->toBeFalse();
-        expect($nullableEmail->nullable)->toBeTrue();
+        expect($emailColumn->nullable)->toBeFalse()
+            ->and($nullableEmail->nullable)->toBeTrue();
 
         // withUnique
         $slugColumn = new Column(name: 'slug', type: 'varchar');
         $uniqueSlug = $slugColumn->withUnique();
-        expect($slugColumn->unique)->toBeFalse();
-        expect($uniqueSlug->unique)->toBeTrue();
+        expect($slugColumn->unique)->toBeFalse()
+            ->and($uniqueSlug->unique)->toBeTrue();
 
         // withDefault
         $statusColumn = new Column(name: 'status', type: 'varchar');
         $statusWithDefault = $statusColumn->withDefault('draft');
-        expect($statusColumn->default)->toBeNull();
-        expect($statusWithDefault->default)->toBe('draft');
+        expect($statusColumn->default)->toBeNull()
+            ->and($statusWithDefault->default)->toBe('draft');
 
         // withReference
         $authorColumn = new Column(name: 'author_id', type: 'int');
         $authorWithRef = $authorColumn->withReference('users.id', 'CASCADE', 'SET NULL');
-        expect($authorColumn->references)->toBeNull();
-        expect($authorWithRef->references)->toBe('users.id');
-        expect($authorWithRef->onDelete)->toBe('CASCADE');
-        expect($authorWithRef->onUpdate)->toBe('SET NULL');
+        expect($authorColumn->references)->toBeNull()
+            ->and($authorWithRef->references)->toBe('users.id')
+            ->and($authorWithRef->onDelete)->toBe('CASCADE')
+            ->and($authorWithRef->onUpdate)->toBe('SET NULL');
     });
 });

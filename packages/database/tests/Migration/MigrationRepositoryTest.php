@@ -20,11 +20,12 @@ describe('MigrationRepository', function (): void {
         $repository = new MigrationRepository();
         $repository->createTable($connection);
 
-        expect($executedSql)->toHaveCount(1);
-        expect($executedSql[0])->toContain('CREATE TABLE IF NOT EXISTS');
-        expect($executedSql[0])->toContain('migrations');
-        expect($executedSql[0])->toContain('name');
-        expect($executedSql[0])->toContain('batch');
+        expect($executedSql)
+            ->toHaveCount(1)
+            ->and($executedSql[0])->toContain('CREATE TABLE IF NOT EXISTS')
+            ->and($executedSql[0])->toContain('migrations')
+            ->and($executedSql[0])->toContain('name')
+            ->and($executedSql[0])->toContain('batch');
     });
 
     it('records applied migration with batch number', function (): void {
@@ -45,10 +46,11 @@ describe('MigrationRepository', function (): void {
         $repository = new MigrationRepository();
         $repository->record($connection, '2024_01_01_000000_create_users_table', 1);
 
-        expect($executedSql)->toHaveCount(1);
-        expect($executedSql[0])->toContain('INSERT INTO');
-        expect($executedSql[0])->toContain('migrations');
-        expect($executedBindings[0])->toBe(['2024_01_01_000000_create_users_table', 1]);
+        expect($executedSql)
+            ->toHaveCount(1)
+            ->and($executedSql[0])->toContain('INSERT INTO')
+            ->and($executedSql[0])->toContain('migrations')
+            ->and($executedBindings[0])->toBe(['2024_01_01_000000_create_users_table', 1]);
     });
 
     it('removes migration record after rollback', function (): void {
@@ -69,10 +71,11 @@ describe('MigrationRepository', function (): void {
         $repository = new MigrationRepository();
         $repository->delete($connection, '2024_01_01_000000_create_users_table');
 
-        expect($executedSql)->toHaveCount(1);
-        expect($executedSql[0])->toContain('DELETE FROM');
-        expect($executedSql[0])->toContain('migrations');
-        expect($executedBindings[0])->toBe(['2024_01_01_000000_create_users_table']);
+        expect($executedSql)
+            ->toHaveCount(1)
+            ->and($executedSql[0])->toContain('DELETE FROM')
+            ->and($executedSql[0])->toContain('migrations')
+            ->and($executedBindings[0])->toBe(['2024_01_01_000000_create_users_table']);
     });
 
     it('returns list of applied migrations', function (): void {

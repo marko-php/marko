@@ -38,12 +38,13 @@ describe('SchemaDiff', function (): void {
             tablesToAlter: ['posts' => $tableToAlter],
         );
 
-        expect($diff->tablesToCreate)->toHaveCount(1);
-        expect($diff->tablesToCreate[0]->name)->toBe('new_table');
-        expect($diff->tablesToDrop)->toHaveCount(1);
-        expect($diff->tablesToDrop[0]->name)->toBe('old_table');
-        expect($diff->tablesToAlter)->toHaveKey('posts');
-        expect($diff->tablesToAlter['posts']->tableName)->toBe('posts');
+        expect($diff->tablesToCreate)
+            ->toHaveCount(1)
+            ->and($diff->tablesToCreate[0]->name)->toBe('new_table')
+            ->and($diff->tablesToDrop)->toHaveCount(1)
+            ->and($diff->tablesToDrop[0]->name)->toBe('old_table')
+            ->and($diff->tablesToAlter)->toHaveKey('posts')
+            ->and($diff->tablesToAlter['posts']->tableName)->toBe('posts');
     });
 
     it('reports isEmpty correctly', function (): void {

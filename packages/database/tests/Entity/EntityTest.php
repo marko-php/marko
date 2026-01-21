@@ -17,7 +17,8 @@ it('creates Entity base class that can be extended', function (): void {
     $entity->id = 1;
     $entity->name = 'Test';
 
-    expect($entity)->toBeInstanceOf(Entity::class);
-    expect($entity->id)->toBe(1);
-    expect($entity->name)->toBe('Test');
+    expect($entity)
+        ->toBeInstanceOf(Entity::class)
+        ->and($entity->id)->toBe(1)
+        ->and($entity->name)->toBe('Test');
 });

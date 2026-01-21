@@ -8,15 +8,15 @@ describe('QueryBuilderInterface', function (): void {
     it('defines table() method to set target table', function (): void {
         $reflection = new ReflectionClass(QueryBuilderInterface::class);
 
-        expect($reflection->isInterface())->toBeTrue();
-        expect($reflection->hasMethod('table'))->toBeTrue();
+        expect($reflection->isInterface())->toBeTrue()
+            ->and($reflection->hasMethod('table'))->toBeTrue();
 
         $method = $reflection->getMethod('table');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[0]->getType()?->getName())->toBe('string');
+        expect($params)->toHaveCount(1)
+            ->and($params[0]->getName())->toBe('table')
+            ->and($params[0]->getType()?->getName())->toBe('string');
 
         // Returns self for fluent chaining
         $returnType = $method->getReturnType();
@@ -31,10 +31,10 @@ describe('QueryBuilderInterface', function (): void {
         $method = $reflection->getMethod('select');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('columns');
-        expect($params[0]->isVariadic())->toBeTrue();
-        expect($params[0]->getType()?->getName())->toBe('string');
+        expect($params)->toHaveCount(1)
+            ->and($params[0]->getName())->toBe('columns')
+            ->and($params[0]->isVariadic())->toBeTrue()
+            ->and($params[0]->getType()?->getName())->toBe('string');
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('static');
@@ -48,13 +48,13 @@ describe('QueryBuilderInterface', function (): void {
         $method = $reflection->getMethod('where');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(3);
-        expect($params[0]->getName())->toBe('column');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('operator');
-        expect($params[1]->getType()?->getName())->toBe('string');
-        expect($params[2]->getName())->toBe('value');
-        expect($params[2]->getType()?->getName())->toBe('mixed');
+        expect($params)->toHaveCount(3)
+            ->and($params[0]->getName())->toBe('column')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('operator')
+            ->and($params[1]->getType()?->getName())->toBe('string')
+            ->and($params[2]->getName())->toBe('value')
+            ->and($params[2]->getType()?->getName())->toBe('mixed');
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('static');
@@ -68,11 +68,11 @@ describe('QueryBuilderInterface', function (): void {
         $method = $reflection->getMethod('whereIn');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(2);
-        expect($params[0]->getName())->toBe('column');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('values');
-        expect($params[1]->getType()?->getName())->toBe('array');
+        expect($params)->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('column')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('values')
+            ->and($params[1]->getType()?->getName())->toBe('array');
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('static');
@@ -81,22 +81,22 @@ describe('QueryBuilderInterface', function (): void {
     it('defines whereNull() and whereNotNull() methods', function (): void {
         $reflection = new ReflectionClass(QueryBuilderInterface::class);
 
-        expect($reflection->hasMethod('whereNull'))->toBeTrue();
-        expect($reflection->hasMethod('whereNotNull'))->toBeTrue();
+        expect($reflection->hasMethod('whereNull'))->toBeTrue()
+            ->and($reflection->hasMethod('whereNotNull'))->toBeTrue();
 
         $whereNull = $reflection->getMethod('whereNull');
-        $params = $whereNull->getParameters();
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('column');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($whereNull->getReturnType()?->getName())->toBe('static');
+        $whereNullParams = $whereNull->getParameters();
+        expect($whereNullParams)->toHaveCount(1)
+            ->and($whereNullParams[0]->getName())->toBe('column')
+            ->and($whereNullParams[0]->getType()?->getName())->toBe('string')
+            ->and($whereNull->getReturnType()?->getName())->toBe('static');
 
         $whereNotNull = $reflection->getMethod('whereNotNull');
-        $params = $whereNotNull->getParameters();
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('column');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($whereNotNull->getReturnType()?->getName())->toBe('static');
+        $whereNotNullParams = $whereNotNull->getParameters();
+        expect($whereNotNullParams)->toHaveCount(1)
+            ->and($whereNotNullParams[0]->getName())->toBe('column')
+            ->and($whereNotNullParams[0]->getType()?->getName())->toBe('string')
+            ->and($whereNotNull->getReturnType()?->getName())->toBe('static');
     });
 
     it('defines orWhere() for OR conditions', function (): void {
@@ -107,13 +107,13 @@ describe('QueryBuilderInterface', function (): void {
         $method = $reflection->getMethod('orWhere');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(3);
-        expect($params[0]->getName())->toBe('column');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('operator');
-        expect($params[1]->getType()?->getName())->toBe('string');
-        expect($params[2]->getName())->toBe('value');
-        expect($params[2]->getType()?->getName())->toBe('mixed');
+        expect($params)->toHaveCount(3)
+            ->and($params[0]->getName())->toBe('column')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('operator')
+            ->and($params[1]->getType()?->getName())->toBe('string')
+            ->and($params[2]->getName())->toBe('value')
+            ->and($params[2]->getType()?->getName())->toBe('mixed');
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('static');
@@ -122,43 +122,43 @@ describe('QueryBuilderInterface', function (): void {
     it('defines join(), leftJoin(), rightJoin() methods', function (): void {
         $reflection = new ReflectionClass(QueryBuilderInterface::class);
 
-        expect($reflection->hasMethod('join'))->toBeTrue();
-        expect($reflection->hasMethod('leftJoin'))->toBeTrue();
-        expect($reflection->hasMethod('rightJoin'))->toBeTrue();
+        expect($reflection->hasMethod('join'))->toBeTrue()
+            ->and($reflection->hasMethod('leftJoin'))->toBeTrue()
+            ->and($reflection->hasMethod('rightJoin'))->toBeTrue();
 
         // Check join() method
         $join = $reflection->getMethod('join');
-        $params = $join->getParameters();
-        expect($params)->toHaveCount(4);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('first');
-        expect($params[1]->getType()?->getName())->toBe('string');
-        expect($params[2]->getName())->toBe('operator');
-        expect($params[2]->getType()?->getName())->toBe('string');
-        expect($params[3]->getName())->toBe('second');
-        expect($params[3]->getType()?->getName())->toBe('string');
-        expect($join->getReturnType()?->getName())->toBe('static');
+        $joinParams = $join->getParameters();
+        expect($joinParams)->toHaveCount(4)
+            ->and($joinParams[0]->getName())->toBe('table')
+            ->and($joinParams[0]->getType()?->getName())->toBe('string')
+            ->and($joinParams[1]->getName())->toBe('first')
+            ->and($joinParams[1]->getType()?->getName())->toBe('string')
+            ->and($joinParams[2]->getName())->toBe('operator')
+            ->and($joinParams[2]->getType()?->getName())->toBe('string')
+            ->and($joinParams[3]->getName())->toBe('second')
+            ->and($joinParams[3]->getType()?->getName())->toBe('string')
+            ->and($join->getReturnType()?->getName())->toBe('static');
 
         // Check leftJoin() method
         $leftJoin = $reflection->getMethod('leftJoin');
-        $params = $leftJoin->getParameters();
-        expect($params)->toHaveCount(4);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[1]->getName())->toBe('first');
-        expect($params[2]->getName())->toBe('operator');
-        expect($params[3]->getName())->toBe('second');
-        expect($leftJoin->getReturnType()?->getName())->toBe('static');
+        $leftJoinParams = $leftJoin->getParameters();
+        expect($leftJoinParams)->toHaveCount(4)
+            ->and($leftJoinParams[0]->getName())->toBe('table')
+            ->and($leftJoinParams[1]->getName())->toBe('first')
+            ->and($leftJoinParams[2]->getName())->toBe('operator')
+            ->and($leftJoinParams[3]->getName())->toBe('second')
+            ->and($leftJoin->getReturnType()?->getName())->toBe('static');
 
         // Check rightJoin() method
         $rightJoin = $reflection->getMethod('rightJoin');
-        $params = $rightJoin->getParameters();
-        expect($params)->toHaveCount(4);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[1]->getName())->toBe('first');
-        expect($params[2]->getName())->toBe('operator');
-        expect($params[3]->getName())->toBe('second');
-        expect($rightJoin->getReturnType()?->getName())->toBe('static');
+        $rightJoinParams = $rightJoin->getParameters();
+        expect($rightJoinParams)->toHaveCount(4)
+            ->and($rightJoinParams[0]->getName())->toBe('table')
+            ->and($rightJoinParams[1]->getName())->toBe('first')
+            ->and($rightJoinParams[2]->getName())->toBe('operator')
+            ->and($rightJoinParams[3]->getName())->toBe('second')
+            ->and($rightJoin->getReturnType()?->getName())->toBe('static');
     });
 
     it('defines orderBy() method with direction', function (): void {
@@ -169,13 +169,13 @@ describe('QueryBuilderInterface', function (): void {
         $method = $reflection->getMethod('orderBy');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(2);
-        expect($params[0]->getName())->toBe('column');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('direction');
-        expect($params[1]->getType()?->getName())->toBe('string');
-        expect($params[1]->isDefaultValueAvailable())->toBeTrue();
-        expect($params[1]->getDefaultValue())->toBe('ASC');
+        expect($params)->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('column')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('direction')
+            ->and($params[1]->getType()?->getName())->toBe('string')
+            ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
+            ->and($params[1]->getDefaultValue())->toBe('ASC');
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('static');
@@ -184,22 +184,22 @@ describe('QueryBuilderInterface', function (): void {
     it('defines limit() and offset() methods', function (): void {
         $reflection = new ReflectionClass(QueryBuilderInterface::class);
 
-        expect($reflection->hasMethod('limit'))->toBeTrue();
-        expect($reflection->hasMethod('offset'))->toBeTrue();
+        expect($reflection->hasMethod('limit'))->toBeTrue()
+            ->and($reflection->hasMethod('offset'))->toBeTrue();
 
         $limit = $reflection->getMethod('limit');
-        $params = $limit->getParameters();
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('limit');
-        expect($params[0]->getType()?->getName())->toBe('int');
-        expect($limit->getReturnType()?->getName())->toBe('static');
+        $limitParams = $limit->getParameters();
+        expect($limitParams)->toHaveCount(1)
+            ->and($limitParams[0]->getName())->toBe('limit')
+            ->and($limitParams[0]->getType()?->getName())->toBe('int')
+            ->and($limit->getReturnType()?->getName())->toBe('static');
 
         $offset = $reflection->getMethod('offset');
-        $params = $offset->getParameters();
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('offset');
-        expect($params[0]->getType()?->getName())->toBe('int');
-        expect($offset->getReturnType()?->getName())->toBe('static');
+        $offsetParams = $offset->getParameters();
+        expect($offsetParams)->toHaveCount(1)
+            ->and($offsetParams[0]->getName())->toBe('offset')
+            ->and($offsetParams[0]->getType()?->getName())->toBe('int')
+            ->and($offset->getReturnType()?->getName())->toBe('static');
     });
 
     it('defines get() method returning array of rows', function (): void {
@@ -239,9 +239,9 @@ describe('QueryBuilderInterface', function (): void {
         $method = $reflection->getMethod('insert');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('data');
-        expect($params[0]->getType()?->getName())->toBe('array');
+        expect($params)->toHaveCount(1)
+            ->and($params[0]->getName())->toBe('data')
+            ->and($params[0]->getType()?->getName())->toBe('array');
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('int');
@@ -255,9 +255,9 @@ describe('QueryBuilderInterface', function (): void {
         $method = $reflection->getMethod('update');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('data');
-        expect($params[0]->getType()?->getName())->toBe('array');
+        expect($params)->toHaveCount(1)
+            ->and($params[0]->getName())->toBe('data')
+            ->and($params[0]->getType()?->getName())->toBe('array');
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('int');
@@ -299,13 +299,13 @@ describe('QueryBuilderInterface', function (): void {
         $method = $reflection->getMethod('raw');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(2);
-        expect($params[0]->getName())->toBe('sql');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('bindings');
-        expect($params[1]->getType()?->getName())->toBe('array');
-        expect($params[1]->isDefaultValueAvailable())->toBeTrue();
-        expect($params[1]->getDefaultValue())->toBe([]);
+        expect($params)->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('sql')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('bindings')
+            ->and($params[1]->getType()?->getName())->toBe('array')
+            ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
+            ->and($params[1]->getDefaultValue())->toBe([]);
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('array');

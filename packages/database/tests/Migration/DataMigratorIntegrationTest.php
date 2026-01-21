@@ -101,8 +101,9 @@ describe('DataMigrator Integration', function (): void {
         $applied = $migrator->migrate();
 
         // Data migrations should be recorded in the same repository
-        expect($applied)->toBe(['001_insert_statuses']);
-        expect($recordedMigrations)->toContain('001_insert_statuses');
+        expect($applied)
+            ->toBe(['001_insert_statuses'])
+            ->and($recordedMigrations)->toContain('001_insert_statuses');
     });
 
     it('runs data migrations after schema migrations in same batch', function (): void {
@@ -183,9 +184,10 @@ describe('DataMigrator Integration', function (): void {
         // Run data migrations
         $applied = $dataMigrator->migrate();
 
-        expect($applied)->toContain('002_insert_statuses');
-        // Data migration should use same batch numbering system
-        expect($batchNumbers['002_insert_statuses'])->toBe(1);
+        expect($applied)
+            ->toContain('002_insert_statuses')
+            // Data migration should use same batch numbering system
+            ->and($batchNumbers['002_insert_statuses'])->toBe(1);
     });
 
     it('skips already applied data migrations', function (): void {
@@ -274,8 +276,9 @@ describe('DataMigrator Integration', function (): void {
         $migrator = new DataMigrator($connection, $repository, $discovery);
         $rolledBack = $migrator->rollback();
 
-        expect($rolledBack)->toBe(['001_insert_data']);
-        expect($deletedMigrations)->toContain('001_insert_data');
-        expect($downCalled)->toBeTrue();
+        expect($rolledBack)
+            ->toBe(['001_insert_data'])
+            ->and($deletedMigrations)->toContain('001_insert_data')
+            ->and($downCalled)->toBeTrue();
     });
 });

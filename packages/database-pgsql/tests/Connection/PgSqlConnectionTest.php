@@ -69,8 +69,8 @@ describe('PgSqlConnection', function (): void {
 
         $options = $method->invoke($connection);
 
-        expect($options)->toHaveKey(PDO::ATTR_ERRMODE);
-        expect($options[PDO::ATTR_ERRMODE])->toBe(PDO::ERRMODE_EXCEPTION);
+        expect($options)->toHaveKey(PDO::ATTR_ERRMODE)
+            ->and($options[PDO::ATTR_ERRMODE])->toBe(PDO::ERRMODE_EXCEPTION);
     });
 
     it('sets client encoding from config', function (): void {
@@ -108,16 +108,15 @@ describe('PgSqlConnection', function (): void {
 
         // Verify method signature
         $params = $queryMethod->getParameters();
-        expect($params)->toHaveCount(2);
-        expect($params[0]->getName())->toBe('sql');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('bindings');
-        expect($params[1]->getType()?->getName())->toBe('array');
-        expect($params[1]->isDefaultValueAvailable())->toBeTrue();
-        expect($params[1]->getDefaultValue())->toBe([]);
-
-        // Verify return type
-        expect($queryMethod->getReturnType()?->getName())->toBe('array');
+        expect($params)->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('sql')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('bindings')
+            ->and($params[1]->getType()?->getName())->toBe('array')
+            ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
+            ->and($params[1]->getDefaultValue())->toBe([])
+            // Verify return type
+            ->and($queryMethod->getReturnType()?->getName())->toBe('array');
 
         // Verify ensureConnected is called internally by inspecting method body
         $method = $reflection->getMethod('ensureConnected');
@@ -187,8 +186,8 @@ describe('PgSqlConnection', function (): void {
         $connection->disconnect();
 
         // Verify PDO is now null
-        expect($pdoProperty->getValue($connection))->toBeNull();
-        expect($connection->isConnected())->toBeFalse();
+        expect($pdoProperty->getValue($connection))->toBeNull()
+            ->and($connection->isConnected())->toBeFalse();
     });
 
     it('implements TransactionInterface', function (): void {
@@ -246,8 +245,8 @@ describe('PgSqlConnection', function (): void {
         expect($connection->inTransaction())->toBeFalse();
 
         $results = $connection->query('SELECT * FROM test_data');
-        expect($results)->toHaveCount(1);
-        expect($results[0]['value'])->toBe('test');
+        expect($results)->toHaveCount(1)
+            ->and($results[0]['value'])->toBe('test');
     });
 
     it('implements rollback() method', function (): void {
@@ -297,8 +296,8 @@ describe('PgSqlConnection', function (): void {
 
         $result = $connection->inTransaction();
 
-        expect($result)->toBeBool();
-        expect($result)->toBeFalse();
+        expect($result)->toBeBool()
+            ->and($result)->toBeFalse();
 
         $connection->beginTransaction();
 
@@ -362,8 +361,8 @@ describe('PgSqlConnection', function (): void {
 
         // Verify data was committed
         $results = $connection->query('SELECT * FROM test_data');
-        expect($results)->toHaveCount(1);
-        expect($results[0]['value'])->toBe('committed');
+        expect($results)->toHaveCount(1)
+            ->and($results[0]['value'])->toBe('committed');
     });
 
     it('auto-rolls back when callback throws exception', function (): void {

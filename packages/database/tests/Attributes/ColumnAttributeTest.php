@@ -81,19 +81,18 @@ it('creates #[Column] attribute with optional name parameter', function (): void
     // Test column without explicit name (uses property name)
     $idProperty = new ReflectionProperty(ColumnTestEntity::class, 'id');
     $idAttributes = $idProperty->getAttributes(Column::class);
-    expect($idAttributes)->toHaveCount(1);
-
     $idColumn = $idAttributes[0]->newInstance();
-    expect($idColumn)->toBeInstanceOf(Column::class);
-    expect($idColumn->name)->toBeNull();
 
     // Test column with explicit name
     $nameProperty = new ReflectionProperty(ColumnTestEntity::class, 'name');
     $nameAttributes = $nameProperty->getAttributes(Column::class);
-    expect($nameAttributes)->toHaveCount(1);
-
     $nameColumn = $nameAttributes[0]->newInstance();
-    expect($nameColumn->name)->toBe('user_name');
+
+    expect($idAttributes)->toHaveCount(1)
+        ->and($idColumn)->toBeInstanceOf(Column::class)
+        ->and($idColumn->name)->toBeNull()
+        ->and($nameAttributes)->toHaveCount(1)
+        ->and($nameColumn->name)->toBe('user_name');
 });
 
 it('supports #[Column] primaryKey parameter', function (): void {
@@ -109,29 +108,31 @@ it('supports #[Column] autoIncrement parameter', function (): void {
     $attributes = $property->getAttributes(Column::class);
 
     $column = $attributes[0]->newInstance();
-    expect($column->autoIncrement)->toBeTrue();
-    expect($column->primaryKey)->toBeTrue();
+    expect($column->autoIncrement)->toBeTrue()
+        ->and($column->primaryKey)->toBeTrue();
 });
 
 it('supports #[Column] length parameter for varchar', function (): void {
     $nameProperty = new ReflectionProperty(VarcharLengthTestEntity::class, 'name');
     $nameColumn = $nameProperty->getAttributes(Column::class)[0]->newInstance();
-    expect($nameColumn->length)->toBe(100);
 
     $emailProperty = new ReflectionProperty(VarcharLengthTestEntity::class, 'email');
     $emailColumn = $emailProperty->getAttributes(Column::class)[0]->newInstance();
-    expect($emailColumn->length)->toBe(255);
+
+    expect($nameColumn->length)->toBe(100)
+        ->and($emailColumn->length)->toBe(255);
 });
 
 it('supports #[Column] type parameter for explicit type override', function (): void {
     $contentProperty = new ReflectionProperty(ExplicitTypeTestEntity::class, 'content');
     $contentColumn = $contentProperty->getAttributes(Column::class)[0]->newInstance();
-    expect($contentColumn->type)->toBe('text');
 
     $priceProperty = new ReflectionProperty(ExplicitTypeTestEntity::class, 'price');
     $priceColumn = $priceProperty->getAttributes(Column::class)[0]->newInstance();
-    expect($priceColumn->type)->toBe('decimal');
-    expect($priceColumn->length)->toBe(10);
+
+    expect($contentColumn->type)->toBe('text')
+        ->and($priceColumn->type)->toBe('decimal')
+        ->and($priceColumn->length)->toBe(10);
 });
 
 it('supports #[Column] unique parameter', function (): void {
@@ -143,15 +144,16 @@ it('supports #[Column] unique parameter', function (): void {
 it('supports #[Column] default parameter', function (): void {
     $statusProperty = new ReflectionProperty(DefaultValueTestEntity::class, 'status');
     $statusColumn = $statusProperty->getAttributes(Column::class)[0]->newInstance();
-    expect($statusColumn->default)->toBe('active');
 
     $countProperty = new ReflectionProperty(DefaultValueTestEntity::class, 'count');
     $countColumn = $countProperty->getAttributes(Column::class)[0]->newInstance();
-    expect($countColumn->default)->toBe(0);
 
     $enabledProperty = new ReflectionProperty(DefaultValueTestEntity::class, 'enabled');
     $enabledColumn = $enabledProperty->getAttributes(Column::class)[0]->newInstance();
-    expect($enabledColumn->default)->toBeTrue();
+
+    expect($statusColumn->default)->toBe('active')
+        ->and($countColumn->default)->toBe(0)
+        ->and($enabledColumn->default)->toBeTrue();
 });
 
 it('supports #[Column] references parameter for foreign keys', function (): void {
@@ -163,7 +165,7 @@ it('supports #[Column] references parameter for foreign keys', function (): void
 it('supports #[Column] onDelete and onUpdate parameters', function (): void {
     $property = new ReflectionProperty(ForeignKeyActionsTestEntity::class, 'userId');
     $column = $property->getAttributes(Column::class)[0]->newInstance();
-    expect($column->references)->toBe('users.id');
-    expect($column->onDelete)->toBe('CASCADE');
-    expect($column->onUpdate)->toBe('SET NULL');
+    expect($column->references)->toBe('users.id')
+        ->and($column->onDelete)->toBe('CASCADE')
+        ->and($column->onUpdate)->toBe('SET NULL');
 });

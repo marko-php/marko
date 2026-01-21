@@ -112,9 +112,9 @@ describe('PgSqlQueryBuilder', function (): void {
         $reflection = new ReflectionClass($builder);
         $method = $reflection->getMethod('quoteIdentifier');
 
-        expect($method->invoke($builder, 'users'))->toBe('"users"');
-        expect($method->invoke($builder, 'id'))->toBe('"id"');
-        expect($method->invoke($builder, 'created_at'))->toBe('"created_at"');
+        expect($method->invoke($builder, 'users'))->toBe('"users"')
+            ->and($method->invoke($builder, 'id'))->toBe('"id"')
+            ->and($method->invoke($builder, 'created_at'))->toBe('"created_at"');
     });
 
     it('builds SELECT queries with column selection', function (): void {
@@ -128,11 +128,11 @@ describe('PgSqlQueryBuilder', function (): void {
             ->select('id', 'name', 'email')
             ->get();
 
-        expect($connection->lastQuerySql)->toBe('SELECT "id", "name", "email" FROM "users"');
-        expect($connection->lastQueryBindings)->toBe([]);
-        expect($result)->toBe([
-            ['id' => 1, 'name' => 'John', 'email' => 'john@example.com'],
-        ]);
+        expect($connection->lastQuerySql)->toBe('SELECT "id", "name", "email" FROM "users"')
+            ->and($connection->lastQueryBindings)->toBe([])
+            ->and($result)->toBe([
+                ['id' => 1, 'name' => 'John', 'email' => 'john@example.com'],
+            ]);
     });
 
     it('builds WHERE clauses with parameter binding', function (): void {
@@ -146,11 +146,11 @@ describe('PgSqlQueryBuilder', function (): void {
             ->where('status', '=', 'active')
             ->get();
 
-        expect($connection->lastQuerySql)->toBe('SELECT * FROM "users" WHERE "status" = $1');
-        expect($connection->lastQueryBindings)->toBe(['active']);
-        expect($result)->toBe([
-            ['id' => 1, 'status' => 'active'],
-        ]);
+        expect($connection->lastQuerySql)->toBe('SELECT * FROM "users" WHERE "status" = $1')
+            ->and($connection->lastQueryBindings)->toBe(['active'])
+            ->and($result)->toBe([
+                ['id' => 1, 'status' => 'active'],
+            ]);
     });
 
     it('builds WHERE IN clauses correctly', function (): void {
@@ -168,9 +168,9 @@ describe('PgSqlQueryBuilder', function (): void {
             ->whereIn('id', [1, 2, 3])
             ->get();
 
-        expect($connection->lastQuerySql)->toBe('SELECT * FROM "users" WHERE "id" IN ($1, $2, $3)');
-        expect($connection->lastQueryBindings)->toBe([1, 2, 3]);
-        expect($result)->toHaveCount(3);
+        expect($connection->lastQuerySql)->toBe('SELECT * FROM "users" WHERE "id" IN ($1, $2, $3)')
+            ->and($connection->lastQueryBindings)->toBe([1, 2, 3])
+            ->and($result)->toHaveCount(3);
     });
 
     it('builds JOIN clauses with proper syntax', function (): void {
@@ -227,9 +227,9 @@ describe('PgSqlQueryBuilder', function (): void {
 
         expect($connection->lastQuerySql)->toBe(
             'INSERT INTO "users" ("name", "email") VALUES ($1, $2) RETURNING "id"',
-        );
-        expect($connection->lastQueryBindings)->toBe(['John', 'john@example.com']);
-        expect($id)->toBe(42);
+        )
+            ->and($connection->lastQueryBindings)->toBe(['John', 'john@example.com'])
+            ->and($id)->toBe(42);
     });
 
     it('builds UPDATE statements with WHERE clause', function (): void {
@@ -246,9 +246,9 @@ describe('PgSqlQueryBuilder', function (): void {
 
         expect($connection->lastExecuteSql)->toBe(
             'UPDATE "users" SET "name" = $1, "status" = $2 WHERE "id" = $3',
-        );
-        expect($connection->lastExecuteBindings)->toBe(['Jane', 'inactive', 1]);
-        expect($affected)->toBe(1);
+        )
+            ->and($connection->lastExecuteBindings)->toBe(['Jane', 'inactive', 1])
+            ->and($affected)->toBe(1);
     });
 
     it('builds DELETE statements with WHERE clause', function (): void {
@@ -260,9 +260,9 @@ describe('PgSqlQueryBuilder', function (): void {
             ->where('id', '=', 1)
             ->delete();
 
-        expect($connection->lastExecuteSql)->toBe('DELETE FROM "users" WHERE "id" = $1');
-        expect($connection->lastExecuteBindings)->toBe([1]);
-        expect($affected)->toBe(1);
+        expect($connection->lastExecuteSql)->toBe('DELETE FROM "users" WHERE "id" = $1')
+            ->and($connection->lastExecuteBindings)->toBe([1])
+            ->and($affected)->toBe(1);
     });
 
     it('returns last insert ID using RETURNING', function (): void {
@@ -277,8 +277,8 @@ describe('PgSqlQueryBuilder', function (): void {
 
         expect($connection->lastQuerySql)->toBe(
             'INSERT INTO "posts" ("title") VALUES ($1) RETURNING "id"',
-        );
-        expect($id)->toBe(123);
+        )
+            ->and($id)->toBe(123);
     });
 
     it('returns affected row count after update/delete', function (): void {
@@ -292,9 +292,9 @@ describe('PgSqlQueryBuilder', function (): void {
 
         expect($connection->lastExecuteSql)->toBe(
             'UPDATE "users" SET "status" = $1 WHERE "role" = $2',
-        );
-        expect($connection->lastExecuteBindings)->toBe(['inactive', 'guest']);
-        expect($affected)->toBe(5);
+        )
+            ->and($connection->lastExecuteBindings)->toBe(['inactive', 'guest'])
+            ->and($affected)->toBe(5);
     });
 
     it('executes raw queries with parameter binding', function (): void {
@@ -305,10 +305,10 @@ describe('PgSqlQueryBuilder', function (): void {
         $builder = new PgSqlQueryBuilder($connection);
         $result = $builder->raw('SELECT * FROM users WHERE age > $1', [18]);
 
-        expect($connection->lastQuerySql)->toBe('SELECT * FROM users WHERE age > $1');
-        expect($connection->lastQueryBindings)->toBe([18]);
-        expect($result)->toBe([
-            ['id' => 1, 'name' => 'John', 'age' => 25],
-        ]);
+        expect($connection->lastQuerySql)->toBe('SELECT * FROM users WHERE age > $1')
+            ->and($connection->lastQueryBindings)->toBe([18])
+            ->and($result)->toBe([
+                ['id' => 1, 'name' => 'John', 'age' => 25],
+            ]);
     });
 });

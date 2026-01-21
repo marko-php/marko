@@ -16,9 +16,9 @@ describe('Index', function (): void {
             columns: ['author_id'],
         );
 
-        expect($btreeIndex->name)->toBe('idx_posts_author_id');
-        expect($btreeIndex->columns)->toBe(['author_id']);
-        expect($btreeIndex->type)->toBe(IndexType::Btree);
+        expect($btreeIndex->name)->toBe('idx_posts_author_id')
+            ->and($btreeIndex->columns)->toBe(['author_id'])
+            ->and($btreeIndex->type)->toBe(IndexType::Btree);
 
         // Unique index
         $uniqueIndex = new Index(
@@ -27,9 +27,9 @@ describe('Index', function (): void {
             type: IndexType::Unique,
         );
 
-        expect($uniqueIndex->name)->toBe('idx_posts_slug');
-        expect($uniqueIndex->columns)->toBe(['slug']);
-        expect($uniqueIndex->type)->toBe(IndexType::Unique);
+        expect($uniqueIndex->name)->toBe('idx_posts_slug')
+            ->and($uniqueIndex->columns)->toBe(['slug'])
+            ->and($uniqueIndex->type)->toBe(IndexType::Unique);
 
         // Fulltext index
         $fulltextIndex = new Index(
@@ -38,9 +38,9 @@ describe('Index', function (): void {
             type: IndexType::Fulltext,
         );
 
-        expect($fulltextIndex->name)->toBe('idx_posts_content');
-        expect($fulltextIndex->columns)->toBe(['title', 'body']);
-        expect($fulltextIndex->type)->toBe(IndexType::Fulltext);
+        expect($fulltextIndex->name)->toBe('idx_posts_content')
+            ->and($fulltextIndex->columns)->toBe(['title', 'body'])
+            ->and($fulltextIndex->type)->toBe(IndexType::Fulltext);
 
         // Verify it's a readonly class
         $reflection = new ReflectionClass($btreeIndex);

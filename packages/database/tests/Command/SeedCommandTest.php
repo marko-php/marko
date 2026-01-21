@@ -2,17 +2,21 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/Helpers.php';
+
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
-use Marko\Core\Command\Output;
 use Marko\Database\Command\SeedCommand;
 use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Seed\SeederDefinition;
 use Marko\Database\Seed\SeederDiscovery;
 use Marko\Database\Seed\SeederInterface;
 use Marko\Database\Seed\SeederRunner;
+
+use function Marko\Database\Tests\Command\createOutputStream;
+use function Marko\Database\Tests\Command\createStubConnection;
+use function Marko\Database\Tests\Command\getOutputContent;
 
 /**
  * Helper to create a stub SeederDiscovery.
@@ -29,9 +33,9 @@ function createStubDiscovery(
     return new class ($vendorDefinitions, $modulesDefinitions, $appDefinitions) extends SeederDiscovery
     {
         public function __construct(
-            private array $vendorDefs,
-            private array $modulesDefs,
-            private array $appDefs,
+            private readonly array $vendorDefs,
+            private readonly array $modulesDefs,
+            private readonly array $appDefs,
         ) {}
 
         public function discoverInVendor(
@@ -55,111 +59,74 @@ function createStubDiscovery(
 }
 
 /**
- * Helper to create a stub ConnectionInterface.
+ * Helper to create a no-op seeder for testing.
  */
-function createStubConnection(): ConnectionInterface
+function createNoOpSeeder(): SeederInterface
 {
-    return new class () implements ConnectionInterface
+    return new class () implements SeederInterface
     {
-        public function connect(): void {}
-
-        public function disconnect(): void {}
-
-        public function isConnected(): bool
-        {
-            return true;
-        }
-
-        public function query(
-            string $sql,
-            array $bindings = [],
-        ): array {
-            return [];
-        }
-
-        public function execute(
-            string $sql,
-            array $bindings = [],
-        ): int {
-            return 0;
-        }
-
-        public function prepare(
-            string $sql,
-        ): StatementInterface {
-            return new class () implements StatementInterface
-            {
-                public function execute(
-                    array $bindings = [],
-                ): bool {
-                    return true;
-                }
-
-                public function fetchAll(): array
-                {
-                    return [];
-                }
-
-                public function fetch(): ?array
-                {
-                    return null;
-                }
-
-                public function rowCount(): int
-                {
-                    return 0;
-                }
-            };
-        }
-
-        public function lastInsertId(): int
-        {
-            return 0;
-        }
+        public function run(
+            ConnectionInterface $connection,
+        ): void {}
     };
 }
 
-if (!function_exists('createOutputStream')) {
-    /**
-     * Helper to capture output.
-     *
-     * @return array{stream: resource, output: Output}
-     */
-    function createOutputStream(): array
-    {
-        $stream = fopen('php://memory', 'r+');
+/**
+ * Helper to create a SeedCommand with standard dependencies.
+ *
+ * @param array<SeederDefinition> $definitions
+ * @param array<string, SeederInterface> $seeders
+ */
+function createSeedCommand(
+    array $definitions = [],
+    array $seeders = [],
+    bool $isProduction = false,
+): SeedCommand {
+    $discovery = createStubDiscovery(vendorDefinitions: $definitions);
+    $connection = createStubConnection();
 
-        return [
-            'stream' => $stream,
-            'output' => new Output($stream),
-        ];
-    }
+    $runner = new SeederRunner(
+        seeders: $seeders,
+        isProduction: $isProduction,
+    );
+
+    return new SeedCommand(
+        discovery: $discovery,
+        runner: $runner,
+        connection: $connection,
+        vendorPath: '/vendor',
+        modulesPath: '/modules',
+        appPath: '/app',
+        isProduction: $isProduction,
+    );
 }
 
-if (!function_exists('getOutputContent')) {
-    /**
-     * Helper to get output content.
-     *
-     * @param resource $stream
-     */
-    function getOutputContent(
-        mixed $stream,
-    ): string {
-        rewind($stream);
+/**
+ * Helper to execute a SeedCommand and return the output.
+ *
+ * @param array<string> $args
+ *
+ * @return array{output: string, exitCode: int}
+ */
+function executeSeedCommand(
+    SeedCommand $command,
+    array $args = ['marko', 'db:seed'],
+): array {
+    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    $input = new Input($args);
 
-        return stream_get_contents($stream);
-    }
+    $exitCode = $command->execute($input, $output);
+    $result = getOutputContent($stream);
+
+    return ['output' => $result, 'exitCode' => $exitCode];
 }
 
 it('registers as db:seed command via #[Command] attribute', function (): void {
     $reflection = new ReflectionClass(SeedCommand::class);
     $attributes = $reflection->getAttributes(Command::class);
 
-    expect($attributes)->toHaveCount(1);
-
-    $command = $attributes[0]->newInstance();
-
-    expect($command->name)->toBe('db:seed');
+    expect($attributes)->toHaveCount(1)
+        ->and($attributes[0]->newInstance()->name)->toBe('db:seed');
 });
 
 it('implements CommandInterface', function (): void {
@@ -169,45 +136,22 @@ it('implements CommandInterface', function (): void {
 });
 
 it('discovers all seeders from modules', function (): void {
-    $seeder = new class () implements SeederInterface
-    {
-        public function run(
-            ConnectionInterface $connection,
-        ): void {}
-    };
+    $seeder = createNoOpSeeder();
 
     $definitions = [
         new SeederDefinition(seederClass: get_class($seeder), name: 'users', order: 10),
         new SeederDefinition(seederClass: get_class($seeder), name: 'posts', order: 20),
     ];
 
-    $discovery = createStubDiscovery(vendorDefinitions: $definitions);
-    $connection = createStubConnection();
-
-    $runner = new SeederRunner(
+    $command = createSeedCommand(
+        definitions: $definitions,
         seeders: [get_class($seeder) => $seeder],
-        isProduction: false,
     );
 
-    $command = new SeedCommand(
-        discovery: $discovery,
-        runner: $runner,
-        connection: $connection,
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
-        isProduction: false,
-    );
+    ['output' => $output] = executeSeedCommand($command);
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
-    $input = new Input(['marko', 'db:seed']);
-
-    $command->execute($input, $output);
-
-    $result = getOutputContent($stream);
-
-    expect($result)->toContain('users')
-        ->and($result)->toContain('posts');
+    expect($output)->toContain('users')
+        ->and($output)->toContain('posts');
 });
 
 it('runs seeders in specified order', function (): void {
@@ -216,6 +160,7 @@ it('runs seeders in specified order', function (): void {
     $seeder1 = new class ($executionOrder) implements SeederInterface
     {
         public function __construct(
+            /** @noinspection PhpUnused - Reference property used to track execution */
             private array &$order,
         ) {}
 
@@ -229,6 +174,7 @@ it('runs seeders in specified order', function (): void {
     $seeder2 = new class ($executionOrder) implements SeederInterface
     {
         public function __construct(
+            /** @noinspection PhpUnused - Reference property used to track execution */
             private array &$order,
         ) {}
 
@@ -244,75 +190,36 @@ it('runs seeders in specified order', function (): void {
         new SeederDefinition(seederClass: get_class($seeder2), name: 'first', order: 10),
     ];
 
-    $discovery = createStubDiscovery(vendorDefinitions: $definitions);
-    $connection = createStubConnection();
-
-    $runner = new SeederRunner(
+    $command = createSeedCommand(
+        definitions: $definitions,
         seeders: [
             get_class($seeder1) => $seeder1,
             get_class($seeder2) => $seeder2,
         ],
-        isProduction: false,
     );
 
-    $command = new SeedCommand(
-        discovery: $discovery,
-        runner: $runner,
-        connection: $connection,
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
-        isProduction: false,
-    );
-
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
-    $input = new Input(['marko', 'db:seed']);
-
-    $command->execute($input, $output);
+    executeSeedCommand($command);
 
     expect($executionOrder)->toBe(['first', 'second']);
 });
 
 it('shows each seeder being run', function (): void {
-    $seeder = new class () implements SeederInterface
-    {
-        public function run(
-            ConnectionInterface $connection,
-        ): void {}
-    };
+    $seeder = createNoOpSeeder();
 
     $definitions = [
         new SeederDefinition(seederClass: get_class($seeder), name: 'users', order: 10),
         new SeederDefinition(seederClass: get_class($seeder), name: 'posts', order: 20),
     ];
 
-    $discovery = createStubDiscovery(vendorDefinitions: $definitions);
-    $connection = createStubConnection();
-
-    $runner = new SeederRunner(
+    $command = createSeedCommand(
+        definitions: $definitions,
         seeders: [get_class($seeder) => $seeder],
-        isProduction: false,
     );
 
-    $command = new SeedCommand(
-        discovery: $discovery,
-        runner: $runner,
-        connection: $connection,
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
-        isProduction: false,
-    );
+    ['output' => $output] = executeSeedCommand($command);
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
-    $input = new Input(['marko', 'db:seed']);
-
-    $command->execute($input, $output);
-
-    $result = getOutputContent($stream);
-
-    expect($result)->toContain('Running seeder: users')
-        ->and($result)->toContain('Running seeder: posts');
+    expect($output)->toContain('Running seeder: users')
+        ->and($output)->toContain('Running seeder: posts');
 });
 
 it('supports --class option to run specific seeder', function (): void {
@@ -322,6 +229,7 @@ it('supports --class option to run specific seeder', function (): void {
     $userSeeder = new class ($userSeederRan) implements SeederInterface
     {
         public function __construct(
+            /** @noinspection PhpUnused - Reference property used to track execution */
             private bool &$ran,
         ) {}
 
@@ -335,6 +243,7 @@ it('supports --class option to run specific seeder', function (): void {
     $postSeeder = new class ($postSeederRan) implements SeederInterface
     {
         public function __construct(
+            /** @noinspection PhpUnused - Reference property used to track execution */
             private bool &$ran,
         ) {}
 
@@ -350,220 +259,100 @@ it('supports --class option to run specific seeder', function (): void {
         new SeederDefinition(seederClass: get_class($postSeeder), name: 'posts', order: 20),
     ];
 
-    $discovery = createStubDiscovery(vendorDefinitions: $definitions);
-    $connection = createStubConnection();
-
-    $runner = new SeederRunner(
+    $command = createSeedCommand(
+        definitions: $definitions,
         seeders: [
             get_class($userSeeder) => $userSeeder,
             get_class($postSeeder) => $postSeeder,
         ],
-        isProduction: false,
     );
 
-    $command = new SeedCommand(
-        discovery: $discovery,
-        runner: $runner,
-        connection: $connection,
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
-        isProduction: false,
-    );
-
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
-    $input = new Input(['marko', 'db:seed', '--class=users']);
-
-    $command->execute($input, $output);
+    executeSeedCommand($command, ['marko', 'db:seed', '--class=users']);
 
     expect($userSeederRan)->toBeTrue()
         ->and($postSeederRan)->toBeFalse();
 });
 
 it('blocks execution in production environment', function (): void {
-    $seeder = new class () implements SeederInterface
-    {
-        public function run(
-            ConnectionInterface $connection,
-        ): void {}
-    };
+    $seeder = createNoOpSeeder();
 
     $definitions = [
         new SeederDefinition(seederClass: get_class($seeder), name: 'users', order: 10),
     ];
 
-    $discovery = createStubDiscovery(vendorDefinitions: $definitions);
-    $connection = createStubConnection();
-
-    $runner = new SeederRunner(
+    $command = createSeedCommand(
+        definitions: $definitions,
         seeders: [get_class($seeder) => $seeder],
         isProduction: true,
     );
 
-    $command = new SeedCommand(
-        discovery: $discovery,
-        runner: $runner,
-        connection: $connection,
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
-        isProduction: true,
-    );
-
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
-    $input = new Input(['marko', 'db:seed']);
-
-    $exitCode = $command->execute($input, $output);
+    ['exitCode' => $exitCode] = executeSeedCommand($command);
 
     expect($exitCode)->toBe(1);
 });
 
 it('shows error message when blocked in production', function (): void {
-    $seeder = new class () implements SeederInterface
-    {
-        public function run(
-            ConnectionInterface $connection,
-        ): void {}
-    };
+    $seeder = createNoOpSeeder();
 
     $definitions = [
         new SeederDefinition(seederClass: get_class($seeder), name: 'users', order: 10),
     ];
 
-    $discovery = createStubDiscovery(vendorDefinitions: $definitions);
-    $connection = createStubConnection();
-
-    $runner = new SeederRunner(
+    $command = createSeedCommand(
+        definitions: $definitions,
         seeders: [get_class($seeder) => $seeder],
         isProduction: true,
     );
 
-    $command = new SeedCommand(
-        discovery: $discovery,
-        runner: $runner,
-        connection: $connection,
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
-        isProduction: true,
-    );
+    ['output' => $output] = executeSeedCommand($command);
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
-    $input = new Input(['marko', 'db:seed']);
-
-    $command->execute($input, $output);
-
-    $result = getOutputContent($stream);
-
-    expect($result)->toContain('cannot be run in production');
+    expect($output)->toContain('cannot be run in production');
 });
 
 it('does NOT support --force flag (seeders never run in production)', function (): void {
-    $seeder = new class () implements SeederInterface
-    {
-        public function run(
-            ConnectionInterface $connection,
-        ): void {}
-    };
+    $seeder = createNoOpSeeder();
 
     $definitions = [
         new SeederDefinition(seederClass: get_class($seeder), name: 'users', order: 10),
     ];
 
-    $discovery = createStubDiscovery(vendorDefinitions: $definitions);
-    $connection = createStubConnection();
-
-    $runner = new SeederRunner(
+    $command = createSeedCommand(
+        definitions: $definitions,
         seeders: [get_class($seeder) => $seeder],
         isProduction: true,
     );
 
-    $command = new SeedCommand(
-        discovery: $discovery,
-        runner: $runner,
-        connection: $connection,
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
-        isProduction: true,
+    // Even with --force, it should still block
+    ['output' => $output, 'exitCode' => $exitCode] = executeSeedCommand(
+        $command,
+        ['marko', 'db:seed', '--force'],
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
-    // Even with --force, it should still block
-    $input = new Input(['marko', 'db:seed', '--force']);
-
-    $exitCode = $command->execute($input, $output);
-
-    expect($exitCode)->toBe(1);
-
-    $result = getOutputContent($stream);
-
-    expect($result)->toContain('cannot be run in production');
+    expect($exitCode)->toBe(1)
+        ->and($output)->toContain('cannot be run in production');
 });
 
 it('shows "No seeders found" when none discovered', function (): void {
-    $discovery = createStubDiscovery();
-    $connection = createStubConnection();
+    $command = createSeedCommand();
 
-    $runner = new SeederRunner(
-        seeders: [],
-        isProduction: false,
-    );
+    ['output' => $output] = executeSeedCommand($command);
 
-    $command = new SeedCommand(
-        discovery: $discovery,
-        runner: $runner,
-        connection: $connection,
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
-        isProduction: false,
-    );
-
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
-    $input = new Input(['marko', 'db:seed']);
-
-    $command->execute($input, $output);
-
-    $result = getOutputContent($stream);
-
-    expect($result)->toContain('No seeders found');
+    expect($output)->toContain('No seeders found');
 });
 
 it('returns 0 on success, 1 on failure', function (): void {
-    $seeder = new class () implements SeederInterface
-    {
-        public function run(
-            ConnectionInterface $connection,
-        ): void {}
-    };
+    $seeder = createNoOpSeeder();
 
     $definitions = [
         new SeederDefinition(seederClass: get_class($seeder), name: 'users', order: 10),
     ];
 
-    $discovery = createStubDiscovery(vendorDefinitions: $definitions);
-    $connection = createStubConnection();
-
-    $runner = new SeederRunner(
+    $command = createSeedCommand(
+        definitions: $definitions,
         seeders: [get_class($seeder) => $seeder],
-        isProduction: false,
     );
 
-    $command = new SeedCommand(
-        discovery: $discovery,
-        runner: $runner,
-        connection: $connection,
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
-        isProduction: false,
-    );
-
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
-    $input = new Input(['marko', 'db:seed']);
-
-    $exitCode = $command->execute($input, $output);
+    ['exitCode' => $exitCode] = executeSeedCommand($command);
 
     expect($exitCode)->toBe(0);
 });

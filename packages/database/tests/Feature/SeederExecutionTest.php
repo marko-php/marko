@@ -119,9 +119,10 @@ describe('Seeder Execution', function (): void {
         $runner = new SeederRunner($seeders, isProduction: false);
         $runner->runAll($definitions, $connection);
 
-        expect($insertedData)->toHaveCount(2);
-        expect($insertedData[0]['bindings'])->toContain('John Doe');
-        expect($insertedData[1]['bindings'])->toContain('Jane Doe');
+        expect($insertedData)
+            ->toHaveCount(2)
+            ->and($insertedData[0]['bindings'])->toContain('John Doe')
+            ->and($insertedData[1]['bindings'])->toContain('Jane Doe');
     });
 
     it('runs seeders in order based on order property', function (): void {
@@ -199,9 +200,10 @@ describe('Seeder Execution', function (): void {
         // Users (order 10) should run first
         // Posts (order 20) should run second
         // Comments (order 30) should run last
-        expect($executionOrder[0])->toBe('users');
-        expect($executionOrder[2])->toBe('posts');
-        expect($executionOrder[3])->toBe('comments');
+        expect($executionOrder[0])
+            ->toBe('users')
+            ->and($executionOrder[2])->toBe('posts')
+            ->and($executionOrder[3])->toBe('comments');
     });
 
     it('runs specific seeder by name', function (): void {
@@ -271,8 +273,9 @@ describe('Seeder Execution', function (): void {
         $runner->runByName('posts', $definitions, $connection);
 
         // Only posts seeder should have run
-        expect($ran)->toHaveCount(1);
-        expect($ran[0])->toBe('posts');
+        expect($ran)
+            ->toHaveCount(1)
+            ->and($ran[0])->toBe('posts');
     });
 
     it('throws SeederException when running in production', function (): void {

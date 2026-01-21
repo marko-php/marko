@@ -15,6 +15,7 @@ class IndexTestEntity extends Entity
 {
     public int $id;
 
+    /** @noinspection PhpUnused - Entity property for structural definition */
     public int $authorId;
 
     public string $title;
@@ -37,49 +38,46 @@ class MultipleIndexTestEntity extends Entity
 {
     public int $id;
 
+    /** @noinspection PhpUnused - Entity property for structural definition */
     public int $authorId;
 
     public string $title;
 
+    /** @noinspection PhpUnused - Entity property for structural definition */
     public ?string $publishedAt;
 }
 
 it('creates #[Index] attribute with name and columns', function (): void {
     $reflection = new ReflectionClass(IndexTestEntity::class);
     $attributes = $reflection->getAttributes(Index::class);
-
-    expect($attributes)->toHaveCount(1);
-
     $index = $attributes[0]->newInstance();
-    expect($index)->toBeInstanceOf(Index::class);
-    expect($index->name)->toBe('idx_author');
-    expect($index->columns)->toBe(['author_id']);
+
+    expect($attributes)->toHaveCount(1)
+        ->and($index)->toBeInstanceOf(Index::class)
+        ->and($index->name)->toBe('idx_author')
+        ->and($index->columns)->toBe(['author_id']);
 });
 
 it('supports #[Index] unique parameter', function (): void {
     $reflection = new ReflectionClass(UniqueIndexTestEntity::class);
     $attributes = $reflection->getAttributes(Index::class);
-
     $index = $attributes[0]->newInstance();
-    expect($index->name)->toBe('idx_email');
-    expect($index->columns)->toBe(['email']);
-    expect($index->unique)->toBeTrue();
+
+    expect($index->name)->toBe('idx_email')
+        ->and($index->columns)->toBe(['email'])
+        ->and($index->unique)->toBeTrue();
 });
 
 it('allows multiple #[Index] attributes on a class', function (): void {
     $reflection = new ReflectionClass(MultipleIndexTestEntity::class);
     $attributes = $reflection->getAttributes(Index::class);
-
-    expect($attributes)->toHaveCount(3);
-
     $indexes = array_map(fn ($attr) => $attr->newInstance(), $attributes);
 
-    expect($indexes[0]->name)->toBe('idx_author');
-    expect($indexes[0]->columns)->toBe(['author_id']);
-
-    expect($indexes[1]->name)->toBe('idx_published');
-    expect($indexes[1]->columns)->toBe(['published_at']);
-
-    expect($indexes[2]->name)->toBe('idx_author_published');
-    expect($indexes[2]->columns)->toBe(['author_id', 'published_at']);
+    expect($attributes)->toHaveCount(3)
+        ->and($indexes[0]->name)->toBe('idx_author')
+        ->and($indexes[0]->columns)->toBe(['author_id'])
+        ->and($indexes[1]->name)->toBe('idx_published')
+        ->and($indexes[1]->columns)->toBe(['published_at'])
+        ->and($indexes[2]->name)->toBe('idx_author_published')
+        ->and($indexes[2]->columns)->toBe(['author_id', 'published_at']);
 });

@@ -106,12 +106,13 @@ it('hydrates entity from database row array', function (): void {
 
     $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
 
-    expect($entity)->toBeInstanceOf(HydratorTestUser::class);
-    expect($entity->id)->toBe(1);
-    expect($entity->name)->toBe('John Doe');
-    expect($entity->email)->toBe('john@example.com');
-    expect($entity->isActive)->toBeTrue();
-    expect($entity->bio)->toBe('A developer');
+    expect($entity)
+        ->toBeInstanceOf(HydratorTestUser::class)
+        ->and($entity->id)->toBe(1)
+        ->and($entity->name)->toBe('John Doe')
+        ->and($entity->email)->toBe('john@example.com')
+        ->and($entity->isActive)->toBeTrue()
+        ->and($entity->bio)->toBe('A developer');
 });
 
 it('maps database columns to entity properties using metadata', function (): void {
@@ -128,8 +129,9 @@ it('maps database columns to entity properties using metadata', function (): voi
 
     $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
 
-    expect($entity->email)->toBe('jane@example.com');
-    expect($entity->isActive)->toBeFalse();
+    expect($entity->email)
+        ->toBe('jane@example.com')
+        ->and($entity->isActive)->toBeFalse();
 });
 
 it('handles snake_case to camelCase conversion', function (): void {
@@ -145,9 +147,10 @@ it('handles snake_case to camelCase conversion', function (): void {
 
     $entity = $hydrator->hydrate(HydratorSnakeCaseEntity::class, $row, $metadata);
 
-    expect($entity->firstName)->toBe('John');
-    expect($entity->lastName)->toBe('Doe');
-    expect($entity->totalCount)->toBe(42);
+    expect($entity->firstName)
+        ->toBe('John')
+        ->and($entity->lastName)->toBe('Doe')
+        ->and($entity->totalCount)->toBe(42);
 });
 
 it('converts database types to PHP types (int, string, bool)', function (): void {
@@ -164,10 +167,11 @@ it('converts database types to PHP types (int, string, bool)', function (): void
 
     $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
 
-    expect($entity->id)->toBe(123);
-    expect($entity->id)->toBeInt();
-    expect($entity->isActive)->toBeTrue();
-    expect($entity->isActive)->toBeBool();
+    expect($entity->id)
+        ->toBe(123)
+        ->toBeInt()
+        ->and($entity->isActive)->toBeTrue()
+        ->toBeBool();
 });
 
 it('converts datetime strings to DateTimeImmutable', function (): void {
@@ -183,10 +187,11 @@ it('converts datetime strings to DateTimeImmutable', function (): void {
 
     $entity = $hydrator->hydrate(HydratorTestPost::class, $row, $metadata);
 
-    expect($entity->createdAt)->toBeInstanceOf(DateTimeImmutable::class);
-    expect($entity->createdAt->format('Y-m-d H:i:s'))->toBe('2024-01-15 10:30:00');
-    expect($entity->publishedAt)->toBeInstanceOf(DateTimeImmutable::class);
-    expect($entity->publishedAt->format('Y-m-d H:i:s'))->toBe('2024-01-16 12:00:00');
+    expect($entity->createdAt)
+        ->toBeInstanceOf(DateTimeImmutable::class)
+        ->and($entity->createdAt->format('Y-m-d H:i:s'))->toBe('2024-01-15 10:30:00')
+        ->and($entity->publishedAt)->toBeInstanceOf(DateTimeImmutable::class)
+        ->and($entity->publishedAt->format('Y-m-d H:i:s'))->toBe('2024-01-16 12:00:00');
 });
 
 it('converts enum values to BackedEnum instances', function (): void {
@@ -202,9 +207,10 @@ it('converts enum values to BackedEnum instances', function (): void {
 
     $entity = $hydrator->hydrate(HydratorTestArticle::class, $row, $metadata);
 
-    expect($entity->status)->toBe(PostStatus::Published);
-    expect($entity->status)->toBeInstanceOf(BackedEnum::class);
-    expect($entity->previousStatus)->toBe(PostStatus::Draft);
+    expect($entity->status)
+        ->toBe(PostStatus::Published)
+        ->toBeInstanceOf(BackedEnum::class)
+        ->and($entity->previousStatus)->toBe(PostStatus::Draft);
 });
 
 it('handles nullable properties correctly', function (): void {
@@ -221,8 +227,9 @@ it('handles nullable properties correctly', function (): void {
 
     $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
 
-    expect($entity->id)->toBeNull();
-    expect($entity->bio)->toBeNull();
+    expect($entity->id)
+        ->toBeNull()
+        ->and($entity->bio)->toBeNull();
 
     $postMetadata = createPostMetadata();
     $postRow = [

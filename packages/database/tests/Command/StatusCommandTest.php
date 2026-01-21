@@ -2,118 +2,25 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/Helpers.php';
+
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
-use Marko\Core\Command\Output;
 use Marko\Database\Command\StatusCommand;
-use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Migration\MigrationRepository;
 use Marko\Database\Migration\Migrator;
 
-/**
- * Helper to create a stub ConnectionInterface.
- */
-function createStubStatusConnection(): ConnectionInterface
-{
-    return new class () implements ConnectionInterface
-    {
-        public function connect(): void {}
-
-        public function disconnect(): void {}
-
-        public function isConnected(): bool
-        {
-            return true;
-        }
-
-        public function query(
-            string $sql,
-            array $bindings = [],
-        ): array {
-            return [];
-        }
-
-        public function execute(
-            string $sql,
-            array $bindings = [],
-        ): int {
-            return 0;
-        }
-
-        public function prepare(
-            string $sql,
-        ): StatementInterface {
-            return new class () implements StatementInterface
-            {
-                public function execute(
-                    array $bindings = [],
-                ): bool {
-                    return true;
-                }
-
-                public function fetchAll(): array
-                {
-                    return [];
-                }
-
-                public function fetch(): ?array
-                {
-                    return null;
-                }
-
-                public function rowCount(): int
-                {
-                    return 0;
-                }
-            };
-        }
-
-        public function lastInsertId(): int
-        {
-            return 0;
-        }
-    };
-}
-
-/**
- * Helper to capture output.
- *
- * @return array{stream: resource, output: Output}
- */
-function createStatusOutputStream(): array
-{
-    $stream = fopen('php://memory', 'r+');
-
-    return [
-        'stream' => $stream,
-        'output' => new Output($stream),
-    ];
-}
-
-/**
- * Helper to get output content.
- *
- * @param resource $stream
- */
-function getStatusOutputContent(
-    mixed $stream,
-): string {
-    rewind($stream);
-
-    return stream_get_contents($stream);
-}
+use function Marko\Database\Tests\Command\createOutputStream;
+use function Marko\Database\Tests\Command\createStubConnection;
+use function Marko\Database\Tests\Command\getOutputContent;
 
 it('registers as db:status command via #[Command] attribute', function (): void {
     $reflection = new ReflectionClass(StatusCommand::class);
     $attributes = $reflection->getAttributes(Command::class);
 
-    expect($attributes)->toHaveCount(1);
-
-    $command = $attributes[0]->newInstance();
-
-    expect($command->name)->toBe('db:status');
+    expect($attributes)->toHaveCount(1)
+        ->and($attributes[0]->newInstance()->name)->toBe('db:status');
 });
 
 it('implements CommandInterface', function (): void {
@@ -140,7 +47,7 @@ PHP;
     file_put_contents($migrationsPath . '/2024_01_01_000000_create_users_table.php', $migrationContent);
     file_put_contents($migrationsPath . '/2024_01_02_000000_create_posts_table.php', $migrationContent);
 
-    $connection = createStubStatusConnection();
+    $connection = createStubConnection();
 
     $repository = $this->createMock(MigrationRepository::class);
     $repository->method('createTable');
@@ -157,12 +64,12 @@ PHP;
 
     $command = new StatusCommand($migrator, $repository, $connection);
 
-    ['stream' => $stream, 'output' => $output] = createStatusOutputStream();
+    ['stream' => $stream, 'output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:status']);
 
     $command->execute($input, $output);
 
-    $result = getStatusOutputContent($stream);
+    $result = getOutputContent($stream);
 
     expect($result)->toContain('2024_01_01_000000_create_users_table')
         ->and($result)->toContain('1')
@@ -193,7 +100,7 @@ PHP;
     file_put_contents($migrationsPath . '/2024_01_02_000000_create_posts_table.php', $migrationContent);
     file_put_contents($migrationsPath . '/2024_01_03_000000_create_comments_table.php', $migrationContent);
 
-    $connection = createStubStatusConnection();
+    $connection = createStubConnection();
 
     $repository = $this->createMock(MigrationRepository::class);
     $repository->method('createTable');
@@ -208,12 +115,12 @@ PHP;
 
     $command = new StatusCommand($migrator, $repository, $connection);
 
-    ['stream' => $stream, 'output' => $output] = createStatusOutputStream();
+    ['stream' => $stream, 'output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:status']);
 
     $command->execute($input, $output);
 
-    $result = getStatusOutputContent($stream);
+    $result = getOutputContent($stream);
 
     expect($result)->toContain('2024_01_02_000000_create_posts_table')
         ->and($result)->toContain('2024_01_03_000000_create_comments_table')
@@ -243,7 +150,7 @@ PHP;
     file_put_contents($migrationsPath . '/2024_01_02_000000_create_posts_table.php', $migrationContent);
     file_put_contents($migrationsPath . '/2024_01_03_000000_create_comments_table.php', $migrationContent);
 
-    $connection = createStubStatusConnection();
+    $connection = createStubConnection();
 
     $repository = $this->createMock(MigrationRepository::class);
     $repository->method('createTable');
@@ -260,12 +167,12 @@ PHP;
 
     $command = new StatusCommand($migrator, $repository, $connection);
 
-    ['stream' => $stream, 'output' => $output] = createStatusOutputStream();
+    ['stream' => $stream, 'output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:status']);
 
     $command->execute($input, $output);
 
-    $result = getStatusOutputContent($stream);
+    $result = getOutputContent($stream);
 
     expect($result)->toContain('Applied: 2');
 
@@ -293,7 +200,7 @@ PHP;
     file_put_contents($migrationsPath . '/2024_01_02_000000_create_posts_table.php', $migrationContent);
     file_put_contents($migrationsPath . '/2024_01_03_000000_create_comments_table.php', $migrationContent);
 
-    $connection = createStubStatusConnection();
+    $connection = createStubConnection();
 
     $repository = $this->createMock(MigrationRepository::class);
     $repository->method('createTable');
@@ -308,12 +215,12 @@ PHP;
 
     $command = new StatusCommand($migrator, $repository, $connection);
 
-    ['stream' => $stream, 'output' => $output] = createStatusOutputStream();
+    ['stream' => $stream, 'output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:status']);
 
     $command->execute($input, $output);
 
-    $result = getStatusOutputContent($stream);
+    $result = getOutputContent($stream);
 
     expect($result)->toContain('Pending: 2');
 
@@ -326,7 +233,7 @@ it('shows "No migrations found" when migrations directory empty', function (): v
     $migrationsPath = sys_get_temp_dir() . '/marko_status_test_' . uniqid();
     mkdir($migrationsPath, 0777, true);
 
-    $connection = createStubStatusConnection();
+    $connection = createStubConnection();
 
     $repository = $this->createMock(MigrationRepository::class);
     $repository->method('createTable');
@@ -337,12 +244,12 @@ it('shows "No migrations found" when migrations directory empty', function (): v
 
     $command = new StatusCommand($migrator, $repository, $connection);
 
-    ['stream' => $stream, 'output' => $output] = createStatusOutputStream();
+    ['stream' => $stream, 'output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:status']);
 
     $command->execute($input, $output);
 
-    $result = getStatusOutputContent($stream);
+    $result = getOutputContent($stream);
 
     expect($result)->toContain('No migrations found');
 
@@ -368,7 +275,7 @@ PHP;
     file_put_contents($migrationsPath . '/2024_01_01_000000_create_users_table.php', $migrationContent);
     file_put_contents($migrationsPath . '/2024_01_02_000000_create_posts_table.php', $migrationContent);
 
-    $connection = createStubStatusConnection();
+    $connection = createStubConnection();
 
     $repository = $this->createMock(MigrationRepository::class);
     $repository->method('createTable');
@@ -385,12 +292,12 @@ PHP;
 
     $command = new StatusCommand($migrator, $repository, $connection);
 
-    ['stream' => $stream, 'output' => $output] = createStatusOutputStream();
+    ['stream' => $stream, 'output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:status']);
 
     $command->execute($input, $output);
 
-    $result = getStatusOutputContent($stream);
+    $result = getOutputContent($stream);
 
     expect($result)->toContain('All migrations applied');
 
@@ -403,7 +310,7 @@ it('returns 0 exit code on success', function (): void {
     $migrationsPath = sys_get_temp_dir() . '/marko_status_test_' . uniqid();
     mkdir($migrationsPath, 0777, true);
 
-    $connection = createStubStatusConnection();
+    $connection = createStubConnection();
 
     $repository = $this->createMock(MigrationRepository::class);
     $repository->method('createTable');
@@ -414,7 +321,7 @@ it('returns 0 exit code on success', function (): void {
 
     $command = new StatusCommand($migrator, $repository, $connection);
 
-    ['stream' => $stream, 'output' => $output] = createStatusOutputStream();
+    ['stream' => $stream, 'output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:status']);
 
     $exitCode = $command->execute($input, $output);

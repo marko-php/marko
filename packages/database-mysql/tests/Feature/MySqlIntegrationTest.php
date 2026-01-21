@@ -44,11 +44,12 @@ describe('MySQL Integration', function (): void {
         $sql = $generator->generateCreateTable($table);
 
         // MySQL uses backticks for identifiers
-        expect($sql)->toContain('`users`');
-        expect($sql)->toContain('`id`');
-        expect($sql)->toContain('`email`');
-        expect($sql)->toContain('AUTO_INCREMENT');
-        expect($sql)->toContain('PRIMARY KEY');
+        expect($sql)
+            ->toContain('`users`')
+            ->and($sql)->toContain('`id`')
+            ->and($sql)->toContain('`email`')
+            ->and($sql)->toContain('AUTO_INCREMENT')
+            ->and($sql)->toContain('PRIMARY KEY');
     });
 
     it('generates MySQL-specific data types', function (): void {
@@ -67,11 +68,11 @@ describe('MySQL Integration', function (): void {
 
         $sql = $generator->generateCreateTable($table);
 
-        // MySQL uses TINYINT(1) for boolean
-        expect($sql)->toContain('TINYINT(1)');
-        // MySQL supports native JSON type
-        expect($sql)->toContain('JSON');
-        expect($sql)->toContain('DATETIME');
+        // MySQL uses TINYINT(1) for boolean, supports native JSON type
+        expect($sql)
+            ->toContain('TINYINT(1)')
+            ->and($sql)->toContain('JSON')
+            ->and($sql)->toContain('DATETIME');
     });
 
     it('generates MySQL-specific ALTER TABLE statements', function (): void {
@@ -98,10 +99,11 @@ describe('MySQL Integration', function (): void {
 
         $statements = $generator->generateUp($diff);
 
-        expect($statements)->toHaveCount(1);
-        expect($statements[0])->toContain('ALTER TABLE `users`');
-        expect($statements[0])->toContain('ADD COLUMN');
-        expect($statements[0])->toContain('`phone`');
+        expect($statements)
+            ->toHaveCount(1)
+            ->and($statements[0])->toContain('ALTER TABLE `users`')
+            ->and($statements[0])->toContain('ADD COLUMN')
+            ->and($statements[0])->toContain('`phone`');
     });
 
     it('generates MySQL-specific index syntax', function (): void {
@@ -115,9 +117,10 @@ describe('MySQL Integration', function (): void {
 
         $sql = $generator->generateAddIndex('users', $index);
 
-        expect($sql)->toContain('CREATE UNIQUE INDEX');
-        expect($sql)->toContain('`idx_email`');
-        expect($sql)->toContain('ON `users`');
+        expect($sql)
+            ->toContain('CREATE UNIQUE INDEX')
+            ->and($sql)->toContain('`idx_email`')
+            ->and($sql)->toContain('ON `users`');
     });
 
     it('generates MySQL-specific foreign key syntax', function (): void {
@@ -134,12 +137,13 @@ describe('MySQL Integration', function (): void {
 
         $sql = $generator->generateAddForeignKey('posts', $foreignKey);
 
-        expect($sql)->toContain('ALTER TABLE `posts`');
-        expect($sql)->toContain('ADD CONSTRAINT `fk_user_id`');
-        expect($sql)->toContain('FOREIGN KEY (`user_id`)');
-        expect($sql)->toContain('REFERENCES `users` (`id`)');
-        expect($sql)->toContain('ON DELETE CASCADE');
-        expect($sql)->toContain('ON UPDATE SET NULL');
+        expect($sql)
+            ->toContain('ALTER TABLE `posts`')
+            ->and($sql)->toContain('ADD CONSTRAINT `fk_user_id`')
+            ->and($sql)->toContain('FOREIGN KEY (`user_id`)')
+            ->and($sql)->toContain('REFERENCES `users` (`id`)')
+            ->and($sql)->toContain('ON DELETE CASCADE')
+            ->and($sql)->toContain('ON UPDATE SET NULL');
     });
 
     it('generates MySQL-specific DROP FOREIGN KEY syntax', function (): void {
@@ -148,8 +152,9 @@ describe('MySQL Integration', function (): void {
         $sql = $generator->generateDropForeignKey('posts', 'fk_user_id');
 
         // MySQL uses DROP FOREIGN KEY (not DROP CONSTRAINT)
-        expect($sql)->toContain('ALTER TABLE `posts`');
-        expect($sql)->toContain('DROP FOREIGN KEY `fk_user_id`');
+        expect($sql)
+            ->toContain('ALTER TABLE `posts`')
+            ->and($sql)->toContain('DROP FOREIGN KEY `fk_user_id`');
     });
 
     it('generates complete migration with up and down', function (): void {
@@ -173,11 +178,11 @@ describe('MySQL Integration', function (): void {
         $upStatements = $generator->generateUp($diff);
         $downStatements = $generator->generateDown($diff);
 
-        expect($upStatements)->toHaveCount(1);
-        expect($upStatements[0])->toContain('CREATE TABLE `products`');
-
-        expect($downStatements)->toHaveCount(1);
-        expect($downStatements[0])->toContain('DROP TABLE `products`');
+        expect($upStatements)
+            ->toHaveCount(1)
+            ->and($upStatements[0])->toContain('CREATE TABLE `products`')
+            ->and($downStatements)->toHaveCount(1)
+            ->and($downStatements[0])->toContain('DROP TABLE `products`');
     });
 
     it('generates MySQL-specific column modifications', function (): void {
@@ -189,10 +194,11 @@ describe('MySQL Integration', function (): void {
         $sql = $generator->generateModifyColumn('orders', $newColumn, $oldColumn);
 
         // MySQL uses MODIFY COLUMN
-        expect($sql)->toContain('ALTER TABLE `orders`');
-        expect($sql)->toContain('MODIFY COLUMN');
-        expect($sql)->toContain('`status`');
-        expect($sql)->toContain('VARCHAR(50)');
+        expect($sql)
+            ->toContain('ALTER TABLE `orders`')
+            ->and($sql)->toContain('MODIFY COLUMN')
+            ->and($sql)->toContain('`status`')
+            ->and($sql)->toContain('VARCHAR(50)');
     });
 
     it('handles nullable columns correctly', function (): void {
@@ -210,8 +216,9 @@ describe('MySQL Integration', function (): void {
 
         $sql = $generator->generateCreateTable($table);
 
-        expect($sql)->toContain('`optional_field` VARCHAR(100) NULL');
-        expect($sql)->toContain('`required_field` VARCHAR(100) NOT NULL');
+        expect($sql)
+            ->toContain('`optional_field` VARCHAR(100) NULL')
+            ->and($sql)->toContain('`required_field` VARCHAR(100) NOT NULL');
     });
 
     it('handles default values with proper escaping', function (): void {
@@ -230,8 +237,9 @@ describe('MySQL Integration', function (): void {
 
         $sql = $generator->generateCreateTable($table);
 
-        expect($sql)->toContain("DEFAULT 'pending'");
-        expect($sql)->toContain('DEFAULT 0');
-        expect($sql)->toContain('DEFAULT 1'); // MySQL uses 1 for true
+        expect($sql)
+            ->toContain("DEFAULT 'pending'")
+            ->and($sql)->toContain('DEFAULT 0')
+            ->and($sql)->toContain('DEFAULT 1'); // MySQL uses 1 for true
     });
 });

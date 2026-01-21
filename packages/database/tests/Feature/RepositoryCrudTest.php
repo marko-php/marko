@@ -176,9 +176,10 @@ describe('Repository CRUD Operations', function (): void {
         // READ
         $found = $repository->find(1);
 
-        expect($found)->not->toBeNull();
-        expect($found->name)->toBe('Test Product');
-        expect($found->price)->toBe(99.99);
+        expect($found)
+            ->not->toBeNull()
+            ->and($found->name)->toBe('Test Product')
+            ->and($found->price)->toBe(99.99);
 
         // UPDATE (via dirty tracking)
         $found->name = 'Updated Product';
@@ -258,9 +259,10 @@ describe('Repository CRUD Operations', function (): void {
 
         $activeProducts = $repository->findBy(['isAvailable' => true]);
 
-        expect($activeProducts)->toHaveCount(2);
-        expect($activeProducts[0]->isAvailable)->toBeTrue();
-        expect($activeProducts[1]->isAvailable)->toBeTrue();
+        expect($activeProducts)
+            ->toHaveCount(2)
+            ->and($activeProducts[0]->isAvailable)->toBeTrue()
+            ->and($activeProducts[1]->isAvailable)->toBeTrue();
     });
 
     it('returns null for non-existent entities', function (): void {
@@ -415,7 +417,8 @@ describe('Repository CRUD Operations', function (): void {
         $hydrator = new EntityHydrator();
         $repository = new ProductRepository($connection, $metadataFactory, $hydrator);
 
-        expect($repository->exists(1))->toBeTrue();
-        expect($repository->exists(999))->toBeFalse();
+        expect($repository->exists(1))
+            ->toBeTrue()
+            ->and($repository->exists(999))->toBeFalse();
     });
 });

@@ -59,13 +59,12 @@ it('defines RepositoryInterface with find(id) method', function (): void {
     expect($method->isPublic())->toBeTrue();
 
     $parameters = $method->getParameters();
-    expect($parameters)->toHaveCount(1);
-    expect($parameters[0]->getName())->toBe('id');
-    expect($parameters[0]->getType()->getName())->toBe('int');
-
     $returnType = $method->getReturnType();
-    expect($returnType->allowsNull())->toBeTrue();
-    expect($returnType->getName())->toBe(Entity::class);
+    expect($parameters)->toHaveCount(1)
+        ->and($parameters[0]->getName())->toBe('id')
+        ->and($parameters[0]->getType()->getName())->toBe('int')
+        ->and($returnType->allowsNull())->toBeTrue()
+        ->and($returnType->getName())->toBe(Entity::class);
 });
 
 it('defines RepositoryInterface with findAll() method', function (): void {
@@ -74,11 +73,10 @@ it('defines RepositoryInterface with findAll() method', function (): void {
     expect($reflection->hasMethod('findAll'))->toBeTrue();
 
     $method = $reflection->getMethod('findAll');
-    expect($method->isPublic())->toBeTrue();
-    expect($method->getParameters())->toHaveCount(0);
-
     $returnType = $method->getReturnType();
-    expect($returnType->getName())->toBe('array');
+    expect($method->isPublic())->toBeTrue()
+        ->and($method->getParameters())->toHaveCount(0)
+        ->and($returnType->getName())->toBe('array');
 });
 
 it('defines RepositoryInterface with findBy(criteria) method', function (): void {
@@ -87,15 +85,13 @@ it('defines RepositoryInterface with findBy(criteria) method', function (): void
     expect($reflection->hasMethod('findBy'))->toBeTrue();
 
     $method = $reflection->getMethod('findBy');
-    expect($method->isPublic())->toBeTrue();
-
     $parameters = $method->getParameters();
-    expect($parameters)->toHaveCount(1);
-    expect($parameters[0]->getName())->toBe('criteria');
-    expect($parameters[0]->getType()->getName())->toBe('array');
-
     $returnType = $method->getReturnType();
-    expect($returnType->getName())->toBe('array');
+    expect($method->isPublic())->toBeTrue()
+        ->and($parameters)->toHaveCount(1)
+        ->and($parameters[0]->getName())->toBe('criteria')
+        ->and($parameters[0]->getType()->getName())->toBe('array')
+        ->and($returnType->getName())->toBe('array');
 });
 
 it('defines RepositoryInterface with findOneBy(criteria) method', function (): void {
@@ -104,16 +100,14 @@ it('defines RepositoryInterface with findOneBy(criteria) method', function (): v
     expect($reflection->hasMethod('findOneBy'))->toBeTrue();
 
     $method = $reflection->getMethod('findOneBy');
-    expect($method->isPublic())->toBeTrue();
-
     $parameters = $method->getParameters();
-    expect($parameters)->toHaveCount(1);
-    expect($parameters[0]->getName())->toBe('criteria');
-    expect($parameters[0]->getType()->getName())->toBe('array');
-
     $returnType = $method->getReturnType();
-    expect($returnType->allowsNull())->toBeTrue();
-    expect($returnType->getName())->toBe(Entity::class);
+    expect($method->isPublic())->toBeTrue()
+        ->and($parameters)->toHaveCount(1)
+        ->and($parameters[0]->getName())->toBe('criteria')
+        ->and($parameters[0]->getType()->getName())->toBe('array')
+        ->and($returnType->allowsNull())->toBeTrue()
+        ->and($returnType->getName())->toBe(Entity::class);
 });
 
 it('defines RepositoryInterface with save(entity) method', function (): void {
@@ -122,15 +116,13 @@ it('defines RepositoryInterface with save(entity) method', function (): void {
     expect($reflection->hasMethod('save'))->toBeTrue();
 
     $method = $reflection->getMethod('save');
-    expect($method->isPublic())->toBeTrue();
-
     $parameters = $method->getParameters();
-    expect($parameters)->toHaveCount(1);
-    expect($parameters[0]->getName())->toBe('entity');
-    expect($parameters[0]->getType()->getName())->toBe(Entity::class);
-
     $returnType = $method->getReturnType();
-    expect($returnType->getName())->toBe('void');
+    expect($method->isPublic())->toBeTrue()
+        ->and($parameters)->toHaveCount(1)
+        ->and($parameters[0]->getName())->toBe('entity')
+        ->and($parameters[0]->getType()->getName())->toBe(Entity::class)
+        ->and($returnType->getName())->toBe('void');
 });
 
 it('defines RepositoryInterface with delete(entity) method', function (): void {
@@ -139,29 +131,27 @@ it('defines RepositoryInterface with delete(entity) method', function (): void {
     expect($reflection->hasMethod('delete'))->toBeTrue();
 
     $method = $reflection->getMethod('delete');
-    expect($method->isPublic())->toBeTrue();
-
     $parameters = $method->getParameters();
-    expect($parameters)->toHaveCount(1);
-    expect($parameters[0]->getName())->toBe('entity');
-    expect($parameters[0]->getType()->getName())->toBe(Entity::class);
-
     $returnType = $method->getReturnType();
-    expect($returnType->getName())->toBe('void');
+    expect($method->isPublic())->toBeTrue()
+        ->and($parameters)->toHaveCount(1)
+        ->and($parameters[0]->getName())->toBe('entity')
+        ->and($parameters[0]->getType()->getName())->toBe(Entity::class)
+        ->and($returnType->getName())->toBe('void');
 });
 
 it('creates Repository base class implementing interface', function (): void {
     $reflection = new ReflectionClass(Repository::class);
 
-    expect($reflection->implementsInterface(RepositoryInterface::class))->toBeTrue();
-    expect($reflection->isAbstract())->toBeTrue();
+    expect($reflection->implementsInterface(RepositoryInterface::class))->toBeTrue()
+        ->and($reflection->isAbstract())->toBeTrue();
 });
 
 it('requires ENTITY_CLASS constant in concrete repositories', function (): void {
     $reflection = new ReflectionClass(UserRepository::class);
 
-    expect($reflection->hasConstant('ENTITY_CLASS'))->toBeTrue();
-    expect($reflection->getConstant('ENTITY_CLASS'))->toBe(RepositoryTestUser::class);
+    expect($reflection->hasConstant('ENTITY_CLASS'))->toBeTrue()
+        ->and($reflection->getConstant('ENTITY_CLASS'))->toBe(RepositoryTestUser::class);
 });
 
 it('throws RepositoryException if ENTITY_CLASS not defined', function (): void {
@@ -184,9 +174,9 @@ it('uses EntityMetadata to determine table and columns', function (): void {
     $metadataProperty = $reflection->getProperty('metadata');
     $metadata = $metadataProperty->getValue($repository);
 
-    expect($metadata)->toBeInstanceOf(EntityMetadata::class);
-    expect($metadata->tableName)->toBe('users');
-    expect($metadata->entityClass)->toBe(RepositoryTestUser::class);
+    expect($metadata)->toBeInstanceOf(EntityMetadata::class)
+        ->and($metadata->tableName)->toBe('users')
+        ->and($metadata->entityClass)->toBe(RepositoryTestUser::class);
 });
 
 it('uses EntityHydrator to convert rows to entities', function (): void {
@@ -210,11 +200,11 @@ it('uses EntityHydrator to convert rows to entities', function (): void {
 
     $user = $repository->find(1);
 
-    expect($user)->toBeInstanceOf(RepositoryTestUser::class);
-    expect($user->id)->toBe(1);
-    expect($user->name)->toBe('John Doe');
-    expect($user->email)->toBe('john@example.com');
-    expect($user->isActive)->toBeTrue();
+    expect($user)->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($user->id)->toBe(1)
+        ->and($user->name)->toBe('John Doe')
+        ->and($user->email)->toBe('john@example.com')
+        ->and($user->isActive)->toBeTrue();
 });
 
 it('injects ConnectionInterface via constructor', function (): void {
@@ -248,10 +238,10 @@ it('finds entity by primary key with find(id)', function (): void {
     $repository = new UserRepository($connection, $metadataFactory, $hydrator);
     $user = $repository->find(42);
 
-    expect($user)->toBeInstanceOf(RepositoryTestUser::class);
-    expect($user->id)->toBe(42);
-    expect($user->name)->toBe('Jane Doe');
-    expect($user->email)->toBe('jane@example.com');
+    expect($user)->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($user->id)->toBe(42)
+        ->and($user->name)->toBe('Jane Doe')
+        ->and($user->email)->toBe('jane@example.com');
 });
 
 it('returns null when entity not found', function (): void {
@@ -276,10 +266,10 @@ it('finds all entities with findAll()', function (): void {
     $repository = new UserRepository($connection, $metadataFactory, $hydrator);
     $users = $repository->findAll();
 
-    expect($users)->toHaveCount(2);
-    expect($users[0])->toBeInstanceOf(RepositoryTestUser::class);
-    expect($users[0]->name)->toBe('Alice');
-    expect($users[1]->name)->toBe('Bob');
+    expect($users)->toHaveCount(2)
+        ->and($users[0])->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($users[0]->name)->toBe('Alice')
+        ->and($users[1]->name)->toBe('Bob');
 });
 
 it('finds entities by criteria array with findBy(array)', function (): void {
@@ -293,9 +283,9 @@ it('finds entities by criteria array with findBy(array)', function (): void {
     $repository = new UserRepository($connection, $metadataFactory, $hydrator);
     $users = $repository->findBy(['isActive' => true]);
 
-    expect($users)->toHaveCount(2);
-    expect($users[0]->isActive)->toBeTrue();
-    expect($users[1]->isActive)->toBeTrue();
+    expect($users)->toHaveCount(2)
+        ->and($users[0]->isActive)->toBeTrue()
+        ->and($users[1]->isActive)->toBeTrue();
 });
 
 it('finds single entity by criteria with findOneBy(array)', function (): void {
@@ -308,8 +298,8 @@ it('finds single entity by criteria with findOneBy(array)', function (): void {
     $repository = new UserRepository($connection, $metadataFactory, $hydrator);
     $user = $repository->findOneBy(['name' => 'Bob']);
 
-    expect($user)->toBeInstanceOf(RepositoryTestUser::class);
-    expect($user->name)->toBe('Bob');
+    expect($user)->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($user->name)->toBe('Bob');
 });
 
 it('inserts new entity with save() when no ID', function (): void {
@@ -373,9 +363,9 @@ it('inserts new entity with save() when no ID', function (): void {
 
     $repository->save($user);
 
-    expect($executedSql)->toHaveCount(1);
-    expect($executedSql[0])->toContain('INSERT INTO');
-    expect($executedSql[0])->toContain('users');
+    expect($executedSql)->toHaveCount(1)
+        ->and($executedSql[0])->toContain('INSERT INTO')
+        ->and($executedSql[0])->toContain('users');
 });
 
 it('updates existing entity with save() when has ID', function (): void {
@@ -449,9 +439,9 @@ it('updates existing entity with save() when has ID', function (): void {
 
     $repository->save($user);
 
-    expect($executedSql)->toHaveCount(1);
-    expect($executedSql[0])->toContain('UPDATE');
-    expect($executedSql[0])->toContain('users');
+    expect($executedSql)->toHaveCount(1)
+        ->and($executedSql[0])->toContain('UPDATE')
+        ->and($executedSql[0])->toContain('users');
 });
 
 it('only updates dirty fields on existing entity', function (): void {
@@ -530,11 +520,11 @@ it('only updates dirty fields on existing entity', function (): void {
 
     // The SQL should only update the dirty field (name)
     $sql = $executedSql[0];
-    expect($sql)->toContain('name');
     // Should not contain email_address in SET clause (only in bindings/conditions)
     $setClause = substr($sql, strpos($sql, 'SET'), strpos($sql, 'WHERE') - strpos($sql, 'SET'));
-    expect($setClause)->not->toContain('email_address');
-    expect($setClause)->not->toContain('isActive');
+    expect($sql)->toContain('name')
+        ->and($setClause)->not->toContain('email_address')
+        ->and($setClause)->not->toContain('isActive');
 });
 
 it('sets auto-generated ID on entity after insert', function (): void {
@@ -659,10 +649,10 @@ it('deletes entity with delete()', function (): void {
     $user = $repository->find(5);
     $repository->delete($user);
 
-    expect($executedSql)->toHaveCount(1);
-    expect($executedSql[0])->toContain('DELETE FROM');
-    expect($executedSql[0])->toContain('users');
-    expect($executedBindings[0])->toBe([5]);
+    expect($executedSql)->toHaveCount(1)
+        ->and($executedSql[0])->toContain('DELETE FROM')
+        ->and($executedSql[0])->toContain('users')
+        ->and($executedBindings[0])->toBe([5]);
 });
 
 it('provides query() method returning QueryBuilder for custom queries', function (): void {
@@ -696,9 +686,9 @@ it('hydrates results from query() automatically', function (): void {
         ->where('name', '=', 'QueryUser')
         ->getEntities();
 
-    expect($users)->toHaveCount(1);
-    expect($users[0])->toBeInstanceOf(RepositoryTestUser::class);
-    expect($users[0]->name)->toBe('QueryUser');
+    expect($users)->toHaveCount(1)
+        ->and($users[0])->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($users[0]->name)->toBe('QueryUser');
 });
 
 it('supports count() method returning total count', function (): void {
@@ -807,8 +797,8 @@ it('supports exists(id) method returning boolean', function (): void {
 
     $repository = new UserRepository($connection, $metadataFactory, $hydrator);
 
-    expect($repository->exists(1))->toBeTrue();
-    expect($repository->exists(999))->toBeFalse();
+    expect($repository->exists(1))->toBeTrue()
+        ->and($repository->exists(999))->toBeFalse();
 });
 
 // Helper function to create mock connection

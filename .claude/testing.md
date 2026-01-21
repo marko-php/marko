@@ -221,6 +221,85 @@ it('creates user and sends welcome email', function () {
 });
 ```
 
+## Test File Checklist (MANDATORY)
+
+**Run through this checklist after creating or modifying any test file.** This ensures consistent quality across all tests.
+
+### Before Committing Any Test File
+
+- [ ] **All classes imported with `use` statements** - Never use inline fully-qualified class names. Import at the top of the file.
+  ```php
+  // CORRECT
+  use Marko\Database\Connection\ConnectionInterface;
+  use Marko\Database\Exceptions\DatabaseException;
+
+  expect($conn)->toBeInstanceOf(ConnectionInterface::class);
+
+  // WRONG - inline fully-qualified name
+  expect($conn)->toBeInstanceOf(\Marko\Database\Connection\ConnectionInterface::class);
+  ```
+
+- [ ] **All expectations chained with `->and()`** - No consecutive `expect()` calls on related assertions.
+  ```php
+  // CORRECT
+  expect($result)
+      ->toBeInstanceOf(User::class)
+      ->and($result->name)->toBe('Alice')
+      ->and($result->email)->toContain('@');
+
+  // WRONG - separate expect() calls
+  expect($result)->toBeInstanceOf(User::class);
+  expect($result->name)->toBe('Alice');
+  expect($result->email)->toContain('@');
+  ```
+
+- [ ] **Test names use present tense verbs** - "resolves", "throws", "returns", not "should resolve" or "demonstrates"
+
+- [ ] **No "demonstrate" in test names** - Tests verify behavior, they don't demonstrate it
+
+- [ ] **Reflection-invoked methods have `@noinspection PhpUnused`** - Plugin methods, observer handlers, etc.
+
+- [ ] **Anonymous class properties accessed via reflection have `@noinspection PhpUnused`** - When properties are only accessed through ORM/reflection
+
+- [ ] **Extract repeated code into helper functions** - If a setup pattern repeats 3+ times, extract it to `Helpers.php`:
+  ```php
+  // WRONG - duplicated setup in every test
+  $discovery = createStubEntityDiscovery();
+  $introspector = createStubIntrospector();
+  $metadataFactory = new EntityMetadataFactory();
+  $command = new DiffCommand(...);  // 10 lines repeated
+
+  // CORRECT - helper function in Helpers.php
+  $command = createDiffCommand(diffCalculator: $customCalculator);
+  ['output' => $output] = executeDiffCommand($command);
+  ```
+  Create helpers that accept only the varying parts as parameters.
+
+- [ ] **Run linter on specific test files AFTER tests pass** - This is MANDATORY. Run php-cs-fixer only on the specific files you created/modified, and only after the test is complete and passing:
+  ```bash
+  # Run php-cs-fixer on the SPECIFIC file(s) you modified
+  ./vendor/bin/php-cs-fixer fix packages/{package}/tests/Path/To/YourTest.php
+  ```
+  **Important:** Run this AFTER your test passes, not during development. This prevents needing to re-read the file after the linter reformats it. The pre-commit hook also runs this automatically, but running it explicitly ensures clean commits.
+
+  This fixes: unnecessary curly braces, trailing commas, whitespace issues, and other formatting problems.
+
+### Quick Verification Commands
+
+```bash
+# Run the tests first
+./vendor/bin/pest packages/{package}/tests/ --parallel
+
+# AFTER tests pass: Run linter on specific files you modified
+./vendor/bin/php-cs-fixer fix packages/{package}/tests/Path/To/YourTest.php
+
+# Check for unchained expectations (should return 0 or very few results)
+grep -rn "^[[:space:]]*expect(" packages/{package}/tests --include="*.php" | grep -v "->and(" | head -20
+
+# Check for inline fully-qualified class names (should return 0)
+grep -rn "\\\\Marko\\\\" packages/{package}/tests --include="*.php" | grep -v "^[^:]*:use " | head -20
+```
+
 ## Testing Principles
 
 ### 1. Test Behavior, Not Implementation
@@ -349,6 +428,87 @@ This applies to:
 - Any method discovered and invoked via reflection by the framework
 
 **Do NOT disable the `PhpUnused` inspection globally for tests** - it catches legitimate unused code. Only suppress it on specific methods that are genuinely used via reflection.
+
+## Anonymous Class Stub Guidelines
+
+When creating anonymous class stubs that extend real classes, follow these patterns:
+
+### Skipping Parent Constructor
+When a stub intentionally skips the parent constructor, add the annotation on BOTH the return statement and the constructor:
+```php
+/** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
+return new class () extends RealClass
+{
+    /** @noinspection PhpMissingParentConstructorInspection */
+    public function __construct(
+        private readonly array $stubData,
+    ) {}
+};
+```
+
+### Stub Return Types with Custom Properties
+When a stub helper returns an anonymous class with custom properties, document them in the return type to avoid "potentially polymorphic call" warnings:
+```php
+/**
+ * @return Migrator&object{rolledBack: array<string>, rollbackCallCount: int}
+ */
+function createStubMigrator(): Migrator {
+    return new class () extends Migrator
+    {
+        public array $rolledBack = [];
+        public int $rollbackCallCount = 0;
+        // ...
+    };
+}
+```
+The `&object{...}` syntax tells PhpStorm about the additional properties on the returned object.
+
+### Using `readonly` Properties
+Always use `readonly` on constructor-promoted properties in anonymous classes:
+```php
+return new class ($param) extends BaseClass
+{
+    public function __construct(
+        private readonly array $data,  // Use readonly
+    ) {}
+};
+```
+
+### Entity Fixture Properties
+Entity properties that exist for structural definition but aren't directly accessed in tests:
+```php
+class TestEntity extends Entity
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public int $id;
+
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public string $name;
+}
+```
+
+### Reference Properties for Tracking
+When using reference properties to track state changes from anonymous class methods:
+```php
+$executionOrder = [];
+
+$seeder = new class ($executionOrder) implements SeederInterface
+{
+    public function __construct(
+        /** @noinspection PhpUnused - Reference property used to track execution */
+        private array &$order,
+    ) {}
+
+    public function run(ConnectionInterface $connection): void
+    {
+        $this->order[] = 'executed';  // Modifies external $executionOrder
+    }
+};
+
+// After seeder runs:
+expect($executionOrder)->toBe(['executed']);
+```
+PhpStorm flags these as "Property is only written but never read" because it doesn't understand the reference semantics. Add the `@noinspection` annotation to suppress.
 
 ## Common Test Patterns
 

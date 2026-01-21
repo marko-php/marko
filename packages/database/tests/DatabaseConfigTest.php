@@ -29,12 +29,12 @@ PHP;
         try {
             $config = new DatabaseConfig($tempDir);
 
-            expect($config->driver)->toBe('mysql');
-            expect($config->host)->toBe('localhost');
-            expect($config->port)->toBe(3306);
-            expect($config->database)->toBe('test_db');
-            expect($config->username)->toBe('root');
-            expect($config->password)->toBe('secret');
+            expect($config->driver)->toBe('mysql')
+                ->and($config->host)->toBe('localhost')
+                ->and($config->port)->toBe(3306)
+                ->and($config->database)->toBe('test_db')
+                ->and($config->username)->toBe('root')
+                ->and($config->password)->toBe('secret');
         } finally {
             // Cleanup
             unlink($configDir . '/database.php');

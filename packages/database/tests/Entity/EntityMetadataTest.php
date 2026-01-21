@@ -58,12 +58,13 @@ it('creates EntityMetadata class to hold parsed attribute data', function (): vo
         indexes: $indexes,
     );
 
-    expect($metadata->entityClass)->toBe('App\Blog\Entity\Post');
-    expect($metadata->tableName)->toBe('posts');
-    expect($metadata->primaryKey)->toBe('id');
-    expect($metadata->columns)->toBe($columns);
-    expect($metadata->indexes)->toBe($indexes);
-    expect($metadata->properties)->toBe($properties);
+    expect($metadata->entityClass)
+        ->toBe('App\Blog\Entity\Post')
+        ->and($metadata->tableName)->toBe('posts')
+        ->and($metadata->primaryKey)->toBe('id')
+        ->and($metadata->columns)->toBe($columns)
+        ->and($metadata->indexes)->toBe($indexes)
+        ->and($metadata->properties)->toBe($properties);
 });
 
 it('creates ColumnMetadata with all properties', function (): void {
@@ -81,17 +82,18 @@ it('creates ColumnMetadata with all properties', function (): void {
         onUpdate: 'CASCADE',
     );
 
-    expect($column->name)->toBe('user_id');
-    expect($column->type)->toBe('INT');
-    expect($column->length)->toBeNull();
-    expect($column->nullable)->toBeTrue();
-    expect($column->default)->toBe(0);
-    expect($column->unique)->toBeFalse();
-    expect($column->primaryKey)->toBeFalse();
-    expect($column->autoIncrement)->toBeFalse();
-    expect($column->references)->toBe('users.id');
-    expect($column->onDelete)->toBe('CASCADE');
-    expect($column->onUpdate)->toBe('CASCADE');
+    expect($column->name)
+        ->toBe('user_id')
+        ->and($column->type)->toBe('INT')
+        ->and($column->length)->toBeNull()
+        ->and($column->nullable)->toBeTrue()
+        ->and($column->default)->toBe(0)
+        ->and($column->unique)->toBeFalse()
+        ->and($column->primaryKey)->toBeFalse()
+        ->and($column->autoIncrement)->toBeFalse()
+        ->and($column->references)->toBe('users.id')
+        ->and($column->onDelete)->toBe('CASCADE')
+        ->and($column->onUpdate)->toBe('CASCADE');
 });
 
 it('creates IndexMetadata with all properties', function (): void {
@@ -101,9 +103,10 @@ it('creates IndexMetadata with all properties', function (): void {
         unique: true,
     );
 
-    expect($index->name)->toBe('idx_name_email');
-    expect($index->columns)->toBe(['name', 'email']);
-    expect($index->unique)->toBeTrue();
+    expect($index->name)
+        ->toBe('idx_name_email')
+        ->and($index->columns)->toBe(['name', 'email'])
+        ->and($index->unique)->toBeTrue();
 });
 
 it('creates PropertyMetadata with all properties', function (): void {
@@ -118,14 +121,15 @@ it('creates PropertyMetadata with all properties', function (): void {
         default: 0,
     );
 
-    expect($property->name)->toBe('userId');
-    expect($property->columnName)->toBe('user_id');
-    expect($property->type)->toBe('int');
-    expect($property->nullable)->toBeTrue();
-    expect($property->isPrimaryKey)->toBeFalse();
-    expect($property->isAutoIncrement)->toBeFalse();
-    expect($property->enumClass)->toBeNull();
-    expect($property->default)->toBe(0);
+    expect($property->name)
+        ->toBe('userId')
+        ->and($property->columnName)->toBe('user_id')
+        ->and($property->type)->toBe('int')
+        ->and($property->nullable)->toBeTrue()
+        ->and($property->isPrimaryKey)->toBeFalse()
+        ->and($property->isAutoIncrement)->toBeFalse()
+        ->and($property->enumClass)->toBeNull()
+        ->and($property->default)->toBe(0);
 });
 
 it('gets property metadata by name', function (): void {
@@ -149,9 +153,10 @@ it('gets property metadata by name', function (): void {
         properties: $properties,
     );
 
-    expect($metadata->getProperty('id'))->toBe($properties['id']);
-    expect($metadata->getProperty('title'))->toBe($properties['title']);
-    expect($metadata->getProperty('nonexistent'))->toBeNull();
+    expect($metadata->getProperty('id'))
+        ->toBe($properties['id'])
+        ->and($metadata->getProperty('title'))->toBe($properties['title'])
+        ->and($metadata->getProperty('nonexistent'))->toBeNull();
 });
 
 it('gets primary key property metadata', function (): void {

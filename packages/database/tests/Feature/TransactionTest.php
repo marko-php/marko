@@ -128,10 +128,10 @@ describe('Transaction Handling', function (): void {
         $connection->execute('INSERT INTO test (value) VALUES (?)', ['test2']);
 
         $connection->commit();
-        expect($connection->inTransaction())->toBeFalse();
-
-        expect($transactionLog)->toBe(['BEGIN', 'COMMIT']);
-        expect($data)->toHaveCount(2);
+        expect($connection->inTransaction())
+            ->toBeFalse()
+            ->and($transactionLog)->toBe(['BEGIN', 'COMMIT'])
+            ->and($data)->toHaveCount(2);
 
         // Test rollback flow
         $transactionLog = [];
@@ -141,8 +141,9 @@ describe('Transaction Handling', function (): void {
         $connection->execute('INSERT INTO test (value) VALUES (?)', ['test3']);
         $connection->rollback();
 
-        expect($transactionLog)->toBe(['BEGIN', 'ROLLBACK']);
-        expect($data)->toHaveCount($originalCount); // No new data
+        expect($transactionLog)
+            ->toBe(['BEGIN', 'ROLLBACK'])
+            ->and($data)->toHaveCount($originalCount);
     });
 
     it('supports nested transaction simulation', function (): void {
@@ -343,8 +344,9 @@ describe('Transaction Handling', function (): void {
             return 'success';
         });
 
-        expect($result)->toBe('success');
-        expect($log)->toBe(['BEGIN', 'COMMIT']);
+        expect($result)
+            ->toBe('success')
+            ->and($log)->toBe(['BEGIN', 'COMMIT']);
     });
 
     it('executes callback within transaction with automatic rollback on exception', function (): void {
@@ -446,8 +448,9 @@ describe('Transaction Handling', function (): void {
             expect($e->getMessage())->toBe('Something went wrong');
         }
 
-        expect($exceptionThrown)->toBeTrue();
-        expect($log)->toBe(['BEGIN', 'ROLLBACK']);
+        expect($exceptionThrown)
+            ->toBeTrue()
+            ->and($log)->toBe(['BEGIN', 'ROLLBACK']);
     });
 
     it('throws TransactionException when committing without active transaction', function (): void {

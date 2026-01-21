@@ -113,15 +113,17 @@ PHP;
         $migrator = new Migrator($connection, $repository, $this->migrationsPath);
         $applied = $migrator->migrate();
 
-        expect($applied)->toHaveCount(1);
-        expect($applied[0])->toBe('2024_01_01_000001_create_test');
-        expect($appliedMigrations)->toContain('CREATE TABLE test_table');
+        expect($applied)
+            ->toHaveCount(1)
+            ->and($applied[0])->toBe('2024_01_01_000001_create_test')
+            ->and($appliedMigrations)->toContain('CREATE TABLE test_table');
 
         // Rollback
         $rolledBack = $migrator->rollback();
 
-        expect($rolledBack)->toHaveCount(1);
-        expect($rolledBackMigrations)->toContain('DROP TABLE test_table');
+        expect($rolledBack)
+            ->toHaveCount(1)
+            ->and($rolledBackMigrations)->toContain('DROP TABLE test_table');
     });
 
     it('applies migrations in order', function (): void {
@@ -294,9 +296,10 @@ PHP;
         $applied = $migrator->migrate();
 
         // Only second migration should be applied
-        expect($applied)->toHaveCount(1);
-        expect($applied[0])->toBe('2024_01_01_000002_second');
-        expect($executedMigrations)->toHaveCount(1);
+        expect($applied)
+            ->toHaveCount(1)
+            ->and($applied[0])->toBe('2024_01_01_000002_second')
+            ->and($executedMigrations)->toHaveCount(1);
     });
 
     it('throws MigrationException on migration failure', function (): void {

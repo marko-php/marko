@@ -37,9 +37,10 @@ it('converts EntityMetadata to Table value object', function (): void {
     $metadata = $this->metadataFactory->parse($entity::class);
     $table = $this->schemaBuilder->build($metadata);
 
-    expect($table)->toBeInstanceOf(SchemaTable::class);
-    expect($table->name)->toBe('posts');
-    expect($table->columns)->toHaveCount(2);
+    expect($table)
+        ->toBeInstanceOf(SchemaTable::class)
+        ->and($table->name)->toBe('posts')
+        ->and($table->columns)->toHaveCount(2);
 });
 
 it('converts ColumnMetadata to Schema Column', function (): void {
@@ -54,6 +55,7 @@ it('converts ColumnMetadata to Schema Column', function (): void {
         #[Column(unique: true)]
         public string $email;
 
+        /** @noinspection PhpUnused - Accessed via reflection */
         #[Column]
         public ?string $bio;
 
@@ -64,24 +66,21 @@ it('converts ColumnMetadata to Schema Column', function (): void {
     $metadata = $this->metadataFactory->parse($entity::class);
     $table = $this->schemaBuilder->build($metadata);
 
-    expect($table->columns[0])->toBeInstanceOf(SchemaColumn::class);
-    expect($table->columns[0]->name)->toBe('id');
-    expect($table->columns[0]->type)->toBe('INT');
-    expect($table->columns[0]->primaryKey)->toBeTrue();
-    expect($table->columns[0]->autoIncrement)->toBeTrue();
-
-    expect($table->columns[1]->name)->toBe('name');
-    expect($table->columns[1]->type)->toBe('VARCHAR');
-    expect($table->columns[1]->length)->toBe(100);
-
-    expect($table->columns[2]->name)->toBe('email');
-    expect($table->columns[2]->unique)->toBeTrue();
-
-    expect($table->columns[3]->name)->toBe('bio');
-    expect($table->columns[3]->nullable)->toBeTrue();
-
-    expect($table->columns[4]->name)->toBe('age');
-    expect($table->columns[4]->default)->toBe(0);
+    expect($table->columns[0])
+        ->toBeInstanceOf(SchemaColumn::class)
+        ->and($table->columns[0]->name)->toBe('id')
+        ->and($table->columns[0]->type)->toBe('INT')
+        ->and($table->columns[0]->primaryKey)->toBeTrue()
+        ->and($table->columns[0]->autoIncrement)->toBeTrue()
+        ->and($table->columns[1]->name)->toBe('name')
+        ->and($table->columns[1]->type)->toBe('VARCHAR')
+        ->and($table->columns[1]->length)->toBe(100)
+        ->and($table->columns[2]->name)->toBe('email')
+        ->and($table->columns[2]->unique)->toBeTrue()
+        ->and($table->columns[3]->name)->toBe('bio')
+        ->and($table->columns[3]->nullable)->toBeTrue()
+        ->and($table->columns[4]->name)->toBe('age')
+        ->and($table->columns[4]->default)->toBe(0);
 });
 
 it('converts IndexMetadata to Schema Index', function (): void {
@@ -106,16 +105,15 @@ it('converts IndexMetadata to Schema Index', function (): void {
     $metadata = $this->metadataFactory->parse($entity::class);
     $table = $this->schemaBuilder->build($metadata);
 
-    expect($table->indexes)->toHaveCount(2);
-
-    expect($table->indexes[0])->toBeInstanceOf(SchemaIndex::class);
-    expect($table->indexes[0]->name)->toBe('idx_title');
-    expect($table->indexes[0]->columns)->toBe(['title']);
-    expect($table->indexes[0]->type)->toBe(IndexType::Btree);
-
-    expect($table->indexes[1]->name)->toBe('idx_slug_status');
-    expect($table->indexes[1]->columns)->toBe(['slug', 'status']);
-    expect($table->indexes[1]->type)->toBe(IndexType::Unique);
+    expect($table->indexes)
+        ->toHaveCount(2)
+        ->and($table->indexes[0])->toBeInstanceOf(SchemaIndex::class)
+        ->and($table->indexes[0]->name)->toBe('idx_title')
+        ->and($table->indexes[0]->columns)->toBe(['title'])
+        ->and($table->indexes[0]->type)->toBe(IndexType::Btree)
+        ->and($table->indexes[1]->name)->toBe('idx_slug_status')
+        ->and($table->indexes[1]->columns)->toBe(['slug', 'status'])
+        ->and($table->indexes[1]->type)->toBe(IndexType::Unique);
 });
 
 it('preserves foreign key references in Schema Column', function (): void {
@@ -131,7 +129,8 @@ it('preserves foreign key references in Schema Column', function (): void {
     $metadata = $this->metadataFactory->parse($entity::class);
     $table = $this->schemaBuilder->build($metadata);
 
-    expect($table->columns[1]->references)->toBe('users.id');
-    expect($table->columns[1]->onDelete)->toBe('CASCADE');
-    expect($table->columns[1]->onUpdate)->toBe('SET NULL');
+    expect($table->columns[1]->references)
+        ->toBe('users.id')
+        ->and($table->columns[1]->onDelete)->toBe('CASCADE')
+        ->and($table->columns[1]->onUpdate)->toBe('SET NULL');
 });

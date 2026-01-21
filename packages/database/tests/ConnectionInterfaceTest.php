@@ -8,10 +8,10 @@ describe('ConnectionInterface', function (): void {
     it('defines ConnectionInterface with connect, disconnect, and isConnected methods', function (): void {
         $reflection = new ReflectionClass(ConnectionInterface::class);
 
-        expect($reflection->isInterface())->toBeTrue();
-        expect($reflection->hasMethod('connect'))->toBeTrue();
-        expect($reflection->hasMethod('disconnect'))->toBeTrue();
-        expect($reflection->hasMethod('isConnected'))->toBeTrue();
+        expect($reflection->isInterface())->toBeTrue()
+            ->and($reflection->hasMethod('connect'))->toBeTrue()
+            ->and($reflection->hasMethod('disconnect'))->toBeTrue()
+            ->and($reflection->hasMethod('isConnected'))->toBeTrue();
 
         $connect = $reflection->getMethod('connect');
         expect($connect->getReturnType()?->getName())->toBe('void');
@@ -26,28 +26,28 @@ describe('ConnectionInterface', function (): void {
     it('defines ConnectionInterface with query and execute methods', function (): void {
         $reflection = new ReflectionClass(ConnectionInterface::class);
 
-        expect($reflection->hasMethod('query'))->toBeTrue();
-        expect($reflection->hasMethod('execute'))->toBeTrue();
+        expect($reflection->hasMethod('query'))->toBeTrue()
+            ->and($reflection->hasMethod('execute'))->toBeTrue();
 
         $query = $reflection->getMethod('query');
-        expect($query->getReturnType()?->getName())->toBe('array');
         $queryParams = $query->getParameters();
-        expect($queryParams)->toHaveCount(2);
-        expect($queryParams[0]->getName())->toBe('sql');
-        expect($queryParams[0]->getType()?->getName())->toBe('string');
-        expect($queryParams[1]->getName())->toBe('bindings');
-        expect($queryParams[1]->getType()?->getName())->toBe('array');
-        expect($queryParams[1]->isDefaultValueAvailable())->toBeTrue();
+        expect($query->getReturnType()?->getName())->toBe('array')
+            ->and($queryParams)->toHaveCount(2)
+            ->and($queryParams[0]->getName())->toBe('sql')
+            ->and($queryParams[0]->getType()?->getName())->toBe('string')
+            ->and($queryParams[1]->getName())->toBe('bindings')
+            ->and($queryParams[1]->getType()?->getName())->toBe('array')
+            ->and($queryParams[1]->isDefaultValueAvailable())->toBeTrue();
 
         $execute = $reflection->getMethod('execute');
-        expect($execute->getReturnType()?->getName())->toBe('int');
         $executeParams = $execute->getParameters();
-        expect($executeParams)->toHaveCount(2);
-        expect($executeParams[0]->getName())->toBe('sql');
-        expect($executeParams[0]->getType()?->getName())->toBe('string');
-        expect($executeParams[1]->getName())->toBe('bindings');
-        expect($executeParams[1]->getType()?->getName())->toBe('array');
-        expect($executeParams[1]->isDefaultValueAvailable())->toBeTrue();
+        expect($execute->getReturnType()?->getName())->toBe('int')
+            ->and($executeParams)->toHaveCount(2)
+            ->and($executeParams[0]->getName())->toBe('sql')
+            ->and($executeParams[0]->getType()?->getName())->toBe('string')
+            ->and($executeParams[1]->getName())->toBe('bindings')
+            ->and($executeParams[1]->getType()?->getName())->toBe('array')
+            ->and($executeParams[1]->isDefaultValueAvailable())->toBeTrue();
     });
 
     it('defines ConnectionInterface with prepare and statement execution', function (): void {
@@ -56,10 +56,10 @@ describe('ConnectionInterface', function (): void {
         expect($reflection->hasMethod('prepare'))->toBeTrue();
 
         $prepare = $reflection->getMethod('prepare');
-        expect($prepare->getReturnType()?->getName())->toBe('Marko\\Database\\Connection\\StatementInterface');
         $prepareParams = $prepare->getParameters();
-        expect($prepareParams)->toHaveCount(1);
-        expect($prepareParams[0]->getName())->toBe('sql');
-        expect($prepareParams[0]->getType()?->getName())->toBe('string');
+        expect($prepare->getReturnType()?->getName())->toBe('Marko\\Database\\Connection\\StatementInterface')
+            ->and($prepareParams)->toHaveCount(1)
+            ->and($prepareParams[0]->getName())->toBe('sql')
+            ->and($prepareParams[0]->getType()?->getName())->toBe('string');
     });
 });

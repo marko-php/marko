@@ -36,11 +36,11 @@ describe('PgSqlGenerator', function (): void {
 
         $sql = $this->generator->generateCreateTable($table);
 
-        expect($sql)->toContain('CREATE TABLE "users"');
-        expect($sql)->toContain('"id" SERIAL PRIMARY KEY');
-        expect($sql)->toContain('"email" VARCHAR(255) NOT NULL UNIQUE');
-        expect($sql)->toContain('"name" VARCHAR(100)');
-        expect($sql)->toContain('"status" VARCHAR(20) NOT NULL DEFAULT \'active\'');
+        expect($sql)->toContain('CREATE TABLE "users"')
+            ->and($sql)->toContain('"id" SERIAL PRIMARY KEY')
+            ->and($sql)->toContain('"email" VARCHAR(255) NOT NULL UNIQUE')
+            ->and($sql)->toContain('"name" VARCHAR(100)')
+            ->and($sql)->toContain('"status" VARCHAR(20) NOT NULL DEFAULT \'active\'');
     });
 
     it('generates DROP TABLE statements', function (): void {
@@ -73,8 +73,8 @@ describe('PgSqlGenerator', function (): void {
 
         $sql = $this->generator->generateModifyColumn('users', $newColumn, $oldColumn);
 
-        expect($sql)->toContain('ALTER TABLE "users"');
-        expect($sql)->toContain('ALTER COLUMN "age" TYPE INTEGER');
+        expect($sql)->toContain('ALTER TABLE "users"')
+            ->and($sql)->toContain('ALTER COLUMN "age" TYPE INTEGER');
     });
 
     it('generates CREATE INDEX statements', function (): void {
@@ -107,10 +107,10 @@ describe('PgSqlGenerator', function (): void {
 
         $sql = $this->generator->generateAddForeignKey('posts', $foreignKey);
 
-        expect($sql)->toContain('ALTER TABLE "posts" ADD CONSTRAINT "fk_posts_user_id"');
-        expect($sql)->toContain('FOREIGN KEY ("user_id") REFERENCES "users" ("id")');
-        expect($sql)->toContain('ON DELETE CASCADE');
-        expect($sql)->toContain('ON UPDATE NO ACTION');
+        expect($sql)->toContain('ALTER TABLE "posts" ADD CONSTRAINT "fk_posts_user_id"')
+            ->and($sql)->toContain('FOREIGN KEY ("user_id") REFERENCES "users" ("id")')
+            ->and($sql)->toContain('ON DELETE CASCADE')
+            ->and($sql)->toContain('ON UPDATE NO ACTION');
     });
 
     it('generates ALTER TABLE DROP CONSTRAINT for foreign keys', function (): void {
@@ -160,8 +160,8 @@ describe('PgSqlGenerator', function (): void {
         $intSql = $this->generator->generateAddColumn('test', $intColumn);
         $bigintSql = $this->generator->generateAddColumn('test', $bigintColumn);
 
-        expect($intSql)->toContain('SERIAL');
-        expect($bigintSql)->toContain('BIGSERIAL');
+        expect($intSql)->toContain('SERIAL')
+            ->and($bigintSql)->toContain('BIGSERIAL');
     });
 
     it('generates proper DEFAULT expressions', function (): void {
@@ -175,10 +175,10 @@ describe('PgSqlGenerator', function (): void {
         $boolSql = $this->generator->generateAddColumn('test', $boolDefault);
         $nullSql = $this->generator->generateAddColumn('test', $nullDefault);
 
-        expect($stringSql)->toContain("DEFAULT 'pending'");
-        expect($intSql)->toContain('DEFAULT 0');
-        expect($boolSql)->toContain('DEFAULT TRUE');
-        expect($nullSql)->not->toContain('DEFAULT');
+        expect($stringSql)->toContain("DEFAULT 'pending'")
+            ->and($intSql)->toContain('DEFAULT 0')
+            ->and($boolSql)->toContain('DEFAULT TRUE')
+            ->and($nullSql)->not->toContain('DEFAULT');
     });
 
     it('generates down SQL that reverses up SQL', function (): void {
@@ -203,8 +203,8 @@ describe('PgSqlGenerator', function (): void {
         $downSql = $this->generator->generateDown($diff);
 
         // Up should create, down should drop
-        expect($upSql[0])->toContain('CREATE TABLE "posts"');
-        expect($downSql)->toContain('DROP TABLE "posts"');
+        expect($upSql[0])->toContain('CREATE TABLE "posts"')
+            ->and($downSql)->toContain('DROP TABLE "posts"');
     });
 
     it('generates unique index for unique index type', function (): void {
@@ -242,8 +242,8 @@ describe('PgSqlGenerator', function (): void {
 
         $sql = $this->generator->generateAddForeignKey('order_items', $foreignKey);
 
-        expect($sql)->toContain('FOREIGN KEY ("product_id", "variant_id")');
-        expect($sql)->toContain('REFERENCES "product_variants" ("product_id", "id")');
+        expect($sql)->toContain('FOREIGN KEY ("product_id", "variant_id")')
+            ->and($sql)->toContain('REFERENCES "product_variants" ("product_id", "id")');
     });
 
     it('generates complete up SQL from schema diff', function (): void {
@@ -272,9 +272,9 @@ describe('PgSqlGenerator', function (): void {
 
         $sql = $this->generator->generateUp($diff);
 
-        expect($sql)->toBeArray();
-        expect(count($sql))->toBeGreaterThanOrEqual(3);
-        expect($sql[0])->toContain('CREATE TABLE "categories"');
+        expect($sql)->toBeArray()
+            ->and(count($sql))->toBeGreaterThanOrEqual(3)
+            ->and($sql[0])->toContain('CREATE TABLE "categories"');
     });
 
     it('generates complete down SQL from schema diff', function (): void {
@@ -300,8 +300,8 @@ describe('PgSqlGenerator', function (): void {
         $sql = $this->generator->generateDown($diff);
 
         // Down should reverse: drop created tables, recreate dropped tables
-        expect($sql)->toContain('DROP TABLE "tags"');
-        expect(implode("\n", $sql))->toContain('CREATE TABLE "old_table"');
+        expect($sql)->toContain('DROP TABLE "tags"')
+            ->and(implode("\n", $sql))->toContain('CREATE TABLE "old_table"');
     });
 
     it('generates ALTER COLUMN SET NOT NULL and DROP NOT NULL', function (): void {

@@ -2,51 +2,25 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/Helpers.php';
+
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
-use Marko\Core\Command\Output;
 use Marko\Database\Command\RollbackCommand;
 use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Migration\Migrator;
 
-if (!function_exists('createOutputStream')) {
-    /**
-     * Helper to capture output.
-     *
-     * @return array{stream: resource, output: Output}
-     */
-    function createOutputStream(): array
-    {
-        $stream = fopen('php://memory', 'r+');
-
-        return [
-            'stream' => $stream,
-            'output' => new Output($stream),
-        ];
-    }
-}
-
-if (!function_exists('getOutputContent')) {
-    /**
-     * Helper to get output content.
-     *
-     * @param resource $stream
-     */
-    function getOutputContent(
-        mixed $stream,
-    ): string {
-        rewind($stream);
-
-        return stream_get_contents($stream);
-    }
-}
+use function Marko\Database\Tests\Command\createOutputStream;
+use function Marko\Database\Tests\Command\getOutputContent;
 
 /**
  * Helper to create a stub Migrator.
  *
  * @param array<string> $lastBatchMigrations
  * @param array<int, array<string>> $batchesMigrations
+ *
+ * @return Migrator&object{rolledBack: array<string>, rollbackCallCount: int}
  */
 function createStubMigrator(
     array $lastBatchMigrations = [],
@@ -54,6 +28,7 @@ function createStubMigrator(
     bool $shouldFail = false,
     string $failMessage = 'Migration failed',
 ): Migrator {
+    /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
     return new class ($lastBatchMigrations, $batchesMigrations, $shouldFail, $failMessage) extends Migrator
     {
         /** @var array<string> */
@@ -62,11 +37,12 @@ function createStubMigrator(
         /** @var int */
         public int $rollbackCallCount = 0;
 
+        /** @noinspection PhpMissingParentConstructorInspection */
         public function __construct(
-            private array $lastBatchMigrations,
-            private array $batchesMigrations,
-            private bool $shouldFail,
-            private string $failMessage,
+            private readonly array $lastBatchMigrations,
+            private readonly array $batchesMigrations,
+            private readonly bool $shouldFail,
+            private readonly string $failMessage,
         ) {}
 
         public function rollback(): array
@@ -101,11 +77,8 @@ it('registers as db:rollback command via #[Command] attribute', function (): voi
     $reflection = new ReflectionClass(RollbackCommand::class);
     $attributes = $reflection->getAttributes(Command::class);
 
-    expect($attributes)->toHaveCount(1);
-
-    $command = $attributes[0]->newInstance();
-
-    expect($command->name)->toBe('db:rollback');
+    expect($attributes)->toHaveCount(1)
+        ->and($attributes[0]->newInstance()->name)->toBe('db:rollback');
 });
 
 it('implements CommandInterface', function (): void {
@@ -125,13 +98,13 @@ it('blocks execution in production environment', function (): void {
         isProduction: true,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $exitCode = $command->execute($input, $output);
 
-    expect($exitCode)->toBe(1);
-    expect($migrator->rollbackCallCount)->toBe(0);
+    expect($exitCode)->toBe(1)
+        ->and($migrator->rollbackCallCount)->toBe(0);
 });
 
 it('shows error message when blocked in production', function (): void {
@@ -194,17 +167,17 @@ it('rolls back last batch of migrations in development', function (): void {
         isProduction: false,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $exitCode = $command->execute($input, $output);
 
-    expect($exitCode)->toBe(0);
-    expect($migrator->rollbackCallCount)->toBe(1);
-    expect($migrator->rolledBack)->toBe([
-        '2024_01_02_000000_second',
-        '2024_01_01_000000_first',
-    ]);
+    expect($exitCode)->toBe(0)
+        ->and($migrator->rollbackCallCount)->toBe(1)
+        ->and($migrator->rolledBack)->toBe([
+            '2024_01_02_000000_second',
+            '2024_01_01_000000_first',
+        ]);
 });
 
 it('executes down() in reverse order within batch', function (): void {
@@ -224,7 +197,7 @@ it('executes down() in reverse order within batch', function (): void {
         isProduction: false,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $command->execute($input, $output);
@@ -275,7 +248,7 @@ it('removes migration records from tracking table', function (): void {
         isProduction: false,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $command->execute($input, $output);
@@ -298,16 +271,16 @@ it('supports --step option to rollback multiple batches', function (): void {
         isProduction: false,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:rollback', '--step=2']);
 
     $command->execute($input, $output);
 
-    expect($migrator->rollbackCallCount)->toBe(2);
-    expect($migrator->rolledBack)->toBe([
-        '2024_01_03_000000_third',
-        '2024_01_02_000000_second',
-    ]);
+    expect($migrator->rollbackCallCount)->toBe(2)
+        ->and($migrator->rolledBack)->toBe([
+            '2024_01_03_000000_third',
+            '2024_01_02_000000_second',
+        ]);
 });
 
 it('offers to delete uncommitted migration files', function (): void {
@@ -333,9 +306,7 @@ it('offers to delete uncommitted migration files', function (): void {
 });
 
 it('shows "Nothing to rollback" when no applied migrations', function (): void {
-    $migrator = createStubMigrator(
-        lastBatchMigrations: [],
-    );
+    $migrator = createStubMigrator();
 
     $command = new RollbackCommand(
         migrator: $migrator,
@@ -387,7 +358,7 @@ it('returns 0 on success, 1 on failure', function (): void {
         isProduction: false,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['output' => $output] = createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $exitCode = $command->execute($input, $output);
@@ -407,7 +378,7 @@ it('returns 0 on success, 1 on failure', function (): void {
         isProduction: false,
     );
 
-    ['stream' => $stream2, 'output' => $output2] = createOutputStream();
+    ['output' => $output2] = createOutputStream();
     $input2 = new Input(['marko', 'db:rollback']);
 
     $exitCode2 = $failingCommand->execute($input2, $output2);

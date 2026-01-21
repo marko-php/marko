@@ -40,22 +40,21 @@ describe('Driver Parity', function (): void {
         $mysqlUp = $this->mysqlGenerator->generateUp($diff);
         $pgsqlUp = $this->pgsqlGenerator->generateUp($diff);
 
-        expect($mysqlUp)->toHaveCount(1);
-        expect($pgsqlUp)->toHaveCount(1);
-
-        // Both should contain CREATE TABLE
-        expect($mysqlUp[0])->toContain('CREATE TABLE');
-        expect($pgsqlUp[0])->toContain('CREATE TABLE');
+        expect($mysqlUp)
+            ->toHaveCount(1)
+            ->and($pgsqlUp)->toHaveCount(1)
+            ->and($mysqlUp[0])->toContain('CREATE TABLE')
+            ->and($pgsqlUp[0])->toContain('CREATE TABLE');
 
         // Both should generate exactly 1 DROP TABLE for down
         $mysqlDown = $this->mysqlGenerator->generateDown($diff);
         $pgsqlDown = $this->pgsqlGenerator->generateDown($diff);
 
-        expect($mysqlDown)->toHaveCount(1);
-        expect($pgsqlDown)->toHaveCount(1);
-
-        expect($mysqlDown[0])->toContain('DROP TABLE');
-        expect($pgsqlDown[0])->toContain('DROP TABLE');
+        expect($mysqlDown)
+            ->toHaveCount(1)
+            ->and($pgsqlDown)->toHaveCount(1)
+            ->and($mysqlDown[0])->toContain('DROP TABLE')
+            ->and($pgsqlDown[0])->toContain('DROP TABLE');
     });
 
     it('generates equivalent column definitions with different syntax', function (): void {
@@ -74,15 +73,14 @@ describe('Driver Parity', function (): void {
 
         // Both should define the same columns (with different quoting/types)
         // MySQL uses backticks, PostgreSQL uses double quotes
-        expect($mysqlSql)->toContain('`id`');
-        expect($pgsqlSql)->toContain('"id"');
-
-        expect($mysqlSql)->toContain('`status`');
-        expect($pgsqlSql)->toContain('"status"');
-
-        // Both should have defaults
-        expect($mysqlSql)->toContain('DEFAULT');
-        expect($pgsqlSql)->toContain('DEFAULT');
+        expect($mysqlSql)
+            ->toContain('`id`')
+            ->toContain('`status`')
+            ->toContain('DEFAULT')
+            ->and($pgsqlSql)
+            ->toContain('"id"')
+            ->toContain('"status"')
+            ->toContain('DEFAULT');
     });
 
     it('generates equivalent index operations', function (): void {
@@ -95,13 +93,13 @@ describe('Driver Parity', function (): void {
         $mysqlSql = $this->mysqlGenerator->generateAddIndex('users', $index);
         $pgsqlSql = $this->pgsqlGenerator->generateAddIndex('users', $index);
 
-        // Both should create a unique index
-        expect($mysqlSql)->toContain('CREATE UNIQUE INDEX');
-        expect($pgsqlSql)->toContain('CREATE UNIQUE INDEX');
-
-        // Both should reference the same index name and table
-        expect($mysqlSql)->toContain('idx_email');
-        expect($pgsqlSql)->toContain('idx_email');
+        // Both should create a unique index and reference the same index name
+        expect($mysqlSql)
+            ->toContain('CREATE UNIQUE INDEX')
+            ->toContain('idx_email')
+            ->and($pgsqlSql)
+            ->toContain('CREATE UNIQUE INDEX')
+            ->toContain('idx_email');
     });
 
     it('generates equivalent foreign key operations', function (): void {
@@ -117,20 +115,18 @@ describe('Driver Parity', function (): void {
         $pgsqlSql = $this->pgsqlGenerator->generateAddForeignKey('posts', $foreignKey);
 
         // Both should add the foreign key constraint
-        expect($mysqlSql)->toContain('ADD CONSTRAINT');
-        expect($pgsqlSql)->toContain('ADD CONSTRAINT');
-
-        expect($mysqlSql)->toContain('fk_author_id');
-        expect($pgsqlSql)->toContain('fk_author_id');
-
-        expect($mysqlSql)->toContain('FOREIGN KEY');
-        expect($pgsqlSql)->toContain('FOREIGN KEY');
-
-        expect($mysqlSql)->toContain('REFERENCES');
-        expect($pgsqlSql)->toContain('REFERENCES');
-
-        expect($mysqlSql)->toContain('ON DELETE CASCADE');
-        expect($pgsqlSql)->toContain('ON DELETE CASCADE');
+        expect($mysqlSql)
+            ->toContain('ADD CONSTRAINT')
+            ->toContain('fk_author_id')
+            ->toContain('FOREIGN KEY')
+            ->toContain('REFERENCES')
+            ->toContain('ON DELETE CASCADE')
+            ->and($pgsqlSql)
+            ->toContain('ADD CONSTRAINT')
+            ->toContain('fk_author_id')
+            ->toContain('FOREIGN KEY')
+            ->toContain('REFERENCES')
+            ->toContain('ON DELETE CASCADE');
     });
 
     it('generates same number of statements for complex migrations', function (): void {
@@ -174,8 +170,9 @@ describe('Driver Parity', function (): void {
 
     it('implements SqlGeneratorInterface consistently', function (): void {
         // Both generators should implement the same interface
-        expect($this->mysqlGenerator)->toBeInstanceOf(SqlGeneratorInterface::class);
-        expect($this->pgsqlGenerator)->toBeInstanceOf(SqlGeneratorInterface::class);
+        expect($this->mysqlGenerator)
+            ->toBeInstanceOf(SqlGeneratorInterface::class)
+            ->and($this->pgsqlGenerator)->toBeInstanceOf(SqlGeneratorInterface::class);
 
         // Both should have all required methods
         $requiredMethods = [
@@ -193,8 +190,9 @@ describe('Driver Parity', function (): void {
         ];
 
         foreach ($requiredMethods as $method) {
-            expect(method_exists($this->mysqlGenerator, $method))->toBeTrue();
-            expect(method_exists($this->pgsqlGenerator, $method))->toBeTrue();
+            expect(method_exists($this->mysqlGenerator, $method))
+                ->toBeTrue()
+                ->and(method_exists($this->pgsqlGenerator, $method))->toBeTrue();
         }
     });
 
@@ -204,13 +202,15 @@ describe('Driver Parity', function (): void {
         $mysqlUp = $this->mysqlGenerator->generateUp($emptyDiff);
         $pgsqlUp = $this->pgsqlGenerator->generateUp($emptyDiff);
 
-        expect($mysqlUp)->toBe([]);
-        expect($pgsqlUp)->toBe([]);
+        expect($mysqlUp)
+            ->toBe([])
+            ->and($pgsqlUp)->toBe([]);
 
         $mysqlDown = $this->mysqlGenerator->generateDown($emptyDiff);
         $pgsqlDown = $this->pgsqlGenerator->generateDown($emptyDiff);
 
-        expect($mysqlDown)->toBe([]);
-        expect($pgsqlDown)->toBe([]);
+        expect($mysqlDown)
+            ->toBe([])
+            ->and($pgsqlDown)->toBe([]);
     });
 });

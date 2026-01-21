@@ -46,7 +46,9 @@ describe('MigrationGenerator', function (): void {
         $paths = $generator->generate($diff);
 
         expect($paths)->toHaveCount(1);
+
         $filename = basename($paths[0]);
+
         expect($filename)->toMatch('/^\d{14}_/');
     });
 
@@ -80,11 +82,12 @@ describe('MigrationGenerator', function (): void {
 
         $content = file_get_contents($paths[0]);
 
-        expect($content)->toContain('<?php');
-        expect($content)->toContain('declare(strict_types=1);');
-        expect($content)->toContain('use Marko\Database\Connection\ConnectionInterface;');
-        expect($content)->toContain('use Marko\Database\Migration\Migration;');
-        expect($content)->toContain('return new class extends Migration');
+        expect($content)
+            ->toContain('<?php')
+            ->toContain('declare(strict_types=1);')
+            ->toContain('use Marko\Database\Connection\ConnectionInterface;')
+            ->toContain('use Marko\Database\Migration\Migration;')
+            ->toContain('return new class extends Migration');
     });
 
     it('includes up() method with SQL statements', function (): void {
@@ -241,10 +244,11 @@ describe('MigrationGenerator', function (): void {
 
         $paths = $generator->generate($diff);
 
-        expect($paths)->toBeArray();
-        expect($paths)->toHaveCount(1);
-        expect($paths[0])->toBeString();
-        expect(file_exists($paths[0]))->toBeTrue();
+        expect($paths)
+            ->toBeArray()
+            ->toHaveCount(1)
+            ->and($paths[0])->toBeString()
+            ->and(file_exists($paths[0]))->toBeTrue();
     });
 
     it('generates separate migrations per table change', function (): void {
@@ -266,9 +270,10 @@ describe('MigrationGenerator', function (): void {
 
         $paths = $generator->generate($diff);
 
-        expect($paths)->toHaveCount(2);
-        expect(basename($paths[0]))->toContain('create_posts');
-        expect(basename($paths[1]))->toContain('create_comments');
+        expect($paths)
+            ->toHaveCount(2)
+            ->and(basename($paths[0]))->toContain('create_posts')
+            ->and(basename($paths[1]))->toContain('create_comments');
     });
 
     it('handles empty diff with no file generated', function (): void {
@@ -282,8 +287,9 @@ describe('MigrationGenerator', function (): void {
 
         $paths = $generator->generate($diff);
 
-        expect($paths)->toBeArray();
-        expect($paths)->toBeEmpty();
+        expect($paths)
+            ->toBeArray()
+            ->toBeEmpty();
     });
 
     it('generates migration for alter table operations', function (): void {

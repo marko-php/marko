@@ -61,15 +61,17 @@ describe('Entity to Migration Workflow', function (): void {
         $metadataFactory = new EntityMetadataFactory();
         $metadata = $metadataFactory->parse(WorkflowUser::class);
 
-        expect($metadata->tableName)->toBe('workflow_users');
-        expect($metadata->columns)->toHaveCount(4);
+        expect($metadata->tableName)
+            ->toBe('workflow_users')
+            ->and($metadata->columns)->toHaveCount(4);
 
         // Step 2: Build schema from metadata
         $schemaBuilder = new SchemaBuilder();
         $table = $schemaBuilder->build($metadata);
 
-        expect($table->name)->toBe('workflow_users');
-        expect($table->columns)->toHaveCount(4);
+        expect($table->name)
+            ->toBe('workflow_users')
+            ->and($table->columns)->toHaveCount(4);
 
         // Step 3: Calculate diff against empty database
         $diffCalculator = new DiffCalculator();
@@ -78,8 +80,9 @@ describe('Entity to Migration Workflow', function (): void {
 
         $diff = $diffCalculator->calculate($entitySchema, $databaseSchema);
 
-        expect($diff->tablesToCreate)->toHaveCount(1);
-        expect($diff->tablesToCreate[0]->name)->toBe('workflow_users');
+        expect($diff->tablesToCreate)
+            ->toHaveCount(1)
+            ->and($diff->tablesToCreate[0]->name)->toBe('workflow_users');
 
         // Step 4: Generate migration SQL using a mock generator
         $sqlGenerator = new class () implements SqlGeneratorInterface
@@ -171,9 +174,11 @@ describe('Entity to Migration Workflow', function (): void {
 
         $upStatements = $sqlGenerator->generateUp($diff);
 
-        expect($upStatements)->toHaveCount(1);
-        expect($upStatements[0])->toContain('CREATE TABLE');
-        expect($upStatements[0])->toContain('workflow_users');
+        expect($upStatements)
+            ->toHaveCount(1)
+            ->and($upStatements[0])
+            ->toContain('CREATE TABLE')
+            ->toContain('workflow_users');
 
         // Step 5: Generate migration file
         $tempDir = sys_get_temp_dir() . '/marko_workflow_test_' . uniqid();
@@ -182,14 +187,16 @@ describe('Entity to Migration Workflow', function (): void {
         $generator = new MigrationGenerator($sqlGenerator, $tempDir);
         $paths = $generator->generate($diff);
 
-        expect($paths)->toHaveCount(1);
-        expect(file_exists($paths[0]))->toBeTrue();
+        expect($paths)
+            ->toHaveCount(1)
+            ->and(file_exists($paths[0]))->toBeTrue();
 
         // Verify migration file content
         $content = file_get_contents($paths[0]);
-        expect($content)->toContain('extends Migration');
-        expect($content)->toContain('function up');
-        expect($content)->toContain('function down');
+        expect($content)
+            ->toContain('extends Migration')
+            ->toContain('function up')
+            ->toContain('function down');
 
         // Cleanup
         array_map('unlink', glob($tempDir . '/database/migrations/*.php'));
@@ -210,30 +217,35 @@ describe('Entity to Migration Workflow', function (): void {
         $postTable = $schemaBuilder->build($postMetadata);
 
         // Verify user table structure
-        expect($userTable->name)->toBe('workflow_users');
-        expect($userTable->columns)->toHaveCount(4);
+        expect($userTable->name)
+            ->toBe('workflow_users')
+            ->and($userTable->columns)->toHaveCount(4);
 
         $columnNames = array_map(fn ($col) => $col->name, $userTable->columns);
-        expect($columnNames)->toContain('id');
-        expect($columnNames)->toContain('name');
-        expect($columnNames)->toContain('email');
-        expect($columnNames)->toContain('isActive');
+        expect($columnNames)
+            ->toContain('id')
+            ->toContain('name')
+            ->toContain('email')
+            ->toContain('isActive');
 
         // Verify post table structure
-        expect($postTable->name)->toBe('workflow_posts');
-        expect($postTable->columns)->toHaveCount(4);
+        expect($postTable->name)
+            ->toBe('workflow_posts')
+            ->and($postTable->columns)->toHaveCount(4);
 
         $postColumnNames = array_map(fn ($col) => $col->name, $postTable->columns);
-        expect($postColumnNames)->toContain('id');
-        expect($postColumnNames)->toContain('title');
-        expect($postColumnNames)->toContain('content');
-        expect($postColumnNames)->toContain('authorId');
+        expect($postColumnNames)
+            ->toContain('id')
+            ->toContain('title')
+            ->toContain('content')
+            ->toContain('authorId');
 
         // Verify primary key detection
         $idColumn = array_filter($userTable->columns, fn ($col) => $col->name === 'id');
         $idColumn = reset($idColumn);
-        expect($idColumn->primaryKey)->toBeTrue();
-        expect($idColumn->autoIncrement)->toBeTrue();
+        expect($idColumn->primaryKey)
+            ->toBeTrue()
+            ->and($idColumn->autoIncrement)->toBeTrue();
     });
 
     it('detects and generates migrations for entity changes', function (): void {
@@ -267,16 +279,18 @@ describe('Entity to Migration Workflow', function (): void {
         );
 
         // Should detect columns to add
-        expect($diff->tablesToCreate)->toBeEmpty();
-        expect($diff->tablesToDrop)->toBeEmpty();
-        expect($diff->tablesToAlter)->toHaveCount(1);
+        expect($diff->tablesToCreate)
+            ->toBeEmpty()
+            ->and($diff->tablesToDrop)->toBeEmpty()
+            ->and($diff->tablesToAlter)->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['workflow_users'];
         expect($tableDiff->columnsToAdd)->toHaveCount(2);
 
         $addedColumnNames = array_map(fn ($col) => $col->name, $tableDiff->columnsToAdd);
-        expect($addedColumnNames)->toContain('email');
-        expect($addedColumnNames)->toContain('isActive');
+        expect($addedColumnNames)
+            ->toContain('email')
+            ->toContain('isActive');
     });
 
     it('detects dropped columns in entity changes', function (): void {
@@ -308,11 +322,13 @@ describe('Entity to Migration Workflow', function (): void {
             ['workflow_users' => $existingTable],
         );
 
-        expect($diff->tablesToAlter)->toHaveCount(1);
+        expect($diff->tablesToAlter)
+            ->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['workflow_users'];
-        expect($tableDiff->columnsToDrop)->toHaveCount(1);
-        expect($tableDiff->columnsToDrop[0]->name)->toBe('deprecated_field');
+        expect($tableDiff->columnsToDrop)
+            ->toHaveCount(1)
+            ->and($tableDiff->columnsToDrop[0]->name)->toBe('deprecated_field');
     });
 
     it('detects new tables to create', function (): void {
@@ -331,8 +347,9 @@ describe('Entity to Migration Workflow', function (): void {
             [], // Empty database
         );
 
-        expect($diff->tablesToCreate)->toHaveCount(1);
-        expect($diff->tablesToCreate[0]->name)->toBe('new_table');
+        expect($diff->tablesToCreate)
+            ->toHaveCount(1)
+            ->and($diff->tablesToCreate[0]->name)->toBe('new_table');
     });
 
     it('detects tables to drop', function (): void {
@@ -351,7 +368,8 @@ describe('Entity to Migration Workflow', function (): void {
             ['old_table' => $existingTable],
         );
 
-        expect($diff->tablesToDrop)->toHaveCount(1);
-        expect($diff->tablesToDrop[0]->name)->toBe('old_table');
+        expect($diff->tablesToDrop)
+            ->toHaveCount(1)
+            ->and($diff->tablesToDrop[0]->name)->toBe('old_table');
     });
 });

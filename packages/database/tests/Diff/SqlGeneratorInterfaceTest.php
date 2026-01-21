@@ -13,16 +13,18 @@ describe('SqlGeneratorInterface', function (): void {
     it('defines generateUp(SchemaDiff) returning array of SQL statements', function (): void {
         $reflection = new ReflectionClass(SqlGeneratorInterface::class);
 
-        expect($reflection->isInterface())->toBeTrue();
-        expect($reflection->hasMethod('generateUp'))->toBeTrue();
+        expect($reflection->isInterface())
+            ->toBeTrue()
+            ->and($reflection->hasMethod('generateUp'))->toBeTrue();
 
         $method = $reflection->getMethod('generateUp');
         expect($method->getReturnType()?->getName())->toBe('array');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('diff');
-        expect($params[0]->getType()?->getName())->toBe(SchemaDiff::class);
+        expect($params)
+            ->toHaveCount(1)
+            ->and($params[0]->getName())->toBe('diff')
+            ->and($params[0]->getType()?->getName())->toBe(SchemaDiff::class);
     });
 
     it('defines generateDown(SchemaDiff) returning array of SQL statements', function (): void {
@@ -34,9 +36,10 @@ describe('SqlGeneratorInterface', function (): void {
         expect($method->getReturnType()?->getName())->toBe('array');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('diff');
-        expect($params[0]->getType()?->getName())->toBe(SchemaDiff::class);
+        expect($params)
+            ->toHaveCount(1)
+            ->and($params[0]->getName())->toBe('diff')
+            ->and($params[0]->getType()?->getName())->toBe(SchemaDiff::class);
     });
 
     it('defines generateCreateTable(Table) returning SQL string', function (): void {
@@ -48,9 +51,10 @@ describe('SqlGeneratorInterface', function (): void {
         expect($method->getReturnType()?->getName())->toBe('string');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[0]->getType()?->getName())->toBe(Table::class);
+        expect($params)
+            ->toHaveCount(1)
+            ->and($params[0]->getName())->toBe('table')
+            ->and($params[0]->getType()?->getName())->toBe(Table::class);
     });
 
     it('defines generateDropTable(tableName) returning SQL string', function (): void {
@@ -62,9 +66,10 @@ describe('SqlGeneratorInterface', function (): void {
         expect($method->getReturnType()?->getName())->toBe('string');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getName())->toBe('tableName');
-        expect($params[0]->getType()?->getName())->toBe('string');
+        expect($params)
+            ->toHaveCount(1)
+            ->and($params[0]->getName())->toBe('tableName')
+            ->and($params[0]->getType()?->getName())->toBe('string');
     });
 
     it('defines generateAddColumn(table, Column) returning SQL string', function (): void {
@@ -76,11 +81,12 @@ describe('SqlGeneratorInterface', function (): void {
         expect($method->getReturnType()?->getName())->toBe('string');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(2);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('column');
-        expect($params[1]->getType()?->getName())->toBe(Column::class);
+        expect($params)
+            ->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('table')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('column')
+            ->and($params[1]->getType()?->getName())->toBe(Column::class);
     });
 
     it('defines generateDropColumn(table, columnName) returning SQL string', function (): void {
@@ -92,11 +98,12 @@ describe('SqlGeneratorInterface', function (): void {
         expect($method->getReturnType()?->getName())->toBe('string');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(2);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('columnName');
-        expect($params[1]->getType()?->getName())->toBe('string');
+        expect($params)
+            ->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('table')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('columnName')
+            ->and($params[1]->getType()?->getName())->toBe('string');
     });
 
     it('defines generateModifyColumn(table, Column, oldColumn) returning SQL string', function (): void {
@@ -108,13 +115,14 @@ describe('SqlGeneratorInterface', function (): void {
         expect($method->getReturnType()?->getName())->toBe('string');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(3);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('column');
-        expect($params[1]->getType()?->getName())->toBe(Column::class);
-        expect($params[2]->getName())->toBe('oldColumn');
-        expect($params[2]->getType()?->getName())->toBe(Column::class);
+        expect($params)
+            ->toHaveCount(3)
+            ->and($params[0]->getName())->toBe('table')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('column')
+            ->and($params[1]->getType()?->getName())->toBe(Column::class)
+            ->and($params[2]->getName())->toBe('oldColumn')
+            ->and($params[2]->getType()?->getName())->toBe(Column::class);
     });
 
     it('defines generateAddIndex(table, Index) returning SQL string', function (): void {
@@ -126,11 +134,12 @@ describe('SqlGeneratorInterface', function (): void {
         expect($method->getReturnType()?->getName())->toBe('string');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(2);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('index');
-        expect($params[1]->getType()?->getName())->toBe(Index::class);
+        expect($params)
+            ->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('table')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('index')
+            ->and($params[1]->getType()?->getName())->toBe(Index::class);
     });
 
     it('defines generateDropIndex(table, indexName) returning SQL string', function (): void {
@@ -142,11 +151,12 @@ describe('SqlGeneratorInterface', function (): void {
         expect($method->getReturnType()?->getName())->toBe('string');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(2);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('indexName');
-        expect($params[1]->getType()?->getName())->toBe('string');
+        expect($params)
+            ->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('table')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('indexName')
+            ->and($params[1]->getType()?->getName())->toBe('string');
     });
 
     it('defines generateAddForeignKey(table, ForeignKey) returning SQL string', function (): void {
@@ -158,11 +168,12 @@ describe('SqlGeneratorInterface', function (): void {
         expect($method->getReturnType()?->getName())->toBe('string');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(2);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('foreignKey');
-        expect($params[1]->getType()?->getName())->toBe(ForeignKey::class);
+        expect($params)
+            ->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('table')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('foreignKey')
+            ->and($params[1]->getType()?->getName())->toBe(ForeignKey::class);
     });
 
     it('defines generateDropForeignKey(table, keyName) returning SQL string', function (): void {
@@ -174,10 +185,11 @@ describe('SqlGeneratorInterface', function (): void {
         expect($method->getReturnType()?->getName())->toBe('string');
 
         $params = $method->getParameters();
-        expect($params)->toHaveCount(2);
-        expect($params[0]->getName())->toBe('table');
-        expect($params[0]->getType()?->getName())->toBe('string');
-        expect($params[1]->getName())->toBe('keyName');
-        expect($params[1]->getType()?->getName())->toBe('string');
+        expect($params)
+            ->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('table')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('keyName')
+            ->and($params[1]->getType()?->getName())->toBe('string');
     });
 });

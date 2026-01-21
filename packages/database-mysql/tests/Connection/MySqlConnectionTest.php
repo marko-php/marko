@@ -173,9 +173,10 @@ describe('MySqlConnection', function (): void {
             ['Alice'],
         );
 
-        expect($results)->toHaveCount(1);
-        expect($results[0]['name'])->toBe('Alice');
-        expect($results[0]['email'])->toBe('alice@example.com');
+        expect($results)
+            ->toHaveCount(1)
+            ->and($results[0]['name'])->toBe('Alice')
+            ->and($results[0]['email'])->toBe('alice@example.com');
 
         // Test execute (INSERT) with bindings
         $affected = $connection->execute(
@@ -360,8 +361,9 @@ describe('MySqlConnection', function (): void {
         expect($connection->inTransaction())->toBeFalse();
 
         $results = $connection->query('SELECT * FROM test_data');
-        expect($results)->toHaveCount(1);
-        expect($results[0]['value'])->toBe('test');
+        expect($results)
+            ->toHaveCount(1)
+            ->and($results[0]['value'])->toBe('test');
     });
 
     it('implements rollback() method', function (): void {
@@ -419,8 +421,9 @@ describe('MySqlConnection', function (): void {
 
         $result = $connection->inTransaction();
 
-        expect($result)->toBeBool();
-        expect($result)->toBeFalse();
+        expect($result)
+            ->toBeBool()
+            ->and($result)->toBeFalse();
 
         $connection->beginTransaction();
 
@@ -492,8 +495,9 @@ describe('MySqlConnection', function (): void {
 
         // Verify data was committed
         $results = $connection->query('SELECT * FROM test_data');
-        expect($results)->toHaveCount(1);
-        expect($results[0]['value'])->toBe('committed');
+        expect($results)
+            ->toHaveCount(1)
+            ->and($results[0]['value'])->toBe('committed');
     });
 
     it('auto-rolls back when callback throws exception', function (): void {

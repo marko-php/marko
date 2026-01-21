@@ -18,12 +18,12 @@ describe('ForeignKey', function (): void {
             onUpdate: 'SET NULL',
         );
 
-        expect($foreignKey->name)->toBe('fk_posts_author');
-        expect($foreignKey->columns)->toBe(['author_id']);
-        expect($foreignKey->referencedTable)->toBe('users');
-        expect($foreignKey->referencedColumns)->toBe(['id']);
-        expect($foreignKey->onDelete)->toBe('CASCADE');
-        expect($foreignKey->onUpdate)->toBe('SET NULL');
+        expect($foreignKey->name)->toBe('fk_posts_author')
+            ->and($foreignKey->columns)->toBe(['author_id'])
+            ->and($foreignKey->referencedTable)->toBe('users')
+            ->and($foreignKey->referencedColumns)->toBe(['id'])
+            ->and($foreignKey->onDelete)->toBe('CASCADE')
+            ->and($foreignKey->onUpdate)->toBe('SET NULL');
 
         // Composite foreign key
         $compositeFk = new ForeignKey(
@@ -33,10 +33,10 @@ describe('ForeignKey', function (): void {
             referencedColumns: ['product_id', 'variant_id'],
         );
 
-        expect($compositeFk->columns)->toBe(['product_id', 'variant_id']);
-        expect($compositeFk->referencedColumns)->toBe(['product_id', 'variant_id']);
-        expect($compositeFk->onDelete)->toBeNull();
-        expect($compositeFk->onUpdate)->toBeNull();
+        expect($compositeFk->columns)->toBe(['product_id', 'variant_id'])
+            ->and($compositeFk->referencedColumns)->toBe(['product_id', 'variant_id'])
+            ->and($compositeFk->onDelete)->toBeNull()
+            ->and($compositeFk->onUpdate)->toBeNull();
 
         // Verify it's a readonly class
         $reflection = new ReflectionClass($foreignKey);

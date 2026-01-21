@@ -51,11 +51,12 @@ describe('DataMigrationDiscovery', function (): void {
 
         $migrations = $discovery->discover();
 
-        expect($migrations)->toHaveCount(2);
-        expect(array_column($migrations, 'name'))->toBe([
-            '001_insert_statuses',
-            '002_insert_categories',
-        ]);
+        expect($migrations)
+            ->toHaveCount(2)
+            ->and(array_column($migrations, 'name'))->toBe([
+                '001_insert_statuses',
+                '002_insert_categories',
+            ]);
     });
 
     it('discovers data migrations in modules/*/*/Data/', function (): void {
@@ -73,9 +74,10 @@ describe('DataMigrationDiscovery', function (): void {
 
         $migrations = $discovery->discover();
 
-        expect($migrations)->toHaveCount(1);
-        expect($migrations[0]['name'])->toBe('001_insert_pages');
-        expect($migrations[0]['source'])->toBe('modules');
+        expect($migrations)
+            ->toHaveCount(1)
+            ->and($migrations[0]['name'])->toBe('001_insert_pages')
+            ->and($migrations[0]['source'])->toBe('modules');
     });
 
     it('discovers data migrations in app/*/Data/', function (): void {
@@ -93,9 +95,10 @@ describe('DataMigrationDiscovery', function (): void {
 
         $migrations = $discovery->discover();
 
-        expect($migrations)->toHaveCount(1);
-        expect($migrations[0]['name'])->toBe('001_insert_custom_statuses');
-        expect($migrations[0]['source'])->toBe('app');
+        expect($migrations)
+            ->toHaveCount(1)
+            ->and($migrations[0]['name'])->toBe('001_insert_custom_statuses')
+            ->and($migrations[0]['source'])->toBe('app');
     });
 
     it('applies data migrations in filename order', function (): void {

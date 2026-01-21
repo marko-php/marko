@@ -20,9 +20,9 @@ describe('Table', function (): void {
 
         $table = new Table(name: 'posts', columns: $columns);
 
-        expect($table->name)->toBe('posts');
-        expect($table->columns)->toBe($columns);
-        expect($table->columns)->toHaveCount(2);
+        expect($table->name)->toBe('posts')
+            ->and($table->columns)->toBe($columns)
+            ->and($table->columns)->toHaveCount(2);
 
         // Verify it's a readonly class
         $reflection = new ReflectionClass($table);
@@ -42,18 +42,18 @@ describe('Table', function (): void {
         expect($table->columns)->toHaveCount(0);
 
         // First addition
-        expect($tableWithId->columns)->toHaveCount(1);
-        expect($tableWithId->columns[0]->name)->toBe('id');
-        expect($tableWithId->name)->toBe('posts');
+        expect($tableWithId->columns)->toHaveCount(1)
+            ->and($tableWithId->columns[0]->name)->toBe('id')
+            ->and($tableWithId->name)->toBe('posts');
 
         // Second addition
-        expect($tableWithBoth->columns)->toHaveCount(2);
-        expect($tableWithBoth->columns[0]->name)->toBe('id');
-        expect($tableWithBoth->columns[1]->name)->toBe('title');
+        expect($tableWithBoth->columns)->toHaveCount(2)
+            ->and($tableWithBoth->columns[0]->name)->toBe('id')
+            ->and($tableWithBoth->columns[1]->name)->toBe('title');
 
         // All are different instances
-        expect($table)->not->toBe($tableWithId);
-        expect($tableWithId)->not->toBe($tableWithBoth);
+        expect($table)->not->toBe($tableWithId)
+            ->and($tableWithId)->not->toBe($tableWithBoth);
     });
 
     it('provides Table::withIndex() for immutable building', function (): void {
@@ -76,17 +76,17 @@ describe('Table', function (): void {
         expect($table->indexes)->toHaveCount(0);
 
         // First addition
-        expect($tableWithSlugIdx->indexes)->toHaveCount(1);
-        expect($tableWithSlugIdx->indexes[0]->name)->toBe('idx_posts_slug');
+        expect($tableWithSlugIdx->indexes)->toHaveCount(1)
+            ->and($tableWithSlugIdx->indexes[0]->name)->toBe('idx_posts_slug');
 
         // Second addition
-        expect($tableWithBoth->indexes)->toHaveCount(2);
-        expect($tableWithBoth->indexes[0]->name)->toBe('idx_posts_slug');
-        expect($tableWithBoth->indexes[1]->name)->toBe('idx_posts_author');
+        expect($tableWithBoth->indexes)->toHaveCount(2)
+            ->and($tableWithBoth->indexes[0]->name)->toBe('idx_posts_slug')
+            ->and($tableWithBoth->indexes[1]->name)->toBe('idx_posts_author');
 
         // All are different instances
-        expect($table)->not->toBe($tableWithSlugIdx);
-        expect($tableWithSlugIdx)->not->toBe($tableWithBoth);
+        expect($table)->not->toBe($tableWithSlugIdx)
+            ->and($tableWithSlugIdx)->not->toBe($tableWithBoth);
     });
 
     it('provides Table::withForeignKey() for immutable building', function (): void {
@@ -113,17 +113,17 @@ describe('Table', function (): void {
         expect($table->foreignKeys)->toHaveCount(0);
 
         // First addition
-        expect($tableWithUserFk->foreignKeys)->toHaveCount(1);
-        expect($tableWithUserFk->foreignKeys[0]->name)->toBe('fk_posts_user');
+        expect($tableWithUserFk->foreignKeys)->toHaveCount(1)
+            ->and($tableWithUserFk->foreignKeys[0]->name)->toBe('fk_posts_user');
 
         // Second addition
-        expect($tableWithBoth->foreignKeys)->toHaveCount(2);
-        expect($tableWithBoth->foreignKeys[0]->name)->toBe('fk_posts_user');
-        expect($tableWithBoth->foreignKeys[1]->name)->toBe('fk_posts_category');
+        expect($tableWithBoth->foreignKeys)->toHaveCount(2)
+            ->and($tableWithBoth->foreignKeys[0]->name)->toBe('fk_posts_user')
+            ->and($tableWithBoth->foreignKeys[1]->name)->toBe('fk_posts_category');
 
         // All are different instances
-        expect($table)->not->toBe($tableWithUserFk);
-        expect($tableWithUserFk)->not->toBe($tableWithBoth);
+        expect($table)->not->toBe($tableWithUserFk)
+            ->and($tableWithUserFk)->not->toBe($tableWithBoth);
     });
 
     it('supports foreignKeys array in constructor', function (): void {
@@ -146,8 +146,8 @@ describe('Table', function (): void {
             foreignKeys: $foreignKeys,
         );
 
-        expect($table->foreignKeys)->toBe($foreignKeys);
-        expect($table->foreignKeys)->toHaveCount(1);
-        expect($table->foreignKeys[0]->name)->toBe('fk_posts_user');
+        expect($table->foreignKeys)->toBe($foreignKeys)
+            ->and($table->foreignKeys)->toHaveCount(1)
+            ->and($table->foreignKeys[0]->name)->toBe('fk_posts_user');
     });
 });

@@ -48,9 +48,10 @@ describe('DiffCalculator', function (): void {
 
         $diff = $this->calculator->calculate($entitySchema, $databaseSchema);
 
-        expect($diff)->toBeInstanceOf(SchemaDiff::class);
-        expect($diff->tablesToCreate)->toHaveCount(1);
-        expect($diff->tablesToCreate[0]->name)->toBe('comments');
+        expect($diff)
+            ->toBeInstanceOf(SchemaDiff::class)
+            ->and($diff->tablesToCreate)->toHaveCount(1)
+            ->and($diff->tablesToCreate[0]->name)->toBe('comments');
     });
 
     it('detects tables that need to be dropped', function (): void {
@@ -80,8 +81,9 @@ describe('DiffCalculator', function (): void {
 
         $diff = $this->calculator->calculate($entitySchema, $databaseSchema);
 
-        expect($diff->tablesToDrop)->toHaveCount(1);
-        expect($diff->tablesToDrop[0]->name)->toBe('legacy_table');
+        expect($diff->tablesToDrop)
+            ->toHaveCount(1)
+            ->and($diff->tablesToDrop[0]->name)->toBe('legacy_table');
     });
 
     it('detects new columns in existing tables', function (): void {
@@ -111,9 +113,10 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter)->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['posts'];
-        expect($tableDiff)->toBeInstanceOf(TableDiff::class);
-        expect($tableDiff->columnsToAdd)->toHaveCount(1);
-        expect($tableDiff->columnsToAdd[0]->name)->toBe('slug');
+        expect($tableDiff)
+            ->toBeInstanceOf(TableDiff::class)
+            ->and($tableDiff->columnsToAdd)->toHaveCount(1)
+            ->and($tableDiff->columnsToAdd[0]->name)->toBe('slug');
     });
 
     it('detects columns that need to be dropped', function (): void {
@@ -141,8 +144,9 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter)->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['posts'];
-        expect($tableDiff->columnsToDrop)->toHaveCount(1);
-        expect($tableDiff->columnsToDrop[0]->name)->toBe('old_column');
+        expect($tableDiff->columnsToDrop)
+            ->toHaveCount(1)
+            ->and($tableDiff->columnsToDrop[0]->name)->toBe('old_column');
     });
 
     it('detects column type changes', function (): void {
@@ -171,9 +175,10 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter)->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['posts'];
-        expect($tableDiff->columnsToModify)->toHaveCount(1);
-        expect($tableDiff->columnsToModify['views']->name)->toBe('views');
-        expect($tableDiff->columnsToModify['views']->type)->toBe('BIGINT');
+        expect($tableDiff->columnsToModify)
+            ->toHaveCount(1)
+            ->and($tableDiff->columnsToModify['views']->name)->toBe('views')
+            ->and($tableDiff->columnsToModify['views']->type)->toBe('BIGINT');
     });
 
     it('detects column nullable changes', function (): void {
@@ -202,8 +207,9 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter)->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['posts'];
-        expect($tableDiff->columnsToModify)->toHaveCount(1);
-        expect($tableDiff->columnsToModify['bio']->nullable)->toBeTrue();
+        expect($tableDiff->columnsToModify)
+            ->toHaveCount(1)
+            ->and($tableDiff->columnsToModify['bio']->nullable)->toBeTrue();
     });
 
     it('detects column default value changes', function (): void {
@@ -232,8 +238,9 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter)->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['posts'];
-        expect($tableDiff->columnsToModify)->toHaveCount(1);
-        expect($tableDiff->columnsToModify['status']->default)->toBe('published');
+        expect($tableDiff->columnsToModify)
+            ->toHaveCount(1)
+            ->and($tableDiff->columnsToModify['status']->default)->toBe('published');
     });
 
     it('detects new indexes', function (): void {
@@ -266,8 +273,9 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter)->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['posts'];
-        expect($tableDiff->indexesToAdd)->toHaveCount(1);
-        expect($tableDiff->indexesToAdd[0]->name)->toBe('idx_posts_slug');
+        expect($tableDiff->indexesToAdd)
+            ->toHaveCount(1)
+            ->and($tableDiff->indexesToAdd[0]->name)->toBe('idx_posts_slug');
     });
 
     it('detects indexes that need to be dropped', function (): void {
@@ -298,8 +306,9 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter)->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['posts'];
-        expect($tableDiff->indexesToDrop)->toHaveCount(1);
-        expect($tableDiff->indexesToDrop[0]->name)->toBe('idx_old');
+        expect($tableDiff->indexesToDrop)
+            ->toHaveCount(1)
+            ->and($tableDiff->indexesToDrop[0]->name)->toBe('idx_old');
     });
 
     it('detects new foreign keys', function (): void {
@@ -340,8 +349,9 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter)->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['posts'];
-        expect($tableDiff->foreignKeysToAdd)->toHaveCount(1);
-        expect($tableDiff->foreignKeysToAdd[0]->name)->toBe('fk_posts_user');
+        expect($tableDiff->foreignKeysToAdd)
+            ->toHaveCount(1)
+            ->and($tableDiff->foreignKeysToAdd[0]->name)->toBe('fk_posts_user');
     });
 
     it('detects foreign keys that need to be dropped', function (): void {
@@ -381,8 +391,9 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter)->toHaveCount(1);
 
         $tableDiff = $diff->tablesToAlter['posts'];
-        expect($tableDiff->foreignKeysToDrop)->toHaveCount(1);
-        expect($tableDiff->foreignKeysToDrop[0]->name)->toBe('fk_legacy');
+        expect($tableDiff->foreignKeysToDrop)
+            ->toHaveCount(1)
+            ->and($tableDiff->foreignKeysToDrop[0]->name)->toBe('fk_legacy');
     });
 
     it('flags destructive operations (DROP) separately', function (): void {
@@ -424,11 +435,12 @@ describe('DiffCalculator', function (): void {
 
         $diff = $this->calculator->calculate($entitySchema, $databaseSchema);
 
-        expect($diff->hasDestructiveChanges())->toBeTrue();
-        expect($diff->getDestructiveChanges())->toContain('DROP TABLE legacy_table');
-        expect($diff->getDestructiveChanges())->toContain('DROP COLUMN posts.old_column');
-        expect($diff->getDestructiveChanges())->toContain('DROP INDEX posts.idx_old');
-        expect($diff->getDestructiveChanges())->toContain('DROP FOREIGN KEY posts.fk_old');
+        expect($diff->hasDestructiveChanges())
+            ->toBeTrue()
+            ->and($diff->getDestructiveChanges())->toContain('DROP TABLE legacy_table')
+            ->and($diff->getDestructiveChanges())->toContain('DROP COLUMN posts.old_column')
+            ->and($diff->getDestructiveChanges())->toContain('DROP INDEX posts.idx_old')
+            ->and($diff->getDestructiveChanges())->toContain('DROP FOREIGN KEY posts.fk_old');
     });
 
     it('returns empty diff when schema matches database', function (): void {
@@ -448,10 +460,11 @@ describe('DiffCalculator', function (): void {
 
         $diff = $this->calculator->calculate($schema, $schema);
 
-        expect($diff->isEmpty())->toBeTrue();
-        expect($diff->tablesToCreate)->toBeEmpty();
-        expect($diff->tablesToDrop)->toBeEmpty();
-        expect($diff->tablesToAlter)->toBeEmpty();
+        expect($diff->isEmpty())
+            ->toBeTrue()
+            ->and($diff->tablesToCreate)->toBeEmpty()
+            ->and($diff->tablesToDrop)->toBeEmpty()
+            ->and($diff->tablesToAlter)->toBeEmpty();
     });
 
     it('provides human-readable diff summary', function (): void {
@@ -494,11 +507,12 @@ describe('DiffCalculator', function (): void {
         $diff = $this->calculator->calculate($entitySchema, $databaseSchema);
         $summary = $diff->getSummary();
 
-        expect($summary)->toContain('Create table: comments');
-        expect($summary)->toContain('Drop table: legacy');
-        expect($summary)->toContain('Alter table: posts');
-        expect($summary)->toContain('Add column: slug');
-        expect($summary)->toContain('Modify column: title');
-        expect($summary)->toContain('Add index: idx_slug');
+        expect($summary)
+            ->toContain('Create table: comments')
+            ->toContain('Drop table: legacy')
+            ->toContain('Alter table: posts')
+            ->toContain('Add column: slug')
+            ->toContain('Modify column: title')
+            ->toContain('Add index: idx_slug');
     });
 });

@@ -159,13 +159,15 @@ describe('DatabaseTestCase Trait', function (): void {
 
         // Begin transaction
         $testCase->testBeginTransaction($connection);
-        expect($testCase->testHasTransaction())->toBeTrue();
-        expect($transactionLog)->toContain('BEGIN');
+        expect($testCase->testHasTransaction())
+            ->toBeTrue()
+            ->and($transactionLog)->toContain('BEGIN');
 
         // Rollback transaction (test isolation)
         $testCase->testRollback();
-        expect($testCase->testHasTransaction())->toBeFalse();
-        expect($transactionLog)->toContain('ROLLBACK');
+        expect($testCase->testHasTransaction())
+            ->toBeFalse()
+            ->and($transactionLog)->toContain('ROLLBACK');
     });
 
     it('can commit transaction when needed', function (): void {
@@ -258,8 +260,9 @@ describe('DatabaseTestCase Trait', function (): void {
         $testCase->testBeginTransaction($connection);
         $testCase->testCommit();
 
-        expect($testCase->testHasTransaction())->toBeFalse();
-        expect($transactionLog)->toBe(['BEGIN', 'COMMIT']);
+        expect($testCase->testHasTransaction())
+            ->toBeFalse()
+            ->and($transactionLog)->toBe(['BEGIN', 'COMMIT']);
     });
 
     it('seeds table with test data', function (): void {
@@ -314,10 +317,11 @@ describe('DatabaseTestCase Trait', function (): void {
             ['name' => 'Jane', 'email' => 'jane@example.com'],
         ]);
 
-        expect($insertedData)->toHaveCount(2);
-        expect($insertedData[0]['sql'])->toContain('INSERT INTO users');
-        expect($insertedData[0]['bindings'])->toContain('John');
-        expect($insertedData[1]['bindings'])->toContain('Jane');
+        expect($insertedData)
+            ->toHaveCount(2)
+            ->and($insertedData[0]['sql'])->toContain('INSERT INTO users')
+            ->and($insertedData[0]['bindings'])->toContain('John')
+            ->and($insertedData[1]['bindings'])->toContain('Jane');
     });
 
     it('truncates table for test cleanup', function (): void {
@@ -369,8 +373,9 @@ describe('DatabaseTestCase Trait', function (): void {
         $testCase = new TestDatabaseTestCase();
         $testCase->testTruncateTable($connection, 'users');
 
-        expect($executedSql)->toHaveCount(1);
-        expect($executedSql[0])->toContain('DELETE FROM users');
+        expect($executedSql)
+            ->toHaveCount(1)
+            ->and($executedSql[0])->toContain('DELETE FROM users');
     });
 
     it('gets table row count', function (): void {

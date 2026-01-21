@@ -37,9 +37,9 @@ it('registers table schema from entity class', function (): void {
 
     $this->registry->registerEntity($entity::class);
 
-    expect($this->registry->hasTable('posts'))->toBeTrue();
-    expect($this->registry->getTable('posts'))->toBeInstanceOf(SchemaTable::class);
-    expect($this->registry->getTable('posts')->columns)->toHaveCount(2);
+    expect($this->registry->hasTable('posts'))->toBeTrue()
+        ->and($this->registry->getTable('posts'))->toBeInstanceOf(SchemaTable::class)
+        ->and($this->registry->getTable('posts')->columns)->toHaveCount(2);
 });
 
 it('retrieves all registered tables', function (): void {
@@ -60,8 +60,8 @@ it('retrieves all registered tables', function (): void {
 
     $tables = $this->registry->getTables();
 
-    expect($tables)->toHaveCount(2);
-    expect(array_keys($tables))->toContain('users', 'posts');
+    expect($tables)->toHaveCount(2)
+        ->and(array_keys($tables))->toContain('users', 'posts');
 });
 
 it('retrieves entity class by table name', function (): void {
@@ -90,15 +90,15 @@ it('retrieves EntityMetadata by table name', function (): void {
 
     $metadata = $this->registry->getMetadata('posts');
 
-    expect($metadata)->not->toBeNull();
-    expect($metadata->tableName)->toBe('posts');
-    expect($metadata->columns)->toHaveCount(2);
+    expect($metadata)->not->toBeNull()
+        ->and($metadata->tableName)->toBe('posts')
+        ->and($metadata->columns)->toHaveCount(2);
 });
 
 it('returns null for unknown table', function (): void {
-    expect($this->registry->getTable('nonexistent'))->toBeNull();
-    expect($this->registry->getEntityClass('nonexistent'))->toBeNull();
-    expect($this->registry->getMetadata('nonexistent'))->toBeNull();
+    expect($this->registry->getTable('nonexistent'))->toBeNull()
+        ->and($this->registry->getEntityClass('nonexistent'))->toBeNull()
+        ->and($this->registry->getMetadata('nonexistent'))->toBeNull();
 });
 
 it('registers multiple entities at once', function (): void {
@@ -119,8 +119,8 @@ it('registers multiple entities at once', function (): void {
         $entity2::class,
     ]);
 
-    expect($this->registry->hasTable('users'))->toBeTrue();
-    expect($this->registry->hasTable('posts'))->toBeTrue();
+    expect($this->registry->hasTable('users'))->toBeTrue()
+        ->and($this->registry->hasTable('posts'))->toBeTrue();
 });
 
 it('gets all table names', function (): void {
@@ -143,8 +143,8 @@ it('gets all table names', function (): void {
 
     $names = $this->registry->getTableNames();
 
-    expect($names)->toContain('users', 'posts');
-    expect($names)->toHaveCount(2);
+    expect($names)->toContain('users', 'posts')
+        ->and($names)->toHaveCount(2);
 });
 
 it('clears all registered tables', function (): void {
@@ -159,6 +159,6 @@ it('clears all registered tables', function (): void {
 
     $this->registry->clear();
 
-    expect($this->registry->hasTable('posts'))->toBeFalse();
-    expect($this->registry->getTables())->toBe([]);
+    expect($this->registry->hasTable('posts'))->toBeFalse()
+        ->and($this->registry->getTables())->toBe([]);
 });

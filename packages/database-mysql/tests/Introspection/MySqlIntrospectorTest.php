@@ -123,10 +123,11 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $columns = $introspector->getColumns('users');
 
-        expect($columns)->toHaveCount(2);
-        expect($columns[0])->toBeInstanceOf(Column::class);
-        expect($columns[0]->name)->toBe('id');
-        expect($columns[1]->name)->toBe('name');
+        expect($columns)
+            ->toHaveCount(2)
+            ->and($columns[0])->toBeInstanceOf(Column::class)
+            ->and($columns[0]->name)->toBe('id')
+            ->and($columns[1]->name)->toBe('name');
     });
 
     it('maps MySQL data types to Column value objects', function (): void {
@@ -162,10 +163,11 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $columns = $introspector->getColumns('posts');
 
-        expect($columns[0]->type)->toBe('bigint');
-        expect($columns[1]->type)->toBe('varchar');
-        expect($columns[1]->length)->toBe(100);
-        expect($columns[2]->type)->toBe('text');
+        expect($columns[0]->type)
+            ->toBe('bigint')
+            ->and($columns[1]->type)->toBe('varchar')
+            ->and($columns[1]->length)->toBe(100)
+            ->and($columns[2]->type)->toBe('text');
     });
 
     it('detects nullable columns', function (): void {
@@ -193,8 +195,9 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->nullable)->toBeFalse();
-        expect($columns[1]->nullable)->toBeTrue();
+        expect($columns[0]->nullable)
+            ->toBeFalse()
+            ->and($columns[1]->nullable)->toBeTrue();
     });
 
     it('detects default values', function (): void {
@@ -230,9 +233,10 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $columns = $introspector->getColumns('tasks');
 
-        expect($columns[0]->default)->toBe('active');
-        expect($columns[1]->default)->toBe('0');
-        expect($columns[2]->default)->toBe('CURRENT_TIMESTAMP');
+        expect($columns[0]->default)
+            ->toBe('active')
+            ->and($columns[1]->default)->toBe('0')
+            ->and($columns[2]->default)->toBe('CURRENT_TIMESTAMP');
     });
 
     it('detects auto_increment columns', function (): void {
@@ -260,8 +264,9 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $columns = $introspector->getColumns('users');
 
-        expect($columns[0]->autoIncrement)->toBeTrue();
-        expect($columns[1]->autoIncrement)->toBeFalse();
+        expect($columns[0]->autoIncrement)
+            ->toBeTrue()
+            ->and($columns[1]->autoIncrement)->toBeFalse();
     });
 
     it('reads indexes from information_schema.statistics', function (): void {
@@ -294,12 +299,13 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $indexes = $introspector->getIndexes('users');
 
-        expect($indexes)->toHaveCount(2);
-        expect($indexes[0])->toBeInstanceOf(Index::class);
-        expect($indexes[0]->name)->toBe('idx_email');
-        expect($indexes[0]->columns)->toBe(['email']);
-        expect($indexes[1]->name)->toBe('idx_name_created');
-        expect($indexes[1]->columns)->toBe(['name', 'created_at']);
+        expect($indexes)
+            ->toHaveCount(2)
+            ->and($indexes[0])->toBeInstanceOf(Index::class)
+            ->and($indexes[0]->name)->toBe('idx_email')
+            ->and($indexes[0]->columns)->toBe(['email'])
+            ->and($indexes[1]->name)->toBe('idx_name_created')
+            ->and($indexes[1]->columns)->toBe(['name', 'created_at']);
     });
 
     it('detects unique indexes', function (): void {
@@ -325,8 +331,9 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $indexes = $introspector->getIndexes('users');
 
-        expect($indexes[0]->type)->toBe(IndexType::Unique);
-        expect($indexes[1]->type)->toBe(IndexType::Btree);
+        expect($indexes[0]->type)
+            ->toBe(IndexType::Unique)
+            ->and($indexes[1]->type)->toBe(IndexType::Btree);
     });
 
     it('reads foreign keys from information_schema.key_column_usage', function (): void {
@@ -352,12 +359,13 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $foreignKeys = $introspector->getForeignKeys('posts');
 
-        expect($foreignKeys)->toHaveCount(1);
-        expect($foreignKeys[0])->toBeInstanceOf(ForeignKey::class);
-        expect($foreignKeys[0]->name)->toBe('fk_posts_user');
-        expect($foreignKeys[0]->columns)->toBe(['user_id']);
-        expect($foreignKeys[0]->referencedTable)->toBe('users');
-        expect($foreignKeys[0]->referencedColumns)->toBe(['id']);
+        expect($foreignKeys)
+            ->toHaveCount(1)
+            ->and($foreignKeys[0])->toBeInstanceOf(ForeignKey::class)
+            ->and($foreignKeys[0]->name)->toBe('fk_posts_user')
+            ->and($foreignKeys[0]->columns)->toBe(['user_id'])
+            ->and($foreignKeys[0]->referencedTable)->toBe('users')
+            ->and($foreignKeys[0]->referencedColumns)->toBe(['id']);
     });
 
     it('detects ON DELETE and ON UPDATE actions', function (): void {
@@ -383,8 +391,9 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $foreignKeys = $introspector->getForeignKeys('orders');
 
-        expect($foreignKeys[0]->onDelete)->toBe('SET NULL');
-        expect($foreignKeys[0]->onUpdate)->toBe('CASCADE');
+        expect($foreignKeys[0]->onDelete)
+            ->toBe('SET NULL')
+            ->and($foreignKeys[0]->onUpdate)->toBe('CASCADE');
     });
 
     it('filters to current database only', function (): void {
@@ -437,8 +446,9 @@ describe('MySqlIntrospector', function (): void {
         $introspector->getTables();
 
         // Verify the query includes database filter
-        expect($capturedQueries)->toHaveCount(1);
-        expect($capturedQueries[0]['bindings'])->toContain('my_app_db');
+        expect($capturedQueries)
+            ->toHaveCount(1)
+            ->and($capturedQueries[0]['bindings'])->toContain('my_app_db');
     });
 
     it('checks if table exists', function (): void {
@@ -451,8 +461,9 @@ describe('MySqlIntrospector', function (): void {
 
         $introspector = new MySqlIntrospector($connection, 'testdb');
 
-        expect($introspector->tableExists('users'))->toBeTrue();
-        expect($introspector->tableExists('nonexistent'))->toBeFalse();
+        expect($introspector->tableExists('users'))
+            ->toBeTrue()
+            ->and($introspector->tableExists('nonexistent'))->toBeFalse();
     });
 
     it('gets table schema with columns and indexes', function (): void {
@@ -539,10 +550,11 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $table = $introspector->getTable('users');
 
-        expect($table)->toBeInstanceOf(Table::class);
-        expect($table->name)->toBe('users');
-        expect($table->columns)->toHaveCount(1);
-        expect($table->indexes)->toHaveCount(1);
+        expect($table)
+            ->toBeInstanceOf(Table::class)
+            ->and($table->name)->toBe('users')
+            ->and($table->columns)->toHaveCount(1)
+            ->and($table->indexes)->toHaveCount(1);
     });
 
     it('returns null for non-existent table', function (): void {
@@ -638,9 +650,10 @@ describe('MySqlIntrospector', function (): void {
         $introspector = new MySqlIntrospector($connection, 'testdb');
         $foreignKeys = $introspector->getForeignKeys('orders');
 
-        expect($foreignKeys)->toHaveCount(1);
-        expect($foreignKeys[0]->columns)->toBe(['tenant_id', 'user_id']);
-        expect($foreignKeys[0]->referencedColumns)->toBe(['id', 'user_id']);
+        expect($foreignKeys)
+            ->toHaveCount(1)
+            ->and($foreignKeys[0]->columns)->toBe(['tenant_id', 'user_id'])
+            ->and($foreignKeys[0]->referencedColumns)->toBe(['id', 'user_id']);
     });
 
     it('handles empty table list', function (): void {

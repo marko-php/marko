@@ -36,12 +36,13 @@ describe('MySqlGenerator', function (): void {
 
         $sql = $generator->generateCreateTable($table);
 
-        expect($sql)->toContain('CREATE TABLE `users`');
-        expect($sql)->toContain('`id` INT NOT NULL AUTO_INCREMENT');
-        expect($sql)->toContain('`email` VARCHAR(255) NOT NULL UNIQUE');
-        expect($sql)->toContain('`name` VARCHAR(100) NULL');
-        expect($sql)->toContain('`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
-        expect($sql)->toContain('PRIMARY KEY (`id`)');
+        expect($sql)
+            ->toContain('CREATE TABLE `users`')
+            ->and($sql)->toContain('`id` INT NOT NULL AUTO_INCREMENT')
+            ->and($sql)->toContain('`email` VARCHAR(255) NOT NULL UNIQUE')
+            ->and($sql)->toContain('`name` VARCHAR(100) NULL')
+            ->and($sql)->toContain('`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP')
+            ->and($sql)->toContain('PRIMARY KEY (`id`)');
     });
 
     it('generates DROP TABLE statements', function (): void {
@@ -250,8 +251,9 @@ describe('MySqlGenerator', function (): void {
 
         $sql = $generator->generateCreateTable($table);
 
-        expect($sql)->toContain('`id` INT NOT NULL AUTO_INCREMENT');
-        expect($sql)->toContain('PRIMARY KEY (`id`)');
+        expect($sql)
+            ->toContain('`id` INT NOT NULL AUTO_INCREMENT')
+            ->and($sql)->toContain('PRIMARY KEY (`id`)');
     });
 
     it('generates proper DEFAULT expressions', function (): void {
@@ -311,11 +313,10 @@ describe('MySqlGenerator', function (): void {
         $upSql = $generator->generateUp($diff);
         $downSql = $generator->generateDown($diff);
 
-        // Up should create table
-        expect($upSql[0])->toContain('CREATE TABLE `posts`');
-
-        // Down should drop table (reverse of create)
-        expect($downSql)->toContain('DROP TABLE `posts`');
+        // Up should create table, down should drop table (reverse of create)
+        expect($upSql[0])
+            ->toContain('CREATE TABLE `posts`')
+            ->and($downSql)->toContain('DROP TABLE `posts`');
     });
 
     it('generates up SQL for all schema changes', function (): void {
@@ -366,12 +367,12 @@ describe('MySqlGenerator', function (): void {
 
         // Should contain create index
         expect(
-            array_filter($upSql, fn ($s) => str_contains($s, 'CREATE INDEX `idx_posts_category`'))
+            array_filter($upSql, fn ($s) => str_contains($s, 'CREATE INDEX `idx_posts_category`')),
         )->not->toBeEmpty();
 
         // Should contain add foreign key
         expect(
-            array_filter($upSql, fn ($s) => str_contains($s, 'ADD CONSTRAINT `fk_posts_category`'))
+            array_filter($upSql, fn ($s) => str_contains($s, 'ADD CONSTRAINT `fk_posts_category`')),
         )->not->toBeEmpty();
     });
 

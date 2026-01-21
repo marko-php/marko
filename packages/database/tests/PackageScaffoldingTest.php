@@ -10,11 +10,11 @@ describe('Package Scaffolding', function (): void {
 
         $composer = json_decode(file_get_contents($composerPath), true);
 
-        expect($composer)->not->toBeNull();
-        expect($composer['name'])->toBe('marko/database');
-        expect($composer['type'])->toBe('library');
-        expect($composer['require']['php'])->toBe('^8.5');
-        expect($composer['require']['marko/core'])->toBe('^0.1');
+        expect($composer)->not->toBeNull()
+            ->and($composer['name'])->toBe('marko/database')
+            ->and($composer['type'])->toBe('library')
+            ->and($composer['require']['php'])->toBe('^8.5')
+            ->and($composer['require']['marko/core'])->toBe('^0.1');
     });
 
     it('creates marko/database-mysql package with valid composer.json requiring marko/database', function (): void {
@@ -24,12 +24,12 @@ describe('Package Scaffolding', function (): void {
 
         $composer = json_decode(file_get_contents($composerPath), true);
 
-        expect($composer)->not->toBeNull();
-        expect($composer['name'])->toBe('marko/database-mysql');
-        expect($composer['type'])->toBe('library');
-        expect($composer['require']['php'])->toBe('^8.5');
-        expect($composer['require']['marko/core'])->toBe('^0.1');
-        expect($composer['require']['marko/database'])->toBe('^0.1');
+        expect($composer)->not->toBeNull()
+            ->and($composer['name'])->toBe('marko/database-mysql')
+            ->and($composer['type'])->toBe('library')
+            ->and($composer['require']['php'])->toBe('^8.5')
+            ->and($composer['require']['marko/core'])->toBe('^0.1')
+            ->and($composer['require']['marko/database'])->toBe('^0.1');
     });
 
     it('creates marko/database-pgsql package with valid composer.json requiring marko/database', function (): void {
@@ -39,12 +39,12 @@ describe('Package Scaffolding', function (): void {
 
         $composer = json_decode(file_get_contents($composerPath), true);
 
-        expect($composer)->not->toBeNull();
-        expect($composer['name'])->toBe('marko/database-pgsql');
-        expect($composer['type'])->toBe('library');
-        expect($composer['require']['php'])->toBe('^8.5');
-        expect($composer['require']['marko/core'])->toBe('^0.1');
-        expect($composer['require']['marko/database'])->toBe('^0.1');
+        expect($composer)->not->toBeNull()
+            ->and($composer['name'])->toBe('marko/database-pgsql')
+            ->and($composer['type'])->toBe('library')
+            ->and($composer['require']['php'])->toBe('^8.5')
+            ->and($composer['require']['marko/core'])->toBe('^0.1')
+            ->and($composer['require']['marko/database'])->toBe('^0.1');
     });
 
     it('creates module.php for database-mysql with connection binding', function (): void {
@@ -54,10 +54,10 @@ describe('Package Scaffolding', function (): void {
 
         $module = require $modulePath;
 
-        expect($module)->toBeArray();
-        expect($module['enabled'])->toBeTrue();
-        expect($module['bindings'])->toBeArray();
-        expect($module['bindings'])->toHaveKey('Marko\\Database\\Connection\\ConnectionInterface');
+        expect($module)->toBeArray()
+            ->and($module['enabled'])->toBeTrue()
+            ->and($module['bindings'])->toBeArray()
+            ->and($module['bindings'])->toHaveKey('Marko\\Database\\Connection\\ConnectionInterface');
     });
 
     it('creates module.php for database-pgsql with connection binding', function (): void {
@@ -67,26 +67,24 @@ describe('Package Scaffolding', function (): void {
 
         $module = require $modulePath;
 
-        expect($module)->toBeArray();
-        expect($module['enabled'])->toBeTrue();
-        expect($module['bindings'])->toBeArray();
-        expect($module['bindings'])->toHaveKey('Marko\\Database\\Connection\\ConnectionInterface');
+        expect($module)->toBeArray()
+            ->and($module['enabled'])->toBeTrue()
+            ->and($module['bindings'])->toBeArray()
+            ->and($module['bindings'])->toHaveKey('Marko\\Database\\Connection\\ConnectionInterface');
     });
 
     it('creates proper directory structure for all three packages', function (): void {
         $packagesDir = dirname(__DIR__, 2);
 
         // marko/database directories
-        expect(is_dir($packagesDir . '/database/src'))->toBeTrue();
-        expect(is_dir($packagesDir . '/database/tests'))->toBeTrue();
-
-        // marko/database-mysql directories
-        expect(is_dir($packagesDir . '/database-mysql/src'))->toBeTrue();
-        expect(is_dir($packagesDir . '/database-mysql/tests'))->toBeTrue();
-
-        // marko/database-pgsql directories
-        expect(is_dir($packagesDir . '/database-pgsql/src'))->toBeTrue();
-        expect(is_dir($packagesDir . '/database-pgsql/tests'))->toBeTrue();
+        expect(is_dir($packagesDir . '/database/src'))->toBeTrue()
+            ->and(is_dir($packagesDir . '/database/tests'))->toBeTrue()
+            // marko/database-mysql directories
+            ->and(is_dir($packagesDir . '/database-mysql/src'))->toBeTrue()
+            ->and(is_dir($packagesDir . '/database-mysql/tests'))->toBeTrue()
+            // marko/database-pgsql directories
+            ->and(is_dir($packagesDir . '/database-pgsql/src'))->toBeTrue()
+            ->and(is_dir($packagesDir . '/database-pgsql/tests'))->toBeTrue();
     });
 
     it('configures PSR-4 namespaces correctly', function (): void {
@@ -94,64 +92,58 @@ describe('Package Scaffolding', function (): void {
 
         // marko/database namespace
         $databaseComposer = json_decode(file_get_contents($packagesDir . '/database/composer.json'), true);
-        expect($databaseComposer['autoload']['psr-4'])->toHaveKey('Marko\\Database\\');
-        expect($databaseComposer['autoload']['psr-4']['Marko\\Database\\'])->toBe('src/');
+        expect($databaseComposer['autoload']['psr-4'])->toHaveKey('Marko\\Database\\')
+            ->and($databaseComposer['autoload']['psr-4']['Marko\\Database\\'])->toBe('src/');
 
         // marko/database-mysql namespace
         $mysqlComposer = json_decode(file_get_contents($packagesDir . '/database-mysql/composer.json'), true);
-        expect($mysqlComposer['autoload']['psr-4'])->toHaveKey('Marko\\Database\\MySql\\');
-        expect($mysqlComposer['autoload']['psr-4']['Marko\\Database\\MySql\\'])->toBe('src/');
+        expect($mysqlComposer['autoload']['psr-4'])->toHaveKey('Marko\\Database\\MySql\\')
+            ->and($mysqlComposer['autoload']['psr-4']['Marko\\Database\\MySql\\'])->toBe('src/');
 
         // marko/database-pgsql namespace
         $pgsqlComposer = json_decode(file_get_contents($packagesDir . '/database-pgsql/composer.json'), true);
-        expect($pgsqlComposer['autoload']['psr-4'])->toHaveKey('Marko\\Database\\PgSql\\');
-        expect($pgsqlComposer['autoload']['psr-4']['Marko\\Database\\PgSql\\'])->toBe('src/');
+        expect($pgsqlComposer['autoload']['psr-4'])->toHaveKey('Marko\\Database\\PgSql\\')
+            ->and($pgsqlComposer['autoload']['psr-4']['Marko\\Database\\PgSql\\'])->toBe('src/');
     });
 
     it(
         'creates README.md for marko/database explaining entity-driven schema and Data Mapper pattern',
         function (): void {
             $readmePath = dirname(__DIR__) . '/README.md';
-    
+
             expect(file_exists($readmePath))->toBeTrue();
-    
+
             $content = file_get_contents($readmePath);
-    
+
             // Core concepts covered
-        expect($content)->toContain('Entity-Driven Schema');
-            expect($content)->toContain('Data Mapper');
-            expect($content)->toContain('Type Inference');
-    
-            // Attributes overview
-        expect($content)->toContain('#[Table]');
-            expect($content)->toContain('#[Column]');
-            expect($content)->toContain('#[Index]');
-    
-            // Post entity example with various attribute types
-        expect($content)->toContain('class Post');
-            expect($content)->toContain('primaryKey');
-            expect($content)->toContain('autoIncrement');
-            expect($content)->toContain('unique');
-            expect($content)->toContain('nullable');
-            expect($content)->toContain('default');
-    
-            // Repository pattern
-        expect($content)->toContain('Repository');
-    
-            // CLI commands overview
-        expect($content)->toContain('db:diff');
-            expect($content)->toContain('db:migrate');
-            expect($content)->toContain('db:rollback');
-            expect($content)->toContain('db:status');
-    
-            // Framework comparison
-        expect($content)->toContain('Laravel');
-            expect($content)->toContain('Doctrine');
-            expect($content)->toContain('Marko');
-    
-            // Single source of truth benefits
-        expect($content)->toContain('single source of truth');
-        }
+            expect($content)->toContain('Entity-Driven Schema')
+                ->and($content)->toContain('Data Mapper')
+                ->and($content)->toContain('Type Inference')
+                // Attributes overview
+                ->and($content)->toContain('#[Table]')
+                ->and($content)->toContain('#[Column]')
+                ->and($content)->toContain('#[Index]')
+                // Post entity example with various attribute types
+                ->and($content)->toContain('class Post')
+                ->and($content)->toContain('primaryKey')
+                ->and($content)->toContain('autoIncrement')
+                ->and($content)->toContain('unique')
+                ->and($content)->toContain('nullable')
+                ->and($content)->toContain('default')
+                // Repository pattern
+                ->and($content)->toContain('Repository')
+                // CLI commands overview
+                ->and($content)->toContain('db:diff')
+                ->and($content)->toContain('db:migrate')
+                ->and($content)->toContain('db:rollback')
+                ->and($content)->toContain('db:status')
+                // Framework comparison
+                ->and($content)->toContain('Laravel')
+                ->and($content)->toContain('Doctrine')
+                ->and($content)->toContain('Marko')
+                // Single source of truth benefits
+                ->and($content)->toContain('single source of truth');
+        },
     );
 
     it('creates README.md for marko/database-mysql with installation and configuration', function (): void {
@@ -162,18 +154,16 @@ describe('Package Scaffolding', function (): void {
         $content = file_get_contents($readmePath);
 
         // Installation instructions
-        expect($content)->toContain('composer require marko/database-mysql');
-
-        // Configuration
-        expect($content)->toContain('config/database.php');
-        expect($content)->toContain('DB_HOST');
-        expect($content)->toContain('DB_DATABASE');
-        expect($content)->toContain('DB_USERNAME');
-        expect($content)->toContain('DB_PASSWORD');
-
-        // Driver-specific notes
-        expect($content)->toContain('MySQL');
-        expect($content)->toContain('MariaDB');
+        expect($content)->toContain('composer require marko/database-mysql')
+            // Configuration
+            ->and($content)->toContain('config/database.php')
+            ->and($content)->toContain('DB_HOST')
+            ->and($content)->toContain('DB_DATABASE')
+            ->and($content)->toContain('DB_USERNAME')
+            ->and($content)->toContain('DB_PASSWORD')
+            // Driver-specific notes
+            ->and($content)->toContain('MySQL')
+            ->and($content)->toContain('MariaDB');
     });
 
     it('creates README.md for marko/database-pgsql with installation and configuration', function (): void {
@@ -184,16 +174,14 @@ describe('Package Scaffolding', function (): void {
         $content = file_get_contents($readmePath);
 
         // Installation instructions
-        expect($content)->toContain('composer require marko/database-pgsql');
-
-        // Configuration
-        expect($content)->toContain('config/database.php');
-        expect($content)->toContain('DB_HOST');
-        expect($content)->toContain('DB_DATABASE');
-        expect($content)->toContain('DB_USERNAME');
-        expect($content)->toContain('DB_PASSWORD');
-
-        // Driver-specific notes
-        expect($content)->toContain('PostgreSQL');
+        expect($content)->toContain('composer require marko/database-pgsql')
+            // Configuration
+            ->and($content)->toContain('config/database.php')
+            ->and($content)->toContain('DB_HOST')
+            ->and($content)->toContain('DB_DATABASE')
+            ->and($content)->toContain('DB_USERNAME')
+            ->and($content)->toContain('DB_PASSWORD')
+            // Driver-specific notes
+            ->and($content)->toContain('PostgreSQL');
     });
 });

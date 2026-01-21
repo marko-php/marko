@@ -15,8 +15,9 @@ describe('DataMigration', function (): void {
             public function down(ConnectionInterface $connection): void {}
         };
 
-        expect($dataMigration)->toBeInstanceOf(Migration::class);
-        expect($dataMigration)->toBeInstanceOf(DataMigration::class);
+        expect($dataMigration)
+            ->toBeInstanceOf(Migration::class)
+            ->toBeInstanceOf(DataMigration::class);
     });
 
     it('supports raw SQL via execute() with nowdoc syntax', function (): void {
@@ -56,9 +57,10 @@ describe('DataMigration', function (): void {
 
         $dataMigration->up($connection);
 
-        expect($executedStatements)->toHaveCount(1);
-        expect($executedStatements[0])->toContain('INSERT INTO "categories"');
-        expect($executedStatements[0])->toContain('ON CONFLICT');
+        expect($executedStatements)
+            ->toHaveCount(1)
+            ->and($executedStatements[0])->toContain('INSERT INTO "categories"')
+            ->and($executedStatements[0])->toContain('ON CONFLICT');
     });
 
     it('provides insert() helper for single inserts', function (): void {
@@ -71,9 +73,9 @@ describe('DataMigration', function (): void {
                 function (string $sql, array $bindings = []) use (&$executedStatements, &$executedBindings): int {
                     $executedStatements[] = $sql;
                     $executedBindings[] = $bindings;
-    
+
                     return 1;
-                }
+                },
             );
 
         $dataMigration = new class () extends DataMigration
@@ -93,10 +95,11 @@ describe('DataMigration', function (): void {
 
         $dataMigration->up($connection);
 
-        expect($executedStatements)->toHaveCount(1);
-        expect($executedStatements[0])->toContain('INSERT INTO');
-        expect($executedStatements[0])->toContain('post_statuses');
-        expect($executedBindings[0])->toBe([1, 'draft', 'Draft']);
+        expect($executedStatements)
+            ->toHaveCount(1)
+            ->and($executedStatements[0])->toContain('INSERT INTO')
+            ->and($executedStatements[0])->toContain('post_statuses')
+            ->and($executedBindings[0])->toBe([1, 'draft', 'Draft']);
     });
 
     it('provides insert() helper for bulk inserts', function (): void {
@@ -109,9 +112,9 @@ describe('DataMigration', function (): void {
                 function (string $sql, array $bindings = []) use (&$executedStatements, &$executedBindings): int {
                     $executedStatements[] = $sql;
                     $executedBindings[] = $bindings;
-    
+
                     return 3;
-                }
+                },
             );
 
         $dataMigration = new class () extends DataMigration
@@ -131,16 +134,17 @@ describe('DataMigration', function (): void {
 
         $dataMigration->up($connection);
 
-        expect($executedStatements)->toHaveCount(1);
-        expect($executedStatements[0])->toContain('INSERT INTO');
-        expect($executedStatements[0])->toContain('post_statuses');
-        // Should have 3 value placeholders: (?, ?, ?), (?, ?, ?), (?, ?, ?)
-        expect(substr_count($executedStatements[0], '?'))->toBe(9);
-        expect($executedBindings[0])->toBe([
-            1, 'draft', 'Draft',
-            2, 'published', 'Published',
-            3, 'archived', 'Archived',
-        ]);
+        expect($executedStatements)
+            ->toHaveCount(1)
+            ->and($executedStatements[0])->toContain('INSERT INTO')
+            ->and($executedStatements[0])->toContain('post_statuses')
+            // Should have 3 value placeholders: (?, ?, ?), (?, ?, ?), (?, ?, ?)
+            ->and(substr_count($executedStatements[0], '?'))->toBe(9)
+            ->and($executedBindings[0])->toBe([
+                1, 'draft', 'Draft',
+                2, 'published', 'Published',
+                3, 'archived', 'Archived',
+            ]);
     });
 
     it('provides update() helper with where clause', function (): void {
@@ -153,9 +157,9 @@ describe('DataMigration', function (): void {
                 function (string $sql, array $bindings = []) use (&$executedStatements, &$executedBindings): int {
                     $executedStatements[] = $sql;
                     $executedBindings[] = $bindings;
-    
+
                     return 1;
-                }
+                },
             );
 
         $dataMigration = new class () extends DataMigration
@@ -176,12 +180,13 @@ describe('DataMigration', function (): void {
 
         $dataMigration->up($connection);
 
-        expect($executedStatements)->toHaveCount(1);
-        expect($executedStatements[0])->toContain('UPDATE');
-        expect($executedStatements[0])->toContain('post_statuses');
-        expect($executedStatements[0])->toContain('SET');
-        expect($executedStatements[0])->toContain('WHERE');
-        expect($executedBindings[0])->toBe(['Published Post', 1, 'published']);
+        expect($executedStatements)
+            ->toHaveCount(1)
+            ->and($executedStatements[0])->toContain('UPDATE')
+            ->and($executedStatements[0])->toContain('post_statuses')
+            ->and($executedStatements[0])->toContain('SET')
+            ->and($executedStatements[0])->toContain('WHERE')
+            ->and($executedBindings[0])->toBe(['Published Post', 1, 'published']);
     });
 
     it('provides delete() helper with where clause', function (): void {
@@ -194,9 +199,9 @@ describe('DataMigration', function (): void {
                 function (string $sql, array $bindings = []) use (&$executedStatements, &$executedBindings): int {
                     $executedStatements[] = $sql;
                     $executedBindings[] = $bindings;
-    
+
                     return 3;
-                }
+                },
             );
 
         $dataMigration = new class () extends DataMigration
@@ -212,11 +217,12 @@ describe('DataMigration', function (): void {
 
         $dataMigration->down($connection);
 
-        expect($executedStatements)->toHaveCount(1);
-        expect($executedStatements[0])->toContain('DELETE FROM');
-        expect($executedStatements[0])->toContain('post_statuses');
-        expect($executedStatements[0])->toContain('WHERE');
-        expect($executedBindings[0])->toBe([1]);
+        expect($executedStatements)
+            ->toHaveCount(1)
+            ->and($executedStatements[0])->toContain('DELETE FROM')
+            ->and($executedStatements[0])->toContain('post_statuses')
+            ->and($executedStatements[0])->toContain('WHERE')
+            ->and($executedBindings[0])->toBe([1]);
     });
 
     it('supports down() for rollback', function (): void {
@@ -265,8 +271,9 @@ describe('DataMigration', function (): void {
         );
 
         // Should not have any environment-checking methods
-        expect($methods)->not->toContain('isProduction');
-        expect($methods)->not->toContain('shouldBlock');
-        expect($methods)->not->toContain('blockInProduction');
+        expect($methods)
+            ->not->toContain('isProduction')
+            ->not->toContain('shouldBlock')
+            ->not->toContain('blockInProduction');
     });
 });

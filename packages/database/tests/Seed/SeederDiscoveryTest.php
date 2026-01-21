@@ -92,11 +92,11 @@ PHP;
             $discovery = new SeederDiscovery();
             $seeders = $discovery->discoverInPath($tempDir . '/Seed');
 
-            expect($seeders)->toHaveCount(1);
-            expect($seeders[0])->toBeInstanceOf(SeederDefinition::class);
-            expect($seeders[0]->seederClass)->toBe('TestSeederModule\\UserSeeder');
-            expect($seeders[0]->name)->toBe('users');
-            expect($seeders[0]->order)->toBe(0);
+            expect($seeders)->toHaveCount(1)
+                ->and($seeders[0])->toBeInstanceOf(SeederDefinition::class)
+                ->and($seeders[0]->seederClass)->toBe('TestSeederModule\\UserSeeder')
+                ->and($seeders[0]->name)->toBe('users')
+                ->and($seeders[0]->order)->toBe(0);
         } finally {
             unlink($tempDir . '/Seed/UserSeeder.php');
             rmdir($tempDir . '/Seed');
@@ -165,9 +165,9 @@ PHP;
             $discovery = new SeederDiscovery();
             $seeders = $discovery->discoverInPath($tempDir . '/Seed');
 
-            expect($seeders)->toHaveCount(1);
-            expect($seeders[0]->name)->toBe('posts');
-            expect($seeders[0]->order)->toBe(10);
+            expect($seeders)->toHaveCount(1)
+                ->and($seeders[0]->name)->toBe('posts')
+                ->and($seeders[0]->order)->toBe(10);
         } finally {
             unlink($tempDir . '/Seed/PostSeeder.php');
             rmdir($tempDir . '/Seed');
@@ -191,8 +191,8 @@ PHP;
             $discovery = new SeederDiscovery();
             $seeders = $discovery->discoverInVendor($tempDir . '/vendor');
 
-            expect($seeders)->toHaveCount(1);
-            expect($seeders[0]->name)->toBe('vendor-seeder');
+            expect($seeders)->toHaveCount(1)
+                ->and($seeders[0]->name)->toBe('vendor-seeder');
         } finally {
             cleanupDir($tempDir);
         }
@@ -214,8 +214,8 @@ PHP;
             $discovery = new SeederDiscovery();
             $seeders = $discovery->discoverInModules($tempDir . '/modules');
 
-            expect($seeders)->toHaveCount(1);
-            expect($seeders[0]->name)->toBe('module-seeder');
+            expect($seeders)->toHaveCount(1)
+                ->and($seeders[0]->name)->toBe('module-seeder');
         } finally {
             cleanupDir($tempDir);
         }
@@ -237,8 +237,8 @@ PHP;
             $discovery = new SeederDiscovery();
             $seeders = $discovery->discoverInApp($tempDir . '/app');
 
-            expect($seeders)->toHaveCount(1);
-            expect($seeders[0]->name)->toBe('app-seeder');
+            expect($seeders)->toHaveCount(1)
+                ->and($seeders[0]->name)->toBe('app-seeder');
         } finally {
             cleanupDir($tempDir);
         }

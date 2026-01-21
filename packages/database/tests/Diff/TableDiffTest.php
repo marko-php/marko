@@ -52,14 +52,15 @@ describe('TableDiff', function (): void {
             foreignKeysToDrop: $foreignKeysToDrop,
         );
 
-        expect($diff->tableName)->toBe('posts');
-        expect($diff->columnsToAdd)->toBe($columnsToAdd);
-        expect($diff->columnsToDrop)->toBe($columnsToDrop);
-        expect($diff->columnsToModify)->toBe($columnsToModify);
-        expect($diff->indexesToAdd)->toBe($indexesToAdd);
-        expect($diff->indexesToDrop)->toBe($indexesToDrop);
-        expect($diff->foreignKeysToAdd)->toBe($foreignKeysToAdd);
-        expect($diff->foreignKeysToDrop)->toBe($foreignKeysToDrop);
+        expect($diff->tableName)
+            ->toBe('posts')
+            ->and($diff->columnsToAdd)->toBe($columnsToAdd)
+            ->and($diff->columnsToDrop)->toBe($columnsToDrop)
+            ->and($diff->columnsToModify)->toBe($columnsToModify)
+            ->and($diff->indexesToAdd)->toBe($indexesToAdd)
+            ->and($diff->indexesToDrop)->toBe($indexesToDrop)
+            ->and($diff->foreignKeysToAdd)->toBe($foreignKeysToAdd)
+            ->and($diff->foreignKeysToDrop)->toBe($foreignKeysToDrop);
     });
 
     it('reports isEmpty correctly', function (): void {
@@ -132,9 +133,10 @@ describe('TableDiff', function (): void {
 
         $changes = $diff->getDestructiveChanges();
 
-        expect($changes)->toContain('DROP COLUMN posts.old_col');
-        expect($changes)->toContain('DROP INDEX posts.idx_old');
-        expect($changes)->toContain('DROP FOREIGN KEY posts.fk_old');
+        expect($changes)
+            ->toContain('DROP COLUMN posts.old_col')
+            ->toContain('DROP INDEX posts.idx_old')
+            ->toContain('DROP FOREIGN KEY posts.fk_old');
     });
 
     it('returns summary lines', function (): void {
@@ -147,8 +149,9 @@ describe('TableDiff', function (): void {
 
         $lines = $diff->getSummaryLines();
 
-        expect($lines)->toContain('  Add column: slug');
-        expect($lines)->toContain('  Modify column: title');
-        expect($lines)->toContain('  Add index: idx_slug');
+        expect($lines)
+            ->toContain('  Add column: slug')
+            ->toContain('  Modify column: title')
+            ->toContain('  Add index: idx_slug');
     });
 });

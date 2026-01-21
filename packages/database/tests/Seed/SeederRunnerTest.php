@@ -178,8 +178,8 @@ describe('SeederRunner', function (): void {
 
         $runner->runByName('users', $definitions, $connection);
 
-        expect($userSeederRan)->toBeTrue();
-        expect($postSeederRan)->toBeFalse();
+        expect($userSeederRan)->toBeTrue()
+            ->and($postSeederRan)->toBeFalse();
     });
 
     it('shows error when seeder not found', function (): void {
