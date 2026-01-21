@@ -54,4 +54,30 @@ class RepositoryException extends MarkoException
             suggestion: 'Ensure you are using the correct repository for the entity type',
         );
     }
+
+    /**
+     * @param class-string $repositoryClass
+     */
+    public static function queryBuilderNotConfigured(
+        string $repositoryClass,
+    ): self {
+        return new self(
+            message: "Repository '$repositoryClass' does not have a query builder factory configured",
+            context: 'Attempting to create a custom query',
+            suggestion: 'Pass a query builder factory closure as the fourth constructor argument',
+        );
+    }
+
+    /**
+     * @param class-string $repositoryClass
+     */
+    public static function invalidQueryBuilder(
+        string $repositoryClass,
+    ): self {
+        return new self(
+            message: "Query builder factory for '$repositoryClass' did not return a QueryBuilderInterface instance",
+            context: 'Creating a query builder from factory',
+            suggestion: 'Ensure the factory closure returns an instance of QueryBuilderInterface',
+        );
+    }
 }

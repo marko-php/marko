@@ -66,14 +66,14 @@ Implement the database layer for Marko framework with entity-driven schema defin
 | 012 | Entity base class and core attributes | 005 | completed |
 | 013 | Entity metadata parser and schema builder | 012 | completed |
 | 014 | Diff engine | 005, 009, 013 | completed |
-| 015 | SQL generator interface | 014 | pending |
+| 015 | SQL generator interface | 014 | completed |
 | 016 | MySQL SQL generator | 010, 015 | pending |
 | 017 | PostgreSQL SQL generator | 011, 015 | pending |
 | 018 | Migration system core | 014, 015 | pending |
 | 019 | Migration file generator (nowdoc syntax) | 018 | pending |
 | 020 | Data migrations system | 018 | pending |
 | 021 | CLI: db:status command | 018 | pending |
-| 022 | CLI: db:diff command | 014 | pending |
+| 022 | CLI: db:diff command | 014 | completed |
 | 023 | CLI: db:migrate command | 019, 020 | pending |
 | 024 | CLI: db:rollback command | 018 | pending |
 | 025 | Seeder system | 002 | completed |
@@ -81,7 +81,7 @@ Implement the database layer for Marko framework with entity-driven schema defin
 | 027 | Transaction support | 002, 003, 004 | completed |
 | 028 | Entity hydration | 012, 006 | completed |
 | 029 | Repository interface and base class | 028 | completed |
-| 030 | Repository query methods | 029 | pending |
+| 030 | Repository query methods | 029 | completed |
 | 031 | Integration tests | 001-030 | pending |
 
 ## Architecture Notes

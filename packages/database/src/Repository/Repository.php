@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Marko\Database\Repository;
 
+use BackedEnum;
+use Closure;
+use DateTimeImmutable;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Database\Entity\PropertyMetadata;
 use Marko\Database\Exceptions\RepositoryException;
+use Marko\Database\Query\QueryBuilderInterface;
 use ReflectionClass;
 
 /**
@@ -28,10 +33,17 @@ abstract class Repository implements RepositoryInterface
 
     protected readonly EntityMetadata $metadata;
 
+    /**
+     * @param ConnectionInterface $connection Database connection
+     * @param EntityMetadataFactory $metadataFactory Factory for entity metadata
+     * @param EntityHydrator $hydrator Entity hydrator
+     * @param Closure|null $queryBuilderFactory Optional factory that creates QueryBuilderInterface instances
+     */
     public function __construct(
         protected readonly ConnectionInterface $connection,
         protected readonly EntityMetadataFactory $metadataFactory,
         protected readonly EntityHydrator $hydrator,
+        protected readonly ?Closure $queryBuilderFactory = null,
     ) {
         $this->validateEntityClass();
         $this->metadata = $this->metadataFactory->parse(static::ENTITY_CLASS);
@@ -173,6 +185,61 @@ abstract class Repository implements RepositoryInterface
     }
 
     /**
+     * Create a query builder for custom queries.
+     *
+     * Returns a RepositoryQueryBuilder that wraps QueryBuilderInterface
+     * and provides entity hydration via getEntities() method.
+     *
+     * @throws RepositoryException If no query builder factory was provided
+     */
+    public function query(): RepositoryQueryBuilder
+    {
+        if ($this->queryBuilderFactory === null) {
+            throw RepositoryException::queryBuilderNotConfigured(static::class);
+        }
+
+        $queryBuilder = ($this->queryBuilderFactory)();
+
+        if (!$queryBuilder instanceof QueryBuilderInterface) {
+            throw RepositoryException::invalidQueryBuilder(static::class);
+        }
+
+        // Pre-configure the query builder with the table name
+        $queryBuilder->table($this->metadata->tableName);
+
+        return new RepositoryQueryBuilder(
+            $queryBuilder,
+            $this->hydrator,
+            $this->metadata,
+            static::ENTITY_CLASS,
+        );
+    }
+
+    /**
+     * Count all entities in the repository.
+     */
+    public function count(): int
+    {
+        $sql = sprintf(
+            'SELECT COUNT(*) as aggregate FROM %s',
+            $this->metadata->tableName,
+        );
+
+        $result = $this->connection->query($sql);
+
+        return (int) ($result[0]['aggregate'] ?? 0);
+    }
+
+    /**
+     * Check if an entity with the given ID exists.
+     */
+    public function exists(
+        int $id,
+    ): bool {
+        return $this->find($id) !== null;
+    }
+
+    /**
      * Insert a new entity.
      */
     protected function insert(
@@ -211,17 +278,42 @@ abstract class Repository implements RepositoryInterface
 
     /**
      * Update an existing entity.
+     *
+     * Only dirty (changed) fields are updated to minimize database operations.
      */
     protected function update(
         Entity $entity,
     ): void {
-        $data = $this->hydrator->extract($entity, $this->metadata);
         $primaryKey = $this->metadata->getPrimaryKeyProperty();
         $pkColumn = $primaryKey?->columnName ?? 'id';
+        $propertyToColumn = $this->metadata->getPropertyToColumnMap();
 
-        // Remove primary key from update data
-        $id = $data[$pkColumn];
-        unset($data[$pkColumn]);
+        // Get the dirty properties
+        $dirtyProperties = $this->hydrator->getDirtyProperties($entity, $this->metadata);
+
+        // If no fields are dirty, skip the update
+        if (count($dirtyProperties) === 0) {
+            return;
+        }
+
+        // Extract only the dirty field values
+        $reflection = new ReflectionClass($entity);
+        $data = [];
+
+        foreach ($dirtyProperties as $propertyName) {
+            $property = $reflection->getProperty($propertyName);
+            $value = $property->getValue($entity);
+            $columnName = $propertyToColumn[$propertyName];
+            $propMeta = $this->metadata->getProperty($propertyName);
+
+            // Convert value to DB format
+            $data[$columnName] = $this->convertToDbValue($value, $propMeta);
+        }
+
+        // Get the primary key value for the WHERE clause
+        $pkPropertyName = $this->metadata->primaryKey;
+        $pkProperty = $reflection->getProperty($pkPropertyName);
+        $id = $pkProperty->getValue($entity);
 
         $setClauses = array_map(
             fn (string $column): string => "$column = ?",
@@ -242,6 +334,28 @@ abstract class Repository implements RepositoryInterface
     }
 
     /**
+     * Convert a PHP value to a database-compatible value.
+     */
+    private function convertToDbValue(
+        mixed $value,
+        ?PropertyMetadata $propMeta,
+    ): mixed {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($value instanceof BackedEnum) {
+            return $value->value;
+        }
+
+        if ($value instanceof DateTimeImmutable) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        return $value;
+    }
+
+    /**
      * Validate that ENTITY_CLASS constant is defined.
      */
     private function validateEntityClass(): void
@@ -257,7 +371,8 @@ abstract class Repository implements RepositoryInterface
     private function validateEntityType(
         Entity $entity,
     ): void {
-        if (!$entity instanceof static::ENTITY_CLASS) {
+        $expectedClass = static::ENTITY_CLASS;
+        if (!$entity instanceof $expectedClass) {
             throw RepositoryException::invalidEntityType(
                 static::class,
                 static::ENTITY_CLASS,
