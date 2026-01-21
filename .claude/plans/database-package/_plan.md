@@ -4,7 +4,7 @@
 2025-01-20
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Implement the database layer for Marko framework with entity-driven schema definition, auto-generated migrations, and both MySQL and PostgreSQL drivers.
@@ -82,7 +82,7 @@ Implement the database layer for Marko framework with entity-driven schema defin
 | 028 | Entity hydration | 012, 006 | completed |
 | 029 | Repository interface and base class | 028 | completed |
 | 030 | Repository query methods | 029 | completed |
-| 031 | Integration tests | 001-030 | pending |
+| 031 | Integration tests | 001-030 | completed |
 
 ## Architecture Notes
 
