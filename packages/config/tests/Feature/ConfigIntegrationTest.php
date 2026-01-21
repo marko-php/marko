@@ -8,6 +8,8 @@ use Marko\Config\ConfigMerger;
 use Marko\Config\ConfigRepository;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\ConfigServiceProvider;
+use Marko\Config\Exceptions\ConfigLoadException;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Container\PreferenceRegistry;
@@ -82,6 +84,379 @@ describe('Config Integration', function (): void {
 
         expect($service)->toBeInstanceOf(TestServiceWithConfig::class)
             ->and($service->getDatabaseHost())->toBe('localhost');
+    });
+
+    it('config file uses environment variable when set', function () {
+        // Create temporary directory structure
+        $tempDir = sys_get_temp_dir() . '/marko-config-env-test-' . uniqid();
+        mkdir($tempDir . '/app-config', 0755, true);
+
+        try {
+            // Create config file that uses $_ENV
+            file_put_contents($tempDir . '/app-config/database.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+return [
+    'host' => $_ENV['DB_HOST'] ?? 'default-host',
+    'port' => (int) ($_ENV['DB_PORT'] ?? 3306),
+];
+PHP);
+
+            // Set environment variables
+            $_ENV['DB_HOST'] = 'env-provided-host';
+            $_ENV['DB_PORT'] = '5432';
+
+            $container = createContainerWithBindings();
+            $provider = $container->get(ConfigServiceProvider::class);
+            $repository = $provider->createRepository(
+                modulePaths: [],
+                rootConfigPath: $tempDir . '/app-config',
+            );
+
+            expect($repository->get('database.host'))->toBe('env-provided-host')
+                ->and($repository->get('database.port'))->toBe(5432);
+        } finally {
+            // Cleanup
+            unset($_ENV['DB_HOST'], $_ENV['DB_PORT']);
+            @unlink($tempDir . '/app-config/database.php');
+            @rmdir($tempDir . '/app-config');
+            @rmdir($tempDir);
+        }
+    });
+
+    it('config file uses default when environment variable is not set', function () {
+        // Create temporary directory structure
+        $tempDir = sys_get_temp_dir() . '/marko-config-env-default-test-' . uniqid();
+        mkdir($tempDir . '/app-config', 0755, true);
+
+        try {
+            // Ensure env vars are not set
+            unset($_ENV['DB_HOST'], $_ENV['DB_PORT']);
+
+            // Create config file that uses $_ENV with defaults
+            file_put_contents($tempDir . '/app-config/database.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+return [
+    'host' => $_ENV['DB_HOST'] ?? 'default-host',
+    'port' => (int) ($_ENV['DB_PORT'] ?? 3306),
+];
+PHP);
+
+            $container = createContainerWithBindings();
+            $provider = $container->get(ConfigServiceProvider::class);
+            $repository = $provider->createRepository(
+                modulePaths: [],
+                rootConfigPath: $tempDir . '/app-config',
+            );
+
+            expect($repository->get('database.host'))->toBe('default-host')
+                ->and($repository->get('database.port'))->toBe(3306);
+        } finally {
+            // Cleanup
+            @unlink($tempDir . '/app-config/database.php');
+            @rmdir($tempDir . '/app-config');
+            @rmdir($tempDir);
+        }
+    });
+
+    it('throws ConfigNotFoundException with helpful message when required config is missing', function () {
+        $container = createContainerWithBindings();
+        $provider = $container->get(ConfigServiceProvider::class);
+        $repository = $provider->createRepository(
+            modulePaths: [],
+            rootConfigPath: $this->fixturesPath . '/empty-config',
+        );
+
+        try {
+            $repository->getString('nonexistent.key');
+            expect(false)->toBeTrue(); // Should not reach here
+        } catch (ConfigNotFoundException $e) {
+            expect($e->getMessage())->toContain('nonexistent.key')
+                ->and($e->getKey())->toBe('nonexistent.key')
+                ->and($e->getSuggestion())->toContain('config')
+                ->and($e->getSuggestion())->toContain('default');
+        }
+    });
+
+    it('throws ConfigLoadException when config file has PHP syntax error', function () {
+        // Create temporary directory structure
+        $tempDir = sys_get_temp_dir() . '/marko-config-syntax-error-' . uniqid();
+        mkdir($tempDir . '/app-config', 0755, true);
+
+        try {
+            // Create config file with syntax error
+            file_put_contents($tempDir . '/app-config/broken.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+return [
+    'key' => 'value'
+    // Missing comma before this line causes syntax error
+    'another' => 'value',
+];
+PHP);
+
+            $container = createContainerWithBindings();
+            $provider = $container->get(ConfigServiceProvider::class);
+            $provider->createRepository(
+                modulePaths: [],
+                rootConfigPath: $tempDir . '/app-config',
+            );
+
+            expect(false)->toBeTrue(); // Should not reach here
+        } catch (ConfigLoadException $e) {
+            expect($e->getMessage())->toContain($tempDir . '/app-config/broken.php')
+                ->and($e->getFilePath())->toBe($tempDir . '/app-config/broken.php');
+        } finally {
+            // Cleanup
+            @unlink($tempDir . '/app-config/broken.php');
+            @rmdir($tempDir . '/app-config');
+            @rmdir($tempDir);
+        }
+    });
+
+    it('throws ConfigLoadException when config file returns non-array', function () {
+        // Create temporary directory structure
+        $tempDir = sys_get_temp_dir() . '/marko-config-non-array-' . uniqid();
+        mkdir($tempDir . '/app-config', 0755, true);
+
+        try {
+            // Create config file that returns string instead of array
+            file_put_contents($tempDir . '/app-config/invalid.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+return "this is not an array";
+PHP);
+
+            $container = createContainerWithBindings();
+            $provider = $container->get(ConfigServiceProvider::class);
+            $provider->createRepository(
+                modulePaths: [],
+                rootConfigPath: $tempDir . '/app-config',
+            );
+
+            expect(false)->toBeTrue(); // Should not reach here
+        } catch (ConfigLoadException $e) {
+            expect($e->getMessage())->toContain($tempDir . '/app-config/invalid.php')
+                ->and($e->getFilePath())->toBe($tempDir . '/app-config/invalid.php');
+        } finally {
+            // Cleanup
+            @unlink($tempDir . '/app-config/invalid.php');
+            @rmdir($tempDir . '/app-config');
+            @rmdir($tempDir);
+        }
+    });
+
+    it('full config lifecycle with temporary module structure', function () {
+        // Create temporary directory structure
+        $tempDir = sys_get_temp_dir() . '/marko-config-test-' . uniqid();
+        mkdir($tempDir . '/module-x/config', 0755, true);
+        mkdir($tempDir . '/module-y/config', 0755, true);
+        mkdir($tempDir . '/app-config', 0755, true);
+
+        try {
+            // Create config files
+            file_put_contents($tempDir . '/module-x/config/app.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+return [
+    'name' => 'Module X App',
+    'debug' => false,
+    'default' => [
+        'locale' => 'en_US',
+    ],
+    'scopes' => [
+        'eu' => [
+            'locale' => 'de_DE',
+        ],
+    ],
+];
+PHP);
+
+            file_put_contents($tempDir . '/module-y/config/app.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+return [
+    'version' => '1.0.0',
+    'debug' => true,
+];
+PHP);
+
+            file_put_contents($tempDir . '/app-config/app.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+return [
+    'name' => 'Production App',
+];
+PHP);
+
+            $container = createContainerWithBindings();
+            $provider = $container->get(ConfigServiceProvider::class);
+            $repository = $provider->createRepository(
+                modulePaths: [$tempDir . '/module-x', $tempDir . '/module-y'],
+                rootConfigPath: $tempDir . '/app-config',
+            );
+
+            // Verify merged config
+            expect($repository->get('app.name'))->toBe('Production App')
+                ->and($repository->get('app.version'))->toBe('1.0.0')
+                ->and($repository->get('app.debug'))->toBe(true);
+
+            // Verify dot notation access
+            expect($repository->has('app.name'))->toBeTrue()
+                ->and($repository->has('app.nonexistent'))->toBeFalse();
+
+            // Verify scoped access
+            expect($repository->get('app.locale', scope: 'eu'))->toBe('de_DE')
+                ->and($repository->get('app.locale', scope: 'us'))->toBe('en_US');
+        } finally {
+            // Cleanup
+            @unlink($tempDir . '/module-x/config/app.php');
+            @unlink($tempDir . '/module-y/config/app.php');
+            @unlink($tempDir . '/app-config/app.php');
+            @rmdir($tempDir . '/module-x/config');
+            @rmdir($tempDir . '/module-y/config');
+            @rmdir($tempDir . '/app-config');
+            @rmdir($tempDir . '/module-x');
+            @rmdir($tempDir . '/module-y');
+            @rmdir($tempDir);
+        }
+    });
+
+    it('multi-tenant scenario with default and scoped values', function () {
+        // Create temporary directory structure
+        $tempDir = sys_get_temp_dir() . '/marko-config-multitenant-' . uniqid();
+        mkdir($tempDir . '/app-config', 0755, true);
+
+        try {
+            // Create config file with multi-tenant structure
+            file_put_contents($tempDir . '/app-config/store.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+return [
+    'default' => [
+        'currency' => 'USD',
+        'locale' => 'en_US',
+        'tax_rate' => 0.08,
+        'shipping' => [
+            'provider' => 'ups',
+            'free_threshold' => 50.00,
+        ],
+    ],
+    'scopes' => [
+        'tenant-eu' => [
+            'currency' => 'EUR',
+            'locale' => 'de_DE',
+            'tax_rate' => 0.19,
+            'shipping' => [
+                'provider' => 'dhl',
+            ],
+        ],
+        'tenant-uk' => [
+            'currency' => 'GBP',
+            'locale' => 'en_GB',
+            'tax_rate' => 0.20,
+        ],
+    ],
+];
+PHP);
+
+            $container = createContainerWithBindings();
+            $provider = $container->get(ConfigServiceProvider::class);
+            $repository = $provider->createRepository(
+                modulePaths: [],
+                rootConfigPath: $tempDir . '/app-config',
+            );
+
+            // Verify scope resolution: tenant-eu has scoped value
+            expect($repository->get('store.currency', scope: 'tenant-eu'))->toBe('EUR')
+                ->and($repository->get('store.locale', scope: 'tenant-eu'))->toBe('de_DE')
+                ->and($repository->get('store.tax_rate', scope: 'tenant-eu'))->toBe(0.19);
+
+            // Verify scope resolution: tenant-uk has scoped values
+            expect($repository->get('store.currency', scope: 'tenant-uk'))->toBe('GBP')
+                ->and($repository->get('store.locale', scope: 'tenant-uk'))->toBe('en_GB');
+
+            // Verify fallback to default when scope doesn't have the key
+            expect($repository->get('store.shipping.free_threshold', scope: 'tenant-eu'))->toBe(50.00)
+                ->and($repository->get('store.shipping.free_threshold', scope: 'tenant-uk'))->toBe(50.00);
+
+            // Verify nested scoped value overrides nested default
+            expect($repository->get('store.shipping.provider', scope: 'tenant-eu'))->toBe('dhl')
+                ->and($repository->get('store.shipping.provider', scope: 'tenant-uk'))->toBe('ups');
+
+            // Verify fallback to default when scope doesn't exist
+            expect($repository->get('store.currency', scope: 'unknown-tenant'))->toBe('USD');
+        } finally {
+            // Cleanup
+            @unlink($tempDir . '/app-config/store.php');
+            @rmdir($tempDir . '/app-config');
+            @rmdir($tempDir);
+        }
+    });
+
+    it('withScope creates properly scoped instance for multi-tenant access', function () {
+        // Create temporary directory structure
+        $tempDir = sys_get_temp_dir() . '/marko-config-withscope-' . uniqid();
+        mkdir($tempDir . '/app-config', 0755, true);
+
+        try {
+            // Create config file with multi-tenant structure
+            file_put_contents($tempDir . '/app-config/pricing.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+return [
+    'default' => [
+        'currency' => 'USD',
+        'discount_rate' => 0.0,
+    ],
+    'scopes' => [
+        'premium' => [
+            'discount_rate' => 0.15,
+        ],
+        'enterprise' => [
+            'discount_rate' => 0.25,
+        ],
+    ],
+];
+PHP);
+
+            $container = createContainerWithBindings();
+            $provider = $container->get(ConfigServiceProvider::class);
+            $repository = $provider->createRepository(
+                modulePaths: [],
+                rootConfigPath: $tempDir . '/app-config',
+            );
+
+            // Create scoped instances
+            $premiumConfig = $repository->withScope('premium');
+            $enterpriseConfig = $repository->withScope('enterprise');
+
+            // Verify withScope creates ConfigRepositoryInterface instance
+            expect($premiumConfig)->toBeInstanceOf(ConfigRepositoryInterface::class)
+                ->and($enterpriseConfig)->toBeInstanceOf(ConfigRepositoryInterface::class);
+
+            // Verify scoped instances automatically use their scope
+            expect($premiumConfig->get('pricing.discount_rate'))->toBe(0.15)
+                ->and($enterpriseConfig->get('pricing.discount_rate'))->toBe(0.25);
+
+            // Verify scoped instances fall back to default for unscoped keys
+            expect($premiumConfig->get('pricing.currency'))->toBe('USD')
+                ->and($enterpriseConfig->get('pricing.currency'))->toBe('USD');
+
+            // Verify original repository is unaffected
+            expect($repository->get('pricing.currency'))->toBeNull()
+                ->and($repository->get('pricing.discount_rate'))->toBeNull();
+
+            // Verify typed accessors work with scoped instances
+            expect($premiumConfig->getFloat('pricing.discount_rate'))->toBe(0.15)
+                ->and($enterpriseConfig->getString('pricing.currency'))->toBe('USD');
+        } finally {
+            // Cleanup
+            @unlink($tempDir . '/app-config/pricing.php');
+            @rmdir($tempDir . '/app-config');
+            @rmdir($tempDir);
+        }
     });
 });
 

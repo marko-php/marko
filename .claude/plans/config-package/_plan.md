@@ -55,7 +55,7 @@ Create the `marko/config` package providing a centralized, type-safe configurati
 | 007 | ConfigDiscovery (scan module config/ directories) | 004 | completed |
 | 008 | Scoped configuration support | 006 | completed |
 | 009 | Application integration | 006, 007 | completed |
-| 010 | Integration tests | 009 | pending |
+| 010 | Integration tests | 009 | completed |
 | 011 | Package README | 010 | pending |
 
 ## Architecture Notes
