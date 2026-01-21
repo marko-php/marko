@@ -62,14 +62,14 @@ HTML;
 <head>
 </head>
 <body style="font-family: sans-serif; padding: 20px; background: #f5f5f5;">
-<h1 style="color: #c00;">{$exceptionClass}</h1>
-<p style="font-size: 1.2em;">{$message}</p>
-<p style="color: #666;">{$file}:{$line}</p>
-{$contextHtml}
-{$suggestionHtml}
-{$codeSnippetHtml}
-{$stackTraceHtml}
-{$previousHtml}
+<h1 style="color: #c00;">$exceptionClass</h1>
+<p style="font-size: 1.2em;">$message</p>
+<p style="color: #666;">$file:$line</p>
+$contextHtml
+$suggestionHtml
+$codeSnippetHtml
+$stackTraceHtml
+$previousHtml
 </body>
 </html>
 HTML;
@@ -93,10 +93,10 @@ HTML;
             $function = $frame['function'] ?? '';
             $call = $class . $type . $function . '()';
 
-            $rows .= "<tr><td>{$index}</td><td>{$file}:{$traceLine}</td><td>{$call}</td></tr>";
+            $rows .= "<tr><td>$index</td><td>$file:$traceLine</td><td>$call</td></tr>";
         }
 
-        return "<table>{$rows}</table>";
+        return "<table>$rows</table>";
     }
 
     private function formatCodeSnippet(
@@ -114,10 +114,10 @@ HTML;
             $isErrorLine = $lineNumber === $snippet['errorLine'];
             $lineClass = $isErrorLine ? ' class="error-line"' : '';
             $escapedCode = $this->escape($code);
-            $lines .= "<div{$lineClass}><span class=\"line-number\">{$lineNumber}</span>{$escapedCode}</div>";
+            $lines .= "<div$lineClass><span class=\"line-number\">$lineNumber</span>$escapedCode</div>";
         }
 
-        return "<pre style=\"font-family: monospace; background: #fff; padding: 10px; border: 1px solid #ddd; overflow-x: auto;\"><code>{$lines}</code></pre>";
+        return "<pre style=\"font-family: monospace; background: #fff; padding: 10px; border: 1px solid #ddd; overflow-x: auto;\"><code>$lines</code></pre>";
     }
 
     private function formatContext(
@@ -127,7 +127,7 @@ HTML;
             return '';
         }
 
-        return "<div><strong>Context:</strong> {$context}</div>";
+        return "<div><strong>Context:</strong> $context</div>";
     }
 
     private function formatSuggestion(
@@ -137,7 +137,7 @@ HTML;
             return '';
         }
 
-        return "<div><strong>Suggestion:</strong> {$suggestion}</div>";
+        return "<div><strong>Suggestion:</strong> $suggestion</div>";
     }
 
     private function formatPrevious(
@@ -150,6 +150,6 @@ HTML;
         $class = $previous::class;
         $message = $previous->getMessage();
 
-        return "<div><strong>Previous:</strong> {$class}: {$message}</div>";
+        return "<div><strong>Previous:</strong> $class: $message</div>";
     }
 }

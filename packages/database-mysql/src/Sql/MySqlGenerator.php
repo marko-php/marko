@@ -307,7 +307,7 @@ class MySqlGenerator implements SqlGeneratorInterface
 
         // VARCHAR requires length
         if ($mysqlType === 'VARCHAR' && $length !== null) {
-            return "VARCHAR({$length})";
+            return "VARCHAR($length)";
         }
 
         return $mysqlType;

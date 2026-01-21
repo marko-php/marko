@@ -57,7 +57,7 @@ class SimpleErrorHandler implements ErrorHandlerInterface
             }
         } catch (Throwable) {
             // Fall back to plain text if formatter fails
-            echo "Error: {$report->message}\n";
+            echo "Error: $report->message\n";
         }
     }
 

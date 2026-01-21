@@ -91,7 +91,7 @@ class SeedCommand implements CommandInterface
         Output $output,
     ): int {
         try {
-            $output->writeLine("Running seeder: {$name}");
+            $output->writeLine("Running seeder: $name");
             $this->runner->runByName($name, $definitions, $this->connection);
             $output->writeLine('Seeder completed successfully.');
 
@@ -114,7 +114,7 @@ class SeedCommand implements CommandInterface
     ): int {
         try {
             foreach ($definitions as $definition) {
-                $output->writeLine("Running seeder: {$definition->name}");
+                $output->writeLine("Running seeder: $definition->name");
             }
 
             $this->runner->runAll($definitions, $this->connection);

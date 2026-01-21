@@ -21,6 +21,7 @@ use SplFileInfo;
  * - Array access with string keys: {$array['key']}
  * - Method calls: {$obj->method()}
  * - Complex expressions: {$obj->prop->nested}
+ * - When followed by alphanumeric/underscore: "{$var}name" or "{$var}_suffix"
  */
 final class RemoveUnnecessaryCurlyBracesFixer extends AbstractFixer
 {
@@ -96,6 +97,20 @@ PHP,
             // If we didn't find a valid simple pattern, skip
             if ($closeIndex === null) {
                 continue;
+            }
+
+            // Check what follows the closing brace - if it's alphanumeric or underscore,
+            // we need to keep the braces to avoid variable name collision
+            $afterCloseIndex = $closeIndex + 1;
+            if ($afterCloseIndex < $tokens->count()) {
+                $afterCloseToken = $tokens[$afterCloseIndex];
+                $afterContent = $afterCloseToken->getContent();
+
+                // If there's content after the brace (typically T_ENCAPSED_AND_WHITESPACE)
+                // check if it starts with alphanumeric or underscore
+                if ($afterContent !== '' && preg_match('/^[a-zA-Z0-9_]/', $afterContent)) {
+                    continue; // Keep the braces
+                }
             }
 
             // Remove the closing brace

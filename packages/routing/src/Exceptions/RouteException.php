@@ -14,8 +14,8 @@ class RouteException extends MarkoException
         string $method,
     ): self {
         return new self(
-            message: "Method '{$method}' overrides parent but has no #[Route] attribute - unclear if route should be inherited or replaced.",
-            context: "Parent: {$parentClass}::{$method}(), Child: {$childClass}::{$method}()",
+            message: "Method '$method' overrides parent but has no #[Route] attribute - unclear if route should be inherited or replaced.",
+            context: "Parent: $parentClass::$method(), Child: $childClass::$method()",
             suggestion: "Add #[Route] attribute to explicitly define the route, or use #[InheritRoute] to keep the parent's route configuration.",
         );
     }
@@ -26,8 +26,8 @@ class RouteException extends MarkoException
         string $reason,
     ): self {
         return new self(
-            message: "Invalid route parameter '{$parameter}' in route definition.",
-            context: "Path: {$path}, Error: {$reason}",
+            message: "Invalid route parameter '$parameter' in route definition.",
+            context: "Path: $path, Error: $reason",
             suggestion: 'Route parameters must use the format {name} or {name:pattern}. Example: {id} or {slug:[a-z-]+}',
         );
     }
@@ -37,8 +37,8 @@ class RouteException extends MarkoException
         string $path,
     ): self {
         return new self(
-            message: "Controller class not found: {$controller}",
-            context: "Route path: {$path}",
+            message: "Controller class not found: $controller",
+            context: "Route path: $path",
             suggestion: 'Verify the class exists and is properly autoloaded. Check the namespace matches the file location.',
         );
     }
@@ -49,8 +49,8 @@ class RouteException extends MarkoException
         string $path,
     ): self {
         return new self(
-            message: "Method not found: {$method}",
-            context: "Controller: {$controller}, Route path: {$path}",
+            message: "Method not found: $method",
+            context: "Controller: $controller, Route path: $path",
             suggestion: 'Verify the method exists and is public. Route handler methods must be public.',
         );
     }

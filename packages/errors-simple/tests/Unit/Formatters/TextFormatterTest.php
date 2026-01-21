@@ -126,7 +126,7 @@ describe('TextFormatter', function (): void {
 
         // Should include line numbers in the snippet
         $lineNum = $report->line;
-        expect($output)->toMatch("/\\|\\s*{$lineNum}\\s*\\|/");
+        expect($output)->toMatch("/\\|\\s*$lineNum\\s*\\|/");
     });
 
     it('displays context when available from MarkoException', function (): void {

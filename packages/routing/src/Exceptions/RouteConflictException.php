@@ -17,8 +17,8 @@ class RouteConflictException extends MarkoException
         string $newMethod,
     ): self {
         return new self(
-            message: "Duplicate route defined for {$method} {$path}",
-            context: "Existing: {$existingController}::{$existingMethod}(), New: {$newController}::{$newMethod}()",
+            message: "Duplicate route defined for $method $path",
+            context: "Existing: $existingController::$existingMethod(), New: $newController::$newMethod()",
             suggestion: 'Use #[Preference] to replace the existing controller, or change the route path to avoid conflicts.',
         );
     }

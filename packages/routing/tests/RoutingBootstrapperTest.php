@@ -97,7 +97,7 @@ it('discovers routes from all loaded modules', function (): void {
         '1.0.0',
         [],
         null,
-        ['psr-4' => ["AcmeBlog{$uniqueId}\\" => 'src/']],
+        ['psr-4' => ["AcmeBlog$uniqueId\\" => 'src/']],
     );
 
     // Create a controller with route attributes
@@ -107,7 +107,7 @@ it('discovers routes from all loaded modules', function (): void {
 
 declare(strict_types=1);
 
-namespace AcmeBlog{$uniqueId};
+namespace AcmeBlog$uniqueId;
 
 use Marko\\Routing\\Attributes\\Get;
 
@@ -176,7 +176,7 @@ it('applies Preference inheritance during discovery', function (): void {
         '1.0.0',
         [],
         null,
-        ['psr-4' => ["AcmeBlog{$uniqueId}\\" => 'src/']],
+        ['psr-4' => ["AcmeBlog$uniqueId\\" => 'src/']],
     );
 
     // Create vendor controller
@@ -186,7 +186,7 @@ it('applies Preference inheritance during discovery', function (): void {
 
 declare(strict_types=1);
 
-namespace AcmeBlog{$uniqueId};
+namespace AcmeBlog$uniqueId;
 
 use Marko\\Routing\\Attributes\\Get;
 
@@ -209,7 +209,7 @@ PHP;
         '1.0.0',
         ['acme/blog' => '^1.0'],
         null,
-        ['psr-4' => ["AppBlog{$uniqueId}\\" => 'src/']],
+        ['psr-4' => ["AppBlog$uniqueId\\" => 'src/']],
     );
 
     // Create app controller with Preference
@@ -219,9 +219,9 @@ PHP;
 
 declare(strict_types=1);
 
-namespace AppBlog{$uniqueId};
+namespace AppBlog$uniqueId;
 
-use AcmeBlog{$uniqueId}\\BlogController as VendorBlogController;
+use AcmeBlog$uniqueId\\BlogController as VendorBlogController;
 use Marko\\Core\\Attributes\\Preference;
 use Marko\\Routing\\Attributes\\InheritRoute;
 
@@ -253,7 +253,7 @@ PHP;
 
     // The route should use the app controller (the Preference)
     expect($route)->not->toBeNull()
-        ->and($route->controller)->toBe("AppBlog{$uniqueId}\\BlogController");
+        ->and($route->controller)->toBe("AppBlog$uniqueId\\BlogController");
 
     routingTestCleanupDirectory($baseDir);
 });
@@ -318,7 +318,7 @@ it('runs route discovery after module loading', function (): void {
         '1.0.0',
         [],
         null,
-        ['psr-4' => ["AcmeModuleA{$uniqueId}\\" => 'src/']],
+        ['psr-4' => ["AcmeModuleA$uniqueId\\" => 'src/']],
     );
 
     mkdir($moduleAPath . '/src', 0755, true);
@@ -327,7 +327,7 @@ it('runs route discovery after module loading', function (): void {
 
 declare(strict_types=1);
 
-namespace AcmeModuleA{$uniqueId};
+namespace AcmeModuleA$uniqueId;
 
 use Marko\\Routing\\Attributes\\Get;
 
@@ -350,7 +350,7 @@ PHP;
         '1.0.0',
         ['acme/module-a' => '^1.0'],
         null,
-        ['psr-4' => ["AcmeModuleB{$uniqueId}\\" => 'src/']],
+        ['psr-4' => ["AcmeModuleB$uniqueId\\" => 'src/']],
     );
 
     mkdir($moduleBPath . '/src', 0755, true);
@@ -359,7 +359,7 @@ PHP;
 
 declare(strict_types=1);
 
-namespace AcmeModuleB{$uniqueId};
+namespace AcmeModuleB$uniqueId;
 
 use Marko\\Routing\\Attributes\\Get;
 
@@ -404,7 +404,7 @@ it('detects route conflicts during boot and fails fast', function (): void {
         '1.0.0',
         [],
         null,
-        ['psr-4' => ["AcmeConflictA{$uniqueId}\\" => 'src/']],
+        ['psr-4' => ["AcmeConflictA$uniqueId\\" => 'src/']],
     );
 
     mkdir($moduleAPath . '/src', 0755, true);
@@ -413,7 +413,7 @@ it('detects route conflicts during boot and fails fast', function (): void {
 
 declare(strict_types=1);
 
-namespace AcmeConflictA{$uniqueId};
+namespace AcmeConflictA$uniqueId;
 
 use Marko\\Routing\\Attributes\\Get;
 
@@ -436,7 +436,7 @@ PHP;
         '1.0.0',
         [],
         null,
-        ['psr-4' => ["AcmeConflictB{$uniqueId}\\" => 'src/']],
+        ['psr-4' => ["AcmeConflictB$uniqueId\\" => 'src/']],
     );
 
     mkdir($moduleBPath . '/src', 0755, true);
@@ -445,7 +445,7 @@ PHP;
 
 declare(strict_types=1);
 
-namespace AcmeConflictB{$uniqueId};
+namespace AcmeConflictB$uniqueId;
 
 use Marko\\Routing\\Attributes\\Get;
 
@@ -486,7 +486,7 @@ it('discovers routes from vendor, modules, and app directories', function (): vo
         '1.0.0',
         [],
         null,
-        ['psr-4' => ["AcmeCore{$uniqueId}\\" => 'src/']],
+        ['psr-4' => ["AcmeCore$uniqueId\\" => 'src/']],
     );
 
     mkdir($vendorModulePath . '/src', 0755, true);
@@ -495,7 +495,7 @@ it('discovers routes from vendor, modules, and app directories', function (): vo
 
 declare(strict_types=1);
 
-namespace AcmeCore{$uniqueId};
+namespace AcmeCore$uniqueId;
 
 use Marko\\Routing\\Attributes\\Get;
 
@@ -518,7 +518,7 @@ PHP;
         '1.0.0',
         ['acme/core' => '^1.0'],
         null,
-        ['psr-4' => ["CustomCheckout{$uniqueId}\\" => 'src/']],
+        ['psr-4' => ["CustomCheckout$uniqueId\\" => 'src/']],
     );
 
     mkdir($modulesModulePath . '/src', 0755, true);
@@ -527,7 +527,7 @@ PHP;
 
 declare(strict_types=1);
 
-namespace CustomCheckout{$uniqueId};
+namespace CustomCheckout$uniqueId;
 
 use Marko\\Routing\\Attributes\\Post;
 
@@ -550,7 +550,7 @@ PHP;
         '1.0.0',
         ['acme/core' => '^1.0'],
         null,
-        ['psr-4' => ["AppBlog{$uniqueId}\\" => 'src/']],
+        ['psr-4' => ["AppBlog$uniqueId\\" => 'src/']],
     );
 
     mkdir($appModulePath . '/src', 0755, true);
@@ -559,7 +559,7 @@ PHP;
 
 declare(strict_types=1);
 
-namespace AppBlog{$uniqueId};
+namespace AppBlog$uniqueId;
 
 use Marko\\Routing\\Attributes\\Get;
 

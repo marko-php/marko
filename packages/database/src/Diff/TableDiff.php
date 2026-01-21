@@ -56,15 +56,15 @@ readonly class TableDiff
         $changes = [];
 
         foreach ($this->columnsToDrop as $column) {
-            $changes[] = "DROP COLUMN {$this->tableName}.{$column->name}";
+            $changes[] = "DROP COLUMN $this->tableName.$column->name";
         }
 
         foreach ($this->indexesToDrop as $index) {
-            $changes[] = "DROP INDEX {$this->tableName}.{$index->name}";
+            $changes[] = "DROP INDEX $this->tableName.$index->name";
         }
 
         foreach ($this->foreignKeysToDrop as $foreignKey) {
-            $changes[] = "DROP FOREIGN KEY {$this->tableName}.{$foreignKey->name}";
+            $changes[] = "DROP FOREIGN KEY $this->tableName.$foreignKey->name";
         }
 
         return $changes;
@@ -78,31 +78,31 @@ readonly class TableDiff
         $lines = [];
 
         foreach ($this->columnsToAdd as $column) {
-            $lines[] = "  Add column: {$column->name}";
+            $lines[] = "  Add column: $column->name";
         }
 
         foreach ($this->columnsToDrop as $column) {
-            $lines[] = "  Drop column: {$column->name}";
+            $lines[] = "  Drop column: $column->name";
         }
 
         foreach ($this->columnsToModify as $column) {
-            $lines[] = "  Modify column: {$column->name}";
+            $lines[] = "  Modify column: $column->name";
         }
 
         foreach ($this->indexesToAdd as $index) {
-            $lines[] = "  Add index: {$index->name}";
+            $lines[] = "  Add index: $index->name";
         }
 
         foreach ($this->indexesToDrop as $index) {
-            $lines[] = "  Drop index: {$index->name}";
+            $lines[] = "  Drop index: $index->name";
         }
 
         foreach ($this->foreignKeysToAdd as $foreignKey) {
-            $lines[] = "  Add foreign key: {$foreignKey->name}";
+            $lines[] = "  Add foreign key: $foreignKey->name";
         }
 
         foreach ($this->foreignKeysToDrop as $foreignKey) {
-            $lines[] = "  Drop foreign key: {$foreignKey->name}";
+            $lines[] = "  Drop foreign key: $foreignKey->name";
         }
 
         return $lines;

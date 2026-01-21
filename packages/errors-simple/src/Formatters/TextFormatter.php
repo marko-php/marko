@@ -36,9 +36,9 @@ class TextFormatter
         $color = $this->colorsEnabled ? $report->severity->color() : '';
         $reset = $this->colorsEnabled ? "\033[0m" : '';
 
-        $output = "{$color}An error occurred{$reset}\n";
-        $output .= "{$report->message}\n";
-        $output .= "Error ID: {$report->id}\n";
+        $output = "{$color}An error occurred$reset\n";
+        $output .= "$report->message\n";
+        $output .= "Error ID: $report->id\n";
 
         return $output;
     }
@@ -50,16 +50,16 @@ class TextFormatter
         $reset = $this->colorsEnabled ? "\033[0m" : '';
         $className = $report->throwable::class;
 
-        $output = "{$color}{$className}{$reset}\n";
-        $output .= "{$report->message}\n";
-        $output .= "{$report->file}:{$report->line}\n\n";
+        $output = "$color$className$reset\n";
+        $output .= "$report->message\n";
+        $output .= "$report->file:$report->line\n\n";
 
         if ($report->context !== '') {
-            $output .= "Context: {$report->context}\n\n";
+            $output .= "Context: $report->context\n\n";
         }
 
         if ($report->suggestion !== '') {
-            $output .= "Suggestion: {$report->suggestion}\n\n";
+            $output .= "Suggestion: $report->suggestion\n\n";
         }
 
         $output .= $this->formatCodeSnippet($report->file, $report->line);
@@ -76,7 +76,7 @@ class TextFormatter
         \Throwable $previous,
     ): string {
         $className = $previous::class;
-        $output = "\nPrevious Exception: {$className}\n";
+        $output = "\nPrevious Exception: $className\n";
         $output .= "{$previous->getMessage()}\n";
         $output .= "{$previous->getFile()}:{$previous->getLine()}\n";
 
@@ -99,7 +99,7 @@ class TextFormatter
         foreach ($snippet['lines'] as $lineNumber => $content) {
             $marker = $lineNumber === $errorLine ? '-->' : '   ';
             $paddedLineNum = str_pad((string) $lineNumber, $maxLineNumWidth, ' ', STR_PAD_LEFT);
-            $output .= "{$marker} | {$paddedLineNum} | {$content}\n";
+            $output .= "$marker | $paddedLineNum | $content\n";
         }
         $output .= "\n";
 
@@ -121,8 +121,8 @@ class TextFormatter
             $type = $frame['type'] ?? '';
             $function = $frame['function'] ?? '';
 
-            $call = $class !== '' ? "{$class}{$type}{$function}()" : "{$function}()";
-            $output .= "#{$index} {$file}:{$line} {$call}\n";
+            $call = $class !== '' ? "$class$type$function()" : "$function()";
+            $output .= "#$index $file:$line $call\n";
         }
 
         return $output;
@@ -149,12 +149,12 @@ class TextFormatter
         $availableForDir = $maxLength - strlen($filename) - 4; // 4 for ".../"
 
         if ($availableForDir <= 0) {
-            return ".../{$filename}";
+            return ".../$filename";
         }
 
         // Truncate directory from the left
         $truncatedDir = substr($dirname, -$availableForDir);
 
-        return ".../{$truncatedDir}/{$filename}";
+        return ".../$truncatedDir/$filename";
     }
 }

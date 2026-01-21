@@ -183,7 +183,7 @@ it('passes route parameters to controller method', function (): void {
         ): Response {
             $this->receivedId = $id;
 
-            return new Response("User: {$id}");
+            return new Response("User: $id");
         }
     };
 

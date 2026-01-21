@@ -12,7 +12,7 @@ namespace Marko\Database\Migration;
  * - third-party modules: Data directory
  * - application customizations: Data directory
  */
-class DataMigrationDiscovery
+readonly class DataMigrationDiscovery
 {
     public function __construct(
         private string $vendorPath,

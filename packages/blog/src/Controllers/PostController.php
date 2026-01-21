@@ -19,6 +19,6 @@ class PostController
     public function show(
         string $slug,
     ): Response {
-        return new Response("Blog Post: {$slug}");
+        return new Response("Blog Post: $slug");
     }
 }

@@ -210,7 +210,7 @@ describe('Error Handling Integration', function (): void {
                 if ($id === ErrorHandlerInterface::class) {
                     return $this->handler;
                 }
-                throw new Exception("Service not found: {$id}");
+                throw new Exception("Service not found: $id");
             }
         };
 

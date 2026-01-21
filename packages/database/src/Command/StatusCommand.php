@@ -54,7 +54,7 @@ class StatusCommand implements CommandInterface
             $output->writeLine('Pending Migrations:');
 
             foreach ($pending as $name) {
-                $output->writeLine("  {$name}");
+                $output->writeLine("  $name");
             }
 
             $output->writeLine('');
@@ -64,8 +64,8 @@ class StatusCommand implements CommandInterface
         }
 
         // Show summary
-        $output->writeLine("Applied: {$appliedCount}");
-        $output->writeLine("Pending: {$pendingCount}");
+        $output->writeLine("Applied: $appliedCount");
+        $output->writeLine("Pending: $pendingCount");
 
         return 0;
     }

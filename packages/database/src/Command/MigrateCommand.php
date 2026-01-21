@@ -70,7 +70,7 @@ class MigrateCommand implements CommandInterface
 
         // Show migrations being applied
         foreach ($pending as $migration) {
-            $output->writeLine("Migrating: {$migration}");
+            $output->writeLine("Migrating: $migration");
         }
 
         // Show SQL statements in verbose mode
@@ -83,7 +83,7 @@ class MigrateCommand implements CommandInterface
                 $output->writeLine('SQL statements:');
 
                 foreach ($statements as $sql) {
-                    $output->writeLine("  {$sql}");
+                    $output->writeLine("  $sql");
                 }
 
                 $output->writeLine('');
@@ -96,7 +96,7 @@ class MigrateCommand implements CommandInterface
 
             $count = count($applied);
             $output->writeLine('');
-            $output->writeLine("Applied {$count} migration(s) successfully.");
+            $output->writeLine("Applied $count migration(s) successfully.");
 
             return 0;
         } catch (MigrationException $e) {
@@ -125,7 +125,7 @@ class MigrateCommand implements CommandInterface
         if (!empty($paths)) {
             foreach ($paths as $path) {
                 $filename = basename($path);
-                $output->writeLine("Generated: {$filename}");
+                $output->writeLine("Generated: $filename");
             }
 
             $output->writeLine('');

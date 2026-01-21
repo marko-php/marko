@@ -97,7 +97,7 @@ class MigrationGenerator
     ): string {
         $timestamp = date('YmdHis');
 
-        return "{$timestamp}_{$operation}_{$tableName}.php";
+        return "{$timestamp}_{$operation}_$tableName.php";
     }
 
     /**
@@ -123,13 +123,13 @@ return new class extends Migration {
     public function up(
         ConnectionInterface \$connection,
     ): void {
-{$upCode}
+$upCode
     }
 
     public function down(
         ConnectionInterface \$connection,
     ): void {
-{$downCode}
+$downCode
     }
 };
 
@@ -168,7 +168,7 @@ PHP;
 
         return <<<PHP
         \$this->execute(\$connection, <<<'SQL'
-{$indentedSql}
+$indentedSql
             SQL);
 PHP;
     }

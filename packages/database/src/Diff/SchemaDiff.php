@@ -49,7 +49,7 @@ readonly class SchemaDiff
         $changes = [];
 
         foreach ($this->tablesToDrop as $table) {
-            $changes[] = "DROP TABLE {$table->name}";
+            $changes[] = "DROP TABLE $table->name";
         }
 
         foreach ($this->tablesToAlter as $tableDiff) {
@@ -64,15 +64,15 @@ readonly class SchemaDiff
         $lines = [];
 
         foreach ($this->tablesToCreate as $table) {
-            $lines[] = "Create table: {$table->name}";
+            $lines[] = "Create table: $table->name";
         }
 
         foreach ($this->tablesToDrop as $table) {
-            $lines[] = "Drop table: {$table->name}";
+            $lines[] = "Drop table: $table->name";
         }
 
         foreach ($this->tablesToAlter as $tableName => $tableDiff) {
-            $lines[] = "Alter table: {$tableName}";
+            $lines[] = "Alter table: $tableName";
             $lines = [...$lines, ...$tableDiff->getSummaryLines()];
         }
 

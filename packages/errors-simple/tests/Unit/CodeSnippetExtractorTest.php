@@ -14,7 +14,7 @@ describe('CodeSnippetExtractor', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'test_');
         $lines = [];
         for ($i = 1; $i <= 20; $i++) {
-            $lines[] = "Line {$i} content";
+            $lines[] = "Line $i content";
         }
         file_put_contents($tempFile, implode("\n", $lines));
 
@@ -40,7 +40,7 @@ describe('CodeSnippetExtractor', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'test_');
         $lines = [];
         for ($i = 1; $i <= 20; $i++) {
-            $lines[] = "Line {$i} content";
+            $lines[] = "Line $i content";
         }
         file_put_contents($tempFile, implode("\n", $lines));
 
@@ -69,7 +69,7 @@ describe('CodeSnippetExtractor', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'test_');
         $lines = [];
         for ($i = 1; $i <= 20; $i++) {
-            $lines[] = "Line {$i} content";
+            $lines[] = "Line $i content";
         }
         file_put_contents($tempFile, implode("\n", $lines));
 
@@ -91,7 +91,7 @@ describe('CodeSnippetExtractor', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'test_');
         $lines = [];
         for ($i = 1; $i <= 20; $i++) {
-            $lines[] = "Line {$i} content";
+            $lines[] = "Line $i content";
         }
         file_put_contents($tempFile, implode("\n", $lines));
 
@@ -114,7 +114,7 @@ describe('CodeSnippetExtractor', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'test_');
         $lines = [];
         for ($i = 1; $i <= 20; $i++) {
-            $lines[] = "Line {$i} content";
+            $lines[] = "Line $i content";
         }
         file_put_contents($tempFile, implode("\n", $lines));
 
@@ -164,7 +164,7 @@ describe('CodeSnippetExtractor', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'test_');
         $lines = [];
         for ($i = 1; $i <= 10; $i++) {
-            $lines[] = "Line {$i} content";
+            $lines[] = "Line $i content";
         }
         file_put_contents($tempFile, implode("\n", $lines));
 
@@ -192,7 +192,7 @@ describe('CodeSnippetExtractor', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'test_');
         $lines = [];
         for ($i = 1; $i <= 10; $i++) {
-            $lines[] = "Line {$i} content";
+            $lines[] = "Line $i content";
         }
         file_put_contents($tempFile, implode("\n", $lines));
 

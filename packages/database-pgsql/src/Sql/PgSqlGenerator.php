@@ -103,13 +103,13 @@ class PgSqlGenerator implements SqlGeneratorInterface
 
         $columnsSql = implode(",\n    ", $columns);
 
-        return "CREATE TABLE \"{$table->name}\" (\n    {$columnsSql}\n)";
+        return "CREATE TABLE \"$table->name\" (\n    $columnsSql\n)";
     }
 
     public function generateDropTable(
         string $tableName,
     ): string {
-        return "DROP TABLE \"{$tableName}\"";
+        return "DROP TABLE \"$tableName\"";
     }
 
     public function generateAddColumn(
@@ -118,14 +118,14 @@ class PgSqlGenerator implements SqlGeneratorInterface
     ): string {
         $definition = $this->generateColumnDefinition($column, forAlter: true);
 
-        return "ALTER TABLE \"{$table}\" ADD COLUMN {$definition}";
+        return "ALTER TABLE \"$table\" ADD COLUMN $definition";
     }
 
     public function generateDropColumn(
         string $table,
         string $columnName,
     ): string {
-        return "ALTER TABLE \"{$table}\" DROP COLUMN \"{$columnName}\"";
+        return "ALTER TABLE \"$table\" DROP COLUMN \"$columnName\"";
     }
 
     public function generateModifyColumn(
@@ -140,31 +140,31 @@ class PgSqlGenerator implements SqlGeneratorInterface
         $oldType = $this->mapType($oldColumn);
 
         if ($newType !== $oldType) {
-            $alterations[] = "ALTER COLUMN \"{$column->name}\" TYPE {$newType}";
+            $alterations[] = "ALTER COLUMN \"$column->name\" TYPE $newType";
         }
 
         // Check for nullability change
         if ($column->nullable !== $oldColumn->nullable) {
             if ($column->nullable) {
-                $alterations[] = "ALTER COLUMN \"{$column->name}\" DROP NOT NULL";
+                $alterations[] = "ALTER COLUMN \"$column->name\" DROP NOT NULL";
             } else {
-                $alterations[] = "ALTER COLUMN \"{$column->name}\" SET NOT NULL";
+                $alterations[] = "ALTER COLUMN \"$column->name\" SET NOT NULL";
             }
         }
 
         // Check for default change
         if ($column->default !== $oldColumn->default) {
             if ($column->default === null) {
-                $alterations[] = "ALTER COLUMN \"{$column->name}\" DROP DEFAULT";
+                $alterations[] = "ALTER COLUMN \"$column->name\" DROP DEFAULT";
             } else {
                 $defaultValue = $this->formatDefaultValue($column->default, $column->type);
-                $alterations[] = "ALTER COLUMN \"{$column->name}\" SET DEFAULT {$defaultValue}";
+                $alterations[] = "ALTER COLUMN \"$column->name\" SET DEFAULT $defaultValue";
             }
         }
 
         $alterationsSql = implode(', ', $alterations);
 
-        return "ALTER TABLE \"{$table}\" {$alterationsSql}";
+        return "ALTER TABLE \"$table\" $alterationsSql";
     }
 
     public function generateAddIndex(
@@ -175,7 +175,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
         $columns = $this->quoteIdentifiers($index->columns);
         $columnsSql = implode(', ', $columns);
 
-        return "CREATE {$unique}INDEX \"{$index->name}\" ON \"{$table}\" ({$columnsSql})";
+        return "CREATE {$unique}INDEX \"$index->name\" ON \"$table\" ($columnsSql)";
     }
 
     public function generateDropIndex(
@@ -183,7 +183,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
         string $indexName,
     ): string {
         // PostgreSQL indexes are not table-scoped, so we don't need the table name
-        return "DROP INDEX \"{$indexName}\"";
+        return "DROP INDEX \"$indexName\"";
     }
 
     public function generateAddForeignKey(
@@ -196,16 +196,16 @@ class PgSqlGenerator implements SqlGeneratorInterface
         $referencedColumns = $this->quoteIdentifiers($foreignKey->referencedColumns);
         $referencedColumnsSql = implode(', ', $referencedColumns);
 
-        $sql = "ALTER TABLE \"{$table}\" ADD CONSTRAINT \"{$foreignKey->name}\" ";
-        $sql .= "FOREIGN KEY ({$columnsSql}) ";
-        $sql .= "REFERENCES \"{$foreignKey->referencedTable}\" ({$referencedColumnsSql})";
+        $sql = "ALTER TABLE \"$table\" ADD CONSTRAINT \"$foreignKey->name\" ";
+        $sql .= "FOREIGN KEY ($columnsSql) ";
+        $sql .= "REFERENCES \"$foreignKey->referencedTable\" ($referencedColumnsSql)";
 
         if ($foreignKey->onDelete !== null) {
-            $sql .= " ON DELETE {$foreignKey->onDelete}";
+            $sql .= " ON DELETE $foreignKey->onDelete";
         }
 
         if ($foreignKey->onUpdate !== null) {
-            $sql .= " ON UPDATE {$foreignKey->onUpdate}";
+            $sql .= " ON UPDATE $foreignKey->onUpdate";
         }
 
         return $sql;
@@ -215,7 +215,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
         string $table,
         string $keyName,
     ): string {
-        return "ALTER TABLE \"{$table}\" DROP CONSTRAINT \"{$keyName}\"";
+        return "ALTER TABLE \"$table\" DROP CONSTRAINT \"$keyName\"";
     }
 
     /**
@@ -228,7 +228,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
         Column $column,
         bool $forAlter = false,
     ): string {
-        $parts = ["\"{$column->name}\""];
+        $parts = ["\"$column->name\""];
 
         // Handle auto-increment with SERIAL types
         if ($column->autoIncrement) {
@@ -270,7 +270,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
 
         // Add length for VARCHAR
         if ($column->type === 'string' && $column->length !== null) {
-            return "{$baseType}({$column->length})";
+            return "$baseType($column->length)";
         }
 
         return $baseType;
@@ -308,7 +308,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
             // Escape single quotes
             $escaped = str_replace("'", "''", $value);
 
-            return "'{$escaped}'";
+            return "'$escaped'";
         }
 
         return 'NULL';
@@ -324,7 +324,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
         array $identifiers,
     ): array {
         return array_map(
-            static fn (string $identifier): string => "\"{$identifier}\"",
+            static fn (string $identifier): string => "\"$identifier\"",
             $identifiers,
         );
     }
@@ -353,8 +353,8 @@ class PgSqlGenerator implements SqlGeneratorInterface
         // so we generate a type change only)
         foreach ($diff->columnsToModify as $columnName => $column) {
             // Without the old column, we can only do a basic type alteration
-            $statements[] = "ALTER TABLE \"{$diff->tableName}\" ALTER COLUMN \"{$columnName}\" TYPE " . $this->mapType(
-                $column
+            $statements[] = "ALTER TABLE \"$diff->tableName\" ALTER COLUMN \"$columnName\" TYPE " . $this->mapType(
+                $column,
             );
         }
 

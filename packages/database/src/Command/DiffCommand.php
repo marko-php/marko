@@ -18,7 +18,7 @@ use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\Schema\Table;
 
 #[Command(name: 'db:diff', description: 'Show differences between entity schema and database')]
-class DiffCommand implements CommandInterface
+readonly class DiffCommand implements CommandInterface
 {
     public function __construct(
         private EntityDiscovery $discovery,
@@ -118,18 +118,18 @@ class DiffCommand implements CommandInterface
 
         // Display tables to create
         foreach ($diff->tablesToCreate as $table) {
-            $output->writeLine("Create table: {$table->name}");
+            $output->writeLine("Create table: $table->name");
             $this->displayTableColumns($table, $output);
         }
 
         // Display tables to drop (destructive)
         foreach ($diff->tablesToDrop as $table) {
-            $output->writeLine("[DESTRUCTIVE] Drop table: {$table->name}");
+            $output->writeLine("[DESTRUCTIVE] Drop table: $table->name");
         }
 
         // Display tables to alter
         foreach ($diff->tablesToAlter as $tableName => $tableDiff) {
-            $output->writeLine("Alter table: {$tableName}");
+            $output->writeLine("Alter table: $tableName");
             $this->displayTableDiff($tableDiff, $output);
         }
     }
@@ -142,11 +142,11 @@ class DiffCommand implements CommandInterface
         Output $output,
     ): void {
         foreach ($table->columns as $column) {
-            $output->writeLine("  Add column: {$column->name}");
+            $output->writeLine("  Add column: $column->name");
         }
 
         foreach ($table->indexes as $index) {
-            $output->writeLine("  Add index: {$index->name}");
+            $output->writeLine("  Add index: $index->name");
         }
     }
 
@@ -159,37 +159,37 @@ class DiffCommand implements CommandInterface
     ): void {
         // Columns to add
         foreach ($diff->columnsToAdd as $column) {
-            $output->writeLine("  Add column: {$column->name}");
+            $output->writeLine("  Add column: $column->name");
         }
 
         // Columns to drop (destructive)
         foreach ($diff->columnsToDrop as $column) {
-            $output->writeLine("  [DESTRUCTIVE] Drop column: {$column->name}");
+            $output->writeLine("  [DESTRUCTIVE] Drop column: $column->name");
         }
 
         // Columns to modify
         foreach ($diff->columnsToModify as $column) {
-            $output->writeLine("  Modify column: {$column->name}");
+            $output->writeLine("  Modify column: $column->name");
         }
 
         // Indexes to add
         foreach ($diff->indexesToAdd as $index) {
-            $output->writeLine("  Add index: {$index->name}");
+            $output->writeLine("  Add index: $index->name");
         }
 
         // Indexes to drop
         foreach ($diff->indexesToDrop as $index) {
-            $output->writeLine("  Drop index: {$index->name}");
+            $output->writeLine("  Drop index: $index->name");
         }
 
         // Foreign keys to add
         foreach ($diff->foreignKeysToAdd as $foreignKey) {
-            $output->writeLine("  Add foreign key: {$foreignKey->name}");
+            $output->writeLine("  Add foreign key: $foreignKey->name");
         }
 
         // Foreign keys to drop
         foreach ($diff->foreignKeysToDrop as $foreignKey) {
-            $output->writeLine("  Drop foreign key: {$foreignKey->name}");
+            $output->writeLine("  Drop foreign key: $foreignKey->name");
         }
     }
 }

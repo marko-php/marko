@@ -204,7 +204,7 @@ trait DatabaseTestCase
         ConnectionInterface $connection,
         string $tableName,
     ): void {
-        $connection->execute("DELETE FROM {$tableName}");
+        $connection->execute("DELETE FROM $tableName");
     }
 
     /**
@@ -218,7 +218,7 @@ trait DatabaseTestCase
         ConnectionInterface $connection,
         string $tableName,
     ): int {
-        $result = $connection->query("SELECT COUNT(*) as count FROM {$tableName}");
+        $result = $connection->query("SELECT COUNT(*) as count FROM $tableName");
 
         return (int) ($result[0]['count'] ?? 0);
     }

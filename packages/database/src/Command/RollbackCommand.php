@@ -47,7 +47,7 @@ class RollbackCommand implements CommandInterface
                 }
 
                 foreach ($rolledBack as $migration) {
-                    $output->writeLine("Rolling back: {$migration}");
+                    $output->writeLine("Rolling back: $migration");
                     $totalRolledBack[] = $migration;
                 }
             } catch (MigrationException $e) {
@@ -65,7 +65,7 @@ class RollbackCommand implements CommandInterface
 
         $count = count($totalRolledBack);
         $output->writeLine('');
-        $output->writeLine("Rolled back {$count} migration(s) successfully.");
+        $output->writeLine("Rolled back $count migration(s) successfully.");
         $output->writeLine('');
         $output->writeLine('Note: If you have uncommitted migration files that should be deleted,');
         $output->writeLine('you can remove them manually or use git to discard them.');
