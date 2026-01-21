@@ -47,6 +47,52 @@ composer require pestphp/pest --dev
 ./vendor/bin/pest --profanity
 ```
 
+## TDD Workflow Commands
+
+Optimized commands for fast feedback during TDD cycles:
+
+```bash
+# RED phase - verify test fails (stop on first failure)
+./vendor/bin/pest --filter="test name here" --bail
+
+# GREEN phase - verify package tests pass (parallel, scoped to package)
+./vendor/bin/pest packages/{package}/tests/ --parallel
+
+# REFACTOR phase - same as GREEN, run after each change
+./vendor/bin/pest packages/{package}/tests/ --parallel
+
+# Final verification - full suite with parallelism
+./vendor/bin/pest --parallel
+```
+
+### Why These Optimizations Matter
+
+| Flag | Purpose | When to Use |
+|------|---------|-------------|
+| `--filter` | Run only matching tests | RED phase - confirm specific test fails |
+| `--bail` | Stop on first failure | RED phase - fast failure confirmation |
+| `--parallel` | Multi-process execution | GREEN/REFACTOR - faster full runs |
+| Package scope | Only run package tests | During task work - skip unrelated tests |
+
+### Example TDD Cycle
+
+```bash
+# 1. RED - Write test, verify it fails
+./vendor/bin/pest --filter="creates user with valid email" --bail
+# Expected: FAILED
+
+# 2. GREEN - Implement, verify test passes
+./vendor/bin/pest packages/core/tests/ --parallel
+# Expected: All pass
+
+# 3. REFACTOR - Clean up, verify still passes
+./vendor/bin/pest packages/core/tests/ --parallel
+# Expected: All pass
+
+# 4. Before commit - full suite
+./vendor/bin/pest --parallel
+```
+
 ## Test File Locations
 
 ### Monorepo Structure
