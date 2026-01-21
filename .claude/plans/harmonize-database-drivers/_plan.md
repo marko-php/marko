@@ -45,7 +45,7 @@ Make database-mysql and database-pgsql packages coherent by standardizing naming
 | 004 | Fix PgSqlIntrospector readonly modifier | - | completed |
 | 005 | Harmonize PHPDoc style in MySQL package | - | completed |
 | 006 | Add namespaces to PostgreSQL tests | - | completed |
-| 007 | Harmonize Connection test approach | 003, 006 | pending |
+| 007 | Harmonize Connection test approach | 003, 006 | completed |
 | 008 | Run tests and verify all changes | 001, 002, 003, 004, 005, 006, 007 | pending |
 
 ## Architecture Notes
