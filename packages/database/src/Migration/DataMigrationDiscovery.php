@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Database\Migration;
 
+use Marko\Core\Path\ProjectPaths;
+
 /**
  * Discovers data migrations across vendor, modules, and app directories.
  *
@@ -14,11 +16,19 @@ namespace Marko\Database\Migration;
  */
 readonly class DataMigrationDiscovery
 {
+    private string $vendorPath;
+
+    private string $modulesPath;
+
+    private string $appPath;
+
     public function __construct(
-        private string $vendorPath,
-        private string $modulesPath,
-        private string $appPath,
-    ) {}
+        ProjectPaths $paths,
+    ) {
+        $this->vendorPath = $paths->vendor;
+        $this->modulesPath = $paths->modules;
+        $this->appPath = $paths->app;
+    }
 
     /**
      * Discover all data migrations from all sources.

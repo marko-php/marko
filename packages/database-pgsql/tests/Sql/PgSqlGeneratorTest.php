@@ -339,4 +339,33 @@ describe('PgSqlGenerator', function (): void {
 
         expect($sql2)->toContain('DROP DEFAULT');
     });
+
+    it('defaults VARCHAR to 255 when no length specified', function (): void {
+        $table = new Table(
+            name: 'posts',
+            columns: [
+                new Column(name: 'title', type: 'string'),  // No length specified
+            ],
+        );
+
+        $sql = $this->generator->generateCreateTable($table);
+
+        expect($sql)->toContain('"title" VARCHAR(255) NOT NULL');
+    });
+
+    it('handles primary key with SERIAL type', function (): void {
+        // PostgreSQL uses SERIAL which implicitly handles NOT NULL
+        $table = new Table(
+            name: 'posts',
+            columns: [
+                new Column(name: 'id', type: 'integer', primaryKey: true, autoIncrement: true, nullable: true),
+                new Column(name: 'title', type: 'string', length: 255),
+            ],
+        );
+
+        $sql = $this->generator->generateCreateTable($table);
+
+        // SERIAL implies NOT NULL in PostgreSQL
+        expect($sql)->toContain('"id" SERIAL PRIMARY KEY');
+    });
 });

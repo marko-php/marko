@@ -257,6 +257,56 @@ it('displays "No changes detected" when in sync', function (): void {
     expect($output)->toContain('No changes detected');
 });
 
+it('excludes migrations table from database schema comparison', function (): void {
+    // Simulate a database that has the migrations table (framework table)
+    $migrationsTable = new Table(
+        name: 'migrations',
+        columns: [
+            new Column(name: 'name', type: 'VARCHAR', length: 255),
+            new Column(name: 'batch', type: 'INT'),
+        ],
+        indexes: [],
+    );
+
+    $command = Helpers::createDiffCommand(tables: ['migrations' => $migrationsTable]);
+    ['output' => $output] = Helpers::executeDiffCommand($command);
+
+    // The migrations table should be excluded, so no "Drop table" should appear
+    expect($output)->toContain('No changes detected')
+        ->and($output)->not->toContain('Drop table: migrations');
+});
+
+it('excludes migrations table even when other tables need changes', function (): void {
+    // Simulate a database with migrations table and another user table
+    $migrationsTable = new Table(
+        name: 'migrations',
+        columns: [
+            new Column(name: 'name', type: 'VARCHAR', length: 255),
+            new Column(name: 'batch', type: 'INT'),
+        ],
+        indexes: [],
+    );
+
+    $usersTable = new Table(
+        name: 'users',
+        columns: [
+            new Column(name: 'id', type: 'INT', primaryKey: true),
+        ],
+        indexes: [],
+    );
+
+    $command = Helpers::createDiffCommand(tables: [
+        'migrations' => $migrationsTable,
+        'users' => $usersTable,
+    ]);
+    ['output' => $output] = Helpers::executeDiffCommand($command);
+
+    // Should show users table needs to be dropped (no entity for it)
+    // But should NOT show migrations table
+    expect($output)->toContain('Drop table: users')
+        ->and($output)->not->toContain('Drop table: migrations');
+});
+
 it('returns 0 when no changes, 1 when changes exist', function (): void {
     // Test return 0 when no changes
     $noDiffCalculator = new class () extends DiffCalculator

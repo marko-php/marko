@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\Config;
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Exceptions\ConfigurationException;
 
 /**
@@ -27,10 +28,9 @@ readonly class DatabaseConfig
      * @throws ConfigurationException
      */
     public function __construct(
-        ?string $basePath = null,
+        ProjectPaths $paths,
     ) {
-        $basePath ??= getcwd();
-        $configPath = $basePath . '/config/database.php';
+        $configPath = $paths->config . '/database.php';
 
         if (!file_exists($configPath)) {
             throw ConfigurationException::configFileNotFound($configPath);

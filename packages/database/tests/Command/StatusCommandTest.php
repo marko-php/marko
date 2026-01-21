@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Command\StatusCommand;
 use Marko\Database\Migration\DataMigrator;
 use Marko\Database\Migration\MigrationRepository;
@@ -135,7 +136,17 @@ function setupStatusTest(
     $repository->method('getApplied')->willReturn($applied);
 
     $connection = Helpers::createStubConnection();
-    $migrator = new Migrator($connection, $repository, $migrationsPath);
+    // Create a temp directory structure with database/migrations for ProjectPaths
+    $basePath = dirname($migrationsPath);
+    $databasePath = $basePath . '/database';
+    if (!is_dir($databasePath)) {
+        mkdir($databasePath, 0777, true);
+    }
+    rename($migrationsPath, $databasePath . '/migrations');
+    $migrationsPath = $databasePath . '/migrations';
+
+    $paths = new ProjectPaths($basePath);
+    $migrator = new Migrator($connection, $repository, $paths);
     $dataMigrator = createStatusDataMigratorStub($dataPending, $dataApplied);
     $command = new StatusCommand($migrator, $dataMigrator, $repository, $connection);
 

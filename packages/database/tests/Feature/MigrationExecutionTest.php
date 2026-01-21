@@ -4,24 +4,26 @@ declare(strict_types=1);
 
 namespace Marko\Database\Tests\Feature;
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Migration\MigrationRepository;
 use Marko\Database\Migration\Migrator;
+use Marko\Database\Tests\Migration\Helpers;
 use RuntimeException;
 
 describe('Migration Execution', function (): void {
     beforeEach(function (): void {
-        $this->migrationsPath = sys_get_temp_dir() . '/marko_migration_test_' . uniqid();
+        // Create a temp directory structure with database/migrations for ProjectPaths
+        $this->basePath = sys_get_temp_dir() . '/marko_migration_test_' . uniqid();
+        $this->migrationsPath = $this->basePath . '/database/migrations';
         mkdir($this->migrationsPath, 0777, true);
+        $this->paths = new ProjectPaths($this->basePath);
     });
 
     afterEach(function (): void {
-        if (is_dir($this->migrationsPath)) {
-            array_map('unlink', glob($this->migrationsPath . '/*.php'));
-            rmdir($this->migrationsPath);
-        }
+        Helpers::removeDirectory($this->basePath);
     });
 
     it('applies and rolls back migrations correctly', function (): void {
@@ -111,7 +113,7 @@ PHP;
         $repository->method('delete');
 
         // Run migration
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $applied = $migrator->migrate();
 
         expect($applied)
@@ -215,7 +217,7 @@ PHP;
         $repository->method('getNextBatchNumber')->willReturn(1);
         $repository->method('record');
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $migrator->migrate();
 
         expect($executionOrder)->toBe(['MIGRATION_1', 'MIGRATION_2']);
@@ -295,7 +297,7 @@ PHP;
         $repository->method('getNextBatchNumber')->willReturn(2);
         $repository->method('record');
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $applied = $migrator->migrate();
 
         // Only second migration should be applied
@@ -330,7 +332,7 @@ PHP;
         $repository->method('getApplied')->willReturn([]);
         $repository->method('getNextBatchNumber')->willReturn(1);
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
 
         expect(fn () => $migrator->migrate())
             ->toThrow(MigrationException::class, '2024_01_01_000001_failing');
@@ -427,7 +429,7 @@ PHP;
         ]);
         $repository->method('delete');
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $migrator->rollback();
 
         expect($rollbackOrder)->toBe(['ROLLBACK_2', 'ROLLBACK_1']);

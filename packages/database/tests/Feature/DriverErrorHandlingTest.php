@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\Tests\Feature;
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Exceptions\ConfigurationException;
 use Marko\Database\Exceptions\DatabaseException;
@@ -58,7 +59,8 @@ return [
 ];
 PHP);
 
-        $config = new DatabaseConfig($tempDir);
+        $paths = new ProjectPaths($tempDir);
+        $config = new DatabaseConfig($paths);
 
         expect($config->driver)
             ->toBe('mysql')
@@ -76,7 +78,8 @@ PHP);
         $tempDir = sys_get_temp_dir() . '/marko_nonexistent_' . uniqid();
         mkdir($tempDir);
 
-        expect(fn () => new DatabaseConfig($tempDir))
+        $paths = new ProjectPaths($tempDir);
+        expect(fn () => new DatabaseConfig($paths))
             ->toThrow(ConfigurationException::class, 'not found');
 
         rmdir($tempDir);
@@ -99,7 +102,8 @@ return [
 ];
 PHP);
 
-        expect(fn () => new DatabaseConfig($tempDir))
+        $paths = new ProjectPaths($tempDir);
+        expect(fn () => new DatabaseConfig($paths))
             ->toThrow(ConfigurationException::class, 'password');
 
         // Cleanup

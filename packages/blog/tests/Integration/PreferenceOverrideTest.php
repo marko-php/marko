@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Blog\Controllers\PostController;
-use Marko\Blog\Entities\Post;
+use Marko\Blog\Entity\Post;
 use Marko\Blog\Repositories\PostRepository;
 use Marko\Core\Attributes\Preference;
 use Marko\Core\Container\Container;

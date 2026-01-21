@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\Tests\Feature;
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
@@ -185,7 +186,8 @@ describe('Entity to Migration Workflow', function (): void {
         $tempDir = sys_get_temp_dir() . '/marko_workflow_test_' . uniqid();
         mkdir($tempDir);
 
-        $generator = new MigrationGenerator($sqlGenerator, $tempDir);
+        $projectPaths = new ProjectPaths($tempDir);
+        $generator = new MigrationGenerator($sqlGenerator, $projectPaths);
         $paths = $generator->generate($diff);
 
         expect($paths)

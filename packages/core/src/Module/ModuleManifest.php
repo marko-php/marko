@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Core\Module;
 
+use Closure;
+
 /**
  * Value object representing a discovered module.
  *
@@ -19,7 +21,7 @@ readonly class ModuleManifest
      * @param array<string, string> $require Hard dependencies from composer.json (package => version constraint)
      * @param array<string> $after Modules to load before this one (from module.php)
      * @param array<string> $before Modules to load after this one (from module.php)
-     * @param array<string, string> $bindings Interface to implementation bindings (from module.php)
+     * @param array<string, string|Closure> $bindings Interface to implementation bindings (from module.php)
      * @param string $path Absolute path to module directory
      * @param string $source Discovery source: vendor, modules, or app
      * @param array<string, string> $autoload PSR-4 autoload configuration from composer.json (namespace => path)

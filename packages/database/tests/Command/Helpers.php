@@ -6,6 +6,7 @@ namespace Marko\Database\Tests\Command;
 
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Command\DiffCommand;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
@@ -231,9 +232,7 @@ final class Helpers
             metadataFactory: new EntityMetadataFactory(),
             schemaBuilder: new SchemaBuilder(),
             diffCalculator: $diffCalculator ?? new DiffCalculator(),
-            vendorPath: '/vendor',
-            modulesPath: '/modules',
-            appPath: '/app',
+            paths: new ProjectPaths('/test'),
         );
     }
 

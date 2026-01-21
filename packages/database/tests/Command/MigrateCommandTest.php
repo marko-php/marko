@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Command\MigrateCommand;
 use Marko\Database\Diff\DiffCalculator;
 use Marko\Database\Diff\SchemaDiff;
@@ -307,9 +308,7 @@ function createMigrateCommand(
         schemaBuilder: new SchemaBuilder(),
         diffCalculator: createMigrateDiffCalculator($diff ?? new SchemaDiff()),
         sqlGenerator: $sqlGenerator ?? createMigrateSqlGenerator(),
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
+        paths: new ProjectPaths('/test'),
         isProduction: $isProduction,
     );
 }
@@ -661,4 +660,41 @@ it('handles data migration failure', function (): void {
     expect($exitCode)->toBe(1)
         ->and($output)->toContain('Error')
         ->and($output)->toContain('Failed to insert country data');
+});
+
+it('excludes migrations table from diff calculation', function (): void {
+    // Create introspector that returns migrations table (simulating it exists in DB)
+    $migrationsTable = new Table(
+        name: 'migrations',
+        columns: [
+            new Column(name: 'name', type: 'VARCHAR', length: 255),
+            new Column(name: 'batch', type: 'INT'),
+        ],
+        indexes: [],
+    );
+
+    $introspector = Helpers::createStubIntrospector(['migrations' => $migrationsTable]);
+
+    /** @var MigrationGenerator&object{generateCalled: bool} $generator */
+    $generator = createMigrationGeneratorStub();
+
+    $command = new MigrateCommand(
+        migrator: createMigratorStub(),
+        dataMigrator: createDataMigratorStub(),
+        migrationGenerator: $generator,
+        entityDiscovery: Helpers::createStubEntityDiscovery(),
+        introspector: $introspector,
+        metadataFactory: new EntityMetadataFactory(),
+        schemaBuilder: new SchemaBuilder(),
+        diffCalculator: new DiffCalculator(),
+        sqlGenerator: createMigrateSqlGenerator(),
+        paths: new ProjectPaths('/test'),
+        isProduction: false,
+    );
+
+    ['output' => $output] = executeMigrateCommand($command);
+
+    // Should NOT generate a migration to drop migrations table
+    expect($output)->toContain('Nothing to migrate')
+        ->and($generator->generateCalled)->toBeFalse();
 });

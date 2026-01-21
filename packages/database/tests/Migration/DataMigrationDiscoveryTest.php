@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Migration\DataMigrationDiscovery;
 use Marko\Database\Tests\Migration\Helpers;
 
@@ -23,11 +24,8 @@ describe('DataMigrationDiscovery', function (): void {
         file_put_contents($vendorPath . '/001_insert_statuses.php', '<?php return new class {};');
         file_put_contents($vendorPath . '/002_insert_categories.php', '<?php return new class {};');
 
-        $discovery = new DataMigrationDiscovery(
-            $this->tempDir . '/vendor',
-            $this->tempDir . '/modules',
-            $this->tempDir . '/app',
-        );
+        $paths = new ProjectPaths($this->tempDir);
+        $discovery = new DataMigrationDiscovery($paths);
 
         $migrations = $discovery->discover();
 
@@ -46,11 +44,8 @@ describe('DataMigrationDiscovery', function (): void {
 
         file_put_contents($modulesPath . '/001_insert_pages.php', '<?php return new class {};');
 
-        $discovery = new DataMigrationDiscovery(
-            $this->tempDir . '/vendor',
-            $this->tempDir . '/modules',
-            $this->tempDir . '/app',
-        );
+        $paths = new ProjectPaths($this->tempDir);
+        $discovery = new DataMigrationDiscovery($paths);
 
         $migrations = $discovery->discover();
 
@@ -67,11 +62,8 @@ describe('DataMigrationDiscovery', function (): void {
 
         file_put_contents($appPath . '/001_insert_custom_statuses.php', '<?php return new class {};');
 
-        $discovery = new DataMigrationDiscovery(
-            $this->tempDir . '/vendor',
-            $this->tempDir . '/modules',
-            $this->tempDir . '/app',
-        );
+        $paths = new ProjectPaths($this->tempDir);
+        $discovery = new DataMigrationDiscovery($paths);
 
         $migrations = $discovery->discover();
 
@@ -96,11 +88,8 @@ describe('DataMigrationDiscovery', function (): void {
         file_put_contents($vendorPath . '/001_vendor_data.php', '<?php return new class {};');
         file_put_contents($modulesPath . '/002_modules_data.php', '<?php return new class {};');
 
-        $discovery = new DataMigrationDiscovery(
-            $this->tempDir . '/vendor',
-            $this->tempDir . '/modules',
-            $this->tempDir . '/app',
-        );
+        $paths = new ProjectPaths($this->tempDir);
+        $discovery = new DataMigrationDiscovery($paths);
 
         $migrations = $discovery->discover();
         $names = array_column($migrations, 'name');
@@ -114,11 +103,8 @@ describe('DataMigrationDiscovery', function (): void {
     });
 
     it('returns empty array when no data migrations exist', function (): void {
-        $discovery = new DataMigrationDiscovery(
-            $this->tempDir . '/vendor',
-            $this->tempDir . '/modules',
-            $this->tempDir . '/app',
-        );
+        $paths = new ProjectPaths($this->tempDir);
+        $discovery = new DataMigrationDiscovery($paths);
 
         $migrations = $discovery->discover();
 
@@ -131,11 +117,8 @@ describe('DataMigrationDiscovery', function (): void {
 
         file_put_contents($vendorPath . '/001_insert_data.php', '<?php return new class {};');
 
-        $discovery = new DataMigrationDiscovery(
-            $this->tempDir . '/vendor',
-            $this->tempDir . '/modules',
-            $this->tempDir . '/app',
-        );
+        $paths = new ProjectPaths($this->tempDir);
+        $discovery = new DataMigrationDiscovery($paths);
 
         $migrations = $discovery->discover();
 

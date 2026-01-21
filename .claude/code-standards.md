@@ -228,10 +228,51 @@ public function resolve(string $abstract): object
 }
 ```
 
-### 8. No Magic Methods
+### 8. Import Classes (No Inline Fully Qualified Names)
+Always import classes at the top of the file with `use` statements. Never use fully qualified class names with leading backslash in code.
+
+```php
+// CORRECT - import at top of file
+use Closure;
+use Marko\Core\Container\Container;
+use Marko\Database\ConnectionInterface;
+
+class MyClass
+{
+    public function process(
+        Closure $callback,
+        ConnectionInterface $connection,
+    ): void {
+        if ($callback instanceof Closure) {
+            // ...
+        }
+    }
+}
+
+// WRONG - inline fully qualified names
+class MyClass
+{
+    public function process(
+        \Closure $callback,
+        \Marko\Database\ConnectionInterface $connection,
+    ): void {
+        if ($callback instanceof \Closure) {
+            // ...
+        }
+    }
+}
+```
+
+**Rules:**
+- Import all classes used in the file with `use` statements
+- Group imports: global classes first, then vendor, then project classes
+- Alphabetize within each group
+- Use short class name everywhere after import
+
+### 9. No Magic Methods
 Avoid `__get`, `__set`, `__call`, `__callStatic`. Be explicit.
 
-### 9. No Traits
+### 10. No Traits
 Traits inject behavior implicitly - you can't see at a glance where a method comes from. Use explicit composition instead.
 
 ```php
@@ -276,7 +317,7 @@ $dbHelper->seedTable('users', $rows);
 
 This keeps dependencies explicit and makes code easier to understand and trace.
 
-### 10. String Interpolation (No Unnecessary Curly Braces)
+### 11. String Interpolation (No Unnecessary Curly Braces)
 When interpolating simple variables in double-quoted strings, do NOT use curly braces.
 **Enforced by:** PhpStorm `PhpUnnecessaryCurlyVarSyntaxInspection`
 
@@ -302,7 +343,7 @@ $message = "Order {$order->id} processed";
 $message = "Found {$count}items"; // Without braces: $countitems would be a different variable
 ```
 
-### 11. Use #[\NoDiscard] for Important Returns
+### 12. Use #[\NoDiscard] for Important Returns
 ```php
 #[\NoDiscard]
 public function validate(): ValidationResult
@@ -311,7 +352,7 @@ public function validate(): ValidationResult
 }
 ```
 
-### 12. Multiline Method Signatures (Always)
+### 13. Multiline Method Signatures (Always)
 **ALL method parameters MUST be on their own line with a trailing comma**, regardless of parameter count:
 
 ```php
@@ -354,7 +395,7 @@ public function registerModule(
 - Opening brace `{` on same line as closing parenthesis/return type
 - Only zero-parameter methods stay on one line: `public function getName(): string {`
 
-### 13. Anonymous Class Braces (Next Line)
+### 14. Anonymous Class Braces (Next Line)
 Anonymous classes follow the same brace placement as regular classes - opening brace on the **next line**.
 **Enforced by:** php-cs-fixer `braces_position.anonymous_classes_opening_brace`
 

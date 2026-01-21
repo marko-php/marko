@@ -115,8 +115,7 @@ $app = (require __DIR__ . '/../vendor/marko/core/bootstrap.php')(
 $request = Request::fromGlobals();
 
 // Route request through Router
-$router = $app->getRouter();
-$response = $router->handle($request);
+$response = $app->router->handle($request);
 
 // Send Response to client
 $response->send();

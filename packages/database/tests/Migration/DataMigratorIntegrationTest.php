@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Migration\DataMigrationDiscovery;
 use Marko\Database\Migration\DataMigrator;
@@ -69,11 +70,8 @@ describe('DataMigrator Integration', function (): void {
                 PHP,
         );
 
-        $discovery = new DataMigrationDiscovery(
-            $this->tempDir . '/vendor',
-            $this->tempDir . '/modules',
-            $this->tempDir . '/app',
-        );
+        $paths = new ProjectPaths($this->tempDir);
+        $discovery = new DataMigrationDiscovery($paths);
 
         $migrator = new DataMigrator($connection, $repository, $discovery);
         $applied = $migrator->migrate();
@@ -151,11 +149,8 @@ describe('DataMigrator Integration', function (): void {
                 PHP,
         );
 
-        $discovery = new DataMigrationDiscovery(
-            $this->tempDir . '/vendor',
-            $this->tempDir . '/modules',
-            $this->tempDir . '/app',
-        );
+        $paths = new ProjectPaths($this->tempDir);
+        $discovery = new DataMigrationDiscovery($paths);
 
         $dataMigrator = new DataMigrator($connection, $repository, $discovery);
 
@@ -192,11 +187,8 @@ describe('DataMigrator Integration', function (): void {
                 PHP,
         );
 
-        $discovery = new DataMigrationDiscovery(
-            $this->tempDir . '/vendor',
-            $this->tempDir . '/modules',
-            $this->tempDir . '/app',
-        );
+        $paths = new ProjectPaths($this->tempDir);
+        $discovery = new DataMigrationDiscovery($paths);
 
         $migrator = new DataMigrator($connection, $repository, $discovery);
         $applied = $migrator->migrate();
@@ -245,11 +237,8 @@ describe('DataMigrator Integration', function (): void {
                 PHP,
         );
 
-        $discovery = new DataMigrationDiscovery(
-            $this->tempDir . '/vendor',
-            $this->tempDir . '/modules',
-            $this->tempDir . '/app',
-        );
+        $paths = new ProjectPaths($this->tempDir);
+        $discovery = new DataMigrationDiscovery($paths);
 
         $migrator = new DataMigrator($connection, $repository, $discovery);
         $rolledBack = $migrator->rollback();

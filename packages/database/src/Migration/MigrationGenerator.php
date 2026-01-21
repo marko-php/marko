@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\Migration;
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\SqlGeneratorInterface;
 
@@ -17,10 +18,14 @@ class MigrationGenerator
 {
     private const string MIGRATIONS_SUBDIR = 'database/migrations';
 
+    private readonly string $basePath;
+
     public function __construct(
         private readonly SqlGeneratorInterface $sqlGenerator,
-        private readonly string $basePath,
-    ) {}
+        ProjectPaths $paths,
+    ) {
+        $this->basePath = $paths->base;
+    }
 
     /**
      * Generate migration files from a schema diff.

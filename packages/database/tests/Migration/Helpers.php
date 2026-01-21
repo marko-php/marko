@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Database\Tests\Migration;
 
 use FilesystemIterator;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Diff\SchemaDiff;
@@ -269,7 +270,8 @@ final class Helpers
         array $downStatements = ['DROP TABLE "posts"'],
     ): array {
         $sqlGenerator = self::createSqlGeneratorStub($upStatements, $downStatements);
-        $generator = new MigrationGenerator($sqlGenerator, $tempDir);
+        $paths = new ProjectPaths($tempDir);
+        $generator = new MigrationGenerator($sqlGenerator, $paths);
         $diff ??= self::createPostsTableDiff();
 
         $paths = $generator->generate($diff);

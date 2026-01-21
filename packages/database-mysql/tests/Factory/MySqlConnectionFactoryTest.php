@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\MySql\Tests\Factory;
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\MySql\Connection\MySqlConnection;
@@ -31,7 +32,8 @@ function createTestConfig(
         '<?php return ' . var_export($config, true) . ';',
     );
 
-    $databaseConfig = new DatabaseConfig($tempDir);
+    $paths = new ProjectPaths($tempDir);
+    $databaseConfig = new DatabaseConfig($paths);
 
     // Cleanup
     unlink($tempDir . '/config/database.php');

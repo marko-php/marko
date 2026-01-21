@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Exceptions\ConfigurationException;
 
@@ -30,8 +31,9 @@ PHP;
         try {
             chdir($tempDir);
 
-            // Instantiate without any arguments - should use getcwd()
-            $config = new DatabaseConfig();
+            // Instantiate without any arguments - should use getcwd() via ProjectPaths
+            $paths = new ProjectPaths();
+            $config = new DatabaseConfig($paths);
 
             expect($config->driver)->toBe('mysql')
                 ->and($config->host)->toBe('localhost')
@@ -68,8 +70,9 @@ PHP;
         file_put_contents($configDir . '/database.php', $configContent);
 
         try {
-            // Explicitly pass base path - should use that, not getcwd()
-            $config = new DatabaseConfig($tempDir);
+            // Explicitly pass base path via ProjectPaths - should use that, not getcwd()
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
 
             expect($config->driver)->toBe('pgsql')
                 ->and($config->host)->toBe('custom-host')
@@ -106,7 +109,8 @@ PHP;
         file_put_contents($configDir . '/database.php', $configContent);
 
         try {
-            $config = new DatabaseConfig($tempDir);
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
 
             expect($config->driver)->toBe('mysql')
                 ->and($config->host)->toBe('localhost')
@@ -127,9 +131,10 @@ PHP;
         mkdir($tempDir, 0755, true);
 
         try {
-            expect(fn () => new DatabaseConfig($tempDir))
+            $paths = new ProjectPaths($tempDir);
+            expect(fn () => new DatabaseConfig($paths))
                 ->toThrow(ConfigurationException::class)
-                ->and(fn () => new DatabaseConfig($tempDir))
+                ->and(fn () => new DatabaseConfig($paths))
                 ->toThrow(ConfigurationException::class, 'not found');
         } finally {
             rmdir($tempDir);
@@ -153,9 +158,10 @@ PHP;
         file_put_contents($configDir . '/database.php', $configContent);
 
         try {
-            expect(fn () => new DatabaseConfig($tempDir))
+            $paths = new ProjectPaths($tempDir);
+            expect(fn () => new DatabaseConfig($paths))
                 ->toThrow(ConfigurationException::class)
-                ->and(fn () => new DatabaseConfig($tempDir))
+                ->and(fn () => new DatabaseConfig($paths))
                 ->toThrow(ConfigurationException::class, 'driver');
         } finally {
             unlink($configDir . '/database.php');

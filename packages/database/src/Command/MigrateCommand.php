@@ -8,6 +8,7 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Diff\DiffCalculator;
 use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\SqlGeneratorInterface;
@@ -35,9 +36,7 @@ readonly class MigrateCommand implements CommandInterface
         private SchemaBuilder $schemaBuilder,
         private DiffCalculator $diffCalculator,
         private SqlGeneratorInterface $sqlGenerator,
-        private string $vendorPath,
-        private string $modulesPath,
-        private string $appPath,
+        private ProjectPaths $paths,
         private bool $isProduction = false,
     ) {}
 
@@ -196,9 +195,9 @@ readonly class MigrateCommand implements CommandInterface
     {
         // Discover entities
         $entityClasses = array_merge(
-            $this->entityDiscovery->discoverInVendor($this->vendorPath),
-            $this->entityDiscovery->discoverInModules($this->modulesPath),
-            $this->entityDiscovery->discoverInApp($this->appPath),
+            $this->entityDiscovery->discoverInVendor($this->paths->vendor),
+            $this->entityDiscovery->discoverInModules($this->paths->modules),
+            $this->entityDiscovery->discoverInApp($this->paths->app),
         );
 
         // Build entity schema
@@ -233,6 +232,13 @@ readonly class MigrateCommand implements CommandInterface
     }
 
     /**
+     * Framework tables to exclude from diff (not entity-managed).
+     */
+    private const array EXCLUDED_TABLES = [
+        'migrations',
+    ];
+
+    /**
      * Get current database schema.
      *
      * @return array<string, Table>
@@ -242,6 +248,11 @@ readonly class MigrateCommand implements CommandInterface
         $schema = [];
 
         foreach ($this->introspector->getTables() as $tableName) {
+            // Skip framework tables that aren't entity-managed
+            if (in_array($tableName, self::EXCLUDED_TABLES, true)) {
+                continue;
+            }
+
             $table = $this->introspector->getTable($tableName);
             if ($table !== null) {
                 $schema[$tableName] = $table;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Command\SeedCommand;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Seed\SeederDefinition;
@@ -89,9 +90,7 @@ function createSeedCommand(
         discovery: $discovery,
         runner: $runner,
         connection: $connection,
-        vendorPath: '/vendor',
-        modulesPath: '/modules',
-        appPath: '/app',
+        paths: new ProjectPaths('/test'),
         isProduction: $isProduction,
     );
 }

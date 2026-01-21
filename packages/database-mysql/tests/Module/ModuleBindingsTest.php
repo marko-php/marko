@@ -7,6 +7,7 @@ namespace Marko\Database\MySql\Tests\Module;
 use Closure;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\ConfigurationException;
@@ -63,8 +64,9 @@ describe('MySQL module.php bindings', function (): void {
         );
 
         try {
-            // Create real DatabaseConfig
-            $config = new DatabaseConfig($tempDir);
+            // Create real DatabaseConfig via ProjectPaths
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
 
             // Create real factory
             $factory = new MySqlConnectionFactory($config);
@@ -101,7 +103,8 @@ describe('MySQL module.php bindings', function (): void {
 
         try {
             // This should throw ConfigurationException when DatabaseConfig is instantiated
-            expect(fn () => new DatabaseConfig($tempDir))
+            $paths = new ProjectPaths($tempDir);
+            expect(fn () => new DatabaseConfig($paths))
                 ->toThrow(ConfigurationException::class, 'Database configuration file not found');
         } finally {
             // Cleanup

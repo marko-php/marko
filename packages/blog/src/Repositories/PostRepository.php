@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Repositories;
 
-use Marko\Blog\Entities\Post;
+use Marko\Blog\Entity\Post;
 use Marko\Database\Repository\Repository;
 
 class PostRepository extends Repository

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\TableDiff;
 use Marko\Database\Migration\Migration;
@@ -99,7 +100,8 @@ describe('MigrationGenerator', function (): void {
         expect(is_dir($this->tempDir . '/database/migrations'))->toBeFalse();
 
         $sqlGenerator = Helpers::createSqlGeneratorStub();
-        $generator = new MigrationGenerator($sqlGenerator, $this->tempDir);
+        $paths = new ProjectPaths($this->tempDir);
+        $generator = new MigrationGenerator($sqlGenerator, $paths);
         $generator->generate(Helpers::createPostsTableDiff());
 
         expect(is_dir($this->tempDir . '/database/migrations'))->toBeTrue();

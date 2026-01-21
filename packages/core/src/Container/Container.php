@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Core\Container;
 
+use Closure;
 use Marko\Core\Exceptions\BindingException;
 use ReflectionClass;
 use ReflectionException;
@@ -17,7 +18,7 @@ class Container implements ContainerInterface
     /** @var array<string, object> */
     private array $instances = [];
 
-    /** @var array<string, string> */
+    /** @var array<string, string|Closure> */
     private array $bindings = [];
 
     public function __construct(
@@ -26,7 +27,7 @@ class Container implements ContainerInterface
 
     public function bind(
         string $interface,
-        string $implementation,
+        string|Closure $implementation,
     ): void {
         $this->bindings[$interface] = $implementation;
     }
@@ -82,7 +83,20 @@ class Container implements ContainerInterface
 
         // Check if there's a binding for this interface
         if (isset($this->bindings[$id])) {
-            $id = $this->bindings[$id];
+            $binding = $this->bindings[$id];
+
+            // Closure bindings are called with the container
+            if ($binding instanceof Closure) {
+                $instance = $binding($this);
+
+                if (isset($this->shared[$id])) {
+                    $this->instances[$id] = $instance;
+                }
+
+                return $instance;
+            }
+
+            $id = $binding;
         }
 
         if (interface_exists($id) && !class_exists($id)) {
@@ -101,11 +115,27 @@ class Container implements ContainerInterface
             foreach ($parameters as $parameter) {
                 $type = $parameter->getType();
 
+                // Use default value for builtin types or untyped parameters
                 if (!$type instanceof ReflectionNamedType || $type->isBuiltin()) {
+                    if ($parameter->isDefaultValueAvailable()) {
+                        $dependencies[] = $parameter->getDefaultValue();
+                        continue;
+                    }
                     throw BindingException::unresolvableParameter($parameter->getName(), $id);
                 }
 
-                $dependencies[] = $this->resolve($type->getName());
+                $typeName = $type->getName();
+
+                // Closure cannot be instantiated - use default value if available
+                if ($typeName === 'Closure' || $typeName === Closure::class) {
+                    if ($parameter->isDefaultValueAvailable()) {
+                        $dependencies[] = $parameter->getDefaultValue();
+                        continue;
+                    }
+                    throw BindingException::unresolvableParameter($parameter->getName(), $id);
+                }
+
+                $dependencies[] = $this->resolve($typeName);
             }
 
             $instance = $reflectionClass->newInstanceArgs($dependencies);

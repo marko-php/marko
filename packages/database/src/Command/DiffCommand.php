@@ -8,6 +8,7 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Diff\DiffCalculator;
 use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\TableDiff;
@@ -27,9 +28,7 @@ readonly class DiffCommand implements CommandInterface
         private EntityMetadataFactory $metadataFactory,
         private SchemaBuilder $schemaBuilder,
         private DiffCalculator $diffCalculator,
-        private string $vendorPath,
-        private string $modulesPath,
-        private string $appPath,
+        private ProjectPaths $paths,
     ) {}
 
     /**
@@ -41,9 +40,9 @@ readonly class DiffCommand implements CommandInterface
     ): int {
         // Discover all entities
         $entityClasses = array_merge(
-            $this->discovery->discoverInVendor($this->vendorPath),
-            $this->discovery->discoverInModules($this->modulesPath),
-            $this->discovery->discoverInApp($this->appPath),
+            $this->discovery->discoverInVendor($this->paths->vendor),
+            $this->discovery->discoverInModules($this->paths->modules),
+            $this->discovery->discoverInApp($this->paths->app),
         );
 
         // Build entity schema
@@ -89,6 +88,13 @@ readonly class DiffCommand implements CommandInterface
     }
 
     /**
+     * Framework tables to exclude from diff (not entity-managed).
+     */
+    private const array EXCLUDED_TABLES = [
+        'migrations',
+    ];
+
+    /**
      * Get current database schema.
      *
      * @return array<string, Table>
@@ -98,6 +104,11 @@ readonly class DiffCommand implements CommandInterface
         $schema = [];
 
         foreach ($this->introspector->getTables() as $tableName) {
+            // Skip framework tables that aren't entity-managed
+            if (in_array($tableName, self::EXCLUDED_TABLES, true)) {
+                continue;
+            }
+
             $table = $this->introspector->getTable($tableName);
             if ($table !== null) {
                 $schema[$tableName] = $table;

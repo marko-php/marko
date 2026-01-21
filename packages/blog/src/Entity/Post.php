@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Marko\Blog\Entities;
+namespace Marko\Blog\Entity;
 
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Table;

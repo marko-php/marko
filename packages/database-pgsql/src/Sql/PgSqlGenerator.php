@@ -268,9 +268,11 @@ class PgSqlGenerator implements SqlGeneratorInterface
     ): string {
         $baseType = self::TYPE_MAP[$column->type] ?? strtoupper($column->type);
 
-        // Add length for VARCHAR
-        if ($column->type === 'string' && $column->length !== null) {
-            return "$baseType($column->length)";
+        // Add length for VARCHAR - default to 255 if not specified
+        if ($baseType === 'VARCHAR') {
+            $length = $column->length ?? 255;
+
+            return "VARCHAR($length)";
         }
 
         return $baseType;

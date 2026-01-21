@@ -32,6 +32,7 @@ use Marko\Core\Module\ModuleDiscovery;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepository;
 use Marko\Core\Module\ModuleRepositoryInterface;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginRegistry;
 use Marko\Routing\Exceptions\RouteConflictException;
@@ -101,6 +102,10 @@ class Application
         $this->preferenceRegistry = new PreferenceRegistry();
         $this->container = new Container($this->preferenceRegistry);
         $bindingRegistry = new BindingRegistry($this->container);
+
+        // Register ProjectPaths for dependency injection (base path derived from vendor path)
+        $basePath = dirname($this->vendorPath);
+        $this->container->instance(ProjectPaths::class, new ProjectPaths($basePath));
 
         // Register bindings from all modules
         foreach ($this->modules as $module) {

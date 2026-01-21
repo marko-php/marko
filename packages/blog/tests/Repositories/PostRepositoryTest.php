@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Tests\Repositories;
 
-use Marko\Blog\Entities\Post;
+use Marko\Blog\Entity\Post;
 use Marko\Blog\Repositories\PostRepository;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;

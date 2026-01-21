@@ -28,7 +28,7 @@ blog/
   src/
     Controllers/
       PostController.php    # Routes with repository injection
-    Entities/
+    Entity/
       Post.php              # Entity with #[Table] and #[Column] attributes
     Repositories/
       PostRepository.php    # Data access extending Repository base
@@ -85,7 +85,7 @@ public function example(): void
 ### Post Entity
 
 ```php
-use Marko\Blog\Entities\Post;
+use Marko\Blog\Entity\Post;
 
 $post = new Post();
 $post->title = 'My First Post';

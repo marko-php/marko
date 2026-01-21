@@ -493,4 +493,51 @@ describe('MySqlGenerator', function (): void {
             'CONSTRAINT `fk_posts_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE',
         );
     });
+
+    it('defaults VARCHAR to 255 when no length specified', function (): void {
+        $generator = new MySqlGenerator();
+
+        $table = new Table(
+            name: 'posts',
+            columns: [
+                new Column(name: 'title', type: 'string'),  // No length specified
+            ],
+        );
+
+        $sql = $generator->generateCreateTable($table);
+
+        expect($sql)->toContain('`title` VARCHAR(255) NOT NULL');
+    });
+
+    it('forces NOT NULL for primary key columns even when marked nullable', function (): void {
+        $generator = new MySqlGenerator();
+
+        // Simulates entity with ?int $id = null (nullable in PHP but must be NOT NULL in DB)
+        $table = new Table(
+            name: 'posts',
+            columns: [
+                new Column(name: 'id', type: 'integer', primaryKey: true, autoIncrement: true, nullable: true),
+                new Column(name: 'title', type: 'string', length: 255),
+            ],
+        );
+
+        $sql = $generator->generateCreateTable($table);
+
+        expect($sql)->toContain('`id` INT NOT NULL AUTO_INCREMENT');
+    });
+
+    it('forces NOT NULL for auto-increment columns even when marked nullable', function (): void {
+        $generator = new MySqlGenerator();
+
+        $table = new Table(
+            name: 'posts',
+            columns: [
+                new Column(name: 'id', type: 'integer', autoIncrement: true, nullable: true),
+            ],
+        );
+
+        $sql = $generator->generateCreateTable($table);
+
+        expect($sql)->toContain('`id` INT NOT NULL AUTO_INCREMENT');
+    });
 });

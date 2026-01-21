@@ -274,8 +274,9 @@ class MySqlGenerator implements SqlGeneratorInterface
         $mysqlType = $this->mapType($column->type, $column->length);
         $parts[] = $mysqlType;
 
-        // NULL/NOT NULL
-        $parts[] = $column->nullable ? 'NULL' : 'NOT NULL';
+        // NULL/NOT NULL - PRIMARY KEY and AUTO_INCREMENT columns must be NOT NULL
+        $forceNotNull = $column->primaryKey || $column->autoIncrement;
+        $parts[] = ($column->nullable && !$forceNotNull) ? 'NULL' : 'NOT NULL';
 
         // AUTO_INCREMENT (must come before DEFAULT)
         if ($column->autoIncrement) {
@@ -305,8 +306,10 @@ class MySqlGenerator implements SqlGeneratorInterface
         $lowerType = strtolower($type);
         $mysqlType = self::TYPE_MAP[$lowerType] ?? strtoupper($type);
 
-        // VARCHAR requires length
-        if ($mysqlType === 'VARCHAR' && $length !== null) {
+        // VARCHAR requires length - default to 255 if not specified
+        if ($mysqlType === 'VARCHAR') {
+            $length ??= 255;
+
             return "VARCHAR($length)";
         }
 

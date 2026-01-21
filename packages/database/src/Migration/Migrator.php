@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\Migration;
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\MigrationException;
 use Throwable;
@@ -15,11 +16,15 @@ class Migrator
 {
     private bool $tableCreated = false;
 
+    private readonly string $migrationsPath;
+
     public function __construct(
         private readonly ConnectionInterface $connection,
         private readonly MigrationRepository $repository,
-        private readonly string $migrationsPath,
-    ) {}
+        ProjectPaths $paths,
+    ) {
+        $this->migrationsPath = $paths->database . '/migrations';
+    }
 
     /**
      * Run all pending migrations.

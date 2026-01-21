@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Marko\Blog\Tests\Entities;
+namespace Marko\Blog\Tests\Entity;
 
-use Marko\Blog\Entities\Post;
+use Marko\Blog\Entity\Post;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;

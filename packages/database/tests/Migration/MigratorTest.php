@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Migration\MigrationRepository;
@@ -10,17 +11,16 @@ use Marko\Database\Tests\Migration\Helpers;
 
 describe('Migrator', function (): void {
     beforeEach(function (): void {
-        // Create a temp directory for migration files
-        $this->migrationsPath = sys_get_temp_dir() . '/marko_test_migrations_' . uniqid();
+        // Create a temp directory structure with database/migrations for ProjectPaths
+        $this->basePath = sys_get_temp_dir() . '/marko_test_base_' . uniqid();
+        $this->migrationsPath = $this->basePath . '/database/migrations';
         mkdir($this->migrationsPath, 0777, true);
+        $this->paths = new ProjectPaths($this->basePath);
     });
 
     afterEach(function (): void {
         // Clean up temp directory
-        if (is_dir($this->migrationsPath)) {
-            array_map('unlink', glob($this->migrationsPath . '/*.php'));
-            rmdir($this->migrationsPath);
-        }
+        Helpers::removeDirectory($this->basePath);
     });
 
     it('creates migrations table if not exists', function (): void {
@@ -38,7 +38,7 @@ describe('Migrator', function (): void {
         $repository->method('getApplied')->willReturn([]);
         $repository->method('getNextBatchNumber')->willReturn(1);
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $migrator->migrate();
 
         expect($tableCreated)->toBeTrue();
@@ -58,7 +58,7 @@ describe('Migrator', function (): void {
         $repository->method('getNextBatchNumber')->willReturn(1);
         $repository->method('record');
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $pending = $migrator->getPending();
 
         expect($pending)
@@ -118,7 +118,7 @@ PHP;
         $repository->method('getNextBatchNumber')->willReturn(1);
         $repository->method('record');
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $migrator->migrate();
 
         expect($appliedOrder)->toBe([
@@ -163,7 +163,7 @@ PHP;
         $repository->method('getNextBatchNumber')->willReturn(1);
         $repository->method('record');
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $migrator->migrate();
 
         expect($upExecuted)->toBeTrue();
@@ -185,7 +185,7 @@ PHP;
                 $recordedMigrations[] = ['name' => $name, 'batch' => $batch];
             });
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $migrator->migrate();
 
         expect($recordedMigrations)
@@ -209,7 +209,7 @@ PHP;
                 $recordedBatches[] = $batch;
             });
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $migrator->migrate();
 
         expect($recordedBatches)->toBe([2, 2, 2]);
@@ -254,7 +254,7 @@ PHP;
         ]);
         $repository->method('delete');
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $migrator->rollback();
 
         expect($rolledBack)->toHaveCount(2);
@@ -295,7 +295,7 @@ PHP;
         $repository->method('getLastBatchMigrations')->willReturn(['2024_01_01_000000_test']);
         $repository->method('delete');
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $migrator->rollback();
 
         expect($downExecuted)->toBeTrue();
@@ -316,7 +316,7 @@ PHP;
                 $deletedMigrations[] = $name;
             });
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $migrator->rollback();
 
         expect($deletedMigrations)->toBe(['2024_01_01_000000_test']);
@@ -332,7 +332,7 @@ PHP;
             '2024_01_02_000000_create_posts_table',
         ]);
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $applied = $migrator->getApplied();
 
         expect($applied)->toBe([
@@ -352,7 +352,7 @@ PHP;
             '2024_01_01_000000_first',
         ]);
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
         $pending = $migrator->getPending();
 
         expect($pending)->toBe([
@@ -386,7 +386,7 @@ PHP;
         $repository->method('getApplied')->willReturn([]);
         $repository->method('getNextBatchNumber')->willReturn(1);
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
 
         expect(fn () => $migrator->migrate())
             ->toThrow(MigrationException::class, '2024_01_01_000000_test');
@@ -399,7 +399,7 @@ PHP;
         $repository->method('createTable');
         $repository->method('getLastBatchMigrations')->willReturn(['2024_01_01_000000_nonexistent']);
 
-        $migrator = new Migrator($connection, $repository, $this->migrationsPath);
+        $migrator = new Migrator($connection, $repository, $this->paths);
 
         expect(fn () => $migrator->rollback())
             ->toThrow(MigrationException::class, 'not found');

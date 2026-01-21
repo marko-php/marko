@@ -8,6 +8,7 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\SeederException;
 use Marko\Database\Seed\SeederDefinition;
@@ -21,9 +22,7 @@ readonly class SeedCommand implements CommandInterface
         private SeederDiscoveryInterface $discovery,
         private SeederRunner $runner,
         private ConnectionInterface $connection,
-        private string $vendorPath,
-        private string $modulesPath,
-        private string $appPath,
+        private ProjectPaths $paths,
         private bool $isProduction = false,
     ) {}
 
@@ -41,9 +40,9 @@ readonly class SeedCommand implements CommandInterface
 
         // Discover all seeders
         $definitions = array_merge(
-            $this->discovery->discoverInVendor($this->vendorPath),
-            $this->discovery->discoverInModules($this->modulesPath),
-            $this->discovery->discoverInApp($this->appPath),
+            $this->discovery->discoverInVendor($this->paths->vendor),
+            $this->discovery->discoverInModules($this->paths->modules),
+            $this->discovery->discoverInApp($this->paths->app),
         );
 
         if ($definitions === []) {
