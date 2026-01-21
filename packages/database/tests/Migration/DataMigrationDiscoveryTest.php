@@ -3,10 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Database\Migration\DataMigrationDiscovery;
-
-use function Marko\Database\Tests\Migration\removeDirectory;
-
-require_once __DIR__ . '/Helpers.php';
+use Marko\Database\Tests\Migration\Helpers;
 
 describe('DataMigrationDiscovery', function (): void {
     beforeEach(function (): void {
@@ -15,7 +12,7 @@ describe('DataMigrationDiscovery', function (): void {
     });
 
     afterEach(function (): void {
-        removeDirectory($this->tempDir);
+        Helpers::removeDirectory($this->tempDir);
     });
 
     it('discovers data migrations in vendor/*/*/Data/', function (): void {

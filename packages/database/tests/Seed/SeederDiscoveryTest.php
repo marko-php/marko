@@ -126,7 +126,7 @@ PHP;
             $discovery = new SeederDiscovery();
             $seeders = $discovery->discoverInPath($tempDir . '/Seed');
 
-            expect($seeders)->toHaveCount(0);
+            expect($seeders)->toBeEmpty();
         } finally {
             unlink($tempDir . '/Seed/NotASeeder.php');
             rmdir($tempDir . '/Seed');

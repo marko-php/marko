@@ -16,6 +16,7 @@ describe('SeederRunner', function (): void {
         $seeder1 = new class ($executionOrder) implements SeederInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$order,
             ) {}
 
@@ -29,6 +30,7 @@ describe('SeederRunner', function (): void {
         $seeder2 = new class ($executionOrder) implements SeederInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$order,
             ) {}
 
@@ -42,6 +44,7 @@ describe('SeederRunner', function (): void {
         $seeder3 = new class ($executionOrder) implements SeederInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$order,
             ) {}
 
@@ -80,6 +83,7 @@ describe('SeederRunner', function (): void {
         $seeder = new class ($executed) implements SeederInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private bool &$executed,
             ) {}
 
@@ -138,6 +142,7 @@ describe('SeederRunner', function (): void {
         $userSeeder = new class ($userSeederRan) implements SeederInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private bool &$ran,
             ) {}
 
@@ -151,6 +156,7 @@ describe('SeederRunner', function (): void {
         $postSeeder = new class ($postSeederRan) implements SeederInterface
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private bool &$ran,
             ) {}
 

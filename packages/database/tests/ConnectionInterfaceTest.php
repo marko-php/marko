@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Tests\Query\Helpers;
 
 describe('ConnectionInterface', function (): void {
     it('defines ConnectionInterface with connect, disconnect, and isConnected methods', function (): void {
@@ -30,24 +31,12 @@ describe('ConnectionInterface', function (): void {
             ->and($reflection->hasMethod('execute'))->toBeTrue();
 
         $query = $reflection->getMethod('query');
-        $queryParams = $query->getParameters();
-        expect($query->getReturnType()?->getName())->toBe('array')
-            ->and($queryParams)->toHaveCount(2)
-            ->and($queryParams[0]->getName())->toBe('sql')
-            ->and($queryParams[0]->getType()?->getName())->toBe('string')
-            ->and($queryParams[1]->getName())->toBe('bindings')
-            ->and($queryParams[1]->getType()?->getName())->toBe('array')
-            ->and($queryParams[1]->isDefaultValueAvailable())->toBeTrue();
+        expect($query->getReturnType()?->getName())->toBe('array');
+        Helpers::assertSqlBindingsParams($query->getParameters());
 
         $execute = $reflection->getMethod('execute');
-        $executeParams = $execute->getParameters();
-        expect($execute->getReturnType()?->getName())->toBe('int')
-            ->and($executeParams)->toHaveCount(2)
-            ->and($executeParams[0]->getName())->toBe('sql')
-            ->and($executeParams[0]->getType()?->getName())->toBe('string')
-            ->and($executeParams[1]->getName())->toBe('bindings')
-            ->and($executeParams[1]->getType()?->getName())->toBe('array')
-            ->and($executeParams[1]->isDefaultValueAvailable())->toBeTrue();
+        expect($execute->getReturnType()?->getName())->toBe('int');
+        Helpers::assertSqlBindingsParams($execute->getParameters());
     });
 
     it('defines ConnectionInterface with prepare and statement execution', function (): void {

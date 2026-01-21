@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Database\Query\QueryBuilderInterface;
+use Marko\Database\Tests\Query\Helpers;
 
 describe('QueryBuilderInterface', function (): void {
     it('defines table() method to set target table', function (): void {
@@ -46,15 +47,7 @@ describe('QueryBuilderInterface', function (): void {
         expect($reflection->hasMethod('where'))->toBeTrue();
 
         $method = $reflection->getMethod('where');
-        $params = $method->getParameters();
-
-        expect($params)->toHaveCount(3)
-            ->and($params[0]->getName())->toBe('column')
-            ->and($params[0]->getType()?->getName())->toBe('string')
-            ->and($params[1]->getName())->toBe('operator')
-            ->and($params[1]->getType()?->getName())->toBe('string')
-            ->and($params[2]->getName())->toBe('value')
-            ->and($params[2]->getType()?->getName())->toBe('mixed');
+        Helpers::assertColumnOperatorValueParams($method->getParameters());
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('static');
@@ -105,15 +98,7 @@ describe('QueryBuilderInterface', function (): void {
         expect($reflection->hasMethod('orWhere'))->toBeTrue();
 
         $method = $reflection->getMethod('orWhere');
-        $params = $method->getParameters();
-
-        expect($params)->toHaveCount(3)
-            ->and($params[0]->getName())->toBe('column')
-            ->and($params[0]->getType()?->getName())->toBe('string')
-            ->and($params[1]->getName())->toBe('operator')
-            ->and($params[1]->getType()?->getName())->toBe('string')
-            ->and($params[2]->getName())->toBe('value')
-            ->and($params[2]->getType()?->getName())->toBe('mixed');
+        Helpers::assertColumnOperatorValueParams($method->getParameters());
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('static');
@@ -142,23 +127,13 @@ describe('QueryBuilderInterface', function (): void {
 
         // Check leftJoin() method
         $leftJoin = $reflection->getMethod('leftJoin');
-        $leftJoinParams = $leftJoin->getParameters();
-        expect($leftJoinParams)->toHaveCount(4)
-            ->and($leftJoinParams[0]->getName())->toBe('table')
-            ->and($leftJoinParams[1]->getName())->toBe('first')
-            ->and($leftJoinParams[2]->getName())->toBe('operator')
-            ->and($leftJoinParams[3]->getName())->toBe('second')
-            ->and($leftJoin->getReturnType()?->getName())->toBe('static');
+        Helpers::assertJoinParams($leftJoin->getParameters());
+        expect($leftJoin->getReturnType()?->getName())->toBe('static');
 
         // Check rightJoin() method
         $rightJoin = $reflection->getMethod('rightJoin');
-        $rightJoinParams = $rightJoin->getParameters();
-        expect($rightJoinParams)->toHaveCount(4)
-            ->and($rightJoinParams[0]->getName())->toBe('table')
-            ->and($rightJoinParams[1]->getName())->toBe('first')
-            ->and($rightJoinParams[2]->getName())->toBe('operator')
-            ->and($rightJoinParams[3]->getName())->toBe('second')
-            ->and($rightJoin->getReturnType()?->getName())->toBe('static');
+        Helpers::assertJoinParams($rightJoin->getParameters());
+        expect($rightJoin->getReturnType()?->getName())->toBe('static');
     });
 
     it('defines orderBy() method with direction', function (): void {
@@ -208,9 +183,7 @@ describe('QueryBuilderInterface', function (): void {
         expect($reflection->hasMethod('get'))->toBeTrue();
 
         $method = $reflection->getMethod('get');
-        $params = $method->getParameters();
-
-        expect($params)->toHaveCount(0);
+        expect($method->getParameters())->toBeEmpty();
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('array');
@@ -222,13 +195,11 @@ describe('QueryBuilderInterface', function (): void {
         expect($reflection->hasMethod('first'))->toBeTrue();
 
         $method = $reflection->getMethod('first');
-        $params = $method->getParameters();
-
-        expect($params)->toHaveCount(0);
+        expect($method->getParameters())->toBeEmpty();
 
         $returnType = $method->getReturnType();
-        expect($returnType?->getName())->toBe('array');
-        expect($returnType?->allowsNull())->toBeTrue();
+        expect($returnType?->getName())->toBe('array')
+            ->and($returnType?->allowsNull())->toBeTrue();
     });
 
     it('defines insert() method with data array', function (): void {
@@ -269,9 +240,7 @@ describe('QueryBuilderInterface', function (): void {
         expect($reflection->hasMethod('delete'))->toBeTrue();
 
         $method = $reflection->getMethod('delete');
-        $params = $method->getParameters();
-
-        expect($params)->toHaveCount(0);
+        expect($method->getParameters())->toBeEmpty();
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('int');
@@ -283,9 +252,7 @@ describe('QueryBuilderInterface', function (): void {
         expect($reflection->hasMethod('count'))->toBeTrue();
 
         $method = $reflection->getMethod('count');
-        $params = $method->getParameters();
-
-        expect($params)->toHaveCount(0);
+        expect($method->getParameters())->toBeEmpty();
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('int');
@@ -297,15 +264,7 @@ describe('QueryBuilderInterface', function (): void {
         expect($reflection->hasMethod('raw'))->toBeTrue();
 
         $method = $reflection->getMethod('raw');
-        $params = $method->getParameters();
-
-        expect($params)->toHaveCount(2)
-            ->and($params[0]->getName())->toBe('sql')
-            ->and($params[0]->getType()?->getName())->toBe('string')
-            ->and($params[1]->getName())->toBe('bindings')
-            ->and($params[1]->getType()?->getName())->toBe('array')
-            ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[1]->getDefaultValue())->toBe([]);
+        Helpers::assertSqlBindingsParams($method->getParameters());
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('array');

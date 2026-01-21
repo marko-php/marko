@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Migration\MigrationRepository;
-
-use function Marko\Database\Tests\Migration\createTrackingConnection;
-
-require_once __DIR__ . '/Helpers.php';
+use Marko\Database\Tests\Migration\Helpers;
 
 describe('MigrationRepository', function (): void {
     it('creates migrations table if not exists', function (): void {
         $executedSql = [];
         $executedBindings = [];
-        $connection = createTrackingConnection($executedSql, $executedBindings);
+        $connection = Helpers::createTrackingConnection($executedSql, $executedBindings);
 
         $repository = new MigrationRepository();
         $repository->createTable($connection);
@@ -29,7 +26,7 @@ describe('MigrationRepository', function (): void {
     it('records applied migration with batch number', function (): void {
         $executedSql = [];
         $executedBindings = [];
-        $connection = createTrackingConnection($executedSql, $executedBindings);
+        $connection = Helpers::createTrackingConnection($executedSql, $executedBindings);
 
         $repository = new MigrationRepository();
         $repository->record($connection, '2024_01_01_000000_create_users_table', 1);
@@ -44,7 +41,7 @@ describe('MigrationRepository', function (): void {
     it('removes migration record after rollback', function (): void {
         $executedSql = [];
         $executedBindings = [];
-        $connection = createTrackingConnection($executedSql, $executedBindings);
+        $connection = Helpers::createTrackingConnection($executedSql, $executedBindings);
 
         $repository = new MigrationRepository();
         $repository->delete($connection, '2024_01_01_000000_create_users_table');

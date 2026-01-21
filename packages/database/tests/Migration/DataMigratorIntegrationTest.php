@@ -6,10 +6,7 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Migration\DataMigrationDiscovery;
 use Marko\Database\Migration\DataMigrator;
 use Marko\Database\Migration\MigrationRepository;
-
-use function Marko\Database\Tests\Migration\removeDirectory;
-
-require_once __DIR__ . '/Helpers.php';
+use Marko\Database\Tests\Migration\Helpers;
 
 describe('DataMigrator Integration', function (): void {
     beforeEach(function (): void {
@@ -24,7 +21,7 @@ describe('DataMigrator Integration', function (): void {
     });
 
     afterEach(function (): void {
-        removeDirectory($this->tempDir);
+        Helpers::removeDirectory($this->tempDir);
     });
 
     it('tracks data migrations in same migrations table', function (): void {

@@ -6,11 +6,7 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Migration\MigrationRepository;
 use Marko\Database\Migration\Migrator;
-
-use function Marko\Database\Tests\Migration\getEmptyMigrationContent;
-use function Marko\Database\Tests\Migration\writeTestMigrationFiles;
-
-require_once __DIR__ . '/Helpers.php';
+use Marko\Database\Tests\Migration\Helpers;
 
 describe('Migrator', function (): void {
     beforeEach(function (): void {
@@ -49,7 +45,7 @@ describe('Migrator', function (): void {
     });
 
     it('finds pending migration files in database/migrations/', function (): void {
-        $migrationContent = getEmptyMigrationContent();
+        $migrationContent = Helpers::getEmptyMigrationContent();
 
         file_put_contents($this->migrationsPath . '/2024_01_01_000000_create_users_table.php', $migrationContent);
         file_put_contents($this->migrationsPath . '/2024_01_02_000000_create_posts_table.php', $migrationContent);
@@ -176,7 +172,7 @@ PHP;
     it('records applied migration with batch number', function (): void {
         $recordedMigrations = [];
 
-        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', getEmptyMigrationContent());
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', Helpers::getEmptyMigrationContent());
 
         $connection = $this->createMock(ConnectionInterface::class);
 
@@ -200,7 +196,7 @@ PHP;
 
     it('groups migrations applied together in same batch', function (): void {
         $recordedBatches = [];
-        writeTestMigrationFiles($this->migrationsPath);
+        Helpers::writeTestMigrationFiles($this->migrationsPath);
 
         $connection = $this->createMock(ConnectionInterface::class);
 
@@ -308,7 +304,7 @@ PHP;
     it('removes migration record after rollback', function (): void {
         $deletedMigrations = [];
 
-        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', getEmptyMigrationContent());
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', Helpers::getEmptyMigrationContent());
 
         $connection = $this->createMock(ConnectionInterface::class);
 
@@ -346,7 +342,7 @@ PHP;
     });
 
     it('returns list of pending migrations', function (): void {
-        writeTestMigrationFiles($this->migrationsPath);
+        Helpers::writeTestMigrationFiles($this->migrationsPath);
 
         $connection = $this->createMock(ConnectionInterface::class);
 

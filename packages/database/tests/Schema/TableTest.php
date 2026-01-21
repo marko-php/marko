@@ -39,20 +39,17 @@ describe('Table', function (): void {
         $tableWithBoth = $tableWithId->withColumn($titleColumn);
 
         // Original table is unchanged (immutable)
-        expect($table->columns)->toHaveCount(0);
-
-        // First addition
-        expect($tableWithId->columns)->toHaveCount(1)
+        expect($table->columns)->toBeEmpty()
+            // First addition
+            ->and($tableWithId->columns)->toHaveCount(1)
             ->and($tableWithId->columns[0]->name)->toBe('id')
-            ->and($tableWithId->name)->toBe('posts');
-
-        // Second addition
-        expect($tableWithBoth->columns)->toHaveCount(2)
+            ->and($tableWithId->name)->toBe('posts')
+            // Second addition
+            ->and($tableWithBoth->columns)->toHaveCount(2)
             ->and($tableWithBoth->columns[0]->name)->toBe('id')
-            ->and($tableWithBoth->columns[1]->name)->toBe('title');
-
-        // All are different instances
-        expect($table)->not->toBe($tableWithId)
+            ->and($tableWithBoth->columns[1]->name)->toBe('title')
+            // All are different instances
+            ->and($table)->not->toBe($tableWithId)
             ->and($tableWithId)->not->toBe($tableWithBoth);
     });
 
@@ -73,19 +70,16 @@ describe('Table', function (): void {
         $tableWithBoth = $tableWithSlugIdx->withIndex($authorIndex);
 
         // Original table is unchanged (immutable)
-        expect($table->indexes)->toHaveCount(0);
-
-        // First addition
-        expect($tableWithSlugIdx->indexes)->toHaveCount(1)
-            ->and($tableWithSlugIdx->indexes[0]->name)->toBe('idx_posts_slug');
-
-        // Second addition
-        expect($tableWithBoth->indexes)->toHaveCount(2)
+        expect($table->indexes)->toBeEmpty()
+            // First addition
+            ->and($tableWithSlugIdx->indexes)->toHaveCount(1)
+            ->and($tableWithSlugIdx->indexes[0]->name)->toBe('idx_posts_slug')
+            // Second addition
+            ->and($tableWithBoth->indexes)->toHaveCount(2)
             ->and($tableWithBoth->indexes[0]->name)->toBe('idx_posts_slug')
-            ->and($tableWithBoth->indexes[1]->name)->toBe('idx_posts_author');
-
-        // All are different instances
-        expect($table)->not->toBe($tableWithSlugIdx)
+            ->and($tableWithBoth->indexes[1]->name)->toBe('idx_posts_author')
+            // All are different instances
+            ->and($table)->not->toBe($tableWithSlugIdx)
             ->and($tableWithSlugIdx)->not->toBe($tableWithBoth);
     });
 
@@ -110,19 +104,16 @@ describe('Table', function (): void {
         $tableWithBoth = $tableWithUserFk->withForeignKey($categoryFk);
 
         // Original table is unchanged (immutable)
-        expect($table->foreignKeys)->toHaveCount(0);
-
-        // First addition
-        expect($tableWithUserFk->foreignKeys)->toHaveCount(1)
-            ->and($tableWithUserFk->foreignKeys[0]->name)->toBe('fk_posts_user');
-
-        // Second addition
-        expect($tableWithBoth->foreignKeys)->toHaveCount(2)
+        expect($table->foreignKeys)->toBeEmpty()
+            // First addition
+            ->and($tableWithUserFk->foreignKeys)->toHaveCount(1)
+            ->and($tableWithUserFk->foreignKeys[0]->name)->toBe('fk_posts_user')
+            // Second addition
+            ->and($tableWithBoth->foreignKeys)->toHaveCount(2)
             ->and($tableWithBoth->foreignKeys[0]->name)->toBe('fk_posts_user')
-            ->and($tableWithBoth->foreignKeys[1]->name)->toBe('fk_posts_category');
-
-        // All are different instances
-        expect($table)->not->toBe($tableWithUserFk)
+            ->and($tableWithBoth->foreignKeys[1]->name)->toBe('fk_posts_category')
+            // All are different instances
+            ->and($table)->not->toBe($tableWithUserFk)
             ->and($tableWithUserFk)->not->toBe($tableWithBoth);
     });
 

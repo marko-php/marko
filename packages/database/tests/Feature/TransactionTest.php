@@ -11,8 +11,6 @@ use Marko\Database\Exceptions\TransactionException;
 use RuntimeException;
 use Throwable;
 
-require_once __DIR__ . '/Helpers.php';
-
 describe('Transaction Handling', function (): void {
     it('handles transactions with commit and rollback', function (): void {
         $transactionLog = [];
@@ -257,7 +255,7 @@ describe('Transaction Handling', function (): void {
 
     it('executes callback within transaction with automatic commit', function (): void {
         $log = [];
-        $connection = createLoggingTransactionConnection($log);
+        $connection = Helpers::createLoggingTransactionConnection($log);
 
         $result = $connection->transaction(function ($conn) {
             $conn->execute('INSERT INTO test VALUES (?)');
@@ -272,7 +270,7 @@ describe('Transaction Handling', function (): void {
 
     it('executes callback within transaction with automatic rollback on exception', function (): void {
         $log = [];
-        $connection = createLoggingTransactionConnection($log);
+        $connection = Helpers::createLoggingTransactionConnection($log);
 
         $exceptionThrown = false;
 

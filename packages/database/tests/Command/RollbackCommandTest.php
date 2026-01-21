@@ -2,17 +2,13 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Helpers.php';
-
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Database\Command\RollbackCommand;
 use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Migration\Migrator;
-
-use function Marko\Database\Tests\Command\createOutputStream;
-use function Marko\Database\Tests\Command\getOutputContent;
+use Marko\Database\Tests\Command\Helpers;
 
 /**
  * Helper to create a stub Migrator.
@@ -99,7 +95,7 @@ it('blocks execution in production environment', function (): void {
         isProduction: true,
     );
 
-    ['output' => $output] = createOutputStream();
+    ['output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $exitCode = $command->execute($input, $output);
@@ -119,12 +115,12 @@ it('shows error message when blocked in production', function (): void {
         isProduction: true,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $command->execute($input, $output);
 
-    $result = getOutputContent($stream);
+    $result = Helpers::getOutputContent($stream);
 
     expect($result)->toContain('cannot be run in production')
         ->and($result)->toContain('Rollback is never allowed in production');
@@ -141,7 +137,7 @@ it('does NOT support --force flag (rollback is never allowed in production)', fu
         isProduction: true,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     // Even with --force, it should still block
     $input = new Input(['marko', 'db:rollback', '--force']);
 
@@ -149,7 +145,7 @@ it('does NOT support --force flag (rollback is never allowed in production)', fu
 
     expect($exitCode)->toBe(1);
 
-    $result = getOutputContent($stream);
+    $result = Helpers::getOutputContent($stream);
 
     expect($result)->toContain('cannot be run in production');
 });
@@ -169,7 +165,7 @@ it('rolls back last batch of migrations in development', function (): void {
         isProduction: false,
     );
 
-    ['output' => $output] = createOutputStream();
+    ['output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $exitCode = $command->execute($input, $output);
@@ -200,7 +196,7 @@ it('executes down() in reverse order within batch', function (): void {
         isProduction: false,
     );
 
-    ['output' => $output] = createOutputStream();
+    ['output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $command->execute($input, $output);
@@ -227,12 +223,12 @@ it('shows each migration being rolled back', function (): void {
         isProduction: false,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $command->execute($input, $output);
 
-    $result = getOutputContent($stream);
+    $result = Helpers::getOutputContent($stream);
 
     expect($result)->toContain('Rolling back: 2024_01_02_000000_create_posts_table')
         ->and($result)->toContain('Rolling back: 2024_01_01_000000_create_users_table');
@@ -252,7 +248,7 @@ it('removes migration records from tracking table', function (): void {
         isProduction: false,
     );
 
-    ['output' => $output] = createOutputStream();
+    ['output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $command->execute($input, $output);
@@ -276,7 +272,7 @@ it('supports --step option to rollback multiple batches', function (): void {
         isProduction: false,
     );
 
-    ['output' => $output] = createOutputStream();
+    ['output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback', '--step=2']);
 
     $command->execute($input, $output);
@@ -299,12 +295,12 @@ it('offers to delete uncommitted migration files', function (): void {
         isProduction: false,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $command->execute($input, $output);
 
-    $result = getOutputContent($stream);
+    $result = Helpers::getOutputContent($stream);
 
     // Should mention uncommitted files hint
     expect($result)->toContain('uncommitted migration files');
@@ -319,12 +315,12 @@ it('shows "Nothing to rollback" when no applied migrations', function (): void {
         isProduction: false,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $command->execute($input, $output);
 
-    $result = getOutputContent($stream);
+    $result = Helpers::getOutputContent($stream);
 
     expect($result)->toContain('Nothing to rollback');
 });
@@ -340,12 +336,12 @@ it('warns about entity sync after rollback', function (): void {
         isProduction: false,
     );
 
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $command->execute($input, $output);
 
-    $result = getOutputContent($stream);
+    $result = Helpers::getOutputContent($stream);
 
     expect($result)->toContain('entity')
         ->and($result)->toContain('sync');
@@ -363,7 +359,7 @@ it('returns 0 on success, 1 on failure', function (): void {
         isProduction: false,
     );
 
-    ['output' => $output] = createOutputStream();
+    ['output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'db:rollback']);
 
     $exitCode = $command->execute($input, $output);
@@ -383,7 +379,7 @@ it('returns 0 on success, 1 on failure', function (): void {
         isProduction: false,
     );
 
-    ['output' => $output2] = createOutputStream();
+    ['output' => $output2] = Helpers::createOutputStream();
     $input2 = new Input(['marko', 'db:rollback']);
 
     $exitCode2 = $failingCommand->execute($input2, $output2);

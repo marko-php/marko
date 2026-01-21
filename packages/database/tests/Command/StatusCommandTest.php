@@ -2,20 +2,13 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Helpers.php';
-
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Database\Command\StatusCommand;
 use Marko\Database\Migration\MigrationRepository;
 use Marko\Database\Migration\Migrator;
-
-use function Marko\Database\Tests\Command\createOutputStream;
-
-use function Marko\Database\Tests\Command\createStubConnection;
-use function Marko\Database\Tests\Command\getOutputContent;
-
+use Marko\Database\Tests\Command\Helpers;
 use PHPUnit\Framework\MockObject\MockObject;
 
 /**
@@ -52,11 +45,11 @@ final class StatusTestContext
      */
     public function execute(): array
     {
-        ['stream' => $stream, 'output' => $output] = createOutputStream();
+        ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
         $input = new Input(['marko', 'db:status']);
 
         $exitCode = $this->command->execute($input, $output);
-        $result = getOutputContent($stream);
+        $result = Helpers::getOutputContent($stream);
 
         return ['output' => $result, 'exitCode' => $exitCode];
     }
@@ -100,7 +93,7 @@ function setupStatusTest(
     $repository->method('getAppliedWithBatch')->willReturn($appliedWithBatch);
     $repository->method('getApplied')->willReturn($applied);
 
-    $connection = createStubConnection();
+    $connection = Helpers::createStubConnection();
     $migrator = new Migrator($connection, $repository, $migrationsPath);
     $command = new StatusCommand($migrator, $repository, $connection);
 

@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Helpers.php';
-
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
@@ -13,10 +11,7 @@ use Marko\Database\Seed\SeederDefinition;
 use Marko\Database\Seed\SeederDiscovery;
 use Marko\Database\Seed\SeederInterface;
 use Marko\Database\Seed\SeederRunner;
-
-use function Marko\Database\Tests\Command\createOutputStream;
-use function Marko\Database\Tests\Command\createStubConnection;
-use function Marko\Database\Tests\Command\getOutputContent;
+use Marko\Database\Tests\Command\Helpers;
 
 /**
  * Helper to create a stub SeederDiscovery.
@@ -83,7 +78,7 @@ function createSeedCommand(
     bool $isProduction = false,
 ): SeedCommand {
     $discovery = createStubDiscovery(vendorDefinitions: $definitions);
-    $connection = createStubConnection();
+    $connection = Helpers::createStubConnection();
 
     $runner = new SeederRunner(
         seeders: $seeders,
@@ -112,11 +107,11 @@ function executeSeedCommand(
     SeedCommand $command,
     array $args = ['marko', 'db:seed'],
 ): array {
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input($args);
 
     $exitCode = $command->execute($input, $output);
-    $result = getOutputContent($stream);
+    $result = Helpers::getOutputContent($stream);
 
     return ['output' => $result, 'exitCode' => $exitCode];
 }

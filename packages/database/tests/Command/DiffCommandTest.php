@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Helpers.php';
-
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Database\Command\DiffCommand;
@@ -14,9 +12,7 @@ use Marko\Database\Schema\Column;
 use Marko\Database\Schema\Index;
 use Marko\Database\Schema\IndexType;
 use Marko\Database\Schema\Table;
-
-use function Marko\Database\Tests\Command\createDiffCommand;
-use function Marko\Database\Tests\Command\executeDiffCommand;
+use Marko\Database\Tests\Command\Helpers;
 
 it('registers as db:diff command via #[Command] attribute', function (): void {
     $reflection = new ReflectionClass(DiffCommand::class);
@@ -33,14 +29,14 @@ it('implements CommandInterface', function (): void {
 });
 
 it('discovers entity classes with #[Table] from all modules', function (): void {
-    $command = createDiffCommand();
-    ['output' => $output] = executeDiffCommand($command);
+    $command = Helpers::createDiffCommand();
+    ['output' => $output] = Helpers::executeDiffCommand($command);
 
     expect($output)->toContain('No changes detected');
 });
 
 it('builds schema from entity metadata', function (): void {
-    $command = createDiffCommand();
+    $command = Helpers::createDiffCommand();
 
     expect($command)->toBeInstanceOf(DiffCommand::class);
 });
@@ -55,8 +51,8 @@ it('introspects current database state', function (): void {
         indexes: [],
     );
 
-    $command = createDiffCommand(tables: ['users' => $existingTable]);
-    ['output' => $output] = executeDiffCommand($command);
+    $command = Helpers::createDiffCommand(tables: ['users' => $existingTable]);
+    ['output' => $output] = Helpers::executeDiffCommand($command);
 
     expect($output)->toContain('Drop table: users')
         ->and($output)->toContain('[DESTRUCTIVE]');
@@ -72,8 +68,8 @@ it('calculates diff between entities and database', function (): void {
         indexes: [],
     );
 
-    $command = createDiffCommand(tables: ['posts' => $dbTable]);
-    ['exitCode' => $exitCode] = executeDiffCommand($command);
+    $command = Helpers::createDiffCommand(tables: ['posts' => $dbTable]);
+    ['exitCode' => $exitCode] = Helpers::executeDiffCommand($command);
 
     expect($exitCode)->toBe(1);
 });
@@ -100,8 +96,8 @@ it('displays tables to be created', function (): void {
         }
     };
 
-    $command = createDiffCommand(diffCalculator: $diffCalculator);
-    ['output' => $output] = executeDiffCommand($command);
+    $command = Helpers::createDiffCommand(diffCalculator: $diffCalculator);
+    ['output' => $output] = Helpers::executeDiffCommand($command);
 
     expect($output)->toContain('Create table: posts');
 });
@@ -127,8 +123,8 @@ it('displays tables to be dropped (flagged as destructive)', function (): void {
         }
     };
 
-    $command = createDiffCommand(diffCalculator: $diffCalculator);
-    ['output' => $output] = executeDiffCommand($command);
+    $command = Helpers::createDiffCommand(diffCalculator: $diffCalculator);
+    ['output' => $output] = Helpers::executeDiffCommand($command);
 
     expect($output)->toContain('Drop table: old_users')
         ->and($output)->toContain('[DESTRUCTIVE]');
@@ -154,8 +150,8 @@ it('displays columns to be added', function (): void {
         }
     };
 
-    $command = createDiffCommand(diffCalculator: $diffCalculator);
-    ['output' => $output] = executeDiffCommand($command);
+    $command = Helpers::createDiffCommand(diffCalculator: $diffCalculator);
+    ['output' => $output] = Helpers::executeDiffCommand($command);
 
     expect($output)->toContain('Alter table: users')
         ->and($output)->toContain('Add column: email');
@@ -181,8 +177,8 @@ it('displays columns to be dropped (flagged as destructive)', function (): void 
         }
     };
 
-    $command = createDiffCommand(diffCalculator: $diffCalculator);
-    ['output' => $output] = executeDiffCommand($command);
+    $command = Helpers::createDiffCommand(diffCalculator: $diffCalculator);
+    ['output' => $output] = Helpers::executeDiffCommand($command);
 
     expect($output)->toContain('Drop column: legacy_field')
         ->and($output)->toContain('[DESTRUCTIVE]');
@@ -208,8 +204,8 @@ it('displays columns to be modified', function (): void {
         }
     };
 
-    $command = createDiffCommand(diffCalculator: $diffCalculator);
-    ['output' => $output] = executeDiffCommand($command);
+    $command = Helpers::createDiffCommand(diffCalculator: $diffCalculator);
+    ['output' => $output] = Helpers::executeDiffCommand($command);
 
     expect($output)->toContain('Modify column: name');
 });
@@ -237,8 +233,8 @@ it('displays indexes to be added or dropped', function (): void {
         }
     };
 
-    $command = createDiffCommand(diffCalculator: $diffCalculator);
-    ['output' => $output] = executeDiffCommand($command);
+    $command = Helpers::createDiffCommand(diffCalculator: $diffCalculator);
+    ['output' => $output] = Helpers::executeDiffCommand($command);
 
     expect($output)->toContain('Add index: idx_email')
         ->and($output)->toContain('Drop index: idx_old');
@@ -255,8 +251,8 @@ it('displays "No changes detected" when in sync', function (): void {
         }
     };
 
-    $command = createDiffCommand(diffCalculator: $diffCalculator);
-    ['output' => $output] = executeDiffCommand($command);
+    $command = Helpers::createDiffCommand(diffCalculator: $diffCalculator);
+    ['output' => $output] = Helpers::executeDiffCommand($command);
 
     expect($output)->toContain('No changes detected');
 });
@@ -273,8 +269,8 @@ it('returns 0 when no changes, 1 when changes exist', function (): void {
         }
     };
 
-    $commandNoChanges = createDiffCommand(diffCalculator: $noDiffCalculator);
-    ['exitCode' => $exitCode1] = executeDiffCommand($commandNoChanges);
+    $commandNoChanges = Helpers::createDiffCommand(diffCalculator: $noDiffCalculator);
+    ['exitCode' => $exitCode1] = Helpers::executeDiffCommand($commandNoChanges);
 
     expect($exitCode1)->toBe(0);
 
@@ -297,8 +293,8 @@ it('returns 0 when no changes, 1 when changes exist', function (): void {
         }
     };
 
-    $commandWithChanges = createDiffCommand(diffCalculator: $hasDiffCalculator);
-    ['exitCode' => $exitCode2] = executeDiffCommand($commandWithChanges);
+    $commandWithChanges = Helpers::createDiffCommand(diffCalculator: $hasDiffCalculator);
+    ['exitCode' => $exitCode2] = Helpers::executeDiffCommand($commandWithChanges);
 
     expect($exitCode2)->toBe(1);
 });

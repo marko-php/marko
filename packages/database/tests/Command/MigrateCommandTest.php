@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Helpers.php';
-
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
@@ -20,11 +18,7 @@ use Marko\Database\Schema\Column;
 use Marko\Database\Schema\ForeignKey;
 use Marko\Database\Schema\Index;
 use Marko\Database\Schema\Table;
-
-use function Marko\Database\Tests\Command\createOutputStream;
-use function Marko\Database\Tests\Command\createStubEntityDiscovery;
-use function Marko\Database\Tests\Command\createStubIntrospector;
-use function Marko\Database\Tests\Command\getOutputContent;
+use Marko\Database\Tests\Command\Helpers;
 
 /**
  * Create a stub Migrator for testing.
@@ -247,8 +241,8 @@ function createMigrateCommand(
     return new MigrateCommand(
         migrator: $migrator ?? createMigratorStub(),
         migrationGenerator: $generator ?? createMigrationGeneratorStub(),
-        entityDiscovery: createStubEntityDiscovery(),
-        introspector: createStubIntrospector(),
+        entityDiscovery: Helpers::createStubEntityDiscovery(),
+        introspector: Helpers::createStubIntrospector(),
         metadataFactory: new EntityMetadataFactory(),
         schemaBuilder: new SchemaBuilder(),
         diffCalculator: createMigrateDiffCalculator($diff ?? new SchemaDiff()),
@@ -271,11 +265,11 @@ function executeMigrateCommand(
     MigrateCommand $command,
     array $args = ['marko', 'db:migrate'],
 ): array {
-    ['stream' => $stream, 'output' => $output] = createOutputStream();
+    ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input($args);
 
     $exitCode = $command->execute($input, $output);
-    $result = getOutputContent($stream);
+    $result = Helpers::getOutputContent($stream);
 
     return ['output' => $result, 'exitCode' => $exitCode];
 }

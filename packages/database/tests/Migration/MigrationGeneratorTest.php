@@ -8,13 +8,7 @@ use Marko\Database\Migration\Migration;
 use Marko\Database\Migration\MigrationGenerator;
 use Marko\Database\Schema\Column;
 use Marko\Database\Schema\Table;
-
-use function Marko\Database\Tests\Migration\createPostsTableDiff;
-use function Marko\Database\Tests\Migration\createSqlGeneratorStub;
-use function Marko\Database\Tests\Migration\generateTestMigration;
-use function Marko\Database\Tests\Migration\removeDirectory;
-
-require_once __DIR__ . '/Helpers.php';
+use Marko\Database\Tests\Migration\Helpers;
 
 describe('MigrationGenerator', function (): void {
     beforeEach(function (): void {
@@ -23,24 +17,24 @@ describe('MigrationGenerator', function (): void {
     });
 
     afterEach(function (): void {
-        removeDirectory($this->tempDir);
+        Helpers::removeDirectory($this->tempDir);
     });
 
     it('generates migration filename with timestamp prefix', function (): void {
-        ['paths' => $paths] = generateTestMigration($this->tempDir);
+        ['paths' => $paths] = Helpers::generateTestMigration($this->tempDir);
 
         expect($paths)->toHaveCount(1)
             ->and(basename($paths[0]))->toMatch('/^\d{14}_/');
     });
 
     it('generates migration filename with descriptive suffix from changes', function (): void {
-        ['paths' => $paths] = generateTestMigration($this->tempDir);
+        ['paths' => $paths] = Helpers::generateTestMigration($this->tempDir);
 
         expect(basename($paths[0]))->toContain('create_posts');
     });
 
     it('generates valid PHP migration class', function (): void {
-        ['content' => $content] = generateTestMigration($this->tempDir);
+        ['content' => $content] = Helpers::generateTestMigration($this->tempDir);
 
         expect($content)
             ->toContain('<?php')
@@ -51,7 +45,7 @@ describe('MigrationGenerator', function (): void {
     });
 
     it('includes up() method with SQL statements', function (): void {
-        ['content' => $content] = generateTestMigration($this->tempDir);
+        ['content' => $content] = Helpers::generateTestMigration($this->tempDir);
 
         expect($content)
             ->toContain('public function up(')
@@ -59,7 +53,7 @@ describe('MigrationGenerator', function (): void {
     });
 
     it('includes down() method with rollback SQL', function (): void {
-        ['content' => $content] = generateTestMigration($this->tempDir);
+        ['content' => $content] = Helpers::generateTestMigration($this->tempDir);
 
         expect($content)
             ->toContain('public function down(')
@@ -67,7 +61,7 @@ describe('MigrationGenerator', function (): void {
     });
 
     it('uses nowdoc syntax for SQL statements', function (): void {
-        ['content' => $content] = generateTestMigration($this->tempDir);
+        ['content' => $content] = Helpers::generateTestMigration($this->tempDir);
 
         expect($content)
             ->toContain("<<<'SQL'")
@@ -75,7 +69,7 @@ describe('MigrationGenerator', function (): void {
     });
 
     it('includes semicolons at end of SQL statements', function (): void {
-        ['content' => $content] = generateTestMigration($this->tempDir);
+        ['content' => $content] = Helpers::generateTestMigration($this->tempDir);
 
         expect($content)
             ->toMatch('/CREATE TABLE "posts" \(id INT\);\s+SQL\)/')
@@ -83,19 +77,19 @@ describe('MigrationGenerator', function (): void {
     });
 
     it('formats SQL with proper indentation inside nowdoc', function (): void {
-        ['content' => $content] = generateTestMigration($this->tempDir);
+        ['content' => $content] = Helpers::generateTestMigration($this->tempDir);
 
         expect($content)->toContain('            CREATE TABLE');
     });
 
     it('uses $this->execute() for each SQL statement', function (): void {
-        ['content' => $content] = generateTestMigration($this->tempDir);
+        ['content' => $content] = Helpers::generateTestMigration($this->tempDir);
 
         expect($content)->toContain('$this->execute($connection,');
     });
 
     it('writes file to database/migrations/ directory', function (): void {
-        ['paths' => $paths] = generateTestMigration($this->tempDir);
+        ['paths' => $paths] = Helpers::generateTestMigration($this->tempDir);
 
         expect($paths[0])->toStartWith($this->tempDir . '/database/migrations/')
             ->and(file_exists($paths[0]))->toBeTrue();
@@ -104,15 +98,15 @@ describe('MigrationGenerator', function (): void {
     it('creates migrations directory if not exists', function (): void {
         expect(is_dir($this->tempDir . '/database/migrations'))->toBeFalse();
 
-        $sqlGenerator = createSqlGeneratorStub();
+        $sqlGenerator = Helpers::createSqlGeneratorStub();
         $generator = new MigrationGenerator($sqlGenerator, $this->tempDir);
-        $generator->generate(createPostsTableDiff());
+        $generator->generate(Helpers::createPostsTableDiff());
 
         expect(is_dir($this->tempDir . '/database/migrations'))->toBeTrue();
     });
 
     it('returns path to generated file', function (): void {
-        ['paths' => $paths] = generateTestMigration($this->tempDir);
+        ['paths' => $paths] = Helpers::generateTestMigration($this->tempDir);
 
         expect($paths)
             ->toBeArray()
@@ -126,7 +120,7 @@ describe('MigrationGenerator', function (): void {
         $commentsTable = new Table('comments', [new Column('id', 'INTEGER', primaryKey: true)]);
         $diff = new SchemaDiff(tablesToCreate: [$postsTable, $commentsTable]);
 
-        ['paths' => $paths] = generateTestMigration(
+        ['paths' => $paths] = Helpers::generateTestMigration(
             $this->tempDir,
             $diff,
             ['CREATE TABLE "posts" (id INT)', 'CREATE TABLE "comments" (id INT)'],
@@ -140,7 +134,7 @@ describe('MigrationGenerator', function (): void {
     });
 
     it('handles empty diff with no file generated', function (): void {
-        ['paths' => $paths] = generateTestMigration(
+        ['paths' => $paths] = Helpers::generateTestMigration(
             $this->tempDir,
             new SchemaDiff(),
             [],
@@ -159,7 +153,7 @@ describe('MigrationGenerator', function (): void {
         );
         $diff = new SchemaDiff(tablesToAlter: ['posts' => $tableDiff]);
 
-        ['paths' => $paths] = generateTestMigration(
+        ['paths' => $paths] = Helpers::generateTestMigration(
             $this->tempDir,
             $diff,
             ['ALTER TABLE "posts" ADD COLUMN "title" VARCHAR(255)'],
@@ -174,7 +168,7 @@ describe('MigrationGenerator', function (): void {
         $table = new Table('posts', [new Column('id', 'INTEGER', primaryKey: true)]);
         $diff = new SchemaDiff(tablesToDrop: [$table]);
 
-        ['paths' => $paths] = generateTestMigration(
+        ['paths' => $paths] = Helpers::generateTestMigration(
             $this->tempDir,
             $diff,
             ['DROP TABLE "posts"'],
@@ -186,7 +180,7 @@ describe('MigrationGenerator', function (): void {
     });
 
     it('generates syntactically valid PHP that can be included', function (): void {
-        ['paths' => $paths] = generateTestMigration($this->tempDir);
+        ['paths' => $paths] = Helpers::generateTestMigration($this->tempDir);
 
         $migration = require $paths[0];
 

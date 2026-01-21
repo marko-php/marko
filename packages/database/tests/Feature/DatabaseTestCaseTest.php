@@ -10,8 +10,6 @@ use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Testing\DatabaseTestCase;
 use RuntimeException;
 
-require_once __DIR__ . '/Helpers.php';
-
 /**
  * Test wrapper class that uses the DatabaseTestCase trait.
  */
@@ -133,7 +131,7 @@ describe('DatabaseTestCase Trait', function (): void {
 
     it('supports test database isolation via transactions', function (): void {
         $transactionLog = [];
-        $connection = createLoggingTransactionConnection($transactionLog);
+        $connection = Helpers::createLoggingTransactionConnection($transactionLog);
         $testCase = new TestDatabaseTestCase();
 
         // Begin transaction
@@ -151,7 +149,7 @@ describe('DatabaseTestCase Trait', function (): void {
 
     it('can commit transaction when needed', function (): void {
         $transactionLog = [];
-        $connection = createLoggingTransactionConnection($transactionLog);
+        $connection = Helpers::createLoggingTransactionConnection($transactionLog);
         $testCase = new TestDatabaseTestCase();
 
         $testCase->testBeginTransaction($connection);
