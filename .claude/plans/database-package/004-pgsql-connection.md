@@ -1,6 +1,6 @@
 # Task 004: PostgreSQL Connection Implementation
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002
 **Retry count**: 0
 
@@ -13,15 +13,15 @@ Implement the PostgreSQL connection class using PDO. This provides the concrete 
 - Must handle PostgreSQL-specific DSN format (host, port, dbname)
 
 ## Requirements (Test Descriptions)
-- [ ] `it implements ConnectionInterface`
-- [ ] `it constructs proper PostgreSQL DSN from config`
-- [ ] `it connects lazily on first query`
-- [ ] `it sets PDO error mode to exceptions`
-- [ ] `it sets client encoding from config`
-- [ ] `it executes raw SQL queries with parameter binding`
-- [ ] `it prepares statements for repeated execution`
-- [ ] `it throws ConnectionException on connection failure with helpful message`
-- [ ] `it properly disconnects and releases resources`
+- [x] `it implements ConnectionInterface`
+- [x] `it constructs proper PostgreSQL DSN from config`
+- [x] `it connects lazily on first query`
+- [x] `it sets PDO error mode to exceptions`
+- [x] `it sets client encoding from config`
+- [x] `it executes raw SQL queries with parameter binding`
+- [x] `it prepares statements for repeated execution`
+- [x] `it throws ConnectionException on connection failure with helpful message`
+- [x] `it properly disconnects and releases resources`
 
 ## Acceptance Criteria
 - All requirements have passing tests

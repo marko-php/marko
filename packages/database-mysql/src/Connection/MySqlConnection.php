@@ -1,0 +1,125 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Marko\Database\MySql\Connection;
+
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Connection\StatementInterface;
+use Marko\Database\MySql\Exceptions\ConnectionException;
+use PDO;
+use PDOException;
+
+class MySqlConnection implements ConnectionInterface
+{
+    private ?PDO $pdo = null;
+
+    public function __construct(
+        private readonly string $host,
+        private readonly int $port,
+        private readonly string $database,
+        private readonly string $username,
+        private readonly string $password,
+        private readonly string $charset = 'utf8mb4',
+    ) {}
+
+    public function getDsn(): string
+    {
+        return sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=%s',
+            $this->host,
+            $this->port,
+            $this->database,
+            $this->charset,
+        );
+    }
+
+    public function connect(): void
+    {
+        if ($this->pdo !== null) {
+            return;
+        }
+
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        ];
+
+        try {
+            $this->pdo = $this->createPdo(
+                $this->getDsn(),
+                $this->username,
+                $this->password,
+                $options,
+            );
+        } catch (PDOException $e) {
+            throw ConnectionException::connectionFailed(
+                $this->host,
+                $this->port,
+                $this->database,
+                $e,
+            );
+        }
+    }
+
+    /**
+     * Create a PDO instance. Override in tests.
+     *
+     * @param string $dsn The DSN string
+     * @param string $username Database username
+     * @param string $password Database password
+     * @param array<int, mixed> $options PDO options
+     * @return PDO The PDO instance
+     */
+    protected function createPdo(
+        string $dsn,
+        string $username,
+        string $password,
+        array $options,
+    ): PDO {
+        return new PDO($dsn, $username, $password, $options);
+    }
+
+    public function disconnect(): void
+    {
+        $this->pdo = null;
+    }
+
+    public function isConnected(): bool
+    {
+        return $this->pdo !== null;
+    }
+
+    public function query(
+        string $sql,
+        array $bindings = [],
+    ): array {
+        $this->connect();
+
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($bindings);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function execute(
+        string $sql,
+        array $bindings = [],
+    ): int {
+        $this->connect();
+
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($bindings);
+
+        return $statement->rowCount();
+    }
+
+    public function prepare(
+        string $sql,
+    ): StatementInterface {
+        $this->connect();
+
+        $pdoStatement = $this->pdo->prepare($sql);
+
+        return new MySqlStatement($pdoStatement);
+    }
+}
