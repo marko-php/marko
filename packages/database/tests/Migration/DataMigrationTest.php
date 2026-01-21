@@ -234,6 +234,7 @@ describe('DataMigration', function (): void {
         $dataMigration = new class ($downCalled) extends DataMigration
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private bool &$called,
             ) {}
 

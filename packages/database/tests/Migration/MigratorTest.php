@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\MigrationException;
-use Marko\Database\Migration\Migration;
 use Marko\Database\Migration\MigrationRepository;
 use Marko\Database\Migration\Migrator;
+
+use function Marko\Database\Tests\Migration\getEmptyMigrationContent;
+use function Marko\Database\Tests\Migration\writeTestMigrationFiles;
+
+require_once __DIR__ . '/Helpers.php';
 
 describe('Migrator', function (): void {
     beforeEach(function (): void {
@@ -45,23 +49,10 @@ describe('Migrator', function (): void {
     });
 
     it('finds pending migration files in database/migrations/', function (): void {
-        // Create test migration files
-        $migration1Content = <<<'PHP'
-<?php
+        $migrationContent = getEmptyMigrationContent();
 
-declare(strict_types=1);
-
-use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Migration\Migration;
-
-return new class () extends Migration {
-    public function up(ConnectionInterface $connection): void {}
-    public function down(ConnectionInterface $connection): void {}
-};
-PHP;
-
-        file_put_contents($this->migrationsPath . '/2024_01_01_000000_create_users_table.php', $migration1Content);
-        file_put_contents($this->migrationsPath . '/2024_01_02_000000_create_posts_table.php', $migration1Content);
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_create_users_table.php', $migrationContent);
+        file_put_contents($this->migrationsPath . '/2024_01_02_000000_create_posts_table.php', $migrationContent);
 
         $connection = $this->createMock(ConnectionInterface::class);
 
@@ -185,18 +176,7 @@ PHP;
     it('records applied migration with batch number', function (): void {
         $recordedMigrations = [];
 
-        $migrationContent = <<<'PHP'
-<?php
-declare(strict_types=1);
-use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Migration\Migration;
-return new class () extends Migration {
-    public function up(ConnectionInterface $connection): void {}
-    public function down(ConnectionInterface $connection): void {}
-};
-PHP;
-
-        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', $migrationContent);
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', getEmptyMigrationContent());
 
         $connection = $this->createMock(ConnectionInterface::class);
 
@@ -220,21 +200,7 @@ PHP;
 
     it('groups migrations applied together in same batch', function (): void {
         $recordedBatches = [];
-
-        $migrationContent = <<<'PHP'
-<?php
-declare(strict_types=1);
-use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Migration\Migration;
-return new class () extends Migration {
-    public function up(ConnectionInterface $connection): void {}
-    public function down(ConnectionInterface $connection): void {}
-};
-PHP;
-
-        file_put_contents($this->migrationsPath . '/2024_01_01_000000_first.php', $migrationContent);
-        file_put_contents($this->migrationsPath . '/2024_01_02_000000_second.php', $migrationContent);
-        file_put_contents($this->migrationsPath . '/2024_01_03_000000_third.php', $migrationContent);
+        writeTestMigrationFiles($this->migrationsPath);
 
         $connection = $this->createMock(ConnectionInterface::class);
 
@@ -342,18 +308,7 @@ PHP;
     it('removes migration record after rollback', function (): void {
         $deletedMigrations = [];
 
-        $migrationContent = <<<'PHP'
-<?php
-declare(strict_types=1);
-use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Migration\Migration;
-return new class () extends Migration {
-    public function up(ConnectionInterface $connection): void {}
-    public function down(ConnectionInterface $connection): void {}
-};
-PHP;
-
-        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', $migrationContent);
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', getEmptyMigrationContent());
 
         $connection = $this->createMock(ConnectionInterface::class);
 
@@ -391,20 +346,7 @@ PHP;
     });
 
     it('returns list of pending migrations', function (): void {
-        $migrationContent = <<<'PHP'
-<?php
-declare(strict_types=1);
-use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Migration\Migration;
-return new class () extends Migration {
-    public function up(ConnectionInterface $connection): void {}
-    public function down(ConnectionInterface $connection): void {}
-};
-PHP;
-
-        file_put_contents($this->migrationsPath . '/2024_01_01_000000_first.php', $migrationContent);
-        file_put_contents($this->migrationsPath . '/2024_01_02_000000_second.php', $migrationContent);
-        file_put_contents($this->migrationsPath . '/2024_01_03_000000_third.php', $migrationContent);
+        writeTestMigrationFiles($this->migrationsPath);
 
         $connection = $this->createMock(ConnectionInterface::class);
 

@@ -5,8 +5,11 @@ declare(strict_types=1);
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Migration\DataMigrationDiscovery;
 use Marko\Database\Migration\DataMigrator;
-use Marko\Database\Migration\Migration;
 use Marko\Database\Migration\MigrationRepository;
+
+use function Marko\Database\Tests\Migration\removeDirectory;
+
+require_once __DIR__ . '/Helpers.php';
 
 describe('DataMigrator Integration', function (): void {
     beforeEach(function (): void {
@@ -18,31 +21,10 @@ describe('DataMigrator Integration', function (): void {
         mkdir($this->tempDir . '/modules', 0777, true);
         mkdir($this->tempDir . '/app', 0777, true);
         mkdir($this->tempDir . '/schema_migrations', 0777, true);
-
-        $this->removeDirectory = function (string $dir): void {
-            if (!is_dir($dir)) {
-                return;
-            }
-
-            $items = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
-                RecursiveIteratorIterator::CHILD_FIRST,
-            );
-
-            foreach ($items as $item) {
-                if ($item->isDir()) {
-                    rmdir($item->getRealPath());
-                } else {
-                    unlink($item->getRealPath());
-                }
-            }
-
-            rmdir($dir);
-        };
     });
 
     afterEach(function (): void {
-        ($this->removeDirectory)($this->tempDir);
+        removeDirectory($this->tempDir);
     });
 
     it('tracks data migrations in same migrations table', function (): void {
@@ -70,7 +52,6 @@ describe('DataMigrator Integration', function (): void {
             ->willReturnCallback(function (
                 ConnectionInterface $conn,
                 string $name,
-                int $batch,
             ) use (&$recordedMigrations): void {
                 $recordedMigrations[] = $name;
             });

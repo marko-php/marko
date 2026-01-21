@@ -50,6 +50,7 @@ describe('Migration', function (): void {
         $migration = new class ($upCalled) extends Migration
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private bool &$called,
             ) {}
 
@@ -75,6 +76,7 @@ describe('Migration', function (): void {
         $migration = new class ($downCalled) extends Migration
         {
             public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private bool &$called,
             ) {}
 

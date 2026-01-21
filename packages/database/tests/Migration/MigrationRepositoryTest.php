@@ -5,17 +5,15 @@ declare(strict_types=1);
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Migration\MigrationRepository;
 
+use function Marko\Database\Tests\Migration\createTrackingConnection;
+
+require_once __DIR__ . '/Helpers.php';
+
 describe('MigrationRepository', function (): void {
     it('creates migrations table if not exists', function (): void {
         $executedSql = [];
-
-        $connection = $this->createMock(ConnectionInterface::class);
-        $connection->method('execute')
-            ->willReturnCallback(function (string $sql) use (&$executedSql): int {
-                $executedSql[] = $sql;
-
-                return 0;
-            });
+        $executedBindings = [];
+        $connection = createTrackingConnection($executedSql, $executedBindings);
 
         $repository = new MigrationRepository();
         $repository->createTable($connection);
@@ -31,17 +29,7 @@ describe('MigrationRepository', function (): void {
     it('records applied migration with batch number', function (): void {
         $executedSql = [];
         $executedBindings = [];
-
-        $connection = $this->createMock(ConnectionInterface::class);
-        $connection->method('execute')
-            ->willReturnCallback(
-                function (string $sql, array $bindings = []) use (&$executedSql, &$executedBindings): int {
-                    $executedSql[] = $sql;
-                    $executedBindings[] = $bindings;
-
-                    return 1;
-                },
-            );
+        $connection = createTrackingConnection($executedSql, $executedBindings);
 
         $repository = new MigrationRepository();
         $repository->record($connection, '2024_01_01_000000_create_users_table', 1);
@@ -56,17 +44,7 @@ describe('MigrationRepository', function (): void {
     it('removes migration record after rollback', function (): void {
         $executedSql = [];
         $executedBindings = [];
-
-        $connection = $this->createMock(ConnectionInterface::class);
-        $connection->method('execute')
-            ->willReturnCallback(
-                function (string $sql, array $bindings = []) use (&$executedSql, &$executedBindings): int {
-                    $executedSql[] = $sql;
-                    $executedBindings[] = $bindings;
-
-                    return 1;
-                },
-            );
+        $connection = createTrackingConnection($executedSql, $executedBindings);
 
         $repository = new MigrationRepository();
         $repository->delete($connection, '2024_01_01_000000_create_users_table');

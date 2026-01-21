@@ -4,35 +4,18 @@ declare(strict_types=1);
 
 use Marko\Database\Migration\DataMigrationDiscovery;
 
+use function Marko\Database\Tests\Migration\removeDirectory;
+
+require_once __DIR__ . '/Helpers.php';
+
 describe('DataMigrationDiscovery', function (): void {
     beforeEach(function (): void {
         $this->tempDir = sys_get_temp_dir() . '/marko_data_migration_test_' . uniqid();
         mkdir($this->tempDir, 0777, true);
-
-        $this->removeDirectory = function (string $dir): void {
-            if (!is_dir($dir)) {
-                return;
-            }
-
-            $items = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
-                RecursiveIteratorIterator::CHILD_FIRST,
-            );
-
-            foreach ($items as $item) {
-                if ($item->isDir()) {
-                    rmdir($item->getRealPath());
-                } else {
-                    unlink($item->getRealPath());
-                }
-            }
-
-            rmdir($dir);
-        };
     });
 
     afterEach(function (): void {
-        ($this->removeDirectory)($this->tempDir);
+        removeDirectory($this->tempDir);
     });
 
     it('discovers data migrations in vendor/*/*/Data/', function (): void {
