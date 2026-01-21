@@ -8,7 +8,7 @@ use Marko\Core\Command\Input;
 use Marko\Database\Command\SeedCommand;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Seed\SeederDefinition;
-use Marko\Database\Seed\SeederDiscovery;
+use Marko\Database\Seed\SeederDiscoveryInterface;
 use Marko\Database\Seed\SeederInterface;
 use Marko\Database\Seed\SeederRunner;
 use Marko\Database\Tests\Command\Helpers;
@@ -24,8 +24,8 @@ function createStubDiscovery(
     array $vendorDefinitions = [],
     array $modulesDefinitions = [],
     array $appDefinitions = [],
-): SeederDiscovery {
-    return new class ($vendorDefinitions, $modulesDefinitions, $appDefinitions) extends SeederDiscovery
+): SeederDiscoveryInterface {
+    return new class ($vendorDefinitions, $modulesDefinitions, $appDefinitions) implements SeederDiscoveryInterface
     {
         public function __construct(
             private readonly array $vendorDefs,

@@ -22,6 +22,10 @@ class ClassFileParser
     public function extractClassName(
         string $filePath,
     ): ?string {
+        if (!is_file($filePath)) {
+            return null;
+        }
+
         $contents = file_get_contents($filePath);
 
         if ($contents === false) {

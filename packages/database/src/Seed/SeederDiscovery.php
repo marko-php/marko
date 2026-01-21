@@ -10,7 +10,7 @@ use ReflectionClass;
 /**
  * Discovers seeder classes in Seed directories.
  */
-readonly class SeederDiscovery
+readonly class SeederDiscovery implements SeederDiscoveryInterface
 {
     public function __construct(
         private ClassFileParser $classFileParser,

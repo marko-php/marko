@@ -62,10 +62,36 @@ describe('SimpleErrorHandler Registration', function (): void {
     });
 
     afterEach(function (): void {
-        // Restore original handlers
+        // Clear any exception handlers set during the test by repeatedly restoring
+        // until we hit the original state (null or our saved handler)
+        while (true) {
+            $current = set_exception_handler(fn () => null);
+            restore_exception_handler();
+
+            if ($current === $this->originalExceptionHandler || $current === null) {
+                break;
+            }
+
+            restore_exception_handler();
+        }
+
+        // Clear any error handlers set during the test
+        while (true) {
+            $current = set_error_handler(fn () => true);
+            restore_error_handler();
+
+            if ($current === $this->originalErrorHandler || $current === null) {
+                break;
+            }
+
+            restore_error_handler();
+        }
+
+        // Restore original handlers if they existed
         if ($this->originalExceptionHandler !== null) {
             set_exception_handler($this->originalExceptionHandler);
         }
+
         if ($this->originalErrorHandler !== null) {
             set_error_handler($this->originalErrorHandler);
         }

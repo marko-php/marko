@@ -11,14 +11,14 @@ use Marko\Core\Command\Output;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\SeederException;
 use Marko\Database\Seed\SeederDefinition;
-use Marko\Database\Seed\SeederDiscovery;
+use Marko\Database\Seed\SeederDiscoveryInterface;
 use Marko\Database\Seed\SeederRunner;
 
 #[Command(name: 'db:seed', description: 'Run database seeders')]
 readonly class SeedCommand implements CommandInterface
 {
     public function __construct(
-        private SeederDiscovery $discovery,
+        private SeederDiscoveryInterface $discovery,
         private SeederRunner $runner,
         private ConnectionInterface $connection,
         private string $vendorPath,
