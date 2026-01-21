@@ -458,12 +458,16 @@ Every package in `packages/` must have a README.md that follows this structure:
    ```markdown
    # Package Name
 
-   One sentence describing what this package does.
+   One sentence describing what it does AND the practical benefit.
    ```
 
+   Example: "Error handling contracts that capture not just what went wrong, but the context and how to fix it."
+
+   Not: "Error handling contracts for the Marko Framework." (no benefit stated)
+
 2. **Overview** (2-4 sentences max)
-   - What it is
-   - Why it exists / key benefit
+   - Lead with the benefit—what does the developer gain?
+   - Be concrete, not marketing speak
    - Keep it brief—details come later
 
 3. **Installation**

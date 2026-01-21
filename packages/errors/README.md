@@ -1,12 +1,12 @@
 # Marko Errors
 
-Error handling contracts for the Marko Framework.
+Error handling contracts that capture not just what went wrong, but the context and how to fix it.
 
 ## Overview
 
-This package defines the interfaces for error handling. It contains no implementation—just contracts that implementations like `marko/errors-simple` follow.
+When errors happen, you need more than a stack trace. This package provides a standardized way to capture the full picture: what the code was doing, why it failed, and what to do about it. `MarkoException` errors automatically include context and suggestions that flow through to your error output.
 
-**Why separate?** You can swap implementations without changing code. Type-hint `ErrorHandlerInterface`, and the container provides whichever implementation is configured.
+This package defines interfaces only—implementations like `marko/errors-simple` handle the actual display.
 
 ## Installation
 

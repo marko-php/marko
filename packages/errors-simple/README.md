@@ -1,15 +1,15 @@
 # Marko Errors Simple
 
-The reliable fallback error handler—designed to never fail.
+A zero-dependency error handler that shows you exactly what went wrong and how to fix it.
 
 ## Overview
 
-This is a zero-dependency error handler that works as the safety net for your application. If your fancy error handler with database logging and Slack notifications fails, this catches *that* failure.
+When an error occurs, you see the full context: exception message, the code that caused it, and actionable suggestions for fixing it. In production, sensitive details are hidden while still providing an error ID for log correlation.
 
-- **CLI**: Colored stack traces with code snippets
-- **Web**: Basic HTML pages with inline styles
-- **Development**: Full details (stack trace, code context, suggestions)
-- **Production**: Generic message with error ID only
+- **CLI**: Colored output with code snippets around the error
+- **Web**: Clean HTML page with stack trace and context
+- **Development**: Full details including suggestions from `MarkoException`
+- **Production**: Generic message with error ID (no sensitive paths or code)
 
 ## Installation
 
