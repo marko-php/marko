@@ -25,6 +25,11 @@ interface TransactionInterface
     public function rollback(): void;
 
     /**
+     * Check if a transaction is currently active.
+     */
+    public function inTransaction(): bool;
+
+    /**
      * Execute a callback within a transaction.
      *
      * Automatically commits on success, rolls back on exception.

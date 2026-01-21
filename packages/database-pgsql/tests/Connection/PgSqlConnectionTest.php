@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Connection\TransactionInterface;
+use Marko\Database\Exceptions\TransactionException;
 use Marko\Database\PgSql\Connection\PgSqlConnection;
 use Marko\Database\PgSql\Connection\PgSqlStatement;
 use Marko\Database\PgSql\Exceptions\ConnectionException;
@@ -187,5 +189,290 @@ describe('PgSqlConnection', function (): void {
         // Verify PDO is now null
         expect($pdoProperty->getValue($connection))->toBeNull();
         expect($connection->isConnected())->toBeFalse();
+    });
+
+    it('implements TransactionInterface', function (): void {
+        $reflection = new ReflectionClass(PgSqlConnection::class);
+
+        expect($reflection->implementsInterface(TransactionInterface::class))->toBeTrue();
+    });
+
+    it('implements beginTransaction() method', function (): void {
+        $connection = new PgSqlConnection(
+            host: 'localhost',
+            port: 5432,
+            database: 'test_db',
+            username: 'user',
+            password: 'pass',
+        );
+
+        $reflection = new ReflectionClass($connection);
+        $pdoProperty = $reflection->getProperty('pdo');
+
+        // Create an in-memory SQLite PDO for testing
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdoProperty->setValue($connection, $pdo);
+
+        expect($connection->inTransaction())->toBeFalse();
+
+        $connection->beginTransaction();
+
+        expect($connection->inTransaction())->toBeTrue();
+    });
+
+    it('implements commit() method', function (): void {
+        $connection = new PgSqlConnection(
+            host: 'localhost',
+            port: 5432,
+            database: 'test_db',
+            username: 'user',
+            password: 'pass',
+        );
+
+        $reflection = new ReflectionClass($connection);
+        $pdoProperty = $reflection->getProperty('pdo');
+
+        // Create an in-memory SQLite PDO for testing
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+        $pdoProperty->setValue($connection, $pdo);
+
+        $connection->beginTransaction();
+        $connection->execute("INSERT INTO test_data (value) VALUES ('test')");
+        $connection->commit();
+
+        expect($connection->inTransaction())->toBeFalse();
+
+        $results = $connection->query('SELECT * FROM test_data');
+        expect($results)->toHaveCount(1);
+        expect($results[0]['value'])->toBe('test');
+    });
+
+    it('implements rollback() method', function (): void {
+        $connection = new PgSqlConnection(
+            host: 'localhost',
+            port: 5432,
+            database: 'test_db',
+            username: 'user',
+            password: 'pass',
+        );
+
+        $reflection = new ReflectionClass($connection);
+        $pdoProperty = $reflection->getProperty('pdo');
+
+        // Create an in-memory SQLite PDO for testing
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+        $pdoProperty->setValue($connection, $pdo);
+
+        $connection->beginTransaction();
+        $connection->execute("INSERT INTO test_data (value) VALUES ('test')");
+        $connection->rollback();
+
+        expect($connection->inTransaction())->toBeFalse();
+
+        $results = $connection->query('SELECT * FROM test_data');
+        expect($results)->toHaveCount(0);
+    });
+
+    it('implements inTransaction() method returning boolean', function (): void {
+        $connection = new PgSqlConnection(
+            host: 'localhost',
+            port: 5432,
+            database: 'test_db',
+            username: 'user',
+            password: 'pass',
+        );
+
+        $reflection = new ReflectionClass($connection);
+        $pdoProperty = $reflection->getProperty('pdo');
+
+        // Create an in-memory SQLite PDO for testing
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdoProperty->setValue($connection, $pdo);
+
+        $result = $connection->inTransaction();
+
+        expect($result)->toBeBool();
+        expect($result)->toBeFalse();
+
+        $connection->beginTransaction();
+
+        expect($connection->inTransaction())->toBeTrue();
+
+        $connection->commit();
+
+        expect($connection->inTransaction())->toBeFalse();
+    });
+
+    it('implements transaction(callable) method', function (): void {
+        $connection = new PgSqlConnection(
+            host: 'localhost',
+            port: 5432,
+            database: 'test_db',
+            username: 'user',
+            password: 'pass',
+        );
+
+        $reflection = new ReflectionClass($connection);
+        $pdoProperty = $reflection->getProperty('pdo');
+
+        // Create an in-memory SQLite PDO for testing
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+        $pdoProperty->setValue($connection, $pdo);
+
+        $connection->transaction(function () use ($connection): void {
+            $connection->execute("INSERT INTO test_data (value) VALUES ('test')");
+        });
+
+        $results = $connection->query('SELECT * FROM test_data');
+        expect($results)->toHaveCount(1);
+    });
+
+    it('auto-commits when callback completes successfully', function (): void {
+        $connection = new PgSqlConnection(
+            host: 'localhost',
+            port: 5432,
+            database: 'test_db',
+            username: 'user',
+            password: 'pass',
+        );
+
+        $reflection = new ReflectionClass($connection);
+        $pdoProperty = $reflection->getProperty('pdo');
+
+        // Create an in-memory SQLite PDO for testing
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+        $pdoProperty->setValue($connection, $pdo);
+
+        $connection->transaction(function () use ($connection): void {
+            $connection->execute("INSERT INTO test_data (value) VALUES ('committed')");
+        });
+
+        // Verify not in transaction after callback
+        expect($connection->inTransaction())->toBeFalse();
+
+        // Verify data was committed
+        $results = $connection->query('SELECT * FROM test_data');
+        expect($results)->toHaveCount(1);
+        expect($results[0]['value'])->toBe('committed');
+    });
+
+    it('auto-rolls back when callback throws exception', function (): void {
+        $connection = new PgSqlConnection(
+            host: 'localhost',
+            port: 5432,
+            database: 'test_db',
+            username: 'user',
+            password: 'pass',
+        );
+
+        $reflection = new ReflectionClass($connection);
+        $pdoProperty = $reflection->getProperty('pdo');
+
+        // Create an in-memory SQLite PDO for testing
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+        $pdoProperty->setValue($connection, $pdo);
+
+        try {
+            $connection->transaction(function () use ($connection): void {
+                $connection->execute("INSERT INTO test_data (value) VALUES ('should_rollback')");
+                throw new RuntimeException('Test exception');
+            });
+        } catch (RuntimeException) {
+            // Expected
+        }
+
+        // Verify not in transaction after callback
+        expect($connection->inTransaction())->toBeFalse();
+
+        // Verify data was rolled back
+        $results = $connection->query('SELECT * FROM test_data');
+        expect($results)->toHaveCount(0);
+    });
+
+    it('re-throws exception after rollback', function (): void {
+        $connection = new PgSqlConnection(
+            host: 'localhost',
+            port: 5432,
+            database: 'test_db',
+            username: 'user',
+            password: 'pass',
+        );
+
+        $reflection = new ReflectionClass($connection);
+        $pdoProperty = $reflection->getProperty('pdo');
+
+        // Create an in-memory SQLite PDO for testing
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+        $pdoProperty->setValue($connection, $pdo);
+
+        expect(function () use ($connection): void {
+            $connection->transaction(function (): void {
+                throw new RuntimeException('Original exception message');
+            });
+        })->toThrow(RuntimeException::class, 'Original exception message');
+    });
+
+    it('returns callback return value on success', function (): void {
+        $connection = new PgSqlConnection(
+            host: 'localhost',
+            port: 5432,
+            database: 'test_db',
+            username: 'user',
+            password: 'pass',
+        );
+
+        $reflection = new ReflectionClass($connection);
+        $pdoProperty = $reflection->getProperty('pdo');
+
+        // Create an in-memory SQLite PDO for testing
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+        $pdoProperty->setValue($connection, $pdo);
+
+        $result = $connection->transaction(function () use ($connection): string {
+            $connection->execute("INSERT INTO test_data (value) VALUES ('test')");
+
+            return 'success';
+        });
+
+        expect($result)->toBe('success');
+    });
+
+    it('prevents nested transactions (throws exception)', function (): void {
+        $connection = new PgSqlConnection(
+            host: 'localhost',
+            port: 5432,
+            database: 'test_db',
+            username: 'user',
+            password: 'pass',
+        );
+
+        $reflection = new ReflectionClass($connection);
+        $pdoProperty = $reflection->getProperty('pdo');
+
+        // Create an in-memory SQLite PDO for testing
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdoProperty->setValue($connection, $pdo);
+
+        $connection->beginTransaction();
+
+        expect(fn () => $connection->beginTransaction())
+            ->toThrow(TransactionException::class, 'Nested transactions are not supported');
     });
 });

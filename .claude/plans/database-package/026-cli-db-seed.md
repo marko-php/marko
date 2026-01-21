@@ -1,6 +1,6 @@
 # Task 026: CLI db:seed Command
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 025
 **Retry count**: 0
 
@@ -13,17 +13,17 @@ Create the db:seed CLI command that runs database seeders for development and te
 - Must check environment before running
 
 ## Requirements (Test Descriptions)
-- [ ] `it registers as db:seed command via #[Command] attribute`
-- [ ] `it implements CommandInterface`
-- [ ] `it discovers all seeders from modules`
-- [ ] `it runs seeders in specified order`
-- [ ] `it shows each seeder being run`
-- [ ] `it supports --class option to run specific seeder`
-- [ ] `it blocks execution in production environment`
-- [ ] `it shows error message when blocked in production`
-- [ ] `it does NOT support --force flag (seeders never run in production)`
-- [ ] `it shows "No seeders found" when none discovered`
-- [ ] `it returns 0 on success, 1 on failure`
+- [x] `it registers as db:seed command via #[Command] attribute`
+- [x] `it implements CommandInterface`
+- [x] `it discovers all seeders from modules`
+- [x] `it runs seeders in specified order`
+- [x] `it shows each seeder being run`
+- [x] `it supports --class option to run specific seeder`
+- [x] `it blocks execution in production environment`
+- [x] `it shows error message when blocked in production`
+- [x] `it does NOT support --force flag (seeders never run in production)`
+- [x] `it shows "No seeders found" when none discovered`
+- [x] `it returns 0 on success, 1 on failure`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -32,4 +32,16 @@ Create the db:seed CLI command that runs database seeders for development and te
 - Development-only tool for test data
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+Created `SeedCommand` class at `packages/database/src/Command/SeedCommand.php` that:
+
+1. Uses `#[Command(name: 'db:seed', description: 'Run database seeders')]` attribute
+2. Implements `CommandInterface` with `execute(Input, Output): int` method
+3. Discovers seeders from vendor, modules, and app directories using `SeederDiscovery`
+4. Runs seeders via `SeederRunner` in order specified by `#[Seeder(order: N)]` attribute
+5. Shows "Running seeder: {name}" for each seeder being executed
+6. Supports `--class=name` option to run a specific seeder
+7. Blocks execution in production with error message (no `--force` flag support)
+8. Shows "No seeders found" when no seeders discovered
+9. Returns 0 on success, 1 on failure
+
+Test file: `packages/database/tests/Command/SeedCommandTest.php` - 11 tests covering all requirements.

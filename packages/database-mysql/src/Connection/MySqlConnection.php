@@ -6,11 +6,14 @@ namespace Marko\Database\MySql\Connection;
 
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Connection\TransactionInterface;
+use Marko\Database\Exceptions\TransactionException;
 use Marko\Database\MySql\Exceptions\ConnectionException;
 use PDO;
 use PDOException;
+use Throwable;
 
-class MySqlConnection implements ConnectionInterface
+class MySqlConnection implements ConnectionInterface, TransactionInterface
 {
     private ?PDO $pdo = null;
 
@@ -121,5 +124,62 @@ class MySqlConnection implements ConnectionInterface
         $pdoStatement = $this->pdo->prepare($sql);
 
         return new MySqlStatement($pdoStatement);
+    }
+
+    public function lastInsertId(): int
+    {
+        $this->connect();
+
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    public function beginTransaction(): void
+    {
+        $this->connect();
+
+        if ($this->pdo->inTransaction()) {
+            throw TransactionException::nestedTransactionNotSupported();
+        }
+
+        $this->pdo->beginTransaction();
+    }
+
+    public function commit(): void
+    {
+        $this->connect();
+
+        $this->pdo->commit();
+    }
+
+    public function rollback(): void
+    {
+        $this->connect();
+
+        $this->pdo->rollBack();
+    }
+
+    public function inTransaction(): bool
+    {
+        $this->connect();
+
+        return $this->pdo->inTransaction();
+    }
+
+    public function transaction(
+        callable $callback,
+    ): mixed {
+        $this->beginTransaction();
+
+        try {
+            $result = $callback();
+
+            $this->commit();
+
+            return $result;
+        } catch (Throwable $e) {
+            $this->rollback();
+
+            throw $e;
+        }
     }
 }

@@ -58,13 +58,13 @@ Implement the database layer for Marko framework with entity-driven schema defin
 | 004 | PostgreSQL connection implementation | 002 | completed |
 | 005 | Schema value objects (Table, Column, Index, ForeignKey) | 001 | completed |
 | 006 | Query builder interface | 002 | completed |
-| 007 | MySQL query builder | 003, 006 | pending |
-| 008 | PostgreSQL query builder | 004, 006 | pending |
+| 007 | MySQL query builder | 003, 006 | completed |
+| 008 | PostgreSQL query builder | 004, 006 | completed |
 | 009 | Database introspector interface | 002 | completed |
-| 010 | MySQL introspector | 003, 009 | pending |
-| 011 | PostgreSQL introspector | 004, 009 | pending |
+| 010 | MySQL introspector | 003, 009 | completed |
+| 011 | PostgreSQL introspector | 004, 009 | completed |
 | 012 | Entity base class and core attributes | 005 | completed |
-| 013 | Entity metadata parser and schema builder | 012 | pending |
+| 013 | Entity metadata parser and schema builder | 012 | completed |
 | 014 | Diff engine | 005, 009, 013 | pending |
 | 015 | SQL generator interface | 014 | pending |
 | 016 | MySQL SQL generator | 010, 015 | pending |
@@ -77,9 +77,9 @@ Implement the database layer for Marko framework with entity-driven schema defin
 | 023 | CLI: db:migrate command | 019, 020 | pending |
 | 024 | CLI: db:rollback command | 018 | pending |
 | 025 | Seeder system | 002 | completed |
-| 026 | CLI: db:seed command | 025 | pending |
-| 027 | Transaction support | 002, 003, 004 | pending |
-| 028 | Entity hydration | 012, 006 | pending |
+| 026 | CLI: db:seed command | 025 | completed |
+| 027 | Transaction support | 002, 003, 004 | completed |
+| 028 | Entity hydration | 012, 006 | completed |
 | 029 | Repository interface and base class | 028 | pending |
 | 030 | Repository query methods | 029 | pending |
 | 031 | Integration tests | 001-030 | pending |

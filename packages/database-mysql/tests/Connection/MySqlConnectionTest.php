@@ -6,9 +6,12 @@ namespace Marko\Database\MySql\Tests\Connection;
 
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Connection\TransactionInterface;
+use Marko\Database\Exceptions\TransactionException;
 use Marko\Database\MySql\Connection\MySqlConnection;
 use Marko\Database\MySql\Exceptions\ConnectionException;
 use PDO;
+use RuntimeException;
 
 describe('MySqlConnection', function (): void {
     it('implements ConnectionInterface', function (): void {
@@ -286,5 +289,334 @@ describe('MySqlConnection', function (): void {
         // Can reconnect after disconnect
         $connection->connect();
         expect($connection->isConnected())->toBeTrue();
+    });
+
+    it('implements TransactionInterface', function (): void {
+        $connection = new MySqlConnection(
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        );
+
+        expect($connection)->toBeInstanceOf(TransactionInterface::class);
+    });
+
+    it('implements beginTransaction() method', function (): void {
+        $connection = new class (
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        ) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                return new PDO('sqlite::memory:', options: $options);
+            }
+        };
+
+        $connection->connect();
+
+        expect($connection->inTransaction())->toBeFalse();
+
+        $connection->beginTransaction();
+
+        expect($connection->inTransaction())->toBeTrue();
+    });
+
+    it('implements commit() method', function (): void {
+        $connection = new class (
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        ) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        $connection->beginTransaction();
+        $connection->execute("INSERT INTO test_data (value) VALUES ('test')");
+        $connection->commit();
+
+        expect($connection->inTransaction())->toBeFalse();
+
+        $results = $connection->query('SELECT * FROM test_data');
+        expect($results)->toHaveCount(1);
+        expect($results[0]['value'])->toBe('test');
+    });
+
+    it('implements rollback() method', function (): void {
+        $connection = new class (
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        ) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        $connection->beginTransaction();
+        $connection->execute("INSERT INTO test_data (value) VALUES ('test')");
+        $connection->rollback();
+
+        expect($connection->inTransaction())->toBeFalse();
+
+        $results = $connection->query('SELECT * FROM test_data');
+        expect($results)->toHaveCount(0);
+    });
+
+    it('implements inTransaction() method returning boolean', function (): void {
+        $connection = new class (
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        ) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                return new PDO('sqlite::memory:', options: $options);
+            }
+        };
+
+        $connection->connect();
+
+        $result = $connection->inTransaction();
+
+        expect($result)->toBeBool();
+        expect($result)->toBeFalse();
+
+        $connection->beginTransaction();
+
+        expect($connection->inTransaction())->toBeTrue();
+
+        $connection->commit();
+
+        expect($connection->inTransaction())->toBeFalse();
+    });
+
+    it('implements transaction(callable) method', function (): void {
+        $connection = new class (
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        ) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        $connection->transaction(function () use ($connection): void {
+            $connection->execute("INSERT INTO test_data (value) VALUES ('test')");
+        });
+
+        $results = $connection->query('SELECT * FROM test_data');
+        expect($results)->toHaveCount(1);
+    });
+
+    it('auto-commits when callback completes successfully', function (): void {
+        $connection = new class (
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        ) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        $connection->transaction(function () use ($connection): void {
+            $connection->execute("INSERT INTO test_data (value) VALUES ('committed')");
+        });
+
+        // Verify not in transaction after callback
+        expect($connection->inTransaction())->toBeFalse();
+
+        // Verify data was committed
+        $results = $connection->query('SELECT * FROM test_data');
+        expect($results)->toHaveCount(1);
+        expect($results[0]['value'])->toBe('committed');
+    });
+
+    it('auto-rolls back when callback throws exception', function (): void {
+        $connection = new class (
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        ) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        try {
+            $connection->transaction(function () use ($connection): void {
+                $connection->execute("INSERT INTO test_data (value) VALUES ('should_rollback')");
+                throw new RuntimeException('Test exception');
+            });
+        } catch (RuntimeException) {
+            // Expected
+        }
+
+        // Verify not in transaction after callback
+        expect($connection->inTransaction())->toBeFalse();
+
+        // Verify data was rolled back
+        $results = $connection->query('SELECT * FROM test_data');
+        expect($results)->toHaveCount(0);
+    });
+
+    it('re-throws exception after rollback', function (): void {
+        $connection = new class (
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        ) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        expect(function () use ($connection): void {
+            $connection->transaction(function (): void {
+                throw new RuntimeException('Original exception message');
+            });
+        })->toThrow(RuntimeException::class, 'Original exception message');
+    });
+
+    it('returns callback return value on success', function (): void {
+        $connection = new class (
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        ) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        $result = $connection->transaction(function () use ($connection): string {
+            $connection->execute("INSERT INTO test_data (value) VALUES ('test')");
+
+            return 'success';
+        });
+
+        expect($result)->toBe('success');
+    });
+
+    it('prevents nested transactions (throws exception)', function (): void {
+        $connection = new class (
+            host: 'localhost',
+            port: 3306,
+            database: 'test',
+            username: 'root',
+            password: '',
+        ) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                return new PDO('sqlite::memory:', options: $options);
+            }
+        };
+
+        $connection->beginTransaction();
+
+        expect(fn () => $connection->beginTransaction())
+            ->toThrow(TransactionException::class, 'Nested transactions are not supported');
     });
 });

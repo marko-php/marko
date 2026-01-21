@@ -6,11 +6,14 @@ namespace Marko\Database\PgSql\Connection;
 
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Connection\TransactionInterface;
+use Marko\Database\Exceptions\TransactionException;
 use Marko\Database\PgSql\Exceptions\ConnectionException;
 use PDO;
 use PDOException;
+use Throwable;
 
-class PgSqlConnection implements ConnectionInterface
+class PgSqlConnection implements ConnectionInterface, TransactionInterface
 {
     private ?PDO $pdo = null;
 
@@ -117,5 +120,62 @@ class PgSqlConnection implements ConnectionInterface
         $pdoStatement = $this->pdo->prepare($sql);
 
         return new PgSqlStatement($pdoStatement);
+    }
+
+    public function lastInsertId(): int
+    {
+        $this->ensureConnected();
+
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    public function beginTransaction(): void
+    {
+        $this->ensureConnected();
+
+        if ($this->pdo->inTransaction()) {
+            throw TransactionException::nestedTransactionNotSupported();
+        }
+
+        $this->pdo->beginTransaction();
+    }
+
+    public function commit(): void
+    {
+        $this->ensureConnected();
+
+        $this->pdo->commit();
+    }
+
+    public function rollback(): void
+    {
+        $this->ensureConnected();
+
+        $this->pdo->rollBack();
+    }
+
+    public function inTransaction(): bool
+    {
+        $this->ensureConnected();
+
+        return $this->pdo->inTransaction();
+    }
+
+    public function transaction(
+        callable $callback,
+    ): mixed {
+        $this->beginTransaction();
+
+        try {
+            $result = $callback();
+
+            $this->commit();
+
+            return $result;
+        } catch (Throwable $e) {
+            $this->rollback();
+
+            throw $e;
+        }
     }
 }

@@ -43,4 +43,11 @@ interface ConnectionInterface
      * @return StatementInterface The prepared statement
      */
     public function prepare(string $sql): StatementInterface;
+
+    /**
+     * Get the ID of the last inserted row.
+     *
+     * @return int The last insert ID
+     */
+    public function lastInsertId(): int;
 }

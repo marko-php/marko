@@ -1,6 +1,6 @@
 # Task 008: PostgreSQL Query Builder
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 004, 006
 **Retry count**: 0
 
@@ -13,20 +13,20 @@ Implement the PostgreSQL-specific query builder that generates PostgreSQL-compat
 - Uses double quotes for identifier quoting
 
 ## Requirements (Test Descriptions)
-- [ ] `it implements QueryBuilderInterface`
-- [ ] `it quotes identifiers with double quotes`
-- [ ] `it builds SELECT queries with column selection`
-- [ ] `it builds WHERE clauses with parameter binding`
-- [ ] `it builds WHERE IN clauses correctly`
-- [ ] `it builds JOIN clauses with proper syntax`
-- [ ] `it builds ORDER BY with ASC/DESC`
-- [ ] `it builds LIMIT and OFFSET clauses`
-- [ ] `it builds INSERT statements with RETURNING id`
-- [ ] `it builds UPDATE statements with WHERE clause`
-- [ ] `it builds DELETE statements with WHERE clause`
-- [ ] `it returns last insert ID using RETURNING`
-- [ ] `it returns affected row count after update/delete`
-- [ ] `it executes raw queries with parameter binding`
+- [x] `it implements QueryBuilderInterface`
+- [x] `it quotes identifiers with double quotes`
+- [x] `it builds SELECT queries with column selection`
+- [x] `it builds WHERE clauses with parameter binding`
+- [x] `it builds WHERE IN clauses correctly`
+- [x] `it builds JOIN clauses with proper syntax`
+- [x] `it builds ORDER BY with ASC/DESC`
+- [x] `it builds LIMIT and OFFSET clauses`
+- [x] `it builds INSERT statements with RETURNING id`
+- [x] `it builds UPDATE statements with WHERE clause`
+- [x] `it builds DELETE statements with WHERE clause`
+- [x] `it returns last insert ID using RETURNING`
+- [x] `it returns affected row count after update/delete`
+- [x] `it executes raw queries with parameter binding`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -35,4 +35,10 @@ Implement the PostgreSQL-specific query builder that generates PostgreSQL-compat
 - Integrates with PgSqlConnection
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created PgSqlQueryBuilder class implementing QueryBuilderInterface
+- Uses PostgreSQL-style $1, $2, etc. positional parameters for safe SQL injection prevention
+- Uses double quotes for identifier quoting (PostgreSQL standard)
+- INSERT uses RETURNING "id" clause for getting last insert ID (PostgreSQL-specific)
+- Supports fluent chaining for all query building methods
+- Handles table.column dot notation for JOINs
+- Added lastInsertId() method to PgSqlConnection to satisfy ConnectionInterface
