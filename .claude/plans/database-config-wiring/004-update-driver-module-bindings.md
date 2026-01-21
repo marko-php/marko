@@ -1,6 +1,6 @@
 # Task 004: Update Driver Module Bindings
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002, 003
 **Retry count**: 0
 
@@ -26,10 +26,10 @@ Example pattern:
 ```
 
 ## Requirements (Test Descriptions)
-- [ ] `it binds ConnectionInterface to factory-created MySqlConnection in mysql driver`
-- [ ] `it binds ConnectionInterface to factory-created PgSqlConnection in pgsql driver`
-- [ ] `it resolves ConnectionInterface to working connection when config exists`
-- [ ] `it throws ConfigurationException when config file missing`
+- [x] `it binds ConnectionInterface to factory-created MySqlConnection in mysql driver`
+- [x] `it binds ConnectionInterface to factory-created PgSqlConnection in pgsql driver`
+- [x] `it resolves ConnectionInterface to working connection when config exists`
+- [x] `it throws ConfigurationException when config file missing`
 
 ## Acceptance Criteria
 - All requirements have passing tests

@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Fix the database driver packages so that ConnectionInterface can be autowired without users needing to manually create factory bindings. The drivers should automatically read config/database.php and create the connection.
@@ -24,12 +24,12 @@ Fix the database driver packages so that ConnectionInterface can be autowired wi
 - Connection pooling or advanced connection management
 
 ## Success Criteria
-- [ ] DatabaseConfig can be autowired by the container
-- [ ] MySqlConnectionFactory creates connections using config
-- [ ] PgSqlConnectionFactory creates connections using config
-- [ ] Running `marko db:migrate` works with just config/database.php (no manual bindings)
-- [ ] All tests passing
-- [ ] Code follows project standards
+- [x] DatabaseConfig can be autowired by the container
+- [x] MySqlConnectionFactory creates connections using config
+- [x] PgSqlConnectionFactory creates connections using config
+- [x] Running `marko db:migrate` works with just config/database.php (no manual bindings)
+- [x] All tests passing
+- [x] Code follows project standards
 
 ## Task Overview
 | Task | Description | Depends On | Status |
@@ -37,7 +37,7 @@ Fix the database driver packages so that ConnectionInterface can be autowired wi
 | 001 | Make DatabaseConfig injectable | - | completed |
 | 002 | Create MySqlConnectionFactory | 001 | completed |
 | 003 | Create PgSqlConnectionFactory | 001 | completed |
-| 004 | Update driver module.php bindings | 002, 003 | pending |
+| 004 | Update driver module.php bindings | 002, 003 | completed |
 
 ## Architecture Notes
 
