@@ -1,7 +1,7 @@
 # Task 011: Package README
 
 ## Status
-pending
+completed
 
 ## Depends On
 010

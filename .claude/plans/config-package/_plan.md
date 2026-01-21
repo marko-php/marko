@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Create the `marko/config` package providing a centralized, type-safe configuration system for Marko applications. The package will load PHP configuration files from modules and application directories, merge them with proper priority ordering, support environment variable integration, and provide scoped configuration for multi-tenant applications.
@@ -56,7 +56,7 @@ Create the `marko/config` package providing a centralized, type-safe configurati
 | 008 | Scoped configuration support | 006 | completed |
 | 009 | Application integration | 006, 007 | completed |
 | 010 | Integration tests | 009 | completed |
-| 011 | Package README | 010 | pending |
+| 011 | Package README | 010 | completed |
 
 ## Architecture Notes
 
