@@ -77,6 +77,20 @@ PSR-12 Extended Coding Style with additional Marko-specific rules.
 - Filename matches class name: `ModuleLoader.php`
 - PSR-4 autoloading: `Marko\Core\ModuleLoader` → `packages/core/src/ModuleLoader.php`
 
+### Sibling Modules (Driver Packages)
+
+When creating packages that implement the same interface for different backends (e.g., `database-mysql`, `database-pgsql`), follow the **Sibling Module Standards** documented in [`.claude/sibling-modules.md`](sibling-modules.md).
+
+Key requirements:
+- Package naming: `marko/{base}-{driver}`
+- Class naming: `{Driver}{Component}` (e.g., `MySqlConnection`, `PgSqlConnection`)
+- Identical method names, visibilities, and patterns across all siblings
+- Multi-line PHPDoc format for property annotations
+- Test files must have proper PSR-4 namespaces
+- Use anonymous class testing pattern (not reflection)
+
+**Even single implementations should follow sibling conventions** if future siblings are planned. This prevents costly refactoring when adding drivers later.
+
 ## Code Structure Rules
 
 ### 1. Strict Types Required
