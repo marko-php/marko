@@ -27,8 +27,9 @@ readonly class DatabaseConfig
      * @throws ConfigurationException
      */
     public function __construct(
-        string $basePath,
+        ?string $basePath = null,
     ) {
+        $basePath ??= getcwd();
         $configPath = $basePath . '/config/database.php';
 
         if (!file_exists($configPath)) {

@@ -301,7 +301,7 @@ it('throws RepositoryException when findOrFail() entity not found', function ():
     $repository->findOrFail(999);
 })->throws(
     RepositoryException::class,
-    "Entity 'Marko\\Database\\Tests\\Repository\\RepositoryTestUser' with ID 999 not found"
+    "Entity 'Marko\\Database\\Tests\\Repository\\RepositoryTestUser' with ID 999 not found",
 );
 
 it('finds all entities with findAll()', function (): void {
