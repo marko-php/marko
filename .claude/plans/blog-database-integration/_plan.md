@@ -39,7 +39,7 @@ Update the marko/blog package to use the database layer for Post entity and repo
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
 | 001 | Update composer.json dependencies | - | completed |
-| 002 | Create Post entity with attributes | 001 | pending |
+| 002 | Create Post entity with attributes | 001 | completed |
 | 003 | Create PostRepository | 002 | pending |
 | 004 | Update PostController to use repository | 003 | pending |
 
