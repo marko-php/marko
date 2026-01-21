@@ -224,4 +224,18 @@ describe('ConfigRepositoryInterface', function (): void {
                 ->and($docComment)->toContain('ConfigNotFoundException');
         }
     });
+
+    it('defines withScope method with scope parameter returning ConfigRepositoryInterface', function (): void {
+        $reflection = new ReflectionClass(ConfigRepositoryInterface::class);
+
+        expect($reflection->hasMethod('withScope'))->toBeTrue();
+
+        $method = $reflection->getMethod('withScope');
+        $params = $method->getParameters();
+
+        expect($method->getReturnType()?->getName())->toBe(ConfigRepositoryInterface::class)
+            ->and($params)->toHaveCount(1)
+            ->and($params[0]->getName())->toBe('scope')
+            ->and($params[0]->getType()?->getName())->toBe('string');
+    });
 });

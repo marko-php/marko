@@ -7,10 +7,11 @@ namespace Marko\Config;
 use Marko\Config\Exceptions\ConfigException;
 use Marko\Config\Exceptions\ConfigNotFoundException;
 
-readonly class ConfigRepository implements ConfigRepositoryInterface
+class ConfigRepository implements ConfigRepositoryInterface
 {
     public function __construct(
-        private array $config,
+        private readonly array $config,
+        private readonly ?string $defaultScope = null,
     ) {}
 
     public function get(
@@ -18,8 +19,10 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
         mixed $default = null,
         ?string $scope = null,
     ): mixed {
-        if ($scope !== null) {
-            [$found, $value] = $this->resolveScopedKey($key, $scope);
+        $effectiveScope = $scope ?? $this->defaultScope;
+
+        if ($effectiveScope !== null) {
+            [$found, $value] = $this->resolveScopedKey($key, $effectiveScope);
             if ($found) {
                 return $value;
             }
@@ -34,8 +37,10 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
         string $key,
         ?string $scope = null,
     ): bool {
-        if ($scope !== null) {
-            [$found] = $this->resolveScopedKey($key, $scope);
+        $effectiveScope = $scope ?? $this->defaultScope;
+
+        if ($effectiveScope !== null) {
+            [$found] = $this->resolveScopedKey($key, $effectiveScope);
             if ($found) {
                 return true;
             }
@@ -208,5 +213,11 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
         ?string $scope = null,
     ): array {
         return $this->config;
+    }
+
+    public function withScope(
+        string $scope,
+    ): ConfigRepositoryInterface {
+        return new self($this->config, $scope);
     }
 }

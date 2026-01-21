@@ -88,4 +88,12 @@ interface ConfigRepositoryInterface
     ): array;
 
     public function all(?string $scope = null): array;
+
+    /**
+     * Create a new ConfigRepository with a default scope.
+     *
+     * Returns a new instance that automatically uses the given scope
+     * for all configuration lookups without passing scope explicitly.
+     */
+    public function withScope(string $scope): ConfigRepositoryInterface;
 }

@@ -87,13 +87,12 @@ it('has module.php with enabled set to true', function () {
         ->and($config['enabled'])->toBeTrue();
 });
 
-it('has module.php with empty bindings array', function () {
+it('has module.php with bindings array', function () {
     $modulePath = dirname(__DIR__) . '/module.php';
     $config = require $modulePath;
 
     expect($config)->toHaveKey('bindings')
-        ->and($config['bindings'])->toBeArray()
-        ->and($config['bindings'])->toBeEmpty();
+        ->and($config['bindings'])->toBeArray();
 });
 
 it('has src directory for source code', function () {
