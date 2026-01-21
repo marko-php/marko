@@ -70,6 +70,17 @@ class MigrationRepository
     }
 
     /**
+     * Get all applied migrations with their batch numbers.
+     *
+     * @return array<array{name: string, batch: int}>
+     */
+    public function getAppliedWithBatch(
+        ConnectionInterface $connection,
+    ): array {
+        return $connection->query('SELECT name, batch FROM migrations ORDER BY name');
+    }
+
+    /**
      * Get the next batch number.
      */
     public function getNextBatchNumber(

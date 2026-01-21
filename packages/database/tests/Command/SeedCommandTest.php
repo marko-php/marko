@@ -119,32 +119,36 @@ function createStubConnection(): ConnectionInterface
     };
 }
 
-/**
- * Helper to capture output.
- *
- * @return array{stream: resource, output: Output}
- */
-function createOutputStream(): array
-{
-    $stream = fopen('php://memory', 'r+');
+if (!function_exists('createOutputStream')) {
+    /**
+     * Helper to capture output.
+     *
+     * @return array{stream: resource, output: Output}
+     */
+    function createOutputStream(): array
+    {
+        $stream = fopen('php://memory', 'r+');
 
-    return [
-        'stream' => $stream,
-        'output' => new Output($stream),
-    ];
+        return [
+            'stream' => $stream,
+            'output' => new Output($stream),
+        ];
+    }
 }
 
-/**
- * Helper to get output content.
- *
- * @param resource $stream
- */
-function getOutputContent(
-    mixed $stream,
-): string {
-    rewind($stream);
+if (!function_exists('getOutputContent')) {
+    /**
+     * Helper to get output content.
+     *
+     * @param resource $stream
+     */
+    function getOutputContent(
+        mixed $stream,
+    ): string {
+        rewind($stream);
 
-    return stream_get_contents($stream);
+        return stream_get_contents($stream);
+    }
 }
 
 it('registers as db:seed command via #[Command] attribute', function (): void {

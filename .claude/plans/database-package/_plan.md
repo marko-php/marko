@@ -70,12 +70,12 @@ Implement the database layer for Marko framework with entity-driven schema defin
 | 016 | MySQL SQL generator | 010, 015 | completed |
 | 017 | PostgreSQL SQL generator | 011, 015 | completed |
 | 018 | Migration system core | 014, 015 | completed |
-| 019 | Migration file generator (nowdoc syntax) | 018 | pending |
-| 020 | Data migrations system | 018 | pending |
-| 021 | CLI: db:status command | 018 | pending |
+| 019 | Migration file generator (nowdoc syntax) | 018 | completed |
+| 020 | Data migrations system | 018 | completed |
+| 021 | CLI: db:status command | 018 | completed |
 | 022 | CLI: db:diff command | 014 | completed |
 | 023 | CLI: db:migrate command | 019, 020 | pending |
-| 024 | CLI: db:rollback command | 018 | pending |
+| 024 | CLI: db:rollback command | 018 | completed |
 | 025 | Seeder system | 002 | completed |
 | 026 | CLI: db:seed command | 025 | completed |
 | 027 | Transaction support | 002, 003, 004 | completed |

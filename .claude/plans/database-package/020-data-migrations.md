@@ -1,6 +1,6 @@
 # Task 020: Data Migrations System
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 018
 **Retry count**: 0
 
@@ -14,19 +14,19 @@ Create the data migrations system for inserting required module data that runs i
 - **Runs in production** - for lookup tables, default config, required records
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates DataMigration base class extending Migration`
-- [ ] `it discovers data migrations in vendor/*/*/Data/`
-- [ ] `it discovers data migrations in modules/*/*/Data/`
-- [ ] `it discovers data migrations in app/*/Data/`
-- [ ] `it tracks data migrations in same migrations table`
-- [ ] `it applies data migrations in filename order`
-- [ ] `it supports raw SQL via execute() with nowdoc syntax`
-- [ ] `it provides insert() helper for single/bulk inserts`
-- [ ] `it provides update() helper with where clause`
-- [ ] `it provides delete() helper with where clause`
-- [ ] `it supports down() for rollback`
-- [ ] `it runs in production (not blocked like seeders)`
-- [ ] `it runs data migrations after schema migrations in same batch`
+- [x] `it creates DataMigration base class extending Migration`
+- [x] `it discovers data migrations in vendor/*/*/Data/`
+- [x] `it discovers data migrations in modules/*/*/Data/`
+- [x] `it discovers data migrations in app/*/Data/`
+- [x] `it tracks data migrations in same migrations table`
+- [x] `it applies data migrations in filename order`
+- [x] `it supports raw SQL via execute() with nowdoc syntax`
+- [x] `it provides insert() helper for single/bulk inserts`
+- [x] `it provides update() helper with where clause`
+- [x] `it provides delete() helper with where clause`
+- [x] `it supports down() for rollback`
+- [x] `it runs in production (not blocked like seeders)`
+- [x] `it runs data migrations after schema migrations in same batch`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -81,4 +81,23 @@ return new class extends DataMigration {
 ```
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+Created three classes for the data migrations system:
+
+1. **DataMigration** (`packages/database/src/Migration/DataMigration.php`)
+   - Extends Migration base class
+   - Provides `insert()` helper for single and bulk inserts with parameterized queries
+   - Provides `update()` helper with where clause support
+   - Provides `delete()` helper with where clause support
+   - Inherits `execute()` from Migration for raw SQL with nowdoc syntax
+   - No environment checks - runs in production by design
+
+2. **DataMigrationDiscovery** (`packages/database/src/Migration/DataMigrationDiscovery.php`)
+   - Discovers data migrations in vendor/*/*/Data/, modules/*/*/Data/, and app/*/Data/
+   - Returns migrations sorted by filename for consistent execution order
+   - Each discovered migration includes name, path, and source
+
+3. **DataMigrator** (`packages/database/src/Migration/DataMigrator.php`)
+   - Uses same MigrationRepository as schema migrations (shared tracking table)
+   - Supports migrate() and rollback() operations
+   - Integrates with same batch numbering system
+   - Validates migrations are DataMigration instances

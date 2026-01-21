@@ -37,9 +37,9 @@ describe('MigrationRepository', function (): void {
                 function (string $sql, array $bindings = []) use (&$executedSql, &$executedBindings): int {
                     $executedSql[] = $sql;
                     $executedBindings[] = $bindings;
-    
+
                     return 1;
-                }
+                },
             );
 
         $repository = new MigrationRepository();
@@ -61,9 +61,9 @@ describe('MigrationRepository', function (): void {
                 function (string $sql, array $bindings = []) use (&$executedSql, &$executedBindings): int {
                     $executedSql[] = $sql;
                     $executedBindings[] = $bindings;
-    
+
                     return 1;
-                }
+                },
             );
 
         $repository = new MigrationRepository();
@@ -91,6 +91,25 @@ describe('MigrationRepository', function (): void {
             '2024_01_01_000000_create_users_table',
             '2024_01_02_000000_create_posts_table',
             '2024_01_03_000000_add_user_email',
+        ]);
+    });
+
+    it('returns list of applied migrations with batch numbers', function (): void {
+        $connection = $this->createMock(ConnectionInterface::class);
+        $connection->method('query')
+            ->willReturn([
+                ['name' => '2024_01_01_000000_create_users_table', 'batch' => 1],
+                ['name' => '2024_01_02_000000_create_posts_table', 'batch' => 1],
+                ['name' => '2024_01_03_000000_add_user_email', 'batch' => 2],
+            ]);
+
+        $repository = new MigrationRepository();
+        $applied = $repository->getAppliedWithBatch($connection);
+
+        expect($applied)->toBe([
+            ['name' => '2024_01_01_000000_create_users_table', 'batch' => 1],
+            ['name' => '2024_01_02_000000_create_posts_table', 'batch' => 1],
+            ['name' => '2024_01_03_000000_add_user_email', 'batch' => 2],
         ]);
     });
 
