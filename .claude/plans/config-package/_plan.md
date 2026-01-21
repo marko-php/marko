@@ -51,8 +51,8 @@ Create the `marko/config` package providing a centralized, type-safe configurati
 | 003 | ConfigMerger (deep array merge logic) | 001 | completed |
 | 004 | ConfigLoader (load and validate PHP config files) | 002 | completed |
 | 005 | ConfigRepositoryInterface | 001 | completed |
-| 006 | ConfigRepository implementation | 003, 004, 005 | pending |
-| 007 | ConfigDiscovery (scan module config/ directories) | 004 | pending |
+| 006 | ConfigRepository implementation | 003, 004, 005 | completed |
+| 007 | ConfigDiscovery (scan module config/ directories) | 004 | completed |
 | 008 | Scoped configuration support | 006 | pending |
 | 009 | Application integration | 006, 007 | pending |
 | 010 | Integration tests | 009 | pending |
