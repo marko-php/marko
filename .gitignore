@@ -1,4 +1,5 @@
 .DS_Store
+.claude/ralph-loop.local.md
 .php-cs-fixer.cache
 .phpstan-cache/
 **/.phpunit.cache/

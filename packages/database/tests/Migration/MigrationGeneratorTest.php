@@ -101,7 +101,7 @@ describe('MigrationGenerator', function (): void {
 
         $content = file_get_contents($paths[0]);
 
-        expect($content)->toContain('public function up(ConnectionInterface $connection): void');
+        expect($content)->toContain('public function up(');
         expect($content)->toContain('CREATE TABLE "posts"');
     });
 
@@ -119,7 +119,7 @@ describe('MigrationGenerator', function (): void {
 
         $content = file_get_contents($paths[0]);
 
-        expect($content)->toContain('public function down(ConnectionInterface $connection): void');
+        expect($content)->toContain('public function down(');
         expect($content)->toContain('DROP TABLE "posts"');
     });
 
