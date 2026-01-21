@@ -1,7 +1,7 @@
 # Task 004: ConfigLoader
 
 ## Status
-pending
+completed
 
 ## Depends On
 002
