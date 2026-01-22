@@ -1,6 +1,6 @@
 # Task 008: queue package module.php
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 005
 **Retry count**: 0
 

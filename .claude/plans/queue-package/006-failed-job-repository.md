@@ -1,6 +1,6 @@
 # Task 006: FailedJobRepositoryInterface
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002
 **Retry count**: 0
 
