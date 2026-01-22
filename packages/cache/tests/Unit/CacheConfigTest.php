@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Marko\Cache\Config\CacheConfig;
 use Marko\Config\ConfigRepositoryInterface;
 
-function createMockConfigRepository(
+function createCacheConfigRepository(
     array $configData = [],
 ): ConfigRepositoryInterface {
     /** @noinspection PhpMissingParentConstructorInspection */
@@ -85,7 +85,7 @@ function createMockConfigRepository(
 }
 
 it('returns driver from config', function () {
-    $config = new CacheConfig(createMockConfigRepository([
+    $config = new CacheConfig(createCacheConfigRepository([
         'cache.driver' => 'redis',
     ]));
 
@@ -93,13 +93,13 @@ it('returns driver from config', function () {
 });
 
 it('returns default driver when not configured', function () {
-    $config = new CacheConfig(createMockConfigRepository([]));
+    $config = new CacheConfig(createCacheConfigRepository([]));
 
     expect($config->driver())->toBe('file');
 });
 
 it('returns path from config', function () {
-    $config = new CacheConfig(createMockConfigRepository([
+    $config = new CacheConfig(createCacheConfigRepository([
         'cache.path' => '/var/cache',
     ]));
 
@@ -107,13 +107,13 @@ it('returns path from config', function () {
 });
 
 it('returns default path when not configured', function () {
-    $config = new CacheConfig(createMockConfigRepository([]));
+    $config = new CacheConfig(createCacheConfigRepository([]));
 
     expect($config->path())->toBe('storage/cache');
 });
 
 it('returns default ttl from config', function () {
-    $config = new CacheConfig(createMockConfigRepository([
+    $config = new CacheConfig(createCacheConfigRepository([
         'cache.default_ttl' => 7200,
     ]));
 
@@ -121,7 +121,7 @@ it('returns default ttl from config', function () {
 });
 
 it('returns default ttl when not configured', function () {
-    $config = new CacheConfig(createMockConfigRepository([]));
+    $config = new CacheConfig(createCacheConfigRepository([]));
 
     expect($config->defaultTtl())->toBe(3600);
 });

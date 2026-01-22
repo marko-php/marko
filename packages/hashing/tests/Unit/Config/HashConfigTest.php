@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Hashing\Config\HashConfig;
 
-function createMockConfigRepository(
+function createHashConfigRepository(
     array $configData = [],
 ): ConfigRepositoryInterface {
     /** @noinspection PhpMissingParentConstructorInspection */
@@ -85,7 +85,7 @@ function createMockConfigRepository(
 }
 
 it('returns configured default hasher', function () {
-    $config = new HashConfig(createMockConfigRepository([
+    $config = new HashConfig(createHashConfigRepository([
         'hashing.default' => 'argon2id',
     ]));
 
@@ -93,13 +93,13 @@ it('returns configured default hasher', function () {
 });
 
 it('returns bcrypt as default when not configured', function () {
-    $config = new HashConfig(createMockConfigRepository([]));
+    $config = new HashConfig(createHashConfigRepository([]));
 
     expect($config->defaultHasher())->toBe('bcrypt');
 });
 
 it('returns true when hasher is configured', function () {
-    $config = new HashConfig(createMockConfigRepository([
+    $config = new HashConfig(createHashConfigRepository([
         'hashing.hashers.bcrypt' => ['cost' => 12],
     ]));
 
@@ -107,13 +107,13 @@ it('returns true when hasher is configured', function () {
 });
 
 it('returns false when hasher is not configured', function () {
-    $config = new HashConfig(createMockConfigRepository([]));
+    $config = new HashConfig(createHashConfigRepository([]));
 
     expect($config->hasHasher('unknown'))->toBeFalse();
 });
 
 it('returns hasher config array', function () {
-    $config = new HashConfig(createMockConfigRepository([
+    $config = new HashConfig(createHashConfigRepository([
         'hashing.hashers.bcrypt' => ['cost' => 14],
     ]));
 
@@ -121,13 +121,13 @@ it('returns hasher config array', function () {
 });
 
 it('returns empty array for unconfigured hasher', function () {
-    $config = new HashConfig(createMockConfigRepository([]));
+    $config = new HashConfig(createHashConfigRepository([]));
 
     expect($config->getHasherConfig('unknown'))->toBe([]);
 });
 
 it('returns configured bcrypt cost', function () {
-    $config = new HashConfig(createMockConfigRepository([
+    $config = new HashConfig(createHashConfigRepository([
         'hashing.hashers.bcrypt.cost' => 14,
     ]));
 
@@ -135,13 +135,13 @@ it('returns configured bcrypt cost', function () {
 });
 
 it('returns default bcrypt cost of 12', function () {
-    $config = new HashConfig(createMockConfigRepository([]));
+    $config = new HashConfig(createHashConfigRepository([]));
 
     expect($config->getBcryptCost())->toBe(12);
 });
 
 it('returns configured argon2 memory', function () {
-    $config = new HashConfig(createMockConfigRepository([
+    $config = new HashConfig(createHashConfigRepository([
         'hashing.hashers.argon2id.memory' => 131072,
     ]));
 
@@ -149,13 +149,13 @@ it('returns configured argon2 memory', function () {
 });
 
 it('returns default argon2 memory of 65536', function () {
-    $config = new HashConfig(createMockConfigRepository([]));
+    $config = new HashConfig(createHashConfigRepository([]));
 
     expect($config->getArgon2Memory())->toBe(65536);
 });
 
 it('returns configured argon2 time', function () {
-    $config = new HashConfig(createMockConfigRepository([
+    $config = new HashConfig(createHashConfigRepository([
         'hashing.hashers.argon2id.time' => 8,
     ]));
 
@@ -163,13 +163,13 @@ it('returns configured argon2 time', function () {
 });
 
 it('returns default argon2 time of 4', function () {
-    $config = new HashConfig(createMockConfigRepository([]));
+    $config = new HashConfig(createHashConfigRepository([]));
 
     expect($config->getArgon2Time())->toBe(4);
 });
 
 it('returns configured argon2 threads', function () {
-    $config = new HashConfig(createMockConfigRepository([
+    $config = new HashConfig(createHashConfigRepository([
         'hashing.hashers.argon2id.threads' => 4,
     ]));
 
@@ -177,7 +177,7 @@ it('returns configured argon2 threads', function () {
 });
 
 it('returns default argon2 threads of 1', function () {
-    $config = new HashConfig(createMockConfigRepository([]));
+    $config = new HashConfig(createHashConfigRepository([]));
 
     expect($config->getArgon2Threads())->toBe(1);
 });

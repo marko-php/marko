@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Queue\QueueConfig;
 
-function createMockConfigRepository(
+function createQueueConfigRepository(
     array $values = [],
 ): ConfigRepositoryInterface {
     return new class ($values) implements ConfigRepositoryInterface
@@ -85,7 +85,7 @@ function createMockConfigRepository(
 
 describe('QueueConfig', function (): void {
     it('loads driver setting', function (): void {
-        $config = createMockConfigRepository([
+        $config = createQueueConfigRepository([
             'queue.driver' => 'database',
         ]);
 
@@ -95,7 +95,7 @@ describe('QueueConfig', function (): void {
     });
 
     it('loads connection setting', function (): void {
-        $config = createMockConfigRepository([
+        $config = createQueueConfigRepository([
             'queue.connection' => 'redis',
         ]);
 
@@ -105,7 +105,7 @@ describe('QueueConfig', function (): void {
     });
 
     it('loads queue name setting', function (): void {
-        $config = createMockConfigRepository([
+        $config = createQueueConfigRepository([
             'queue.queue' => 'high-priority',
         ]);
 
@@ -115,7 +115,7 @@ describe('QueueConfig', function (): void {
     });
 
     it('loads retry_after setting', function (): void {
-        $config = createMockConfigRepository([
+        $config = createQueueConfigRepository([
             'queue.retry_after' => 120,
         ]);
 
@@ -125,7 +125,7 @@ describe('QueueConfig', function (): void {
     });
 
     it('loads max_attempts setting', function (): void {
-        $config = createMockConfigRepository([
+        $config = createQueueConfigRepository([
             'queue.max_attempts' => 5,
         ]);
 
@@ -135,7 +135,7 @@ describe('QueueConfig', function (): void {
     });
 
     it('provides default values', function (): void {
-        $config = createMockConfigRepository([]);
+        $config = createQueueConfigRepository([]);
 
         $queueConfig = new QueueConfig($config);
 
@@ -151,7 +151,7 @@ describe('QueueConfig', function (): void {
         // These defaults are suitable for development environments (sync driver)
         // while production can override via config files
 
-        $emptyConfig = createMockConfigRepository([]);
+        $emptyConfig = createQueueConfigRepository([]);
         $queueConfig = new QueueConfig($emptyConfig);
 
         // Verify defaults are appropriate for development environment
@@ -162,7 +162,7 @@ describe('QueueConfig', function (): void {
             ->and($queueConfig->maxAttempts())->toBe(3);  // 3 attempts before giving up
 
         // Verify that explicit config values override the defaults
-        $customConfig = createMockConfigRepository([
+        $customConfig = createQueueConfigRepository([
             'queue.driver' => 'database',
             'queue.connection' => 'mysql',
             'queue.queue' => 'high-priority',

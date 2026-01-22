@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\View\ViewConfig;
 
-function createMockConfigRepository(
+function createViewConfigRepository(
     array $values = [],
 ): ConfigRepositoryInterface {
     return new class ($values) implements ConfigRepositoryInterface
@@ -84,7 +84,7 @@ function createMockConfigRepository(
 }
 
 it('ViewConfig has cache directory property', function () {
-    $config = createMockConfigRepository([
+    $config = createViewConfigRepository([
         'view.cache_directory' => '/var/cache/views',
     ]);
 
@@ -95,33 +95,33 @@ it('ViewConfig has cache directory property', function () {
 
 it('ViewConfig has extension with default', function () {
     // Test with explicit value
-    $configWithExtension = createMockConfigRepository([
+    $configWithExtension = createViewConfigRepository([
         'view.extension' => '.blade.php',
     ]);
     $viewConfigWithExtension = new ViewConfig($configWithExtension);
     expect($viewConfigWithExtension->extension())->toBe('.blade.php');
 
     // Test default value
-    $configEmpty = createMockConfigRepository([]);
+    $configEmpty = createViewConfigRepository([]);
     $viewConfigEmpty = new ViewConfig($configEmpty);
     expect($viewConfigEmpty->extension())->toBe('.latte');
 });
 
 it('ViewConfig has auto refresh with default', function () {
     // Test with explicit value (true)
-    $configWithAutoRefresh = createMockConfigRepository([
+    $configWithAutoRefresh = createViewConfigRepository([
         'view.auto_refresh' => true,
     ]);
     $viewConfigWithAutoRefresh = new ViewConfig($configWithAutoRefresh);
     expect($viewConfigWithAutoRefresh->autoRefresh())->toBeTrue();
 
     // Test default value (true for dev)
-    $configEmpty = createMockConfigRepository([]);
+    $configEmpty = createViewConfigRepository([]);
     $viewConfigEmpty = new ViewConfig($configEmpty);
     expect($viewConfigEmpty->autoRefresh())->toBeTrue();
 
     // Test with explicit false
-    $configWithAutoRefreshFalse = createMockConfigRepository([
+    $configWithAutoRefreshFalse = createViewConfigRepository([
         'view.auto_refresh' => false,
     ]);
     $viewConfigWithAutoRefreshFalse = new ViewConfig($configWithAutoRefreshFalse);
@@ -130,7 +130,7 @@ it('ViewConfig has auto refresh with default', function () {
 
 it('ViewConfig loads from config repository', function () {
     // Test that all properties are loaded from the config repository
-    $config = createMockConfigRepository([
+    $config = createViewConfigRepository([
         'view.cache_directory' => '/custom/cache',
         'view.extension' => '.twig',
         'view.auto_refresh' => false,
@@ -145,7 +145,7 @@ it('ViewConfig loads from config repository', function () {
         ->and($viewConfig->strictTypes())->toBeTrue();
 
     // Test default values when config is empty
-    $emptyConfig = createMockConfigRepository([]);
+    $emptyConfig = createViewConfigRepository([]);
     $emptyViewConfig = new ViewConfig($emptyConfig);
 
     expect($emptyViewConfig->cacheDirectory())->toBe('/tmp/views')
