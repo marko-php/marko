@@ -6,6 +6,23 @@ Type-safe configuration management with dot notation, automatic merging, and mul
 
 The config package provides a centralized configuration system for Marko applications. Config files are plain PHP arrays that get automatically discovered, merged by priority, and accessed through a type-safe repository. Scoped configuration enables multi-tenant applications where each tenant can have different settings while sharing common defaults.
 
+## When to Use This Package
+
+**Use marko/config when:**
+
+- **Installing modules with default config** - Modules ship sensible defaults in `vendor/*/config/`, and you override just what you need in `app/config/`
+- **Managing environment-specific settings** - Different database credentials, API keys, or feature flags for dev/staging/prod via `$_ENV`
+- **Building multi-tenant applications** - Each tenant needs different settings (currency, locale, pricing) while sharing common defaults
+- **Centralizing config access** - Inject `ConfigRepositoryInterface` anywhere instead of loading files directly
+
+**You probably don't need this when:**
+
+- You have a single config file with hardcoded values
+- Your app is simple with no modules to override
+- You're not using environment variables for different environments
+
+**Migration path:** Existing packages (like `DatabaseConfig`) that load config directly continue working. They can adopt `ConfigRepositoryInterface` when the benefits apply.
+
 ## Installation
 
 ```bash
