@@ -17,11 +17,18 @@ The config package provides a centralized configuration system for Marko applica
 
 **You probably don't need this when:**
 
-- You have a single config file with hardcoded values
-- Your app is simple with no modules to override
+- A package loads its own config directly (e.g., `$config = require 'config/database.php'`)
+- Your app is simple with no modules shipping default config to override
 - You're not using environment variables for different environments
 
-**Migration path:** Existing packages (like `DatabaseConfig`) that load config directly continue working. They can adopt `ConfigRepositoryInterface` when the benefits apply.
+**Note:** Packages can always load config files directly with `require`—that's how `DatabaseConfig` works today. This package adds value when you need merging, scopes, or centralized access across multiple config sources.
+
+```php
+<?php
+// Simple direct loading (no marko/config needed)
+$config = require $paths->config . '/database.php';
+$host = $config['host'];
+```
 
 ## Installation
 
