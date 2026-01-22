@@ -1,6 +1,6 @@
 # Task 003: SyntaxHighlighter
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002
 **Retry count**: 0
 
@@ -13,12 +13,12 @@ Create the SyntaxHighlighter class for PHP code tokenization and coloring.
 - No external dependencies
 
 ## Requirements (Test Descriptions)
-- [ ] `it highlights PHP code with spans`
-- [ ] `it escapes HTML entities`
-- [ ] `it identifies token types correctly`
-- [ ] `it handles invalid PHP code gracefully`
-- [ ] `it produces valid HTML output`
-- [ ] `it supports context lines around error`
+- [x] `it highlights PHP code with spans`
+- [x] `it escapes HTML entities`
+- [x] `it identifies token types correctly`
+- [x] `it handles invalid PHP code gracefully`
+- [x] `it produces valid HTML output`
+- [x] `it supports context lines around error`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -26,4 +26,9 @@ Create the SyntaxHighlighter class for PHP code tokenization and coloring.
 - Handles edge cases gracefully
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created `SyntaxHighlighter` class in `packages/errors-advanced/src/SyntaxHighlighter.php`
+- Uses PHP's `token_get_all()` for tokenization
+- HTML escaping via `htmlspecialchars()` with ENT_QUOTES | ENT_HTML5
+- Token type classification via match expression covering keywords, strings, variables, comments, numbers, tags, and identifiers
+- `highlight()` method tokenizes and wraps tokens in span elements with CSS classes
+- `highlightWithContext()` method extracts lines around an error line and highlights them
