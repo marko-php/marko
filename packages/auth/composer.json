@@ -4,7 +4,8 @@
     "type": "marko-module",
     "license": "MIT",
     "require": {
-        "php": "^8.5"
+        "php": "^8.5",
+        "marko/core": "^0.1"
     },
     "autoload": {
         "psr-4": {

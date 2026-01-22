@@ -1,6 +1,6 @@
 # Task 013: Authentication Events
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001
 **Retry count**: 0
 
@@ -13,14 +13,14 @@ Create authentication event classes: LoginEvent, LogoutEvent, FailedLoginEvent, 
 - Follow existing event pattern in core
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates LoginEvent with user and guard name`
-- [ ] `it creates LoginEvent with remember flag`
-- [ ] `it creates LogoutEvent with user and guard name`
-- [ ] `it creates FailedLoginEvent with credentials and guard name`
-- [ ] `it creates FailedLoginEvent without exposing password`
-- [ ] `it creates PasswordResetEvent with user`
-- [ ] `all events are immutable`
-- [ ] `all events have getter methods`
+- [x] `it creates LoginEvent with user and guard name`
+- [x] `it creates LoginEvent with remember flag`
+- [x] `it creates LogoutEvent with user and guard name`
+- [x] `it creates FailedLoginEvent with credentials and guard name`
+- [x] `it creates FailedLoginEvent without exposing password`
+- [x] `it creates PasswordResetEvent with user`
+- [x] `all events are immutable`
+- [x] `all events have getter methods`
 
 ## Acceptance Criteria
 - All requirements have passing tests

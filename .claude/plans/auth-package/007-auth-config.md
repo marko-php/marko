@@ -1,6 +1,6 @@
 # Task 007: AuthConfig
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001
 **Retry count**: 0
 
@@ -12,15 +12,15 @@ Create the AuthConfig class that loads configuration from config/auth.php.
 - Configuration includes guards, providers, password settings, remember token settings
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates AuthConfig class`
-- [ ] `it loads default guard name`
-- [ ] `it loads default provider name`
-- [ ] `it loads guards configuration array`
-- [ ] `it loads providers configuration array`
-- [ ] `it loads password hasher settings`
-- [ ] `it loads remember token settings`
-- [ ] `it provides getter for bcrypt cost`
-- [ ] `it provides default configuration file`
+- [x] `it creates AuthConfig class`
+- [x] `it loads default guard name`
+- [x] `it loads default provider name`
+- [x] `it loads guards configuration array`
+- [x] `it loads providers configuration array`
+- [x] `it loads password hasher settings`
+- [x] `it loads remember token settings`
+- [x] `it provides getter for bcrypt cost`
+- [x] `it provides default configuration file`
 
 ## Acceptance Criteria
 - All requirements have passing tests

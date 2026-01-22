@@ -1,6 +1,6 @@
 # Task 004: PasswordHasherInterface and BcryptPasswordHasher
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001
 **Retry count**: 0
 
@@ -13,16 +13,16 @@ Create the PasswordHasherInterface contract for password hashing/verification an
 - Support configurable bcrypt cost
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates PasswordHasherInterface with hash method`
-- [ ] `it creates PasswordHasherInterface with verify method`
-- [ ] `it creates PasswordHasherInterface with needsRehash method`
-- [ ] `it creates BcryptPasswordHasher implementing interface`
-- [ ] `it hashes password with bcrypt algorithm`
-- [ ] `it verifies correct password returns true`
-- [ ] `it verifies incorrect password returns false`
-- [ ] `it detects when rehash is needed`
-- [ ] `it supports configurable cost parameter`
-- [ ] `it uses default cost of 12`
+- [x] `it creates PasswordHasherInterface with hash method`
+- [x] `it creates PasswordHasherInterface with verify method`
+- [x] `it creates PasswordHasherInterface with needsRehash method`
+- [x] `it creates BcryptPasswordHasher implementing interface`
+- [x] `it hashes password with bcrypt algorithm`
+- [x] `it verifies correct password returns true`
+- [x] `it verifies incorrect password returns false`
+- [x] `it detects when rehash is needed`
+- [x] `it supports configurable cost parameter`
+- [x] `it uses default cost of 12`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -30,4 +30,8 @@ Create the PasswordHasherInterface contract for password hashing/verification an
 - Cost is configurable via constructor
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+Created two files:
+- `packages/auth/src/Contracts/PasswordHasherInterface.php` - Interface with hash(), verify(), and needsRehash() methods
+- `packages/auth/src/Hashing/BcryptPasswordHasher.php` - Implementation using PHP's password_hash/password_verify with PASSWORD_BCRYPT algorithm
+
+The BcryptPasswordHasher supports configurable cost via constructor with a default of 12. All methods are implemented using PHP's built-in secure password functions.
