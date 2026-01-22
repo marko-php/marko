@@ -1,6 +1,6 @@
 # Task 020: Integration Tests
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 013
 **Retry count**: 0
 
