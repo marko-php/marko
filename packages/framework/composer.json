@@ -1,0 +1,32 @@
+{
+    "name": "marko/framework",
+    "description": "Marko Framework - All core packages for typical web applications",
+    "license": "MIT",
+    "type": "metapackage",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "^1.0",
+        "marko/routing": "^1.0",
+        "marko/cli": "^1.0",
+        "marko/errors": "^1.0",
+        "marko/errors-simple": "^1.0",
+        "marko/config": "^1.0",
+        "marko/hashing": "^1.0",
+        "marko/validation": "^1.0"
+    },
+    "suggest": {
+        "marko/database": "Database abstraction layer",
+        "marko/database-mysql": "MySQL database driver",
+        "marko/database-pgsql": "PostgreSQL database driver",
+        "marko/cache": "Cache abstraction layer",
+        "marko/cache-file": "File-based cache driver",
+        "marko/session": "Session abstraction layer",
+        "marko/session-file": "File-based session driver",
+        "marko/auth": "Authentication abstraction layer",
+        "marko/log": "Logging abstraction layer",
+        "marko/log-file": "File-based logging driver",
+        "marko/filesystem": "Filesystem abstraction layer",
+        "marko/filesystem-local": "Local filesystem driver",
+        "marko/errors-advanced": "Advanced error handling with detailed debugging"
+    }
+}

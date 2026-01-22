@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-pending
+in_progress
 
 ## Objective
 Create the `marko/framework` metapackage that bundles all commonly-used Marko framework packages for easy installation. This provides a single-command setup for new projects while allowing individual package installation for advanced users.
