@@ -108,4 +108,79 @@ describe('RequestDataCollector', function () {
             ->and($data['server']['software'])->toBe('Apache/2.4.41')
             ->and($data['server']['name'])->toBe('example.com');
     });
+
+    it('masks token fields', function () {
+        $_POST = ['username' => 'john', 'token' => 'secret-token-123'];
+        $_GET = ['access_token' => 'query-token-456', 'refresh_token' => 'refresh-789'];
+
+        $collector = new RequestDataCollector();
+        $data = $collector->collect();
+
+        expect($data['post']['username'])->toBe('john')
+            ->and($data['post']['token'])->toBe('********')
+            ->and($data['query']['access_token'])->toBe('********')
+            ->and($data['query']['refresh_token'])->toBe('********');
+    });
+
+    it('masks cookies', function () {
+        $_COOKIE = ['session_id' => 'abc123', 'user_token' => 'secret'];
+
+        $collector = new RequestDataCollector();
+        $data = $collector->collect();
+
+        expect($data['cookies'])->toBeArray()
+            ->and($data['cookies']['session_id'])->toBe('********')
+            ->and($data['cookies']['user_token'])->toBe('********');
+    });
+
+    it('handles empty request data', function () {
+        $_GET = [];
+        $_POST = [];
+        $_COOKIE = [];
+        unset($_SERVER['REQUEST_METHOD']);
+        unset($_SERVER['REQUEST_URI']);
+
+        $collector = new RequestDataCollector();
+        $data = $collector->collect();
+
+        expect($data['method'])->toBe('CLI')
+            ->and($data['uri'])->toBe('')
+            ->and($data['query'])->toBe([])
+            ->and($data['post'])->toBe([])
+            ->and($data['cookies'])->toBe([]);
+    });
+
+    it('handles nested data', function () {
+        $_POST = [
+            'user' => [
+                'name' => 'john',
+                'password' => 'secret123',
+                'credentials' => [
+                    'api_key' => 'nested-key',
+                ],
+            ],
+        ];
+
+        $collector = new RequestDataCollector();
+        $data = $collector->collect();
+
+        expect($data['post']['user']['name'])->toBe('john')
+            ->and($data['post']['user']['password'])->toBe('********')
+            ->and($data['post']['user']['credentials']['api_key'])->toBe('********');
+    });
+
+    it('preserves non-sensitive data', function () {
+        $_GET = ['page' => '5', 'sort' => 'name', 'filter' => 'active'];
+        $_POST = ['title' => 'Hello World', 'content' => 'Some content', 'category_id' => '42'];
+
+        $collector = new RequestDataCollector();
+        $data = $collector->collect();
+
+        expect($data['query']['page'])->toBe('5')
+            ->and($data['query']['sort'])->toBe('name')
+            ->and($data['query']['filter'])->toBe('active')
+            ->and($data['post']['title'])->toBe('Hello World')
+            ->and($data['post']['content'])->toBe('Some content')
+            ->and($data['post']['category_id'])->toBe('42');
+    });
 });

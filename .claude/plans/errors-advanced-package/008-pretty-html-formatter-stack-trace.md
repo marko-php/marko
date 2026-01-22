@@ -1,6 +1,6 @@
 # Task 008: PrettyHtmlFormatter Stack Trace Formatting
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 005, 003
 **Retry count**: 0
 
@@ -13,12 +13,12 @@ Format stack trace with syntax highlighting and file navigation.
 - Previous exceptions included
 
 ## Requirements (Test Descriptions)
-- [ ] `it formats stack trace entries`
-- [ ] `it shows file and line for each frame`
-- [ ] `it highlights code at each frame`
-- [ ] `it shows function/method name`
-- [ ] `it handles previous exceptions`
-- [ ] `it limits context lines per frame`
+- [x] `it formats stack trace entries`
+- [x] `it shows file and line for each frame`
+- [x] `it highlights code at each frame`
+- [x] `it shows function/method name`
+- [x] `it handles previous exceptions`
+- [x] `it limits context lines per frame`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -26,4 +26,13 @@ Format stack trace with syntax highlighting and file navigation.
 - Code context is helpful
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+Implemented stack trace formatting in PrettyHtmlFormatter with:
+
+1. **formatStackTrace()** - Iterates over trace array and formats each frame
+2. **formatStackFrame()** - Renders individual stack frame with:
+   - frame-function: Shows the function/method name (ClassName->method() or function())
+   - frame-location: Shows file:line with proper HTML escaping
+   - frame-code: Syntax-highlighted code snippet from the file
+3. **formatFunctionName()** - Formats function name handling class methods with type indicator
+4. **formatPreviousException()** - Displays chained exceptions with their message, location, and code
+5. **contextLines parameter** - Constructor parameter to limit context lines per frame (passed to SyntaxHighlighter)

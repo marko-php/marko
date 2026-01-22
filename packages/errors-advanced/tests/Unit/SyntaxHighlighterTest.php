@@ -15,7 +15,74 @@ describe('SyntaxHighlighter', function () {
             ->and($result)->toContain('</span>');
     });
 
-    it('escapes HTML entities', function () {
+    it('highlights PHP keywords', function () {
+        $highlighter = new SyntaxHighlighter();
+
+        $code = '<?php function myFunc() { return true; }';
+        $result = $highlighter->highlight($code);
+
+        expect($result)->toContain('<span class="keyword">function</span>')
+            ->and($result)->toContain('<span class="keyword">return</span>');
+    });
+
+    it('highlights strings', function () {
+        $highlighter = new SyntaxHighlighter();
+
+        $code = '<?php $x = "hello world";';
+        $result = $highlighter->highlight($code);
+
+        expect($result)->toContain('class="string"')
+            ->and($result)->toContain('hello world');
+    });
+
+    it('highlights comments', function () {
+        $highlighter = new SyntaxHighlighter();
+
+        $code = '<?php // This is a comment';
+        $result = $highlighter->highlight($code);
+
+        expect($result)->toContain('class="comment"')
+            ->and($result)->toContain('This is a comment');
+    });
+
+    it('highlights variables', function () {
+        $highlighter = new SyntaxHighlighter();
+
+        $code = '<?php $myVariable = 1;';
+        $result = $highlighter->highlight($code);
+
+        expect($result)->toContain('<span class="variable">$myVariable</span>');
+    });
+
+    it('handles multi-line code', function () {
+        $highlighter = new SyntaxHighlighter();
+
+        $code = <<<'PHP'
+<?php
+function example() {
+    $x = 1;
+    return $x;
+}
+PHP;
+        $result = $highlighter->highlight($code);
+
+        expect($result)->toContain('class="keyword"')
+            ->and($result)->toContain('class="variable"')
+            ->and($result)->toContain("\n");
+    });
+
+    it('handles invalid syntax gracefully', function () {
+        $highlighter = new SyntaxHighlighter();
+
+        $invalidCode = '<?php function( { broken syntax';
+        $result = $highlighter->highlight($invalidCode);
+
+        expect($result)->toBeString()
+            ->and($result)->not->toBeEmpty()
+            ->and($result)->toContain('broken');
+    });
+
+    it('escapes special HTML characters', function () {
         $highlighter = new SyntaxHighlighter();
 
         $code = '<?php $x = "<script>alert(1)</script>";';
@@ -26,6 +93,14 @@ describe('SyntaxHighlighter', function () {
             ->and($result)->not->toContain('<script>');
     });
 
+    it('handles empty input', function () {
+        $highlighter = new SyntaxHighlighter();
+
+        $result = $highlighter->highlight('');
+
+        expect($result)->toBe('');
+    });
+
     it('identifies token types correctly', function () {
         $highlighter = new SyntaxHighlighter();
 
@@ -34,17 +109,6 @@ describe('SyntaxHighlighter', function () {
 
         expect($result)->toContain('class="keyword"')
             ->and($result)->toContain('class="string"');
-    });
-
-    it('handles invalid PHP code gracefully', function () {
-        $highlighter = new SyntaxHighlighter();
-
-        $invalidCode = '<?php function( { broken syntax';
-        $result = $highlighter->highlight($invalidCode);
-
-        expect($result)->toBeString()
-            ->and($result)->not->toBeEmpty()
-            ->and($result)->toContain('broken');
     });
 
     it('produces valid HTML output', function () {

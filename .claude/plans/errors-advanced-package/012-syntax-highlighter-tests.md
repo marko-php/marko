@@ -1,6 +1,6 @@
 # Task 012: Unit Tests for SyntaxHighlighter
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 003
 **Retry count**: 0
 
@@ -12,14 +12,14 @@ Create comprehensive unit tests for SyntaxHighlighter.
 - Test edge cases and error handling
 
 ## Requirements (Test Descriptions)
-- [ ] `it highlights PHP keywords`
-- [ ] `it highlights strings`
-- [ ] `it highlights comments`
-- [ ] `it highlights variables`
-- [ ] `it handles multi-line code`
-- [ ] `it handles invalid syntax gracefully`
-- [ ] `it escapes special HTML characters`
-- [ ] `it handles empty input`
+- [x] `it highlights PHP keywords`
+- [x] `it highlights strings`
+- [x] `it highlights comments`
+- [x] `it highlights variables`
+- [x] `it handles multi-line code`
+- [x] `it handles invalid syntax gracefully`
+- [x] `it escapes special HTML characters`
+- [x] `it handles empty input`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -27,4 +27,4 @@ Create comprehensive unit tests for SyntaxHighlighter.
 - Output is always valid HTML
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+Added 6 new tests to the existing test file to cover all required test cases. The existing tests already covered invalid syntax and HTML escaping, but the new tests provide more explicit and focused coverage for each requirement. All 12 tests in SyntaxHighlighterTest.php pass.

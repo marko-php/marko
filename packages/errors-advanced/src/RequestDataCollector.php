@@ -10,6 +10,9 @@ class RequestDataCollector
         'password',
         'api_key',
         'apikey',
+        'token',
+        'secret',
+        'session',
     ];
 
     private const array SENSITIVE_HEADERS = [
@@ -29,6 +32,7 @@ class RequestDataCollector
             'headers' => $this->maskSensitiveHeaders($this->collectHeaders()),
             'query' => $this->maskSensitiveData($_GET),
             'post' => $this->maskSensitiveData($_POST),
+            'cookies' => $this->maskSensitiveData($_COOKIE),
             'server' => $this->collectServerInfo(),
         ];
     }
@@ -61,6 +65,8 @@ class RequestDataCollector
         foreach ($data as $key => $value) {
             if ($this->isSensitiveField($key)) {
                 $data[$key] = self::MASK;
+            } elseif (is_array($value)) {
+                $data[$key] = $this->maskSensitiveData($value);
             }
         }
 
