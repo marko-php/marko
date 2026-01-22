@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-pending
+in_progress
 
 ## Objective
 Implement the mail system for Marko framework with an interface package (`marko/mail`) providing a fluent Message builder and MailerInterface, and an SMTP driver implementation (`marko/mail-smtp`), following the established interface/driver split pattern.
