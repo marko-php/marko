@@ -1,0 +1,20 @@
+{
+    "name": "marko/session-file",
+    "description": "File-based session driver for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "marko/session": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Session\\File\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Session\\File\\Tests\\": "tests/"
+        }
+    }
+}

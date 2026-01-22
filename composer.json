@@ -17,6 +17,8 @@
     "autoload": {
         "psr-4": {
             "Marko\\Blog\\": "packages/blog/src/",
+            "Marko\\Cache\\": "packages/cache/src/",
+            "Marko\\Cache\\File\\": "packages/cache-file/src/",
             "Marko\\Cli\\": "packages/cli/src/",
             "Marko\\Config\\": "packages/config/src/",
             "Marko\\Core\\": "packages/core/src/",
@@ -25,12 +27,23 @@
             "Marko\\Database\\PgSql\\": "packages/database-pgsql/src/",
             "Marko\\Errors\\": "packages/errors/src/",
             "Marko\\ErrorsSimple\\": "packages/errors-simple/src/",
-            "Marko\\Routing\\": "packages/routing/src/"
+            "Marko\\Filesystem\\": "packages/filesystem/src/",
+            "Marko\\Filesystem\\Local\\": "packages/filesystem-local/src/",
+            "Marko\\Hashing\\": "packages/hashing/src/",
+            "Marko\\Log\\": "packages/log/src/",
+            "Marko\\Log\\File\\": "packages/log-file/src/",
+            "Marko\\Routing\\": "packages/routing/src/",
+            "Marko\\Session\\": "packages/session/src/",
+            "Marko\\Session\\File\\": "packages/session-file/src/",
+            "Marko\\Validation\\": "packages/validation/src/",
+            "Marko\\Auth\\": "packages/auth/src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
             "Marko\\Blog\\Tests\\": "packages/blog/tests/",
+            "Marko\\Cache\\Tests\\": "packages/cache/tests/",
+            "Marko\\Cache\\File\\Tests\\": "packages/cache-file/tests/",
             "Marko\\Cli\\Tests\\": "packages/cli/tests/",
             "Marko\\Config\\Tests\\": "packages/config/tests/",
             "Marko\\Core\\Tests\\": "packages/core/tests/",
@@ -39,7 +52,16 @@
             "Marko\\Database\\PgSql\\Tests\\": "packages/database-pgsql/tests/",
             "Marko\\Errors\\Tests\\": "packages/errors/tests/",
             "Marko\\ErrorsSimple\\Tests\\": "packages/errors-simple/tests/",
-            "Marko\\Routing\\Tests\\": "packages/routing/tests/"
+            "Marko\\Filesystem\\Tests\\": "packages/filesystem/tests/",
+            "Marko\\Filesystem\\Local\\Tests\\": "packages/filesystem-local/tests/",
+            "Marko\\Hashing\\Tests\\": "packages/hashing/tests/",
+            "Marko\\Log\\Tests\\": "packages/log/tests/",
+            "Marko\\Log\\File\\Tests\\": "packages/log-file/tests/",
+            "Marko\\Routing\\Tests\\": "packages/routing/tests/",
+            "Marko\\Session\\Tests\\": "packages/session/tests/",
+            "Marko\\Session\\File\\Tests\\": "packages/session-file/tests/",
+            "Marko\\Validation\\Tests\\": "packages/validation/tests/",
+            "Marko\\Auth\\Tests\\": "packages/auth/tests/"
         }
     },
     "scripts": {

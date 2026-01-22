@@ -1,0 +1,19 @@
+{
+    "name": "marko/validation",
+    "description": "Validation component for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Validation\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Validation\\Tests\\": "tests/"
+        }
+    }
+}

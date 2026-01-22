@@ -1,0 +1,21 @@
+{
+    "name": "marko/filesystem",
+    "description": "Filesystem interfaces and infrastructure for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "^1.0",
+        "marko/config": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Filesystem\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Filesystem\\Tests\\": "tests/"
+        }
+    }
+}

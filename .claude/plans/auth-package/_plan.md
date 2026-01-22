@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-pending
+in_progress
 
 ## Objective
 Implement a flexible authentication system for Marko framework with multiple guard support (session-based web auth, API token auth), user providers, authentication middleware, and authentication events - following the established interface/implementation split pattern where `marko/auth` provides interfaces and core infrastructure.

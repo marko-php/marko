@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-pending
+completed
 
 ## Objective
 Create the `marko/hashing` package providing a unified, extensible hashing system for Marko applications. The package will deliver multiple hashing algorithms (bcrypt, Argon2id) through a pluggable manager interface, support configurable parameters for each algorithm, and integrate seamlessly with the application's authentication and security workflows.
