@@ -681,4 +681,104 @@ describe('Worker', function () {
 
         expect($popCount)->toBe(1);
     });
+
+    test('Worker uses exponential backoff', function () {
+        // Test that retry delay follows formula: 2^attempts * 10 seconds
+        // After 1st attempt (attempts=1): 2^1 * 10 = 20 seconds
+        // After 2nd attempt (attempts=2): 2^2 * 10 = 40 seconds
+        // After 3rd attempt (attempts=3): 2^3 * 10 = 80 seconds
+
+        $releasedDelays = [];
+
+        $job = new class () extends Job
+        {
+            protected int $maxAttempts = 5;
+
+            public function handle(): void
+            {
+                throw new RuntimeException('Intentional failure');
+            }
+        };
+
+        $queue = new class ($job, $releasedDelays) implements QueueInterface
+        {
+            private int $popCount = 0;
+
+            public function __construct(
+                private JobInterface $job,
+                private array &$releasedDelays,
+            ) {}
+
+            public function push(
+                JobInterface $job,
+                ?string $queue = null,
+            ): string {
+                return 'job-1';
+            }
+
+            public function later(
+                int $delay,
+                JobInterface $job,
+                ?string $queue = null,
+            ): string {
+                return 'job-1';
+            }
+
+            public function pop(
+                ?string $queue = null,
+            ): ?JobInterface {
+                $this->popCount++;
+                if ($this->popCount > 3) {
+                    return null;
+                }
+                // Return the same job to simulate re-processing after release
+                $this->job->setId('job-' . $this->popCount);
+
+                return $this->job;
+            }
+
+            public function size(
+                ?string $queue = null,
+            ): int {
+                return 0;
+            }
+
+            public function clear(
+                ?string $queue = null,
+            ): int {
+                return 0;
+            }
+
+            public function delete(
+                string $jobId,
+            ): bool {
+                return true;
+            }
+
+            public function release(
+                string $jobId,
+                int $delay = 0,
+            ): bool {
+                $this->releasedDelays[] = $delay;
+
+                return true;
+            }
+        };
+
+        $failedRepository = createTestFailedJobRepository();
+        $config = createTestQueueConfig();
+
+        $worker = new Worker($queue, $failedRepository, $config);
+
+        // Process jobs (once each)
+        $worker->work(once: true); // 1st attempt
+        $worker->work(once: true); // 2nd attempt
+        $worker->work(once: true); // 3rd attempt
+
+        // Verify exponential backoff: 2^attempts * 10
+        expect($releasedDelays)->toHaveCount(3)
+            ->and($releasedDelays[0])->toBe(20)  // 2^1 * 10 = 20
+            ->and($releasedDelays[1])->toBe(40)  // 2^2 * 10 = 40
+            ->and($releasedDelays[2])->toBe(80); // 2^3 * 10 = 80
+    });
 });

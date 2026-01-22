@@ -74,3 +74,39 @@ test('CreateJobsTable creates correct indexes', function () {
     expect($allStatements)->toContain('queue');
     expect($allStatements)->toContain('available_at');
 });
+
+test('Migrations create correct table structure', function () {
+    $executedStatements = [];
+
+    $connection = $this->createMock(ConnectionInterface::class);
+    $connection->method('execute')
+        ->willReturnCallback(function (string $sql) use (&$executedStatements): int {
+            $executedStatements[] = $sql;
+
+            return 1;
+        });
+
+    $jobsMigration = new CreateJobsTable();
+    $jobsMigration->up($connection);
+
+    $allStatements = implode("\n", $executedStatements);
+
+    // Jobs table structure verification
+    expect($allStatements)->toContain('CREATE TABLE')
+        ->and($allStatements)->toContain('jobs')
+        ->and($allStatements)->toContain('id VARCHAR(36)')
+        ->and($allStatements)->toContain('PRIMARY KEY')
+        ->and($allStatements)->toContain('queue VARCHAR(255)')
+        ->and($allStatements)->toContain('payload TEXT')
+        ->and($allStatements)->toContain('attempts INT')
+        ->and($allStatements)->toContain('reserved_at TIMESTAMP')
+        ->and($allStatements)->toContain('available_at TIMESTAMP')
+        ->and($allStatements)->toContain('created_at TIMESTAMP');
+
+    // Verify proper queue defaults
+    expect($allStatements)->toContain("DEFAULT 'default'");
+
+    // Verify index for efficient queue lookups
+    expect($allStatements)->toContain('CREATE INDEX')
+        ->and($allStatements)->toContain('idx_queue_available');
+});

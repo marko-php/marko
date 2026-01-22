@@ -89,3 +89,24 @@ test('NullFailedJobRepository clear returns zero', function (): void {
 
     expect($repository->clear())->toBe(0);
 });
+
+it('NullFailedJobRepository methods are no-ops', function (): void {
+    $repository = new NullFailedJobRepository();
+    $failedJob = new FailedJob(
+        id: 'test-123',
+        queue: 'default',
+        payload: '{"class":"TestJob"}',
+        exception: 'Exception: Test error',
+        failedAt: new DateTimeImmutable(),
+    );
+
+    // All methods are no-ops
+    $repository->store($failedJob);
+
+    expect($repository->all())->toBe([])
+        ->and($repository->find('test-123'))->toBeNull()
+        ->and($repository->find('nonexistent'))->toBeNull()
+        ->and($repository->delete('test-123'))->toBeFalse()
+        ->and($repository->clear())->toBe(0)
+        ->and($repository->count())->toBe(0);
+});

@@ -66,3 +66,36 @@ describe('SerializationException', function (): void {
             ->and($exception->getSuggestion())->toContain('Closure');
     });
 });
+
+it('Exception factories include proper context', function (): void {
+    // Test all exception factories include context, message, and suggestion
+    $queueNoDriver = QueueException::noDriverInstalled();
+    expect($queueNoDriver->getMessage())->not->toBeEmpty()
+        ->and($queueNoDriver->getContext())->not->toBeEmpty()
+        ->and($queueNoDriver->getSuggestion())->not->toBeEmpty();
+
+    $queueConfigNotFound = QueueException::configFileNotFound('/config/queue.php');
+    expect($queueConfigNotFound->getMessage())->not->toBeEmpty()
+        ->and($queueConfigNotFound->getContext())->toContain('/config/queue.php')
+        ->and($queueConfigNotFound->getSuggestion())->not->toBeEmpty();
+
+    $jobFailed = JobFailedException::fromException(
+        'App\Jobs\TestJob',
+        new RuntimeException('Test error'),
+    );
+    expect($jobFailed->getMessage())->toContain('App\Jobs\TestJob')
+        ->and($jobFailed->getMessage())->toContain('Test error')
+        ->and($jobFailed->getContext())->toContain('App\Jobs\TestJob')
+        ->and($jobFailed->getSuggestion())->not->toBeEmpty()
+        ->and($jobFailed->getPrevious())->toBeInstanceOf(RuntimeException::class);
+
+    $serializationInvalid = SerializationException::invalidJobData('missing class');
+    expect($serializationInvalid->getMessage())->not->toBeEmpty()
+        ->and($serializationInvalid->getContext())->toContain('missing class')
+        ->and($serializationInvalid->getSuggestion())->not->toBeEmpty();
+
+    $serializationClosure = SerializationException::unserializableClosure('App\Jobs\ClosureJob');
+    expect($serializationClosure->getMessage())->not->toBeEmpty()
+        ->and($serializationClosure->getContext())->toContain('App\Jobs\ClosureJob')
+        ->and($serializationClosure->getSuggestion())->not->toBeEmpty();
+});

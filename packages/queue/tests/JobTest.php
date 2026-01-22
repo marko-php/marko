@@ -17,6 +17,16 @@ class TestJob extends Job
     }
 }
 
+class CustomMaxAttemptsJob extends Job
+{
+    protected int $maxAttempts = 10;
+
+    public function handle(): void
+    {
+        // Job with custom max attempts for serialization testing
+    }
+}
+
 describe('Job', function (): void {
     it('implements JobInterface', function (): void {
         $reflection = new ReflectionClass(Job::class);
@@ -74,5 +84,37 @@ describe('Job', function (): void {
         $job->setId('my-job-id');
 
         expect($job->getId())->toBe('my-job-id');
+    });
+
+    it('Job handles custom maxAttempts', function (): void {
+        $customJob = new class () extends Job
+        {
+            protected int $maxAttempts = 5;
+
+            public function handle(): void
+            {
+                // Custom job with different max attempts
+            }
+        };
+
+        expect($customJob->getMaxAttempts())->toBe(5);
+
+        // Test another custom value
+        $singleAttemptJob = new class () extends Job
+        {
+            protected int $maxAttempts = 1;
+
+            public function handle(): void {}
+        };
+
+        expect($singleAttemptJob->getMaxAttempts())->toBe(1);
+
+        // Test that custom maxAttempts persists through serialization using named class
+        $customAttemptsJob = new CustomMaxAttemptsJob();
+        $customAttemptsJob->setId('custom-job-1');
+        $serialized = $customAttemptsJob->serialize();
+        $unserialized = CustomMaxAttemptsJob::unserialize($serialized);
+
+        expect($unserialized->getMaxAttempts())->toBe(10);
     });
 });

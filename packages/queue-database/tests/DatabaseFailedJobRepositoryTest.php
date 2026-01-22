@@ -208,3 +208,44 @@ test('DatabaseFailedJobRepository count returns total', function (): void {
     expect($connection->executedQueries[0]['sql'])->toContain('SELECT COUNT');
     expect($connection->executedQueries[0]['sql'])->toContain('failed_jobs');
 });
+
+test('DatabaseFailedJobRepository stores exception details', function (): void {
+    $connection = createMockConnection(executeResult: 1);
+    $repository = new DatabaseFailedJobRepository($connection);
+
+    // Create a realistic exception message with stack trace details
+    $exceptionMessage = "RuntimeException: Database connection failed\n"
+        . "Stack trace:\n"
+        . "#0 /app/src/Queue/Worker.php(123): DatabaseQueue->pop()\n"
+        . "#1 /app/src/Console/WorkCommand.php(45): Worker->work()\n"
+        . "#2 {main}\n"
+        . 'Previous: PDOException: SQLSTATE[HY000] [2002] Connection refused';
+
+    $failedJob = new FailedJob(
+        id: 'failed-detail-test',
+        queue: 'critical',
+        payload: '{"class":"ImportantJob","data":{"userId":123}}',
+        exception: $exceptionMessage,
+        failedAt: new DateTimeImmutable('2024-01-15 14:30:00'),
+    );
+
+    $repository->store($failedJob);
+
+    // Verify the exception details were stored correctly
+    expect($connection->executedStatements)->toHaveCount(1);
+
+    $bindings = $connection->executedStatements[0]['bindings'];
+
+    // The bindings should contain the full exception message
+    expect($bindings)->toContain($exceptionMessage);
+
+    // Verify the exception column is included in the INSERT
+    expect($connection->executedStatements[0]['sql'])->toContain('exception');
+
+    // Verify the complete exception is preserved with newlines and stack trace
+    $storedExceptionIndex = array_search($exceptionMessage, $bindings);
+    expect($storedExceptionIndex)->not->toBeFalse('Exception message should be in bindings');
+    expect($bindings[$storedExceptionIndex])->toContain('Stack trace:');
+    expect($bindings[$storedExceptionIndex])->toContain('DatabaseQueue->pop()');
+    expect($bindings[$storedExceptionIndex])->toContain('Previous:');
+});

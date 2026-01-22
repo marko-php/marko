@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Connection\TransactionInterface;
 use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\TestJob;
 use Marko\Queue\QueueInterface;
@@ -299,4 +301,180 @@ test('DatabaseQueue release returns false when job not found', function () {
     $released = $queue->release('nonexistent-job');
 
     expect($released)->toBeFalse();
+});
+
+test('DatabaseQueue uses transactions for pop', function () {
+    $job = new TestJob('transaction test');
+    $serializedJob = $job->serialize();
+
+    $transactionCalls = [];
+
+    // Create a mock that implements both interfaces
+    $connection = new class ($serializedJob, $transactionCalls) implements ConnectionInterface, TransactionInterface
+    {
+        private bool $inTransaction = false;
+
+        public function __construct(
+            private string $serializedJob,
+            private array &$transactionCalls,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            $this->transactionCalls[] = ['operation' => 'query', 'inTransaction' => $this->inTransaction];
+
+            return [
+                [
+                    'id' => 'job-tx-123',
+                    'queue' => 'default',
+                    'payload' => $this->serializedJob,
+                    'attempts' => 0,
+                    'reserved_at' => null,
+                    'available_at' => '2024-01-01 00:00:00',
+                    'created_at' => '2024-01-01 00:00:00',
+                ],
+            ];
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            $this->transactionCalls[] = ['operation' => 'execute', 'inTransaction' => $this->inTransaction];
+
+            return 1;
+        }
+
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 1;
+        }
+
+        public function beginTransaction(): void
+        {
+            $this->transactionCalls[] = ['operation' => 'beginTransaction'];
+            $this->inTransaction = true;
+        }
+
+        public function commit(): void
+        {
+            $this->transactionCalls[] = ['operation' => 'commit'];
+            $this->inTransaction = false;
+        }
+
+        public function rollback(): void
+        {
+            $this->transactionCalls[] = ['operation' => 'rollback'];
+            $this->inTransaction = false;
+        }
+
+        public function inTransaction(): bool
+        {
+            return $this->inTransaction;
+        }
+
+        public function transaction(
+            callable $callback,
+        ): mixed {
+            $this->beginTransaction();
+            try {
+                $result = $callback();
+                $this->commit();
+
+                return $result;
+            } catch (Throwable $e) {
+                $this->rollback();
+                throw $e;
+            }
+        }
+    };
+
+    $queue = new DatabaseQueue($connection);
+    $poppedJob = $queue->pop();
+
+    expect($poppedJob)->not->toBeNull();
+
+    // Verify transaction was used: beginTransaction, then query+execute inside transaction, then commit
+    $operations = array_column($transactionCalls, 'operation');
+    expect($operations)->toContain('beginTransaction')
+        ->and($operations)->toContain('commit');
+
+    // Verify query and execute happened inside the transaction
+    $queryCall = array_filter($transactionCalls, fn ($c) => ($c['operation'] ?? '') === 'query');
+    $executeCall = array_filter($transactionCalls, fn ($c) => ($c['operation'] ?? '') === 'execute');
+
+    expect(array_values($queryCall)[0]['inTransaction'])->toBeTrue('Query should happen inside transaction');
+    expect(array_values($executeCall)[0]['inTransaction'])->toBeTrue('Execute should happen inside transaction');
+});
+
+test('DatabaseQueue respects available_at for delayed jobs', function () {
+    $connection = $this->createMock(ConnectionInterface::class);
+
+    $job = new TestJob('delayed job test');
+    $serializedJob = $job->serialize();
+
+    // Create two jobs: one immediately available, one delayed (future available_at)
+    $now = new DateTimeImmutable();
+    $futureTime = $now->modify('+1 hour')->format('Y-m-d H:i:s');
+    $pastTime = $now->modify('-1 minute')->format('Y-m-d H:i:s');
+
+    // Capture the query bindings to verify the available_at condition
+    $capturedQuery = [];
+    $connection->expects($this->once())
+        ->method('query')
+        ->with(
+            $this->callback(function (string $sql) use (&$capturedQuery) {
+                $capturedQuery['sql'] = $sql;
+
+                // Must filter by available_at <= now to exclude delayed jobs
+                return str_contains($sql, 'available_at') && str_contains($sql, '<=');
+            }),
+            $this->callback(function (array $bindings) use (&$capturedQuery) {
+                $capturedQuery['bindings'] = $bindings;
+
+                // Must have a 'now' binding to compare against available_at
+                return isset($bindings['now']);
+            }),
+        )
+        ->willReturn([
+            [
+                'id' => 'available-job',
+                'queue' => 'default',
+                'payload' => $serializedJob,
+                'attempts' => 0,
+                'reserved_at' => null,
+                'available_at' => $pastTime,
+                'created_at' => $pastTime,
+            ],
+        ]);
+
+    $connection->method('execute')->willReturn(1);
+
+    $queue = new DatabaseQueue($connection);
+    $poppedJob = $queue->pop();
+
+    expect($poppedJob)->not->toBeNull();
+    expect($poppedJob->getId())->toBe('available-job');
+
+    // Verify the SQL query filters by available_at
+    expect($capturedQuery['sql'])->toContain('available_at');
+    expect($capturedQuery['sql'])->toContain('<=');
+    expect($capturedQuery['bindings'])->toHaveKey('now');
 });

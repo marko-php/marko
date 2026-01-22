@@ -109,3 +109,20 @@ it('push throws JobFailedException on job failure', function (): void {
 
     $queue->push($job);
 })->throws(JobFailedException::class, 'Job failed');
+
+it('SyncQueue handles job exceptions properly', function (): void {
+    $queue = new SyncQueue();
+
+    $job = new class () extends Job
+    {
+        public function handle(): void
+        {
+            throw new RuntimeException('Test exception message');
+        }
+    };
+
+    expect(fn () => $queue->push($job))
+        ->toThrow(JobFailedException::class)
+        ->and(fn () => $queue->later(60, $job))
+        ->toThrow(JobFailedException::class);
+});

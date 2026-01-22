@@ -1,6 +1,6 @@
 # Task 014: queue-database module.php
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 011, 012, 013
 **Retry count**: 0
 
@@ -13,8 +13,8 @@ Create the module.php for queue-database package with driver bindings.
 - Requires marko/database for ConnectionInterface
 
 ## Requirements (Test Descriptions)
-- [ ] `module.php exists with correct structure`
-- [ ] `module.php binds QueueInterface via factory`
-- [ ] `module.php binds FailedJobRepositoryInterface`
+- [x] `module.php exists with correct structure`
+- [x] `module.php binds QueueInterface via factory`
+- [x] `module.php binds FailedJobRepositoryInterface`
 
 ## Implementation Notes

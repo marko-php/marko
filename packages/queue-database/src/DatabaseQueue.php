@@ -6,6 +6,7 @@ namespace Marko\Queue\Database;
 
 use DateTimeImmutable;
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Connection\TransactionInterface;
 use Marko\Queue\JobInterface;
 use Marko\Queue\QueueInterface;
 
@@ -78,6 +79,18 @@ class DatabaseQueue implements QueueInterface
         ?string $queue = null,
     ): ?JobInterface {
         $queueName = $queue ?? $this->defaultQueue;
+
+        // Use transaction if the connection supports it
+        if ($this->connection instanceof TransactionInterface) {
+            return $this->connection->transaction(fn () => $this->popJob($queueName));
+        }
+
+        return $this->popJob($queueName);
+    }
+
+    private function popJob(
+        string $queueName,
+    ): ?JobInterface {
         $now = new DateTimeImmutable();
 
         $rows = $this->connection->query(

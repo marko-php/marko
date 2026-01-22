@@ -145,4 +145,36 @@ describe('QueueConfig', function (): void {
             ->and($queueConfig->retryAfter())->toBe(90)
             ->and($queueConfig->maxAttempts())->toBe(3);
     });
+
+    it('QueueConfig uses environment defaults', function (): void {
+        // QueueConfig should use sensible defaults when no configuration is provided
+        // These defaults are suitable for development environments (sync driver)
+        // while production can override via config files
+
+        $emptyConfig = createMockConfigRepository([]);
+        $queueConfig = new QueueConfig($emptyConfig);
+
+        // Verify defaults are appropriate for development environment
+        expect($queueConfig->driver())->toBe('sync')  // sync for immediate execution in dev
+            ->and($queueConfig->connection())->toBe('default')  // standard connection name
+            ->and($queueConfig->queue())->toBe('default')  // standard queue name
+            ->and($queueConfig->retryAfter())->toBe(90)  // 90 seconds reasonable retry window
+            ->and($queueConfig->maxAttempts())->toBe(3);  // 3 attempts before giving up
+
+        // Verify that explicit config values override the defaults
+        $customConfig = createMockConfigRepository([
+            'queue.driver' => 'database',
+            'queue.connection' => 'mysql',
+            'queue.queue' => 'high-priority',
+            'queue.retry_after' => 300,
+            'queue.max_attempts' => 5,
+        ]);
+        $customQueueConfig = new QueueConfig($customConfig);
+
+        expect($customQueueConfig->driver())->toBe('database')
+            ->and($customQueueConfig->connection())->toBe('mysql')
+            ->and($customQueueConfig->queue())->toBe('high-priority')
+            ->and($customQueueConfig->retryAfter())->toBe(300)
+            ->and($customQueueConfig->maxAttempts())->toBe(5);
+    });
 });
