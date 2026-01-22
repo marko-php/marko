@@ -116,6 +116,30 @@ function cleanupFactoryTestPath(
     rmdir($path);
 }
 
+/**
+ * Write a cache entry with a past expiration timestamp.
+ */
+function writeExpiredFactoryCacheEntry(
+    string $cachePath,
+    string $key,
+    mixed $value,
+): void {
+    if (!is_dir($cachePath)) {
+        mkdir($cachePath, 0755, true);
+    }
+
+    $hash = hash('xxh128', $key);
+    $filePath = $cachePath . '/' . $hash . '.cache';
+
+    $data = [
+        'value' => $value,
+        'expires_at' => time() - 10,
+        'created_at' => time() - 20,
+    ];
+
+    file_put_contents($filePath, serialize($data));
+}
+
 it('creates FileCacheDriver instance', function () {
     $config = createCacheConfigMock();
 
@@ -149,8 +173,7 @@ it('uses default ttl from config', function () {
     $factory = new FileCacheFactory($config);
     $driver = $factory->create();
 
-    $driver->set('key', 'value');
-    sleep(2);
+    writeExpiredFactoryCacheEntry($cachePath, 'key', 'value');
 
     expect($driver->get('key'))->toBeNull();
 

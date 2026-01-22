@@ -28,6 +28,30 @@ function cleanupCacheTestPath(
     rmdir($path);
 }
 
+/**
+ * Write a cache entry with a past expiration timestamp.
+ */
+function writeExpiredCacheEntry(
+    string $cachePath,
+    string $key,
+    mixed $value,
+): void {
+    if (!is_dir($cachePath)) {
+        mkdir($cachePath, 0755, true);
+    }
+
+    $hash = hash('xxh128', $key);
+    $filePath = $cachePath . '/' . $hash . '.cache';
+
+    $data = [
+        'value' => $value,
+        'expires_at' => time() - 10,  // Expired 10 seconds ago
+        'created_at' => time() - 20,
+    ];
+
+    file_put_contents($filePath, serialize($data));
+}
+
 beforeEach(function () {
     $this->cachePath = getCacheTestPath();
     $this->driver = new FileCacheDriver($this->cachePath);
@@ -135,9 +159,7 @@ it('returns true when clearing empty cache', function () {
 });
 
 it('expires items after ttl', function () {
-    $this->driver->set('key', 'value', 1);
-
-    sleep(2);
+    writeExpiredCacheEntry($this->cachePath, 'key', 'value');
 
     expect($this->driver->get('key'))->toBeNull();
 });
@@ -151,9 +173,7 @@ it('does not expire items with zero ttl', function () {
 it('uses default ttl when not specified', function () {
     $cachePath = getCacheTestPath();
     $driver = new FileCacheDriver($cachePath, 1);
-    $driver->set('key', 'value');
-
-    sleep(2);
+    writeExpiredCacheEntry($cachePath, 'key', 'value');
 
     expect($driver->get('key'))->toBeNull();
 
@@ -267,15 +287,13 @@ it('handles concurrent access safely', function () {
 });
 
 it('removes expired item on has check', function () {
-    $this->driver->set('key', 'value', 1);
-    sleep(2);
+    writeExpiredCacheEntry($this->cachePath, 'key', 'value');
 
     expect($this->driver->has('key'))->toBeFalse();
 });
 
 it('removes expired item on getItem', function () {
-    $this->driver->set('key', 'value', 1);
-    sleep(2);
+    writeExpiredCacheEntry($this->cachePath, 'key', 'value');
 
     $item = $this->driver->getItem('key');
 
