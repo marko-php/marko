@@ -1,6 +1,6 @@
 # Task 003: JobInterface and Job Base Class
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001
 **Retry count**: 0
 

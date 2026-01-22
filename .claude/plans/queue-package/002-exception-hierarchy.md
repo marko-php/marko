@@ -1,6 +1,6 @@
 # Task 002: QueueException Hierarchy
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001
 **Retry count**: 0
 

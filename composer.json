@@ -39,7 +39,10 @@
             "Marko\\Session\\": "packages/session/src/",
             "Marko\\Session\\File\\": "packages/session-file/src/",
             "Marko\\Validation\\": "packages/validation/src/",
-            "Marko\\Auth\\": "packages/auth/src/"
+            "Marko\\Auth\\": "packages/auth/src/",
+            "Marko\\Queue\\": "packages/queue/src/",
+            "Marko\\Queue\\Sync\\": "packages/queue-sync/src/",
+            "Marko\\Queue\\Database\\": "packages/queue-database/src/"
         }
     },
     "autoload-dev": {
@@ -68,7 +71,10 @@
             "Marko\\Session\\Tests\\": "packages/session/tests/",
             "Marko\\Session\\File\\Tests\\": "packages/session-file/tests/",
             "Marko\\Validation\\Tests\\": "packages/validation/tests/",
-            "Marko\\Auth\\Tests\\": "packages/auth/tests/"
+            "Marko\\Auth\\Tests\\": "packages/auth/tests/",
+            "Marko\\Queue\\Tests\\": "packages/queue/tests/",
+            "Marko\\Queue\\Sync\\Tests\\": "packages/queue-sync/tests/",
+            "Marko\\Queue\\Database\\Tests\\": "packages/queue-database/tests/"
         }
     },
     "scripts": {
