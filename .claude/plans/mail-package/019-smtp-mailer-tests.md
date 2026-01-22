@@ -1,6 +1,6 @@
 # Task 019: Unit Tests for SmtpMailer
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 011
 **Retry count**: 0
 

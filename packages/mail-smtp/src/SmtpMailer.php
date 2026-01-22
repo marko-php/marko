@@ -14,6 +14,7 @@ class SmtpMailer implements MailerInterface
 {
     public function __construct(
         private SmtpTransport $transport,
+        private ?SmtpConfig $config = null,
     ) {}
 
     public function send(
@@ -167,7 +168,7 @@ class SmtpMailer implements MailerInterface
         // Subject
         $subject = $message->getSubject();
         if ($subject !== null) {
-            $headers[] = 'Subject: ' . $subject;
+            $headers[] = 'Subject: ' . $this->encodeHeader($subject);
         }
 
         // Priority
@@ -280,7 +281,7 @@ class SmtpMailer implements MailerInterface
                 $html,
                 $inlineAttachments,
                 $relatedBoundary,
-                $alternativeBoundary
+                $alternativeBoundary,
             );
         } elseif ($text !== null && $html !== null && $alternativeBoundary !== null) {
             // Nested alternative
@@ -391,5 +392,17 @@ class SmtpMailer implements MailerInterface
     private function generateBoundary(): string
     {
         return '=_Part_' . bin2hex(random_bytes(16));
+    }
+
+    private function encodeHeader(
+        string $value,
+    ): string {
+        // Check if the value contains non-ASCII characters
+        if (!preg_match('/[^\x20-\x7E]/', $value)) {
+            return $value;
+        }
+
+        // RFC 2047 Base64 encoding for non-ASCII headers
+        return '=?UTF-8?B?' . base64_encode($value) . '?=';
     }
 }

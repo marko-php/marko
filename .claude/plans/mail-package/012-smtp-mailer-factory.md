@@ -1,6 +1,6 @@
 # Task 012: SmtpMailerFactory
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 009, 011
 **Retry count**: 0
 
