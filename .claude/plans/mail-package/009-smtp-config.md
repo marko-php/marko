@@ -1,6 +1,6 @@
 # Task 009: SmtpConfig Class
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 007
 **Retry count**: 0
 

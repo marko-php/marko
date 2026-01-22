@@ -1,6 +1,6 @@
 # Task 005: Message Class
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 003, 004
 **Retry count**: 0
 

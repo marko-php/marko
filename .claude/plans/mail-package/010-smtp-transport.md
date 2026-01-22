@@ -1,6 +1,6 @@
 # Task 010: SmtpTransport
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002
 **Retry count**: 0
 

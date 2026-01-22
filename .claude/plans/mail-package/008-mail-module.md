@@ -1,6 +1,6 @@
 # Task 008: Mail Package module.php
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 007
 **Retry count**: 0
 

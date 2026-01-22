@@ -1,0 +1,291 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Marko\Mail\Smtp\Tests\Unit;
+
+use Marko\Mail\Exception\TransportException;
+use Marko\Mail\Smtp\SmtpTransport;
+use Marko\Mail\Smtp\SocketInterface;
+
+test('SmtpTransport connects to server', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+
+    expect($socket->isConnected())->toBeTrue();
+});
+
+test('SmtpTransport throws on connection failure', function (): void {
+    $socket = createFailingSocket();
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+})->throws(TransportException::class);
+
+test('SmtpTransport sends EHLO command', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        "250-smtp.example.com\r\n250-SIZE 52428800\r\n250-STARTTLS\r\n250 AUTH LOGIN PLAIN",
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $capabilities = $transport->ehlo('client.example.com');
+
+    expect($socket->getWritten())->toContain("EHLO client.example.com\r\n");
+    expect($capabilities)->toContain('SIZE 52428800');
+    expect($capabilities)->toContain('STARTTLS');
+    expect($capabilities)->toContain('AUTH LOGIN PLAIN');
+});
+
+test('SmtpTransport handles STARTTLS', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '220 Ready to start TLS',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->startTls();
+
+    expect($socket->getWritten())->toContain("STARTTLS\r\n");
+    expect($socket->isTlsEnabled())->toBeTrue();
+});
+
+test('SmtpTransport throws on TLS failure', function (): void {
+    $socket = createMockSocket(
+        responses: [
+            '220 smtp.example.com ESMTP ready',
+            '220 Ready to start TLS',
+        ],
+        tlsSuccess: false,
+    );
+    $socket->setHost('smtp.example.com');
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->startTls();
+})->throws(TransportException::class);
+
+test('SmtpTransport authenticates with LOGIN', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '334 VXNlcm5hbWU6', // Base64 "Username:"
+        '334 UGFzc3dvcmQ6', // Base64 "Password:"
+        '235 Authentication successful',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->authenticate('user@example.com', 'secret', 'LOGIN');
+
+    $written = $socket->getWritten();
+    expect($written)->toContain("AUTH LOGIN\r\n");
+    expect($written)->toContain(base64_encode('user@example.com') . "\r\n");
+    expect($written)->toContain(base64_encode('secret') . "\r\n");
+});
+
+test('SmtpTransport authenticates with PLAIN', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '235 Authentication successful',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->authenticate('user@example.com', 'secret', 'PLAIN');
+
+    $written = $socket->getWritten();
+    $expectedCredentials = base64_encode("\0user@example.com\0secret");
+    expect($written)->toContain("AUTH PLAIN $expectedCredentials\r\n");
+});
+
+test('SmtpTransport throws on auth failure', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '535 Authentication failed',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->authenticate('user@example.com', 'wrongpassword', 'PLAIN');
+})->throws(TransportException::class);
+
+test('SmtpTransport sends MAIL FROM command', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '250 OK',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->mailFrom('sender@example.com');
+
+    expect($socket->getWritten())->toContain("MAIL FROM:<sender@example.com>\r\n");
+});
+
+test('SmtpTransport sends RCPT TO command', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '250 OK',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->rcptTo('recipient@example.com');
+
+    expect($socket->getWritten())->toContain("RCPT TO:<recipient@example.com>\r\n");
+});
+
+test('SmtpTransport sends DATA command', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '354 Start mail input',
+        '250 OK',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->data("Subject: Test\r\n\r\nHello World");
+
+    $written = $socket->getWritten();
+    expect($written)->toContain("DATA\r\n");
+    expect($written)->toContain("Subject: Test\r\n\r\nHello World\r\n.\r\n");
+});
+
+test('SmtpTransport handles unexpected response codes', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '550 User not found',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->rcptTo('invalid@example.com');
+})->throws(TransportException::class);
+
+function createFailingSocket(): SocketInterface
+{
+    return new class () implements SocketInterface
+    {
+        public function connect(
+            string $host,
+            int $port,
+            ?string $encryption = null,
+            int $timeout = 30,
+        ): void {
+            throw TransportException::connectionFailed($host, $port);
+        }
+
+        public function read(): string
+        {
+            return '';
+        }
+
+        public function write(string $data): void {}
+
+        public function enableTls(): bool
+        {
+            return false;
+        }
+
+        public function close(): void {}
+
+        public function isConnected(): bool
+        {
+            return false;
+        }
+    };
+}
+
+function createMockSocket(
+    array $responses,
+    bool $tlsSuccess = true,
+): MockSocket {
+    return new MockSocket($responses, $tlsSuccess);
+}
+
+class MockSocket implements SocketInterface
+{
+    private bool $connected = false;
+
+    private bool $tlsEnabled = false;
+
+    private int $responseIndex = 0;
+
+    private array $written = [];
+
+    private string $host = '';
+
+    public function __construct(
+        private array $responses,
+        private bool $tlsSuccess = true,
+    ) {}
+
+    public function setHost(
+        string $host,
+    ): void {
+        $this->host = $host;
+    }
+
+    public function getHost(): string
+    {
+        return $this->host;
+    }
+
+    public function connect(
+        string $host,
+        int $port,
+        ?string $encryption = null,
+        int $timeout = 30,
+    ): void {
+        $this->host = $host;
+        $this->connected = true;
+    }
+
+    public function read(): string
+    {
+        return $this->responses[$this->responseIndex++] ?? '';
+    }
+
+    public function write(
+        string $data,
+    ): void {
+        $this->written[] = $data;
+    }
+
+    public function enableTls(): bool
+    {
+        if ($this->tlsSuccess) {
+            $this->tlsEnabled = true;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public function close(): void
+    {
+        $this->connected = false;
+    }
+
+    public function isConnected(): bool
+    {
+        return $this->connected;
+    }
+
+    public function isTlsEnabled(): bool
+    {
+        return $this->tlsEnabled;
+    }
+
+    public function getWritten(): array
+    {
+        return $this->written;
+    }
+}
