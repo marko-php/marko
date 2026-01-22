@@ -20,6 +20,7 @@ class TokenGuard implements GuardInterface
     public function __construct(
         private string $headerName = 'Authorization',
         private string $prefix = 'Bearer ',
+        private string $name = 'token',
     ) {}
 
     public function check(): bool
@@ -92,7 +93,7 @@ class TokenGuard implements GuardInterface
 
     public function getName(): string
     {
-        return 'token';
+        return $this->name;
     }
 
     /**

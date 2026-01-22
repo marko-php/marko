@@ -251,6 +251,24 @@ test('it returns false from check when no token', function (): void {
     expect($guard->check())->toBeFalse();
 });
 
+test('it returns null when Authorization header is missing', function (): void {
+    $guard = new TokenGuard();
+
+    // Headers without Authorization
+    $headers = ['Content-Type' => 'application/json'];
+    $token = $guard->getTokenFromHeaders($headers);
+
+    expect($token)->toBeNull();
+});
+
+test('it returns null when headers array is empty', function (): void {
+    $guard = new TokenGuard();
+
+    $token = $guard->getTokenFromHeaders([]);
+
+    expect($token)->toBeNull();
+});
+
 test('it supports configurable header name', function (): void {
     $guard = new TokenGuard(
         headerName: 'X-API-Key',
@@ -271,6 +289,95 @@ test('it supports configurable prefix', function (): void {
     $token = $guard->getTokenFromHeaders($headers);
 
     expect($token)->toBe('my-custom-token');
+});
+
+test('it handles logout as no-op for stateless token auth', function (): void {
+    $user = new class () implements AuthenticatableInterface
+    {
+        public function getAuthIdentifier(): int|string
+        {
+            return 1;
+        }
+
+        public function getAuthIdentifierName(): string
+        {
+            return 'id';
+        }
+
+        public function getAuthPassword(): string
+        {
+            return 'hashed';
+        }
+
+        public function getRememberToken(): ?string
+        {
+            return null;
+        }
+
+        public function setRememberToken(?string $token): void {}
+
+        public function getRememberTokenName(): string
+        {
+            return 'remember_token';
+        }
+    };
+
+    $provider = new class ($user) implements UserProviderInterface
+    {
+        public function __construct(
+            private AuthenticatableInterface $user,
+        ) {}
+
+        public function retrieveById(
+            int|string $identifier,
+        ): ?AuthenticatableInterface {
+            return null;
+        }
+
+        public function retrieveByCredentials(
+            array $credentials,
+        ): ?AuthenticatableInterface {
+            if (isset($credentials['api_token']) && $credentials['api_token'] === 'valid-token') {
+                return $this->user;
+            }
+
+            return null;
+        }
+
+        public function validateCredentials(
+            AuthenticatableInterface $user,
+            array $credentials,
+        ): bool {
+            return true;
+        }
+
+        public function retrieveByRememberToken(
+            int|string $identifier,
+            string $token,
+        ): ?AuthenticatableInterface {
+            return null;
+        }
+
+        public function updateRememberToken(
+            AuthenticatableInterface $user,
+            ?string $token,
+        ): void {}
+    };
+
+    $guard = new TokenGuard();
+    $guard->setProvider($provider);
+    $guard->setHeaders(['Authorization' => 'Bearer valid-token']);
+
+    // Verify user is authenticated
+    expect($guard->check())->toBeTrue();
+
+    // Logout should be a no-op for stateless token auth
+    $guard->logout();
+
+    // Token auth is stateless - logout doesn't affect authentication
+    // Re-setting headers should still work
+    $guard->setHeaders(['Authorization' => 'Bearer valid-token']);
+    expect($guard->check())->toBeTrue();
 });
 
 test('it is stateless (no session dependency)', function (): void {

@@ -5,14 +5,17 @@ declare(strict_types=1);
 namespace Marko\Auth\Guard;
 
 use Marko\Auth\AuthenticatableInterface;
+use Marko\Auth\Contracts\CookieJarInterface;
 use Marko\Auth\Contracts\GuardInterface;
 use Marko\Auth\Contracts\UserProviderInterface;
 use Marko\Auth\Exceptions\AuthException;
+use Marko\Auth\Token\RememberTokenManager;
 use Marko\Session\Contracts\SessionInterface;
 
 class SessionGuard implements GuardInterface
 {
     private const SESSION_KEY = 'auth_user_id';
+    private const REMEMBER_COOKIE_MINUTES = 43200; // 30 days
 
     private ?AuthenticatableInterface $cachedUser = null;
 
@@ -20,6 +23,8 @@ class SessionGuard implements GuardInterface
         private SessionInterface $session,
         private UserProviderInterface $provider,
         private string $name = 'session',
+        private ?CookieJarInterface $cookieJar = null,
+        private ?RememberTokenManager $tokenManager = null,
     ) {}
 
     public function check(): bool
@@ -40,13 +45,55 @@ class SessionGuard implements GuardInterface
 
         $id = $this->session->get(self::SESSION_KEY);
 
-        if ($id === null) {
+        if ($id !== null) {
+            $this->cachedUser = $this->provider->retrieveById($id);
+
+            return $this->cachedUser;
+        }
+
+        // Try to authenticate via remember token
+        $this->cachedUser = $this->authenticateViaRememberCookie();
+
+        return $this->cachedUser;
+    }
+
+    private function authenticateViaRememberCookie(): ?AuthenticatableInterface
+    {
+        if ($this->cookieJar === null || $this->tokenManager === null) {
             return null;
         }
 
-        $this->cachedUser = $this->provider->retrieveById($id);
+        $cookieValue = $this->cookieJar->get($this->getRememberCookieName());
 
-        return $this->cachedUser;
+        if ($cookieValue === null) {
+            return null;
+        }
+
+        $parts = explode('|', $cookieValue, 2);
+
+        if (count($parts) !== 2) {
+            return null;
+        }
+
+        [$id, $token] = $parts;
+
+        $user = $this->provider->retrieveByRememberToken($id, $token);
+
+        if ($user === null) {
+            return null;
+        }
+
+        // Validate the token
+        $storedHash = $user->getRememberToken();
+
+        if ($storedHash === null || !$this->tokenManager->validate($token, $storedHash)) {
+            return null;
+        }
+
+        // Regenerate the token for security (prevents replay attacks)
+        $this->createRememberToken($user);
+
+        return $user;
     }
 
     public function id(): int|string|null
@@ -74,11 +121,37 @@ class SessionGuard implements GuardInterface
 
     public function login(
         AuthenticatableInterface $user,
+        bool $remember = false,
     ): void {
         $this->ensureSessionStarted();
         $this->session->set(self::SESSION_KEY, $user->getAuthIdentifier());
         $this->session->regenerate();
         $this->cachedUser = $user;
+
+        if ($remember && $this->cookieJar !== null && $this->tokenManager !== null) {
+            $this->createRememberToken($user);
+        }
+    }
+
+    private function createRememberToken(
+        AuthenticatableInterface $user,
+    ): void {
+        $token = $this->tokenManager->generate();
+        $hashedToken = $this->tokenManager->hash($token);
+
+        $this->provider->updateRememberToken($user, $hashedToken);
+
+        $cookieValue = $user->getAuthIdentifier() . '|' . $token;
+        $this->cookieJar->set(
+            $this->getRememberCookieName(),
+            $cookieValue,
+            self::REMEMBER_COOKIE_MINUTES,
+        );
+    }
+
+    private function getRememberCookieName(): string
+    {
+        return 'remember_' . $this->name;
     }
 
     private function ensureSessionStarted(): void
@@ -108,6 +181,13 @@ class SessionGuard implements GuardInterface
 
     public function logout(): void
     {
+        $user = $this->user();
+
+        if ($user !== null && $this->cookieJar !== null && $this->tokenManager !== null) {
+            $this->provider->updateRememberToken($user, null);
+            $this->cookieJar->delete($this->getRememberCookieName());
+        }
+
         $this->session->remove(self::SESSION_KEY);
         $this->cachedUser = null;
     }
