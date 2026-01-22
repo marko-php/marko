@@ -7,17 +7,20 @@ use Marko\Blog\Entity\Post;
 use Marko\Blog\Repositories\PostRepository;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
+use Marko\View\ViewInterface;
 
-it('injects PostRepository via constructor', function (): void {
+it('injects PostRepository and ViewInterface via constructor', function (): void {
     $reflection = new ReflectionClass(PostController::class);
     $constructor = $reflection->getConstructor();
 
     expect($constructor)->not->toBeNull();
 
     $parameters = $constructor->getParameters();
-    expect($parameters)->toHaveCount(1)
+    expect($parameters)->toHaveCount(2)
         ->and($parameters[0]->getName())->toBe('repository')
-        ->and($parameters[0]->getType()->getName())->toBe(PostRepository::class);
+        ->and($parameters[0]->getType()->getName())->toBe(PostRepository::class)
+        ->and($parameters[1]->getName())->toBe('view')
+        ->and($parameters[1]->getType()->getName())->toBe(ViewInterface::class);
 });
 
 it('has GET /blog route on index method', function (): void {
@@ -42,30 +45,32 @@ it('has GET /blog/{slug} route on show method', function (): void {
     expect($routeAttribute->path)->toBe('/blog/{slug}');
 });
 
-it('returns response with all posts data on index route', function (): void {
+it('returns response using view on index route', function (): void {
     $repository = createMockPostRepository([
         ['id' => 1, 'title' => 'Post 1'],
         ['id' => 2, 'title' => 'Post 2'],
     ]);
-    $controller = new PostController($repository);
+    $view = createMockView();
+    $controller = new PostController($repository, $view);
     $response = $controller->index();
 
     expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(200)
-        ->and($response->body())->toContain('2');
+        ->and($response->body())->toContain('blog::post/index');
 });
 
-it('returns response with single post data on show route', function (): void {
+it('returns response using view on show route', function (): void {
     $repository = createMockPostRepository(
         posts: [],
         findBySlugResult: ['id' => 1, 'title' => 'Hello World', 'slug' => 'hello-world'],
     );
-    $controller = new PostController($repository);
+    $view = createMockView();
+    $controller = new PostController($repository, $view);
     $response = $controller->show('hello-world');
 
     expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(200)
-        ->and($response->body())->toContain('Hello World');
+        ->and($response->body())->toContain('blog::post/show');
 });
 
 it('returns 404 response when post slug not found', function (): void {
@@ -73,7 +78,8 @@ it('returns 404 response when post slug not found', function (): void {
         posts: [],
         findBySlugResult: null,
     );
-    $controller = new PostController($repository);
+    $view = createMockView();
+    $controller = new PostController($repository, $view);
     $response = $controller->show('non-existent');
 
     expect($response)->toBeInstanceOf(Response::class)
@@ -98,6 +104,28 @@ it('maintains existing route attributes for GET /blog and GET /blog/{slug}', fun
     $showRoute = $showAttributes[0]->newInstance();
     expect($showRoute->path)->toBe('/blog/{slug}');
 });
+
+// Helper function to create mock ViewInterface
+
+function createMockView(): ViewInterface
+{
+    return new class () implements ViewInterface
+    {
+        public function render(
+            string $template,
+            array $data = [],
+        ): Response {
+            return new Response("rendered: $template");
+        }
+
+        public function renderToString(
+            string $template,
+            array $data = [],
+        ): string {
+            return "rendered: $template";
+        }
+    };
+}
 
 // Helper function to create mock PostRepository
 

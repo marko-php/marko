@@ -7,20 +7,23 @@ namespace Marko\Blog\Controllers;
 use Marko\Blog\Repositories\PostRepository;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
+use Marko\View\ViewInterface;
 
 class PostController
 {
     public function __construct(
         private readonly PostRepository $repository,
+        private readonly ViewInterface $view,
     ) {}
 
     #[Get('/blog')]
     public function index(): Response
     {
         $posts = $this->repository->findAll();
-        $count = count($posts);
 
-        return new Response("Blog Posts: $count found");
+        return $this->view->render('blog::post/index', [
+            'posts' => $posts,
+        ]);
     }
 
     #[Get('/blog/{slug}')]
@@ -33,6 +36,8 @@ class PostController
             return new Response('Post not found', 404);
         }
 
-        return new Response("Post: $post->title");
+        return $this->view->render('blog::post/show', [
+            'post' => $post,
+        ]);
     }
 }

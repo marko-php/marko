@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-pending
+completed
 
 ## Objective
 Implement the view/templating layer for Marko framework with an interface package (`marko/view`) and Latte driver implementation (`marko/view-latte`), following the established interface/driver split pattern.

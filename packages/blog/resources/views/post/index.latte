@@ -1,0 +1,7 @@
+{* Blog post index template *}
+<h1>Blog Posts</h1>
+<ul>
+{foreach $posts as $post}
+    <li><a href="/blog/{$post->slug}">{$post->title}</a></li>
+{/foreach}
+</ul>

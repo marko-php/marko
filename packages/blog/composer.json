@@ -16,13 +16,18 @@
         {
             "type": "path",
             "url": "../database"
+        },
+        {
+            "type": "path",
+            "url": "../view"
         }
     ],
     "require": {
         "php": "^8.5",
         "marko/core": "@dev",
         "marko/routing": "@dev",
-        "marko/database": "@dev"
+        "marko/database": "@dev",
+        "marko/view": "@dev"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

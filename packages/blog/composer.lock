@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c5287dec4581090c50ea6771925bd9d1",
+    "content-hash": "66ed8dc6b5dfb9e100b6d0f994e256ee",
     "packages": [
         {
             "name": "marko/core",
@@ -41,6 +41,40 @@
             }
         },
         {
+            "name": "marko/database",
+            "version": "dev-develop",
+            "dist": {
+                "type": "path",
+                "url": "../database",
+                "reference": "ea046780f8ccfd280fcad08b6ecbf100058abe24"
+            },
+            "require": {
+                "marko/core": "@dev",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "pestphp/pest": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Database\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Marko\\Database\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Marko Framework Database Layer - Entity-driven schema with Data Mapper pattern",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "marko/routing",
             "version": "dev-develop",
             "dist": {
@@ -70,6 +104,41 @@
                 "MIT"
             ],
             "description": "Marko Framework Routing",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "marko/view",
+            "version": "dev-develop",
+            "dist": {
+                "type": "path",
+                "url": "../view",
+                "reference": "e3e9d9896c671c6f03230cb56aee351a841bb9ab"
+            },
+            "require": {
+                "marko/core": "@dev",
+                "marko/routing": "@dev",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "pestphp/pest": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Marko\\View\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Marko\\View\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Marko Framework View - Templating interfaces and contracts",
             "transport-options": {
                 "relative": true
             }
@@ -3969,7 +4038,9 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "marko/core": 20,
-        "marko/routing": 20
+        "marko/database": 20,
+        "marko/routing": 20,
+        "marko/view": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

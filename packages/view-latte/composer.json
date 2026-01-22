@@ -1,29 +1,24 @@
 {
-    "name": "marko/database",
-    "description": "Marko Framework Database Layer - Entity-driven schema with Data Mapper pattern",
+    "name": "marko/view-latte",
+    "description": "Latte templating driver for Marko Framework View",
     "license": "MIT",
     "type": "library",
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev"
+        "marko/view": "^0.1",
+        "latte/latte": "^3.0"
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../core"
-        }
-    ],
     "require-dev": {
         "pestphp/pest": "^4.0"
     },
     "autoload": {
         "psr-4": {
-            "Marko\\Database\\": "src/"
+            "Marko\\View\\Latte\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Marko\\Database\\Tests\\": "tests/"
+            "Marko\\View\\Latte\\Tests\\": "tests/"
         }
     },
     "config": {

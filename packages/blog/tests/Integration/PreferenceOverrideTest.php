@@ -13,6 +13,7 @@ use Marko\Routing\Attributes\InheritRoute;
 use Marko\Routing\Http\Response;
 use Marko\Routing\PreferenceRouteResolver;
 use Marko\Routing\RouteDiscovery;
+use Marko\View\ViewInterface;
 
 /**
  * Tests for Preference override behavior of PostController.
@@ -21,10 +22,11 @@ use Marko\Routing\RouteDiscovery;
 
 it('demo app/blog overrides PostController via Preference', function (): void {
     $mockRepository = createMockPostRepositoryForPreferenceTest();
+    $mockView = createMockViewForPreferenceTest();
 
     // Test fixture simulating demo/app/blog/Controllers/PostController
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class ($mockRepository) extends PostController
+    class ($mockRepository, $mockView) extends PostController
     {
         public function show(
             string $slug,
@@ -36,10 +38,11 @@ it('demo app/blog overrides PostController via Preference', function (): void {
     $preferenceRegistry = new PreferenceRegistry();
     $preferenceRegistry->register(PostController::class, $appPostController::class);
 
-    // Container needs to be able to resolve PostRepository dependency
-    // We bind the mock repository as a singleton instance
+    // Container needs to be able to resolve PostRepository and ViewInterface dependencies
+    // We bind the mock instances as singletons
     $container = new Container($preferenceRegistry);
     $container->instance(PostRepository::class, $mockRepository);
+    $container->instance(ViewInterface::class, $mockView);
 
     // When requesting the original controller, we get the Preference instead
     $resolvedController = $container->get(PostController::class);
@@ -49,10 +52,11 @@ it('demo app/blog overrides PostController via Preference', function (): void {
 
 it('app PostController modifies show method response', function (): void {
     $mockRepository = createMockPostRepositoryForPreferenceTest();
+    $mockView = createMockViewForPreferenceTest();
 
     // Test fixture simulating demo/app/blog/Controllers/PostController
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class ($mockRepository) extends PostController
+    class ($mockRepository, $mockView) extends PostController
     {
         public function show(
             string $slug,
@@ -70,10 +74,11 @@ it('app PostController modifies show method response', function (): void {
 
 it('DisableRoute attribute removes route from Preference override', function (): void {
     $mockRepository = createMockPostRepositoryForPreferenceTest();
+    $mockView = createMockViewForPreferenceTest();
 
     // Test fixture: child controller disables parent route
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class ($mockRepository) extends PostController
+    class ($mockRepository, $mockView) extends PostController
     {
         #[DisableRoute]
         public function index(): Response
@@ -133,6 +138,28 @@ function createMockPostRepositoryForPreferenceTest(): PostRepository
             string $slug,
         ): ?Post {
             return null;
+        }
+    };
+}
+
+// Helper function to create mock ViewInterface for preference tests
+
+function createMockViewForPreferenceTest(): ViewInterface
+{
+    return new class () implements ViewInterface
+    {
+        public function render(
+            string $template,
+            array $data = [],
+        ): Response {
+            return new Response("rendered: $template");
+        }
+
+        public function renderToString(
+            string $template,
+            array $data = [],
+        ): string {
+            return "rendered: $template";
         }
     };
 }

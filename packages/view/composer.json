@@ -1,16 +1,25 @@
 {
-    "name": "marko/database",
-    "description": "Marko Framework Database Layer - Entity-driven schema with Data Mapper pattern",
+    "name": "marko/view",
+    "description": "Marko Framework View - Templating interfaces and contracts",
     "license": "MIT",
     "type": "library",
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev"
+        "marko/core": "@dev",
+        "marko/routing": "@dev"
     },
     "repositories": [
         {
             "type": "path",
             "url": "../core"
+        },
+        {
+            "type": "path",
+            "url": "../routing"
+        },
+        {
+            "type": "path",
+            "url": "../config"
         }
     ],
     "require-dev": {
@@ -18,12 +27,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Marko\\Database\\": "src/"
+            "Marko\\View\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Marko\\Database\\Tests\\": "tests/"
+            "Marko\\View\\Tests\\": "tests/"
         }
     },
     "config": {
