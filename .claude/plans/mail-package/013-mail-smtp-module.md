@@ -1,6 +1,6 @@
 # Task 013: mail-smtp module.php
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 012
 **Retry count**: 0
 
