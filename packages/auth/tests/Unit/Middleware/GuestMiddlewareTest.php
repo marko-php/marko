@@ -339,3 +339,50 @@ test('it supports configurable redirect URL', function (): void {
     expect($response->statusCode())->toBe(302)
         ->and($response->headers()['Location'])->toBe('/custom/home');
 });
+
+test('it supports specifying guard via parameter', function (): void {
+    $user = new GuestMiddlewareTestUser(id: 1);
+    $configRepo = new GuestMiddlewareTestConfigRepository([
+        'auth.default.guard' => 'web',
+        'auth.guards' => [
+            'web' => ['driver' => 'session', 'provider' => 'users'],
+            'api' => ['driver' => 'token', 'provider' => 'users'],
+        ],
+    ]);
+
+    $authConfig = new AuthConfig($configRepo);
+    $session = new GuestMiddlewareTestSession();
+    $provider = new GuestMiddlewareTestUserProvider(
+        userById: $user,
+        userByCredentials: $user,
+        credentialsValid: true,
+    );
+
+    $authManager = new AuthManager(
+        config: $authConfig,
+        session: $session,
+        provider: $provider,
+    );
+
+    // Authenticate on web guard
+    $authManager->attempt(['email' => 'test@example.com', 'password' => 'password']);
+
+    // GuestMiddleware using 'api' guard should allow through (user not authenticated on api guard)
+    $middleware = new GuestMiddleware(
+        auth: $authManager,
+        redirectTo: '/dashboard',
+        guard: 'api',
+    );
+
+    $request = new Request();
+    $expectedResponse = new Response(body: 'login page', statusCode: 200);
+
+    $response = $middleware->handle(
+        $request,
+        fn (Request $r) => $expectedResponse,
+    );
+
+    // API guard user is not authenticated, so request passes through
+    expect($response)->toBe($expectedResponse)
+        ->and($response->statusCode())->toBe(200);
+});
