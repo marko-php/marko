@@ -223,6 +223,10 @@ $config->get('store.currency', scope: 'unknown');   // 'USD' (falls back to defa
 
 // Scope-specific value with fallback to default
 $config->getFloat('store.shipping.free_threshold', scope: 'tenant-eu'); // 50.00 (from default)
+
+// Two ways to access default values directly (both work)
+$config->get('store.default.shipping.provider'); // 'ups' (recommended - explicit path)
+$config->get('store.shipping.provider', scope: 'default'); // 'ups' (works via fallback)
 ```
 
 Create a scoped repository for cleaner code when working with a single tenant:
