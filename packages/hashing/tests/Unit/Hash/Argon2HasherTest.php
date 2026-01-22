@@ -7,7 +7,7 @@ use Marko\Hashing\Exceptions\InvalidHasherConfigException;
 use Marko\Hashing\Hash\Argon2Hasher;
 
 it('implements HasherInterface', function () {
-    $hasher = new Argon2Hasher();
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     expect($hasher)->toBeInstanceOf(HasherInterface::class);
 });
@@ -19,7 +19,7 @@ it('uses default parameters when none provided', function () {
 });
 
 it('accepts custom memory parameter', function () {
-    $hasher = new Argon2Hasher(memory: 32768);
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     $hash = $hasher->hash('password');
 
@@ -27,7 +27,7 @@ it('accepts custom memory parameter', function () {
 });
 
 it('accepts custom time parameter', function () {
-    $hasher = new Argon2Hasher(time: 2);
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     $hash = $hasher->hash('password');
 
@@ -35,7 +35,7 @@ it('accepts custom time parameter', function () {
 });
 
 it('accepts custom threads parameter', function () {
-    $hasher = new Argon2Hasher(threads: 2);
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     $hash = $hasher->hash('password');
 
@@ -43,7 +43,7 @@ it('accepts custom threads parameter', function () {
 });
 
 it('hashes a password with argon2id algorithm', function () {
-    $hasher = new Argon2Hasher();
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     $hash = $hasher->hash('password');
 
@@ -51,7 +51,7 @@ it('hashes a password with argon2id algorithm', function () {
 });
 
 it('produces different hashes for the same password due to salt', function () {
-    $hasher = new Argon2Hasher();
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     $hash1 = $hasher->hash('password');
     $hash2 = $hasher->hash('password');
@@ -60,7 +60,7 @@ it('produces different hashes for the same password due to salt', function () {
 });
 
 it('verifies correct password returns true', function () {
-    $hasher = new Argon2Hasher();
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     $hash = $hasher->hash('password');
 
@@ -68,7 +68,7 @@ it('verifies correct password returns true', function () {
 });
 
 it('verifies incorrect password returns false', function () {
-    $hasher = new Argon2Hasher();
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     $hash = $hasher->hash('password');
 
@@ -76,22 +76,22 @@ it('verifies incorrect password returns false', function () {
 });
 
 it('returns argon2id as algorithm name', function () {
-    $hasher = new Argon2Hasher();
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     expect($hasher->algorithm())->toBe('argon2id');
 });
 
 it('indicates rehash needed when parameters change', function () {
-    $hasher = new Argon2Hasher(memory: 16384, time: 2, threads: 1);
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
     $hash = $hasher->hash('password');
 
-    $newHasher = new Argon2Hasher(memory: 65536, time: 4, threads: 1);
+    $newHasher = new Argon2Hasher(memory: 2048, time: 2, threads: 1);
 
     expect($newHasher->needsRehash($hash))->toBeTrue();
 });
 
 it('indicates no rehash needed when parameters are the same', function () {
-    $hasher = new Argon2Hasher(memory: 32768, time: 3, threads: 1);
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
     $hash = $hasher->hash('password');
 
     expect($hasher->needsRehash($hash))->toBeFalse();

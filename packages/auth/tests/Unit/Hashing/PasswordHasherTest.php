@@ -54,13 +54,13 @@ it('creates PasswordHasherInterface with needsRehash method', function () {
 });
 
 it('creates BcryptPasswordHasher implementing interface', function () {
-    $hasher = new BcryptPasswordHasher();
+    $hasher = new BcryptPasswordHasher(cost: 4);
 
     expect($hasher)->toBeInstanceOf(PasswordHasherInterface::class);
 });
 
 it('hashes password with bcrypt algorithm', function () {
-    $hasher = new BcryptPasswordHasher();
+    $hasher = new BcryptPasswordHasher(cost: 4);
 
     $hash = $hasher->hash('secret');
 
@@ -69,7 +69,7 @@ it('hashes password with bcrypt algorithm', function () {
 });
 
 it('verifies correct password returns true', function () {
-    $hasher = new BcryptPasswordHasher();
+    $hasher = new BcryptPasswordHasher(cost: 4);
 
     $hash = $hasher->hash('secret');
 
@@ -77,7 +77,7 @@ it('verifies correct password returns true', function () {
 });
 
 it('verifies incorrect password returns false', function () {
-    $hasher = new BcryptPasswordHasher();
+    $hasher = new BcryptPasswordHasher(cost: 4);
 
     $hash = $hasher->hash('secret');
 
@@ -86,7 +86,7 @@ it('verifies incorrect password returns false', function () {
 
 it('detects when rehash is needed', function () {
     $lowCostHasher = new BcryptPasswordHasher(cost: 4);
-    $highCostHasher = new BcryptPasswordHasher(cost: 10);
+    $highCostHasher = new BcryptPasswordHasher(cost: 6);
 
     $hash = $lowCostHasher->hash('secret');
 
@@ -94,11 +94,11 @@ it('detects when rehash is needed', function () {
 });
 
 it('supports configurable cost parameter', function () {
-    $hasher = new BcryptPasswordHasher(cost: 10);
+    $hasher = new BcryptPasswordHasher(cost: 5);
 
     $hash = $hasher->hash('secret');
 
-    expect($hash)->toStartWith('$2y$10$');
+    expect($hash)->toStartWith('$2y$05$');
 });
 
 it('uses default cost of 12', function () {
@@ -110,7 +110,7 @@ it('uses default cost of 12', function () {
 });
 
 it('hashes password to non-readable format', function () {
-    $hasher = new BcryptPasswordHasher();
+    $hasher = new BcryptPasswordHasher(cost: 4);
     $password = 'my-secret-password';
 
     $hash = $hasher->hash($password);
@@ -121,7 +121,7 @@ it('hashes password to non-readable format', function () {
 });
 
 it('produces different hash for same password', function () {
-    $hasher = new BcryptPasswordHasher();
+    $hasher = new BcryptPasswordHasher(cost: 4);
     $password = 'same-password';
 
     $hash1 = $hasher->hash($password);
@@ -134,7 +134,7 @@ it('produces different hash for same password', function () {
 
 it('detects rehash needed for lower cost', function () {
     $lowCostHasher = new BcryptPasswordHasher(cost: 4);
-    $higherCostHasher = new BcryptPasswordHasher(cost: 10);
+    $higherCostHasher = new BcryptPasswordHasher(cost: 6);
 
     $hashWithLowCost = $lowCostHasher->hash('secret');
 
@@ -142,7 +142,7 @@ it('detects rehash needed for lower cost', function () {
 });
 
 it('detects no rehash needed for same cost', function () {
-    $hasher = new BcryptPasswordHasher(cost: 10);
+    $hasher = new BcryptPasswordHasher(cost: 4);
 
     $hash = $hasher->hash('secret');
 

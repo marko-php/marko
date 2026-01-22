@@ -13,9 +13,9 @@ function createIntegrationManager(
 ): HashManager {
     $defaults = [
         'hashing.default' => 'bcrypt',
-        'hashing.hashers.bcrypt.cost' => 10,
-        'hashing.hashers.argon2id.memory' => 32768,
-        'hashing.hashers.argon2id.time' => 2,
+        'hashing.hashers.bcrypt.cost' => 4,
+        'hashing.hashers.argon2id.memory' => 1024,
+        'hashing.hashers.argon2id.time' => 1,
         'hashing.hashers.argon2id.threads' => 1,
     ];
 
@@ -154,7 +154,7 @@ it('detects algorithm change requires rehash', function () {
 
 it('detects cost change requires rehash', function () {
     $lowCostManager = createIntegrationManager(['hashing.hashers.bcrypt.cost' => 4]);
-    $highCostManager = createIntegrationManager(['hashing.hashers.bcrypt.cost' => 12]);
+    $highCostManager = createIntegrationManager(['hashing.hashers.bcrypt.cost' => 6]);
 
     $lowCostHash = $lowCostManager->hash('password');
 
@@ -163,7 +163,7 @@ it('detects cost change requires rehash', function () {
 
 it('can rehash password when cost changes', function () {
     $lowCostManager = createIntegrationManager(['hashing.hashers.bcrypt.cost' => 4]);
-    $highCostManager = createIntegrationManager(['hashing.hashers.bcrypt.cost' => 12]);
+    $highCostManager = createIntegrationManager(['hashing.hashers.bcrypt.cost' => 6]);
 
     $password = 'password';
     $oldHash = $lowCostManager->hash($password);

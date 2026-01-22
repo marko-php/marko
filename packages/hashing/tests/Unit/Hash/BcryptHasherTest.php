@@ -7,7 +7,7 @@ use Marko\Hashing\Exceptions\InvalidHasherConfigException;
 use Marko\Hashing\Hash\BcryptHasher;
 
 it('implements HasherInterface', function () {
-    $hasher = new BcryptHasher();
+    $hasher = new BcryptHasher(cost: 4);
 
     expect($hasher)->toBeInstanceOf(HasherInterface::class);
 });
@@ -19,15 +19,15 @@ it('uses default cost of 12 when no cost provided', function () {
 });
 
 it('accepts custom cost parameter', function () {
-    $hasher = new BcryptHasher(cost: 10);
+    $hasher = new BcryptHasher(cost: 5);
 
     $hash = $hasher->hash('password');
 
-    expect($hash)->toStartWith('$2y$10$');
+    expect($hash)->toStartWith('$2y$05$');
 });
 
 it('hashes a password with bcrypt algorithm', function () {
-    $hasher = new BcryptHasher();
+    $hasher = new BcryptHasher(cost: 4);
 
     $hash = $hasher->hash('password');
 
@@ -36,7 +36,7 @@ it('hashes a password with bcrypt algorithm', function () {
 });
 
 it('produces different hashes for the same password due to salt', function () {
-    $hasher = new BcryptHasher();
+    $hasher = new BcryptHasher(cost: 4);
 
     $hash1 = $hasher->hash('password');
     $hash2 = $hasher->hash('password');
@@ -45,7 +45,7 @@ it('produces different hashes for the same password due to salt', function () {
 });
 
 it('verifies correct password returns true', function () {
-    $hasher = new BcryptHasher();
+    $hasher = new BcryptHasher(cost: 4);
 
     $hash = $hasher->hash('password');
 
@@ -53,7 +53,7 @@ it('verifies correct password returns true', function () {
 });
 
 it('verifies incorrect password returns false', function () {
-    $hasher = new BcryptHasher();
+    $hasher = new BcryptHasher(cost: 4);
 
     $hash = $hasher->hash('password');
 
@@ -61,7 +61,7 @@ it('verifies incorrect password returns false', function () {
 });
 
 it('returns bcrypt as algorithm name', function () {
-    $hasher = new BcryptHasher();
+    $hasher = new BcryptHasher(cost: 4);
 
     expect($hasher->algorithm())->toBe('bcrypt');
 });
@@ -70,13 +70,13 @@ it('indicates rehash needed when cost increases', function () {
     $hasher = new BcryptHasher(cost: 4);
     $hash = $hasher->hash('password');
 
-    $newHasher = new BcryptHasher(cost: 10);
+    $newHasher = new BcryptHasher(cost: 6);
 
     expect($newHasher->needsRehash($hash))->toBeTrue();
 });
 
 it('indicates no rehash needed when cost is the same', function () {
-    $hasher = new BcryptHasher(cost: 10);
+    $hasher = new BcryptHasher(cost: 4);
     $hash = $hasher->hash('password');
 
     expect($hasher->needsRehash($hash))->toBeFalse();

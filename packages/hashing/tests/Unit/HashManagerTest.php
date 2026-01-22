@@ -13,9 +13,9 @@ use Marko\Hashing\HashManager;
 
 function createHashManager(
     string $defaultHasher = 'bcrypt',
-    int $bcryptCost = 10,
-    int $argon2Memory = 32768,
-    int $argon2Time = 2,
+    int $bcryptCost = 4,
+    int $argon2Memory = 1024,
+    int $argon2Time = 1,
     int $argon2Threads = 1,
 ): HashManager {
     $configData = [
@@ -128,7 +128,7 @@ it('checks if rehash is needed using default hasher', function () {
     $manager = createHashManager(bcryptCost: 4);
     $hash = $manager->hash('password');
 
-    $newManager = createHashManager(bcryptCost: 10);
+    $newManager = createHashManager(bcryptCost: 6);
 
     expect($newManager->needsRehash($hash))->toBeTrue();
 });
