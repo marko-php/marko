@@ -1,6 +1,6 @@
 # Task 016: CLI queue:failed Command
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 006
 **Retry count**: 0
 

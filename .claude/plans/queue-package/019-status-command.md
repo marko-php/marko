@@ -1,6 +1,6 @@
 # Task 019: CLI queue:status Command
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 004, 006
 **Retry count**: 0
 

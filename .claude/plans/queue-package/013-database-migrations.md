@@ -1,6 +1,6 @@
 # Task 013: Database Migrations
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 011, 012
 **Retry count**: 0
 

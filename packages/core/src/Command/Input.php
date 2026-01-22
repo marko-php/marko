@@ -51,4 +51,39 @@ readonly class Input
     ): ?string {
         return $this->getArguments()[$index] ?? null;
     }
+
+    /**
+     * Checks if an option exists (e.g., --verbose or --queue=value).
+     */
+    public function hasOption(
+        string $name,
+    ): bool {
+        foreach ($this->getArguments() as $arg) {
+            if ($arg === "--$name" || str_starts_with($arg, "--$name=")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the value of an option, or null if not found.
+     * For boolean flags (--verbose), returns "true".
+     * For value options (--queue=emails), returns the value.
+     */
+    public function getOption(
+        string $name,
+    ): ?string {
+        foreach ($this->getArguments() as $arg) {
+            if ($arg === "--$name") {
+                return 'true';
+            }
+            if (str_starts_with($arg, "--$name=")) {
+                return substr($arg, strlen("--$name="));
+            }
+        }
+
+        return null;
+    }
 }

@@ -85,6 +85,7 @@ readonly class ObserverDiscovery
                 observerClass: $className,
                 eventClass: $attribute->event,
                 priority: $attribute->priority,
+                async: $attribute->async,
             );
         }
 

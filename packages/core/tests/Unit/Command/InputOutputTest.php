@@ -91,3 +91,29 @@ it('defaults Output to STDOUT', function (): void {
 
     expect($streamProperty->getValue($output))->toBe(STDOUT);
 });
+
+it('checks if option exists', function (): void {
+    $input = new Input(['marko', 'queue:clear', '--queue=emails']);
+
+    expect($input->hasOption('queue'))->toBeTrue()
+        ->and($input->hasOption('verbose'))->toBeFalse();
+});
+
+it('returns option value with equals syntax', function (): void {
+    $input = new Input(['marko', 'queue:clear', '--queue=emails']);
+
+    expect($input->getOption('queue'))->toBe('emails');
+});
+
+it('returns null for missing option', function (): void {
+    $input = new Input(['marko', 'queue:clear']);
+
+    expect($input->getOption('queue'))->toBeNull();
+});
+
+it('returns true for boolean flag option', function (): void {
+    $input = new Input(['marko', 'queue:work', '--verbose']);
+
+    expect($input->hasOption('verbose'))->toBeTrue()
+        ->and($input->getOption('verbose'))->toBe('true');
+});

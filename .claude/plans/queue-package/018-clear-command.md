@@ -1,6 +1,6 @@
 # Task 018: CLI queue:clear Command
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 004
 **Retry count**: 0
 

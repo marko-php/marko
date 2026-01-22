@@ -1,6 +1,6 @@
 # Task 017: CLI queue:retry Command
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 006, 007
 **Retry count**: 0
 

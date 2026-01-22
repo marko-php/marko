@@ -13,5 +13,6 @@ readonly class ObserverDefinition
         public string $observerClass,
         public string $eventClass,
         public int $priority = 0,
+        public bool $async = false,
     ) {}
 }
