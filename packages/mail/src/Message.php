@@ -33,6 +33,11 @@ class Message
 
     private ?int $priority = null;
 
+    private ?string $view = null;
+
+    /** @var array<string, mixed> */
+    private array $viewData = [];
+
     public static function create(): self
     {
         return new self();
@@ -203,5 +208,42 @@ class Message
     public function getPriority(): ?int
     {
         return $this->priority;
+    }
+
+    public function view(
+        string $template,
+    ): self {
+        $this->view = $template;
+
+        return $this;
+    }
+
+    public function getView(): ?string
+    {
+        return $this->view;
+    }
+
+    /**
+     * @param array<string, mixed>|string $key
+     */
+    public function with(
+        array|string $key,
+        mixed $value = null,
+    ): self {
+        if (is_array($key)) {
+            $this->viewData = array_merge($this->viewData, $key);
+        } else {
+            $this->viewData[$key] = $value;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getViewData(): array
+    {
+        return $this->viewData;
     }
 }

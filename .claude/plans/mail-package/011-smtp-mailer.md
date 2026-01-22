@@ -1,6 +1,6 @@
 # Task 011: SmtpMailer Implementation
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 006, 009, 010
 **Retry count**: 0
 

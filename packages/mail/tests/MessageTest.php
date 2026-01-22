@@ -26,7 +26,9 @@ describe('Message', function (): void {
             ->and($message->getText())->toBeNull()
             ->and($message->getAttachments())->toBe([])
             ->and($message->getHeaders())->toBe([])
-            ->and($message->getPriority())->toBeNull();
+            ->and($message->getPriority())->toBeNull()
+            ->and($message->getView())->toBeNull()
+            ->and($message->getViewData())->toBe([]);
     });
 
     it('to adds recipient', function (): void {
@@ -291,5 +293,29 @@ describe('Message', function (): void {
         } finally {
             unlink($testFile);
         }
+    });
+
+    it('view method sets template', function (): void {
+        $message = Message::create()
+            ->view('emails.welcome');
+
+        expect($message->getView())->toBe('emails.welcome');
+    });
+
+    it('with method sets template data', function (): void {
+        $message = Message::create()
+            ->view('emails.welcome')
+            ->with(['name' => 'John', 'email' => 'john@example.com']);
+
+        expect($message->getViewData())->toBe(['name' => 'John', 'email' => 'john@example.com']);
+    });
+
+    it('with method supports key-value signature', function (): void {
+        $message = Message::create()
+            ->view('emails.welcome')
+            ->with('name', 'John')
+            ->with('email', 'john@example.com');
+
+        expect($message->getViewData())->toBe(['name' => 'John', 'email' => 'john@example.com']);
     });
 });

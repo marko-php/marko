@@ -1,6 +1,6 @@
 # Task 015: CLI mail:test Command
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 006, 007
 **Retry count**: 0
 
