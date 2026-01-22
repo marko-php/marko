@@ -117,28 +117,35 @@ if ($config->has('feature.experimental')) {
 
 ### Dot Notation
 
-Access nested configuration values using dot notation.
+Access nested configuration values using dot notation. The filename becomes the top-level key.
 
 ```php
 <?php
+// config/database.php
 
 declare(strict_types=1);
 
-// Config structure
 return [
-    'database' => [
-        'connections' => [
-            'mysql' => [
-                'host' => 'localhost',
-                'port' => 3306,
-            ],
+    'default' => 'mysql',
+    'connections' => [
+        'mysql' => [
+            'host' => 'localhost',
+            'port' => 3306,
+        ],
+        'pgsql' => [
+            'host' => 'localhost',
+            'port' => 5432,
         ],
     ],
 ];
+```
 
-// Access nested values
+```php
+<?php
+// Access nested values (filename "database" is the top-level key)
+$default = $config->get('database.default'); // 'mysql'
 $host = $config->get('database.connections.mysql.host'); // 'localhost'
-$port = $config->get('database.connections.mysql.port'); // 3306
+$port = $config->get('database.connections.pgsql.port'); // 5432
 ```
 
 ### Environment Variables
