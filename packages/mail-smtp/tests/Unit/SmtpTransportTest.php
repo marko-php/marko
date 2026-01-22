@@ -168,6 +168,64 @@ test('SmtpTransport handles unexpected response codes', function (): void {
     $transport->rcptTo('invalid@example.com');
 })->throws(TransportException::class);
 
+test('SmtpTransport handles multi-line responses', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        "250-mail.example.com Hello\r\n250-SIZE 52428800\r\n250-8BITMIME\r\n250 HELP",
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $capabilities = $transport->ehlo('client.example.com');
+
+    expect($capabilities)->toContain('mail.example.com Hello')
+        ->and($capabilities)->toContain('SIZE 52428800')
+        ->and($capabilities)->toContain('8BITMIME')
+        ->and($capabilities)->toContain('HELP');
+});
+
+test('SmtpTransport handles connection timeout', function (): void {
+    $socket = createTimeoutSocket();
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('slow.example.com', 587);
+})->throws(TransportException::class, 'Failed to connect to mail server.');
+
+test('SmtpTransport handles server disconnect', function (): void {
+    $socket = createDisconnectingSocket([
+        '220 smtp.example.com ESMTP ready',
+        '250 OK',
+        '', // Server disconnects, returns empty response
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->mailFrom('sender@example.com');
+
+    // Server disconnects before RCPT TO can complete
+    $transport->rcptTo('recipient@example.com');
+})->throws(TransportException::class, 'Unexpected SMTP response.');
+
+test('SmtpTransport handles various SMTP error codes', function (
+    int $errorCode,
+    string $errorMessage,
+): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        "$errorCode $errorMessage",
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->mailFrom('sender@example.com');
+})->throws(TransportException::class, 'Unexpected SMTP response.')
+    ->with([
+        '421 - Service not available' => [421, 'Service not available, closing transmission channel'],
+        '450 - Mailbox unavailable' => [450, 'Requested mail action not taken: mailbox unavailable'],
+        '500 - Syntax error' => [500, 'Syntax error, command unrecognized'],
+        '550 - Requested action not taken' => [550, 'Requested action not taken: mailbox unavailable'],
+    ]);
+
 function createFailingSocket(): SocketInterface
 {
     return new class () implements SocketInterface
@@ -198,6 +256,94 @@ function createFailingSocket(): SocketInterface
         public function isConnected(): bool
         {
             return false;
+        }
+    };
+}
+
+function createTimeoutSocket(): SocketInterface
+{
+    return new class () implements SocketInterface
+    {
+        public function connect(
+            string $host,
+            int $port,
+            ?string $encryption = null,
+            int $timeout = 30,
+        ): void {
+            // Simulate timeout by throwing connection failed exception
+            throw TransportException::connectionFailed($host, $port);
+        }
+
+        public function read(): string
+        {
+            return '';
+        }
+
+        public function write(string $data): void {}
+
+        public function enableTls(): bool
+        {
+            return false;
+        }
+
+        public function close(): void {}
+
+        public function isConnected(): bool
+        {
+            return false;
+        }
+    };
+}
+
+function createDisconnectingSocket(
+    array $responses,
+): SocketInterface {
+    return new class ($responses) implements SocketInterface
+    {
+        private bool $connected = false;
+
+        private int $responseIndex = 0;
+
+        public function __construct(
+            private array $responses,
+        ) {}
+
+        public function connect(
+            string $host,
+            int $port,
+            ?string $encryption = null,
+            int $timeout = 30,
+        ): void {
+            $this->connected = true;
+        }
+
+        public function read(): string
+        {
+            $response = $this->responses[$this->responseIndex++] ?? '';
+
+            // Simulate disconnect when empty response
+            if ($response === '') {
+                $this->connected = false;
+            }
+
+            return $response;
+        }
+
+        public function write(string $data): void {}
+
+        public function enableTls(): bool
+        {
+            return true;
+        }
+
+        public function close(): void
+        {
+            $this->connected = false;
+        }
+
+        public function isConnected(): bool
+        {
+            return $this->connected;
         }
     };
 }

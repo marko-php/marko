@@ -1,6 +1,6 @@
 # Task 016: Unit Tests for Message Class
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 005
 **Retry count**: 0
 

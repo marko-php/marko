@@ -13,6 +13,22 @@ describe('Message', function (): void {
         expect($message)->toBeInstanceOf(Message::class);
     });
 
+    it('getters return correct data', function (): void {
+        $message = Message::create();
+
+        expect($message->getTo())->toBe([])
+            ->and($message->getCc())->toBe([])
+            ->and($message->getBcc())->toBe([])
+            ->and($message->getFrom())->toBeNull()
+            ->and($message->getReplyTo())->toBeNull()
+            ->and($message->getSubject())->toBeNull()
+            ->and($message->getHtml())->toBeNull()
+            ->and($message->getText())->toBeNull()
+            ->and($message->getAttachments())->toBe([])
+            ->and($message->getHeaders())->toBe([])
+            ->and($message->getPriority())->toBeNull();
+    });
+
     it('to adds recipient', function (): void {
         $message = Message::create()
             ->to('user@example.com', 'John Doe');
@@ -49,6 +65,23 @@ describe('Message', function (): void {
             ->and($recipients[0]->name)->toBe('Manager');
     });
 
+    it('supports multiple cc addresses', function (): void {
+        $message = Message::create()
+            ->cc('manager1@example.com', 'Manager One')
+            ->cc('manager2@example.com', 'Manager Two')
+            ->cc('manager3@example.com');
+
+        $recipients = $message->getCc();
+
+        expect($recipients)->toHaveCount(3)
+            ->and($recipients[0]->email)->toBe('manager1@example.com')
+            ->and($recipients[0]->name)->toBe('Manager One')
+            ->and($recipients[1]->email)->toBe('manager2@example.com')
+            ->and($recipients[1]->name)->toBe('Manager Two')
+            ->and($recipients[2]->email)->toBe('manager3@example.com')
+            ->and($recipients[2]->name)->toBeNull();
+    });
+
     it('bcc adds blind copy recipient', function (): void {
         $message = Message::create()
             ->bcc('secret@example.com', 'Secret Recipient');
@@ -59,6 +92,23 @@ describe('Message', function (): void {
             ->and($recipients[0])->toBeInstanceOf(Address::class)
             ->and($recipients[0]->email)->toBe('secret@example.com')
             ->and($recipients[0]->name)->toBe('Secret Recipient');
+    });
+
+    it('supports multiple bcc addresses', function (): void {
+        $message = Message::create()
+            ->bcc('secret1@example.com', 'Secret One')
+            ->bcc('secret2@example.com', 'Secret Two')
+            ->bcc('secret3@example.com');
+
+        $recipients = $message->getBcc();
+
+        expect($recipients)->toHaveCount(3)
+            ->and($recipients[0]->email)->toBe('secret1@example.com')
+            ->and($recipients[0]->name)->toBe('Secret One')
+            ->and($recipients[1]->email)->toBe('secret2@example.com')
+            ->and($recipients[1]->name)->toBe('Secret Two')
+            ->and($recipients[2]->email)->toBe('secret3@example.com')
+            ->and($recipients[2]->name)->toBeNull();
     });
 
     it('from sets sender', function (): void {
@@ -122,6 +172,37 @@ describe('Message', function (): void {
         }
     });
 
+    it('supports multiple attachments', function (): void {
+        $testFile1 = sys_get_temp_dir() . '/attachment1.txt';
+        $testFile2 = sys_get_temp_dir() . '/attachment2.pdf';
+        $testFile3 = sys_get_temp_dir() . '/attachment3.csv';
+
+        file_put_contents($testFile1, 'First attachment');
+        file_put_contents($testFile2, 'Second attachment');
+        file_put_contents($testFile3, 'Third attachment');
+
+        try {
+            $message = Message::create()
+                ->attach($testFile1)
+                ->attach($testFile2, 'custom-name.pdf')
+                ->attach($testFile3);
+
+            $attachments = $message->getAttachments();
+
+            expect($attachments)->toHaveCount(3)
+                ->and($attachments[0])->toBeInstanceOf(Attachment::class)
+                ->and($attachments[0]->name)->toBe('attachment1.txt')
+                ->and($attachments[1])->toBeInstanceOf(Attachment::class)
+                ->and($attachments[1]->name)->toBe('custom-name.pdf')
+                ->and($attachments[2])->toBeInstanceOf(Attachment::class)
+                ->and($attachments[2]->name)->toBe('attachment3.csv');
+        } finally {
+            @unlink($testFile1);
+            @unlink($testFile2);
+            @unlink($testFile3);
+        }
+    });
+
     it('embed adds inline attachment', function (): void {
         $testFile = sys_get_temp_dir() . '/inline-image.png';
         $pngData = base64_decode(
@@ -151,6 +232,23 @@ describe('Message', function (): void {
 
         expect($headers)->toHaveKey('X-Custom-Header')
             ->and($headers['X-Custom-Header'])->toBe('custom-value');
+    });
+
+    it('supports multiple headers', function (): void {
+        $message = Message::create()
+            ->header('X-Mailer', 'Marko Mail')
+            ->header('X-Priority', '1')
+            ->header('X-Custom-ID', 'abc123');
+
+        $headers = $message->getHeaders();
+
+        expect($headers)->toHaveCount(3)
+            ->and($headers)->toHaveKey('X-Mailer')
+            ->and($headers['X-Mailer'])->toBe('Marko Mail')
+            ->and($headers)->toHaveKey('X-Priority')
+            ->and($headers['X-Priority'])->toBe('1')
+            ->and($headers)->toHaveKey('X-Custom-ID')
+            ->and($headers['X-Custom-ID'])->toBe('abc123');
     });
 
     it('priority sets message priority', function (): void {

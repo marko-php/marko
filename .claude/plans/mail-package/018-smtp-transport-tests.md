@@ -1,6 +1,6 @@
 # Task 018: Unit Tests for SmtpTransport
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 010
 **Retry count**: 0
 

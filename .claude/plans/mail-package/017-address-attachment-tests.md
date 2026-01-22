@@ -1,6 +1,6 @@
 # Task 017: Unit Tests for Address and Attachment
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 003, 004
 **Retry count**: 0
 

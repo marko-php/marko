@@ -41,7 +41,7 @@ describe('Attachment', function (): void {
         $testFile = sys_get_temp_dir() . '/test-image.png';
         // Create a minimal valid PNG file (8x8 transparent)
         $pngData = base64_decode(
-            'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAADklEQVQI12P4////GQYJAAAFRgF+O+bnIwAAAABJRU5ErkJggg=='
+            'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAADklEQVQI12P4////GQYJAAAFRgF+O+bnIwAAAABJRU5ErkJggg==',
         );
         file_put_contents($testFile, $pngData);
 
@@ -67,7 +67,7 @@ describe('Attachment', function (): void {
     it('inline sets content ID', function (): void {
         $testFile = sys_get_temp_dir() . '/inline-image.png';
         $pngData = base64_decode(
-            'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAADklEQVQI12P4////GQYJAAAFRgF+O+bnIwAAAABJRU5ErkJggg=='
+            'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAADklEQVQI12P4////GQYJAAAFRgF+O+bnIwAAAABJRU5ErkJggg==',
         );
         file_put_contents($testFile, $pngData);
 
@@ -86,5 +86,113 @@ describe('Attachment', function (): void {
         $reflection = new ReflectionClass(Attachment::class);
 
         expect($reflection->isReadOnly())->toBeTrue();
+    });
+
+    it('detects various mime types', function (string $extension, string $content, string $expectedMime): void {
+        $testFile = sys_get_temp_dir() . '/test-file.' . $extension;
+        file_put_contents($testFile, $content);
+
+        try {
+            $attachment = Attachment::fromPath($testFile);
+
+            expect($attachment->mimeType)->toBe($expectedMime);
+        } finally {
+            unlink($testFile);
+        }
+    })->with([
+        'plain text file' => ['txt', 'Hello, World!', 'text/plain'],
+        'HTML file' => ['html', '<!DOCTYPE html><html><body>Test</body></html>', 'text/html'],
+        'JSON file' => ['json', '{"key": "value"}', 'application/json'],
+        'JPEG image' => [
+            'jpg',
+            base64_decode(
+                '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AVN//2Q=='
+            ),
+            'image/jpeg',
+        ],
+        'GIF image' => [
+            'gif',
+            base64_decode('R0lGODlhAQABAIAAAAUEBAAAACH5BAEAAAEALAAAAAABAAEAAAICRAEAOw=='),
+            'image/gif',
+        ],
+        'PDF document' => [
+            'pdf',
+            '%PDF-1.4' . "\n" . '1 0 obj<</Type/Catalog>>endobj',
+            'application/pdf',
+        ],
+        'XML file' => ['xml', '<?xml version="1.0"?><root></root>', 'text/xml'],
+    ]);
+
+    it('handles special characters in filenames', function (string $filename): void {
+        $testFile = sys_get_temp_dir() . '/' . $filename;
+        file_put_contents($testFile, 'Test content');
+
+        try {
+            $attachment = Attachment::fromPath($testFile);
+
+            expect($attachment->name)->toBe($filename);
+        } finally {
+            unlink($testFile);
+        }
+    })->with([
+        'spaces in filename' => ['my document.txt'],
+        'unicode characters' => ['archivo_español.txt'],
+        'multiple dots' => ['file.backup.2024.txt'],
+        'hyphens and underscores' => ['my-file_name.txt'],
+        'parentheses' => ['report (final).txt'],
+        'ampersand' => ['tom & jerry.txt'],
+        'plus sign' => ['file+extra.txt'],
+        'at symbol' => ['email@backup.txt'],
+        'exclamation mark' => ['urgent!.txt'],
+        'numbers' => ['file123.txt'],
+    ]);
+
+    it('inline uses correct content disposition via contentId', function (): void {
+        $testFile = sys_get_temp_dir() . '/inline-test.png';
+        $pngData = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAADklEQVQI12P4////GQYJAAAFRgF+O+bnIwAAAABJRU5ErkJggg==',
+        );
+        file_put_contents($testFile, $pngData);
+
+        try {
+            $inline = Attachment::inline($testFile, 'my-logo');
+            $regular = Attachment::fromPath($testFile);
+
+            // Inline attachments have contentId set (indicating inline disposition)
+            expect($inline->contentId)->toBe('my-logo')
+                ->and($inline->name)->toBe('inline-test.png')
+                ->and($inline->mimeType)->toBe('image/png');
+
+            // Regular attachments have null contentId (indicating attachment disposition)
+            expect($regular->contentId)->toBeNull()
+                ->and($regular->name)->toBe('inline-test.png');
+        } finally {
+            unlink($testFile);
+        }
+    });
+
+    it('inline allows custom name and mime type', function (): void {
+        $testFile = sys_get_temp_dir() . '/inline-custom.txt';
+        file_put_contents($testFile, 'Test content');
+
+        try {
+            $attachment = Attachment::inline(
+                $testFile,
+                'custom-id',
+                'custom-name.jpg',
+                'image/jpeg',
+            );
+
+            expect($attachment->contentId)->toBe('custom-id')
+                ->and($attachment->name)->toBe('custom-name.jpg')
+                ->and($attachment->mimeType)->toBe('image/jpeg');
+        } finally {
+            unlink($testFile);
+        }
+    });
+
+    it('inline throws for non-existent file', function (): void {
+        expect(fn () => Attachment::inline('/nonexistent/file.png', 'id'))
+            ->toThrow(MessageException::class, "Attachment file not found: '/nonexistent/file.png'");
     });
 });
