@@ -1,6 +1,6 @@
 # Task 012: DatabaseFailedJobRepository Implementation
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 006
 **Retry count**: 0
 
