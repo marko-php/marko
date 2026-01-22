@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-pending
+in_progress
 
 ## Objective
 Create the `marko/errors-advanced` package providing an enhanced, beautiful error presentation layer for development environments. This package extends `marko/errors` with a production-quality HTML error formatter featuring syntax highlighting, formatted stack traces with source context, request/environment details, and dark mode support.

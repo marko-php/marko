@@ -1,0 +1,23 @@
+{
+    "name": "marko/errors-advanced",
+    "description": "Advanced error handling with Whoops integration for the Marko framework",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.5",
+        "marko/errors": "^0.1"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\ErrorsAdvanced\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\ErrorsAdvanced\\Tests\\": "tests/"
+        }
+    }
+}
