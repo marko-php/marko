@@ -1,0 +1,29 @@
+{
+    "name": "marko/queue-sync",
+    "description": "Synchronous queue driver for Marko Framework",
+    "license": "MIT",
+    "type": "library",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "^0.1",
+        "marko/queue": "^0.1"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Queue\\Sync\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Queue\\Sync\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

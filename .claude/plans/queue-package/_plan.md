@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-pending
+in_progress
 
 ## Objective
 Implement the queue system for Marko framework with interface/implementation split pattern, enabling async observers and background job processing. Provide `marko/queue` (interfaces and infrastructure), `marko/queue-sync` (synchronous driver for development), and `marko/queue-database` (database-backed driver for production).

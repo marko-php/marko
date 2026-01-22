@@ -1,0 +1,28 @@
+{
+    "name": "marko/queue",
+    "description": "Queue interfaces and infrastructure for Marko Framework",
+    "license": "MIT",
+    "type": "library",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "^0.1"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Queue\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Queue\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

@@ -33,3 +33,36 @@ it('defaults observer priority to 0 when not specified', function (): void {
 
     expect($observer->priority)->toBe(0);
 });
+
+#[Observer(event: TestEvent::class, async: true)]
+class AsyncObserver {}
+
+it('accepts async parameter', function (): void {
+    $reflection = new ReflectionClass(AsyncObserver::class);
+    $attributes = $reflection->getAttributes(Observer::class);
+
+    expect($attributes)->toHaveCount(1);
+
+    $observer = $attributes[0]->newInstance();
+
+    expect($observer->async)->toBeTrue();
+});
+
+it('defaults async to false', function (): void {
+    $reflection = new ReflectionClass(SimpleObserver::class);
+    $attributes = $reflection->getAttributes(Observer::class);
+
+    $observer = $attributes[0]->newInstance();
+
+    expect($observer->async)->toBeFalse();
+});
+
+it('stores async value', function (): void {
+    $observer = new Observer(event: TestEvent::class, async: true);
+
+    expect($observer->async)->toBeTrue();
+
+    $syncObserver = new Observer(event: TestEvent::class, async: false);
+
+    expect($syncObserver->async)->toBeFalse();
+});

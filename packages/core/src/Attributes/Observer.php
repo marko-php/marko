@@ -12,5 +12,6 @@ readonly class Observer
     public function __construct(
         public string $event,
         public int $priority = 0,
+        public bool $async = false,
     ) {}
 }
