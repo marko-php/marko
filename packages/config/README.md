@@ -205,25 +205,24 @@ return [
 ];
 ```
 
-Access scoped values by passing the scope parameter:
+**Important:** The `default` and `scopes` keys are special—but only when you pass a scope parameter. Without a scope, the config is accessed directly.
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-// Get scope-specific values
-$currency = $config->get('store.currency', scope: 'tenant-eu'); // 'EUR'
-$taxRate = $config->getFloat('store.tax_rate', scope: 'tenant-eu'); // 0.19
+// WITHOUT scope - accesses config directly (won't find values inside 'default')
+$config->get('store.currency'); // null - 'currency' is inside 'default', not at top level
+$config->get('store.default.currency'); // 'USD' - explicit path works
 
-// Falls back to default when scope doesn't have the key
-$threshold = $config->getFloat(
-    'store.shipping.free_threshold',
-    scope: 'tenant-eu',
-); // 50.00
+// WITH scope - uses resolution order: scopes.{scope} → default → direct
+$config->get('store.currency', scope: 'tenant-eu'); // 'EUR' (from scopes.tenant-eu)
+$config->get('store.currency', scope: 'tenant-uk'); // 'GBP' (from scopes.tenant-uk)
+$config->get('store.currency', scope: 'unknown');   // 'USD' (falls back to default)
 
-// Falls back to default when scope doesn't exist
-$currency = $config->get('store.currency', scope: 'unknown'); // 'USD'
+// Scope-specific value with fallback to default
+$config->getFloat('store.shipping.free_threshold', scope: 'tenant-eu'); // 50.00 (from default)
 ```
 
 Create a scoped repository for cleaner code when working with a single tenant:
