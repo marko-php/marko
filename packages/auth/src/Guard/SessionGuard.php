@@ -8,8 +8,12 @@ use Marko\Auth\AuthenticatableInterface;
 use Marko\Auth\Contracts\CookieJarInterface;
 use Marko\Auth\Contracts\GuardInterface;
 use Marko\Auth\Contracts\UserProviderInterface;
+use Marko\Auth\Event\FailedLoginEvent;
+use Marko\Auth\Event\LoginEvent;
+use Marko\Auth\Event\LogoutEvent;
 use Marko\Auth\Exceptions\AuthException;
 use Marko\Auth\Token\RememberTokenManager;
+use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Session\Contracts\SessionInterface;
 
 class SessionGuard implements GuardInterface
@@ -25,6 +29,7 @@ class SessionGuard implements GuardInterface
         private string $name = 'session',
         private ?CookieJarInterface $cookieJar = null,
         private ?RememberTokenManager $tokenManager = null,
+        private ?EventDispatcherInterface $eventDispatcher = null,
     ) {}
 
     public function check(): bool
@@ -107,16 +112,29 @@ class SessionGuard implements GuardInterface
         $user = $this->provider->retrieveByCredentials($credentials);
 
         if ($user === null) {
+            $this->dispatchFailedLoginEvent($credentials);
+
             return false;
         }
 
         if (!$this->provider->validateCredentials($user, $credentials)) {
+            $this->dispatchFailedLoginEvent($credentials);
+
             return false;
         }
 
         $this->login($user);
 
         return true;
+    }
+
+    private function dispatchFailedLoginEvent(
+        array $credentials,
+    ): void {
+        $this->eventDispatcher?->dispatch(new FailedLoginEvent(
+            credentials: $credentials,
+            guard: $this->name,
+        ));
     }
 
     public function login(
@@ -131,6 +149,19 @@ class SessionGuard implements GuardInterface
         if ($remember && $this->cookieJar !== null && $this->tokenManager !== null) {
             $this->createRememberToken($user);
         }
+
+        $this->dispatchLoginEvent($user, $remember);
+    }
+
+    private function dispatchLoginEvent(
+        AuthenticatableInterface $user,
+        bool $remember,
+    ): void {
+        $this->eventDispatcher?->dispatch(new LoginEvent(
+            user: $user,
+            guard: $this->name,
+            remember: $remember,
+        ));
     }
 
     private function createRememberToken(
@@ -188,8 +219,21 @@ class SessionGuard implements GuardInterface
             $this->cookieJar->delete($this->getRememberCookieName());
         }
 
+        if ($user !== null) {
+            $this->dispatchLogoutEvent($user);
+        }
+
         $this->session->remove(self::SESSION_KEY);
         $this->cachedUser = null;
+    }
+
+    private function dispatchLogoutEvent(
+        AuthenticatableInterface $user,
+    ): void {
+        $this->eventDispatcher?->dispatch(new LogoutEvent(
+            user: $user,
+            guard: $this->name,
+        ));
     }
 
     public function setProvider(

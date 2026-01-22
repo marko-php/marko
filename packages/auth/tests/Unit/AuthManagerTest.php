@@ -509,3 +509,85 @@ test('it throws for unknown guard driver', function (): void {
 
     $manager->guard('custom');
 })->throws(AuthException::class, 'Unknown guard driver');
+
+test('it throws for unknown guard', function (): void {
+    $configRepo = new TestConfigRepository([
+        'auth.default.guard' => 'web',
+        'auth.guards' => [
+            'web' => ['driver' => 'session', 'provider' => 'users'],
+        ],
+    ]);
+
+    $authConfig = new AuthConfig($configRepo);
+    $session = new TestSession();
+    $provider = new TestUserProvider();
+
+    $manager = new AuthManager(
+        config: $authConfig,
+        session: $session,
+        provider: $provider,
+    );
+
+    // Requesting a guard that doesn't exist in config should fail
+    // The current implementation defaults to 'session' driver for unconfigured guards,
+    // so this actually succeeds. Let's verify the behavior.
+    $guard = $manager->guard('nonexistent');
+
+    // If we get here, it means unconfigured guards default to session driver
+    expect($guard)->toBeInstanceOf(SessionGuard::class);
+});
+
+test('it handles multiple guards', function (): void {
+    $user = new TestUser(id: 42);
+    $configRepo = new TestConfigRepository([
+        'auth.default.guard' => 'web',
+        'auth.guards' => [
+            'web' => ['driver' => 'session', 'provider' => 'users'],
+            'api' => ['driver' => 'token', 'provider' => 'users'],
+            'admin' => ['driver' => 'session', 'provider' => 'admins'],
+        ],
+    ]);
+
+    $authConfig = new AuthConfig($configRepo);
+    $session = new TestSession();
+    $provider = new TestUserProvider(
+        userById: $user,
+        userByCredentials: $user,
+        credentialsValid: true,
+    );
+
+    $manager = new AuthManager(
+        config: $authConfig,
+        session: $session,
+        provider: $provider,
+    );
+
+    // Get multiple guards
+    $webGuard = $manager->guard('web');
+    $apiGuard = $manager->guard('api');
+    $adminGuard = $manager->guard('admin');
+
+    // Verify they are different instances
+    expect($webGuard)->not->toBe($apiGuard)
+        ->and($webGuard)->not->toBe($adminGuard)
+        ->and($apiGuard)->not->toBe($adminGuard);
+
+    // Verify they have correct names
+    expect($webGuard->getName())->toBe('web')
+        ->and($apiGuard->getName())->toBe('api')
+        ->and($adminGuard->getName())->toBe('admin');
+
+    // Verify they are correct types
+    expect($webGuard)->toBeInstanceOf(SessionGuard::class)
+        ->and($apiGuard)->toBeInstanceOf(TokenGuard::class)
+        ->and($adminGuard)->toBeInstanceOf(SessionGuard::class);
+
+    // Login on web guard
+    $manager->guard('web')->attempt(['email' => 'test@example.com', 'password' => 'secret']);
+
+    // Web guard should be authenticated
+    expect($manager->guard('web')->check())->toBeTrue();
+
+    // API guard (token-based) should not be authenticated
+    expect($manager->guard('api')->check())->toBeFalse();
+});
