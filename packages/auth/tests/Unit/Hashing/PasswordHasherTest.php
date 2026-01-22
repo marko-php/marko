@@ -108,3 +108,58 @@ it('uses default cost of 12', function () {
 
     expect($hash)->toStartWith('$2y$12$');
 });
+
+it('hashes password to non-readable format', function () {
+    $hasher = new BcryptPasswordHasher();
+    $password = 'my-secret-password';
+
+    $hash = $hasher->hash($password);
+
+    expect($hash)->not->toBe($password)
+        ->and($hash)->not->toContain($password)
+        ->and(strlen($hash))->toBe(60);
+});
+
+it('produces different hash for same password', function () {
+    $hasher = new BcryptPasswordHasher();
+    $password = 'same-password';
+
+    $hash1 = $hasher->hash($password);
+    $hash2 = $hasher->hash($password);
+
+    expect($hash1)->not->toBe($hash2)
+        ->and($hasher->verify($password, $hash1))->toBeTrue()
+        ->and($hasher->verify($password, $hash2))->toBeTrue();
+});
+
+it('detects rehash needed for lower cost', function () {
+    $lowCostHasher = new BcryptPasswordHasher(cost: 4);
+    $higherCostHasher = new BcryptPasswordHasher(cost: 10);
+
+    $hashWithLowCost = $lowCostHasher->hash('secret');
+
+    expect($higherCostHasher->needsRehash($hashWithLowCost))->toBeTrue();
+});
+
+it('detects no rehash needed for same cost', function () {
+    $hasher = new BcryptPasswordHasher(cost: 10);
+
+    $hash = $hasher->hash('secret');
+
+    expect($hasher->needsRehash($hash))->toBeFalse();
+});
+
+it('uses custom cost when provided', function () {
+    $hasher = new BcryptPasswordHasher(cost: 5);
+
+    $hash = $hasher->hash('secret');
+
+    expect($hash)->toStartWith('$2y$05$');
+});
+
+it('validates minimum cost requirement', function () {
+    $hasher = new BcryptPasswordHasher(cost: 3);
+
+    expect(fn () => $hasher->hash('secret'))
+        ->toThrow(ValueError::class);
+});
