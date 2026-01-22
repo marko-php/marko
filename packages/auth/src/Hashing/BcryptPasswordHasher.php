@@ -8,12 +8,14 @@ use Marko\Auth\Contracts\PasswordHasherInterface;
 
 class BcryptPasswordHasher implements PasswordHasherInterface
 {
+    public const int DEFAULT_COST = 12;
+
     private int $cost;
 
     public function __construct(
         ?int $cost = null,
     ) {
-        $this->cost = $cost ?? 12;
+        $this->cost = $cost ?? self::DEFAULT_COST;
     }
 
     public function hash(

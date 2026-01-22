@@ -140,7 +140,7 @@ it('provides helpful context in threads validation exception', function () {
 });
 
 it('accepts minimum valid memory of 8', function () {
-    $hasher = new Argon2Hasher(memory: 8);
+    $hasher = new Argon2Hasher(memory: 8, time: 1, threads: 1);
 
     $hash = $hasher->hash('password');
 
@@ -148,7 +148,7 @@ it('accepts minimum valid memory of 8', function () {
 });
 
 it('accepts minimum valid time of 1', function () {
-    $hasher = new Argon2Hasher(time: 1);
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     $hash = $hasher->hash('password');
 
@@ -156,7 +156,7 @@ it('accepts minimum valid time of 1', function () {
 });
 
 it('accepts minimum valid threads of 1', function () {
-    $hasher = new Argon2Hasher(threads: 1);
+    $hasher = new Argon2Hasher(memory: 1024, time: 1, threads: 1);
 
     $hash = $hasher->hash('password');
 

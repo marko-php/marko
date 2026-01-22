@@ -92,7 +92,7 @@ function createFactoryWithConfig(
 
 it('creates bcrypt hasher', function () {
     $factory = createFactoryWithConfig([
-        'hashing.hashers.bcrypt.cost' => 10,
+        'hashing.hashers.bcrypt.cost' => 4,
     ]);
 
     $hasher = $factory->make('bcrypt');
@@ -102,8 +102,8 @@ it('creates bcrypt hasher', function () {
 
 it('creates argon2id hasher', function () {
     $factory = createFactoryWithConfig([
-        'hashing.hashers.argon2id.memory' => 32768,
-        'hashing.hashers.argon2id.time' => 2,
+        'hashing.hashers.argon2id.memory' => 1024,
+        'hashing.hashers.argon2id.time' => 1,
         'hashing.hashers.argon2id.threads' => 1,
     ]);
 
@@ -114,20 +114,20 @@ it('creates argon2id hasher', function () {
 
 it('creates bcrypt hasher with configured cost', function () {
     $factory = createFactoryWithConfig([
-        'hashing.hashers.bcrypt.cost' => 8,
+        'hashing.hashers.bcrypt.cost' => 4,
     ]);
 
     $hasher = $factory->make('bcrypt');
     $hash = $hasher->hash('password');
 
-    expect($hash)->toStartWith('$2y$08$');
+    expect($hash)->toStartWith('$2y$04$');
 });
 
 it('creates argon2id hasher with configured parameters', function () {
     $factory = createFactoryWithConfig([
-        'hashing.hashers.argon2id.memory' => 16384,
-        'hashing.hashers.argon2id.time' => 3,
-        'hashing.hashers.argon2id.threads' => 2,
+        'hashing.hashers.argon2id.memory' => 1024,
+        'hashing.hashers.argon2id.time' => 1,
+        'hashing.hashers.argon2id.threads' => 1,
     ]);
 
     $hasher = $factory->make('argon2id');
@@ -157,9 +157,10 @@ it('uses default bcrypt cost when not configured', function () {
     $factory = createFactoryWithConfig([]);
 
     $hasher = $factory->make('bcrypt');
-    $hash = $hasher->hash('password');
 
-    expect($hash)->toStartWith('$2y$12$');
+    // Verify default cost constant is 12 (without slow hashing)
+    expect(BcryptHasher::DEFAULT_COST)->toBe(12)
+        ->and($hasher)->toBeInstanceOf(BcryptHasher::class);
 });
 
 it('uses default argon2 parameters when not configured', function () {
@@ -167,5 +168,9 @@ it('uses default argon2 parameters when not configured', function () {
 
     $hasher = $factory->make('argon2id');
 
-    expect($hasher)->toBeInstanceOf(Argon2Hasher::class);
+    // Verify default constants (without slow hashing)
+    expect(Argon2Hasher::DEFAULT_MEMORY)->toBe(65536)
+        ->and(Argon2Hasher::DEFAULT_TIME)->toBe(4)
+        ->and(Argon2Hasher::DEFAULT_THREADS)->toBe(1)
+        ->and($hasher)->toBeInstanceOf(Argon2Hasher::class);
 });

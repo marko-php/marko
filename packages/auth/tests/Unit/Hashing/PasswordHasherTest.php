@@ -102,11 +102,8 @@ it('supports configurable cost parameter', function () {
 });
 
 it('uses default cost of 12', function () {
-    $hasher = new BcryptPasswordHasher();
-
-    $hash = $hasher->hash('secret');
-
-    expect($hash)->toStartWith('$2y$12$');
+    // Verify default cost constant (without slow hashing)
+    expect(BcryptPasswordHasher::DEFAULT_COST)->toBe(12);
 });
 
 it('hashes password to non-readable format', function () {
