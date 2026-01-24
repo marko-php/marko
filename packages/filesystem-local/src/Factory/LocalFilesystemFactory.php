@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Filesystem\Local\Factory;
 
+use JsonException;
 use Marko\Filesystem\Contracts\FilesystemInterface;
 use Marko\Filesystem\Exceptions\FilesystemException;
 use Marko\Filesystem\Local\Filesystem\LocalFilesystem;
@@ -12,6 +13,7 @@ class LocalFilesystemFactory
 {
     /**
      * @param array<string, mixed> $config
+     * @throws JsonException|FilesystemException
      */
     public function create(
         array $config,

@@ -9,6 +9,8 @@ use Marko\Core\Container\ContainerInterface;
 use Marko\Filesystem\Config\FilesystemConfig;
 use Marko\Filesystem\Contracts\FilesystemInterface;
 use Marko\Filesystem\Exceptions\FilesystemException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 class FilesystemManager
 {
@@ -52,7 +54,16 @@ class FilesystemManager
         );
 
         $factoryClass = $this->config->getDriverFactory($driver);
-        $factory = $this->container->get($factoryClass);
+
+        try {
+            $factory = $this->container->get($factoryClass);
+        } catch (NotFoundExceptionInterface|ContainerExceptionInterface $e) {
+            throw new FilesystemException(
+                message: "Failed to create filesystem factory: $factoryClass",
+                context: $e->getMessage(),
+                suggestion: 'Ensure the driver package is installed and the factory class exists',
+            );
+        }
 
         return $factory->create($config);
     }

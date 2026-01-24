@@ -15,31 +15,43 @@ use Marko\Filesystem\Values\DirectoryListing;
 use Marko\Filesystem\Values\FileInfo;
 use Throwable;
 
-class LocalFilesystem implements FilesystemInterface
+readonly class LocalFilesystem implements FilesystemInterface
 {
     public function __construct(
-        private readonly string $basePath,
-        private readonly bool $isPublic = false,
+        private string $basePath,
+        private bool $isPublic = false,
     ) {}
 
+    /**
+     * @throws PathException
+     */
     public function exists(
         string $path,
     ): bool {
         return file_exists($this->fullPath($path));
     }
 
+    /**
+     * @throws PathException
+     */
     public function isFile(
         string $path,
     ): bool {
         return is_file($this->fullPath($path));
     }
 
+    /**
+     * @throws PathException
+     */
     public function isDirectory(
         string $path,
     ): bool {
         return is_dir($this->fullPath($path));
     }
 
+    /**
+     * @throws FileNotFoundException|PathException
+     */
     public function info(
         string $path,
     ): FileInfo {
@@ -64,6 +76,9 @@ class LocalFilesystem implements FilesystemInterface
         );
     }
 
+    /**
+     * @throws PermissionException|FileNotFoundException|FilesystemException
+     */
     public function read(
         string $path,
     ): string {
@@ -90,6 +105,9 @@ class LocalFilesystem implements FilesystemInterface
         return $contents;
     }
 
+    /**
+     * @throws PathException|PermissionException|FileNotFoundException|FilesystemException
+     */
     public function readStream(
         string $path,
     ): mixed {
@@ -116,6 +134,9 @@ class LocalFilesystem implements FilesystemInterface
         return $stream;
     }
 
+    /**
+     * @throws Throwable|PathException|FilesystemException
+     */
     public function write(
         string $path,
         string $contents,
@@ -141,9 +162,8 @@ class LocalFilesystem implements FilesystemInterface
                 );
             }
 
-            if (isset($options['visibility'])) {
-                $this->setVisibility($path, $options['visibility']);
-            }
+            $visibility = $options['visibility'] ?? ($this->isPublic ? 'public' : 'private');
+            $this->setVisibility($path, $visibility);
 
             return true;
         } catch (Throwable $e) {
@@ -153,6 +173,9 @@ class LocalFilesystem implements FilesystemInterface
         }
     }
 
+    /**
+     * @throws Throwable|FilesystemException
+     */
     public function writeStream(
         string $path,
         mixed $resource,
@@ -171,6 +194,9 @@ class LocalFilesystem implements FilesystemInterface
         return $this->write($path, $contents, $options);
     }
 
+    /**
+     * @throws PathException|PermissionException
+     */
     public function append(
         string $path,
         string $contents,
@@ -188,6 +214,9 @@ class LocalFilesystem implements FilesystemInterface
         return true;
     }
 
+    /**
+     * @throws PermissionException|PathException
+     */
     public function delete(
         string $path,
     ): bool {
@@ -204,6 +233,9 @@ class LocalFilesystem implements FilesystemInterface
         return unlink($fullPath);
     }
 
+    /**
+     * @throws PermissionException|PathException|FileNotFoundException
+     */
     public function copy(
         string $source,
         string $destination,
@@ -220,6 +252,9 @@ class LocalFilesystem implements FilesystemInterface
         return copy($sourcePath, $destinationPath);
     }
 
+    /**
+     * @throws PathException|FileNotFoundException|PermissionException
+     */
     public function move(
         string $source,
         string $destination,
@@ -236,6 +271,9 @@ class LocalFilesystem implements FilesystemInterface
         return rename($sourcePath, $destinationPath);
     }
 
+    /**
+     * @throws PathException|FileNotFoundException
+     */
     public function size(
         string $path,
     ): int {
@@ -250,6 +288,9 @@ class LocalFilesystem implements FilesystemInterface
         return $size !== false ? $size : 0;
     }
 
+    /**
+     * @throws FileNotFoundException|PathException
+     */
     public function lastModified(
         string $path,
     ): int {
@@ -264,6 +305,9 @@ class LocalFilesystem implements FilesystemInterface
         return $time !== false ? $time : 0;
     }
 
+    /**
+     * @throws PathException|FileNotFoundException
+     */
     public function mimeType(
         string $path,
     ): string {
@@ -276,6 +320,9 @@ class LocalFilesystem implements FilesystemInterface
         return $this->detectMimeType($fullPath) ?? 'application/octet-stream';
     }
 
+    /**
+     * @throws FileNotFoundException|PathException|FilesystemException
+     */
     public function listDirectory(
         string $path = '/',
     ): DirectoryListingInterface {
@@ -323,6 +370,9 @@ class LocalFilesystem implements FilesystemInterface
         return new DirectoryListing($entries);
     }
 
+    /**
+     * @throws PathException
+     */
     public function makeDirectory(
         string $path,
     ): bool {
@@ -335,6 +385,9 @@ class LocalFilesystem implements FilesystemInterface
         return mkdir($fullPath, 0755, true);
     }
 
+    /**
+     * @throws PathException
+     */
     public function deleteDirectory(
         string $path,
     ): bool {
@@ -347,6 +400,9 @@ class LocalFilesystem implements FilesystemInterface
         return $this->deleteDirectoryRecursively($fullPath);
     }
 
+    /**
+     * @throws PathException|FileNotFoundException
+     */
     public function setVisibility(
         string $path,
         string $visibility,
@@ -364,6 +420,9 @@ class LocalFilesystem implements FilesystemInterface
         return chmod($fullPath, $permissions);
     }
 
+    /**
+     * @throws FileNotFoundException|PathException
+     */
     public function visibility(
         string $path,
     ): string {
@@ -376,6 +435,9 @@ class LocalFilesystem implements FilesystemInterface
         return $this->determineVisibility($fullPath);
     }
 
+    /**
+     * @throws PathException
+     */
     private function validatePath(
         string $path,
     ): string {
@@ -389,6 +451,9 @@ class LocalFilesystem implements FilesystemInterface
         return $normalized;
     }
 
+    /**
+     * @throws PathException
+     */
     private function fullPath(
         string $path,
     ): string {
@@ -401,6 +466,9 @@ class LocalFilesystem implements FilesystemInterface
         return $this->basePath . '/' . $normalized;
     }
 
+    /**
+     * @throws PermissionException
+     */
     private function ensureDirectoryExists(
         string $directory,
     ): void {

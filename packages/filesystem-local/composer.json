@@ -5,7 +5,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
-        "marko/filesystem": "^1.0"
+        "marko/filesystem": "^1.0",
+        "ext-fileinfo": "*"
     },
     "autoload": {
         "psr-4": {

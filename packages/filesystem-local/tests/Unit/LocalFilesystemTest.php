@@ -233,7 +233,7 @@ it('lists directory contents', function () {
     file_put_contents($this->basePath . '/file2.txt', 'content');
     mkdir($this->basePath . '/subdir');
 
-    $listing = $this->filesystem->listDirectory('/');
+    $listing = $this->filesystem->listDirectory();
 
     expect($listing)->toBeInstanceOf(DirectoryListingInterface::class)
         ->and($listing->entries())->toHaveCount(3);
@@ -243,7 +243,7 @@ it('filters files in directory listing', function () {
     file_put_contents($this->basePath . '/file1.txt', 'content');
     mkdir($this->basePath . '/subdir');
 
-    $listing = $this->filesystem->listDirectory('/');
+    $listing = $this->filesystem->listDirectory();
 
     expect($listing->files())->toHaveCount(1)
         ->and($listing->files()[0]->path)->toBe('file1.txt');
@@ -253,7 +253,7 @@ it('filters directories in directory listing', function () {
     file_put_contents($this->basePath . '/file1.txt', 'content');
     mkdir($this->basePath . '/subdir');
 
-    $listing = $this->filesystem->listDirectory('/');
+    $listing = $this->filesystem->listDirectory();
 
     expect($listing->directories())->toHaveCount(1)
         ->and($listing->directories()[0]->path)->toBe('subdir');
