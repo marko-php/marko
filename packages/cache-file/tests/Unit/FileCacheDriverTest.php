@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\Cache\File\Driver\FileCacheDriver;
+use Marko\Config\ConfigRepositoryInterface;
 
 function getCacheTestPath(): string
 {
@@ -26,6 +28,93 @@ function cleanupCacheTestPath(
         }
     }
     rmdir($path);
+}
+
+function createTestCacheConfig(
+    string $path,
+    int $defaultTtl = 3600,
+): CacheConfig {
+    $configRepo = new class ($path, $defaultTtl) implements ConfigRepositoryInterface
+    {
+        public function __construct(
+            private string $path,
+            private int $defaultTtl,
+        ) {}
+
+        public function get(
+            string $key,
+            mixed $default = null,
+            ?string $scope = null,
+        ): mixed {
+            return match ($key) {
+                'cache.path' => $this->path,
+                'cache.default_ttl' => $this->defaultTtl,
+                'cache.driver' => 'file',
+                default => $default,
+            };
+        }
+
+        public function has(
+            string $key,
+            ?string $scope = null,
+        ): bool {
+            return in_array($key, ['cache.path', 'cache.default_ttl', 'cache.driver'], true);
+        }
+
+        public function getString(
+            string $key,
+            ?string $default = null,
+            ?string $scope = null,
+        ): string {
+            return (string) $this->get($key, $default, $scope);
+        }
+
+        public function getInt(
+            string $key,
+            ?int $default = null,
+            ?string $scope = null,
+        ): int {
+            return (int) $this->get($key, $default, $scope);
+        }
+
+        public function getBool(
+            string $key,
+            ?bool $default = null,
+            ?string $scope = null,
+        ): bool {
+            return (bool) $this->get($key, $default, $scope);
+        }
+
+        public function getFloat(
+            string $key,
+            ?float $default = null,
+            ?string $scope = null,
+        ): float {
+            return (float) $this->get($key, $default, $scope);
+        }
+
+        public function getArray(
+            string $key,
+            ?array $default = null,
+            ?string $scope = null,
+        ): array {
+            return (array) $this->get($key, $default, $scope);
+        }
+
+        public function all(
+            ?string $scope = null,
+        ): array {
+            return [];
+        }
+
+        public function withScope(
+            string $scope,
+        ): ConfigRepositoryInterface {
+            return $this;
+        }
+    };
+
+    return new CacheConfig($configRepo);
 }
 
 /**
@@ -54,7 +143,8 @@ function writeExpiredCacheEntry(
 
 beforeEach(function () {
     $this->cachePath = getCacheTestPath();
-    $this->driver = new FileCacheDriver($this->cachePath);
+    $this->config = createTestCacheConfig($this->cachePath);
+    $this->driver = new FileCacheDriver($this->config);
 });
 
 afterEach(function () {
@@ -172,7 +262,8 @@ it('does not expire items with zero ttl', function () {
 
 it('uses default ttl when not specified', function () {
     $cachePath = getCacheTestPath();
-    $driver = new FileCacheDriver($cachePath, 1);
+    $config = createTestCacheConfig($cachePath, 1);
+    $driver = new FileCacheDriver($config);
     writeExpiredCacheEntry($cachePath, 'key', 'value');
 
     expect($driver->get('key'))->toBeNull();
@@ -268,7 +359,8 @@ it('throws exception for key with invalid characters', function () {
 
 it('creates cache directory if not exists', function () {
     $newPath = sys_get_temp_dir() . '/marko-cache-new-' . uniqid();
-    $driver = new FileCacheDriver($newPath);
+    $config = createTestCacheConfig($newPath);
+    $driver = new FileCacheDriver($config);
 
     $driver->set('key', 'value');
 

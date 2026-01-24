@@ -20,5 +20,10 @@
         "psr-4": {
             "Marko\\ErrorsSimple\\Tests\\": "tests/"
         }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
     }
 }

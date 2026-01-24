@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\MySql\Connection;
 
+use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionInterface;
@@ -18,11 +19,7 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
     private ?PDO $pdo = null;
 
     public function __construct(
-        private readonly string $host,
-        private readonly int $port,
-        private readonly string $database,
-        private readonly string $username,
-        private readonly string $password,
+        private readonly DatabaseConfig $config,
         private readonly string $charset = 'utf8mb4',
     ) {}
 
@@ -30,9 +27,9 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
     {
         return sprintf(
             'mysql:host=%s;port=%d;dbname=%s;charset=%s',
-            $this->host,
-            $this->port,
-            $this->database,
+            $this->config->host,
+            $this->config->port,
+            $this->config->database,
             $this->charset,
         );
     }
@@ -53,15 +50,15 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         try {
             $this->pdo = $this->createPdo(
                 $this->getDsn(),
-                $this->username,
-                $this->password,
+                $this->config->username,
+                $this->config->password,
                 $options,
             );
         } catch (PDOException $e) {
             throw ConnectionException::connectionFailed(
-                $this->host,
-                $this->port,
-                $this->database,
+                $this->config->host,
+                $this->config->port,
+                $this->config->database,
                 $e,
             );
         }

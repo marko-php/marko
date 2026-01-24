@@ -4,22 +4,46 @@ declare(strict_types=1);
 
 namespace Marko\Database\MySql\Tests\Query;
 
+use Marko\Core\Path\ProjectPaths;
+use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\MySql\Connection\MySqlConnection;
 use Marko\Database\MySql\Query\MySqlQueryBuilder;
 use Marko\Database\Query\QueryBuilderInterface;
 use PDO;
 use ReflectionClass;
 
+function createQueryBuilderTestConfig(): DatabaseConfig
+{
+    $tempDir = sys_get_temp_dir() . '/marko_mysql_qb_' . uniqid();
+    mkdir($tempDir . '/config', recursive: true);
+    file_put_contents(
+        $tempDir . '/config/database.php',
+        '<?php return ' . var_export([
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'port' => 3306,
+            'database' => 'test',
+            'username' => 'root',
+            'password' => '',
+        ], true) . ';',
+    );
+
+    $paths = new ProjectPaths($tempDir);
+    $config = new DatabaseConfig($paths);
+
+    unlink($tempDir . '/config/database.php');
+    rmdir($tempDir . '/config');
+    rmdir($tempDir);
+
+    return $config;
+}
+
 describe('MySqlQueryBuilder', function (): void {
     beforeEach(function (): void {
+        $config = createQueryBuilderTestConfig();
+
         // Create a testable connection with SQLite for testing
-        $this->connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $this->connection = new class ($config) extends MySqlConnection
         {
             private ?PDO $testPdo = null;
 

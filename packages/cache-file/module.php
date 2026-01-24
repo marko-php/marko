@@ -3,14 +3,11 @@
 declare(strict_types=1);
 
 use Marko\Cache\Contracts\CacheInterface;
-use Marko\Cache\File\Factory\FileCacheFactory;
-use Marko\Core\Container\ContainerInterface;
+use Marko\Cache\File\Driver\FileCacheDriver;
 
 return [
     'enabled' => true,
     'bindings' => [
-        CacheInterface::class => function (ContainerInterface $container): CacheInterface {
-            return $container->get(FileCacheFactory::class)->create();
-        },
+        CacheInterface::class => FileCacheDriver::class,
     ],
 ];

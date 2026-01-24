@@ -52,6 +52,12 @@ function routingTestCreateModule(
     if ($autoload !== null) {
         $composerData['autoload'] = $autoload;
     }
+    // Add extra.marko.module: true to mark as Marko module
+    $composerData['extra'] = [
+        'marko' => [
+            'module' => true,
+        ],
+    ];
     file_put_contents($path . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
 
     // Create module.php (optional)

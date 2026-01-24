@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Database\PgSql\Tests\Connection;
 
+use Marko\Core\Path\ProjectPaths;
+use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionInterface;
@@ -13,27 +15,81 @@ use Marko\Database\PgSql\Exceptions\ConnectionException;
 use PDO;
 use RuntimeException;
 
+function createTestPgSqlConfig(
+    string $host = 'localhost',
+    int $port = 5432,
+    string $database = 'test',
+    string $username = 'user',
+    string $password = 'pass',
+): DatabaseConfig {
+    $tempDir = sys_get_temp_dir() . '/marko_pgsql_test_' . uniqid();
+    mkdir($tempDir . '/config', recursive: true);
+    file_put_contents(
+        $tempDir . '/config/database.php',
+        '<?php return ' . var_export([
+            'driver' => 'pgsql',
+            'host' => $host,
+            'port' => $port,
+            'database' => $database,
+            'username' => $username,
+            'password' => $password,
+        ], true) . ';',
+    );
+
+    $paths = new ProjectPaths($tempDir);
+    $config = new DatabaseConfig($paths);
+
+    // Clean up temp files immediately (config is already loaded)
+    unlink($tempDir . '/config/database.php');
+    rmdir($tempDir . '/config');
+    rmdir($tempDir);
+
+    return $config;
+}
+
+/**
+ * Create a mock PDO that handles SET NAMES for PostgreSQL tests.
+ */
+function createSqliteMockPdo(
+    array $options = [],
+): PDO {
+    return new class ($options) extends PDO
+    {
+        /** @param array<int, mixed> $options */
+        public function __construct(
+            array $options,
+        ) {
+            parent::__construct('sqlite::memory:', options: $options);
+        }
+
+        public function exec(
+            string $statement,
+        ): int|false {
+            // Skip SET NAMES query (not supported in SQLite)
+            if (str_starts_with($statement, 'SET NAMES')) {
+                return 0;
+            }
+
+            return parent::exec($statement);
+        }
+    };
+}
+
 describe('PgSqlConnection', function (): void {
     it('implements ConnectionInterface', function (): void {
-        $connection = new PgSqlConnection(
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        );
+        $config = createTestPgSqlConfig();
+        $connection = new PgSqlConnection($config);
 
         expect($connection)->toBeInstanceOf(ConnectionInterface::class);
     });
 
     it('constructs proper PostgreSQL DSN from config', function (): void {
-        $connection = new PgSqlConnection(
+        $config = createTestPgSqlConfig(
             host: 'db.example.com',
             port: 5433,
             database: 'myapp',
-            username: 'user',
-            password: 'secret',
         );
+        $connection = new PgSqlConnection($config);
 
         // Use public getDsn() method instead of reflection
         expect($connection->getDsn())->toBe('pgsql:host=db.example.com;port=5433;dbname=myapp');
@@ -41,13 +97,8 @@ describe('PgSqlConnection', function (): void {
 
     it('connects lazily on first query', function (): void {
         // Connection with invalid host - should NOT throw on construction
-        $connection = new PgSqlConnection(
-            host: 'nonexistent.invalid.host',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        );
+        $config = createTestPgSqlConfig(host: 'nonexistent.invalid.host');
+        $connection = new PgSqlConnection($config);
 
         // Not connected yet - lazy connection, should only throw when we actually try to query
         expect($connection->isConnected())
@@ -57,27 +108,17 @@ describe('PgSqlConnection', function (): void {
 
     it('sets PDO error mode to exceptions', function (): void {
         $capturedOptions = [];
+        $config = createTestPgSqlConfig();
 
         // Create a testable connection that captures PDO options
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-            capturedOptions: $capturedOptions,
-        ) extends PgSqlConnection
+        $connection = new class ($config, $capturedOptions) extends PgSqlConnection
         {
             public function __construct(
-                string $host,
-                int $port,
-                string $database,
-                string $username,
-                string $password,
+                DatabaseConfig $config,
                 /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$capturedOptions,
             ) {
-                parent::__construct($host, $port, $database, $username, $password);
+                parent::__construct($config);
             }
 
             protected function createPdo(
@@ -89,25 +130,7 @@ describe('PgSqlConnection', function (): void {
                 $this->capturedOptions = $options;
 
                 // Return a mock PDO using SQLite in-memory for testing
-                // Use a mock that ignores SET NAMES query
-                return new class () extends PDO
-                {
-                    public function __construct()
-                    {
-                        parent::__construct('sqlite::memory:');
-                    }
-
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return createSqliteMockPdo($options);
             }
         };
 
@@ -118,29 +141,17 @@ describe('PgSqlConnection', function (): void {
 
     it('sets client encoding from config', function (): void {
         $capturedDsn = '';
+        $config = createTestPgSqlConfig();
 
         // Create a testable connection that captures the DSN
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-            charset: 'utf8',
-            capturedDsn: $capturedDsn,
-        ) extends PgSqlConnection
+        $connection = new class ($config, $capturedDsn) extends PgSqlConnection
         {
             public function __construct(
-                string $host,
-                int $port,
-                string $database,
-                string $username,
-                string $password,
-                string $charset,
+                DatabaseConfig $config,
                 /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private string &$capturedDsn,
             ) {
-                parent::__construct($host, $port, $database, $username, $password, $charset);
+                parent::__construct($config, 'utf8');
             }
 
             protected function createPdo(
@@ -151,26 +162,7 @@ describe('PgSqlConnection', function (): void {
             ): PDO {
                 $this->capturedDsn = $dsn;
 
-                // Return a mock PDO using SQLite in-memory for testing
-                // Use a mock that ignores SET NAMES query
-                return new class () extends PDO
-                {
-                    public function __construct()
-                    {
-                        parent::__construct('sqlite::memory:');
-                    }
-
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return createSqliteMockPdo($options);
             }
         };
 
@@ -181,14 +173,10 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('executes raw SQL queries with parameter binding', function (): void {
+        $config = createTestPgSqlConfig();
+
         // Create a testable connection with SQLite for query testing
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -197,30 +185,13 @@ describe('PgSqlConnection', function (): void {
                 array $options,
             ): PDO {
                 // Return a mock PDO that handles SET NAMES and creates test table
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                        // Create a test table
-                        parent::exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)');
-                        parent::exec("INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com')");
-                        parent::exec("INSERT INTO users (name, email) VALUES ('Bob', 'bob@example.com')");
-                    }
+                $pdo = createSqliteMockPdo($options);
+                // Create a test table
+                $pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)');
+                $pdo->exec("INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com')");
+                $pdo->exec("INSERT INTO users (name, email) VALUES ('Bob', 'bob@example.com')");
 
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return $pdo;
             }
         };
 
@@ -249,14 +220,10 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('prepares statements for repeated execution', function (): void {
+        $config = createTestPgSqlConfig();
+
         // Create a testable connection with SQLite
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -264,28 +231,10 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES and creates test table
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                        parent::exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)');
-                    }
+                $pdo = createSqliteMockPdo($options);
+                $pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)');
 
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return $pdo;
             }
         };
 
@@ -310,13 +259,13 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('throws ConnectionException on connection failure with helpful message', function (): void {
-        $connection = new PgSqlConnection(
+        $config = createTestPgSqlConfig(
             host: 'nonexistent.invalid.host',
-            port: 5432,
             database: 'testdb',
             username: 'baduser',
             password: 'badpass',
         );
+        $connection = new PgSqlConnection($config);
 
         try {
             $connection->connect();
@@ -332,14 +281,10 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('properly disconnects and releases resources', function (): void {
+        $config = createTestPgSqlConfig();
+
         // Create a testable connection with SQLite
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -347,27 +292,7 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                    }
-
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return createSqliteMockPdo($options);
             }
         };
 
@@ -388,25 +313,15 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('implements TransactionInterface', function (): void {
-        $connection = new PgSqlConnection(
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        );
+        $config = createTestPgSqlConfig();
+        $connection = new PgSqlConnection($config);
 
         expect($connection)->toBeInstanceOf(TransactionInterface::class);
     });
 
     it('implements beginTransaction() method', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -414,27 +329,7 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                    }
-
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return createSqliteMockPdo($options);
             }
         };
 
@@ -448,13 +343,8 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('implements commit() method', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -462,28 +352,10 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES and creates test table
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                        parent::exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
-                    }
+                $pdo = createSqliteMockPdo($options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
 
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return $pdo;
             }
         };
 
@@ -500,13 +372,8 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('implements rollback() method', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -514,28 +381,10 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES and creates test table
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                        parent::exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
-                    }
+                $pdo = createSqliteMockPdo($options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
 
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return $pdo;
             }
         };
 
@@ -550,13 +399,8 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('implements inTransaction() method returning boolean', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -564,27 +408,7 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                    }
-
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return createSqliteMockPdo($options);
             }
         };
 
@@ -606,13 +430,8 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('implements transaction(callable) method', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -620,28 +439,10 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES and creates test table
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                        parent::exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
-                    }
+                $pdo = createSqliteMockPdo($options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
 
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return $pdo;
             }
         };
 
@@ -654,13 +455,8 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('auto-commits when callback completes successfully', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -668,28 +464,10 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES and creates test table
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                        parent::exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
-                    }
+                $pdo = createSqliteMockPdo($options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
 
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return $pdo;
             }
         };
 
@@ -708,13 +486,8 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('auto-rolls back when callback throws exception', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -722,28 +495,10 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES and creates test table
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                        parent::exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
-                    }
+                $pdo = createSqliteMockPdo($options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
 
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return $pdo;
             }
         };
 
@@ -765,13 +520,8 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('re-throws exception after rollback', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -779,28 +529,10 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES and creates test table
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                        parent::exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
-                    }
+                $pdo = createSqliteMockPdo($options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
 
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return $pdo;
             }
         };
 
@@ -812,13 +544,8 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('returns callback return value on success', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -826,28 +553,10 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES and creates test table
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                        parent::exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
-                    }
+                $pdo = createSqliteMockPdo($options);
+                $pdo->exec('CREATE TABLE test_data (id INTEGER PRIMARY KEY, value TEXT)');
 
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return $pdo;
             }
         };
 
@@ -861,13 +570,8 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('prevents nested transactions (throws exception)', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 5432,
-            database: 'test',
-            username: 'user',
-            password: 'pass',
-        ) extends PgSqlConnection
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -875,27 +579,7 @@ describe('PgSqlConnection', function (): void {
                 string $password,
                 array $options,
             ): PDO {
-                // Return a mock PDO that handles SET NAMES
-                return new class ($options) extends PDO
-                {
-                    /** @param array<int, mixed> $options */
-                    public function __construct(
-                        array $options,
-                    ) {
-                        parent::__construct('sqlite::memory:', options: $options);
-                    }
-
-                    public function exec(
-                        string $statement,
-                    ): int|false {
-                        // Skip SET NAMES query (not supported in SQLite)
-                        if (str_starts_with($statement, 'SET NAMES')) {
-                            return 0;
-                        }
-
-                        return parent::exec($statement);
-                    }
-                };
+                return createSqliteMockPdo($options);
             }
         };
 

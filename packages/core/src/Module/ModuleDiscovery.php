@@ -10,7 +10,7 @@ use Marko\Core\Exceptions\ModuleException;
  * Discovers Marko modules in configured directories.
  *
  * A directory is a Marko module if it contains:
- * - composer.json (required - provides name, version, dependencies)
+ * - composer.json with extra.marko.module: true (required - marks as Marko module)
  * - module.php (optional - provides Marko-specific config like bindings)
  *
  * Discovery depths vary by source:
@@ -118,14 +118,33 @@ readonly class ModuleDiscovery
     /**
      * Check if a directory is a Marko module.
      *
-     * A Marko module must have composer.json (required for all modules).
-     * module.php is optional but commonly present for Marko-specific config.
+     * A package is a Marko module if and only if its composer.json contains
+     * extra.marko.module: true. This follows the Laravel/Symfony pattern
+     * for package auto-discovery.
      */
     private function isMarkoModule(
         string $path,
     ): bool {
-        // composer.json is required for all modules
-        return is_file($path . '/composer.json');
+        $composerPath = $path . '/composer.json';
+
+        if (!is_file($composerPath)) {
+            return false;
+        }
+
+        $contents = file_get_contents($composerPath);
+
+        if ($contents === false) {
+            return false;
+        }
+
+        $data = json_decode($contents, true);
+
+        if (!is_array($data)) {
+            return false;
+        }
+
+        return isset($data['extra']['marko']['module'])
+            && $data['extra']['marko']['module'] === true;
     }
 
     /**

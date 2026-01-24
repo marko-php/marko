@@ -28,5 +28,10 @@
         "marko/filesystem": "Filesystem abstraction layer",
         "marko/filesystem-local": "Local filesystem driver",
         "marko/errors-advanced": "Advanced error handling with detailed debugging"
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
     }
 }

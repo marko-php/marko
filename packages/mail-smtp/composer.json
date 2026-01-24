@@ -25,5 +25,10 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true
         }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
     }
 }

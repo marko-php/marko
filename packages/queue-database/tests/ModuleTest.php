@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Queue\Database\DatabaseFailedJobRepository;
+use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\QueueInterface;
 
@@ -20,12 +21,12 @@ test('module.php exists with correct structure', function (): void {
         ->and($module['bindings'])->toBeArray();
 });
 
-test('module.php binds QueueInterface via factory', function (): void {
+test('module.php binds QueueInterface to DatabaseQueue class', function (): void {
     $modulePath = dirname(__DIR__) . '/module.php';
     $module = require $modulePath;
 
     expect($module['bindings'])->toHaveKey(QueueInterface::class)
-        ->and($module['bindings'][QueueInterface::class])->toBeInstanceOf(Closure::class);
+        ->and($module['bindings'][QueueInterface::class])->toBe(DatabaseQueue::class);
 });
 
 test('module.php binds FailedJobRepositoryInterface', function (): void {

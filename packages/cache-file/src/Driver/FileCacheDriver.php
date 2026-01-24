@@ -6,15 +6,15 @@ namespace Marko\Cache\File\Driver;
 
 use DateTimeImmutable;
 use Marko\Cache\CacheItem;
+use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 
-class FileCacheDriver implements CacheInterface
+readonly class FileCacheDriver implements CacheInterface
 {
     public function __construct(
-        private readonly string $path,
-        private readonly int $defaultTtl = 3600,
+        private CacheConfig $config,
     ) {}
 
     /**
@@ -52,7 +52,7 @@ class FileCacheDriver implements CacheInterface
         $this->validateKey($key);
         $this->ensureDirectoryExists();
 
-        $ttl ??= $this->defaultTtl;
+        $ttl ??= $this->config->defaultTtl();
         $expiresAt = $ttl > 0 ? time() + $ttl : null;
 
         $data = [
@@ -106,11 +106,11 @@ class FileCacheDriver implements CacheInterface
 
     public function clear(): bool
     {
-        if (!is_dir($this->path)) {
+        if (!is_dir($this->config->path())) {
             return true;
         }
 
-        $files = glob($this->path . '/*.cache');
+        $files = glob($this->config->path() . '/*.cache');
 
         if ($files === false) {
             return false;
@@ -148,7 +148,7 @@ class FileCacheDriver implements CacheInterface
         }
 
         $expiresAt = $data['expires_at'] !== null
-            ? (new DateTimeImmutable())->setTimestamp($data['expires_at'])
+            ? new DateTimeImmutable()->setTimestamp($data['expires_at'])
             : null;
 
         return CacheItem::hit($key, $data['value'], $expiresAt);
@@ -229,7 +229,7 @@ class FileCacheDriver implements CacheInterface
     private function getFilePath(
         string $key,
     ): string {
-        return $this->path . '/' . $this->hashKey($key) . '.cache';
+        return $this->config->path() . '/' . $this->hashKey($key) . '.cache';
     }
 
     /**
@@ -293,10 +293,10 @@ class FileCacheDriver implements CacheInterface
 
     private function ensureDirectoryExists(): void
     {
-        if (is_dir($this->path)) {
+        if (is_dir($this->config->path())) {
             return;
         }
 
-        mkdir($this->path, 0755, true);
+        mkdir($this->config->path(), 0755, true);
     }
 }

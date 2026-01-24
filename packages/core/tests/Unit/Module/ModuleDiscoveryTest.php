@@ -37,6 +37,7 @@ function createTestModule(
     string $version = '1.0.0',
     array $require = [],
     ?array $modulePhp = null,
+    bool $isMarkoModule = true,
 ): void {
     mkdir($path, 0755, true);
 
@@ -47,6 +48,14 @@ function createTestModule(
     ];
     if (!empty($require)) {
         $composerData['require'] = $require;
+    }
+    // Add extra.marko.module: true by default to mark as Marko module
+    if ($isMarkoModule) {
+        $composerData['extra'] = [
+            'marko' => [
+                'module' => true,
+            ],
+        ];
     }
     file_put_contents($path . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
 
@@ -346,14 +355,14 @@ it('skips directories without composer.json file', function (): void {
     $vendorDir = $baseDir . '/vendor';
     $appDir = $baseDir . '/app';
 
-    // Create vendor/marko/core WITH composer.json
+    // Create vendor/marko/core WITH composer.json and extra.marko.module
     createTestModule($vendorDir . '/marko/core', 'marko/core');
 
     // Create vendor/other/package WITHOUT composer.json (not a module)
     mkdir($vendorDir . '/other/package/src', 0755, true);
     file_put_contents($vendorDir . '/other/package/src/SomeClass.php', '<?php class SomeClass {}');
 
-    // Create app/blog WITH composer.json
+    // Create app/blog WITH composer.json and extra.marko.module
     createTestModule($appDir . '/blog', 'app/blog');
 
     // Create app/lib WITHOUT composer.json (not a module)
@@ -367,6 +376,88 @@ it('skips directories without composer.json file', function (): void {
 
     expect($vendorModules)->toHaveCount(1)
         ->and($vendorModules[0]->name)->toBe('marko/core')
+        ->and($appModules)->toHaveCount(1)
+        ->and($appModules[0]->name)->toBe('app/blog');
+
+    cleanupDirectory($baseDir);
+});
+
+it('skips packages without extra.marko.module marker', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $vendorDir = $baseDir . '/vendor';
+
+    // Create a Marko module WITH extra.marko.module: true
+    createTestModule($vendorDir . '/marko/core', 'marko/core');
+
+    // Create a non-Marko package WITHOUT extra.marko (like latte/latte)
+    createTestModule($vendorDir . '/latte/latte', 'latte/latte', '3.0.0', [], null, isMarkoModule: false);
+
+    $discovery = new ModuleDiscovery(new ManifestParser());
+    $modules = $discovery->discoverInVendor($vendorDir);
+
+    $names = array_map(fn (ModuleManifest $m) => $m->name, $modules);
+
+    expect($names)
+        ->toContain('marko/core')
+        ->not->toContain('latte/latte');
+
+    cleanupDirectory($baseDir);
+});
+
+it('skips packages with extra.marko.module set to false', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $vendorDir = $baseDir . '/vendor';
+
+    // Create a package with extra.marko.module: false (explicitly not a Marko module)
+    mkdir($vendorDir . '/acme/package', 0755, true);
+    file_put_contents(
+        $vendorDir . '/acme/package/composer.json',
+        json_encode([
+            'name' => 'acme/package',
+            'version' => '1.0.0',
+            'extra' => [
+                'marko' => [
+                    'module' => false,
+                ],
+            ],
+        ], JSON_PRETTY_PRINT),
+    );
+
+    $discovery = new ModuleDiscovery(new ManifestParser());
+    $modules = $discovery->discoverInVendor($vendorDir);
+
+    expect($modules)->toBeEmpty();
+
+    cleanupDirectory($baseDir);
+});
+
+it('uses same detection rule for vendor, modules, and app directories', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $vendorDir = $baseDir . '/vendor';
+    $modulesDir = $baseDir . '/modules';
+    $appDir = $baseDir . '/app';
+
+    // Create modules WITH extra.marko.module: true (should be discovered)
+    createTestModule($vendorDir . '/marko/core', 'marko/core');
+    createTestModule($modulesDir . '/custom/module', 'custom/module');
+    createTestModule($appDir . '/blog', 'app/blog');
+
+    // Create packages WITHOUT extra.marko (should NOT be discovered)
+    createTestModule($vendorDir . '/other/lib', 'other/lib', '1.0.0', [], null, isMarkoModule: false);
+    createTestModule($modulesDir . '/legacy/code', 'legacy/code', '1.0.0', [], null, isMarkoModule: false);
+    createTestModule($appDir . '/tools', 'app/tools', '1.0.0', [], null, isMarkoModule: false);
+
+    $discovery = new ModuleDiscovery(new ManifestParser());
+
+    $vendorModules = $discovery->discoverInVendor($vendorDir);
+    $customModules = $discovery->discoverInModules($modulesDir);
+    $appModules = $discovery->discoverInApp($appDir);
+
+    // Only modules with extra.marko.module: true should be discovered
+    expect($vendorModules)->toHaveCount(1)
+        ->and($vendorModules[0]->name)->toBe('marko/core')
+        ->and($customModules)->toHaveCount(1)
+        ->and($customModules[0]->name)->toBe('custom/module')
         ->and($appModules)->toHaveCount(1)
         ->and($appModules[0]->name)->toBe('app/blog');
 

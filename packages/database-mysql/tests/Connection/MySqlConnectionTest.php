@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Database\MySql\Tests\Connection;
 
+use Marko\Core\Path\ProjectPaths;
+use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionInterface;
@@ -13,27 +15,53 @@ use Marko\Database\MySql\Exceptions\ConnectionException;
 use PDO;
 use RuntimeException;
 
+function createTestDatabaseConfig(
+    string $host = 'localhost',
+    int $port = 3306,
+    string $database = 'test',
+    string $username = 'root',
+    string $password = '',
+): DatabaseConfig {
+    $tempDir = sys_get_temp_dir() . '/marko_mysql_test_' . uniqid();
+    mkdir($tempDir . '/config', recursive: true);
+    file_put_contents(
+        $tempDir . '/config/database.php',
+        '<?php return ' . var_export([
+            'driver' => 'mysql',
+            'host' => $host,
+            'port' => $port,
+            'database' => $database,
+            'username' => $username,
+            'password' => $password,
+        ], true) . ';',
+    );
+
+    $paths = new ProjectPaths($tempDir);
+    $config = new DatabaseConfig($paths);
+
+    // Clean up temp files immediately (config is already loaded)
+    unlink($tempDir . '/config/database.php');
+    rmdir($tempDir . '/config');
+    rmdir($tempDir);
+
+    return $config;
+}
+
 describe('MySqlConnection', function (): void {
     it('implements ConnectionInterface', function (): void {
-        $connection = new MySqlConnection(
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        );
+        $config = createTestDatabaseConfig();
+        $connection = new MySqlConnection($config);
 
         expect($connection)->toBeInstanceOf(ConnectionInterface::class);
     });
 
     it('constructs proper MySQL DSN from config', function (): void {
-        $connection = new MySqlConnection(
+        $config = createTestDatabaseConfig(
             host: 'db.example.com',
             port: 3307,
             database: 'myapp',
-            username: 'user',
-            password: 'secret',
         );
+        $connection = new MySqlConnection($config);
 
         // We can verify DSN via a getter method for testing (uses default charset utf8mb4)
         expect($connection->getDsn())->toBe('mysql:host=db.example.com;port=3307;dbname=myapp;charset=utf8mb4');
@@ -41,13 +69,8 @@ describe('MySqlConnection', function (): void {
 
     it('connects lazily on first query', function (): void {
         // Connection with invalid host - should NOT throw on construction
-        $connection = new MySqlConnection(
-            host: 'nonexistent.invalid.host',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        );
+        $config = createTestDatabaseConfig(host: 'nonexistent.invalid.host');
+        $connection = new MySqlConnection($config);
 
         // Not connected yet - lazy connection, should only throw when we actually try to query
         expect($connection->isConnected())
@@ -57,27 +80,17 @@ describe('MySqlConnection', function (): void {
 
     it('sets PDO error mode to exceptions', function (): void {
         $capturedOptions = [];
+        $config = createTestDatabaseConfig();
 
         // Create a testable connection that captures PDO options
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-            capturedOptions: $capturedOptions,
-        ) extends MySqlConnection
+        $connection = new class ($config, $capturedOptions) extends MySqlConnection
         {
             public function __construct(
-                string $host,
-                int $port,
-                string $database,
-                string $username,
-                string $password,
+                DatabaseConfig $config,
                 /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private array &$capturedOptions,
             ) {
-                parent::__construct($host, $port, $database, $username, $password);
+                parent::__construct($config);
             }
 
             protected function createPdo(
@@ -100,29 +113,17 @@ describe('MySqlConnection', function (): void {
 
     it('sets charset from config', function (): void {
         $capturedDsn = '';
+        $config = createTestDatabaseConfig();
 
         // Create a testable connection that captures the DSN
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-            charset: 'utf8mb4',
-            capturedDsn: $capturedDsn,
-        ) extends MySqlConnection
+        $connection = new class ($config, $capturedDsn) extends MySqlConnection
         {
             public function __construct(
-                string $host,
-                int $port,
-                string $database,
-                string $username,
-                string $password,
-                string $charset,
+                DatabaseConfig $config,
                 /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private string &$capturedDsn,
             ) {
-                parent::__construct($host, $port, $database, $username, $password, $charset);
+                parent::__construct($config, 'utf8mb4');
             }
 
             protected function createPdo(
@@ -143,14 +144,10 @@ describe('MySqlConnection', function (): void {
     });
 
     it('executes raw SQL queries with parameter binding', function (): void {
+        $config = createTestDatabaseConfig();
+
         // Create a testable connection with SQLite for query testing
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -193,14 +190,10 @@ describe('MySqlConnection', function (): void {
     });
 
     it('prepares statements for repeated execution', function (): void {
+        $config = createTestDatabaseConfig();
+
         // Create a testable connection with SQLite
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -236,13 +229,13 @@ describe('MySqlConnection', function (): void {
     });
 
     it('throws ConnectionException on connection failure with helpful message', function (): void {
-        $connection = new MySqlConnection(
+        $config = createTestDatabaseConfig(
             host: 'nonexistent.invalid.host',
-            port: 3306,
             database: 'testdb',
             username: 'baduser',
             password: 'badpass',
         );
+        $connection = new MySqlConnection($config);
 
         try {
             $connection->connect();
@@ -259,14 +252,10 @@ describe('MySqlConnection', function (): void {
     });
 
     it('properly disconnects and releases resources', function (): void {
+        $config = createTestDatabaseConfig();
+
         // Create a testable connection with SQLite
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -295,25 +284,15 @@ describe('MySqlConnection', function (): void {
     });
 
     it('implements TransactionInterface', function (): void {
-        $connection = new MySqlConnection(
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        );
+        $config = createTestDatabaseConfig();
+        $connection = new MySqlConnection($config);
 
         expect($connection)->toBeInstanceOf(TransactionInterface::class);
     });
 
     it('implements beginTransaction() method', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -335,13 +314,8 @@ describe('MySqlConnection', function (): void {
     });
 
     it('implements commit() method', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -369,13 +343,8 @@ describe('MySqlConnection', function (): void {
     });
 
     it('implements rollback() method', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -401,13 +370,8 @@ describe('MySqlConnection', function (): void {
     });
 
     it('implements inTransaction() method returning boolean', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -437,13 +401,8 @@ describe('MySqlConnection', function (): void {
     });
 
     it('implements transaction(callable) method', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -467,13 +426,8 @@ describe('MySqlConnection', function (): void {
     });
 
     it('auto-commits when callback completes successfully', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -503,13 +457,8 @@ describe('MySqlConnection', function (): void {
     });
 
     it('auto-rolls back when callback throws exception', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -542,13 +491,8 @@ describe('MySqlConnection', function (): void {
     });
 
     it('re-throws exception after rollback', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -571,13 +515,8 @@ describe('MySqlConnection', function (): void {
     });
 
     it('returns callback return value on success', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,
@@ -602,13 +541,8 @@ describe('MySqlConnection', function (): void {
     });
 
     it('prevents nested transactions (throws exception)', function (): void {
-        $connection = new class (
-            host: 'localhost',
-            port: 3306,
-            database: 'test',
-            username: 'root',
-            password: '',
-        ) extends MySqlConnection
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
         {
             protected function createPdo(
                 string $dsn,

@@ -5,95 +5,41 @@ declare(strict_types=1);
 namespace Marko\Database\MySql\Tests\Module;
 
 use Closure;
-use Marko\Core\Container\Container;
-use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Exceptions\ConfigurationException;
+use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\MySql\Connection\MySqlConnection;
-use Marko\Database\MySql\Factory\MySqlConnectionFactory;
+use Marko\Database\MySql\Sql\MySqlGenerator;
 
 describe('MySQL module.php bindings', function (): void {
-    it('binds ConnectionInterface to factory-created MySqlConnection in mysql driver', function (): void {
+    it('binds ConnectionInterface to MySqlConnection class', function (): void {
         $modulePath = dirname(__DIR__, 2);
         $moduleConfig = require $modulePath . '/module.php';
 
         // Verify bindings key exists and contains ConnectionInterface
         expect($moduleConfig)->toHaveKey('bindings')
-            ->and($moduleConfig['bindings'])->toHaveKey(ConnectionInterface::class);
-
-        // Verify the binding is a closure
-        $binding = $moduleConfig['bindings'][ConnectionInterface::class];
-        expect($binding)->toBeInstanceOf(Closure::class);
-
-        // Create a mock container that returns a factory
-        $factory = $this->createMock(MySqlConnectionFactory::class);
-        $connection = $this->createMock(MySqlConnection::class);
-
-        $factory->expects($this->once())
-            ->method('create')
-            ->willReturn($connection);
-
-        $container = $this->createMock(ContainerInterface::class);
-        $container->expects($this->once())
-            ->method('get')
-            ->with(MySqlConnectionFactory::class)
-            ->willReturn($factory);
-
-        // Execute the binding closure
-        $result = $binding($container);
-
-        expect($result)->toBe($connection);
+            ->and($moduleConfig['bindings'])->toHaveKey(ConnectionInterface::class)
+            ->and($moduleConfig['bindings'][ConnectionInterface::class])->toBe(MySqlConnection::class);
     });
 
-    it('resolves ConnectionInterface to working connection when config exists', function (): void {
-        // Create temp directory with config
-        $tempDir = sys_get_temp_dir() . '/marko_mysql_test_' . uniqid();
-        mkdir($tempDir . '/config', recursive: true);
-        file_put_contents(
-            $tempDir . '/config/database.php',
-            '<?php return ' . var_export([
-                'driver' => 'mysql',
-                'host' => 'localhost',
-                'port' => 3306,
-                'database' => 'test_db',
-                'username' => 'test_user',
-                'password' => 'test_pass',
-            ], true) . ';',
-        );
+    it('binds SqlGeneratorInterface to MySqlGenerator class', function (): void {
+        $modulePath = dirname(__DIR__, 2);
+        $moduleConfig = require $modulePath . '/module.php';
 
-        try {
-            // Create real DatabaseConfig via ProjectPaths
-            $paths = new ProjectPaths($tempDir);
-            $config = new DatabaseConfig($paths);
+        expect($moduleConfig['bindings'])->toHaveKey(SqlGeneratorInterface::class)
+            ->and($moduleConfig['bindings'][SqlGeneratorInterface::class])->toBe(MySqlGenerator::class);
+    });
 
-            // Create real factory
-            $factory = new MySqlConnectionFactory($config);
+    it('binds IntrospectorInterface via closure (requires database name)', function (): void {
+        $modulePath = dirname(__DIR__, 2);
+        $moduleConfig = require $modulePath . '/module.php';
 
-            // Create container with factory instance
-            $container = new Container();
-            $container->instance(MySqlConnectionFactory::class, $factory);
-
-            // Get the binding closure from module.php
-            $modulePath = dirname(__DIR__, 2);
-            $moduleConfig = require $modulePath . '/module.php';
-            $binding = $moduleConfig['bindings'][ConnectionInterface::class];
-
-            // Execute the binding
-            $result = $binding($container);
-
-            expect($result)->toBeInstanceOf(MySqlConnection::class)
-                ->and($result)->toBeInstanceOf(ConnectionInterface::class)
-                ->and($result->getDsn())->toContain('mysql:')
-                ->and($result->getDsn())->toContain('host=localhost')
-                ->and($result->getDsn())->toContain('dbname=test_db');
-        } finally {
-            // Cleanup
-            unlink($tempDir . '/config/database.php');
-            rmdir($tempDir . '/config');
-            rmdir($tempDir);
-        }
+        // IntrospectorInterface still uses a closure because it needs the database name
+        expect($moduleConfig['bindings'])->toHaveKey(IntrospectorInterface::class)
+            ->and($moduleConfig['bindings'][IntrospectorInterface::class])->toBeInstanceOf(Closure::class);
     });
 
     it('throws ConfigurationException when config file missing', function (): void {

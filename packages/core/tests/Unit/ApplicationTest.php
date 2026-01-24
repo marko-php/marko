@@ -71,6 +71,12 @@ function appTestCreateModule(
     if (!empty($require)) {
         $composerData['require'] = $require;
     }
+    // Add extra.marko.module: true to mark as Marko module
+    $composerData['extra'] = [
+        'marko' => [
+            'module' => true,
+        ],
+    ];
     file_put_contents($path . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
 
     // Create module.php (optional)
@@ -575,6 +581,11 @@ it('registers PSR-4 autoloaders for modules source during boot', function (): vo
                 "CustomBlog$uniqueId\\" => 'lib/',
             ],
         ],
+        'extra' => [
+            'marko' => [
+                'module' => true,
+            ],
+        ],
     ];
     file_put_contents($modulePath . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
 
@@ -636,6 +647,11 @@ it('skips autoloader registration for vendor modules', function (): void {
         'autoload' => [
             'psr-4' => [
                 "AcmeCore$uniqueId\\" => 'lib/',
+            ],
+        ],
+        'extra' => [
+            'marko' => [
+                'module' => true,
             ],
         ],
     ];
@@ -700,6 +716,11 @@ it('resolves class from app module without explicit require in root composer.jso
         'autoload' => [
             'psr-4' => [
                 "App\\Blog$uniqueId\\" => 'src/',
+            ],
+        ],
+        'extra' => [
+            'marko' => [
+                'module' => true,
             ],
         ],
     ];
@@ -788,6 +809,11 @@ it('resolves class from modules directory without explicit require in root compo
         'autoload' => [
             'psr-4' => [
                 "Custom\\Checkout$uniqueId\\" => 'src/',
+            ],
+        ],
+        'extra' => [
+            'marko' => [
+                'module' => true,
             ],
         ],
     ];

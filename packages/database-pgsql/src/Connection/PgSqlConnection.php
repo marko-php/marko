@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\PgSql\Connection;
 
+use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionInterface;
@@ -18,11 +19,7 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
     private ?PDO $pdo = null;
 
     public function __construct(
-        private readonly string $host,
-        private readonly int $port,
-        private readonly string $database,
-        private readonly string $username,
-        private readonly string $password,
+        private readonly DatabaseConfig $config,
         private readonly string $charset = 'utf8',
     ) {}
 
@@ -43,17 +40,17 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         try {
             $this->pdo = $this->createPdo(
                 $this->buildDsn(),
-                $this->username,
-                $this->password,
+                $this->config->username,
+                $this->config->password,
                 $this->getPdoOptions(),
             );
 
             $this->pdo->exec($this->getSetEncodingQuery());
         } catch (PDOException $e) {
             throw ConnectionException::connectionFailed(
-                $this->host,
-                $this->port,
-                $this->database,
+                $this->config->host,
+                $this->config->port,
+                $this->config->database,
                 $e,
             );
         }
@@ -79,7 +76,7 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
 
     private function buildDsn(): string
     {
-        return "pgsql:host=$this->host;port=$this->port;dbname=$this->database";
+        return "pgsql:host={$this->config->host};port={$this->config->port};dbname={$this->config->database}";
     }
 
     /**
