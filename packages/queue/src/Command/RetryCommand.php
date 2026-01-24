@@ -12,6 +12,7 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobInterface;
 use Marko\Queue\QueueInterface;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'queue:retry', description: 'Retry failed jobs')]
 class RetryCommand implements CommandInterface
 {

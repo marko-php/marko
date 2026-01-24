@@ -10,6 +10,7 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Queue\FailedJobRepositoryInterface;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'queue:failed', description: 'List all failed jobs')]
 class FailedCommand implements CommandInterface
 {

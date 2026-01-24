@@ -10,11 +10,12 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'cache:status', description: 'Show cache statistics')]
-class StatusCommand implements CommandInterface
+readonly class StatusCommand implements CommandInterface
 {
     public function __construct(
-        private readonly CacheConfig $config,
+        private CacheConfig $config,
     ) {}
 
     public function execute(

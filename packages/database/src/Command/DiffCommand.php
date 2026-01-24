@@ -19,6 +19,7 @@ use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\Schema\Table;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'db:diff', description: 'Show differences between entity schema and database')]
 readonly class DiffCommand implements CommandInterface
 {

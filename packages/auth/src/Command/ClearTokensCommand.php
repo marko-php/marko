@@ -10,6 +10,7 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'auth:clear-tokens', description: 'Clear expired remember me tokens')]
 class ClearTokensCommand implements CommandInterface
 {

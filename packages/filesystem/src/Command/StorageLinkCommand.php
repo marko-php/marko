@@ -9,6 +9,7 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'storage:link', description: 'Create public storage symlink')]
 class StorageLinkCommand implements CommandInterface
 {

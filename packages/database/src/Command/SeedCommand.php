@@ -15,6 +15,7 @@ use Marko\Database\Seed\SeederDefinition;
 use Marko\Database\Seed\SeederDiscoveryInterface;
 use Marko\Database\Seed\SeederRunner;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'db:seed', description: 'Run database seeders')]
 readonly class SeedCommand implements CommandInterface
 {

@@ -13,6 +13,7 @@ use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Exception\TransportException;
 use Marko\Mail\Message;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'mail:test', description: 'Send a test email to verify mail configuration')]
 class TestCommand implements CommandInterface
 {
@@ -44,7 +45,7 @@ class TestCommand implements CommandInterface
             ->subject($subject)
             ->text('This is a test email sent from Marko to verify your mail configuration is working correctly.')
             ->html(
-                '<p>This is a test email sent from Marko to verify your mail configuration is working correctly.</p>'
+                '<p>This is a test email sent from Marko to verify your mail configuration is working correctly.</p>',
             );
 
         try {

@@ -10,6 +10,7 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Core\Module\ModuleRepositoryInterface;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'module:list', description: 'Show all modules and their status')]
 class ModuleListCommand implements CommandInterface
 {

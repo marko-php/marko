@@ -23,6 +23,7 @@ use Marko\Database\Migration\MigrationGenerator;
 use Marko\Database\Migration\Migrator;
 use Marko\Database\Schema\Table;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'db:migrate', description: 'Apply database migrations')]
 readonly class MigrateCommand implements CommandInterface
 {

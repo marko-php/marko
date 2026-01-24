@@ -10,6 +10,7 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Queue\QueueInterface;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'queue:clear', description: 'Clear all jobs from queue')]
 class QueueClearCommand implements CommandInterface
 {

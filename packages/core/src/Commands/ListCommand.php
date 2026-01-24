@@ -10,6 +10,7 @@ use Marko\Core\Command\CommandRegistry;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'list', description: 'Show all available commands')]
 class ListCommand implements CommandInterface
 {

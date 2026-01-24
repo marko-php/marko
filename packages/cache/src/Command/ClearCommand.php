@@ -10,11 +10,12 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'cache:clear', description: 'Clear all cached items')]
-class ClearCommand implements CommandInterface
+readonly class ClearCommand implements CommandInterface
 {
     public function __construct(
-        private readonly CacheInterface $cache,
+        private CacheInterface $cache,
     ) {}
 
     public function execute(

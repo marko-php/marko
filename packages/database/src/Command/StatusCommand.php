@@ -13,6 +13,7 @@ use Marko\Database\Migration\DataMigrator;
 use Marko\Database\Migration\MigrationRepository;
 use Marko\Database\Migration\Migrator;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'db:status', description: 'Show migration status')]
 readonly class StatusCommand implements CommandInterface
 {

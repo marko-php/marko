@@ -10,6 +10,7 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Queue\WorkerInterface;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'queue:work', description: 'Process jobs from the queue')]
 class WorkCommand implements CommandInterface
 {

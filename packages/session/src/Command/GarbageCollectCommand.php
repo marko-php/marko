@@ -11,6 +11,7 @@ use Marko\Core\Command\Output;
 use Marko\Session\Config\SessionConfig;
 use Marko\Session\Contracts\SessionHandlerInterface;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'session:gc', description: 'Run session garbage collection')]
 class GarbageCollectCommand implements CommandInterface
 {

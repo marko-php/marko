@@ -12,6 +12,7 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'queue:status', description: 'Show queue statistics')]
 class StatusCommand implements CommandInterface
 {
