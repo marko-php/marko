@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\Database\Seed;
 
-use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\SeederException;
 
 /**
@@ -29,7 +28,6 @@ readonly class SeederRunner
      */
     public function runAll(
         array $definitions,
-        ConnectionInterface $connection,
     ): void {
         if ($this->isProduction) {
             throw SeederException::blockedInProduction();
@@ -45,7 +43,7 @@ readonly class SeederRunner
                 continue;
             }
 
-            $seeder->run($connection);
+            $seeder->run();
         }
     }
 
@@ -58,7 +56,6 @@ readonly class SeederRunner
     public function runByName(
         string $name,
         array $definitions,
-        ConnectionInterface $connection,
     ): void {
         if ($this->isProduction) {
             throw SeederException::blockedInProduction();
@@ -75,7 +72,7 @@ readonly class SeederRunner
                 throw SeederException::seederNotFound($name);
             }
 
-            $seeder->run($connection);
+            $seeder->run();
 
             return;
         }

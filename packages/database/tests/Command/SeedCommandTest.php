@@ -7,7 +7,6 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Command\SeedCommand;
-use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Seed\SeederDefinition;
 use Marko\Database\Seed\SeederDiscoveryInterface;
 use Marko\Database\Seed\SeederInterface;
@@ -61,9 +60,7 @@ function createNoOpSeeder(): SeederInterface
 {
     return new class () implements SeederInterface
     {
-        public function run(
-            ConnectionInterface $connection,
-        ): void {}
+        public function run(): void {}
     };
 }
 
@@ -79,7 +76,6 @@ function createSeedCommand(
     bool $isProduction = false,
 ): SeedCommand {
     $discovery = createStubDiscovery(vendorDefinitions: $definitions);
-    $connection = Helpers::createStubConnection();
 
     $runner = new SeederRunner(
         seeders: $seeders,
@@ -89,7 +85,6 @@ function createSeedCommand(
     return new SeedCommand(
         discovery: $discovery,
         runner: $runner,
-        connection: $connection,
         paths: new ProjectPaths('/test'),
         isProduction: $isProduction,
     );
@@ -158,9 +153,8 @@ it('runs seeders in specified order', function (): void {
             private array &$order,
         ) {}
 
-        public function run(
-            ConnectionInterface $connection,
-        ): void {
+        public function run(): void
+        {
             $this->order[] = 'second';
         }
     };
@@ -172,9 +166,8 @@ it('runs seeders in specified order', function (): void {
             private array &$order,
         ) {}
 
-        public function run(
-            ConnectionInterface $connection,
-        ): void {
+        public function run(): void
+        {
             $this->order[] = 'first';
         }
     };
@@ -227,9 +220,8 @@ it('supports --class option to run specific seeder', function (): void {
             private bool &$ran,
         ) {}
 
-        public function run(
-            ConnectionInterface $connection,
-        ): void {
+        public function run(): void
+        {
             $this->ran = true;
         }
     };
@@ -241,9 +233,8 @@ it('supports --class option to run specific seeder', function (): void {
             private bool &$ran,
         ) {}
 
-        public function run(
-            ConnectionInterface $connection,
-        ): void {
+        public function run(): void
+        {
             $this->ran = true;
         }
     };

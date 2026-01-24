@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\SeederException;
 use Marko\Database\Seed\SeederDefinition;
 use Marko\Database\Seed\SeederInterface;
@@ -20,9 +19,8 @@ describe('SeederRunner', function (): void {
                 private array &$order,
             ) {}
 
-            public function run(
-                ConnectionInterface $connection,
-            ): void {
+            public function run(): void
+            {
                 $this->order[] = 'third';
             }
         };
@@ -34,9 +32,8 @@ describe('SeederRunner', function (): void {
                 private array &$order,
             ) {}
 
-            public function run(
-                ConnectionInterface $connection,
-            ): void {
+            public function run(): void
+            {
                 $this->order[] = 'first';
             }
         };
@@ -48,9 +45,8 @@ describe('SeederRunner', function (): void {
                 private array &$order,
             ) {}
 
-            public function run(
-                ConnectionInterface $connection,
-            ): void {
+            public function run(): void
+            {
                 $this->order[] = 'second';
             }
         };
@@ -61,8 +57,6 @@ describe('SeederRunner', function (): void {
             new SeederDefinition(seederClass: get_class($seeder3), name: 'second', order: 20),
         ];
 
-        $connection = $this->createMock(ConnectionInterface::class);
-
         $runner = new SeederRunner(
             seeders: [
                 get_class($seeder1) => $seeder1,
@@ -72,7 +66,7 @@ describe('SeederRunner', function (): void {
             isProduction: false,
         );
 
-        $runner->runAll($definitions, $connection);
+        $runner->runAll($definitions);
 
         expect($executionOrder)->toBe(['first', 'second', 'third']);
     });
@@ -87,9 +81,8 @@ describe('SeederRunner', function (): void {
                 private bool &$executed,
             ) {}
 
-            public function run(
-                ConnectionInterface $connection,
-            ): void {
+            public function run(): void
+            {
                 $this->executed = true;
             }
         };
@@ -98,14 +91,12 @@ describe('SeederRunner', function (): void {
             new SeederDefinition(seederClass: get_class($seeder), name: 'test', order: 0),
         ];
 
-        $connection = $this->createMock(ConnectionInterface::class);
-
         $runner = new SeederRunner(
             seeders: [get_class($seeder) => $seeder],
             isProduction: false,
         );
 
-        $runner->runAll($definitions, $connection);
+        $runner->runAll($definitions);
 
         expect($executed)->toBeTrue();
     });
@@ -113,9 +104,8 @@ describe('SeederRunner', function (): void {
     it('blocks seeder execution in production environment', function (): void {
         $seeder = new class () implements SeederInterface
         {
-            public function run(
-                ConnectionInterface $connection,
-            ): void {
+            public function run(): void
+            {
                 // This should not execute
             }
         };
@@ -124,14 +114,12 @@ describe('SeederRunner', function (): void {
             new SeederDefinition(seederClass: get_class($seeder), name: 'test', order: 0),
         ];
 
-        $connection = $this->createMock(ConnectionInterface::class);
-
         $runner = new SeederRunner(
             seeders: [get_class($seeder) => $seeder],
             isProduction: true,
         );
 
-        expect(fn () => $runner->runAll($definitions, $connection))
+        expect(fn () => $runner->runAll($definitions))
             ->toThrow(SeederException::class, 'cannot be run in production');
     });
 
@@ -146,9 +134,8 @@ describe('SeederRunner', function (): void {
                 private bool &$ran,
             ) {}
 
-            public function run(
-                ConnectionInterface $connection,
-            ): void {
+            public function run(): void
+            {
                 $this->ran = true;
             }
         };
@@ -160,9 +147,8 @@ describe('SeederRunner', function (): void {
                 private bool &$ran,
             ) {}
 
-            public function run(
-                ConnectionInterface $connection,
-            ): void {
+            public function run(): void
+            {
                 $this->ran = true;
             }
         };
@@ -172,8 +158,6 @@ describe('SeederRunner', function (): void {
             new SeederDefinition(seederClass: get_class($postSeeder), name: 'posts', order: 10),
         ];
 
-        $connection = $this->createMock(ConnectionInterface::class);
-
         $runner = new SeederRunner(
             seeders: [
                 get_class($userSeeder) => $userSeeder,
@@ -182,7 +166,7 @@ describe('SeederRunner', function (): void {
             isProduction: false,
         );
 
-        $runner->runByName('users', $definitions, $connection);
+        $runner->runByName('users', $definitions);
 
         expect($userSeederRan)->toBeTrue()
             ->and($postSeederRan)->toBeFalse();
@@ -191,14 +175,12 @@ describe('SeederRunner', function (): void {
     it('shows error when seeder not found', function (): void {
         $definitions = [];
 
-        $connection = $this->createMock(ConnectionInterface::class);
-
         $runner = new SeederRunner(
             seeders: [],
             isProduction: false,
         );
 
-        expect(fn () => $runner->runByName('nonexistent', $definitions, $connection))
+        expect(fn () => $runner->runByName('nonexistent', $definitions))
             ->toThrow(SeederException::class, "'nonexistent' not found");
     });
 });

@@ -12,18 +12,192 @@ use Marko\Database\Seed\SeederInterface;
 use Marko\Database\Seed\SeederRunner;
 use RuntimeException;
 
-// Test seeders
+/**
+ * Creates a tracking connection that records inserts.
+ *
+ * @param array<mixed> $insertedData Reference to array that will store insert data
+ */
+function createTrackingConnection(
+    array &$insertedData,
+): ConnectionInterface {
+    return new class ($insertedData) implements ConnectionInterface
+    {
+        public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+            private array &$inserts,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            return [];
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            if (str_starts_with($sql, 'INSERT')) {
+                $this->inserts[] = ['sql' => $sql, 'bindings' => $bindings];
+            }
+
+            return 1;
+        }
+
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 1;
+        }
+    };
+}
+
+/**
+ * Creates an order-tracking connection that records which table was accessed.
+ *
+ * @param array<string> $executionOrder Reference to array that will store execution order
+ */
+function createOrderTrackingConnection(
+    array &$executionOrder,
+): ConnectionInterface {
+    return new class ($executionOrder) implements ConnectionInterface
+    {
+        public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+            private array &$order,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            return [];
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            if (str_contains($sql, 'users')) {
+                $this->order[] = 'users';
+            } elseif (str_contains($sql, 'posts')) {
+                $this->order[] = 'posts';
+            } elseif (str_contains($sql, 'comments')) {
+                $this->order[] = 'comments';
+            }
+
+            return 1;
+        }
+
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 1;
+        }
+    };
+}
+
+/**
+ * Creates a run-tracking connection that records which table was accessed.
+ *
+ * @param array<string> $ran Reference to array that will store which seeders ran
+ */
+function createRunTrackingConnection(
+    array &$ran,
+): ConnectionInterface {
+    return new class ($ran) implements ConnectionInterface
+    {
+        public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+            private array &$ran,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            return [];
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            if (str_contains($sql, 'posts')) {
+                $this->ran[] = 'posts';
+            } elseif (str_contains($sql, 'users')) {
+                $this->ran[] = 'users';
+            }
+
+            return 1;
+        }
+
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 1;
+        }
+    };
+}
+
+// Test seeders with constructor injection
 
 class UserSeeder implements SeederInterface
 {
-    public function run(
-        ConnectionInterface $connection,
-    ): void {
-        $connection->execute(
+    public function __construct(
+        private ConnectionInterface $connection,
+    ) {}
+
+    public function run(): void
+    {
+        $this->connection->execute(
             'INSERT INTO users (name, email) VALUES (?, ?)',
             ['John Doe', 'john@example.com'],
         );
-        $connection->execute(
+        $this->connection->execute(
             'INSERT INTO users (name, email) VALUES (?, ?)',
             ['Jane Doe', 'jane@example.com'],
         );
@@ -32,10 +206,13 @@ class UserSeeder implements SeederInterface
 
 class PostSeeder implements SeederInterface
 {
-    public function run(
-        ConnectionInterface $connection,
-    ): void {
-        $connection->execute(
+    public function __construct(
+        private ConnectionInterface $connection,
+    ) {}
+
+    public function run(): void
+    {
+        $this->connection->execute(
             'INSERT INTO posts (title, author_id) VALUES (?, ?)',
             ['First Post', 1],
         );
@@ -44,10 +221,13 @@ class PostSeeder implements SeederInterface
 
 class DependentSeeder implements SeederInterface
 {
-    public function run(
-        ConnectionInterface $connection,
-    ): void {
-        $connection->execute(
+    public function __construct(
+        private ConnectionInterface $connection,
+    ) {}
+
+    public function run(): void
+    {
+        $this->connection->execute(
             'INSERT INTO comments (post_id, content) VALUES (?, ?)',
             [1, 'A comment'],
         );
@@ -57,54 +237,9 @@ class DependentSeeder implements SeederInterface
 describe('Seeder Execution', function (): void {
     it('runs seeders and populates test data', function (): void {
         $insertedData = [];
+        $connection = createTrackingConnection($insertedData);
 
-        $connection = new class ($insertedData) implements ConnectionInterface
-        {
-            public function __construct(
-                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
-                private array &$inserts,
-            ) {}
-
-            public function connect(): void {}
-
-            public function disconnect(): void {}
-
-            public function isConnected(): bool
-            {
-                return true;
-            }
-
-            public function query(
-                string $sql,
-                array $bindings = [],
-            ): array {
-                return [];
-            }
-
-            public function execute(
-                string $sql,
-                array $bindings = [],
-            ): int {
-                if (str_starts_with($sql, 'INSERT')) {
-                    $this->inserts[] = ['sql' => $sql, 'bindings' => $bindings];
-                }
-
-                return 1;
-            }
-
-            public function prepare(
-                string $sql,
-            ): StatementInterface {
-                throw new RuntimeException('Not implemented');
-            }
-
-            public function lastInsertId(): int
-            {
-                return 1;
-            }
-        };
-
-        $userSeeder = new UserSeeder();
+        $userSeeder = new UserSeeder($connection);
         $seeders = [UserSeeder::class => $userSeeder];
 
         $definitions = [
@@ -116,7 +251,7 @@ describe('Seeder Execution', function (): void {
         ];
 
         $runner = new SeederRunner($seeders, isProduction: false);
-        $runner->runAll($definitions, $connection);
+        $runner->runAll($definitions);
 
         expect($insertedData)
             ->toHaveCount(2)
@@ -126,60 +261,11 @@ describe('Seeder Execution', function (): void {
 
     it('runs seeders in order based on order property', function (): void {
         $executionOrder = [];
+        $connection = createOrderTrackingConnection($executionOrder);
 
-        $connection = new class ($executionOrder) implements ConnectionInterface
-        {
-            public function __construct(
-                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
-                private array &$order,
-            ) {}
-
-            public function connect(): void {}
-
-            public function disconnect(): void {}
-
-            public function isConnected(): bool
-            {
-                return true;
-            }
-
-            public function query(
-                string $sql,
-                array $bindings = [],
-            ): array {
-                return [];
-            }
-
-            public function execute(
-                string $sql,
-                array $bindings = [],
-            ): int {
-                if (str_contains($sql, 'users')) {
-                    $this->order[] = 'users';
-                } elseif (str_contains($sql, 'posts')) {
-                    $this->order[] = 'posts';
-                } elseif (str_contains($sql, 'comments')) {
-                    $this->order[] = 'comments';
-                }
-
-                return 1;
-            }
-
-            public function prepare(
-                string $sql,
-            ): StatementInterface {
-                throw new RuntimeException('Not implemented');
-            }
-
-            public function lastInsertId(): int
-            {
-                return 1;
-            }
-        };
-
-        $userSeeder = new UserSeeder();
-        $postSeeder = new PostSeeder();
-        $dependentSeeder = new DependentSeeder();
+        $userSeeder = new UserSeeder($connection);
+        $postSeeder = new PostSeeder($connection);
+        $dependentSeeder = new DependentSeeder($connection);
 
         $seeders = [
             UserSeeder::class => $userSeeder,
@@ -195,7 +281,7 @@ describe('Seeder Execution', function (): void {
         ];
 
         $runner = new SeederRunner($seeders, isProduction: false);
-        $runner->runAll($definitions, $connection);
+        $runner->runAll($definitions);
 
         // Users (order 10) should run first
         // Posts (order 20) should run second
@@ -208,57 +294,10 @@ describe('Seeder Execution', function (): void {
 
     it('runs specific seeder by name', function (): void {
         $ran = [];
+        $connection = createRunTrackingConnection($ran);
 
-        $connection = new class ($ran) implements ConnectionInterface
-        {
-            public function __construct(
-                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
-                private array &$ran,
-            ) {}
-
-            public function connect(): void {}
-
-            public function disconnect(): void {}
-
-            public function isConnected(): bool
-            {
-                return true;
-            }
-
-            public function query(
-                string $sql,
-                array $bindings = [],
-            ): array {
-                return [];
-            }
-
-            public function execute(
-                string $sql,
-                array $bindings = [],
-            ): int {
-                if (str_contains($sql, 'posts')) {
-                    $this->ran[] = 'posts';
-                } elseif (str_contains($sql, 'users')) {
-                    $this->ran[] = 'users';
-                }
-
-                return 1;
-            }
-
-            public function prepare(
-                string $sql,
-            ): StatementInterface {
-                throw new RuntimeException('Not implemented');
-            }
-
-            public function lastInsertId(): int
-            {
-                return 1;
-            }
-        };
-
-        $userSeeder = new UserSeeder();
-        $postSeeder = new PostSeeder();
+        $userSeeder = new UserSeeder($connection);
+        $postSeeder = new PostSeeder($connection);
 
         $seeders = [
             UserSeeder::class => $userSeeder,
@@ -271,7 +310,7 @@ describe('Seeder Execution', function (): void {
         ];
 
         $runner = new SeederRunner($seeders, isProduction: false);
-        $runner->runByName('posts', $definitions, $connection);
+        $runner->runByName('posts', $definitions);
 
         // Only posts seeder should have run
         expect($ran)
@@ -280,8 +319,10 @@ describe('Seeder Execution', function (): void {
     });
 
     it('throws SeederException when running in production', function (): void {
-        $connection = $this->createMock(ConnectionInterface::class);
-        $userSeeder = new UserSeeder();
+        $insertedData = [];
+        $connection = createTrackingConnection($insertedData);
+
+        $userSeeder = new UserSeeder($connection);
         $seeders = [UserSeeder::class => $userSeeder];
 
         $definitions = [
@@ -290,12 +331,11 @@ describe('Seeder Execution', function (): void {
 
         $runner = new SeederRunner($seeders, isProduction: true);
 
-        expect(fn () => $runner->runAll($definitions, $connection))
+        expect(fn () => $runner->runAll($definitions))
             ->toThrow(SeederException::class, 'production');
     });
 
     it('throws SeederException when seeder not found', function (): void {
-        $connection = $this->createMock(ConnectionInterface::class);
         $seeders = [];
 
         $definitions = [
@@ -304,7 +344,7 @@ describe('Seeder Execution', function (): void {
 
         $runner = new SeederRunner($seeders, isProduction: false);
 
-        expect(fn () => $runner->runByName('nonexistent', $definitions, $connection))
+        expect(fn () => $runner->runByName('nonexistent', $definitions))
             ->toThrow(SeederException::class, 'not found');
     });
 });

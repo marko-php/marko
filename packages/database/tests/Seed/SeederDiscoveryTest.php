@@ -21,16 +21,14 @@ declare(strict_types=1);
 
 namespace $namespace;
 
-use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Seed\Seeder;
 use Marko\Database\Seed\SeederInterface;
 
 #[Seeder(name: '$seederName'$orderParam)]
 class $className implements SeederInterface
 {
-    public function run(
-        ConnectionInterface \$connection,
-    ): void {
+    public function run(): void
+    {
         // Seed data
     }
 }
@@ -73,16 +71,14 @@ declare(strict_types=1);
 
 namespace TestSeederModule;
 
-use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Seed\Seeder;
 use Marko\Database\Seed\SeederInterface;
 
 #[Seeder(name: 'users')]
 class UserSeeder implements SeederInterface
 {
-    public function run(
-        ConnectionInterface $connection,
-    ): void {
+    public function run(): void
+    {
         // Seed users
     }
 }
@@ -146,16 +142,14 @@ declare(strict_types=1);
 
 namespace TestSeederModule3;
 
-use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Seed\Seeder;
 use Marko\Database\Seed\SeederInterface;
 
 #[Seeder(name: 'posts', order: 10)]
 class PostSeeder implements SeederInterface
 {
-    public function run(
-        ConnectionInterface $connection,
-    ): void {
+    public function run(): void
+    {
         // Seed posts
     }
 }

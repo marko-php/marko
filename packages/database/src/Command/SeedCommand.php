@@ -9,7 +9,6 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Core\Path\ProjectPaths;
-use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\SeederException;
 use Marko\Database\Seed\SeederDefinition;
 use Marko\Database\Seed\SeederDiscoveryInterface;
@@ -22,7 +21,6 @@ readonly class SeedCommand implements CommandInterface
     public function __construct(
         private SeederDiscoveryInterface $discovery,
         private SeederRunner $runner,
-        private ConnectionInterface $connection,
         private ProjectPaths $paths,
         private bool $isProduction = false,
     ) {}
@@ -92,7 +90,7 @@ readonly class SeedCommand implements CommandInterface
     ): int {
         try {
             $output->writeLine("Running seeder: $name");
-            $this->runner->runByName($name, $definitions, $this->connection);
+            $this->runner->runByName($name, $definitions);
             $output->writeLine('Seeder completed successfully.');
 
             return 0;
@@ -117,7 +115,7 @@ readonly class SeedCommand implements CommandInterface
                 $output->writeLine("Running seeder: $definition->name");
             }
 
-            $this->runner->runAll($definitions, $this->connection);
+            $this->runner->runAll($definitions);
             $output->writeLine('All seeders completed successfully.');
 
             return 0;
