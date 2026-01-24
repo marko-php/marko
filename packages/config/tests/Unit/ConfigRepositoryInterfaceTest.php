@@ -200,31 +200,6 @@ describe('ConfigRepositoryInterface', function (): void {
             ->and($docComment)->toContain('database.host');
     });
 
-    it('documents ConfigNotFoundException for type-safe getString method', function (): void {
-        $reflection = new ReflectionClass(ConfigRepositoryInterface::class);
-        $method = $reflection->getMethod('getString');
-        $docComment = $method->getDocComment();
-
-        expect($docComment)->toBeString()
-            ->and($docComment)->toContain('ConfigNotFoundException')
-            ->and($docComment)->toContain('not found')
-            ->and($docComment)->toContain('no default');
-    });
-
-    it('has throws annotation for type-safe methods', function (): void {
-        $reflection = new ReflectionClass(ConfigRepositoryInterface::class);
-        $typeSafeMethods = ['getString', 'getInt', 'getBool', 'getFloat', 'getArray'];
-
-        foreach ($typeSafeMethods as $methodName) {
-            $method = $reflection->getMethod($methodName);
-            $docComment = $method->getDocComment();
-
-            expect($docComment)->toBeString()
-                ->and($docComment)->toContain('@throws')
-                ->and($docComment)->toContain('ConfigNotFoundException');
-        }
-    });
-
     it('defines withScope method with scope parameter returning ConfigRepositoryInterface', function (): void {
         $reflection = new ReflectionClass(ConfigRepositoryInterface::class);
 

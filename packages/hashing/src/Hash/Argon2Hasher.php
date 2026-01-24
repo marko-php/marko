@@ -19,6 +19,9 @@ readonly class Argon2Hasher implements HasherInterface
 
     private int $threads;
 
+    /**
+     * @throws InvalidHasherConfigException
+     */
     public function __construct(
         ?int $memory = null,
         ?int $time = null,
@@ -33,21 +36,11 @@ readonly class Argon2Hasher implements HasherInterface
     public function hash(
         string $value,
     ): string {
-        $hashed = password_hash($value, PASSWORD_ARGON2ID, [
+        return password_hash($value, PASSWORD_ARGON2ID, [
             'memory_cost' => $this->memory,
             'time_cost' => $this->time,
             'threads' => $this->threads,
         ]);
-
-        if ($hashed === false) {
-            throw new InvalidHasherConfigException(
-                message: 'Failed to hash value with Argon2id',
-                context: "Memory: $this->memory, Time: $this->time, Threads: $this->threads",
-                suggestion: 'Ensure PHP version is >= 7.2 with Argon2 support and parameters are valid',
-            );
-        }
-
-        return $hashed;
     }
 
     public function verify(
