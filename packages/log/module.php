@@ -10,7 +10,6 @@ use Marko\Log\Formatter\LineFormatter;
 return [
     'enabled' => true,
     'bindings' => [
-        LogConfig::class => LogConfig::class,
         LogFormatterInterface::class => function (ContainerInterface $container): LogFormatterInterface {
             $config = $container->get(LogConfig::class);
 

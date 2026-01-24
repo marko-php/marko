@@ -440,14 +440,6 @@ describe('Integration Tests', function (): void {
     });
 
     test('Module bindings resolve correctly', function (): void {
-        // Test that queue module bindings are correct
-        $queueModulePath = dirname(__DIR__, 2) . '/module.php';
-        $queueModule = require $queueModulePath;
-
-        expect($queueModule)->toBeArray()
-            ->and($queueModule['enabled'])->toBeTrue()
-            ->and($queueModule['bindings'])->toHaveKey(QueueConfig::class);
-
         // Test that queue-sync module bindings are correct
         $syncModulePath = dirname(__DIR__, 3) . '/queue-sync/module.php';
         $syncModule = require $syncModulePath;

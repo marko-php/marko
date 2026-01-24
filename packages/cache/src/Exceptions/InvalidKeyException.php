@@ -39,12 +39,6 @@ class InvalidKeyException extends CacheException
             return false;
         }
 
-        foreach (self::INVALID_CHARS as $char) {
-            if (str_contains($key, $char)) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all(self::INVALID_CHARS, fn ($char) => !str_contains($key, $char));
     }
 }

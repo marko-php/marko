@@ -10,7 +10,6 @@ use Marko\Filesystem\Manager\FilesystemManager;
 return [
     'enabled' => true,
     'bindings' => [
-        LocalFilesystemFactory::class => LocalFilesystemFactory::class,
         FilesystemInterface::class => function (ContainerInterface $container): FilesystemInterface {
             $manager = $container->get(FilesystemManager::class);
             $manager->registerDriver('local', LocalFilesystemFactory::class);

@@ -11,7 +11,6 @@ use Marko\Session\Session;
 return [
     'enabled' => true,
     'bindings' => [
-        SessionConfig::class => SessionConfig::class,
         SessionInterface::class => function (ContainerInterface $container): SessionInterface {
             return new Session(
                 $container->get(SessionHandlerInterface::class),

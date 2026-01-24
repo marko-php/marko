@@ -9,7 +9,6 @@ use Marko\Session\File\Factory\FileSessionHandlerFactory;
 return [
     'enabled' => true,
     'bindings' => [
-        FileSessionHandlerFactory::class => FileSessionHandlerFactory::class,
         SessionHandlerInterface::class => function (ContainerInterface $container): SessionHandlerInterface {
             return $container->get(FileSessionHandlerFactory::class)->create();
         },

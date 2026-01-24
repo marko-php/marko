@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Marko\Mail\Contracts\MailerInterface;
-use Marko\Mail\Smtp\SmtpConfig;
 
 describe('module.php', function (): void {
     it('module.php exists with correct structure', function (): void {
@@ -18,14 +17,6 @@ describe('module.php', function (): void {
             ->and($module['enabled'])->toBeTrue()
             ->and($module)->toHaveKey('bindings')
             ->and($module['bindings'])->toBeArray();
-    });
-
-    it('module.php binds SmtpConfig', function (): void {
-        $modulePath = dirname(__DIR__, 2) . '/module.php';
-        $module = require $modulePath;
-
-        expect($module['bindings'])->toHaveKey(SmtpConfig::class)
-            ->and($module['bindings'][SmtpConfig::class])->toBe(SmtpConfig::class);
     });
 
     it('module.php binds MailerInterface via factory', function (): void {

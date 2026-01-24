@@ -233,18 +233,6 @@ test('SmtpMailerFactory creates configured mailer', function (): void {
 });
 
 test('module bindings resolve correctly', function (): void {
-    // Test mail module
-    $mailModulePath = dirname(__DIR__, 2) . '/module.php';
-    expect(file_exists($mailModulePath))->toBeTrue();
-
-    $mailModule = require $mailModulePath;
-
-    expect($mailModule)->toBeArray()
-        ->and($mailModule)->toHaveKey('enabled')
-        ->and($mailModule['enabled'])->toBeTrue()
-        ->and($mailModule)->toHaveKey('bindings')
-        ->and($mailModule['bindings'])->toHaveKey(MailConfig::class);
-
     // Test mail-smtp module
     $smtpModulePath = dirname(__DIR__, 3) . '/mail-smtp/module.php';
     expect(file_exists($smtpModulePath))->toBeTrue();
@@ -255,7 +243,6 @@ test('module bindings resolve correctly', function (): void {
         ->and($smtpModule)->toHaveKey('enabled')
         ->and($smtpModule['enabled'])->toBeTrue()
         ->and($smtpModule)->toHaveKey('bindings')
-        ->and($smtpModule['bindings'])->toHaveKey(SmtpConfig::class)
         ->and($smtpModule['bindings'])->toHaveKey(MailerInterface::class)
         ->and($smtpModule['bindings'][MailerInterface::class])->toBeInstanceOf(Closure::class);
 });

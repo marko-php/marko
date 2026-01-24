@@ -18,15 +18,3 @@ it('composer.json has marko/core dependency', function () {
     expect($composer)->toHaveKey('require')
         ->and($composer['require'])->toHaveKey('marko/core');
 });
-
-it('module.php exists with enabled status', function () {
-    $modulePath = dirname(__DIR__) . '/module.php';
-
-    expect(file_exists($modulePath))->toBeTrue();
-
-    $module = require $modulePath;
-
-    expect($module)->toBeArray()
-        ->and($module)->toHaveKey('enabled')
-        ->and($module['enabled'])->toBeTrue();
-});

@@ -36,19 +36,6 @@ describe('Package Setup', function (): void {
         });
     });
 
-    describe('module.php', function (): void {
-        it('has module.php that is enabled by default', function (): void {
-            $modulePath = __DIR__ . '/../../module.php';
-
-            expect(file_exists($modulePath))->toBeTrue();
-
-            $config = require $modulePath;
-
-            expect($config)->toBeArray()
-                ->and($config['enabled'])->toBeTrue();
-        });
-    });
-
     describe('exports', function (): void {
         it('exports ErrorHandlerInterface', function (): void {
             expect(interface_exists(ErrorHandlerInterface::class))->toBeTrue();

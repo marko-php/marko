@@ -92,7 +92,7 @@ it('returns driver from config', function () {
 });
 
 it('returns default driver when not configured', function () {
-    $config = new CacheConfig(createCacheConfigRepository([]));
+    $config = new CacheConfig(createCacheConfigRepository());
 
     expect($config->driver())->toBe('file');
 });
@@ -106,7 +106,7 @@ it('returns path from config', function () {
 });
 
 it('returns default path when not configured', function () {
-    $config = new CacheConfig(createCacheConfigRepository([]));
+    $config = new CacheConfig(createCacheConfigRepository());
 
     expect($config->path())->toBe('storage/cache');
 });
@@ -120,7 +120,7 @@ it('returns default ttl from config', function () {
 });
 
 it('returns default ttl when not configured', function () {
-    $config = new CacheConfig(createCacheConfigRepository([]));
+    $config = new CacheConfig(createCacheConfigRepository());
 
     expect($config->defaultTtl())->toBe(3600);
 });

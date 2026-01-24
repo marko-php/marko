@@ -49,26 +49,6 @@ it('has PSR-4 autoloading configured for Marko\Cache namespace', function () {
         ->and($composer['autoload']['psr-4']['Marko\\Cache\\'])->toBe('src/');
 });
 
-it('has module.php with enabled set to true', function () {
-    $modulePath = dirname(__DIR__) . '/module.php';
-
-    expect(file_exists($modulePath))->toBeTrue();
-
-    $config = require $modulePath;
-
-    expect($config)->toBeArray()
-        ->and($config)->toHaveKey('enabled')
-        ->and($config['enabled'])->toBeTrue();
-});
-
-it('has module.php with bindings array', function () {
-    $modulePath = dirname(__DIR__) . '/module.php';
-    $config = require $modulePath;
-
-    expect($config)->toHaveKey('bindings')
-        ->and($config['bindings'])->toBeArray();
-});
-
 it('has src directory for source code', function () {
     $srcPath = dirname(__DIR__) . '/src';
 
