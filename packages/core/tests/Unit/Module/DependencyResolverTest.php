@@ -148,22 +148,21 @@ it('includes cycle path in CircularDependencyException message', function (): vo
         ->toContain('->');
 });
 
-it('throws ModuleException when required module is not found', function (): void {
-    // Module A requires a module that doesn't exist
+it('ignores dependencies that are not Marko modules', function (): void {
+    // Module A requires a package that isn't in our modules list
+    // This could be a regular Composer package like psr/container
     $moduleA = new ModuleManifest(
         name: 'vendor/module-a',
         version: '1.0.0',
-        require: ['vendor/nonexistent' => '^1.0'],
+        require: ['psr/container' => '^2.0'],
     );
 
     $resolver = new DependencyResolver();
+    $sorted = $resolver->resolve([$moduleA]);
 
-    expect(fn () => $resolver->resolve([$moduleA]))
-        ->toThrow(ModuleException::class)
-        ->and(fn () => $resolver->resolve([$moduleA]))
-        ->toThrow(
-            fn (ModuleException $e) => str_contains($e->getMessage(), 'vendor/nonexistent'),
-        );
+    // Should resolve successfully - non-Marko dependencies are ignored
+    expect($sorted)->toHaveCount(1)
+        ->and($sorted[0]->name)->toBe('vendor/module-a');
 });
 
 it('filters out disabled modules from load order', function (): void {

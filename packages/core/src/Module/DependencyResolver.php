@@ -21,19 +21,28 @@ class DependencyResolver
     public function resolve(
         array $modules,
     ): array {
-        // Filter out disabled modules first
+        // Index ALL modules by name (including disabled) for validation
+        $allModulesByName = [];
+        foreach ($modules as $module) {
+            $allModulesByName[$module->name] = $module;
+        }
+
+        // Filter out disabled modules
         $enabledModules = array_filter($modules, fn (ModuleManifest $m) => $m->enabled);
 
-        // Index modules by name (only enabled ones)
+        // Index enabled modules by name
         $modulesByName = [];
         foreach ($enabledModules as $module) {
             $modulesByName[$module->name] = $module;
         }
 
-        // Validate that all required dependencies exist (and are enabled)
+        // Validate that enabled modules don't require disabled modules
+        // Note: We don't validate missing dependencies because they might be
+        // regular Composer packages (like psr/container), not Marko modules
         foreach ($enabledModules as $module) {
             foreach (array_keys($module->require) as $dependency) {
-                if (!isset($modulesByName[$dependency])) {
+                // If the dependency exists as a module but is disabled, that's an error
+                if (isset($allModulesByName[$dependency]) && !$allModulesByName[$dependency]->enabled) {
                     throw ModuleException::missingDependency($module->name, $dependency);
                 }
             }

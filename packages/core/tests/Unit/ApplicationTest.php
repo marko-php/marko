@@ -10,7 +10,6 @@ use Marko\Core\Command\Output;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Exceptions\CircularDependencyException;
-use Marko\Core\Exceptions\ModuleException;
 
 it('creates Application class as main entry point', function (): void {
     $app = new Application();
@@ -116,16 +115,17 @@ it('scans all three directories for modules during boot', function (): void {
     appTestCleanupDirectory($baseDir);
 });
 
-it('validates module dependencies exist', function (): void {
+it('ignores dependencies that are not discovered Marko modules', function (): void {
     $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
     $vendorDir = $baseDir . '/vendor';
 
-    // Create a module that requires a non-existent dependency
+    // Create a module that requires a package not in our modules list
+    // This could be a regular Composer package like psr/container
     appTestCreateModule(
         $vendorDir . '/acme/blog',
         'acme/blog',
         '1.0.0',
-        ['marko/missing-module' => '^1.0'],
+        ['psr/container' => '^2.0'],
     );
 
     $app = new Application(
@@ -134,7 +134,11 @@ it('validates module dependencies exist', function (): void {
         appPath: '',
     );
 
-    expect(fn () => $app->boot())->toThrow(ModuleException::class);
+    // Should boot successfully - non-Marko dependencies are ignored
+    $app->boot();
+
+    expect($app->modules)->toHaveCount(1)
+        ->and($app->modules[0]->name)->toBe('acme/blog');
 
     appTestCleanupDirectory($baseDir);
 });
