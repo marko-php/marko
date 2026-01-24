@@ -6,7 +6,8 @@
     "require": {
         "php": "^8.5",
         "marko/core": "@dev",
-        "marko/routing": "@dev"
+        "marko/routing": "@dev",
+        "marko/config": "@dev"
     },
     "repositories": [
         {
