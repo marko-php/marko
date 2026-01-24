@@ -295,7 +295,7 @@ For modules in `app/`, use `App` as the vendor namespace:
     "name": "app/blog",
     "autoload": {
         "psr-4": {
-            "App\\Blog\\": "src/"
+            "App\\Blog\\": ""
         }
     }
 }
@@ -341,7 +341,7 @@ app/payments/
     "name": "app/payments",
     "autoload": {
         "psr-4": {
-            "App\\Payments\\": "src/"
+            "App\\Payments\\": ""
         }
     },
     "extra": {
@@ -487,7 +487,7 @@ If your module has PHP classes, you need autoload configuration:
     "name": "app/blog",
     "autoload": {
         "psr-4": {
-            "App\\Blog\\": "src/"
+            "App\\Blog\\": ""
         }
     },
     "extra": {
