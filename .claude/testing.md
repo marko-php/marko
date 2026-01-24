@@ -515,7 +515,7 @@ This applies to:
 When creating anonymous class stubs that extend real classes, follow these patterns:
 
 ### Skipping Parent Constructor
-When a stub intentionally skips the parent constructor, add the annotation on BOTH the return statement and the constructor:
+When a stub **extends a class** and intentionally skips the parent constructor, add the annotation on BOTH the return statement and the constructor:
 ```php
 /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
 return new class () extends RealClass
@@ -526,6 +526,15 @@ return new class () extends RealClass
     ) {}
 };
 ```
+
+**When to use this annotation:**
+- Only when using `extends SomeClass` where the parent class has a constructor
+- Only when you intentionally skip calling `parent::__construct()`
+
+**When NOT to use this annotation:**
+- When using `implements SomeInterface` - interfaces don't have constructors, so there's no parent constructor to skip
+- When the parent class has no constructor
+- When you do call `parent::__construct()` in your stub
 
 ### Stub Return Types with Custom Properties
 When a stub helper returns an anonymous class with custom properties, document them in the return type to avoid "potentially polymorphic call" warnings:

@@ -37,6 +37,7 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'greet', description: 'Say hello')]
 class GreetCommand implements CommandInterface
 {
@@ -49,6 +50,8 @@ class GreetCommand implements CommandInterface
     }
 }
 ```
+
+> **IDE Note:** PhpStorm may report command classes as "unused" since they're discovered via attributes rather than direct instantiation. The `@noinspection PhpUnused` annotation suppresses this false positive.
 
 Run it:
 

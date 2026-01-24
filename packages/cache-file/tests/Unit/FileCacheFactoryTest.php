@@ -12,7 +12,6 @@ function createCacheConfigMock(
     string $path = '/tmp/cache',
     int $defaultTtl = 3600,
 ): CacheConfig {
-    /** @noinspection PhpMissingParentConstructorInspection */
     $repository = new class ($path, $defaultTtl) implements ConfigRepositoryInterface
     {
         public function __construct(

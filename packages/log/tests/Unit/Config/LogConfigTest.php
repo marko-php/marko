@@ -10,7 +10,6 @@ use Marko\Log\LogLevel;
 function createMockLogConfigRepository(
     array $configData = [],
 ): ConfigRepositoryInterface {
-    /** @noinspection PhpMissingParentConstructorInspection */
     return new class ($configData) implements ConfigRepositoryInterface
     {
         public function __construct(
@@ -95,7 +94,7 @@ it('returns configured driver', function () {
 });
 
 it('returns file as default driver', function () {
-    $config = new LogConfig(createMockLogConfigRepository([]));
+    $config = new LogConfig(createMockLogConfigRepository());
 
     expect($config->driver())->toBe('file');
 });
@@ -109,7 +108,7 @@ it('returns configured path', function () {
 });
 
 it('returns storage/logs as default path', function () {
-    $config = new LogConfig(createMockLogConfigRepository([]));
+    $config = new LogConfig(createMockLogConfigRepository());
 
     expect($config->path())->toBe('storage/logs');
 });
@@ -123,7 +122,7 @@ it('returns configured level as LogLevel enum', function () {
 });
 
 it('returns debug as default level', function () {
-    $config = new LogConfig(createMockLogConfigRepository([]));
+    $config = new LogConfig(createMockLogConfigRepository());
 
     expect($config->level())->toBe(LogLevel::Debug);
 });
@@ -146,7 +145,7 @@ it('returns configured channel', function () {
 });
 
 it('returns app as default channel', function () {
-    $config = new LogConfig(createMockLogConfigRepository([]));
+    $config = new LogConfig(createMockLogConfigRepository());
 
     expect($config->channel())->toBe('app');
 });
@@ -160,7 +159,7 @@ it('returns configured format', function () {
 });
 
 it('returns default format string', function () {
-    $config = new LogConfig(createMockLogConfigRepository([]));
+    $config = new LogConfig(createMockLogConfigRepository());
 
     expect($config->format())->toContain('{datetime}')
         ->and($config->format())->toContain('{channel}')
@@ -177,7 +176,7 @@ it('returns configured date format', function () {
 });
 
 it('returns Y-m-d H:i:s as default date format', function () {
-    $config = new LogConfig(createMockLogConfigRepository([]));
+    $config = new LogConfig(createMockLogConfigRepository());
 
     expect($config->dateFormat())->toBe('Y-m-d H:i:s');
 });
@@ -191,7 +190,7 @@ it('returns configured max files', function () {
 });
 
 it('returns 30 as default max files', function () {
-    $config = new LogConfig(createMockLogConfigRepository([]));
+    $config = new LogConfig(createMockLogConfigRepository());
 
     expect($config->maxFiles())->toBe(30);
 });
@@ -205,7 +204,7 @@ it('returns configured max file size', function () {
 });
 
 it('returns 10MB as default max file size', function () {
-    $config = new LogConfig(createMockLogConfigRepository([]));
+    $config = new LogConfig(createMockLogConfigRepository());
 
     expect($config->maxFileSize())->toBe(10 * 1024 * 1024);
 });

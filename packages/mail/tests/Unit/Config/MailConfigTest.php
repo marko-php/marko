@@ -9,7 +9,6 @@ use Marko\Mail\Exception\MailException;
 function createMailMockConfigRepository(
     array $configData = [],
 ): ConfigRepositoryInterface {
-    /** @noinspection PhpMissingParentConstructorInspection */
     return new class ($configData) implements ConfigRepositoryInterface
     {
         public function __construct(

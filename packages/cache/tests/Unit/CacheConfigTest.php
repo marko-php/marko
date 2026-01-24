@@ -8,7 +8,6 @@ use Marko\Config\ConfigRepositoryInterface;
 function createCacheConfigRepository(
     array $configData = [],
 ): ConfigRepositoryInterface {
-    /** @noinspection PhpMissingParentConstructorInspection */
     return new class ($configData) implements ConfigRepositoryInterface
     {
         public function __construct(

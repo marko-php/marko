@@ -10,11 +10,12 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Log\Config\LogConfig;
 
+/** @noinspection PhpUnused */
 #[Command(name: 'log:clear', description: 'Clear old log files')]
-class ClearCommand implements CommandInterface
+readonly class ClearCommand implements CommandInterface
 {
     public function __construct(
-        private readonly LogConfig $config,
+        private LogConfig $config,
     ) {}
 
     public function execute(
