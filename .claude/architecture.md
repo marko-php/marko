@@ -104,12 +104,12 @@ Marko = Enterprise-grade extensibility
 
 Marko uses Composer naming conventions everywhere. One name, one format, no translation between systems.
 
-| Element | Format | Example |
-|---------|--------|---------|
-| Package name | `vendor/package` | `marko/database` |
-| Module name | `vendor/package` | `acme/blog` |
-| Namespace | PSR-4 from Composer | `Acme\Blog\Controllers` |
-| Directory | Matches Composer | `vendor/acme/blog/` |
+| Element      | Format              | Example                 |
+|--------------|---------------------|-------------------------|
+| Package name | `vendor/package`    | `marko/database`        |
+| Module name  | `vendor/package`    | `acme/blog`             |
+| Namespace    | PSR-4 from Composer | `Acme\Blog\Controllers` |
+| Directory    | Matches Composer    | `vendor/acme/blog/`     |
 
 ### Consistency
 
@@ -311,13 +311,13 @@ marko/database-postgresql # PostgreSQL implementation, requires marko/database
 
 ### Standard Package Splits
 
-| Base Package | Driver Packages |
-|--------------|-----------------|
+| Base Package     | Driver Packages                                     |
+|------------------|-----------------------------------------------------|
 | `marko/database` | `marko/database-mysql`, `marko/database-postgresql` |
-| `marko/cache` | `marko/cache-file`, `marko/cache-redis` |
-| `marko/view` | `marko/view-latte`, `marko/view-liquid` |
-| `marko/errors` | `marko/errors-basic`, `marko/errors-advanced` |
-| `marko/queue` | `marko/queue-rabbitmq`, `marko/queue-sqs` |
+| `marko/cache`    | `marko/cache-file`, `marko/cache-redis`             |
+| `marko/view`     | `marko/view-latte`, `marko/view-liquid`             |
+| `marko/errors`   | `marko/errors-basic`, `marko/errors-advanced`       |
+| `marko/queue`    | `marko/queue-rabbitmq`, `marko/queue-sqs`           |
 
 ### Metapackages
 
@@ -431,13 +431,13 @@ Observers can be marked as async. They are queued for later processing rather th
 
 ### Events vs Plugins
 
-| Use Events When... | Use Plugins When... |
-|-------------------|-------------------|
-| Multiple independent reactions needed | Modifying specific method behavior |
-| Reactions are optional/decoupled | Transformation is required |
+| Use Events When...                       | Use Plugins When...                 |
+|------------------------------------------|-------------------------------------|
+| Multiple independent reactions needed    | Modifying specific method behavior  |
+| Reactions are optional/decoupled         | Transformation is required          |
 | You're broadcasting "something happened" | You're intercepting "do this thing" |
-| Order of reactions doesn't matter much | Execution order is critical |
-| Async processing is acceptable | Synchronous modification needed |
+| Order of reactions doesn't matter much   | Execution order is critical         |
+| Async processing is acceptable           | Synchronous modification needed     |
 
 ---
 
@@ -471,12 +471,12 @@ To completely replace a vendor's controller, use `#[Preference]` on your control
 
 **Inheritance rules for routes when using Preference:**
 
-| Scenario | Result |
-|----------|--------|
-| Method not overridden | Parent's route attribute applies |
-| Method overridden with route attribute | Your route attribute applies |
-| Method overridden with `#[DisableRoute]` | Route is intentionally removed |
-| Method overridden with no attribute | **ERROR** - ambiguous intent |
+| Scenario                                 | Result                           |
+|------------------------------------------|----------------------------------|
+| Method not overridden                    | Parent's route attribute applies |
+| Method overridden with route attribute   | Your route attribute applies     |
+| Method overridden with `#[DisableRoute]` | Route is intentionally removed   |
+| Method overridden with no attribute      | **ERROR** - ambiguous intent     |
 
 ### Disabling Routes
 
@@ -564,25 +564,25 @@ Attributes are wrong for system wiring and environment configuration:
 
 ### Framework Attributes Quick Reference
 
-| Attribute | Target | Purpose |
-|-----------|--------|---------|
-| `#[Plugin]` | Class | Marks class as a plugin for another class |
-| `#[Before]` | Method | Plugin method runs before target |
-| `#[After]` | Method | Plugin method runs after target |
-| `#[Observer]` | Class | Reacts to dispatched events |
-| `#[Preference]` | Class | Replaces another class globally |
-| `#[Get]`, `#[Post]`, etc. | Method | Defines HTTP route |
-| `#[Middleware]` | Method/Class | Applies middleware |
-| `#[DisableRoute]` | Method | Explicitly removes inherited route |
-| `#[Command]` | Class | Registers CLI command |
+| Attribute                 | Target       | Purpose                                   |
+|---------------------------|--------------|-------------------------------------------|
+| `#[Plugin]`               | Class        | Marks class as a plugin for another class |
+| `#[Before]`               | Method       | Plugin method runs before target          |
+| `#[After]`                | Method       | Plugin method runs after target           |
+| `#[Observer]`             | Class        | Reacts to dispatched events               |
+| `#[Preference]`           | Class        | Replaces another class globally           |
+| `#[Get]`, `#[Post]`, etc. | Method       | Defines HTTP route                        |
+| `#[Middleware]`           | Method/Class | Applies middleware                        |
+| `#[DisableRoute]`         | Method       | Explicitly removes inherited route        |
+| `#[Command]`              | Class        | Registers CLI command                     |
 
 ### PHP Built-in Attributes to Use
 
-| Attribute | Purpose |
-|-----------|---------|
-| `#[\NoDiscard]` | Warn if return value ignored |
-| `#[\Override]` | Verify method overrides parent |
-| `#[\Deprecated]` | Mark as deprecated |
+| Attribute        | Purpose                        |
+|------------------|--------------------------------|
+| `#[\NoDiscard]`  | Warn if return value ignored   |
+| `#[\Override]`   | Verify method overrides parent |
+| `#[\Deprecated]` | Mark as deprecated             |
 
 ---
 
@@ -653,15 +653,15 @@ Error handling is provided by a module that binds `ErrorHandlerInterface`. This 
 
 ### Common Error Types
 
-| Error | Cause | Resolution |
-|-------|-------|------------|
-| `BindingException` | No implementation for interface | Install appropriate driver package |
-| `BindingConflictException` | Multiple bindings for same interface | Resolve in app module or use Composer replace |
-| `ModuleException` | Module manifest issues | Check syntax and dependencies |
-| `CircularDependencyException` | Modules depend on each other | Refactor module boundaries |
-| `RouteConflictException` | Duplicate route definitions | Use Preference or change paths |
-| `RouteException` | Override without attribute | Add route attribute or DisableRoute |
-| `PluginException` | Plugin configuration issues | Check target class and method exist |
+| Error                         | Cause                                | Resolution                                    |
+|-------------------------------|--------------------------------------|-----------------------------------------------|
+| `BindingException`            | No implementation for interface      | Install appropriate driver package            |
+| `BindingConflictException`    | Multiple bindings for same interface | Resolve in app module or use Composer replace |
+| `ModuleException`             | Module manifest issues               | Check syntax and dependencies                 |
+| `CircularDependencyException` | Modules depend on each other         | Refactor module boundaries                    |
+| `RouteConflictException`      | Duplicate route definitions          | Use Preference or change paths                |
+| `RouteException`              | Override without attribute           | Add route attribute or DisableRoute           |
+| `PluginException`             | Plugin configuration issues          | Check target class and method exist           |
 
 ---
 
@@ -753,12 +753,12 @@ All Marko packages share the same version number. When a release is tagged, ever
 
 **Why unified versioning:**
 
-| Benefit | Explanation |
-|---------|-------------|
-| Clear compatibility | All v1.2.3 packages work together, guaranteed |
-| Simple upgrades | Upgrade everything to same version, no matrix |
-| One changelog | All changes documented in one place |
-| No version confusion | No "which routing works with which core?" |
+| Benefit              | Explanation                                   |
+|----------------------|-----------------------------------------------|
+| Clear compatibility  | All v1.2.3 packages work together, guaranteed |
+| Simple upgrades      | Upgrade everything to same version, no matrix |
+| One changelog        | All changes documented in one place           |
+| No version confusion | No "which routing works with which core?"     |
 
 **Example:**
 
@@ -804,12 +804,12 @@ When a release is made, all interdependencies are automatically updated to requi
 
 ### Official Resources
 
-| Resource | Location |
-|----------|----------|
-| Website | marko.build |
-| GitHub Organization | github.com/devtomic |
-| Monorepo | github.com/devtomic/marko |
-| Packagist | packagist.org/packages/marko |
+| Resource            | Location                     |
+|---------------------|------------------------------|
+| Website             | marko.build                  |
+| GitHub Organization | github.com/devtomic          |
+| Monorepo            | github.com/devtomic/marko    |
+| Packagist           | packagist.org/packages/marko |
 
 ---
 

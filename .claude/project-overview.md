@@ -62,9 +62,9 @@ PHP Framework (monorepo containing multiple packages)
 - Anyone building modular applications that last
 
 ## Official Resources
-| Resource | Location |
-|----------|----------|
-| Website | marko.build |
-| GitHub Organization | github.com/devtomic |
-| Monorepo | github.com/devtomic/marko |
-| Packagist | packagist.org/packages/marko |
+| Resource            | Location                     |
+|---------------------|------------------------------|
+| Website             | marko.build                  |
+| GitHub Organization | github.com/devtomic          |
+| Monorepo            | github.com/devtomic/marko    |
+| Packagist           | packagist.org/packages/marko |

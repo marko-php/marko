@@ -335,12 +335,12 @@ chmod -R 755 ~/Sites/myblog
 
 ## Quick Reference
 
-| Command | Purpose |
-|---------|---------|
-| `php -S localhost:9000 -t public` | Start dev server |
-| `composer update` | Refresh dependencies |
-| `composer dump-autoload` | Rebuild autoloader |
-| `./vendor/bin/marko db:migrate` | Run migrations |
+| Command                           | Purpose              |
+|-----------------------------------|----------------------|
+| `php -S localhost:9000 -t public` | Start dev server     |
+| `composer update`                 | Refresh dependencies |
+| `composer dump-autoload`          | Rebuild autoloader   |
+| `./vendor/bin/marko db:migrate`   | Run migrations       |
 
 ---
 

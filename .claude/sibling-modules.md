@@ -6,12 +6,12 @@ Standards for creating consistent, coherent driver/implementation packages that 
 
 Sibling modules are packages that implement the same interface for different backends. They follow Marko's interface/implementation split pattern:
 
-| Base Package | Sibling Implementations |
-|--------------|------------------------|
+| Base Package     | Sibling Implementations                        |
+|------------------|------------------------------------------------|
 | `marko/database` | `marko/database-mysql`, `marko/database-pgsql` |
-| `marko/cache` | `marko/cache-file`, `marko/cache-redis` |
-| `marko/view` | `marko/view-latte`, `marko/view-liquid` |
-| `marko/queue` | `marko/queue-rabbitmq`, `marko/queue-sqs` |
+| `marko/cache`    | `marko/cache-file`, `marko/cache-redis`        |
+| `marko/view`     | `marko/view-latte`, `marko/view-liquid`        |
+| `marko/queue`    | `marko/queue-rabbitmq`, `marko/queue-sqs`      |
 
 ## Core Principle
 
@@ -34,12 +34,12 @@ marko/db-mysql           ✗ (abbreviated base)
 
 Format: `{Driver}{Component}`
 
-| Component | MySQL | PostgreSQL | Redis |
-|-----------|-------|------------|-------|
-| Connection | `MySqlConnection` | `PgSqlConnection` | `RedisConnection` |
-| Statement | `MySqlStatement` | `PgSqlStatement` | - |
-| QueryBuilder | `MySqlQueryBuilder` | `PgSqlQueryBuilder` | - |
-| Generator | `MySqlGenerator` | `PgSqlGenerator` | - |
+| Component    | MySQL               | PostgreSQL          | Redis             |
+|--------------|---------------------|---------------------|-------------------|
+| Connection   | `MySqlConnection`   | `PgSqlConnection`   | `RedisConnection` |
+| Statement    | `MySqlStatement`    | `PgSqlStatement`    | -                 |
+| QueryBuilder | `MySqlQueryBuilder` | `PgSqlQueryBuilder` | -                 |
+| Generator    | `MySqlGenerator`    | `PgSqlGenerator`    | -                 |
 
 ### Namespace Structure
 
@@ -352,16 +352,16 @@ When adding a new sibling to an existing set:
 
 Before merging sibling module changes:
 
-| Aspect | Check |
-|--------|-------|
-| Method names | Identical across all siblings |
-| Method visibility | Identical for same-purpose methods |
-| PHPDoc style | Multi-line format everywhere |
-| Class modifiers | Consistent (readonly, etc.) |
-| Test namespaces | Proper PSR-4 namespaces |
-| Test approach | Anonymous class pattern |
-| Exception messages | Consistent format |
-| Aliases | Same names for computed values |
+| Aspect             | Check                              |
+|--------------------|------------------------------------|
+| Method names       | Identical across all siblings      |
+| Method visibility  | Identical for same-purpose methods |
+| PHPDoc style       | Multi-line format everywhere       |
+| Class modifiers    | Consistent (readonly, etc.)        |
+| Test namespaces    | Proper PSR-4 namespaces            |
+| Test approach      | Anonymous class pattern            |
+| Exception messages | Consistent format                  |
+| Aliases            | Same names for computed values     |
 
 ## Anti-Patterns
 

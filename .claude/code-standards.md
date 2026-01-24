@@ -554,14 +554,14 @@ Every package in `packages/` must have a README.md. Keep it concise—developers
 
 ### Structure
 
-| Section | Purpose |
-|---------|---------|
-| **Title + One-Liner** | What it does + practical benefit |
-| **Overview** | 2-4 sentences expanding on the benefit |
-| **Installation** | Composer command |
-| **Usage** | How module developers use it (THE KEY SECTION) |
-| **Customization** | Extending via Preferences (if applicable) |
-| **API Reference** | Public signatures only |
+| Section               | Purpose                                        |
+|-----------------------|------------------------------------------------|
+| **Title + One-Liner** | What it does + practical benefit               |
+| **Overview**          | 2-4 sentences expanding on the benefit         |
+| **Installation**      | Composer command                               |
+| **Usage**             | How module developers use it (THE KEY SECTION) |
+| **Customization**     | Extending via Preferences (if applicable)      |
+| **API Reference**     | Public signatures only                         |
 
 ### Interface vs Implementation Packages
 
