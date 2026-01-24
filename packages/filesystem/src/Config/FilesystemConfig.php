@@ -20,6 +20,7 @@ readonly class FilesystemConfig
 
     /**
      * @return array<string, mixed>
+     * @throws FilesystemException
      */
     public function getDisk(
         string $name,
@@ -35,21 +36,5 @@ readonly class FilesystemConfig
         }
 
         return $disks[$name];
-    }
-
-    /**
-     * @return array<string, array<string, mixed>>
-     */
-    public function allDisks(): array
-    {
-        return $this->config->getArray('filesystem.disks', []);
-    }
-
-    public function hasDisk(
-        string $name,
-    ): bool {
-        $disks = $this->config->getArray('filesystem.disks', []);
-
-        return isset($disks[$name]);
     }
 }
