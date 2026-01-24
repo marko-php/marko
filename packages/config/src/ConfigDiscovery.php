@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Config;
 
+use Marko\Config\Exceptions\ConfigLoadException;
+
 readonly class ConfigDiscovery
 {
     public function __construct(
@@ -11,6 +13,9 @@ readonly class ConfigDiscovery
         private ConfigMerger $merger,
     ) {}
 
+    /**
+     * @throws ConfigLoadException
+     */
     public function discover(
         array $modulePaths,
         string $rootConfigPath,
@@ -25,14 +30,15 @@ readonly class ConfigDiscovery
         }
 
         // Merge root config (highest priority)
-        $result = $this->mergeConfigFromDirectory(
+        return $this->mergeConfigFromDirectory(
             result: $result,
             directory: $rootConfigPath,
         );
-
-        return $result;
     }
 
+    /**
+     * @throws ConfigLoadException
+     */
     private function mergeConfigFromDirectory(
         array $result,
         string $directory,

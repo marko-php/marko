@@ -221,6 +221,27 @@ it('creates user and sends welcome email', function () {
 });
 ```
 
+## Assertion Simplification (Required)
+
+Use the specific boolean matchers instead of generic `toBe()`:
+
+```php
+// CORRECT - use specific matchers
+expect($config->has('key'))->toBeTrue();
+expect($config->has('missing'))->toBeFalse();
+expect($value)->toBeNull();
+
+// WRONG - generic toBe() when specific matcher exists
+expect($config->has('key'))->toBe(true);
+expect($config->has('missing'))->toBe(false);
+expect($value)->toBe(null);
+```
+
+**Rules:**
+- `->toBe(true)` → `->toBeTrue()`
+- `->toBe(false)` → `->toBeFalse()`
+- `->toBe(null)` → `->toBeNull()`
+
 ## Test File Checklist (MANDATORY)
 
 **Run through this checklist after creating or modifying any test file.** This ensures consistent quality across all tests.

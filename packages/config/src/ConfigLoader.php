@@ -9,6 +9,9 @@ use ParseError;
 
 readonly class ConfigLoader
 {
+    /**
+     * @throws ConfigLoadException
+     */
     public function load(
         string $filePath,
     ): array {
@@ -40,6 +43,9 @@ readonly class ConfigLoader
         return $config;
     }
 
+    /**
+     * @throws ConfigLoadException
+     */
     public function loadIfExists(
         string $filePath,
     ): ?array {

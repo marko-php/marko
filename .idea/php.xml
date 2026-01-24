@@ -181,6 +181,7 @@
       <path value="$PROJECT_DIR$/vendor/phar-io/manifest" />
       <path value="$PROJECT_DIR$/vendor/myclabs/deep-copy" />
       <path value="$PROJECT_DIR$/vendor/staabm/side-effects-detector" />
+      <path value="$PROJECT_DIR$/vendor/latte/latte" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.5" />

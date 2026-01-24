@@ -28,8 +28,8 @@ it('gets nested value with dot notation', function () {
 it('returns default value when key is missing', function () {
     $config = new ConfigRepository(['name' => 'Marko']);
 
-    expect($config->get('missing', 'default'))->toBe('default');
-    expect($config->get('missing.nested.key', 'fallback'))->toBe('fallback');
+    expect($config->get('missing', 'default'))->toBe('default')
+        ->and($config->get('missing.nested.key', 'fallback'))->toBe('fallback');
 });
 
 it('checks if key exists with has()', function () {
@@ -40,10 +40,10 @@ it('checks if key exists with has()', function () {
         ],
     ]);
 
-    expect($config->has('name'))->toBeTrue();
-    expect($config->has('database.host'))->toBeTrue();
-    expect($config->has('missing'))->toBeFalse();
-    expect($config->has('database.missing'))->toBeFalse();
+    expect($config->has('name'))->toBeTrue()
+        ->and($config->has('database.host'))->toBeTrue()
+        ->and($config->has('missing'))->toBeFalse()
+        ->and($config->has('database.missing'))->toBeFalse();
 });
 
 it('gets typed values with type-safe accessors', function () {
@@ -55,11 +55,11 @@ it('gets typed values with type-safe accessors', function () {
         'tags' => ['php', 'framework'],
     ]);
 
-    expect($config->getString('name'))->toBe('Marko');
-    expect($config->getInt('port'))->toBe(8080);
-    expect($config->getBool('debug'))->toBe(true);
-    expect($config->getFloat('rate'))->toBe(1.5);
-    expect($config->getArray('tags'))->toBe(['php', 'framework']);
+    expect($config->getString('name'))->toBe('Marko')
+        ->and($config->getInt('port'))->toBe(8080)
+        ->and($config->getBool('debug'))->toBeTrue()
+        ->and($config->getFloat('rate'))->toBe(1.5)
+        ->and($config->getArray('tags'))->toBe(['php', 'framework']);
 });
 
 it('throws ConfigException on type mismatch', function () {
@@ -69,14 +69,14 @@ it('throws ConfigException on type mismatch', function () {
     ]);
 
     expect(fn () => $config->getString('tags'))
-        ->toThrow(ConfigException::class);
-    expect(fn () => $config->getInt('tags'))
-        ->toThrow(ConfigException::class);
-    expect(fn () => $config->getBool('tags'))
-        ->toThrow(ConfigException::class);
-    expect(fn () => $config->getFloat('tags'))
-        ->toThrow(ConfigException::class);
-    expect(fn () => $config->getArray('name'))
+        ->toThrow(ConfigException::class)
+        ->and(fn () => $config->getInt('tags'))
+        ->toThrow(ConfigException::class)
+        ->and(fn () => $config->getBool('tags'))
+        ->toThrow(ConfigException::class)
+        ->and(fn () => $config->getFloat('tags'))
+        ->toThrow(ConfigException::class)
+        ->and(fn () => $config->getArray('name'))
         ->toThrow(ConfigException::class);
 });
 
@@ -84,14 +84,14 @@ it('throws ConfigNotFoundException when key is missing and no default provided',
     $config = new ConfigRepository(['name' => 'Marko']);
 
     expect(fn () => $config->getString('missing'))
-        ->toThrow(ConfigNotFoundException::class);
-    expect(fn () => $config->getInt('missing'))
-        ->toThrow(ConfigNotFoundException::class);
-    expect(fn () => $config->getBool('missing'))
-        ->toThrow(ConfigNotFoundException::class);
-    expect(fn () => $config->getFloat('missing'))
-        ->toThrow(ConfigNotFoundException::class);
-    expect(fn () => $config->getArray('missing'))
+        ->toThrow(ConfigNotFoundException::class)
+        ->and(fn () => $config->getInt('missing'))
+        ->toThrow(ConfigNotFoundException::class)
+        ->and(fn () => $config->getBool('missing'))
+        ->toThrow(ConfigNotFoundException::class)
+        ->and(fn () => $config->getFloat('missing'))
+        ->toThrow(ConfigNotFoundException::class)
+        ->and(fn () => $config->getArray('missing'))
         ->toThrow(ConfigNotFoundException::class);
 });
 
@@ -112,8 +112,8 @@ it('returns scope-specific value when scope is provided', function () {
         ],
     ]);
 
-    expect($config->get('store.currency', scope: 'us'))->toBe('USD');
-    expect($config->get('store.currency', scope: 'eu'))->toBe('EUR');
+    expect($config->get('store.currency', scope: 'us'))->toBe('USD')
+        ->and($config->get('store.currency', scope: 'eu'))->toBe('EUR');
 });
 
 it('falls back to default scope when scope-specific value is missing', function () {
@@ -131,10 +131,9 @@ it('falls back to default scope when scope-specific value is missing', function 
         ],
     ]);
 
-    // 'ca' scope doesn't exist, should fall back to default
-    expect($config->get('store.currency', scope: 'ca'))->toBe('GBP');
-    // 'us' scope doesn't have timezone, should fall back to default
-    expect($config->get('store.timezone', scope: 'us'))->toBe('UTC');
+    // 'ca' scope doesn't exist, 'us' scope doesn't have timezone - both fall back to default
+    expect($config->get('store.currency', scope: 'ca'))->toBe('GBP')
+        ->and($config->get('store.timezone', scope: 'us'))->toBe('UTC');
 });
 
 it('falls back to unscoped value when scope and default are missing', function () {
@@ -150,8 +149,8 @@ it('falls back to unscoped value when scope and default are missing', function (
     ]);
 
     // 'name' is not in scopes or default, should fall back to unscoped value
-    expect($config->get('store.name', scope: 'us'))->toBe('My Store');
-    expect($config->get('store.name', scope: 'unknown'))->toBe('My Store');
+    expect($config->get('store.name', scope: 'us'))->toBe('My Store')
+        ->and($config->get('store.name', scope: 'unknown'))->toBe('My Store');
 });
 
 it('returns entire config with all()', function () {
@@ -188,18 +187,12 @@ it('supports scoped config structure with default and scopes keys', function () 
         ],
     ]);
 
-    // Scoped value exists
-    expect($config->get('pricing.currency', scope: 'tenant-1'))->toBe('EUR');
-    expect($config->get('pricing.tax_rate', scope: 'tenant-1'))->toBe(0.2);
-
-    // Another scope
-    expect($config->get('pricing.currency', scope: 'tenant-2'))->toBe('GBP');
-
-    // Falls back to default when scope doesn't have the key
-    expect($config->get('pricing.tax_rate', scope: 'tenant-2'))->toBe(0.1);
-
-    // Falls back to default when scope doesn't exist
-    expect($config->get('pricing.currency', scope: 'unknown'))->toBe('USD');
+    // Scoped values, fallback to default when key missing, fallback when scope doesn't exist
+    expect($config->get('pricing.currency', scope: 'tenant-1'))->toBe('EUR')
+        ->and($config->get('pricing.tax_rate', scope: 'tenant-1'))->toBe(0.2)
+        ->and($config->get('pricing.currency', scope: 'tenant-2'))->toBe('GBP')
+        ->and($config->get('pricing.tax_rate', scope: 'tenant-2'))->toBe(0.1)
+        ->and($config->get('pricing.currency', scope: 'unknown'))->toBe('USD');
 });
 
 it('follows correct scope resolution order: scoped -> default -> unscoped', function () {
@@ -223,14 +216,10 @@ it('follows correct scope resolution order: scoped -> default -> unscoped', func
         ],
     ]);
 
-    // Level 1: Scoped value exists - use it
-    expect($config->get('settings.feature_a', scope: 'tenant-1'))->toBe('tenant1-a');
-
-    // Level 2: No scoped value, falls back to default
-    expect($config->get('settings.feature_b', scope: 'tenant-1'))->toBe('default-b');
-
-    // Level 3: No scoped or default value, falls back to unscoped
-    expect($config->get('settings.feature_c', scope: 'tenant-1'))->toBe('unscoped-c');
+    // Level 1: scoped value, Level 2: default fallback, Level 3: unscoped fallback
+    expect($config->get('settings.feature_a', scope: 'tenant-1'))->toBe('tenant1-a')
+        ->and($config->get('settings.feature_b', scope: 'tenant-1'))->toBe('default-b')
+        ->and($config->get('settings.feature_c', scope: 'tenant-1'))->toBe('unscoped-c');
 });
 
 it('withScope returns a new ConfigRepository with default scope set', function () {
@@ -249,14 +238,10 @@ it('withScope returns a new ConfigRepository with default scope set', function (
 
     $tenantConfig = $config->withScope('tenant-1');
 
-    // Should return a ConfigRepositoryInterface instance
-    expect($tenantConfig)->toBeInstanceOf(ConfigRepositoryInterface::class);
-
-    // Should automatically use the scope without passing it explicitly
-    expect($tenantConfig->get('pricing.currency'))->toBe('EUR');
-
-    // Original config should remain unscoped
-    expect($config->get('pricing.currency'))->toBe(null);
+    // Returns ConfigRepositoryInterface, uses scope automatically, original remains unscoped
+    expect($tenantConfig)->toBeInstanceOf(ConfigRepositoryInterface::class)
+        ->and($tenantConfig->get('pricing.currency'))->toBe('EUR')
+        ->and($config->get('pricing.currency'))->toBeNull();
 });
 
 it('uses unscoped values when scope is null', function () {
@@ -276,7 +261,6 @@ it('uses unscoped values when scope is null', function () {
 
     // When scope is null, get the unscoped value directly (not from default or scopes)
     expect($config->get('app.name'))->toBe('MyApp');
-    expect($config->get('app.name', scope: null))->toBe('MyApp');
 });
 
 it('scoped repository respects scope on all methods', function () {
@@ -303,24 +287,14 @@ it('scoped repository respects scope on all methods', function () {
 
     $tenantConfig = $config->withScope('tenant-1');
 
-    // Test has() uses scope
-    expect($tenantConfig->has('settings.name'))->toBeTrue();
-    expect($tenantConfig->has('settings.port'))->toBeTrue();
-
-    // Test getString() uses scope
-    expect($tenantConfig->getString('settings.name'))->toBe('tenant-name');
-
-    // Test getInt() uses scope
-    expect($tenantConfig->getInt('settings.port'))->toBe(3000);
-
-    // Test getBool() uses scope
-    expect($tenantConfig->getBool('settings.debug'))->toBe(true);
-
-    // Test getFloat() uses scope
-    expect($tenantConfig->getFloat('settings.rate'))->toBe(2.5);
-
-    // Test getArray() uses scope
-    expect($tenantConfig->getArray('settings.tags'))->toBe(['tenant', 'custom']);
+    // All typed accessors respect the scope
+    expect($tenantConfig->has('settings.name'))->toBeTrue()
+        ->and($tenantConfig->has('settings.port'))->toBeTrue()
+        ->and($tenantConfig->getString('settings.name'))->toBe('tenant-name')
+        ->and($tenantConfig->getInt('settings.port'))->toBe(3000)
+        ->and($tenantConfig->getBool('settings.debug'))->toBeTrue()
+        ->and($tenantConfig->getFloat('settings.rate'))->toBe(2.5)
+        ->and($tenantConfig->getArray('settings.tags'))->toBe(['tenant', 'custom']);
 });
 
 it('supports nested scoped values multiple levels deep', function () {
@@ -349,15 +323,9 @@ it('supports nested scoped values multiple levels deep', function () {
         ],
     ]);
 
-    // Production scope has deeply nested value
-    expect($config->get('database.connection.host', scope: 'production'))->toBe('prod-host');
-
-    // Production scope has double-nested value
-    expect($config->get('database.connection.credentials.username', scope: 'production'))->toBe('prod-user');
-
-    // Production scope missing port, falls back to default nested value
-    expect($config->get('database.connection.port', scope: 'production'))->toBe(3306);
-
-    // Production scope missing password in credentials, falls back to default
-    expect($config->get('database.connection.credentials.password', scope: 'production'))->toBe('default-pass');
+    // Deeply nested scoped values with fallback to default for missing keys
+    expect($config->get('database.connection.host', scope: 'production'))->toBe('prod-host')
+        ->and($config->get('database.connection.credentials.username', scope: 'production'))->toBe('prod-user')
+        ->and($config->get('database.connection.port', scope: 'production'))->toBe(3306)
+        ->and($config->get('database.connection.credentials.password', scope: 'production'))->toBe('default-pass');
 });

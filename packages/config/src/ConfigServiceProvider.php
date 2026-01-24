@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Config;
 
+use Marko\Config\Exceptions\ConfigLoadException;
+
 /**
  * Service provider for configuration management.
  *
@@ -52,6 +54,7 @@ readonly class ConfigServiceProvider
      *
      * @param array<string> $modulePaths Paths to modules (containing config/ subdirectories)
      * @param string $rootConfigPath Path to the root/app config directory
+     * @throws ConfigLoadException
      */
     public function createRepository(
         array $modulePaths,

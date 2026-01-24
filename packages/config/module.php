@@ -10,9 +10,6 @@ use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\ConfigServiceProvider;
 use Marko\Core\Container\ContainerInterface;
 
-// Marko-specific configuration for this module.
-// Name and version come from composer.json.
-
 return [
     'enabled' => true,
     'bindings' => [

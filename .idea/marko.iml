@@ -20,6 +20,47 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/database-pgsql/tests" isTestSource="true" packagePrefix="Marko\Database\PgSql\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/database/src" isTestSource="false" packagePrefix="Marko\Database\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/database/tests" isTestSource="true" packagePrefix="Marko\Database\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/auth/src" isTestSource="false" packagePrefix="Marko\Auth\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/auth/tests" isTestSource="true" packagePrefix="Marko\Auth\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-file/src" isTestSource="false" packagePrefix="Marko\Cache\File\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-file/tests" isTestSource="true" packagePrefix="Marko\Cache\File\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache/src" isTestSource="false" packagePrefix="Marko\Cache\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache/tests" isTestSource="true" packagePrefix="Marko\Cache\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/config/src" isTestSource="false" packagePrefix="Marko\Config\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/config/tests" isTestSource="true" packagePrefix="Marko\Config\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors-advanced/src" isTestSource="false" packagePrefix="Marko\ErrorsAdvanced\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors-advanced/tests" isTestSource="true" packagePrefix="Marko\ErrorsAdvanced\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem-local/src" isTestSource="false" packagePrefix="Marko\Filesystem\Local\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem-local/tests" isTestSource="true" packagePrefix="Marko\Filesystem\Local\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem/src" isTestSource="false" packagePrefix="Marko\Filesystem\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem/tests" isTestSource="true" packagePrefix="Marko\Filesystem\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/framework/tests" isTestSource="true" packagePrefix="Marko\Framework\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/hashing/src" isTestSource="false" packagePrefix="Marko\Hashing\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/hashing/tests" isTestSource="true" packagePrefix="Marko\Hashing\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/log-file/src" isTestSource="false" packagePrefix="Marko\Log\File\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/log-file/tests" isTestSource="true" packagePrefix="Marko\Log\File\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/log/src" isTestSource="false" packagePrefix="Marko\Log\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/log/tests" isTestSource="true" packagePrefix="Marko\Log\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail-smtp/src" isTestSource="false" packagePrefix="Marko\Mail\Smtp\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail-smtp/tests" isTestSource="true" packagePrefix="Marko\Mail\Smtp\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail/src" isTestSource="false" packagePrefix="Marko\Mail\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail/tests" isTestSource="true" packagePrefix="Marko\Mail\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-database/src" isTestSource="false" packagePrefix="Marko\Queue\Database\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-database/tests" isTestSource="true" packagePrefix="Marko\Queue\Database\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-sync/src" isTestSource="false" packagePrefix="Marko\Queue\Sync\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-sync/tests" isTestSource="true" packagePrefix="Marko\Queue\Sync\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue/src" isTestSource="false" packagePrefix="Marko\Queue\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue/tests" isTestSource="true" packagePrefix="Marko\Queue\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session-file/src" isTestSource="false" packagePrefix="Marko\Session\File\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session-file/tests" isTestSource="true" packagePrefix="Marko\Session\File\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session/src" isTestSource="false" packagePrefix="Marko\Session\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session/tests" isTestSource="true" packagePrefix="Marko\Session\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/validation/src" isTestSource="false" packagePrefix="Marko\Validation\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/validation/tests" isTestSource="true" packagePrefix="Marko\Validation\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/view-latte/src" isTestSource="false" packagePrefix="Marko\View\Latte\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/view-latte/tests" isTestSource="true" packagePrefix="Marko\View\Latte\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/view/src" isTestSource="false" packagePrefix="Marko\View\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/view/tests" isTestSource="true" packagePrefix="Marko\View\Tests\" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/brianium/paratest" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/composer" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/doctrine/deprecations" />
@@ -158,6 +199,7 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/ta-tikoma/phpunit-architecture-test" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/theseer/tokenizer" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/webmozart/assert" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/latte/latte" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

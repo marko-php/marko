@@ -300,15 +300,15 @@ PHP);
             // Verify merged config
             expect($repository->get('app.name'))->toBe('Production App')
                 ->and($repository->get('app.version'))->toBe('1.0.0')
-                ->and($repository->get('app.debug'))->toBe(true);
+                ->and($repository->get('app.debug'))->toBeTrue()
+                ->and($repository->has('app.name'))->toBeTrue()
+                ->and($repository->has('app.nonexistent'))->toBeFalse()
+                ->and($repository->get('app.locale', scope: 'eu'))->toBe('de_DE')
+                ->and($repository->get('app.locale', scope: 'us'))->toBe('en_US');
 
             // Verify dot notation access
-            expect($repository->has('app.name'))->toBeTrue()
-                ->and($repository->has('app.nonexistent'))->toBeFalse();
 
             // Verify scoped access
-            expect($repository->get('app.locale', scope: 'eu'))->toBe('de_DE')
-                ->and($repository->get('app.locale', scope: 'us'))->toBe('en_US');
         } finally {
             // Cleanup
             @unlink($tempDir . '/module-x/config/app.php');
@@ -371,22 +371,22 @@ PHP);
             // Verify scope resolution: tenant-eu has scoped value
             expect($repository->get('store.currency', scope: 'tenant-eu'))->toBe('EUR')
                 ->and($repository->get('store.locale', scope: 'tenant-eu'))->toBe('de_DE')
-                ->and($repository->get('store.tax_rate', scope: 'tenant-eu'))->toBe(0.19);
+                ->and($repository->get('store.tax_rate', scope: 'tenant-eu'))->toBe(0.19)
+                ->and($repository->get('store.currency', scope: 'tenant-uk'))->toBe('GBP')
+                ->and($repository->get('store.locale', scope: 'tenant-uk'))->toBe('en_GB')
+                ->and($repository->get('store.shipping.free_threshold', scope: 'tenant-eu'))->toBe(50.00)
+                ->and($repository->get('store.shipping.free_threshold', scope: 'tenant-uk'))->toBe(50.00)
+                ->and($repository->get('store.shipping.provider', scope: 'tenant-eu'))->toBe('dhl')
+                ->and($repository->get('store.shipping.provider', scope: 'tenant-uk'))->toBe('ups')
+                ->and($repository->get('store.currency', scope: 'unknown-tenant'))->toBe('USD');
 
             // Verify scope resolution: tenant-uk has scoped values
-            expect($repository->get('store.currency', scope: 'tenant-uk'))->toBe('GBP')
-                ->and($repository->get('store.locale', scope: 'tenant-uk'))->toBe('en_GB');
 
             // Verify fallback to default when scope doesn't have the key
-            expect($repository->get('store.shipping.free_threshold', scope: 'tenant-eu'))->toBe(50.00)
-                ->and($repository->get('store.shipping.free_threshold', scope: 'tenant-uk'))->toBe(50.00);
 
             // Verify nested scoped value overrides nested default
-            expect($repository->get('store.shipping.provider', scope: 'tenant-eu'))->toBe('dhl')
-                ->and($repository->get('store.shipping.provider', scope: 'tenant-uk'))->toBe('ups');
 
             // Verify fallback to default when scope doesn't exist
-            expect($repository->get('store.currency', scope: 'unknown-tenant'))->toBe('USD');
         } finally {
             // Cleanup
             @unlink($tempDir . '/app-config/store.php');
@@ -434,23 +434,23 @@ PHP);
 
             // Verify withScope creates ConfigRepositoryInterface instance
             expect($premiumConfig)->toBeInstanceOf(ConfigRepositoryInterface::class)
-                ->and($enterpriseConfig)->toBeInstanceOf(ConfigRepositoryInterface::class);
+                ->and($enterpriseConfig)->toBeInstanceOf(ConfigRepositoryInterface::class)
+                ->and($premiumConfig->get('pricing.discount_rate'))->toBe(0.15)
+                ->and($enterpriseConfig->get('pricing.discount_rate'))->toBe(0.25)
+                ->and($premiumConfig->get('pricing.currency'))->toBe('USD')
+                ->and($enterpriseConfig->get('pricing.currency'))->toBe('USD')
+                ->and($repository->get('pricing.currency'))->toBeNull()
+                ->and($repository->get('pricing.discount_rate'))->toBeNull()
+                ->and($premiumConfig->getFloat('pricing.discount_rate'))->toBe(0.15)
+                ->and($enterpriseConfig->getString('pricing.currency'))->toBe('USD');
 
             // Verify scoped instances automatically use their scope
-            expect($premiumConfig->get('pricing.discount_rate'))->toBe(0.15)
-                ->and($enterpriseConfig->get('pricing.discount_rate'))->toBe(0.25);
 
             // Verify scoped instances fall back to default for unscoped keys
-            expect($premiumConfig->get('pricing.currency'))->toBe('USD')
-                ->and($enterpriseConfig->get('pricing.currency'))->toBe('USD');
 
             // Verify original repository is unaffected
-            expect($repository->get('pricing.currency'))->toBeNull()
-                ->and($repository->get('pricing.discount_rate'))->toBeNull();
 
             // Verify typed accessors work with scoped instances
-            expect($premiumConfig->getFloat('pricing.discount_rate'))->toBe(0.15)
-                ->and($enterpriseConfig->getString('pricing.currency'))->toBe('USD');
         } finally {
             // Cleanup
             @unlink($tempDir . '/app-config/pricing.php');
@@ -483,12 +483,13 @@ function createContainerWithBindings(): Container
 /**
  * Test service that depends on ConfigRepositoryInterface.
  */
-class TestServiceWithConfig
+readonly class TestServiceWithConfig
 {
     public function __construct(
         private ConfigRepositoryInterface $config,
     ) {}
 
+    /** @noinspection PhpUnused */
     public function getDatabaseHost(): string
     {
         return $this->config->getString('database.host');

@@ -7,11 +7,11 @@ namespace Marko\Config;
 use Marko\Config\Exceptions\ConfigException;
 use Marko\Config\Exceptions\ConfigNotFoundException;
 
-class ConfigRepository implements ConfigRepositoryInterface
+readonly class ConfigRepository implements ConfigRepositoryInterface
 {
     public function __construct(
-        private readonly array $config,
-        private readonly ?string $defaultScope = null,
+        private array $config,
+        private ?string $defaultScope = null,
     ) {}
 
     public function get(
@@ -104,6 +104,9 @@ class ConfigRepository implements ConfigRepositoryInterface
         return $this->resolveKey($defaultKey);
     }
 
+    /**
+     * @throws ConfigNotFoundException|ConfigException
+     */
     public function getString(
         string $key,
         ?string $default = null,
@@ -123,6 +126,9 @@ class ConfigRepository implements ConfigRepositoryInterface
         return (string) $value;
     }
 
+    /**
+     * @throws ConfigException|ConfigNotFoundException
+     */
     public function getInt(
         string $key,
         ?int $default = null,
@@ -142,6 +148,9 @@ class ConfigRepository implements ConfigRepositoryInterface
         return (int) $value;
     }
 
+    /**
+     * @throws ConfigException|ConfigNotFoundException
+     */
     public function getBool(
         string $key,
         ?bool $default = null,
@@ -161,6 +170,9 @@ class ConfigRepository implements ConfigRepositoryInterface
         return (bool) $value;
     }
 
+    /**
+     * @throws ConfigNotFoundException|ConfigException
+     */
     public function getFloat(
         string $key,
         ?float $default = null,
@@ -180,6 +192,9 @@ class ConfigRepository implements ConfigRepositoryInterface
         return (float) $value;
     }
 
+    /**
+     * @throws ConfigNotFoundException|ConfigException
+     */
     public function getArray(
         string $key,
         ?array $default = null,
@@ -199,6 +214,9 @@ class ConfigRepository implements ConfigRepositoryInterface
         return (array) $value;
     }
 
+    /**
+     * @throws ConfigNotFoundException
+     */
     private function ensureKeyExists(
         string $key,
         mixed $default,
