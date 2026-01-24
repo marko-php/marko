@@ -143,7 +143,7 @@ readonly class MySqlIntrospector implements IntrospectorInterface
                 continue;
             }
 
-            $type = $this->mapIndexType($data['type'], $data['non_unique']);
+            $type = $this->mapIndexType($data['type'], (string) $data['non_unique']);
             $indexes[] = new Index(
                 name: $name,
                 columns: $data['columns'],
