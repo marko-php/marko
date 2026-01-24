@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Marko\Filesystem\Local\Factory\LocalFilesystemFactory;
 
 it('has a valid composer.json with correct package name marko/filesystem-local', function () {
     $composerPath = dirname(__DIR__) . '/composer.json';
@@ -86,4 +87,22 @@ it('has tests directory for tests', function () {
     $testsPath = dirname(__DIR__) . '/tests';
 
     expect(is_dir($testsPath))->toBeTrue();
+});
+
+it('has config directory for driver registration', function () {
+    $configPath = dirname(__DIR__) . '/config';
+
+    expect(is_dir($configPath))->toBeTrue();
+});
+
+it('registers local driver in filesystem.php config', function () {
+    $configPath = dirname(__DIR__) . '/config/filesystem.php';
+
+    expect(file_exists($configPath))->toBeTrue();
+
+    $config = require $configPath;
+
+    expect($config)->toHaveKey('drivers')
+        ->and($config['drivers'])->toHaveKey('local')
+        ->and($config['drivers']['local'])->toBe(LocalFilesystemFactory::class);
 });

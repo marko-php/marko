@@ -27,6 +27,6 @@ it('creates exception with suggestion', function () {
     $exception = ItemNotFoundException::forKey('my-key');
 
     expect($exception->getSuggestion())->toBe(
-        'Use CacheInterface::has() to check if an item exists before accessing it'
+        'Use CacheInterface::has() to check if an item exists before accessing it',
     );
 });

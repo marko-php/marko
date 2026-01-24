@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Filesystem\Manager;
 
+use JsonException;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Filesystem\Config\FilesystemConfig;
 use Marko\Filesystem\Contracts\FilesystemInterface;
@@ -16,16 +17,14 @@ class FilesystemManager
      */
     private array $disks = [];
 
-    /**
-     * @var array<string, class-string>
-     */
-    private array $factoryMap = [];
-
     public function __construct(
         private readonly FilesystemConfig $config,
         private readonly ContainerInterface $container,
     ) {}
 
+    /**
+     * @throws FilesystemException|JsonException
+     */
     public function disk(
         ?string $name = null,
     ): FilesystemInterface {
@@ -40,19 +39,8 @@ class FilesystemManager
     }
 
     /**
-     * Register a factory for a driver type.
-     *
-     * @param class-string $factoryClass
-     */
-    public function registerDriver(
-        string $driver,
-        string $factoryClass,
-    ): void {
-        $this->factoryMap[$driver] = $factoryClass;
-    }
-
-    /**
      * @param array<string, mixed> $config
+     * @throws FilesystemException|JsonException
      */
     private function createDisk(
         array $config,
@@ -63,15 +51,8 @@ class FilesystemManager
             suggestion: 'Add a "driver" key to your disk configuration',
         );
 
-        if (!isset($this->factoryMap[$driver])) {
-            throw new FilesystemException(
-                message: "Unknown filesystem driver: $driver",
-                context: 'Available drivers depend on installed packages',
-                suggestion: 'For local storage: composer require marko/filesystem-local',
-            );
-        }
-
-        $factory = $this->container->get($this->factoryMap[$driver]);
+        $factoryClass = $this->config->getDriverFactory($driver);
+        $factory = $this->container->get($factoryClass);
 
         return $factory->create($config);
     }

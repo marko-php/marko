@@ -26,7 +26,7 @@ readonly class SizeRotation implements RotationStrategyInterface
         $i = 1;
 
         while (file_exists("$basePath/$channel.$i.log") && $this->getFileSize(
-            "$basePath/$channel.$i.log"
+            "$basePath/$channel.$i.log",
         ) >= $this->maxSize) {
             $i++;
         }
