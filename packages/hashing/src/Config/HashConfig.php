@@ -23,9 +23,6 @@ readonly class HashConfig
         return $this->config->has("hashing.hashers.$name");
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     public function getHasherConfig(
         string $name,
     ): array {

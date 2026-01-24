@@ -24,10 +24,6 @@ interface ConfigRepositoryInterface
 
     /**
      * Get a configuration value as a string.
-     *
-     * Throws ConfigNotFoundException if key is not found and no default is provided.
-     *
-     * @throws Exceptions\ConfigNotFoundException
      */
     public function getString(
         string $key,
@@ -37,10 +33,6 @@ interface ConfigRepositoryInterface
 
     /**
      * Get a configuration value as an integer.
-     *
-     * Throws ConfigNotFoundException if key is not found and no default is provided.
-     *
-     * @throws Exceptions\ConfigNotFoundException
      */
     public function getInt(
         string $key,
@@ -50,10 +42,6 @@ interface ConfigRepositoryInterface
 
     /**
      * Get a configuration value as a boolean.
-     *
-     * Throws ConfigNotFoundException if key is not found and no default is provided.
-     *
-     * @throws Exceptions\ConfigNotFoundException
      */
     public function getBool(
         string $key,
@@ -63,10 +51,6 @@ interface ConfigRepositoryInterface
 
     /**
      * Get a configuration value as a float.
-     *
-     * Throws ConfigNotFoundException if key is not found and no default is provided.
-     *
-     * @throws Exceptions\ConfigNotFoundException
      */
     public function getFloat(
         string $key,
@@ -76,10 +60,6 @@ interface ConfigRepositoryInterface
 
     /**
      * Get a configuration value as an array.
-     *
-     * Throws ConfigNotFoundException if key is not found and no default is provided.
-     *
-     * @throws Exceptions\ConfigNotFoundException
      */
     public function getArray(
         string $key,
