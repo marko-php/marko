@@ -127,6 +127,49 @@ class PostRepository extends Repository
 - **Flexibility**: Switch databases without changing entity code
 - **Clarity**: No hidden magic, explicit saves via repository
 
+## Seeders
+
+Seeders populate development/test databases with sample data. They're discovered via the `#[Seeder]` attribute.
+
+### Creating Seeders
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Seed;
+
+use App\Blog\Entity\Post;
+use App\Blog\Repositories\PostRepository;
+use Marko\Database\Seed\Seeder;
+use Marko\Database\Seed\SeederInterface;
+
+/** @noinspection PhpUnused */
+#[Seeder(name: 'posts', order: 1)]
+readonly class PostSeeder implements SeederInterface
+{
+    public function __construct(
+        private PostRepository $repository,
+    ) {}
+
+    public function run(): void
+    {
+        $post = new Post();
+        $post->title = 'Hello World';
+        $post->slug = 'hello-world';
+        $post->content = 'Welcome to my blog!';
+        $post->createdAt = date('Y-m-d H:i:s');
+
+        $this->repository->save($post);
+    }
+}
+```
+
+> **IDE Note:** PhpStorm may report seeder classes as "unused" since they're discovered via attributes rather than direct instantiation. The `@noinspection PhpUnused` annotation suppresses this false positive.
+
+Place seeders in your module's `Seed/` directory. The `order` parameter controls execution sequence.
+
 ## CLI Commands
 
 | Command | Description |

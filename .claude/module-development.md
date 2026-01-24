@@ -402,6 +402,7 @@ use Marko\Blog\Repositories\PostRepository;
 use Marko\Database\Seed\Seeder;
 use Marko\Database\Seed\SeederInterface;
 
+/** @noinspection PhpUnused */
 #[Seeder(name: 'posts', order: 1)]
 class PostSeeder implements SeederInterface
 {
