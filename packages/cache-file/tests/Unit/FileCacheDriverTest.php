@@ -34,7 +34,7 @@ function createTestCacheConfig(
     string $path,
     int $defaultTtl = 3600,
 ): CacheConfig {
-    $configRepo = new class ($path, $defaultTtl) implements ConfigRepositoryInterface
+    $configRepo = new readonly class ($path, $defaultTtl) implements ConfigRepositoryInterface
     {
         public function __construct(
             private string $path,
