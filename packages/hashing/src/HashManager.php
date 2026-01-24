@@ -19,12 +19,18 @@ class HashManager
         private readonly HasherFactory $factory,
     ) {}
 
+    /**
+     * @throws HasherNotFoundException
+     */
     public function hash(
         string $value,
     ): string {
         return $this->hasher()->hash($value);
     }
 
+    /**
+     * @throws HasherNotFoundException
+     */
     public function verify(
         string $value,
         string $hash,
@@ -32,6 +38,9 @@ class HashManager
         return $this->hasher()->verify($value, $hash);
     }
 
+    /**
+     * @throws HasherNotFoundException
+     */
     public function needsRehash(
         string $hash,
     ): bool {

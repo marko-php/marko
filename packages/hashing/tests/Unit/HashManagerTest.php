@@ -26,7 +26,6 @@ function createHashManager(
         'hashing.hashers.argon2id.threads' => $argon2Threads,
     ];
 
-    /** @noinspection PhpMissingParentConstructorInspection */
     $configRepo = new class ($configData) implements ConfigRepositoryInterface
     {
         public function __construct(
@@ -125,7 +124,7 @@ it('verifies a password using default hasher', function () {
 });
 
 it('checks if rehash is needed using default hasher', function () {
-    $manager = createHashManager(bcryptCost: 4);
+    $manager = createHashManager();
     $hash = $manager->hash('password');
 
     $newManager = createHashManager(bcryptCost: 6);
@@ -134,7 +133,7 @@ it('checks if rehash is needed using default hasher', function () {
 });
 
 it('returns default hasher when no name provided', function () {
-    $manager = createHashManager(defaultHasher: 'bcrypt');
+    $manager = createHashManager();
 
     $hasher = $manager->hasher();
 
@@ -199,7 +198,7 @@ it('hashes with argon2id when configured as default', function () {
 });
 
 it('can switch between hashers', function () {
-    $manager = createHashManager(defaultHasher: 'bcrypt');
+    $manager = createHashManager();
 
     $bcryptHash = $manager->hasher('bcrypt')->hash('password');
     $argon2Hash = $manager->hasher('argon2id')->hash('password');

@@ -21,7 +21,6 @@ function createIntegrationManager(
 
     $mergedConfig = array_merge($defaults, $configData);
 
-    /** @noinspection PhpMissingParentConstructorInspection */
     $configRepo = new class ($mergedConfig) implements ConfigRepositoryInterface
     {
         public function __construct(
@@ -110,10 +109,10 @@ it('completes full password hashing workflow with bcrypt', function () {
     $hash = $manager->hash($password);
 
     // Verify correct password
-    expect($manager->verify($password, $hash))->toBeTrue();
+    expect($manager->verify($password, $hash))->toBeTrue()
+        ->and($manager->verify('wrong-password', $hash))->toBeFalse();
 
     // Verify wrong password
-    expect($manager->verify('wrong-password', $hash))->toBeFalse();
 });
 
 it('completes full password hashing workflow with argon2id', function () {
@@ -124,10 +123,10 @@ it('completes full password hashing workflow with argon2id', function () {
     $hash = $manager->hash($password);
 
     // Verify correct password
-    expect($manager->verify($password, $hash))->toBeTrue();
+    expect($manager->verify($password, $hash))->toBeTrue()
+        ->and($manager->verify('wrong-password', $hash))->toBeFalse();
 
     // Verify wrong password
-    expect($manager->verify('wrong-password', $hash))->toBeFalse();
 });
 
 it('switches between hashers within same manager', function () {
@@ -169,10 +168,10 @@ it('can rehash password when cost changes', function () {
     $oldHash = $lowCostManager->hash($password);
 
     // Verify old hash still works
-    expect($highCostManager->verify($password, $oldHash))->toBeTrue();
+    expect($highCostManager->verify($password, $oldHash))->toBeTrue()
+        ->and($highCostManager->needsRehash($oldHash))->toBeTrue();
 
     // Detect need for rehash
-    expect($highCostManager->needsRehash($oldHash))->toBeTrue();
 
     // Rehash with new cost
     $newHash = $highCostManager->hash($password);
@@ -216,7 +215,6 @@ it('handles unicode password', function () {
 });
 
 it('handles very long password', function () {
-    $manager = createIntegrationManager();
     // Note: bcrypt truncates at 72 bytes, so we test with argon2id for long passwords
     $manager = createIntegrationManager(['hashing.default' => 'argon2id']);
     $password = str_repeat('a', 1000);

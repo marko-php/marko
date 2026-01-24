@@ -13,6 +13,9 @@ readonly class BcryptHasher implements HasherInterface
 
     private int $cost;
 
+    /**
+     * @throws InvalidHasherConfigException
+     */
     public function __construct(
         ?int $cost = null,
     ) {
@@ -23,17 +26,7 @@ readonly class BcryptHasher implements HasherInterface
     public function hash(
         string $value,
     ): string {
-        $hashed = password_hash($value, PASSWORD_BCRYPT, ['cost' => $this->cost]);
-
-        if ($hashed === false) {
-            throw new InvalidHasherConfigException(
-                message: 'Failed to hash value with bcrypt',
-                context: "Cost: $this->cost, PHP version: " . phpversion(),
-                suggestion: 'Ensure PHP version is >= 5.3 and cost is between 4 and 31',
-            );
-        }
-
-        return $hashed;
+        return password_hash($value, PASSWORD_BCRYPT, ['cost' => $this->cost]);
     }
 
     public function verify(

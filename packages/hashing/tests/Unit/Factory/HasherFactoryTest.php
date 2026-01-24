@@ -12,7 +12,6 @@ use Marko\Hashing\Hash\BcryptHasher;
 function createFactoryWithConfig(
     array $configData = [],
 ): HasherFactory {
-    /** @noinspection PhpMissingParentConstructorInspection */
     $configRepo = new class ($configData) implements ConfigRepositoryInterface
     {
         public function __construct(
@@ -137,14 +136,14 @@ it('creates argon2id hasher with configured parameters', function () {
 });
 
 it('throws HasherNotFoundException for unknown hasher name', function () {
-    $factory = createFactoryWithConfig([]);
+    $factory = createFactoryWithConfig();
 
     expect(fn () => $factory->make('sha256'))
         ->toThrow(HasherNotFoundException::class, "Hasher 'sha256' not found");
 });
 
 it('provides helpful suggestion in HasherNotFoundException', function () {
-    $factory = createFactoryWithConfig([]);
+    $factory = createFactoryWithConfig();
 
     try {
         $factory->make('md5');
@@ -154,7 +153,7 @@ it('provides helpful suggestion in HasherNotFoundException', function () {
 });
 
 it('uses default bcrypt cost when not configured', function () {
-    $factory = createFactoryWithConfig([]);
+    $factory = createFactoryWithConfig();
 
     $hasher = $factory->make('bcrypt');
 
@@ -164,7 +163,7 @@ it('uses default bcrypt cost when not configured', function () {
 });
 
 it('uses default argon2 parameters when not configured', function () {
-    $factory = createFactoryWithConfig([]);
+    $factory = createFactoryWithConfig();
 
     $hasher = $factory->make('argon2id');
 

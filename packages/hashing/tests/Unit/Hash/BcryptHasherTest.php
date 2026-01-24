@@ -13,8 +13,6 @@ it('implements HasherInterface', function () {
 });
 
 it('uses default cost of 12 when no cost provided', function () {
-    $hasher = new BcryptHasher();
-
     expect(BcryptHasher::DEFAULT_COST)->toBe(12);
 });
 
