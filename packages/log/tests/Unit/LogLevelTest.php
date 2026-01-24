@@ -57,6 +57,7 @@ it('returns uppercase name', function () {
 });
 
 it('can be created from string value', function () {
+    /** @noinspection PhpCaseWithValueNotFoundInEnumInspection */
     expect(LogLevel::from('error'))->toBe(LogLevel::Error)
         ->and(LogLevel::from('debug'))->toBe(LogLevel::Debug)
         ->and(LogLevel::tryFrom('invalid'))->toBeNull();

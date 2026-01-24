@@ -577,6 +577,17 @@ class TestEntity extends Entity
 }
 ```
 
+### Testing Invalid Enum Values
+When testing that `tryFrom()` returns null for invalid enum backing values, PhpStorm warns that the value doesn't exist in the enum. Suppress with `PhpCaseWithValueNotFoundInEnumInspection`:
+```php
+it('can be created from string value', function () {
+    /** @noinspection PhpCaseWithValueNotFoundInEnumInspection */
+    expect(LogLevel::from('error'))->toBe(LogLevel::Error)
+        ->and(LogLevel::tryFrom('invalid'))->toBeNull();
+});
+```
+Place the annotation above the `expect()` call, not inline with the assertion.
+
 ### Reference Properties for Tracking
 When using reference properties to track state changes from anonymous class methods:
 ```php
