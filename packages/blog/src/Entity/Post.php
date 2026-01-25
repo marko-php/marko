@@ -39,6 +39,12 @@ class Post extends Entity implements PostInterface
 
     private ?AuthorInterface $author = null;
 
+    /** @var array<CategoryInterface> */
+    private array $categories = [];
+
+    /** @var array<TagInterface> */
+    private array $tags = [];
+
     /**
      * @param Closure(string): bool|null $uniquenessChecker
      */
@@ -195,5 +201,39 @@ class Post extends Entity implements PostInterface
     public function isScheduled(): bool
     {
         return $this->status === PostStatus::Scheduled;
+    }
+
+    /**
+     * @return array<CategoryInterface>
+     */
+    public function getCategories(): array
+    {
+        return $this->categories;
+    }
+
+    /**
+     * @param array<CategoryInterface> $categories
+     */
+    public function setCategories(
+        array $categories,
+    ): void {
+        $this->categories = $categories;
+    }
+
+    /**
+     * @return array<TagInterface>
+     */
+    public function getTags(): array
+    {
+        return $this->tags;
+    }
+
+    /**
+     * @param array<TagInterface> $tags
+     */
+    public function setTags(
+        array $tags,
+    ): void {
+        $this->tags = $tags;
     }
 }

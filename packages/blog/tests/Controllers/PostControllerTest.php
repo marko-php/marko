@@ -7,8 +7,13 @@ namespace Marko\Blog\Tests\Controllers\PostController;
 use Marko\Blog\Controllers\PostController;
 use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Author;
+use Marko\Blog\Entity\Category;
+use Marko\Blog\Entity\Comment;
 use Marko\Blog\Entity\Post;
+use Marko\Blog\Entity\Tag;
+use Marko\Blog\Enum\CommentStatus;
 use Marko\Blog\Enum\PostStatus;
+use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Database\Entity\Entity;
@@ -25,13 +30,15 @@ use ReflectionClass;
     \expect($constructor)->not->toBeNull();
 
     $parameters = $constructor->getParameters();
-    \expect($parameters)->toHaveCount(3)
+    \expect($parameters)->toHaveCount(4)
         ->and($parameters[0]->getName())->toBe('repository')
         ->and($parameters[0]->getType()->getName())->toBe(PostRepositoryInterface::class)
-        ->and($parameters[1]->getName())->toBe('paginationService')
-        ->and($parameters[1]->getType()->getName())->toBe(PaginationServiceInterface::class)
-        ->and($parameters[2]->getName())->toBe('view')
-        ->and($parameters[2]->getType()->getName())->toBe(ViewInterface::class);
+        ->and($parameters[1]->getName())->toBe('commentRepository')
+        ->and($parameters[1]->getType()->getName())->toBe(CommentRepositoryInterface::class)
+        ->and($parameters[2]->getName())->toBe('paginationService')
+        ->and($parameters[2]->getType()->getName())->toBe(PaginationServiceInterface::class)
+        ->and($parameters[3]->getName())->toBe('view')
+        ->and($parameters[3]->getType()->getName())->toBe(ViewInterface::class);
 });
 
 \it('has GET /blog route on index method', function (): void {
@@ -62,9 +69,10 @@ use ReflectionClass;
         createPost(2, 'Post 2', 'post-2'),
     ];
     $repository = createMockPostRepository(findPublishedPaginatedResult: $posts, countPublishedResult: 2);
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 2);
     $view = createMockView();
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $response = $controller->index();
 
     \expect($response)->toBeInstanceOf(Response::class)
@@ -76,9 +84,10 @@ use ReflectionClass;
     $repository = createMockPostRepository(
         findBySlugResult: createPost(1, 'Hello World', 'hello-world'),
     );
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $view = createMockView();
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $response = $controller->show('hello-world');
 
     \expect($response)->toBeInstanceOf(Response::class)
@@ -86,16 +95,241 @@ use ReflectionClass;
         ->and($response->body())->toContain('blog::post/show');
 });
 
-\it('returns 404 response when post slug not found', function (): void {
+\it('returns single post at GET /blog/{slug}', function (): void {
+    $author = createAuthor(1, 'John Doe', 'john-doe');
+    $post = createPost(
+        id: 1,
+        title: 'Test Post',
+        slug: 'test-post',
+        author: $author,
+    );
+
+    $repository = createMockPostRepository(findBySlugResult: $post);
+    $commentRepository = createMockCommentRepository();
+    $pagination = createMockPaginationService();
+    $capturedData = [];
+    $view = createMockViewWithCapture($capturedData);
+
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $response = $controller->show('test-post');
+
+    \expect($response->statusCode())->toBe(200)
+        ->and($capturedData)->toHaveKey('post')
+        ->and($capturedData['post']->getTitle())->toBe('Test Post')
+        ->and($capturedData['post']->getSlug())->toBe('test-post');
+});
+
+\it('returns 404 when post slug not found', function (): void {
     $repository = createMockPostRepository();
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $view = createMockView();
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $response = $controller->show('non-existent');
 
     \expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(404)
         ->and($response->body())->toContain('not found');
+});
+
+\it('returns 404 when post is not published', function (): void {
+    $draftPost = createPost(
+        id: 1,
+        title: 'Draft Post',
+        slug: 'draft-post',
+        status: PostStatus::Draft,
+    );
+
+    $repository = createMockPostRepository(findBySlugResult: $draftPost);
+    $commentRepository = createMockCommentRepository();
+    $pagination = createMockPaginationService();
+    $view = createMockView();
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $response = $controller->show('draft-post');
+
+    \expect($response)->toBeInstanceOf(Response::class)
+        ->and($response->statusCode())->toBe(404)
+        ->and($response->body())->toContain('not found');
+});
+
+\it('includes full post content in response', function (): void {
+    $author = createAuthor(1, 'John Doe', 'john-doe');
+    $post = createPostWithContent(
+        id: 1,
+        title: 'Full Content Post',
+        slug: 'full-content-post',
+        content: '<p>This is the full article content with <strong>formatting</strong>.</p>',
+        author: $author,
+    );
+
+    $repository = createMockPostRepository(findBySlugResult: $post);
+    $commentRepository = createMockCommentRepository();
+    $pagination = createMockPaginationService();
+    $capturedData = [];
+    $view = createMockViewWithCapture($capturedData);
+
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $controller->show('full-content-post');
+
+    \expect($capturedData)->toHaveKey('post')
+        ->and($capturedData['post']->getContent())->toBe(
+            '<p>This is the full article content with <strong>formatting</strong>.</p>'
+        );
+});
+
+\it('includes author information', function (): void {
+    $author = createAuthor(1, 'Jane Smith', 'jane-smith');
+    $post = createPost(
+        id: 1,
+        title: 'Post with Author',
+        slug: 'post-with-author',
+        author: $author,
+    );
+
+    $repository = createMockPostRepository(findBySlugResult: $post);
+    $commentRepository = createMockCommentRepository();
+    $pagination = createMockPaginationService();
+    $capturedData = [];
+    $view = createMockViewWithCapture($capturedData);
+
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $controller->show('post-with-author');
+
+    \expect($capturedData)->toHaveKey('post')
+        ->and($capturedData['post']->getAuthor()->getName())->toBe('Jane Smith')
+        ->and($capturedData['post']->getAuthor()->getSlug())->toBe('jane-smith');
+});
+
+\it('includes post categories', function (): void {
+    $author = createAuthor(1, 'John Doe', 'john-doe');
+    $post = createPost(
+        id: 1,
+        title: 'Post with Categories',
+        slug: 'post-with-categories',
+        author: $author,
+    );
+
+    $categories = [
+        createCategory(1, 'Technology', 'technology'),
+        createCategory(2, 'Programming', 'programming'),
+    ];
+
+    $repository = createMockPostRepository(
+        findBySlugResult: $post,
+        categoriesForPost: $categories,
+    );
+    $commentRepository = createMockCommentRepository();
+    $pagination = createMockPaginationService();
+    $capturedData = [];
+    $view = createMockViewWithCapture($capturedData);
+
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $controller->show('post-with-categories');
+
+    \expect($capturedData)->toHaveKey('categories')
+        ->and($capturedData['categories'])->toHaveCount(2)
+        ->and($capturedData['categories'][0]->getName())->toBe('Technology')
+        ->and($capturedData['categories'][1]->getName())->toBe('Programming');
+});
+
+\it('includes post tags', function (): void {
+    $author = createAuthor(1, 'John Doe', 'john-doe');
+    $post = createPost(
+        id: 1,
+        title: 'Post with Tags',
+        slug: 'post-with-tags',
+        author: $author,
+    );
+
+    $tags = [
+        createTag(1, 'PHP', 'php'),
+        createTag(2, 'Laravel', 'laravel'),
+        createTag(3, 'TDD', 'tdd'),
+    ];
+
+    $repository = createMockPostRepository(
+        findBySlugResult: $post,
+        tagsForPost: $tags,
+    );
+    $commentRepository = createMockCommentRepository();
+    $pagination = createMockPaginationService();
+    $capturedData = [];
+    $view = createMockViewWithCapture($capturedData);
+
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $controller->show('post-with-tags');
+
+    \expect($capturedData)->toHaveKey('tags')
+        ->and($capturedData['tags'])->toHaveCount(3)
+        ->and($capturedData['tags'][0]->getName())->toBe('PHP')
+        ->and($capturedData['tags'][1]->getName())->toBe('Laravel')
+        ->and($capturedData['tags'][2]->getName())->toBe('TDD');
+});
+
+\it('includes threaded verified comments', function (): void {
+    $author = createAuthor(1, 'John Doe', 'john-doe');
+    $post = createPost(
+        id: 1,
+        title: 'Post with Comments',
+        slug: 'post-with-comments',
+        author: $author,
+    );
+
+    // Create threaded comments structure
+    $childComment = createComment(
+        id: 2,
+        postId: 1,
+        authorName: 'Jane Smith',
+        authorEmail: 'jane@example.com',
+        content: 'This is a reply comment.',
+        parentId: 1,
+    );
+
+    $parentComment = createComment(
+        id: 1,
+        postId: 1,
+        authorName: 'Bob Wilson',
+        authorEmail: 'bob@example.com',
+        content: 'This is a root comment.',
+        children: [$childComment],
+    );
+
+    $threadedComments = [$parentComment];
+
+    $repository = createMockPostRepository(findBySlugResult: $post);
+    $commentRepository = createMockCommentRepository(threadedComments: $threadedComments);
+    $pagination = createMockPaginationService();
+    $capturedData = [];
+    $view = createMockViewWithCapture($capturedData);
+
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $controller->show('post-with-comments');
+
+    \expect($capturedData)->toHaveKey('comments')
+        ->and($capturedData['comments'])->toHaveCount(1)
+        ->and($capturedData['comments'][0]->content)->toBe('This is a root comment.')
+        ->and($capturedData['comments'][0]->getChildren())->toHaveCount(1)
+        ->and($capturedData['comments'][0]->getChildren()[0]->content)->toBe('This is a reply comment.');
+});
+
+\it('renders show using view template', function (): void {
+    $author = createAuthor(1, 'John Doe', 'john-doe');
+    $post = createPost(
+        id: 1,
+        title: 'View Template Test',
+        slug: 'view-template-test',
+        author: $author,
+    );
+
+    $repository = createMockPostRepository(findBySlugResult: $post);
+    $commentRepository = createMockCommentRepository();
+    $pagination = createMockPaginationService();
+    $view = createMockView();
+
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $response = $controller->show('view-template-test');
+
+    \expect($response->body())->toContain('blog::post/show');
 });
 
 \it('maintains existing route attributes for GET /blog and GET /blog/{slug}', function (): void {
@@ -132,11 +366,12 @@ use ReflectionClass;
         createPost(2, 'Post 2', 'post-2'),
     ];
     $repository = createMockPostRepository(findPublishedPaginatedResult: $posts, countPublishedResult: 2);
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 2);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $response = $controller->index();
 
     \expect($response->statusCode())->toBe(200)
@@ -153,10 +388,11 @@ use ReflectionClass;
         createPost(2, 'Older Post', 'older-post', publishedAt: '2024-01-01 12:00:00'),
     ];
     $repository = createMockPostRepository(findPublishedPaginatedResult: $posts, countPublishedResult: 2);
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 2);
     $view = createMockView();
 
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $response = $controller->index();
 
     \expect($response->statusCode())->toBe(200);
@@ -174,11 +410,12 @@ use ReflectionClass;
         findPublishedPaginatedResult: $publishedPosts,
         countPublishedResult: 1,
     );
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($publishedPosts, 1);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $controller->index();
 
     // Verify that only published posts are in the result
@@ -193,11 +430,12 @@ use ReflectionClass;
         findPublishedPaginatedResult: $posts,
         countPublishedResult: 25,
     );
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 25);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $controller->index(page: 3);
 
     \expect($capturedData['posts']->currentPage)->toBe(3);
@@ -209,11 +447,12 @@ use ReflectionClass;
         findPublishedPaginatedResult: $posts,
         countPublishedResult: 10,
     );
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 10);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $controller->index();
 
     \expect($capturedData['posts']->currentPage)->toBe(1);
@@ -224,10 +463,11 @@ use ReflectionClass;
         findPublishedPaginatedResult: [],
         countPublishedResult: 25,
     );
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService([], 25);
     $view = createMockView();
 
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
 
     // Test page 0
     $response = $controller->index(page: 0);
@@ -248,11 +488,12 @@ use ReflectionClass;
         findPublishedPaginatedResult: $posts,
         countPublishedResult: 25,
     );
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 25);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $controller->index();
 
     \expect($capturedData['posts'])->toBeInstanceOf(PaginatedResult::class)
@@ -279,11 +520,12 @@ use ReflectionClass;
         findPublishedPaginatedResult: [$post],
         countPublishedResult: 1,
     );
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService([$post], 1);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $controller->index();
 
     $postInView = $capturedData['posts']->items[0];
@@ -299,10 +541,11 @@ use ReflectionClass;
         findPublishedPaginatedResult: $posts,
         countPublishedResult: 1,
     );
+    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 1);
     $view = createMockView();
 
-    $controller = new PostController($repository, $pagination, $view);
+    $controller = new PostController($repository, $commentRepository, $pagination, $view);
     $response = $controller->index();
 
     \expect($response->body())->toContain('blog::post/index');
@@ -332,6 +575,29 @@ function createPost(
     return $post;
 }
 
+function createPostWithContent(
+    int $id,
+    string $title,
+    string $slug,
+    string $content,
+    PostStatus $status = PostStatus::Published,
+    ?string $summary = null,
+    ?string $publishedAt = null,
+    ?Author $author = null,
+): Post {
+    $post = new Post(title: $title, content: $content, authorId: 1);
+    $post->id = $id;
+    $post->slug = $slug;
+    $post->status = $status;
+    $post->summary = $summary;
+    $post->publishedAt = $publishedAt ?? '2024-01-01 12:00:00';
+    if ($author !== null) {
+        $post->setAuthor($author);
+    }
+
+    return $post;
+}
+
 function createAuthor(
     int $id,
     string $name,
@@ -346,21 +612,53 @@ function createAuthor(
     return $author;
 }
 
+function createCategory(
+    int $id,
+    string $name,
+    string $slug,
+): Category {
+    $category = new Category();
+    $category->id = $id;
+    $category->name = $name;
+    $category->slug = $slug;
+
+    return $category;
+}
+
+function createTag(
+    int $id,
+    string $name,
+    string $slug,
+): Tag {
+    $tag = new Tag();
+    $tag->id = $id;
+    $tag->name = $name;
+    $tag->slug = $slug;
+
+    return $tag;
+}
+
 function createMockPostRepository(
     array $findPublishedPaginatedResult = [],
     int $countPublishedResult = 0,
     ?Post $findBySlugResult = null,
+    array $categoriesForPost = [],
+    array $tagsForPost = [],
 ): PostRepositoryInterface {
     return new class (
         $findPublishedPaginatedResult,
         $countPublishedResult,
         $findBySlugResult,
+        $categoriesForPost,
+        $tagsForPost,
     ) implements PostRepositoryInterface
     {
         public function __construct(
             private readonly array $findPublishedPaginatedResult,
             private readonly int $countPublishedResult,
             private readonly ?Post $findBySlugResult,
+            private readonly array $categoriesForPost,
+            private readonly array $tagsForPost,
         ) {}
 
         public function findBySlug(
@@ -481,13 +779,13 @@ function createMockPostRepository(
         public function getCategoriesForPost(
             int $postId,
         ): array {
-            return [];
+            return $this->categoriesForPost;
         }
 
         public function getTagsForPost(
             int $postId,
         ): array {
-            return [];
+            return $this->tagsForPost;
         }
 
         public function syncCategories(
@@ -629,4 +927,123 @@ function createMockViewWithCapture(
             return "rendered: $template";
         }
     };
+}
+
+function createMockCommentRepository(
+    array $threadedComments = [],
+): CommentRepositoryInterface {
+    return new class ($threadedComments) implements CommentRepositoryInterface
+    {
+        public function __construct(
+            private readonly array $threadedComments,
+        ) {}
+
+        public function find(
+            int $id,
+        ): ?Comment {
+            return null;
+        }
+
+        public function findVerifiedForPost(
+            int $postId,
+        ): array {
+            return [];
+        }
+
+        public function findPendingForPost(
+            int $postId,
+        ): array {
+            return [];
+        }
+
+        public function getThreadedCommentsForPost(
+            int $postId,
+        ): array {
+            return $this->threadedComments;
+        }
+
+        public function countForPost(
+            int $postId,
+        ): int {
+            return 0;
+        }
+
+        public function countVerifiedForPost(
+            int $postId,
+        ): int {
+            return count($this->threadedComments);
+        }
+
+        public function findByAuthorEmail(
+            string $email,
+        ): array {
+            return [];
+        }
+
+        public function calculateDepth(
+            int $commentId,
+        ): int {
+            return 0;
+        }
+
+        public function findOrFail(
+            int $id,
+        ): Entity {
+            throw RepositoryException::notFound(Comment::class, $id);
+        }
+
+        public function findAll(): array
+        {
+            return [];
+        }
+
+        public function findBy(
+            array $criteria,
+        ): array {
+            return [];
+        }
+
+        public function findOneBy(
+            array $criteria,
+        ): ?Entity {
+            return null;
+        }
+
+        public function save(
+            Entity $entity,
+        ): void {}
+
+        public function delete(
+            Entity $entity,
+        ): void {}
+    };
+}
+
+function createComment(
+    int $id,
+    int $postId,
+    string $authorName,
+    string $authorEmail,
+    string $content,
+    CommentStatus $status = CommentStatus::Verified,
+    ?int $parentId = null,
+    array $children = [],
+): Comment {
+    $comment = new Comment();
+    $comment->id = $id;
+    $comment->postId = $postId;
+    $comment->authorName = $authorName;
+    $comment->authorEmail = $authorEmail;
+    $comment->content = $content;
+    $comment->status = $status;
+    $comment->parentId = $parentId;
+    $comment->createdAt = '2024-01-01 12:00:00';
+    if ($status === CommentStatus::Verified) {
+        $comment->verifiedAt = '2024-01-01 12:30:00';
+    }
+    if (!empty($children)) {
+        $comment->setChildren($children);
+    }
+
+    return $comment;
 }

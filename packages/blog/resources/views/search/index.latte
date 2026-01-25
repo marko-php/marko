@@ -1,0 +1,28 @@
+{* Search results template *}
+<header class="search-header">
+    {include '../components/search-bar.latte', query: $query}
+    <p class="search-results-count">{$posts->totalItems} {$posts->totalItems === 1 ? 'result' : 'results'} found</p>
+</header>
+
+<section class="search-results">
+{if $posts->isEmpty()}
+    <p class="no-results">No results found for your search.</p>
+{else}
+    <ul class="post-list">
+    {foreach $posts->items as $post}
+        <li class="post-item">
+            <h2><a href="/blog/{$post->getSlug()}">{$post->getTitle()}</a></h2>
+            {if $post->getSummary()}
+                <p class="post-summary">{$post->getSummary()}</p>
+            {/if}
+            <p class="post-meta">
+                <span class="post-author">By {$post->getAuthor()->getName()}</span>
+                <time class="post-date" datetime="{$post->getPublishedAt()?->format('Y-m-d')}">{$post->getPublishedAt()?->format('Y-m-d')}</time>
+            </p>
+        </li>
+    {/foreach}
+    </ul>
+
+    {include '../components/pagination.latte', pagination: $posts, baseUrl: '/blog/search', queryParams: ['q' => $query]}
+{/if}
+</section>

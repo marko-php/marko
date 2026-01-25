@@ -13,15 +13,15 @@ Create the Latte view template for search results. Shows search form, current qu
 - Preserves search query in pagination links
 
 ## Requirements (Test Descriptions)
-- [ ] `it includes search bar component with current query`
-- [ ] `it displays result count for query`
-- [ ] `it renders matching posts`
-- [ ] `it displays post title summary author and date`
-- [ ] `it includes pagination component`
-- [ ] `it preserves search query in pagination links`
-- [ ] `it shows no results message when empty`
-- [ ] `it has semantic HTML structure`
-- [ ] `it includes search input with label`
+- [x] `it includes search bar component with current query`
+- [x] `it displays result count for query`
+- [x] `it renders matching posts`
+- [x] `it displays post title summary author and date`
+- [x] `it includes pagination component`
+- [x] `it preserves search query in pagination links`
+- [x] `it shows no results message when empty`
+- [x] `it has semantic HTML structure`
+- [x] `it includes search input with label`
 
 ## Acceptance Criteria
 - All requirements have passing tests

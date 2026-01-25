@@ -1,7 +1,39 @@
 {* Blog post index template *}
-<h1>Blog Posts</h1>
-<ul>
-{foreach $posts as $post}
-    <li><a href="/blog/{$post->slug}">{$post->title}</a></li>
-{/foreach}
-</ul>
+<main>
+    <h1>Blog Posts</h1>
+    {if $posts->isEmpty()}
+        <p class="no-posts">There are no posts yet.</p>
+    {else}
+    <ul class="post-list">
+    {foreach $posts->items as $post}
+        <li class="post-item">
+            <article>
+                <h2 class="post-title"><a href="/blog/{$post->slug}">{$post->title}</a></h2>
+                {if $post->summary}
+                    <p class="post-summary">{$post->summary}</p>
+                {/if}
+                <p class="post-meta">
+                    <span class="post-author">By <a href="/blog/author/{$post->getAuthor()->slug}">{$post->getAuthor()->name}</a></span>
+                    <time class="post-date" datetime="{$post->getPublishedAt()?->format('Y-m-d')}">{$post->getPublishedAt()?->format('F j, Y')}</time>
+                </p>
+                {if count($post->getCategories()) > 0}
+                <p class="post-categories">
+                    {foreach $post->getCategories() as $category}
+                        <a href="/blog/category/{$category->slug}" class="post-category">{$category->name}</a>
+                    {/foreach}
+                </p>
+                {/if}
+                {if count($post->getTags()) > 0}
+                <p class="post-tags">
+                    {foreach $post->getTags() as $tag}
+                        <a href="/blog/tag/{$tag->slug}" class="post-tag">{$tag->name}</a>
+                    {/foreach}
+                </p>
+                {/if}
+            </article>
+        </li>
+    {/foreach}
+    </ul>
+    {include '../components/pagination.latte', pagination: $posts, baseUrl: '/blog'}
+    {/if}
+</main>

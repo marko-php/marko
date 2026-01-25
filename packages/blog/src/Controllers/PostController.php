@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Controllers;
 
+use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Routing\Attributes\Get;
@@ -14,6 +15,7 @@ class PostController
 {
     public function __construct(
         private readonly PostRepositoryInterface $repository,
+        private readonly CommentRepositoryInterface $commentRepository,
         private readonly PaginationServiceInterface $paginationService,
         private readonly ViewInterface $view,
     ) {}
@@ -52,12 +54,19 @@ class PostController
     ): Response {
         $post = $this->repository->findBySlug($slug);
 
-        if ($post === null) {
+        if ($post === null || !$post->isPublished()) {
             return new Response('Post not found', 404);
         }
 
+        $categories = $this->repository->getCategoriesForPost($post->getId());
+        $tags = $this->repository->getTagsForPost($post->getId());
+        $comments = $this->commentRepository->getThreadedCommentsForPost($post->getId());
+
         return $this->view->render('blog::post/show', [
             'post' => $post,
+            'categories' => $categories,
+            'tags' => $tags,
+            'comments' => $comments,
         ]);
     }
 }

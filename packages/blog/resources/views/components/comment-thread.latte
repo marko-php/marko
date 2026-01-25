@@ -1,0 +1,36 @@
+{* Blog comment thread component *}
+{default $comments = []}
+{default $maxDepth = 5}
+{default $postId = null}
+{default $currentDepth = 0}
+{default $commentCount = null}
+
+{if $currentDepth === 0 && $commentCount !== null}
+<h3 class="comment-count">{$commentCount} {$commentCount === 1 ? 'Comment' : 'Comments'}</h3>
+{/if}
+
+{if empty($comments) && $currentDepth === 0}
+<p class="comment-empty">No comments yet. Be the first to comment!</p>
+{/if}
+
+{foreach $comments as $comment}
+<article class="comment comment-depth-{$currentDepth}" aria-label="Comment by {$comment->authorName}">
+    <header class="comment-header">
+        <span class="comment-author">{$comment->authorName}</span>
+        <time class="comment-date" datetime="{$comment->getCreatedAt()?->format('Y-m-d\\TH:i:s')}">{$comment->getCreatedAt()?->format('F j, Y')}</time>
+    </header>
+    <div class="comment-content">
+        {$comment->content}
+    </div>
+    <footer class="comment-footer">
+        {if $currentDepth + 1 < $maxDepth}
+        <a href="#comment-form" class="comment-reply-link" data-parent-id="{$comment->id}">Reply</a>
+        {/if}
+    </footer>
+    {if $comment->getChildren() && $currentDepth + 1 < $maxDepth}
+    <div class="comment-replies">
+        {include 'comment-thread.latte', comments: $comment->getChildren(), maxDepth: $maxDepth, postId: $postId, currentDepth: $currentDepth + 1}
+    </div>
+    {/if}
+</article>
+{/foreach}
