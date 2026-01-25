@@ -146,6 +146,53 @@ class PostRepository extends Repository implements PostRepositoryInterface
     }
 
     /**
+     * Find published posts with pagination, ordered by published_at DESC.
+     *
+     * @return array<Post>
+     */
+    public function findPublishedPaginated(
+        int $limit,
+        int $offset,
+    ): array {
+        $sql = sprintf(
+            'SELECT * FROM %s WHERE status = ? ORDER BY published_at DESC LIMIT ? OFFSET ?',
+            $this->metadata->tableName,
+        );
+
+        $rows = $this->connection->query($sql, [
+            PostStatus::Published->value,
+            $limit,
+            $offset,
+        ]);
+
+        return array_map(
+            fn (array $row): Post => $this->hydrator->hydrate(
+                static::ENTITY_CLASS,
+                $row,
+                $this->metadata,
+            ),
+            $rows,
+        );
+    }
+
+    /**
+     * Count all published posts.
+     */
+    public function countPublished(): int
+    {
+        $sql = sprintf(
+            'SELECT COUNT(*) as count FROM %s WHERE status = ?',
+            $this->metadata->tableName,
+        );
+
+        $result = $this->connection->query($sql, [
+            PostStatus::Published->value,
+        ]);
+
+        return (int) ($result[0]['count'] ?? 0);
+    }
+
+    /**
      * Find posts by status.
      *
      * @return array<Post>

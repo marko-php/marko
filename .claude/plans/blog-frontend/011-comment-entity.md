@@ -1,6 +1,6 @@
 # Task 011: Comment Entity
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 007, 010
 **Retry count**: 0
 

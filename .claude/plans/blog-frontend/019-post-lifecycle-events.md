@@ -1,6 +1,6 @@
 # Task 019: Post Lifecycle Events
 
-**Status**: complete
+**Status**: completed
 **Depends on**: 007
 **Retry count**: 0
 

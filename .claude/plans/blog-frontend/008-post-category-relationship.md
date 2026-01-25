@@ -1,6 +1,6 @@
 # Task 008: Post-Category Relationship
 
-**Status**: complete
+**Status**: completed
 **Depends on**: 004, 007
 **Retry count**: 0
 

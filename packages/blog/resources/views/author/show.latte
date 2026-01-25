@@ -1,0 +1,30 @@
+{* Blog author archive template *}
+<link rel="canonical" href="{$canonicalUrl}">
+
+<header class="author-header">
+    <h1>{$author->getName()}</h1>
+    <p class="author-email">{$author->getEmail()}</p>
+    {if $author->getBio()}
+    <p class="author-bio">{$author->getBio()}</p>
+    {/if}
+</header>
+
+<section class="author-posts">
+{if $posts->isEmpty()}
+    <p class="no-posts">This author has no posts yet.</p>
+{else}
+    <ul class="post-list">
+    {foreach $posts->items as $post}
+        <li class="post-item">
+            <h2 class="post-title">{$post->getTitle()}</h2>
+            {if $post->getSummary()}
+            <p class="post-summary">{$post->getSummary()}</p>
+            {/if}
+            <time class="post-date" datetime="{$post->getPublishedAt()?->format('Y-m-d')}">{$post->getPublishedAt()?->format('Y-m-d')}</time>
+        </li>
+    {/foreach}
+    </ul>
+
+    {include '../components/pagination.latte', pagination: $posts, baseUrl: $canonicalUrl}
+{/if}
+</section>

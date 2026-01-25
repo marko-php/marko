@@ -1,6 +1,6 @@
 # Task 009: Post-Tag Relationship
 
-**Status**: complete
+**Status**: completed
 **Depends on**: 005, 007
 **Retry count**: 0
 

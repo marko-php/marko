@@ -1,6 +1,6 @@
 # Task 026: Author Archive Controller
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 003, 017
 **Retry count**: 0
 

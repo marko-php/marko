@@ -27,6 +27,21 @@ interface PostRepositoryInterface extends RepositoryInterface
     public function findPublished(): array;
 
     /**
+     * Find published posts with pagination, ordered by published_at DESC.
+     *
+     * @return array<Post>
+     */
+    public function findPublishedPaginated(
+        int $limit,
+        int $offset,
+    ): array;
+
+    /**
+     * Count all published posts.
+     */
+    public function countPublished(): int;
+
+    /**
      * Find posts by status.
      *
      * @return array<Post>

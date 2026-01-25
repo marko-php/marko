@@ -340,6 +340,18 @@ function createMockPostRepository(
             return [];
         }
 
+        public function findPublishedPaginated(
+            int $limit,
+            int $offset,
+        ): array {
+            return [];
+        }
+
+        public function countPublished(): int
+        {
+            return 0;
+        }
+
         public function findByStatus(
             PostStatus $status,
         ): array {

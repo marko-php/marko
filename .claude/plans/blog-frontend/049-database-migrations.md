@@ -1,6 +1,6 @@
 # Task 049: Database Migrations
 
-**Status**: pending
+**Status**: complete
 **Depends on**: 003, 004, 005, 007, 008, 009, 011, 012
 **Retry count**: 0
 
@@ -14,17 +14,17 @@ Create database migrations for all blog module tables. Migrations define the sch
 - Each migration is a timestamped PHP file
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates authors table with correct columns`
-- [ ] `it creates categories table with self-referential parent_id`
-- [ ] `it creates tags table with correct columns`
-- [ ] `it updates posts table with new columns`
-- [ ] `it creates comments table with self-referential parent_id`
-- [ ] `it creates verification_tokens table`
-- [ ] `it creates post_categories pivot table`
-- [ ] `it creates post_tags pivot table`
-- [ ] `it adds foreign key constraints`
-- [ ] `it adds indexes for frequently queried columns`
-- [ ] `it can rollback all migrations cleanly`
+- [x] `it creates authors table with correct columns`
+- [x] `it creates categories table with self-referential parent_id`
+- [x] `it creates tags table with correct columns`
+- [x] `it updates posts table with new columns`
+- [x] `it creates comments table with self-referential parent_id`
+- [x] `it creates verification_tokens table`
+- [x] `it creates post_categories pivot table`
+- [x] `it creates post_tags pivot table`
+- [x] `it adds foreign key constraints`
+- [x] `it adds indexes for frequently queried columns`
+- [x] `it can rollback all migrations cleanly`
 
 ## Migration Files
 
@@ -262,4 +262,30 @@ return new class extends Migration
 - Code follows Marko standards
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+### Implementation Details
+- Created 8 migration files in `packages/blog/database/migrations/`
+- Used raw SQL CREATE TABLE statements via the `Migration::execute()` helper method from `marko/database`
+- All migrations use MySQL-compatible syntax with proper data types
+- Helper functions in test file prefixed with `blogMigration` to avoid global namespace collisions
+
+### Files Created
+- `packages/blog/database/migrations/001_create_authors_table.php`
+- `packages/blog/database/migrations/002_create_categories_table.php`
+- `packages/blog/database/migrations/003_create_tags_table.php`
+- `packages/blog/database/migrations/004_update_posts_table.php`
+- `packages/blog/database/migrations/005_create_comments_table.php`
+- `packages/blog/database/migrations/006_create_verification_tokens_table.php`
+- `packages/blog/database/migrations/007_create_post_categories_table.php`
+- `packages/blog/database/migrations/008_create_post_tags_table.php`
+- `packages/blog/tests/Migration/MigrationTest.php`
+
+### Schema Decisions
+- All tables use INT UNSIGNED for IDs with AUTO_INCREMENT
+- Self-referential foreign keys for categories (parent_id) and comments (parent_id)
+- posts table created fresh (not ALTER TABLE) since blog module is new
+- All foreign keys use proper CASCADE/SET NULL behavior as specified
+- Named indexes for all frequently queried columns
+
+### Test Results
+- 11 tests, 169 assertions, all passing

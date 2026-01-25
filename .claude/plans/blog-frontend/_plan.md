@@ -80,27 +80,27 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 005 | Tag Entity and Repository | 002 | completed |
 | 006 | Post Status Enum | - | completed |
 | 007 | Expand Post Entity | 002, 003, 006 | completed |
-| 008 | Post-Category Relationship | 004, 007 | pending |
-| 009 | Post-Tag Relationship | 005, 007 | pending |
+| 008 | Post-Category Relationship | 004, 007 | completed |
+| 009 | Post-Tag Relationship | 005, 007 | completed |
 | 010 | Comment Status Enum | - | completed |
-| 011 | Comment Entity | 007, 010 | pending |
+| 011 | Comment Entity | 007, 010 | completed |
 | 012 | Verification Token Entity | - | completed |
 | 013 | Comment Repository | 011 | pending |
 | 014 | Comment Verification Service | 012, 013 | pending |
 | 015 | Comment Rate Limiter | 013 | pending |
 | 016 | Honeypot Validation | - | completed |
 | 017 | Pagination Service | 001 | completed |
-| 018 | Search Service | 007 | pending |
-| 019 | Post Lifecycle Events | 007 | pending |
+| 018 | Search Service | 007 | completed |
+| 019 | Post Lifecycle Events | 007 | completed |
 | 020 | Comment Lifecycle Events | 011 | pending |
 | 021 | Author Lifecycle Events | 003 | completed |
 | 022 | Category Lifecycle Events | 004 | completed |
 | 023 | Tag Lifecycle Events | 005 | completed |
 | 024 | Post List Controller | 007, 017, 019 | pending |
 | 025 | Post Show Controller | 007, 013 | pending |
-| 026 | Author Archive Controller | 003, 017 | pending |
-| 027 | Category Archive Controller | 004, 017 | pending |
-| 028 | Tag Archive Controller | 005, 017 | pending |
+| 026 | Author Archive Controller | 003, 017 | completed |
+| 027 | Category Archive Controller | 004, 017 | completed |
+| 028 | Tag Archive Controller | 005, 017 | completed |
 | 029 | Comment Submit Controller | 014, 015, 016, 020 | pending |
 | 030 | Comment Verify Controller | 014 | pending |
 | 031 | Search Controller | 017, 018 | pending |
@@ -115,7 +115,7 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 040 | Tag Archive View | 028, 032 | pending |
 | 041 | Search Results View | 031, 032, 046 | pending |
 | 042 | Blog Cleanup Command | 012, 015 | pending |
-| 043 | SEO Meta Service | 007 | pending |
+| 043 | SEO Meta Service | 007 | completed |
 | 044 | SEO View Integration | 033, 037, 038, 039, 040, 041, 043 | pending |
 | 045 | Publish Scheduled Posts Command | 007, 019 | pending |
 | 046 | Search Bar Component | - | completed |
