@@ -97,15 +97,15 @@ describe('Integration with marko/errors-simple', function () {
 
         // Both packages bind to the same interface
         expect($simpleConfig['bindings'])->toHaveKey(ErrorHandlerInterface::class)
-            ->and($advancedConfig['bindings'])->toHaveKey(ErrorHandlerInterface::class);
+            ->and($advancedConfig['bindings'])->toHaveKey(ErrorHandlerInterface::class)
+            ->and($simpleConfig['bindings'][ErrorHandlerInterface::class])
+            ->toBe(SimpleErrorHandler::class)
+            ->and($advancedConfig['bindings'][ErrorHandlerInterface::class])
+            ->toBe(AdvancedErrorHandler::class);
 
         // errors-simple binds to SimpleErrorHandler
-        expect($simpleConfig['bindings'][ErrorHandlerInterface::class])
-            ->toBe(SimpleErrorHandler::class);
 
         // errors-advanced binds to AdvancedErrorHandler (overrides simple)
-        expect($advancedConfig['bindings'][ErrorHandlerInterface::class])
-            ->toBe(AdvancedErrorHandler::class);
 
         // Verify AdvancedErrorHandler is a valid implementation
         $handler = new AdvancedErrorHandler();

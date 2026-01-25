@@ -6,28 +6,30 @@ use Marko\ErrorsAdvanced\RequestDataCollector;
 
 describe('RequestDataCollector', function () {
     it('collects request method', function () {
-        $_SERVER['REQUEST_METHOD'] = 'POST';
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            server: ['REQUEST_METHOD' => 'POST'],
+        );
         $data = $collector->collect();
 
         expect($data['method'])->toBe('POST');
     });
 
     it('collects request URI', function () {
-        $_SERVER['REQUEST_URI'] = '/api/users?page=1';
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            server: ['REQUEST_URI' => '/api/users?page=1'],
+        );
         $data = $collector->collect();
 
         expect($data['uri'])->toBe('/api/users?page=1');
     });
 
     it('collects headers', function () {
-        $_SERVER['HTTP_CONTENT_TYPE'] = 'application/json';
-        $_SERVER['HTTP_ACCEPT'] = 'text/html';
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            server: [
+                'HTTP_CONTENT_TYPE' => 'application/json',
+                'HTTP_ACCEPT' => 'text/html',
+            ],
+        );
         $data = $collector->collect();
 
         expect($data['headers'])->toBeArray()
@@ -36,9 +38,9 @@ describe('RequestDataCollector', function () {
     });
 
     it('collects query parameters', function () {
-        $_GET = ['page' => '1', 'sort' => 'name'];
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            get: ['page' => '1', 'sort' => 'name'],
+        );
         $data = $collector->collect();
 
         expect($data['query'])->toBeArray()
@@ -47,9 +49,9 @@ describe('RequestDataCollector', function () {
     });
 
     it('collects POST data', function () {
-        $_POST = ['username' => 'john', 'email' => 'john@example.com'];
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            post: ['username' => 'john', 'email' => 'john@example.com'],
+        );
         $data = $collector->collect();
 
         expect($data['post'])->toBeArray()
@@ -58,9 +60,9 @@ describe('RequestDataCollector', function () {
     });
 
     it('masks sensitive fields like password', function () {
-        $_POST = ['username' => 'john', 'password' => 'secret123'];
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            post: ['username' => 'john', 'password' => 'secret123'],
+        );
         $data = $collector->collect();
 
         expect($data['post']['username'])->toBe('john')
@@ -68,10 +70,12 @@ describe('RequestDataCollector', function () {
     });
 
     it('masks authorization headers', function () {
-        $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer token123';
-        $_SERVER['HTTP_ACCEPT'] = 'text/html';
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            server: [
+                'HTTP_AUTHORIZATION' => 'Bearer token123',
+                'HTTP_ACCEPT' => 'text/html',
+            ],
+        );
         $data = $collector->collect();
 
         expect($data['headers']['Authorization'])->toBe('********')
@@ -79,10 +83,10 @@ describe('RequestDataCollector', function () {
     });
 
     it('masks API key fields', function () {
-        $_POST = ['username' => 'john', 'api_key' => 'secret-key-123'];
-        $_GET = ['apiKey' => 'query-key-456'];
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            get: ['apiKey' => 'query-key-456'],
+            post: ['username' => 'john', 'api_key' => 'secret-key-123'],
+        );
         $data = $collector->collect();
 
         expect($data['post']['username'])->toBe('john')
@@ -98,10 +102,12 @@ describe('RequestDataCollector', function () {
     });
 
     it('collects server information', function () {
-        $_SERVER['SERVER_SOFTWARE'] = 'Apache/2.4.41';
-        $_SERVER['SERVER_NAME'] = 'example.com';
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            server: [
+                'SERVER_SOFTWARE' => 'Apache/2.4.41',
+                'SERVER_NAME' => 'example.com',
+            ],
+        );
         $data = $collector->collect();
 
         expect($data['server'])->toBeArray()
@@ -110,10 +116,10 @@ describe('RequestDataCollector', function () {
     });
 
     it('masks token fields', function () {
-        $_POST = ['username' => 'john', 'token' => 'secret-token-123'];
-        $_GET = ['access_token' => 'query-token-456', 'refresh_token' => 'refresh-789'];
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            get: ['access_token' => 'query-token-456', 'refresh_token' => 'refresh-789'],
+            post: ['username' => 'john', 'token' => 'secret-token-123'],
+        );
         $data = $collector->collect();
 
         expect($data['post']['username'])->toBe('john')
@@ -123,9 +129,9 @@ describe('RequestDataCollector', function () {
     });
 
     it('masks cookies', function () {
-        $_COOKIE = ['session_id' => 'abc123', 'user_token' => 'secret'];
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            cookie: ['session_id' => 'abc123', 'user_token' => 'secret'],
+        );
         $data = $collector->collect();
 
         expect($data['cookies'])->toBeArray()
@@ -134,13 +140,12 @@ describe('RequestDataCollector', function () {
     });
 
     it('handles empty request data', function () {
-        $_GET = [];
-        $_POST = [];
-        $_COOKIE = [];
-        unset($_SERVER['REQUEST_METHOD']);
-        unset($_SERVER['REQUEST_URI']);
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            server: [],
+            get: [],
+            post: [],
+            cookie: [],
+        );
         $data = $collector->collect();
 
         expect($data['method'])->toBe('CLI')
@@ -151,17 +156,17 @@ describe('RequestDataCollector', function () {
     });
 
     it('handles nested data', function () {
-        $_POST = [
-            'user' => [
-                'name' => 'john',
-                'password' => 'secret123',
-                'credentials' => [
-                    'api_key' => 'nested-key',
+        $collector = new RequestDataCollector(
+            post: [
+                'user' => [
+                    'name' => 'john',
+                    'password' => 'secret123',
+                    'credentials' => [
+                        'api_key' => 'nested-key',
+                    ],
                 ],
             ],
-        ];
-
-        $collector = new RequestDataCollector();
+        );
         $data = $collector->collect();
 
         expect($data['post']['user']['name'])->toBe('john')
@@ -170,10 +175,10 @@ describe('RequestDataCollector', function () {
     });
 
     it('preserves non-sensitive data', function () {
-        $_GET = ['page' => '5', 'sort' => 'name', 'filter' => 'active'];
-        $_POST = ['title' => 'Hello World', 'content' => 'Some content', 'category_id' => '42'];
-
-        $collector = new RequestDataCollector();
+        $collector = new RequestDataCollector(
+            get: ['page' => '5', 'sort' => 'name', 'filter' => 'active'],
+            post: ['title' => 'Hello World', 'content' => 'Some content', 'category_id' => '42'],
+        );
         $data = $collector->collect();
 
         expect($data['query']['page'])->toBe('5')

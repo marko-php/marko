@@ -7,10 +7,7 @@ use Marko\Errors\Contracts\FormatterInterface;
 use Marko\Errors\ErrorReport;
 use Marko\Errors\Severity;
 use Marko\ErrorsAdvanced\AdvancedErrorHandler;
-use Marko\ErrorsAdvanced\PrettyHtmlFormatter;
 use Marko\ErrorsSimple\Environment;
-use Marko\ErrorsSimple\Formatters\BasicHtmlFormatter;
-use Marko\ErrorsSimple\Formatters\TextFormatter;
 use Marko\ErrorsSimple\SimpleErrorHandler;
 
 describe('Error Handler Chain Integration', function () {
@@ -133,10 +130,10 @@ describe('Error Handler Chain Integration', function () {
 
         // Bindings map interface to implementation
         expect($config['bindings'])->toHaveKey(ErrorHandlerInterface::class)
-            ->and($config['bindings'][ErrorHandlerInterface::class])->toBe(AdvancedErrorHandler::class);
+            ->and($config['bindings'][ErrorHandlerInterface::class])->toBe(AdvancedErrorHandler::class)
+            ->and($config['boot'])->toBeCallable();
 
         // Boot function exists and is callable
-        expect($config['boot'])->toBeCallable();
 
         // AdvancedErrorHandler implements the interface correctly
         $handler = new AdvancedErrorHandler();
@@ -153,11 +150,11 @@ describe('Error Handler Chain Integration', function () {
 
         // errors-simple binds SimpleErrorHandler
         expect($simpleConfig['bindings'][ErrorHandlerInterface::class])
-            ->toBe(SimpleErrorHandler::class);
+            ->toBe(SimpleErrorHandler::class)
+            ->and($advancedConfig['bindings'][ErrorHandlerInterface::class])
+            ->toBe(AdvancedErrorHandler::class);
 
         // errors-advanced binds AdvancedErrorHandler (should override simple)
-        expect($advancedConfig['bindings'][ErrorHandlerInterface::class])
-            ->toBe(AdvancedErrorHandler::class);
 
         // Both handlers implement the same interface
         $environment = new Environment();

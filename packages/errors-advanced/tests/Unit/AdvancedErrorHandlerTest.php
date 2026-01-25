@@ -7,7 +7,6 @@ use Marko\Errors\Contracts\FormatterInterface;
 use Marko\Errors\ErrorReport;
 use Marko\Errors\Severity;
 use Marko\ErrorsAdvanced\AdvancedErrorHandler;
-use Marko\ErrorsAdvanced\PrettyHtmlFormatter;
 use Marko\ErrorsSimple\Environment;
 
 function createTestErrorReportForHandler(

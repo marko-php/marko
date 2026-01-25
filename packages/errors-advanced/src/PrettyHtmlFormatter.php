@@ -12,9 +12,9 @@ class PrettyHtmlFormatter implements FormatterInterface
 {
     public function __construct(
         private ?SyntaxHighlighter $highlighter = null,
-        private string $environment = 'development',
+        private readonly string $environment = 'development',
         private ?RequestDataCollector $requestCollector = null,
-        private int $contextLines = 3,
+        private readonly int $contextLines = 3,
     ) {
         $this->highlighter ??= new SyntaxHighlighter();
         $this->requestCollector ??= new RequestDataCollector();
@@ -41,7 +41,7 @@ class PrettyHtmlFormatter implements FormatterInterface
 
         return <<<HTML
 <!DOCTYPE html>
-<html>
+<html lang="">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -69,7 +69,7 @@ HTML;
 
         return <<<HTML
 <!DOCTYPE html>
-<html>
+<html lang="">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -88,28 +88,22 @@ $previousException
 HTML;
     }
 
+    /** @noinspection CssUnusedSymbol - selectors used in HTML heredocs */
     private function getEmbeddedCss(): string
     {
-        return <<<'CSS'
+        $syntaxCss = $this->highlighter->getCss();
+
+        return <<<CSS
 body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
 .message { font-size: 1.2em; color: #333; }
 .location { color: #666; }
 .code-snippet { background: #fff; padding: 10px; border: 1px solid #ddd; overflow-x: auto; }
-.keyword { color: #0000ff; }
-.string { color: #a31515; }
-.variable { color: #001080; }
-.comment { color: #008000; }
-.number { color: #098658; }
+$syntaxCss
 @media (prefers-color-scheme: dark) {
 body { background: #1e1e1e; color: #d4d4d4; }
 .message { color: #d4d4d4; }
 .location { color: #9cdcfe; }
 .code-snippet { background: #252526; border-color: #3c3c3c; }
-.keyword { color: #569cd6; }
-.string { color: #ce9178; }
-.variable { color: #9cdcfe; }
-.comment { color: #6a9955; }
-.number { color: #b5cea8; }
 }
 @media (max-width: 768px) {
 body { padding: 10px; }

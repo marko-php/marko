@@ -6,6 +6,25 @@ namespace Marko\ErrorsAdvanced;
 
 class SyntaxHighlighter
 {
+    /** @noinspection CssUnusedSymbol - selectors used in highlight() output */
+    public function getCss(): string
+    {
+        return <<<'CSS'
+.keyword { color: #0000ff; }
+.string { color: #a31515; }
+.variable { color: #001080; }
+.comment { color: #008000; }
+.number { color: #098658; }
+@media (prefers-color-scheme: dark) {
+.keyword { color: #569cd6; }
+.string { color: #ce9178; }
+.variable { color: #9cdcfe; }
+.comment { color: #6a9955; }
+.number { color: #b5cea8; }
+}
+CSS;
+    }
+
     public function highlight(
         string $code,
     ): string {

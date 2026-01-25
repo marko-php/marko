@@ -39,7 +39,7 @@ function createTestRequestCollector(
     return new class ($mergedData) extends RequestDataCollector
     {
         public function __construct(
-            private array $testData,
+            private readonly array $testData,
         ) {}
 
         public function collect(): array
@@ -114,7 +114,7 @@ describe('PrettyHtmlFormatter', function () {
         $output = $formatter->format($report);
 
         expect($output)->toContain('<!DOCTYPE html>')
-            ->and($output)->toContain('<html>')
+            ->and($output)->toContain('<html lang="">')
             ->and($output)->toContain('</html>')
             ->and($output)->toContain('<head>')
             ->and($output)->toContain('</head>')

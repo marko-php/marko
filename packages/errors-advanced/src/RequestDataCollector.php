@@ -21,18 +21,48 @@ class RequestDataCollector
 
     private const string MASK = '********';
 
+    /** @var array<string, mixed> */
+    private array $server;
+
+    /** @var array<string, mixed> */
+    private array $get;
+
+    /** @var array<string, mixed> */
+    private array $post;
+
+    /** @var array<string, mixed> */
+    private array $cookie;
+
+    /**
+     * @param array<string, mixed>|null $server
+     * @param array<string, mixed>|null $get
+     * @param array<string, mixed>|null $post
+     * @param array<string, mixed>|null $cookie
+     */
+    public function __construct(
+        ?array $server = null,
+        ?array $get = null,
+        ?array $post = null,
+        ?array $cookie = null,
+    ) {
+        $this->server = $server ?? $_SERVER;
+        $this->get = $get ?? $_GET;
+        $this->post = $post ?? $_POST;
+        $this->cookie = $cookie ?? $_COOKIE;
+    }
+
     /**
      * @return array<string, mixed>
      */
     public function collect(): array
     {
         return [
-            'method' => $_SERVER['REQUEST_METHOD'] ?? 'CLI',
-            'uri' => $_SERVER['REQUEST_URI'] ?? '',
+            'method' => $this->server['REQUEST_METHOD'] ?? 'CLI',
+            'uri' => $this->server['REQUEST_URI'] ?? '',
             'headers' => $this->maskSensitiveHeaders($this->collectHeaders()),
-            'query' => $this->maskSensitiveData($_GET),
-            'post' => $this->maskSensitiveData($_POST),
-            'cookies' => $this->maskSensitiveData($_COOKIE),
+            'query' => $this->maskSensitiveData($this->get),
+            'post' => $this->maskSensitiveData($this->post),
+            'cookies' => $this->maskSensitiveData($this->cookie),
             'server' => $this->collectServerInfo(),
         ];
     }
@@ -44,7 +74,7 @@ class RequestDataCollector
     {
         $headers = [];
 
-        foreach ($_SERVER as $key => $value) {
+        foreach ($this->server as $key => $value) {
             if (str_starts_with($key, 'HTTP_')) {
                 $headerName = str_replace('_', '-', substr($key, 5));
                 $headerName = ucwords(strtolower($headerName), '-');
@@ -111,8 +141,8 @@ class RequestDataCollector
     {
         return [
             'php_version' => PHP_VERSION,
-            'software' => $_SERVER['SERVER_SOFTWARE'] ?? '',
-            'name' => $_SERVER['SERVER_NAME'] ?? '',
+            'software' => $this->server['SERVER_SOFTWARE'] ?? '',
+            'name' => $this->server['SERVER_NAME'] ?? '',
         ];
     }
 }
