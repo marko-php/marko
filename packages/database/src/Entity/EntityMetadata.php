@@ -65,11 +65,6 @@ readonly class EntityMetadata
      */
     public function getPropertyToColumnMap(): array
     {
-        $map = [];
-        foreach ($this->properties as $propName => $meta) {
-            $map[$propName] = $meta->columnName;
-        }
-
-        return $map;
+        return array_map(fn ($meta) => $meta->columnName, $this->properties);
     }
 }

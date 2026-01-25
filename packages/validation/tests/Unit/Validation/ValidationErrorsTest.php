@@ -101,10 +101,7 @@ it('is iterable', function () {
     $errors->add('name', 'Required');
     $errors->add('email', 'Invalid');
 
-    $result = [];
-    foreach ($errors as $field => $messages) {
-        $result[$field] = $messages;
-    }
+    $result = iterator_to_array($errors);
 
     expect($result)->toBe([
         'name' => ['Required'],
