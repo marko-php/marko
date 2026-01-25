@@ -245,7 +245,7 @@ it('finds entity by primary key with find(id)', function (): void {
 });
 
 it('returns null when entity not found', function (): void {
-    $connection = createMockConnection([]);
+    $connection = createMockConnection();
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
 
@@ -293,7 +293,7 @@ it('finds entity by primary key with findOrFail(id)', function (): void {
 });
 
 it('throws RepositoryException when findOrFail() entity not found', function (): void {
-    $connection = createMockConnection([]);
+    $connection = createMockConnection();
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
 
@@ -705,7 +705,7 @@ it('deletes entity with delete()', function (): void {
 });
 
 it('provides query() method returning QueryBuilder for custom queries', function (): void {
-    $connection = createMockConnection([]);
+    $connection = createMockConnection();
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
 

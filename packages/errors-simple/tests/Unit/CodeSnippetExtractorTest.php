@@ -97,7 +97,7 @@ describe('CodeSnippetExtractor', function (): void {
 
         try {
             // Request line 2 with 5 lines of context
-            $result = $extractor->extract($tempFile, 2, 5);
+            $result = $extractor->extract($tempFile, 2);
 
             // Should extract lines 1-7 (can't go before line 1)
             expect(array_keys($result['lines']))->toBe([1, 2, 3, 4, 5, 6, 7]);
@@ -120,7 +120,7 @@ describe('CodeSnippetExtractor', function (): void {
 
         try {
             // Request line 19 with 5 lines of context (file has 20 lines)
-            $result = $extractor->extract($tempFile, 19, 5);
+            $result = $extractor->extract($tempFile, 19);
 
             // Should extract lines 14-20 (can't go past line 20)
             expect(array_keys($result['lines']))->toBe([14, 15, 16, 17, 18, 19, 20]);
@@ -219,7 +219,7 @@ describe('CodeSnippetExtractor', function (): void {
 
         try {
             // Request line 2 with 5 lines of context (but file only has 3 lines)
-            $result = $extractor->extract($tempFile, 2, 5);
+            $result = $extractor->extract($tempFile, 2);
 
             // Should return all 3 lines
             expect($result['lines'])->toHaveCount(3);

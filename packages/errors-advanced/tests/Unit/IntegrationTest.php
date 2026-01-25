@@ -22,8 +22,6 @@ describe('Integration with marko/errors-simple', function () {
         $config = require $modulePath;
 
         expect($config)->toBeArray()
-            ->and($config)->toHaveKey('enabled')
-            ->and($config['enabled'])->toBeTrue()
             ->and($config)->toHaveKey('bindings')
             ->and($config['bindings'])->toHaveKey(ErrorHandlerInterface::class)
             ->and($config['bindings'][ErrorHandlerInterface::class])->toBe(AdvancedErrorHandler::class);

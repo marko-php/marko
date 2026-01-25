@@ -11,7 +11,6 @@ use Marko\Core\Container\ContainerInterface;
 use Marko\Session\Contracts\SessionInterface;
 
 return [
-    'enabled' => true,
     'bindings' => [
         PasswordHasherInterface::class => function (ContainerInterface $container): PasswordHasherInterface {
             $config = $container->get(AuthConfig::class);

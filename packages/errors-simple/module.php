@@ -9,7 +9,6 @@ use Marko\ErrorsSimple\SimpleErrorHandler;
 // Name and version come from composer.json.
 
 return [
-    'enabled' => true,
     'bindings' => [
         ErrorHandlerInterface::class => SimpleErrorHandler::class,
     ],

@@ -9,14 +9,18 @@ use Marko\Mail\Attachment;
 use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Exception\MessageException;
 use Marko\Mail\Message;
+use Random\RandomException;
 
-class SmtpMailer implements MailerInterface
+readonly class SmtpMailer implements MailerInterface
 {
     public function __construct(
         private SmtpTransport $transport,
         private ?SmtpConfig $config = null,
     ) {}
 
+    /**
+     * @throws MessageException|RandomException
+     */
     public function send(
         Message $message,
     ): bool {
@@ -84,6 +88,9 @@ class SmtpMailer implements MailerInterface
         );
     }
 
+    /**
+     * @throws RandomException
+     */
     private function buildMessage(
         Message $message,
     ): string {
@@ -307,7 +314,7 @@ class SmtpMailer implements MailerInterface
             $body[] = 'Content-Transfer-Encoding: base64';
             $body[] = "Content-Disposition: attachment; filename=\"$attachment->name\"";
             $body[] = '';
-            $body[] = chunk_split(base64_encode($attachment->content), 76, "\r\n");
+            $body[] = chunk_split(base64_encode($attachment->content));
         }
 
         $body[] = "--$mixedBoundary--";
@@ -350,7 +357,7 @@ class SmtpMailer implements MailerInterface
             $body[] = "Content-ID: <$attachment->contentId>";
             $body[] = "Content-Disposition: inline; filename=\"$attachment->name\"";
             $body[] = '';
-            $body[] = chunk_split(base64_encode($attachment->content), 76, "\r\n");
+            $body[] = chunk_split(base64_encode($attachment->content));
         }
 
         $body[] = "--$relatedBoundary--";
@@ -389,6 +396,9 @@ class SmtpMailer implements MailerInterface
         return implode("\r\n", $body);
     }
 
+    /**
+     * @throws RandomException
+     */
     private function generateBoundary(): string
     {
         return '=_Part_' . bin2hex(random_bytes(16));

@@ -151,7 +151,7 @@ describe('PgSqlConnection', function (): void {
                 /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private string &$capturedDsn,
             ) {
-                parent::__construct($config, 'utf8');
+                parent::__construct($config);
             }
 
             protected function createPdo(

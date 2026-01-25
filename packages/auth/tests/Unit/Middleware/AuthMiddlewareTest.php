@@ -290,7 +290,7 @@ test('it allows authenticated users through', function (): void {
 });
 
 test('it blocks unauthenticated users', function (): void {
-    $authManager = createAuthManagerWithUser(null); // No user
+    $authManager = createAuthManagerWithUser(); // No user
 
     $middleware = new AuthMiddleware($authManager);
 
@@ -311,7 +311,7 @@ test('it blocks unauthenticated users', function (): void {
 });
 
 test('it returns 401 for API guard when unauthenticated', function (): void {
-    $authManager = createAuthManagerWithUser(null);
+    $authManager = createAuthManagerWithUser();
 
     $middleware = new AuthMiddleware(
         auth: $authManager,
@@ -331,7 +331,7 @@ test('it returns 401 for API guard when unauthenticated', function (): void {
 });
 
 test('it redirects for web guard when unauthenticated', function (): void {
-    $authManager = createAuthManagerWithUser(null);
+    $authManager = createAuthManagerWithUser();
 
     $middleware = new AuthMiddleware(
         auth: $authManager,

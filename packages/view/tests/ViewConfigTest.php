@@ -8,7 +8,7 @@ use Marko\View\ViewConfig;
 function createViewConfigRepository(
     array $values = [],
 ): ConfigRepositoryInterface {
-    return new class ($values) implements ConfigRepositoryInterface
+    return new readonly class ($values) implements ConfigRepositoryInterface
     {
         public function __construct(
             private array $values,
@@ -102,7 +102,7 @@ it('ViewConfig has extension with default', function () {
     expect($viewConfigWithExtension->extension())->toBe('.blade.php');
 
     // Test default value
-    $configEmpty = createViewConfigRepository([]);
+    $configEmpty = createViewConfigRepository();
     $viewConfigEmpty = new ViewConfig($configEmpty);
     expect($viewConfigEmpty->extension())->toBe('.latte');
 });
@@ -116,7 +116,7 @@ it('ViewConfig has auto refresh with default', function () {
     expect($viewConfigWithAutoRefresh->autoRefresh())->toBeTrue();
 
     // Test default value (true for dev)
-    $configEmpty = createViewConfigRepository([]);
+    $configEmpty = createViewConfigRepository();
     $viewConfigEmpty = new ViewConfig($configEmpty);
     expect($viewConfigEmpty->autoRefresh())->toBeTrue();
 
@@ -145,7 +145,7 @@ it('ViewConfig loads from config repository', function () {
         ->and($viewConfig->strictTypes())->toBeTrue();
 
     // Test default values when config is empty
-    $emptyConfig = createViewConfigRepository([]);
+    $emptyConfig = createViewConfigRepository();
     $emptyViewConfig = new ViewConfig($emptyConfig);
 
     expect($emptyViewConfig->cacheDirectory())->toBe('/tmp/views')

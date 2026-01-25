@@ -272,7 +272,7 @@ function createGuestAuthManagerWithUser(
 }
 
 test('GuestMiddleware allows unauthenticated users', function (): void {
-    $authManager = createGuestAuthManagerWithUser(null); // No user
+    $authManager = createGuestAuthManagerWithUser(); // No user
 
     $middleware = new GuestMiddleware(
         auth: $authManager,

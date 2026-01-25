@@ -84,7 +84,7 @@ it('retries specific job by ID', function (): void {
 
 it('supports all flag', function (): void {
     $failedJobs = [
-        createFailedJob('job-1', 'default'),
+        createFailedJob('job-1'),
         createFailedJob('job-2', 'emails'),
     ];
 
@@ -147,7 +147,7 @@ it('shows success message for all jobs', function (): void {
 });
 
 it('handles invalid ID', function (): void {
-    $repository = Helpers::createStubFailedJobRepository([]);
+    $repository = Helpers::createStubFailedJobRepository();
     $queue = Helpers::createStubQueue();
 
     $command = new RetryCommand($repository, $queue);
@@ -164,7 +164,7 @@ it('handles invalid ID', function (): void {
 });
 
 it('requires job ID or --all flag', function (): void {
-    $repository = Helpers::createStubFailedJobRepository([]);
+    $repository = Helpers::createStubFailedJobRepository();
     $queue = Helpers::createStubQueue();
 
     $command = new RetryCommand($repository, $queue);

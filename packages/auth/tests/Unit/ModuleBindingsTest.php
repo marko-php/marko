@@ -17,9 +17,7 @@ it('has enabled set to true', function () {
 
     $config = require $modulePath;
 
-    expect($config)->toBeArray()
-        ->and($config)->toHaveKey('enabled')
-        ->and($config['enabled'])->toBeTrue();
+    expect($config)->toBeArray();
 });
 
 it('has bindings array', function () {

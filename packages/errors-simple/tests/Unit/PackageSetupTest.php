@@ -43,13 +43,6 @@ describe('Package Setup', function () {
         expect($composerJson['autoload']['psr-4']['Marko\\ErrorsSimple\\'])->toBe('src/');
     });
 
-    it('has module.php that is enabled by default', function () use ($modulePath) {
-        expect(file_exists($modulePath))->toBeTrue();
-        $module = require $modulePath;
-        expect($module)->toBeArray();
-        expect($module['enabled'])->toBeTrue();
-    });
-
     it('binds SimpleErrorHandler to ErrorHandlerInterface in module.php', function () use ($modulePath) {
         $module = require $modulePath;
         expect($module['bindings'])->toHaveKey(ErrorHandlerInterface::class);

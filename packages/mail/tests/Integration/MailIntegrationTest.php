@@ -240,8 +240,6 @@ test('module bindings resolve correctly', function (): void {
     $smtpModule = require $smtpModulePath;
 
     expect($smtpModule)->toBeArray()
-        ->and($smtpModule)->toHaveKey('enabled')
-        ->and($smtpModule['enabled'])->toBeTrue()
         ->and($smtpModule)->toHaveKey('bindings')
         ->and($smtpModule['bindings'])->toHaveKey(MailerInterface::class)
         ->and($smtpModule['bindings'][MailerInterface::class])->toBeInstanceOf(Closure::class);
@@ -249,9 +247,7 @@ test('module bindings resolve correctly', function (): void {
 
 test('missing driver throws MailException', function (): void {
     // When no mail config exists, ensureConfigExists should throw
-    $configRepo = createIntegrationConfigRepository([
-        // 'mail' key is intentionally missing
-    ]);
+    $configRepo = createIntegrationConfigRepository();
 
     $mailConfig = new MailConfig($configRepo);
 

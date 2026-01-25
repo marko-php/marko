@@ -399,7 +399,7 @@ test('it fails attempt with invalid credentials', function (): void {
     $regenerateCalled = false;
     $session = createSessionStub($storage, $regenerateCalled);
     $user = createUserStub(id: 42);
-    $provider = createUserProviderStub(userByCredentials: $user, credentialsValid: false);
+    $provider = createUserProviderStub(userByCredentials: $user);
 
     $guard = new SessionGuard(
         session: $session,
@@ -698,7 +698,7 @@ test('it does not create token when remember is explicitly false', function (): 
     );
 
     // Login with explicitly false remember flag
-    $guard->login($user, remember: false);
+    $guard->login($user);
 
     expect($cookies)->not->toHaveKey('remember_web')
         ->and($updatedRememberToken)->toBeNull();
@@ -795,7 +795,6 @@ test('it handles user not found by remember token gracefully', function (): void
     $session = createSessionStub($storage, $regenerateCalled);
     // No user found by remember token
     $provider = createUserProviderStub(
-        userByRememberToken: null,
         updatedRememberToken: $updatedRememberToken,
     );
     $cookieJar = createCookieJarStub($cookies);

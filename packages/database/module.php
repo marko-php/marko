@@ -9,7 +9,6 @@ use Marko\Database\Seed\SeederDiscoveryInterface;
 use Marko\Database\Seed\SeederRunner;
 
 return [
-    'enabled' => true,
     'bindings' => [
         SeederDiscoveryInterface::class => SeederDiscovery::class,
         SeederRunner::class => function (ContainerInterface $container): SeederRunner {

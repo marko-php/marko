@@ -332,7 +332,6 @@ it('shows both schema and data migration summary', function (): void {
             ['name' => '2024_01_01_000000_create_users_table', 'batch' => 1],
         ],
         repository: $this->createMock(MigrationRepository::class),
-        dataPending: [],
         dataApplied: ['001_seed_countries'],
     );
 

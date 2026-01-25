@@ -7,7 +7,6 @@ use Marko\Log\Contracts\LoggerInterface;
 use Marko\Log\File\Factory\FileLoggerFactory;
 
 return [
-    'enabled' => true,
     'bindings' => [
         LoggerInterface::class => function (ContainerInterface $container): LoggerInterface {
             return $container->get(FileLoggerFactory::class)->create();

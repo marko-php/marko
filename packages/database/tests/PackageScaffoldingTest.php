@@ -55,7 +55,6 @@ describe('Package Scaffolding', function (): void {
         $module = require $modulePath;
 
         expect($module)->toBeArray()
-            ->and($module['enabled'])->toBeTrue()
             ->and($module['bindings'])->toBeArray()
             ->and($module['bindings'])->toHaveKey('Marko\\Database\\Connection\\ConnectionInterface');
     });
@@ -68,7 +67,6 @@ describe('Package Scaffolding', function (): void {
         $module = require $modulePath;
 
         expect($module)->toBeArray()
-            ->and($module['enabled'])->toBeTrue()
             ->and($module['bindings'])->toBeArray()
             ->and($module['bindings'])->toHaveKey('Marko\\Database\\Connection\\ConnectionInterface');
     });

@@ -9,7 +9,6 @@ use Marko\View\TemplateResolverInterface;
 use Marko\View\ViewInterface;
 
 return [
-    'enabled' => true,
     'bindings' => [
         ViewInterface::class => function (ContainerInterface $container): ViewInterface {
             $engine = $container->get(LatteEngineFactory::class)->create();

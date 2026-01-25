@@ -131,9 +131,6 @@ describe('Error Handler Chain Integration', function () {
         $modulePath = dirname(__DIR__, 2) . '/module.php';
         $config = require $modulePath;
 
-        // Module is enabled
-        expect($config['enabled'])->toBeTrue();
-
         // Bindings map interface to implementation
         expect($config['bindings'])->toHaveKey(ErrorHandlerInterface::class)
             ->and($config['bindings'][ErrorHandlerInterface::class])->toBe(AdvancedErrorHandler::class);

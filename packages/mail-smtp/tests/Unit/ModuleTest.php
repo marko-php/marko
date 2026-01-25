@@ -13,8 +13,6 @@ describe('module.php', function (): void {
         $module = require $modulePath;
 
         expect($module)->toBeArray()
-            ->and($module)->toHaveKey('enabled')
-            ->and($module['enabled'])->toBeTrue()
             ->and($module)->toHaveKey('bindings')
             ->and($module['bindings'])->toBeArray();
     });

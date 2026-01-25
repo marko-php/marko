@@ -277,7 +277,7 @@ it('implements CommandInterface', function (): void {
 
 it('shows driver', function (): void {
     $command = new StatusCommand(
-        config: createStatusQueueConfig(driver: 'database'),
+        config: createStatusQueueConfig(),
         queue: createStatusQueue(),
         failedJobRepository: createStatusFailedJobRepository(),
     );

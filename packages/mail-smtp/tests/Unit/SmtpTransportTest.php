@@ -81,7 +81,7 @@ test('SmtpTransport authenticates with LOGIN', function (): void {
 
     $transport = new SmtpTransport($socket);
     $transport->connect('smtp.example.com', 587);
-    $transport->authenticate('user@example.com', 'secret', 'LOGIN');
+    $transport->authenticate('user@example.com', 'secret');
 
     $written = $socket->getWritten();
     expect($written)->toContain("AUTH LOGIN\r\n");

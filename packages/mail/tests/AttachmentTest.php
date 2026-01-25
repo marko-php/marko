@@ -57,7 +57,7 @@ describe('Attachment', function (): void {
     it('fromContent stores raw content', function (): void {
         $content = 'Raw binary data here';
 
-        $attachment = Attachment::fromContent($content, 'data.bin', 'application/octet-stream');
+        $attachment = Attachment::fromContent($content, 'data.bin');
 
         expect($attachment->content)->toBe('Raw binary data here')
             ->and($attachment->name)->toBe('data.bin')

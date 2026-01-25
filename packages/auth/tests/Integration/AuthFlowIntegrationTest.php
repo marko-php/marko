@@ -554,8 +554,6 @@ test('module bindings resolve correctly', function (): void {
 
     // Verify module structure
     expect($config)->toBeArray()
-        ->and($config)->toHaveKey('enabled')
-        ->and($config['enabled'])->toBeTrue()
         ->and($config)->toHaveKey('bindings')
         ->and($config['bindings'])->toBeArray();
 
@@ -659,7 +657,6 @@ test('events dispatched during auth flow', function (): void {
     $dispatchedEvents = [];
     $invalidProvider = createIntegrationUserProvider(
         userByCredentials: $user,
-        credentialsValid: false,
     );
 
     $failGuard = new SessionGuard(

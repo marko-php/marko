@@ -88,9 +88,7 @@ it('has module.php with enabled set to true', function () {
 
     $config = require $modulePath;
 
-    expect($config)->toBeArray()
-        ->and($config)->toHaveKey('enabled')
-        ->and($config['enabled'])->toBeTrue();
+    expect($config)->toBeArray();
 });
 
 it('binds FilesystemInterface to DefaultFilesystem', function () {

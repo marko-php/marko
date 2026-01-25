@@ -61,7 +61,6 @@ it('returns response using view on index route', function (): void {
 
 it('returns response using view on show route', function (): void {
     $repository = createMockPostRepository(
-        posts: [],
         findBySlugResult: ['id' => 1, 'title' => 'Hello World', 'slug' => 'hello-world'],
     );
     $view = createMockView();
@@ -74,10 +73,7 @@ it('returns response using view on show route', function (): void {
 });
 
 it('returns 404 response when post slug not found', function (): void {
-    $repository = createMockPostRepository(
-        posts: [],
-        findBySlugResult: null,
-    );
+    $repository = createMockPostRepository();
     $view = createMockView();
     $controller = new PostController($repository, $view);
     $response = $controller->show('non-existent');

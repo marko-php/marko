@@ -135,7 +135,7 @@ describe('QueueConfig', function (): void {
     });
 
     it('provides default values', function (): void {
-        $config = createQueueConfigRepository([]);
+        $config = createQueueConfigRepository();
 
         $queueConfig = new QueueConfig($config);
 
@@ -151,7 +151,7 @@ describe('QueueConfig', function (): void {
         // These defaults are suitable for development environments (sync driver)
         // while production can override via config files
 
-        $emptyConfig = createQueueConfigRepository([]);
+        $emptyConfig = createQueueConfigRepository();
         $queueConfig = new QueueConfig($emptyConfig);
 
         // Verify defaults are appropriate for development environment

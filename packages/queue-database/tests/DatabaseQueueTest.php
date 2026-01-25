@@ -278,7 +278,7 @@ test('DatabaseQueue release with zero delay makes job immediately available', fu
 
     $queue = new DatabaseQueue($connection);
     $beforeTime = new DateTimeImmutable();
-    $released = $queue->release('job-123', 0);
+    $released = $queue->release('job-123');
     $afterTime = new DateTimeImmutable();
 
     expect($released)->toBeTrue();

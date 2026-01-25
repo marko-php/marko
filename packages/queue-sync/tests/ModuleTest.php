@@ -16,8 +16,6 @@ test('module.php exists with correct structure', function (): void {
     $module = require $modulePath;
 
     expect($module)->toBeArray();
-    expect($module)->toHaveKey('enabled');
-    expect($module['enabled'])->toBeTrue();
     expect($module)->toHaveKey('bindings');
     expect($module['bindings'])->toBeArray();
 });

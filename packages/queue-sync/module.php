@@ -8,7 +8,6 @@ use Marko\Queue\Sync\NullFailedJobRepository;
 use Marko\Queue\Sync\SyncQueue;
 
 return [
-    'enabled' => true,
     'bindings' => [
         QueueInterface::class => SyncQueue::class,
         FailedJobRepositoryInterface::class => NullFailedJobRepository::class,

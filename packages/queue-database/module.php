@@ -8,7 +8,6 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\QueueInterface;
 
 return [
-    'enabled' => true,
     'bindings' => [
         QueueInterface::class => DatabaseQueue::class,
         FailedJobRepositoryInterface::class => DatabaseFailedJobRepository::class,

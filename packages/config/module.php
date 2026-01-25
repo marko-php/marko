@@ -9,7 +9,6 @@ use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\Core\Path\ProjectPaths;
 
 return [
-    'enabled' => true,
     'bindings' => [
         ConfigRepositoryInterface::class => static function (ContainerInterface $container): ConfigRepositoryInterface {
             $provider = $container->get(ConfigServiceProvider::class);

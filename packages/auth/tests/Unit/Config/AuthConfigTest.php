@@ -84,7 +84,7 @@ function createAuthMockConfigRepository(
 }
 
 it('creates AuthConfig class', function () {
-    $config = new AuthConfig(createAuthMockConfigRepository([]));
+    $config = new AuthConfig(createAuthMockConfigRepository());
 
     expect($config)->toBeInstanceOf(AuthConfig::class);
 });
@@ -162,7 +162,7 @@ it('provides getter for bcrypt cost', function () {
 });
 
 it('provides default bcrypt cost of 12', function () {
-    $config = new AuthConfig(createAuthMockConfigRepository([]));
+    $config = new AuthConfig(createAuthMockConfigRepository());
 
     expect($config->bcryptCost())->toBe(12);
 });

@@ -7,7 +7,6 @@ use Marko\Hashing\Contracts\HasherInterface;
 use Marko\Hashing\HashManager;
 
 return [
-    'enabled' => true,
     'bindings' => [
         HasherInterface::class => function (ContainerInterface $container): HasherInterface {
             return $container->get(HashManager::class)->hasher();

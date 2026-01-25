@@ -175,7 +175,7 @@ test('DatabaseFailedJobRepository delete removes by ID', function (): void {
 });
 
 test('DatabaseFailedJobRepository delete returns false when ID not found', function (): void {
-    $connection = createMockConnection(executeResult: 0);
+    $connection = createMockConnection();
     $repository = new DatabaseFailedJobRepository($connection);
 
     $result = $repository->delete('non-existent');

@@ -9,7 +9,6 @@ use Marko\ErrorsAdvanced\AdvancedErrorHandler;
 // Name and version come from composer.json.
 
 return [
-    'enabled' => true,
     'bindings' => [
         ErrorHandlerInterface::class => AdvancedErrorHandler::class,
     ],

@@ -7,7 +7,7 @@ namespace Marko\View;
 use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\View\Exceptions\TemplateNotFoundException;
 
-class ModuleTemplateResolver implements TemplateResolverInterface
+readonly class ModuleTemplateResolver implements TemplateResolverInterface
 {
     public function __construct(
         private ModuleRepositoryInterface $moduleRepository,

@@ -123,7 +123,7 @@ describe('MySqlConnection', function (): void {
                 /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private string &$capturedDsn,
             ) {
-                parent::__construct($config, 'utf8mb4');
+                parent::__construct($config);
             }
 
             protected function createPdo(

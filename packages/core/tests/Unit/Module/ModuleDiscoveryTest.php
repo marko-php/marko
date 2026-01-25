@@ -390,7 +390,7 @@ it('skips packages without extra.marko.module marker', function (): void {
     createTestModule($vendorDir . '/marko/core', 'marko/core');
 
     // Create a non-Marko package WITHOUT extra.marko (like latte/latte)
-    createTestModule($vendorDir . '/latte/latte', 'latte/latte', '3.0.0', [], null, isMarkoModule: false);
+    createTestModule($vendorDir . '/latte/latte', 'latte/latte', '3.0.0', isMarkoModule: false);
 
     $discovery = new ModuleDiscovery(new ManifestParser());
     $modules = $discovery->discoverInVendor($vendorDir);
@@ -443,9 +443,9 @@ it('uses same detection rule for vendor, modules, and app directories', function
     createTestModule($appDir . '/blog', 'app/blog');
 
     // Create packages WITHOUT extra.marko (should NOT be discovered)
-    createTestModule($vendorDir . '/other/lib', 'other/lib', '1.0.0', [], null, isMarkoModule: false);
-    createTestModule($modulesDir . '/legacy/code', 'legacy/code', '1.0.0', [], null, isMarkoModule: false);
-    createTestModule($appDir . '/tools', 'app/tools', '1.0.0', [], null, isMarkoModule: false);
+    createTestModule($vendorDir . '/other/lib', 'other/lib', isMarkoModule: false);
+    createTestModule($modulesDir . '/legacy/code', 'legacy/code', isMarkoModule: false);
+    createTestModule($appDir . '/tools', 'app/tools', isMarkoModule: false);
 
     $discovery = new ModuleDiscovery(new ManifestParser());
 

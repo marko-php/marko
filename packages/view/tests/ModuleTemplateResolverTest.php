@@ -15,7 +15,7 @@ function createTestViewConfig(
 ): ViewConfig {
     $config = new class ($extension) implements ConfigRepositoryInterface
     {
-        public function __construct(private string $extension) {}
+        public function __construct(private readonly string $extension) {}
 
         public function get(
             string $key,

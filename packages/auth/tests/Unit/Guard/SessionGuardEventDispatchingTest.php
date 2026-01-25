@@ -345,7 +345,7 @@ test('it dispatches FailedLoginEvent on failed attempt', function (): void {
     $session = createEventTestSessionStub($storage, $regenerateCalled);
     $user = createEventTestUserStub(id: 42);
     // User found but credentials invalid
-    $provider = createEventTestUserProviderStub(userByCredentials: $user, credentialsValid: false);
+    $provider = createEventTestUserProviderStub(userByCredentials: $user);
     $dispatcher = createEventTestDispatcherStub($dispatchedEvents);
 
     $guard = new SessionGuard(
@@ -403,7 +403,7 @@ test('it includes remember flag in LoginEvent', function (): void {
     );
 
     // Test with remember = false
-    $guard->login($user, remember: false);
+    $guard->login($user);
 
     expect($dispatchedEvents)->toHaveCount(1)
         ->and($dispatchedEvents[0])->toBeInstanceOf(LoginEvent::class)
@@ -450,7 +450,7 @@ test('event dispatching is optional (no error if dispatcher missing)', function 
     expect($result)->toBeTrue();
 
     // Also test failed attempt
-    $provider2 = createEventTestUserProviderStub(userByCredentials: $user, credentialsValid: false);
+    $provider2 = createEventTestUserProviderStub(userByCredentials: $user);
     $guard2 = new SessionGuard(
         session: createEventTestSessionStub($storage, $regenerateCalled),
         provider: $provider2,

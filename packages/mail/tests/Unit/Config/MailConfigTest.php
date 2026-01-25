@@ -122,7 +122,7 @@ test('MailConfig provides driver-specific config', function () {
 });
 
 test('MailConfig throws on missing config file', function () {
-    $config = new MailConfig(createMailMockConfigRepository([]));
+    $config = new MailConfig(createMailMockConfigRepository());
 
     expect(fn () => $config->ensureConfigExists())
         ->toThrow(MailException::class, 'Mail configuration file not found.');

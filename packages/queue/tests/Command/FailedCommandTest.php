@@ -97,7 +97,7 @@ it('shows total count', function (): void {
 });
 
 it('handles empty list', function (): void {
-    $repository = Helpers::createStubFailedJobRepository([]);
+    $repository = Helpers::createStubFailedJobRepository();
     $command = new FailedCommand($repository);
     ['output' => $output] = executeFailedCommand($command);
 

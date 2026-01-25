@@ -15,7 +15,6 @@ use Marko\Database\Query\QueryBuilderInterface;
 // Name and version come from composer.json.
 
 return [
-    'enabled' => true,
     'bindings' => [
         ConnectionInterface::class => PgSqlConnection::class,
         SqlGeneratorInterface::class => PgSqlGenerator::class,

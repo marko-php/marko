@@ -383,7 +383,7 @@ it('handles controller returning Response object', function (): void {
     {
         public function redirectHome(): Response
         {
-            return Response::redirect('/home', 302);
+            return Response::redirect('/home');
         }
     };
 

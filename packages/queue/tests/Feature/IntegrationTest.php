@@ -445,7 +445,6 @@ describe('Integration Tests', function (): void {
         $syncModule = require $syncModulePath;
 
         expect($syncModule)->toBeArray()
-            ->and($syncModule['enabled'])->toBeTrue()
             ->and($syncModule['bindings'])->toHaveKey(QueueInterface::class)
             ->and($syncModule['bindings'])->toHaveKey(FailedJobRepositoryInterface::class);
 
