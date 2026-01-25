@@ -15,7 +15,7 @@ use Marko\Queue\WorkerInterface;
 function createTestQueueConfig(
     array $values = [],
 ): QueueConfig {
-    $configRepository = new class ($values) implements ConfigRepositoryInterface
+    $configRepository = new readonly class ($values) implements ConfigRepositoryInterface
     {
         public function __construct(
             private array $values,
@@ -144,7 +144,7 @@ function createTestFailedJobRepository(): FailedJobRepositoryInterface
 
 class FailingTestJob extends Job
 {
-    protected int $maxAttempts = 2;
+    public protected(set) int $maxAttempts = 2;
 
     public function handle(): void
     {
@@ -248,7 +248,7 @@ describe('Worker', function () {
             public bool $deleted = false;
 
             public function __construct(
-                private JobInterface $job,
+                private readonly JobInterface $job,
             ) {}
 
             public function push(
@@ -314,14 +314,14 @@ describe('Worker', function () {
 
         $worker->work(once: true);
 
-        expect($job::$handled)->toBeTrue();
-        expect($queue->deleted)->toBeTrue();
+        expect($job::$handled)->toBeTrue()
+            ->and($queue->deleted)->toBeTrue();
     });
 
     test('handles job failures with retry', function () {
         $job = new class () extends Job
         {
-            protected int $maxAttempts = 3;
+            public protected(set) int $maxAttempts = 3;
 
             public function handle(): void
             {
@@ -330,8 +330,7 @@ describe('Worker', function () {
         };
         $job->setId('job-1');
 
-        $releasedDelay = null;
-        $queue = new class ($job, $releasedDelay) implements QueueInterface
+        $queue = new class ($job) implements QueueInterface
         {
             private bool $popped = false;
 
@@ -340,11 +339,8 @@ describe('Worker', function () {
             public ?int $releasedDelay = null;
 
             public function __construct(
-                private JobInterface $job,
-                mixed &$releasedDelay,
-            ) {
-                $releasedDelay = &$this->releasedDelay;
-            }
+                private readonly JobInterface $job,
+            ) {}
 
             public function push(
                 JobInterface $job,
@@ -410,9 +406,9 @@ describe('Worker', function () {
         $worker->work(once: true);
 
         // Job should be released with exponential backoff delay (2^1 * 10 = 20 seconds)
-        expect($queue->releasedDelay)->toBe(20);
-        expect($queue->deleted)->toBeFalse();
-        expect($failedRepository->count())->toBe(0);
+        expect($queue->releasedDelay)->toBe(20)
+            ->and($queue->deleted)->toBeFalse()
+            ->and($failedRepository->count())->toBe(0);
     });
 
     test('stores failed job after max attempts', function () {
@@ -430,7 +426,7 @@ describe('Worker', function () {
             public bool $released = false;
 
             public function __construct(
-                private JobInterface $job,
+                private readonly JobInterface $job,
             ) {}
 
             public function push(
@@ -497,15 +493,15 @@ describe('Worker', function () {
         $worker->work(once: true);
 
         // Job should be stored as failed and deleted from queue
-        expect($queue->deleted)->toBeTrue();
-        expect($queue->released)->toBeFalse();
-        expect($failedRepository->count())->toBe(1);
+        expect($queue->deleted)->toBeTrue()
+            ->and($queue->released)->toBeFalse()
+            ->and($failedRepository->count())->toBe(1);
 
         $failedJob = $failedRepository->find('job-1');
 
-        expect($failedJob)->not->toBeNull();
-        expect($failedJob->queue)->toBe('default');
-        expect($failedJob->exception)->toContain('Job failed permanently');
+        expect($failedJob)->not->toBeNull()
+            ->and($failedJob->queue)->toBe('default')
+            ->and($failedJob->exception)->toContain('Job failed permanently');
     });
 
     test('stops when stop() is called', function () {
@@ -547,7 +543,7 @@ describe('Worker', function () {
         $queue = new class ($job, $popCount) implements QueueInterface
         {
             public function __construct(
-                private JobInterface $job,
+                private readonly JobInterface $job,
                 private int &$popCount,
             ) {}
 
@@ -609,8 +605,8 @@ describe('Worker', function () {
         // With once=true, worker should process exactly one job and return
         $worker->work(once: true);
 
-        expect($popCount)->toBe(1);
-        expect($job::$handled)->toBeTrue();
+        expect($popCount)->toBe(1)
+            ->and($job::$handled)->toBeTrue();
     });
 
     test('returns immediately when once flag is set and no jobs available', function () {
@@ -688,11 +684,11 @@ describe('Worker', function () {
         // After 2nd attempt (attempts=2): 2^2 * 10 = 40 seconds
         // After 3rd attempt (attempts=3): 2^3 * 10 = 80 seconds
 
-        $releasedDelays = [];
+        $capture = (object) ['releasedDelays' => []];
 
         $job = new class () extends Job
         {
-            protected int $maxAttempts = 5;
+            public protected(set) int $maxAttempts = 5;
 
             public function handle(): void
             {
@@ -700,13 +696,13 @@ describe('Worker', function () {
             }
         };
 
-        $queue = new class ($job, $releasedDelays) implements QueueInterface
+        $queue = new class ($job, $capture) implements QueueInterface
         {
             private int $popCount = 0;
 
             public function __construct(
-                private JobInterface $job,
-                private array &$releasedDelays,
+                private readonly JobInterface $job,
+                private readonly object $capture,
             ) {}
 
             public function push(
@@ -759,7 +755,7 @@ describe('Worker', function () {
                 string $jobId,
                 int $delay = 0,
             ): bool {
-                $this->releasedDelays[] = $delay;
+                $this->capture->releasedDelays[] = $delay;
 
                 return true;
             }
@@ -776,9 +772,9 @@ describe('Worker', function () {
         $worker->work(once: true); // 3rd attempt
 
         // Verify exponential backoff: 2^attempts * 10
-        expect($releasedDelays)->toHaveCount(3)
-            ->and($releasedDelays[0])->toBe(20)  // 2^1 * 10 = 20
-            ->and($releasedDelays[1])->toBe(40)  // 2^2 * 10 = 40
-            ->and($releasedDelays[2])->toBe(80); // 2^3 * 10 = 80
+        expect($capture->releasedDelays)->toHaveCount(3)
+            ->and($capture->releasedDelays[0])->toBe(20)  // 2^1 * 10 = 20
+            ->and($capture->releasedDelays[1])->toBe(40)  // 2^2 * 10 = 40
+            ->and($capture->releasedDelays[2])->toBe(80); // 2^3 * 10 = 80
     });
 });

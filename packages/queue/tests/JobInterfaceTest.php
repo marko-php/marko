@@ -17,17 +17,20 @@ describe('JobInterface', function (): void {
             ->and($method->getReturnType()?->getName())->toBe('void');
     });
 
-    it('defines id methods', function (): void {
+    it('defines id property and setId method', function (): void {
         $reflection = new ReflectionClass(JobInterface::class);
 
-        expect($reflection->hasMethod('getId'))->toBeTrue()
+        // Interface uses property hook: public ?string $id { get; }
+        expect($reflection->hasProperty('id'))->toBeTrue();
+
+        $idProperty = $reflection->getProperty('id');
+
+        expect($idProperty->isPublic())->toBeTrue()
+            ->and($idProperty->getType()?->allowsNull())->toBeTrue()
+            ->and($idProperty->getType()?->getName())->toBe('string')
             ->and($reflection->hasMethod('setId'))->toBeTrue();
 
-        $getId = $reflection->getMethod('getId');
-
-        expect($getId->isPublic())->toBeTrue()
-            ->and($getId->getReturnType()?->allowsNull())->toBeTrue()
-            ->and($getId->getReturnType()?->getName())->toBe('string');
+        // setId method still exists for setting the ID
 
         $setId = $reflection->getMethod('setId');
 
@@ -38,27 +41,28 @@ describe('JobInterface', function (): void {
             ->and($setId->getParameters()[0]->getType()?->getName())->toBe('string');
     });
 
-    it('defines attempt methods', function (): void {
+    it('defines attempt properties and incrementAttempts method', function (): void {
         $reflection = new ReflectionClass(JobInterface::class);
 
-        expect($reflection->hasMethod('getAttempts'))->toBeTrue()
-            ->and($reflection->hasMethod('incrementAttempts'))->toBeTrue()
-            ->and($reflection->hasMethod('getMaxAttempts'))->toBeTrue();
+        // Interface uses property hooks: public int $attempts { get; } and public int $maxAttempts { get; }
+        expect($reflection->hasProperty('attempts'))->toBeTrue()
+            ->and($reflection->hasProperty('maxAttempts'))->toBeTrue()
+            ->and($reflection->hasMethod('incrementAttempts'))->toBeTrue();
 
-        $getAttempts = $reflection->getMethod('getAttempts');
+        $attemptsProperty = $reflection->getProperty('attempts');
 
-        expect($getAttempts->isPublic())->toBeTrue()
-            ->and($getAttempts->getReturnType()?->getName())->toBe('int');
+        expect($attemptsProperty->isPublic())->toBeTrue()
+            ->and($attemptsProperty->getType()?->getName())->toBe('int');
+
+        $maxAttemptsProperty = $reflection->getProperty('maxAttempts');
+
+        expect($maxAttemptsProperty->isPublic())->toBeTrue()
+            ->and($maxAttemptsProperty->getType()?->getName())->toBe('int');
 
         $incrementAttempts = $reflection->getMethod('incrementAttempts');
 
         expect($incrementAttempts->isPublic())->toBeTrue()
             ->and($incrementAttempts->getReturnType()?->getName())->toBe('void');
-
-        $getMaxAttempts = $reflection->getMethod('getMaxAttempts');
-
-        expect($getMaxAttempts->isPublic())->toBeTrue()
-            ->and($getMaxAttempts->getReturnType()?->getName())->toBe('int');
     });
 
     it('defines serialization methods', function (): void {

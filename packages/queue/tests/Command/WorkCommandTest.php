@@ -52,7 +52,7 @@ it('processes jobs continuously', function (): void {
     {
         public function __construct(
             private int &$processed,
-            private int $max,
+            private readonly int $max,
         ) {}
 
         public function work(
@@ -77,12 +77,12 @@ it('processes jobs continuously', function (): void {
 });
 
 it('supports once flag', function (): void {
-    $receivedOnce = null;
+    $capture = (object) ['once' => null];
 
-    $worker = new class ($receivedOnce) implements WorkerInterface
+    $worker = new readonly class ($capture) implements WorkerInterface
     {
         public function __construct(
-            private ?bool &$once,
+            private object $capture,
         ) {}
 
         public function work(
@@ -90,7 +90,7 @@ it('supports once flag', function (): void {
             bool $once = false,
             int $sleep = 3,
         ): void {
-            $this->once = $once;
+            $this->capture->once = $once;
         }
 
         public function stop(): void {}
@@ -99,16 +99,16 @@ it('supports once flag', function (): void {
     $command = new WorkCommand($worker);
     executeWorkCommand($command, ['marko', 'queue:work', '--once']);
 
-    expect($receivedOnce)->toBeTrue();
+    expect($capture->once)->toBeTrue();
 });
 
 it('supports queue option', function (): void {
-    $receivedQueue = null;
+    $capture = (object) ['queue' => null];
 
-    $worker = new class ($receivedQueue) implements WorkerInterface
+    $worker = new readonly class ($capture) implements WorkerInterface
     {
         public function __construct(
-            private ?string &$queue,
+            private object $capture,
         ) {}
 
         public function work(
@@ -116,7 +116,7 @@ it('supports queue option', function (): void {
             bool $once = false,
             int $sleep = 3,
         ): void {
-            $this->queue = $queue;
+            $this->capture->queue = $queue;
         }
 
         public function stop(): void {}
@@ -125,16 +125,16 @@ it('supports queue option', function (): void {
     $command = new WorkCommand($worker);
     executeWorkCommand($command, ['marko', 'queue:work', '--queue=emails']);
 
-    expect($receivedQueue)->toBe('emails');
+    expect($capture->queue)->toBe('emails');
 });
 
 it('supports sleep option', function (): void {
-    $receivedSleep = null;
+    $capture = (object) ['sleep' => null];
 
-    $worker = new class ($receivedSleep) implements WorkerInterface
+    $worker = new readonly class ($capture) implements WorkerInterface
     {
         public function __construct(
-            private ?int &$sleep,
+            private object $capture,
         ) {}
 
         public function work(
@@ -142,7 +142,7 @@ it('supports sleep option', function (): void {
             bool $once = false,
             int $sleep = 3,
         ): void {
-            $this->sleep = $sleep;
+            $this->capture->sleep = $sleep;
         }
 
         public function stop(): void {}
@@ -151,7 +151,7 @@ it('supports sleep option', function (): void {
     $command = new WorkCommand($worker);
     executeWorkCommand($command, ['marko', 'queue:work', '--sleep=5']);
 
-    expect($receivedSleep)->toBe(5);
+    expect($capture->sleep)->toBe(5);
 });
 
 it('displays processing status', function (): void {

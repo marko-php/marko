@@ -8,7 +8,7 @@ use Marko\Queue\QueueConfig;
 function createQueueConfigRepository(
     array $values = [],
 ): ConfigRepositoryInterface {
-    return new class ($values) implements ConfigRepositoryInterface
+    return new readonly class ($values) implements ConfigRepositoryInterface
     {
         public function __construct(
             private array $values,

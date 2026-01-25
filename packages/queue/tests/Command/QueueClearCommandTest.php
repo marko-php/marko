@@ -15,17 +15,15 @@ use Marko\Queue\QueueInterface;
  */
 function createQueueStub(
     int $clearReturn = 0,
-    ?string $expectedQueue = null,
 ): QueueInterface {
-    return new class ($clearReturn, $expectedQueue) implements QueueInterface
+    return new class ($clearReturn) implements QueueInterface
     {
-        private int $clearCallCount = 0;
+        public private(set) int $clearCallCount = 0;
 
-        private ?string $lastClearedQueue = null;
+        public private(set) ?string $lastClearedQueue = null;
 
         public function __construct(
             private readonly int $clearReturn,
-            private readonly ?string $expectedQueue,
         ) {}
 
         public function push(
@@ -75,16 +73,6 @@ function createQueueStub(
             int $delay = 0,
         ): bool {
             return true;
-        }
-
-        public function getClearCallCount(): int
-        {
-            return $this->clearCallCount;
-        }
-
-        public function getLastClearedQueue(): ?string
-        {
-            return $this->lastClearedQueue;
         }
     };
 }
@@ -148,8 +136,8 @@ it('clears all jobs from queue', function (): void {
     );
 
     expect($exitCode)->toBe(0)
-        ->and($queue->getClearCallCount())->toBe(1)
-        ->and($queue->getLastClearedQueue())->toBeNull();
+        ->and($queue->clearCallCount)->toBe(1)
+        ->and($queue->lastClearedQueue)->toBeNull();
 });
 
 it('supports queue option', function (): void {
@@ -159,8 +147,8 @@ it('supports queue option', function (): void {
     );
 
     expect($exitCode)->toBe(0)
-        ->and($queue->getClearCallCount())->toBe(1)
-        ->and($queue->getLastClearedQueue())->toBe('emails');
+        ->and($queue->clearCallCount)->toBe(1)
+        ->and($queue->lastClearedQueue)->toBe('emails');
 });
 
 it('shows cleared count for default queue', function (): void {

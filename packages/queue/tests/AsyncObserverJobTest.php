@@ -18,7 +18,7 @@ describe('AsyncObserverJob', function (): void {
             eventData: serialize(['test' => 'data']),
         );
 
-        expect($job->getObserverClass())->toBe('App\Observers\EmailNotificationObserver');
+        expect($job->observerClass)->toBe('App\Observers\EmailNotificationObserver');
     });
 
     it('stores serialized event', function (): void {
@@ -29,26 +29,24 @@ describe('AsyncObserverJob', function (): void {
             eventData: $eventData,
         );
 
-        expect($job->getEventData())->toBe($eventData);
+        expect($job->eventData)->toBe($eventData);
     });
 
     it('handle executes observer', function (): void {
         // Create a mock observer that tracks if it was called
-        $observerCalled = false;
-        $receivedEvent = null;
+        $capture = (object) ['called' => false, 'event' => null];
 
-        $observer = new class ($observerCalled, $receivedEvent)
+        $observer = new readonly class ($capture)
         {
             public function __construct(
-                private bool &$called,
-                private mixed &$event,
+                private object $capture,
             ) {}
 
             public function handle(
                 object $event,
             ): void {
-                $this->called = true;
-                $this->event = $event;
+                $this->capture->called = true;
+                $this->capture->event = $event;
             }
         };
 
@@ -66,10 +64,10 @@ describe('AsyncObserverJob', function (): void {
         // Create a resolver callback to simulate container resolution
         $job->handle(fn (string $class): object => $observer);
 
-        expect($observerCalled)->toBeTrue()
-            ->and($receivedEvent)->toBeInstanceOf(stdClass::class)
-            ->and($receivedEvent->type)->toBe('user.created')
-            ->and($receivedEvent->userId)->toBe(42);
+        expect($capture->called)->toBeTrue()
+            ->and($capture->event)->toBeInstanceOf(stdClass::class)
+            ->and($capture->event->type)->toBe('user.created')
+            ->and($capture->event->userId)->toBe(42);
     });
 
     it('serializes and unserializes correctly', function (): void {
@@ -84,9 +82,9 @@ describe('AsyncObserverJob', function (): void {
         $unserialized = AsyncObserverJob::unserialize($serialized);
 
         expect($unserialized)->toBeInstanceOf(AsyncObserverJob::class)
-            ->and($unserialized->getObserverClass())->toBe('App\Observers\TestObserver')
-            ->and($unserialized->getEventData())->toBe(serialize(['test' => 'value']))
-            ->and($unserialized->getId())->toBe('async-123')
-            ->and($unserialized->getAttempts())->toBe(1);
+            ->and($unserialized->observerClass)->toBe('App\Observers\TestObserver')
+            ->and($unserialized->eventData)->toBe(serialize(['test' => 'value']))
+            ->and($unserialized->id)->toBe('async-123')
+            ->and($unserialized->attempts)->toBe(1);
     });
 });

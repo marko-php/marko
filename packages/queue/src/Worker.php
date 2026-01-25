@@ -12,9 +12,9 @@ class Worker implements WorkerInterface
     private bool $running = false;
 
     public function __construct(
-        private QueueInterface $queue,
-        private FailedJobRepositoryInterface $failedRepository,
-        private QueueConfig $config,
+        private readonly QueueInterface $queue,
+        private readonly FailedJobRepositoryInterface $failedRepository,
+        private readonly QueueConfig $config,
     ) {}
 
     public function work(
@@ -39,7 +39,7 @@ class Worker implements WorkerInterface
             try {
                 $job->incrementAttempts();
                 $job->handle();
-                $this->queue->delete($job->getId());
+                $this->queue->delete($job->id);
             } catch (Throwable $e) {
                 $this->handleFailedJob($job, $e, $queue);
             }
@@ -60,18 +60,18 @@ class Worker implements WorkerInterface
         Throwable $e,
         ?string $queue,
     ): void {
-        if ($job->getAttempts() < $job->getMaxAttempts()) {
-            $delay = (int) pow(2, $job->getAttempts()) * 10;
-            $this->queue->release($job->getId(), $delay);
+        if ($job->attempts < $job->maxAttempts) {
+            $delay = (int) pow(2, $job->attempts) * 10;
+            $this->queue->release($job->id, $delay);
         } else {
             $this->failedRepository->store(new FailedJob(
-                id: $job->getId(),
+                id: $job->id,
                 queue: $queue ?? $this->config->queue(),
                 payload: $job->serialize(),
                 exception: $e->getMessage() . "\n" . $e->getTraceAsString(),
                 failedAt: new DateTimeImmutable(),
             ));
-            $this->queue->delete($job->getId());
+            $this->queue->delete($job->id);
         }
     }
 }

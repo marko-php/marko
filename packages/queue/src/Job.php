@@ -6,16 +6,11 @@ namespace Marko\Queue;
 
 abstract class Job implements JobInterface
 {
-    private ?string $id = null;
+    public private(set) ?string $id = null;
 
-    private int $attempts = 0;
+    public private(set) int $attempts = 0;
 
-    protected int $maxAttempts = 3;
-
-    public function getId(): ?string
-    {
-        return $this->id;
-    }
+    public protected(set) int $maxAttempts = 3;
 
     public function setId(
         string $id,
@@ -23,19 +18,9 @@ abstract class Job implements JobInterface
         $this->id = $id;
     }
 
-    public function getAttempts(): int
-    {
-        return $this->attempts;
-    }
-
     public function incrementAttempts(): void
     {
         $this->attempts++;
-    }
-
-    public function getMaxAttempts(): int
-    {
-        return $this->maxAttempts;
     }
 
     public function serialize(): string

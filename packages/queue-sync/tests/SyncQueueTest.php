@@ -49,7 +49,7 @@ it('push returns job ID', function (): void {
 
     expect($id)->toBeString()
         ->not->toBeEmpty()
-        ->and($job->getId())->toBe($id);
+        ->and($job->id)->toBe($id);
 });
 
 it('later executes job immediately', function (): void {
@@ -72,7 +72,7 @@ it('later executes job immediately', function (): void {
 
     expect($executed)->toBeTrue()
         ->and($id)->toBeString()->not->toBeEmpty()
-        ->and($job->getId())->toBe($id);
+        ->and($job->id)->toBe($id);
 });
 
 it('pop returns null', function (): void {

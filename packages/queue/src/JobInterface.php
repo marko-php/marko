@@ -6,17 +6,17 @@ namespace Marko\Queue;
 
 interface JobInterface
 {
-    public function handle(): void;
+    public ?string $id { get; }
 
-    public function getId(): ?string;
+    public int $attempts { get; }
+
+    public int $maxAttempts { get; }
+
+    public function handle(): void;
 
     public function setId(string $id): void;
 
-    public function getAttempts(): int;
-
     public function incrementAttempts(): void;
-
-    public function getMaxAttempts(): int;
 
     public function serialize(): string;
 

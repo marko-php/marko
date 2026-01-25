@@ -50,7 +50,7 @@ function getStatusOutputContent(
 function createStatusConfigRepository(
     array $values = [],
 ): ConfigRepositoryInterface {
-    return new class ($values) implements ConfigRepositoryInterface
+    return new readonly class ($values) implements ConfigRepositoryInterface
     {
         /**
          * @param array<string, mixed> $values

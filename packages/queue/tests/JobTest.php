@@ -19,7 +19,7 @@ class TestJob extends Job
 
 class CustomMaxAttemptsJob extends Job
 {
-    protected int $maxAttempts = 10;
+    public protected(set) int $maxAttempts = 10;
 
     public function handle(): void
     {
@@ -48,48 +48,48 @@ describe('Job', function (): void {
 
         expect($unserialized)->toBeInstanceOf(TestJob::class)
             ->and($unserialized->message)->toBe('hello world')
-            ->and($unserialized->getId())->toBe('job-123')
-            ->and($unserialized->getAttempts())->toBe(1);
+            ->and($unserialized->id)->toBe('job-123')
+            ->and($unserialized->attempts)->toBe(1);
     });
 
     it('tracks attempts correctly', function (): void {
         $job = new TestJob();
 
-        expect($job->getAttempts())->toBe(0);
+        expect($job->attempts)->toBe(0);
 
         $job->incrementAttempts();
 
-        expect($job->getAttempts())->toBe(1);
+        expect($job->attempts)->toBe(1);
 
         $job->incrementAttempts();
         $job->incrementAttempts();
 
-        expect($job->getAttempts())->toBe(3);
+        expect($job->attempts)->toBe(3);
     });
 
     it('has default max attempts of 3', function (): void {
         $job = new TestJob();
 
-        expect($job->getMaxAttempts())->toBe(3);
+        expect($job->maxAttempts)->toBe(3);
     });
 
     it('returns null id by default', function (): void {
         $job = new TestJob();
 
-        expect($job->getId())->toBeNull();
+        expect($job->id)->toBeNull();
     });
 
     it('allows setting and getting id', function (): void {
         $job = new TestJob();
         $job->setId('my-job-id');
 
-        expect($job->getId())->toBe('my-job-id');
+        expect($job->id)->toBe('my-job-id');
     });
 
     it('Job handles custom maxAttempts', function (): void {
         $customJob = new class () extends Job
         {
-            protected int $maxAttempts = 5;
+            public protected(set) int $maxAttempts = 5;
 
             public function handle(): void
             {
@@ -97,17 +97,17 @@ describe('Job', function (): void {
             }
         };
 
-        expect($customJob->getMaxAttempts())->toBe(5);
+        expect($customJob->maxAttempts)->toBe(5);
 
         // Test another custom value
         $singleAttemptJob = new class () extends Job
         {
-            protected int $maxAttempts = 1;
+            public protected(set) int $maxAttempts = 1;
 
             public function handle(): void {}
         };
 
-        expect($singleAttemptJob->getMaxAttempts())->toBe(1);
+        expect($singleAttemptJob->maxAttempts)->toBe(1);
 
         // Test that custom maxAttempts persists through serialization using named class
         $customAttemptsJob = new CustomMaxAttemptsJob();
@@ -115,6 +115,6 @@ describe('Job', function (): void {
         $serialized = $customAttemptsJob->serialize();
         $unserialized = CustomMaxAttemptsJob::unserialize($serialized);
 
-        expect($unserialized->getMaxAttempts())->toBe(10);
+        expect($unserialized->maxAttempts)->toBe(10);
     });
 });

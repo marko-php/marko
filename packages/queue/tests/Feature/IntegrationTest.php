@@ -26,7 +26,7 @@ use Marko\Queue\WorkerInterface;
 function createIntegrationQueueConfig(
     array $values = [],
 ): QueueConfig {
-    $configRepository = new class ($values) implements ConfigRepositoryInterface
+    $configRepository = new readonly class ($values) implements ConfigRepositoryInterface
     {
         public function __construct(
             private array $values,
@@ -275,22 +275,20 @@ function createInMemoryQueue(): QueueInterface
 describe('Integration Tests', function (): void {
     test('Job lifecycle from push to completion', function (): void {
         // Track whether the job was handled
-        $handled = false;
-        $receivedMessage = null;
+        $capture = (object) ['handled' => false, 'message' => null];
 
         // Create a real job that tracks its execution
-        $job = new class ('Hello, World!', $handled, $receivedMessage) extends Job
+        $job = new class ('Hello, World!', $capture) extends Job
         {
             public function __construct(
-                private string $message,
-                private bool &$wasHandled,
-                private ?string &$capturedMessage,
+                private readonly string $message,
+                private object $capture,
             ) {}
 
             public function handle(): void
             {
-                $this->wasHandled = true;
-                $this->capturedMessage = $this->message;
+                $this->capture->handled = true;
+                $this->capture->message = $this->message;
             }
         };
 
@@ -304,43 +302,41 @@ describe('Integration Tests', function (): void {
         $jobId = $queue->push($job);
 
         expect($jobId)->toBeString()
-            ->and($job->getId())->toBe($jobId);
+            ->and($job->id)->toBe($jobId)
+            ->and($queue->size())->toBe(1);
 
         // 2. Verify job is in the queue
-        expect($queue->size())->toBe(1);
 
         // 3. Process the job via worker
         $worker->work(once: true);
 
         // 4. Verify job was handled
-        expect($handled)->toBeTrue()
-            ->and($receivedMessage)->toBe('Hello, World!');
+        expect($capture->handled)->toBeTrue()
+            ->and($capture->message)->toBe('Hello, World!')
+            ->and($queue->size())->toBe(0)
+            ->and($failedRepository->count())->toBe(0);
 
         // 5. Verify queue is now empty
-        expect($queue->size())->toBe(0);
 
         // 6. Verify no failed jobs
-        expect($failedRepository->count())->toBe(0);
     });
 
     test('Async observer queues and executes', function (): void {
         // Track observer execution
-        $observerCalled = false;
-        $receivedEvent = null;
+        $capture = (object) ['called' => false, 'event' => null];
 
         // Create mock observer
-        $observer = new class ($observerCalled, $receivedEvent)
+        $observer = new class ($capture)
         {
             public function __construct(
-                private bool &$called,
-                private mixed &$event,
+                private object $capture,
             ) {}
 
             public function handle(
                 object $event,
             ): void {
-                $this->called = true;
-                $this->event = $event;
+                $this->capture->called = true;
+                $this->capture->event = $event;
             }
         };
 
@@ -357,8 +353,6 @@ describe('Integration Tests', function (): void {
 
         // Create queue and push the job
         $queue = createInMemoryQueue();
-        $failedRepository = createIntegrationFailedJobRepository();
-        $config = createIntegrationQueueConfig();
 
         $jobId = $queue->push($job);
 
@@ -374,29 +368,29 @@ describe('Integration Tests', function (): void {
         $poppedJob->handle(fn (string $class): object => $observer);
 
         // Verify observer was called with the correct event
-        expect($observerCalled)->toBeTrue()
-            ->and($receivedEvent)->toBeInstanceOf(stdClass::class)
-            ->and($receivedEvent->type)->toBe('user.created')
-            ->and($receivedEvent->userId)->toBe(123);
+        expect($capture->called)->toBeTrue()
+            ->and($capture->event)->toBeInstanceOf(stdClass::class)
+            ->and($capture->event->type)->toBe('user.created')
+            ->and($capture->event->userId)->toBe(123)
+            ->and($queue->size())->toBe(0);
 
         // Verify queue is empty
-        expect($queue->size())->toBe(0);
     });
 
     test('CLI commands work with drivers', function (): void {
         // Track job execution
-        $jobExecuted = false;
+        $capture = (object) ['executed' => false];
 
         // Create a job that tracks execution
-        $job = new class ($jobExecuted) extends Job
+        $job = new class ($capture) extends Job
         {
             public function __construct(
-                private bool &$wasExecuted,
+                private object $capture,
             ) {}
 
             public function handle(): void
             {
-                $this->wasExecuted = true;
+                $this->capture->executed = true;
             }
         };
 
@@ -423,13 +417,13 @@ describe('Integration Tests', function (): void {
         $exitCode = $workCommand->execute($input, $output);
 
         // Verify command completed successfully
-        expect($exitCode)->toBe(0);
+        expect($exitCode)->toBe(0)
+            ->and($capture->executed)->toBeTrue()
+            ->and($queue->size())->toBe(0);
 
         // Verify job was executed
-        expect($jobExecuted)->toBeTrue();
 
         // Verify queue is now empty
-        expect($queue->size())->toBe(0);
 
         // Verify output contains expected message
         rewind($stream);
@@ -471,17 +465,17 @@ describe('Integration Tests', function (): void {
         expect($worker)->toBeInstanceOf(WorkerInterface::class);
 
         // Test that the complete system can be wired together
-        $handled = false;
+        $capture = (object) ['handled' => false];
 
-        $job = new class ($handled) extends Job
+        $job = new class ($capture) extends Job
         {
             public function __construct(
-                private bool &$wasHandled,
+                private object $capture,
             ) {}
 
             public function handle(): void
             {
-                $this->wasHandled = true;
+                $this->capture->handled = true;
             }
         };
 
@@ -489,6 +483,6 @@ describe('Integration Tests', function (): void {
         $jobId = $syncQueue->push($job);
 
         expect($jobId)->toBeString()
-            ->and($handled)->toBeTrue(); // SyncQueue executes immediately
+            ->and($capture->handled)->toBeTrue(); // SyncQueue executes immediately
     });
 });

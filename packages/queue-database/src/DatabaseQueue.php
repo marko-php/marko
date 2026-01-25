@@ -122,7 +122,7 @@ class DatabaseQueue implements QueueInterface
 
         // Sync attempts count with database
         for ($i = 0; $i < (int) $row['attempts'] + 1; $i++) {
-            if ($job->getAttempts() <= $i) {
+            if ($job->attempts <= $i) {
                 $job->incrementAttempts();
             }
         }

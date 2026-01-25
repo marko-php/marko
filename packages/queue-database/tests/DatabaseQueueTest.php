@@ -53,7 +53,7 @@ test('DatabaseQueue push returns job ID', function () {
 
     expect($id)->toBeString();
     expect($id)->toMatch('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/');
-    expect($job->getId())->toBe($id);
+    expect($job->id)->toBe($id);
 });
 
 test('DatabaseQueue later stores job with future available_at', function () {
@@ -135,8 +135,8 @@ test('DatabaseQueue pop retrieves and reserves next job', function () {
     $poppedJob = $queue->pop();
 
     expect($poppedJob)->toBeInstanceOf(TestJob::class);
-    expect($poppedJob->getId())->toBe('job-123');
-    expect($poppedJob->getAttempts())->toBe(1);
+    expect($poppedJob->id)->toBe('job-123');
+    expect($poppedJob->attempts)->toBe(1);
 });
 
 test('DatabaseQueue pop returns null when empty', function () {
@@ -471,7 +471,7 @@ test('DatabaseQueue respects available_at for delayed jobs', function () {
     $poppedJob = $queue->pop();
 
     expect($poppedJob)->not->toBeNull();
-    expect($poppedJob->getId())->toBe('available-job');
+    expect($poppedJob->id)->toBe('available-job');
 
     // Verify the SQL query filters by available_at
     expect($capturedQuery['sql'])->toContain('available_at');

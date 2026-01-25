@@ -398,7 +398,7 @@ it('queues async observers', function (): void {
 
     // Job is an AsyncObserverJob
     expect($queue->jobs[0])->toBeInstanceOf(AsyncObserverJob::class);
-    expect($queue->jobs[0]->getObserverClass())->toBe(AsyncTestObserver::class);
+    expect($queue->jobs[0]->observerClass)->toBe(AsyncTestObserver::class);
 });
 
 class SyncTestObserver

@@ -7,10 +7,7 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Queue\Command\RetryCommand;
 use Marko\Queue\FailedJob;
-use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
-use Marko\Queue\JobInterface;
-use Marko\Queue\QueueInterface;
 use Marko\Queue\Tests\Command\Helpers;
 
 /**
@@ -62,11 +59,7 @@ it('implements CommandInterface', function (): void {
 
 it('retries specific job by ID', function (): void {
     $failedJob = createFailedJob('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
-
-    /** @var FailedJobRepositoryInterface&object{deletedIds: array<string>} $repository */
     $repository = Helpers::createStubFailedJobRepository([$failedJob]);
-
-    /** @var QueueInterface&object{pushedJobs: array<array{job: JobInterface, queue: ?string}>} $queue */
     $queue = Helpers::createStubQueue();
 
     $command = new RetryCommand($repository, $queue);
@@ -87,11 +80,7 @@ it('supports all flag', function (): void {
         createFailedJob('job-1'),
         createFailedJob('job-2', 'emails'),
     ];
-
-    /** @var FailedJobRepositoryInterface&object{deletedIds: array<string>} $repository */
     $repository = Helpers::createStubFailedJobRepository($failedJobs);
-
-    /** @var QueueInterface&object{pushedJobs: array<array{job: JobInterface, queue: ?string}>} $queue */
     $queue = Helpers::createStubQueue();
 
     $command = new RetryCommand($repository, $queue);

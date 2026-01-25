@@ -16,14 +16,14 @@ describe('WorkerInterface', function () {
 
         $parameters = $method->getParameters();
 
-        expect($parameters)->toHaveCount(3);
-        expect($parameters[0]->getName())->toBe('queue');
-        expect($parameters[0]->getType()?->getName())->toBe('string');
-        expect($parameters[0]->allowsNull())->toBeTrue();
-        expect($parameters[1]->getName())->toBe('once');
-        expect($parameters[1]->getType()?->getName())->toBe('bool');
-        expect($parameters[2]->getName())->toBe('sleep');
-        expect($parameters[2]->getType()?->getName())->toBe('int');
+        expect($parameters)->toHaveCount(3)
+            ->and($parameters[0]->getName())->toBe('queue')
+            ->and($parameters[0]->getType()?->getName())->toBe('string')
+            ->and($parameters[0]->allowsNull())->toBeTrue()
+            ->and($parameters[1]->getName())->toBe('once')
+            ->and($parameters[1]->getType()?->getName())->toBe('bool')
+            ->and($parameters[2]->getName())->toBe('sleep')
+            ->and($parameters[2]->getType()?->getName())->toBe('int');
 
         $returnType = $method->getReturnType();
 
@@ -37,8 +37,8 @@ describe('WorkerInterface', function () {
 
         $method = $reflection->getMethod('stop');
 
-        expect($method->isPublic())->toBeTrue();
-        expect($method->getParameters())->toBeEmpty();
+        expect($method->isPublic())->toBeTrue()
+            ->and($method->getParameters())->toBeEmpty();
 
         $returnType = $method->getReturnType();
 

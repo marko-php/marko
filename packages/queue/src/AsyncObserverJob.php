@@ -7,19 +7,9 @@ namespace Marko\Queue;
 class AsyncObserverJob extends Job
 {
     public function __construct(
-        private string $observerClass,
-        private string $eventData,
+        public readonly string $observerClass,
+        public readonly string $eventData,
     ) {}
-
-    public function getObserverClass(): string
-    {
-        return $this->observerClass;
-    }
-
-    public function getEventData(): string
-    {
-        return $this->eventData;
-    }
 
     public function handle(
         ?callable $resolver = null,

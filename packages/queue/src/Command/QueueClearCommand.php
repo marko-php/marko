@@ -12,7 +12,7 @@ use Marko\Queue\QueueInterface;
 
 /** @noinspection PhpUnused */
 #[Command(name: 'queue:clear', description: 'Clear all jobs from queue')]
-class QueueClearCommand implements CommandInterface
+readonly class QueueClearCommand implements CommandInterface
 {
     public function __construct(
         private QueueInterface $queue,
