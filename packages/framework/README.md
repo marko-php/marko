@@ -12,16 +12,16 @@ composer require marko/framework
 
 These packages are automatically installed with `marko/framework`:
 
-| Package | Description |
-|---------|-------------|
-| `marko/core` | Bootstrap, DI container, module loader, plugins, events |
-| `marko/routing` | Route attributes, router, middleware |
-| `marko/cli` | Command-line interface and console commands |
-| `marko/errors` | Error handling abstraction |
-| `marko/errors-simple` | Simple error handler for production |
-| `marko/config` | Configuration management with scoped values |
-| `marko/hashing` | Password hashing and verification |
-| `marko/validation` | Data validation with attribute-based rules |
+| Package               | Description                                             |
+|-----------------------|---------------------------------------------------------|
+| `marko/core`          | Bootstrap, DI container, module loader, plugins, events |
+| `marko/routing`       | Route attributes, router, middleware                    |
+| `marko/cli`           | Command-line interface and console commands             |
+| `marko/errors`        | Error handling abstraction                              |
+| `marko/errors-simple` | Simple error handler for production                     |
+| `marko/config`        | Configuration management with scoped values             |
+| `marko/hashing`       | Password hashing and verification                       |
+| `marko/validation`    | Data validation with attribute-based rules              |
 
 ## Optional Packages
 
@@ -35,10 +35,10 @@ composer require marko/database marko/database-mysql
 composer require marko/database marko/database-pgsql
 ```
 
-| Package | Description |
-|---------|-------------|
-| `marko/database` | Database abstraction layer |
-| `marko/database-mysql` | MySQL database driver |
+| Package                | Description                |
+|------------------------|----------------------------|
+| `marko/database`       | Database abstraction layer |
+| `marko/database-mysql` | MySQL database driver      |
 | `marko/database-pgsql` | PostgreSQL database driver |
 
 ### Cache
@@ -47,9 +47,9 @@ composer require marko/database marko/database-pgsql
 composer require marko/cache marko/cache-file
 ```
 
-| Package | Description |
-|---------|-------------|
-| `marko/cache` | Cache abstraction layer |
+| Package            | Description             |
+|--------------------|-------------------------|
+| `marko/cache`      | Cache abstraction layer |
 | `marko/cache-file` | File-based cache driver |
 
 ### Session
@@ -58,9 +58,9 @@ composer require marko/cache marko/cache-file
 composer require marko/session marko/session-file
 ```
 
-| Package | Description |
-|---------|-------------|
-| `marko/session` | Session abstraction layer |
+| Package              | Description               |
+|----------------------|---------------------------|
+| `marko/session`      | Session abstraction layer |
 | `marko/session-file` | File-based session driver |
 
 ### Authentication
@@ -69,8 +69,8 @@ composer require marko/session marko/session-file
 composer require marko/auth
 ```
 
-| Package | Description |
-|---------|-------------|
+| Package      | Description                      |
+|--------------|----------------------------------|
 | `marko/auth` | Authentication abstraction layer |
 
 ### Logging
@@ -79,9 +79,9 @@ composer require marko/auth
 composer require marko/log marko/log-file
 ```
 
-| Package | Description |
-|---------|-------------|
-| `marko/log` | Logging abstraction layer |
+| Package          | Description               |
+|------------------|---------------------------|
+| `marko/log`      | Logging abstraction layer |
 | `marko/log-file` | File-based logging driver |
 
 ### Filesystem
@@ -90,10 +90,10 @@ composer require marko/log marko/log-file
 composer require marko/filesystem marko/filesystem-local
 ```
 
-| Package | Description |
-|---------|-------------|
-| `marko/filesystem` | Filesystem abstraction layer |
-| `marko/filesystem-local` | Local filesystem driver |
+| Package                  | Description                  |
+|--------------------------|------------------------------|
+| `marko/filesystem`       | Filesystem abstraction layer |
+| `marko/filesystem-local` | Local filesystem driver      |
 
 ### Advanced Error Handling
 
@@ -101,8 +101,8 @@ composer require marko/filesystem marko/filesystem-local
 composer require marko/errors-advanced
 ```
 
-| Package | Description |
-|---------|-------------|
+| Package                 | Description                                     |
+|-------------------------|-------------------------------------------------|
 | `marko/errors-advanced` | Advanced error handling with detailed debugging |
 
 ## Installation Examples

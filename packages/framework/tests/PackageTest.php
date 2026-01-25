@@ -72,8 +72,8 @@ it('requires core packages', function () {
     expect($composer)->toHaveKey('require');
 
     foreach ($requiredPackages as $package) {
-        expect($composer['require'])->toHaveKey($package);
-        expect($composer['require'][$package])->toBe('^1.0');
+        expect($composer['require'])->toHaveKey($package)
+            ->and($composer['require'][$package])->toBe('^1.0');
     }
 });
 
