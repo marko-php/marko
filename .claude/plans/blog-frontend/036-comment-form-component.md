@@ -1,6 +1,6 @@
 # Task 036: Comment Form Component
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 016
 **Retry count**: 0
 

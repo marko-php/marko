@@ -1,6 +1,6 @@
 # Task 004: Category Entity and Repository
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002
 **Retry count**: 0
 

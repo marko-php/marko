@@ -75,9 +75,9 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 |------|-------------|------------|--------|
 | 001 | Blog Configuration | - | completed |
 | 002 | Slug Generator Service | - | completed |
-| 003 | Author Entity and Repository | 002 | pending |
-| 004 | Category Entity and Repository | 002 | pending |
-| 005 | Tag Entity and Repository | 002 | pending |
+| 003 | Author Entity and Repository | 002 | completed |
+| 004 | Category Entity and Repository | 002 | completed |
+| 005 | Tag Entity and Repository | 002 | completed |
 | 006 | Post Status Enum | - | completed |
 | 007 | Expand Post Entity | 002, 003, 006 | pending |
 | 008 | Post-Category Relationship | 004, 007 | pending |
@@ -89,7 +89,7 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 014 | Comment Verification Service | 012, 013 | pending |
 | 015 | Comment Rate Limiter | 013 | pending |
 | 016 | Honeypot Validation | - | completed |
-| 017 | Pagination Service | 001 | pending |
+| 017 | Pagination Service | 001 | completed |
 | 018 | Search Service | 007 | pending |
 | 019 | Post Lifecycle Events | 007 | pending |
 | 020 | Comment Lifecycle Events | 011 | pending |
@@ -108,7 +108,7 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 033 | Post List View | 024, 032 | pending |
 | 034 | Post Show View | 025 | pending |
 | 035 | Comment Thread Component | 013 | pending |
-| 036 | Comment Form Component | 016 | pending |
+| 036 | Comment Form Component | 016 | completed |
 | 037 | Post Show with Comments | 034, 035, 036 | pending |
 | 038 | Author Archive View | 026, 032 | pending |
 | 039 | Category Archive View | 027, 032 | pending |
