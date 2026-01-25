@@ -1,7 +1,52 @@
 {* Blog post show template *}
-<article>
-    <h1>{$post->title}</h1>
-    <div class="content">
-        {$post->content}
+<article class="post-article">
+    <header class="post-header">
+        <h1>{$post->title}</h1>
+        <div class="post-meta">
+            <time datetime="{$post->publishedAt}">{$post->getPublishedAt()->format('F j, Y')}</time>
+            {if $post->wasUpdatedAfterPublishing()}
+                <span class="post-updated">
+                    Updated: <time datetime="{$post->updatedAt}">{$post->getUpdatedAt()->format('F j, Y')}</time>
+                </span>
+            {/if}
+        </div>
+    </header>
+
+    <div class="post-content">
+        {$post->content|noescape}
     </div>
+
+    {if $post->getCategories()}
+        <nav class="post-categories" aria-label="Post categories">
+            <h2>Categories</h2>
+            <ul>
+                {foreach $post->getCategories() as $category}
+                    <li><a href="/blog/category/{$category->slug}">{$category->name}</a></li>
+                {/foreach}
+            </ul>
+        </nav>
+    {/if}
+
+    {if $post->getTags()}
+        <nav class="post-tags" aria-label="Post tags">
+            <h2>Tags</h2>
+            <ul>
+                {foreach $post->getTags() as $tag}
+                    <li><a href="/blog/tag/{$tag->slug}">{$tag->name}</a></li>
+                {/foreach}
+            </ul>
+        </nav>
+    {/if}
+
+    <aside class="post-author">
+        <a href="/blog/author/{$post->getAuthor()->slug}">{$post->getAuthor()->name}</a>
+        {if $post->getAuthor()->bio}
+            <p class="author-bio">{$post->getAuthor()->bio}</p>
+        {/if}
+    </aside>
+
+    <section class="post-comments" aria-label="Comments">
+        <h2>Comments</h2>
+        {* Comment section will be integrated in a later task *}
+    </section>
 </article>

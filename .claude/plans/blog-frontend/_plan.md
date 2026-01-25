@@ -86,8 +86,8 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 011 | Comment Entity | 007, 010 | completed |
 | 012 | Verification Token Entity | - | completed |
 | 013 | Comment Repository | 011 | completed |
-| 014 | Comment Verification Service | 012, 013 | pending |
-| 015 | Comment Rate Limiter | 013 | pending |
+| 014 | Comment Verification Service | 012, 013 | completed |
+| 015 | Comment Rate Limiter | 013 | completed |
 | 016 | Honeypot Validation | - | completed |
 | 017 | Pagination Service | 001 | completed |
 | 018 | Search Service | 007 | completed |
@@ -97,7 +97,7 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 022 | Category Lifecycle Events | 004 | completed |
 | 023 | Tag Lifecycle Events | 005 | completed |
 | 024 | Post List Controller | 007, 017, 019 | completed |
-| 025 | Post Show Controller | 007, 013 | pending |
+| 025 | Post Show Controller | 007, 013 | completed |
 | 026 | Author Archive Controller | 003, 017 | completed |
 | 027 | Category Archive Controller | 004, 017 | completed |
 | 028 | Tag Archive Controller | 005, 017 | completed |
@@ -105,15 +105,15 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 030 | Comment Verify Controller | 014 | pending |
 | 031 | Search Controller | 017, 018 | completed |
 | 032 | Pagination View Component | 017 | completed |
-| 033 | Post List View | 024, 032 | pending |
+| 033 | Post List View | 024, 032 | completed |
 | 034 | Post Show View | 025 | pending |
-| 035 | Comment Thread Component | 013 | pending |
+| 035 | Comment Thread Component | 013 | completed |
 | 036 | Comment Form Component | 016 | completed |
 | 037 | Post Show with Comments | 034, 035, 036 | pending |
 | 038 | Author Archive View | 026, 032 | completed |
 | 039 | Category Archive View | 027, 032 | completed |
 | 040 | Tag Archive View | 028, 032 | completed |
-| 041 | Search Results View | 031, 032, 046 | pending |
+| 041 | Search Results View | 031, 032, 046 | completed |
 | 042 | Blog Cleanup Command | 012, 015 | pending |
 | 043 | SEO Meta Service | 007 | completed |
 | 044 | SEO View Integration | 033, 037, 038, 039, 040, 041, 043 | pending |

@@ -1,6 +1,6 @@
 # Task 042: Blog Cleanup Command
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 012
 **Retry count**: 0
 
@@ -16,14 +16,14 @@ Create a CLI command for blog module housekeeping: expired verification tokens. 
 - Handles database cleanup (verification tokens) only
 
 ## Requirements (Test Descriptions)
-- [ ] `it is registered as blog:cleanup command`
-- [ ] `it deletes email verification tokens older than configured expiry`
-- [ ] `it deletes browser tokens older than configured cookie days`
-- [ ] `it reports count of deleted email verification tokens`
-- [ ] `it reports count of deleted browser tokens`
-- [ ] `it handles case when nothing to clean up`
-- [ ] `it provides verbose output option`
-- [ ] `it returns success exit code on completion`
+- [x] `it is registered as blog:cleanup command`
+- [x] `it deletes email verification tokens older than configured expiry`
+- [x] `it deletes browser tokens older than configured cookie days`
+- [x] `it reports count of deleted email verification tokens`
+- [x] `it reports count of deleted browser tokens`
+- [x] `it handles case when nothing to clean up`
+- [x] `it provides verbose output option`
+- [x] `it returns success exit code on completion`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -33,4 +33,9 @@ Create a CLI command for blog module housekeeping: expired verification tokens. 
 - Code follows Marko standards
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created `CleanupCommand` at `/packages/blog/src/Commands/CleanupCommand.php`
+- Extended `TokenRepositoryInterface` with `deleteExpiredEmailTokens()` and `deleteExpiredBrowserTokens()` methods
+- Updated `MockTokenRepository` in `CommentVerificationServiceTest.php` to implement new interface methods
+- Command uses `BlogConfigInterface` for expiry settings (`getVerificationTokenExpiryDays()` and `getVerificationCookieDays()`)
+- Verbose mode shows configuration values before cleanup
+- Note: Uses `TokenRepositoryInterface` (not `VerificationTokenRepositoryInterface` as mentioned in acceptance criteria - this is the actual interface name in the codebase)

@@ -20,6 +20,22 @@
         {
             "type": "path",
             "url": "../view"
+        },
+        {
+            "type": "path",
+            "url": "../cache"
+        },
+        {
+            "type": "path",
+            "url": "../mail"
+        },
+        {
+            "type": "path",
+            "url": "../config"
+        },
+        {
+            "type": "path",
+            "url": "../session"
         }
     ],
     "require": {
@@ -27,7 +43,15 @@
         "marko/core": "@dev",
         "marko/routing": "@dev",
         "marko/database": "@dev",
-        "marko/view": "@dev"
+        "marko/view": "@dev",
+        "marko/cache": "@dev",
+        "marko/mail": "@dev",
+        "marko/config": "@dev",
+        "marko/session": "@dev"
+    },
+    "suggest": {
+        "marko/view-latte": "Latte template engine for default blog templates",
+        "marko/csrf": "CSRF protection for comment forms"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

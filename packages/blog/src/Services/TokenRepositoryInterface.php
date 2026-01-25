@@ -27,4 +27,22 @@ interface TokenRepositoryInterface
     public function delete(
         VerificationToken $token,
     ): void;
+
+    /**
+     * Delete expired email verification tokens.
+     *
+     * @return int Number of tokens deleted
+     */
+    public function deleteExpiredEmailTokens(
+        int $expiryDays,
+    ): int;
+
+    /**
+     * Delete expired browser tokens.
+     *
+     * @return int Number of tokens deleted
+     */
+    public function deleteExpiredBrowserTokens(
+        int $cookieDays,
+    ): int;
 }

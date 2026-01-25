@@ -7,11 +7,13 @@ namespace Marko\Blog\Services;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Marko\Blog\Config\BlogConfigInterface;
+use Marko\Blog\Dto\VerificationResult;
 use Marko\Blog\Entity\CommentInterface;
 use Marko\Blog\Entity\VerificationToken;
 use Marko\Blog\Enum\CommentStatus;
 use Marko\Blog\Events\Comment\CommentVerified;
 use Marko\Blog\Repositories\CommentRepositoryInterface;
+use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Message;
@@ -21,6 +23,7 @@ class CommentVerificationService implements CommentVerificationServiceInterface
     public function __construct(
         private readonly TokenRepositoryInterface $tokenRepository,
         private readonly CommentRepositoryInterface $commentRepository,
+        private readonly PostRepositoryInterface $postRepository,
         private readonly MailerInterface $mailer,
         private readonly BlogConfigInterface $config,
         private readonly ?EventDispatcherInterface $eventDispatcher = null,
@@ -62,7 +65,7 @@ class CommentVerificationService implements CommentVerificationServiceInterface
 
     public function verifyByToken(
         string $token,
-    ): string {
+    ): VerificationResult {
         $verificationToken = $this->tokenRepository->findByToken($token);
 
         if ($verificationToken === null) {
@@ -79,9 +82,16 @@ class CommentVerificationService implements CommentVerificationServiceInterface
             throw new InvalidArgumentException('Comment not found');
         }
 
+        $post = $this->postRepository->find($comment->postId);
+
+        if ($post === null) {
+            throw new InvalidArgumentException('Post not found');
+        }
+
         // Update comment status to verified
         $comment->status = CommentStatus::Verified;
         $comment->verifiedAt = (new DateTimeImmutable())->format('Y-m-d H:i:s');
+        $comment->setPost($post);
         $this->commentRepository->save($comment);
 
         // Dispatch event
@@ -97,7 +107,11 @@ class CommentVerificationService implements CommentVerificationServiceInterface
         // Delete the used email verification token
         $this->tokenRepository->delete($verificationToken);
 
-        return $browserToken->token;
+        return new VerificationResult(
+            browserToken: $browserToken->token,
+            postSlug: $post->getSlug(),
+            commentId: $comment->id,
+        );
     }
 
     public function isBrowserTokenValid(

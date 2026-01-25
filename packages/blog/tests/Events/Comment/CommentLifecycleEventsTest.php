@@ -10,17 +10,23 @@ use Marko\Blog\Entity\Comment;
 use Marko\Blog\Entity\CommentInterface;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\PostInterface;
+use Marko\Blog\Entity\VerificationToken;
 use Marko\Blog\Events\Comment\CommentCreated;
 use Marko\Blog\Events\Comment\CommentDeleted;
 use Marko\Blog\Events\Comment\CommentVerified;
 use Marko\Blog\Repositories\CommentRepository;
+use Marko\Blog\Repositories\CommentRepositoryInterface;
+use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\CommentVerificationService;
+use Marko\Blog\Services\TokenRepositoryInterface;
 use Marko\Core\Event\Event;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Mail\Contracts\MailerInterface;
+use Marko\Mail\Message;
 use RuntimeException;
 
 it('dispatches CommentCreated event when comment is submitted', function (): void {
@@ -85,9 +91,7 @@ it('dispatches CommentVerified event when email is verified', function (): void 
     $comment->content = 'Great post!';
     $comment->setPost($post);
 
-    $verificationService = new CommentVerificationService(
-        eventDispatcher: $eventDispatcher,
-    );
+    $verificationService = createCommentEventVerificationService($eventDispatcher);
 
     $verificationService->markAsVerified($comment, 'email');
 
@@ -258,9 +262,7 @@ it('includes verification method in CommentVerified event', function (): void {
     $comment->content = 'Great post!';
     $comment->setPost($post);
 
-    $verificationService = new CommentVerificationService(
-        eventDispatcher: $eventDispatcher,
-    );
+    $verificationService = createCommentEventVerificationService($eventDispatcher);
 
     $verificationService->markAsVerified($comment, 'browser_cookie');
 
@@ -293,9 +295,7 @@ it('includes timestamp in all events', function (): void {
         $eventDispatcher,
     );
 
-    $verificationService = new CommentVerificationService(
-        eventDispatcher: $eventDispatcher,
-    );
+    $verificationService = createCommentEventVerificationService($eventDispatcher);
 
     $post = new Post(
         title: 'Test Post',
@@ -352,6 +352,114 @@ it('includes timestamp in all events', function (): void {
 });
 
 // Helper functions for comment event tests
+
+function createCommentEventVerificationService(
+    EventDispatcherInterface $eventDispatcher,
+): CommentVerificationService {
+    $tokenRepository = new class () implements TokenRepositoryInterface
+    {
+        public function save(VerificationToken $token): void {}
+
+        public function findByToken(
+            string $token,
+        ): ?VerificationToken {
+            return null;
+        }
+
+        public function findByCommentId(
+            int $commentId,
+        ): ?VerificationToken {
+            return null;
+        }
+
+        public function findBrowserTokenForEmail(
+            string $email,
+        ): ?VerificationToken {
+            return null;
+        }
+
+        public function delete(VerificationToken $token): void {}
+
+        public function deleteExpiredEmailTokens(
+            int $expiryDays,
+        ): int {
+            return 0;
+        }
+
+        public function deleteExpiredBrowserTokens(
+            int $cookieDays,
+        ): int {
+            return 0;
+        }
+    };
+
+    $commentRepository = new class () implements CommentRepositoryInterface
+    {
+        public function find(
+            int $id,
+        ): ?Comment {
+            return null;
+        }
+
+        public function findByPostId(
+            int $postId,
+        ): array {
+            return [];
+        }
+
+        public function findByEmail(
+            string $email,
+        ): array {
+            return [];
+        }
+
+        public function save(Comment $comment): void {}
+
+        public function delete(Comment $comment): void {}
+    };
+
+    $postRepository = new class () implements PostRepositoryInterface
+    {
+        public function find(
+            int $id,
+        ): ?Post {
+            return null;
+        }
+
+        public function findBySlug(
+            string $slug,
+        ): ?Post {
+            return null;
+        }
+
+        public function findAll(
+            int $limit = 10,
+            int $offset = 0,
+        ): array {
+            return [];
+        }
+
+        public function save(Post $post): void {}
+
+        public function delete(Post $post): void {}
+    };
+
+    $mailer = new class () implements MailerInterface
+    {
+        public function send(Message $message): void {}
+    };
+
+    $config = createCommentMockBlogConfig();
+
+    return new CommentVerificationService(
+        tokenRepository: $tokenRepository,
+        commentRepository: $commentRepository,
+        postRepository: $postRepository,
+        mailer: $mailer,
+        config: $config,
+        eventDispatcher: $eventDispatcher,
+    );
+}
 
 function createCommentMockBlogConfig(): BlogConfigInterface
 {

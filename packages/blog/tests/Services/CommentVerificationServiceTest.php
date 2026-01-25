@@ -11,7 +11,9 @@ use Marko\Blog\Entity\Comment;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\VerificationToken;
 use Marko\Blog\Enum\CommentStatus;
+use Marko\Blog\Enum\PostStatus;
 use Marko\Blog\Repositories\CommentRepositoryInterface;
+use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\CommentVerificationService;
 use Marko\Blog\Services\TokenRepositoryInterface;
 use Marko\Core\Event\Event;
@@ -31,6 +33,7 @@ it('generates unique verification token for comment', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: $commentRepository,
+        postRepository: new MockPostRepository(),
         mailer: $mailer,
         config: $config,
         eventDispatcher: $eventDispatcher,
@@ -56,6 +59,7 @@ it('sends verification email with link to commenter', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
+        postRepository: new MockPostRepository(),
         mailer: $mailer,
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
@@ -73,9 +77,20 @@ it('sends verification email with link to commenter', function (): void {
 });
 
 it('verifies comment when valid token provided', function (): void {
+    $post = new Post(
+        title: 'Test Post',
+        content: 'Test content',
+        authorId: 1,
+        slug: 'test-post',
+    );
+    $post->id = 1;
+
     $comment = createVerificationTestComment();
     $commentRepository = new MockCommentRepository();
     $commentRepository->findResult = $comment;
+
+    $postRepository = new MockPostRepository();
+    $postRepository->findResult = $post;
 
     $verificationToken = VerificationToken::create(
         email: 'commenter@example.com',
@@ -92,17 +107,20 @@ it('verifies comment when valid token provided', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: $commentRepository,
+        postRepository: $postRepository,
         mailer: new MockMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: $eventDispatcher,
     );
 
-    $browserToken = $service->verifyByToken($verificationToken->token);
+    $result = $service->verifyByToken($verificationToken->token);
 
-    // Should return a browser token
-    expect($browserToken)->toBeString()
-        ->and($browserToken)->not->toBeEmpty()
-        ->and(strlen($browserToken))->toBeGreaterThanOrEqual(32);
+    // Should return a VerificationResult with browser token
+    expect($result->browserToken)->toBeString()
+        ->and($result->browserToken)->not->toBeEmpty()
+        ->and(strlen($result->browserToken))->toBeGreaterThanOrEqual(32)
+        ->and($result->postSlug)->toBe('test-post')
+        ->and($result->commentId)->toBe(1);
 
     // Should update comment status to verified
     expect($commentRepository->savedComments)->toHaveCount(1)
@@ -126,6 +144,7 @@ it('rejects expired verification tokens', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
+        postRepository: new MockPostRepository(),
         mailer: new MockMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
@@ -142,6 +161,7 @@ it('rejects invalid verification tokens', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
+        postRepository: new MockPostRepository(),
         mailer: new MockMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
@@ -169,6 +189,7 @@ it('creates browser token after successful verification', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: $commentRepository,
+        postRepository: new MockPostRepository(),
         mailer: new MockMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
@@ -201,6 +222,7 @@ it('checks if browser token is valid for email', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
+        postRepository: new MockPostRepository(),
         mailer: new MockMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
@@ -232,6 +254,7 @@ it('auto-approves comment when valid browser token exists', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
+        postRepository: new MockPostRepository(),
         mailer: new MockMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
@@ -270,6 +293,7 @@ it('returns verification token cookie value after verification', function (): vo
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: $commentRepository,
+        postRepository: new MockPostRepository(),
         mailer: new MockMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
@@ -299,6 +323,7 @@ it('uses configured token expiry days', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
+        postRepository: new MockPostRepository(),
         mailer: new MockMailer(),
         config: $config,
         eventDispatcher: new MockEventDispatcher(),
@@ -324,6 +349,7 @@ it('uses configured cookie name from BlogConfig', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: new MockTokenRepository(),
         commentRepository: new MockCommentRepository(),
+        postRepository: new MockPostRepository(),
         mailer: new MockMailer(),
         config: $config,
         eventDispatcher: new MockEventDispatcher(),
@@ -338,6 +364,7 @@ it('returns cookie lifetime days from config', function (): void {
     $service = new CommentVerificationService(
         tokenRepository: new MockTokenRepository(),
         commentRepository: new MockCommentRepository(),
+        postRepository: new MockPostRepository(),
         mailer: new MockMailer(),
         config: $config,
         eventDispatcher: new MockEventDispatcher(),
@@ -354,6 +381,7 @@ it('allows resending verification email for pending comment', function (): void 
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
+        postRepository: new MockPostRepository(),
         mailer: $mailer,
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
@@ -390,6 +418,7 @@ it('invalidates old token when resending verification email', function (): void 
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
+        postRepository: new MockPostRepository(),
         mailer: new MockMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
@@ -476,6 +505,18 @@ class MockTokenRepository implements TokenRepositoryInterface
         VerificationToken $token,
     ): void {
         $this->deletedTokens[] = $token;
+    }
+
+    public function deleteExpiredEmailTokens(
+        int $expiryDays,
+    ): int {
+        return 0;
+    }
+
+    public function deleteExpiredBrowserTokens(
+        int $cookieDays,
+    ): int {
+        return 0;
     }
 }
 
@@ -643,4 +684,179 @@ class MockEventDispatcher implements EventDispatcherInterface
     ): void {
         $this->dispatchedEvents[] = $event;
     }
+}
+
+class MockPostRepository implements PostRepositoryInterface
+{
+    public ?Post $findResult = null;
+
+    public function find(
+        int $id,
+    ): ?Post {
+        return $this->findResult;
+    }
+
+    public function findOrFail(
+        int $id,
+    ): Post {
+        return $this->findResult ?? throw new RuntimeException('Not found');
+    }
+
+    public function findAll(): array
+    {
+        return [];
+    }
+
+    public function findBy(
+        array $criteria,
+    ): array {
+        return [];
+    }
+
+    public function findOneBy(
+        array $criteria,
+    ): ?Post {
+        return null;
+    }
+
+    public function save(object $entity): void {}
+
+    public function delete(object $entity): void {}
+
+    public function findBySlug(
+        string $slug,
+    ): ?Post {
+        return null;
+    }
+
+    public function findPublished(): array
+    {
+        return [];
+    }
+
+    public function findPublishedPaginated(
+        int $limit,
+        int $offset,
+    ): array {
+        return [];
+    }
+
+    public function countPublished(): int
+    {
+        return 0;
+    }
+
+    public function findByStatus(
+        PostStatus $status,
+    ): array {
+        return [];
+    }
+
+    public function findByAuthor(
+        int $authorId,
+    ): array {
+        return [];
+    }
+
+    public function findScheduledPostsDue(): array
+    {
+        return [];
+    }
+
+    public function countByAuthor(
+        int $authorId,
+    ): int {
+        return 0;
+    }
+
+    public function findPublishedByAuthor(
+        int $authorId,
+        int $limit,
+        int $offset,
+    ): array {
+        return [];
+    }
+
+    public function countPublishedByAuthor(
+        int $authorId,
+    ): int {
+        return 0;
+    }
+
+    public function isSlugUnique(
+        string $slug,
+        ?int $excludeId = null,
+    ): bool {
+        return true;
+    }
+
+    public function findPublishedByTag(
+        int $tagId,
+        int $limit,
+        int $offset,
+    ): array {
+        return [];
+    }
+
+    public function countPublishedByTag(
+        int $tagId,
+    ): int {
+        return 0;
+    }
+
+    public function findPublishedByCategory(
+        int $categoryId,
+        int $limit,
+        int $offset,
+    ): array {
+        return [];
+    }
+
+    public function countPublishedByCategory(
+        int $categoryId,
+    ): int {
+        return 0;
+    }
+
+    public function attachCategory(
+        int $postId,
+        int $categoryId,
+    ): void {}
+
+    public function detachCategory(
+        int $postId,
+        int $categoryId,
+    ): void {}
+
+    public function attachTag(
+        int $postId,
+        int $tagId,
+    ): void {}
+
+    public function detachTag(
+        int $postId,
+        int $tagId,
+    ): void {}
+
+    public function getCategoriesForPost(
+        int $postId,
+    ): array {
+        return [];
+    }
+
+    public function getTagsForPost(
+        int $postId,
+    ): array {
+        return [];
+    }
+
+    public function syncCategories(
+        int $postId,
+        array $categoryIds,
+    ): void {}
+
+    public function syncTags(
+        int $postId,
+        array $tagIds,
+    ): void {}
 }

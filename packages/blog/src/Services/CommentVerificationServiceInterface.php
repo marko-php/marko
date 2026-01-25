@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Services;
 
+use Marko\Blog\Dto\VerificationResult;
 use Marko\Blog\Entity\CommentInterface;
 
 interface CommentVerificationServiceInterface
@@ -14,7 +15,7 @@ interface CommentVerificationServiceInterface
 
     public function verifyByToken(
         string $token,
-    ): string;
+    ): VerificationResult;
 
     public function isBrowserTokenValid(
         string $browserToken,

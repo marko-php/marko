@@ -1,0 +1,13 @@
+{* Plain text version of comment verification email *}
+Hello, {$comment->getAuthorName()}
+
+Thank you! You recently commented on "{$post->getTitle()}" and we need to verify your email address.
+
+Click here to verify your comment:
+{$verificationUrl}
+
+This link expires in {$expiresInDays} days.
+
+If you did not leave this comment, please ignore this email.
+
+{$siteName}
