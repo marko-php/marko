@@ -1,6 +1,6 @@
 # Task 021: Author Lifecycle Events
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 003
 **Retry count**: 0
 

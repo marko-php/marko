@@ -1,6 +1,6 @@
 # Task 007: Expand Post Entity
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002, 003, 006
 **Retry count**: 0
 

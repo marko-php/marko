@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Blog\Repositories;
 
 use Marko\Blog\Entity\Category;
+use Marko\Blog\Entity\Post;
 use Marko\Database\Repository\RepositoryInterface;
 
 interface CategoryRepositoryInterface extends RepositoryInterface
@@ -48,4 +49,13 @@ interface CategoryRepositoryInterface extends RepositoryInterface
      * @return array<Category>
      */
     public function findRoots(): array;
+
+    /**
+     * Get all posts for a category.
+     *
+     * @return array<Post>
+     */
+    public function getPostsForCategory(
+        int $categoryId,
+    ): array;
 }

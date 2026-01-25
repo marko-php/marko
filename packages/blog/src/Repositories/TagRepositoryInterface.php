@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Repositories;
 
+use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
 use Marko\Database\Repository\RepositoryInterface;
 
@@ -36,4 +37,13 @@ interface TagRepositoryInterface extends RepositoryInterface
         string $slug,
         ?int $excludeId = null,
     ): bool;
+
+    /**
+     * Get all posts for a tag.
+     *
+     * @return array<Post>
+     */
+    public function getPostsForTag(
+        int $tagId,
+    ): array;
 }

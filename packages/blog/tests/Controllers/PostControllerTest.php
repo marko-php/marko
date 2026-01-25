@@ -2,50 +2,53 @@
 
 declare(strict_types=1);
 
+namespace Marko\Blog\Tests\Controllers\PostController;
+
 use Marko\Blog\Controllers\PostController;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Repositories\PostRepository;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
+use ReflectionClass;
 
-it('injects PostRepository and ViewInterface via constructor', function (): void {
+\it('injects PostRepository and ViewInterface via constructor', function (): void {
     $reflection = new ReflectionClass(PostController::class);
     $constructor = $reflection->getConstructor();
 
-    expect($constructor)->not->toBeNull();
+    \expect($constructor)->not->toBeNull();
 
     $parameters = $constructor->getParameters();
-    expect($parameters)->toHaveCount(2)
+    \expect($parameters)->toHaveCount(2)
         ->and($parameters[0]->getName())->toBe('repository')
         ->and($parameters[0]->getType()->getName())->toBe(PostRepository::class)
         ->and($parameters[1]->getName())->toBe('view')
         ->and($parameters[1]->getType()->getName())->toBe(ViewInterface::class);
 });
 
-it('has GET /blog route on index method', function (): void {
+\it('has GET /blog route on index method', function (): void {
     $reflection = new ReflectionClass(PostController::class);
     $method = $reflection->getMethod('index');
     $attributes = $method->getAttributes(Get::class);
 
-    expect($attributes)->toHaveCount(1);
+    \expect($attributes)->toHaveCount(1);
 
     $routeAttribute = $attributes[0]->newInstance();
-    expect($routeAttribute->path)->toBe('/blog');
+    \expect($routeAttribute->path)->toBe('/blog');
 });
 
-it('has GET /blog/{slug} route on show method', function (): void {
+\it('has GET /blog/{slug} route on show method', function (): void {
     $reflection = new ReflectionClass(PostController::class);
     $method = $reflection->getMethod('show');
     $attributes = $method->getAttributes(Get::class);
 
-    expect($attributes)->toHaveCount(1);
+    \expect($attributes)->toHaveCount(1);
 
     $routeAttribute = $attributes[0]->newInstance();
-    expect($routeAttribute->path)->toBe('/blog/{slug}');
+    \expect($routeAttribute->path)->toBe('/blog/{slug}');
 });
 
-it('returns response using view on index route', function (): void {
+\it('returns response using view on index route', function (): void {
     $repository = createMockPostRepository([
         ['id' => 1, 'title' => 'Post 1'],
         ['id' => 2, 'title' => 'Post 2'],
@@ -54,12 +57,12 @@ it('returns response using view on index route', function (): void {
     $controller = new PostController($repository, $view);
     $response = $controller->index();
 
-    expect($response)->toBeInstanceOf(Response::class)
+    \expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(200)
         ->and($response->body())->toContain('blog::post/index');
 });
 
-it('returns response using view on show route', function (): void {
+\it('returns response using view on show route', function (): void {
     $repository = createMockPostRepository(
         findBySlugResult: ['id' => 1, 'title' => 'Hello World', 'slug' => 'hello-world'],
     );
@@ -67,38 +70,38 @@ it('returns response using view on show route', function (): void {
     $controller = new PostController($repository, $view);
     $response = $controller->show('hello-world');
 
-    expect($response)->toBeInstanceOf(Response::class)
+    \expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(200)
         ->and($response->body())->toContain('blog::post/show');
 });
 
-it('returns 404 response when post slug not found', function (): void {
+\it('returns 404 response when post slug not found', function (): void {
     $repository = createMockPostRepository();
     $view = createMockView();
     $controller = new PostController($repository, $view);
     $response = $controller->show('non-existent');
 
-    expect($response)->toBeInstanceOf(Response::class)
+    \expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(404)
         ->and($response->body())->toContain('not found');
 });
 
-it('maintains existing route attributes for GET /blog and GET /blog/{slug}', function (): void {
+\it('maintains existing route attributes for GET /blog and GET /blog/{slug}', function (): void {
     $reflection = new ReflectionClass(PostController::class);
 
     // Check index method route
     $indexMethod = $reflection->getMethod('index');
     $indexAttributes = $indexMethod->getAttributes(Get::class);
-    expect($indexAttributes)->toHaveCount(1);
+    \expect($indexAttributes)->toHaveCount(1);
     $indexRoute = $indexAttributes[0]->newInstance();
-    expect($indexRoute->path)->toBe('/blog');
+    \expect($indexRoute->path)->toBe('/blog');
 
     // Check show method route
     $showMethod = $reflection->getMethod('show');
     $showAttributes = $showMethod->getAttributes(Get::class);
-    expect($showAttributes)->toHaveCount(1);
+    \expect($showAttributes)->toHaveCount(1);
     $showRoute = $showAttributes[0]->newInstance();
-    expect($showRoute->path)->toBe('/blog/{slug}');
+    \expect($showRoute->path)->toBe('/blog/{slug}');
 });
 
 // Helper function to create mock ViewInterface

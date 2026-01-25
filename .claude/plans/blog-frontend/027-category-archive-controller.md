@@ -1,6 +1,6 @@
 # Task 027: Category Archive Controller
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 004, 017
 **Retry count**: 0
 
@@ -13,15 +13,15 @@ Create controller for category archive pages showing all published posts in a sp
 - Route: GET /blog/category/{slug}
 
 ## Requirements (Test Descriptions)
-- [ ] `it injects CategoryRepositoryInterface and PostRepositoryInterface not concrete classes`
-- [ ] `it returns paginated posts in category at GET /blog/category/{slug}`
-- [ ] `it returns 404 when category slug not found`
-- [ ] `it includes category name and path in response`
-- [ ] `it only includes published posts`
-- [ ] `it orders posts by published date descending`
-- [ ] `it accepts page query parameter for pagination`
-- [ ] `it includes pagination metadata in response`
-- [ ] `it renders using view template`
+- [x] `it injects CategoryRepositoryInterface and PostRepositoryInterface not concrete classes`
+- [x] `it returns paginated posts in category at GET /blog/category/{slug}`
+- [x] `it returns 404 when category slug not found`
+- [x] `it includes category name and path in response`
+- [x] `it only includes published posts`
+- [x] `it orders posts by published date descending`
+- [x] `it accepts page query parameter for pagination`
+- [x] `it includes pagination metadata in response`
+- [x] `it renders using view template`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -31,4 +31,17 @@ Create controller for category archive pages showing all published posts in a sp
 - Code follows Marko standards
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+Created CategoryController at packages/blog/src/Controllers/CategoryController.php with:
+- Constructor injection of CategoryRepositoryInterface, PostRepositoryInterface, PaginationServiceInterface, ViewInterface
+- GET /blog/category/{slug} route via #[Get] attribute
+- show() method that accepts slug and page parameters
+- Returns 404 Response when category not found
+- Passes category, path (hierarchy), and paginated posts to view
+- Uses findPublishedByCategory/countPublishedByCategory for filtering published posts
+- Repository methods handle ordering by published_at DESC
+
+Also extended PostRepositoryInterface with:
+- findPublishedByCategory(int $categoryId, int $limit, int $offset): array
+- countPublishedByCategory(int $categoryId): int
+
+And implemented these methods in PostRepository.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Blog\Repositories;
 
 use DateTimeImmutable;
+use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
 use Marko\Blog\Events\Tag\TagCreated;
 use Marko\Blog\Events\Tag\TagDeleted;
@@ -157,6 +158,32 @@ class TagRepository extends Repository implements TagRepositoryInterface
         $result = $this->connection->query($sql, [$tagId]);
 
         return (int) ($result[0]['count'] ?? 0);
+    }
+
+    /**
+     * Get all posts for a tag.
+     *
+     * @return array<Post>
+     */
+    public function getPostsForTag(
+        int $tagId,
+    ): array {
+        $sql = 'SELECT p.* FROM posts p
+            INNER JOIN post_tags pt ON p.id = pt.post_id
+            WHERE pt.tag_id = ?';
+
+        $rows = $this->connection->query($sql, [$tagId]);
+
+        $postMetadata = $this->metadataFactory->parse(Post::class);
+
+        return array_map(
+            fn (array $row): Post => $this->hydrator->hydrate(
+                Post::class,
+                $row,
+                $postMetadata,
+            ),
+            $rows,
+        );
     }
 
     /**

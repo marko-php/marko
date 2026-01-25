@@ -79,7 +79,7 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 004 | Category Entity and Repository | 002 | completed |
 | 005 | Tag Entity and Repository | 002 | completed |
 | 006 | Post Status Enum | - | completed |
-| 007 | Expand Post Entity | 002, 003, 006 | pending |
+| 007 | Expand Post Entity | 002, 003, 006 | completed |
 | 008 | Post-Category Relationship | 004, 007 | pending |
 | 009 | Post-Tag Relationship | 005, 007 | pending |
 | 010 | Comment Status Enum | - | completed |
@@ -93,9 +93,9 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 018 | Search Service | 007 | pending |
 | 019 | Post Lifecycle Events | 007 | pending |
 | 020 | Comment Lifecycle Events | 011 | pending |
-| 021 | Author Lifecycle Events | 003 | pending |
-| 022 | Category Lifecycle Events | 004 | pending |
-| 023 | Tag Lifecycle Events | 005 | pending |
+| 021 | Author Lifecycle Events | 003 | completed |
+| 022 | Category Lifecycle Events | 004 | completed |
+| 023 | Tag Lifecycle Events | 005 | completed |
 | 024 | Post List Controller | 007, 017, 019 | pending |
 | 025 | Post Show Controller | 007, 013 | pending |
 | 026 | Author Archive Controller | 003, 017 | pending |
@@ -104,7 +104,7 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 029 | Comment Submit Controller | 014, 015, 016, 020 | pending |
 | 030 | Comment Verify Controller | 014 | pending |
 | 031 | Search Controller | 017, 018 | pending |
-| 032 | Pagination View Component | 017 | pending |
+| 032 | Pagination View Component | 017 | completed |
 | 033 | Post List View | 024, 032 | pending |
 | 034 | Post Show View | 025 | pending |
 | 035 | Comment Thread Component | 013 | pending |

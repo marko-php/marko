@@ -7,6 +7,7 @@ namespace Marko\Blog\Repositories;
 use Closure;
 use Marko\Blog\Entity\Category;
 use Marko\Blog\Entity\CategoryInterface;
+use Marko\Blog\Entity\Post;
 use Marko\Blog\Events\Category\CategoryCreated;
 use Marko\Blog\Events\Category\CategoryDeleted;
 use Marko\Blog\Events\Category\CategoryUpdated;
@@ -239,5 +240,31 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
             category: $category,
             parent: $parent,
         ));
+    }
+
+    /**
+     * Get all posts for a category.
+     *
+     * @return array<Post>
+     */
+    public function getPostsForCategory(
+        int $categoryId,
+    ): array {
+        $sql = 'SELECT p.* FROM posts p
+            INNER JOIN post_categories pc ON p.id = pc.post_id
+            WHERE pc.category_id = ?';
+
+        $rows = $this->connection->query($sql, [$categoryId]);
+
+        $postMetadata = $this->metadataFactory->parse(Post::class);
+
+        return array_map(
+            fn (array $row): Post => $this->hydrator->hydrate(
+                Post::class,
+                $row,
+                $postMetadata,
+            ),
+            $rows,
+        );
     }
 }
