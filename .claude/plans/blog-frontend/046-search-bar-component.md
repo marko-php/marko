@@ -1,6 +1,6 @@
 # Task 046: Search Bar Component
 
-**Status**: pending
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 

@@ -1,6 +1,6 @@
 # Task 006: Post Status Enum
 
-**Status**: pending
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 

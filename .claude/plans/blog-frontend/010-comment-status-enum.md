@@ -1,6 +1,6 @@
 # Task 010: Comment Status Enum
 
-**Status**: complete
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 

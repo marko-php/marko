@@ -1,6 +1,6 @@
 # Task 012: Verification Token Entity
 
-**Status**: pending
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 
