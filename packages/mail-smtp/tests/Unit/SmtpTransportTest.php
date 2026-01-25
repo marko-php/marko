@@ -230,6 +230,8 @@ function createFailingSocket(): SocketInterface
 {
     return new class () implements SocketInterface
     {
+        public bool $connected = false;
+
         public function connect(
             string $host,
             int $port,
@@ -252,11 +254,6 @@ function createFailingSocket(): SocketInterface
         }
 
         public function close(): void {}
-
-        public function isConnected(): bool
-        {
-            return false;
-        }
     };
 }
 
@@ -264,6 +261,8 @@ function createTimeoutSocket(): SocketInterface
 {
     return new class () implements SocketInterface
     {
+        public bool $connected = false;
+
         public function connect(
             string $host,
             int $port,
@@ -287,11 +286,6 @@ function createTimeoutSocket(): SocketInterface
         }
 
         public function close(): void {}
-
-        public function isConnected(): bool
-        {
-            return false;
-        }
     };
 }
 
@@ -300,7 +294,7 @@ function createDisconnectingSocket(
 ): SocketInterface {
     return new class ($responses) implements SocketInterface
     {
-        private bool $connected = false;
+        public private(set) bool $connected = false;
 
         private int $responseIndex = 0;
 
@@ -357,7 +351,7 @@ function createMockSocket(
 
 class MockSocket implements SocketInterface
 {
-    private bool $connected = false;
+    public private(set) bool $connected = false;
 
     private bool $tlsEnabled = false;
 

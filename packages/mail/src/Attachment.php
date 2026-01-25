@@ -15,6 +15,9 @@ readonly class Attachment
         public ?string $contentId = null,
     ) {}
 
+    /**
+     * @throws MessageException
+     */
     public static function fromPath(
         string $path,
         ?string $name = null,
@@ -43,6 +46,9 @@ readonly class Attachment
         );
     }
 
+    /**
+     * @throws MessageException
+     */
     public static function inline(
         string $path,
         string $contentId,

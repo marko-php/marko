@@ -21,5 +21,7 @@ interface SocketInterface
 
     public function close(): void;
 
-    public function isConnected(): bool;
+    public bool $connected {
+        get;
+    }
 }

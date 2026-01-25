@@ -8,6 +8,9 @@ use Marko\Mail\Exceptions\MessageException;
 
 readonly class Address
 {
+    /**
+     * @throws MessageException
+     */
     public function __construct(
         public string $email,
         public ?string $name = null,

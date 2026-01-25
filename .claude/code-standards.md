@@ -169,39 +169,78 @@ class OrderId
 }
 ```
 
-### 5. Property Hooks Over Getters/Setters (PHP 8.4+)
-Use property hooks instead of traditional getter/setter methods. This is cleaner and more idiomatic PHP 8.4+.
+### 5. Asymmetric Visibility (PHP 8.4+)
+Use asymmetric visibility for properties that should be publicly readable but privately writable. This replaces getter methods and is cleaner than property hooks for simple cases.
 
 ```php
-// CORRECT - property hooks with asymmetric visibility
-class Application
+// CORRECT - asymmetric visibility for public read, private write
+class Message
 {
-    public private(set) ContainerInterface $container;
-    public private(set) PreferenceRegistry $preferenceRegistry;
+    public private(set) ?string $subject = null;
+    public private(set) ?Address $from = null;
 
-    // For computed/validated access
-    public Router $router {
-        get => $this->_router ?? throw new RuntimeException('Call boot() first');
+    /** @var array<Address> */
+    public private(set) array $to = [];
+
+    public function subject(
+        string $subject,
+    ): self {
+        $this->subject = $subject;
+        return $this;
+    }
+
+    public function to(
+        string $email,
+        ?string $name = null,
+    ): self {
+        $this->to[] = new Address($email, $name);  // Array modification works!
+        return $this;
     }
 }
 
 // WRONG - traditional getters
-class Application
+class Message
 {
-    private ContainerInterface $container;
+    private ?string $subject = null;
 
-    public function getContainer(): ContainerInterface
+    public function getSubject(): ?string
     {
-        return $this->container;
+        return $this->subject;
+    }
+}
+
+// WRONG - property hooks with only get (blocks array modification)
+class Message
+{
+    /** @var array<Address> */
+    public array $to = [] {
+        get {
+            return $this->to;
+        }
+    }
+
+    public function to(string $email): self
+    {
+        $this->to[] = new Address($email);  // ERROR: Indirect modification not allowed!
+        return $this;
     }
 }
 ```
 
+**When to use what:**
+
+| Pattern | Use When |
+|---------|----------|
+| `public private(set)` | Public read, private write (most common) |
+| `public protected(set)` | Public read, subclass can write |
+| `{ get => expr; }` | Computed/validated/lazy access |
+| `{ set => expr; }` | Validation or transformation on write |
+
 **Rules:**
-- Use `{ get; }` for simple read-only property access
-- Use `{ get => expr; }` for computed or validated access
-- Use `{ set => expr; }` when validation/transformation is needed on write
-- Asymmetric visibility: `public private(set)` for public read, private write (keep explicit `public` - explicit over implicit)
+- Prefer `public private(set)` over property hooks for simple read-only exposure
+- Keep explicit `public` - explicit over implicit
+- Property hooks with only `get` are implicitly read-only and block indirect modifications (like `$this->array[] = ...`)
+- Use property hooks only when you need computed values or validation logic
 
 ### 6. Avoid Final (Blocks Extensibility)
 `final` prevents Preferences from extending classes. Avoid it.

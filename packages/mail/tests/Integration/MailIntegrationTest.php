@@ -23,7 +23,7 @@ use ReflectionClass;
 function createIntegrationConfigRepository(
     array $values = [],
 ): ConfigRepositoryInterface {
-    return new class ($values) implements ConfigRepositoryInterface
+    return new readonly class ($values) implements ConfigRepositoryInterface
     {
         public function __construct(
             private array $values,
@@ -105,7 +105,7 @@ function createIntegrationSocket(): SocketInterface
 {
     return new class () implements SocketInterface
     {
-        private bool $connected = false;
+        public private(set) bool $connected = false;
 
         public function connect(
             string $host,
@@ -131,11 +131,6 @@ function createIntegrationSocket(): SocketInterface
         public function close(): void
         {
             $this->connected = false;
-        }
-
-        public function isConnected(): bool
-        {
-            return $this->connected;
         }
     };
 }

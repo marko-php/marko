@@ -24,7 +24,7 @@ readonly class SmtpMailer implements MailerInterface
     public function send(
         Message $message,
     ): bool {
-        $from = $message->getFrom();
+        $from = $message->from;
         $recipients = $this->getAllRecipients($message);
 
         // Validate recipients
@@ -82,9 +82,9 @@ readonly class SmtpMailer implements MailerInterface
         Message $message,
     ): array {
         return array_merge(
-            $message->getTo(),
-            $message->getCc(),
-            $message->getBcc(),
+            $message->to,
+            $message->cc,
+            $message->bcc,
         );
     }
 
@@ -94,9 +94,9 @@ readonly class SmtpMailer implements MailerInterface
     private function buildMessage(
         Message $message,
     ): string {
-        $html = $message->getHtml();
-        $text = $message->getText();
-        $attachments = $message->getAttachments();
+        $html = $message->html;
+        $text = $message->text;
+        $attachments = $message->attachments;
 
         // Separate inline from regular attachments
         $regularAttachments = array_filter($attachments, fn (Attachment $a) => $a->contentId === null);
@@ -147,39 +147,39 @@ readonly class SmtpMailer implements MailerInterface
         $headers = [];
 
         // From
-        $from = $message->getFrom();
+        $from = $message->from;
         if ($from !== null) {
             $headers[] = 'From: ' . $from->toString();
         }
 
         // To
-        $toAddresses = $message->getTo();
+        $toAddresses = $message->to;
         if ($toAddresses !== []) {
             $to = array_map(fn (Address $addr) => $addr->toString(), $toAddresses);
             $headers[] = 'To: ' . implode(', ', $to);
         }
 
         // Cc
-        $ccAddresses = $message->getCc();
+        $ccAddresses = $message->cc;
         if ($ccAddresses !== []) {
             $cc = array_map(fn (Address $addr) => $addr->toString(), $ccAddresses);
             $headers[] = 'Cc: ' . implode(', ', $cc);
         }
 
         // Reply-To
-        $replyTo = $message->getReplyTo();
+        $replyTo = $message->replyTo;
         if ($replyTo !== null) {
             $headers[] = 'Reply-To: ' . $replyTo->toString();
         }
 
         // Subject
-        $subject = $message->getSubject();
+        $subject = $message->subject;
         if ($subject !== null) {
             $headers[] = 'Subject: ' . $this->encodeHeader($subject);
         }
 
         // Priority
-        $priority = $message->getPriority();
+        $priority = $message->priority;
         if ($priority !== null) {
             $headers[] = 'X-Priority: ' . $priority;
         }
@@ -195,7 +195,7 @@ readonly class SmtpMailer implements MailerInterface
             $headers[] = "Content-Type: multipart/related; boundary=\"$relatedBoundary\"";
         } elseif ($isAlternative && $alternativeBoundary !== null) {
             $headers[] = "Content-Type: multipart/alternative; boundary=\"$alternativeBoundary\"";
-        } elseif ($message->getHtml() !== null) {
+        } elseif ($message->html !== null) {
             $headers[] = 'Content-Type: text/html; charset=UTF-8';
             $headers[] = 'Content-Transfer-Encoding: quoted-printable';
         } else {
@@ -204,7 +204,7 @@ readonly class SmtpMailer implements MailerInterface
         }
 
         // Custom headers
-        foreach ($message->getHeaders() as $name => $value) {
+        foreach ($message->headers as $name => $value) {
             $headers[] = "$name: $value";
         }
 
@@ -226,8 +226,8 @@ readonly class SmtpMailer implements MailerInterface
         ?string $relatedBoundary,
         ?string $alternativeBoundary,
     ): string {
-        $html = $message->getHtml();
-        $text = $message->getText();
+        $html = $message->html;
+        $text = $message->text;
 
         if ($hasRegularAttachments && $mixedBoundary !== null) {
             return $this->buildMixedBody(

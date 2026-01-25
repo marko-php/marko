@@ -661,7 +661,7 @@ function createSmtpMockTransport(
 
 class SmtpMockSocket implements SocketInterface
 {
-    private bool $connected = false;
+    public private(set) bool $connected = false;
 
     private int $responseIndex = 0;
 

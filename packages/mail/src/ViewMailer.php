@@ -14,7 +14,7 @@ use Marko\Mail\Contracts\ViewInterface;
  * to HTML before delegating to the underlying mailer. If no ViewInterface
  * is provided, messages pass through unchanged.
  */
-class ViewMailer implements MailerInterface
+readonly class ViewMailer implements MailerInterface
 {
     public function __construct(
         private MailerInterface $mailer,
@@ -24,10 +24,10 @@ class ViewMailer implements MailerInterface
     public function send(
         Message $message,
     ): bool {
-        if ($this->view !== null && $message->getView() !== null) {
+        if ($this->view !== null && $message->view !== null) {
             $html = $this->view->render(
-                $message->getView(),
-                $message->getViewData(),
+                $message->view,
+                $message->viewData,
             );
             $message->html($html);
         }

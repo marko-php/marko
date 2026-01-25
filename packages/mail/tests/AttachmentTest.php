@@ -101,7 +101,7 @@ describe('Attachment', function (): void {
         }
     })->with([
         'plain text file' => ['txt', 'Hello, World!', 'text/plain'],
-        'HTML file' => ['html', '<!DOCTYPE html><html><body>Test</body></html>', 'text/html'],
+        'HTML file' => ['html', '<!DOCTYPE html><html lang=""><body>Test</body></html>', 'text/html'],
         'JSON file' => ['json', '{"key": "value"}', 'application/json'],
         'JPEG image' => [
             'jpg',
@@ -161,11 +161,11 @@ describe('Attachment', function (): void {
             // Inline attachments have contentId set (indicating inline disposition)
             expect($inline->contentId)->toBe('my-logo')
                 ->and($inline->name)->toBe('inline-test.png')
-                ->and($inline->mimeType)->toBe('image/png');
+                ->and($inline->mimeType)->toBe('image/png')
+                ->and($regular->contentId)->toBeNull()
+                ->and($regular->name)->toBe('inline-test.png');
 
             // Regular attachments have null contentId (indicating attachment disposition)
-            expect($regular->contentId)->toBeNull()
-                ->and($regular->name)->toBe('inline-test.png');
         } finally {
             unlink($testFile);
         }

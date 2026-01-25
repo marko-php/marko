@@ -72,7 +72,7 @@ it('mail:test command supports subject option', function (): void {
     $command->execute($input, $output);
 
     expect($capturedMessage)->not->toBeNull()
-        ->and($capturedMessage->getSubject())->toBe('Custom Subject');
+        ->and($capturedMessage->subject)->toBe('Custom Subject');
 });
 
 it('mail:test command shows success message', function (): void {

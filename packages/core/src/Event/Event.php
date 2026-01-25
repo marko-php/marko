@@ -6,11 +6,7 @@ namespace Marko\Core\Event;
 
 abstract class Event
 {
-    public bool $propagationStopped = false {
-        get {
-            return $this->propagationStopped;
-        }
-    }
+    public private(set) bool $propagationStopped = false;
 
     public function stopPropagation(): void
     {

@@ -20,7 +20,7 @@ describe('ViewMailer', function (): void {
         $mailer->expects($this->once())
             ->method('send')
             ->with($this->callback(function (Message $message) {
-                return $message->getHtml() === '<h1>Welcome John!</h1>';
+                return $message->html === '<h1>Welcome John!</h1>';
             }))
             ->willReturn(true);
 
@@ -44,7 +44,7 @@ describe('ViewMailer', function (): void {
             ->method('send')
             ->with($this->callback(function (Message $message) {
                 // HTML should remain unchanged when no ViewInterface provided
-                return $message->getHtml() === '<h1>Welcome!</h1>';
+                return $message->html === '<h1>Welcome!</h1>';
             }))
             ->willReturn(true);
 
@@ -68,9 +68,9 @@ describe('ViewMailer', function (): void {
             ->method('send')
             ->with($this->callback(function (Message $message) {
                 // Template data is stored but not rendered
-                return $message->getView() === 'emails.welcome'
-                    && $message->getViewData() === ['name' => 'John']
-                    && $message->getHtml() === null;
+                return $message->view === 'emails.welcome'
+                    && $message->viewData === ['name' => 'John']
+                    && $message->html === null;
             }))
             ->willReturn(true);
 

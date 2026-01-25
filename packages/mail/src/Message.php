@@ -4,45 +4,50 @@ declare(strict_types=1);
 
 namespace Marko\Mail;
 
+use Marko\Mail\Exceptions\MessageException;
+
 class Message
 {
     /** @var array<Address> */
-    private array $to = [];
+    public private(set) array $to = [];
 
     /** @var array<Address> */
-    private array $cc = [];
+    public private(set) array $cc = [];
 
     /** @var array<Address> */
-    private array $bcc = [];
+    public private(set) array $bcc = [];
 
-    private ?Address $from = null;
+    public private(set) ?Address $from = null;
 
-    private ?Address $replyTo = null;
+    public private(set) ?Address $replyTo = null;
 
-    private ?string $subject = null;
+    public private(set) ?string $subject = null;
 
-    private ?string $html = null;
+    public private(set) ?string $html = null;
 
-    private ?string $text = null;
+    public private(set) ?string $text = null;
 
     /** @var array<Attachment> */
-    private array $attachments = [];
+    public private(set) array $attachments = [];
 
     /** @var array<string, string> */
-    private array $headers = [];
+    public private(set) array $headers = [];
 
-    private ?int $priority = null;
+    public private(set) ?int $priority = null;
 
-    private ?string $view = null;
+    public private(set) ?string $view = null;
 
     /** @var array<string, mixed> */
-    private array $viewData = [];
+    public private(set) array $viewData = [];
 
     public static function create(): self
     {
         return new self();
     }
 
+    /**
+     * @throws MessageException
+     */
     public function to(
         string $email,
         ?string $name = null,
@@ -52,12 +57,9 @@ class Message
         return $this;
     }
 
-    /** @return array<Address> */
-    public function getTo(): array
-    {
-        return $this->to;
-    }
-
+    /**
+     * @throws MessageException
+     */
     public function cc(
         string $email,
         ?string $name = null,
@@ -67,12 +69,9 @@ class Message
         return $this;
     }
 
-    /** @return array<Address> */
-    public function getCc(): array
-    {
-        return $this->cc;
-    }
-
+    /**
+     * @throws MessageException
+     */
     public function bcc(
         string $email,
         ?string $name = null,
@@ -82,12 +81,9 @@ class Message
         return $this;
     }
 
-    /** @return array<Address> */
-    public function getBcc(): array
-    {
-        return $this->bcc;
-    }
-
+    /**
+     * @throws MessageException
+     */
     public function from(
         string $email,
         ?string $name = null,
@@ -97,11 +93,9 @@ class Message
         return $this;
     }
 
-    public function getFrom(): ?Address
-    {
-        return $this->from;
-    }
-
+    /**
+     * @throws MessageException
+     */
     public function replyTo(
         string $email,
         ?string $name = null,
@@ -109,11 +103,6 @@ class Message
         $this->replyTo = new Address($email, $name);
 
         return $this;
-    }
-
-    public function getReplyTo(): ?Address
-    {
-        return $this->replyTo;
     }
 
     public function subject(
@@ -124,22 +113,12 @@ class Message
         return $this;
     }
 
-    public function getSubject(): ?string
-    {
-        return $this->subject;
-    }
-
     public function html(
         string $html,
     ): self {
         $this->html = $html;
 
         return $this;
-    }
-
-    public function getHtml(): ?string
-    {
-        return $this->html;
     }
 
     public function text(
@@ -150,11 +129,9 @@ class Message
         return $this;
     }
 
-    public function getText(): ?string
-    {
-        return $this->text;
-    }
-
+    /**
+     * @throws MessageException
+     */
     public function attach(
         string $path,
         ?string $name = null,
@@ -165,12 +142,9 @@ class Message
         return $this;
     }
 
-    /** @return array<Attachment> */
-    public function getAttachments(): array
-    {
-        return $this->attachments;
-    }
-
+    /**
+     * @throws MessageException
+     */
     public function embed(
         string $path,
         string $contentId,
@@ -191,12 +165,6 @@ class Message
         return $this;
     }
 
-    /** @return array<string, string> */
-    public function getHeaders(): array
-    {
-        return $this->headers;
-    }
-
     public function priority(
         int $priority,
     ): self {
@@ -205,22 +173,12 @@ class Message
         return $this;
     }
 
-    public function getPriority(): ?int
-    {
-        return $this->priority;
-    }
-
     public function view(
         string $template,
     ): self {
         $this->view = $template;
 
         return $this;
-    }
-
-    public function getView(): ?string
-    {
-        return $this->view;
     }
 
     /**
@@ -237,13 +195,5 @@ class Message
         }
 
         return $this;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getViewData(): array
-    {
-        return $this->viewData;
     }
 }

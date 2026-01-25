@@ -14,11 +14,7 @@ use Marko\Session\Flash\FlashBag;
 
 class Session implements SessionInterface
 {
-    public bool $started = false {
-        get {
-            return $this->started;
-        }
-    }
+    public private(set) bool $started = false;
 
     private string $id = '';
 

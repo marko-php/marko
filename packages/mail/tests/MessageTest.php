@@ -16,26 +16,26 @@ describe('Message', function (): void {
     it('getters return correct data', function (): void {
         $message = Message::create();
 
-        expect($message->getTo())->toBe([])
-            ->and($message->getCc())->toBe([])
-            ->and($message->getBcc())->toBe([])
-            ->and($message->getFrom())->toBeNull()
-            ->and($message->getReplyTo())->toBeNull()
-            ->and($message->getSubject())->toBeNull()
-            ->and($message->getHtml())->toBeNull()
-            ->and($message->getText())->toBeNull()
-            ->and($message->getAttachments())->toBe([])
-            ->and($message->getHeaders())->toBe([])
-            ->and($message->getPriority())->toBeNull()
-            ->and($message->getView())->toBeNull()
-            ->and($message->getViewData())->toBe([]);
+        expect($message->to)->toBe([])
+            ->and($message->cc)->toBe([])
+            ->and($message->bcc)->toBe([])
+            ->and($message->from)->toBeNull()
+            ->and($message->replyTo)->toBeNull()
+            ->and($message->subject)->toBeNull()
+            ->and($message->html)->toBeNull()
+            ->and($message->text)->toBeNull()
+            ->and($message->attachments)->toBe([])
+            ->and($message->headers)->toBe([])
+            ->and($message->priority)->toBeNull()
+            ->and($message->view)->toBeNull()
+            ->and($message->viewData)->toBe([]);
     });
 
     it('to adds recipient', function (): void {
         $message = Message::create()
             ->to('user@example.com', 'John Doe');
 
-        $recipients = $message->getTo();
+        $recipients = $message->to;
 
         expect($recipients)->toHaveCount(1)
             ->and($recipients[0])->toBeInstanceOf(Address::class)
@@ -48,7 +48,7 @@ describe('Message', function (): void {
             ->to('user1@example.com', 'User One')
             ->to('user2@example.com', 'User Two');
 
-        $recipients = $message->getTo();
+        $recipients = $message->to;
 
         expect($recipients)->toHaveCount(2)
             ->and($recipients[0]->email)->toBe('user1@example.com')
@@ -59,7 +59,7 @@ describe('Message', function (): void {
         $message = Message::create()
             ->cc('manager@example.com', 'Manager');
 
-        $recipients = $message->getCc();
+        $recipients = $message->cc;
 
         expect($recipients)->toHaveCount(1)
             ->and($recipients[0])->toBeInstanceOf(Address::class)
@@ -73,7 +73,7 @@ describe('Message', function (): void {
             ->cc('manager2@example.com', 'Manager Two')
             ->cc('manager3@example.com');
 
-        $recipients = $message->getCc();
+        $recipients = $message->cc;
 
         expect($recipients)->toHaveCount(3)
             ->and($recipients[0]->email)->toBe('manager1@example.com')
@@ -88,7 +88,7 @@ describe('Message', function (): void {
         $message = Message::create()
             ->bcc('secret@example.com', 'Secret Recipient');
 
-        $recipients = $message->getBcc();
+        $recipients = $message->bcc;
 
         expect($recipients)->toHaveCount(1)
             ->and($recipients[0])->toBeInstanceOf(Address::class)
@@ -102,7 +102,7 @@ describe('Message', function (): void {
             ->bcc('secret2@example.com', 'Secret Two')
             ->bcc('secret3@example.com');
 
-        $recipients = $message->getBcc();
+        $recipients = $message->bcc;
 
         expect($recipients)->toHaveCount(3)
             ->and($recipients[0]->email)->toBe('secret1@example.com')
@@ -117,7 +117,7 @@ describe('Message', function (): void {
         $message = Message::create()
             ->from('noreply@example.com', 'My App');
 
-        $from = $message->getFrom();
+        $from = $message->from;
 
         expect($from)->toBeInstanceOf(Address::class)
             ->and($from->email)->toBe('noreply@example.com')
@@ -128,7 +128,7 @@ describe('Message', function (): void {
         $message = Message::create()
             ->replyTo('support@example.com', 'Support Team');
 
-        $replyTo = $message->getReplyTo();
+        $replyTo = $message->replyTo;
 
         expect($replyTo)->toBeInstanceOf(Address::class)
             ->and($replyTo->email)->toBe('support@example.com')
@@ -139,21 +139,21 @@ describe('Message', function (): void {
         $message = Message::create()
             ->subject('Welcome to My App!');
 
-        expect($message->getSubject())->toBe('Welcome to My App!');
+        expect($message->subject)->toBe('Welcome to My App!');
     });
 
     it('html sets HTML body', function (): void {
         $message = Message::create()
             ->html('<h1>Welcome!</h1><p>Thanks for joining.</p>');
 
-        expect($message->getHtml())->toBe('<h1>Welcome!</h1><p>Thanks for joining.</p>');
+        expect($message->html)->toBe('<h1>Welcome!</h1><p>Thanks for joining.</p>');
     });
 
     it('text sets plain text body', function (): void {
         $message = Message::create()
             ->text('Welcome! Thanks for joining.');
 
-        expect($message->getText())->toBe('Welcome! Thanks for joining.');
+        expect($message->text)->toBe('Welcome! Thanks for joining.');
     });
 
     it('attach adds attachment', function (): void {
@@ -164,7 +164,7 @@ describe('Message', function (): void {
             $message = Message::create()
                 ->attach($testFile);
 
-            $attachments = $message->getAttachments();
+            $attachments = $message->attachments;
 
             expect($attachments)->toHaveCount(1)
                 ->and($attachments[0])->toBeInstanceOf(Attachment::class)
@@ -189,7 +189,7 @@ describe('Message', function (): void {
                 ->attach($testFile2, 'custom-name.pdf')
                 ->attach($testFile3);
 
-            $attachments = $message->getAttachments();
+            $attachments = $message->attachments;
 
             expect($attachments)->toHaveCount(3)
                 ->and($attachments[0])->toBeInstanceOf(Attachment::class)
@@ -216,7 +216,7 @@ describe('Message', function (): void {
             $message = Message::create()
                 ->embed($testFile, 'logo');
 
-            $attachments = $message->getAttachments();
+            $attachments = $message->attachments;
 
             expect($attachments)->toHaveCount(1)
                 ->and($attachments[0])->toBeInstanceOf(Attachment::class)
@@ -230,7 +230,7 @@ describe('Message', function (): void {
         $message = Message::create()
             ->header('X-Custom-Header', 'custom-value');
 
-        $headers = $message->getHeaders();
+        $headers = $message->headers;
 
         expect($headers)->toHaveKey('X-Custom-Header')
             ->and($headers['X-Custom-Header'])->toBe('custom-value');
@@ -242,7 +242,7 @@ describe('Message', function (): void {
             ->header('X-Priority', '1')
             ->header('X-Custom-ID', 'abc123');
 
-        $headers = $message->getHeaders();
+        $headers = $message->headers;
 
         expect($headers)->toHaveCount(3)
             ->and($headers)->toHaveKey('X-Mailer')
@@ -257,7 +257,7 @@ describe('Message', function (): void {
         $message = Message::create()
             ->priority(1);
 
-        expect($message->getPriority())->toBe(1);
+        expect($message->priority)->toBe(1);
     });
 
     it('methods return self for chaining', function (): void {
@@ -279,17 +279,17 @@ describe('Message', function (): void {
                 ->priority(1);
 
             expect($message)->toBeInstanceOf(Message::class)
-                ->and($message->getTo())->toHaveCount(1)
-                ->and($message->getCc())->toHaveCount(1)
-                ->and($message->getBcc())->toHaveCount(1)
-                ->and($message->getFrom())->not->toBeNull()
-                ->and($message->getReplyTo())->not->toBeNull()
-                ->and($message->getSubject())->toBe('Welcome!')
-                ->and($message->getHtml())->toBe('<h1>Welcome!</h1>')
-                ->and($message->getText())->toBe('Welcome!')
-                ->and($message->getAttachments())->toHaveCount(1)
-                ->and($message->getHeaders())->toHaveKey('X-Custom')
-                ->and($message->getPriority())->toBe(1);
+                ->and($message->to)->toHaveCount(1)
+                ->and($message->cc)->toHaveCount(1)
+                ->and($message->bcc)->toHaveCount(1)
+                ->and($message->from)->not->toBeNull()
+                ->and($message->replyTo)->not->toBeNull()
+                ->and($message->subject)->toBe('Welcome!')
+                ->and($message->html)->toBe('<h1>Welcome!</h1>')
+                ->and($message->text)->toBe('Welcome!')
+                ->and($message->attachments)->toHaveCount(1)
+                ->and($message->headers)->toHaveKey('X-Custom')
+                ->and($message->priority)->toBe(1);
         } finally {
             unlink($testFile);
         }
@@ -299,7 +299,7 @@ describe('Message', function (): void {
         $message = Message::create()
             ->view('emails.welcome');
 
-        expect($message->getView())->toBe('emails.welcome');
+        expect($message->view)->toBe('emails.welcome');
     });
 
     it('with method sets template data', function (): void {
@@ -307,7 +307,7 @@ describe('Message', function (): void {
             ->view('emails.welcome')
             ->with(['name' => 'John', 'email' => 'john@example.com']);
 
-        expect($message->getViewData())->toBe(['name' => 'John', 'email' => 'john@example.com']);
+        expect($message->viewData)->toBe(['name' => 'John', 'email' => 'john@example.com']);
     });
 
     it('with method supports key-value signature', function (): void {
@@ -316,6 +316,6 @@ describe('Message', function (): void {
             ->with('name', 'John')
             ->with('email', 'john@example.com');
 
-        expect($message->getViewData())->toBe(['name' => 'John', 'email' => 'john@example.com']);
+        expect($message->viewData)->toBe(['name' => 'John', 'email' => 'john@example.com']);
     });
 });
