@@ -56,12 +56,9 @@ interface GuardInterface
      */
     public function logout(): void;
 
-    /**
-     * Set the user provider used by the guard.
-     */
-    public function setProvider(
-        UserProviderInterface $provider,
-    ): void;
+    public UserProviderInterface $provider {
+        set;
+    }
 
     /**
      * Get the unique name of the guard.

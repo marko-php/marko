@@ -109,7 +109,7 @@ test('it returns user for valid token', function (): void {
     };
 
     $guard = new TokenGuard();
-    $guard->setProvider($provider);
+    $guard->provider = $provider;
 
     $headers = ['Authorization' => 'Bearer valid-token'];
     $guard->setHeaders($headers);
@@ -154,7 +154,7 @@ test('it returns null for invalid token', function (): void {
     };
 
     $guard = new TokenGuard();
-    $guard->setProvider($provider);
+    $guard->provider = $provider;
 
     $headers = ['Authorization' => 'Bearer invalid-token'];
     $guard->setHeaders($headers);
@@ -236,7 +236,7 @@ test('it returns true from check when token valid', function (): void {
     };
 
     $guard = new TokenGuard();
-    $guard->setProvider($provider);
+    $guard->provider = $provider;
 
     $headers = ['Authorization' => 'Bearer valid-token'];
     $guard->setHeaders($headers);
@@ -365,7 +365,7 @@ test('it handles logout as no-op for stateless token auth', function (): void {
     };
 
     $guard = new TokenGuard();
-    $guard->setProvider($provider);
+    $guard->provider = $provider;
     $guard->setHeaders(['Authorization' => 'Bearer valid-token']);
 
     // Verify user is authenticated

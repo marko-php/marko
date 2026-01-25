@@ -75,8 +75,8 @@ class AuthManager
     ): TokenGuard {
         $guard = new TokenGuard(
             name: $name,
+            provider: $this->provider,
         );
-        $guard->setProvider($this->provider);
 
         return $guard;
     }

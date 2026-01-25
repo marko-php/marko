@@ -18,18 +18,22 @@ use Marko\Session\Contracts\SessionInterface;
 
 class SessionGuard implements GuardInterface
 {
-    private const SESSION_KEY = 'auth_user_id';
-    private const REMEMBER_COOKIE_MINUTES = 43200; // 30 days
+    private const string SESSION_KEY = 'auth_user_id';
+    private const int REMEMBER_COOKIE_MINUTES = 43200; // 30 days
 
     private ?AuthenticatableInterface $cachedUser = null;
 
     public function __construct(
-        private SessionInterface $session,
-        private UserProviderInterface $provider,
-        private string $name = 'session',
-        private ?CookieJarInterface $cookieJar = null,
-        private ?RememberTokenManager $tokenManager = null,
-        private ?EventDispatcherInterface $eventDispatcher = null,
+        private readonly SessionInterface $session,
+        public UserProviderInterface $provider {
+            set {
+                $this->provider = $value;
+            }
+        },
+        private readonly string $name = 'session',
+        private readonly ?CookieJarInterface $cookieJar = null,
+        private readonly ?RememberTokenManager $tokenManager = null,
+        private readonly ?EventDispatcherInterface $eventDispatcher = null,
     ) {}
 
     public function check(): bool
@@ -106,6 +110,9 @@ class SessionGuard implements GuardInterface
         return $this->user()?->getAuthIdentifier();
     }
 
+    /**
+     * @throws AuthException
+     */
     public function attempt(
         array $credentials,
     ): bool {
@@ -137,6 +144,9 @@ class SessionGuard implements GuardInterface
         ));
     }
 
+    /**
+     * @throws AuthException
+     */
     public function login(
         AuthenticatableInterface $user,
         bool $remember = false,
@@ -185,6 +195,9 @@ class SessionGuard implements GuardInterface
         return 'remember_' . $this->name;
     }
 
+    /**
+     * @throws AuthException
+     */
     private function ensureSessionStarted(): void
     {
         if (!$this->session->started) {
@@ -196,6 +209,9 @@ class SessionGuard implements GuardInterface
         }
     }
 
+    /**
+     * @throws AuthException
+     */
     public function loginById(
         int|string $id,
     ): ?AuthenticatableInterface {
@@ -234,12 +250,6 @@ class SessionGuard implements GuardInterface
             user: $user,
             guard: $this->name,
         ));
-    }
-
-    public function setProvider(
-        UserProviderInterface $provider,
-    ): void {
-        $this->provider = $provider;
     }
 
     public function getName(): string

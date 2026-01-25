@@ -10,17 +10,21 @@ use Marko\Auth\Contracts\UserProviderInterface;
 
 class TokenGuard implements GuardInterface
 {
-    private ?UserProviderInterface $provider = null;
-
     /** @var array<string, string> */
     private array $headers = [];
 
     private ?AuthenticatableInterface $cachedUser = null;
 
     public function __construct(
-        private string $headerName = 'Authorization',
-        private string $prefix = 'Bearer ',
-        private string $name = 'token',
+        private readonly string $headerName = 'Authorization',
+        private readonly string $prefix = 'Bearer ',
+        private readonly string $name = 'token',
+        public ?UserProviderInterface $provider = null {
+            set {
+                $this->provider = $value;
+                $this->cachedUser = null;
+            }
+        },
     ) {}
 
     public function check(): bool
@@ -84,12 +88,6 @@ class TokenGuard implements GuardInterface
     }
 
     public function logout(): void {}
-
-    public function setProvider(
-        UserProviderInterface $provider,
-    ): void {
-        $this->provider = $provider;
-    }
 
     public function getName(): string
     {

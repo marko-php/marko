@@ -7,6 +7,7 @@ namespace Marko\Auth\Tests\Unit\Contracts;
 use Marko\Auth\AuthenticatableInterface;
 use Marko\Auth\Contracts\GuardInterface;
 use Marko\Auth\Contracts\UserProviderInterface;
+use PropertyHookType;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionUnionType;
@@ -159,25 +160,22 @@ test('it creates GuardInterface with logout method', function (): void {
         ->and($returnType->getName())->toBe('void');
 });
 
-test('it creates GuardInterface with setProvider method', function (): void {
+test('it creates GuardInterface with provider property hook', function (): void {
     $reflection = new ReflectionClass(GuardInterface::class);
 
-    expect($reflection->hasMethod('setProvider'))->toBeTrue();
+    // Should have provider property with set hook
+    expect($reflection->hasProperty('provider'))->toBeTrue();
 
-    $method = $reflection->getMethod('setProvider');
-    $parameters = $method->getParameters();
+    $property = $reflection->getProperty('provider');
+    expect($property->isPublic())->toBeTrue();
 
-    // Should have provider parameter
-    expect(count($parameters))->toBe(1);
+    // Check property type
+    $type = $property->getType();
+    expect($type)->not->toBeNull()
+        ->and($type->getName())->toBe(UserProviderInterface::class);
 
-    $providerParam = $parameters[0];
-    expect($providerParam->getName())->toBe('provider')
-        ->and($providerParam->getType()->getName())->toBe(UserProviderInterface::class);
-
-    // Should return void
-    $returnType = $method->getReturnType();
-    expect($returnType)->not->toBeNull()
-        ->and($returnType->getName())->toBe('void');
+    // Check for set hook (property should be settable)
+    expect($property->hasHook(PropertyHookType::Set))->toBeTrue();
 });
 
 test('it creates GuardInterface with getName method', function (): void {
