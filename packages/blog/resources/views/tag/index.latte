@@ -1,6 +1,33 @@
 {* Tag archive template *}
+{default $metaDescription = null}
+{default $pageTitle = null}
+{default $prevLink = null}
+{default $nextLink = null}
+{default $ogType = 'website'}
 {if isset($canonicalUrl)}
 <link rel="canonical" href="{$canonicalUrl}">
+{/if}
+{if $metaDescription}
+<meta name="description" content="{$metaDescription}">
+{/if}
+{if $pageTitle}
+<title>{$pageTitle}</title>
+{/if}
+{if isset($canonicalUrl)}
+<meta property="og:url" content="{$canonicalUrl}">
+{/if}
+{if $pageTitle}
+<meta property="og:title" content="{$pageTitle}">
+{/if}
+{if $metaDescription}
+<meta property="og:description" content="{$metaDescription}">
+{/if}
+<meta property="og:type" content="{$ogType}">
+{if $prevLink}
+<link rel="prev" href="{$prevLink}">
+{/if}
+{if $nextLink}
+<link rel="next" href="{$nextLink}">
 {/if}
 <main>
     <h1>{$tag->name}</h1>

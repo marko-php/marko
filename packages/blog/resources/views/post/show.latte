@@ -1,4 +1,27 @@
 {* Blog post show template *}
+{default $canonicalUrl = null}
+{default $metaDescription = null}
+{default $pageTitle = null}
+{default $ogType = 'article'}
+{if $canonicalUrl}
+<link rel="canonical" href="{$canonicalUrl}">
+{/if}
+{if $metaDescription}
+<meta name="description" content="{$metaDescription}">
+{/if}
+{if $pageTitle}
+<title>{$pageTitle}</title>
+{/if}
+{if $canonicalUrl}
+<meta property="og:url" content="{$canonicalUrl}">
+{/if}
+{if $pageTitle}
+<meta property="og:title" content="{$pageTitle}">
+{/if}
+{if $metaDescription}
+<meta property="og:description" content="{$metaDescription}">
+{/if}
+<meta property="og:type" content="{$ogType}">
 <article class="post-article">
     <header class="post-header">
         <h1>{$post->title}</h1>

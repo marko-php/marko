@@ -1,5 +1,30 @@
 {* Blog author archive template *}
+{default $metaDescription = null}
+{default $pageTitle = null}
+{default $prevLink = null}
+{default $nextLink = null}
+{default $ogType = 'website'}
 <link rel="canonical" href="{$canonicalUrl}">
+{if $metaDescription}
+<meta name="description" content="{$metaDescription}">
+{/if}
+{if $pageTitle}
+<title>{$pageTitle}</title>
+{/if}
+<meta property="og:url" content="{$canonicalUrl}">
+{if $pageTitle}
+<meta property="og:title" content="{$pageTitle}">
+{/if}
+{if $metaDescription}
+<meta property="og:description" content="{$metaDescription}">
+{/if}
+<meta property="og:type" content="{$ogType}">
+{if $prevLink}
+<link rel="prev" href="{$prevLink}">
+{/if}
+{if $nextLink}
+<link rel="next" href="{$nextLink}">
+{/if}
 
 <header class="author-header">
     <h1>{$author->getName()}</h1>
