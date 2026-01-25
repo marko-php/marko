@@ -41,20 +41,20 @@ test('SmtpMailer sends simple text email', function (): void {
 
     expect($result)->toBeTrue();
 
-    $written = $socket->getWritten();
+    $written = $socket->written;
     $writtenString = implode('', $written);
 
     // Verify SMTP commands
-    expect($writtenString)->toContain('MAIL FROM:<sender@example.com>');
-    expect($writtenString)->toContain('RCPT TO:<recipient@example.com>');
-    expect($writtenString)->toContain('DATA');
+    expect($writtenString)->toContain('MAIL FROM:<sender@example.com>')
+        ->and($writtenString)->toContain('RCPT TO:<recipient@example.com>')
+        ->and($writtenString)->toContain('DATA')
+        ->and($writtenString)->toContain('From: Sender <sender@example.com>')
+        ->and($writtenString)->toContain('To: Recipient <recipient@example.com>')
+        ->and($writtenString)->toContain('Subject: Test Subject')
+        ->and($writtenString)->toContain('Content-Type: text/plain')
+        ->and($writtenString)->toContain('Hello, this is a test email.');
 
     // Verify email headers and content
-    expect($writtenString)->toContain('From: Sender <sender@example.com>');
-    expect($writtenString)->toContain('To: Recipient <recipient@example.com>');
-    expect($writtenString)->toContain('Subject: Test Subject');
-    expect($writtenString)->toContain('Content-Type: text/plain');
-    expect($writtenString)->toContain('Hello, this is a test email.');
 });
 
 test('SmtpMailer sends HTML email', function (): void {
@@ -74,18 +74,18 @@ test('SmtpMailer sends HTML email', function (): void {
         ->from('sender@example.com')
         ->to('recipient@example.com')
         ->subject('HTML Email')
-        ->html('<html><body><h1>Hello</h1></body></html>');
+        ->html('<html lang=""><body><h1>Hello</h1></body></html>');
 
     $result = $mailer->send($message);
 
     expect($result)->toBeTrue();
 
-    $written = $socket->getWritten();
+    $written = $socket->written;
     $writtenString = implode('', $written);
 
-    // Verify Content-Type is HTML
-    expect($writtenString)->toContain('Content-Type: text/html');
-    expect($writtenString)->toContain('<html><body><h1>Hello</h1></body></html>');
+    // Verify Content-Type is HTML (note: = is encoded as =3D in quoted-printable)
+    expect($writtenString)->toContain('Content-Type: text/html')
+        ->and($writtenString)->toContain('<html lang=3D""><body><h1>Hello</h1></body></html>');
 });
 
 test('SmtpMailer sends multipart email', function (): void {
@@ -106,22 +106,22 @@ test('SmtpMailer sends multipart email', function (): void {
         ->to('recipient@example.com')
         ->subject('Multipart Email')
         ->text('Plain text version')
-        ->html('<html><body>HTML version</body></html>');
+        ->html('<html lang=""><body>HTML version</body></html>');
 
     $result = $mailer->send($message);
 
     expect($result)->toBeTrue();
 
-    $written = $socket->getWritten();
+    $written = $socket->written;
     $writtenString = implode('', $written);
 
     // Verify multipart structure
-    expect($writtenString)->toContain('Content-Type: multipart/alternative');
-    expect($writtenString)->toContain('boundary=');
-    expect($writtenString)->toContain('Content-Type: text/plain');
-    expect($writtenString)->toContain('Content-Type: text/html');
-    expect($writtenString)->toContain('Plain text version');
-    expect($writtenString)->toContain('HTML version');
+    expect($writtenString)->toContain('Content-Type: multipart/alternative')
+        ->and($writtenString)->toContain('boundary=')
+        ->and($writtenString)->toContain('Content-Type: text/plain')
+        ->and($writtenString)->toContain('Content-Type: text/html')
+        ->and($writtenString)->toContain('Plain text version')
+        ->and($writtenString)->toContain('HTML version');
 });
 
 test('SmtpMailer handles attachments', function (): void {
@@ -152,13 +152,13 @@ test('SmtpMailer handles attachments', function (): void {
 
     expect($result)->toBeTrue();
 
-    $written = $socket->getWritten();
+    $written = $socket->written;
     $writtenString = implode('', $written);
 
     // Verify multipart/mixed for attachments
-    expect($writtenString)->toContain('Content-Type: multipart/mixed');
-    expect($writtenString)->toContain('Content-Disposition: attachment; filename="document.txt"');
-    expect($writtenString)->toContain('Content-Transfer-Encoding: base64');
+    expect($writtenString)->toContain('Content-Type: multipart/mixed')
+        ->and($writtenString)->toContain('Content-Disposition: attachment; filename="document.txt"')
+        ->and($writtenString)->toContain('Content-Transfer-Encoding: base64');
 
     // Verify the attachment content is base64 encoded
     $encodedContent = base64_encode('This is attachment content');
@@ -193,20 +193,20 @@ test('SmtpMailer handles inline images', function (): void {
         ->from('sender@example.com')
         ->to('recipient@example.com')
         ->subject('Email with Inline Image')
-        ->html('<html><body><img src="cid:logo123"></body></html>')
+        ->html('<html lang=""><body><img src="cid:logo123" alt=""></body></html>')
         ->embed($tempImage, 'logo123', 'logo.png', 'image/png');
 
     $result = $mailer->send($message);
 
     expect($result)->toBeTrue();
 
-    $written = $socket->getWritten();
+    $written = $socket->written;
     $writtenString = implode('', $written);
 
     // Verify multipart/related structure for inline images
-    expect($writtenString)->toContain('Content-Type: multipart/related');
-    expect($writtenString)->toContain('Content-ID: <logo123>');
-    expect($writtenString)->toContain('Content-Disposition: inline; filename="logo.png"');
+    expect($writtenString)->toContain('Content-Type: multipart/related')
+        ->and($writtenString)->toContain('Content-ID: <logo123>')
+        ->and($writtenString)->toContain('Content-Disposition: inline; filename="logo.png"');
 
     // Cleanup
     unlink($tempImage);
@@ -240,18 +240,18 @@ test('SmtpMailer sets proper headers', function (): void {
 
     expect($result)->toBeTrue();
 
-    $written = $socket->getWritten();
+    $written = $socket->written;
     $writtenString = implode('', $written);
 
     // Verify all headers are set correctly
-    expect($writtenString)->toContain('From: Sender Name <sender@example.com>');
-    expect($writtenString)->toContain('To: Recipient Name <recipient@example.com>');
-    expect($writtenString)->toContain('Cc: CC Name <cc@example.com>');
-    expect($writtenString)->toContain('Reply-To: Reply Name <reply@example.com>');
-    expect($writtenString)->toContain('Subject: Test Subject');
-    expect($writtenString)->toContain('MIME-Version: 1.0');
-    expect($writtenString)->toContain('X-Priority: 1');
-    expect($writtenString)->toContain('X-Custom-Header: custom-value');
+    expect($writtenString)->toContain('From: Sender Name <sender@example.com>')
+        ->and($writtenString)->toContain('To: Recipient Name <recipient@example.com>')
+        ->and($writtenString)->toContain('Cc: CC Name <cc@example.com>')
+        ->and($writtenString)->toContain('Reply-To: Reply Name <reply@example.com>')
+        ->and($writtenString)->toContain('Subject: Test Subject')
+        ->and($writtenString)->toContain('MIME-Version: 1.0')
+        ->and($writtenString)->toContain('X-Priority: 1')
+        ->and($writtenString)->toContain('X-Custom-Header: custom-value');
 });
 
 test('SmtpMailer throws on no recipients', function (): void {
@@ -289,11 +289,11 @@ test('SmtpMailer generates correct MIME boundaries', function (): void {
         ->to('recipient@example.com')
         ->subject('Test Boundaries')
         ->text('Plain text version')
-        ->html('<html><body>HTML version</body></html>');
+        ->html('<html lang=""><body>HTML version</body></html>');
 
     $mailer->send($message);
 
-    $writtenString = implode('', $socket->getWritten());
+    $writtenString = implode('', $socket->written);
 
     // Verify boundary has correct prefix format
     expect($writtenString)->toMatch('/boundary="=_Part_[a-f0-9]{32}"/');
@@ -307,8 +307,8 @@ test('SmtpMailer generates correct MIME boundaries', function (): void {
 
     // Verify boundary is used correctly in content
     $boundary = $boundaries[0];
-    expect($writtenString)->toContain("--$boundary");
-    expect($writtenString)->toContain("--$boundary--");
+    expect($writtenString)->toContain("--$boundary")
+        ->and($writtenString)->toContain("--$boundary--");
 });
 
 test('SmtpMailer handles ASCII subjects without encoding', function (): void {
@@ -333,11 +333,11 @@ test('SmtpMailer handles ASCII subjects without encoding', function (): void {
 
     $mailer->send($message);
 
-    $writtenString = implode('', $socket->getWritten());
+    $writtenString = implode('', $socket->written);
 
     // ASCII subjects should NOT be RFC 2047 encoded
-    expect($writtenString)->toContain('Subject: Hello World');
-    expect($writtenString)->not->toContain('=?UTF-8?');
+    expect($writtenString)->toContain('Subject: Hello World')
+        ->and($writtenString)->not->toContain('=?UTF-8?');
 });
 
 test('SmtpMailer handles UTF-8 subjects', function (): void {
@@ -362,7 +362,7 @@ test('SmtpMailer handles UTF-8 subjects', function (): void {
 
     $mailer->send($message);
 
-    $writtenString = implode('', $socket->getWritten());
+    $writtenString = implode('', $socket->written);
 
     // UTF-8 subject should be RFC 2047 encoded (base64 or quoted-printable)
     // Format: =?UTF-8?B?base64encoded?= or =?UTF-8?Q?quotedprintable?=
@@ -396,21 +396,21 @@ test('SmtpMailer generates correct Content-ID for inline', function (): void {
         ->from('sender@example.com')
         ->to('recipient@example.com')
         ->subject('Email with Inline')
-        ->html('<html><body><img src="cid:' . $contentId . '"></body></html>')
+        ->html('<html lang=""><body><img src="cid:' . $contentId . '" alt=""></body></html>')
         ->embed($tempImage, $contentId, 'image.png', 'image/png');
 
     $mailer->send($message);
 
-    $writtenString = implode('', $socket->getWritten());
+    $writtenString = implode('', $socket->written);
 
     // Content-ID should be wrapped in angle brackets per RFC 2045
-    expect($writtenString)->toContain("Content-ID: <$contentId>");
+    expect($writtenString)->toContain("Content-ID: <$contentId>")
+        ->and($writtenString)->toContain("cid:$contentId")
+        ->and($writtenString)->toContain('Content-Disposition: inline');
 
     // Also verify the HTML references the CID correctly
-    expect($writtenString)->toContain("cid:$contentId");
 
     // Verify inline disposition
-    expect($writtenString)->toContain('Content-Disposition: inline');
 
     // Cleanup
     unlink($tempImage);
@@ -439,7 +439,7 @@ test('SmtpMailer handles message priority headers', function (): void {
 
     $mailer->send($message);
 
-    $writtenString = implode('', $socket->getWritten());
+    $writtenString = implode('', $socket->written);
 
     // X-Priority header should be set
     expect($writtenString)->toContain('X-Priority: 1');
@@ -468,7 +468,7 @@ test('SmtpMailer handles different priority levels', function (): void {
 
     $mailer->send($message);
 
-    $writtenString = implode('', $socket->getWritten());
+    $writtenString = implode('', $socket->written);
     expect($writtenString)->toContain('X-Priority: 3');
 });
 
@@ -493,7 +493,7 @@ test('SmtpMailer omits priority header when not set', function (): void {
 
     $mailer->send($message);
 
-    $writtenString = implode('', $socket->getWritten());
+    $writtenString = implode('', $socket->written);
 
     // X-Priority should NOT be present
     expect($writtenString)->not->toContain('X-Priority');
@@ -526,12 +526,12 @@ test('SmtpMailer generates Content-ID with special characters', function (): voi
         ->from('sender@example.com')
         ->to('recipient@example.com')
         ->subject('Email with Special CID')
-        ->html('<html><body><img src="cid:' . $contentId . '"></body></html>')
+        ->html('<html lang=""><body><img src="cid:' . $contentId . '" alt=""></body></html>')
         ->embed($tempImage, $contentId, 'logo.png', 'image/png');
 
     $mailer->send($message);
 
-    $writtenString = implode('', $socket->getWritten());
+    $writtenString = implode('', $socket->written);
 
     // Content-ID should preserve special characters
     expect($writtenString)->toContain("Content-ID: <$contentId>");
@@ -563,7 +563,7 @@ test('SmtpMailer encodes headers properly', function (): void {
 
     $mailer->send($message);
 
-    $writtenString = implode('', $socket->getWritten());
+    $writtenString = implode('', $socket->written);
 
     // Verify headers are properly formatted
     expect($writtenString)
@@ -596,22 +596,22 @@ test('SmtpMailer generates unique boundaries for nested multipart', function ():
         ->to('recipient@example.com')
         ->subject('Nested Boundaries')
         ->text('Plain text')
-        ->html('<html><body>HTML</body></html>')
+        ->html('<html lang=""><body>HTML</body></html>')
         ->attach($tempFile, 'file.txt', 'text/plain');
 
     $mailer->send($message);
 
-    $writtenString = implode('', $socket->getWritten());
+    $writtenString = implode('', $socket->written);
 
     // Extract all boundaries
     preg_match_all('/boundary="(=_Part_[a-f0-9]{32})"/', $writtenString, $matches);
     $boundaries = $matches[1];
 
     // Should have 2 boundaries: mixed (outer) and alternative (inner)
-    expect($boundaries)->toHaveCount(2);
+    expect($boundaries)->toHaveCount(2)
+        ->and(array_unique($boundaries))->toHaveCount(2);
 
     // Verify boundaries are unique (no conflicts)
-    expect(array_unique($boundaries))->toHaveCount(2);
 
     // Cleanup
     unlink($tempFile);
@@ -642,13 +642,13 @@ test('SmtpMailer sendRaw sends pre-formatted message', function (): void {
 
     expect($result)->toBeTrue();
 
-    $written = $socket->getWritten();
+    $written = $socket->written;
     $writtenString = implode('', $written);
 
     // Verify the raw message was sent as-is
-    expect($writtenString)->toContain('RCPT TO:<recipient@example.com>');
-    expect($writtenString)->toContain('Subject: Raw Email');
-    expect($writtenString)->toContain('This is a raw email body.');
+    expect($writtenString)->toContain('RCPT TO:<recipient@example.com>')
+        ->and($writtenString)->toContain('Subject: Raw Email')
+        ->and($writtenString)->toContain('This is a raw email body.');
 });
 
 function createSmtpMockTransport(
@@ -666,10 +666,10 @@ class SmtpMockSocket implements SocketInterface
     private int $responseIndex = 0;
 
     /** @var array<string> */
-    private array $written = [];
+    public private(set) array $written = [];
 
     public function __construct(
-        private array $responses = [],
+        private readonly array $responses = [],
     ) {}
 
     public function connect(
@@ -700,16 +700,5 @@ class SmtpMockSocket implements SocketInterface
     public function close(): void
     {
         $this->connected = false;
-    }
-
-    public function isConnected(): bool
-    {
-        return $this->connected;
-    }
-
-    /** @return array<string> */
-    public function getWritten(): array
-    {
-        return $this->written;
     }
 }

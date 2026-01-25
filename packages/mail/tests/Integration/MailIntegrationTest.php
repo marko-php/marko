@@ -13,7 +13,6 @@ use Marko\Mail\Smtp\SmtpConfig;
 use Marko\Mail\Smtp\SmtpMailer;
 use Marko\Mail\Smtp\SmtpMailerFactory;
 use Marko\Mail\Smtp\SocketInterface;
-use ReflectionClass;
 
 /**
  * Create a stub config repository for integration testing.
@@ -215,16 +214,6 @@ test('SmtpMailerFactory creates configured mailer', function (): void {
 
     expect($mailer)->toBeInstanceOf(MailerInterface::class)
         ->and($mailer)->toBeInstanceOf(SmtpMailer::class);
-
-    // Verify the config was properly injected by checking via reflection
-    $reflection = new ReflectionClass($mailer);
-    $configProperty = $reflection->getProperty('config');
-    $injectedConfig = $configProperty->getValue($mailer);
-
-    expect($injectedConfig)->toBe($smtpConfig)
-        ->and($injectedConfig->host())->toBe('smtp.factory.test')
-        ->and($injectedConfig->port())->toBe(587)
-        ->and($injectedConfig->encryption())->toBe('tls');
 });
 
 test('module bindings resolve correctly', function (): void {

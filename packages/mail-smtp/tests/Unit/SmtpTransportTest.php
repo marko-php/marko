@@ -16,7 +16,7 @@ test('SmtpTransport connects to server', function (): void {
     $transport = new SmtpTransport($socket);
     $transport->connect('smtp.example.com', 587);
 
-    expect($socket->isConnected())->toBeTrue();
+    expect($socket->connected)->toBeTrue();
 });
 
 test('SmtpTransport throws on connection failure', function (): void {
@@ -36,10 +36,10 @@ test('SmtpTransport sends EHLO command', function (): void {
     $transport->connect('smtp.example.com', 587);
     $capabilities = $transport->ehlo('client.example.com');
 
-    expect($socket->getWritten())->toContain("EHLO client.example.com\r\n");
-    expect($capabilities)->toContain('SIZE 52428800');
-    expect($capabilities)->toContain('STARTTLS');
-    expect($capabilities)->toContain('AUTH LOGIN PLAIN');
+    expect($socket->written)->toContain("EHLO client.example.com\r\n")
+        ->and($capabilities)->toContain('SIZE 52428800')
+        ->and($capabilities)->toContain('STARTTLS')
+        ->and($capabilities)->toContain('AUTH LOGIN PLAIN');
 });
 
 test('SmtpTransport handles STARTTLS', function (): void {
@@ -52,8 +52,8 @@ test('SmtpTransport handles STARTTLS', function (): void {
     $transport->connect('smtp.example.com', 587);
     $transport->startTls();
 
-    expect($socket->getWritten())->toContain("STARTTLS\r\n");
-    expect($socket->isTlsEnabled())->toBeTrue();
+    expect($socket->written)->toContain("STARTTLS\r\n")
+        ->and($socket->tlsEnabled)->toBeTrue();
 });
 
 test('SmtpTransport throws on TLS failure', function (): void {
@@ -64,7 +64,6 @@ test('SmtpTransport throws on TLS failure', function (): void {
         ],
         tlsSuccess: false,
     );
-    $socket->setHost('smtp.example.com');
 
     $transport = new SmtpTransport($socket);
     $transport->connect('smtp.example.com', 587);
@@ -83,10 +82,10 @@ test('SmtpTransport authenticates with LOGIN', function (): void {
     $transport->connect('smtp.example.com', 587);
     $transport->authenticate('user@example.com', 'secret');
 
-    $written = $socket->getWritten();
-    expect($written)->toContain("AUTH LOGIN\r\n");
-    expect($written)->toContain(base64_encode('user@example.com') . "\r\n");
-    expect($written)->toContain(base64_encode('secret') . "\r\n");
+    $written = $socket->written;
+    expect($written)->toContain("AUTH LOGIN\r\n")
+        ->and($written)->toContain(base64_encode('user@example.com') . "\r\n")
+        ->and($written)->toContain(base64_encode('secret') . "\r\n");
 });
 
 test('SmtpTransport authenticates with PLAIN', function (): void {
@@ -99,7 +98,7 @@ test('SmtpTransport authenticates with PLAIN', function (): void {
     $transport->connect('smtp.example.com', 587);
     $transport->authenticate('user@example.com', 'secret', 'PLAIN');
 
-    $written = $socket->getWritten();
+    $written = $socket->written;
     $expectedCredentials = base64_encode("\0user@example.com\0secret");
     expect($written)->toContain("AUTH PLAIN $expectedCredentials\r\n");
 });
@@ -125,7 +124,7 @@ test('SmtpTransport sends MAIL FROM command', function (): void {
     $transport->connect('smtp.example.com', 587);
     $transport->mailFrom('sender@example.com');
 
-    expect($socket->getWritten())->toContain("MAIL FROM:<sender@example.com>\r\n");
+    expect($socket->written)->toContain("MAIL FROM:<sender@example.com>\r\n");
 });
 
 test('SmtpTransport sends RCPT TO command', function (): void {
@@ -138,7 +137,7 @@ test('SmtpTransport sends RCPT TO command', function (): void {
     $transport->connect('smtp.example.com', 587);
     $transport->rcptTo('recipient@example.com');
 
-    expect($socket->getWritten())->toContain("RCPT TO:<recipient@example.com>\r\n");
+    expect($socket->written)->toContain("RCPT TO:<recipient@example.com>\r\n");
 });
 
 test('SmtpTransport sends DATA command', function (): void {
@@ -152,9 +151,9 @@ test('SmtpTransport sends DATA command', function (): void {
     $transport->connect('smtp.example.com', 587);
     $transport->data("Subject: Test\r\n\r\nHello World");
 
-    $written = $socket->getWritten();
-    expect($written)->toContain("DATA\r\n");
-    expect($written)->toContain("Subject: Test\r\n\r\nHello World\r\n.\r\n");
+    $written = $socket->written;
+    expect($written)->toContain("DATA\r\n")
+        ->and($written)->toContain("Subject: Test\r\n\r\nHello World\r\n.\r\n");
 });
 
 test('SmtpTransport handles unexpected response codes', function (): void {
@@ -299,7 +298,7 @@ function createDisconnectingSocket(
         private int $responseIndex = 0;
 
         public function __construct(
-            private array $responses,
+            private readonly array $responses,
         ) {}
 
         public function connect(
@@ -334,11 +333,6 @@ function createDisconnectingSocket(
         {
             $this->connected = false;
         }
-
-        public function isConnected(): bool
-        {
-            return $this->connected;
-        }
     };
 }
 
@@ -353,29 +347,19 @@ class MockSocket implements SocketInterface
 {
     public private(set) bool $connected = false;
 
-    private bool $tlsEnabled = false;
+    public private(set) bool $tlsEnabled = false;
 
     private int $responseIndex = 0;
 
-    private array $written = [];
+    /** @var array<string> */
+    public private(set) array $written = [];
 
-    private string $host = '';
+    public private(set) string $host = '';
 
     public function __construct(
-        private array $responses,
-        private bool $tlsSuccess = true,
+        private readonly array $responses,
+        private readonly bool $tlsSuccess = true,
     ) {}
-
-    public function setHost(
-        string $host,
-    ): void {
-        $this->host = $host;
-    }
-
-    public function getHost(): string
-    {
-        return $this->host;
-    }
 
     public function connect(
         string $host,
@@ -412,20 +396,5 @@ class MockSocket implements SocketInterface
     public function close(): void
     {
         $this->connected = false;
-    }
-
-    public function isConnected(): bool
-    {
-        return $this->connected;
-    }
-
-    public function isTlsEnabled(): bool
-    {
-        return $this->tlsEnabled;
-    }
-
-    public function getWritten(): array
-    {
-        return $this->written;
     }
 }

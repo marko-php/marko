@@ -13,7 +13,7 @@ class SmtpTransport
     private string $username = '';
 
     public function __construct(
-        private SocketInterface $socket,
+        private readonly SocketInterface $socket,
     ) {}
 
     public function connect(
@@ -38,6 +38,9 @@ class SmtpTransport
         return $this->parseCapabilities($response);
     }
 
+    /**
+     * @throws TransportException
+     */
     public function startTls(): void
     {
         $this->socket->write("STARTTLS\r\n");
@@ -48,6 +51,9 @@ class SmtpTransport
         }
     }
 
+    /**
+     * @throws TransportException
+     */
     public function authenticate(
         string $username,
         string $password,
@@ -62,6 +68,9 @@ class SmtpTransport
         }
     }
 
+    /**
+     * @throws TransportException
+     */
     private function authenticateLogin(
         string $username,
         string $password,
@@ -79,6 +88,9 @@ class SmtpTransport
         $this->expectAuthSuccess($response);
     }
 
+    /**
+     * @throws TransportException
+     */
     private function authenticatePlain(
         string $username,
         string $password,
@@ -89,6 +101,9 @@ class SmtpTransport
         $this->expectAuthSuccess($response);
     }
 
+    /**
+     * @throws TransportException
+     */
     public function mailFrom(
         string $address,
     ): void {
@@ -97,6 +112,9 @@ class SmtpTransport
         $this->expectSuccess($response);
     }
 
+    /**
+     * @throws TransportException
+     */
     public function rcptTo(
         string $address,
     ): void {
@@ -105,6 +123,9 @@ class SmtpTransport
         $this->expectSuccess($response);
     }
 
+    /**
+     * @throws TransportException
+     */
     public function data(
         string $content,
     ): void {
@@ -124,6 +145,9 @@ class SmtpTransport
         $this->socket->close();
     }
 
+    /**
+     * @throws TransportException
+     */
     private function expectAuthSuccess(
         string $response,
     ): void {
@@ -134,6 +158,9 @@ class SmtpTransport
         }
     }
 
+    /**
+     * @throws TransportException
+     */
     private function expectSuccess(
         string $response,
     ): void {
@@ -144,6 +171,9 @@ class SmtpTransport
         }
     }
 
+    /**
+     * @throws TransportException
+     */
     private function expectResponseCode(
         string $response,
         int $expected,

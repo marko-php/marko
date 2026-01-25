@@ -6,7 +6,7 @@ namespace Marko\Mail\Smtp;
 
 use Marko\Mail\Contracts\MailerInterface;
 
-class SmtpMailerFactory
+readonly class SmtpMailerFactory
 {
     public function __construct(
         private SmtpConfig $config,
@@ -17,7 +17,6 @@ class SmtpMailerFactory
     {
         return new SmtpMailer(
             transport: new SmtpTransport($this->socket),
-            config: $this->config,
         );
     }
 }

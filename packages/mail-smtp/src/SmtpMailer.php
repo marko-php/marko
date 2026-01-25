@@ -15,7 +15,6 @@ readonly class SmtpMailer implements MailerInterface
 {
     public function __construct(
         private SmtpTransport $transport,
-        private ?SmtpConfig $config = null,
     ) {}
 
     /**
