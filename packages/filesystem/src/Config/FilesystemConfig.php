@@ -37,24 +37,4 @@ readonly class FilesystemConfig
 
         return $disks[$name];
     }
-
-    /**
-     * @return class-string
-     * @throws FilesystemException
-     */
-    public function getDriverFactory(
-        string $driver,
-    ): string {
-        $drivers = $this->config->getArray('filesystem.drivers', []);
-
-        if (!isset($drivers[$driver])) {
-            throw new FilesystemException(
-                message: "Unknown filesystem driver: $driver",
-                context: 'Available drivers: ' . implode(', ', array_keys($drivers)),
-                suggestion: 'For local storage: composer require marko/filesystem-local',
-            );
-        }
-
-        return $drivers[$driver];
-    }
 }

@@ -8,6 +8,7 @@ use JsonException;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Filesystem\Config\FilesystemConfig;
 use Marko\Filesystem\Contracts\FilesystemInterface;
+use Marko\Filesystem\Discovery\DriverRegistry;
 use Marko\Filesystem\Exceptions\FilesystemException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -21,6 +22,7 @@ class FilesystemManager
 
     public function __construct(
         private readonly FilesystemConfig $config,
+        private readonly DriverRegistry $driverRegistry,
         private readonly ContainerInterface $container,
     ) {}
 
@@ -53,7 +55,7 @@ class FilesystemManager
             suggestion: 'Add a "driver" key to your disk configuration',
         );
 
-        $factoryClass = $this->config->getDriverFactory($driver);
+        $factoryClass = $this->driverRegistry->get($driver);
 
         try {
             $factory = $this->container->get($factoryClass);

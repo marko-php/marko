@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Marko\Filesystem\Local\Factory;
 
 use JsonException;
+use Marko\Filesystem\Attributes\FilesystemDriver;
+use Marko\Filesystem\Contracts\FilesystemDriverFactoryInterface;
 use Marko\Filesystem\Contracts\FilesystemInterface;
 use Marko\Filesystem\Exceptions\FilesystemException;
 use Marko\Filesystem\Local\Filesystem\LocalFilesystem;
 
-class LocalFilesystemFactory
+#[FilesystemDriver('local')]
+class LocalFilesystemFactory implements FilesystemDriverFactoryInterface
 {
     /**
      * @param array<string, mixed> $config

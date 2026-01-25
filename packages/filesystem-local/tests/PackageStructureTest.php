@@ -1,6 +1,9 @@
 <?php
 
 declare(strict_types=1);
+
+use Marko\Filesystem\Attributes\FilesystemDriver;
+use Marko\Filesystem\Contracts\FilesystemDriverFactoryInterface;
 use Marko\Filesystem\Local\Factory\LocalFilesystemFactory;
 
 it('has a valid composer.json with correct package name marko/filesystem-local', function () {
@@ -69,14 +72,6 @@ it('has module.php with enabled set to true', function () {
         ->and($config['enabled'])->toBeTrue();
 });
 
-it('has module.php with bindings array', function () {
-    $modulePath = dirname(__DIR__) . '/module.php';
-    $config = require $modulePath;
-
-    expect($config)->toHaveKey('bindings')
-        ->and($config['bindings'])->toBeArray();
-});
-
 it('has src directory for source code', function () {
     $srcPath = dirname(__DIR__) . '/src';
 
@@ -89,20 +84,19 @@ it('has tests directory for tests', function () {
     expect(is_dir($testsPath))->toBeTrue();
 });
 
-it('has config directory for driver registration', function () {
-    $configPath = dirname(__DIR__) . '/config';
+it('has LocalFilesystemFactory with FilesystemDriver attribute', function () {
+    $reflection = new ReflectionClass(LocalFilesystemFactory::class);
+    $attributes = $reflection->getAttributes(FilesystemDriver::class);
 
-    expect(is_dir($configPath))->toBeTrue();
+    expect($attributes)->toHaveCount(1);
+
+    $attribute = $attributes[0]->newInstance();
+
+    expect($attribute->name)->toBe('local');
 });
 
-it('registers local driver in filesystem.php config', function () {
-    $configPath = dirname(__DIR__) . '/config/filesystem.php';
+it('has LocalFilesystemFactory implementing FilesystemDriverFactoryInterface', function () {
+    $reflection = new ReflectionClass(LocalFilesystemFactory::class);
 
-    expect(file_exists($configPath))->toBeTrue();
-
-    $config = require $configPath;
-
-    expect($config)->toHaveKey('drivers')
-        ->and($config['drivers'])->toHaveKey('local')
-        ->and($config['drivers']['local'])->toBe(LocalFilesystemFactory::class);
+    expect($reflection->implementsInterface(FilesystemDriverFactoryInterface::class))->toBeTrue();
 });

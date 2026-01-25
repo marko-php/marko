@@ -1,6 +1,8 @@
 <?php
 
 declare(strict_types=1);
+use Marko\Filesystem\Contracts\FilesystemInterface;
+use Marko\Filesystem\DefaultFilesystem;
 
 it('has a valid composer.json with correct package name marko/filesystem', function () {
     $composerPath = dirname(__DIR__) . '/composer.json';
@@ -77,4 +79,26 @@ it('has default filesystem.php config file', function () {
     expect($config)->toBeArray()
         ->and($config)->toHaveKey('default')
         ->and($config)->toHaveKey('disks');
+});
+
+it('has module.php with enabled set to true', function () {
+    $modulePath = dirname(__DIR__) . '/module.php';
+
+    expect(file_exists($modulePath))->toBeTrue();
+
+    $config = require $modulePath;
+
+    expect($config)->toBeArray()
+        ->and($config)->toHaveKey('enabled')
+        ->and($config['enabled'])->toBeTrue();
+});
+
+it('binds FilesystemInterface to DefaultFilesystem', function () {
+    $modulePath = dirname(__DIR__) . '/module.php';
+    $config = require $modulePath;
+
+    expect($config)->toHaveKey('bindings')
+        ->and($config['bindings'])->toHaveKey(FilesystemInterface::class)
+        ->and($config['bindings'][FilesystemInterface::class])
+            ->toBe(DefaultFilesystem::class);
 });
