@@ -159,6 +159,35 @@ it('uses DisableRoute to demonstrate route removal', ...);
 it('removes route when method has DisableRoute attribute', ...);
 ```
 
+### Grouping Tests with describe()
+
+Use `describe()` blocks to group related tests. This improves readability and organization:
+
+```php
+describe('Column', function (): void {
+    it('creates readonly Column class with name, type, and constraints', function (): void {
+        $column = new Column(
+            name: 'email',
+            type: 'varchar',
+            length: 255,
+        );
+
+        expect($column->name)->toBe('email')
+            ->and($column->type)->toBe('varchar');
+    });
+
+    it('supports column properties: nullable, default, unique', function (): void {
+        // ...
+    });
+});
+```
+
+**Guidelines:**
+- Use `describe()` when testing a single class with multiple aspects
+- Group by behavior or feature area within the class
+- Keep function signatures consistent: `function (): void`
+- Avoid deeply nesting `describe()` blocks
+
 ## Expectation Chaining (Required)
 
 **Always chain expectations** using `->and()` to switch subjects. Never use consecutive `expect()` calls when they can be chained.
@@ -397,8 +426,10 @@ For interfaces, test against the interface contract, not specific implementation
 
 ## Pest 4 Features
 
+> **Note:** The following sections document Pest 4 capabilities. Some features require additional plugins that may not be installed in the project yet. Check `composer.json` for current dependencies.
+
 ### Browser Testing (Playwright-Powered)
-Pest 4 includes first-class browser testing. No need for Dusk.
+Pest 4 includes first-class browser testing. No need for Dusk. **Requires:** `pestphp/pest-plugin-browser`
 
 **Installation:**
 ```bash
@@ -648,6 +679,101 @@ it('discovers Plugin attribute on class', function () {
     expect($plugins)->toContain(PriceModifierPlugin::class);
 });
 ```
+
+### Capture Object Pattern
+
+Use capture objects (objects with public properties) to track state changes during test execution. This is preferred over reference properties when you need to track multiple values or complex state:
+
+```php
+// Define event with capture property
+class DispatcherTestEvent extends Event
+{
+    public array $handledBy = [];
+}
+
+it('dispatches event to observers in priority order', function (): void {
+    $event = new DispatcherTestEvent();
+    $dispatcher->dispatch($event);
+
+    // Assert via capture object
+    expect($event->handledBy)->toBe(['high', 'medium', 'low']);
+});
+```
+
+**When to use capture objects vs reference properties:**
+- **Capture objects**: When tracking multiple related values, when state belongs logically to the test subject
+- **Reference properties**: When tracking simple state from anonymous classes that don't naturally own the state
+
+### Test Helpers (Helpers.php)
+
+When a setup pattern repeats 3+ times across tests, extract it to a `Helpers.php` file in the same test directory:
+
+```php
+// packages/database/tests/Command/Helpers.php
+namespace Marko\Database\Tests\Command;
+
+final class Helpers
+{
+    /**
+     * Helper to capture command output.
+     *
+     * @return array{stream: resource, output: Output}
+     */
+    public static function createOutputStream(): array
+    {
+        $stream = fopen('php://memory', 'r+');
+
+        return [
+            'stream' => $stream,
+            'output' => new Output($stream),
+        ];
+    }
+
+    /**
+     * Helper to create a DiffCommand with standard dependencies.
+     */
+    public static function createDiffCommand(
+        ?DiffCalculator $diffCalculator = null,
+    ): DiffCommand {
+        return new DiffCommand(
+            discovery: self::createStubEntityDiscovery(),
+            // ...
+        );
+    }
+}
+```
+
+**Guidelines for test helpers:**
+- Place in `Helpers.php` (not `Helpers/` directory)
+- Use `final class` with static methods
+- Accept only the varying parts as parameters
+- Return arrays with named keys for multiple values: `['stream' => $stream, 'output' => $output]`
+- Document return types with PHPDoc when returning complex structures
+
+### Test Fixtures at File Top
+
+For simple test fixtures (classes used by multiple tests in the same file), define them at the top of the file before tests:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Marko\Core\Container\Container;
+
+// Test fixtures
+interface PaymentInterface {}
+class StripePayment implements PaymentInterface {}
+class PayPalPayment implements PaymentInterface {}
+
+it('registers bindings from module manifest', function (): void {
+    // Uses PaymentInterface and StripePayment defined above
+});
+```
+
+**When to use file-top fixtures vs anonymous classes:**
+- **File-top fixtures**: When multiple tests need the same class, when class needs methods/properties
+- **Anonymous classes**: When testing interface contracts, when class is only used once
 
 ## Running Tests in CI
 

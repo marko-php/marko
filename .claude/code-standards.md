@@ -482,6 +482,40 @@ public function show(int $id): Response
 }
 ```
 
+## Exception Standards (Loud Errors)
+
+All Marko exceptions extend `MarkoException` and provide three pieces of information via named parameters:
+
+```php
+class BindingConflictException extends MarkoException
+{
+    public static function multipleBindings(
+        string $interface,
+        array $modules,
+    ): self {
+        $moduleList = implode(', ', $modules);
+
+        return new self(
+            message: "Multiple modules bind the same interface '$interface': $moduleList",
+            context: "While loading module bindings for '$interface'",
+            suggestion: 'Use a Preference in a higher-priority module to resolve the conflict, or remove duplicate bindings',
+        );
+    }
+}
+```
+
+| Parameter    | Purpose                                        |
+|--------------|------------------------------------------------|
+| `message`    | What went wrong (specific, actionable)         |
+| `context`    | Where it happened (help locate the issue)      |
+| `suggestion` | How to fix it (guide toward the solution)      |
+
+**Guidelines:**
+- Use static factory methods (e.g., `::multipleBindings()`) for common exception cases
+- Include variable values in messages (interface names, module names, etc.)
+- Keep suggestions actionable - tell the developer exactly what to do
+- Always use named parameters when creating exceptions
+
 ## Documentation Standards
 
 ### When to Document
