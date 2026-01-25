@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace Marko\Auth\Tests\Integration;
 
 use Closure;
-use Marko\Auth\AuthenticatableInterface;
 use Marko\Auth\AuthManager;
 use Marko\Auth\Config\AuthConfig;
-use Marko\Auth\Contracts\CookieJarInterface;
 use Marko\Auth\Contracts\PasswordHasherInterface;
-use Marko\Auth\Contracts\UserProviderInterface;
 use Marko\Auth\Event\FailedLoginEvent;
 use Marko\Auth\Event\LoginEvent;
 use Marko\Auth\Event\LogoutEvent;
@@ -18,10 +15,6 @@ use Marko\Auth\Guard\SessionGuard;
 use Marko\Auth\Guard\TokenGuard;
 use Marko\Auth\Token\RememberTokenManager;
 use Marko\Config\ConfigRepositoryInterface;
-use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
-use Marko\Session\Contracts\SessionInterface;
-use Marko\Session\Flash\FlashBag;
 
 /**
  * Create a stub config repository for integration testing.
@@ -34,7 +27,7 @@ function createIntegrationConfigRepository(
     return new class ($values) implements ConfigRepositoryInterface
     {
         public function __construct(
-            private array $values,
+            private readonly array $values,
         ) {}
 
         public function get(
@@ -106,260 +99,9 @@ function createIntegrationConfigRepository(
     };
 }
 
-/**
- * Create a stub session for integration testing.
- *
- * @param array<string, mixed> $storage
- */
-function createIntegrationSession(
-    array &$storage = [],
-    bool &$regenerateCalled = false,
-    bool $isStarted = true,
-): SessionInterface {
-    return new class ($storage, $regenerateCalled, $isStarted) implements SessionInterface
-    {
-        public function __construct(
-            private array &$storage,
-            private bool &$regenerateCalled,
-            private bool $isStartedValue,
-        ) {}
-
-        public bool $started {
-            get => $this->isStartedValue;
-        }
-
-        public function start(): void {}
-
-        public function get(
-            string $key,
-            mixed $default = null,
-        ): mixed {
-            return $this->storage[$key] ?? $default;
-        }
-
-        public function set(
-            string $key,
-            mixed $value,
-        ): void {
-            $this->storage[$key] = $value;
-        }
-
-        public function has(
-            string $key,
-        ): bool {
-            return isset($this->storage[$key]);
-        }
-
-        public function remove(
-            string $key,
-        ): void {
-            unset($this->storage[$key]);
-        }
-
-        public function clear(): void
-        {
-            $this->storage = [];
-        }
-
-        public function all(): array
-        {
-            return $this->storage;
-        }
-
-        public function regenerate(
-            bool $deleteOldSession = true,
-        ): void {
-            $this->regenerateCalled = true;
-        }
-
-        public function destroy(): void
-        {
-            $this->storage = [];
-        }
-
-        public function getId(): string
-        {
-            return 'test-session-id';
-        }
-
-        public function setId(string $id): void {}
-
-        public function flash(): FlashBag
-        {
-            return new FlashBag();
-        }
-
-        public function save(): void {}
-    };
-}
-
-/**
- * Create a stub cookie jar for integration testing.
- *
- * @param array<string, string> $cookies
- */
-function createIntegrationCookieJar(
-    array &$cookies = [],
-): CookieJarInterface {
-    return new class ($cookies) implements CookieJarInterface
-    {
-        public function __construct(
-            private array &$cookies,
-        ) {}
-
-        public function get(
-            string $name,
-        ): ?string {
-            return $this->cookies[$name] ?? null;
-        }
-
-        public function set(
-            string $name,
-            string $value,
-            int $minutes = 0,
-        ): void {
-            $this->cookies[$name] = $value;
-        }
-
-        public function delete(
-            string $name,
-        ): void {
-            unset($this->cookies[$name]);
-        }
-    };
-}
-
-/**
- * Create an authenticatable user for integration testing.
- */
-function createIntegrationUser(
-    int|string $id = 1,
-    string $password = 'hashed',
-): AuthenticatableInterface {
-    return new class ($id, $password) implements AuthenticatableInterface
-    {
-        private ?string $rememberToken = null;
-
-        public function __construct(
-            private int|string $id,
-            private string $password,
-        ) {}
-
-        public function getAuthIdentifier(): int|string
-        {
-            return $this->id;
-        }
-
-        public function getAuthIdentifierName(): string
-        {
-            return 'id';
-        }
-
-        public function getAuthPassword(): string
-        {
-            return $this->password;
-        }
-
-        public function getRememberToken(): ?string
-        {
-            return $this->rememberToken;
-        }
-
-        public function setRememberToken(
-            ?string $token,
-        ): void {
-            $this->rememberToken = $token;
-        }
-
-        public function getRememberTokenName(): string
-        {
-            return 'remember_token';
-        }
-    };
-}
-
-/**
- * Create a user provider for integration testing.
- */
-function createIntegrationUserProvider(
-    ?AuthenticatableInterface $userById = null,
-    ?AuthenticatableInterface $userByCredentials = null,
-    bool $credentialsValid = false,
-    ?AuthenticatableInterface $userByRememberToken = null,
-    ?string &$updatedRememberToken = null,
-): UserProviderInterface {
-    return new class ($userById, $userByCredentials, $credentialsValid, $userByRememberToken, $updatedRememberToken) implements UserProviderInterface
-    {
-        public function __construct(
-            private ?AuthenticatableInterface $userById,
-            private ?AuthenticatableInterface $userByCredentials,
-            private bool $credentialsValid,
-            private ?AuthenticatableInterface $userByRememberToken,
-            private ?string &$updatedRememberToken,
-        ) {}
-
-        public function retrieveById(
-            int|string $identifier,
-        ): ?AuthenticatableInterface {
-            return $this->userById;
-        }
-
-        public function retrieveByCredentials(
-            array $credentials,
-        ): ?AuthenticatableInterface {
-            return $this->userByCredentials;
-        }
-
-        public function validateCredentials(
-            AuthenticatableInterface $user,
-            array $credentials,
-        ): bool {
-            return $this->credentialsValid;
-        }
-
-        public function retrieveByRememberToken(
-            int|string $identifier,
-            string $token,
-        ): ?AuthenticatableInterface {
-            return $this->userByRememberToken;
-        }
-
-        public function updateRememberToken(
-            AuthenticatableInterface $user,
-            ?string $token,
-        ): void {
-            $this->updatedRememberToken = $token;
-            $user->setRememberToken($token);
-        }
-    };
-}
-
-/**
- * Create an event dispatcher for integration testing.
- *
- * @param array<Event> $dispatchedEvents
- */
-function createIntegrationEventDispatcher(
-    array &$dispatchedEvents = [],
-): EventDispatcherInterface {
-    return new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$dispatchedEvents,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->dispatchedEvents[] = $event;
-        }
-    };
-}
-
 test('complete login flow works', function (): void {
-    $user = createIntegrationUser(id: 42);
-    $storage = [];
-    $regenerateCalled = false;
+    $user = new TestUser(id: 42);
+    $session = new TestSession();
 
     $configRepo = createIntegrationConfigRepository([
         'auth.default.guard' => 'web',
@@ -369,8 +111,7 @@ test('complete login flow works', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = createIntegrationSession($storage, $regenerateCalled);
-    $provider = createIntegrationUserProvider(
+    $provider = new TestUserProvider(
         userById: $user,
         userByCredentials: $user,
         credentialsValid: true,
@@ -395,13 +136,12 @@ test('complete login flow works', function (): void {
         ->and($manager->check())->toBeTrue()
         ->and($manager->user())->toBe($user)
         ->and($manager->id())->toBe(42)
-        ->and($regenerateCalled)->toBeTrue();
+        ->and($session->regenerateCalled)->toBeTrue();
 });
 
 test('complete logout flow works', function (): void {
-    $user = createIntegrationUser(id: 42);
-    $storage = [];
-    $regenerateCalled = false;
+    $user = new TestUser(id: 42);
+    $session = new TestSession();
 
     $configRepo = createIntegrationConfigRepository([
         'auth.default.guard' => 'web',
@@ -411,8 +151,7 @@ test('complete logout flow works', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = createIntegrationSession($storage, $regenerateCalled);
-    $provider = createIntegrationUserProvider(
+    $provider = new TestUserProvider(
         userById: $user,
         userByCredentials: $user,
         credentialsValid: true,
@@ -438,21 +177,15 @@ test('complete logout flow works', function (): void {
 });
 
 test('remember me creates and uses token', function (): void {
-    $user = createIntegrationUser(id: 42);
-    $storage = [];
-    $cookies = [];
-    $regenerateCalled = false;
-    $updatedRememberToken = null;
-
-    $session = createIntegrationSession($storage, $regenerateCalled);
-    $cookieJar = createIntegrationCookieJar($cookies);
+    $user = new TestUser(id: 42);
+    $session = new TestSession();
+    $cookieJar = new TestCookieJar();
     $tokenManager = new RememberTokenManager();
-    $provider = createIntegrationUserProvider(
+    $provider = new TestUserProvider(
         userById: $user,
         userByCredentials: $user,
         credentialsValid: true,
         userByRememberToken: $user,
-        updatedRememberToken: $updatedRememberToken,
     );
 
     $guard = new SessionGuard(
@@ -467,28 +200,27 @@ test('remember me creates and uses token', function (): void {
     $guard->login($user, remember: true);
 
     // Verify remember token was created
-    expect($updatedRememberToken)->not->toBeNull()
-        ->and($cookies)->toHaveKey('remember_web')
-        ->and($cookies['remember_web'])->toContain('42|');
+    expect($provider->lastUpdatedRememberToken)->not->toBeNull()
+        ->and($cookieJar->cookies)->toHaveKey('remember_web')
+        ->and($cookieJar->cookies['remember_web'])->toContain('42|');
 
     // Verify user has remember token set
     $storedHash = $user->getRememberToken();
     expect($storedHash)->not->toBeNull();
 
     // Extract token from cookie
-    $cookieValue = $cookies['remember_web'];
+    $cookieValue = $cookieJar->cookies['remember_web'];
     $parts = explode('|', $cookieValue);
     expect($parts)->toHaveCount(2);
-    [$userId, $plainToken] = $parts;
+    [, $plainToken] = $parts;
 
     // Verify the token validates against stored hash
     expect($tokenManager->validate($plainToken, $storedHash))->toBeTrue();
 });
 
 test('guard switching works correctly', function (): void {
-    $user = createIntegrationUser(id: 42);
-    $storage = [];
-    $regenerateCalled = false;
+    $user = new TestUser(id: 42);
+    $session = new TestSession();
 
     $configRepo = createIntegrationConfigRepository([
         'auth.default.guard' => 'web',
@@ -500,8 +232,7 @@ test('guard switching works correctly', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = createIntegrationSession($storage, $regenerateCalled);
-    $provider = createIntegrationUserProvider(
+    $provider = new TestUserProvider(
         userById: $user,
         userByCredentials: $user,
         credentialsValid: true,
@@ -521,17 +252,17 @@ test('guard switching works correctly', function (): void {
     // Verify correct guard types
     expect($webGuard)->toBeInstanceOf(SessionGuard::class)
         ->and($apiGuard)->toBeInstanceOf(TokenGuard::class)
-        ->and($adminGuard)->toBeInstanceOf(SessionGuard::class);
-
-    // Verify guard names
-    expect($webGuard->getName())->toBe('web')
+        ->and($adminGuard)->toBeInstanceOf(SessionGuard::class)
+        ->and($webGuard->getName())->toBe('web')
         ->and($apiGuard->getName())->toBe('api')
-        ->and($adminGuard->getName())->toBe('admin');
-
-    // Verify they are different instances
-    expect($webGuard)->not->toBe($apiGuard)
+        ->and($adminGuard->getName())->toBe('admin')
+        ->and($webGuard)->not->toBe($apiGuard)
         ->and($webGuard)->not->toBe($adminGuard)
         ->and($apiGuard)->not->toBe($adminGuard);
+
+    // Verify guard names
+
+    // Verify they are different instances
 
     // Login on web guard only
     $webGuard->login($user);
@@ -555,15 +286,15 @@ test('module bindings resolve correctly', function (): void {
     // Verify module structure
     expect($config)->toBeArray()
         ->and($config)->toHaveKey('bindings')
-        ->and($config['bindings'])->toBeArray();
+        ->and($config['bindings'])->toBeArray()
+        ->and($config['bindings'])->toHaveKey(PasswordHasherInterface::class)
+        ->and($config['bindings'])->toHaveKey(AuthManager::class)
+        ->and($config['bindings'][PasswordHasherInterface::class])->toBeInstanceOf(Closure::class)
+        ->and($config['bindings'][AuthManager::class])->toBeInstanceOf(Closure::class);
 
     // Verify required bindings exist
-    expect($config['bindings'])->toHaveKey(PasswordHasherInterface::class)
-        ->and($config['bindings'])->toHaveKey(AuthManager::class);
 
     // Verify bindings are closures
-    expect($config['bindings'][PasswordHasherInterface::class])->toBeInstanceOf(Closure::class)
-        ->and($config['bindings'][AuthManager::class])->toBeInstanceOf(Closure::class);
 });
 
 test('config loading works', function (): void {
@@ -603,10 +334,10 @@ test('config loading works', function (): void {
     // Verify providers
     $providers = $authConfig->providers();
     expect($providers)->toHaveKey('users')
-        ->and($providers)->toHaveKey('customers');
+        ->and($providers)->toHaveKey('customers')
+        ->and($authConfig->bcryptCost())->toBe(10);
 
     // Verify password config
-    expect($authConfig->bcryptCost())->toBe(10);
 
     // Verify remember config
     $rememberConfig = $authConfig->rememberConfig();
@@ -615,14 +346,10 @@ test('config loading works', function (): void {
 });
 
 test('events dispatched during auth flow', function (): void {
-    $user = createIntegrationUser(id: 42);
-    $storage = [];
-    $regenerateCalled = false;
-    $dispatchedEvents = [];
-
-    $session = createIntegrationSession($storage, $regenerateCalled);
-    $dispatcher = createIntegrationEventDispatcher($dispatchedEvents);
-    $provider = createIntegrationUserProvider(
+    $user = new TestUser(id: 42);
+    $session = new TestSession();
+    $dispatcher = new TestEventDispatcher();
+    $provider = new TestUserProvider(
         userById: $user,
         userByCredentials: $user,
         credentialsValid: true,
@@ -638,29 +365,31 @@ test('events dispatched during auth flow', function (): void {
     // Test successful login event
     $guard->login($user);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(LoginEvent::class)
-        ->and($dispatchedEvents[0]->user)->toBe($user)
-        ->and($dispatchedEvents[0]->guard)->toBe('web')
-        ->and($dispatchedEvents[0]->remember)->toBeFalse();
+    expect($dispatcher->events)->toHaveCount(1);
+    $loginEvent = $dispatcher->events[0];
+    assert($loginEvent instanceof LoginEvent);
+    expect($loginEvent->user)->toBe($user)
+        ->and($loginEvent->guard)->toBe('web')
+        ->and($loginEvent->remember)->toBeFalse();
 
     // Reset events and test logout
-    $dispatchedEvents = [];
+    $dispatcher->clear();
     $guard->logout();
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(LogoutEvent::class)
-        ->and($dispatchedEvents[0]->user)->toBe($user)
-        ->and($dispatchedEvents[0]->guard)->toBe('web');
+    expect($dispatcher->events)->toHaveCount(1);
+    $logoutEvent = $dispatcher->events[0];
+    assert($logoutEvent instanceof LogoutEvent);
+    expect($logoutEvent->user)->toBe($user)
+        ->and($logoutEvent->guard)->toBe('web');
 
     // Reset events and test failed login
-    $dispatchedEvents = [];
-    $invalidProvider = createIntegrationUserProvider(
+    $dispatcher->clear();
+    $invalidProvider = new TestUserProvider(
         userByCredentials: $user,
     );
 
     $failGuard = new SessionGuard(
-        session: createIntegrationSession($storage, $regenerateCalled),
+        session: new TestSession(),
         provider: $invalidProvider,
         name: 'web',
         eventDispatcher: $dispatcher,
@@ -669,8 +398,9 @@ test('events dispatched during auth flow', function (): void {
     $result = $failGuard->attempt(['email' => 'test@example.com', 'password' => 'wrong']);
 
     expect($result)->toBeFalse()
-        ->and($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(FailedLoginEvent::class)
-        ->and($dispatchedEvents[0]->guard)->toBe('web')
-        ->and($dispatchedEvents[0]->credentials)->toBe(['email' => 'test@example.com']);
+        ->and($dispatcher->events)->toHaveCount(1);
+    $failedEvent = $dispatcher->events[0];
+    assert($failedEvent instanceof FailedLoginEvent);
+    expect($failedEvent->guard)->toBe('web')
+        ->and($failedEvent->credentials)->toBe(['email' => 'test@example.com']);
 });

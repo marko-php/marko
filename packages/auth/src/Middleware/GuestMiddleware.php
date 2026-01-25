@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Marko\Auth\Middleware;
 
 use Marko\Auth\AuthManager;
+use Marko\Auth\Exceptions\AuthException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 
-class GuestMiddleware implements MiddlewareInterface
+readonly class GuestMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private AuthManager $auth,
@@ -17,6 +18,9 @@ class GuestMiddleware implements MiddlewareInterface
         private ?string $guard = null,
     ) {}
 
+    /**
+     * @throws AuthException
+     */
     public function handle(
         Request $request,
         callable $next,

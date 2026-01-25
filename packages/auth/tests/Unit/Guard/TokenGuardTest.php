@@ -66,7 +66,7 @@ test('it returns user for valid token', function (): void {
         }
     };
 
-    $provider = new class ($user) implements UserProviderInterface
+    $provider = new readonly class ($user) implements UserProviderInterface
     {
         public function __construct(
             private AuthenticatableInterface $user,
@@ -193,7 +193,7 @@ test('it returns true from check when token valid', function (): void {
         }
     };
 
-    $provider = new class ($user) implements UserProviderInterface
+    $provider = new readonly class ($user) implements UserProviderInterface
     {
         public function __construct(
             private AuthenticatableInterface $user,
@@ -322,7 +322,7 @@ test('it handles logout as no-op for stateless token auth', function (): void {
         }
     };
 
-    $provider = new class ($user) implements UserProviderInterface
+    $provider = new readonly class ($user) implements UserProviderInterface
     {
         public function __construct(
             private AuthenticatableInterface $user,

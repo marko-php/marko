@@ -2,19 +2,18 @@
 
 declare(strict_types=1);
 
-use Marko\Auth\AuthenticatableInterface;
 use Marko\Auth\AuthManager;
 use Marko\Auth\Config\AuthConfig;
-use Marko\Auth\Contracts\UserProviderInterface;
 use Marko\Auth\Middleware\AuthMiddleware;
+use Marko\Auth\Tests\Integration\TestSession;
+use Marko\Auth\Tests\Integration\TestUser;
+use Marko\Auth\Tests\Integration\TestUserProvider;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
-use Marko\Session\Contracts\SessionInterface;
-use Marko\Session\Flash\FlashBag;
 
-// Test helpers
-class MiddlewareTestConfigRepository implements ConfigRepositoryInterface
+// Test helper for config repository
+readonly class MiddlewareTestConfigRepository implements ConfigRepositoryInterface
 {
     public function __construct(
         private array $values = [],
@@ -88,156 +87,9 @@ class MiddlewareTestConfigRepository implements ConfigRepositoryInterface
     }
 }
 
-class MiddlewareTestSession implements SessionInterface
-{
-    private array $storage = [];
-
-    public bool $started = true;
-
-    public function start(): void {}
-
-    public function get(
-        string $key,
-        mixed $default = null,
-    ): mixed {
-        return $this->storage[$key] ?? $default;
-    }
-
-    public function set(
-        string $key,
-        mixed $value,
-    ): void {
-        $this->storage[$key] = $value;
-    }
-
-    public function has(
-        string $key,
-    ): bool {
-        return isset($this->storage[$key]);
-    }
-
-    public function remove(
-        string $key,
-    ): void {
-        unset($this->storage[$key]);
-    }
-
-    public function clear(): void
-    {
-        $this->storage = [];
-    }
-
-    public function all(): array
-    {
-        return $this->storage;
-    }
-
-    public function regenerate(bool $deleteOldSession = true): void {}
-
-    public function destroy(): void
-    {
-        $this->storage = [];
-    }
-
-    public function getId(): string
-    {
-        return 'test-session-id';
-    }
-
-    public function setId(string $id): void {}
-
-    public function flash(): FlashBag
-    {
-        return new FlashBag();
-    }
-
-    public function save(): void {}
-}
-
-class MiddlewareTestUserProvider implements UserProviderInterface
-{
-    public function __construct(
-        private ?AuthenticatableInterface $userById = null,
-        private ?AuthenticatableInterface $userByCredentials = null,
-        private bool $credentialsValid = false,
-    ) {}
-
-    public function retrieveById(
-        int|string $identifier,
-    ): ?AuthenticatableInterface {
-        return $this->userById;
-    }
-
-    public function retrieveByCredentials(
-        array $credentials,
-    ): ?AuthenticatableInterface {
-        return $this->userByCredentials;
-    }
-
-    public function validateCredentials(
-        AuthenticatableInterface $user,
-        array $credentials,
-    ): bool {
-        return $this->credentialsValid;
-    }
-
-    public function retrieveByRememberToken(
-        int|string $identifier,
-        string $token,
-    ): ?AuthenticatableInterface {
-        return null;
-    }
-
-    public function updateRememberToken(
-        AuthenticatableInterface $user,
-        ?string $token,
-    ): void {}
-}
-
-class MiddlewareTestUser implements AuthenticatableInterface
-{
-    private ?string $rememberToken = null;
-
-    public function __construct(
-        private int|string $id = 1,
-        private string $password = 'hashed',
-    ) {}
-
-    public function getAuthIdentifier(): int|string
-    {
-        return $this->id;
-    }
-
-    public function getAuthIdentifierName(): string
-    {
-        return 'id';
-    }
-
-    public function getAuthPassword(): string
-    {
-        return $this->password;
-    }
-
-    public function getRememberToken(): ?string
-    {
-        return $this->rememberToken;
-    }
-
-    public function setRememberToken(
-        ?string $token,
-    ): void {
-        $this->rememberToken = $token;
-    }
-
-    public function getRememberTokenName(): string
-    {
-        return 'remember_token';
-    }
-}
-
 // Helper function to create AuthManager with authenticated user
 function createAuthManagerWithUser(
-    ?MiddlewareTestUser $user = null,
+    ?TestUser $user = null,
 ): AuthManager {
     $configRepo = new MiddlewareTestConfigRepository([
         'auth.default.guard' => 'web',
@@ -248,8 +100,8 @@ function createAuthManagerWithUser(
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new MiddlewareTestSession();
-    $provider = new MiddlewareTestUserProvider(
+    $session = new TestSession();
+    $provider = new TestUserProvider(
         userById: $user,
         userByCredentials: $user,
         credentialsValid: $user !== null,
@@ -270,7 +122,7 @@ function createAuthManagerWithUser(
 }
 
 test('it allows authenticated users through', function (): void {
-    $user = new MiddlewareTestUser(id: 1);
+    $user = new TestUser(id: 1);
     $authManager = createAuthManagerWithUser($user);
 
     $middleware = new AuthMiddleware($authManager);
@@ -297,7 +149,7 @@ test('it blocks unauthenticated users', function (): void {
 
     $response = $middleware->handle(
         $request,
-        function (Request $r) use (&$nextCalled): Response {
+        function () use (&$nextCalled): Response {
             $nextCalled = true;
 
             return new Response(body: 'success', statusCode: 200);
@@ -350,7 +202,7 @@ test('it redirects for web guard when unauthenticated', function (): void {
 });
 
 test('it supports specifying guard via parameter', function (): void {
-    $user = new MiddlewareTestUser(id: 1);
+    $user = new TestUser(id: 1);
     $configRepo = new MiddlewareTestConfigRepository([
         'auth.default.guard' => 'web',
         'auth.guards' => [
@@ -360,8 +212,8 @@ test('it supports specifying guard via parameter', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new MiddlewareTestSession();
-    $provider = new MiddlewareTestUserProvider(
+    $session = new TestSession();
+    $provider = new TestUserProvider(
         userById: $user,
         userByCredentials: $user,
         credentialsValid: true,
@@ -394,7 +246,7 @@ test('it supports specifying guard via parameter', function (): void {
 });
 
 test('it uses default guard when not specified', function (): void {
-    $user = new MiddlewareTestUser(id: 1);
+    $user = new TestUser(id: 1);
     $authManager = createAuthManagerWithUser($user);
 
     // Middleware without guard parameter uses default (web)

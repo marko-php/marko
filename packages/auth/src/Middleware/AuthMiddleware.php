@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Marko\Auth\Middleware;
 
+use JsonException;
 use Marko\Auth\AuthManager;
+use Marko\Auth\Exceptions\AuthException;
 use Marko\Auth\Guard\TokenGuard;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 
-class AuthMiddleware implements MiddlewareInterface
+readonly class AuthMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private AuthManager $auth,
@@ -18,6 +20,9 @@ class AuthMiddleware implements MiddlewareInterface
         private ?string $redirectTo = null,
     ) {}
 
+    /**
+     * @throws JsonException|AuthException
+     */
     public function handle(
         Request $request,
         callable $next,

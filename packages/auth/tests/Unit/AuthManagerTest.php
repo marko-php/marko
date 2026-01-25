@@ -2,20 +2,19 @@
 
 declare(strict_types=1);
 
-use Marko\Auth\AuthenticatableInterface;
 use Marko\Auth\AuthManager;
 use Marko\Auth\Config\AuthConfig;
 use Marko\Auth\Contracts\GuardInterface;
-use Marko\Auth\Contracts\UserProviderInterface;
 use Marko\Auth\Exceptions\AuthException;
 use Marko\Auth\Guard\SessionGuard;
 use Marko\Auth\Guard\TokenGuard;
+use Marko\Auth\Tests\Integration\TestSession;
+use Marko\Auth\Tests\Integration\TestUser;
+use Marko\Auth\Tests\Integration\TestUserProvider;
 use Marko\Config\ConfigRepositoryInterface;
-use Marko\Session\Contracts\SessionInterface;
-use Marko\Session\Flash\FlashBag;
 
-// Helper classes defined outside tests
-class TestConfigRepository implements ConfigRepositoryInterface
+// Helper class for config repository
+readonly class TestConfigRepository implements ConfigRepositoryInterface
 {
     public function __construct(
         private array $values = [],
@@ -86,153 +85,6 @@ class TestConfigRepository implements ConfigRepositoryInterface
         string $scope,
     ): ConfigRepositoryInterface {
         return $this;
-    }
-}
-
-class TestSession implements SessionInterface
-{
-    private array $storage = [];
-
-    public bool $started = true;
-
-    public function start(): void {}
-
-    public function get(
-        string $key,
-        mixed $default = null,
-    ): mixed {
-        return $this->storage[$key] ?? $default;
-    }
-
-    public function set(
-        string $key,
-        mixed $value,
-    ): void {
-        $this->storage[$key] = $value;
-    }
-
-    public function has(
-        string $key,
-    ): bool {
-        return isset($this->storage[$key]);
-    }
-
-    public function remove(
-        string $key,
-    ): void {
-        unset($this->storage[$key]);
-    }
-
-    public function clear(): void
-    {
-        $this->storage = [];
-    }
-
-    public function all(): array
-    {
-        return $this->storage;
-    }
-
-    public function regenerate(bool $deleteOldSession = true): void {}
-
-    public function destroy(): void
-    {
-        $this->storage = [];
-    }
-
-    public function getId(): string
-    {
-        return 'test-session-id';
-    }
-
-    public function setId(string $id): void {}
-
-    public function flash(): FlashBag
-    {
-        return new FlashBag();
-    }
-
-    public function save(): void {}
-}
-
-class TestUserProvider implements UserProviderInterface
-{
-    public function __construct(
-        private ?AuthenticatableInterface $userById = null,
-        private ?AuthenticatableInterface $userByCredentials = null,
-        private bool $credentialsValid = false,
-    ) {}
-
-    public function retrieveById(
-        int|string $identifier,
-    ): ?AuthenticatableInterface {
-        return $this->userById;
-    }
-
-    public function retrieveByCredentials(
-        array $credentials,
-    ): ?AuthenticatableInterface {
-        return $this->userByCredentials;
-    }
-
-    public function validateCredentials(
-        AuthenticatableInterface $user,
-        array $credentials,
-    ): bool {
-        return $this->credentialsValid;
-    }
-
-    public function retrieveByRememberToken(
-        int|string $identifier,
-        string $token,
-    ): ?AuthenticatableInterface {
-        return null;
-    }
-
-    public function updateRememberToken(
-        AuthenticatableInterface $user,
-        ?string $token,
-    ): void {}
-}
-
-class TestUser implements AuthenticatableInterface
-{
-    private ?string $rememberToken = null;
-
-    public function __construct(
-        private int|string $id = 1,
-        private string $password = 'hashed',
-    ) {}
-
-    public function getAuthIdentifier(): int|string
-    {
-        return $this->id;
-    }
-
-    public function getAuthIdentifierName(): string
-    {
-        return 'id';
-    }
-
-    public function getAuthPassword(): string
-    {
-        return $this->password;
-    }
-
-    public function getRememberToken(): ?string
-    {
-        return $this->rememberToken;
-    }
-
-    public function setRememberToken(
-        ?string $token,
-    ): void {
-        $this->rememberToken = $token;
-    }
-
-    public function getRememberTokenName(): string
-    {
-        return 'remember_token';
     }
 }
 
@@ -567,24 +419,24 @@ test('it handles multiple guards', function (): void {
     // Verify they are different instances
     expect($webGuard)->not->toBe($apiGuard)
         ->and($webGuard)->not->toBe($adminGuard)
-        ->and($apiGuard)->not->toBe($adminGuard);
-
-    // Verify they have correct names
-    expect($webGuard->getName())->toBe('web')
+        ->and($apiGuard)->not->toBe($adminGuard)
+        ->and($webGuard->getName())->toBe('web')
         ->and($apiGuard->getName())->toBe('api')
-        ->and($adminGuard->getName())->toBe('admin');
-
-    // Verify they are correct types
-    expect($webGuard)->toBeInstanceOf(SessionGuard::class)
+        ->and($adminGuard->getName())->toBe('admin')
+        ->and($webGuard)->toBeInstanceOf(SessionGuard::class)
         ->and($apiGuard)->toBeInstanceOf(TokenGuard::class)
         ->and($adminGuard)->toBeInstanceOf(SessionGuard::class);
+
+    // Verify they have correct names
+
+    // Verify they are correct types
 
     // Login on web guard
     $manager->guard('web')->attempt(['email' => 'test@example.com', 'password' => 'secret']);
 
     // Web guard should be authenticated
-    expect($manager->guard('web')->check())->toBeTrue();
+    expect($manager->guard('web')->check())->toBeTrue()
+        ->and($manager->guard('api')->check())->toBeFalse();
 
     // API guard (token-based) should not be authenticated
-    expect($manager->guard('api')->check())->toBeFalse();
 });

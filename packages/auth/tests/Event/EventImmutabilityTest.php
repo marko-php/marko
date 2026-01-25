@@ -2,44 +2,12 @@
 
 declare(strict_types=1);
 
-use Marko\Auth\AuthenticatableInterface;
 use Marko\Auth\Event\FailedLoginEvent;
 use Marko\Auth\Event\LoginEvent;
 use Marko\Auth\Event\LogoutEvent;
 use Marko\Auth\Event\PasswordResetEvent;
 
 it('all events are immutable', function () {
-    $user = new class () implements AuthenticatableInterface
-    {
-        public function getAuthIdentifier(): int|string
-        {
-            return 1;
-        }
-
-        public function getAuthIdentifierName(): string
-        {
-            return 'id';
-        }
-
-        public function getAuthPassword(): string
-        {
-            return 'hashed_password';
-        }
-
-        public function getRememberToken(): ?string
-        {
-            return null;
-        }
-
-        public function setRememberToken(
-            ?string $token,
-        ): void {}
-
-        public function getRememberTokenName(): string
-        {
-            return 'remember_token';
-        }
-    };
 
     // Check LoginEvent properties are readonly
     $loginEvent = new ReflectionClass(LoginEvent::class);

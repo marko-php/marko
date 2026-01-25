@@ -18,11 +18,14 @@ class AuthManager
     private array $guards = [];
 
     public function __construct(
-        private AuthConfig $config,
-        private SessionInterface $session,
-        private UserProviderInterface $provider,
+        private readonly AuthConfig $config,
+        private readonly SessionInterface $session,
+        private readonly UserProviderInterface $provider,
     ) {}
 
+    /**
+     * @throws AuthException
+     */
     public function guard(
         ?string $name = null,
     ): GuardInterface {
@@ -43,6 +46,9 @@ class AuthManager
         return $guard;
     }
 
+    /**
+     * @throws AuthException
+     */
     private function createGuard(
         string $driver,
         string $name,
@@ -61,36 +67,41 @@ class AuthManager
     private function createSessionGuard(
         string $name,
     ): SessionGuard {
-        $guard = new SessionGuard(
+        return new SessionGuard(
             session: $this->session,
             provider: $this->provider,
             name: $name,
         );
-
-        return $guard;
     }
 
     private function createTokenGuard(
         string $name,
     ): TokenGuard {
-        $guard = new TokenGuard(
+        return new TokenGuard(
             name: $name,
             provider: $this->provider,
         );
-
-        return $guard;
     }
 
+    /**
+     * @throws AuthException
+     */
     public function check(): bool
     {
         return $this->guard()->check();
     }
 
+    /**
+     * @throws AuthException
+     */
     public function user(): ?AuthenticatableInterface
     {
         return $this->guard()->user();
     }
 
+    /**
+     * @throws AuthException
+     */
     public function id(): int|string|null
     {
         return $this->guard()->id();
@@ -100,6 +111,7 @@ class AuthManager
      * Attempt to authenticate a user using the given credentials.
      *
      * @param array<string, mixed> $credentials
+     * @throws AuthException
      */
     public function attempt(
         array $credentials,
@@ -107,6 +119,9 @@ class AuthManager
         return $this->guard()->attempt($credentials);
     }
 
+    /**
+     * @throws AuthException
+     */
     public function logout(): void
     {
         $this->guard()->logout();

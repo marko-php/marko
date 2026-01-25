@@ -16,9 +16,8 @@ it('creates PasswordHasherInterface with hash method', function () {
 
     $param = $method->getParameters()[0];
     expect($param->getName())->toBe('password')
-        ->and($param->getType()->getName())->toBe('string');
-
-    expect($method->getReturnType()->getName())->toBe('string');
+        ->and($param->getType()->getName())->toBe('string')
+        ->and($method->getReturnType()->getName())->toBe('string');
 });
 
 it('creates PasswordHasherInterface with verify method', function () {
@@ -33,9 +32,8 @@ it('creates PasswordHasherInterface with verify method', function () {
     expect($params[0]->getName())->toBe('password')
         ->and($params[0]->getType()->getName())->toBe('string')
         ->and($params[1]->getName())->toBe('hash')
-        ->and($params[1]->getType()->getName())->toBe('string');
-
-    expect($method->getReturnType()->getName())->toBe('bool');
+        ->and($params[1]->getType()->getName())->toBe('string')
+        ->and($method->getReturnType()->getName())->toBe('bool');
 });
 
 it('creates PasswordHasherInterface with needsRehash method', function () {
@@ -48,9 +46,8 @@ it('creates PasswordHasherInterface with needsRehash method', function () {
 
     $param = $method->getParameters()[0];
     expect($param->getName())->toBe('hash')
-        ->and($param->getType()->getName())->toBe('string');
-
-    expect($method->getReturnType()->getName())->toBe('bool');
+        ->and($param->getType()->getName())->toBe('string')
+        ->and($method->getReturnType()->getName())->toBe('bool');
 });
 
 it('creates BcryptPasswordHasher implementing interface', function () {

@@ -15,6 +15,7 @@ use Marko\Auth\Exceptions\AuthException;
 use Marko\Auth\Token\RememberTokenManager;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Session\Contracts\SessionInterface;
+use Random\RandomException;
 
 class SessionGuard implements GuardInterface
 {
@@ -36,16 +37,25 @@ class SessionGuard implements GuardInterface
         private readonly ?EventDispatcherInterface $eventDispatcher = null,
     ) {}
 
+    /**
+     * @throws RandomException
+     */
     public function check(): bool
     {
         return $this->user() !== null;
     }
 
+    /**
+     * @throws RandomException
+     */
     public function guest(): bool
     {
         return !$this->check();
     }
 
+    /**
+     * @throws RandomException
+     */
     public function user(): ?AuthenticatableInterface
     {
         if ($this->cachedUser !== null) {
@@ -66,6 +76,9 @@ class SessionGuard implements GuardInterface
         return $this->cachedUser;
     }
 
+    /**
+     * @throws RandomException
+     */
     private function authenticateViaRememberCookie(): ?AuthenticatableInterface
     {
         if ($this->cookieJar === null || $this->tokenManager === null) {
@@ -105,13 +118,16 @@ class SessionGuard implements GuardInterface
         return $user;
     }
 
+    /**
+     * @throws RandomException
+     */
     public function id(): int|string|null
     {
         return $this->user()?->getAuthIdentifier();
     }
 
     /**
-     * @throws AuthException
+     * @throws AuthException|RandomException
      */
     public function attempt(
         array $credentials,
@@ -145,7 +161,7 @@ class SessionGuard implements GuardInterface
     }
 
     /**
-     * @throws AuthException
+     * @throws AuthException|RandomException
      */
     public function login(
         AuthenticatableInterface $user,
@@ -174,6 +190,9 @@ class SessionGuard implements GuardInterface
         ));
     }
 
+    /**
+     * @throws RandomException
+     */
     private function createRememberToken(
         AuthenticatableInterface $user,
     ): void {
@@ -210,7 +229,7 @@ class SessionGuard implements GuardInterface
     }
 
     /**
-     * @throws AuthException
+     * @throws AuthException|RandomException
      */
     public function loginById(
         int|string $id,
@@ -226,6 +245,9 @@ class SessionGuard implements GuardInterface
         return $user;
     }
 
+    /**
+     * @throws RandomException
+     */
     public function logout(): void
     {
         $user = $this->user();

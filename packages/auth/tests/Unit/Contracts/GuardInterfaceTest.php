@@ -16,9 +16,8 @@ test('it creates GuardInterface with check method returning bool', function (): 
     expect(interface_exists(GuardInterface::class))->toBeTrue();
 
     $reflection = new ReflectionClass(GuardInterface::class);
-    expect($reflection->isInterface())->toBeTrue();
-
-    expect($reflection->hasMethod('check'))->toBeTrue();
+    expect($reflection->isInterface())->toBeTrue()
+        ->and($reflection->hasMethod('check'))->toBeTrue();
 
     $method = $reflection->getMethod('check');
     expect($method->getNumberOfParameters())->toBe(0);
@@ -172,10 +171,10 @@ test('it creates GuardInterface with provider property hook', function (): void 
     // Check property type
     $type = $property->getType();
     expect($type)->not->toBeNull()
-        ->and($type->getName())->toBe(UserProviderInterface::class);
+        ->and($type->getName())->toBe(UserProviderInterface::class)
+        ->and($property->hasHook(PropertyHookType::Set))->toBeTrue();
 
     // Check for set hook (property should be settable)
-    expect($property->hasHook(PropertyHookType::Set))->toBeTrue();
 });
 
 test('it creates GuardInterface with getName method', function (): void {

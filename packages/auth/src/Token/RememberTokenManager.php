@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Marko\Auth\Token;
 
+use DateMalformedStringException;
 use DateTimeImmutable;
+use Random\RandomException;
 
 class RememberTokenManager
 {
@@ -16,6 +18,9 @@ class RememberTokenManager
         $this->lifetimeMinutes = $lifetimeMinutes ?? 43200; // 30 days default
     }
 
+    /**
+     * @throws RandomException
+     */
     public function generate(): string
     {
         return bin2hex(random_bytes(32));
@@ -34,6 +39,9 @@ class RememberTokenManager
         return hash_equals($storedHash, $this->hash($token));
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function isExpired(
         DateTimeImmutable $createdAt,
     ): bool {
@@ -45,6 +53,7 @@ class RememberTokenManager
     /**
      * @param array<int, array{hash: string, created_at: DateTimeImmutable}> $tokens
      * @return array<int, array{hash: string, created_at: DateTimeImmutable}>
+     * @throws DateMalformedStringException
      */
     public function filterExpired(
         array $tokens,
