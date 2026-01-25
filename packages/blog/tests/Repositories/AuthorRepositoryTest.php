@@ -229,7 +229,7 @@ it('prevents deletion when author has posts', function (): void {
     $repository->delete($author);
 })->throws(
     AuthorHasPostsException::class,
-    "Cannot delete author 'Author With Posts' because they have 3 associated posts"
+    "Cannot delete author 'Author With Posts' because they have 3 associated posts",
 );
 
 // Helper function to create mock connection for Author tests

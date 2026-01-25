@@ -4,14 +4,54 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Repositories;
 
+use Closure;
+use DateTimeImmutable;
 use Marko\Blog\Entity\Author;
+use Marko\Blog\Events\Author\AuthorCreated;
+use Marko\Blog\Events\Author\AuthorDeleted;
+use Marko\Blog\Events\Author\AuthorUpdated;
 use Marko\Blog\Exceptions\AuthorHasPostsException;
+use Marko\Core\Event\EventDispatcherInterface;
+use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityHydrator;
+use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
 
 class AuthorRepository extends Repository implements AuthorRepositoryInterface
 {
     protected const string ENTITY_CLASS = Author::class;
+
+    public function __construct(
+        ConnectionInterface $connection,
+        EntityMetadataFactory $metadataFactory,
+        EntityHydrator $hydrator,
+        ?Closure $queryBuilderFactory = null,
+        private readonly ?EventDispatcherInterface $eventDispatcher = null,
+    ) {
+        parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory);
+    }
+
+    /**
+     * Save an author entity and dispatch lifecycle events.
+     */
+    public function save(
+        Entity $entity,
+    ): void {
+        $isNew = $this->hydrator->isNew($entity, $this->metadata);
+
+        parent::save($entity);
+
+        if ($this->eventDispatcher !== null && $entity instanceof Author) {
+            $timestamp = new DateTimeImmutable();
+
+            if ($isNew) {
+                $this->eventDispatcher->dispatch(new AuthorCreated($entity, $timestamp));
+            } else {
+                $this->eventDispatcher->dispatch(new AuthorUpdated($entity, $timestamp));
+            }
+        }
+    }
 
     /**
      * Find an author by their slug.
@@ -79,6 +119,10 @@ class AuthorRepository extends Repository implements AuthorRepositoryInterface
         }
 
         parent::delete($entity);
+
+        if ($this->eventDispatcher !== null) {
+            $this->eventDispatcher->dispatch(new AuthorDeleted($entity, new DateTimeImmutable()));
+        }
     }
 
     /**

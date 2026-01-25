@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Repositories;
 
+use DateTimeImmutable;
 use Marko\Blog\Entity\Tag;
+use Marko\Blog\Events\Tag\TagCreated;
+use Marko\Blog\Events\Tag\TagDeleted;
+use Marko\Blog\Events\Tag\TagUpdated;
 use Marko\Blog\Exceptions\TagHasPostsException;
 use Marko\Blog\Services\SlugGeneratorInterface;
+use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
@@ -22,6 +27,7 @@ class TagRepository extends Repository implements TagRepositoryInterface
         EntityMetadataFactory $metadataFactory,
         EntityHydrator $hydrator,
         protected readonly SlugGeneratorInterface $slugGenerator,
+        protected readonly ?EventDispatcherInterface $eventDispatcher = null,
     ) {
         parent::__construct($connection, $metadataFactory, $hydrator);
     }
@@ -98,6 +104,8 @@ class TagRepository extends Repository implements TagRepositoryInterface
             return;
         }
 
+        $isNew = $entity->id === null;
+
         // Auto-generate slug if not set
         if (!isset($entity->slug) || $entity->slug === '') {
             $entity->slug = $this->slugGenerator->generate(
@@ -107,6 +115,8 @@ class TagRepository extends Repository implements TagRepositoryInterface
         }
 
         parent::save($entity);
+
+        $this->dispatchTagEvent($entity, $isNew);
     }
 
     /**
@@ -131,6 +141,10 @@ class TagRepository extends Repository implements TagRepositoryInterface
         }
 
         parent::delete($entity);
+
+        $this->eventDispatcher?->dispatch(
+            new TagDeleted($entity, new DateTimeImmutable()),
+        );
     }
 
     /**
@@ -143,5 +157,25 @@ class TagRepository extends Repository implements TagRepositoryInterface
         $result = $this->connection->query($sql, [$tagId]);
 
         return (int) ($result[0]['count'] ?? 0);
+    }
+
+    /**
+     * Dispatch the appropriate tag event based on whether the tag is new or existing.
+     */
+    private function dispatchTagEvent(
+        Tag $tag,
+        bool $isNew,
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        $timestamp = new DateTimeImmutable();
+
+        if ($isNew) {
+            $this->eventDispatcher->dispatch(new TagCreated($tag, $timestamp));
+        } else {
+            $this->eventDispatcher->dispatch(new TagUpdated($tag, $timestamp));
+        }
     }
 }

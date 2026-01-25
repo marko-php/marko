@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\Entity;
 
+use BackedEnum;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
@@ -98,6 +99,12 @@ class EntityMetadataFactory
                 onUpdate: $columnAttr->onUpdate,
             );
 
+            // Detect if the type is a BackedEnum
+            $enumClass = null;
+            if (enum_exists($phpType) && is_subclass_of($phpType, BackedEnum::class)) {
+                $enumClass = $phpType;
+            }
+
             $properties[$propertyName] = new PropertyMetadata(
                 name: $propertyName,
                 columnName: $columnName,
@@ -105,6 +112,7 @@ class EntityMetadataFactory
                 nullable: $nullable,
                 isPrimaryKey: $columnAttr->primaryKey,
                 isAutoIncrement: $columnAttr->autoIncrement,
+                enumClass: $enumClass,
                 default: $columnAttr->default ?? $default,
             );
         }

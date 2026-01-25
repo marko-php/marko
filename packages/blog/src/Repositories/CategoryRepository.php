@@ -6,7 +6,12 @@ namespace Marko\Blog\Repositories;
 
 use Closure;
 use Marko\Blog\Entity\Category;
+use Marko\Blog\Entity\CategoryInterface;
+use Marko\Blog\Events\Category\CategoryCreated;
+use Marko\Blog\Events\Category\CategoryDeleted;
+use Marko\Blog\Events\Category\CategoryUpdated;
 use Marko\Blog\Services\SlugGeneratorInterface;
+use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
@@ -24,6 +29,7 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
         EntityHydrator $hydrator,
         private readonly SlugGeneratorInterface $slugGenerator,
         ?Closure $queryBuilderFactory = null,
+        private readonly ?EventDispatcherInterface $eventDispatcher = null,
     ) {
         parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory);
     }
@@ -144,7 +150,46 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
             );
         }
 
+        $isNew = $entity->id === null;
+
         parent::save($entity);
+
+        $this->dispatchSaveEvent($entity, $isNew);
+    }
+
+    private function dispatchSaveEvent(
+        Category $category,
+        bool $isNew,
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        $parent = $this->resolveParent($category);
+
+        if ($isNew) {
+            $this->eventDispatcher->dispatch(new CategoryCreated(
+                category: $category,
+                parent: $parent,
+            ));
+        } else {
+            $this->eventDispatcher->dispatch(new CategoryUpdated(
+                category: $category,
+                parent: $parent,
+            ));
+        }
+    }
+
+    private function resolveParent(
+        Category $category,
+    ): ?CategoryInterface {
+        if ($category->parentId === null) {
+            return null;
+        }
+
+        $parent = $this->find($category->parentId);
+
+        return $parent instanceof CategoryInterface ? $parent : null;
     }
 
     /**
@@ -179,6 +224,20 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
             throw new RepositoryException('Cannot delete category with child categories');
         }
 
+        $parent = $this->resolveParent($entity);
+
         parent::delete($entity);
+
+        $this->dispatchDeleteEvent($entity, $parent);
+    }
+
+    private function dispatchDeleteEvent(
+        Category $category,
+        ?CategoryInterface $parent,
+    ): void {
+        $this->eventDispatcher?->dispatch(new CategoryDeleted(
+            category: $category,
+            parent: $parent,
+        ));
     }
 }
