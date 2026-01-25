@@ -15,10 +15,10 @@ use Marko\Blog\Events\Comment\CommentCreated;
 use Marko\Blog\Events\Comment\CommentDeleted;
 use Marko\Blog\Events\Comment\CommentVerified;
 use Marko\Blog\Repositories\CommentRepository;
-use Marko\Blog\Repositories\CommentRepositoryInterface;
-use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\CommentVerificationService;
 use Marko\Blog\Services\TokenRepositoryInterface;
+use Marko\Blog\Tests\Mocks\MockCommentRepository;
+use Marko\Blog\Tests\Mocks\MockPostRepository;
 use Marko\Core\Event\Event;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
@@ -393,60 +393,24 @@ function createCommentEventVerificationService(
         }
     };
 
-    $commentRepository = new class () implements CommentRepositoryInterface
-    {
-        public function find(
-            int $id,
-        ): ?Comment {
-            return null;
-        }
+    $commentRepository = new MockCommentRepository();
 
-        public function findByPostId(
-            int $postId,
-        ): array {
-            return [];
-        }
-
-        public function findByEmail(
-            string $email,
-        ): array {
-            return [];
-        }
-
-        public function save(Comment $comment): void {}
-
-        public function delete(Comment $comment): void {}
-    };
-
-    $postRepository = new class () implements PostRepositoryInterface
-    {
-        public function find(
-            int $id,
-        ): ?Post {
-            return null;
-        }
-
-        public function findBySlug(
-            string $slug,
-        ): ?Post {
-            return null;
-        }
-
-        public function findAll(
-            int $limit = 10,
-            int $offset = 0,
-        ): array {
-            return [];
-        }
-
-        public function save(Post $post): void {}
-
-        public function delete(Post $post): void {}
-    };
+    $postRepository = new MockPostRepository();
 
     $mailer = new class () implements MailerInterface
     {
-        public function send(Message $message): void {}
+        public function send(
+            Message $message,
+        ): bool {
+            return true;
+        }
+
+        public function sendRaw(
+            string $to,
+            string $raw,
+        ): bool {
+            return true;
+        }
     };
 
     $config = createCommentMockBlogConfig();
