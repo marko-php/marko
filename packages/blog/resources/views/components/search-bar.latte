@@ -1,0 +1,7 @@
+{* Blog search bar component *}
+{default $query = ''}
+<form method="get" role="search" class="search-bar">
+    <label for="search-input">Search</label>
+    <input type="text" id="search-input" name="q" value="{$query}" placeholder="Search posts...">
+    <button type="submit">Search</button>
+</form>
