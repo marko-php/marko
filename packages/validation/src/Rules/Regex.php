@@ -6,10 +6,10 @@ namespace Marko\Validation\Rules;
 
 use Marko\Validation\Contracts\RuleInterface;
 
-class Regex implements RuleInterface
+readonly class Regex implements RuleInterface
 {
     public function __construct(
-        private readonly string $pattern,
+        private string $pattern,
     ) {}
 
     public function passes(

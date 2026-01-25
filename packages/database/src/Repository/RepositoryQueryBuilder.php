@@ -15,13 +15,13 @@ use Marko\Database\Query\QueryBuilderInterface;
  * This class wraps a QueryBuilderInterface and adds the ability to return
  * hydrated entities instead of raw arrays.
  */
-class RepositoryQueryBuilder implements QueryBuilderInterface
+readonly class RepositoryQueryBuilder implements QueryBuilderInterface
 {
     public function __construct(
-        private readonly QueryBuilderInterface $queryBuilder,
-        private readonly EntityHydrator $hydrator,
-        private readonly EntityMetadata $metadata,
-        private readonly string $entityClass,
+        private QueryBuilderInterface $queryBuilder,
+        private EntityHydrator $hydrator,
+        private EntityMetadata $metadata,
+        private string $entityClass,
     ) {}
 
     public function table(

@@ -205,10 +205,10 @@ describe('Repository CRUD Operations', function (): void {
             3 => ['id' => 3, 'name' => 'Another Active', 'price' => 15.0, 'stock' => 3, 'isAvailable' => true],
         ];
 
-        $connection = new class ($storage) implements ConnectionInterface
+        $connection = new readonly class ($storage) implements ConnectionInterface
         {
             public function __construct(
-                private readonly array $storage,
+                private array $storage,
             ) {}
 
             public function connect(): void {}
@@ -370,10 +370,10 @@ describe('Repository CRUD Operations', function (): void {
             1 => ['id' => 1, 'name' => 'Existing', 'price' => 10.0, 'stock' => 1, 'isAvailable' => true],
         ];
 
-        $connection = new class ($storage) implements ConnectionInterface
+        $connection = new readonly class ($storage) implements ConnectionInterface
         {
             public function __construct(
-                private readonly array $storage,
+                private array $storage,
             ) {}
 
             public function connect(): void {}

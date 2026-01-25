@@ -72,10 +72,10 @@ class LoggerDependency
     }
 }
 
-class ObserverWithDependency
+readonly class ObserverWithDependency
 {
     public function __construct(
-        private readonly LoggerDependency $logger,
+        private LoggerDependency $logger,
     ) {}
 
     public function handle(

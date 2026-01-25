@@ -25,12 +25,12 @@ function createStubDiscovery(
     array $modulesDefinitions = [],
     array $appDefinitions = [],
 ): SeederDiscoveryInterface {
-    return new class ($vendorDefinitions, $modulesDefinitions, $appDefinitions) implements SeederDiscoveryInterface
+    return new readonly class ($vendorDefinitions, $modulesDefinitions, $appDefinitions) implements SeederDiscoveryInterface
     {
         public function __construct(
-            private readonly array $vendorDefs,
-            private readonly array $modulesDefs,
-            private readonly array $appDefs,
+            private array $vendorDefs,
+            private array $modulesDefs,
+            private array $appDefs,
         ) {}
 
         public function discoverInVendor(

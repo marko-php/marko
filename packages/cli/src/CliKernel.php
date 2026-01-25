@@ -12,18 +12,18 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Throwable;
 
-class CliKernel
+readonly class CliKernel
 {
     /** @var Closure(string): object */
-    private readonly Closure $applicationFactory;
+    private Closure $applicationFactory;
 
-    private readonly Output $output;
+    private Output $output;
 
     /**
      * @param Closure(string): object|null $applicationFactory
      */
     public function __construct(
-        private readonly ProjectFinder $projectFinder,
+        private ProjectFinder $projectFinder,
         ?Closure $applicationFactory = null,
         ?Output $output = null,
     ) {

@@ -9,7 +9,7 @@ use Marko\Validation\Contracts\RuleInterface;
 class In implements RuleInterface
 {
     /**
-     * @var array<mixed>
+     * @var array
      */
     private array $values;
 

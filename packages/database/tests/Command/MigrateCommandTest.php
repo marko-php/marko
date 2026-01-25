@@ -115,10 +115,10 @@ function createMigrateDiffCalculator(
 function createMigrateSqlGenerator(
     array $upStatements = [],
 ): SqlGeneratorInterface {
-    return new class ($upStatements) implements SqlGeneratorInterface
+    return new readonly class ($upStatements) implements SqlGeneratorInterface
     {
         public function __construct(
-            private readonly array $upStatements,
+            private array $upStatements,
         ) {}
 
         public function generateUp(

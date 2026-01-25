@@ -9,7 +9,7 @@ use Marko\Validation\Contracts\RuleInterface;
 class NotIn implements RuleInterface
 {
     /**
-     * @var array<mixed>
+     * @var array
      */
     private array $values;
 

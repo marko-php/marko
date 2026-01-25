@@ -23,13 +23,13 @@ use RuntimeException;
 function createMockConnection(
     array $queryResults = [],
 ): ConnectionInterface {
-    return new class ($queryResults) implements ConnectionInterface
+    return new readonly class ($queryResults) implements ConnectionInterface
     {
         /**
          * @param array<string, array<int, array<string, mixed>>> $queryResults
          */
         public function __construct(
-            private readonly array $queryResults,
+            private array $queryResults,
         ) {}
 
         public function connect(): void {}

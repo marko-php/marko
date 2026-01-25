@@ -8,7 +8,7 @@ use Marko\Validation\Contracts\RuleInterface;
 
 class Boolean implements RuleInterface
 {
-    private const ACCEPTABLE_VALUES = [true, false, 0, 1, '0', '1'];
+    private const array ACCEPTABLE_VALUES = [true, false, 0, 1, '0', '1'];
 
     public function passes(
         string $field,

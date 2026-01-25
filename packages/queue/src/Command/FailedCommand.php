@@ -12,10 +12,10 @@ use Marko\Queue\FailedJobRepositoryInterface;
 
 /** @noinspection PhpUnused */
 #[Command(name: 'queue:failed', description: 'List all failed jobs')]
-class FailedCommand implements CommandInterface
+readonly class FailedCommand implements CommandInterface
 {
     public function __construct(
-        private readonly FailedJobRepositoryInterface $repository,
+        private FailedJobRepositoryInterface $repository,
     ) {}
 
     public function execute(

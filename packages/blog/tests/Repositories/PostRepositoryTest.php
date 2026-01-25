@@ -135,10 +135,10 @@ it('provides findBySlug convenience method for slug lookups', function (): void 
 function createMockConnection(
     array $queryResult = [],
 ): ConnectionInterface {
-    return new class ($queryResult) implements ConnectionInterface
+    return new readonly class ($queryResult) implements ConnectionInterface
     {
         public function __construct(
-            private readonly array $queryResult,
+            private array $queryResult,
         ) {}
 
         public function connect(): void {}

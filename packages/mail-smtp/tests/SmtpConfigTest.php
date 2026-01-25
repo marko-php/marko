@@ -9,10 +9,10 @@ use Marko\Mail\Smtp\SmtpConfig;
 function createSmtpMockConfigRepository(
     array $configData = [],
 ): ConfigRepositoryInterface {
-    return new class ($configData) implements ConfigRepositoryInterface
+    return new readonly class ($configData) implements ConfigRepositoryInterface
     {
         public function __construct(
-            private readonly array $data,
+            private array $data,
         ) {}
 
         public function get(

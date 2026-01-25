@@ -10,10 +10,10 @@ use Marko\Validation\Exceptions\ValidationException;
 use Marko\Validation\Rules\Nullable;
 use Marko\Validation\Rules\Required;
 
-class Validator implements ValidatorInterface
+readonly class Validator implements ValidatorInterface
 {
     public function __construct(
-        private readonly RuleParser $parser = new RuleParser(),
+        private RuleParser $parser = new RuleParser(),
     ) {}
 
     public function validate(

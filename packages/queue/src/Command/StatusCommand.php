@@ -14,12 +14,12 @@ use Marko\Queue\QueueInterface;
 
 /** @noinspection PhpUnused */
 #[Command(name: 'queue:status', description: 'Show queue statistics')]
-class StatusCommand implements CommandInterface
+readonly class StatusCommand implements CommandInterface
 {
     public function __construct(
-        private readonly QueueConfig $config,
-        private readonly QueueInterface $queue,
-        private readonly FailedJobRepositoryInterface $failedJobRepository,
+        private QueueConfig $config,
+        private QueueInterface $queue,
+        private FailedJobRepositoryInterface $failedJobRepository,
     ) {}
 
     public function execute(

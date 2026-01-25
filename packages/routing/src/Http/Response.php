@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Marko\Routing\Http;
 
-class Response
+readonly class Response
 {
     /**
      * @param array<string, string> $headers
      */
     public function __construct(
-        private readonly string $body = '',
-        private readonly int $statusCode = 200,
-        private readonly array $headers = [],
+        private string $body = '',
+        private int $statusCode = 200,
+        private array $headers = [],
     ) {}
 
     public function body(): string

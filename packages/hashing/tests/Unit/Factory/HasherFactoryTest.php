@@ -12,10 +12,10 @@ use Marko\Hashing\Hash\BcryptHasher;
 function createFactoryWithConfig(
     array $configData = [],
 ): HasherFactory {
-    $configRepo = new class ($configData) implements ConfigRepositoryInterface
+    $configRepo = new readonly class ($configData) implements ConfigRepositoryInterface
     {
         public function __construct(
-            private readonly array $data,
+            private array $data,
         ) {}
 
         public function get(

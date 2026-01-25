@@ -21,10 +21,10 @@ function createIntegrationManager(
 
     $mergedConfig = array_merge($defaults, $configData);
 
-    $configRepo = new class ($mergedConfig) implements ConfigRepositoryInterface
+    $configRepo = new readonly class ($mergedConfig) implements ConfigRepositoryInterface
     {
         public function __construct(
-            private readonly array $data,
+            private array $data,
         ) {}
 
         public function get(

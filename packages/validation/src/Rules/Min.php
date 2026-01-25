@@ -6,10 +6,10 @@ namespace Marko\Validation\Rules;
 
 use Marko\Validation\Contracts\RuleInterface;
 
-class Min implements RuleInterface
+readonly class Min implements RuleInterface
 {
     public function __construct(
-        private readonly int|float $minimum,
+        private int|float $minimum,
     ) {}
 
     public function passes(

@@ -24,11 +24,11 @@ function createQueueConfigMock(
     string $driver = 'sync',
     string $queue = 'default',
 ): QueueConfig {
-    $repository = new class ($driver, $queue) implements ConfigRepositoryInterface
+    $repository = new readonly class ($driver, $queue) implements ConfigRepositoryInterface
     {
         public function __construct(
-            private readonly string $driver,
-            private readonly string $queue,
+            private string $driver,
+            private string $queue,
         ) {}
 
         public function get(

@@ -14,11 +14,11 @@ use Marko\Queue\QueueInterface;
 
 /** @noinspection PhpUnused */
 #[Command(name: 'queue:retry', description: 'Retry failed jobs')]
-class RetryCommand implements CommandInterface
+readonly class RetryCommand implements CommandInterface
 {
     public function __construct(
-        private readonly FailedJobRepositoryInterface $failedJobRepository,
-        private readonly QueueInterface $queue,
+        private FailedJobRepositoryInterface $failedJobRepository,
+        private QueueInterface $queue,
     ) {}
 
     public function execute(

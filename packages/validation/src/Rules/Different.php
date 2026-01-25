@@ -6,10 +6,10 @@ namespace Marko\Validation\Rules;
 
 use Marko\Validation\Contracts\RuleInterface;
 
-class Different implements RuleInterface
+readonly class Different implements RuleInterface
 {
     public function __construct(
-        private readonly string $otherField,
+        private string $otherField,
     ) {}
 
     public function passes(

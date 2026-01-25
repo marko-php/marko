@@ -31,9 +31,9 @@ function cleanupSessionTestPath(
 function createSessionConfig(
     string $path,
 ): SessionConfig {
-    $configRepo = new class ($path) implements ConfigRepositoryInterface
+    $configRepo = new readonly class ($path) implements ConfigRepositoryInterface
     {
-        public function __construct(private readonly string $path) {}
+        public function __construct(private string $path) {}
 
         public function get(
             string $key,

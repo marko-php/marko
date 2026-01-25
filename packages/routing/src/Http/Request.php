@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Routing\Http;
 
-class Request
+readonly class Request
 {
     /**
      * @param array<string, mixed> $server
@@ -12,9 +12,9 @@ class Request
      * @param array<string, mixed> $post
      */
     public function __construct(
-        private readonly array $server = [],
-        private readonly array $query = [],
-        private readonly array $post = [],
+        private array $server = [],
+        private array $query = [],
+        private array $post = [],
     ) {}
 
     public static function fromGlobals(): self

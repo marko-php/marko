@@ -15,11 +15,11 @@ use Marko\Mail\Message;
 
 /** @noinspection PhpUnused */
 #[Command(name: 'mail:test', description: 'Send a test email to verify mail configuration')]
-class TestCommand implements CommandInterface
+readonly class TestCommand implements CommandInterface
 {
     public function __construct(
-        private readonly MailerInterface $mailer,
-        private readonly MailConfig $config,
+        private MailerInterface $mailer,
+        private MailConfig $config,
     ) {}
 
     public function execute(

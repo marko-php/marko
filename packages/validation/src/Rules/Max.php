@@ -6,10 +6,10 @@ namespace Marko\Validation\Rules;
 
 use Marko\Validation\Contracts\RuleInterface;
 
-class Max implements RuleInterface
+readonly class Max implements RuleInterface
 {
     public function __construct(
-        private readonly int|float $maximum,
+        private int|float $maximum,
     ) {}
 
     public function passes(

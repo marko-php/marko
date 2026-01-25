@@ -570,13 +570,13 @@ describe('PgSqlIntrospector', function (): void {
 function createTestConnection(
     callable $queryCallback,
 ): ConnectionInterface {
-    return new class ($queryCallback) implements ConnectionInterface
+    return new readonly class ($queryCallback) implements ConnectionInterface
     {
         /**
          * @param callable(string, array): array<array<string, mixed>> $queryCallback
          */
         public function __construct(
-            private readonly mixed $queryCallback,
+            private mixed $queryCallback,
         ) {}
 
         public function connect(): void

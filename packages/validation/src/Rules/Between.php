@@ -6,11 +6,11 @@ namespace Marko\Validation\Rules;
 
 use Marko\Validation\Contracts\RuleInterface;
 
-class Between implements RuleInterface
+readonly class Between implements RuleInterface
 {
     public function __construct(
-        private readonly int|float $minimum,
-        private readonly int|float $maximum,
+        private int|float $minimum,
+        private int|float $maximum,
     ) {}
 
     public function passes(

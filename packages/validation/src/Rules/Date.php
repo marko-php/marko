@@ -7,10 +7,10 @@ namespace Marko\Validation\Rules;
 use DateTimeInterface;
 use Marko\Validation\Contracts\RuleInterface;
 
-class Date implements RuleInterface
+readonly class Date implements RuleInterface
 {
     public function __construct(
-        private readonly ?string $format = null,
+        private ?string $format = null,
     ) {}
 
     public function passes(

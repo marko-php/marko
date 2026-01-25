@@ -12,10 +12,10 @@ use Marko\Core\Command\Output;
 
 /** @noinspection PhpUnused */
 #[Command(name: 'auth:clear-tokens', description: 'Clear expired remember me tokens')]
-class ClearTokensCommand implements CommandInterface
+readonly class ClearTokensCommand implements CommandInterface
 {
     public function __construct(
-        private readonly RememberTokenStorageInterface $storage,
+        private RememberTokenStorageInterface $storage,
     ) {}
 
     public function execute(

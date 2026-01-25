@@ -11,60 +11,60 @@ class SimpleClass {}
 
 class DependencyClass {}
 
-class ClassWithDependency
+readonly class ClassWithDependency
 {
     public function __construct(
-        public readonly DependencyClass $dependency,
+        public DependencyClass $dependency,
     ) {}
 }
 
 class DeepDependency {}
 
-class MiddleDependency
+readonly class MiddleDependency
 {
     public function __construct(
-        public readonly DeepDependency $deep,
+        public DeepDependency $deep,
     ) {}
 }
 
-class ClassWithNestedDependencies
+readonly class ClassWithNestedDependencies
 {
     public function __construct(
-        public readonly MiddleDependency $middle,
-        public readonly SimpleClass $simple,
+        public MiddleDependency $middle,
+        public SimpleClass $simple,
     ) {}
 }
 
 interface UnboundInterface {}
 
-class ClassWithInterfaceDependency
+readonly class ClassWithInterfaceDependency
 {
     public function __construct(
-        public readonly UnboundInterface $dependency,
+        public UnboundInterface $dependency,
     ) {}
 }
 
-class ClassWithDefaultScalarValue
+readonly class ClassWithDefaultScalarValue
 {
     public function __construct(
-        public readonly string $name = 'default',
-        public readonly ?int $count = null,
+        public string $name = 'default',
+        public ?int $count = null,
     ) {}
 }
 
-class ClassWithMixedDependencies
+readonly class ClassWithMixedDependencies
 {
     public function __construct(
-        public readonly SimpleClass $simple,
-        public readonly string $name = 'default',
+        public SimpleClass $simple,
+        public string $name = 'default',
     ) {}
 }
 
-class ClassWithClosureParameter
+readonly class ClassWithClosureParameter
 {
     public function __construct(
-        public readonly SimpleClass $simple,
-        public readonly ?Closure $factory = null,
+        public SimpleClass $simple,
+        public ?Closure $factory = null,
     ) {}
 }
 
@@ -163,9 +163,9 @@ it('passes container to closure bindings for dependency resolution', function ()
     $container->bind(UnboundInterface::class, function (Container $c) {
         $dependency = $c->get(DependencyClass::class);
 
-        return new class ($dependency) implements UnboundInterface
+        return new readonly class ($dependency) implements UnboundInterface
         {
-            public function __construct(public readonly DependencyClass $dep) {}
+            public function __construct(public DependencyClass $dep) {}
         };
     });
 

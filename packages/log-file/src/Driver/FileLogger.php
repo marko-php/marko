@@ -13,14 +13,14 @@ use Marko\Log\File\Rotation\RotationStrategyInterface;
 use Marko\Log\LogLevel;
 use Marko\Log\LogRecord;
 
-class FileLogger implements LoggerInterface
+readonly class FileLogger implements LoggerInterface
 {
     public function __construct(
-        private readonly string $path,
-        private readonly string $channel,
-        private readonly LogLevel $minimumLevel,
-        private readonly LogFormatterInterface $formatter,
-        private readonly RotationStrategyInterface $rotation = new DailyRotation(),
+        private string $path,
+        private string $channel,
+        private LogLevel $minimumLevel,
+        private LogFormatterInterface $formatter,
+        private RotationStrategyInterface $rotation = new DailyRotation(),
     ) {}
 
     public function emergency(
