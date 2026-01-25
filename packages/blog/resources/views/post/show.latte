@@ -47,6 +47,19 @@
 
     <section class="post-comments" aria-label="Comments">
         <h2>Comments</h2>
-        {* Comment section will be integrated in a later task *}
+        {default $comments = []}
+        {default $honeypotField = ''}
+        {default $csrfToken = null}
+        {default $errors = []}
+        {default $oldInput = []}
+        {default $verificationSuccess = false}
+        {default $commentCount = null}
+        {if $verificationSuccess}
+        <div class="comment-verification-success" role="alert">
+            Thank you! Your comment has been verified and is now visible.
+        </div>
+        {/if}
+        {include '../components/comment-thread.latte', comments: $comments, maxDepth: 5, postId: $post->id, commentCount: $commentCount}
+        {include '../components/comment-form.latte', postId: $post->slug, honeypotField: $honeypotField, csrfToken: $csrfToken, errors: $errors, oldInput: $oldInput}
     </section>
 </article>

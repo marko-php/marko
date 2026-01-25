@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Blog\Entity\Author;
 use Marko\Blog\Entity\Category;
+use Marko\Blog\Entity\Comment;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
 use Marko\Blog\Enum\PostStatus;
@@ -56,7 +57,7 @@ describe('Post Show View', function (): void {
 
         expect($html)->toContain('John Doe')
             ->and($html)->toMatch(
-                '/<a[^>]*href\s*=\s*["\'][^"\']*\/blog\/author\/john-doe["\'][^>]*>.*John Doe.*<\/a>/s'
+                '/<a[^>]*href\s*=\s*["\'][^"\']*\/blog\/author\/john-doe["\'][^>]*>.*John Doe.*<\/a>/s',
             );
     });
 
@@ -133,10 +134,10 @@ describe('Post Show View', function (): void {
         ]);
 
         expect($html)->toMatch(
-            '/<a[^>]*href\s*=\s*["\'][^"\']*\/blog\/category\/technology["\'][^>]*>.*Technology.*<\/a>/s'
+            '/<a[^>]*href\s*=\s*["\'][^"\']*\/blog\/category\/technology["\'][^>]*>.*Technology.*<\/a>/s',
         )
             ->and($html)->toMatch(
-                '/<a[^>]*href\s*=\s*["\'][^"\']*\/blog\/category\/programming["\'][^>]*>.*Programming.*<\/a>/s'
+                '/<a[^>]*href\s*=\s*["\'][^"\']*\/blog\/category\/programming["\'][^>]*>.*Programming.*<\/a>/s',
             );
     });
 
@@ -205,6 +206,179 @@ describe('Post Show View', function (): void {
             ->and($html)->toMatch('/<h2[^>]*>.*Categories.*<\/h2>/is')
             ->and($html)->toMatch('/<h2[^>]*>.*Tags.*<\/h2>/is')
             ->and($html)->toMatch('/<h2[^>]*>.*Comments.*<\/h2>/is');
+    });
+
+    it('includes comment thread component after post content', function (): void {
+        $view = createPostShowTestView();
+
+        $post = createPostShowTestPost();
+        $comment = createPostShowTestComment(
+            id: 1,
+            authorName: 'John Doe',
+            content: 'Great article!',
+        );
+
+        $html = $view->renderToString('blog::post/show', [
+            'post' => $post,
+            'comments' => [$comment],
+        ]);
+
+        // Comment thread should render the comment author and content
+        expect($html)->toContain('John Doe')
+            ->and($html)->toContain('Great article!')
+            // Comment should appear after post content (inside comments section)
+            ->and($html)->toMatch('/<section[^>]*class\s*=\s*["\'][^"\']*post-comments[^"\']*["\']/');
+    });
+
+    it('includes comment form component', function (): void {
+        $view = createPostShowTestView();
+
+        $post = createPostShowTestPost();
+
+        $html = $view->renderToString('blog::post/show', [
+            'post' => $post,
+        ]);
+
+        // Comment form should be present with proper structure
+        expect($html)->toMatch('/<form[^>]*class\s*=\s*["\'][^"\']*comment-form[^"\']*["\']/i')
+            ->and($html)->toMatch('/method\s*=\s*["\']post["\']/i')
+            // Form should have name, email, and content fields
+            ->and($html)->toMatch('/name\s*=\s*["\']name["\']/i')
+            ->and($html)->toMatch('/name\s*=\s*["\']email["\']/i')
+            ->and($html)->toMatch('/name\s*=\s*["\']content["\']/i');
+    });
+
+    it('passes verified comments to thread component', function (): void {
+        $view = createPostShowTestView();
+
+        $post = createPostShowTestPost();
+        $verifiedComment = createPostShowTestComment(
+            id: 1,
+            authorName: 'Verified User',
+            content: 'This is a verified comment!',
+        );
+        $verifiedComment->verifiedAt = '2024-01-15 12:00:00';
+
+        $anotherVerifiedComment = createPostShowTestComment(
+            id: 2,
+            authorName: 'Another Verified User',
+            content: 'Another verified comment.',
+        );
+        $anotherVerifiedComment->verifiedAt = '2024-01-16 14:00:00';
+
+        $html = $view->renderToString('blog::post/show', [
+            'post' => $post,
+            'comments' => [$verifiedComment, $anotherVerifiedComment],
+        ]);
+
+        // Verified comments should be passed to and rendered by thread component
+        expect($html)->toContain('Verified User')
+            ->and($html)->toContain('This is a verified comment!')
+            ->and($html)->toContain('Another Verified User')
+            ->and($html)->toContain('Another verified comment.');
+    });
+
+    it('passes post slug to form for action URL', function (): void {
+        $view = createPostShowTestView();
+
+        $post = createPostShowTestPost(
+            id: 42,
+            slug: 'my-awesome-post',
+        );
+
+        $html = $view->renderToString('blog::post/show', [
+            'post' => $post,
+        ]);
+
+        // Form action should use post slug for the URL
+        expect($html)->toMatch('/action\s*=\s*["\'][^"\']*\/posts\/my-awesome-post\/comments["\']/i');
+    });
+
+    it('displays verification success message when present', function (): void {
+        $view = createPostShowTestView();
+
+        $post = createPostShowTestPost();
+
+        $html = $view->renderToString('blog::post/show', [
+            'post' => $post,
+            'verificationSuccess' => true,
+        ]);
+
+        // Should display a success message about comment verification
+        expect($html)->toMatch('/comment.*verified|verified.*comment|thank\s+you/i');
+    });
+
+    it('shows comment count in heading', function (): void {
+        $view = createPostShowTestView();
+
+        $post = createPostShowTestPost();
+        $comment1 = createPostShowTestComment(
+            id: 1,
+            authorName: 'User One',
+            content: 'First comment.',
+        );
+        $comment2 = createPostShowTestComment(
+            id: 2,
+            authorName: 'User Two',
+            content: 'Second comment.',
+        );
+
+        $html = $view->renderToString('blog::post/show', [
+            'post' => $post,
+            'comments' => [$comment1, $comment2],
+            'commentCount' => 2,
+        ]);
+
+        // Comment count should be displayed in the heading
+        expect($html)->toMatch('/2\s+[Cc]omments/');
+    });
+
+    it('handles reply form display via JavaScript data attribute', function (): void {
+        $view = createPostShowTestView();
+
+        $post = createPostShowTestPost();
+        $comment = createPostShowTestComment(
+            id: 123,
+            authorName: 'Test User',
+            content: 'A comment with a reply link.',
+        );
+
+        $html = $view->renderToString('blog::post/show', [
+            'post' => $post,
+            'comments' => [$comment],
+        ]);
+
+        // Reply link should have data-parent-id attribute for JavaScript handling
+        expect($html)->toMatch('/data-parent-id\s*=\s*["\']123["\']/');
+    });
+
+    it('maintains proper section structure', function (): void {
+        $view = createPostShowTestView();
+
+        $post = createPostShowTestPost();
+        $comment = createPostShowTestComment(
+            id: 1,
+            authorName: 'Test User',
+            content: 'A test comment.',
+        );
+
+        $html = $view->renderToString('blog::post/show', [
+            'post' => $post,
+            'comments' => [$comment],
+            'commentCount' => 1,
+        ]);
+
+        // Verify proper section structure:
+        // - Comments section with aria-label
+        // - h2 heading for Comments
+        // - Comment thread before form
+        // - Comment form at the end
+        expect($html)->toMatch('/<section[^>]*class\s*=\s*["\'][^"\']*post-comments[^"\']*["\']/i')
+            ->and($html)->toMatch('/<section[^>]*aria-label\s*=\s*["\'][^"\']*[Cc]omments[^"\']*["\']/i')
+            ->and($html)->toMatch('/<h2[^>]*>.*Comments.*<\/h2>/is')
+            // Comment thread article should appear before form
+            ->and($html)->toMatch('/<article[^>]*class\s*=\s*["\'][^"\']*comment\b[^"\']*["\']/i')
+            ->and($html)->toMatch('/<form[^>]*class\s*=\s*["\'][^"\']*comment-form[^"\']*["\']/i');
     });
 });
 
@@ -309,4 +483,25 @@ function createPostShowTestTag(
     $tag->slug = $slug;
 
     return $tag;
+}
+
+function createPostShowTestComment(
+    int $id,
+    string $authorName,
+    string $content,
+    ?int $parentId = null,
+    ?string $createdAt = null,
+    array $children = [],
+): Comment {
+    $comment = new Comment();
+    $comment->id = $id;
+    $comment->postId = 1;
+    $comment->authorName = $authorName;
+    $comment->authorEmail = 'test@example.com';
+    $comment->content = $content;
+    $comment->parentId = $parentId;
+    $comment->createdAt = $createdAt ?? '2024-01-15 10:30:00';
+    $comment->setChildren($children);
+
+    return $comment;
 }

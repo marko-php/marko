@@ -101,28 +101,28 @@ See `000-routing-prerequisite.md` for full details on implementing configurable 
 | 026 | Author Archive Controller | 003, 017 | completed |
 | 027 | Category Archive Controller | 004, 017 | completed |
 | 028 | Tag Archive Controller | 005, 017 | completed |
-| 029 | Comment Submit Controller | 014, 015, 016, 020 | pending |
-| 030 | Comment Verify Controller | 014 | pending |
+| 029 | Comment Submit Controller | 014, 015, 016, 020 | completed |
+| 030 | Comment Verify Controller | 014 | completed |
 | 031 | Search Controller | 017, 018 | completed |
 | 032 | Pagination View Component | 017 | completed |
 | 033 | Post List View | 024, 032 | completed |
-| 034 | Post Show View | 025 | pending |
+| 034 | Post Show View | 025 | completed |
 | 035 | Comment Thread Component | 013 | completed |
 | 036 | Comment Form Component | 016 | completed |
-| 037 | Post Show with Comments | 034, 035, 036 | pending |
+| 037 | Post Show with Comments | 034, 035, 036 | completed |
 | 038 | Author Archive View | 026, 032 | completed |
 | 039 | Category Archive View | 027, 032 | completed |
 | 040 | Tag Archive View | 028, 032 | completed |
 | 041 | Search Results View | 031, 032, 046 | completed |
-| 042 | Blog Cleanup Command | 012, 015 | pending |
+| 042 | Blog Cleanup Command | 012, 015 | completed |
 | 043 | SEO Meta Service | 007 | completed |
 | 044 | SEO View Integration | 033, 037, 038, 039, 040, 041, 043 | pending |
 | 045 | Publish Scheduled Posts Command | 007, 019 | completed |
 | 046 | Search Bar Component | - | completed |
-| 047 | Module Bindings Configuration | 001, 002, 003, 004, 005, 013, 014, 015, 016, 017, 018, 043 | pending |
-| 048 | Module README Documentation | 047 | pending |
+| 047 | Module Bindings Configuration | 001, 002, 003, 004, 005, 013, 014, 015, 016, 017, 018, 043 | completed |
+| 048 | Module README Documentation | 047 | completed |
 | 049 | Database Migrations | 003, 004, 005, 007, 008, 009, 011, 012 | completed |
-| 050 | Verification Email Template | 014 | pending |
+| 050 | Verification Email Template | 014 | completed |
 
 ## Architecture Notes
 
