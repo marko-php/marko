@@ -92,12 +92,11 @@ class MiddlewareTestSession implements SessionInterface
 {
     private array $storage = [];
 
-    public function start(): void {}
-
-    public function isStarted(): bool
-    {
-        return true;
+    public bool $started {
+        get => true;
     }
+
+    public function start(): void {}
 
     public function get(
         string $key,

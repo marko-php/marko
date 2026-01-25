@@ -121,15 +121,14 @@ function createIntegrationSession(
         public function __construct(
             private array &$storage,
             private bool &$regenerateCalled,
-            private bool $isStarted,
+            private bool $isStartedValue,
         ) {}
 
-        public function start(): void {}
-
-        public function isStarted(): bool
-        {
-            return $this->isStarted;
+        public bool $started {
+            get => $this->isStartedValue;
         }
+
+        public function start(): void {}
 
         public function get(
             string $key,

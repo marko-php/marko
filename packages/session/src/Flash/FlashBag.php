@@ -6,7 +6,7 @@ namespace Marko\Session\Flash;
 
 class FlashBag
 {
-    private const FLASH_KEY = '_flash';
+    private const string FLASH_KEY = '_flash';
 
     /**
      * @var array<string, array<string>>

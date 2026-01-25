@@ -187,7 +187,7 @@ class SessionGuard implements GuardInterface
 
     private function ensureSessionStarted(): void
     {
-        if (!$this->session->isStarted()) {
+        if (!$this->session->started) {
             throw new AuthException(
                 message: 'Session not started',
                 context: 'SessionGuard requires an active session',

@@ -13,10 +13,9 @@ interface SessionInterface
      */
     public function start(): void;
 
-    /**
-     * Check if session has been started.
-     */
-    public function isStarted(): bool;
+    public bool $started {
+        get;
+    }
 
     /**
      * Get a value from the session.

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Marko\Config\ConfigRepositoryInterface;
+use Marko\Session\Config\SessionConfig;
 use Marko\Session\Contracts\SessionHandlerInterface;
 use Marko\Session\File\Handler\FileSessionHandler;
 
@@ -26,9 +28,87 @@ function cleanupSessionTestPath(
     rmdir($path);
 }
 
+function createSessionConfig(
+    string $path,
+): SessionConfig {
+    $configRepo = new class ($path) implements ConfigRepositoryInterface
+    {
+        public function __construct(private readonly string $path) {}
+
+        public function get(
+            string $key,
+            mixed $default = null,
+            ?string $scope = null,
+        ): mixed {
+            return $default;
+        }
+
+        public function getString(
+            string $key,
+            ?string $default = null,
+            ?string $scope = null,
+        ): string {
+            return $key === 'session.path' ? $this->path : ($default ?? '');
+        }
+
+        public function getInt(
+            string $key,
+            ?int $default = null,
+            ?string $scope = null,
+        ): int {
+            return $default ?? 0;
+        }
+
+        public function getBool(
+            string $key,
+            ?bool $default = null,
+            ?string $scope = null,
+        ): bool {
+            return $default ?? false;
+        }
+
+        public function getFloat(
+            string $key,
+            ?float $default = null,
+            ?string $scope = null,
+        ): float {
+            return $default ?? 0.0;
+        }
+
+        public function getArray(
+            string $key,
+            ?array $default = null,
+            ?string $scope = null,
+        ): array {
+            return $default ?? [];
+        }
+
+        public function has(
+            string $key,
+            ?string $scope = null,
+        ): bool {
+            return false;
+        }
+
+        public function all(
+            ?string $scope = null,
+        ): array {
+            return [];
+        }
+
+        public function withScope(
+            string $scope,
+        ): ConfigRepositoryInterface {
+            return $this;
+        }
+    };
+
+    return new SessionConfig($configRepo);
+}
+
 beforeEach(function () {
     $this->sessionPath = getSessionTestPath();
-    $this->handler = new FileSessionHandler($this->sessionPath);
+    $this->handler = new FileSessionHandler(createSessionConfig($this->sessionPath));
 });
 
 afterEach(function () {

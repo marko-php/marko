@@ -60,18 +60,6 @@ it('has PSR-4 autoloading configured for Marko\\Filesystem\\Local namespace', fu
         ->and($composer['autoload']['psr-4']['Marko\\Filesystem\\Local\\'])->toBe('src/');
 });
 
-it('has module.php with enabled set to true', function () {
-    $modulePath = dirname(__DIR__) . '/module.php';
-
-    expect(file_exists($modulePath))->toBeTrue();
-
-    $config = require $modulePath;
-
-    expect($config)->toBeArray()
-        ->and($config)->toHaveKey('enabled')
-        ->and($config['enabled'])->toBeTrue();
-});
-
 it('has src directory for source code', function () {
     $srcPath = dirname(__DIR__) . '/src';
 

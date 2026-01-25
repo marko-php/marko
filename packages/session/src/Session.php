@@ -14,7 +14,11 @@ use Marko\Session\Flash\FlashBag;
 
 class Session implements SessionInterface
 {
-    private bool $started = false;
+    public bool $started = false {
+        get {
+            return $this->started;
+        }
+    }
 
     private string $id = '';
 
@@ -30,6 +34,9 @@ class Session implements SessionInterface
         private readonly SessionConfig $config,
     ) {}
 
+    /**
+     * @throws SessionException
+     */
     public function start(): void
     {
         if ($this->started) {
@@ -64,11 +71,9 @@ class Session implements SessionInterface
         $this->started = true;
     }
 
-    public function isStarted(): bool
-    {
-        return $this->started;
-    }
-
+    /**
+     * @throws SessionNotStartedException
+     */
     public function get(
         string $key,
         mixed $default = null,
@@ -78,6 +83,9 @@ class Session implements SessionInterface
         return $this->data[$key] ?? $default;
     }
 
+    /**
+     * @throws SessionNotStartedException
+     */
     public function set(
         string $key,
         mixed $value,
@@ -87,6 +95,9 @@ class Session implements SessionInterface
         $this->data[$key] = $value;
     }
 
+    /**
+     * @throws SessionNotStartedException
+     */
     public function has(
         string $key,
     ): bool {
@@ -95,6 +106,9 @@ class Session implements SessionInterface
         return array_key_exists($key, $this->data);
     }
 
+    /**
+     * @throws SessionNotStartedException
+     */
     public function remove(
         string $key,
     ): void {
@@ -103,6 +117,9 @@ class Session implements SessionInterface
         unset($this->data[$key]);
     }
 
+    /**
+     * @throws SessionNotStartedException
+     */
     public function clear(): void
     {
         $this->ensureStarted('clear');
@@ -111,6 +128,9 @@ class Session implements SessionInterface
         $this->flashBag = new FlashBag($this->data);
     }
 
+    /**
+     * @throws SessionNotStartedException
+     */
     public function all(): array
     {
         $this->ensureStarted('all');
@@ -118,6 +138,9 @@ class Session implements SessionInterface
         return $this->data;
     }
 
+    /**
+     * @throws SessionNotStartedException|SessionException
+     */
     public function regenerate(
         bool $deleteOldSession = true,
     ): void {
@@ -134,6 +157,9 @@ class Session implements SessionInterface
         $this->id = session_id();
     }
 
+    /**
+     * @throws SessionNotStartedException
+     */
     public function destroy(): void
     {
         $this->ensureStarted('destroy');
@@ -166,6 +192,9 @@ class Session implements SessionInterface
         return $this->id;
     }
 
+    /**
+     * @throws InvalidSessionIdException|SessionException
+     */
     public function setId(
         string $id,
     ): void {
@@ -184,6 +213,9 @@ class Session implements SessionInterface
         $this->id = $id;
     }
 
+    /**
+     * @throws SessionNotStartedException
+     */
     public function flash(): FlashBag
     {
         $this->ensureStarted('flash');
@@ -225,6 +257,9 @@ class Session implements SessionInterface
         session_set_save_handler($this->handler, true);
     }
 
+    /**
+     * @throws SessionNotStartedException
+     */
     private function ensureStarted(
         string $operation,
     ): void {

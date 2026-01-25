@@ -4,13 +4,24 @@ declare(strict_types=1);
 
 namespace Marko\Session\File\Handler;
 
+use Marko\Session\Config\SessionConfig;
 use Marko\Session\Contracts\SessionHandlerInterface;
 
-class FileSessionHandler implements SessionHandlerInterface
+readonly class FileSessionHandler implements SessionHandlerInterface
 {
+    private string $path;
+
     public function __construct(
-        private readonly string $path,
-    ) {}
+        SessionConfig $config,
+    ) {
+        $path = $config->path();
+
+        if (!str_starts_with($path, '/')) {
+            $path = getcwd() . '/' . $path;
+        }
+
+        $this->path = $path;
+    }
 
     public function open(
         string $path,
@@ -86,10 +97,10 @@ class FileSessionHandler implements SessionHandlerInterface
     }
 
     public function gc(
-        int $maxLifetime,
+        int $max_lifetime,
     ): int|false {
         $count = 0;
-        $expireTime = time() - $maxLifetime;
+        $expireTime = time() - $max_lifetime;
 
         $files = glob($this->path . '/sess_*');
 
