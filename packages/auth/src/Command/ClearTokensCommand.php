@@ -48,12 +48,6 @@ readonly class ClearTokensCommand implements CommandInterface
     private function hasForceFlag(
         Input $input,
     ): bool {
-        foreach ($input->getArguments() as $arg) {
-            if ($arg === '--force') {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($input->getArguments(), fn ($arg) => $arg === '--force');
     }
 }

@@ -43,13 +43,7 @@ readonly class RetryCommand implements CommandInterface
     private function hasAllFlag(
         Input $input,
     ): bool {
-        foreach ($input->getArguments() as $arg) {
-            if ($arg === '--all') {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($input->getArguments(), fn ($arg) => $arg === '--all');
     }
 
     private function retryAll(

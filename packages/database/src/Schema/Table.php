@@ -62,30 +62,24 @@ readonly class Table
             return false;
         }
 
-        foreach ($this->columns as $i => $column) {
-            if (!$column->equals($other->columns[$i])) {
-                return false;
-            }
+        if (array_any($this->columns, fn ($column, $i) => !$column->equals($other->columns[$i]))) {
+            return false;
         }
 
         if (count($this->indexes) !== count($other->indexes)) {
             return false;
         }
 
-        foreach ($this->indexes as $i => $index) {
-            if (!$index->equals($other->indexes[$i])) {
-                return false;
-            }
+        if (array_any($this->indexes, fn ($index, $i) => !$index->equals($other->indexes[$i]))) {
+            return false;
         }
 
         if (count($this->foreignKeys) !== count($other->foreignKeys)) {
             return false;
         }
 
-        foreach ($this->foreignKeys as $i => $foreignKey) {
-            if (!$foreignKey->equals($other->foreignKeys[$i])) {
-                return false;
-            }
+        if (array_any($this->foreignKeys, fn ($foreignKey, $i) => !$foreignKey->equals($other->foreignKeys[$i]))) {
+            return false;
         }
 
         return true;

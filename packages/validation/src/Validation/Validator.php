@@ -116,13 +116,7 @@ readonly class Validator implements ValidatorInterface
     private function hasNullableRule(
         array $rules,
     ): bool {
-        foreach ($rules as $rule) {
-            if ($rule instanceof Nullable) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($rules, fn ($rule) => $rule instanceof Nullable);
     }
 
     /**
@@ -131,13 +125,7 @@ readonly class Validator implements ValidatorInterface
     private function hasRequiredRule(
         array $rules,
     ): bool {
-        foreach ($rules as $rule) {
-            if ($rule instanceof Required) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($rules, fn ($rule) => $rule instanceof Required);
     }
 
     private function isEmpty(
@@ -151,7 +139,7 @@ readonly class Validator implements ValidatorInterface
             return true;
         }
 
-        if (is_array($value) && $value === []) {
+        if ($value === []) {
             return true;
         }
 

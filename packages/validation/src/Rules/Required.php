@@ -21,7 +21,7 @@ class Required implements RuleInterface
             return false;
         }
 
-        if (is_array($value) && $value === []) {
+        if ($value === []) {
             return false;
         }
 

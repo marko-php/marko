@@ -58,13 +58,7 @@ readonly class Input
     public function hasOption(
         string $name,
     ): bool {
-        foreach ($this->getArguments() as $arg) {
-            if ($arg === "--$name" || str_starts_with($arg, "--$name=")) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($this->getArguments(), fn ($arg) => $arg === "--$name" || str_starts_with($arg, "--$name="));
     }
 
     /**
