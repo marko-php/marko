@@ -68,7 +68,7 @@ class RuleParser
     }
 
     /**
-     * @param array<mixed> $rules
+     * @param array $rules
      *
      * @return array<RuleInterface>
      */

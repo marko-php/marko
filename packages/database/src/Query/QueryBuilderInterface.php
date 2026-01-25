@@ -43,7 +43,7 @@ interface QueryBuilderInterface
      * Add a WHERE IN condition.
      *
      * @param string $column The column name
-     * @param array<mixed> $values The values to match against
+     * @param array $values The values to match against
      * @return static For fluent chaining
      */
     public function whereIn(
@@ -205,7 +205,7 @@ interface QueryBuilderInterface
      * Execute a raw SQL query with optional bindings.
      *
      * @param string $sql The raw SQL query
-     * @param array<mixed> $bindings Parameter bindings
+     * @param array $bindings Parameter bindings
      * @return array<array<string, mixed>> The result rows
      */
     public function raw(

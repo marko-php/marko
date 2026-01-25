@@ -15,7 +15,7 @@ use RuntimeException;
 /**
  * Creates a tracking connection that records inserts.
  *
- * @param array<mixed> $insertedData Reference to array that will store insert data
+ * @param array $insertedData Reference to array that will store insert data
  */
 function createTrackingConnection(
     array &$insertedData,

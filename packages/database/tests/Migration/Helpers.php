@@ -157,7 +157,7 @@ final class Helpers
      * Creates a connection stub that tracks executed SQL and bindings.
      *
      * @param array<string> $executedSql Reference array to track SQL statements
-     * @param array<array<mixed>> $executedBindings Reference array to track bindings
+     * @param array[] $executedBindings Reference array to track bindings
      */
     public static function createTrackingConnection(
         array &$executedSql,
