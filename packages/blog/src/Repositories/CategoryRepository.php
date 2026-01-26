@@ -267,4 +267,37 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
             $rows,
         );
     }
+
+    /**
+     * Get all descendant category IDs (children, grandchildren, etc.).
+     *
+     * @return array<int>
+     */
+    public function getDescendantIds(
+        int $categoryId,
+    ): array {
+        $descendantIds = [];
+        $this->collectDescendantIds($categoryId, $descendantIds);
+
+        return $descendantIds;
+    }
+
+    /**
+     * Recursively collect descendant category IDs.
+     *
+     * @param array<int> $descendantIds
+     */
+    private function collectDescendantIds(
+        int $categoryId,
+        array &$descendantIds,
+    ): void {
+        $sql = 'SELECT id FROM categories WHERE parent_id = ?';
+        $rows = $this->connection->query($sql, [$categoryId]);
+
+        foreach ($rows as $row) {
+            $childId = (int) $row['id'];
+            $descendantIds[] = $childId;
+            $this->collectDescendantIds($childId, $descendantIds);
+        }
+    }
 }

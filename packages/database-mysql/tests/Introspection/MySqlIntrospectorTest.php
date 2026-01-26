@@ -164,10 +164,10 @@ describe('MySqlIntrospector', function (): void {
         $columns = $introspector->getColumns('posts');
 
         expect($columns[0]->type)
-            ->toBe('bigint')
-            ->and($columns[1]->type)->toBe('varchar')
+            ->toBe('BIGINT')
+            ->and($columns[1]->type)->toBe('VARCHAR')
             ->and($columns[1]->length)->toBe(100)
-            ->and($columns[2]->type)->toBe('text');
+            ->and($columns[2]->type)->toBe('TEXT');
     });
 
     it('detects nullable columns', function (): void {
@@ -519,11 +519,14 @@ describe('MySqlIntrospector', function (): void {
                 if (str_contains($sql, 'information_schema.statistics')) {
                     $this->callOrder[] = 'indexes';
 
+                    // Return a non-unique index (not filtered out)
+                    // Single-column unique indexes are represented by the column's
+                    // unique property and are filtered from the indexes list
                     return [
                         [
                             'INDEX_NAME' => 'idx_id',
                             'COLUMN_NAME' => 'id',
-                            'NON_UNIQUE' => '0',
+                            'NON_UNIQUE' => '1',
                             'INDEX_TYPE' => 'BTREE',
                             'SEQ_IN_INDEX' => '1',
                         ],

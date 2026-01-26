@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Controllers;
 
+use Marko\Blog\Entity\Post;
+use Marko\Blog\Repositories\AuthorRepositoryInterface;
+use Marko\Blog\Repositories\CategoryRepositoryInterface;
 use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
@@ -15,6 +18,8 @@ class PostController
 {
     public function __construct(
         private readonly PostRepositoryInterface $repository,
+        private readonly AuthorRepositoryInterface $authorRepository,
+        private readonly CategoryRepositoryInterface $categoryRepository,
         private readonly CommentRepositoryInterface $commentRepository,
         private readonly PaginationServiceInterface $paginationService,
         private readonly ViewInterface $view,
@@ -41,11 +46,39 @@ class PostController
         $offset = $this->paginationService->calculateOffset($page);
         $posts = $this->repository->findPublishedPaginated($perPage, $offset);
 
+        // Load relationships for each post
+        $this->loadPostRelationships($posts);
+
         $pagination = $this->paginationService->paginate($posts, $totalPosts, $page);
 
         return $this->view->render('blog::post/index', [
             'posts' => $pagination,
         ]);
+    }
+
+    /**
+     * Load author, categories, and tags for each post.
+     *
+     * @param array<Post> $posts
+     */
+    private function loadPostRelationships(
+        array $posts,
+    ): void {
+        foreach ($posts as $post) {
+            // Load author
+            $author = $this->authorRepository->find($post->getAuthorId());
+            if ($author !== null) {
+                $post->setAuthor($author);
+            }
+
+            // Load categories
+            $categories = $this->repository->getCategoriesForPost($post->getId());
+            $post->setCategories($categories);
+
+            // Load tags
+            $tags = $this->repository->getTagsForPost($post->getId());
+            $post->setTags($tags);
+        }
     }
 
     #[Get('/blog/{slug}')]
@@ -58,13 +91,30 @@ class PostController
             return new Response('Post not found', 404);
         }
 
+        // Load author
+        $author = $this->authorRepository->find($post->getAuthorId());
+        if ($author !== null) {
+            $post->setAuthor($author);
+        }
+
         $categories = $this->repository->getCategoriesForPost($post->getId());
         $tags = $this->repository->getTagsForPost($post->getId());
         $comments = $this->commentRepository->getThreadedCommentsForPost($post->getId());
 
+        // Build category paths for breadcrumb display
+        $categoryPaths = [];
+        foreach ($categories as $category) {
+            $categoryPaths[$category->id] = $this->categoryRepository->getPath($category);
+        }
+
+        // Set relationships on post
+        $post->setCategories($categories);
+        $post->setTags($tags);
+
         return $this->view->render('blog::post/show', [
             'post' => $post,
             'categories' => $categories,
+            'categoryPaths' => $categoryPaths,
             'tags' => $tags,
             'comments' => $comments,
         ]);

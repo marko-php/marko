@@ -6,10 +6,12 @@ namespace Marko\Blog\Entity;
 
 use DateTimeImmutable;
 use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('authors')]
+#[Index('idx_authors_email', ['email'], unique: true)]
 class Author extends Entity implements AuthorInterface
 {
     #[Column(primaryKey: true, autoIncrement: true)]

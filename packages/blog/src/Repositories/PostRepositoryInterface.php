@@ -139,6 +139,27 @@ interface PostRepositoryInterface extends RepositoryInterface
     ): int;
 
     /**
+     * Find published posts by multiple categories with pagination.
+     *
+     * @param array<int> $categoryIds
+     * @return array<Post>
+     */
+    public function findPublishedByCategories(
+        array $categoryIds,
+        int $limit,
+        int $offset,
+    ): array;
+
+    /**
+     * Count published posts by multiple categories.
+     *
+     * @param array<int> $categoryIds
+     */
+    public function countPublishedByCategories(
+        array $categoryIds,
+    ): int;
+
+    /**
      * Attach a category to a post.
      */
     public function attachCategory(

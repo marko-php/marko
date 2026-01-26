@@ -29,18 +29,15 @@
 {if $nextLink}
 <link rel="next" href="{$nextLink}">
 {/if}
-<nav class="breadcrumbs" aria-label="Category hierarchy">
-    <ol>
-        {foreach $path as $pathCategory}
-            <li>
-                {if $pathCategory->id === $category->id}
-                    <span aria-current="page">{$pathCategory->name}</span>
-                {else}
-                    <a href="/blog/category/{$pathCategory->slug}">{$pathCategory->name}</a>
-                {/if}
-            </li>
-        {/foreach}
-    </ol>
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/blog">Blog</a> &gt;
+    {foreach $path as $pathCategory}
+        {if $pathCategory->id === $category->id}
+            <span aria-current="page">{$pathCategory->name}</span>
+        {else}
+            <a href="/blog/category/{$pathCategory->slug}">{$pathCategory->name}</a> &gt;
+        {/if}
+    {/foreach}
 </nav>
 <h1>{$category->name}</h1>
 {if $posts->isEmpty()}

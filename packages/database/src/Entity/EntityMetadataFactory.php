@@ -77,6 +77,11 @@ class EntityMetadataFactory
             $nullable = $type->allowsNull();
             $default = $property->hasDefaultValue() ? $property->getDefaultValue() : null;
 
+            // Convert BackedEnum default values to their backing value for database storage
+            if ($default instanceof BackedEnum) {
+                $default = $default->value;
+            }
+
             if ($columnAttr->autoIncrement && !$columnAttr->primaryKey) {
                 throw EntityException::autoIncrementWithoutPrimaryKey($entityClass, $propertyName);
             }

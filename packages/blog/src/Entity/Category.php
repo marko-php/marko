@@ -6,10 +6,12 @@ namespace Marko\Blog\Entity;
 
 use DateTimeImmutable;
 use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('categories')]
+#[Index('idx_categories_parent_id', ['parent_id'])]
 class Category extends Entity implements CategoryInterface
 {
     #[Column(primaryKey: true, autoIncrement: true)]
@@ -21,7 +23,7 @@ class Category extends Entity implements CategoryInterface
     #[Column(unique: true)]
     public string $slug;
 
-    #[Column('parent_id')]
+    #[Column('parent_id', references: 'categories.id', onDelete: 'CASCADE')]
     public ?int $parentId = null;
 
     #[Column('created_at')]

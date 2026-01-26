@@ -10,10 +10,14 @@ use InvalidArgumentException;
 use Marko\Blog\Enum\PostStatus;
 use Marko\Blog\Services\SlugGeneratorInterface;
 use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('posts')]
+#[Index('idx_posts_author_id', ['author_id'])]
+#[Index('idx_posts_status', ['status'])]
+#[Index('idx_posts_published_at', ['published_at'])]
 class Post extends Entity implements PostInterface
 {
     #[Column(primaryKey: true, autoIncrement: true)]
@@ -53,7 +57,7 @@ class Post extends Entity implements PostInterface
         public string $title = '',
         #[Column(type: 'TEXT')]
         public string $content = '',
-        #[Column('author_id')]
+        #[Column('author_id', references: 'authors.id')]
         public int $authorId = 0,
         ?SlugGeneratorInterface $slugGenerator = null,
         ?string $slug = null,

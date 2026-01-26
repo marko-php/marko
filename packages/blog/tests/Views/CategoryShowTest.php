@@ -146,7 +146,7 @@ describe('Category Show View', function (): void {
         ]);
 
         expect($html)->toMatch('/<nav[^>]*class\s*=\s*["\']breadcrumbs["\']/i')
-            ->and($html)->toMatch('/aria-label\s*=\s*["\']Category hierarchy["\']/i')
+            ->and($html)->toMatch('/aria-label\s*=\s*["\']Breadcrumb["\']/i')
             ->and($html)->toMatch('/<h1[^>]*>/i')
             ->and($html)->toMatch('/<time[^>]*datetime\s*=\s*["\']/i');
     });
@@ -164,7 +164,7 @@ describe('Category Show View', function (): void {
         ]);
 
         expect($html)->toMatch(
-            '/<link[^>]*rel\s*=\s*["\']canonical["\'][^>]*href\s*=\s*["\']\/blog\/category\/technology["\']/i'
+            '/<link[^>]*rel\s*=\s*["\']canonical["\'][^>]*href\s*=\s*["\']\/blog\/category\/technology["\']/i',
         );
     });
 });

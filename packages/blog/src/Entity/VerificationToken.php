@@ -6,10 +6,13 @@ namespace Marko\Blog\Entity;
 
 use DateTimeImmutable;
 use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('verification_tokens')]
+#[Index('idx_verification_tokens_email', ['email'])]
+#[Index('idx_verification_tokens_comment_id', ['comment_id'])]
 class VerificationToken extends Entity implements VerificationTokenInterface
 {
     #[Column(primaryKey: true, autoIncrement: true)]
@@ -24,7 +27,7 @@ class VerificationToken extends Entity implements VerificationTokenInterface
     #[Column]
     public string $type;
 
-    #[Column('comment_id')]
+    #[Column('comment_id', references: 'comments.id', onDelete: 'CASCADE')]
     public ?int $commentId = null;
 
     #[Column('created_at')]

@@ -58,4 +58,13 @@ interface CategoryRepositoryInterface extends RepositoryInterface
     public function getPostsForCategory(
         int $categoryId,
     ): array;
+
+    /**
+     * Get all descendant category IDs (children, grandchildren, etc.).
+     *
+     * @return array<int>
+     */
+    public function getDescendantIds(
+        int $categoryId,
+    ): array;
 }

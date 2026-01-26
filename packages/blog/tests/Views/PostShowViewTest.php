@@ -180,9 +180,11 @@ describe('Post Show View', function (): void {
             'post' => $post,
         ]);
 
-        expect($html)->toMatch('/<article[^>]*class\s*=\s*["\'][^"\']*post-article[^"\']*["\']/i')
+        expect($html)->toMatch('/<main>/')
+            ->and($html)->toMatch('/<article[^>]*class\s*=\s*["\'][^"\']*post-article[^"\']*["\']/i')
             ->and($html)->toMatch('/<header[^>]*class\s*=\s*["\'][^"\']*post-header[^"\']*["\']/i')
-            ->and($html)->toMatch('/<aside[^>]*class\s*=\s*["\'][^"\']*post-author[^"\']*["\']/i')
+            ->and($html)->toMatch('/<footer[^>]*class\s*=\s*["\'][^"\']*post-footer[^"\']*["\']/i')
+            ->and($html)->toMatch('/<div[^>]*class\s*=\s*["\'][^"\']*post-author[^"\']*["\']/i')
             ->and($html)->toMatch('/<time[^>]*datetime\s*=\s*["\']/i');
     });
 
@@ -201,11 +203,12 @@ describe('Post Show View', function (): void {
             'post' => $post,
         ]);
 
-        // h1 for main title, h2 for section headings
+        // h1 for main title, h2 only for Comments section
+        // Categories and Tags use labels (not h2) as they are metadata, not content sections
         expect($html)->toMatch('/<h1[^>]*>.*Main Article Title.*<\/h1>/s')
-            ->and($html)->toMatch('/<h2[^>]*>.*Categories.*<\/h2>/is')
-            ->and($html)->toMatch('/<h2[^>]*>.*Tags.*<\/h2>/is')
-            ->and($html)->toMatch('/<h2[^>]*>.*Comments.*<\/h2>/is');
+            ->and($html)->toMatch('/<strong>Categories:<\/strong>/i')
+            ->and($html)->toMatch('/<strong>Tags:<\/strong>/i')
+            ->and($html)->toMatch('/<h2[^>]*id\s*=\s*["\']comments-heading["\'][^>]*>.*Comments.*<\/h2>/is');
     });
 
     it('includes comment thread component after post content', function (): void {
@@ -369,13 +372,13 @@ describe('Post Show View', function (): void {
         ]);
 
         // Verify proper section structure:
-        // - Comments section with aria-label
-        // - h2 heading for Comments
+        // - Comments section with aria-labelledby
+        // - h2 heading for Comments with id
         // - Comment thread before form
         // - Comment form at the end
         expect($html)->toMatch('/<section[^>]*class\s*=\s*["\'][^"\']*post-comments[^"\']*["\']/i')
-            ->and($html)->toMatch('/<section[^>]*aria-label\s*=\s*["\'][^"\']*[Cc]omments[^"\']*["\']/i')
-            ->and($html)->toMatch('/<h2[^>]*>.*Comments.*<\/h2>/is')
+            ->and($html)->toMatch('/<section[^>]*aria-labelledby\s*=\s*["\']comments-heading["\']/i')
+            ->and($html)->toMatch('/<h2[^>]*id\s*=\s*["\']comments-heading["\'][^>]*>.*Comments.*<\/h2>/is')
             // Comment thread article should appear before form
             ->and($html)->toMatch('/<article[^>]*class\s*=\s*["\'][^"\']*comment\b[^"\']*["\']/i')
             ->and($html)->toMatch('/<form[^>]*class\s*=\s*["\'][^"\']*comment-form[^"\']*["\']/i');

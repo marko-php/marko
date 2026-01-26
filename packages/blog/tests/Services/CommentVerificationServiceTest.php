@@ -186,16 +186,19 @@ it('creates browser token after successful verification', function (): void {
     $tokenRepository = new MockTokenRepository();
     $tokenRepository->findByTokenResult = $verificationToken;
 
+    $postRepository = new MockPostRepository();
+    $postRepository->findResult = $comment->getPost();
+
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: $commentRepository,
-        postRepository: new MockPostRepository(),
+        postRepository: $postRepository,
         mailer: new MockMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
     );
 
-    $browserToken = $service->verifyByToken($verificationToken->token);
+    $result = $service->verifyByToken($verificationToken->token);
 
     // Browser token should be saved
     $savedBrowserTokens = array_filter(
@@ -205,7 +208,7 @@ it('creates browser token after successful verification', function (): void {
 
     expect($savedBrowserTokens)->toHaveCount(1);
     $savedToken = array_values($savedBrowserTokens)[0];
-    expect($savedToken->token)->toBe($browserToken)
+    expect($savedToken->token)->toBe($result->browserToken)
         ->and($savedToken->email)->toBe('commenter@example.com')
         ->and($savedToken->type)->toBe('browser');
 });
@@ -290,20 +293,25 @@ it('returns verification token cookie value after verification', function (): vo
     $tokenRepository = new MockTokenRepository();
     $tokenRepository->findByTokenResult = $verificationToken;
 
+    $postRepository = new MockPostRepository();
+    $postRepository->findResult = $comment->getPost();
+
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: $commentRepository,
-        postRepository: new MockPostRepository(),
+        postRepository: $postRepository,
         mailer: new MockMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: new MockEventDispatcher(),
     );
 
-    // verifyByToken returns the browser token value to store in cookie
-    $browserTokenValue = $service->verifyByToken($verificationToken->token);
+    // verifyByToken returns a VerificationResult with the browser token value to store in cookie
+    $result = $service->verifyByToken($verificationToken->token);
 
-    expect($browserTokenValue)->toBeString()
-        ->and(strlen($browserTokenValue))->toBeGreaterThanOrEqual(32);
+    expect($result->browserToken)->toBeString()
+        ->and(strlen($result->browserToken))->toBeGreaterThanOrEqual(32)
+        ->and($result->postSlug)->toBe('test-post')
+        ->and($result->commentId)->toBe(1);
 
     // The returned value should match the saved browser token
     $savedBrowserTokens = array_filter(
@@ -312,7 +320,7 @@ it('returns verification token cookie value after verification', function (): vo
     );
     $savedBrowserToken = array_values($savedBrowserTokens)[0];
 
-    expect($browserTokenValue)->toBe($savedBrowserToken->token);
+    expect($result->browserToken)->toBe($savedBrowserToken->token);
 });
 
 it('uses configured token expiry days', function (): void {
@@ -859,4 +867,18 @@ class MockPostRepository implements PostRepositoryInterface
         int $postId,
         array $tagIds,
     ): void {}
+
+    public function findPublishedByCategories(
+        array $categoryIds,
+        int $limit,
+        int $offset,
+    ): array {
+        return [];
+    }
+
+    public function countPublishedByCategories(
+        array $categoryIds,
+    ): int {
+        return 0;
+    }
 }

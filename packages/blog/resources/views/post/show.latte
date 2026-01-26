@@ -22,54 +22,72 @@
 <meta property="og:description" content="{$metaDescription}">
 {/if}
 <meta property="og:type" content="{$ogType}">
-<article class="post-article">
-    <header class="post-header">
-        <h1>{$post->title}</h1>
-        <div class="post-meta">
-            <time datetime="{$post->publishedAt}">{$post->getPublishedAt()->format('F j, Y')}</time>
-            {if $post->wasUpdatedAfterPublishing()}
-                <span class="post-updated">
-                    Updated: <time datetime="{$post->updatedAt}">{$post->getUpdatedAt()->format('F j, Y')}</time>
-                </span>
-            {/if}
+<main>
+    <article class="post-article">
+        <header class="post-header">
+            <h1>{$post->title}</h1>
+            <div class="post-meta">
+                <time datetime="{$post->publishedAt}">{$post->getPublishedAt()->format('F j, Y')}</time>
+                {if $post->wasUpdatedAfterPublishing()}
+                    <span class="post-updated">
+                        Updated: <time datetime="{$post->updatedAt}">{$post->getUpdatedAt()->format('F j, Y')}</time>
+                    </span>
+                {/if}
+            </div>
+        </header>
+
+        <div class="post-content">
+            {$post->content|noescape}
         </div>
-    </header>
 
-    <div class="post-content">
-        {$post->content|noescape}
-    </div>
+        <footer class="post-footer">
+            {if $post->getCategories()}
+                {default $categoryPaths = []}
+                <div class="post-categories">
+                    <strong>Categories:</strong>
+                    <ul>
+                        {foreach $post->getCategories() as $category}
+                            <li>
+                                {if isset($categoryPaths[$category->id])}
+                                    {foreach $categoryPaths[$category->id] as $pathCategory}
+                                        {if $pathCategory->id === $category->id}
+                                            <a href="/blog/category/{$pathCategory->slug}">{$pathCategory->name}</a>
+                                        {else}
+                                            <a href="/blog/category/{$pathCategory->slug}">{$pathCategory->name}</a> &gt;
+                                        {/if}
+                                    {/foreach}
+                                {else}
+                                    <a href="/blog/category/{$category->slug}">{$category->name}</a>
+                                {/if}
+                            </li>
+                        {/foreach}
+                    </ul>
+                </div>
+            {/if}
 
-    {if $post->getCategories()}
-        <nav class="post-categories" aria-label="Post categories">
-            <h2>Categories</h2>
-            <ul>
-                {foreach $post->getCategories() as $category}
-                    <li><a href="/blog/category/{$category->slug}">{$category->name}</a></li>
-                {/foreach}
-            </ul>
-        </nav>
-    {/if}
+            {if $post->getTags()}
+                <div class="post-tags">
+                    <strong>Tags:</strong>
+                    <ul>
+                        {foreach $post->getTags() as $tag}
+                            <li><a href="/blog/tag/{$tag->slug}">{$tag->name}</a></li>
+                        {/foreach}
+                    </ul>
+                </div>
+            {/if}
 
-    {if $post->getTags()}
-        <nav class="post-tags" aria-label="Post tags">
-            <h2>Tags</h2>
-            <ul>
-                {foreach $post->getTags() as $tag}
-                    <li><a href="/blog/tag/{$tag->slug}">{$tag->name}</a></li>
-                {/foreach}
-            </ul>
-        </nav>
-    {/if}
+            <div class="post-author">
+                <strong>Author:</strong>
+                <a href="/blog/author/{$post->getAuthor()->slug}">{$post->getAuthor()->name}</a>
+                {if $post->getAuthor()->bio}
+                    <p class="author-bio">{$post->getAuthor()->bio}</p>
+                {/if}
+            </div>
+        </footer>
+    </article>
 
-    <aside class="post-author">
-        <a href="/blog/author/{$post->getAuthor()->slug}">{$post->getAuthor()->name}</a>
-        {if $post->getAuthor()->bio}
-            <p class="author-bio">{$post->getAuthor()->bio}</p>
-        {/if}
-    </aside>
-
-    <section class="post-comments" aria-label="Comments">
-        <h2>Comments</h2>
+    <section class="post-comments" aria-labelledby="comments-heading">
+        <h2 id="comments-heading">Comments</h2>
         {default $comments = []}
         {default $honeypotField = ''}
         {default $csrfToken = null}
@@ -85,4 +103,4 @@
         {include '../components/comment-thread.latte', comments: $comments, maxDepth: 5, postId: $post->id, commentCount: $commentCount}
         {include '../components/comment-form.latte', postId: $post->slug, honeypotField: $honeypotField, csrfToken: $csrfToken, errors: $errors, oldInput: $oldInput}
     </section>
-</article>
+</main>

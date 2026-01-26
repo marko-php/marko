@@ -44,13 +44,19 @@ readonly class MySqlIntrospector implements IntrospectorInterface
             return null;
         }
 
-        $columns = $this->getColumns($name);
-        $indexes = $this->getIndexes($name);
+        $primaryKeyColumns = $this->getPrimaryKey($name);
+        $uniqueColumns = $this->getUniqueColumns($name);
+        // Set unique=true on columns, but keep indexes (don't filter)
+        // The diff calculator will handle matching column unique=true with indexes
+        $columns = $this->getColumns($name, $primaryKeyColumns, $uniqueColumns);
+        $indexes = $this->getIndexes($name, []);  // Don't filter any indexes
+        $foreignKeys = $this->getForeignKeys($name);
 
         return new Table(
             name: $name,
             columns: $columns,
             indexes: $indexes,
+            foreignKeys: $foreignKeys,
         );
     }
 
@@ -61,10 +67,14 @@ readonly class MySqlIntrospector implements IntrospectorInterface
     }
 
     /**
+     * @param array<string> $primaryKeyColumns
+     * @param array<string> $uniqueColumns
      * @return array<Column>
      */
     public function getColumns(
         string $table,
+        array $primaryKeyColumns = [],
+        array $uniqueColumns = [],
     ): array {
         $sql = <<<'SQL'
             SELECT
@@ -84,16 +94,22 @@ readonly class MySqlIntrospector implements IntrospectorInterface
         $columns = [];
 
         foreach ($rows as $row) {
+            $columnName = $row['COLUMN_NAME'];
             $length = $row['CHARACTER_MAXIMUM_LENGTH'] !== null
                 ? (int) $row['CHARACTER_MAXIMUM_LENGTH']
                 : null;
 
+            $isPrimaryKey = in_array($columnName, $primaryKeyColumns, true);
+            $isUnique = in_array($columnName, $uniqueColumns, true);
+
             $columns[] = new Column(
-                name: $row['COLUMN_NAME'],
-                type: $row['DATA_TYPE'],
+                name: $columnName,
+                type: strtoupper($row['DATA_TYPE']),
                 length: $length,
                 nullable: $row['IS_NULLABLE'] === 'YES',
                 default: $row['COLUMN_DEFAULT'],
+                unique: $isUnique,
+                primaryKey: $isPrimaryKey,
                 autoIncrement: str_contains($row['EXTRA'], 'auto_increment'),
             );
         }
@@ -102,10 +118,50 @@ readonly class MySqlIntrospector implements IntrospectorInterface
     }
 
     /**
+     * Get columns that have single-column unique indexes.
+     *
+     * @return array<string>
+     */
+    private function getUniqueColumns(
+        string $table,
+    ): array {
+        $sql = <<<'SQL'
+            SELECT COLUMN_NAME, INDEX_NAME
+            FROM information_schema.statistics
+            WHERE TABLE_SCHEMA = ?
+            AND TABLE_NAME = ?
+            AND NON_UNIQUE = 0
+            AND INDEX_NAME != 'PRIMARY'
+        SQL;
+
+        $rows = $this->connection->query($sql, [$this->database, $table]);
+
+        // Group by index to find single-column unique indexes
+        $indexColumns = [];
+        foreach ($rows as $row) {
+            $indexName = $row['INDEX_NAME'];
+            $indexColumns[$indexName][] = $row['COLUMN_NAME'];
+        }
+
+        // Only return columns that are the sole column in a unique index
+        $uniqueColumns = [];
+        foreach ($indexColumns as $columns) {
+            if (count($columns) === 1) {
+                $uniqueColumns[] = $columns[0];
+            }
+        }
+
+        return $uniqueColumns;
+    }
+
+    /**
+     * @param array<string> $uniqueColumns Columns that have single-column unique indexes
+     *                                     (these are represented by the column's unique property)
      * @return array<Index>
      */
     public function getIndexes(
         string $table,
+        array $uniqueColumns = [],
     ): array {
         $sql = <<<'SQL'
             SELECT
@@ -140,6 +196,16 @@ readonly class MySqlIntrospector implements IntrospectorInterface
         $indexes = [];
         foreach ($indexData as $name => $data) {
             if ($name === 'PRIMARY') {
+                continue;
+            }
+
+            // Skip single-column unique indexes - these are represented by the
+            // column's unique property instead, to match how entities define them
+            if (
+                (string) $data['non_unique'] === '0'
+                && count($data['columns']) === 1
+                && in_array($data['columns'][0], $uniqueColumns, true)
+            ) {
                 continue;
             }
 

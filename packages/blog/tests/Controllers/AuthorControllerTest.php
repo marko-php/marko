@@ -554,6 +554,20 @@ function authorControllerCreatePostRepository(
             array $tagIds,
         ): void {}
 
+        public function findPublishedByCategories(
+            array $categoryIds,
+            int $limit,
+            int $offset,
+        ): array {
+            return [];
+        }
+
+        public function countPublishedByCategories(
+            array $categoryIds,
+        ): int {
+            return 0;
+        }
+
         public function find(
             int $id,
         ): ?Entity {

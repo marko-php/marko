@@ -49,36 +49,16 @@ readonly class MigrateCommand implements CommandInterface
         Output $output,
     ): int {
         $verbose = $this->isVerbose($input);
-
-        // In development mode, check for entity diffs and generate migrations
-        if (!$this->isProduction) {
-            $this->generateMigrationsFromDiff($output, $verbose);
-        }
+        $noGenerate = $this->hasFlag($input, '--no-generate');
 
         // Get pending migrations
         $schemaPending = $this->migrator->getPending();
         $dataPending = $this->dataMigrator->getPending();
 
-        // Nothing to do
-        if (empty($schemaPending) && empty($dataPending)) {
-            // Check if there are entity diffs in production mode
-            if ($this->isProduction) {
-                $diff = $this->calculateDiff();
-                if (!$diff->isEmpty()) {
-                    $output->writeLine('Warning: Entity schema differs from database.');
-                    $output->writeLine('Run db:migrate in development to generate migrations.');
-                }
-            }
-
-            $output->writeLine('Nothing to migrate.');
-
-            return 0;
-        }
-
         $schemaCount = 0;
         $dataCount = 0;
 
-        // Apply schema migrations
+        // Apply existing schema migrations first
         if (!empty($schemaPending)) {
             foreach ($schemaPending as $migration) {
                 $output->writeLine("Migrating: $migration");
@@ -141,6 +121,53 @@ readonly class MigrateCommand implements CommandInterface
             }
         }
 
+        // After running existing migrations, check for entity diffs in development mode
+        // Skip if --no-generate flag is passed
+        if (!$this->isProduction && !$noGenerate) {
+            $generatedPaths = $this->generateMigrationsFromDiff($output, $verbose);
+
+            // If new migrations were generated, run them
+            if (!empty($generatedPaths)) {
+                $newPending = $this->migrator->getPending();
+                if (!empty($newPending)) {
+                    foreach ($newPending as $migration) {
+                        $output->writeLine("Migrating: $migration");
+                    }
+
+                    try {
+                        $newApplied = $this->migrator->migrate();
+                        $newCount = count($newApplied);
+
+                        if ($newCount > 0) {
+                            $output->writeLine("Applied $newCount schema migration(s).");
+                            $schemaCount += $newCount;
+                        }
+                    } catch (MigrationException $e) {
+                        $output->writeLine('');
+                        $output->writeLine("Error: {$e->getMessage()}");
+
+                        return 1;
+                    }
+                }
+            }
+        }
+
+        // Nothing was done
+        if ($schemaCount === 0 && $dataCount === 0) {
+            // Check if there are entity diffs in production mode
+            if ($this->isProduction) {
+                $diff = $this->calculateDiff();
+                if (!$diff->isEmpty()) {
+                    $output->writeLine('Warning: Entity schema differs from database.');
+                    $output->writeLine('Run db:migrate in development to generate migrations.');
+                }
+            }
+
+            $output->writeLine('Nothing to migrate.');
+
+            return 0;
+        }
+
         $output->writeLine('');
         $output->writeLine('Migration complete.');
 
@@ -150,16 +177,17 @@ readonly class MigrateCommand implements CommandInterface
     /**
      * Generate migrations from entity/database diff in development mode.
      *
+     * @return array<string> Paths to generated migration files
      * @throws EntityException
      */
     private function generateMigrationsFromDiff(
         Output $output,
         bool $verbose,
-    ): void {
+    ): array {
         $diff = $this->calculateDiff();
 
         if ($diff->isEmpty()) {
-            return;
+            return [];
         }
 
         $paths = $this->migrationGenerator->generate($diff);
@@ -185,6 +213,8 @@ readonly class MigrateCommand implements CommandInterface
 
             $output->writeLine('');
         }
+
+        return $paths;
     }
 
     /**
@@ -269,6 +299,16 @@ readonly class MigrateCommand implements CommandInterface
     private function isVerbose(
         Input $input,
     ): bool {
-        return array_any($input->getArguments(), fn ($arg) => $arg === '--verbose' || $arg === '-v');
+        return $this->hasFlag($input, '--verbose') || $this->hasFlag($input, '-v');
+    }
+
+    /**
+     * Check if a flag is present in the input arguments.
+     */
+    private function hasFlag(
+        Input $input,
+        string $flag,
+    ): bool {
+        return array_any($input->getArguments(), fn ($arg) => $arg === $flag);
     }
 }

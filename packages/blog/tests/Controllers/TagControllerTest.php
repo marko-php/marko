@@ -9,9 +9,11 @@ use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
 use Marko\Blog\Enum\PostStatus;
+use Marko\Blog\Repositories\AuthorRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Repositories\TagRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
+use Marko\Blog\Tests\Mocks\MockAuthorRepository;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Routing\Attributes\Get;
@@ -26,15 +28,17 @@ use ReflectionClass;
     \expect($constructor)->not->toBeNull();
 
     $parameters = $constructor->getParameters();
-    \expect($parameters)->toHaveCount(4)
+    \expect($parameters)->toHaveCount(5)
         ->and($parameters[0]->getName())->toBe('tagRepository')
         ->and($parameters[0]->getType()->getName())->toBe(TagRepositoryInterface::class)
         ->and($parameters[1]->getName())->toBe('postRepository')
         ->and($parameters[1]->getType()->getName())->toBe(PostRepositoryInterface::class)
-        ->and($parameters[2]->getName())->toBe('paginationService')
-        ->and($parameters[2]->getType()->getName())->toBe(PaginationServiceInterface::class)
-        ->and($parameters[3]->getName())->toBe('view')
-        ->and($parameters[3]->getType()->getName())->toBe(ViewInterface::class);
+        ->and($parameters[2]->getName())->toBe('authorRepository')
+        ->and($parameters[2]->getType()->getName())->toBe(AuthorRepositoryInterface::class)
+        ->and($parameters[3]->getName())->toBe('paginationService')
+        ->and($parameters[3]->getType()->getName())->toBe(PaginationServiceInterface::class)
+        ->and($parameters[4]->getName())->toBe('view')
+        ->and($parameters[4]->getType()->getName())->toBe(ViewInterface::class);
 });
 
 \it('returns paginated posts with tag at GET /blog/tag/{slug}', function (): void {
@@ -61,7 +65,8 @@ use ReflectionClass;
     $paginationService = createPaginationService($paginatedResult);
     $view = createView();
 
-    $controller = new TagController($tagRepository, $postRepository, $paginationService, $view);
+    $authorRepository = new MockAuthorRepository();
+    $controller = new TagController($tagRepository, $postRepository, $authorRepository, $paginationService, $view);
     $response = $controller->index('php');
 
     \expect($response)->toBeInstanceOf(Response::class)
@@ -74,7 +79,8 @@ use ReflectionClass;
     $paginationService = createPaginationService(createPaginatedResult());
     $view = createView();
 
-    $controller = new TagController($tagRepository, $postRepository, $paginationService, $view);
+    $authorRepository = new MockAuthorRepository();
+    $controller = new TagController($tagRepository, $postRepository, $authorRepository, $paginationService, $view);
     $response = $controller->index('non-existent-tag');
 
     \expect($response)->toBeInstanceOf(Response::class)
@@ -94,7 +100,8 @@ use ReflectionClass;
     $paginationService = createPaginationService(createPaginatedResult());
     $view = createViewWithCapture($capturedData);
 
-    $controller = new TagController($tagRepository, $postRepository, $paginationService, $view);
+    $authorRepository = new MockAuthorRepository();
+    $controller = new TagController($tagRepository, $postRepository, $authorRepository, $paginationService, $view);
     $controller->index('php-development');
 
     \expect($capturedData)->toHaveKey('tag')
@@ -117,7 +124,8 @@ use ReflectionClass;
     $paginationService = createPaginationService(createPaginatedResult($publishedPosts, 1, 1));
     $view = createView();
 
-    $controller = new TagController($tagRepository, $postRepository, $paginationService, $view);
+    $authorRepository = new MockAuthorRepository();
+    $controller = new TagController($tagRepository, $postRepository, $authorRepository, $paginationService, $view);
     $response = $controller->index('php');
 
     // A successful response means findPublishedByTag was called
@@ -149,7 +157,8 @@ use ReflectionClass;
     $paginationService = createPaginationService(createPaginatedResult($orderedPosts, 1, 3));
     $view = createViewWithCapture($capturedData);
 
-    $controller = new TagController($tagRepository, $postRepository, $paginationService, $view);
+    $authorRepository = new MockAuthorRepository();
+    $controller = new TagController($tagRepository, $postRepository, $authorRepository, $paginationService, $view);
     $controller->index('php');
 
     // Verify posts are in the expected order (as returned by repository)
@@ -183,7 +192,8 @@ use ReflectionClass;
     $paginationService = createPaginationService($paginatedResult);
     $view = createView();
 
-    $controller = new TagController($tagRepository, $postRepository, $paginationService, $view);
+    $authorRepository = new MockAuthorRepository();
+    $controller = new TagController($tagRepository, $postRepository, $authorRepository, $paginationService, $view);
     $response = $controller->index('php', 2);
 
     \expect($response->statusCode())->toBe(200);
@@ -209,7 +219,8 @@ use ReflectionClass;
     $paginationService = createPaginationService($paginatedResult);
     $view = createViewWithCapture($capturedData);
 
-    $controller = new TagController($tagRepository, $postRepository, $paginationService, $view);
+    $authorRepository = new MockAuthorRepository();
+    $controller = new TagController($tagRepository, $postRepository, $authorRepository, $paginationService, $view);
     $controller->index('php', 2);
 
     // Verify pagination metadata is passed to the view
@@ -235,7 +246,8 @@ use ReflectionClass;
     $paginationService = createPaginationService(createPaginatedResult());
     $view = createViewWithTemplateCapture($capturedTemplate);
 
-    $controller = new TagController($tagRepository, $postRepository, $paginationService, $view);
+    $authorRepository = new MockAuthorRepository();
+    $controller = new TagController($tagRepository, $postRepository, $authorRepository, $paginationService, $view);
     $controller->index('php');
 
     // Verify the correct template is used
@@ -501,6 +513,20 @@ function createPostRepository(
             array $tagIds,
         ): void {}
 
+        public function findPublishedByCategories(
+            array $categoryIds,
+            int $limit,
+            int $offset,
+        ): array {
+            return [];
+        }
+
+        public function countPublishedByCategories(
+            array $categoryIds,
+        ): int {
+            return 0;
+        }
+
         public function find(
             int $id,
         ): ?Entity {
@@ -694,6 +720,20 @@ function createPostRepositoryWithCallTracking(
             int $postId,
             array $tagIds,
         ): void {}
+
+        public function findPublishedByCategories(
+            array $categoryIds,
+            int $limit,
+            int $offset,
+        ): array {
+            return [];
+        }
+
+        public function countPublishedByCategories(
+            array $categoryIds,
+        ): int {
+            return 0;
+        }
 
         public function find(
             int $id,

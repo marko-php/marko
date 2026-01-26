@@ -3,8 +3,16 @@
 declare(strict_types=1);
 
 use Marko\Blog\Controllers\PostController;
-use Marko\Blog\Entity\Post;
-use Marko\Blog\Repositories\PostRepository;
+use Marko\Blog\Dto\PaginatedResult;
+use Marko\Blog\Repositories\AuthorRepositoryInterface;
+use Marko\Blog\Repositories\CategoryRepositoryInterface;
+use Marko\Blog\Repositories\CommentRepositoryInterface;
+use Marko\Blog\Repositories\PostRepositoryInterface;
+use Marko\Blog\Services\PaginationServiceInterface;
+use Marko\Blog\Tests\Mocks\MockAuthorRepository;
+use Marko\Blog\Tests\Mocks\MockCategoryRepository;
+use Marko\Blog\Tests\Mocks\MockCommentRepository;
+use Marko\Blog\Tests\Mocks\MockPostRepository;
 use Marko\Core\Attributes\Preference;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\PreferenceRegistry;
@@ -21,12 +29,23 @@ use Marko\View\ViewInterface;
  */
 
 it('demo app/blog overrides PostController via Preference', function (): void {
-    $mockRepository = createMockPostRepositoryForPreferenceTest();
+    $mockRepository = new MockPostRepository();
+    $mockAuthorRepository = new MockAuthorRepository();
+    $mockCategoryRepository = new MockCategoryRepository();
+    $mockCommentRepository = new MockCommentRepository();
+    $mockPaginationService = createMockPaginationServiceForPreferenceTest();
     $mockView = createMockViewForPreferenceTest();
 
     // Test fixture simulating demo/app/blog/Controllers/PostController
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class ($mockRepository, $mockView) extends PostController
+    class (
+        $mockRepository,
+        $mockAuthorRepository,
+        $mockCategoryRepository,
+        $mockCommentRepository,
+        $mockPaginationService,
+        $mockView,
+    ) extends PostController
     {
         public function show(
             string $slug,
@@ -38,10 +57,14 @@ it('demo app/blog overrides PostController via Preference', function (): void {
     $preferenceRegistry = new PreferenceRegistry();
     $preferenceRegistry->register(PostController::class, $appPostController::class);
 
-    // Container needs to be able to resolve PostRepository and ViewInterface dependencies
+    // Container needs to be able to resolve all dependencies
     // We bind the mock instances as singletons
     $container = new Container($preferenceRegistry);
-    $container->instance(PostRepository::class, $mockRepository);
+    $container->instance(PostRepositoryInterface::class, $mockRepository);
+    $container->instance(AuthorRepositoryInterface::class, $mockAuthorRepository);
+    $container->instance(CategoryRepositoryInterface::class, $mockCategoryRepository);
+    $container->instance(CommentRepositoryInterface::class, $mockCommentRepository);
+    $container->instance(PaginationServiceInterface::class, $mockPaginationService);
     $container->instance(ViewInterface::class, $mockView);
 
     // When requesting the original controller, we get the Preference instead
@@ -51,12 +74,23 @@ it('demo app/blog overrides PostController via Preference', function (): void {
 });
 
 it('app PostController modifies show method response', function (): void {
-    $mockRepository = createMockPostRepositoryForPreferenceTest();
+    $mockRepository = new MockPostRepository();
+    $mockAuthorRepository = new MockAuthorRepository();
+    $mockCategoryRepository = new MockCategoryRepository();
+    $mockCommentRepository = new MockCommentRepository();
+    $mockPaginationService = createMockPaginationServiceForPreferenceTest();
     $mockView = createMockViewForPreferenceTest();
 
     // Test fixture simulating demo/app/blog/Controllers/PostController
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class ($mockRepository, $mockView) extends PostController
+    class (
+        $mockRepository,
+        $mockAuthorRepository,
+        $mockCategoryRepository,
+        $mockCommentRepository,
+        $mockPaginationService,
+        $mockView,
+    ) extends PostController
     {
         public function show(
             string $slug,
@@ -73,17 +107,29 @@ it('app PostController modifies show method response', function (): void {
 });
 
 it('DisableRoute attribute removes route from Preference override', function (): void {
-    $mockRepository = createMockPostRepositoryForPreferenceTest();
+    $mockRepository = new MockPostRepository();
+    $mockAuthorRepository = new MockAuthorRepository();
+    $mockCategoryRepository = new MockCategoryRepository();
+    $mockCommentRepository = new MockCommentRepository();
+    $mockPaginationService = createMockPaginationServiceForPreferenceTest();
     $mockView = createMockViewForPreferenceTest();
 
     // Test fixture: child controller disables parent route
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class ($mockRepository, $mockView) extends PostController
+    class (
+        $mockRepository,
+        $mockAuthorRepository,
+        $mockCategoryRepository,
+        $mockCommentRepository,
+        $mockPaginationService,
+        $mockView,
+    ) extends PostController
     {
         #[DisableRoute]
-        public function index(): Response
-        {
-            return parent::index();
+        public function index(
+            int $page = 1,
+        ): Response {
+            return parent::index($page);
         }
 
         #[InheritRoute]
@@ -118,26 +164,43 @@ it('DisableRoute attribute removes route from Preference override', function ():
         ->and($route->action)->toBe('show');
 });
 
-// Helper function to create mock PostRepository for preference tests
+// Helper function to create mock PaginationServiceInterface for preference tests
 
-function createMockPostRepositoryForPreferenceTest(): PostRepository
+function createMockPaginationServiceForPreferenceTest(): PaginationServiceInterface
 {
-    return new class () extends PostRepository
+    return new class () implements PaginationServiceInterface
     {
-        public function __construct()
-        {
-            // Skip parent constructor - we're mocking everything
+        public function paginate(
+            array $items,
+            int $totalItems,
+            int $currentPage,
+            ?int $perPage = null,
+        ): PaginatedResult {
+            $perPage = $perPage ?? 10;
+            $totalPages = $totalItems > 0 ? (int) ceil($totalItems / $perPage) : 0;
+
+            return new PaginatedResult(
+                items: $items,
+                currentPage: $currentPage,
+                totalItems: $totalItems,
+                perPage: $perPage,
+                totalPages: $totalPages,
+                hasPreviousPage: $currentPage > 1,
+                hasNextPage: $currentPage < $totalPages,
+                pageNumbers: range(1, max(1, $totalPages)),
+            );
         }
 
-        public function findAll(): array
-        {
-            return [];
+        public function calculateOffset(
+            int $page,
+            ?int $perPage = null,
+        ): int {
+            return ($page - 1) * ($perPage ?? 10);
         }
 
-        public function findBySlug(
-            string $slug,
-        ): ?Post {
-            return null;
+        public function getPerPage(): int
+        {
+            return 10;
         }
     };
 }

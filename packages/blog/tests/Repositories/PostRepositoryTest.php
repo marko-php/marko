@@ -367,6 +367,102 @@ it('returns false when slug is not unique', function (): void {
     expect($isUnique)->toBeFalse();
 });
 
+it('finds published posts by multiple category IDs', function (): void {
+    $queryHistory = [];
+    $connection = createMockConnectionWithHistory(
+        [
+            [
+                'id' => 1,
+                'title' => 'Post in PHP',
+                'slug' => 'post-in-php',
+                'content' => 'Content',
+                'summary' => null,
+                'status' => 'published',
+                'author_id' => 1,
+                'scheduled_at' => null,
+                'published_at' => '2024-01-15 12:00:00',
+                'created_at' => '2024-01-01 00:00:00',
+                'updated_at' => '2024-01-15 12:00:00',
+            ],
+            [
+                'id' => 2,
+                'title' => 'Post in JavaScript',
+                'slug' => 'post-in-javascript',
+                'content' => 'Content 2',
+                'summary' => null,
+                'status' => 'published',
+                'author_id' => 1,
+                'scheduled_at' => null,
+                'published_at' => '2024-01-14 12:00:00',
+                'created_at' => '2024-01-01 00:00:00',
+                'updated_at' => '2024-01-14 12:00:00',
+            ],
+        ],
+        $queryHistory,
+    );
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+
+    $repository = new PostRepository($connection, $metadataFactory, $hydrator);
+    $posts = $repository->findPublishedByCategories([3, 4, 5], 10, 0);
+
+    expect($posts)->toHaveCount(2)
+        ->and($posts[0])->toBeInstanceOf(PostInterface::class)
+        ->and($queryHistory[0]['sql'])->toContain('DISTINCT')
+        ->and($queryHistory[0]['sql'])->toContain('post_categories')
+        ->and($queryHistory[0]['sql'])->toContain('category_id IN (?,?,?)')
+        ->and($queryHistory[0]['sql'])->toContain('status = ?')
+        ->and($queryHistory[0]['bindings'])->toBe([3, 4, 5, 'published']);
+});
+
+it('returns empty array when finding posts with empty category IDs', function (): void {
+    $queryHistory = [];
+    $connection = createMockConnectionWithHistory([], $queryHistory);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+
+    $repository = new PostRepository($connection, $metadataFactory, $hydrator);
+    $posts = $repository->findPublishedByCategories([], 10, 0);
+
+    expect($posts)->toBe([])
+        ->and($queryHistory)->toBe([]);
+});
+
+it('counts published posts by multiple category IDs', function (): void {
+    $queryHistory = [];
+    $connection = createMockConnectionWithHistory(
+        [
+            ['count' => 15],
+        ],
+        $queryHistory,
+    );
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+
+    $repository = new PostRepository($connection, $metadataFactory, $hydrator);
+    $count = $repository->countPublishedByCategories([3, 4, 5]);
+
+    expect($count)->toBe(15)
+        ->and($queryHistory[0]['sql'])->toContain('COUNT(DISTINCT')
+        ->and($queryHistory[0]['sql'])->toContain('post_categories')
+        ->and($queryHistory[0]['sql'])->toContain('category_id IN (?,?,?)')
+        ->and($queryHistory[0]['sql'])->toContain('status = ?')
+        ->and($queryHistory[0]['bindings'])->toBe([3, 4, 5, 'published']);
+});
+
+it('returns zero when counting posts with empty category IDs', function (): void {
+    $queryHistory = [];
+    $connection = createMockConnectionWithHistory([], $queryHistory);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+
+    $repository = new PostRepository($connection, $metadataFactory, $hydrator);
+    $count = $repository->countPublishedByCategories([]);
+
+    expect($count)->toBe(0)
+        ->and($queryHistory)->toBe([]);
+});
+
 // Helper function to create mock connection
 
 function createMockConnection(

@@ -8,10 +8,15 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Marko\Blog\Enum\CommentStatus;
 use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('comments')]
+#[Index('idx_comments_post_id', ['post_id'])]
+#[Index('idx_comments_status', ['status'])]
+#[Index('idx_comments_parent_id', ['parent_id'])]
+#[Index('idx_comments_author_email', ['author_email'])]
 class Comment extends Entity implements CommentInterface
 {
     public const int MAX_CONTENT_LENGTH = 10000;
@@ -19,7 +24,7 @@ class Comment extends Entity implements CommentInterface
     #[Column(primaryKey: true, autoIncrement: true)]
     public ?int $id = null;
 
-    #[Column('post_id')]
+    #[Column('post_id', references: 'posts.id', onDelete: 'CASCADE')]
     public int $postId;
 
     #[Column('author_name')]
@@ -34,7 +39,7 @@ class Comment extends Entity implements CommentInterface
     #[Column]
     public CommentStatus $status = CommentStatus::Pending;
 
-    #[Column('parent_id')]
+    #[Column('parent_id', references: 'comments.id', onDelete: 'CASCADE')]
     public ?int $parentId = null;
 
     #[Column('verified_at')]

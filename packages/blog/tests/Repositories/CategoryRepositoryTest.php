@@ -551,6 +551,68 @@ it('has updated_at timestamp', function (): void {
     expect($category->updatedAt)->toBe('2024-03-20 09:15:00');
 });
 
+it('returns all descendant IDs for a category', function (): void {
+    // Mock connection that returns children based on parent_id
+    // Category 1 (Technology) has children 2 (Programming) and 3 (DevOps)
+    // Category 2 (Programming) has children 4 (PHP) and 5 (JavaScript)
+    // Category 4 (PHP) has no children
+    $connection = createMockCategoryConnectionForDescendants([
+        1 => [['id' => 2], ['id' => 3]],  // Technology -> Programming, DevOps
+        2 => [['id' => 4], ['id' => 5]],  // Programming -> PHP, JavaScript
+        3 => [],                           // DevOps -> (none)
+        4 => [],                           // PHP -> (none)
+        5 => [],                           // JavaScript -> (none)
+    ]);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $slugGenerator = createMockSlugGenerator();
+
+    $repository = new CategoryRepository($connection, $metadataFactory, $hydrator, $slugGenerator);
+
+    $descendantIds = $repository->getDescendantIds(1);
+
+    // Should return [2, 4, 5, 3] - all descendants of Technology
+    expect($descendantIds)->toContain(2)
+        ->and($descendantIds)->toContain(3)
+        ->and($descendantIds)->toContain(4)
+        ->and($descendantIds)->toContain(5)
+        ->and($descendantIds)->toHaveCount(4);
+});
+
+it('returns empty array when category has no descendants', function (): void {
+    $connection = createMockCategoryConnectionForDescendants([
+        1 => [],  // Category has no children
+    ]);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $slugGenerator = createMockSlugGenerator();
+
+    $repository = new CategoryRepository($connection, $metadataFactory, $hydrator, $slugGenerator);
+
+    $descendantIds = $repository->getDescendantIds(1);
+
+    expect($descendantIds)->toBeEmpty();
+});
+
+it('returns only direct children IDs when no grandchildren exist', function (): void {
+    $connection = createMockCategoryConnectionForDescendants([
+        1 => [['id' => 2], ['id' => 3]],  // Parent has two children
+        2 => [],                           // No grandchildren
+        3 => [],                           // No grandchildren
+    ]);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $slugGenerator = createMockSlugGenerator();
+
+    $repository = new CategoryRepository($connection, $metadataFactory, $hydrator, $slugGenerator);
+
+    $descendantIds = $repository->getDescendantIds(1);
+
+    expect($descendantIds)->toHaveCount(2)
+        ->and($descendantIds)->toContain(2)
+        ->and($descendantIds)->toContain(3);
+});
+
 // Helper functions
 
 function createMockCategoryConnection(
@@ -607,6 +669,64 @@ function createMockSlugGenerator(): SlugGeneratorInterface
             ?Closure $uniquenessChecker = null,
         ): string {
             return strtolower(str_replace(' ', '-', $title));
+        }
+    };
+}
+
+/**
+ * Creates a mock connection for testing getDescendantIds.
+ * Takes a map of parent_id => array of child rows.
+ *
+ * @param array<int, array<array{id: int}>> $childrenByParentId
+ */
+function createMockCategoryConnectionForDescendants(
+    array $childrenByParentId,
+): ConnectionInterface {
+    return new class ($childrenByParentId) implements ConnectionInterface
+    {
+        public function __construct(
+            private array $childrenByParentId,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            // Extract parent_id from bindings for descendant queries
+            if (str_contains($sql, 'parent_id') && !empty($bindings)) {
+                $parentId = $bindings[0];
+
+                return $this->childrenByParentId[$parentId] ?? [];
+            }
+
+            return [];
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            return 1;
+        }
+
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 1;
         }
     };
 }

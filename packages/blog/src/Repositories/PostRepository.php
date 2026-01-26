@@ -154,15 +154,17 @@ class PostRepository extends Repository implements PostRepositoryInterface
         int $limit,
         int $offset,
     ): array {
+        // LIMIT and OFFSET must be interpolated directly as integers
+        // because PDO binds all values as strings by default
         $sql = sprintf(
-            'SELECT * FROM %s WHERE status = ? ORDER BY published_at DESC LIMIT ? OFFSET ?',
+            'SELECT * FROM %s WHERE status = ? ORDER BY published_at DESC LIMIT %d OFFSET %d',
             $this->metadata->tableName,
+            $limit,
+            $offset,
         );
 
         $rows = $this->connection->query($sql, [
             PostStatus::Published->value,
-            $limit,
-            $offset,
         ]);
 
         return array_map(
@@ -298,15 +300,15 @@ class PostRepository extends Repository implements PostRepositoryInterface
         int $offset,
     ): array {
         $sql = sprintf(
-            'SELECT * FROM %s WHERE author_id = ? AND status = ? ORDER BY published_at DESC LIMIT ? OFFSET ?',
+            'SELECT * FROM %s WHERE author_id = ? AND status = ? ORDER BY published_at DESC LIMIT %d OFFSET %d',
             $this->metadata->tableName,
+            $limit,
+            $offset,
         );
 
         $rows = $this->connection->query($sql, [
             $authorId,
             PostStatus::Published->value,
-            $limit,
-            $offset,
         ]);
 
         return array_map(
@@ -379,15 +381,15 @@ class PostRepository extends Repository implements PostRepositoryInterface
             INNER JOIN post_tags pt ON p.id = pt.post_id
             WHERE pt.tag_id = ? AND p.status = ?
             ORDER BY p.published_at DESC
-            LIMIT ? OFFSET ?',
+            LIMIT %d OFFSET %d',
             $this->metadata->tableName,
+            $limit,
+            $offset,
         );
 
         $rows = $this->connection->query($sql, [
             $tagId,
             PostStatus::Published->value,
-            $limit,
-            $offset,
         ]);
 
         return array_map(
@@ -436,15 +438,15 @@ class PostRepository extends Repository implements PostRepositoryInterface
             INNER JOIN post_categories pc ON p.id = pc.post_id
             WHERE pc.category_id = ? AND p.status = ?
             ORDER BY p.published_at DESC
-            LIMIT ? OFFSET ?',
+            LIMIT %d OFFSET %d',
             $this->metadata->tableName,
+            $limit,
+            $offset,
         );
 
         $rows = $this->connection->query($sql, [
             $categoryId,
             PostStatus::Published->value,
-            $limit,
-            $offset,
         ]);
 
         return array_map(
@@ -474,6 +476,78 @@ class PostRepository extends Repository implements PostRepositoryInterface
             $categoryId,
             PostStatus::Published->value,
         ]);
+
+        return (int) ($result[0]['count'] ?? 0);
+    }
+
+    /**
+     * Find published posts by multiple categories with pagination.
+     *
+     * @param array<int> $categoryIds
+     * @return array<Post>
+     */
+    public function findPublishedByCategories(
+        array $categoryIds,
+        int $limit,
+        int $offset,
+    ): array {
+        if ($categoryIds === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
+
+        $sql = sprintf(
+            'SELECT DISTINCT p.* FROM %s p
+            INNER JOIN post_categories pc ON p.id = pc.post_id
+            WHERE pc.category_id IN (%s) AND p.status = ?
+            ORDER BY p.published_at DESC
+            LIMIT %d OFFSET %d',
+            $this->metadata->tableName,
+            $placeholders,
+            $limit,
+            $offset,
+        );
+
+        $params = [...$categoryIds, PostStatus::Published->value];
+
+        $rows = $this->connection->query($sql, $params);
+
+        return array_map(
+            fn (array $row): Post => $this->hydrator->hydrate(
+                static::ENTITY_CLASS,
+                $row,
+                $this->metadata,
+            ),
+            $rows,
+        );
+    }
+
+    /**
+     * Count published posts by multiple categories.
+     *
+     * @param array<int> $categoryIds
+     */
+    public function countPublishedByCategories(
+        array $categoryIds,
+    ): int {
+        if ($categoryIds === []) {
+            return 0;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
+
+        $sql = sprintf(
+            'SELECT COUNT(DISTINCT p.id) as count FROM %s p
+            INNER JOIN post_categories pc ON p.id = pc.post_id
+            WHERE pc.category_id IN (%s) AND p.status = ?',
+            $this->metadata->tableName,
+            $placeholders,
+        );
+
+        $params = [...$categoryIds, PostStatus::Published->value];
+
+        $result = $this->connection->query($sql, $params);
 
         return (int) ($result[0]['count'] ?? 0);
     }

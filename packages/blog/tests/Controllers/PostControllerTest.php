@@ -13,6 +13,8 @@ use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
 use Marko\Blog\Enum\CommentStatus;
 use Marko\Blog\Enum\PostStatus;
+use Marko\Blog\Repositories\AuthorRepositoryInterface;
+use Marko\Blog\Repositories\CategoryRepositoryInterface;
 use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
@@ -30,15 +32,19 @@ use ReflectionClass;
     \expect($constructor)->not->toBeNull();
 
     $parameters = $constructor->getParameters();
-    \expect($parameters)->toHaveCount(4)
+    \expect($parameters)->toHaveCount(6)
         ->and($parameters[0]->getName())->toBe('repository')
         ->and($parameters[0]->getType()->getName())->toBe(PostRepositoryInterface::class)
-        ->and($parameters[1]->getName())->toBe('commentRepository')
-        ->and($parameters[1]->getType()->getName())->toBe(CommentRepositoryInterface::class)
-        ->and($parameters[2]->getName())->toBe('paginationService')
-        ->and($parameters[2]->getType()->getName())->toBe(PaginationServiceInterface::class)
-        ->and($parameters[3]->getName())->toBe('view')
-        ->and($parameters[3]->getType()->getName())->toBe(ViewInterface::class);
+        ->and($parameters[1]->getName())->toBe('authorRepository')
+        ->and($parameters[1]->getType()->getName())->toBe(AuthorRepositoryInterface::class)
+        ->and($parameters[2]->getName())->toBe('categoryRepository')
+        ->and($parameters[2]->getType()->getName())->toBe(CategoryRepositoryInterface::class)
+        ->and($parameters[3]->getName())->toBe('commentRepository')
+        ->and($parameters[3]->getType()->getName())->toBe(CommentRepositoryInterface::class)
+        ->and($parameters[4]->getName())->toBe('paginationService')
+        ->and($parameters[4]->getType()->getName())->toBe(PaginationServiceInterface::class)
+        ->and($parameters[5]->getName())->toBe('view')
+        ->and($parameters[5]->getType()->getName())->toBe(ViewInterface::class);
 });
 
 \it('has GET /blog route on index method', function (): void {
@@ -72,7 +78,16 @@ use ReflectionClass;
     $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 2);
     $view = createMockView();
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $response = $controller->index();
 
     \expect($response)->toBeInstanceOf(Response::class)
@@ -87,7 +102,16 @@ use ReflectionClass;
     $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $view = createMockView();
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $response = $controller->show('hello-world');
 
     \expect($response)->toBeInstanceOf(Response::class)
@@ -110,7 +134,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $response = $controller->show('test-post');
 
     \expect($response->statusCode())->toBe(200)
@@ -124,7 +157,16 @@ use ReflectionClass;
     $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $view = createMockView();
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $response = $controller->show('non-existent');
 
     \expect($response)->toBeInstanceOf(Response::class)
@@ -144,7 +186,16 @@ use ReflectionClass;
     $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $view = createMockView();
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $response = $controller->show('draft-post');
 
     \expect($response)->toBeInstanceOf(Response::class)
@@ -168,12 +219,21 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $controller->show('full-content-post');
 
     \expect($capturedData)->toHaveKey('post')
         ->and($capturedData['post']->getContent())->toBe(
-            '<p>This is the full article content with <strong>formatting</strong>.</p>'
+            '<p>This is the full article content with <strong>formatting</strong>.</p>',
         );
 });
 
@@ -192,7 +252,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $controller->show('post-with-author');
 
     \expect($capturedData)->toHaveKey('post')
@@ -223,7 +292,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $controller->show('post-with-categories');
 
     \expect($capturedData)->toHaveKey('categories')
@@ -256,7 +334,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $controller->show('post-with-tags');
 
     \expect($capturedData)->toHaveKey('tags')
@@ -302,7 +389,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $controller->show('post-with-comments');
 
     \expect($capturedData)->toHaveKey('comments')
@@ -326,7 +422,16 @@ use ReflectionClass;
     $pagination = createMockPaginationService();
     $view = createMockView();
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $response = $controller->show('view-template-test');
 
     \expect($response->body())->toContain('blog::post/show');
@@ -371,7 +476,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $response = $controller->index();
 
     \expect($response->statusCode())->toBe(200)
@@ -392,7 +506,16 @@ use ReflectionClass;
     $pagination = createMockPaginationService($posts, 2);
     $view = createMockView();
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $response = $controller->index();
 
     \expect($response->statusCode())->toBe(200);
@@ -415,7 +538,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $controller->index();
 
     // Verify that only published posts are in the result
@@ -435,7 +567,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $controller->index(page: 3);
 
     \expect($capturedData['posts']->currentPage)->toBe(3);
@@ -452,7 +593,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $controller->index();
 
     \expect($capturedData['posts']->currentPage)->toBe(1);
@@ -467,7 +617,16 @@ use ReflectionClass;
     $pagination = createMockPaginationService([], 25);
     $view = createMockView();
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
 
     // Test page 0
     $response = $controller->index(page: 0);
@@ -493,7 +652,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $controller->index();
 
     \expect($capturedData['posts'])->toBeInstanceOf(PaginatedResult::class)
@@ -525,7 +693,16 @@ use ReflectionClass;
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $controller->index();
 
     $postInView = $capturedData['posts']->items[0];
@@ -545,10 +722,158 @@ use ReflectionClass;
     $pagination = createMockPaginationService($posts, 1);
     $view = createMockView();
 
-    $controller = new PostController($repository, $commentRepository, $pagination, $view);
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
     $response = $controller->index();
 
     \expect($response->body())->toContain('blog::post/index');
+});
+
+\it('includes categoryPaths with full hierarchy for each category', function (): void {
+    $author = createAuthor(1, 'John Doe', 'john-doe');
+    $post = createPost(
+        id: 1,
+        title: 'Post with Hierarchy',
+        slug: 'post-with-hierarchy',
+        author: $author,
+    );
+
+    // Create hierarchy: Technology > Programming > PHP
+    $technology = createCategory(1, 'Technology', 'technology');
+    $programming = createCategory(2, 'Programming', 'programming');
+    $programming->parentId = 1;
+    $php = createCategory(3, 'PHP', 'php');
+    $php->parentId = 2;
+
+    $categories = [$php]; // Post is assigned to PHP
+
+    // Mock paths: PHP has full path [Technology, Programming, PHP]
+    $categoryPaths = [
+        3 => [$technology, $programming, $php],
+    ];
+
+    $repository = createMockPostRepository(
+        findBySlugResult: $post,
+        categoriesForPost: $categories,
+    );
+    $commentRepository = createMockCommentRepository();
+    $pagination = createMockPaginationService();
+    $capturedData = [];
+    $view = createMockViewWithCapture($capturedData);
+
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepositoryWithPaths($categoryPaths);
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
+    $controller->show('post-with-hierarchy');
+
+    \expect($capturedData)->toHaveKey('categoryPaths')
+        ->and($capturedData['categoryPaths'])->toHaveKey(3)
+        ->and($capturedData['categoryPaths'][3])->toHaveCount(3)
+        ->and($capturedData['categoryPaths'][3][0]->getName())->toBe('Technology')
+        ->and($capturedData['categoryPaths'][3][1]->getName())->toBe('Programming')
+        ->and($capturedData['categoryPaths'][3][2]->getName())->toBe('PHP');
+});
+
+\it('includes categoryPaths for multiple categories', function (): void {
+    $author = createAuthor(1, 'John Doe', 'john-doe');
+    $post = createPost(
+        id: 1,
+        title: 'Post in Multiple Categories',
+        slug: 'post-multiple-categories',
+        author: $author,
+    );
+
+    // Create hierarchies
+    $technology = createCategory(1, 'Technology', 'technology');
+    $php = createCategory(2, 'PHP', 'php');
+    $php->parentId = 1;
+    $tutorials = createCategory(3, 'Tutorials', 'tutorials');
+
+    $categories = [$php, $tutorials]; // Post is in PHP and Tutorials
+
+    // PHP has path [Technology, PHP], Tutorials is a root
+    $categoryPaths = [
+        2 => [$technology, $php],
+        3 => [$tutorials],
+    ];
+
+    $repository = createMockPostRepository(
+        findBySlugResult: $post,
+        categoriesForPost: $categories,
+    );
+    $commentRepository = createMockCommentRepository();
+    $pagination = createMockPaginationService();
+    $capturedData = [];
+    $view = createMockViewWithCapture($capturedData);
+
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepositoryWithPaths($categoryPaths);
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
+    $controller->show('post-multiple-categories');
+
+    \expect($capturedData)->toHaveKey('categoryPaths')
+        ->and($capturedData['categoryPaths'])->toHaveCount(2)
+        ->and($capturedData['categoryPaths'][2])->toHaveCount(2)
+        ->and($capturedData['categoryPaths'][2][0]->getName())->toBe('Technology')
+        ->and($capturedData['categoryPaths'][2][1]->getName())->toBe('PHP')
+        ->and($capturedData['categoryPaths'][3])->toHaveCount(1)
+        ->and($capturedData['categoryPaths'][3][0]->getName())->toBe('Tutorials');
+});
+
+\it('includes empty categoryPaths when post has no categories', function (): void {
+    $author = createAuthor(1, 'John Doe', 'john-doe');
+    $post = createPost(
+        id: 1,
+        title: 'Post without Categories',
+        slug: 'post-no-categories',
+        author: $author,
+    );
+
+    $repository = createMockPostRepository(
+        findBySlugResult: $post,
+        categoriesForPost: [],
+    );
+    $commentRepository = createMockCommentRepository();
+    $pagination = createMockPaginationService();
+    $capturedData = [];
+    $view = createMockViewWithCapture($capturedData);
+
+    $authorRepository = createMockAuthorRepository();
+    $categoryRepository = createMockCategoryRepository();
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $pagination,
+        $view
+    );
+    $controller->show('post-no-categories');
+
+    \expect($capturedData)->toHaveKey('categoryPaths')
+        ->and($capturedData['categoryPaths'])->toBe([]);
 });
 
 // Helper functions
@@ -798,6 +1123,20 @@ function createMockPostRepository(
             array $tagIds,
         ): void {}
 
+        public function findPublishedByCategories(
+            array $categoryIds,
+            int $limit,
+            int $offset,
+        ): array {
+            return [];
+        }
+
+        public function countPublishedByCategories(
+            array $categoryIds,
+        ): int {
+            return 0;
+        }
+
         public function find(
             int $id,
         ): ?Entity {
@@ -834,6 +1173,244 @@ function createMockPostRepository(
         public function delete(
             Entity $entity,
         ): void {}
+    };
+}
+
+function createMockAuthorRepository(
+    ?Author $findResult = null,
+): AuthorRepositoryInterface {
+    return new class ($findResult) implements AuthorRepositoryInterface
+    {
+        public function __construct(
+            private readonly ?Author $findResult,
+        ) {}
+
+        public function find(
+            int $id,
+        ): ?Entity {
+            return $this->findResult;
+        }
+
+        public function findOrFail(
+            int $id,
+        ): Entity {
+            if ($this->findResult === null) {
+                throw RepositoryException::notFound(Author::class, $id);
+            }
+
+            return $this->findResult;
+        }
+
+        public function findAll(): array
+        {
+            return $this->findResult !== null ? [$this->findResult] : [];
+        }
+
+        public function findBy(
+            array $criteria,
+        ): array {
+            return [];
+        }
+
+        public function findOneBy(
+            array $criteria,
+        ): ?Entity {
+            return null;
+        }
+
+        public function save(
+            Entity $entity,
+        ): void {}
+
+        public function delete(
+            Entity $entity,
+        ): void {}
+
+        public function findBySlug(
+            string $slug,
+        ): ?Author {
+            return $this->findResult;
+        }
+
+        public function findByEmail(
+            string $email,
+        ): ?Author {
+            return $this->findResult;
+        }
+
+        public function isSlugUnique(
+            string $slug,
+            ?int $excludeId = null,
+        ): bool {
+            return true;
+        }
+    };
+}
+
+function createMockCategoryRepository(): CategoryRepositoryInterface
+{
+    return new class () implements CategoryRepositoryInterface
+    {
+        public function find(
+            int $id,
+        ): ?Entity {
+            return null;
+        }
+
+        public function findOrFail(
+            int $id,
+        ): Entity {
+            throw RepositoryException::notFound(Category::class, $id);
+        }
+
+        public function findAll(): array
+        {
+            return [];
+        }
+
+        public function findBy(
+            array $criteria,
+        ): array {
+            return [];
+        }
+
+        public function findOneBy(
+            array $criteria,
+        ): ?Entity {
+            return null;
+        }
+
+        public function save(Entity $entity): void {}
+
+        public function delete(Entity $entity): void {}
+
+        public function findBySlug(
+            string $slug,
+        ): ?Category {
+            return null;
+        }
+
+        public function isSlugUnique(
+            string $slug,
+            ?int $excludeId = null,
+        ): bool {
+            return true;
+        }
+
+        public function findChildren(
+            Category $parent,
+        ): array {
+            return [];
+        }
+
+        public function getPath(
+            Category $category,
+        ): array {
+            return [$category];
+        }
+
+        public function findRoots(): array
+        {
+            return [];
+        }
+
+        public function getPostsForCategory(
+            int $categoryId,
+        ): array {
+            return [];
+        }
+
+        public function getDescendantIds(
+            int $categoryId,
+        ): array {
+            return [];
+        }
+    };
+}
+
+function createMockCategoryRepositoryWithPaths(
+    array $categoryPaths = [],
+): CategoryRepositoryInterface {
+    return new class ($categoryPaths) implements CategoryRepositoryInterface
+    {
+        public function __construct(
+            private readonly array $categoryPaths,
+        ) {}
+
+        public function find(
+            int $id,
+        ): ?Entity {
+            return null;
+        }
+
+        public function findOrFail(
+            int $id,
+        ): Entity {
+            throw RepositoryException::notFound(Category::class, $id);
+        }
+
+        public function findAll(): array
+        {
+            return [];
+        }
+
+        public function findBy(
+            array $criteria,
+        ): array {
+            return [];
+        }
+
+        public function findOneBy(
+            array $criteria,
+        ): ?Entity {
+            return null;
+        }
+
+        public function save(Entity $entity): void {}
+
+        public function delete(Entity $entity): void {}
+
+        public function findBySlug(
+            string $slug,
+        ): ?Category {
+            return null;
+        }
+
+        public function isSlugUnique(
+            string $slug,
+            ?int $excludeId = null,
+        ): bool {
+            return true;
+        }
+
+        public function findChildren(
+            Category $parent,
+        ): array {
+            return [];
+        }
+
+        public function getPath(
+            Category $category,
+        ): array {
+            return $this->categoryPaths[$category->id] ?? [$category];
+        }
+
+        public function findRoots(): array
+        {
+            return [];
+        }
+
+        public function getPostsForCategory(
+            int $categoryId,
+        ): array {
+            return [];
+        }
+
+        public function getDescendantIds(
+            int $categoryId,
+        ): array {
+            return [];
+        }
     };
 }
 

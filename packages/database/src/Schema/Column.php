@@ -126,19 +126,103 @@ readonly class Column
         );
     }
 
+    /**
+     * Compare two columns for equality.
+     *
+     * Note: This intentionally excludes references, onDelete, and onUpdate
+     * because foreign key relationships are handled separately via ForeignKey
+     * objects in the Table's foreignKeys array.
+     */
     public function equals(
         self $other,
     ): bool {
         return $this->name === $other->name
             && $this->type === $other->type
-            && $this->length === $other->length
-            && $this->nullable === $other->nullable
-            && $this->default === $other->default
+            && $this->lengthEquals($other)
+            && $this->nullableEquals($other)
+            && $this->defaultEquals($other)
             && $this->unique === $other->unique
             && $this->primaryKey === $other->primaryKey
-            && $this->autoIncrement === $other->autoIncrement
-            && $this->references === $other->references
-            && $this->onDelete === $other->onDelete
-            && $this->onUpdate === $other->onUpdate;
+            && $this->autoIncrement === $other->autoIncrement;
+    }
+
+    /**
+     * Compare length with tolerance for database defaults.
+     *
+     * When entity doesn't specify length (null), the database will use defaults
+     * (e.g., VARCHAR defaults to 255, TEXT has implicit length). These should
+     * be considered equal when the entity didn't explicitly set a length.
+     */
+    private function lengthEquals(
+        self $other,
+    ): bool {
+        // If both are null or both have same value, they're equal
+        if ($this->length === $other->length) {
+            return true;
+        }
+
+        // For TEXT type, length comparison is irrelevant (TEXT has no user-specified length)
+        if ($this->type === 'TEXT') {
+            return true;
+        }
+
+        // If entity doesn't specify length (null), accept database's default
+        // This handles VARCHAR defaulting to 255, etc.
+        if ($this->length === null && $other->length !== null) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Compare nullable with consideration for primary keys.
+     *
+     * Primary keys are never nullable in the database, even if the PHP
+     * property is nullable (e.g., ?int $id = null for auto-increment columns
+     * that are set after insert).
+     */
+    private function nullableEquals(
+        self $other,
+    ): bool {
+        // If same, they're equal
+        if ($this->nullable === $other->nullable) {
+            return true;
+        }
+
+        // Primary keys with auto-increment are never nullable in DB
+        // even if entity declares them as nullable PHP type
+        if ($this->primaryKey && $this->autoIncrement) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Compare default values with tolerance for migration defaults.
+     *
+     * When entity doesn't specify a default (null) but the database has one,
+     * this can happen because:
+     * - Migration added a NOT NULL column with temporary default
+     * - The application always provides values at runtime
+     *
+     * In these cases, we consider them equal if entity has no explicit default.
+     */
+    private function defaultEquals(
+        self $other,
+    ): bool {
+        // If both are same, they're equal
+        if ($this->default === $other->default) {
+            return true;
+        }
+
+        // If entity doesn't specify default (null), accept database's default
+        // This handles migration defaults for NOT NULL columns
+        if ($this->default === null && $other->default !== null) {
+            return true;
+        }
+
+        return false;
     }
 }

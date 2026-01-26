@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Database\Entity;
 
 use Marko\Database\Schema\Column;
+use Marko\Database\Schema\ForeignKey;
 use Marko\Database\Schema\Index;
 use Marko\Database\Schema\IndexType;
 use Marko\Database\Schema\Table;
@@ -30,10 +31,13 @@ class SchemaBuilder
             $metadata->indexes,
         );
 
+        $foreignKeys = $this->buildForeignKeys($metadata->tableName, $metadata->columns);
+
         return new Table(
             name: $metadata->tableName,
             columns: $columns,
             indexes: $indexes,
+            foreignKeys: $foreignKeys,
         );
     }
 
@@ -69,5 +73,47 @@ class SchemaBuilder
             columns: $metadata->columns,
             type: $metadata->unique ? IndexType::Unique : IndexType::Btree,
         );
+    }
+
+    /**
+     * Build ForeignKey schemas from columns with references.
+     *
+     * @param string $tableName The table name (for generating FK names)
+     * @param array<ColumnMetadata> $columns
+     * @return array<ForeignKey>
+     */
+    private function buildForeignKeys(
+        string $tableName,
+        array $columns,
+    ): array {
+        $foreignKeys = [];
+
+        foreach ($columns as $column) {
+            if ($column->references === null) {
+                continue;
+            }
+
+            // Parse references format: "table.column"
+            $parts = explode('.', $column->references);
+            if (count($parts) !== 2) {
+                continue;
+            }
+
+            [$referencedTable, $referencedColumn] = $parts;
+
+            // Generate FK name: fk_{table}_{column}
+            $fkName = "fk_{$tableName}_$column->name";
+
+            $foreignKeys[] = new ForeignKey(
+                name: $fkName,
+                columns: [$column->name],
+                referencedTable: $referencedTable,
+                referencedColumns: [$referencedColumn],
+                onDelete: $column->onDelete,
+                onUpdate: $column->onUpdate,
+            );
+        }
+
+        return $foreignKeys;
     }
 }

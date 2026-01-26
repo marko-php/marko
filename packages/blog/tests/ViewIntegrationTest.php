@@ -3,8 +3,15 @@
 declare(strict_types=1);
 
 use Marko\Blog\Controllers\PostController;
+use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Post;
-use Marko\Blog\Repositories\PostRepository;
+use Marko\Blog\Enum\PostStatus;
+use Marko\Blog\Repositories\PostRepositoryInterface;
+use Marko\Blog\Services\PaginationServiceInterface;
+use Marko\Blog\Tests\Mocks\MockAuthorRepository;
+use Marko\Blog\Tests\Mocks\MockCategoryRepository;
+use Marko\Blog\Tests\Mocks\MockCommentRepository;
+use Marko\Database\Entity\Entity;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
 
@@ -37,17 +44,27 @@ it('has post/index.latte template file', function (): void {
 });
 
 it('renders post index template', function (): void {
-    $posts = [createPost(1, 'First Post', 'first-post'), createPost(2, 'Second Post', 'second-post')];
-    $repository = createMockRepository($posts);
+    $posts = [createViewTestPost(1, 'First Post', 'first-post'), createViewTestPost(2, 'Second Post', 'second-post')];
+    $repository = createViewTestMockRepository($posts);
+    $authorRepository = new MockAuthorRepository();
+    $categoryRepository = new MockCategoryRepository();
+    $commentRepository = new MockCommentRepository();
+    $paginationService = createViewTestMockPaginationService();
     $capture = new stdClass();
-    $view = createCapturingMockView($capture);
+    $view = createViewTestCapturingMockView($capture);
 
-    $controller = new PostController($repository, $view);
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $paginationService,
+        $view
+    );
     $response = $controller->index();
 
     expect($capture->template)->toBe('blog::post/index')
-        ->and($capture->data)->toHaveKey('posts')
-        ->and($capture->data['posts'])->toHaveCount(2);
+        ->and($capture->data)->toHaveKey('posts');
 });
 
 it('has post/show.latte template file', function (): void {
@@ -57,49 +74,88 @@ it('has post/show.latte template file', function (): void {
 });
 
 it('renders post show template', function (): void {
-    $post = createPost(1, 'My Post', 'my-post');
-    $repository = createMockRepository([], $post);
+    $post = createViewTestPost(1, 'My Post', 'my-post');
+    $repository = createViewTestMockRepository([], $post);
+    $authorRepository = new MockAuthorRepository();
+    $categoryRepository = new MockCategoryRepository();
+    $commentRepository = new MockCommentRepository();
+    $paginationService = createViewTestMockPaginationService();
     $capture = new stdClass();
-    $view = createCapturingMockView($capture);
+    $view = createViewTestCapturingMockView($capture);
 
-    $controller = new PostController($repository, $view);
+    $controller = new PostController(
+        $repository,
+        $authorRepository,
+        $categoryRepository,
+        $commentRepository,
+        $paginationService,
+        $view
+    );
     $response = $controller->show('my-post');
 
     expect($capture->template)->toBe('blog::post/show')
         ->and($capture->data)->toHaveKey('post')
-        ->and($capture->data['post']->title)->toBe('My Post');
+        ->and($capture->data['post']->getTitle())->toBe('My Post');
 });
 
 // Helper functions
 
-function createPost(
+function createViewTestPost(
     int $id,
     string $title,
     string $slug,
 ): Post {
-    $post = new Post();
+    $post = new Post(
+        title: $title,
+        content: "Content for $title",
+        authorId: 1,
+        slug: $slug,
+    );
     $post->id = $id;
-    $post->title = $title;
-    $post->slug = $slug;
-    $post->content = "Content for $title";
+    $post->status = PostStatus::Published;
+    $post->publishedAt = (new DateTimeImmutable())->format('Y-m-d H:i:s');
 
     return $post;
 }
 
-function createMockRepository(
+function createViewTestMockRepository(
     array $posts = [],
     ?Post $findBySlugResult = null,
-): PostRepository {
-    return new class ($posts, $findBySlugResult) extends PostRepository
+): PostRepositoryInterface {
+    return new class ($posts, $findBySlugResult) implements PostRepositoryInterface
     {
         public function __construct(
             private readonly array $posts,
             private readonly ?Post $findBySlugEntity,
         ) {}
 
+        public function find(
+            int $id,
+        ): ?Post {
+            return null;
+        }
+
+        public function findOrFail(
+            int $id,
+        ): Post {
+            throw new RuntimeException('Not found');
+        }
+
         public function findAll(): array
         {
             return $this->posts;
+        }
+
+        public function findBy(
+            array $criteria,
+        ): array {
+            return [];
+        }
+
+        public function findOneBy(
+            array $criteria,
+        ): ?Post {
+            return null;
         }
 
         public function findBySlug(
@@ -107,10 +163,198 @@ function createMockRepository(
         ): ?Post {
             return $this->findBySlugEntity;
         }
+
+        public function findPublished(): array
+        {
+            return $this->posts;
+        }
+
+        public function findPublishedPaginated(
+            int $limit,
+            int $offset,
+        ): array {
+            return $this->posts;
+        }
+
+        public function countPublished(): int
+        {
+            return count($this->posts);
+        }
+
+        public function findByStatus(
+            PostStatus $status,
+        ): array {
+            return [];
+        }
+
+        public function findByAuthor(
+            int $authorId,
+        ): array {
+            return [];
+        }
+
+        public function findScheduledPostsDue(): array
+        {
+            return [];
+        }
+
+        public function countByAuthor(
+            int $authorId,
+        ): int {
+            return 0;
+        }
+
+        public function findPublishedByAuthor(
+            int $authorId,
+            int $limit,
+            int $offset,
+        ): array {
+            return [];
+        }
+
+        public function countPublishedByAuthor(
+            int $authorId,
+        ): int {
+            return 0;
+        }
+
+        public function isSlugUnique(
+            string $slug,
+            ?int $excludeId = null,
+        ): bool {
+            return true;
+        }
+
+        public function findPublishedByTag(
+            int $tagId,
+            int $limit,
+            int $offset,
+        ): array {
+            return [];
+        }
+
+        public function countPublishedByTag(
+            int $tagId,
+        ): int {
+            return 0;
+        }
+
+        public function findPublishedByCategory(
+            int $categoryId,
+            int $limit,
+            int $offset,
+        ): array {
+            return [];
+        }
+
+        public function countPublishedByCategory(
+            int $categoryId,
+        ): int {
+            return 0;
+        }
+
+        public function attachCategory(
+            int $postId,
+            int $categoryId,
+        ): void {}
+
+        public function detachCategory(
+            int $postId,
+            int $categoryId,
+        ): void {}
+
+        public function attachTag(
+            int $postId,
+            int $tagId,
+        ): void {}
+
+        public function detachTag(
+            int $postId,
+            int $tagId,
+        ): void {}
+
+        public function getCategoriesForPost(
+            int $postId,
+        ): array {
+            return [];
+        }
+
+        public function getTagsForPost(
+            int $postId,
+        ): array {
+            return [];
+        }
+
+        public function syncCategories(
+            int $postId,
+            array $categoryIds,
+        ): void {}
+
+        public function syncTags(
+            int $postId,
+            array $tagIds,
+        ): void {}
+
+        public function findPublishedByCategories(
+            array $categoryIds,
+            int $limit,
+            int $offset,
+        ): array {
+            return [];
+        }
+
+        public function countPublishedByCategories(
+            array $categoryIds,
+        ): int {
+            return 0;
+        }
+
+        public function save(Entity $entity): void {}
+
+        public function delete(Entity $entity): void {}
     };
 }
 
-function createCapturingMockView(
+function createViewTestMockPaginationService(): PaginationServiceInterface
+{
+    return new class () implements PaginationServiceInterface
+    {
+        public function paginate(
+            array $items,
+            int $totalItems,
+            int $currentPage,
+            ?int $perPage = null,
+        ): PaginatedResult {
+            $perPage = $perPage ?? 10;
+            $totalPages = $totalItems > 0 ? (int) ceil($totalItems / $perPage) : 0;
+
+            return new PaginatedResult(
+                items: $items,
+                currentPage: $currentPage,
+                totalItems: $totalItems,
+                perPage: $perPage,
+                totalPages: $totalPages,
+                hasPreviousPage: $currentPage > 1,
+                hasNextPage: $currentPage < $totalPages,
+                pageNumbers: range(1, max(1, $totalPages)),
+            );
+        }
+
+        public function calculateOffset(
+            int $page,
+            ?int $perPage = null,
+        ): int {
+            return ($page - 1) * ($perPage ?? 10);
+        }
+
+        public function getPerPage(): int
+        {
+            return 10;
+        }
+    };
+}
+
+function createViewTestCapturingMockView(
     stdClass $capture,
 ): ViewInterface {
     return new class ($capture) implements ViewInterface

@@ -136,6 +136,20 @@ class MockPostRepository implements PostRepositoryInterface
         return 0;
     }
 
+    public function findPublishedByCategories(
+        array $categoryIds,
+        int $limit,
+        int $offset,
+    ): array {
+        return [];
+    }
+
+    public function countPublishedByCategories(
+        array $categoryIds,
+    ): int {
+        return 0;
+    }
+
     public function attachCategory(
         int $postId,
         int $categoryId,
