@@ -35,7 +35,7 @@ describe('LatteEngineFactory', function (): void {
         $templatePath = $cacheDir . '/test.latte';
         file_put_contents($templatePath, 'Hello {$name}');
 
-        $engine->render($templatePath, ['name' => 'World']);
+        $engine->renderToString($templatePath, ['name' => 'World']);
 
         // Check that cache files were created in the configured directory
         $cacheFiles = glob($cacheDir . '/*');
