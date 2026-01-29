@@ -743,3 +743,112 @@ Zero-parameter methods stay on one line everywhere: `public function index(): Re
 - Use marketing speak ("designed to never fail")
 - Include internal implementation details
 - Repeat what's obvious from the code
+
+## Latte Template Standards
+
+Templates are pure presentation. Keep them clean, minimal, and consistent.
+
+### No Useless Comments
+The filename already says what the template is. Don't add comments like `{* Blog post index template *}`.
+
+```latte
+{* WRONG - useless, filename says this *}
+{* Blog post index template *}
+<main>
+
+{* CORRECT - just start the template *}
+<main>
+```
+
+### Use `n:if` Attribute Syntax
+For single-element conditionals, use `n:if` on the element instead of wrapping in `{if}...{/if}` blocks.
+
+```latte
+{* WRONG - verbose block syntax *}
+{if $canonicalUrl}
+<link rel="canonical" href="{$canonicalUrl}">
+{/if}
+
+{* CORRECT - attribute syntax *}
+<link n:if="$canonicalUrl" rel="canonical" href="{$canonicalUrl}">
+```
+
+**When to use block syntax:** `{if}/{elseif}/{else}` chains with 3+ branches still use blocks.
+
+### Prefer Dual `n:if` Over `{if}/{else}` Blocks
+When showing either an empty state OR content, use `n:if` on both elements instead of a block.
+
+```latte
+{* WRONG - block syntax for simple either/or *}
+{if $posts->isEmpty()}
+    <p class="no-posts">No posts yet.</p>
+{else}
+    <ul class="post-list">
+        ...
+    </ul>
+{/if}
+
+{* CORRECT - n:if on both elements *}
+<p n:if="$posts->isEmpty()" class="no-posts">No posts yet.</p>
+<ul n:if="!$posts->isEmpty()" class="post-list">
+    ...
+</ul>
+```
+
+### Combine Default Declarations
+Declare multiple defaults on one line with commas.
+
+```latte
+{* WRONG - verbose *}
+{default $canonicalUrl = null}
+{default $metaDescription = null}
+{default $pageTitle = null}
+
+{* CORRECT - combined *}
+{default $canonicalUrl = null, $metaDescription = null, $pageTitle = null}
+```
+
+### Use PHP Truthiness for Cleaner Conditions
+Leverage PHP's falsy values (`0`, `null`, `''`, `[]`) for cleaner conditionals.
+
+```latte
+{* WRONG - verbose *}
+n:if="$currentDepth === 0"
+n:if="empty($comments)"
+n:if="$posts->isEmpty()"
+
+{* CORRECT - use truthiness *}
+n:if="!$currentDepth"
+n:if="!$comments"
+n:if="!$posts->isEmpty()"
+```
+
+### No Variable Extraction
+Templates are presentational - don't extract expressions into variables. Inline them.
+
+```latte
+{* WRONG - unnecessary variable *}
+{var $params = array_merge($queryParams, ['page' => $pageNumber])}
+<a href="{$baseUrl}?{http_build_query($params)}">
+
+{* CORRECT - inline *}
+<a href="{$baseUrl}?{http_build_query(array_merge($queryParams, ['page' => $pageNumber]))}">
+```
+
+### Remove Dead Variables
+If a variable is declared in `{default}` but never used (or only passed through), remove it.
+
+### Consistent Attribute Usage
+Don't mix `{if}` blocks and `n:if` for similar elements. Pick one style per template.
+
+```latte
+{* WRONG - inconsistent *}
+{if $hasPrev}
+    <a href="..." class="prev">Previous</a>
+{/if}
+<a n:if="$hasNext" href="..." class="next">Next</a>
+
+{* CORRECT - consistent *}
+<a n:if="$hasPrev" href="..." class="prev">Previous</a>
+<a n:if="$hasNext" href="..." class="next">Next</a>
+```

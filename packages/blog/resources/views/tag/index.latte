@@ -1,45 +1,25 @@
-{* Tag archive template *}
-{default $metaDescription = null}
-{default $pageTitle = null}
-{default $prevLink = null}
-{default $nextLink = null}
-{default $ogType = 'website'}
-{if isset($canonicalUrl)}
-<link rel="canonical" href="{$canonicalUrl}">
-{/if}
-{if $metaDescription}
-<meta name="description" content="{$metaDescription}">
-{/if}
-{if $pageTitle}
-<title>{$pageTitle}</title>
-{/if}
-{if isset($canonicalUrl)}
-<meta property="og:url" content="{$canonicalUrl}">
-{/if}
-{if $pageTitle}
-<meta property="og:title" content="{$pageTitle}">
-{/if}
-{if $metaDescription}
-<meta property="og:description" content="{$metaDescription}">
-{/if}
+{default $canonicalUrl = null, $metaDescription = null, $pageTitle = null, $prevLink = null, $nextLink = null, $ogType = 'website'}
+
+<link n:if="$canonicalUrl" rel="canonical" href="{$canonicalUrl}">
+<meta n:if="$metaDescription" name="description" content="{$metaDescription}">
+<title n:if="$pageTitle">{$pageTitle}</title>
+<meta n:if="$canonicalUrl" property="og:url" content="{$canonicalUrl}">
+<meta n:if="$pageTitle" property="og:title" content="{$pageTitle}">
+<meta n:if="$metaDescription" property="og:description" content="{$metaDescription}">
 <meta property="og:type" content="{$ogType}">
-{if $prevLink}
-<link rel="prev" href="{$prevLink}">
-{/if}
-{if $nextLink}
-<link rel="next" href="{$nextLink}">
-{/if}
+<link n:if="$prevLink" rel="prev" href="{$prevLink}">
+<link n:if="$nextLink" rel="next" href="{$nextLink}">
+
 <main>
     {include 'blog::breadcrumb/index', items: $breadcrumbs}
     <h1>{$tag->name}</h1>
-    {if $posts->isEmpty()}
-        <p class="no-posts">There are no posts with this tag.</p>
-    {else}
-    <ul class="post-list">
-    {foreach $posts->items as $post}
-        {include 'blog::post/list/item', post: $post}
-    {/foreach}
+    <p n:if="$posts->isEmpty()" class="no-posts">There are no posts with this tag.</p>
+    <ul n:if="!$posts->isEmpty()" class="post-list">
+        {foreach $posts->items as $post}
+            {include 'blog::post/list/item', post: $post}
+        {/foreach}
     </ul>
-    {include 'blog::pagination/index', pagination: $posts, baseUrl: "/blog/tag/{$tag->slug}"}
+    {if !$posts->isEmpty()}
+        {include 'blog::pagination/index', pagination: $posts, baseUrl: "/blog/tag/{$tag->slug}"}
     {/if}
 </main>

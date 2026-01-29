@@ -1,41 +1,25 @@
-{* Blog comment form component *}
-{default $postId = null}
-{default $parentId = null}
-{default $honeypotField = ''}
-{default $csrfToken = null}
-{default $errors = []}
-{default $oldInput = []}
-<form method="post" action="/posts/{$postId}/comments" class="comment-form" aria-label="Leave a comment">
-    {if $csrfToken}
-    <input type="hidden" name="_token" value="{$csrfToken}">
-    {/if}
+{default $postId = null, $parentId = null, $honeypotField = '', $csrfToken = null, $errors = [], $oldInput = []}
 
-    {if $parentId}
-    <input type="hidden" name="parent_id" value="{$parentId}">
-    {/if}
+<form method="post" action="/posts/{$postId}/comments" class="comment-form" aria-label="Leave a comment">
+    <input n:if="$csrfToken" type="hidden" name="_token" value="{$csrfToken}">
+    <input n:if="$parentId" type="hidden" name="parent_id" value="{$parentId}">
 
     <div class="form-group">
         <label for="comment-name">Name</label>
         <input type="text" id="comment-name" name="name" value="{$oldInput['name'] ?? ''}" required>
-        {if isset($errors['name'])}
-        <span class="error">{$errors['name']}</span>
-        {/if}
+        <span n:if="isset($errors['name'])" class="error">{$errors['name']}</span>
     </div>
 
     <div class="form-group">
         <label for="comment-email">Email</label>
         <input type="email" id="comment-email" name="email" value="{$oldInput['email'] ?? ''}" required>
-        {if isset($errors['email'])}
-        <span class="error">{$errors['email']}</span>
-        {/if}
+        <span n:if="isset($errors['email'])" class="error">{$errors['email']}</span>
     </div>
 
     <div class="form-group">
         <label for="comment-content">Comment</label>
         <textarea id="comment-content" name="content" rows="4" required>{$oldInput['content'] ?? ''}</textarea>
-        {if isset($errors['content'])}
-        <span class="error">{$errors['content']}</span>
-        {/if}
+        <span n:if="isset($errors['content'])" class="error">{$errors['content']}</span>
     </div>
 
     {$honeypotField|noescape}

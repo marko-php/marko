@@ -1,14 +1,12 @@
-{* Blog post index template *}
 <main>
     <h1>Blog Posts</h1>
-    {if $posts->isEmpty()}
-        <p class="no-posts">There are no posts yet.</p>
-    {else}
-    <ul class="post-list">
-    {foreach $posts->items as $post}
-        {include 'blog::post/list/item', post: $post}
-    {/foreach}
+    <p n:if="$posts->isEmpty()" class="no-posts">There are no posts yet.</p>
+    <ul n:if="!$posts->isEmpty()" class="post-list">
+        {foreach $posts->items as $post}
+            {include 'blog::post/list/item', post: $post}
+        {/foreach}
     </ul>
-    {include 'blog::pagination/index', pagination: $posts, baseUrl: '/blog'}
+    {if !$posts->isEmpty()}
+        {include 'blog::pagination/index', pagination: $posts, baseUrl: '/blog'}
     {/if}
 </main>

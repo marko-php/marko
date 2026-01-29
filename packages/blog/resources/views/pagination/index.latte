@@ -1,28 +1,17 @@
-{* Blog pagination component *}
 {default $queryParams = []}
 
-{if $pagination->shouldShowPagination()}
-<nav class="pagination" aria-label="Page navigation">
-    {if $pagination->hasPreviousPage}
-        {var $prevParams = array_merge($queryParams, ['page' => $pagination->getPreviousPage()])}
-        <a href="{$baseUrl}?{http_build_query($prevParams)}" class="pagination-prev">Previous</a>
-    {/if}
+<nav n:if="$pagination->shouldShowPagination()" class="pagination" aria-label="Page navigation">
+    <a n:if="$pagination->hasPreviousPage" href="{$baseUrl}?{http_build_query(array_merge($queryParams, ['page' => $pagination->getPreviousPage()]))}" class="pagination-prev">Previous</a>
     <ul class="pagination-pages">
         {foreach $pagination->pageNumbers as $pageNumber}
             {if $pageNumber === null}
                 <li class="pagination-ellipsis">...</li>
             {elseif $pageNumber === $pagination->currentPage}
-                {var $currentParams = array_merge($queryParams, ['page' => $pageNumber])}
-                <li><a href="{$baseUrl}?{http_build_query($currentParams)}" class="pagination-current" aria-current="page">{$pageNumber}</a></li>
+                <li><a href="{$baseUrl}?{http_build_query(array_merge($queryParams, ['page' => $pageNumber]))}" class="pagination-current" aria-current="page">{$pageNumber}</a></li>
             {else}
-                {var $linkParams = array_merge($queryParams, ['page' => $pageNumber])}
-                <li><a href="{$baseUrl}?{http_build_query($linkParams)}">{$pageNumber}</a></li>
+                <li><a href="{$baseUrl}?{http_build_query(array_merge($queryParams, ['page' => $pageNumber]))}">{$pageNumber}</a></li>
             {/if}
         {/foreach}
     </ul>
-    {if $pagination->hasNextPage}
-        {var $nextParams = array_merge($queryParams, ['page' => $pagination->getNextPage()])}
-        <a href="{$baseUrl}?{http_build_query($nextParams)}" class="pagination-next">Next</a>
-    {/if}
+    <a n:if="$pagination->hasNextPage" href="{$baseUrl}?{http_build_query(array_merge($queryParams, ['page' => $pagination->getNextPage()]))}" class="pagination-next">Next</a>
 </nav>
-{/if}

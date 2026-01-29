@@ -1,4 +1,3 @@
-{* Search results template *}
 <main>
     <header class="search-header">
         {include 'blog::search/bar', query: $query}
@@ -6,15 +5,14 @@
     </header>
 
     <section class="search-results">
-    {if $posts->isEmpty()}
-        <p class="no-results">No results found for your search.</p>
-    {else}
-        <ul class="post-list">
-        {foreach $posts->items as $post}
-            {include 'blog::post/list/item', post: $post}
-        {/foreach}
+        <p n:if="$posts->isEmpty()" class="no-results">No results found for your search.</p>
+        <ul n:if="!$posts->isEmpty()" class="post-list">
+            {foreach $posts->items as $post}
+                {include 'blog::post/list/item', post: $post}
+            {/foreach}
         </ul>
-        {include 'blog::pagination/index', pagination: $posts, baseUrl: '/blog/search', queryParams: ['q' => $query]}
-    {/if}
+        {if !$posts->isEmpty()}
+            {include 'blog::pagination/index', pagination: $posts, baseUrl: '/blog/search', queryParams: ['q' => $query]}
+        {/if}
     </section>
 </main>

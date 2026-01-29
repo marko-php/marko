@@ -1,38 +1,23 @@
-{* Blog post show template *}
-{default $canonicalUrl = null}
-{default $metaDescription = null}
-{default $pageTitle = null}
-{default $ogType = 'article'}
-{if $canonicalUrl}
-<link rel="canonical" href="{$canonicalUrl}">
-{/if}
-{if $metaDescription}
-<meta name="description" content="{$metaDescription}">
-{/if}
-{if $pageTitle}
-<title>{$pageTitle}</title>
-{/if}
-{if $canonicalUrl}
-<meta property="og:url" content="{$canonicalUrl}">
-{/if}
-{if $pageTitle}
-<meta property="og:title" content="{$pageTitle}">
-{/if}
-{if $metaDescription}
-<meta property="og:description" content="{$metaDescription}">
-{/if}
+{default $canonicalUrl = null, $metaDescription = null, $pageTitle = null, $ogType = 'article'}
+{default $comments = [], $honeypotField = '', $csrfToken = null, $errors = [], $oldInput = [], $verificationSuccess = false, $commentCount = null, $categoryPaths = []}
+
+<link n:if="$canonicalUrl" rel="canonical" href="{$canonicalUrl}">
+<meta n:if="$metaDescription" name="description" content="{$metaDescription}">
+<title n:if="$pageTitle">{$pageTitle}</title>
+<meta n:if="$canonicalUrl" property="og:url" content="{$canonicalUrl}">
+<meta n:if="$pageTitle" property="og:title" content="{$pageTitle}">
+<meta n:if="$metaDescription" property="og:description" content="{$metaDescription}">
 <meta property="og:type" content="{$ogType}">
+
 <main>
     <article class="post-article">
         <header class="post-header">
             <h1>{$post->title}</h1>
             <div class="post-meta">
                 <time datetime="{$post->publishedAt}">{$post->getPublishedAt()->format('F j, Y')}</time>
-                {if $post->wasUpdatedAfterPublishing()}
-                    <span class="post-updated">
-                        Updated: <time datetime="{$post->updatedAt}">{$post->getUpdatedAt()->format('F j, Y')}</time>
-                    </span>
-                {/if}
+                <span n:if="$post->wasUpdatedAfterPublishing()" class="post-updated">
+                    Updated: <time datetime="{$post->updatedAt}">{$post->getUpdatedAt()->format('F j, Y')}</time>
+                </span>
             </div>
         </header>
 
@@ -41,66 +26,46 @@
         </div>
 
         <footer class="post-footer">
-            {if $post->getCategories()}
-                {default $categoryPaths = []}
-                <div class="post-categories">
-                    <strong>Categories:</strong>
-                    <ul>
-                        {foreach $post->getCategories() as $category}
-                            <li>
-                                {if isset($categoryPaths[$category->id])}
-                                    {foreach $categoryPaths[$category->id] as $pathCategory}
-                                        {if $pathCategory->id === $category->id}
-                                            <a href="/blog/category/{$pathCategory->slug}">{$pathCategory->name}</a>
-                                        {else}
-                                            <a href="/blog/category/{$pathCategory->slug}">{$pathCategory->name}</a> &gt;
-                                        {/if}
-                                    {/foreach}
-                                {else}
-                                    <a href="/blog/category/{$category->slug}">{$category->name}</a>
-                                {/if}
-                            </li>
-                        {/foreach}
-                    </ul>
-                </div>
-            {/if}
+            <div n:if="$post->getCategories()" class="post-categories">
+                <strong>Categories:</strong>
+                <ul>
+                    {foreach $post->getCategories() as $category}
+                        <li>
+                            {if isset($categoryPaths[$category->id])}
+                                {foreach $categoryPaths[$category->id] as $pathCategory}
+                                    <a href="/blog/category/{$pathCategory->slug}">{$pathCategory->name}</a>{if $pathCategory->id !== $category->id} &gt;{/if}
+                                {/foreach}
+                            {else}
+                                <a href="/blog/category/{$category->slug}">{$category->name}</a>
+                            {/if}
+                        </li>
+                    {/foreach}
+                </ul>
+            </div>
 
-            {if $post->getTags()}
-                <div class="post-tags">
-                    <strong>Tags:</strong>
-                    <ul>
-                        {foreach $post->getTags() as $tag}
-                            <li><a href="/blog/tag/{$tag->slug}">{$tag->name}</a></li>
-                        {/foreach}
-                    </ul>
-                </div>
-            {/if}
+            <div n:if="$post->getTags()" class="post-tags">
+                <strong>Tags:</strong>
+                <ul>
+                    {foreach $post->getTags() as $tag}
+                        <li><a href="/blog/tag/{$tag->slug}">{$tag->name}</a></li>
+                    {/foreach}
+                </ul>
+            </div>
 
             <div class="post-author">
                 <strong>Author:</strong>
                 <a href="/blog/author/{$post->getAuthor()->slug}">{$post->getAuthor()->name}</a>
-                {if $post->getAuthor()->bio}
-                    <p class="author-bio">{$post->getAuthor()->bio}</p>
-                {/if}
+                <p n:if="$post->getAuthor()->bio" class="author-bio">{$post->getAuthor()->bio}</p>
             </div>
         </footer>
     </article>
 
     <section class="post-comments" aria-labelledby="comments-heading">
         <h2 id="comments-heading">Comments</h2>
-        {default $comments = []}
-        {default $honeypotField = ''}
-        {default $csrfToken = null}
-        {default $errors = []}
-        {default $oldInput = []}
-        {default $verificationSuccess = false}
-        {default $commentCount = null}
-        {if $verificationSuccess}
-        <div class="comment-verification-success" role="alert">
+        <div n:if="$verificationSuccess" class="comment-verification-success" role="alert">
             Thank you! Your comment has been verified and is now visible.
         </div>
-        {/if}
-        {include 'blog::comment/thread', comments: $comments, maxDepth: 5, postId: $post->id, commentCount: $commentCount}
+        {include 'blog::comment/thread', comments: $comments, maxDepth: 5, commentCount: $commentCount}
         {include 'blog::comment/form', postId: $post->slug, honeypotField: $honeypotField, csrfToken: $csrfToken, errors: $errors, oldInput: $oldInput}
     </section>
 </main>
