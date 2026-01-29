@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE latte PUBLIC "-//LATTE//Latte plugin configuration XML V0.0.1//EN" "Latte.xsd">
+<latte version="1" vendor="nette/assets">
+    <tags>
+        <tag name="asset" type="UNPAIRED_ATTR" documentation="Asset management for PHP with versioning, caching and mappers for various storage backends" documentationUrl="https://doc.nette.org/en/assets">
+            <arguments>
+                <argument name="file" types="FILE_PATH" type="string" required="true" />
+            </arguments>
+        </tag>
+        <tag name="asset?" type="UNPAIRED_ATTR" documentation="Optional asset" documentationUrl="https://doc.nette.org/en/assets#toc-optional-assets">
+            <arguments>
+                <argument name="file" types="FILE_PATH" type="string" required="true" />
+            </arguments>
+        </tag>
+        <tag name="preload" type="UNPAIRED" documentation="Improve page load performance" documentationUrl="https://doc.nette.org/en/assets#toc-preload">
+            <arguments>
+                <argument name="file" types="FILE_PATH" type="string" required="true" />
+            </arguments>
+        </tag>
+    </tags>
+    <functions>
+        <function name="asset" returnType="string" documentation="Asset management for PHP with versioning, caching and mappers for various storage backends" documentationUrl="https://doc.nette.org/en/assets">
+            <functionArguments>
+                <functionArgument name="filePath" type="string"/>
+            </functionArguments>
+        </function>
+        <function name="tryAsset" returnType="bool" documentation="Returns true if asset exists" documentationUrl="https://doc.nette.org/en/assets#toc-optional-assets">
+            <functionArguments>
+                <functionArgument name="filePath" type="string"/>
+            </functionArguments>
+        </function>
+    </functions>
+</latte>

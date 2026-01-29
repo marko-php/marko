@@ -272,6 +272,31 @@ class TenantService
 - File names become top-level config keys (`config/database.php` -> `database.*`)
 - Files must return arrays
 - Use `declare(strict_types=1)` in all config files
+- **Default values belong in config files, not hardcoded in code** - Config files are the single source of truth. If a config key is missing, it should fail loudly, not fall back to a hardcoded default.
+
+```php
+<?php
+// config/blog.php - all defaults defined here
+return [
+    'posts_per_page' => 10,
+    'site_name' => 'My Blog',
+];
+```
+
+```php
+<?php
+// CORRECT - no fallback, config file is the source of truth
+public function getPostsPerPage(): int
+{
+    return $this->config->getInt('blog.posts_per_page');
+}
+
+// WRONG - hardcoded fallback hides missing config
+public function getPostsPerPage(): int
+{
+    return $this->config->getInt('blog.posts_per_page', 10);
+}
+```
 
 ## Merge Priority
 

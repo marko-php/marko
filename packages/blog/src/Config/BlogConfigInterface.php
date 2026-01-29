@@ -19,4 +19,6 @@ interface BlogConfigInterface
     public function getRoutePrefix(): string;
 
     public function getVerificationCookieName(): string;
+
+    public function getSiteName(): string;
 }

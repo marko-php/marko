@@ -744,6 +744,37 @@ Zero-parameter methods stay on one line everywhere: `public function index(): Re
 - Include internal implementation details
 - Repeat what's obvious from the code
 
+## Configuration Standards
+
+### Defaults Belong in Config Files
+Default values must be defined in config files (`config/*.php`), not hardcoded in code. This provides:
+- **Single source of truth** - All defaults visible in one place
+- **Easy overrides** - Other modules can override via higher-priority config files
+- **Transparency** - Developers can see all configurable options
+- **Loud errors** - Missing config fails immediately, not silently uses wrong default
+
+```php
+// config/blog.php - all defaults defined here
+return [
+    'posts_per_page' => 10,
+    'site_name' => 'My Blog',
+];
+```
+
+```php
+// CORRECT - no fallback, config file is the source of truth
+public function getPostsPerPage(): int
+{
+    return $this->config->getInt('blog.posts_per_page');
+}
+
+// WRONG - hardcoded fallback hides missing config
+public function getPostsPerPage(): int
+{
+    return $this->config->getInt('blog.posts_per_page', 10);
+}
+```
+
 ## Latte Template Standards
 
 Templates are pure presentation. Keep them clean, minimal, and consistent.

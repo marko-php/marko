@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    // Site
+    'site_name' => 'My Blog',
+
     // Pagination
     'posts_per_page' => 10,
 

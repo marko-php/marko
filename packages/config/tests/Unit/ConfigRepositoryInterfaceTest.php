@@ -11,7 +11,7 @@ describe('ConfigRepositoryInterface', function (): void {
         expect($reflection->isInterface())->toBeTrue();
     });
 
-    it('defines get method with key, default, and scope parameters returning mixed', function (): void {
+    it('defines get method without default parameter', function (): void {
         $reflection = new ReflectionClass(ConfigRepositoryInterface::class);
 
         expect($reflection->hasMethod('get'))->toBeTrue();
@@ -20,18 +20,14 @@ describe('ConfigRepositoryInterface', function (): void {
         $params = $method->getParameters();
 
         expect($method->getReturnType()?->getName())->toBe('mixed')
-            ->and($params)->toHaveCount(3)
+            ->and($params)->toHaveCount(2)
             ->and($params[0]->getName())->toBe('key')
             ->and($params[0]->getType()?->getName())->toBe('string')
-            ->and($params[1]->getName())->toBe('default')
-            ->and($params[1]->getType()?->getName())->toBe('mixed')
+            ->and($params[1]->getName())->toBe('scope')
+            ->and($params[1]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getType()?->allowsNull())->toBeTrue()
             ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[1]->getDefaultValue())->toBeNull()
-            ->and($params[2]->getName())->toBe('scope')
-            ->and($params[2]->getType()?->getName())->toBe('string')
-            ->and($params[2]->getType()?->allowsNull())->toBeTrue()
-            ->and($params[2]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[2]->getDefaultValue())->toBeNull();
+            ->and($params[1]->getDefaultValue())->toBeNull();
     });
 
     it('defines has method with key and scope parameters returning bool', function (): void {
@@ -53,7 +49,7 @@ describe('ConfigRepositoryInterface', function (): void {
             ->and($params[1]->getDefaultValue())->toBeNull();
     });
 
-    it('defines getString method with key, default, and scope parameters returning string', function (): void {
+    it('defines getString method without default parameter', function (): void {
         $reflection = new ReflectionClass(ConfigRepositoryInterface::class);
 
         expect($reflection->hasMethod('getString'))->toBeTrue();
@@ -62,22 +58,17 @@ describe('ConfigRepositoryInterface', function (): void {
         $params = $method->getParameters();
 
         expect($method->getReturnType()?->getName())->toBe('string')
-            ->and($params)->toHaveCount(3)
+            ->and($params)->toHaveCount(2)
             ->and($params[0]->getName())->toBe('key')
             ->and($params[0]->getType()?->getName())->toBe('string')
-            ->and($params[1]->getName())->toBe('default')
+            ->and($params[1]->getName())->toBe('scope')
             ->and($params[1]->getType()?->getName())->toBe('string')
             ->and($params[1]->getType()?->allowsNull())->toBeTrue()
             ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[1]->getDefaultValue())->toBeNull()
-            ->and($params[2]->getName())->toBe('scope')
-            ->and($params[2]->getType()?->getName())->toBe('string')
-            ->and($params[2]->getType()?->allowsNull())->toBeTrue()
-            ->and($params[2]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[2]->getDefaultValue())->toBeNull();
+            ->and($params[1]->getDefaultValue())->toBeNull();
     });
 
-    it('defines getInt method with key, default, and scope parameters returning int', function (): void {
+    it('defines getInt method without default parameter', function (): void {
         $reflection = new ReflectionClass(ConfigRepositoryInterface::class);
 
         expect($reflection->hasMethod('getInt'))->toBeTrue();
@@ -86,22 +77,17 @@ describe('ConfigRepositoryInterface', function (): void {
         $params = $method->getParameters();
 
         expect($method->getReturnType()?->getName())->toBe('int')
-            ->and($params)->toHaveCount(3)
+            ->and($params)->toHaveCount(2)
             ->and($params[0]->getName())->toBe('key')
             ->and($params[0]->getType()?->getName())->toBe('string')
-            ->and($params[1]->getName())->toBe('default')
-            ->and($params[1]->getType()?->getName())->toBe('int')
+            ->and($params[1]->getName())->toBe('scope')
+            ->and($params[1]->getType()?->getName())->toBe('string')
             ->and($params[1]->getType()?->allowsNull())->toBeTrue()
             ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[1]->getDefaultValue())->toBeNull()
-            ->and($params[2]->getName())->toBe('scope')
-            ->and($params[2]->getType()?->getName())->toBe('string')
-            ->and($params[2]->getType()?->allowsNull())->toBeTrue()
-            ->and($params[2]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[2]->getDefaultValue())->toBeNull();
+            ->and($params[1]->getDefaultValue())->toBeNull();
     });
 
-    it('defines getBool method with key, default, and scope parameters returning bool', function (): void {
+    it('defines getBool method without default parameter', function (): void {
         $reflection = new ReflectionClass(ConfigRepositoryInterface::class);
 
         expect($reflection->hasMethod('getBool'))->toBeTrue();
@@ -110,22 +96,17 @@ describe('ConfigRepositoryInterface', function (): void {
         $params = $method->getParameters();
 
         expect($method->getReturnType()?->getName())->toBe('bool')
-            ->and($params)->toHaveCount(3)
+            ->and($params)->toHaveCount(2)
             ->and($params[0]->getName())->toBe('key')
             ->and($params[0]->getType()?->getName())->toBe('string')
-            ->and($params[1]->getName())->toBe('default')
-            ->and($params[1]->getType()?->getName())->toBe('bool')
+            ->and($params[1]->getName())->toBe('scope')
+            ->and($params[1]->getType()?->getName())->toBe('string')
             ->and($params[1]->getType()?->allowsNull())->toBeTrue()
             ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[1]->getDefaultValue())->toBeNull()
-            ->and($params[2]->getName())->toBe('scope')
-            ->and($params[2]->getType()?->getName())->toBe('string')
-            ->and($params[2]->getType()?->allowsNull())->toBeTrue()
-            ->and($params[2]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[2]->getDefaultValue())->toBeNull();
+            ->and($params[1]->getDefaultValue())->toBeNull();
     });
 
-    it('defines getFloat method with key, default, and scope parameters returning float', function (): void {
+    it('defines getFloat method without default parameter', function (): void {
         $reflection = new ReflectionClass(ConfigRepositoryInterface::class);
 
         expect($reflection->hasMethod('getFloat'))->toBeTrue();
@@ -134,22 +115,17 @@ describe('ConfigRepositoryInterface', function (): void {
         $params = $method->getParameters();
 
         expect($method->getReturnType()?->getName())->toBe('float')
-            ->and($params)->toHaveCount(3)
+            ->and($params)->toHaveCount(2)
             ->and($params[0]->getName())->toBe('key')
             ->and($params[0]->getType()?->getName())->toBe('string')
-            ->and($params[1]->getName())->toBe('default')
-            ->and($params[1]->getType()?->getName())->toBe('float')
+            ->and($params[1]->getName())->toBe('scope')
+            ->and($params[1]->getType()?->getName())->toBe('string')
             ->and($params[1]->getType()?->allowsNull())->toBeTrue()
             ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[1]->getDefaultValue())->toBeNull()
-            ->and($params[2]->getName())->toBe('scope')
-            ->and($params[2]->getType()?->getName())->toBe('string')
-            ->and($params[2]->getType()?->allowsNull())->toBeTrue()
-            ->and($params[2]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[2]->getDefaultValue())->toBeNull();
+            ->and($params[1]->getDefaultValue())->toBeNull();
     });
 
-    it('defines getArray method with key, default, and scope parameters returning array', function (): void {
+    it('defines getArray method without default parameter', function (): void {
         $reflection = new ReflectionClass(ConfigRepositoryInterface::class);
 
         expect($reflection->hasMethod('getArray'))->toBeTrue();
@@ -158,19 +134,14 @@ describe('ConfigRepositoryInterface', function (): void {
         $params = $method->getParameters();
 
         expect($method->getReturnType()?->getName())->toBe('array')
-            ->and($params)->toHaveCount(3)
+            ->and($params)->toHaveCount(2)
             ->and($params[0]->getName())->toBe('key')
             ->and($params[0]->getType()?->getName())->toBe('string')
-            ->and($params[1]->getName())->toBe('default')
-            ->and($params[1]->getType()?->getName())->toBe('array')
+            ->and($params[1]->getName())->toBe('scope')
+            ->and($params[1]->getType()?->getName())->toBe('string')
             ->and($params[1]->getType()?->allowsNull())->toBeTrue()
             ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[1]->getDefaultValue())->toBeNull()
-            ->and($params[2]->getName())->toBe('scope')
-            ->and($params[2]->getType()?->getName())->toBe('string')
-            ->and($params[2]->getType()?->allowsNull())->toBeTrue()
-            ->and($params[2]->isDefaultValueAvailable())->toBeTrue()
-            ->and($params[2]->getDefaultValue())->toBeNull();
+            ->and($params[1]->getDefaultValue())->toBeNull();
     });
 
     it('defines all method with scope parameter returning array', function (): void {

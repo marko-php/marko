@@ -61,6 +61,8 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/view-latte/tests" isTestSource="true" packagePrefix="Marko\View\Latte\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/view/src" isTestSource="false" packagePrefix="Marko\View\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/view/tests" isTestSource="true" packagePrefix="Marko\View\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/env/src" isTestSource="false" packagePrefix="Marko\Env\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/env/tests" isTestSource="true" packagePrefix="Marko\Env\Tests\" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/brianium/paratest" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/composer" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/doctrine/deprecations" />

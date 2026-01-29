@@ -1,0 +1,143 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="latte">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="tags" type="tagsType"/>
+                <xs:element name="filters" type="filtersType"/>
+                <xs:element name="functions" type="functionsType"/>
+                <xs:element name="variables" type="variablesType"/>
+                <xs:element name="assets" type="assetsType"/>
+            </xs:sequence>
+            <xs:attribute name="vendor" type="xs:string" use="required"/>
+            <xs:attribute name="version" type="xs:string" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="tagsType">
+        <xs:sequence>
+            <xs:element name="tag" type="tagType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="filtersType">
+        <xs:sequence>
+            <xs:element name="filter" type="filterType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="functionsType">
+        <xs:sequence>
+            <xs:element name="function" type="functionType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="variablesType">
+        <xs:sequence>
+            <xs:element name="variable" type="variableType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="assetsType">
+        <xs:sequence>
+            <xs:element name="assetMappings" type="assetMappingsType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="basePath" type="xs:string" default="%resourceRoot%"/>
+    </xs:complexType>
+
+    <xs:complexType name="argumentsType">
+        <xs:sequence>
+            <xs:element name="argument" type="argumentType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="filterArgumentsType">
+        <xs:sequence>
+            <xs:element name="filterArgument" type="filterArgumentType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="functionArgumentsType">
+        <xs:sequence>
+            <xs:element name="functionArgument" type="functionArgumentType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="tagType">
+        <xs:sequence>
+            <xs:element name="arguments" type="argumentsType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="required"/>
+        <xs:attribute name="documentation" type="xs:string"/>
+        <xs:attribute name="documentationUrl" type="xs:string"/>
+        <xs:attribute name="deprecatedMessage" type="xs:string"/>
+        <xs:attribute name="arguments" type="xs:string"/>
+        <xs:attribute name="allowFilters" type="xs:boolean"/>
+        <xs:attribute name="multiLine" type="xs:boolean"/>
+    </xs:complexType>
+
+    <xs:complexType name="filterType">
+        <xs:sequence>
+            <xs:element name="filterArguments" type="filterArgumentsType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="description" type="xs:string" use="required"/>
+        <xs:attribute name="inputType" default="string|null" type="xs:string"/>
+        <xs:attribute name="returnType" default="string" type="xs:string"/>
+        <xs:attribute name="documentation" type="xs:string"/>
+        <xs:attribute name="documentationUrl" type="xs:string"/>
+    </xs:complexType>
+
+    <xs:complexType name="functionType">
+        <xs:sequence>
+            <xs:element name="functionArguments" type="functionArgumentsType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="returnType" default="mixed" type="xs:string" use="required"/>
+        <xs:attribute name="documentation" type="xs:string"/>
+        <xs:attribute name="documentationUrl" type="xs:string"/>
+        <xs:attribute name="deprecatedMessage" type="xs:string"/>
+    </xs:complexType>
+
+    <xs:complexType name="variableType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" default="mixed" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="assetMappingsType">
+        <xs:sequence>
+            <xs:element name="assetMapping" type="assetMappingType" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="argumentType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="types" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string"/>
+        <xs:attribute name="required" type="xs:boolean"/>
+        <xs:attribute name="repeatable" type="xs:boolean"/>
+    </xs:complexType>
+
+    <xs:complexType name="filterArgumentType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="required"/>
+        <xs:attribute name="defaultValue" type="xs:string"/>
+        <xs:attribute name="description" type="xs:string"/>
+        <xs:attribute name="repeatable" type="xs:boolean"/>
+    </xs:complexType>
+
+    <xs:complexType name="functionArgumentType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="required"/>
+        <xs:attribute name="defaultValue" type="xs:string"/>
+        <xs:attribute name="description" type="xs:string"/>
+    </xs:complexType>
+
+    <xs:complexType name="assetMappingType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="path" type="xs:string"/>
+        <xs:attribute name="extensions" type="xs:string"/>
+    </xs:complexType>
+
+</xs:schema>
