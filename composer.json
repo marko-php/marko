@@ -17,6 +17,9 @@
         "squizlabs/php_codesniffer": "^4.0"
     },
     "autoload": {
+        "files": [
+            "packages/env/src/functions.php"
+        ],
         "psr-4": {
             "Marko\\Blog\\": "packages/blog/src/",
             "Marko\\Cache\\": "packages/cache/src/",
@@ -27,6 +30,7 @@
             "Marko\\Database\\": "packages/database/src/",
             "Marko\\Database\\MySql\\": "packages/database-mysql/src/",
             "Marko\\Database\\PgSql\\": "packages/database-pgsql/src/",
+            "Marko\\Env\\": "packages/env/src/",
             "Marko\\Errors\\": "packages/errors/src/",
             "Marko\\ErrorsAdvanced\\": "packages/errors-advanced/src/",
             "Marko\\ErrorsSimple\\": "packages/errors-simple/src/",
@@ -60,6 +64,7 @@
             "Marko\\Database\\Tests\\": "packages/database/tests/",
             "Marko\\Database\\MySql\\Tests\\": "packages/database-mysql/tests/",
             "Marko\\Database\\PgSql\\Tests\\": "packages/database-pgsql/tests/",
+            "Marko\\Env\\Tests\\": "packages/env/tests/",
             "Marko\\Errors\\Tests\\": "packages/errors/tests/",
             "Marko\\ErrorsAdvanced\\Tests\\": "packages/errors-advanced/tests/",
             "Marko\\ErrorsSimple\\Tests\\": "packages/errors-simple/tests/",

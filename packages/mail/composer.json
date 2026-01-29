@@ -3,10 +3,14 @@
     "description": "Marko Framework Mail - Message building and mailing interfaces",
     "license": "MIT",
     "type": "library",
+    "repositories": [
+        { "type": "path", "url": "../core" },
+        { "type": "path", "url": "../config" }
+    ],
     "require": {
         "php": "^8.5",
-        "marko/core": "^0.1",
-        "marko/config": "^0.1"
+        "marko/core": "@dev",
+        "marko/config": "@dev"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

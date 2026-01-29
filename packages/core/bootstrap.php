@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Core\Application;
+use Marko\Env\EnvLoader;
 
 /**
  * Marko Framework Bootstrap
@@ -22,6 +23,11 @@ return function (
     string $modulesPath,
     string $appPath,
 ): Application {
+    // Load environment variables if marko/env is installed
+    if (class_exists(EnvLoader::class)) {
+        (new EnvLoader())->load(dirname($vendorPath));
+    }
+
     $app = new Application(
         vendorPath: $vendorPath,
         modulesPath: $modulesPath,
