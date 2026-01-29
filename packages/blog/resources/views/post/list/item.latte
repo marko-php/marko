@@ -1,0 +1,17 @@
+{* Reusable post list item template *}
+{default $showAuthor = true}
+{default $linkAuthor = true}
+<li class="post-item">
+    <article>
+        <h2><a href="/blog/{$post->slug}">{$post->title}</a></h2>
+        {if $post->summary}
+            <p class="post-summary">{$post->summary}</p>
+        {/if}
+        <p class="post-meta">
+            {if $showAuthor}
+                <span class="post-author">By {if $linkAuthor}<a href="/blog/author/{$post->getAuthor()->slug}">{$post->getAuthor()->name}</a>{else}{$post->getAuthor()->name}{/if}</span>
+            {/if}
+            <time class="post-date" datetime="{$post->getPublishedAt()?->format('Y-m-d')}">{$post->getPublishedAt()?->format('F j, Y')}</time>
+        </p>
+    </article>
+</li>

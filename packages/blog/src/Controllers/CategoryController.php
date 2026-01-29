@@ -70,10 +70,15 @@ class CategoryController
 
         $pagination = $this->paginationService->paginate($posts, $totalPosts, $page);
 
+        $breadcrumbs = array_map(fn ($cat) => [
+            'label' => $cat->name,
+            'url' => $cat->id === $category->id ? null : "/blog/category/$cat->slug",
+        ], $path);
+
         return $this->view->render('blog::category/show', [
             'category' => $category,
-            'path' => $path,
             'posts' => $pagination,
+            'breadcrumbs' => $breadcrumbs,
         ]);
     }
 }

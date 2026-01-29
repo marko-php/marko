@@ -14,7 +14,7 @@ describe('Comment Form Component', function (): void {
     it('renders form with POST action to comment endpoint', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '<input type="text" name="hp_abc123" value="" autocomplete="off" tabindex="-1" />',
         ]);
@@ -27,7 +27,7 @@ describe('Comment Form Component', function (): void {
     it('includes name input field with label', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '',
         ]);
@@ -41,7 +41,7 @@ describe('Comment Form Component', function (): void {
     it('includes email input field with label', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '',
         ]);
@@ -55,7 +55,7 @@ describe('Comment Form Component', function (): void {
     it('includes content textarea with label', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '',
         ]);
@@ -70,7 +70,7 @@ describe('Comment Form Component', function (): void {
     it('includes hidden parent_id field for replies', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '',
             'parentId' => 42,
@@ -85,7 +85,7 @@ describe('Comment Form Component', function (): void {
         $view = createCommentFormTestView();
         $honeypotField = '<div style="position:absolute;left:-9999px;"><input type="text" name="hp_abc123" value="" autocomplete="off" tabindex="-1" /></div>';
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => $honeypotField,
         ]);
@@ -96,7 +96,7 @@ describe('Comment Form Component', function (): void {
     it('includes submit button', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '',
         ]);
@@ -107,7 +107,7 @@ describe('Comment Form Component', function (): void {
     it('shows validation error messages when provided', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '',
             'errors' => [
@@ -125,7 +125,7 @@ describe('Comment Form Component', function (): void {
     it('preserves input values on validation failure', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '',
             'oldInput' => [
@@ -143,7 +143,7 @@ describe('Comment Form Component', function (): void {
     it('has proper form accessibility labels', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '',
         ]);
@@ -159,7 +159,7 @@ describe('Comment Form Component', function (): void {
     it('includes CSRF token when provided', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '',
             'csrfToken' => 'test-csrf-token-12345',
@@ -173,7 +173,7 @@ describe('Comment Form Component', function (): void {
     it('works without CSRF when token not provided', function (): void {
         $view = createCommentFormTestView();
 
-        $html = $view->renderToString('blog::components/comment-form', [
+        $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
             'honeypotField' => '',
         ]);

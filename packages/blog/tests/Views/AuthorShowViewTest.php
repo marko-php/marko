@@ -23,6 +23,7 @@ describe('Author Show View', function (): void {
 
         $html = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => '/blog/author/jane-smith',
         ]);
@@ -38,6 +39,7 @@ describe('Author Show View', function (): void {
 
         $html = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => '/blog/author/john-doe',
         ]);
@@ -53,6 +55,7 @@ describe('Author Show View', function (): void {
 
         $html = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => '/blog/author/john-doe',
         ]);
@@ -73,6 +76,7 @@ describe('Author Show View', function (): void {
 
         $html = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => '/blog/author/john-doe',
         ]);
@@ -99,6 +103,7 @@ describe('Author Show View', function (): void {
 
         $html = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => '/blog/author/john-doe',
         ]);
@@ -129,6 +134,7 @@ describe('Author Show View', function (): void {
 
         $html = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => '/blog/author/john-doe',
         ]);
@@ -145,6 +151,7 @@ describe('Author Show View', function (): void {
 
         $html = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => '/blog/author/john-doe',
         ]);
@@ -161,6 +168,7 @@ describe('Author Show View', function (): void {
 
         $html = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => '/blog/author/john-doe',
         ]);
@@ -177,6 +185,7 @@ describe('Author Show View', function (): void {
 
         $html = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => '/blog/author/jane-smith',
         ]);

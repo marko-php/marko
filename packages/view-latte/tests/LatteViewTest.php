@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Latte\CompileException;
 use Latte\Engine;
+use Latte\RuntimeException;
 use Marko\Routing\Http\Response;
 use Marko\View\Latte\LatteView;
 use Marko\View\TemplateResolverInterface;
@@ -112,8 +113,7 @@ describe('LatteView', function (): void {
         $engine->setTempDirectory($cacheDir);
 
         $resolver = $this->createMock(TemplateResolverInterface::class);
-        $resolver->expects($this->once())
-            ->method('resolve')
+        $resolver->method('resolve')
             ->with('blog::post/show')
             ->willReturn($templatePath);
 
@@ -173,6 +173,70 @@ describe('LatteView', function (): void {
         $html = $view->renderToString('blog::article', ['title' => 'Custom Extension']);
 
         expect($html)->toBe('<article>Custom Extension</article>');
+
+        // Cleanup
+        array_map('unlink', glob($cacheDir . '/*'));
+        rmdir($cacheDir);
+    });
+
+    test('includes use namespaced template resolution', function (): void {
+        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . uniqid();
+        mkdir($cacheDir, 0755, true);
+
+        // Create the item template that will be included
+        $itemPath = $cacheDir . '/item.latte';
+        file_put_contents($itemPath, '<li>{$name}</li>');
+
+        // Create the parent template that includes the item
+        $listPath = $cacheDir . '/list.latte';
+        file_put_contents(
+            $listPath,
+            '<ul>{foreach $items as $item}{include "blog::post/list/item", name: $item}{/foreach}</ul>'
+        );
+
+        $engine = new Engine();
+        $engine->setTempDirectory($cacheDir);
+
+        $resolver = $this->createMock(TemplateResolverInterface::class);
+        $resolver->method('resolve')
+            ->willReturnCallback(fn (string $template) => match ($template) {
+                'blog::post/index' => $listPath,
+                'blog::post/list/item' => $itemPath,
+                default => throw new Exception("Unknown template: $template"),
+            });
+
+        $view = new LatteView($engine, $resolver);
+        $html = $view->renderToString('blog::post/index', [
+            'items' => ['First', 'Second', 'Third'],
+        ]);
+
+        expect($html)->toBe('<ul><li>First</li><li>Second</li><li>Third</li></ul>');
+
+        // Cleanup
+        array_map('unlink', glob($cacheDir . '/*'));
+        rmdir($cacheDir);
+    });
+
+    test('includes reject relative paths', function (): void {
+        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . uniqid();
+        mkdir($cacheDir, 0755, true);
+
+        // Create a template with a relative include (not allowed)
+        $templatePath = $cacheDir . '/parent.latte';
+        file_put_contents($templatePath, '{include "../item.latte"}');
+
+        $engine = new Engine();
+        $engine->setTempDirectory($cacheDir);
+
+        $resolver = $this->createMock(TemplateResolverInterface::class);
+        $resolver->method('resolve')
+            ->with('blog::parent')
+            ->willReturn($templatePath);
+
+        $view = new LatteView($engine, $resolver);
+
+        expect(fn () => $view->renderToString('blog::parent'))
+            ->toThrow(RuntimeException::class, 'must use module namespace format');
 
         // Cleanup
         array_map('unlink', glob($cacheDir . '/*'));

@@ -23,7 +23,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1, null, 2, 3, 4, null, 10],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
         ]);
@@ -42,7 +42,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1, 2, 3, null, 10],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
         ]);
@@ -61,7 +61,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1, null, 2, 3, 4, null, 10],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
         ]);
@@ -80,7 +80,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1, null, 9, 10],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
         ]);
@@ -99,7 +99,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1, 2, 3, 4, 5],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
         ]);
@@ -122,7 +122,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1, 2, 3, 4, 5],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
         ]);
@@ -143,7 +143,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1, null, 4, 5, 6, null, 20],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
         ]);
@@ -162,7 +162,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1, 2, 3, 4, 5],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
         ]);
@@ -181,7 +181,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1, 2, 3, 4, 5],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
             'queryParams' => ['q' => 'search term'],
@@ -201,7 +201,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
         ]);
@@ -221,7 +221,7 @@ describe('Pagination Component', function (): void {
             pageNumbers: [1, 2, 3, 4, 5],
         );
 
-        $html = $view->renderToString('blog::components/pagination', [
+        $html = $view->renderToString('blog::pagination/index', [
             'pagination' => $pagination,
             'baseUrl' => '/blog',
         ]);

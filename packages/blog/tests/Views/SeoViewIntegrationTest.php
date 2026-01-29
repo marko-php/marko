@@ -58,7 +58,7 @@ describe('SEO View Integration', function (): void {
 
         $categoryHtml = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => [['label' => $category->name]],
             'posts' => $posts,
             'canonicalUrl' => 'https://example.com/blog/category/technology',
         ]);
@@ -68,6 +68,7 @@ describe('SEO View Integration', function (): void {
 
         $tagHtml = $view->renderToString('blog::tag/index', [
             'tag' => $tag,
+            'breadcrumbs' => [['label' => $tag->name]],
             'posts' => $posts,
             'canonicalUrl' => 'https://example.com/blog/tag/php',
         ]);
@@ -77,6 +78,7 @@ describe('SEO View Integration', function (): void {
 
         $authorHtml = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => 'https://example.com/blog/author/jane-smith',
         ]);
@@ -101,7 +103,7 @@ describe('SEO View Integration', function (): void {
 
         $categoryHtml = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => [['label' => $category->name]],
             'posts' => $posts,
             'metaDescription' => 'Browse all posts in the Technology category.',
         ]);
@@ -111,6 +113,7 @@ describe('SEO View Integration', function (): void {
 
         $tagHtml = $view->renderToString('blog::tag/index', [
             'tag' => $tag,
+            'breadcrumbs' => [['label' => $tag->name]],
             'posts' => $posts,
             'metaDescription' => 'Browse all posts tagged with PHP.',
         ]);
@@ -120,6 +123,7 @@ describe('SEO View Integration', function (): void {
 
         $authorHtml = $view->renderToString('blog::author/show', [
             'author' => $author,
+            'breadcrumbs' => [['label' => $author->getName()]],
             'posts' => $posts,
             'canonicalUrl' => 'https://example.com/blog/author/jane-smith',
             'metaDescription' => 'Browse all posts by Jane Smith.',
@@ -150,7 +154,7 @@ describe('SEO View Integration', function (): void {
 
         $html = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => [['label' => $category->name]],
             'posts' => $posts,
             'prevLink' => 'https://example.com/blog/category/technology/page/2',
             'nextLink' => 'https://example.com/blog/category/technology/page/4',
@@ -181,7 +185,7 @@ describe('SEO View Integration', function (): void {
 
         $categoryHtml = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => [['label' => $category->name]],
             'posts' => $posts,
             'pageTitle' => 'Technology | My Blog',
         ]);
@@ -252,7 +256,7 @@ describe('SEO View Integration', function (): void {
 
         $archiveHtml = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => [['label' => $category->name]],
             'posts' => $posts,
             'ogType' => 'website',
         ]);

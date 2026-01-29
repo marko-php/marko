@@ -25,6 +25,7 @@ describe('Tag Archive View', function (): void {
 
         $html = $view->renderToString('blog::tag/index', [
             'tag' => $tag,
+            'breadcrumbs' => [['label' => $tag->name]],
             'posts' => $posts,
         ]);
 
@@ -43,6 +44,7 @@ describe('Tag Archive View', function (): void {
 
         $html = $view->renderToString('blog::tag/index', [
             'tag' => $tag,
+            'breadcrumbs' => [['label' => $tag->name]],
             'posts' => $posts,
         ]);
 
@@ -61,6 +63,7 @@ describe('Tag Archive View', function (): void {
 
         $html = $view->renderToString('blog::tag/index', [
             'tag' => $tag,
+            'breadcrumbs' => [['label' => $tag->name]],
             'posts' => $posts,
         ]);
 
@@ -86,6 +89,7 @@ describe('Tag Archive View', function (): void {
 
         $html = $view->renderToString('blog::tag/index', [
             'tag' => $tag,
+            'breadcrumbs' => [['label' => $tag->name]],
             'posts' => $posts,
         ]);
 
@@ -101,6 +105,7 @@ describe('Tag Archive View', function (): void {
 
         $html = $view->renderToString('blog::tag/index', [
             'tag' => $tag,
+            'breadcrumbs' => [['label' => $tag->name]],
             'posts' => $posts,
         ]);
 
@@ -118,6 +123,7 @@ describe('Tag Archive View', function (): void {
 
         $html = $view->renderToString('blog::tag/index', [
             'tag' => $tag,
+            'breadcrumbs' => [['label' => $tag->name]],
             'posts' => $posts,
         ]);
 
@@ -135,6 +141,7 @@ describe('Tag Archive View', function (): void {
 
         $html = $view->renderToString('blog::tag/index', [
             'tag' => $tag,
+            'breadcrumbs' => [['label' => $tag->name]],
             'posts' => $posts,
             'canonicalUrl' => $canonicalUrl,
         ]);

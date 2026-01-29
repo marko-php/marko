@@ -51,6 +51,7 @@ class AuthorController
         return $this->view->render('blog::author/show', [
             'author' => $author,
             'posts' => $paginatedPosts,
+            'breadcrumbs' => [['label' => $author->getName()]],
         ]);
     }
 }

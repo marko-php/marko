@@ -107,11 +107,13 @@ use ReflectionClass;
     $controller->show('programming');
 
     \expect($capturedData)->toHaveKey('category')
-        ->and($capturedData)->toHaveKey('path')
+        ->and($capturedData)->toHaveKey('breadcrumbs')
         ->and($capturedData['category']->name)->toBe('Programming')
-        ->and($capturedData['path'])->toHaveCount(2)
-        ->and($capturedData['path'][0]->name)->toBe('Technology')
-        ->and($capturedData['path'][1]->name)->toBe('Programming');
+        ->and($capturedData['breadcrumbs'])->toHaveCount(2)
+        ->and($capturedData['breadcrumbs'][0]['label'])->toBe('Technology')
+        ->and($capturedData['breadcrumbs'][0]['url'])->toBe('/blog/category/technology')
+        ->and($capturedData['breadcrumbs'][1]['label'])->toBe('Programming')
+        ->and($capturedData['breadcrumbs'][1]['url'])->toBeNull();
 });
 
 \it('only includes published posts', function (): void {

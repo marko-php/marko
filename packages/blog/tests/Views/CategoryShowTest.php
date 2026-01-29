@@ -23,7 +23,7 @@ describe('Category Show View', function (): void {
 
         $html = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => createCategoryShowBreadcrumbs([$category], $category),
             'posts' => $posts,
         ]);
 
@@ -40,7 +40,7 @@ describe('Category Show View', function (): void {
 
         $html = $view->renderToString('blog::category/show', [
             'category' => $grandchild,
-            'path' => [$parent, $child, $grandchild],
+            'breadcrumbs' => createCategoryShowBreadcrumbs([$parent, $child, $grandchild], $grandchild),
             'posts' => $posts,
         ]);
 
@@ -62,7 +62,7 @@ describe('Category Show View', function (): void {
 
         $html = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => createCategoryShowBreadcrumbs([$category], $category),
             'posts' => $pagination,
         ]);
 
@@ -84,7 +84,7 @@ describe('Category Show View', function (): void {
 
         $html = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => createCategoryShowBreadcrumbs([$category], $category),
             'posts' => $pagination,
         ]);
 
@@ -111,7 +111,7 @@ describe('Category Show View', function (): void {
 
         $html = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => createCategoryShowBreadcrumbs([$category], $category),
             'posts' => $pagination,
         ]);
 
@@ -125,7 +125,7 @@ describe('Category Show View', function (): void {
 
         $html = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => createCategoryShowBreadcrumbs([$category], $category),
             'posts' => $posts,
         ]);
 
@@ -141,7 +141,7 @@ describe('Category Show View', function (): void {
 
         $html = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => createCategoryShowBreadcrumbs([$category], $category),
             'posts' => $pagination,
         ]);
 
@@ -158,7 +158,7 @@ describe('Category Show View', function (): void {
 
         $html = $view->renderToString('blog::category/show', [
             'category' => $category,
-            'path' => [$category],
+            'breadcrumbs' => createCategoryShowBreadcrumbs([$category], $category),
             'posts' => $posts,
             'canonicalUrl' => '/blog/category/technology',
         ]);
@@ -272,4 +272,14 @@ function createCategoryShowPaginatedResult(
         hasNextPage: $currentPage < $totalPages,
         pageNumbers: range(1, $totalPages),
     );
+}
+
+function createCategoryShowBreadcrumbs(
+    array $path,
+    Category $current,
+): array {
+    return array_map(fn ($cat) => [
+        'label' => $cat->name,
+        'url' => $cat->id === $current->id ? null : "/blog/category/$cat->slug",
+    ], $path);
 }

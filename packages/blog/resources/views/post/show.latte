@@ -100,7 +100,7 @@
             Thank you! Your comment has been verified and is now visible.
         </div>
         {/if}
-        {include '../components/comment-thread.latte', comments: $comments, maxDepth: 5, postId: $post->id, commentCount: $commentCount}
-        {include '../components/comment-form.latte', postId: $post->slug, honeypotField: $honeypotField, csrfToken: $csrfToken, errors: $errors, oldInput: $oldInput}
+        {include 'blog::comment/thread', comments: $comments, maxDepth: 5, postId: $post->id, commentCount: $commentCount}
+        {include 'blog::comment/form', postId: $post->slug, honeypotField: $honeypotField, csrfToken: $csrfToken, errors: $errors, oldInput: $oldInput}
     </section>
 </main>

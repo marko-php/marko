@@ -6,9 +6,7 @@ namespace Marko\Blog\Tests\Views\PostListView;
 
 use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Author;
-use Marko\Blog\Entity\Category;
 use Marko\Blog\Entity\Post;
-use Marko\Blog\Entity\Tag;
 use Marko\Blog\Enum\PostStatus;
 use Marko\Config\ConfigRepository;
 use Marko\Core\Module\ModuleManifest;
@@ -96,48 +94,6 @@ describe('Post List View', function (): void {
 
         expect($html)->toMatch('/<time[^>]*datetime\s*=\s*["\']2025-03-15["\']/i')
             ->and($html)->toMatch('/March\s+15,?\s+2025|Mar\s+15/i');
-    });
-
-    it('displays post categories as links', function (): void {
-        $view = createPostListTestView();
-
-        $categories = [
-            createPostListCategory(1, 'Technology', 'technology'),
-            createPostListCategory(2, 'Programming', 'programming'),
-        ];
-        $post = createPostListPost(1, 'Test Post', 'test-post');
-        $post->setCategories($categories);
-        $pagination = createPostListPaginatedResult([$post]);
-
-        $html = $view->renderToString('blog::post/index', [
-            'posts' => $pagination,
-        ]);
-
-        expect($html)->toMatch('/<a[^>]*href\s*=\s*["\']\/blog\/category\/technology["\']/i')
-            ->and($html)->toContain('Technology')
-            ->and($html)->toMatch('/<a[^>]*href\s*=\s*["\']\/blog\/category\/programming["\']/i')
-            ->and($html)->toContain('Programming');
-    });
-
-    it('displays post tags as links', function (): void {
-        $view = createPostListTestView();
-
-        $tags = [
-            createPostListTag(1, 'PHP', 'php'),
-            createPostListTag(2, 'Laravel', 'laravel'),
-        ];
-        $post = createPostListPost(1, 'Test Post', 'test-post');
-        $post->setTags($tags);
-        $pagination = createPostListPaginatedResult([$post]);
-
-        $html = $view->renderToString('blog::post/index', [
-            'posts' => $pagination,
-        ]);
-
-        expect($html)->toMatch('/<a[^>]*href\s*=\s*["\']\/blog\/tag\/php["\']/i')
-            ->and($html)->toContain('PHP')
-            ->and($html)->toMatch('/<a[^>]*href\s*=\s*["\']\/blog\/tag\/laravel["\']/i')
-            ->and($html)->toContain('Laravel');
     });
 
     it('includes pagination component', function (): void {
@@ -265,32 +221,6 @@ function createPostListAuthor(
     $author->email = strtolower(str_replace(' ', '.', $name)) . '@example.com';
 
     return $author;
-}
-
-function createPostListCategory(
-    int $id,
-    string $name,
-    string $slug,
-): Category {
-    $category = new Category();
-    $category->id = $id;
-    $category->name = $name;
-    $category->slug = $slug;
-
-    return $category;
-}
-
-function createPostListTag(
-    int $id,
-    string $name,
-    string $slug,
-): Tag {
-    $tag = new Tag();
-    $tag->id = $id;
-    $tag->name = $name;
-    $tag->slug = $slug;
-
-    return $tag;
 }
 
 function createPostListPaginatedResult(

@@ -1,0 +1,13 @@
+{* Breadcrumb navigation template *}
+{* Pass items as array of ['label' => string, 'url' => ?string] - null url means current page *}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/blog">Blog</a>
+    {foreach $items as $item}
+        &gt;
+        {if $item['url'] ?? null}
+            <a href="{$item['url']}">{$item['label']}</a>
+        {else}
+            <span aria-current="page">{$item['label']}</span>
+        {/if}
+    {/foreach}
+</nav>

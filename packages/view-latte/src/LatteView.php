@@ -14,14 +14,16 @@ class LatteView implements ViewInterface
     public function __construct(
         private Engine $engine,
         private TemplateResolverInterface $resolver,
-    ) {}
+    ) {
+        // Set our custom loader so includes use the same module resolution
+        $this->engine->setLoader(new ModuleLoader($resolver));
+    }
 
     public function render(
         string $template,
         array $data = [],
     ): Response {
-        $path = $this->resolver->resolve($template);
-        $html = $this->engine->renderToString($path, $data);
+        $html = $this->engine->renderToString($template, $data);
 
         return Response::html($html);
     }
@@ -30,8 +32,6 @@ class LatteView implements ViewInterface
         string $template,
         array $data = [],
     ): string {
-        $path = $this->resolver->resolve($template);
-
-        return $this->engine->renderToString($path, $data);
+        return $this->engine->renderToString($template, $data);
     }
 }

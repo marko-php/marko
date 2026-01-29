@@ -23,7 +23,7 @@ describe('Comment Verification Email Template', function (): void {
         $post = createVerificationEmailPost(1, 'How to Build APIs', 'how-to-build-apis');
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
 
-        $html = $view->renderToString('blog::email/comment-verification', [
+        $html = $view->renderToString('blog::email/comment-verification/html', [
             'comment' => $comment,
             'post' => $post,
             'verificationUrl' => 'https://example.com/verify?token=abc123',
@@ -40,7 +40,7 @@ describe('Comment Verification Email Template', function (): void {
         $post = createVerificationEmailPost(1, 'Test Post', 'test-post');
         $comment = createVerificationEmailComment($post, 'Jane Smith', 'jane@example.com');
 
-        $html = $view->renderToString('blog::email/comment-verification', [
+        $html = $view->renderToString('blog::email/comment-verification/html', [
             'comment' => $comment,
             'post' => $post,
             'verificationUrl' => 'https://example.com/verify?token=abc123',
@@ -57,7 +57,7 @@ describe('Comment Verification Email Template', function (): void {
         $post = createVerificationEmailPost(1, 'Advanced PHP Patterns', 'advanced-php-patterns');
         $comment = createVerificationEmailComment($post, 'Bob Wilson', 'bob@example.com');
 
-        $html = $view->renderToString('blog::email/comment-verification', [
+        $html = $view->renderToString('blog::email/comment-verification/html', [
             'comment' => $comment,
             'post' => $post,
             'verificationUrl' => 'https://example.com/verify?token=abc123',
@@ -75,7 +75,7 @@ describe('Comment Verification Email Template', function (): void {
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
         $verificationUrl = 'https://example.com/blog/verify?token=unique123';
 
-        $html = $view->renderToString('blog::email/comment-verification', [
+        $html = $view->renderToString('blog::email/comment-verification/html', [
             'comment' => $comment,
             'post' => $post,
             'verificationUrl' => $verificationUrl,
@@ -92,7 +92,7 @@ describe('Comment Verification Email Template', function (): void {
         $post = createVerificationEmailPost(1, 'Test Post', 'test-post');
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
 
-        $html = $view->renderToString('blog::email/comment-verification', [
+        $html = $view->renderToString('blog::email/comment-verification/html', [
             'comment' => $comment,
             'post' => $post,
             'verificationUrl' => 'https://example.com/verify?token=abc123',
@@ -110,7 +110,7 @@ describe('Comment Verification Email Template', function (): void {
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
         $verificationUrl = 'https://example.com/verify?token=abc123';
 
-        $text = $view->renderToString('blog::email/comment-verification-text', [
+        $text = $view->renderToString('blog::email/comment-verification/text', [
             'comment' => $comment,
             'post' => $post,
             'verificationUrl' => $verificationUrl,
@@ -132,7 +132,7 @@ describe('Comment Verification Email Template', function (): void {
         $post = createVerificationEmailPost(1, 'Test Post', 'test-post');
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
 
-        $html = $view->renderToString('blog::email/comment-verification', [
+        $html = $view->renderToString('blog::email/comment-verification/html', [
             'comment' => $comment,
             'post' => $post,
             'verificationUrl' => 'https://example.com/verify?token=abc123',
@@ -154,7 +154,7 @@ describe('Comment Verification Email Template', function (): void {
         $post = createVerificationEmailPost(1, 'Test Post', 'test-post');
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
 
-        $html = $view->renderToString('blog::email/comment-verification', [
+        $html = $view->renderToString('blog::email/comment-verification/html', [
             'comment' => $comment,
             'post' => $post,
             'verificationUrl' => 'https://example.com/verify?token=abc123',

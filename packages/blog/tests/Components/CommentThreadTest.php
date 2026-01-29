@@ -21,7 +21,7 @@ describe('Comment Thread Component', function (): void {
             content: 'This is a great post!',
         );
 
-        $html = $view->renderToString('blog::components/comment-thread', [
+        $html = $view->renderToString('blog::comment/thread', [
             'comments' => [$comment],
             'maxDepth' => 5,
             'postId' => 1,
@@ -41,7 +41,7 @@ describe('Comment Thread Component', function (): void {
             createdAt: '2024-03-15 14:30:00',
         );
 
-        $html = $view->renderToString('blog::components/comment-thread', [
+        $html = $view->renderToString('blog::comment/thread', [
             'comments' => [$comment],
             'maxDepth' => 5,
             'postId' => 1,
@@ -68,7 +68,7 @@ describe('Comment Thread Component', function (): void {
             children: [$childComment],
         );
 
-        $html = $view->renderToString('blog::components/comment-thread', [
+        $html = $view->renderToString('blog::comment/thread', [
             'comments' => [$parentComment],
             'maxDepth' => 5,
             'postId' => 1,
@@ -108,7 +108,7 @@ describe('Comment Thread Component', function (): void {
         );
 
         // With maxDepth=2, only depth 0 and 1 should be rendered
-        $html = $view->renderToString('blog::components/comment-thread', [
+        $html = $view->renderToString('blog::comment/thread', [
             'comments' => [$rootComment],
             'maxDepth' => 2,
             'postId' => 1,
@@ -129,7 +129,7 @@ describe('Comment Thread Component', function (): void {
             content: 'A comment that can be replied to.',
         );
 
-        $html = $view->renderToString('blog::components/comment-thread', [
+        $html = $view->renderToString('blog::comment/thread', [
             'comments' => [$comment],
             'maxDepth' => 3,
             'postId' => 42,
@@ -158,7 +158,7 @@ describe('Comment Thread Component', function (): void {
 
         // maxDepth=2 means depth 0 and 1 are allowed
         // Child at depth 1 should NOT have a reply link (would be depth 2)
-        $html = $view->renderToString('blog::components/comment-thread', [
+        $html = $view->renderToString('blog::comment/thread', [
             'comments' => [$parentComment],
             'maxDepth' => 2,
             'postId' => 1,
@@ -174,7 +174,7 @@ describe('Comment Thread Component', function (): void {
     it('shows message when no comments', function (): void {
         $view = createCommentThreadTestView();
 
-        $html = $view->renderToString('blog::components/comment-thread', [
+        $html = $view->renderToString('blog::comment/thread', [
             'comments' => [],
             'maxDepth' => 5,
             'postId' => 1,
@@ -192,7 +192,7 @@ describe('Comment Thread Component', function (): void {
             content: 'Test content.',
         );
 
-        $html = $view->renderToString('blog::components/comment-thread', [
+        $html = $view->renderToString('blog::comment/thread', [
             'comments' => [$comment],
             'maxDepth' => 5,
             'postId' => 1,
@@ -214,7 +214,7 @@ describe('Comment Thread Component', function (): void {
             content: 'Test content.',
         );
 
-        $html = $view->renderToString('blog::components/comment-thread', [
+        $html = $view->renderToString('blog::comment/thread', [
             'comments' => [$comment],
             'maxDepth' => 5,
             'postId' => 1,
@@ -245,7 +245,7 @@ describe('Comment Thread Component', function (): void {
             content: 'Third comment.',
         );
 
-        $html = $view->renderToString('blog::components/comment-thread', [
+        $html = $view->renderToString('blog::comment/thread', [
             'comments' => [$comment1, $comment2, $comment3],
             'maxDepth' => 5,
             'postId' => 1,

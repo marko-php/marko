@@ -72,6 +72,7 @@ class TagController
         return $this->view->render('blog::tag/index', [
             'tag' => $tag,
             'posts' => $paginatedResult,
+            'breadcrumbs' => [['label' => $tag->name]],
         ]);
     }
 }

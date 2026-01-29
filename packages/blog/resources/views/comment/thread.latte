@@ -29,7 +29,7 @@
     </footer>
     {if $comment->getChildren() && $currentDepth + 1 < $maxDepth}
     <div class="comment-replies">
-        {include 'comment-thread.latte', comments: $comment->getChildren(), maxDepth: $maxDepth, postId: $postId, currentDepth: $currentDepth + 1}
+        {include 'blog::comment/thread', comments: $comment->getChildren(), maxDepth: $maxDepth, postId: $postId, currentDepth: $currentDepth + 1}
     </div>
     {/if}
 </article>
