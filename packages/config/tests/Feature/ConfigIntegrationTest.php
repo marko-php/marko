@@ -439,8 +439,9 @@ PHP);
                 ->and($enterpriseConfig->get('pricing.discount_rate'))->toBe(0.25)
                 ->and($premiumConfig->get('pricing.currency'))->toBe('USD')
                 ->and($enterpriseConfig->get('pricing.currency'))->toBe('USD')
-                ->and($repository->get('pricing.currency'))->toBeNull()
-                ->and($repository->get('pricing.discount_rate'))->toBeNull()
+                // Original unscoped repository throws because keys don't exist at unscoped level
+                ->and(fn () => $repository->get('pricing.currency'))->toThrow(ConfigNotFoundException::class)
+                ->and(fn () => $repository->get('pricing.discount_rate'))->toThrow(ConfigNotFoundException::class)
                 ->and($premiumConfig->getFloat('pricing.discount_rate'))->toBe(0.15)
                 ->and($enterpriseConfig->getString('pricing.currency'))->toBe('USD');
 

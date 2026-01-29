@@ -221,6 +221,11 @@ readonly class StubBlogConfig implements BlogConfigInterface
     {
         return 'blog_verified';
     }
+
+    public function getSiteName(): string
+    {
+        return 'Test Blog';
+    }
 }
 
 /**

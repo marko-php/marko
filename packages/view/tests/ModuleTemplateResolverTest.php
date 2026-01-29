@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepository;
 use Marko\View\Exceptions\TemplateNotFoundException;
@@ -19,60 +20,54 @@ function createTestViewConfig(
 
         public function get(
             string $key,
-            mixed $default = null,
             ?string $scope = null,
         ): mixed {
-            return $default;
+            if ($key === 'view.extension') {
+                return $this->extension;
+            }
+            throw new ConfigNotFoundException($key);
         }
 
         public function has(
             string $key,
             ?string $scope = null,
         ): bool {
-            return false;
+            return $key === 'view.extension';
         }
 
         public function getString(
             string $key,
-            ?string $default = null,
             ?string $scope = null,
         ): string {
-            return match($key) {
-                'view.extension' => $this->extension,
-                default => $default ?? '',
-            };
+            return (string) $this->get($key, $scope);
         }
 
         public function getInt(
             string $key,
-            ?int $default = null,
             ?string $scope = null,
         ): int {
-            return $default ?? 0;
+            return (int) $this->get($key, $scope);
         }
 
         public function getFloat(
             string $key,
-            ?float $default = null,
             ?string $scope = null,
         ): float {
-            return $default ?? 0.0;
+            return (float) $this->get($key, $scope);
         }
 
         public function getBool(
             string $key,
-            ?bool $default = null,
             ?string $scope = null,
         ): bool {
-            return $default ?? false;
+            return (bool) $this->get($key, $scope);
         }
 
         public function getArray(
             string $key,
-            ?array $default = null,
             ?string $scope = null,
         ): array {
-            return $default ?? [];
+            return (array) $this->get($key, $scope);
         }
 
         public function all(

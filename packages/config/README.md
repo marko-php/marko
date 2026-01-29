@@ -83,12 +83,7 @@ class DatabaseConnection
         $host = $this->config->get('database.host');
         $port = $this->config->get('database.port');
         $name = $this->config->get('database.name');
-
-        // With default value
-        $charset = $this->config->get(
-            'database.connection.charset',
-            'utf8mb4',
-        );
+        $charset = $this->config->get('database.connection.charset');
 
         return new PDO("mysql:host={$host};port={$port};dbname={$name};charset={$charset}");
     }
@@ -97,7 +92,7 @@ class DatabaseConnection
 
 ### Type-Safe Accessors
 
-Use typed accessor methods to get values with automatic type validation. These methods throw `ConfigNotFoundException` when the key is missing (unless a default is provided) and `ConfigException` on type mismatch.
+Use typed accessor methods to get values with automatic type validation. These methods throw `ConfigNotFoundException` when the key is missing and `ConfigException` on type mismatch.
 
 ```php
 <?php
@@ -106,9 +101,7 @@ declare(strict_types=1);
 
 // Get string value (throws if not found or not a string)
 $host = $config->getString('database.host');
-
-// Get with default
-$driver = $config->getString('database.driver', 'mysql');
+$driver = $config->getString('database.driver');
 
 // Other typed accessors
 $port = $config->getInt('database.port');
@@ -116,7 +109,7 @@ $debug = $config->getBool('app.debug');
 $rate = $config->getFloat('pricing.tax_rate');
 $drivers = $config->getArray('cache.available_drivers');
 
-// Check existence before accessing
+// Check existence before accessing optional config
 if ($config->has('feature.experimental')) {
     $enabled = $config->getBool('feature.experimental');
 }
@@ -355,13 +348,12 @@ class CachedConfigRepository extends ConfigRepository
 
     public function get(
         string $key,
-        mixed $default = null,
         ?string $scope = null,
     ): mixed {
         $cacheKey = $key . ($scope ? ":{$scope}" : '');
 
         if (!isset($this->cache[$cacheKey])) {
-            $this->cache[$cacheKey] = parent::get($key, $default, $scope);
+            $this->cache[$cacheKey] = parent::get($key, $scope);
         }
 
         return $this->cache[$cacheKey];
@@ -374,16 +366,18 @@ class CachedConfigRepository extends ConfigRepository
 ### ConfigRepositoryInterface
 
 ```php
-public function get(string $key, mixed $default = null, ?string $scope = null): mixed
+public function get(string $key, ?string $scope = null): mixed
 public function has(string $key, ?string $scope = null): bool
-public function getString(string $key, ?string $default = null, ?string $scope = null): string
-public function getInt(string $key, ?int $default = null, ?string $scope = null): int
-public function getBool(string $key, ?bool $default = null, ?string $scope = null): bool
-public function getFloat(string $key, ?float $default = null, ?string $scope = null): float
-public function getArray(string $key, ?array $default = null, ?string $scope = null): array
+public function getString(string $key, ?string $scope = null): string
+public function getInt(string $key, ?string $scope = null): int
+public function getBool(string $key, ?string $scope = null): bool
+public function getFloat(string $key, ?string $scope = null): float
+public function getArray(string $key, ?string $scope = null): array
 public function all(?string $scope = null): array
 public function withScope(string $scope): ConfigRepositoryInterface
 ```
+
+All getter methods throw `ConfigNotFoundException` when the key does not exist. Use `has()` to check for existence before accessing, or define all defaults in your config files.
 
 ### ConfigLoader
 

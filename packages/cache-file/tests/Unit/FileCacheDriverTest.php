@@ -8,6 +8,7 @@ use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\Cache\File\Driver\FileCacheDriver;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 
 function getCacheTestPath(): string
 {
@@ -43,14 +44,13 @@ function createTestCacheConfig(
 
         public function get(
             string $key,
-            mixed $default = null,
             ?string $scope = null,
         ): mixed {
             return match ($key) {
                 'cache.path' => $this->path,
                 'cache.default_ttl' => $this->defaultTtl,
                 'cache.driver' => 'file',
-                default => $default,
+                default => throw new ConfigNotFoundException($key),
             };
         }
 
@@ -63,42 +63,37 @@ function createTestCacheConfig(
 
         public function getString(
             string $key,
-            ?string $default = null,
             ?string $scope = null,
         ): string {
-            return (string) $this->get($key, $default, $scope);
+            return (string) $this->get($key, $scope);
         }
 
         public function getInt(
             string $key,
-            ?int $default = null,
             ?string $scope = null,
         ): int {
-            return (int) $this->get($key, $default, $scope);
+            return (int) $this->get($key, $scope);
         }
 
         public function getBool(
             string $key,
-            ?bool $default = null,
             ?string $scope = null,
         ): bool {
-            return (bool) $this->get($key, $default, $scope);
+            return (bool) $this->get($key, $scope);
         }
 
         public function getFloat(
             string $key,
-            ?float $default = null,
             ?string $scope = null,
         ): float {
-            return (float) $this->get($key, $default, $scope);
+            return (float) $this->get($key, $scope);
         }
 
         public function getArray(
             string $key,
-            ?array $default = null,
             ?string $scope = null,
         ): array {
-            return (array) $this->get($key, $default, $scope);
+            return (array) $this->get($key, $scope);
         }
 
         public function all(

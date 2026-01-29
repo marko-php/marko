@@ -25,11 +25,13 @@ it('gets nested value with dot notation', function () {
     expect($config->get('database.connection.host'))->toBe('localhost');
 });
 
-it('returns default value when key is missing', function () {
+it('throws ConfigNotFoundException when get is called with missing key', function () {
     $config = new ConfigRepository(['name' => 'Marko']);
 
-    expect($config->get('missing', 'default'))->toBe('default')
-        ->and($config->get('missing.nested.key', 'fallback'))->toBe('fallback');
+    expect(fn () => $config->get('missing'))
+        ->toThrow(ConfigNotFoundException::class)
+        ->and(fn () => $config->get('missing.nested.key'))
+        ->toThrow(ConfigNotFoundException::class);
 });
 
 it('checks if key exists with has()', function () {
@@ -46,7 +48,7 @@ it('checks if key exists with has()', function () {
         ->and($config->has('database.missing'))->toBeFalse();
 });
 
-it('gets typed values with type-safe accessors', function () {
+it('returns value when key exists for all getter types', function () {
     $config = new ConfigRepository([
         'name' => 'Marko',
         'port' => 8080,
@@ -55,7 +57,8 @@ it('gets typed values with type-safe accessors', function () {
         'tags' => ['php', 'framework'],
     ]);
 
-    expect($config->getString('name'))->toBe('Marko')
+    expect($config->get('name'))->toBe('Marko')
+        ->and($config->getString('name'))->toBe('Marko')
         ->and($config->getInt('port'))->toBe(8080)
         ->and($config->getBool('debug'))->toBeTrue()
         ->and($config->getFloat('rate'))->toBe(1.5)
@@ -80,18 +83,38 @@ it('throws ConfigException on type mismatch', function () {
         ->toThrow(ConfigException::class);
 });
 
-it('throws ConfigNotFoundException when key is missing and no default provided', function () {
+it('throws ConfigNotFoundException when getString is called with missing key', function () {
     $config = new ConfigRepository(['name' => 'Marko']);
 
     expect(fn () => $config->getString('missing'))
-        ->toThrow(ConfigNotFoundException::class)
-        ->and(fn () => $config->getInt('missing'))
-        ->toThrow(ConfigNotFoundException::class)
-        ->and(fn () => $config->getBool('missing'))
-        ->toThrow(ConfigNotFoundException::class)
-        ->and(fn () => $config->getFloat('missing'))
-        ->toThrow(ConfigNotFoundException::class)
-        ->and(fn () => $config->getArray('missing'))
+        ->toThrow(ConfigNotFoundException::class);
+});
+
+it('throws ConfigNotFoundException when getInt is called with missing key', function () {
+    $config = new ConfigRepository(['name' => 'Marko']);
+
+    expect(fn () => $config->getInt('missing'))
+        ->toThrow(ConfigNotFoundException::class);
+});
+
+it('throws ConfigNotFoundException when getBool is called with missing key', function () {
+    $config = new ConfigRepository(['name' => 'Marko']);
+
+    expect(fn () => $config->getBool('missing'))
+        ->toThrow(ConfigNotFoundException::class);
+});
+
+it('throws ConfigNotFoundException when getFloat is called with missing key', function () {
+    $config = new ConfigRepository(['name' => 'Marko']);
+
+    expect(fn () => $config->getFloat('missing'))
+        ->toThrow(ConfigNotFoundException::class);
+});
+
+it('throws ConfigNotFoundException when getArray is called with missing key', function () {
+    $config = new ConfigRepository(['name' => 'Marko']);
+
+    expect(fn () => $config->getArray('missing'))
         ->toThrow(ConfigNotFoundException::class);
 });
 
@@ -151,6 +174,30 @@ it('falls back to unscoped value when scope and default are missing', function (
     // 'name' is not in scopes or default, should fall back to unscoped value
     expect($config->get('store.name', scope: 'us'))->toBe('My Store')
         ->and($config->get('store.name', scope: 'unknown'))->toBe('My Store');
+});
+
+it('still supports scoped config cascade for missing scope keys', function () {
+    $config = new ConfigRepository([
+        'app' => [
+            'default' => [
+                'name' => 'DefaultApp',
+                'version' => '1.0',
+            ],
+            'scopes' => [
+                'tenant-1' => [
+                    'name' => 'Tenant1App',
+                    // version not defined - should cascade to default
+                ],
+            ],
+        ],
+    ]);
+
+    // Scope-specific value exists
+    expect($config->get('app.name', scope: 'tenant-1'))->toBe('Tenant1App')
+        // Scope-specific value missing - cascades to default
+        ->and($config->get('app.version', scope: 'tenant-1'))->toBe('1.0')
+        // Unknown scope - cascades to default
+        ->and($config->get('app.name', scope: 'unknown'))->toBe('DefaultApp');
 });
 
 it('returns entire config with all()', function () {
@@ -238,10 +285,11 @@ it('withScope returns a new ConfigRepository with default scope set', function (
 
     $tenantConfig = $config->withScope('tenant-1');
 
-    // Returns ConfigRepositoryInterface, uses scope automatically, original remains unscoped
+    // Returns ConfigRepositoryInterface, uses scope automatically
     expect($tenantConfig)->toBeInstanceOf(ConfigRepositoryInterface::class)
         ->and($tenantConfig->get('pricing.currency'))->toBe('EUR')
-        ->and($config->get('pricing.currency'))->toBeNull();
+        // Original without scope throws because key doesn't exist at unscoped level
+        ->and(fn () => $config->get('pricing.currency'))->toThrow(ConfigNotFoundException::class);
 });
 
 it('uses unscoped values when scope is null', function () {

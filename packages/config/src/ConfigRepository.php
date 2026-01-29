@@ -16,7 +16,6 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
 
     public function get(
         string $key,
-        mixed $default = null,
         ?string $scope = null,
     ): mixed {
         $effectiveScope = $scope ?? $this->defaultScope;
@@ -30,7 +29,11 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
 
         [$found, $value] = $this->resolveKey($key);
 
-        return $found ? $value : $default;
+        if (!$found) {
+            throw new ConfigNotFoundException($key);
+        }
+
+        return $value;
     }
 
     public function has(
@@ -109,13 +112,11 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
      */
     public function getString(
         string $key,
-        ?string $default = null,
         ?string $scope = null,
     ): string {
-        $this->ensureKeyExists($key, $default, $scope);
-        $value = $this->get($key, $default, $scope);
+        $value = $this->get($key, $scope);
 
-        if ($value !== null && !is_scalar($value)) {
+        if (!is_scalar($value)) {
             throw new ConfigException(
                 sprintf('Configuration key "%s" is not a string', $key),
                 sprintf('Expected string, got %s', get_debug_type($value)),
@@ -131,13 +132,11 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
      */
     public function getInt(
         string $key,
-        ?int $default = null,
         ?string $scope = null,
     ): int {
-        $this->ensureKeyExists($key, $default, $scope);
-        $value = $this->get($key, $default, $scope);
+        $value = $this->get($key, $scope);
 
-        if ($value !== null && !is_numeric($value)) {
+        if (!is_numeric($value)) {
             throw new ConfigException(
                 sprintf('Configuration key "%s" is not an integer', $key),
                 sprintf('Expected integer, got %s', get_debug_type($value)),
@@ -153,13 +152,11 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
      */
     public function getBool(
         string $key,
-        ?bool $default = null,
         ?string $scope = null,
     ): bool {
-        $this->ensureKeyExists($key, $default, $scope);
-        $value = $this->get($key, $default, $scope);
+        $value = $this->get($key, $scope);
 
-        if ($value !== null && !is_scalar($value)) {
+        if (!is_scalar($value)) {
             throw new ConfigException(
                 sprintf('Configuration key "%s" is not a boolean', $key),
                 sprintf('Expected boolean, got %s', get_debug_type($value)),
@@ -175,13 +172,11 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
      */
     public function getFloat(
         string $key,
-        ?float $default = null,
         ?string $scope = null,
     ): float {
-        $this->ensureKeyExists($key, $default, $scope);
-        $value = $this->get($key, $default, $scope);
+        $value = $this->get($key, $scope);
 
-        if ($value !== null && !is_numeric($value)) {
+        if (!is_numeric($value)) {
             throw new ConfigException(
                 sprintf('Configuration key "%s" is not a float', $key),
                 sprintf('Expected float, got %s', get_debug_type($value)),
@@ -197,13 +192,11 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
      */
     public function getArray(
         string $key,
-        ?array $default = null,
         ?string $scope = null,
     ): array {
-        $this->ensureKeyExists($key, $default, $scope);
-        $value = $this->get($key, $default, $scope);
+        $value = $this->get($key, $scope);
 
-        if ($value !== null && !is_array($value)) {
+        if (!is_array($value)) {
             throw new ConfigException(
                 sprintf('Configuration key "%s" is not an array', $key),
                 sprintf('Expected array, got %s', get_debug_type($value)),
@@ -211,20 +204,7 @@ readonly class ConfigRepository implements ConfigRepositoryInterface
             );
         }
 
-        return (array) $value;
-    }
-
-    /**
-     * @throws ConfigNotFoundException
-     */
-    private function ensureKeyExists(
-        string $key,
-        mixed $default,
-        ?string $scope,
-    ): void {
-        if ($default === null && !$this->has($key, $scope)) {
-            throw new ConfigNotFoundException($key);
-        }
+        return $value;
     }
 
     public function all(

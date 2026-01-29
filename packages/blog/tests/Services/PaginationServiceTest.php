@@ -52,6 +52,11 @@ function createMockBlogConfig(
         {
             return 'blog_verified';
         }
+
+        public function getSiteName(): string
+        {
+            return 'Test Blog';
+        }
     };
 }
 

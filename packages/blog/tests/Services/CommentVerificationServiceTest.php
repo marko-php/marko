@@ -680,6 +680,11 @@ class MockBlogConfig implements BlogConfigInterface
     {
         return $this->cookieName;
     }
+
+    public function getSiteName(): string
+    {
+        return 'Test Blog';
+    }
 }
 
 class MockEventDispatcher implements EventDispatcherInterface

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Blog\Config\BlogConfig;
 use Marko\Blog\Exceptions\InvalidRoutePrefixException;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 
 function createBlogMockConfigRepository(
     array $configData = [],
@@ -17,10 +18,13 @@ function createBlogMockConfigRepository(
 
         public function get(
             string $key,
-            mixed $default = null,
             ?string $scope = null,
         ): mixed {
-            return $this->data[$key] ?? $default;
+            if (!$this->has($key, $scope)) {
+                throw new ConfigNotFoundException($key);
+            }
+
+            return $this->data[$key];
         }
 
         public function has(
@@ -32,42 +36,37 @@ function createBlogMockConfigRepository(
 
         public function getString(
             string $key,
-            ?string $default = null,
             ?string $scope = null,
         ): string {
-            return (string) ($this->data[$key] ?? $default);
+            return (string) $this->get($key, $scope);
         }
 
         public function getInt(
             string $key,
-            ?int $default = null,
             ?string $scope = null,
         ): int {
-            return (int) ($this->data[$key] ?? $default);
+            return (int) $this->get($key, $scope);
         }
 
         public function getBool(
             string $key,
-            ?bool $default = null,
             ?string $scope = null,
         ): bool {
-            return (bool) ($this->data[$key] ?? $default);
+            return (bool) $this->get($key, $scope);
         }
 
         public function getFloat(
             string $key,
-            ?float $default = null,
             ?string $scope = null,
         ): float {
-            return (float) ($this->data[$key] ?? $default);
+            return (float) $this->get($key, $scope);
         }
 
         public function getArray(
             string $key,
-            ?array $default = null,
             ?string $scope = null,
         ): array {
-            return (array) ($this->data[$key] ?? $default ?? []);
+            return (array) $this->get($key, $scope);
         }
 
         public function all(

@@ -463,6 +463,11 @@ function createCommentMockBlogConfig(): BlogConfigInterface
         {
             return 'comment_verified';
         }
+
+        public function getSiteName(): string
+        {
+            return 'Test Blog';
+        }
     };
 }
 

@@ -6,6 +6,7 @@ namespace Marko\Mail\Tests\Integration;
 
 use Closure;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Mail\Config\MailConfig;
 use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Exception\MailException;
@@ -30,50 +31,48 @@ function createIntegrationConfigRepository(
 
         public function get(
             string $key,
-            mixed $default = null,
             ?string $scope = null,
         ): mixed {
-            return $this->values[$key] ?? $default;
+            if (!$this->has($key, $scope)) {
+                throw new ConfigNotFoundException($key);
+            }
+
+            return $this->values[$key];
         }
 
         public function getString(
             string $key,
-            ?string $default = null,
             ?string $scope = null,
         ): string {
-            return (string) ($this->values[$key] ?? $default ?? '');
+            return (string) $this->get($key, $scope);
         }
 
         public function getInt(
             string $key,
-            ?int $default = null,
             ?string $scope = null,
         ): int {
-            return (int) ($this->values[$key] ?? $default ?? 0);
+            return (int) $this->get($key, $scope);
         }
 
         public function getBool(
             string $key,
-            ?bool $default = null,
             ?string $scope = null,
         ): bool {
-            return (bool) ($this->values[$key] ?? $default ?? false);
+            return (bool) $this->get($key, $scope);
         }
 
         public function getFloat(
             string $key,
-            ?float $default = null,
             ?string $scope = null,
         ): float {
-            return (float) ($this->values[$key] ?? $default ?? 0.0);
+            return (float) $this->get($key, $scope);
         }
 
         public function getArray(
             string $key,
-            ?array $default = null,
             ?string $scope = null,
         ): array {
-            return (array) ($this->values[$key] ?? $default ?? []);
+            return (array) $this->get($key, $scope);
         }
 
         public function has(
