@@ -14,26 +14,26 @@ readonly class QueueConfig
 
     public function driver(): string
     {
-        return $this->config->getString('queue.driver', 'sync');
+        return $this->config->getString('queue.driver');
     }
 
     public function connection(): string
     {
-        return $this->config->getString('queue.connection', 'default');
+        return $this->config->getString('queue.connection');
     }
 
     public function queue(): string
     {
-        return $this->config->getString('queue.queue', 'default');
+        return $this->config->getString('queue.queue');
     }
 
     public function retryAfter(): int
     {
-        return $this->config->getInt('queue.retry_after', 90);
+        return $this->config->getInt('queue.retry_after');
     }
 
     public function maxAttempts(): int
     {
-        return $this->config->getInt('queue.max_attempts', 3);
+        return $this->config->getInt('queue.max_attempts');
     }
 }

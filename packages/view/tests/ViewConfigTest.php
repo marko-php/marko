@@ -82,8 +82,22 @@ function createViewConfigRepository(
     };
 }
 
+/**
+ * Helper to create a config repository with all default view config values.
+ */
+function createDefaultViewConfigRepository(
+    array $overrides = [],
+): ConfigRepositoryInterface {
+    return createViewConfigRepository(array_merge([
+        'view.cache_directory' => '/tmp/views',
+        'view.extension' => '.latte',
+        'view.auto_refresh' => true,
+        'view.strict_types' => true,
+    ], $overrides));
+}
+
 it('ViewConfig has cache directory property', function () {
-    $config = createViewConfigRepository([
+    $config = createDefaultViewConfigRepository([
         'view.cache_directory' => '/var/cache/views',
     ]);
 
@@ -92,48 +106,54 @@ it('ViewConfig has cache directory property', function () {
     expect($viewConfig->cacheDirectory())->toBe('/var/cache/views');
 });
 
-it('ViewConfig has extension with default', function () {
-    // Test with explicit value
-    $configWithExtension = createViewConfigRepository([
+it('ViewConfig has extension property', function () {
+    $config = createDefaultViewConfigRepository([
         'view.extension' => '.blade.php',
     ]);
-    $viewConfigWithExtension = new ViewConfig($configWithExtension);
-    expect($viewConfigWithExtension->extension())->toBe('.blade.php');
 
-    // Test default value
-    $configEmpty = createViewConfigRepository();
-    $viewConfigEmpty = new ViewConfig($configEmpty);
-    expect($viewConfigEmpty->extension())->toBe('.latte');
+    $viewConfig = new ViewConfig($config);
+
+    expect($viewConfig->extension())->toBe('.blade.php');
 });
 
-it('ViewConfig has auto refresh with default', function () {
-    // Test with explicit value (true)
-    $configWithAutoRefresh = createViewConfigRepository([
+it('ViewConfig has auto refresh property', function () {
+    // Test with explicit true
+    $configTrue = createDefaultViewConfigRepository([
         'view.auto_refresh' => true,
     ]);
-    $viewConfigWithAutoRefresh = new ViewConfig($configWithAutoRefresh);
-    expect($viewConfigWithAutoRefresh->autoRefresh())->toBeTrue();
-
-    // Test default value (true for dev)
-    $configEmpty = createViewConfigRepository();
-    $viewConfigEmpty = new ViewConfig($configEmpty);
-    expect($viewConfigEmpty->autoRefresh())->toBeTrue();
+    $viewConfigTrue = new ViewConfig($configTrue);
+    expect($viewConfigTrue->autoRefresh())->toBeTrue();
 
     // Test with explicit false
-    $configWithAutoRefreshFalse = createViewConfigRepository([
+    $configFalse = createDefaultViewConfigRepository([
         'view.auto_refresh' => false,
     ]);
-    $viewConfigWithAutoRefreshFalse = new ViewConfig($configWithAutoRefreshFalse);
-    expect($viewConfigWithAutoRefreshFalse->autoRefresh())->toBeFalse();
+    $viewConfigFalse = new ViewConfig($configFalse);
+    expect($viewConfigFalse->autoRefresh())->toBeFalse();
 });
 
-it('ViewConfig loads from config repository', function () {
-    // Test that all properties are loaded from the config repository
+it('ViewConfig has strict types property', function () {
+    // Test with explicit true
+    $configTrue = createDefaultViewConfigRepository([
+        'view.strict_types' => true,
+    ]);
+    $viewConfigTrue = new ViewConfig($configTrue);
+    expect($viewConfigTrue->strictTypes())->toBeTrue();
+
+    // Test with explicit false
+    $configFalse = createDefaultViewConfigRepository([
+        'view.strict_types' => false,
+    ]);
+    $viewConfigFalse = new ViewConfig($configFalse);
+    expect($viewConfigFalse->strictTypes())->toBeFalse();
+});
+
+it('ViewConfig loads all properties from config repository', function () {
     $config = createViewConfigRepository([
         'view.cache_directory' => '/custom/cache',
         'view.extension' => '.twig',
         'view.auto_refresh' => false,
-        'view.strict_types' => true,
+        'view.strict_types' => false,
     ]);
 
     $viewConfig = new ViewConfig($config);
@@ -141,14 +161,24 @@ it('ViewConfig loads from config repository', function () {
     expect($viewConfig->cacheDirectory())->toBe('/custom/cache')
         ->and($viewConfig->extension())->toBe('.twig')
         ->and($viewConfig->autoRefresh())->toBeFalse()
-        ->and($viewConfig->strictTypes())->toBeTrue();
-
-    // Test default values when config is empty
-    $emptyConfig = createViewConfigRepository();
-    $emptyViewConfig = new ViewConfig($emptyConfig);
-
-    expect($emptyViewConfig->cacheDirectory())->toBe('/tmp/views')
-        ->and($emptyViewConfig->extension())->toBe('.latte')
-        ->and($emptyViewConfig->autoRefresh())->toBeTrue()
-        ->and($emptyViewConfig->strictTypes())->toBeTrue();
+        ->and($viewConfig->strictTypes())->toBeFalse();
 });
+
+it('ViewConfig uses default config values', function () {
+    $config = createDefaultViewConfigRepository();
+
+    $viewConfig = new ViewConfig($config);
+
+    expect($viewConfig->cacheDirectory())->toBe('/tmp/views')
+        ->and($viewConfig->extension())->toBe('.latte')
+        ->and($viewConfig->autoRefresh())->toBeTrue()
+        ->and($viewConfig->strictTypes())->toBeTrue();
+});
+
+it('ViewConfig throws exception when config key is missing', function () {
+    $config = createViewConfigRepository([]);
+
+    $viewConfig = new ViewConfig($config);
+
+    $viewConfig->cacheDirectory();
+})->throws(ConfigNotFoundException::class);

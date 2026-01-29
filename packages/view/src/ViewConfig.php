@@ -14,21 +14,21 @@ readonly class ViewConfig
 
     public function cacheDirectory(): string
     {
-        return $this->config->getString('view.cache_directory', '/tmp/views');
+        return $this->config->getString('view.cache_directory');
     }
 
     public function extension(): string
     {
-        return $this->config->getString('view.extension', '.latte');
+        return $this->config->getString('view.extension');
     }
 
     public function autoRefresh(): bool
     {
-        return $this->config->getBool('view.auto_refresh', true);
+        return $this->config->getBool('view.auto_refresh');
     }
 
     public function strictTypes(): bool
     {
-        return $this->config->getBool('view.strict_types', true);
+        return $this->config->getBool('view.strict_types');
     }
 }

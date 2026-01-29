@@ -133,8 +133,16 @@ describe('QueueConfig', function (): void {
         expect($queueConfig->maxAttempts())->toBe(5);
     });
 
-    it('provides default values', function (): void {
-        $config = createQueueConfigRepository();
+    it('uses default config values from config file', function (): void {
+        // Defaults are now provided by config/queue.php, not fallback parameters
+        // This test verifies the expected default values match config file
+        $config = createQueueConfigRepository([
+            'queue.driver' => 'sync',
+            'queue.connection' => 'default',
+            'queue.queue' => 'default',
+            'queue.retry_after' => 90,
+            'queue.max_attempts' => 3,
+        ]);
 
         $queueConfig = new QueueConfig($config);
 
@@ -145,22 +153,14 @@ describe('QueueConfig', function (): void {
             ->and($queueConfig->maxAttempts())->toBe(3);
     });
 
-    it('QueueConfig uses environment defaults', function (): void {
-        // QueueConfig should use sensible defaults when no configuration is provided
-        // These defaults are suitable for development environments (sync driver)
-        // while production can override via config files
-
+    it('throws ConfigNotFoundException when required config is missing', function (): void {
         $emptyConfig = createQueueConfigRepository();
         $queueConfig = new QueueConfig($emptyConfig);
 
-        // Verify defaults are appropriate for development environment
-        expect($queueConfig->driver())->toBe('sync')  // sync for immediate execution in dev
-            ->and($queueConfig->connection())->toBe('default')  // standard connection name
-            ->and($queueConfig->queue())->toBe('default')  // standard queue name
-            ->and($queueConfig->retryAfter())->toBe(90)  // 90 seconds reasonable retry window
-            ->and($queueConfig->maxAttempts())->toBe(3);  // 3 attempts before giving up
+        expect(fn () => $queueConfig->driver())->toThrow(ConfigNotFoundException::class);
+    });
 
-        // Verify that explicit config values override the defaults
+    it('allows custom config values to override defaults', function (): void {
         $customConfig = createQueueConfigRepository([
             'queue.driver' => 'database',
             'queue.connection' => 'mysql',

@@ -27,6 +27,15 @@ use Marko\Queue\WorkerInterface;
 function createIntegrationQueueConfig(
     array $values = [],
 ): QueueConfig {
+    // Provide default config values (simulating what config/queue.php provides)
+    $defaults = [
+        'queue.driver' => 'sync',
+        'queue.connection' => 'default',
+        'queue.queue' => 'default',
+        'queue.retry_after' => 90,
+        'queue.max_attempts' => 3,
+    ];
+    $values = array_merge($defaults, $values);
     $configRepository = new readonly class ($values) implements ConfigRepositoryInterface
     {
         public function __construct(
