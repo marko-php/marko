@@ -12,11 +12,11 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
 #[Command(name: 'blog:cleanup', description: 'Clean up expired verification tokens')]
-class CleanupCommand implements CommandInterface
+readonly class CleanupCommand implements CommandInterface
 {
     public function __construct(
-        private readonly TokenRepositoryInterface $tokenRepository,
-        private readonly BlogConfigInterface $config,
+        private TokenRepositoryInterface $tokenRepository,
+        private BlogConfigInterface $config,
     ) {}
 
     public function execute(

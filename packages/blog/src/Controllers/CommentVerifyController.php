@@ -12,13 +12,13 @@ use Marko\Routing\Http\Response;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\View\ViewInterface;
 
-class CommentVerifyController
+readonly class CommentVerifyController
 {
     public function __construct(
-        private readonly CommentVerificationServiceInterface $verificationService,
-        private readonly ViewInterface $view,
-        private readonly CookieJarInterface $cookieJar,
-        private readonly SessionInterface $session,
+        private CommentVerificationServiceInterface $verificationService,
+        private ViewInterface $view,
+        private CookieJarInterface $cookieJar,
+        private SessionInterface $session,
     ) {}
 
     #[Get('/blog/comment/verify/{token}')]

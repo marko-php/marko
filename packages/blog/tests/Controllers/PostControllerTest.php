@@ -86,7 +86,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $response = $controller->index();
 
@@ -110,7 +110,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $response = $controller->show('hello-world');
 
@@ -142,7 +142,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $response = $controller->show('test-post');
 
@@ -165,7 +165,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $response = $controller->show('non-existent');
 
@@ -194,7 +194,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $response = $controller->show('draft-post');
 
@@ -227,7 +227,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->show('full-content-post');
 
@@ -260,7 +260,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->show('post-with-author');
 
@@ -300,7 +300,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->show('post-with-categories');
 
@@ -342,7 +342,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->show('post-with-tags');
 
@@ -397,7 +397,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->show('post-with-comments');
 
@@ -430,7 +430,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $response = $controller->show('view-template-test');
 
@@ -484,7 +484,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $response = $controller->index();
 
@@ -514,7 +514,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $response = $controller->index();
 
@@ -546,7 +546,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->index();
 
@@ -575,7 +575,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->index(page: 3);
 
@@ -601,7 +601,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->index();
 
@@ -625,7 +625,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
 
     // Test page 0
@@ -660,7 +660,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->index();
 
@@ -701,7 +701,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->index();
 
@@ -730,7 +730,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $response = $controller->index();
 
@@ -777,7 +777,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->show('post-with-hierarchy');
 
@@ -829,7 +829,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->show('post-multiple-categories');
 
@@ -868,7 +868,7 @@ use ReflectionClass;
         $categoryRepository,
         $commentRepository,
         $pagination,
-        $view
+        $view,
     );
     $controller->show('post-no-categories');
 
@@ -970,7 +970,7 @@ function createMockPostRepository(
     array $categoriesForPost = [],
     array $tagsForPost = [],
 ): PostRepositoryInterface {
-    return new class (
+    return new readonly class (
         $findPublishedPaginatedResult,
         $countPublishedResult,
         $findBySlugResult,
@@ -979,11 +979,11 @@ function createMockPostRepository(
     ) implements PostRepositoryInterface
     {
         public function __construct(
-            private readonly array $findPublishedPaginatedResult,
-            private readonly int $countPublishedResult,
-            private readonly ?Post $findBySlugResult,
-            private readonly array $categoriesForPost,
-            private readonly array $tagsForPost,
+            private array $findPublishedPaginatedResult,
+            private int $countPublishedResult,
+            private ?Post $findBySlugResult,
+            private array $categoriesForPost,
+            private array $tagsForPost,
         ) {}
 
         public function findBySlug(
@@ -1179,10 +1179,10 @@ function createMockPostRepository(
 function createMockAuthorRepository(
     ?Author $findResult = null,
 ): AuthorRepositoryInterface {
-    return new class ($findResult) implements AuthorRepositoryInterface
+    return new readonly class ($findResult) implements AuthorRepositoryInterface
     {
         public function __construct(
-            private readonly ?Author $findResult,
+            private ?Author $findResult,
         ) {}
 
         public function find(
@@ -1331,10 +1331,10 @@ function createMockCategoryRepository(): CategoryRepositoryInterface
 function createMockCategoryRepositoryWithPaths(
     array $categoryPaths = [],
 ): CategoryRepositoryInterface {
-    return new class ($categoryPaths) implements CategoryRepositoryInterface
+    return new readonly class ($categoryPaths) implements CategoryRepositoryInterface
     {
         public function __construct(
-            private readonly array $categoryPaths,
+            private array $categoryPaths,
         ) {}
 
         public function find(
@@ -1418,11 +1418,11 @@ function createMockPaginationService(
     array $items = [],
     int $totalItems = 0,
 ): PaginationServiceInterface {
-    return new class ($items, $totalItems) implements PaginationServiceInterface
+    return new readonly class ($items, $totalItems) implements PaginationServiceInterface
     {
         public function __construct(
-            private readonly array $items,
-            private readonly int $totalItems,
+            private array $items,
+            private int $totalItems,
         ) {}
 
         public function paginate(
@@ -1509,10 +1509,10 @@ function createMockViewWithCapture(
 function createMockCommentRepository(
     array $threadedComments = [],
 ): CommentRepositoryInterface {
-    return new class ($threadedComments) implements CommentRepositoryInterface
+    return new readonly class ($threadedComments) implements CommentRepositoryInterface
     {
         public function __construct(
-            private readonly array $threadedComments,
+            private array $threadedComments,
         ) {}
 
         public function find(

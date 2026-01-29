@@ -13,14 +13,14 @@ use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
 
-class TagController
+readonly class TagController
 {
     public function __construct(
-        private readonly TagRepositoryInterface $tagRepository,
-        private readonly PostRepositoryInterface $postRepository,
-        private readonly AuthorRepositoryInterface $authorRepository,
-        private readonly PaginationServiceInterface $paginationService,
-        private readonly ViewInterface $view,
+        private TagRepositoryInterface $tagRepository,
+        private PostRepositoryInterface $postRepository,
+        private AuthorRepositoryInterface $authorRepository,
+        private PaginationServiceInterface $paginationService,
+        private ViewInterface $view,
     ) {}
 
     /**

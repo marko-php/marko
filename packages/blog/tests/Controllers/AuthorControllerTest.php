@@ -341,10 +341,10 @@ function authorControllerCreatePaginatedResult(
 function authorControllerCreateAuthorRepository(
     ?Author $findBySlugResult = null,
 ): AuthorRepositoryInterface {
-    return new class ($findBySlugResult) implements AuthorRepositoryInterface
+    return new readonly class ($findBySlugResult) implements AuthorRepositoryInterface
     {
         public function __construct(
-            private readonly ?Author $findBySlugResult,
+            private ?Author $findBySlugResult,
         ) {}
 
         public function findBySlug(
@@ -410,11 +410,11 @@ function authorControllerCreatePostRepository(
     array $findPublishedByAuthorResult = [],
     int $countPublishedByAuthorResult = 0,
 ): PostRepositoryInterface {
-    return new class ($findPublishedByAuthorResult, $countPublishedByAuthorResult) implements PostRepositoryInterface
+    return new readonly class ($findPublishedByAuthorResult, $countPublishedByAuthorResult) implements PostRepositoryInterface
     {
         public function __construct(
-            private readonly array $findPublishedByAuthorResult,
-            private readonly int $countPublishedByAuthorResult,
+            private array $findPublishedByAuthorResult,
+            private int $countPublishedByAuthorResult,
         ) {}
 
         public function findBySlug(
@@ -613,10 +613,10 @@ function authorControllerCreatePaginationService(
 ): PaginationServiceInterface {
     $paginateResult = $paginateResult ?? authorControllerCreatePaginatedResult();
 
-    return new class ($paginateResult) implements PaginationServiceInterface
+    return new readonly class ($paginateResult) implements PaginationServiceInterface
     {
         public function __construct(
-            private readonly PaginatedResult $paginateResult,
+            private PaginatedResult $paginateResult,
         ) {}
 
         public function paginate(
@@ -669,10 +669,10 @@ function authorControllerCreateView(): ViewInterface
 function authorControllerCreateViewWithCapture(
     object $capturedData,
 ): ViewInterface {
-    return new class ($capturedData) implements ViewInterface
+    return new readonly class ($capturedData) implements ViewInterface
     {
         public function __construct(
-            private readonly object $capturedData,
+            private object $capturedData,
         ) {}
 
         public function render(

@@ -18,17 +18,17 @@ use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Routing\Attributes\Post as PostRoute;
 use Marko\Routing\Http\Response;
 
-class CommentController
+readonly class CommentController
 {
     public function __construct(
-        private readonly PostRepositoryInterface $postRepository,
-        private readonly CommentRepositoryInterface $commentRepository,
-        private readonly HoneypotValidatorInterface $honeypotValidator,
-        private readonly CommentRateLimiterInterface $rateLimiter,
-        private readonly CommentVerificationServiceInterface $verificationService,
-        private readonly BlogConfigInterface $blogConfig,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ?CsrfValidatorInterface $csrfValidator = null,
+        private PostRepositoryInterface $postRepository,
+        private CommentRepositoryInterface $commentRepository,
+        private HoneypotValidatorInterface $honeypotValidator,
+        private CommentRateLimiterInterface $rateLimiter,
+        private CommentVerificationServiceInterface $verificationService,
+        private BlogConfigInterface $blogConfig,
+        private EventDispatcherInterface $eventDispatcher,
+        private ?CsrfValidatorInterface $csrfValidator = null,
     ) {}
 
     #[PostRoute('/blog/{slug}/comment')]

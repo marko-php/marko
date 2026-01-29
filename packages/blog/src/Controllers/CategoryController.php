@@ -13,14 +13,14 @@ use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
 
-class CategoryController
+readonly class CategoryController
 {
     public function __construct(
-        private readonly CategoryRepositoryInterface $categoryRepository,
-        private readonly PostRepositoryInterface $postRepository,
-        private readonly AuthorRepositoryInterface $authorRepository,
-        private readonly PaginationServiceInterface $paginationService,
-        private readonly ViewInterface $view,
+        private CategoryRepositoryInterface $categoryRepository,
+        private PostRepositoryInterface $postRepository,
+        private AuthorRepositoryInterface $authorRepository,
+        private PaginationServiceInterface $paginationService,
+        private ViewInterface $view,
     ) {}
 
     /**

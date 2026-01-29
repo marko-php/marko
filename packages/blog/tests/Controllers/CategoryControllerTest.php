@@ -329,12 +329,12 @@ function createMockCategoryRepository(
     array $pathResult = [],
     array $descendantIds = [],
 ): CategoryRepositoryInterface {
-    return new class ($findBySlugResult, $pathResult, $descendantIds) implements CategoryRepositoryInterface
+    return new readonly class ($findBySlugResult, $pathResult, $descendantIds) implements CategoryRepositoryInterface
     {
         public function __construct(
-            private readonly ?Category $findBySlugResult,
-            private readonly array $pathResult,
-            private readonly array $descendantIds,
+            private ?Category $findBySlugResult,
+            private array $pathResult,
+            private array $descendantIds,
         ) {}
 
         public function findBySlug(
@@ -422,11 +422,11 @@ function createMockPostRepository(
     array $findPublishedByCategoryResult = [],
     int $countByCategoryResult = 0,
 ): PostRepositoryInterface {
-    return new class ($findPublishedByCategoryResult, $countByCategoryResult) implements PostRepositoryInterface
+    return new readonly class ($findPublishedByCategoryResult, $countByCategoryResult) implements PostRepositoryInterface
     {
         public function __construct(
-            private readonly array $findPublishedByCategoryResult,
-            private readonly int $countByCategoryResult,
+            private array $findPublishedByCategoryResult,
+            private int $countByCategoryResult,
         ) {}
 
         public function findBySlug(
@@ -623,11 +623,11 @@ function createMockPaginationService(
     array $items = [],
     int $totalItems = 0,
 ): PaginationServiceInterface {
-    return new class ($items, $totalItems) implements PaginationServiceInterface
+    return new readonly class ($items, $totalItems) implements PaginationServiceInterface
     {
         public function __construct(
-            private readonly array $items,
-            private readonly int $totalItems,
+            private array $items,
+            private int $totalItems,
         ) {}
 
         public function paginate(
@@ -715,11 +715,11 @@ function createMockPostRepositoryWithCapture(
     array $findByCategoriesResult = [],
     int $countByCategoriesResult = 0,
 ): PostRepositoryInterface {
-    return new class ($findByCategoriesResult, $countByCategoriesResult) implements PostRepositoryInterface
+    return new readonly class ($findByCategoriesResult, $countByCategoriesResult) implements PostRepositoryInterface
     {
         public function __construct(
-            private readonly array $findByCategoriesResult,
-            private readonly int $countByCategoriesResult,
+            private array $findByCategoriesResult,
+            private int $countByCategoriesResult,
         ) {}
 
         public function findBySlug(

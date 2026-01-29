@@ -441,7 +441,7 @@ function createMockVerificationService(
     string $cookieName = 'blog_verified',
     int $cookieLifetimeDays = 365,
 ): CommentVerificationServiceInterface {
-    return new class (
+    return new readonly class (
         $verifyByTokenResult,
         $verifyByTokenException,
         $cookieName,
@@ -449,10 +449,10 @@ function createMockVerificationService(
     ) implements CommentVerificationServiceInterface
     {
         public function __construct(
-            private readonly ?VerificationResult $verifyByTokenResult,
-            private readonly ?Throwable $verifyByTokenException,
-            private readonly string $cookieName,
-            private readonly int $cookieLifetimeDays,
+            private ?VerificationResult $verifyByTokenResult,
+            private ?Throwable $verifyByTokenException,
+            private string $cookieName,
+            private int $cookieLifetimeDays,
         ) {}
 
         public function sendVerificationEmail(
@@ -508,7 +508,7 @@ function createMockVerificationServiceWithCapture(
     string $cookieName = 'blog_verified',
     int $cookieLifetimeDays = 365,
 ): CommentVerificationServiceInterface {
-    return new class (
+    return new readonly class (
         $callCapture,
         $verifyByTokenResult,
         $verifyByTokenException,
@@ -517,11 +517,11 @@ function createMockVerificationServiceWithCapture(
     ) implements CommentVerificationServiceInterface
     {
         public function __construct(
-            private readonly CallCapture $callCapture,
-            private readonly ?VerificationResult $verifyByTokenResult,
-            private readonly ?Throwable $verifyByTokenException,
-            private readonly string $cookieName,
-            private readonly int $cookieLifetimeDays,
+            private CallCapture $callCapture,
+            private ?VerificationResult $verifyByTokenResult,
+            private ?Throwable $verifyByTokenException,
+            private string $cookieName,
+            private int $cookieLifetimeDays,
         ) {}
 
         public function sendVerificationEmail(

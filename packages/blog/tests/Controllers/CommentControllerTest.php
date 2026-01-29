@@ -746,10 +746,10 @@ function createPost(
 function createMockPostRepository(
     ?Post $findBySlugResult = null,
 ): PostRepositoryInterface {
-    return new class ($findBySlugResult) implements PostRepositoryInterface
+    return new readonly class ($findBySlugResult) implements PostRepositoryInterface
     {
         public function __construct(
-            private readonly ?Post $findBySlugResult,
+            private ?Post $findBySlugResult,
         ) {}
 
         public function findBySlug(
@@ -1044,10 +1044,10 @@ function createMockCommentRepository(
 function createMockHoneypotValidator(
     bool $validateResult = true,
 ): HoneypotValidatorInterface {
-    return new class ($validateResult) implements HoneypotValidatorInterface
+    return new readonly class ($validateResult) implements HoneypotValidatorInterface
     {
         public function __construct(
-            private readonly bool $validateResult,
+            private bool $validateResult,
         ) {}
 
         public function getFieldName(): string
@@ -1072,11 +1072,11 @@ function createMockRateLimiter(
     bool $isAllowed = true,
     int $secondsRemaining = 0,
 ): CommentRateLimiterInterface {
-    return new class ($isAllowed, $secondsRemaining) implements CommentRateLimiterInterface
+    return new readonly class ($isAllowed, $secondsRemaining) implements CommentRateLimiterInterface
     {
         public function __construct(
-            private readonly bool $isAllowed,
-            private readonly int $secondsRemaining,
+            private bool $isAllowed,
+            private int $secondsRemaining,
         ) {}
 
         public function isAllowed(
@@ -1159,10 +1159,10 @@ function createMockVerificationService(
 function createMockBlogConfig(
     int $maxDepth = 5,
 ): BlogConfigInterface {
-    return new class ($maxDepth) implements BlogConfigInterface
+    return new readonly class ($maxDepth) implements BlogConfigInterface
     {
         public function __construct(
-            private readonly int $maxDepth,
+            private int $maxDepth,
         ) {}
 
         public function getPostsPerPage(): int
@@ -1220,10 +1220,10 @@ function createMockEventDispatcher(): EventDispatcherInterface
 function createMockCsrfValidator(
     bool $validateResult = true,
 ): CsrfValidatorInterface {
-    return new class ($validateResult) implements CsrfValidatorInterface
+    return new readonly class ($validateResult) implements CsrfValidatorInterface
     {
         public function __construct(
-            private readonly bool $validateResult,
+            private bool $validateResult,
         ) {}
 
         public function validate(

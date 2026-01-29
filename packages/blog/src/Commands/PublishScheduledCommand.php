@@ -14,11 +14,11 @@ use Marko\Core\Command\Output;
 use Marko\Core\Event\EventDispatcherInterface;
 
 #[Command(name: 'blog:publish-scheduled', description: 'Publish scheduled posts that are due')]
-class PublishScheduledCommand implements CommandInterface
+readonly class PublishScheduledCommand implements CommandInterface
 {
     public function __construct(
-        private readonly PostRepositoryInterface $postRepository,
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private PostRepositoryInterface $postRepository,
+        private EventDispatcherInterface $eventDispatcher,
     ) {}
 
     public function execute(

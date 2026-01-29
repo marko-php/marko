@@ -13,9 +13,9 @@ use Marko\View\ViewConfig;
 function createTestViewConfig(
     string $extension = '.latte',
 ): ViewConfig {
-    $config = new class ($extension) implements ConfigRepositoryInterface
+    $config = new readonly class ($extension) implements ConfigRepositoryInterface
     {
-        public function __construct(private readonly string $extension) {}
+        public function __construct(private string $extension) {}
 
         public function get(
             string $key,

@@ -328,14 +328,14 @@ class StubEventDispatcher implements EventDispatcherInterface
 /**
  * Stub post repository for testing.
  */
-class StubPostRepository implements PostRepositoryInterface
+readonly class StubPostRepository implements PostRepositoryInterface
 {
     /**
      * @param array<Post> $scheduledPosts
      */
     public function __construct(
-        private readonly object $capture,
-        private readonly array $scheduledPosts,
+        private object $capture,
+        private array $scheduledPosts,
     ) {}
 
     public function findScheduledPostsDue(): array

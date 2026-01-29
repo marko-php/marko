@@ -294,10 +294,10 @@ function createPaginatedResult(
 function createTagRepository(
     ?Tag $findBySlugResult = null,
 ): TagRepositoryInterface {
-    return new class ($findBySlugResult) implements TagRepositoryInterface
+    return new readonly class ($findBySlugResult) implements TagRepositoryInterface
     {
         public function __construct(
-            private readonly ?Tag $findBySlugResult,
+            private ?Tag $findBySlugResult,
         ) {}
 
         public function findBySlug(
@@ -369,11 +369,11 @@ function createPostRepository(
     array $findPublishedByTagResult = [],
     int $countPublishedByTagResult = 0,
 ): PostRepositoryInterface {
-    return new class ($findPublishedByTagResult, $countPublishedByTagResult) implements PostRepositoryInterface
+    return new readonly class ($findPublishedByTagResult, $countPublishedByTagResult) implements PostRepositoryInterface
     {
         public function __construct(
-            private readonly array $findPublishedByTagResult,
-            private readonly int $countPublishedByTagResult,
+            private array $findPublishedByTagResult,
+            private int $countPublishedByTagResult,
         ) {}
 
         public function findBySlug(
@@ -774,10 +774,10 @@ function createPostRepositoryWithCallTracking(
 function createPaginationService(
     PaginatedResult $paginateResult,
 ): PaginationServiceInterface {
-    return new class ($paginateResult) implements PaginationServiceInterface
+    return new readonly class ($paginateResult) implements PaginationServiceInterface
     {
         public function __construct(
-            private readonly PaginatedResult $paginateResult,
+            private PaginatedResult $paginateResult,
         ) {}
 
         public function paginate(

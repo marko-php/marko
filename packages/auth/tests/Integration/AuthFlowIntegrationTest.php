@@ -24,10 +24,10 @@ use Marko\Config\ConfigRepositoryInterface;
 function createIntegrationConfigRepository(
     array $values = [],
 ): ConfigRepositoryInterface {
-    return new class ($values) implements ConfigRepositoryInterface
+    return new readonly class ($values) implements ConfigRepositoryInterface
     {
         public function __construct(
-            private readonly array $values,
+            private array $values,
         ) {}
 
         public function get(

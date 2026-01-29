@@ -59,7 +59,7 @@ it('renders post index template', function (): void {
         $categoryRepository,
         $commentRepository,
         $paginationService,
-        $view
+        $view,
     );
     $response = $controller->index();
 
@@ -89,7 +89,7 @@ it('renders post show template', function (): void {
         $categoryRepository,
         $commentRepository,
         $paginationService,
-        $view
+        $view,
     );
     $response = $controller->show('my-post');
 
@@ -122,11 +122,11 @@ function createViewTestMockRepository(
     array $posts = [],
     ?Post $findBySlugResult = null,
 ): PostRepositoryInterface {
-    return new class ($posts, $findBySlugResult) implements PostRepositoryInterface
+    return new readonly class ($posts, $findBySlugResult) implements PostRepositoryInterface
     {
         public function __construct(
-            private readonly array $posts,
-            private readonly ?Post $findBySlugEntity,
+            private array $posts,
+            private ?Post $findBySlugEntity,
         ) {}
 
         public function find(

@@ -11,13 +11,13 @@ use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
 
-class AuthorController
+readonly class AuthorController
 {
     public function __construct(
-        private readonly AuthorRepositoryInterface $authorRepository,
-        private readonly PostRepositoryInterface $postRepository,
-        private readonly PaginationServiceInterface $paginationService,
-        private readonly ViewInterface $view,
+        private AuthorRepositoryInterface $authorRepository,
+        private PostRepositoryInterface $postRepository,
+        private PaginationServiceInterface $paginationService,
+        private ViewInterface $view,
     ) {}
 
     #[Get('/blog/author/{slug}')]

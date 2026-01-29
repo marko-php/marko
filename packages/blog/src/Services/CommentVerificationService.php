@@ -18,15 +18,15 @@ use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Message;
 
-class CommentVerificationService implements CommentVerificationServiceInterface
+readonly class CommentVerificationService implements CommentVerificationServiceInterface
 {
     public function __construct(
-        private readonly TokenRepositoryInterface $tokenRepository,
-        private readonly CommentRepositoryInterface $commentRepository,
-        private readonly PostRepositoryInterface $postRepository,
-        private readonly MailerInterface $mailer,
-        private readonly BlogConfigInterface $config,
-        private readonly ?EventDispatcherInterface $eventDispatcher = null,
+        private TokenRepositoryInterface $tokenRepository,
+        private CommentRepositoryInterface $commentRepository,
+        private PostRepositoryInterface $postRepository,
+        private MailerInterface $mailer,
+        private BlogConfigInterface $config,
+        private ?EventDispatcherInterface $eventDispatcher = null,
     ) {}
 
     public function sendVerificationEmail(

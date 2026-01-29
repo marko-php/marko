@@ -237,11 +237,11 @@ function createSearchService(
     array $results = [],
     int $total = 0,
 ): SearchServiceInterface {
-    return new class ($results, $total) implements SearchServiceInterface
+    return new readonly class ($results, $total) implements SearchServiceInterface
     {
         public function __construct(
-            private readonly array $results,
-            private readonly int $total,
+            private array $results,
+            private int $total,
         ) {}
 
         public function search(
@@ -267,10 +267,10 @@ function createSearchService(
 function createPaginationService(
     PaginatedResult $paginateResult,
 ): PaginationServiceInterface {
-    return new class ($paginateResult) implements PaginationServiceInterface
+    return new readonly class ($paginateResult) implements PaginationServiceInterface
     {
         public function __construct(
-            private readonly PaginatedResult $paginateResult,
+            private PaginatedResult $paginateResult,
         ) {}
 
         public function paginate(
@@ -376,11 +376,11 @@ function createMockPost(
     int $id,
     string $title,
 ): PostInterface {
-    return new class ($id, $title) implements PostInterface
+    return new readonly class ($id, $title) implements PostInterface
     {
         public function __construct(
-            private readonly int $id,
-            private readonly string $title,
+            private int $id,
+            private string $title,
         ) {}
 
         public function getId(): ?int

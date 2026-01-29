@@ -10,12 +10,12 @@ use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
 
-class SearchController
+readonly class SearchController
 {
     public function __construct(
-        private readonly SearchServiceInterface $searchService,
-        private readonly PaginationServiceInterface $paginationService,
-        private readonly ViewInterface $view,
+        private SearchServiceInterface $searchService,
+        private PaginationServiceInterface $paginationService,
+        private ViewInterface $view,
     ) {}
 
     #[Get('/blog/search')]

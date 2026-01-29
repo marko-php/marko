@@ -180,11 +180,11 @@ it('returns success exit code on completion', function (): void {
 /**
  * Stub blog config for testing.
  */
-class StubBlogConfig implements BlogConfigInterface
+readonly class StubBlogConfig implements BlogConfigInterface
 {
     public function __construct(
-        private readonly int $verificationTokenExpiryDays = 7,
-        private readonly int $verificationCookieDays = 365,
+        private int $verificationTokenExpiryDays = 7,
+        private int $verificationCookieDays = 365,
     ) {}
 
     public function getPostsPerPage(): int
@@ -226,10 +226,10 @@ class StubBlogConfig implements BlogConfigInterface
 /**
  * Stub token repository for testing.
  */
-class StubTokenRepository implements TokenRepositoryInterface
+readonly class StubTokenRepository implements TokenRepositoryInterface
 {
     public function __construct(
-        private readonly object $capture,
+        private object $capture,
     ) {}
 
     public function save(
