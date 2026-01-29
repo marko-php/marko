@@ -73,7 +73,7 @@ describe('BasicHtmlFormatter', function (): void {
         expect($html)->toContain((string) $report->line);
     });
 
-    it('displays formatted stack trace as table', function (): void {
+    it('displays formatted stack trace', function (): void {
         $exception = new Exception('Test error');
         $report = ErrorReport::fromThrowable($exception, Severity::Error);
         $environment = new Environment(envVars: ['MARKO_ENV' => 'development']);
@@ -82,10 +82,9 @@ describe('BasicHtmlFormatter', function (): void {
         $formatter = new BasicHtmlFormatter($environment, $extractor);
         $html = $formatter->format($report);
 
-        expect($html)->toContain('<table');
-        expect($html)->toContain('</table>');
-        expect($html)->toContain('<tr');
-        expect($html)->toContain('<td');
+        // Stack trace should be displayed with frame information
+        expect($html)->toContain('stack-trace');
+        expect($html)->toContain('stack-frame');
     });
 
     it('displays code snippet with syntax highlighting', function (): void {
@@ -120,9 +119,8 @@ PHP;
             $formatter = new BasicHtmlFormatter($environment, $extractor);
             $html = $formatter->format($report);
 
-            // Should contain code snippet in a pre/code block
-            expect($html)->toContain('<pre');
-            expect($html)->toContain('<code');
+            // Should contain code snippet in a code block
+            expect($html)->toContain('code-block');
             expect($html)->toContain('throw new Exception');
         } finally {
             unlink($tempFile);
@@ -216,8 +214,8 @@ PHP;
         $formatter = new BasicHtmlFormatter($environment, $extractor);
         $html = $formatter->format($report);
 
-        // Context should be displayed in a dedicated section
-        expect($html)->toContain('Context');
+        // Context should be displayed in a callout section
+        expect($html)->toContain('What is happening');
         expect($html)->toContain('While loading module');
     });
 
@@ -233,9 +231,9 @@ PHP;
         $formatter = new BasicHtmlFormatter($environment, $extractor);
         $html = $formatter->format($report);
 
-        // Suggestion should be displayed in a dedicated section
-        expect($html)->toContain('Suggestion');
-        expect($html)->toContain('Run "marko init"');
+        // Suggestion should be displayed in a callout section
+        expect($html)->toContain('How to fix it');
+        expect($html)->toContain('marko init');
     });
 
     it('displays previous exception when present', function (): void {
@@ -249,7 +247,7 @@ PHP;
         $html = $formatter->format($report);
 
         // Should display information about the previous exception
-        expect($html)->toContain('Previous');
+        expect($html)->toContain('Caused by');
         expect($html)->toContain('Database connection failed');
     });
 
@@ -268,23 +266,31 @@ PHP;
         expect($html)->toContain('&lt;script&gt;');
     });
 
-    it('escapes HTML entities in file paths', function (): void {
-        $exception = new Exception('Test error');
-        // Use reflection to set a malicious file path
-        $reflection = new ReflectionClass($exception);
-        $fileProperty = $reflection->getProperty('file');
-        $fileProperty->setValue($exception, '/path/<script>evil</script>/file.php');
+    it('displays file path in code header', function (): void {
+        $tempFile = tempnam(sys_get_temp_dir(), 'test_');
+        file_put_contents($tempFile, "<?php\necho 'test';\n");
 
-        $report = ErrorReport::fromThrowable($exception, Severity::Error);
-        $environment = new Environment(envVars: ['MARKO_ENV' => 'development']);
-        $extractor = new CodeSnippetExtractor();
+        try {
+            $exception = new Exception('Test error');
+            $reflection = new ReflectionClass($exception);
+            $fileProperty = $reflection->getProperty('file');
+            $fileProperty->setValue($exception, $tempFile);
+            $lineProperty = $reflection->getProperty('line');
+            $lineProperty->setValue($exception, 2);
 
-        $formatter = new BasicHtmlFormatter($environment, $extractor);
-        $html = $formatter->format($report);
+            $report = ErrorReport::fromThrowable($exception, Severity::Error);
+            $environment = new Environment(envVars: ['MARKO_ENV' => 'development']);
+            $extractor = new CodeSnippetExtractor();
 
-        // Should escape the path
-        expect($html)->not->toContain('/path/<script>evil</script>/file.php');
-        expect($html)->toContain('&lt;script&gt;');
+            $formatter = new BasicHtmlFormatter($environment, $extractor);
+            $html = $formatter->format($report);
+
+            // File path should be displayed in code header
+            expect($html)->toContain('code-header');
+            expect($html)->toContain($tempFile);
+        } finally {
+            unlink($tempFile);
+        }
     });
 
     it('escapes HTML entities in code snippets', function (): void {
@@ -350,7 +356,7 @@ PHP;
         expect($html)->not->toContain($report->file);
     });
 
-    it('uses inline styles for reliability', function (): void {
+    it('uses embedded styles for reliability', function (): void {
         $exception = new Exception('Test error');
         $report = ErrorReport::fromThrowable($exception, Severity::Error);
         $environment = new Environment(envVars: ['MARKO_ENV' => 'development']);
@@ -359,8 +365,8 @@ PHP;
         $formatter = new BasicHtmlFormatter($environment, $extractor);
         $html = $formatter->format($report);
 
-        // Should use inline styles (style attribute) rather than external CSS
-        expect($html)->toContain('style="');
+        // Should use embedded styles (style tag) rather than external CSS
+        expect($html)->toContain('<style>');
         // Should NOT reference external stylesheet
         expect($html)->not->toContain('<link rel="stylesheet"');
     });

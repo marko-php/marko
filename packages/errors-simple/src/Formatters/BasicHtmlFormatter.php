@@ -60,16 +60,105 @@ HTML;
 <!DOCTYPE html>
 <html>
 <head>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        padding: 20px;
+        background: #f5f5f5;
+        margin: 0;
+        line-height: 1.5;
+    }
+    h1 { color: #c00; margin: 0 0 12px 0; font-size: 1.4em; word-break: break-word; }
+    .message { font-size: 1.2em; margin: 0; color: #333; }
+    .section { margin-bottom: 28px; }
+    .callout {
+        border-left: 4px solid #1a73e8;
+        padding: 16px;
+        margin-bottom: 28px;
+        background: #e8f4fd;
+    }
+    .callout-neutral {
+        background: #f8f8f8;
+        border-left-color: #888;
+    }
+    .callout-neutral .callout-label { color: #555; }
+    .callout-label {
+        font-weight: 700;
+        font-size: 1.1em;
+        color: #1a73e8;
+        margin-bottom: 6px;
+    }
+    .callout-text { color: #333; font-size: 1em; margin: 0; }
+    .code-wrapper {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 12px;
+    }
+    .code-header {
+        font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+        font-size: 14px;
+        font-weight: normal;
+        background: #e8e8e8;
+        padding: 8px 12px;
+        color: #555;
+        border-bottom: 1px solid #ddd;
+    }
+    .code-block {
+        font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+        font-size: 14px;
+        font-weight: normal;
+        color: #555;
+        background: #fff;
+        padding: 12px;
+        overflow-x: auto;
+        line-height: 2.0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-top: 12px;
+        white-space: pre;
+    }
+    .code-wrapper .code-block {
+        border: none;
+        border-radius: 0;
+        margin-top: 0;
+    }
+    .code-block .line-number {
+        display: inline-block;
+        width: 36px;
+        color: #999;
+        text-align: right;
+        margin-right: 12px;
+        user-select: none;
+    }
+    .code-block .error-line { background: #fee; font-weight: bold !important; color: #000 !important; }
+    .stack-trace { margin: 0; white-space: pre; font-size: 14px; font-weight: normal; line-height: 1.8; }
+    .stack-frame { display: block; padding: 3px 0; }
+    .stack-frame:hover { background: #f0f0f0; }
+    .stack-index { display: inline-block; width: 24px; color: #999; }
+    .stack-location { color: #555; }
+    .stack-call { color: #555; margin-left: 12px; }
+    .previous-exception {
+        background: #fff8e6;
+        border-left: 4px solid #f59e0b;
+        padding: 16px;
+    }
+    .previous-exception .callout-label { color: #b45309; }
+</style>
 </head>
-<body style="font-family: sans-serif; padding: 20px; background: #f5f5f5;">
-<h1 style="color: #c00;">$exceptionClass</h1>
-<p style="font-size: 1.2em;">$message</p>
-<p style="color: #666;">$file:$line</p>
-$contextHtml
-$suggestionHtml
-$codeSnippetHtml
-$stackTraceHtml
-$previousHtml
+<body>
+<div class="container">
+    <div class="section">
+        <h1>$exceptionClass</h1>
+        <p class="message"><strong>Error:</strong> $message</p>
+    </div>
+    $contextHtml
+    $suggestionHtml
+    $codeSnippetHtml
+    $stackTraceHtml
+    $previousHtml
+</div>
 </body>
 </html>
 HTML;
@@ -84,19 +173,24 @@ HTML;
     private function formatStackTrace(
         array $trace,
     ): string {
-        $rows = '';
+        $frames = '';
         foreach ($trace as $index => $frame) {
-            $file = $frame['file'] ?? '[internal]';
+            $file = $this->escape($frame['file'] ?? '[internal]');
             $traceLine = $frame['line'] ?? 0;
-            $class = $frame['class'] ?? '';
-            $type = $frame['type'] ?? '';
-            $function = $frame['function'] ?? '';
+            $class = $this->escape($frame['class'] ?? '');
+            $type = $this->escape($frame['type'] ?? '');
+            $function = $this->escape($frame['function'] ?? '');
             $call = $class . $type . $function . '()';
 
-            $rows .= "<tr><td>$index</td><td>$file:$traceLine</td><td>$call</td></tr>";
+            $frames .= "<span class=\"stack-frame\"><span class=\"stack-index\">$index</span><span class=\"stack-location\">$file:$traceLine</span><span class=\"stack-call\">$call</span></span>";
         }
 
-        return "<table>$rows</table>";
+        return <<<HTML
+<div class="callout callout-neutral">
+    <div class="callout-label">Stack trace</div>
+    <div class="code-block"><div class="stack-trace">$frames</div></div>
+</div>
+HTML;
     }
 
     private function formatCodeSnippet(
@@ -109,6 +203,7 @@ HTML;
             return '';
         }
 
+        $escapedFile = $this->escape($file);
         $lines = '';
         foreach ($snippet['lines'] as $lineNumber => $code) {
             $isErrorLine = $lineNumber === $snippet['errorLine'];
@@ -117,7 +212,12 @@ HTML;
             $lines .= "<div$lineClass><span class=\"line-number\">$lineNumber</span>$escapedCode</div>";
         }
 
-        return "<pre style=\"font-family: monospace; background: #fff; padding: 10px; border: 1px solid #ddd; overflow-x: auto;\"><code>$lines</code></pre>";
+        return <<<HTML
+<div class="callout callout-neutral">
+    <div class="callout-label">Where it happens</div>
+    <div class="code-wrapper"><div class="code-header">$escapedFile:$errorLine</div><div class="code-block">$lines</div></div>
+</div>
+HTML;
     }
 
     private function formatContext(
@@ -127,7 +227,14 @@ HTML;
             return '';
         }
 
-        return "<div><strong>Context:</strong> $context</div>";
+        $escaped = $this->escape($context);
+
+        return <<<HTML
+<div class="callout">
+    <div class="callout-label">What is happening</div>
+    <p class="callout-text">$escaped</p>
+</div>
+HTML;
     }
 
     private function formatSuggestion(
@@ -137,7 +244,14 @@ HTML;
             return '';
         }
 
-        return "<div><strong>Suggestion:</strong> $suggestion</div>";
+        $escaped = $this->escape($suggestion);
+
+        return <<<HTML
+<div class="callout">
+    <div class="callout-label">How to fix it</div>
+    <p class="callout-text">$escaped</p>
+</div>
+HTML;
     }
 
     private function formatPrevious(
@@ -147,9 +261,14 @@ HTML;
             return '';
         }
 
-        $class = $previous::class;
-        $message = $previous->getMessage();
+        $class = $this->escape($previous::class);
+        $message = $this->escape($previous->getMessage());
 
-        return "<div><strong>Previous:</strong> $class: $message</div>";
+        return <<<HTML
+<div class="callout previous-exception">
+    <div class="callout-label">Caused by</div>
+    <p class="callout-text"><strong>$class</strong><br>$message</p>
+</div>
+HTML;
     }
 }
