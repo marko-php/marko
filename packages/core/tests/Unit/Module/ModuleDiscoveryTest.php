@@ -568,3 +568,46 @@ it('stores autoload as empty array when composer.json has no autoload section', 
 
     cleanupDirectory($tempDir);
 });
+
+it('extracts boot callback from module.php', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    mkdir($tempDir, 0755, true);
+
+    // Create composer.json
+    file_put_contents($tempDir . '/composer.json', json_encode(['name' => 'acme/bootable']));
+
+    // Create module.php with boot callback (can't use var_export for closures)
+    $modulePhpContent = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+return [
+    'boot' => function ($container) {
+        // Boot callback for testing
+        $container->booted = true;
+    },
+];
+PHP;
+    file_put_contents($tempDir . '/module.php', $modulePhpContent);
+
+    $parser = new ManifestParser();
+    $manifest = $parser->parse($tempDir);
+
+    expect($manifest->boot)
+        ->toBeInstanceOf(Closure::class);
+
+    cleanupDirectory($tempDir);
+});
+
+it('defaults boot to null when not specified in module.php', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    createTestModule($tempDir, 'acme/no-boot');
+
+    $parser = new ManifestParser();
+    $manifest = $parser->parse($tempDir);
+
+    expect($manifest->boot)->toBeNull();
+
+    cleanupDirectory($tempDir);
+});

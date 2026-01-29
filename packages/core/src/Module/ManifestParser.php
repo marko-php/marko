@@ -38,6 +38,7 @@ class ManifestParser
             before: $sequence['before'] ?? [],
             bindings: $moduleData['bindings'] ?? [],
             autoload: $composerData['autoload']['psr-4'] ?? [],
+            boot: $moduleData['boot'] ?? null,
         );
     }
 

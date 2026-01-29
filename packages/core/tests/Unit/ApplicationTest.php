@@ -1181,3 +1181,103 @@ PHP;
 
     appTestCleanupDirectory($baseDir);
 });
+
+it('calls module boot callbacks after bindings are registered', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    // Create a module with a boot callback
+    $modulePath = $vendorDir . '/acme/bootable';
+    mkdir($modulePath, 0755, true);
+
+    // Create composer.json
+    file_put_contents($modulePath . '/composer.json', json_encode([
+        'name' => 'acme/bootable',
+        'version' => '1.0.0',
+        'extra' => ['marko' => ['module' => true]],
+    ], JSON_PRETTY_PRINT));
+
+    // Create module.php with boot callback that sets a flag on the container
+    // We'll use a static variable to track if boot was called
+    $modulePhpContent = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+return [
+    'boot' => function ($container) {
+        // Set a flag that we can check after boot
+        $GLOBALS['__marko_boot_test_called'] = true;
+    },
+];
+PHP;
+    file_put_contents($modulePath . '/module.php', $modulePhpContent);
+
+    // Clear any previous test state
+    unset($GLOBALS['__marko_boot_test_called']);
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    // Before boot, the flag should not be set
+    expect($GLOBALS['__marko_boot_test_called'] ?? false)->toBeFalse();
+
+    $app->boot();
+
+    // After boot, the flag should be set
+    expect($GLOBALS['__marko_boot_test_called'] ?? false)->toBeTrue();
+
+    // Clean up
+    unset($GLOBALS['__marko_boot_test_called']);
+    appTestCleanupDirectory($baseDir);
+});
+
+it('passes container to boot callbacks', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    // Create a module with a boot callback that uses the container
+    $modulePath = $vendorDir . '/acme/bootable';
+    mkdir($modulePath, 0755, true);
+
+    file_put_contents($modulePath . '/composer.json', json_encode([
+        'name' => 'acme/bootable',
+        'version' => '1.0.0',
+        'extra' => ['marko' => ['module' => true]],
+    ], JSON_PRETTY_PRINT));
+
+    // Boot callback that stores the container class name in a global
+    $modulePhpContent = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+return [
+    'boot' => function ($container) {
+        $GLOBALS['__marko_boot_container_class'] = $container::class;
+    },
+];
+PHP;
+    file_put_contents($modulePath . '/module.php', $modulePhpContent);
+
+    unset($GLOBALS['__marko_boot_container_class']);
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    // The boot callback should have received the container
+    expect($GLOBALS['__marko_boot_container_class'] ?? '')->toBe('Marko\Core\Container\Container');
+
+    unset($GLOBALS['__marko_boot_container_class']);
+    appTestCleanupDirectory($baseDir);
+});

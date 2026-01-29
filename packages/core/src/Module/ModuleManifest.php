@@ -10,7 +10,7 @@ use Closure;
  * Value object representing a discovered module.
  *
  * Combines data from composer.json (name, version, require)
- * with Marko-specific config from module.php (enabled, sequence, bindings).
+ * with Marko-specific config from module.php (enabled, sequence, bindings, boot).
  */
 readonly class ModuleManifest
 {
@@ -25,6 +25,7 @@ readonly class ModuleManifest
      * @param string $path Absolute path to module directory
      * @param string $source Discovery source: vendor, modules, or app
      * @param array<string, string> $autoload PSR-4 autoload configuration from composer.json (namespace => path)
+     * @param Closure|null $boot Boot callback to run after bindings are registered (from module.php)
      */
     public function __construct(
         public string $name,
@@ -37,5 +38,6 @@ readonly class ModuleManifest
         public string $path = '',
         public string $source = '',
         public array $autoload = [],
+        public ?Closure $boot = null,
     ) {}
 }

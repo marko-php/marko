@@ -166,6 +166,7 @@ readonly class ModuleDiscovery
             path: $path,
             source: $source,
             autoload: $manifest->autoload,
+            boot: $manifest->boot,
         );
     }
 

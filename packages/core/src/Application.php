@@ -112,6 +112,13 @@ class Application
             $bindingRegistry->registerModule($module);
         }
 
+        // Call module boot callbacks (e.g., error handler registration)
+        foreach ($this->modules as $module) {
+            if ($module->boot !== null) {
+                ($module->boot)($this->container);
+            }
+        }
+
         // Discover and register preferences
         $this->discoverPreferences();
 
