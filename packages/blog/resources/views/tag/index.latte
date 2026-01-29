@@ -30,24 +30,30 @@
 <link rel="next" href="{$nextLink}">
 {/if}
 <main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/blog">Blog</a> &gt;
+        <span aria-current="page">{$tag->name}</span>
+    </nav>
     <h1>{$tag->name}</h1>
-    {if count($posts->items) > 0}
+    {if $posts->isEmpty()}
+        <p class="no-posts">There are no posts with this tag.</p>
+    {else}
     <ul class="post-list">
     {foreach $posts->items as $post}
-        <li>
-            <article class="post-item">
-                <h2 class="post-title">{$post->title}</h2>
-                {if $post->summary}<p class="post-summary">{$post->summary}</p>{/if}
+        <li class="post-item">
+            <article>
+                <h2><a href="/blog/{$post->slug}">{$post->title}</a></h2>
+                {if $post->summary}
+                    <p class="post-summary">{$post->summary}</p>
+                {/if}
                 <p class="post-meta">
-                    <span class="post-author">{$post->getAuthor()->name}</span>
-                    <time class="post-date" datetime="{$post->getPublishedAt()->format('Y-m-d')}">{$post->getPublishedAt()->format('F j, Y')}</time>
+                    <span class="post-author">By {$post->getAuthor()->name}</span>
+                    <time class="post-date" datetime="{$post->getPublishedAt()?->format('Y-m-d')}">{$post->getPublishedAt()?->format('F j, Y')}</time>
                 </p>
             </article>
         </li>
     {/foreach}
     </ul>
-    {include '../components/pagination.latte', pagination: $posts, baseUrl: '/blog/tag/' . $tag->slug}
-    {else}
-    <p>No posts found with this tag.</p>
+    {include '../components/pagination.latte', pagination: $posts, baseUrl: "/blog/tag/{$tag->slug}"}
     {/if}
 </main>

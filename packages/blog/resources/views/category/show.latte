@@ -29,33 +29,37 @@
 {if $nextLink}
 <link rel="next" href="{$nextLink}">
 {/if}
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <a href="/blog">Blog</a> &gt;
-    {foreach $path as $pathCategory}
-        {if $pathCategory->id === $category->id}
-            <span aria-current="page">{$pathCategory->name}</span>
-        {else}
-            <a href="/blog/category/{$pathCategory->slug}">{$pathCategory->name}</a> &gt;
-        {/if}
-    {/foreach}
-</nav>
-<h1>{$category->name}</h1>
-{if $posts->isEmpty()}
-    <p class="no-posts">There are no posts in this category.</p>
-{else}
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/blog">Blog</a> &gt;
+        {foreach $path as $pathCategory}
+            {if $pathCategory->id === $category->id}
+                <span aria-current="page">{$pathCategory->name}</span>
+            {else}
+                <a href="/blog/category/{$pathCategory->slug}">{$pathCategory->name}</a> &gt;
+            {/if}
+        {/foreach}
+    </nav>
+    <h1>{$category->name}</h1>
+    {if $posts->isEmpty()}
+        <p class="no-posts">There are no posts in this category.</p>
+    {else}
     <ul class="post-list">
     {foreach $posts->items as $post}
         <li class="post-item">
-            <h2><a href="/blog/{$post->slug}">{$post->title}</a></h2>
-            {if $post->summary}
-                <p class="post-summary">{$post->summary}</p>
-            {/if}
-            <p class="post-meta">
-                <span class="post-author">By {$post->getAuthor()->name}</span>
-                <time class="post-date" datetime="{$post->getPublishedAt()?->format('Y-m-d')}">{$post->getPublishedAt()?->format('F j, Y')}</time>
-            </p>
+            <article>
+                <h2><a href="/blog/{$post->slug}">{$post->title}</a></h2>
+                {if $post->summary}
+                    <p class="post-summary">{$post->summary}</p>
+                {/if}
+                <p class="post-meta">
+                    <span class="post-author">By {$post->getAuthor()->name}</span>
+                    <time class="post-date" datetime="{$post->getPublishedAt()?->format('Y-m-d')}">{$post->getPublishedAt()?->format('F j, Y')}</time>
+                </p>
+            </article>
         </li>
     {/foreach}
     </ul>
     {include '../components/pagination.latte', pagination: $posts, baseUrl: "/blog/category/{$category->slug}"}
-{/if}
+    {/if}
+</main>
