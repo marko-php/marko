@@ -141,16 +141,16 @@ declare(strict_types=1);
 namespace App\Blog\Seed;
 
 use App\Blog\Entity\Post;
-use App\Blog\Repositories\PostRepository;
+use App\Blog\Repository\PostRepositoryInterface;
 use Marko\Database\Seed\Seeder;
 use Marko\Database\Seed\SeederInterface;
 
 /** @noinspection PhpUnused */
-#[Seeder(name: 'posts', order: 1)]
+#[Seeder(name: 'posts', order: 10)]
 readonly class PostSeeder implements SeederInterface
 {
     public function __construct(
-        private PostRepository $repository,
+        private PostRepositoryInterface $repository,
     ) {}
 
     public function run(): void
@@ -166,9 +166,11 @@ readonly class PostSeeder implements SeederInterface
 }
 ```
 
+> **Why `new Post()` instead of factories?** Entities are simple data objects without dependencies or complex construction logic. Direct instantiation is explicit - you see exactly what's being set. This aligns with Marko's "explicit over implicit" principle. If your tests need realistic fake data at scale, consider adding a test data builder for that specific need rather than a general factory abstraction.
+
 > **IDE Note:** PhpStorm may report seeder classes as "unused" since they're discovered via attributes rather than direct instantiation. The `@noinspection PhpUnused` annotation suppresses this false positive.
 
-Place seeders in your module's `Seed/` directory. The `order` parameter controls execution sequence.
+Place seeders in your module's `Seed/` directory. The `order` parameter controls execution sequence - use spaced numbers (10, 20, 30) rather than sequential (1, 2, 3) to allow other modules to insert seeders between existing ones without renumbering.
 
 ## CLI Commands
 
