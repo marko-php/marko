@@ -160,15 +160,40 @@ it('provides getter for bcrypt cost', function () {
     expect($config->bcryptCost())->toBe(14);
 });
 
-it('provides default bcrypt cost of 12', function () {
-    $config = new AuthConfig(createAuthMockConfigRepository());
+it('reads default guard from config without fallback', function () {
+    $config = new AuthConfig(createAuthMockConfigRepository([
+        'auth.default.guard' => 'token',
+    ]));
 
-    expect($config->bcryptCost())->toBe(12);
+    expect($config->defaultGuard())->toBe('token');
 });
 
-it('provides default configuration file', function () {
+it('reads default provider from config without fallback', function () {
+    $config = new AuthConfig(createAuthMockConfigRepository([
+        'auth.default.provider' => 'admins',
+    ]));
+
+    expect($config->defaultProvider())->toBe('admins');
+});
+
+it('reads bcrypt cost from config without fallback', function () {
+    $config = new AuthConfig(createAuthMockConfigRepository([
+        'auth.password.bcrypt.cost' => 10,
+    ]));
+
+    expect($config->bcryptCost())->toBe(10);
+});
+
+it('config file contains all required keys with defaults', function () {
     $configPath = dirname(__DIR__, 3) . '/config/auth.php';
+    $config = require $configPath;
 
     expect(file_exists($configPath))->toBeTrue()
-        ->and(is_array(require $configPath))->toBeTrue();
+        ->and($config)->toBeArray()
+        ->and($config)->toHaveKey('default')
+        ->and($config['default'])->toHaveKey('guard')
+        ->and($config['default'])->toHaveKey('provider')
+        ->and($config)->toHaveKey('password')
+        ->and($config['password'])->toHaveKey('bcrypt')
+        ->and($config['password']['bcrypt'])->toHaveKey('cost');
 });

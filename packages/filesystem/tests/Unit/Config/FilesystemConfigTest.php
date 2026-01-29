@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Marko\Cache\Config\CacheConfig;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Filesystem\Config\FilesystemConfig;
 
-function createCacheConfigRepository(
+function createFilesystemMockConfigRepository(
     array $configData = [],
 ): ConfigRepositoryInterface {
     return new readonly class ($configData) implements ConfigRepositoryInterface
@@ -82,52 +82,37 @@ function createCacheConfigRepository(
     };
 }
 
-it('reads driver from config without fallback', function () {
-    $config = new CacheConfig(createCacheConfigRepository([
-        'cache.driver' => 'redis',
-    ]));
+describe('FilesystemConfig', function (): void {
+    it('reads default from config without fallback', function (): void {
+        $config = new FilesystemConfig(createFilesystemMockConfigRepository([
+            'filesystem.default' => 'local',
+        ]));
 
-    expect($config->driver())->toBe('redis');
-});
+        expect($config->defaultDisk())->toBe('local');
+    });
 
-it('reads path from config without fallback', function () {
-    $config = new CacheConfig(createCacheConfigRepository([
-        'cache.path' => '/var/cache',
-    ]));
+    it('reads disk configuration from config without fallback', function (): void {
+        $diskConfig = [
+            'local' => [
+                'driver' => 'local',
+                'path' => 'storage',
+            ],
+        ];
 
-    expect($config->path())->toBe('/var/cache');
-});
+        $config = new FilesystemConfig(createFilesystemMockConfigRepository([
+            'filesystem.disks' => $diskConfig,
+        ]));
 
-it('reads default_ttl from config without fallback', function () {
-    $config = new CacheConfig(createCacheConfigRepository([
-        'cache.default_ttl' => 7200,
-    ]));
+        expect($config->getDisk('local'))->toBe($diskConfig['local']);
+    });
 
-    expect($config->defaultTtl())->toBe(7200);
-});
+    it('config file contains all required keys with defaults', function (): void {
+        $configFile = require dirname(__DIR__, 3) . '/config/filesystem.php';
 
-it('throws ConfigNotFoundException when driver is missing', function () {
-    $config = new CacheConfig(createCacheConfigRepository([]));
-
-    $config->driver();
-})->throws(ConfigNotFoundException::class);
-
-it('throws ConfigNotFoundException when path is missing', function () {
-    $config = new CacheConfig(createCacheConfigRepository([]));
-
-    $config->path();
-})->throws(ConfigNotFoundException::class);
-
-it('throws ConfigNotFoundException when default_ttl is missing', function () {
-    $config = new CacheConfig(createCacheConfigRepository([]));
-
-    $config->defaultTtl();
-})->throws(ConfigNotFoundException::class);
-
-it('config file contains all required keys with defaults', function () {
-    $configFile = require dirname(__DIR__, 2) . '/config/cache.php';
-
-    expect($configFile)->toHaveKey('driver');
-    expect($configFile)->toHaveKey('path');
-    expect($configFile)->toHaveKey('default_ttl');
+        expect($configFile)->toBeArray()
+            ->and($configFile)->toHaveKey('default')
+            ->and($configFile)->toHaveKey('disks')
+            ->and($configFile['default'])->toBeString()
+            ->and($configFile['disks'])->toBeArray();
+    });
 });

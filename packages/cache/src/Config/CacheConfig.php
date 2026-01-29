@@ -14,16 +14,16 @@ readonly class CacheConfig
 
     public function driver(): string
     {
-        return $this->config->getString('cache.driver', 'file');
+        return $this->config->getString('cache.driver');
     }
 
     public function path(): string
     {
-        return $this->config->getString('cache.path', 'storage/cache');
+        return $this->config->getString('cache.path');
     }
 
     public function defaultTtl(): int
     {
-        return $this->config->getInt('cache.default_ttl', 3600);
+        return $this->config->getInt('cache.default_ttl');
     }
 }

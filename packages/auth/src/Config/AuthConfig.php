@@ -14,12 +14,12 @@ readonly class AuthConfig
 
     public function defaultGuard(): string
     {
-        return $this->config->getString('auth.default.guard', 'session');
+        return $this->config->getString('auth.default.guard');
     }
 
     public function defaultProvider(): string
     {
-        return $this->config->getString('auth.default.provider', 'users');
+        return $this->config->getString('auth.default.provider');
     }
 
     /**
@@ -27,7 +27,7 @@ readonly class AuthConfig
      */
     public function guards(): array
     {
-        return $this->config->getArray('auth.guards', []);
+        return $this->config->getArray('auth.guards');
     }
 
     /**
@@ -35,7 +35,7 @@ readonly class AuthConfig
      */
     public function providers(): array
     {
-        return $this->config->getArray('auth.providers', []);
+        return $this->config->getArray('auth.providers');
     }
 
     /**
@@ -43,7 +43,7 @@ readonly class AuthConfig
      */
     public function passwordConfig(): array
     {
-        return $this->config->getArray('auth.password', []);
+        return $this->config->getArray('auth.password');
     }
 
     /**
@@ -51,11 +51,11 @@ readonly class AuthConfig
      */
     public function rememberConfig(): array
     {
-        return $this->config->getArray('auth.remember', []);
+        return $this->config->getArray('auth.remember');
     }
 
     public function bcryptCost(): int
     {
-        return $this->config->getInt('auth.password.bcrypt.cost', 12);
+        return $this->config->getInt('auth.password.bcrypt.cost');
     }
 }

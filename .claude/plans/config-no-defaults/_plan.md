@@ -38,7 +38,7 @@ Remove default parameters from ConfigRepositoryInterface to enforce config files
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
 | 001 | Update ConfigRepositoryInterface | - | completed |
-| 002 | Update ConfigRepository implementation | 001 | pending |
+| 002 | Update ConfigRepository implementation | 001 | completed |
 | 003 | Update blog package config | 002 | pending |
 | 004 | Update session package config | 002 | pending |
 | 005 | Update hashing package config | 002 | pending |

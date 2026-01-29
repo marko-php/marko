@@ -16,12 +16,12 @@ readonly class LogConfig
 
     public function driver(): string
     {
-        return $this->config->getString('log.driver', 'file');
+        return $this->config->getString('log.driver');
     }
 
     public function path(): string
     {
-        return $this->config->getString('log.path', 'storage/logs');
+        return $this->config->getString('log.path');
     }
 
     /**
@@ -29,7 +29,7 @@ readonly class LogConfig
      */
     public function level(): LogLevel
     {
-        $level = $this->config->getString('log.level', 'debug');
+        $level = $this->config->getString('log.level');
 
         return LogLevel::tryFrom($level)
             ?? throw InvalidLogLevelException::forLevel($level);
@@ -37,26 +37,26 @@ readonly class LogConfig
 
     public function channel(): string
     {
-        return $this->config->getString('log.channel', 'app');
+        return $this->config->getString('log.channel');
     }
 
     public function format(): string
     {
-        return $this->config->getString('log.format', '[{datetime}] {channel}.{level}: {message} {context}');
+        return $this->config->getString('log.format');
     }
 
     public function dateFormat(): string
     {
-        return $this->config->getString('log.date_format', 'Y-m-d H:i:s');
+        return $this->config->getString('log.date_format');
     }
 
     public function maxFiles(): int
     {
-        return $this->config->getInt('log.max_files', 30);
+        return $this->config->getInt('log.max_files');
     }
 
     public function maxFileSize(): int
     {
-        return $this->config->getInt('log.max_file_size', 10 * 1024 * 1024);
+        return $this->config->getInt('log.max_file_size');
     }
 }

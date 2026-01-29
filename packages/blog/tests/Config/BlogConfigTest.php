@@ -83,66 +83,68 @@ function createBlogMockConfigRepository(
     };
 }
 
-it('provides default posts_per_page value of 10', function (): void {
-    $config = new BlogConfig(createBlogMockConfigRepository());
-
-    expect($config->getPostsPerPage())->toBe(10);
-});
-
-it('provides default comment_max_depth value of 5', function (): void {
-    $config = new BlogConfig(createBlogMockConfigRepository());
-
-    expect($config->getCommentMaxDepth())->toBe(5);
-});
-
-it('provides default comment_rate_limit_seconds value of 30', function (): void {
-    $config = new BlogConfig(createBlogMockConfigRepository());
-
-    expect($config->getCommentRateLimitSeconds())->toBe(30);
-});
-
-it('provides default verification_token_expiry_days value of 7', function (): void {
-    $config = new BlogConfig(createBlogMockConfigRepository());
-
-    expect($config->getVerificationTokenExpiryDays())->toBe(7);
-});
-
-it('provides default verification_cookie_days value of 365', function (): void {
-    $config = new BlogConfig(createBlogMockConfigRepository());
-
-    expect($config->getVerificationCookieDays())->toBe(365);
-});
-
-it('provides default route_prefix value of /blog', function (): void {
-    $config = new BlogConfig(createBlogMockConfigRepository());
-
-    expect($config->getRoutePrefix())->toBe('/blog');
-});
-
-it('provides default verification_cookie_name value of blog_verified', function (): void {
-    $config = new BlogConfig(createBlogMockConfigRepository());
-
-    expect($config->getVerificationCookieName())->toBe('blog_verified');
-});
-
-it('allows configuration values to be overridden', function (): void {
+it('reads posts_per_page from config without fallback', function (): void {
     $config = new BlogConfig(createBlogMockConfigRepository([
-        'blog.posts_per_page' => 25,
-        'blog.comment_max_depth' => 3,
-        'blog.comment_rate_limit_seconds' => 60,
-        'blog.verification_token_expiry_days' => 14,
-        'blog.verification_cookie_days' => 180,
-        'blog.route_prefix' => '/articles',
-        'blog.verification_cookie_name' => 'custom_verified',
+        'blog.posts_per_page' => 15,
     ]));
 
-    expect($config->getPostsPerPage())->toBe(25)
-        ->and($config->getCommentMaxDepth())->toBe(3)
-        ->and($config->getCommentRateLimitSeconds())->toBe(60)
-        ->and($config->getVerificationTokenExpiryDays())->toBe(14)
-        ->and($config->getVerificationCookieDays())->toBe(180)
-        ->and($config->getRoutePrefix())->toBe('/articles')
-        ->and($config->getVerificationCookieName())->toBe('custom_verified');
+    expect($config->getPostsPerPage())->toBe(15);
+});
+
+it('reads comment_max_depth from config without fallback', function (): void {
+    $config = new BlogConfig(createBlogMockConfigRepository([
+        'blog.comment_max_depth' => 3,
+    ]));
+
+    expect($config->getCommentMaxDepth())->toBe(3);
+});
+
+it('reads comment_rate_limit_seconds from config without fallback', function (): void {
+    $config = new BlogConfig(createBlogMockConfigRepository([
+        'blog.comment_rate_limit_seconds' => 60,
+    ]));
+
+    expect($config->getCommentRateLimitSeconds())->toBe(60);
+});
+
+it('reads verification_token_expiry_days from config without fallback', function (): void {
+    $config = new BlogConfig(createBlogMockConfigRepository([
+        'blog.verification_token_expiry_days' => 14,
+    ]));
+
+    expect($config->getVerificationTokenExpiryDays())->toBe(14);
+});
+
+it('reads verification_cookie_days from config without fallback', function (): void {
+    $config = new BlogConfig(createBlogMockConfigRepository([
+        'blog.verification_cookie_days' => 180,
+    ]));
+
+    expect($config->getVerificationCookieDays())->toBe(180);
+});
+
+it('reads verification_cookie_name from config without fallback', function (): void {
+    $config = new BlogConfig(createBlogMockConfigRepository([
+        'blog.verification_cookie_name' => 'custom_cookie',
+    ]));
+
+    expect($config->getVerificationCookieName())->toBe('custom_cookie');
+});
+
+it('reads route_prefix from config without fallback', function (): void {
+    $config = new BlogConfig(createBlogMockConfigRepository([
+        'blog.route_prefix' => '/articles',
+    ]));
+
+    expect($config->getRoutePrefix())->toBe('/articles');
+});
+
+it('reads site_name from config without fallback', function (): void {
+    $config = new BlogConfig(createBlogMockConfigRepository([
+        'blog.site_name' => 'My Awesome Blog',
+    ]));
+
+    expect($config->getSiteName())->toBe('My Awesome Blog');
 });
 
 it('validates route_prefix starts with forward slash', function (): void {
@@ -163,9 +165,29 @@ it('validates route_prefix does not end with forward slash', function (): void {
         ->toThrow(InvalidRoutePrefixException::class, 'must not end with a forward slash');
 });
 
-it('provides default configuration file', function (): void {
+it('config file contains all required keys with defaults', function (): void {
     $configPath = dirname(__DIR__, 2) . '/config/blog.php';
 
-    expect(file_exists($configPath))->toBeTrue()
-        ->and(is_array(require $configPath))->toBeTrue();
+    expect(file_exists($configPath))->toBeTrue();
+
+    $configData = require $configPath;
+
+    expect($configData)->toBeArray()
+        ->and($configData)->toHaveKey('site_name')
+        ->and($configData)->toHaveKey('posts_per_page')
+        ->and($configData)->toHaveKey('comment_max_depth')
+        ->and($configData)->toHaveKey('comment_rate_limit_seconds')
+        ->and($configData)->toHaveKey('verification_token_expiry_days')
+        ->and($configData)->toHaveKey('verification_cookie_days')
+        ->and($configData)->toHaveKey('verification_cookie_name')
+        ->and($configData)->toHaveKey('route_prefix')
+        // Verify default values
+        ->and($configData['site_name'])->toBe('My Blog')
+        ->and($configData['posts_per_page'])->toBe(10)
+        ->and($configData['comment_max_depth'])->toBe(5)
+        ->and($configData['comment_rate_limit_seconds'])->toBe(30)
+        ->and($configData['verification_token_expiry_days'])->toBe(7)
+        ->and($configData['verification_cookie_days'])->toBe(365)
+        ->and($configData['verification_cookie_name'])->toBe('blog_verified')
+        ->and($configData['route_prefix'])->toBe('/blog');
 });

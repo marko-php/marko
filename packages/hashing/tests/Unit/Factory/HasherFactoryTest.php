@@ -151,8 +151,10 @@ it('provides helpful suggestion in HasherNotFoundException', function () {
     }
 });
 
-it('uses default bcrypt cost when not configured', function () {
-    $factory = createFactoryWithConfig();
+it('creates bcrypt hasher with cost from config', function () {
+    $factory = createFactoryWithConfig([
+        'hashing.hashers.bcrypt.cost' => 12,
+    ]);
 
     $hasher = $factory->make('bcrypt');
 
@@ -161,8 +163,12 @@ it('uses default bcrypt cost when not configured', function () {
         ->and($hasher)->toBeInstanceOf(BcryptHasher::class);
 });
 
-it('uses default argon2 parameters when not configured', function () {
-    $factory = createFactoryWithConfig();
+it('creates argon2 hasher with parameters from config', function () {
+    $factory = createFactoryWithConfig([
+        'hashing.hashers.argon2id.memory' => 65536,
+        'hashing.hashers.argon2id.time' => 4,
+        'hashing.hashers.argon2id.threads' => 1,
+    ]);
 
     $hasher = $factory->make('argon2id');
 

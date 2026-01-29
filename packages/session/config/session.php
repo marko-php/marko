@@ -12,7 +12,7 @@ return [
     'cookie' => [
         'name' => 'marko_session',
         'path' => '/',
-        'domain' => null,
+        'domain' => '',
         'secure' => true,
         'httponly' => true,
         'samesite' => 'lax',

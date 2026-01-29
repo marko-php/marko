@@ -133,3 +133,45 @@ test('provides default configuration file', function () {
     expect(file_exists($configPath))->toBeTrue()
         ->and(is_array(require $configPath))->toBeTrue();
 });
+
+test('it reads driver from config without fallback', function () {
+    $config = new MailConfig(createMailMockConfigRepository([
+        'mail.driver' => 'sendmail',
+    ]));
+
+    expect($config->driver())->toBe('sendmail');
+});
+
+test('it reads from address from config without fallback', function () {
+    $config = new MailConfig(createMailMockConfigRepository([
+        'mail.from.address' => 'test@example.org',
+    ]));
+
+    expect($config->fromAddress())->toBe('test@example.org');
+});
+
+test('it reads from name from config without fallback', function () {
+    $config = new MailConfig(createMailMockConfigRepository([
+        'mail.from.name' => 'Test Sender',
+    ]));
+
+    expect($config->fromName())->toBe('Test Sender');
+});
+
+test('config file contains all required keys with defaults', function () {
+    $configPath = dirname(__DIR__, 3) . '/config/mail.php';
+    $config = require $configPath;
+
+    expect($config)->toBeArray()
+        ->toHaveKey('driver')
+        ->toHaveKey('from');
+
+    expect($config['from'])->toBeArray()
+        ->toHaveKey('address')
+        ->toHaveKey('name');
+
+    // Verify defaults are set
+    expect($config['driver'])->toBe('smtp')
+        ->and($config['from']['address'])->toBe('hello@example.com')
+        ->and($config['from']['name'])->toBe('Marko Application');
+});

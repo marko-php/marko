@@ -84,7 +84,7 @@ function createMockLogConfigRepository(
     };
 }
 
-it('returns configured driver', function () {
+it('reads driver from config without fallback', function () {
     $config = new LogConfig(createMockLogConfigRepository([
         'log.driver' => 'database',
     ]));
@@ -92,13 +92,14 @@ it('returns configured driver', function () {
     expect($config->driver())->toBe('database');
 });
 
-it('returns file as default driver', function () {
+it('throws when driver is not configured', function () {
     $config = new LogConfig(createMockLogConfigRepository());
 
-    expect($config->driver())->toBe('file');
+    expect(fn () => $config->driver())
+        ->toThrow(ConfigNotFoundException::class);
 });
 
-it('returns configured path', function () {
+it('reads path from config without fallback', function () {
     $config = new LogConfig(createMockLogConfigRepository([
         'log.path' => '/var/log/app',
     ]));
@@ -106,13 +107,14 @@ it('returns configured path', function () {
     expect($config->path())->toBe('/var/log/app');
 });
 
-it('returns storage/logs as default path', function () {
+it('throws when path is not configured', function () {
     $config = new LogConfig(createMockLogConfigRepository());
 
-    expect($config->path())->toBe('storage/logs');
+    expect(fn () => $config->path())
+        ->toThrow(ConfigNotFoundException::class);
 });
 
-it('returns configured level as LogLevel enum', function () {
+it('reads level from config without fallback', function () {
     $config = new LogConfig(createMockLogConfigRepository([
         'log.level' => 'error',
     ]));
@@ -120,10 +122,11 @@ it('returns configured level as LogLevel enum', function () {
     expect($config->level())->toBe(LogLevel::Error);
 });
 
-it('returns debug as default level', function () {
+it('throws when level is not configured', function () {
     $config = new LogConfig(createMockLogConfigRepository());
 
-    expect($config->level())->toBe(LogLevel::Debug);
+    expect(fn () => $config->level())
+        ->toThrow(ConfigNotFoundException::class);
 });
 
 it('throws InvalidLogLevelException for invalid level', function () {
@@ -135,7 +138,7 @@ it('throws InvalidLogLevelException for invalid level', function () {
         ->toThrow(InvalidLogLevelException::class);
 });
 
-it('returns configured channel', function () {
+it('reads channel from config without fallback', function () {
     $config = new LogConfig(createMockLogConfigRepository([
         'log.channel' => 'api',
     ]));
@@ -143,13 +146,14 @@ it('returns configured channel', function () {
     expect($config->channel())->toBe('api');
 });
 
-it('returns app as default channel', function () {
+it('throws when channel is not configured', function () {
     $config = new LogConfig(createMockLogConfigRepository());
 
-    expect($config->channel())->toBe('app');
+    expect(fn () => $config->channel())
+        ->toThrow(ConfigNotFoundException::class);
 });
 
-it('returns configured format', function () {
+it('reads format from config without fallback', function () {
     $config = new LogConfig(createMockLogConfigRepository([
         'log.format' => '{level}: {message}',
     ]));
@@ -157,16 +161,14 @@ it('returns configured format', function () {
     expect($config->format())->toBe('{level}: {message}');
 });
 
-it('returns default format string', function () {
+it('throws when format is not configured', function () {
     $config = new LogConfig(createMockLogConfigRepository());
 
-    expect($config->format())->toContain('{datetime}')
-        ->and($config->format())->toContain('{channel}')
-        ->and($config->format())->toContain('{level}')
-        ->and($config->format())->toContain('{message}');
+    expect(fn () => $config->format())
+        ->toThrow(ConfigNotFoundException::class);
 });
 
-it('returns configured date format', function () {
+it('reads date_format from config without fallback', function () {
     $config = new LogConfig(createMockLogConfigRepository([
         'log.date_format' => 'd/m/Y H:i:s',
     ]));
@@ -174,13 +176,14 @@ it('returns configured date format', function () {
     expect($config->dateFormat())->toBe('d/m/Y H:i:s');
 });
 
-it('returns Y-m-d H:i:s as default date format', function () {
+it('throws when date_format is not configured', function () {
     $config = new LogConfig(createMockLogConfigRepository());
 
-    expect($config->dateFormat())->toBe('Y-m-d H:i:s');
+    expect(fn () => $config->dateFormat())
+        ->toThrow(ConfigNotFoundException::class);
 });
 
-it('returns configured max files', function () {
+it('reads max_files from config without fallback', function () {
     $config = new LogConfig(createMockLogConfigRepository([
         'log.max_files' => 14,
     ]));
@@ -188,13 +191,14 @@ it('returns configured max files', function () {
     expect($config->maxFiles())->toBe(14);
 });
 
-it('returns 30 as default max files', function () {
+it('throws when max_files is not configured', function () {
     $config = new LogConfig(createMockLogConfigRepository());
 
-    expect($config->maxFiles())->toBe(30);
+    expect(fn () => $config->maxFiles())
+        ->toThrow(ConfigNotFoundException::class);
 });
 
-it('returns configured max file size', function () {
+it('reads max_file_size from config without fallback', function () {
     $config = new LogConfig(createMockLogConfigRepository([
         'log.max_file_size' => 5 * 1024 * 1024,
     ]));
@@ -202,8 +206,24 @@ it('returns configured max file size', function () {
     expect($config->maxFileSize())->toBe(5 * 1024 * 1024);
 });
 
-it('returns 10MB as default max file size', function () {
+it('throws when max_file_size is not configured', function () {
     $config = new LogConfig(createMockLogConfigRepository());
 
-    expect($config->maxFileSize())->toBe(10 * 1024 * 1024);
+    expect(fn () => $config->maxFileSize())
+        ->toThrow(ConfigNotFoundException::class);
+});
+
+it('config file contains all required keys with defaults', function () {
+    $configPath = dirname(__DIR__, 3) . '/config/log.php';
+    $config = require $configPath;
+
+    expect($config)->toBeArray()
+        ->and($config)->toHaveKey('driver')
+        ->and($config)->toHaveKey('path')
+        ->and($config)->toHaveKey('level')
+        ->and($config)->toHaveKey('channel')
+        ->and($config)->toHaveKey('format')
+        ->and($config)->toHaveKey('date_format')
+        ->and($config)->toHaveKey('max_files')
+        ->and($config)->toHaveKey('max_file_size');
 });

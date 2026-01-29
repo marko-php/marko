@@ -38,6 +38,16 @@ composer require marko/config
 
 ## Usage
 
+### Design Philosophy
+
+Config files are the **single source of truth**. All getter methods throw `ConfigNotFoundException` when a key is missing - there are no default parameter fallbacks. This ensures:
+
+- Missing config fails loudly during development
+- All configurable values are documented in config files
+- No hidden defaults scattered through application code
+
+If you need a default value, define it in the config file.
+
 ### Basic Config File
 
 Config files are PHP files that return arrays. Place them in your module's `config/` directory.

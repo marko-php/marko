@@ -508,17 +508,91 @@ Configuration is always PHP. No XML. No YAML. No DSL. This provides:
 - Conditional logic when needed
 - Actual syntax errors instead of silent failures
 
+### Config Files Are the Single Source of Truth
+
+All default values belong in config files, not hardcoded in application code. Getter methods throw `ConfigNotFoundException` when keys are missing - there are no silent fallbacks.
+
+This provides:
+
+- **Visibility** - All configurable options visible in one place
+- **Override capability** - Higher-priority modules can override any value
+- **Loud errors** - Missing config fails immediately with helpful messages
+- **No hidden defaults** - Developers see exactly what values are used
+
+```php
+// CORRECT - config file defines defaults
+// config/blog.php
+return [
+    'posts_per_page' => 10,
+];
+
+// CORRECT - no fallback, throws if missing
+$perPage = $config->getInt('blog.posts_per_page');
+
+// WRONG - hardcoded fallback hides missing config
+$perPage = $config->getInt('blog.posts_per_page', 10);
+```
+
 ### Module Configuration
 
 Each module can have configuration files in its `config/` directory. These are PHP files that return arrays.
 
 ### Environment Variables
 
-Environment variables provide values for configuration, but configuration structure is always defined in PHP files. You can see all possible configuration by reading the config files.
+Environment variables should **only** be referenced in config files (`config/*.php`), never in application code. Config files act as the translation layer between environment and application.
 
-### Scoped Configuration
+```php
+// CORRECT - env var in config file only
+// config/database.php
+return [
+    'host' => $_ENV['DB_HOST'] ?? 'localhost',
+    'port' => (int) ($_ENV['DB_PORT'] ?? 3306),
+];
 
-Configuration values can cascade through scopes (default → tenant → specific) for multi-tenant applications.
+// Application code reads config, not env vars
+$host = $config->getString('database.host');
+
+// WRONG - reading env vars in application code
+$host = $_ENV['DB_HOST'] ?? 'localhost';
+```
+
+This centralizes environment handling and ensures all configurable values are documented in config files.
+
+### Scoped Configuration (Multi-tenant)
+
+Configuration supports scoped access for multi-tenant applications. This is an **intentional exception** to the no-fallback rule.
+
+When accessing config with a scope parameter, values cascade in this order:
+
+1. `scopes.{tenant}` - Tenant-specific value (if exists)
+2. `default` - Shared default value (if exists)
+3. Direct access - Top-level config key
+
+```php
+// config/store.php
+return [
+    'default' => [
+        'currency' => 'USD',
+        'tax_rate' => 0.08,
+    ],
+    'scopes' => [
+        'tenant-eu' => [
+            'currency' => 'EUR',
+            'tax_rate' => 0.19,
+        ],
+    ],
+];
+
+// Scoped access uses cascade
+$config->getString('store.currency', scope: 'tenant-eu');  // 'EUR' (from scopes.tenant-eu)
+$config->getFloat('store.tax_rate', scope: 'tenant-uk');   // 0.08 (falls back to default)
+
+// Without scope - no cascade, accesses directly
+$config->get('store.currency');                            // null (not at top level)
+$config->get('store.default.currency');                    // 'USD' (explicit path)
+```
+
+**Why this cascade is intentional:** Multi-tenant applications need tenants to inherit shared defaults while overriding specific values. Without cascade, every tenant config would need to duplicate all shared values. This is NOT a fallback for missing configuration - it's a feature for configuration inheritance.
 
 ---
 

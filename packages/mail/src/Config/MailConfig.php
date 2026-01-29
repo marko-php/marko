@@ -27,17 +27,17 @@ readonly class MailConfig
 
     public function driver(): string
     {
-        return $this->config->getString('mail.driver', 'smtp');
+        return $this->config->getString('mail.driver');
     }
 
     public function fromAddress(): string
     {
-        return $this->config->getString('mail.from.address', '');
+        return $this->config->getString('mail.from.address');
     }
 
     public function fromName(): string
     {
-        return $this->config->getString('mail.from.name', '');
+        return $this->config->getString('mail.from.name');
     }
 
     /**
@@ -46,6 +46,6 @@ readonly class MailConfig
     public function driverConfig(
         string $driver,
     ): array {
-        return $this->config->getArray("mail.$driver", []);
+        return $this->config->getArray("mail.$driver");
     }
 }

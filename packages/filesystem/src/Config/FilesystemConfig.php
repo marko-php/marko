@@ -15,7 +15,7 @@ readonly class FilesystemConfig
 
     public function defaultDisk(): string
     {
-        return $this->config->getString('filesystem.default', 'local');
+        return $this->config->getString('filesystem.default');
     }
 
     /**
@@ -25,7 +25,7 @@ readonly class FilesystemConfig
     public function getDisk(
         string $name,
     ): array {
-        $disks = $this->config->getArray('filesystem.disks', []);
+        $disks = $this->config->getArray('filesystem.disks');
 
         if (!isset($disks[$name])) {
             throw new FilesystemException(

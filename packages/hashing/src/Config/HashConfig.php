@@ -14,7 +14,7 @@ readonly class HashConfig
 
     public function defaultHasher(): string
     {
-        return $this->config->getString('hashing.default', 'bcrypt');
+        return $this->config->getString('hashing.default');
     }
 
     public function hasHasher(
@@ -26,26 +26,26 @@ readonly class HashConfig
     public function getHasherConfig(
         string $name,
     ): array {
-        return $this->config->getArray("hashing.hashers.$name", []);
+        return $this->config->getArray("hashing.hashers.$name");
     }
 
     public function getBcryptCost(): int
     {
-        return $this->config->getInt('hashing.hashers.bcrypt.cost', 12);
+        return $this->config->getInt('hashing.hashers.bcrypt.cost');
     }
 
     public function getArgon2Memory(): int
     {
-        return $this->config->getInt('hashing.hashers.argon2id.memory', 65536);
+        return $this->config->getInt('hashing.hashers.argon2id.memory');
     }
 
     public function getArgon2Time(): int
     {
-        return $this->config->getInt('hashing.hashers.argon2id.time', 4);
+        return $this->config->getInt('hashing.hashers.argon2id.time');
     }
 
     public function getArgon2Threads(): int
     {
-        return $this->config->getInt('hashing.hashers.argon2id.threads', 1);
+        return $this->config->getInt('hashing.hashers.argon2id.threads');
     }
 }

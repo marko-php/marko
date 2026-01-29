@@ -761,6 +761,9 @@ return [
 ];
 ```
 
+### No Fallback Parameters
+Config getter methods throw `ConfigNotFoundException` when keys are missing. Never pass fallback parameters - define all defaults in config files instead.
+
 ```php
 // CORRECT - no fallback, config file is the source of truth
 public function getPostsPerPage(): int
@@ -773,6 +776,23 @@ public function getPostsPerPage(): int
 {
     return $this->config->getInt('blog.posts_per_page', 10);
 }
+```
+
+### Environment Variables in Config Files Only
+Environment variables should only be referenced in config files (`config/*.php`), never in application code. Config files act as the translation layer.
+
+```php
+// CORRECT - env var in config file
+// config/database.php
+return [
+    'host' => $_ENV['DB_HOST'] ?? 'localhost',
+];
+
+// Application code reads config
+$host = $config->getString('database.host');
+
+// WRONG - reading env vars in application code
+$host = $_ENV['DB_HOST'] ?? 'localhost';
 ```
 
 ## Latte Template Standards
