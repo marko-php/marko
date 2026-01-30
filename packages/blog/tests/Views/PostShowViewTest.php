@@ -294,7 +294,7 @@ describe('Post Show View', function (): void {
         ]);
 
         // Form action should use post slug for the URL
-        expect($html)->toMatch('/action\s*=\s*["\'][^"\']*\/posts\/my-awesome-post\/comments["\']/i');
+        expect($html)->toMatch('/action\s*=\s*["\'][^"\']*\/blog\/my-awesome-post\/comment["\']/i');
     });
 
     it('displays verification success message when present', function (): void {

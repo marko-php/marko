@@ -90,6 +90,15 @@ HTML;
         margin-bottom: 6px;
     }
     .callout-text { color: #333; font-size: 1em; margin: 0; }
+    .callout-text code {
+        font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+        font-size: 0.9em;
+        background: #f0f0f0;
+        padding: 2px 6px;
+        border-radius: 3px;
+    }
+    .callout-text ul { margin: 8px 0; padding-left: 24px; }
+    .callout-text li { margin: 4px 0; }
     .code-wrapper {
         border: 1px solid #ddd;
         border-radius: 4px;
@@ -244,14 +253,72 @@ HTML;
             return '';
         }
 
-        $escaped = $this->escape($suggestion);
+        $formatted = $this->formatSuggestionText($suggestion);
 
         return <<<HTML
 <div class="callout">
     <div class="callout-label">How to fix it</div>
-    <p class="callout-text">$escaped</p>
+    <div class="callout-text">$formatted</div>
 </div>
 HTML;
+    }
+
+    /**
+     * Format suggestion text with simple markdown-like syntax.
+     *
+     * Supports:
+     * - `code` → <code>code</code>
+     * - Lines starting with "- " → <ul><li>...</li></ul>
+     * - Newlines → <br> (for non-list content)
+     */
+    private function formatSuggestionText(
+        string $text,
+    ): string {
+        $lines = explode("\n", $text);
+        $result = [];
+        $inList = false;
+
+        foreach ($lines as $line) {
+            $trimmed = $line;
+
+            // Check if line is a list item
+            if (str_starts_with($trimmed, '- ')) {
+                if (!$inList) {
+                    $result[] = '<ul>';
+                    $inList = true;
+                }
+                $itemContent = substr($trimmed, 2);
+                $itemContent = $this->formatInlineCode($this->escape($itemContent));
+                $result[] = "<li>$itemContent</li>";
+            } else {
+                if ($inList) {
+                    $result[] = '</ul>';
+                    $inList = false;
+                }
+
+                if ($trimmed === '') {
+                    $result[] = '<br>';
+                } else {
+                    $formatted = $this->formatInlineCode($this->escape($trimmed));
+                    $result[] = "<p style=\"margin: 0 0 4px 0;\">$formatted</p>";
+                }
+            }
+        }
+
+        if ($inList) {
+            $result[] = '</ul>';
+        }
+
+        return implode("\n", $result);
+    }
+
+    /**
+     * Convert `code` to <code>code</code>.
+     */
+    private function formatInlineCode(
+        string $text,
+    ): string {
+        return preg_replace('/`([^`]+)`/', '<code>$1</code>', $text);
     }
 
     private function formatPrevious(

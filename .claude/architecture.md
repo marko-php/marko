@@ -314,7 +314,7 @@ marko/database-postgresql # PostgreSQL implementation, requires marko/database
 | Base Package     | Driver Packages                                     |
 |------------------|-----------------------------------------------------|
 | `marko/database` | `marko/database-mysql`, `marko/database-postgresql` |
-| `marko/cache`    | `marko/cache-file`, `marko/cache-redis`             |
+| `marko/cache`    | `marko/cache-array`, `marko/cache-file`, `marko/cache-redis` |
 | `marko/view`     | `marko/view-latte`, `marko/view-liquid`             |
 | `marko/errors`   | `marko/errors-basic`, `marko/errors-advanced`       |
 | `marko/queue`    | `marko/queue-rabbitmq`, `marko/queue-sqs`           |

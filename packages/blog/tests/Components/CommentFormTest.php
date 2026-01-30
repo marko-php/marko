@@ -21,7 +21,7 @@ describe('Comment Form Component', function (): void {
 
         expect($html)->toContain('<form')
             ->and($html)->toMatch('/method\s*=\s*["\']post["\']/i')
-            ->and($html)->toMatch('/action\s*=\s*["\'][^"\']*\/posts\/1\/comments["\']/');
+            ->and($html)->toMatch('/action\s*=\s*["\'][^"\']*\/blog\/1\/comment["\']/');
     });
 
     it('includes name input field with label', function (): void {
