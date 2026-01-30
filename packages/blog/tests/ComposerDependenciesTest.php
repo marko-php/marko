@@ -41,4 +41,22 @@ describe('Blog Package Composer Dependencies', function (): void {
         expect($composer['require'])->not->toHaveKey('marko/database-mysql')
             ->and($composer['require'])->not->toHaveKey('marko/database-pgsql');
     });
+
+    it('blog composer.json suggests marko/mail-log driver', function (): void {
+        $composerPath = dirname(__DIR__) . '/composer.json';
+
+        $composer = json_decode(file_get_contents($composerPath), true);
+
+        expect($composer)->not->toBeNull()
+            ->and($composer['suggest'])->toHaveKey('marko/mail-log');
+    });
+
+    it('blog composer.json suggests marko/mail-smtp driver', function (): void {
+        $composerPath = dirname(__DIR__) . '/composer.json';
+
+        $composer = json_decode(file_get_contents($composerPath), true);
+
+        expect($composer)->not->toBeNull()
+            ->and($composer['suggest'])->toHaveKey('marko/mail-smtp');
+    });
 });

@@ -51,7 +51,9 @@
     },
     "suggest": {
         "marko/view-latte": "Latte template engine for default blog templates",
-        "marko/csrf": "CSRF protection for comment forms"
+        "marko/csrf": "CSRF protection for comment forms",
+        "marko/mail-log": "Log-based mail driver for development and debugging",
+        "marko/mail-smtp": "SMTP mail driver for production email sending"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

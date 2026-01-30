@@ -4,7 +4,7 @@
 2026-01-29
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Create `marko/mail-log` package that implements `MailerInterface` by logging emails via the existing `LoggerInterface`, providing a zero-configuration dev/testing solution.
@@ -37,7 +37,7 @@ Create `marko/mail-log` package that implements `MailerInterface` by logging ema
 |------|-------------|------------|--------|
 | 001 | Create package structure and LogMailer class | - | completed |
 | 002 | Implement email formatting for logging | 001 | completed |
-| 003 | Add module.php bindings and update blog suggestions | 002 | pending |
+| 003 | Add module.php bindings and update blog suggestions | 002 | completed |
 
 ## Architecture Notes
 

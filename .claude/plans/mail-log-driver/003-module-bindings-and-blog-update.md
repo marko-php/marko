@@ -1,6 +1,6 @@
 # Task 003: Add Module Bindings and Update Blog Suggestions
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002
 **Retry count**: 0
 
@@ -13,11 +13,10 @@ Create module.php with DI bindings for `MailerInterface` and update the blog pac
 - Blog should suggest both mail-smtp and mail-log drivers
 
 ## Requirements (Test Descriptions)
-- [ ] `it binds MailerInterface to LogMailer in module.php`
-- [ ] `it resolves LogMailer with configured storage path`
-- [ ] `it uses default storage path when not configured`
-- [ ] `blog composer.json suggests marko/mail-log driver`
-- [ ] `blog composer.json suggests marko/mail-smtp driver`
+- [x] `it binds MailerInterface to LogMailer in module.php`
+- [x] `it resolves LogMailer with LoggerInterface injected`
+- [x] `blog composer.json suggests marko/mail-log driver`
+- [x] `blog composer.json suggests marko/mail-smtp driver`
 
 ## Acceptance Criteria
 - module.php exists with proper bindings
