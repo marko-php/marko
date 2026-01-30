@@ -155,32 +155,6 @@ describe('Comment Form Component', function (): void {
             // Form should have aria-label for accessibility
             ->and($html)->toMatch('/aria-label\s*=\s*["\'].*comment.*["\']/i');
     });
-
-    it('includes CSRF token when provided', function (): void {
-        $view = createCommentFormTestView();
-
-        $html = $view->renderToString('blog::comment/form', [
-            'postId' => 1,
-            'honeypotField' => '',
-            'csrfToken' => 'test-csrf-token-12345',
-        ]);
-
-        expect($html)->toMatch('/<input[^>]*type\s*=\s*["\']hidden["\']/i')
-            ->and($html)->toMatch('/<input[^>]*name\s*=\s*["\']_token["\']/i')
-            ->and($html)->toMatch('/value\s*=\s*["\']test-csrf-token-12345["\']/');
-    });
-
-    it('works without CSRF when token not provided', function (): void {
-        $view = createCommentFormTestView();
-
-        $html = $view->renderToString('blog::comment/form', [
-            'postId' => 1,
-            'honeypotField' => '',
-        ]);
-
-        // Form should render without _token field
-        expect($html)->not->toMatch('/name\s*=\s*["\']_token["\']/');
-    });
 });
 
 function createCommentFormTestView(): LatteView

@@ -1,7 +1,6 @@
-{default $postId = null, $parentId = null, $honeypotField = '', $csrfToken = null, $errors = [], $oldInput = []}
+{default $postId = null, $parentId = null, $honeypotField = '', $errors = [], $oldInput = []}
 
 <form method="post" action="/blog/{$postId}/comment" class="comment-form" aria-label="Leave a comment">
-    <input n:if="$csrfToken" type="hidden" name="_token" value="{$csrfToken}">
     <input n:if="$parentId" type="hidden" name="parent_id" value="{$parentId}">
 
     <div class="form-group">

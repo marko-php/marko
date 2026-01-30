@@ -29,14 +29,6 @@ describe('Blog module README.md', function (): void {
             ->and($content)->toMatch('/view.*driver|template.*engine/i');
     });
 
-    it('documents optional CSRF protection and recommends marko/csrf for production', function () use ($readme): void {
-        $content = $readme();
-
-        expect($content)->toContain('marko/csrf')
-            ->and($content)->toMatch('/CSRF|csrf.*protection/i')
-            ->and($content)->toMatch('/optional|recommended|production/i');
-    });
-
     it('explains how to override view templates in app module', function () use ($readme): void {
         $content = $readme();
 

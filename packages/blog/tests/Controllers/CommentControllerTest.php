@@ -17,7 +17,6 @@ use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\CommentRateLimiterInterface;
 use Marko\Blog\Services\CommentVerificationServiceInterface;
-use Marko\Blog\Services\CsrfValidatorInterface;
 use Marko\Blog\Services\HoneypotValidatorInterface;
 use Marko\Core\Event\Event;
 use Marko\Core\Event\EventDispatcherInterface;
@@ -58,8 +57,8 @@ it('returns 404 when post slug not found', function (): void {
 
     $response = $controller->submit(
         slug: 'non-existent-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a test comment.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -97,8 +96,8 @@ it('returns 404 when post is not published', function (): void {
 
     $response = $controller->submit(
         slug: 'draft-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a test comment.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -108,7 +107,7 @@ it('returns 404 when post is not published', function (): void {
         ->and($response->body())->toContain('not found');
 });
 
-it('validates author_name is required', function (): void {
+it('validates name is required', function (): void {
     $post = createPost(id: 1, title: 'Test Post', slug: 'test-post');
     $postRepository = createMockPostRepository(findBySlugResult: $post);
     $commentRepository = createMockCommentRepository();
@@ -130,8 +129,8 @@ it('validates author_name is required', function (): void {
 
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: '',
-        authorEmail: 'john@example.com',
+        name: '',
+        email: 'john@example.com',
         content: 'This is a valid comment content.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -141,10 +140,10 @@ it('validates author_name is required', function (): void {
 
     $body = json_decode($response->body(), true);
     expect($body)->toHaveKey('errors')
-        ->and($body['errors'])->toHaveKey('author_name');
+        ->and($body['errors'])->toHaveKey('name');
 });
 
-it('validates author_email is required and valid format', function (): void {
+it('validates email is required and valid format', function (): void {
     $post = createPost(id: 1, title: 'Test Post', slug: 'test-post');
     $postRepository = createMockPostRepository(findBySlugResult: $post);
     $commentRepository = createMockCommentRepository();
@@ -167,8 +166,8 @@ it('validates author_email is required and valid format', function (): void {
     // Test empty email
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: '',
+        name: 'John Doe',
+        email: '',
         content: 'This is a valid comment content.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -177,13 +176,13 @@ it('validates author_email is required and valid format', function (): void {
     expect($response->statusCode())->toBe(422);
 
     $body = json_decode($response->body(), true);
-    expect($body['errors'])->toHaveKey('author_email');
+    expect($body['errors'])->toHaveKey('email');
 
     // Test invalid email format
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'not-an-email',
+        name: 'John Doe',
+        email: 'not-an-email',
         content: 'This is a valid comment content.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -192,7 +191,7 @@ it('validates author_email is required and valid format', function (): void {
     expect($response->statusCode())->toBe(422);
 
     $body = json_decode($response->body(), true);
-    expect($body['errors'])->toHaveKey('author_email');
+    expect($body['errors'])->toHaveKey('email');
 });
 
 it('validates content is required and has minimum length', function (): void {
@@ -218,8 +217,8 @@ it('validates content is required and has minimum length', function (): void {
     // Test empty content
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: '',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -233,8 +232,8 @@ it('validates content is required and has minimum length', function (): void {
     // Test content too short (less than 10 characters)
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'Hi',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -268,8 +267,8 @@ it('rejects submission when honeypot field is filled', function (): void {
 
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a valid comment content.',
         honeypot: 'filled-by-bot',
         ipAddress: '127.0.0.1',
@@ -283,81 +282,6 @@ it('rejects submission when honeypot field is filled', function (): void {
 
     // But comment should NOT have been saved
     expect($commentRepository->savedComments)->toBeEmpty();
-});
-
-it('validates CSRF token when marko/csrf is installed', function (): void {
-    $post = createPost(id: 1, title: 'Test Post', slug: 'test-post');
-    $postRepository = createMockPostRepository(findBySlugResult: $post);
-    $commentRepository = createMockCommentRepository();
-    $honeypotValidator = createMockHoneypotValidator();
-    $rateLimiter = createMockRateLimiter();
-    $verificationService = createMockVerificationService();
-    $blogConfig = createMockBlogConfig();
-    $eventDispatcher = createMockEventDispatcher();
-    $csrfValidator = createMockCsrfValidator(validateResult: false);
-
-    $controller = new CommentController(
-        postRepository: $postRepository,
-        commentRepository: $commentRepository,
-        honeypotValidator: $honeypotValidator,
-        rateLimiter: $rateLimiter,
-        verificationService: $verificationService,
-        blogConfig: $blogConfig,
-        eventDispatcher: $eventDispatcher,
-        csrfValidator: $csrfValidator,
-    );
-
-    $response = $controller->submit(
-        slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
-        content: 'This is a valid comment content.',
-        honeypot: '',
-        ipAddress: '127.0.0.1',
-        csrfToken: 'invalid-token',
-    );
-
-    expect($response->statusCode())->toBe(422);
-
-    $body = json_decode($response->body(), true);
-    expect($body['errors'])->toHaveKey('csrf');
-});
-
-it('skips CSRF validation when marko/csrf is not installed', function (): void {
-    $post = createPost(id: 1, title: 'Test Post', slug: 'test-post');
-    $postRepository = createMockPostRepository(findBySlugResult: $post);
-    $commentRepository = createMockCommentRepository();
-    $honeypotValidator = createMockHoneypotValidator();
-    $rateLimiter = createMockRateLimiter();
-    $verificationService = createMockVerificationService();
-    $blogConfig = createMockBlogConfig();
-    $eventDispatcher = createMockEventDispatcher();
-    // No CSRF validator provided
-
-    $controller = new CommentController(
-        postRepository: $postRepository,
-        commentRepository: $commentRepository,
-        honeypotValidator: $honeypotValidator,
-        rateLimiter: $rateLimiter,
-        verificationService: $verificationService,
-        blogConfig: $blogConfig,
-        eventDispatcher: $eventDispatcher,
-        // csrfValidator not provided - defaults to null
-    );
-
-    $response = $controller->submit(
-        slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
-        content: 'This is a valid comment content.',
-        honeypot: '',
-        ipAddress: '127.0.0.1',
-        csrfToken: 'any-token-should-be-ignored',
-    );
-
-    // Should still succeed (not 422) because CSRF is not validated
-    // 202 = pending verification, which is correct behavior
-    expect($response->statusCode())->toBeIn([200, 201, 202]);
 });
 
 it('rejects submission when rate limit exceeded', function (): void {
@@ -382,8 +306,8 @@ it('rejects submission when rate limit exceeded', function (): void {
 
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a valid comment content.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -418,8 +342,8 @@ it('returns rate limit wait time when rate limited', function (): void {
 
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a valid comment content.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -454,8 +378,8 @@ it('auto-approves comment when valid browser token exists', function (): void {
 
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a valid comment content.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -496,8 +420,8 @@ it('creates pending comment and sends verification email when no token', functio
 
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a valid comment content.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -545,8 +469,8 @@ it('accepts optional parent_id for threaded replies', function (): void {
 
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a reply comment.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -592,8 +516,8 @@ it('validates parent comment belongs to same post', function (): void {
 
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a reply comment.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -638,8 +562,8 @@ it('validates reply does not exceed configured max depth', function (): void {
 
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a reply comment.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -675,8 +599,8 @@ it('dispatches CommentCreated event', function (): void {
 
     $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a valid comment content.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -710,8 +634,8 @@ it('returns success response with next steps', function (): void {
 
     $response = $controller->submit(
         slug: 'test-post',
-        authorName: 'John Doe',
-        authorEmail: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
         content: 'This is a valid comment content.',
         honeypot: '',
         ipAddress: '127.0.0.1',
@@ -1218,28 +1142,6 @@ function createMockEventDispatcher(): EventDispatcherInterface
             Event $event,
         ): void {
             $this->dispatchedEvents[] = $event;
-        }
-    };
-}
-
-function createMockCsrfValidator(
-    bool $validateResult = true,
-): CsrfValidatorInterface {
-    return new readonly class ($validateResult) implements CsrfValidatorInterface
-    {
-        public function __construct(
-            private bool $validateResult,
-        ) {}
-
-        public function validate(
-            string $token,
-        ): bool {
-            return $this->validateResult;
-        }
-
-        public function generate(): string
-        {
-            return 'test-csrf-token';
         }
     };
 }

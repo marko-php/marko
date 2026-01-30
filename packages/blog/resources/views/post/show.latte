@@ -1,5 +1,5 @@
 {default $canonicalUrl = null, $metaDescription = null, $pageTitle = null, $ogType = 'article'}
-{default $comments = [], $honeypotField = '', $csrfToken = null, $errors = [], $oldInput = [], $verificationSuccess = false, $commentCount = null, $categoryPaths = []}
+{default $comments = [], $honeypotField = '', $errors = [], $oldInput = [], $verificationSuccess = false, $commentCount = null, $categoryPaths = []}
 
 <link n:if="$canonicalUrl" rel="canonical" href="{$canonicalUrl}">
 <meta n:if="$metaDescription" name="description" content="{$metaDescription}">
@@ -66,6 +66,6 @@
             Thank you! Your comment has been verified and is now visible.
         </div>
         {include 'blog::comment/thread', comments: $comments, maxDepth: 5, commentCount: $commentCount}
-        {include 'blog::comment/form', postId: $post->slug, honeypotField: $honeypotField, csrfToken: $csrfToken, errors: $errors, oldInput: $oldInput}
+        {include 'blog::comment/form', postId: $post->slug, honeypotField: $honeypotField, errors: $errors, oldInput: $oldInput}
     </section>
 </main>

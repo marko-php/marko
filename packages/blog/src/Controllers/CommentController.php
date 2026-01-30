@@ -12,7 +12,6 @@ use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\CommentRateLimiterInterface;
 use Marko\Blog\Services\CommentVerificationServiceInterface;
-use Marko\Blog\Services\CsrfValidatorInterface;
 use Marko\Blog\Services\HoneypotValidatorInterface;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Routing\Attributes\Post as PostRoute;
@@ -28,20 +27,18 @@ readonly class CommentController
         private CommentVerificationServiceInterface $verificationService,
         private BlogConfigInterface $blogConfig,
         private EventDispatcherInterface $eventDispatcher,
-        private ?CsrfValidatorInterface $csrfValidator = null,
     ) {}
 
     #[PostRoute('/blog/{slug}/comment')]
     public function submit(
         string $slug,
-        string $authorName = '',
-        string $authorEmail = '',
+        string $name = '',
+        string $email = '',
         string $content = '',
         string $honeypot = '',
         string $ipAddress = '',
         ?int $parentId = null,
         ?string $browserToken = null,
-        ?string $csrfToken = null,
     ): Response {
         // Find the post by slug
         $post = $this->postRepository->findBySlug($slug);
@@ -55,16 +52,9 @@ readonly class CommentController
             return Response::json(['status' => 'ok']);
         }
 
-        // Validate CSRF token if validator is installed
-        if ($this->csrfValidator !== null && $csrfToken !== null) {
-            if (!$this->csrfValidator->validate($csrfToken)) {
-                return Response::json(['errors' => ['csrf' => 'Invalid CSRF token']], 422);
-            }
-        }
-
         // Check rate limit
-        if (!$this->rateLimiter->isAllowed($ipAddress, $authorEmail)) {
-            $secondsRemaining = $this->rateLimiter->getSecondsRemaining($ipAddress, $authorEmail);
+        if (!$this->rateLimiter->isAllowed($ipAddress, $email)) {
+            $secondsRemaining = $this->rateLimiter->getSecondsRemaining($ipAddress, $email);
 
             return Response::json([
                 'error' => 'Rate limit exceeded',
@@ -82,7 +72,7 @@ readonly class CommentController
         }
 
         // Validate input
-        $errors = $this->validateInput($authorName, $authorEmail, $content);
+        $errors = $this->validateInput($name, $email, $content);
 
         if (!empty($errors)) {
             return Response::json(['errors' => $errors], 422);
@@ -91,14 +81,14 @@ readonly class CommentController
         // Create the comment
         $comment = new Comment();
         $comment->postId = $post->id;
-        $comment->authorName = trim($authorName);
-        $comment->authorEmail = trim($authorEmail);
+        $comment->authorName = trim($name);
+        $comment->authorEmail = trim($email);
         $comment->content = trim($content);
         $comment->parentId = $parentId;
         $comment->createdAt = date('Y-m-d H:i:s');
 
         // Check if auto-approve based on browser token
-        if ($this->verificationService->shouldAutoApprove($authorEmail, $browserToken)) {
+        if ($this->verificationService->shouldAutoApprove($email, $browserToken)) {
             $comment->status = CommentStatus::Verified;
             $comment->verifiedAt = date('Y-m-d H:i:s');
             $this->commentRepository->save($comment);
@@ -107,7 +97,7 @@ readonly class CommentController
             $this->eventDispatcher->dispatch(new CommentCreated($comment, $post));
 
             // Record submission for rate limiting
-            $this->rateLimiter->recordSubmission($ipAddress, $authorEmail);
+            $this->rateLimiter->recordSubmission($ipAddress, $email);
 
             return Response::json([
                 'status' => 'success',
@@ -126,7 +116,7 @@ readonly class CommentController
         $this->eventDispatcher->dispatch(new CommentCreated($comment, $post));
 
         // Record submission for rate limiting
-        $this->rateLimiter->recordSubmission($ipAddress, $authorEmail);
+        $this->rateLimiter->recordSubmission($ipAddress, $email);
 
         return Response::json([
             'status' => 'pending',
@@ -140,20 +130,20 @@ readonly class CommentController
      * @return array<string, string>
      */
     private function validateInput(
-        string $authorName,
-        string $authorEmail,
+        string $name,
+        string $email,
         string $content,
     ): array {
         $errors = [];
 
-        if (trim($authorName) === '') {
-            $errors['author_name'] = 'Author name is required';
+        if (trim($name) === '') {
+            $errors['name'] = 'Name is required';
         }
 
-        if (trim($authorEmail) === '') {
-            $errors['author_email'] = 'Author email is required';
-        } elseif (!filter_var($authorEmail, FILTER_VALIDATE_EMAIL)) {
-            $errors['author_email'] = 'Author email must be a valid email address';
+        if (trim($email) === '') {
+            $errors['email'] = 'Email is required';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Email must be a valid email address';
         }
 
         $trimmedContent = trim($content);

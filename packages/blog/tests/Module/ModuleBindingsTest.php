@@ -109,7 +109,7 @@ describe('Blog module.php bindings', function (): void {
 
         expect($config['bindings'])->toHaveKey(CommentVerificationServiceInterface::class)
             ->and($config['bindings'][CommentVerificationServiceInterface::class])->toBe(
-                CommentVerificationService::class
+                CommentVerificationService::class,
             );
     });
 
@@ -159,11 +159,11 @@ describe('Blog module composer.json dependencies', function (): void {
         'declares module dependencies on marko/core marko/routing marko/database marko/view marko/cache marko/mail marko/config marko/session',
         function (): void {
             $composerPath = dirname(__DIR__, 2) . '/composer.json';
-    
+
             expect(file_exists($composerPath))->toBeTrue();
-    
+
             $composer = json_decode(file_get_contents($composerPath), true);
-    
+
             expect($composer['require'])->toHaveKey('marko/core')
                 ->and($composer['require'])->toHaveKey('marko/routing')
                 ->and($composer['require'])->toHaveKey('marko/database')
@@ -172,7 +172,7 @@ describe('Blog module composer.json dependencies', function (): void {
                 ->and($composer['require'])->toHaveKey('marko/mail')
                 ->and($composer['require'])->toHaveKey('marko/config')
                 ->and($composer['require'])->toHaveKey('marko/session');
-        }
+        },
     );
 
     it('suggests marko/view-latte for default templates', function (): void {
@@ -181,14 +181,6 @@ describe('Blog module composer.json dependencies', function (): void {
 
         expect($composer)->toHaveKey('suggest')
             ->and($composer['suggest'])->toHaveKey('marko/view-latte');
-    });
-
-    it('suggests marko/csrf for CSRF protection on comment forms', function (): void {
-        $composerPath = dirname(__DIR__, 2) . '/composer.json';
-        $composer = json_decode(file_get_contents($composerPath), true);
-
-        expect($composer)->toHaveKey('suggest')
-            ->and($composer['suggest'])->toHaveKey('marko/csrf');
     });
 
     it('does not require specific drivers allowing custom implementations', function (): void {

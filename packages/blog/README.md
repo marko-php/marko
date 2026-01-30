@@ -14,12 +14,6 @@ composer require marko/blog
 composer require marko/blog marko/view-latte marko/database-mysql
 ```
 
-**Recommended for production:** CSRF protection for comment forms:
-
-```bash
-composer require marko/csrf
-```
-
 ## Quick Start
 
 Once installed with a view and database driver, the blog works automatically:
@@ -87,10 +81,6 @@ app/
 Templates in `app/` modules take precedence over package templates.
 
 ## Security
-
-### CSRF Protection (Recommended)
-
-Install `marko/csrf` for production. The comment form will automatically include CSRF tokens when the package is installed. Without it, the optional CSRF validation is skipped.
 
 ### Rate Limiting
 
