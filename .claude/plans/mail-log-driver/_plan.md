@@ -36,7 +36,7 @@ Create `marko/mail-log` package that implements `MailerInterface` by logging ema
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
 | 001 | Create package structure and LogMailer class | - | completed |
-| 002 | Implement email formatting for logging | 001 | pending |
+| 002 | Implement email formatting for logging | 001 | completed |
 | 003 | Add module.php bindings and update blog suggestions | 002 | pending |
 
 ## Architecture Notes
