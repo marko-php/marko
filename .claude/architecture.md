@@ -181,6 +181,7 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 |---------|------|-------------|
 | `marko/mail` | Interface | `MailerInterface`, `Message` builder |
 | `marko/mail-smtp` | Driver | SMTP transport |
+| `marko/mail-log` | Driver | Logs emails via LoggerInterface (dev/testing) |
 
 ### Queue
 
