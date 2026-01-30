@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Path\ProjectPaths;
+use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Seed\SeederDiscovery;
 use Marko\Database\Seed\SeederDiscoveryInterface;
 use Marko\Database\Seed\SeederRunner;
@@ -28,7 +29,15 @@ return [
                 $seeders[$definition->seederClass] = $container->get($definition->seederClass);
             }
 
-            return new SeederRunner($seeders);
+            // Get transaction manager if available (requires a database driver)
+            $transaction = $container->has(TransactionInterface::class)
+                ? $container->get(TransactionInterface::class)
+                : null;
+
+            return new SeederRunner(
+                seeders: $seeders,
+                transaction: $transaction,
+            );
         },
     ],
 ];

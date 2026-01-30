@@ -77,6 +77,31 @@ class Migrator
     }
 
     /**
+     * Reset the database by rolling back all migrations.
+     *
+     * @return array<string> List of rolled back migration names
+     * @throws MigrationException If a rollback fails
+     */
+    public function reset(): array
+    {
+        $this->ensureTable();
+
+        $applied = $this->repository->getApplied($this->connection);
+        $rolledBack = [];
+
+        // Roll back in reverse order
+        $migrations = array_reverse($applied);
+
+        foreach ($migrations as $name) {
+            $this->runMigration($name, 'down');
+            $this->repository->delete($this->connection, $name);
+            $rolledBack[] = $name;
+        }
+
+        return $rolledBack;
+    }
+
+    /**
      * Get all applied migrations.
      *
      * @return array<string>

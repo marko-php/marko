@@ -404,4 +404,57 @@ PHP;
         expect(fn () => $migrator->rollback())
             ->toThrow(MigrationException::class, 'not found');
     });
+
+    it('resets database by rolling back all migrations in reverse order', function (): void {
+        $rolledBackOrder = [];
+
+        $migrationContent = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(ConnectionInterface $connection): void {}
+    public function down(
+        ConnectionInterface $connection,
+    ): void {
+        $connection->execute('ROLLBACK');
+    }
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_first.php', $migrationContent);
+        file_put_contents($this->migrationsPath . '/2024_01_02_000000_second.php', $migrationContent);
+        file_put_contents($this->migrationsPath . '/2024_01_03_000000_third.php', $migrationContent);
+
+        $connection = $this->createMock(ConnectionInterface::class);
+        $connection->method('execute')->willReturn(1);
+
+        $repository = $this->createMock(MigrationRepository::class);
+        $repository->method('createTable');
+        $repository->method('getApplied')->willReturn([
+            '2024_01_01_000000_first',
+            '2024_01_02_000000_second',
+            '2024_01_03_000000_third',
+        ]);
+        $repository->method('delete')
+            ->willReturnCallback(function ($conn, $name) use (&$rolledBackOrder): void {
+                $rolledBackOrder[] = $name;
+            });
+
+        $migrator = new Migrator($connection, $repository, $this->paths);
+        $result = $migrator->reset();
+
+        // Should roll back in reverse order (newest first)
+        expect($rolledBackOrder)->toBe([
+            '2024_01_03_000000_third',
+            '2024_01_02_000000_second',
+            '2024_01_01_000000_first',
+        ])
+            ->and($result)->toBe([
+                '2024_01_03_000000_third',
+                '2024_01_02_000000_second',
+                '2024_01_01_000000_first',
+            ]);
+    });
 });

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Exceptions\SeederException;
 use Marko\Database\Seed\SeederDefinition;
 use Marko\Database\Seed\SeederInterface;
@@ -182,5 +183,142 @@ describe('SeederRunner', function (): void {
 
         expect(fn () => $runner->runByName('nonexistent', $definitions))
             ->toThrow(SeederException::class, "'nonexistent' not found");
+    });
+
+    it('wraps seeder execution in transaction when transaction manager provided', function (): void {
+        $transactionStarted = false;
+        $transactionCommitted = false;
+        $seederExecuted = false;
+
+        $transaction = new class ($transactionStarted, $transactionCommitted) implements TransactionInterface
+        {
+            public function __construct(
+                private bool &$started,
+                private bool &$committed,
+            ) {}
+
+            public function beginTransaction(): void
+            {
+                $this->started = true;
+            }
+
+            public function commit(): void
+            {
+                $this->committed = true;
+            }
+
+            public function rollback(): void {}
+
+            public function inTransaction(): bool
+            {
+                return $this->started && !$this->committed;
+            }
+
+            public function transaction(
+                callable $callback,
+            ): mixed {
+                $this->beginTransaction();
+                try {
+                    $result = $callback();
+                    $this->commit();
+
+                    return $result;
+                } catch (Throwable $e) {
+                    $this->rollback();
+                    throw $e;
+                }
+            }
+        };
+
+        $seeder = new class ($seederExecuted) implements SeederInterface
+        {
+            public function __construct(
+                private bool &$executed,
+            ) {}
+
+            public function run(): void
+            {
+                $this->executed = true;
+            }
+        };
+
+        $definitions = [
+            new SeederDefinition(seederClass: get_class($seeder), name: 'test', order: 0),
+        ];
+
+        $runner = new SeederRunner(
+            seeders: [get_class($seeder) => $seeder],
+            isProduction: false,
+            transaction: $transaction,
+        );
+
+        $runner->runAll($definitions);
+
+        expect($transactionStarted)->toBeTrue()
+            ->and($transactionCommitted)->toBeTrue()
+            ->and($seederExecuted)->toBeTrue();
+    });
+
+    it('rolls back transaction when seeder fails', function (): void {
+        $transactionRolledBack = false;
+
+        $transaction = new class ($transactionRolledBack) implements TransactionInterface
+        {
+            public function __construct(
+                private bool &$rolledBack,
+            ) {}
+
+            public function beginTransaction(): void {}
+
+            public function commit(): void {}
+
+            public function rollback(): void
+            {
+                $this->rolledBack = true;
+            }
+
+            public function inTransaction(): bool
+            {
+                return true;
+            }
+
+            public function transaction(
+                callable $callback,
+            ): mixed {
+                $this->beginTransaction();
+                try {
+                    $result = $callback();
+                    $this->commit();
+
+                    return $result;
+                } catch (Throwable $e) {
+                    $this->rollback();
+                    throw $e;
+                }
+            }
+        };
+
+        $seeder = new class () implements SeederInterface
+        {
+            public function run(): void
+            {
+                throw new RuntimeException('Seeder failed');
+            }
+        };
+
+        $definitions = [
+            new SeederDefinition(seederClass: get_class($seeder), name: 'test', order: 0),
+        ];
+
+        $runner = new SeederRunner(
+            seeders: [get_class($seeder) => $seeder],
+            isProduction: false,
+            transaction: $transaction,
+        );
+
+        expect(fn () => $runner->runAll($definitions))
+            ->toThrow(RuntimeException::class, 'Seeder failed');
+
+        expect($transactionRolledBack)->toBeTrue();
     });
 });

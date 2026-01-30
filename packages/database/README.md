@@ -131,6 +131,10 @@ class PostRepository extends Repository
 
 Seeders populate development/test databases with sample data. They're discovered via the `#[Seeder]` attribute.
 
+### Transaction Safety
+
+Each seeder runs inside a database transaction. If a seeder fails partway through, all its changes are automatically rolled back - preventing partial data that would require manual cleanup. This means you can safely re-run seeders after fixing errors without first having to reset your database.
+
 ### Creating Seeders
 
 ```php
@@ -180,6 +184,8 @@ Place seeders in your module's `Seed/` directory. The `order` parameter controls
 | `marko db:diff` | Preview changes between entities and database |
 | `marko db:migrate` | Generate and apply migrations |
 | `marko db:rollback` | Revert last migration batch (development only) |
+| `marko db:reset` | Rollback all migrations (development only) |
+| `marko db:rebuild` | Reset + re-run all migrations (development only) |
 | `marko db:seed` | Run seeders (development only) |
 
 ### Development Workflow
