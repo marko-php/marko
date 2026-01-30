@@ -134,3 +134,26 @@ it('preserves foreign key references in Schema Column', function (): void {
         ->and($table->columns[1]->onDelete)->toBe('CASCADE')
         ->and($table->columns[1]->onUpdate)->toBe('SET NULL');
 });
+
+it('builds ForeignKey objects from column references', function (): void {
+    $entity = new #[Table('posts')] class () extends Entity
+    {
+        #[Column(primaryKey: true)]
+        public int $id;
+
+        #[Column(references: 'users.id', onDelete: 'CASCADE', onUpdate: 'SET NULL')]
+        public int $userId;
+    };
+
+    $metadata = $this->metadataFactory->parse($entity::class);
+    $table = $this->schemaBuilder->build($metadata);
+
+    expect($table->foreignKeys)
+        ->toHaveCount(1)
+        ->and($table->foreignKeys[0]->name)->toBe('fk_posts_userId')
+        ->and($table->foreignKeys[0]->columns)->toBe(['userId'])
+        ->and($table->foreignKeys[0]->referencedTable)->toBe('users')
+        ->and($table->foreignKeys[0]->referencedColumns)->toBe(['id'])
+        ->and($table->foreignKeys[0]->onDelete)->toBe('CASCADE')
+        ->and($table->foreignKeys[0]->onUpdate)->toBe('SET NULL');
+});

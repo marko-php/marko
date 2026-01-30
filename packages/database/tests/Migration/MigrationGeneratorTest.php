@@ -8,6 +8,7 @@ use Marko\Database\Diff\TableDiff;
 use Marko\Database\Migration\Migration;
 use Marko\Database\Migration\MigrationGenerator;
 use Marko\Database\Schema\Column;
+use Marko\Database\Schema\ForeignKey;
 use Marko\Database\Schema\Table;
 use Marko\Database\Tests\Migration\Helpers;
 
@@ -133,6 +134,163 @@ describe('MigrationGenerator', function (): void {
             ->toHaveCount(2)
             ->and(basename($paths[0]))->toContain('create_posts')
             ->and(basename($paths[1]))->toContain('create_comments');
+    });
+
+    it('orders migrations by foreign key dependencies', function (): void {
+        // Comments references posts, so posts must be created first
+        $postsTable = new Table('posts', [new Column('id', 'INTEGER', primaryKey: true)]);
+        $commentsTable = new Table(
+            'comments',
+            [
+                new Column('id', 'INTEGER', primaryKey: true),
+                new Column('post_id', 'INTEGER'),
+            ],
+            foreignKeys: [
+                new ForeignKey(
+                    'fk_comments_post_id',
+                    ['post_id'],
+                    'posts',
+                    ['id'],
+                ),
+            ],
+        );
+
+        // Pass comments first to verify reordering happens
+        $diff = new SchemaDiff(tablesToCreate: [$commentsTable, $postsTable]);
+
+        ['paths' => $paths] = Helpers::generateTestMigration(
+            $this->tempDir,
+            $diff,
+            ['CREATE TABLE "posts" (id INT)', 'CREATE TABLE "comments" (id INT, post_id INT)'],
+            ['DROP TABLE "comments"', 'DROP TABLE "posts"'],
+        );
+
+        // Posts should come first due to foreign key dependency
+        expect($paths)
+            ->toHaveCount(2)
+            ->and(basename($paths[0]))->toContain('create_posts')
+            ->and(basename($paths[1]))->toContain('create_comments');
+
+        // Verify timestamps are sequential
+        $timestamp1 = substr(basename($paths[0]), 0, 14);
+        $timestamp2 = substr(basename($paths[1]), 0, 14);
+        expect((int) $timestamp2)->toBeGreaterThanOrEqual((int) $timestamp1);
+    });
+
+    it('orders complex dependency graph correctly (blog-like schema)', function (): void {
+        // Create a blog-like schema:
+        // - authors (no deps)
+        // - categories (no deps)
+        // - posts (depends on authors)
+        // - comments (depends on posts)
+        $authors = new Table('authors', [new Column('id', 'INTEGER', primaryKey: true)]);
+        $categories = new Table('categories', [new Column('id', 'INTEGER', primaryKey: true)]);
+        $posts = new Table(
+            'posts',
+            [
+                new Column('id', 'INTEGER', primaryKey: true),
+                new Column('author_id', 'INTEGER'),
+            ],
+            foreignKeys: [
+                new ForeignKey('fk_posts_author_id', ['author_id'], 'authors', ['id']),
+            ],
+        );
+        $comments = new Table(
+            'comments',
+            [
+                new Column('id', 'INTEGER', primaryKey: true),
+                new Column('post_id', 'INTEGER'),
+            ],
+            foreignKeys: [
+                new ForeignKey('fk_comments_post_id', ['post_id'], 'posts', ['id']),
+            ],
+        );
+
+        // Pass in scrambled order: posts, comments, authors, categories
+        // The algorithm should reorder to: authors, categories, posts, comments
+        $diff = new SchemaDiff(tablesToCreate: [$posts, $comments, $authors, $categories]);
+
+        ['paths' => $paths] = Helpers::generateTestMigration(
+            $this->tempDir,
+            $diff,
+            [
+                'CREATE TABLE "authors"',
+                'CREATE TABLE "categories"',
+                'CREATE TABLE "posts"',
+                'CREATE TABLE "comments"',
+            ],
+            [
+                'DROP TABLE "comments"',
+                'DROP TABLE "posts"',
+                'DROP TABLE "categories"',
+                'DROP TABLE "authors"',
+            ],
+        );
+
+        // Verify correct dependency order
+        expect($paths)->toHaveCount(4);
+
+        // Extract table names from paths
+        $tableOrder = array_map(function ($path) {
+            // Extract table name from filename like "20260130123456_create_tablename.php"
+            preg_match('/_create_(\w+)\.php$/', basename($path), $matches);
+
+            return $matches[1] ?? '';
+        }, $paths);
+
+        // Authors must come before posts (posts depends on authors)
+        $authorsIndex = array_search('authors', $tableOrder, true);
+        $postsIndex = array_search('posts', $tableOrder, true);
+        expect($authorsIndex)->toBeLessThan($postsIndex);
+
+        // Posts must come before comments (comments depends on posts)
+        $commentsIndex = array_search('comments', $tableOrder, true);
+        expect($postsIndex)->toBeLessThan($commentsIndex);
+
+        // Categories has no dependencies, so should maintain relative original order
+        // (it was passed after authors in original order, so should appear after authors)
+    });
+
+    it('handles self-referential foreign keys (parent_id pattern)', function (): void {
+        // Comments has a self-referential FK (parent_id -> comments.id)
+        // This should not cause a circular dependency detection
+        $posts = new Table('posts', [new Column('id', 'INTEGER', primaryKey: true)]);
+        $comments = new Table(
+            'comments',
+            [
+                new Column('id', 'INTEGER', primaryKey: true),
+                new Column('post_id', 'INTEGER'),
+                new Column('parent_id', 'INTEGER', nullable: true),
+            ],
+            foreignKeys: [
+                new ForeignKey('fk_comments_post_id', ['post_id'], 'posts', ['id']),
+                new ForeignKey('fk_comments_parent_id', ['parent_id'], 'comments', ['id']),
+            ],
+        );
+
+        // Pass comments first - should still work because self-ref is ignored
+        $diff = new SchemaDiff(tablesToCreate: [$comments, $posts]);
+
+        ['paths' => $paths] = Helpers::generateTestMigration(
+            $this->tempDir,
+            $diff,
+            ['CREATE TABLE "posts"', 'CREATE TABLE "comments"'],
+            ['DROP TABLE "comments"', 'DROP TABLE "posts"'],
+        );
+
+        expect($paths)->toHaveCount(2);
+
+        // Extract table names
+        $tableOrder = array_map(function ($path) {
+            preg_match('/_create_(\w+)\.php$/', basename($path), $matches);
+
+            return $matches[1] ?? '';
+        }, $paths);
+
+        // Posts must come before comments
+        $postsIndex = array_search('posts', $tableOrder, true);
+        $commentsIndex = array_search('comments', $tableOrder, true);
+        expect($postsIndex)->toBeLessThan($commentsIndex);
     });
 
     it('handles empty diff with no file generated', function (): void {
