@@ -366,8 +366,8 @@ use ReflectionClass;
     $childComment = createComment(
         id: 2,
         postId: 1,
-        authorName: 'Jane Smith',
-        authorEmail: 'jane@example.com',
+        name: 'Jane Smith',
+        email: 'jane@example.com',
         content: 'This is a reply comment.',
         parentId: 1,
     );
@@ -375,8 +375,8 @@ use ReflectionClass;
     $parentComment = createComment(
         id: 1,
         postId: 1,
-        authorName: 'Bob Wilson',
-        authorEmail: 'bob@example.com',
+        name: 'Bob Wilson',
+        email: 'bob@example.com',
         content: 'This is a root comment.',
         children: [$childComment],
     );
@@ -1551,7 +1551,7 @@ function createMockCommentRepository(
             return count($this->threadedComments);
         }
 
-        public function findByAuthorEmail(
+        public function findByEmail(
             string $email,
         ): array {
             return [];
@@ -1599,8 +1599,8 @@ function createMockCommentRepository(
 function createComment(
     int $id,
     int $postId,
-    string $authorName,
-    string $authorEmail,
+    string $name,
+    string $email,
     string $content,
     CommentStatus $status = CommentStatus::Verified,
     ?int $parentId = null,
@@ -1609,8 +1609,8 @@ function createComment(
     $comment = new Comment();
     $comment->id = $id;
     $comment->postId = $postId;
-    $comment->authorName = $authorName;
-    $comment->authorEmail = $authorEmail;
+    $comment->name = $name;
+    $comment->email = $email;
     $comment->content = $content;
     $comment->status = $status;
     $comment->parentId = $parentId;

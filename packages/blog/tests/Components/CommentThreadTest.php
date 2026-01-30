@@ -17,7 +17,7 @@ describe('Comment Thread Component', function (): void {
 
         $comment = createTestComment(
             id: 1,
-            authorName: 'John Doe',
+            name: 'John Doe',
             content: 'This is a great post!',
         );
 
@@ -36,7 +36,7 @@ describe('Comment Thread Component', function (): void {
 
         $comment = createTestComment(
             id: 1,
-            authorName: 'Jane Doe',
+            name: 'Jane Doe',
             content: 'Nice article!',
             createdAt: '2024-03-15 14:30:00',
         );
@@ -56,14 +56,14 @@ describe('Comment Thread Component', function (): void {
 
         $childComment = createTestComment(
             id: 2,
-            authorName: 'Reply Author',
+            name: 'Reply Author',
             content: 'This is a reply!',
             parentId: 1,
         );
 
         $parentComment = createTestComment(
             id: 1,
-            authorName: 'Parent Author',
+            name: 'Parent Author',
             content: 'This is the parent comment.',
             children: [$childComment],
         );
@@ -87,14 +87,14 @@ describe('Comment Thread Component', function (): void {
         // Create deeply nested comments: level 0 -> level 1 -> level 2
         $level2Comment = createTestComment(
             id: 3,
-            authorName: 'Level 2 Author',
+            name: 'Level 2 Author',
             content: 'Should not be rendered',
             parentId: 2,
         );
 
         $level1Comment = createTestComment(
             id: 2,
-            authorName: 'Level 1 Author',
+            name: 'Level 1 Author',
             content: 'First level reply',
             parentId: 1,
             children: [$level2Comment],
@@ -102,7 +102,7 @@ describe('Comment Thread Component', function (): void {
 
         $rootComment = createTestComment(
             id: 1,
-            authorName: 'Root Author',
+            name: 'Root Author',
             content: 'Root comment',
             children: [$level1Comment],
         );
@@ -125,7 +125,7 @@ describe('Comment Thread Component', function (): void {
 
         $comment = createTestComment(
             id: 1,
-            authorName: 'Test Author',
+            name: 'Test Author',
             content: 'A comment that can be replied to.',
         );
 
@@ -144,14 +144,14 @@ describe('Comment Thread Component', function (): void {
 
         $childComment = createTestComment(
             id: 2,
-            authorName: 'Max Depth Author',
+            name: 'Max Depth Author',
             content: 'At max depth, cannot reply.',
             parentId: 1,
         );
 
         $parentComment = createTestComment(
             id: 1,
-            authorName: 'Parent Author',
+            name: 'Parent Author',
             content: 'Parent comment.',
             children: [$childComment],
         );
@@ -188,7 +188,7 @@ describe('Comment Thread Component', function (): void {
 
         $comment = createTestComment(
             id: 1,
-            authorName: 'Test Author',
+            name: 'Test Author',
             content: 'Test content.',
         );
 
@@ -210,7 +210,7 @@ describe('Comment Thread Component', function (): void {
 
         $comment = createTestComment(
             id: 1,
-            authorName: 'Test Author',
+            name: 'Test Author',
             content: 'Test content.',
         );
 
@@ -229,19 +229,19 @@ describe('Comment Thread Component', function (): void {
 
         $comment1 = createTestComment(
             id: 1,
-            authorName: 'Author 1',
+            name: 'Author 1',
             content: 'First comment.',
         );
 
         $comment2 = createTestComment(
             id: 2,
-            authorName: 'Author 2',
+            name: 'Author 2',
             content: 'Second comment.',
         );
 
         $comment3 = createTestComment(
             id: 3,
-            authorName: 'Author 3',
+            name: 'Author 3',
             content: 'Third comment.',
         );
 
@@ -291,7 +291,7 @@ function createCommentThreadTestView(): LatteView
 
 function createTestComment(
     int $id,
-    string $authorName,
+    string $name,
     string $content,
     ?int $parentId = null,
     ?string $createdAt = null,
@@ -300,8 +300,8 @@ function createTestComment(
     $comment = new Comment();
     $comment->id = $id;
     $comment->postId = 1;
-    $comment->authorName = $authorName;
-    $comment->authorEmail = 'test@example.com';
+    $comment->name = $name;
+    $comment->email = 'test@example.com';
     $comment->content = $content;
     $comment->parentId = $parentId;
     $comment->createdAt = $createdAt ?? '2024-01-15 10:30:00';

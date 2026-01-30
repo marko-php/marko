@@ -392,8 +392,8 @@ it('auto-approves comment when valid browser token exists', function (): void {
     expect($commentRepository->savedComments)->toHaveCount(1);
     $savedComment = $commentRepository->savedComments[0];
     expect($savedComment->status)->toBe(CommentStatus::Verified)
-        ->and($savedComment->authorName)->toBe('John Doe')
-        ->and($savedComment->authorEmail)->toBe('john@example.com')
+        ->and($savedComment->name)->toBe('John Doe')
+        ->and($savedComment->email)->toBe('john@example.com')
         ->and($savedComment->content)->toBe('This is a valid comment content.')
         ->and($savedComment->postId)->toBe(1);
 });
@@ -444,8 +444,8 @@ it('accepts optional parent_id for threaded replies', function (): void {
     $parentComment = new Comment();
     $parentComment->id = 5;
     $parentComment->postId = 1;
-    $parentComment->authorName = 'Parent Author';
-    $parentComment->authorEmail = 'parent@example.com';
+    $parentComment->name = 'Parent Author';
+    $parentComment->email = 'parent@example.com';
     $parentComment->content = 'Parent comment content';
     $parentComment->status = CommentStatus::Verified;
 
@@ -491,8 +491,8 @@ it('validates parent comment belongs to same post', function (): void {
     $parentComment = new Comment();
     $parentComment->id = 5;
     $parentComment->postId = 999; // Different post!
-    $parentComment->authorName = 'Parent Author';
-    $parentComment->authorEmail = 'parent@example.com';
+    $parentComment->name = 'Parent Author';
+    $parentComment->email = 'parent@example.com';
     $parentComment->content = 'Parent comment content';
     $parentComment->status = CommentStatus::Verified;
 
@@ -535,8 +535,8 @@ it('validates reply does not exceed configured max depth', function (): void {
     $parentComment = new Comment();
     $parentComment->id = 5;
     $parentComment->postId = 1;
-    $parentComment->authorName = 'Parent Author';
-    $parentComment->authorEmail = 'parent@example.com';
+    $parentComment->name = 'Parent Author';
+    $parentComment->email = 'parent@example.com';
     $parentComment->content = 'Parent comment content';
     $parentComment->status = CommentStatus::Verified;
 
@@ -916,7 +916,7 @@ function createMockCommentRepository(
             return 0;
         }
 
-        public function findByAuthorEmail(
+        public function findByEmail(
             string $email,
         ): array {
             return [];

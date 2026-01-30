@@ -18,8 +18,8 @@ it('finds comment by id', function (): void {
         [
             'id' => 1,
             'post_id' => 10,
-            'author_name' => 'John Doe',
-            'author_email' => 'john@example.com',
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
             'content' => 'This is a test comment',
             'status' => 'verified',
             'parent_id' => null,
@@ -38,8 +38,8 @@ it('finds comment by id', function (): void {
     expect($comment)->toBeInstanceOf(Comment::class)
         ->and($comment->id)->toBe(1)
         ->and($comment->postId)->toBe(10)
-        ->and($comment->authorName)->toBe('John Doe')
-        ->and($comment->authorEmail)->toBe('john@example.com')
+        ->and($comment->name)->toBe('John Doe')
+        ->and($comment->email)->toBe('john@example.com')
         ->and($comment->content)->toBe('This is a test comment');
 });
 
@@ -50,8 +50,8 @@ it('finds all verified comments for a post', function (): void {
             [
                 'id' => 1,
                 'post_id' => 10,
-                'author_name' => 'John Doe',
-                'author_email' => 'john@example.com',
+                'name' => 'John Doe',
+                'email' => 'john@example.com',
                 'content' => 'First verified comment',
                 'status' => 'verified',
                 'parent_id' => null,
@@ -61,8 +61,8 @@ it('finds all verified comments for a post', function (): void {
             [
                 'id' => 2,
                 'post_id' => 10,
-                'author_name' => 'Jane Doe',
-                'author_email' => 'jane@example.com',
+                'name' => 'Jane Doe',
+                'email' => 'jane@example.com',
                 'content' => 'Second verified comment',
                 'status' => 'verified',
                 'parent_id' => null,
@@ -97,8 +97,8 @@ it('finds pending comments for a post', function (): void {
             [
                 'id' => 1,
                 'post_id' => 10,
-                'author_name' => 'John Doe',
-                'author_email' => 'john@example.com',
+                'name' => 'John Doe',
+                'email' => 'john@example.com',
                 'content' => 'Pending comment',
                 'status' => 'pending',
                 'parent_id' => null,
@@ -135,8 +135,8 @@ it('returns comments as threaded tree structure', function (): void {
         [
             'id' => 1,
             'post_id' => 10,
-            'author_name' => 'John Doe',
-            'author_email' => 'john@example.com',
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
             'content' => 'Root comment 1',
             'status' => 'verified',
             'parent_id' => null,
@@ -146,8 +146,8 @@ it('returns comments as threaded tree structure', function (): void {
         [
             'id' => 2,
             'post_id' => 10,
-            'author_name' => 'Jane Doe',
-            'author_email' => 'jane@example.com',
+            'name' => 'Jane Doe',
+            'email' => 'jane@example.com',
             'content' => 'Reply to comment 1',
             'status' => 'verified',
             'parent_id' => 1,
@@ -157,8 +157,8 @@ it('returns comments as threaded tree structure', function (): void {
         [
             'id' => 3,
             'post_id' => 10,
-            'author_name' => 'Bob Smith',
-            'author_email' => 'bob@example.com',
+            'name' => 'Bob Smith',
+            'email' => 'bob@example.com',
             'content' => 'Reply to comment 2',
             'status' => 'verified',
             'parent_id' => 2,
@@ -168,8 +168,8 @@ it('returns comments as threaded tree structure', function (): void {
         [
             'id' => 4,
             'post_id' => 10,
-            'author_name' => 'Alice Jones',
-            'author_email' => 'alice@example.com',
+            'name' => 'Alice Jones',
+            'email' => 'alice@example.com',
             'content' => 'Root comment 2',
             'status' => 'verified',
             'parent_id' => null,
@@ -214,8 +214,8 @@ it('respects max depth configuration when building tree', function (): void {
         [
             'id' => 1,
             'post_id' => 10,
-            'author_name' => 'John Doe',
-            'author_email' => 'john@example.com',
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
             'content' => 'Root comment (depth 0)',
             'status' => 'verified',
             'parent_id' => null,
@@ -225,8 +225,8 @@ it('respects max depth configuration when building tree', function (): void {
         [
             'id' => 2,
             'post_id' => 10,
-            'author_name' => 'Jane Doe',
-            'author_email' => 'jane@example.com',
+            'name' => 'Jane Doe',
+            'email' => 'jane@example.com',
             'content' => 'Reply depth 1',
             'status' => 'verified',
             'parent_id' => 1,
@@ -236,8 +236,8 @@ it('respects max depth configuration when building tree', function (): void {
         [
             'id' => 3,
             'post_id' => 10,
-            'author_name' => 'Bob Smith',
-            'author_email' => 'bob@example.com',
+            'name' => 'Bob Smith',
+            'email' => 'bob@example.com',
             'content' => 'Reply depth 2 (max)',
             'status' => 'verified',
             'parent_id' => 2,
@@ -247,8 +247,8 @@ it('respects max depth configuration when building tree', function (): void {
         [
             'id' => 4,
             'post_id' => 10,
-            'author_name' => 'Alice Jones',
-            'author_email' => 'alice@example.com',
+            'name' => 'Alice Jones',
+            'email' => 'alice@example.com',
             'content' => 'Would be depth 3 but flattened to max',
             'status' => 'verified',
             'parent_id' => 3,
@@ -350,8 +350,8 @@ it('finds comments by author email', function (): void {
             [
                 'id' => 1,
                 'post_id' => 10,
-                'author_name' => 'John Doe',
-                'author_email' => 'john@example.com',
+                'name' => 'John Doe',
+                'email' => 'john@example.com',
                 'content' => 'First comment',
                 'status' => 'verified',
                 'parent_id' => null,
@@ -361,8 +361,8 @@ it('finds comments by author email', function (): void {
             [
                 'id' => 5,
                 'post_id' => 20,
-                'author_name' => 'John Doe',
-                'author_email' => 'john@example.com',
+                'name' => 'John Doe',
+                'email' => 'john@example.com',
                 'content' => 'Second comment',
                 'status' => 'verified',
                 'parent_id' => null,
@@ -378,12 +378,12 @@ it('finds comments by author email', function (): void {
 
     $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
 
-    $comments = $repository->findByAuthorEmail('john@example.com');
+    $comments = $repository->findByEmail('john@example.com');
 
     expect($comments)->toHaveCount(2)
-        ->and($comments[0]->authorEmail)->toBe('john@example.com')
-        ->and($comments[1]->authorEmail)->toBe('john@example.com')
-        ->and($queryHistory[0]['sql'])->toContain('author_email = ?')
+        ->and($comments[0]->email)->toBe('john@example.com')
+        ->and($comments[1]->email)->toBe('john@example.com')
+        ->and($queryHistory[0]['sql'])->toContain('email = ?')
         ->and($queryHistory[0]['bindings'])->toContain('john@example.com');
 });
 
@@ -396,8 +396,8 @@ it('calculates depth of a comment in thread', function (): void {
         1 => [
             'id' => 1,
             'post_id' => 10,
-            'author_name' => 'John Doe',
-            'author_email' => 'john@example.com',
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
             'content' => 'Root comment',
             'status' => 'verified',
             'parent_id' => null,
@@ -407,8 +407,8 @@ it('calculates depth of a comment in thread', function (): void {
         2 => [
             'id' => 2,
             'post_id' => 10,
-            'author_name' => 'Jane Doe',
-            'author_email' => 'jane@example.com',
+            'name' => 'Jane Doe',
+            'email' => 'jane@example.com',
             'content' => 'Reply',
             'status' => 'verified',
             'parent_id' => 1,
@@ -418,8 +418,8 @@ it('calculates depth of a comment in thread', function (): void {
         3 => [
             'id' => 3,
             'post_id' => 10,
-            'author_name' => 'Bob Smith',
-            'author_email' => 'bob@example.com',
+            'name' => 'Bob Smith',
+            'email' => 'bob@example.com',
             'content' => 'Nested reply',
             'status' => 'verified',
             'parent_id' => 2,

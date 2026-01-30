@@ -14,8 +14,8 @@ return new class () extends Migration
             CREATE TABLE comments (
                 id INT UNSIGNED NOT NULL AUTO_INCREMENT,
                 post_id INT UNSIGNED NOT NULL,
-                author_name VARCHAR(255) NOT NULL,
-                author_email VARCHAR(255) NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
                 content TEXT NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
                 parent_id INT UNSIGNED NULL,
@@ -25,7 +25,7 @@ return new class () extends Migration
                 INDEX idx_comments_post_id (post_id),
                 INDEX idx_comments_status (status),
                 INDEX idx_comments_parent_id (parent_id),
-                INDEX idx_comments_author_email (author_email),
+                INDEX idx_comments_email (email),
                 FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
                 FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
             )

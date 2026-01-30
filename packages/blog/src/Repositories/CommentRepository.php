@@ -325,11 +325,11 @@ class CommentRepository extends Repository implements CommentRepositoryInterface
      *
      * @return array<Comment>
      */
-    public function findByAuthorEmail(
+    public function findByEmail(
         string $email,
     ): array {
         $sql = sprintf(
-            'SELECT * FROM %s WHERE author_email = ?',
+            'SELECT * FROM %s WHERE email = ?',
             $this->metadata->tableName,
         );
 

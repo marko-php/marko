@@ -21,5 +21,5 @@ interface CommentInterface
 
     public function getCreatedAt(): ?DateTimeImmutable;
 
-    public function getAuthorName(): string;
+    public function getName(): string;
 }

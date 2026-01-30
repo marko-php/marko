@@ -81,8 +81,8 @@ readonly class CommentController
         // Create the comment
         $comment = new Comment();
         $comment->postId = $post->id;
-        $comment->authorName = trim($name);
-        $comment->authorEmail = trim($email);
+        $comment->name = trim($name);
+        $comment->email = trim($email);
         $comment->content = trim($content);
         $comment->parentId = $parentId;
         $comment->createdAt = date('Y-m-d H:i:s');

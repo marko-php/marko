@@ -4,9 +4,9 @@
 <p n:if="!$currentDepth && !$comments" class="comment-empty">No comments yet. Be the first to comment!</p>
 
 {foreach $comments as $comment}
-<article class="comment comment-depth-{$currentDepth}" aria-label="Comment by {$comment->authorName}">
+<article class="comment comment-depth-{$currentDepth}" aria-label="Comment by {$comment->name}">
     <header class="comment-header">
-        <span class="comment-author">{$comment->authorName}</span>
+        <span class="comment-author">{$comment->name}</span>
         <time class="comment-date" datetime="{$comment->getCreatedAt()?->format('Y-m-d\\TH:i:s')}">{$comment->getCreatedAt()?->format('F j, Y')}</time>
     </header>
     <div class="comment-content">

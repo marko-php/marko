@@ -50,8 +50,8 @@ it('generates unique verification token for comment', function (): void {
 
 it('sends verification email with link to commenter', function (): void {
     $comment = createVerificationTestComment(
-        authorEmail: 'john@example.com',
-        authorName: 'John Doe',
+        email: 'john@example.com',
+        name: 'John Doe',
     );
     $tokenRepository = new MockTokenRepository();
     $mailer = new MockMailer();
@@ -447,15 +447,15 @@ it('invalidates old token when resending verification email', function (): void 
 
 function createVerificationTestComment(
     int $id = 1,
-    string $authorEmail = 'commenter@example.com',
-    string $authorName = 'Test Commenter',
+    string $email = 'commenter@example.com',
+    string $name = 'Test Commenter',
     CommentStatus $status = CommentStatus::Pending,
 ): Comment {
     $comment = new Comment();
     $comment->id = $id;
     $comment->postId = 10;
-    $comment->authorEmail = $authorEmail;
-    $comment->authorName = $authorName;
+    $comment->email = $email;
+    $comment->name = $name;
     $comment->content = 'Test comment content';
     $comment->status = $status;
     $comment->createdAt = '2024-01-01 10:00:00';
@@ -594,7 +594,7 @@ class MockCommentRepository implements CommentRepositoryInterface
         return 0;
     }
 
-    public function findByAuthorEmail(
+    public function findByEmail(
         string $email,
     ): array {
         return [];

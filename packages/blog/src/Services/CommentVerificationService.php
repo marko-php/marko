@@ -43,7 +43,7 @@ readonly class CommentVerificationService implements CommentVerificationServiceI
         );
 
         $token = VerificationToken::create(
-            email: $comment->authorEmail,
+            email: $comment->email,
             type: 'email',
             commentId: $comment->id,
             expiresAt: $expiresAt,
@@ -54,7 +54,7 @@ readonly class CommentVerificationService implements CommentVerificationServiceI
         $verificationLink = '/blog/comment/verify?token=' . $token->token;
 
         $message = Message::create()
-            ->to($comment->authorEmail, $comment->getAuthorName())
+            ->to($comment->email, $comment->getName())
             ->subject('Verify your comment')
             ->text('Please verify your comment by clicking this link: ' . $verificationLink);
 

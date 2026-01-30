@@ -16,7 +16,7 @@ use Marko\Database\Entity\Entity;
 #[Index('idx_comments_post_id', ['post_id'])]
 #[Index('idx_comments_status', ['status'])]
 #[Index('idx_comments_parent_id', ['parent_id'])]
-#[Index('idx_comments_author_email', ['author_email'])]
+#[Index('idx_comments_email', ['email'])]
 class Comment extends Entity implements CommentInterface
 {
     public const int MAX_CONTENT_LENGTH = 10000;
@@ -27,11 +27,11 @@ class Comment extends Entity implements CommentInterface
     #[Column('post_id', references: 'posts.id', onDelete: 'CASCADE')]
     public int $postId;
 
-    #[Column('author_name')]
-    public string $authorName;
+    #[Column]
+    public string $name;
 
-    #[Column('author_email')]
-    public string $authorEmail;
+    #[Column]
+    public string $email;
 
     #[Column(type: 'TEXT')]
     public string $content;
@@ -116,8 +116,8 @@ class Comment extends Entity implements CommentInterface
         return new DateTimeImmutable($this->createdAt);
     }
 
-    public function getAuthorName(): string
+    public function getName(): string
     {
-        return $this->authorName;
+        return $this->name;
     }
 }

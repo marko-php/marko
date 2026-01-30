@@ -15,16 +15,16 @@ use Marko\Database\Attributes\Column;
 use ReflectionClass;
 use RuntimeException;
 
-it('creates comment with post_id author_name author_email and content', function (): void {
+it('creates comment with post_id name email and content', function (): void {
     $comment = new Comment();
     $comment->postId = 1;
-    $comment->authorName = 'John Doe';
-    $comment->authorEmail = 'john@example.com';
+    $comment->name = 'John Doe';
+    $comment->email = 'john@example.com';
     $comment->content = 'This is a great blog post!';
 
     expect($comment->postId)->toBe(1)
-        ->and($comment->authorName)->toBe('John Doe')
-        ->and($comment->authorEmail)->toBe('john@example.com')
+        ->and($comment->name)->toBe('John Doe')
+        ->and($comment->email)->toBe('john@example.com')
         ->and($comment->content)->toBe('This is a great blog post!');
 });
 
@@ -42,32 +42,26 @@ it('requires post_id field', function (): void {
     expect($columnAttribute->name)->toBe('post_id');
 });
 
-it('requires author_name field', function (): void {
+it('requires name field', function (): void {
     $reflection = new ReflectionClass(Comment::class);
-    $property = $reflection->getProperty('authorName');
+    $property = $reflection->getProperty('name');
 
     expect($property->getType()->allowsNull())->toBeFalse()
         ->and($property->getType()->getName())->toBe('string');
 
     $attributes = $property->getAttributes(Column::class);
     expect($attributes)->toHaveCount(1);
-
-    $columnAttribute = $attributes[0]->newInstance();
-    expect($columnAttribute->name)->toBe('author_name');
 });
 
-it('requires author_email with valid format', function (): void {
+it('requires email with valid format', function (): void {
     $reflection = new ReflectionClass(Comment::class);
-    $property = $reflection->getProperty('authorEmail');
+    $property = $reflection->getProperty('email');
 
     expect($property->getType()->allowsNull())->toBeFalse()
         ->and($property->getType()->getName())->toBe('string');
 
     $attributes = $property->getAttributes(Column::class);
     expect($attributes)->toHaveCount(1);
-
-    $columnAttribute = $attributes[0]->newInstance();
-    expect($columnAttribute->name)->toBe('author_email');
 });
 
 it('requires content field with minimum length', function (): void {
@@ -87,8 +81,8 @@ it('requires content field with minimum length', function (): void {
 it('validates content does not exceed maximum length of 10000 characters', function (): void {
     $comment = new Comment();
     $comment->postId = 1;
-    $comment->authorName = 'John Doe';
-    $comment->authorEmail = 'john@example.com';
+    $comment->name = 'John Doe';
+    $comment->email = 'john@example.com';
     $comment->content = str_repeat('a', 10000);
 
     // Content at exactly 10000 should be valid
@@ -272,16 +266,16 @@ it('returns parent comment if exists', function (): void {
     $parentComment = new Comment();
     $parentComment->id = 1;
     $parentComment->postId = 1;
-    $parentComment->authorName = 'Parent Author';
-    $parentComment->authorEmail = 'parent@example.com';
+    $parentComment->name = 'Parent Author';
+    $parentComment->email = 'parent@example.com';
     $parentComment->content = 'This is the parent comment.';
 
     $childComment = new Comment();
     $childComment->id = 2;
     $childComment->postId = 1;
     $childComment->parentId = 1;
-    $childComment->authorName = 'Child Author';
-    $childComment->authorEmail = 'child@example.com';
+    $childComment->name = 'Child Author';
+    $childComment->email = 'child@example.com';
     $childComment->content = 'This is a reply to the parent comment.';
 
     // Before parent is set, returns null
@@ -290,31 +284,31 @@ it('returns parent comment if exists', function (): void {
     // After setting parent
     $childComment->setParent($parentComment);
     expect($childComment->getParent())->toBe($parentComment)
-        ->and($childComment->getParent()->getAuthorName())->toBe('Parent Author');
+        ->and($childComment->getParent()->getName())->toBe('Parent Author');
 });
 
 it('returns child comments', function (): void {
     $parentComment = new Comment();
     $parentComment->id = 1;
     $parentComment->postId = 1;
-    $parentComment->authorName = 'Parent Author';
-    $parentComment->authorEmail = 'parent@example.com';
+    $parentComment->name = 'Parent Author';
+    $parentComment->email = 'parent@example.com';
     $parentComment->content = 'This is the parent comment.';
 
     $childComment1 = new Comment();
     $childComment1->id = 2;
     $childComment1->postId = 1;
     $childComment1->parentId = 1;
-    $childComment1->authorName = 'Child Author 1';
-    $childComment1->authorEmail = 'child1@example.com';
+    $childComment1->name = 'Child Author 1';
+    $childComment1->email = 'child1@example.com';
     $childComment1->content = 'First reply.';
 
     $childComment2 = new Comment();
     $childComment2->id = 3;
     $childComment2->postId = 1;
     $childComment2->parentId = 1;
-    $childComment2->authorName = 'Child Author 2';
-    $childComment2->authorEmail = 'child2@example.com';
+    $childComment2->name = 'Child Author 2';
+    $childComment2->email = 'child2@example.com';
     $childComment2->content = 'Second reply.';
 
     // Initially empty
@@ -323,6 +317,6 @@ it('returns child comments', function (): void {
     // After setting children
     $parentComment->setChildren([$childComment1, $childComment2]);
     expect($parentComment->getChildren())->toHaveCount(2)
-        ->and($parentComment->getChildren()[0]->getAuthorName())->toBe('Child Author 1')
-        ->and($parentComment->getChildren()[1]->getAuthorName())->toBe('Child Author 2');
+        ->and($parentComment->getChildren()[0]->getName())->toBe('Child Author 1')
+        ->and($parentComment->getChildren()[1]->getName())->toBe('Child Author 2');
 });

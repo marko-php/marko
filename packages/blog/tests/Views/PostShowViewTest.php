@@ -217,7 +217,7 @@ describe('Post Show View', function (): void {
         $post = createPostShowTestPost();
         $comment = createPostShowTestComment(
             id: 1,
-            authorName: 'John Doe',
+            name: 'John Doe',
             content: 'Great article!',
         );
 
@@ -257,14 +257,14 @@ describe('Post Show View', function (): void {
         $post = createPostShowTestPost();
         $verifiedComment = createPostShowTestComment(
             id: 1,
-            authorName: 'Verified User',
+            name: 'Verified User',
             content: 'This is a verified comment!',
         );
         $verifiedComment->verifiedAt = '2024-01-15 12:00:00';
 
         $anotherVerifiedComment = createPostShowTestComment(
             id: 2,
-            authorName: 'Another Verified User',
+            name: 'Another Verified User',
             content: 'Another verified comment.',
         );
         $anotherVerifiedComment->verifiedAt = '2024-01-16 14:00:00';
@@ -317,12 +317,12 @@ describe('Post Show View', function (): void {
         $post = createPostShowTestPost();
         $comment1 = createPostShowTestComment(
             id: 1,
-            authorName: 'User One',
+            name: 'User One',
             content: 'First comment.',
         );
         $comment2 = createPostShowTestComment(
             id: 2,
-            authorName: 'User Two',
+            name: 'User Two',
             content: 'Second comment.',
         );
 
@@ -342,7 +342,7 @@ describe('Post Show View', function (): void {
         $post = createPostShowTestPost();
         $comment = createPostShowTestComment(
             id: 123,
-            authorName: 'Test User',
+            name: 'Test User',
             content: 'A comment with a reply link.',
         );
 
@@ -361,7 +361,7 @@ describe('Post Show View', function (): void {
         $post = createPostShowTestPost();
         $comment = createPostShowTestComment(
             id: 1,
-            authorName: 'Test User',
+            name: 'Test User',
             content: 'A test comment.',
         );
 
@@ -490,7 +490,7 @@ function createPostShowTestTag(
 
 function createPostShowTestComment(
     int $id,
-    string $authorName,
+    string $name,
     string $content,
     ?int $parentId = null,
     ?string $createdAt = null,
@@ -499,8 +499,8 @@ function createPostShowTestComment(
     $comment = new Comment();
     $comment->id = $id;
     $comment->postId = 1;
-    $comment->authorName = $authorName;
-    $comment->authorEmail = 'test@example.com';
+    $comment->name = $name;
+    $comment->email = 'test@example.com';
     $comment->content = $content;
     $comment->parentId = $parentId;
     $comment->createdAt = $createdAt ?? '2024-01-15 10:30:00';

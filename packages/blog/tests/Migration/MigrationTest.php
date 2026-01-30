@@ -194,8 +194,8 @@ describe('Blog Migrations', function (): void {
             ->and($sql)->toContain('comments')
             ->and($sql)->toContain('id')
             ->and($sql)->toContain('post_id')
-            ->and($sql)->toContain('author_name')
-            ->and($sql)->toContain('author_email')
+            ->and($sql)->toContain('name')
+            ->and($sql)->toContain('email')
             ->and($sql)->toContain('content')
             ->and($sql)->toContain('status')
             ->and($sql)->toContain('parent_id')
@@ -313,7 +313,7 @@ describe('Blog Migrations', function (): void {
             '002_create_categories_table.php' => ['idx_categories_slug', 'idx_categories_parent_id'],
             '003_create_tags_table.php' => ['idx_tags_slug'],
             '004_update_posts_table.php' => ['idx_posts_slug', 'idx_posts_status', 'idx_posts_author_id', 'idx_posts_published_at'],
-            '005_create_comments_table.php' => ['idx_comments_post_id', 'idx_comments_status', 'idx_comments_parent_id', 'idx_comments_author_email'],
+            '005_create_comments_table.php' => ['idx_comments_post_id', 'idx_comments_status', 'idx_comments_parent_id', 'idx_comments_email'],
             '006_create_verification_tokens_table.php' => ['idx_verification_tokens_token', 'idx_verification_tokens_email', 'idx_verification_tokens_type', 'idx_verification_tokens_expires_at'],
             '007_create_post_categories_table.php' => ['idx_post_categories_unique', 'idx_post_categories_category_id'],
             '008_create_post_tags_table.php' => ['idx_post_tags_unique', 'idx_post_tags_tag_id'],

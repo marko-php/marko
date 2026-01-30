@@ -60,8 +60,8 @@ it('dispatches CommentCreated event when comment is submitted', function (): voi
 
     $comment = new Comment();
     $comment->postId = 1;
-    $comment->authorName = 'John Doe';
-    $comment->authorEmail = 'john@example.com';
+    $comment->name = 'John Doe';
+    $comment->email = 'john@example.com';
     $comment->content = 'Great post!';
     $comment->setPost($post);
 
@@ -86,8 +86,8 @@ it('dispatches CommentVerified event when email is verified', function (): void 
     $comment = new Comment();
     $comment->id = 1;
     $comment->postId = 1;
-    $comment->authorName = 'John Doe';
-    $comment->authorEmail = 'john@example.com';
+    $comment->name = 'John Doe';
+    $comment->email = 'john@example.com';
     $comment->content = 'Great post!';
     $comment->setPost($post);
 
@@ -131,8 +131,8 @@ it('dispatches CommentDeleted event when comment is removed', function (): void 
     $comment = new Comment();
     $comment->id = 1;
     $comment->postId = 1;
-    $comment->authorName = 'John Doe';
-    $comment->authorEmail = 'john@example.com';
+    $comment->name = 'John Doe';
+    $comment->email = 'john@example.com';
     $comment->content = 'Great post!';
     $comment->setPost($post);
 
@@ -173,8 +173,8 @@ it('includes full comment entity in event data', function (): void {
 
     $comment = new Comment();
     $comment->postId = 1;
-    $comment->authorName = 'Jane Smith';
-    $comment->authorEmail = 'jane@example.com';
+    $comment->name = 'Jane Smith';
+    $comment->email = 'jane@example.com';
     $comment->content = 'This is my full comment content with all details.';
     $comment->setPost($post);
 
@@ -187,8 +187,8 @@ it('includes full comment entity in event data', function (): void {
     $eventComment = $event->getComment();
 
     expect($eventComment)->toBeInstanceOf(CommentInterface::class)
-        ->and($eventComment->getAuthorName())->toBe('Jane Smith')
-        ->and($eventComment->authorEmail)->toBe('jane@example.com')
+        ->and($eventComment->getName())->toBe('Jane Smith')
+        ->and($eventComment->email)->toBe('jane@example.com')
         ->and($eventComment->content)->toBe('This is my full comment content with all details.');
 });
 
@@ -223,8 +223,8 @@ it('includes associated post in event data', function (): void {
 
     $comment = new Comment();
     $comment->postId = 5;
-    $comment->authorName = 'John Doe';
-    $comment->authorEmail = 'john@example.com';
+    $comment->name = 'John Doe';
+    $comment->email = 'john@example.com';
     $comment->content = 'Comment on post';
     $comment->setPost($post);
 
@@ -257,8 +257,8 @@ it('includes verification method in CommentVerified event', function (): void {
     $comment = new Comment();
     $comment->id = 1;
     $comment->postId = 1;
-    $comment->authorName = 'John Doe';
-    $comment->authorEmail = 'john@example.com';
+    $comment->name = 'John Doe';
+    $comment->email = 'john@example.com';
     $comment->content = 'Great post!';
     $comment->setPost($post);
 
@@ -310,8 +310,8 @@ it('includes timestamp in all events', function (): void {
     // Create a new comment (CommentCreated event)
     $newComment = new Comment();
     $newComment->postId = 1;
-    $newComment->authorName = 'New Commenter';
-    $newComment->authorEmail = 'new@example.com';
+    $newComment->name = 'New Commenter';
+    $newComment->email = 'new@example.com';
     $newComment->content = 'New comment';
     $newComment->setPost($post);
 
@@ -321,8 +321,8 @@ it('includes timestamp in all events', function (): void {
     $verifyComment = new Comment();
     $verifyComment->id = 2;
     $verifyComment->postId = 1;
-    $verifyComment->authorName = 'Verify Me';
-    $verifyComment->authorEmail = 'verify@example.com';
+    $verifyComment->name = 'Verify Me';
+    $verifyComment->email = 'verify@example.com';
     $verifyComment->content = 'Verifiable comment';
     $verifyComment->setPost($post);
 
@@ -332,8 +332,8 @@ it('includes timestamp in all events', function (): void {
     $deleteComment = new Comment();
     $deleteComment->id = 3;
     $deleteComment->postId = 1;
-    $deleteComment->authorName = 'Delete Me';
-    $deleteComment->authorEmail = 'delete@example.com';
+    $deleteComment->name = 'Delete Me';
+    $deleteComment->email = 'delete@example.com';
     $deleteComment->content = 'Comment to delete';
     $deleteComment->setPost($post);
 

@@ -70,7 +70,7 @@ class MockCommentRepository implements CommentRepositoryInterface
         return 0;
     }
 
-    public function findByAuthorEmail(
+    public function findByEmail(
         string $email,
     ): array {
         return [];

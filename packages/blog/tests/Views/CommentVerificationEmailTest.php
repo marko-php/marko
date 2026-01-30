@@ -219,14 +219,14 @@ function createVerificationEmailPost(
 
 function createVerificationEmailComment(
     Post $post,
-    string $authorName,
-    string $authorEmail,
+    string $name,
+    string $email,
 ): Comment {
     $comment = new Comment();
     $comment->id = 1;
     $comment->postId = $post->id ?? 0;
-    $comment->authorName = $authorName;
-    $comment->authorEmail = $authorEmail;
+    $comment->name = $name;
+    $comment->email = $email;
     $comment->content = 'This is a test comment.';
     $comment->status = CommentStatus::Pending;
     $comment->setPost($post);

@@ -59,11 +59,11 @@ interface CommentRepositoryInterface extends RepositoryInterface
     ): int;
 
     /**
-     * Find all comments by author email.
+     * Find all comments by email.
      *
      * @return array<Comment>
      */
-    public function findByAuthorEmail(
+    public function findByEmail(
         string $email,
     ): array;
 
