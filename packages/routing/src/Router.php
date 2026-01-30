@@ -8,6 +8,7 @@ use Marko\Core\Container\ContainerInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewarePipeline;
+use ReflectionMethod;
 
 readonly class Router
 {
@@ -34,7 +35,15 @@ readonly class Router
 
         $handler = function (Request $request) use ($matched): Response {
             $controller = $this->container->get($matched->route->controller);
-            $result = $controller->{$matched->route->action}(...array_values($matched->parameters));
+
+            $parameters = $this->resolveParameters(
+                $controller,
+                $matched->route->action,
+                $matched->parameters,
+                $request,
+            );
+
+            $result = $controller->{$matched->route->action}(...$parameters);
 
             return $this->wrapResult($result);
         };
@@ -44,6 +53,41 @@ readonly class Router
             $request,
             $handler,
         );
+    }
+
+    /**
+     * Resolve controller method parameters from route params, POST data, and query string.
+     *
+     * @param array<string, mixed> $routeParams
+     * @return array<mixed>
+     */
+    private function resolveParameters(
+        object $controller,
+        string $action,
+        array $routeParams,
+        Request $request,
+    ): array {
+        $reflection = new ReflectionMethod($controller, $action);
+        $parameters = [];
+
+        foreach ($reflection->getParameters() as $param) {
+            $name = $param->getName();
+
+            // Priority: route params > POST data > query string > default
+            if (array_key_exists($name, $routeParams)) {
+                $parameters[] = $routeParams[$name];
+            } elseif (($postValue = $request->post($name)) !== null) {
+                $parameters[] = $postValue;
+            } elseif (($queryValue = $request->query($name)) !== null) {
+                $parameters[] = $queryValue;
+            } elseif ($param->isDefaultValueAvailable()) {
+                $parameters[] = $param->getDefaultValue();
+            } else {
+                $parameters[] = null;
+            }
+        }
+
+        return $parameters;
     }
 
     private function wrapResult(

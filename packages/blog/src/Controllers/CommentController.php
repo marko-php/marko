@@ -81,6 +81,7 @@ readonly class CommentController
         // Create the comment
         $comment = new Comment();
         $comment->postId = $post->id;
+        $comment->setPost($post);
         $comment->name = trim($name);
         $comment->email = trim($email);
         $comment->content = trim($content);
