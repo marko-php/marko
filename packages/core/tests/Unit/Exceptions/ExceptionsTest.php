@@ -20,8 +20,9 @@ it('throws BindingException when no implementation exists for interface', functi
         ->toBeInstanceOf(BindingException::class)
         ->toBeInstanceOf(MarkoException::class)
         ->and($exception->getMessage())
-        ->toContain($interface)
-        ->toContain('No implementation bound');
+        ->toContain('No implementation bound')
+        ->and($exception->getContext())
+        ->toContain($interface);
 });
 
 it('throws BindingConflictException when multiple modules bind same interface', function (): void {
@@ -92,7 +93,8 @@ it('includes helpful message with what went wrong in all exceptions', function (
     expect($baseException->getMessage())->toBe($message);
 
     $bindingException = BindingException::noImplementation('SomeInterface');
-    expect($bindingException->getMessage())->not->toBeEmpty()->toContain('SomeInterface');
+    expect($bindingException->getMessage())->not->toBeEmpty()
+        ->and($bindingException->getContext())->toContain('SomeInterface');
 
     $conflictException = BindingConflictException::multipleBindings('SomeInterface', ['A', 'B']);
     expect($conflictException->getMessage())->not->toBeEmpty()->toContain('SomeInterface');

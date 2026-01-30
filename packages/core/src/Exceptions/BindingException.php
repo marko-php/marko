@@ -17,14 +17,14 @@ class BindingException extends MarkoException implements ContainerExceptionInter
         if ($driverPackages !== []) {
             $packageList = array_map(fn ($pkg) => "- `$pkg`", $driverPackages);
             $suggestion = "Option 1: Install an available driver package:\n" . implode("\n", $packageList);
-            $suggestion .= "\n\nOption 2: Register a binding in your module.php:\n`'bindings' => ['$interface' => YourImplementation::class]`";
+            $suggestion .= "\n\nOption 2: Register a binding in module.php:\n`'bindings' => ['$interface' => YourImplementation::class]`";
         } else {
-            $suggestion = "Register a binding in your module.php:\n`'bindings' => ['$interface' => YourImplementation::class]`";
+            $suggestion = "Register a binding in module.php:\n`'bindings' => ['$interface' => YourImplementation::class]`";
         }
 
         return new self(
-            message: "No implementation bound for interface: $interface",
-            context: "Attempted to resolve '$interface' from the container",
+            message: 'No implementation bound for interface',
+            context: "Attempted to resolve `$interface`, but no binding found",
             suggestion: $suggestion,
         );
     }

@@ -47,7 +47,7 @@ HTML;
         ErrorReport $report,
     ): string {
         $exceptionClass = $this->escape($report->throwable::class);
-        $message = $this->escape($report->message);
+        $message = $this->formatInlineCode($this->escape($report->message));
         $file = $this->escape($report->file);
         $line = $report->line;
         $stackTraceHtml = $this->formatStackTrace($report->trace);
@@ -154,6 +154,16 @@ HTML;
         padding: 16px;
     }
     .previous-exception .callout-label { color: #b45309; }
+    .debug-details { margin-bottom: 28px; }
+    .debug-details summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: #555;
+        padding: 8px 0;
+        user-select: none;
+    }
+    .debug-details summary:hover { color: #333; }
+    .debug-details[open] summary { margin-bottom: 12px; }
 </style>
 </head>
 <body>
@@ -164,8 +174,11 @@ HTML;
     </div>
     $contextHtml
     $suggestionHtml
-    $codeSnippetHtml
-    $stackTraceHtml
+    <details class="debug-details">
+        <summary>Details</summary>
+        $codeSnippetHtml
+        $stackTraceHtml
+    </details>
     $previousHtml
 </div>
 </body>
@@ -236,12 +249,12 @@ HTML;
             return '';
         }
 
-        $escaped = $this->escape($context);
+        $formatted = $this->formatInlineCode($this->escape($context));
 
         return <<<HTML
 <div class="callout">
     <div class="callout-label">What is happening</div>
-    <p class="callout-text">$escaped</p>
+    <p class="callout-text">$formatted</p>
 </div>
 HTML;
     }
