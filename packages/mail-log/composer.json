@@ -3,30 +3,11 @@
     "description": "Log driver for Marko Framework Mail",
     "license": "MIT",
     "type": "marko-module",
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../core"
-        },
-        {
-            "type": "path",
-            "url": "../config"
-        },
-        {
-            "type": "path",
-            "url": "../mail"
-        },
-        {
-            "type": "path",
-            "url": "../log"
-        }
-    ],
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/config": "@dev",
-        "marko/mail": "@dev",
-        "marko/log": "@dev"
+        "marko/core": "^0.1",
+        "marko/mail": "^0.1",
+        "marko/log": "^0.1"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"
