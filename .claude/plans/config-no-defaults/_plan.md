@@ -4,7 +4,7 @@
 2026-01-29
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Remove default parameters from ConfigRepositoryInterface to enforce config files as the single source of truth. Missing config keys throw ConfigNotFoundException instead of silently falling back.
@@ -39,15 +39,17 @@ Remove default parameters from ConfigRepositoryInterface to enforce config files
 |------|-------------|------------|--------|
 | 001 | Update ConfigRepositoryInterface | - | completed |
 | 002 | Update ConfigRepository implementation | 001 | completed |
-| 003 | Update blog package config | 002 | pending |
-| 004 | Update session package config | 002 | pending |
-| 005 | Update hashing package config | 002 | pending |
-| 006 | Update cache package config | 002 | pending |
-| 007 | Update auth package config | 002 | pending |
-| 008 | Update mail package config | 002 | pending |
-| 009 | Update log package config | 002 | pending |
-| 010 | Update filesystem package config | 002 | pending |
-| 011 | Update documentation | 002 | pending |
+| 003 | Update blog package config | 002 | completed |
+| 004 | Update session package config | 002 | completed |
+| 005 | Update hashing package config | 002 | completed |
+| 006 | Update cache package config | 002 | completed |
+| 007 | Update auth package config | 002 | completed |
+| 008 | Update mail package config | 002 | completed |
+| 009 | Update log package config | 002 | completed |
+| 010 | Update filesystem package config | 002 | completed |
+| 011 | Update documentation | 002 | completed |
+| 012 | Update view package config | 002 | completed |
+| 013 | Update queue package config | 002 | completed |
 
 ## Architecture Notes
 - Scoped config cascade (scopes.{tenant} → default → direct) is an **intentional exception** to allow multi-tenant flexibility
