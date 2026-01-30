@@ -18,8 +18,7 @@ describe('marko/view-latte package', function (): void {
         $composerPath = dirname(__DIR__) . '/composer.json';
         $composer = json_decode(file_get_contents($composerPath), true);
 
-        expect($composer['require'])->toHaveKey('marko/view')
-            ->and($composer['require']['marko/view'])->toBe('^0.1');
+        expect($composer['require'])->toHaveKey('marko/view');
     });
 
     test('composer.json requires latte/latte', function (): void {

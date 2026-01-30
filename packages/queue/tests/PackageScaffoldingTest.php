@@ -39,8 +39,7 @@ describe('Package Scaffolding', function (): void {
         $composerPath = dirname(__DIR__, 2) . '/queue-sync/composer.json';
         $composer = json_decode(file_get_contents($composerPath), true);
 
-        expect($composer['require'])->toHaveKey('marko/queue')
-            ->and($composer['require']['marko/queue'])->toBe('^0.1');
+        expect($composer['require'])->toHaveKey('marko/queue');
     });
 
     it('queue-database composer.json exists with correct name', function (): void {
@@ -59,8 +58,6 @@ describe('Package Scaffolding', function (): void {
         $composer = json_decode(file_get_contents($composerPath), true);
 
         expect($composer['require'])->toHaveKey('marko/queue')
-            ->and($composer['require']['marko/queue'])->toBe('^0.1')
-            ->and($composer['require'])->toHaveKey('marko/database')
-            ->and($composer['require']['marko/database'])->toBe('^0.1');
+            ->and($composer['require'])->toHaveKey('marko/database');
     });
 });

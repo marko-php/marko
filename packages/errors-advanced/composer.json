@@ -5,8 +5,8 @@
     "license": "MIT",
     "require": {
         "php": ">=8.5",
-        "marko/errors": "^0.1",
-        "marko/errors-simple": "^0.1"
+        "marko/errors": "@dev",
+        "marko/errors-simple": "@dev"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

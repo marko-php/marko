@@ -5,7 +5,7 @@
     "type": "library",
     "require": {
         "php": "^8.5",
-        "marko/view": "^0.1",
+        "marko/view": "@dev",
         "latte/latte": "^3.0"
     },
     "require-dev": {

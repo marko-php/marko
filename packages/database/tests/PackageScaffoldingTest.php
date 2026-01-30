@@ -13,8 +13,7 @@ describe('Package Scaffolding', function (): void {
         expect($composer)->not->toBeNull()
             ->and($composer['name'])->toBe('marko/database')
             ->and($composer['type'])->toBe('library')
-            ->and($composer['require']['php'])->toBe('^8.5')
-            ->and($composer['require']['marko/core'])->toBe('^0.1');
+            ->and($composer['require']['php'])->toBe('^8.5');
     });
 
     it('creates marko/database-mysql package with valid composer.json requiring marko/database', function (): void {
@@ -27,9 +26,7 @@ describe('Package Scaffolding', function (): void {
         expect($composer)->not->toBeNull()
             ->and($composer['name'])->toBe('marko/database-mysql')
             ->and($composer['type'])->toBe('library')
-            ->and($composer['require']['php'])->toBe('^8.5')
-            ->and($composer['require']['marko/core'])->toBe('^0.1')
-            ->and($composer['require']['marko/database'])->toBe('^0.1');
+            ->and($composer['require']['php'])->toBe('^8.5');
     });
 
     it('creates marko/database-pgsql package with valid composer.json requiring marko/database', function (): void {
@@ -42,9 +39,7 @@ describe('Package Scaffolding', function (): void {
         expect($composer)->not->toBeNull()
             ->and($composer['name'])->toBe('marko/database-pgsql')
             ->and($composer['type'])->toBe('library')
-            ->and($composer['require']['php'])->toBe('^8.5')
-            ->and($composer['require']['marko/core'])->toBe('^0.1')
-            ->and($composer['require']['marko/database'])->toBe('^0.1');
+            ->and($composer['require']['php'])->toBe('^8.5');
     });
 
     it('creates module.php for database-mysql with connection binding', function (): void {

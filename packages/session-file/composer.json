@@ -5,7 +5,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
-        "marko/session": "^1.0"
+        "marko/session": "@dev"
     },
     "autoload": {
         "psr-4": {

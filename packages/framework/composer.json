@@ -5,14 +5,14 @@
     "type": "metapackage",
     "require": {
         "php": "^8.5",
-        "marko/core": "^1.0",
-        "marko/routing": "^1.0",
-        "marko/cli": "^1.0",
-        "marko/errors": "^1.0",
-        "marko/errors-simple": "^1.0",
-        "marko/config": "^1.0",
-        "marko/hashing": "^1.0",
-        "marko/validation": "^1.0"
+        "marko/core": "@dev",
+        "marko/routing": "@dev",
+        "marko/cli": "@dev",
+        "marko/errors": "@dev",
+        "marko/errors-simple": "@dev",
+        "marko/config": "@dev",
+        "marko/hashing": "@dev",
+        "marko/validation": "@dev"
     },
     "suggest": {
         "marko/database": "Database abstraction layer",

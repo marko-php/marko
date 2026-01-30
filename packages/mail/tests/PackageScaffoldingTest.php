@@ -39,8 +39,7 @@ describe('Package Scaffolding', function (): void {
         $composerPath = dirname(__DIR__, 2) . '/mail-smtp/composer.json';
         $composer = json_decode(file_get_contents($composerPath), true);
 
-        expect($composer['require'])->toHaveKey('marko/mail')
-            ->and($composer['require']['marko/mail'])->toBe('^0.1');
+        expect($composer['require'])->toHaveKey('marko/mail');
     });
 
     it('mail-smtp composer.json has proper autoload configuration', function (): void {

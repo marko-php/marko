@@ -5,7 +5,7 @@
     "type": "library",
     "require": {
         "php": "^8.5",
-        "marko/core": "^0.1"
+        "marko/core": "@dev"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

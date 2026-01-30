@@ -5,8 +5,8 @@
     "type": "library",
     "require": {
         "php": "^8.5",
-        "marko/core": "^0.1",
-        "marko/database": "^0.1",
+        "marko/core": "@dev",
+        "marko/database": "@dev",
         "ext-pdo": "*"
     },
     "require-dev": {

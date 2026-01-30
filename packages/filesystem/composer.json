@@ -5,8 +5,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
-        "marko/core": "^1.0",
-        "marko/config": "^1.0"
+        "marko/core": "@dev",
+        "marko/config": "@dev"
     },
     "autoload": {
         "psr-4": {
