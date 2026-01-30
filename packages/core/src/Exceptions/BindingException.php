@@ -23,7 +23,7 @@ class BindingException extends MarkoException implements ContainerExceptionInter
         }
 
         return new self(
-            message: 'No implementation bound for interface',
+            message: "No implementation bound for interface '$interface'",
             context: "Attempted to resolve `$interface`, but no binding found",
             suggestion: $suggestion,
         );
