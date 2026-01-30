@@ -8,20 +8,22 @@
 
 1. [Philosophy](#philosophy)
 2. [Core Equation](#core-equation)
-3. [Naming Conventions](#naming-conventions)
-4. [Directory Structure](#directory-structure)
-5. [Module System](#module-system)
-6. [Package Architecture](#package-architecture)
-7. [Dependency Injection](#dependency-injection)
-8. [Plugin System](#plugin-system)
-9. [Event System](#event-system)
-10. [Routing](#routing)
-11. [Configuration](#configuration)
-12. [PHP Attributes](#php-attributes)
-13. [CLI System](#cli-system)
-14. [Error Handling](#error-handling)
-15. [Bootstrap Process](#bootstrap-process)
-16. [Development & Release Process](#development--release-process)
+3. [Before Writing Code](#before-writing-code)
+4. [Package Inventory](#package-inventory)
+5. [Naming Conventions](#naming-conventions)
+6. [Directory Structure](#directory-structure)
+7. [Module System](#module-system)
+8. [Package Architecture](#package-architecture)
+9. [Dependency Injection](#dependency-injection)
+10. [Plugin System](#plugin-system)
+11. [Event System](#event-system)
+12. [Routing](#routing)
+13. [Configuration](#configuration)
+14. [PHP Attributes](#php-attributes)
+15. [CLI System](#cli-system)
+16. [Error Handling](#error-handling)
+17. [Bootstrap Process](#bootstrap-process)
+18. [Development & Release Process](#development--release-process)
 
 ---
 
@@ -95,6 +97,137 @@ Marko = Enterprise-grade extensibility
 - Explicit over implicit
 - Loud errors over silent failures
 - Constraints that create quality
+
+---
+
+## Before Writing Code
+
+### Discovery First
+
+Before implementing new functionality, always check what already exists. Marko follows an interface/driver architecture - many features you need are already implemented.
+
+### Checklist
+
+**Before writing code:**
+
+1. **Check for existing packages** - Scan `packages/` for functionality that might already exist
+2. **Use interface packages, not driver packages** - Depend on `marko/log`, not `marko/log-file`. Let the application choose the driver.
+3. **Check the Package Inventory** - Review the inventory below before creating new packages
+4. **Follow the interface/driver split** - If building new infrastructure, create the interface package first, then driver packages
+
+**After creating a new package:**
+
+5. **Update the Package Inventory** - Add the new package to the inventory section in this document so it stays current
+
+### Common Mistakes to Avoid
+
+| Mistake | Correct Approach |
+|---------|------------------|
+| Writing custom file logging | Use existing `LoggerInterface` from `marko/log` |
+| Direct database queries | Use `ConnectionInterface` from `marko/database` |
+| Custom caching logic | Use `CacheInterface` from `marko/cache` |
+| Rolling your own config parsing | Use `ConfigRepositoryInterface` from `marko/config` |
+| Depending on a driver package | Depend on the interface package instead |
+
+### Why Interface Packages
+
+When your code depends on `marko/log` (interface) instead of `marko/log-file` (driver):
+
+- **Flexibility**: Applications can swap drivers without changing your code
+- **Testing**: Tests can use lightweight drivers (array, null) instead of file I/O
+- **Decoupling**: Your package doesn't dictate implementation details
+- **Composability**: Multiple packages can share the same logger instance
+
+---
+
+## Package Inventory
+
+### Core Infrastructure
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/core` | Core | Bootstrap, DI container, module loader |
+| `marko/config` | Core | Configuration repository and access |
+| `marko/env` | Core | Environment variable loading |
+| `marko/routing` | Core | Route attributes and router |
+| `marko/cli` | Core | Global CLI command (thin client) |
+
+### Logging
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/log` | Interface | `LoggerInterface`, formatters, log levels |
+| `marko/log-file` | Driver | File-based logging with rotation |
+
+### Database
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/database` | Interface | `ConnectionInterface`, query builder interfaces |
+| `marko/database-mysql` | Driver | MySQL/MariaDB implementation |
+| `marko/database-pgsql` | Driver | PostgreSQL implementation |
+
+### Caching
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/cache` | Interface | `CacheInterface`, cache items |
+| `marko/cache-file` | Driver | File-based caching |
+| `marko/cache-array` | Driver | In-memory caching (request lifetime) |
+
+### Mail
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/mail` | Interface | `MailerInterface`, `Message` builder |
+| `marko/mail-smtp` | Driver | SMTP transport |
+
+### Queue
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/queue` | Interface | `QueueInterface`, job dispatching |
+| `marko/queue-sync` | Driver | Synchronous (immediate) execution |
+| `marko/queue-database` | Driver | Database-backed queue |
+
+### View/Templates
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/view` | Interface | `ViewInterface`, template rendering |
+| `marko/view-latte` | Driver | Latte template engine |
+
+### Filesystem
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/filesystem` | Interface | `FilesystemInterface`, file operations |
+| `marko/filesystem-local` | Driver | Local disk operations |
+
+### Session
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/session` | Interface | `SessionInterface`, session management |
+| `marko/session-file` | Driver | File-based sessions |
+
+### Error Handling
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/errors` | Interface | `ErrorHandlerInterface` |
+| `marko/errors-simple` | Driver | Basic error logging |
+| `marko/errors-advanced` | Driver | Pretty stack traces, suggestions |
+
+### Other Packages
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/auth` | Feature | Authentication services |
+| `marko/hashing` | Feature | Password hashing |
+| `marko/validation` | Feature | Input validation |
+| `marko/blog` | Module | Blog functionality |
+| `marko/framework` | Metapackage | Bundles common packages |
 
 ---
 
