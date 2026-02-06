@@ -1,0 +1,120 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Marko\AdminAuth\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('admin_users')]
+class AdminUser extends Entity implements AdminUserInterface
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    #[Column(unique: true)]
+    public string $email;
+
+    #[Column]
+    public string $password;
+
+    #[Column]
+    public string $name;
+
+    #[Column('remember_token')]
+    public ?string $rememberToken = null;
+
+    #[Column('is_active', default: '1')]
+    public string $isActive = '1';
+
+    #[Column('created_at')]
+    public ?string $createdAt = null;
+
+    #[Column('updated_at')]
+    public ?string $updatedAt = null;
+
+    public function getAuthIdentifier(): int|string
+    {
+        return $this->id ?? 0;
+    }
+
+    public function getAuthIdentifierName(): string
+    {
+        return 'id';
+    }
+
+    public function getAuthPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function getRememberToken(): ?string
+    {
+        return $this->rememberToken;
+    }
+
+    public function setRememberToken(
+        ?string $token,
+    ): void {
+        $this->rememberToken = $token;
+    }
+
+    public function getRememberTokenName(): string
+    {
+        return 'remember_token';
+    }
+
+    /** @var array<Role> */
+    private array $roles = [];
+
+    /** @var array<string> */
+    private array $permissionKeys = [];
+
+    /**
+     * Set the loaded roles and their aggregated permission keys.
+     *
+     * @param array<Role> $roles
+     * @param array<string> $permissionKeys
+     */
+    public function setRoles(
+        array $roles,
+        array $permissionKeys = [],
+    ): void {
+        $this->roles = $roles;
+        $this->permissionKeys = $permissionKeys;
+    }
+
+    /**
+     * @return array<Role>
+     */
+    public function getRoles(): array
+    {
+        return $this->roles;
+    }
+
+    public function hasPermission(
+        string $key,
+    ): bool {
+        foreach ($this->roles as $role) {
+            if ($role->isSuperAdmin()) {
+                return true;
+            }
+        }
+
+        return in_array($key, $this->permissionKeys, true);
+    }
+
+    public function hasRole(
+        string $slug,
+    ): bool {
+        foreach ($this->roles as $role) {
+            if ($role->getSlug() === $slug) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
