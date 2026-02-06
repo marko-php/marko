@@ -49,18 +49,18 @@ Build a modular, extensible admin system consisting of four new packages (`marko
 | 005 | marko/admin-auth - Permission and Role entities, migrations | 002 | completed |
 | 006 | marko/admin-auth - User entity with AuthenticatableInterface + roles | 005 | completed |
 | 007 | marko/admin-auth - PermissionRegistry and PermissionDiscovery | 005 | completed |
-| 008 | marko/admin-auth - RoleRepository and PermissionRepository | 005, 006 | pending |
+| 008 | marko/admin-auth - RoleRepository and PermissionRepository | 005, 006 | completed |
 | 009 | marko/admin-auth - AdminUserProvider implementing UserProviderInterface | 006, 008 | pending |
 | 010 | marko/admin-auth - AdminAuthMiddleware and RequiresPermission attribute | 007, 009 | pending |
 | 011 | marko/admin-auth - AdminAuthConfig and module.php bindings | 009, 010 | pending |
 | 012 | marko/admin-panel - Package skeleton, composer.json, AdminPanelConfig | 003 | completed |
-| 013 | marko/admin-panel - Layout template and Latte views (base, login, dashboard) | 012 | pending |
+| 013 | marko/admin-panel - Layout template and Latte views (base, login, dashboard) | 012 | completed |
 | 014 | marko/admin-panel - AdminPanelController (dashboard, login, logout) | 011, 013 | pending |
 | 015 | marko/admin-panel - Menu building and section rendering | 004, 014 | pending |
 | 016 | marko/admin-api - Package skeleton, ApiResponse helpers | 003 | completed |
 | 017 | marko/admin-api - AdminApiController (sections list, section detail) | 011, 016 | pending |
 | 018 | marko/admin-api - API route registration and auth integration | 017 | pending |
-| 019 | marko/blog admin - BlogAdminSection registration and permissions | 004, 007 | pending |
+| 019 | marko/blog admin - BlogAdminSection registration and permissions | 004, 007 | completed |
 | 020 | marko/blog admin - PostAdminController (list, create, edit, delete) | 010, 019 | pending |
 | 021 | marko/blog admin - Author/Category/Tag/Comment admin controllers | 020 | pending |
 | 022 | marko/blog admin - Post admin Latte templates | 013, 020 | pending |

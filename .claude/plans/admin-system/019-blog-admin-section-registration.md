@@ -1,6 +1,6 @@
 # Task 019: marko/blog Admin - BlogAdminSection Registration and Permissions
 
-**Status**: pending
+**Status**: done
 **Depends on**: 004, 007
 **Retry count**: 0
 
@@ -20,16 +20,16 @@ Register the blog package's admin presence by creating `BlogAdminSection` with `
 - Section: id=`blog`, label=`Blog`, icon=`newspaper`, sortOrder=50
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates BlogAdminSection implementing AdminSectionInterface`
-- [ ] `it has AdminSection attribute with id blog, label Blog, icon newspaper, sortOrder 50`
-- [ ] `it declares all blog post permissions via AdminPermission attributes`
-- [ ] `it declares all blog author permissions via AdminPermission attributes`
-- [ ] `it declares all blog category permissions via AdminPermission attributes`
-- [ ] `it declares all blog tag permissions via AdminPermission attributes`
-- [ ] `it declares all blog comment permissions via AdminPermission attributes`
-- [ ] `it returns menu items for posts, authors, categories, tags, comments`
-- [ ] `it sets correct permission on each menu item`
-- [ ] `it sorts menu items with posts first`
+- [x] `it creates BlogAdminSection implementing AdminSectionInterface`
+- [x] `it has AdminSection attribute with id blog, label Blog, icon newspaper, sortOrder 50`
+- [x] `it declares all blog post permissions via AdminPermission attributes`
+- [x] `it declares all blog author permissions via AdminPermission attributes`
+- [x] `it declares all blog category permissions via AdminPermission attributes`
+- [x] `it declares all blog tag permissions via AdminPermission attributes`
+- [x] `it declares all blog comment permissions via AdminPermission attributes`
+- [x] `it returns menu items for posts, authors, categories, tags, comments`
+- [x] `it sets correct permission on each menu item`
+- [x] `it sorts menu items with posts first`
 
 ## Acceptance Criteria
 - All requirements have passing tests
