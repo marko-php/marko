@@ -1,6 +1,6 @@
 # Task 020: marko/blog Admin - PostAdminController (List, Create, Edit, Delete)
 
-**Status**: pending
+**Status**: complete
 **Depends on**: 010, 019
 **Retry count**: 0
 
@@ -18,18 +18,18 @@ Create the `PostAdminController` in the blog package that provides CRUD operatio
 - Create/edit forms include: title, content, summary, author selection, category checkboxes, tag selection, status
 
 ## Requirements (Test Descriptions)
-- [ ] `it lists paginated posts on GET /admin/blog/posts with blog.posts.view permission`
-- [ ] `it renders create form on GET /admin/blog/posts/create with blog.posts.create permission`
-- [ ] `it creates new post on POST /admin/blog/posts with valid data`
-- [ ] `it returns validation errors on POST /admin/blog/posts with invalid data`
-- [ ] `it renders edit form on GET /admin/blog/posts/{id}/edit with blog.posts.edit permission`
-- [ ] `it returns 404 when editing non-existent post`
-- [ ] `it updates post on PUT /admin/blog/posts/{id} with valid data`
-- [ ] `it deletes post on DELETE /admin/blog/posts/{id} with blog.posts.delete permission`
-- [ ] `it publishes post on POST /admin/blog/posts/{id}/publish with blog.posts.publish permission`
-- [ ] `it requires AdminAuthMiddleware on all routes`
-- [ ] `it syncs categories and tags on create and update`
-- [ ] `it dispatches PostCreated and PostUpdated events`
+- [x] `it lists paginated posts on GET /admin/blog/posts with blog.posts.view permission`
+- [x] `it renders create form on GET /admin/blog/posts/create with blog.posts.create permission`
+- [x] `it creates new post on POST /admin/blog/posts with valid data`
+- [x] `it returns validation errors on POST /admin/blog/posts with invalid data`
+- [x] `it renders edit form on GET /admin/blog/posts/{id}/edit with blog.posts.edit permission`
+- [x] `it returns 404 when editing non-existent post`
+- [x] `it updates post on PUT /admin/blog/posts/{id} with valid data`
+- [x] `it deletes post on DELETE /admin/blog/posts/{id} with blog.posts.delete permission`
+- [x] `it publishes post on POST /admin/blog/posts/{id}/publish with blog.posts.publish permission`
+- [x] `it requires AdminAuthMiddleware on all routes`
+- [x] `it syncs categories and tags on create and update`
+- [x] `it dispatches PostCreated and PostUpdated events`
 
 ## Acceptance Criteria
 - All requirements have passing tests
