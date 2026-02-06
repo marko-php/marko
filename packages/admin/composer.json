@@ -6,12 +6,14 @@
     "version": "1.0.0",
     "repositories": [
         {"type": "path", "url": "../core"},
-        {"type": "path", "url": "../routing"}
+        {"type": "path", "url": "../routing"},
+        {"type": "path", "url": "../config"}
     ],
     "require": {
         "php": "^8.5",
         "marko/core": "@dev",
-        "marko/routing": "@dev"
+        "marko/routing": "@dev",
+        "marko/config": "@dev"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"
