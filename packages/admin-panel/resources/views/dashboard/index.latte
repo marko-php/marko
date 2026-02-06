@@ -1,0 +1,20 @@
+{layout 'admin-panel::layout/base'}
+
+{default $sections = []}
+
+{block content}
+    <h1>Dashboard</h1>
+
+    <p>Welcome to the admin panel.</p>
+
+    <section n:if="$sections" class="admin-sections">
+        <h2>Registered Sections</h2>
+        <ul class="sections-list">
+            {foreach $sections as $section}
+                <li>
+                    <strong>{$section->getLabel()}</strong>
+                </li>
+            {/foreach}
+        </ul>
+    </section>
+{/block}

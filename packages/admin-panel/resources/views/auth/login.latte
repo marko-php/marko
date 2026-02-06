@@ -1,0 +1,33 @@
+{default $pageTitle = 'Login - Marko Admin', $error = null, $csrfToken = '', $loginUrl = '/admin/login'}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{$pageTitle}</title>
+</head>
+<body class="admin-login">
+    <div class="login-container">
+        <h1>Admin Login</h1>
+
+        <div n:if="$error" class="login-error" role="alert">{$error}</div>
+
+        <form method="post" action="{$loginUrl}">
+            <input type="hidden" name="_token" value="{$csrfToken}">
+
+            <div class="form-group">
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" name="email" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" name="password" required>
+            </div>
+
+            <button type="submit">Sign In</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Task 013: marko/admin-panel - Layout Template and Latte Views
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 012
 **Retry count**: 0
 
@@ -18,13 +18,13 @@ Create the Latte template files for the admin panel: base layout with sidebar na
 - No JavaScript framework dependencies - plain HTML forms
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates base layout template with html shell, sidebar, and content block`
-- [ ] `it creates login template with email and password form fields`
-- [ ] `it creates dashboard template extending base layout`
-- [ ] `it creates sidebar partial with menu items loop`
-- [ ] `it creates flash message partial for success and error messages`
-- [ ] `it includes csrf-safe form structure in login template`
-- [ ] `it has content block that child templates can override`
+- [x] `it creates base layout template with html shell, sidebar, and content block`
+- [x] `it creates login template with email and password form fields`
+- [x] `it creates dashboard template extending base layout`
+- [x] `it creates sidebar partial with menu items loop`
+- [x] `it creates flash message partial for success and error messages`
+- [x] `it includes csrf-safe form structure in login template`
+- [x] `it has content block that child templates can override`
 
 ## Acceptance Criteria
 - All templates are valid Latte syntax

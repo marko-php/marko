@@ -1,0 +1,11 @@
+{default $flashMessages = []}
+
+<div n:if="$flashMessages" class="flash-messages">
+    <div n:if="isset($flashMessages['success'])" class="flash-message flash-success" role="alert">
+        {$flashMessages['success']}
+    </div>
+
+    <div n:if="isset($flashMessages['error'])" class="flash-message flash-error" role="alert">
+        {$flashMessages['error']}
+    </div>
+</div>

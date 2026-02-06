@@ -1,0 +1,22 @@
+{default $pageTitle = 'Marko Admin', $menuItems = [], $flashMessages = []}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{$pageTitle}</title>
+    {block head}{/block}
+</head>
+<body class="admin-layout">
+    <div class="admin-wrapper">
+        {include 'admin-panel::partials/sidebar', menuItems: $menuItems}
+
+        <main class="admin-main">
+            {include 'admin-panel::partials/flash', flashMessages: $flashMessages}
+
+            {block content}{/block}
+        </main>
+    </div>
+</body>
+</html>
