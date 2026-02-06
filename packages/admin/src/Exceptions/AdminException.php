@@ -25,4 +25,13 @@ class AdminException extends MarkoException
             suggestion: 'Ensure the admin section is registered before accessing it',
         );
     }
+
+    public static function sectionMustImplementInterface(string $className): self
+    {
+        return new self(
+            message: "Class '$className' has #[AdminSection] attribute but does not implement AdminSectionInterface",
+            context: "While discovering admin sections in class '$className'",
+            suggestion: "Ensure '$className' implements Marko\\Admin\\Contracts\\AdminSectionInterface",
+        );
+    }
 }
