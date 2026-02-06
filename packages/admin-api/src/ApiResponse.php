@@ -26,6 +26,23 @@ class ApiResponse
     }
 
     /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $meta
+     */
+    public static function created(
+        array $data = [],
+        array $meta = [],
+    ): Response {
+        return Response::json(
+            data: [
+                'data' => $data,
+                'meta' => $meta,
+            ],
+            statusCode: 201,
+        );
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $errors
      */
     public static function error(

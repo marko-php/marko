@@ -1,6 +1,6 @@
 # Task 024: marko/blog Admin - Blog Admin API Controllers
 
-**Status**: pending
+**Status**: complete
 **Depends on**: 018, 019
 **Retry count**: 0
 
@@ -21,18 +21,18 @@ Create JSON API controllers for blog admin operations that work through the admi
 - Reuses existing blog repositories for data access
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates PostApiController with list, show, create, update, delete, publish actions`
-- [ ] `it returns paginated JSON list of posts with meta`
-- [ ] `it creates post from JSON body and returns 201`
-- [ ] `it returns 422 with validation errors for invalid post data`
-- [ ] `it creates AuthorApiController with CRUD actions returning JSON`
-- [ ] `it creates CategoryApiController with CRUD actions returning JSON`
-- [ ] `it creates TagApiController with CRUD actions returning JSON`
-- [ ] `it creates CommentApiController with list, show, verify, delete actions`
-- [ ] `it requires appropriate blog permissions on each endpoint`
-- [ ] `it returns ApiResponse format for all responses`
-- [ ] `it returns 401 when bearer token is missing`
-- [ ] `it returns 403 when user lacks required permission`
+- [x] `it creates PostApiController with list, show, create, update, delete, publish actions`
+- [x] `it returns paginated JSON list of posts with meta`
+- [x] `it creates post from JSON body and returns 201`
+- [x] `it returns 422 with validation errors for invalid post data`
+- [x] `it creates AuthorApiController with CRUD actions returning JSON`
+- [x] `it creates CategoryApiController with CRUD actions returning JSON`
+- [x] `it creates TagApiController with CRUD actions returning JSON`
+- [x] `it creates CommentApiController with list, show, verify, delete actions`
+- [x] `it requires appropriate blog permissions on each endpoint`
+- [x] `it returns ApiResponse format for all responses`
+- [x] `it returns 401 when bearer token is missing`
+- [x] `it returns 403 when user lacks required permission`
 
 ## Acceptance Criteria
 - All requirements have passing tests
