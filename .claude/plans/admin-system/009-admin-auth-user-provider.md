@@ -1,6 +1,6 @@
 # Task 009: marko/admin-auth - AdminUserProvider implementing UserProviderInterface
 
-**Status**: pending
+**Status**: complete
 **Depends on**: 006, 008
 **Retry count**: 0
 
@@ -16,17 +16,17 @@ Create `AdminUserProvider` implementing the auth package's `UserProviderInterfac
 - This provider will be configured as the provider for the `admin` guard
 
 ## Requirements (Test Descriptions)
-- [ ] `it implements UserProviderInterface`
-- [ ] `it retrieves admin user by id via retrieveById`
-- [ ] `it returns null from retrieveById when user not found`
-- [ ] `it returns null from retrieveById when user is inactive`
-- [ ] `it retrieves admin user by email credentials via retrieveByCredentials`
-- [ ] `it returns null from retrieveByCredentials when email not found`
-- [ ] `it validates credentials using PasswordHasherInterface`
-- [ ] `it returns false from validateCredentials when password is wrong`
-- [ ] `it loads roles and permissions when retrieving a user`
-- [ ] `it retrieves user by remember token via retrieveByRememberToken`
-- [ ] `it updates remember token via updateRememberToken`
+- [x] `it implements UserProviderInterface`
+- [x] `it retrieves admin user by id via retrieveById`
+- [x] `it returns null from retrieveById when user not found`
+- [x] `it returns null from retrieveById when user is inactive`
+- [x] `it retrieves admin user by email credentials via retrieveByCredentials`
+- [x] `it returns null from retrieveByCredentials when email not found`
+- [x] `it validates credentials using PasswordHasherInterface`
+- [x] `it returns false from validateCredentials when password is wrong`
+- [x] `it loads roles and permissions when retrieving a user`
+- [x] `it retrieves user by remember token via retrieveByRememberToken`
+- [x] `it updates remember token via updateRememberToken`
 
 ## Acceptance Criteria
 - All requirements have passing tests
