@@ -1,0 +1,65 @@
+{layout 'admin-panel::layout/base'}
+
+{default $pageTitle = 'Create Post', $authors = [], $categories = [], $tags = [], $errors = [], $input = []}
+
+{block content}
+    <h1>Create Post</h1>
+
+    <ul n:if="$errors" class="error-list" role="alert">
+        {foreach $errors as $error}
+            <li>{$error}</li>
+        {/foreach}
+    </ul>
+
+    <form method="post" action="/admin/blog/posts" class="admin-form">
+        <div class="form-group">
+            <label for="post-title">Title</label>
+            <input type="text" id="post-title" name="title" value="{$input['title'] ?? ''}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="post-content">Content</label>
+            <textarea id="post-content" name="content" rows="10" required>{$input['content'] ?? ''}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="post-summary">Summary</label>
+            <textarea id="post-summary" name="summary" rows="3">{$input['summary'] ?? ''}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="post-author">Author</label>
+            <select id="post-author" name="author_id" required>
+                <option value="">Select an author</option>
+                {foreach $authors as $author}
+                    <option value="{$author->getId()}">{$author->getName()}</option>
+                {/foreach}
+            </select>
+        </div>
+
+        <fieldset class="form-group">
+            <legend>Categories</legend>
+            {foreach $categories as $category}
+                <label class="checkbox-label">
+                    <input type="checkbox" name="category_ids[]" value="{$category->getId()}">
+                    {$category->getName()}
+                </label>
+            {/foreach}
+        </fieldset>
+
+        <fieldset class="form-group">
+            <legend>Tags</legend>
+            {foreach $tags as $tag}
+                <label class="checkbox-label">
+                    <input type="checkbox" name="tag_ids[]" value="{$tag->getId()}">
+                    {$tag->getName()}
+                </label>
+            {/foreach}
+        </fieldset>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Post</button>
+            <a href="/admin/blog/posts" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+{/block}

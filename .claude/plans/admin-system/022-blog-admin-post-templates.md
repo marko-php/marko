@@ -1,6 +1,6 @@
 # Task 022: marko/blog Admin - Post Admin Latte Templates
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 013, 020
 **Retry count**: 0
 
@@ -18,16 +18,16 @@ Create the Latte templates for post admin views: list (index), create form, edit
 - Forms use POST method with appropriate action URLs
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates index template with posts table and pagination`
-- [ ] `it creates create template with form fields for all post properties`
-- [ ] `it creates edit template pre-populated with existing post data`
-- [ ] `it includes author dropdown populated from passed authors array`
-- [ ] `it includes category checkboxes populated from passed categories array`
-- [ ] `it includes tag selection populated from passed tags array`
-- [ ] `it includes status dropdown with Draft, Published, Scheduled options`
-- [ ] `it shows action buttons for edit and delete on each row`
-- [ ] `it extends admin-panel base layout`
-- [ ] `it includes flash message display`
+- [x] `it creates index template with posts table and pagination`
+- [x] `it creates create template with form fields for all post properties`
+- [x] `it creates edit template pre-populated with existing post data`
+- [x] `it includes author dropdown populated from passed authors array`
+- [x] `it includes category checkboxes populated from passed categories array`
+- [x] `it includes tag selection populated from passed tags array`
+- [x] `it includes status dropdown with Draft, Published, Scheduled options`
+- [x] `it shows action buttons for edit and delete on each row`
+- [x] `it extends admin-panel base layout`
+- [x] `it includes flash message display`
 
 ## Acceptance Criteria
 - All templates are valid Latte syntax
