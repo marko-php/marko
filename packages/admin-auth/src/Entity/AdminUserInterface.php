@@ -25,6 +25,13 @@ interface AdminUserInterface extends AuthenticatableInterface
     public function getRoles(): array;
 
     /**
+     * Get the raw permission keys assigned via roles.
+     *
+     * @return array<string>
+     */
+    public function getPermissionKeys(): array;
+
+    /**
      * Check if the user has a specific permission via their loaded roles.
      */
     public function hasPermission(

@@ -51,7 +51,7 @@ Build a modular, extensible admin system consisting of four new packages (`marko
 | 007 | marko/admin-auth - PermissionRegistry and PermissionDiscovery | 005 | completed |
 | 008 | marko/admin-auth - RoleRepository and PermissionRepository | 005, 006 | completed |
 | 009 | marko/admin-auth - AdminUserProvider implementing UserProviderInterface | 006, 008 | completed |
-| 010 | marko/admin-auth - AdminAuthMiddleware and RequiresPermission attribute | 007, 009 | pending |
+| 010 | marko/admin-auth - AdminAuthMiddleware and RequiresPermission attribute | 007, 009 | completed |
 | 011 | marko/admin-auth - AdminAuthConfig and module.php bindings | 009, 010 | pending |
 | 012 | marko/admin-panel - Package skeleton, composer.json, AdminPanelConfig | 003 | completed |
 | 013 | marko/admin-panel - Layout template and Latte views (base, login, dashboard) | 012 | completed |

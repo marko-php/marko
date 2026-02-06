@@ -1,6 +1,6 @@
 # Task 010: marko/admin-auth - AdminAuthMiddleware and RequiresPermission Attribute
 
-**Status**: pending
+**Status**: done
 **Depends on**: 007, 009
 **Retry count**: 0
 
@@ -18,16 +18,16 @@ Create `AdminAuthMiddleware` that ensures the user is authenticated via the admi
 - Super admin role bypasses all permission checks
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates RequiresPermission attribute targeting methods with permission key property`
-- [ ] `it returns 401 when user is not authenticated`
-- [ ] `it passes through when user is authenticated and no RequiresPermission attribute present`
-- [ ] `it passes through when user has the required permission`
-- [ ] `it returns 403 when user lacks the required permission`
-- [ ] `it passes through for super admin users regardless of permission`
-- [ ] `it redirects to admin login for unauthenticated web requests`
-- [ ] `it returns JSON 401 for unauthenticated API requests`
-- [ ] `it returns JSON 403 for unauthorized API requests`
-- [ ] `it supports wildcard permission matching via user roles`
+- [x] `it creates RequiresPermission attribute targeting methods with permission key property`
+- [x] `it returns 401 when user is not authenticated`
+- [x] `it passes through when user is authenticated and no RequiresPermission attribute present`
+- [x] `it passes through when user has the required permission`
+- [x] `it returns 403 when user lacks the required permission`
+- [x] `it passes through for super admin users regardless of permission`
+- [x] `it redirects to admin login for unauthenticated web requests`
+- [x] `it returns JSON 401 for unauthenticated API requests`
+- [x] `it returns JSON 403 for unauthorized API requests`
+- [x] `it supports wildcard permission matching via user roles`
 
 ## Acceptance Criteria
 - All requirements have passing tests

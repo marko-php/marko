@@ -94,6 +94,14 @@ class AdminUser extends Entity implements AdminUserInterface
         return $this->roles;
     }
 
+    /**
+     * @return array<string>
+     */
+    public function getPermissionKeys(): array
+    {
+        return $this->permissionKeys;
+    }
+
     public function hasPermission(
         string $key,
     ): bool {
