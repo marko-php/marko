@@ -1,0 +1,27 @@
+{layout 'admin-panel::layout/base'}
+
+{default $pageTitle = 'Edit Tag', $tag = null, $errors = [], $input = []}
+
+{block content}
+    <h1>Edit Tag</h1>
+
+    <ul n:if="$errors" class="error-list" role="alert">
+        {foreach $errors as $error}
+            <li>{$error}</li>
+        {/foreach}
+    </ul>
+
+    <form method="post" action="/admin/blog/tags/{$tag->id}" class="admin-form">
+        <input type="hidden" name="_method" value="PUT">
+
+        <div class="form-group">
+            <label for="tag-name">Name</label>
+            <input type="text" id="tag-name" name="name" value="{$input['name'] ?? $tag->name}" required>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Update Tag</button>
+            <a href="/admin/blog/tags" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+{/block}

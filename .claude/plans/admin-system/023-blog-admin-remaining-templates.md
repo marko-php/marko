@@ -1,6 +1,6 @@
 # Task 023: marko/blog Admin - Remaining Admin Latte Templates
 
-**Status**: pending
+**Status**: done
 **Depends on**: 022
 **Retry count**: 0
 
@@ -20,16 +20,16 @@ Create the Latte templates for the remaining blog admin views: authors, categori
   - Show view: full comment content with verify/delete actions
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates author index, create, and edit templates`
-- [ ] `it creates category index, create, and edit templates with parent dropdown`
-- [ ] `it creates tag index, create, and edit templates`
-- [ ] `it creates comment index and show templates`
-- [ ] `it shows category hierarchy with indentation in category list`
-- [ ] `it includes verify and delete actions on comment show template`
-- [ ] `it shows comment status badge on comment list`
-- [ ] `it extends admin-panel base layout for all templates`
-- [ ] `it includes pagination on all list templates`
-- [ ] `it includes flash message display on all templates`
+- [x] `it creates author index, create, and edit templates`
+- [x] `it creates category index, create, and edit templates with parent dropdown`
+- [x] `it creates tag index, create, and edit templates`
+- [x] `it creates comment index and show templates`
+- [x] `it shows category hierarchy with indentation in category list`
+- [x] `it includes verify and delete actions on comment show template`
+- [x] `it shows comment status badge on comment list`
+- [x] `it extends admin-panel base layout for all templates`
+- [x] `it includes pagination on all list templates`
+- [x] `it includes flash message display on all templates`
 
 ## Acceptance Criteria
 - All templates are valid Latte syntax
