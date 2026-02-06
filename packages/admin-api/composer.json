@@ -1,0 +1,45 @@
+{
+    "name": "marko/admin-api",
+    "description": "Admin REST API for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "version": "1.0.0",
+    "repositories": [
+        {"type": "path", "url": "../core"},
+        {"type": "path", "url": "../admin"},
+        {"type": "path", "url": "../admin-auth"},
+        {"type": "path", "url": "../routing"},
+        {"type": "path", "url": "../auth"}
+    ],
+    "require": {
+        "php": "^8.5",
+        "marko/core": "@dev",
+        "marko/admin": "@dev",
+        "marko/admin-auth": "@dev",
+        "marko/routing": "@dev",
+        "marko/auth": "@dev"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\AdminApi\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\AdminApi\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
