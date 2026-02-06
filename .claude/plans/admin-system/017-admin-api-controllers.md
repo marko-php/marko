@@ -1,6 +1,6 @@
 # Task 017: marko/admin-api - AdminApiController (Sections List, Section Detail)
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 011, 016
 **Retry count**: 0
 
