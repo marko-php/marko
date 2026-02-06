@@ -52,11 +52,13 @@
             "Marko\\Queue\\Sync\\": "packages/queue-sync/src/",
             "Marko\\Queue\\Database\\": "packages/queue-database/src/",
             "Marko\\View\\": "packages/view/src/",
-            "Marko\\View\\Latte\\": "packages/view-latte/src/"
+            "Marko\\View\\Latte\\": "packages/view-latte/src/",
+            "Marko\\Admin\\": "packages/admin/src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
+            "Marko\\Admin\\Tests\\": "packages/admin/tests/",
             "Marko\\Blog\\Tests\\": "packages/blog/tests/",
             "Marko\\Cache\\Tests\\": "packages/cache/tests/",
             "Marko\\Cache\\File\\Tests\\": "packages/cache-file/tests/",
