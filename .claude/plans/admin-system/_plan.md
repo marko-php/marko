@@ -4,7 +4,7 @@
 2026-02-06
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Build a modular, extensible admin system consisting of four new packages (`marko/admin`, `marko/admin-auth`, `marko/admin-panel`, `marko/admin-api`) and integrate blog admin functionality into the existing `marko/blog` package.
@@ -62,10 +62,10 @@ Build a modular, extensible admin system consisting of four new packages (`marko
 | 018 | marko/admin-api - API route registration and auth integration | 017 | completed |
 | 019 | marko/blog admin - BlogAdminSection registration and permissions | 004, 007 | completed |
 | 020 | marko/blog admin - PostAdminController (list, create, edit, delete) | 010, 019 | completed |
-| 021 | marko/blog admin - Author/Category/Tag/Comment admin controllers | 020 | pending |
+| 021 | marko/blog admin - Author/Category/Tag/Comment admin controllers | 020 | completed |
 | 022 | marko/blog admin - Post admin Latte templates | 013, 020 | completed |
-| 023 | marko/blog admin - Remaining admin Latte templates | 022 | pending |
-| 024 | marko/blog admin - Blog admin API controllers | 018, 019 | pending |
+| 023 | marko/blog admin - Remaining admin Latte templates | 022 | completed |
+| 024 | marko/blog admin - Blog admin API controllers | 018, 019 | completed |
 
 ## Architecture Notes
 
