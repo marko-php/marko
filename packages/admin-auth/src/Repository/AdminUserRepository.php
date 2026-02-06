@@ -1,0 +1,134 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Marko\AdminAuth\Repository;
+
+use Closure;
+use Marko\AdminAuth\Entity\AdminUser;
+use Marko\AdminAuth\Entity\Role;
+use Marko\AdminAuth\Events\AdminUserCreated;
+use Marko\AdminAuth\Events\AdminUserUpdated;
+use Marko\Core\Event\EventDispatcherInterface;
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityHydrator;
+use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Database\Repository\Repository;
+
+class AdminUserRepository extends Repository implements AdminUserRepositoryInterface
+{
+    protected const string ENTITY_CLASS = AdminUser::class;
+
+    public function __construct(
+        ConnectionInterface $connection,
+        EntityMetadataFactory $metadataFactory,
+        EntityHydrator $hydrator,
+        ?Closure $queryBuilderFactory = null,
+        private readonly ?EventDispatcherInterface $eventDispatcher = null,
+    ) {
+        parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory);
+    }
+
+    /**
+     * Find an admin user by email address.
+     */
+    public function findByEmail(
+        string $email,
+    ): ?AdminUser {
+        return $this->findOneBy(['email' => $email]);
+    }
+
+    /**
+     * Get all roles for a user.
+     *
+     * @return array<Role>
+     */
+    public function getRolesForUser(
+        int $userId,
+    ): array {
+        $sql = 'SELECT r.* FROM roles r
+            INNER JOIN admin_user_roles aur ON r.id = aur.role_id
+            WHERE aur.user_id = ?';
+
+        $rows = $this->connection->query($sql, [$userId]);
+
+        $roleMetadata = $this->metadataFactory->parse(Role::class);
+
+        return array_map(
+            fn (array $row): Role => $this->hydrator->hydrate(
+                Role::class,
+                $row,
+                $roleMetadata,
+            ),
+            $rows,
+        );
+    }
+
+    /**
+     * Sync roles for a user, replacing all existing.
+     *
+     * @param array<int> $roleIds
+     */
+    public function syncRoles(
+        int $userId,
+        array $roleIds,
+    ): void {
+        // Remove all existing roles for this user
+        $sql = 'DELETE FROM admin_user_roles WHERE user_id = ?';
+        $this->connection->execute($sql, [$userId]);
+
+        // Attach the new roles
+        foreach ($roleIds as $roleId) {
+            $sql = 'INSERT INTO admin_user_roles (user_id, role_id) VALUES (?, ?)';
+            $this->connection->execute($sql, [$userId, $roleId]);
+        }
+    }
+
+    /**
+     * Save an admin user, dispatching appropriate events.
+     */
+    public function save(
+        Entity $entity,
+    ): void {
+        if (!$entity instanceof AdminUser) {
+            parent::save($entity);
+
+            return;
+        }
+
+        $isNew = $entity->id === null;
+
+        parent::save($entity);
+
+        $this->dispatchSaveEvent($entity, $isNew);
+    }
+
+    /**
+     * Delete an admin user.
+     */
+    public function delete(
+        Entity $entity,
+    ): void {
+        parent::delete($entity);
+    }
+
+    private function dispatchSaveEvent(
+        AdminUser $user,
+        bool $isNew,
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        if ($isNew) {
+            $this->eventDispatcher->dispatch(new AdminUserCreated(
+                user: $user,
+            ));
+        } else {
+            $this->eventDispatcher->dispatch(new AdminUserUpdated(
+                user: $user,
+            ));
+        }
+    }
+}

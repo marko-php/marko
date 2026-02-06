@@ -1,6 +1,6 @@
 # Task 008: marko/admin-auth - RoleRepository and PermissionRepository
 
-**Status**: pending
+**Status**: complete
 **Depends on**: 005, 006
 **Retry count**: 0
 
@@ -16,18 +16,18 @@ Create repository interfaces and implementations for Role, Permission, and Admin
 - Dispatch events: RoleCreated, RoleUpdated, RoleDeleted, AdminUserCreated, AdminUserUpdated
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates RoleRepositoryInterface with find, findBySlug, all, save, delete methods`
-- [ ] `it creates RoleRepository extending Repository`
-- [ ] `it loads permissions for a role via getPermissionsForRole`
-- [ ] `it syncs permissions for a role via syncPermissions`
-- [ ] `it creates PermissionRepositoryInterface with find, findByKey, all, findByGroup methods`
-- [ ] `it creates PermissionRepository extending Repository`
-- [ ] `it syncs permissions from registry to database creating new and preserving existing`
-- [ ] `it creates AdminUserRepositoryInterface with find, findByEmail, all, save, delete methods`
-- [ ] `it creates AdminUserRepository extending Repository`
-- [ ] `it loads roles for a user via getRolesForUser`
-- [ ] `it syncs roles for a user via syncRoles`
-- [ ] `it dispatches events on role and user create/update/delete`
+- [x] `it creates RoleRepositoryInterface with find, findBySlug, all, save, delete methods`
+- [x] `it creates RoleRepository extending Repository`
+- [x] `it loads permissions for a role via getPermissionsForRole`
+- [x] `it syncs permissions for a role via syncPermissions`
+- [x] `it creates PermissionRepositoryInterface with find, findByKey, all, findByGroup methods`
+- [x] `it creates PermissionRepository extending Repository`
+- [x] `it syncs permissions from registry to database creating new and preserving existing`
+- [x] `it creates AdminUserRepositoryInterface with find, findByEmail, all, save, delete methods`
+- [x] `it creates AdminUserRepository extending Repository`
+- [x] `it loads roles for a user via getRolesForUser`
+- [x] `it syncs roles for a user via syncRoles`
+- [x] `it dispatches events on role and user create/update/delete`
 
 ## Acceptance Criteria
 - All requirements have passing tests
