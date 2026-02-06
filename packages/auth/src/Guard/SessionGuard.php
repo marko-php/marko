@@ -19,7 +19,6 @@ use Random\RandomException;
 
 class SessionGuard implements GuardInterface
 {
-    private const string SESSION_KEY = 'auth_user_id';
     private const int REMEMBER_COOKIE_MINUTES = 43200; // 30 days
 
     private ?AuthenticatableInterface $cachedUser = null;
@@ -62,7 +61,7 @@ class SessionGuard implements GuardInterface
             return $this->cachedUser;
         }
 
-        $id = $this->session->get(self::SESSION_KEY);
+        $id = $this->session->get($this->getSessionKey());
 
         if ($id !== null) {
             $this->cachedUser = $this->provider->retrieveById($id);
@@ -168,7 +167,7 @@ class SessionGuard implements GuardInterface
         bool $remember = false,
     ): void {
         $this->ensureSessionStarted();
-        $this->session->set(self::SESSION_KEY, $user->getAuthIdentifier());
+        $this->session->set($this->getSessionKey(), $user->getAuthIdentifier());
         $this->session->regenerate();
         $this->cachedUser = $user;
 
@@ -207,6 +206,11 @@ class SessionGuard implements GuardInterface
             $cookieValue,
             self::REMEMBER_COOKIE_MINUTES,
         );
+    }
+
+    private function getSessionKey(): string
+    {
+        return 'auth_' . $this->name . '_user_id';
     }
 
     private function getRememberCookieName(): string
@@ -261,7 +265,7 @@ class SessionGuard implements GuardInterface
             $this->dispatchLogoutEvent($user);
         }
 
-        $this->session->remove(self::SESSION_KEY);
+        $this->session->remove($this->getSessionKey());
         $this->cachedUser = null;
     }
 

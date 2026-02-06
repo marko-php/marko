@@ -270,9 +270,8 @@ test('guard switching works correctly', function (): void {
     expect($webGuard->check())->toBeTrue()
         ->and($apiGuard->check())->toBeFalse();
 
-    // Admin guard shares session, so it may be authenticated depending on implementation
-    // The current implementation stores session with 'auth_user_id' key
-    // which is shared across all session guards
+    // Admin guard shares session storage, but each guard uses its own scoped key
+    // (e.g., 'auth_web_user_id' vs 'auth_admin_user_id'), so they are isolated
 });
 
 test('module bindings resolve correctly', function (): void {

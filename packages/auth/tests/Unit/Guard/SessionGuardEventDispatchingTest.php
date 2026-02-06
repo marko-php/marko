@@ -59,7 +59,7 @@ test('it dispatches LoginEvent on successful attempt', function (): void {
 test('it dispatches LogoutEvent on logout', function (): void {
     $user = new TestUser(id: 42);
     $session = new TestSession();
-    $session->set('auth_user_id', 42);
+    $session->set('auth_web_user_id', 42);
     $provider = new TestUserProvider(userById: $user);
     $dispatcher = new TestEventDispatcher();
 

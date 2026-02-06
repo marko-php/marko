@@ -31,12 +31,12 @@ test('it stores user ID in session on login', function (): void {
 
     $guard->login($user);
 
-    expect($session->get('auth_user_id'))->toBe(42);
+    expect($session->get('auth_web_user_id'))->toBe(42);
 });
 
 test('it retrieves user from session', function (): void {
     $session = new TestSession();
-    $session->set('auth_user_id', 42);
+    $session->set('auth_web_user_id', 42);
     $user = new TestUser(id: 42);
     $provider = new TestUserProvider(userById: $user);
 
@@ -54,7 +54,7 @@ test('it retrieves user from session', function (): void {
 
 test('it returns true from check when authenticated', function (): void {
     $session = new TestSession();
-    $session->set('auth_user_id', 42);
+    $session->set('auth_web_user_id', 42);
     $user = new TestUser(id: 42);
     $provider = new TestUserProvider(userById: $user);
 
@@ -95,7 +95,7 @@ test('it returns true from guest when not authenticated', function (): void {
 
 test('it returns false from guest when authenticated', function (): void {
     $session = new TestSession();
-    $session->set('auth_user_id', 42);
+    $session->set('auth_web_user_id', 42);
     $user = new TestUser(id: 42);
     $provider = new TestUserProvider(userById: $user);
 
@@ -110,7 +110,7 @@ test('it returns false from guest when authenticated', function (): void {
 
 test('it returns user from user method when authenticated', function (): void {
     $session = new TestSession();
-    $session->set('auth_user_id', 42);
+    $session->set('auth_web_user_id', 42);
     $user = new TestUser(id: 42);
     $provider = new TestUserProvider(userById: $user);
 
@@ -150,7 +150,7 @@ test('it attempts login with valid credentials', function (): void {
     $result = $guard->attempt(['email' => 'test@example.com', 'password' => 'secret']);
 
     expect($result)->toBeTrue()
-        ->and($session->get('auth_user_id'))->toBe(42);
+        ->and($session->get('auth_web_user_id'))->toBe(42);
 });
 
 test('it fails attempt with invalid credentials', function (): void {
@@ -167,12 +167,12 @@ test('it fails attempt with invalid credentials', function (): void {
     $result = $guard->attempt(['email' => 'test@example.com', 'password' => 'wrong']);
 
     expect($result)->toBeFalse()
-        ->and($session->has('auth_user_id'))->toBeFalse();
+        ->and($session->has('auth_web_user_id'))->toBeFalse();
 });
 
 test('it logs out user and clears session', function (): void {
     $session = new TestSession();
-    $session->set('auth_user_id', 42);
+    $session->set('auth_web_user_id', 42);
     $user = new TestUser(id: 42);
     $provider = new TestUserProvider(userById: $user);
 
@@ -189,7 +189,7 @@ test('it logs out user and clears session', function (): void {
     $guard->logout();
 
     // Verify session is cleared and user cache is invalidated
-    expect($session->has('auth_user_id'))->toBeFalse()
+    expect($session->has('auth_web_user_id'))->toBeFalse()
         ->and($guard->check())->toBeFalse();
 });
 
@@ -307,7 +307,7 @@ test('it authenticates via remember token cookie', function (): void {
 
 test('it clears remember token on logout', function (): void {
     $session = new TestSession();
-    $session->set('auth_user_id', 42);
+    $session->set('auth_web_user_id', 42);
     $user = new TestUser(id: 42);
 
     // Simulate existing remember token
@@ -500,4 +500,145 @@ test('it handles user not found by remember token gracefully', function (): void
 
     // Should return null without errors
     expect($guard->user())->toBeNull();
+});
+
+test('it uses guard-name-scoped session key format auth_{name}_user_id', function (): void {
+    $session = new TestSession();
+    $provider = new TestUserProvider();
+    $user = new TestUser(id: 42);
+
+    $guard = new SessionGuard(
+        session: $session,
+        provider: $provider,
+        name: 'admin',
+    );
+
+    $guard->login($user);
+
+    // The session key should be scoped to the guard name
+    expect($session->get('auth_admin_user_id'))->toBe(42)
+        ->and($session->has('auth_web_user_id'))->toBeFalse();
+});
+
+test('it stores user id under scoped session key on login', function (): void {
+    $session = new TestSession();
+    $provider = new TestUserProvider();
+    $user = new TestUser(id: 99);
+
+    $guard = new SessionGuard(
+        session: $session,
+        provider: $provider,
+        name: 'api',
+    );
+
+    $guard->login($user);
+
+    // Verify the user ID is stored under the guard-scoped key
+    expect($session->get('auth_api_user_id'))->toBe(99)
+        ->and($session->all())->toHaveKey('auth_api_user_id');
+});
+
+test('it retrieves user id from scoped session key on check', function (): void {
+    $session = new TestSession();
+    $user = new TestUser(id: 77);
+    $provider = new TestUserProvider(userById: $user);
+
+    // Manually set the scoped session key
+    $session->set('auth_custom_user_id', 77);
+
+    $guard = new SessionGuard(
+        session: $session,
+        provider: $provider,
+        name: 'custom',
+    );
+
+    // check() should find the user via the scoped session key
+    expect($guard->check())->toBeTrue()
+        ->and($guard->user())->toBe($user)
+        ->and($guard->id())->toBe(77);
+});
+
+test('it removes scoped session key on logout', function (): void {
+    $session = new TestSession();
+    $user = new TestUser(id: 55);
+    $provider = new TestUserProvider(userById: $user);
+
+    $guard = new SessionGuard(
+        session: $session,
+        provider: $provider,
+        name: 'portal',
+    );
+
+    // Login first
+    $guard->login($user);
+    expect($session->has('auth_portal_user_id'))->toBeTrue();
+
+    // Logout
+    $guard->logout();
+
+    // Verify the scoped session key is removed
+    expect($session->has('auth_portal_user_id'))->toBeFalse()
+        ->and($guard->check())->toBeFalse();
+});
+
+test('it isolates session state between two guards with different names', function (): void {
+    $session = new TestSession();
+    $webUser = new TestUser(id: 1);
+    $adminUser = new TestUser(id: 2);
+    $webProvider = new TestUserProvider(userById: $webUser);
+    $adminProvider = new TestUserProvider(userById: $adminUser);
+
+    $webGuard = new SessionGuard(
+        session: $session,
+        provider: $webProvider,
+        name: 'web',
+    );
+
+    $adminGuard = new SessionGuard(
+        session: $session,
+        provider: $adminProvider,
+        name: 'admin',
+    );
+
+    // Login web user only
+    $webGuard->login($webUser);
+
+    // Web guard should be authenticated, admin guard should not
+    expect($webGuard->check())->toBeTrue()
+        ->and($adminGuard->check())->toBeFalse();
+
+    // Login admin user
+    $adminGuard->login($adminUser);
+
+    // Both should now be authenticated with their own users
+    expect($webGuard->check())->toBeTrue()
+        ->and($adminGuard->check())->toBeTrue()
+        ->and($session->get('auth_web_user_id'))->toBe(1)
+        ->and($session->get('auth_admin_user_id'))->toBe(2);
+
+    // Logout web guard should not affect admin guard
+    $webGuard->logout();
+
+    expect($webGuard->check())->toBeFalse()
+        ->and($adminGuard->check())->toBeTrue()
+        ->and($session->has('auth_web_user_id'))->toBeFalse()
+        ->and($session->get('auth_admin_user_id'))->toBe(2);
+});
+
+test('it defaults to auth_session_user_id when guard name is session', function (): void {
+    $session = new TestSession();
+    $provider = new TestUserProvider();
+    $user = new TestUser(id: 33);
+
+    // Use the default guard name (which is 'session')
+    $guard = new SessionGuard(
+        session: $session,
+        provider: $provider,
+    );
+
+    $guard->login($user);
+
+    // The default guard name is 'session', so the key should be 'auth_session_user_id'
+    expect($session->get('auth_session_user_id'))->toBe(33)
+        ->and($guard->getName())->toBe('session');
 });
