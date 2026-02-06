@@ -149,6 +149,57 @@ describe('AdminAuth Migrations', function (): void {
             ->and($sql)->toContain('ON DELETE CASCADE');
     });
 
+    it('creates migration for admin_users table with correct columns and indexes', function (): void {
+        $capturedSql = [];
+        $connection = adminAuthMigrationCreateMockConnection($capturedSql);
+        $migration = adminAuthMigrationLoadMigration('004_create_admin_users_table.php');
+
+        $migration->up($connection);
+
+        expect($capturedSql)->toHaveCount(1);
+
+        $sql = $capturedSql[0];
+        expect($sql)
+            ->toContain('CREATE TABLE')
+            ->and($sql)->toContain('admin_users')
+            ->and($sql)->toContain('id')
+            ->and($sql)->toContain('email')
+            ->and($sql)->toContain('password')
+            ->and($sql)->toContain('name')
+            ->and($sql)->toContain('remember_token')
+            ->and($sql)->toContain('is_active')
+            ->and($sql)->toContain('created_at')
+            ->and($sql)->toContain('updated_at')
+            ->and($sql)->toContain('PRIMARY KEY')
+            ->and($sql)->toContain('AUTO_INCREMENT')
+            ->and($sql)->toContain('UNIQUE')
+            ->and($sql)->toContain('idx_admin_users_email')
+            ->and($sql)->toContain('DEFAULT 1');
+    });
+
+    it('creates migration for admin_user_roles junction table', function (): void {
+        $capturedSql = [];
+        $connection = adminAuthMigrationCreateMockConnection($capturedSql);
+        $migration = adminAuthMigrationLoadMigration('005_create_admin_user_roles_table.php');
+
+        $migration->up($connection);
+
+        expect($capturedSql)->toHaveCount(1);
+
+        $sql = $capturedSql[0];
+        expect($sql)
+            ->toContain('CREATE TABLE')
+            ->and($sql)->toContain('admin_user_roles')
+            ->and($sql)->toContain('user_id')
+            ->and($sql)->toContain('role_id')
+            ->and($sql)->toContain('UNIQUE')
+            ->and($sql)->toContain('idx_admin_user_roles_unique')
+            ->and($sql)->toContain('FOREIGN KEY')
+            ->and($sql)->toContain('REFERENCES admin_users')
+            ->and($sql)->toContain('REFERENCES roles')
+            ->and($sql)->toContain('ON DELETE CASCADE');
+    });
+
     it('adds indexes for frequently queried columns', function (): void {
         $indexExpectations = [
             '001_create_roles_table.php' => ['idx_roles_slug'],
@@ -177,6 +228,8 @@ describe('AdminAuth Migrations', function (): void {
             '001_create_roles_table.php' => 'DROP TABLE roles',
             '002_create_permissions_table.php' => 'DROP TABLE permissions',
             '003_create_role_permissions_table.php' => 'DROP TABLE role_permissions',
+            '004_create_admin_users_table.php' => 'DROP TABLE admin_users',
+            '005_create_admin_user_roles_table.php' => 'DROP TABLE admin_user_roles',
         ];
 
         foreach ($migrations as $filename => $expectedSql) {

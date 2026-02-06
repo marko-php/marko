@@ -54,13 +54,17 @@
             "Marko\\View\\": "packages/view/src/",
             "Marko\\View\\Latte\\": "packages/view-latte/src/",
             "Marko\\Admin\\": "packages/admin/src/",
-            "Marko\\AdminAuth\\": "packages/admin-auth/src/"
+            "Marko\\AdminAuth\\": "packages/admin-auth/src/",
+            "Marko\\AdminApi\\": "packages/admin-api/src/",
+            "Marko\\AdminPanel\\": "packages/admin-panel/src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
             "Marko\\Admin\\Tests\\": "packages/admin/tests/",
             "Marko\\AdminAuth\\Tests\\": "packages/admin-auth/tests/",
+            "Marko\\AdminApi\\Tests\\": "packages/admin-api/tests/",
+            "Marko\\AdminPanel\\Tests\\": "packages/admin-panel/tests/",
             "Marko\\Blog\\Tests\\": "packages/blog/tests/",
             "Marko\\Cache\\Tests\\": "packages/cache/tests/",
             "Marko\\Cache\\File\\Tests\\": "packages/cache-file/tests/",
