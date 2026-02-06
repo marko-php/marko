@@ -1,6 +1,6 @@
 # Task 015: marko/admin-panel - Menu Building and Section Rendering
 
-**Status**: pending
+**Status**: done
 **Depends on**: 004, 014
 **Retry count**: 0
 
@@ -16,14 +16,14 @@ Create the `AdminMenuBuilder` that constructs the sidebar navigation from regist
 - The active menu item is determined by matching the current request path
 
 ## Requirements (Test Descriptions)
-- [ ] `it builds menu from registered admin sections`
-- [ ] `it sorts sections by sortOrder`
-- [ ] `it sorts menu items within each section by sortOrder`
-- [ ] `it filters out menu items the user lacks permission for`
-- [ ] `it shows all menu items for super admin users`
-- [ ] `it marks the active menu item based on current request path`
-- [ ] `it returns empty menu when no sections are registered`
-- [ ] `it builds dashboard section list filtered by user permissions`
+- [x] `it builds menu from registered admin sections`
+- [x] `it sorts sections by sortOrder`
+- [x] `it sorts menu items within each section by sortOrder`
+- [x] `it filters out menu items the user lacks permission for`
+- [x] `it shows all menu items for super admin users`
+- [x] `it marks the active menu item based on current request path`
+- [x] `it returns empty menu when no sections are registered`
+- [x] `it builds dashboard section list filtered by user permissions`
 
 ## Acceptance Criteria
 - All requirements have passing tests

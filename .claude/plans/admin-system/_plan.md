@@ -56,14 +56,14 @@ Build a modular, extensible admin system consisting of four new packages (`marko
 | 012 | marko/admin-panel - Package skeleton, composer.json, AdminPanelConfig | 003 | completed |
 | 013 | marko/admin-panel - Layout template and Latte views (base, login, dashboard) | 012 | completed |
 | 014 | marko/admin-panel - AdminPanelController (dashboard, login, logout) | 011, 013 | completed |
-| 015 | marko/admin-panel - Menu building and section rendering | 004, 014 | pending |
+| 015 | marko/admin-panel - Menu building and section rendering | 004, 014 | completed |
 | 016 | marko/admin-api - Package skeleton, ApiResponse helpers | 003 | completed |
 | 017 | marko/admin-api - AdminApiController (sections list, section detail) | 011, 016 | completed |
-| 018 | marko/admin-api - API route registration and auth integration | 017 | pending |
+| 018 | marko/admin-api - API route registration and auth integration | 017 | completed |
 | 019 | marko/blog admin - BlogAdminSection registration and permissions | 004, 007 | completed |
 | 020 | marko/blog admin - PostAdminController (list, create, edit, delete) | 010, 019 | completed |
 | 021 | marko/blog admin - Author/Category/Tag/Comment admin controllers | 020 | pending |
-| 022 | marko/blog admin - Post admin Latte templates | 013, 020 | pending |
+| 022 | marko/blog admin - Post admin Latte templates | 013, 020 | completed |
 | 023 | marko/blog admin - Remaining admin Latte templates | 022 | pending |
 | 024 | marko/blog admin - Blog admin API controllers | 018, 019 | pending |
 
