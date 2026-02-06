@@ -1,0 +1,51 @@
+{
+    "name": "marko/admin-panel",
+    "description": "Admin panel UI for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "version": "1.0.0",
+    "repositories": [
+        {"type": "path", "url": "../core"},
+        {"type": "path", "url": "../admin"},
+        {"type": "path", "url": "../admin-auth"},
+        {"type": "path", "url": "../view"},
+        {"type": "path", "url": "../auth"},
+        {"type": "path", "url": "../session"},
+        {"type": "path", "url": "../routing"},
+        {"type": "path", "url": "../config"}
+    ],
+    "require": {
+        "php": "^8.5",
+        "marko/core": "@dev",
+        "marko/admin": "@dev",
+        "marko/admin-auth": "@dev",
+        "marko/view": "@dev",
+        "marko/auth": "@dev",
+        "marko/session": "@dev",
+        "marko/routing": "@dev",
+        "marko/config": "@dev"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\AdminPanel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\AdminPanel\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
