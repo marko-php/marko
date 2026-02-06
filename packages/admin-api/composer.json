@@ -9,7 +9,8 @@
         {"type": "path", "url": "../admin"},
         {"type": "path", "url": "../admin-auth"},
         {"type": "path", "url": "../routing"},
-        {"type": "path", "url": "../auth"}
+        {"type": "path", "url": "../auth"},
+        {"type": "path", "url": "../config"}
     ],
     "require": {
         "php": "^8.5",
@@ -17,7 +18,8 @@
         "marko/admin": "@dev",
         "marko/admin-auth": "@dev",
         "marko/routing": "@dev",
-        "marko/auth": "@dev"
+        "marko/auth": "@dev",
+        "marko/config": "@dev"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

@@ -1,6 +1,6 @@
 # Task 018: marko/admin-api - API Route Registration and Auth Integration
 
-**Status**: pending
+**Status**: done
 **Depends on**: 017
 **Retry count**: 0
 
@@ -16,15 +16,15 @@ Wire up the admin API routes, configure the token guard for API authentication, 
 - module.php bindings for AdminApiConfig
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates AdminApiConfig with version and rate limit settings`
-- [ ] `it configures admin-api token guard for API authentication`
-- [ ] `it registers API routes under /admin/api/v1 prefix`
-- [ ] `it does not conflict with admin-panel routes`
-- [ ] `it returns JSON 401 for missing bearer token`
-- [ ] `it returns JSON 401 for invalid bearer token`
-- [ ] `it authenticates with valid bearer token and returns user`
-- [ ] `it has valid config/admin-api.php with default values`
-- [ ] `it has module.php with AdminApiConfig binding`
+- [x] `it creates AdminApiConfig with version and rate limit settings`
+- [x] `it configures admin-api token guard for API authentication`
+- [x] `it registers API routes under /admin/api/v1 prefix`
+- [x] `it does not conflict with admin-panel routes`
+- [x] `it returns JSON 401 for missing bearer token`
+- [x] `it returns JSON 401 for invalid bearer token`
+- [x] `it authenticates with valid bearer token and returns user`
+- [x] `it has valid config/admin-api.php with default values`
+- [x] `it has module.php with AdminApiConfig binding`
 
 ## Acceptance Criteria
 - All requirements have passing tests
