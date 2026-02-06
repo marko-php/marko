@@ -1,6 +1,6 @@
 # Task 014: marko/admin-panel - AdminPanelController (Dashboard, Login, Logout)
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 011, 013
 **Retry count**: 0
 
