@@ -63,6 +63,18 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/view/tests" isTestSource="true" packagePrefix="Marko\View\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/env/src" isTestSource="false" packagePrefix="Marko\Env\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/env/tests" isTestSource="true" packagePrefix="Marko\Env\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-api/src" isTestSource="false" packagePrefix="Marko\AdminApi\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-api/tests" isTestSource="true" packagePrefix="Marko\AdminApi\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-auth/src" isTestSource="false" packagePrefix="Marko\AdminAuth\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-auth/tests" isTestSource="true" packagePrefix="Marko\AdminAuth\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-panel/src" isTestSource="false" packagePrefix="Marko\AdminPanel\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-panel/tests" isTestSource="true" packagePrefix="Marko\AdminPanel\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin/src" isTestSource="false" packagePrefix="Marko\Admin\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin/tests" isTestSource="true" packagePrefix="Marko\Admin\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-array/src" isTestSource="false" packagePrefix="Marko\Cache\Memory\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-array/tests" isTestSource="true" packagePrefix="Marko\Cache\Memory\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail-log/src" isTestSource="false" packagePrefix="Marko\Mail\Log\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail-log/tests" isTestSource="true" packagePrefix="Marko\Mail\Log\Tests\" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/brianium/paratest" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/composer" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/doctrine/deprecations" />
