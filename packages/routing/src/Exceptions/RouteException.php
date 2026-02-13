@@ -4,10 +4,47 @@ declare(strict_types=1);
 
 namespace Marko\Routing\Exceptions;
 
+use Error;
 use Marko\Core\Exceptions\MarkoException;
 
 class RouteException extends MarkoException
 {
+    public static function classNotFoundDuringDiscovery(
+        string $filePath,
+        string $missingClass,
+        Error $previous,
+    ): self {
+        $package = self::inferPackageName($missingClass);
+        $suggestion = $package !== null
+            ? "Run: composer require $package"
+            : "Ensure the class '$missingClass' is available via Composer autoloading";
+
+        return new self(
+            message: "Failed to load controller file: class or interface '$missingClass' not found",
+            context: "While discovering routes in '$filePath'. This usually means a required package is missing.",
+            suggestion: $suggestion,
+            previous: $previous,
+        );
+    }
+
+    public static function attributeClassNotFound(
+        string $controller,
+        string $missingClass,
+        Error $previous,
+    ): self {
+        $package = self::inferPackageName($missingClass);
+        $suggestion = $package !== null
+            ? "Run: composer require $package"
+            : "Ensure the class '$missingClass' is available via Composer autoloading";
+
+        return new self(
+            message: "Attribute class '$missingClass' not found on controller '$controller'",
+            context: 'While instantiating route attributes. This usually means a required package is missing.',
+            suggestion: $suggestion,
+            previous: $previous,
+        );
+    }
+
     public static function ambiguousOverride(
         string $parentClass,
         string $childClass,

@@ -36,15 +36,10 @@
         {
             "type": "path",
             "url": "../session"
-        },
-        {
-            "type": "path",
-            "url": "../admin"
         }
     ],
     "require": {
         "php": "^8.5",
-        "marko/admin": "@dev",
         "marko/core": "@dev",
         "marko/routing": "@dev",
         "marko/database": "@dev",
@@ -55,6 +50,8 @@
         "marko/session": "@dev"
     },
     "suggest": {
+        "marko/admin": "Admin panel integration for managing blog content",
+        "marko/admin-auth": "Admin authentication for blog admin controllers",
         "marko/view-latte": "Latte template engine for default blog templates",
         "marko/mail-log": "Log-based mail driver for development and debugging",
         "marko/mail-smtp": "SMTP mail driver for production email sending"

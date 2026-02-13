@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Marko\Routing;
 
+use Error;
 use Marko\Core\Attributes\Preference;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Container\PreferenceRegistry;
 use Marko\Core\Discovery\ClassFileParser;
+use Marko\Core\Exceptions\MarkoException;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Routing\Attributes\Route;
 use Marko\Routing\Exceptions\RouteConflictException;
@@ -122,7 +124,15 @@ class RoutingBootstrapper
             }
 
             // Ensure the class file is loaded
-            require_once $filePath;
+            try {
+                require_once $filePath;
+            } catch (Error $e) {
+                $missingClass = MarkoException::extractMissingClass($e);
+                if ($missingClass !== null) {
+                    throw RouteException::classNotFoundDuringDiscovery($filePath, $missingClass, $e);
+                }
+                throw $e;
+            }
 
             if (!class_exists($className)) {
                 continue;
@@ -176,7 +186,11 @@ class RoutingBootstrapper
             if ($method->getDeclaringClass()->getName() !== $reflection->getName()) {
                 // But also check if an inherited method has route attributes
                 foreach ($method->getAttributes() as $attribute) {
-                    $instance = $attribute->newInstance();
+                    try {
+                        $instance = $attribute->newInstance();
+                    } catch (Error) {
+                        continue;
+                    }
                     if ($instance instanceof Route) {
                         return true;
                     }
@@ -185,7 +199,11 @@ class RoutingBootstrapper
             }
 
             foreach ($method->getAttributes() as $attribute) {
-                $instance = $attribute->newInstance();
+                try {
+                    $instance = $attribute->newInstance();
+                } catch (Error) {
+                    continue;
+                }
                 if ($instance instanceof Route) {
                     return true;
                 }

@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-pending
+completed
 
 ## Objective
 Build the `marko/validation` package providing a type-safe, attribute-based validation system with declarative rules on DTOs/entities, validator service, validation error collection, and integration with routing for request data validation - following the framework's "loud errors" philosophy.

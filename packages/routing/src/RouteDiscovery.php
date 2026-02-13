@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Marko\Routing;
 
+use Error;
+use Marko\Core\Exceptions\MarkoException;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Routing\Attributes\DisableRoute;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Route;
+use Marko\Routing\Exceptions\RouteException;
 use ReflectionClass;
 use ReflectionMethod;
 
@@ -43,7 +46,15 @@ class RouteDiscovery
             }
 
             foreach ($method->getAttributes() as $attribute) {
-                $instance = $attribute->newInstance();
+                try {
+                    $instance = $attribute->newInstance();
+                } catch (Error $e) {
+                    $missingClass = MarkoException::extractMissingClass($e);
+                    if ($missingClass !== null) {
+                        throw RouteException::attributeClassNotFound($className, $missingClass, $e);
+                    }
+                    throw $e;
+                }
                 if ($instance instanceof Route) {
                     $methodMiddleware = $this->getMethodMiddleware($method);
                     $routes[] = new RouteDefinition(
@@ -73,7 +84,15 @@ class RouteDiscovery
             return [];
         }
 
-        $middleware = $middlewareAttributes[0]->newInstance();
+        try {
+            $middleware = $middlewareAttributes[0]->newInstance();
+        } catch (Error $e) {
+            $missingClass = MarkoException::extractMissingClass($e);
+            if ($missingClass !== null) {
+                throw RouteException::attributeClassNotFound($reflection->getName(), $missingClass, $e);
+            }
+            throw $e;
+        }
 
         return $middleware->middleware;
     }
@@ -91,7 +110,16 @@ class RouteDiscovery
             return [];
         }
 
-        $middleware = $middlewareAttributes[0]->newInstance();
+        try {
+            $middleware = $middlewareAttributes[0]->newInstance();
+        } catch (Error $e) {
+            $missingClass = MarkoException::extractMissingClass($e);
+            if ($missingClass !== null) {
+                $controller = $method->getDeclaringClass()->getName();
+                throw RouteException::attributeClassNotFound($controller, $missingClass, $e);
+            }
+            throw $e;
+        }
 
         return $middleware->middleware;
     }

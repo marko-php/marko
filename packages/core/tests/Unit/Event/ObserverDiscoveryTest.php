@@ -137,3 +137,52 @@ PHP;
     rmdir($tempDir . '/src');
     rmdir($tempDir);
 });
+
+it('throws EventException with package suggestion when observer file references missing class', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    mkdir($tempDir . '/src', 0755, true);
+
+    // Create an observer file that implements a non-existent interface
+    $observerCode = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace TestModuleMissing;
+
+use Marko\Core\Attributes\Observer;
+use DiscoveryTestEvent;
+
+// This interface doesn't exist - simulating a missing package
+interface NonExistentInterface {}
+
+#[Observer(event: DiscoveryTestEvent::class)]
+class MissingDependencyObserver implements \Marko\AdminAuth\Contracts\NonExistent
+{
+    public function handle(DiscoveryTestEvent $event): void {}
+}
+PHP;
+    file_put_contents($tempDir . '/src/MissingDependencyObserver.php', $observerCode);
+
+    $manifest = new ModuleManifest(
+        name: 'test/module',
+        version: '1.0.0',
+        path: $tempDir,
+    );
+
+    $discovery = new ObserverDiscovery(new ClassFileParser());
+
+    try {
+        $discovery->discover([$manifest]);
+        // If no exception, that's unexpected - clean up and fail
+        $this->fail('Expected EventException was not thrown');
+    } catch (EventException $e) {
+        expect($e->getMessage())->toContain('not found')
+            ->and($e->getContext())->toContain('discovering observers')
+            ->and($e->getSuggestion())->toContain('composer require');
+    } finally {
+        unlink($tempDir . '/src/MissingDependencyObserver.php');
+        rmdir($tempDir . '/src');
+        rmdir($tempDir);
+    }
+});

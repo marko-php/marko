@@ -4,7 +4,7 @@
 2026-01-21
 
 ## Status
-pending
+completed
 
 ## Objective
 Implement the session layer for Marko framework with a clean interface/implementation split pattern, providing `marko/session` (interfaces, session management, flash messages, and session middleware) and `marko/session-file` (file-based driver implementation using PHP's native session handling).
