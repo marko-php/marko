@@ -13,6 +13,7 @@ use Marko\Blog\Tests\Mocks\MockAuthorRepository;
 use Marko\Blog\Tests\Mocks\MockCategoryRepository;
 use Marko\Blog\Tests\Mocks\MockCommentRepository;
 use Marko\Blog\Tests\Mocks\MockPostRepository;
+use Marko\Blog\Tests\Mocks\MockSession;
 use Marko\Core\Attributes\Preference;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\PreferenceRegistry;
@@ -21,6 +22,7 @@ use Marko\Routing\Attributes\InheritRoute;
 use Marko\Routing\Http\Response;
 use Marko\Routing\PreferenceRouteResolver;
 use Marko\Routing\RouteDiscovery;
+use Marko\Session\Contracts\SessionInterface;
 use Marko\View\ViewInterface;
 
 /**
@@ -45,6 +47,7 @@ it('demo app/blog overrides PostController via Preference', function (): void {
         $mockCommentRepository,
         $mockPaginationService,
         $mockView,
+        new MockSession(),
     ) extends PostController
     {
         public function show(
@@ -66,6 +69,7 @@ it('demo app/blog overrides PostController via Preference', function (): void {
     $container->instance(CommentRepositoryInterface::class, $mockCommentRepository);
     $container->instance(PaginationServiceInterface::class, $mockPaginationService);
     $container->instance(ViewInterface::class, $mockView);
+    $container->instance(SessionInterface::class, new MockSession());
 
     // When requesting the original controller, we get the Preference instead
     $resolvedController = $container->get(PostController::class);
@@ -90,6 +94,7 @@ it('app PostController modifies show method response', function (): void {
         $mockCommentRepository,
         $mockPaginationService,
         $mockView,
+        new MockSession(),
     ) extends PostController
     {
         public function show(
@@ -123,6 +128,7 @@ it('DisableRoute attribute removes route from Preference override', function ():
         $mockCommentRepository,
         $mockPaginationService,
         $mockView,
+        new MockSession(),
     ) extends PostController
     {
         #[DisableRoute]

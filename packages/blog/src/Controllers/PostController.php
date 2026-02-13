@@ -12,6 +12,7 @@ use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
+use Marko\Session\Contracts\SessionInterface;
 use Marko\View\ViewInterface;
 
 class PostController
@@ -23,6 +24,7 @@ class PostController
         private readonly CommentRepositoryInterface $commentRepository,
         private readonly PaginationServiceInterface $paginationService,
         private readonly ViewInterface $view,
+        private readonly SessionInterface $session,
     ) {}
 
     #[Get('/blog')]
@@ -111,12 +113,17 @@ class PostController
         $post->setCategories($categories);
         $post->setTags($tags);
 
+        $this->session->start();
+        $successMessages = $this->session->flash()->get('success');
+        $this->session->save();
+
         return $this->view->render('blog::post/show', [
             'post' => $post,
             'categories' => $categories,
             'categoryPaths' => $categoryPaths,
             'tags' => $tags,
             'comments' => $comments,
+            'verificationSuccess' => !empty($successMessages),
         ]);
     }
 }

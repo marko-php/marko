@@ -41,7 +41,9 @@ readonly class CommentVerifyController
                 ],
             );
 
+            $this->session->start();
             $this->session->flash()->add('success', 'Your comment has been verified.');
+            $this->session->save();
 
             $redirectUrl = '/blog/' . $result->postSlug . '#comment-' . $result->commentId;
 

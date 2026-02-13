@@ -22,6 +22,8 @@ use Marko\Database\Entity\Entity;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
+use Marko\Session\Contracts\SessionInterface;
+use Marko\Session\Flash\FlashBag;
 use Marko\View\ViewInterface;
 use ReflectionClass;
 
@@ -32,7 +34,7 @@ use ReflectionClass;
     \expect($constructor)->not->toBeNull();
 
     $parameters = $constructor->getParameters();
-    \expect($parameters)->toHaveCount(6)
+    \expect($parameters)->toHaveCount(7)
         ->and($parameters[0]->getName())->toBe('repository')
         ->and($parameters[0]->getType()->getName())->toBe(PostRepositoryInterface::class)
         ->and($parameters[1]->getName())->toBe('authorRepository')
@@ -44,7 +46,9 @@ use ReflectionClass;
         ->and($parameters[4]->getName())->toBe('paginationService')
         ->and($parameters[4]->getType()->getName())->toBe(PaginationServiceInterface::class)
         ->and($parameters[5]->getName())->toBe('view')
-        ->and($parameters[5]->getType()->getName())->toBe(ViewInterface::class);
+        ->and($parameters[5]->getType()->getName())->toBe(ViewInterface::class)
+        ->and($parameters[6]->getName())->toBe('session')
+        ->and($parameters[6]->getType()->getName())->toBe(SessionInterface::class);
 });
 
 \it('has GET /blog route on index method', function (): void {
@@ -87,6 +91,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $response = $controller->index();
 
@@ -111,6 +116,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $response = $controller->show('hello-world');
 
@@ -143,6 +149,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $response = $controller->show('test-post');
 
@@ -166,6 +173,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $response = $controller->show('non-existent');
 
@@ -195,6 +203,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $response = $controller->show('draft-post');
 
@@ -228,6 +237,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->show('full-content-post');
 
@@ -261,6 +271,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->show('post-with-author');
 
@@ -301,6 +312,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->show('post-with-categories');
 
@@ -343,6 +355,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->show('post-with-tags');
 
@@ -398,6 +411,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->show('post-with-comments');
 
@@ -431,6 +445,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $response = $controller->show('view-template-test');
 
@@ -485,6 +500,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $response = $controller->index();
 
@@ -515,6 +531,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $response = $controller->index();
 
@@ -547,6 +564,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->index();
 
@@ -576,6 +594,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->index(page: 3);
 
@@ -602,6 +621,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->index();
 
@@ -626,6 +646,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
 
     // Test page 0
@@ -661,6 +682,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->index();
 
@@ -702,6 +724,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->index();
 
@@ -731,6 +754,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $response = $controller->index();
 
@@ -778,6 +802,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->show('post-with-hierarchy');
 
@@ -830,6 +855,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->show('post-multiple-categories');
 
@@ -869,6 +895,7 @@ use ReflectionClass;
         $commentRepository,
         $pagination,
         $view,
+        createMockSession(),
     );
     $controller->show('post-no-categories');
 
@@ -1454,6 +1481,84 @@ function createMockPaginationService(
         {
             return 10;
         }
+    };
+}
+
+function createMockSession(
+    array $flashMessages = [],
+): SessionInterface {
+    return new class ($flashMessages) implements SessionInterface
+    {
+        public bool $started {
+            get => true;
+        }
+
+        private array $data = [];
+
+        public function __construct(
+            private array $flashMessages,
+        ) {}
+
+        public function start(): void {}
+
+        public function get(
+            string $key,
+            mixed $default = null,
+        ): mixed {
+            return $this->data[$key] ?? $default;
+        }
+
+        public function set(
+            string $key,
+            mixed $value,
+        ): void {
+            $this->data[$key] = $value;
+        }
+
+        public function has(
+            string $key,
+        ): bool {
+            return isset($this->data[$key]);
+        }
+
+        public function remove(
+            string $key,
+        ): void {
+            unset($this->data[$key]);
+        }
+
+        public function clear(): void
+        {
+            $this->data = [];
+        }
+
+        public function all(): array
+        {
+            return $this->data;
+        }
+
+        public function regenerate(bool $deleteOldSession = true): void {}
+
+        public function destroy(): void
+        {
+            $this->data = [];
+        }
+
+        public function getId(): string
+        {
+            return 'test-session-id';
+        }
+
+        public function setId(string $id): void {}
+
+        public function flash(): FlashBag
+        {
+            $flashData = ['_flash' => $this->flashMessages];
+
+            return new FlashBag($flashData);
+        }
+
+        public function save(): void {}
     };
 }
 

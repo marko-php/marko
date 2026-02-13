@@ -232,6 +232,30 @@ it('redirects to post page after verification', function (): void {
         ->and($response->headers()['Location'])->toBe('/blog/my-awesome-post#comment-42');
 });
 
+it('starts session before setting flash message', function (): void {
+    $verificationService = createMockVerificationService(
+        verifyByTokenResult: new VerificationResult(
+            browserToken: 'browser-token',
+            postSlug: 'test-post',
+            commentId: 1,
+        ),
+    );
+    $view = createMockView();
+    $cookieJar = new MockCookieJar();
+    $session = new MockSession();
+
+    $controller = new CommentVerifyController(
+        verificationService: $verificationService,
+        view: $view,
+        cookieJar: $cookieJar,
+        session: $session,
+    );
+
+    $controller->verify('valid-token');
+
+    expect($session->startCalled)->toBeTrue();
+});
+
 it('sets success flash message on redirect', function (): void {
     $verificationService = createMockVerificationService(
         verifyByTokenResult: new VerificationResult(
@@ -346,6 +370,8 @@ class MockSession implements SessionInterface
     /** @var array<string, array<string>> */
     public array $flashMessages = [];
 
+    public bool $startCalled = false;
+
     /** @var array<string, mixed> */
     private array $sessionData = [];
 
@@ -353,7 +379,10 @@ class MockSession implements SessionInterface
         get => true;
     }
 
-    public function start(): void {}
+    public function start(): void
+    {
+        $this->startCalled = true;
+    }
 
     public function get(
         string $key,
