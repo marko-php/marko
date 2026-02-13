@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Core\Discovery;
 
+use Error;
+use Marko\Core\Exceptions\MarkoException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -48,6 +50,36 @@ class ClassFileParser
         }
 
         return $namespace !== null ? $namespace . '\\' . $class : $class;
+    }
+
+    /**
+     * Load a class file and verify the class exists.
+     *
+     * Handles missing Marko package dependencies gracefully by returning false
+     * (the file depends on an uninstalled optional package). Non-Marko missing
+     * classes are re-thrown as real errors.
+     *
+     * @return bool True if the class was loaded successfully, false if skipped
+     */
+    public function loadClass(
+        string $filePath,
+        string $className,
+    ): bool {
+        try {
+            require_once $filePath;
+
+            if (!class_exists($className)) {
+                return false;
+            }
+        } catch (Error $e) {
+            $missingClass = MarkoException::extractMissingClass($e);
+            if ($missingClass !== null && MarkoException::inferPackageName($missingClass) !== null) {
+                return false;
+            }
+            throw $e;
+        }
+
+        return true;
     }
 
     /**

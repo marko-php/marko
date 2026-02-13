@@ -62,9 +62,7 @@ readonly class CommandDiscovery
             }
 
             // Load the file so class is available for reflection
-            require_once $filePath;
-
-            if (!class_exists($className)) {
+            if (!$this->classFileParser->loadClass($filePath, $className)) {
                 continue;
             }
 

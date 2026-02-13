@@ -203,9 +203,7 @@ class Application
                     continue;
                 }
 
-                require_once $file;
-
-                if (!class_exists($className)) {
+                if (!$this->classFileParser->loadClass($file, $className)) {
                     continue;
                 }
 
@@ -239,9 +237,7 @@ class Application
                     continue;
                 }
 
-                require_once $file;
-
-                if (!class_exists($className)) {
+                if (!$this->classFileParser->loadClass($file, $className)) {
                     continue;
                 }
 

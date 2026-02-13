@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Marko\Core\Event;
 
-use Error;
 use Marko\Core\Attributes\Observer;
 use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Exceptions\EventException;
-use Marko\Core\Exceptions\MarkoException;
 use Marko\Core\Module\ModuleManifest;
 use ReflectionClass;
 
@@ -64,17 +62,7 @@ readonly class ObserverDiscovery
             }
 
             // Load the file so class is available for reflection
-            try {
-                require_once $filePath;
-            } catch (Error $e) {
-                $missingClass = MarkoException::extractMissingClass($e);
-                if ($missingClass !== null) {
-                    throw EventException::classNotFoundDuringDiscovery($filePath, $missingClass, $e);
-                }
-                throw $e;
-            }
-
-            if (!class_exists($className)) {
+            if (!$this->classFileParser->loadClass($filePath, $className)) {
                 continue;
             }
 

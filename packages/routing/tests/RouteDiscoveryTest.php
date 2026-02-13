@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Marko\Core\Module\ModuleManifest;
-use Marko\Routing\Exceptions\RouteException;
 use Marko\Routing\RouteDefinition;
 use Marko\Routing\RouteDiscovery;
 use Test\DiscoveryModule\DeleteController;
@@ -169,9 +168,13 @@ it('handles multiple routes in same controller', function () {
         ->and($methods)->toContain('DELETE');
 });
 
-it('throws RouteException with package suggestion when attribute class is missing', function () {
+it('skips missing Marko attribute classes and still discovers routes', function () {
     require_once $this->fixturesPath . '/src/MissingAttributeController.php';
 
-    expect(fn () => $this->discovery->discoverFromClass(MissingAttributeController::class))
-        ->toThrow(RouteException::class, 'not found');
+    $routes = $this->discovery->discoverFromClass(MissingAttributeController::class);
+
+    // The #[Get] route is still discovered, the missing Marko attribute is skipped
+    expect($routes)->toHaveCount(1)
+        ->and($routes[0]->method)->toBe('GET')
+        ->and($routes[0]->path)->toBe('/admin/dashboard');
 });

@@ -51,6 +51,10 @@ class RouteDiscovery
                 } catch (Error $e) {
                     $missingClass = MarkoException::extractMissingClass($e);
                     if ($missingClass !== null) {
+                        // Skip attributes from uninstalled Marko packages
+                        if (MarkoException::inferPackageName($missingClass) !== null) {
+                            continue;
+                        }
                         throw RouteException::attributeClassNotFound($className, $missingClass, $e);
                     }
                     throw $e;
@@ -89,6 +93,9 @@ class RouteDiscovery
         } catch (Error $e) {
             $missingClass = MarkoException::extractMissingClass($e);
             if ($missingClass !== null) {
+                if (MarkoException::inferPackageName($missingClass) !== null) {
+                    return [];
+                }
                 throw RouteException::attributeClassNotFound($reflection->getName(), $missingClass, $e);
             }
             throw $e;
@@ -115,6 +122,9 @@ class RouteDiscovery
         } catch (Error $e) {
             $missingClass = MarkoException::extractMissingClass($e);
             if ($missingClass !== null) {
+                if (MarkoException::inferPackageName($missingClass) !== null) {
+                    return [];
+                }
                 $controller = $method->getDeclaringClass()->getName();
                 throw RouteException::attributeClassNotFound($controller, $missingClass, $e);
             }

@@ -62,9 +62,7 @@ readonly class DriverDiscovery
                 continue;
             }
 
-            require_once $filePath;
-
-            if (!class_exists($className)) {
+            if (!$this->classFileParser->loadClass($filePath, $className)) {
                 continue;
             }
 

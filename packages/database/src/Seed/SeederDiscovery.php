@@ -101,9 +101,7 @@ readonly class SeederDiscovery implements SeederDiscoveryInterface
                 continue;
             }
 
-            require_once $filePath;
-
-            if (!class_exists($className)) {
+            if (!$this->classFileParser->loadClass($filePath, $className)) {
                 continue;
             }
 

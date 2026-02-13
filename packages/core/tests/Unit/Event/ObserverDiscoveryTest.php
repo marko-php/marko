@@ -138,11 +138,11 @@ PHP;
     rmdir($tempDir);
 });
 
-it('throws EventException with package suggestion when observer file references missing class', function (): void {
+it('skips files that reference missing Marko package classes', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
     mkdir($tempDir . '/src', 0755, true);
 
-    // Create an observer file that implements a non-existent interface
+    // Create an observer file that implements a non-existent Marko interface
     $observerCode = <<<'PHP'
 <?php
 
@@ -153,11 +153,8 @@ namespace TestModuleMissing;
 use Marko\Core\Attributes\Observer;
 use DiscoveryTestEvent;
 
-// This interface doesn't exist - simulating a missing package
-interface NonExistentInterface {}
-
 #[Observer(event: DiscoveryTestEvent::class)]
-class MissingDependencyObserver implements \Marko\AdminAuth\Contracts\NonExistent
+class MissingDependencyObserver implements \Marko\NonExistentPackage\Contracts\SomeInterface
 {
     public function handle(DiscoveryTestEvent $event): void {}
 }
@@ -171,17 +168,53 @@ PHP;
     );
 
     $discovery = new ObserverDiscovery(new ClassFileParser());
+    $observers = $discovery->discover([$manifest]);
+
+    // File is silently skipped — no exception, no observers from it
+    expect($observers)->toBeEmpty();
+
+    // Cleanup
+    unlink($tempDir . '/src/MissingDependencyObserver.php');
+    rmdir($tempDir . '/src');
+    rmdir($tempDir);
+});
+
+it('throws Error when file references missing non-Marko class', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    mkdir($tempDir . '/src', 0755, true);
+
+    // Create an observer file that references a non-Marko missing class
+    $observerCode = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace TestModuleNonMarko;
+
+use Marko\Core\Attributes\Observer;
+use DiscoveryTestEvent;
+
+#[Observer(event: DiscoveryTestEvent::class)]
+class BadDependencyObserver implements \SomeVendor\Missing\SomeInterface
+{
+    public function handle(DiscoveryTestEvent $event): void {}
+}
+PHP;
+    file_put_contents($tempDir . '/src/BadDependencyObserver.php', $observerCode);
+
+    $manifest = new ModuleManifest(
+        name: 'test/module',
+        version: '1.0.0',
+        path: $tempDir,
+    );
+
+    $discovery = new ObserverDiscovery(new ClassFileParser());
 
     try {
-        $discovery->discover([$manifest]);
-        // If no exception, that's unexpected - clean up and fail
-        $this->fail('Expected EventException was not thrown');
-    } catch (EventException $e) {
-        expect($e->getMessage())->toContain('not found')
-            ->and($e->getContext())->toContain('discovering observers')
-            ->and($e->getSuggestion())->toContain('composer require');
+        expect(fn () => $discovery->discover([$manifest]))
+            ->toThrow(Error::class, 'not found');
     } finally {
-        unlink($tempDir . '/src/MissingDependencyObserver.php');
+        unlink($tempDir . '/src/BadDependencyObserver.php');
         rmdir($tempDir . '/src');
         rmdir($tempDir);
     }
