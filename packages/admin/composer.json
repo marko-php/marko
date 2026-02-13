@@ -3,7 +3,6 @@
     "description": "Admin contracts for Marko Framework",
     "type": "library",
     "license": "MIT",
-    "version": "1.0.0",
     "repositories": [
         {"type": "path", "url": "../core"},
         {"type": "path", "url": "../routing"},

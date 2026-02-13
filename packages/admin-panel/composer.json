@@ -3,7 +3,6 @@
     "description": "Admin panel UI for Marko Framework",
     "type": "marko-module",
     "license": "MIT",
-    "version": "1.0.0",
     "repositories": [
         {"type": "path", "url": "../core"},
         {"type": "path", "url": "../admin"},

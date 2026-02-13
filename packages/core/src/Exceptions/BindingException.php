@@ -15,7 +15,10 @@ class BindingException extends MarkoException implements ContainerExceptionInter
         $driverPackages = self::discoverDriverPackages($interface);
 
         if ($driverPackages !== []) {
-            $packageList = array_map(fn ($pkg) => "- `$pkg`", $driverPackages);
+            $packageList = array_map(
+                fn ($pkg) => "- `composer require $pkg:\"dev-develop as 0.1.0\"`",
+                $driverPackages
+            );
             $suggestion = "Option 1: Install an available driver package:\n" . implode("\n", $packageList);
             $suggestion .= "\n\nOption 2: Register a binding in module.php:\n`'bindings' => ['$interface' => YourImplementation::class]`";
         } else {
