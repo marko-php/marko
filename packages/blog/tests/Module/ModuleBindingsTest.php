@@ -6,6 +6,8 @@ namespace Marko\Blog\Tests\Module;
 
 use Marko\Blog\Config\BlogConfig;
 use Marko\Blog\Config\BlogConfigInterface;
+use Marko\Blog\Contracts\CookieJarInterface;
+use Marko\Blog\Http\CookieJar;
 use Marko\Blog\Repositories\AuthorRepository;
 use Marko\Blog\Repositories\AuthorRepositoryInterface;
 use Marko\Blog\Repositories\CategoryRepository;
@@ -35,6 +37,14 @@ use Marko\Blog\Services\TokenRepositoryInterface;
 use ReflectionClass;
 
 describe('Blog module.php bindings', function (): void {
+    it('binds CookieJarInterface to CookieJar', function (): void {
+        $modulePath = dirname(__DIR__, 2) . '/module.php';
+        $config = require $modulePath;
+
+        expect($config['bindings'])->toHaveKey(CookieJarInterface::class)
+            ->and($config['bindings'][CookieJarInterface::class])->toBe(CookieJar::class);
+    });
+
     it('binds BlogConfigInterface to BlogConfig', function (): void {
         $modulePath = dirname(__DIR__, 2) . '/module.php';
 

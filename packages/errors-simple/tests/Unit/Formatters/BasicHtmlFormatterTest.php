@@ -371,6 +371,33 @@ PHP;
         expect($html)->not->toContain('<link rel="stylesheet"');
     });
 
+    it('includes copy-as-markdown button in development mode', function (): void {
+        $exception = new Exception('Test error');
+        $report = ErrorReport::fromThrowable($exception, Severity::Error);
+        $environment = new Environment(envVars: ['MARKO_ENV' => 'development']);
+        $extractor = new CodeSnippetExtractor();
+
+        $formatter = new BasicHtmlFormatter($environment, $extractor);
+        $html = $formatter->format($report);
+
+        expect($html)->toContain('id="copy-md"')
+            ->and($html)->toContain('Copy as Markdown')
+            ->and($html)->toContain('buildMarkdown');
+    });
+
+    it('does not include copy button in production mode', function (): void {
+        $exception = new Exception('Test error');
+        $report = ErrorReport::fromThrowable($exception, Severity::Error);
+        $environment = new Environment(envVars: ['MARKO_ENV' => 'production']);
+        $extractor = new CodeSnippetExtractor();
+
+        $formatter = new BasicHtmlFormatter($environment, $extractor);
+        $html = $formatter->format($report);
+
+        expect($html)->not->toContain('copy-md')
+            ->and($html)->not->toContain('buildMarkdown');
+    });
+
     it('uses monospace font for code', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'test_');
         $code = "<?php\necho 'hello';";

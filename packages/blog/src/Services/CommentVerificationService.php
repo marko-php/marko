@@ -51,7 +51,7 @@ readonly class CommentVerificationService implements CommentVerificationServiceI
 
         $this->tokenRepository->save($token);
 
-        $verificationLink = '/blog/comment/verify?token=' . $token->token;
+        $verificationLink = '/blog/comment/verify/' . $token->token;
 
         $message = Message::create()
             ->to($comment->email, $comment->getName())

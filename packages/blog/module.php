@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Marko\Blog\Config\BlogConfig;
 use Marko\Blog\Config\BlogConfigInterface;
+use Marko\Blog\Contracts\CookieJarInterface;
+use Marko\Blog\Http\CookieJar;
 use Marko\Blog\Repositories\AuthorRepository;
 use Marko\Blog\Repositories\AuthorRepositoryInterface;
 use Marko\Blog\Repositories\CategoryRepository;
@@ -33,6 +35,7 @@ use Marko\Blog\Services\TokenRepositoryInterface;
 
 return [
     'bindings' => [
+        CookieJarInterface::class => CookieJar::class,
         BlogConfigInterface::class => BlogConfig::class,
         SlugGeneratorInterface::class => SlugGenerator::class,
         AuthorRepositoryInterface::class => AuthorRepository::class,

@@ -164,6 +164,25 @@ HTML;
     }
     .debug-details summary:hover { color: #333; }
     .debug-details[open] summary { margin-bottom: 12px; }
+    .copy-btn {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 8px;
+        cursor: pointer;
+        z-index: 100;
+        line-height: 1;
+        transition: background 0.15s;
+    }
+    .copy-btn:hover { background: #e8e8e8; }
+    .copy-btn svg { display: block; width: 20px; height: 20px; fill: none; stroke: #555; stroke-width: 2; }
+    .copy-btn.copied { background: #d4edda; border-color: #a3d9b1; }
+    .copy-btn.copied .icon-copy { display: none; }
+    .copy-btn .icon-check { display: none; }
+    .copy-btn.copied .icon-check { display: block; stroke: #28a745; }
 </style>
 </head>
 <body>
@@ -181,6 +200,14 @@ HTML;
     </details>
     $previousHtml
 </div>
+<button class="copy-btn" id="copy-md" title="Copy as Markdown">
+<svg class="icon-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+<svg class="icon-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+</button>
+<script>
+document.getElementById('copy-md').addEventListener('click',function(){var b=this;var md=buildMarkdown();navigator.clipboard.writeText(md).then(function(){b.classList.add('copied');b.title='Copied!';setTimeout(function(){b.classList.remove('copied');b.title='Copy as Markdown'},1000)})});
+function buildMarkdown(){var N='\\n';var H='## ';var s=[];var h1=document.querySelector('h1');if(h1)s.push('# '+h1.textContent);var msg=document.querySelector('.message');if(msg)s.push(H+'Error'+N+msg.textContent.replace(/^Error:\\s*/,''));var cals=document.querySelectorAll('.callout:not(.callout-neutral):not(.previous-exception)');cals.forEach(function(c){var l=c.querySelector('.callout-label');var t=c.querySelector('.callout-text');if(l&&t){s.push(H+l.textContent+N+t.textContent)}});var det=document.querySelector('.debug-details');if(det){var wh=det.querySelector('.callout-neutral .callout-label');if(wh&&wh.textContent==='Where it happens'){var ch=det.querySelector('.code-header');if(ch)s.push(H+'Where it happens'+N+ch.textContent);var cb=det.querySelector('.code-wrapper .code-block');if(cb){var lines=[];cb.querySelectorAll('div').forEach(function(d){var ln=d.querySelector('.line-number');var code=d.textContent;if(ln)code=code.replace(ln.textContent,'').trim();lines.push(code)});if(lines.length)s.push('```'+N+lines.join(N)+N+'```')}}var st=det.querySelector('.stack-trace');if(st){s.push(H+'Stack trace');var frames=[];st.querySelectorAll('.stack-frame').forEach(function(f){var i=f.querySelector('.stack-index');var loc=f.querySelector('.stack-location');var call=f.querySelector('.stack-call');if(i&&loc)frames.push(i.textContent+loc.textContent+(call?call.textContent:''))});if(frames.length)s.push(frames.join(N))}}var prev=document.querySelector('.previous-exception');if(prev){var pl=prev.querySelector('.callout-label');var pt=prev.querySelector('.callout-text');if(pl&&pt)s.push(H+pl.textContent+N+pt.textContent)}return s.join(N+N)}
+</script>
 </body>
 </html>
 HTML;
