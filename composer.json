@@ -12,6 +12,7 @@
         "friendsofphp/php-cs-fixer": "^3.92",
         "latte/latte": "^3.0",
         "pestphp/pest": "^4.3",
+        "php-amqplib/php-amqplib": "^3.0",
         "rector/rector": "^2.3",
         "slevomat/coding-standard": "^8.26",
         "squizlabs/php_codesniffer": "^4.0"
@@ -51,6 +52,7 @@
             "Marko\\Queue\\": "packages/queue/src/",
             "Marko\\Queue\\Sync\\": "packages/queue-sync/src/",
             "Marko\\Queue\\Database\\": "packages/queue-database/src/",
+            "Marko\\Queue\\Rabbitmq\\": "packages/queue-rabbitmq/src/",
             "Marko\\View\\": "packages/view/src/",
             "Marko\\View\\Latte\\": "packages/view-latte/src/",
             "Marko\\Admin\\": "packages/admin/src/",
@@ -96,6 +98,7 @@
             "Marko\\Queue\\Tests\\": "packages/queue/tests/",
             "Marko\\Queue\\Sync\\Tests\\": "packages/queue-sync/tests/",
             "Marko\\Queue\\Database\\Tests\\": "packages/queue-database/tests/",
+            "Marko\\Queue\\Rabbitmq\\Tests\\": "packages/queue-rabbitmq/tests/",
             "Marko\\View\\Tests\\": "packages/view/tests/",
             "Marko\\View\\Latte\\Tests\\": "packages/view-latte/tests/"
         }

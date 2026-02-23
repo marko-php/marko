@@ -1,0 +1,199 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Marko\Queue\Rabbitmq\Tests;
+
+use Marko\Queue\Rabbitmq\RabbitmqConnection;
+use OpenSSLCertificate;
+use PhpAmqpLib\Channel\AMQPChannel;
+use PhpAmqpLib\Connection\AbstractConnection;
+
+function createMockAmqpConnection(): AbstractConnection
+{
+    $mockChannel = new class () extends AMQPChannel
+    {
+        public function __construct() {}
+    };
+
+    return new class ($mockChannel) extends AbstractConnection
+    {
+        public function __construct(
+            private AMQPChannel $mockChannel,
+        ) {}
+
+        public function channel(
+            $channel_id = null,
+        ): AMQPChannel {
+            return $this->mockChannel;
+        }
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+    };
+}
+
+function createTestableConnection(
+    bool &$connectCalled,
+    ?AbstractConnection $mockAmqpConnection = null,
+): RabbitmqConnection {
+    $mockAmqpConnection ??= createMockAmqpConnection();
+
+    return new class ($connectCalled, $mockAmqpConnection) extends RabbitmqConnection
+    {
+        public function __construct(
+            private bool &$connectCalled,
+            private AbstractConnection $mockConnection,
+        ) {
+            parent::__construct();
+        }
+
+        protected function createConnection(): AbstractConnection
+        {
+            $this->connectCalled = true;
+
+            return $this->mockConnection;
+        }
+    };
+}
+
+describe('RabbitmqConnection', function (): void {
+    it('creates RabbitmqConnection with default configuration', function (): void {
+        $connection = new RabbitmqConnection();
+
+        expect($connection)
+            ->toBeInstanceOf(RabbitmqConnection::class)
+            ->and($connection->host)->toBe('localhost')
+            ->and($connection->port)->toBe(5672)
+            ->and($connection->user)->toBe('guest')
+            ->and($connection->password)->toBe('guest')
+            ->and($connection->vhost)->toBe('/');
+    });
+
+    it('creates RabbitmqConnection with custom host port user and vhost', function (): void {
+        $connection = new RabbitmqConnection(
+            host: 'rabbitmq.example.com',
+            port: 5673,
+            user: 'admin',
+            password: 'secret',
+            vhost: '/production',
+        );
+
+        expect($connection->host)->toBe('rabbitmq.example.com')
+            ->and($connection->port)->toBe(5673)
+            ->and($connection->user)->toBe('admin')
+            ->and($connection->password)->toBe('secret')
+            ->and($connection->vhost)->toBe('/production');
+    });
+
+    it('lazily connects on first channel call', function (): void {
+        $connectCalled = false;
+        $connection = createTestableConnection($connectCalled);
+
+        // Before calling channel(), connection should not have been created
+        expect($connectCalled)->toBeFalse();
+
+        // Call channel() - this should trigger lazy connection
+        $channel = $connection->channel();
+
+        expect($connectCalled)->toBeTrue()
+            ->and($channel)->toBeInstanceOf(AMQPChannel::class);
+    });
+
+    it('returns same channel on subsequent calls', function (): void {
+        $connectCalled = false;
+        $connection = createTestableConnection($connectCalled);
+
+        $channel1 = $connection->channel();
+        $channel2 = $connection->channel();
+
+        expect($channel1)->toBe($channel2);
+    });
+
+    it('reports connected status correctly', function (): void {
+        $connectCalled = false;
+        $connection = createTestableConnection($connectCalled);
+
+        // Before connecting, should report not connected
+        expect($connection->isConnected())->toBeFalse();
+
+        // After channel() call (which triggers connection), should report connected
+        $connection->channel();
+
+        expect($connection->isConnected())->toBeTrue();
+    });
+
+    it('disconnects and clears channel reference', function (): void {
+        $connectCalled = false;
+        $connection = createTestableConnection($connectCalled);
+
+        // Connect by requesting a channel
+        $connection->channel();
+        expect($connection->isConnected())->toBeTrue();
+
+        // Disconnect
+        $connection->disconnect();
+
+        expect($connection->isConnected())->toBeFalse();
+
+        // After disconnect, calling channel() again should create a new connection
+        $connectCalled = false;
+        $connection->channel();
+
+        expect($connectCalled)->toBeTrue()
+            ->and($connection->isConnected())->toBeTrue();
+    });
+
+    it('creates SSL connection when TLS options are provided', function (): void {
+        $capturedContext = null;
+
+        $mockAmqpConnection = createMockAmqpConnection();
+
+        $tlsOptions = [
+            'cafile' => '/path/to/ca.pem',
+            'local_cert' => '/path/to/cert.pem',
+            'local_pk' => '/path/to/key.pem',
+            'verify_peer' => true,
+        ];
+
+        $connection = new class ($tlsOptions, $capturedContext, $mockAmqpConnection) extends RabbitmqConnection
+        {
+            public function __construct(
+                array $tlsOptions,
+                private mixed &$capturedContext,
+                private AbstractConnection $mockConnection,
+            ) {
+                parent::__construct(
+                    port: 5671,
+                    tlsOptions: $tlsOptions,
+                );
+            }
+
+            protected function createConnection(): AbstractConnection
+            {
+                // Call parent to verify it builds the context, but capture the context
+                // We can't actually connect, so we intercept and return our mock
+                $this->capturedContext = $this->buildSslContext();
+
+                return $this->mockConnection;
+            }
+        };
+
+        // Trigger connection
+        $connection->channel();
+
+        // Verify SSL context was created
+        expect($capturedContext)->not->toBeNull()
+            ->and(is_resource($capturedContext) || $capturedContext instanceof OpenSSLCertificate || is_object($capturedContext))->toBeTrue();
+
+        // Verify stream context options contain SSL settings
+        $options = stream_context_get_options($capturedContext);
+        expect($options)->toHaveKey('ssl')
+            ->and($options['ssl'])->toHaveKey('cafile')
+            ->and($options['ssl']['cafile'])->toBe('/path/to/ca.pem')
+            ->and($options['ssl'])->toHaveKey('verify_peer')
+            ->and($options['ssl']['verify_peer'])->toBeTrue();
+    });
+});
