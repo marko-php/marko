@@ -116,6 +116,55 @@ return [
 ];
 ```
 
+The `boot` callback runs after all module bindings are registered and receives the container:
+
+```php
+return [
+    'bindings' => [
+        PaymentInterface::class => StripePayment::class,
+    ],
+    'boot' => function ($container) {
+        $handler = $container->get(ErrorHandlerInterface::class);
+        $handler->register();
+    },
+];
+```
+
+### Environment-Specific Bindings
+
+When different environments need different implementations (e.g., a mock service in development vs the real one in production), use the `boot` callback to conditionally override bindings:
+
+```php
+return [
+    'bindings' => [
+        // Default binding — used in all environments
+        PaymentGatewayInterface::class => StripePaymentGateway::class,
+    ],
+    'boot' => function ($container) {
+        if (($_ENV['APP_ENV'] ?? 'production') === 'development') {
+            $container->bind(
+                PaymentGatewayInterface::class,
+                MockPaymentGateway::class,
+            );
+        }
+    },
+];
+```
+
+Since boot callbacks run after all static bindings are registered, `$container->bind()` in a boot callback overrides the static binding from the same module. The override is explicit and visible in the module's own `module.php`.
+
+**Use boot callbacks when** you need a completely different implementation class per environment (mock vs real).
+
+**Use config instead when** the difference is just values (API URLs, credentials, feature flags). Keep the same class everywhere and let config drive the behavior:
+
+```php
+// config/payments.php — same class, different behavior per environment
+return [
+    'gateway_url' => $_ENV['PAYMENT_GATEWAY_URL'] ?? 'https://sandbox.stripe.com',
+    'dry_run' => (bool) ($_ENV['PAYMENT_DRY_RUN'] ?? true),
+];
+```
+
 ### Throwing Rich Exceptions
 
 Include context and fix suggestions:

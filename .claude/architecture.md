@@ -370,6 +370,7 @@ Module configuration is split between two files with clear responsibilities:
 - `enabled` - Whether module is active (default: true)
 - `sequence` - Load order hints (after/before other modules)
 - `bindings` - Interface → implementation mappings
+- `boot` - Closure that runs after all bindings are registered (receives the Container)
 
 This split keeps standard PHP metadata in the standard location (composer.json) while Marko-specific config lives in module.php. A minimal module only needs a composer.json with a `name` field.
 
@@ -507,6 +508,58 @@ When resolving a dependency:
 ### Conflict Handling
 
 If multiple modules bind the same interface without one explicitly overriding the other, the framework throws a loud error. No silent "last one wins" behavior.
+
+### Environment-Specific Bindings
+
+For cases where different environments need different implementations (e.g., a mock payment gateway in development vs a real one in production), use the `boot` callback in `module.php` to conditionally register bindings based on `$_ENV['APP_ENV']`.
+
+```php
+// module.php
+return [
+    'bindings' => [
+        // Default binding used in all environments
+        PaymentGatewayInterface::class => StripePaymentGateway::class,
+    ],
+    'boot' => function ($container) {
+        // Override for development only
+        if (($_ENV['APP_ENV'] ?? 'production') === 'development') {
+            $container->bind(
+                PaymentGatewayInterface::class,
+                MockPaymentGateway::class,
+            );
+        }
+    },
+];
+```
+
+Boot callbacks run after all module bindings are registered, so `$container->bind()` in a boot callback overrides the static binding from the same module. This keeps the override explicit and visible in the module's own configuration.
+
+**When to use this pattern:**
+- You need a completely different implementation class per environment (mock vs real)
+- The behavior difference can't be achieved through configuration values alone
+
+**When NOT to use this pattern — use config instead:**
+- Different API endpoints per environment → use config with `$_ENV`
+- Enabling/disabling features → use config flags
+- Different credentials → use environment variables in config files
+
+```php
+// WRONG - don't use boot callbacks for config-level differences
+'boot' => function ($container) {
+    if ($_ENV['APP_ENV'] === 'development') {
+        $container->bind(MailerInterface::class, SandboxMailer::class);
+    }
+};
+
+// RIGHT - same mailer class, different config per environment
+// config/mail.php
+return [
+    'host' => $_ENV['MAIL_HOST'] ?? 'localhost',
+    'port' => (int) ($_ENV['MAIL_PORT'] ?? 1025),
+];
+```
+
+The principle: keep DI deterministic whenever possible. The container should wire the same way across environments, with behavior differences driven by configuration. Reserve boot callback overrides for the rare case where you genuinely need a different class.
 
 ---
 
