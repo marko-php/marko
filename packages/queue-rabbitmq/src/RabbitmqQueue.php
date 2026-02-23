@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Queue\Rabbitmq;
 
+use Exception;
 use Marko\Queue\JobInterface;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Rabbitmq\Exchange\ExchangeConfig;
@@ -17,6 +18,9 @@ class RabbitmqQueue implements QueueInterface
 
     /** @var array<string, int> */
     private array $deliveryTags = [];
+
+    /** @var array<string, string> */
+    private array $messagePayloads = [];
 
     public function __construct(
         private RabbitmqConnection $connection,
@@ -57,7 +61,39 @@ class RabbitmqQueue implements QueueInterface
         JobInterface $job,
         ?string $queue = null,
     ): string {
-        return '';
+        $this->declare($queue);
+
+        $queueName = $queue ?? $this->defaultQueue;
+        $delayQueue = $queueName . '_delay';
+
+        $channel = $this->connection->channel();
+        $channel->queue_declare(
+            $delayQueue,
+            passive: false,
+            durable: true,
+            exclusive: false,
+            auto_delete: false,
+            arguments: new AMQPTable([
+                'x-dead-letter-exchange' => $this->exchangeConfig->name,
+                'x-dead-letter-routing-key' => $queueName,
+            ]),
+        );
+
+        $id = $this->generateId();
+        $job->setId($id);
+
+        $message = new AMQPMessage(
+            $job->serialize(),
+            [
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                'expiration' => (string) ($delay * 1000),
+                'application_headers' => new AMQPTable(['job_id' => $id]),
+            ],
+        );
+
+        $channel->basic_publish($message, '', $delayQueue);
+
+        return $id;
     }
 
     public function pop(
@@ -80,6 +116,7 @@ class RabbitmqQueue implements QueueInterface
         $job->setId($jobId);
 
         $this->deliveryTags[$jobId] = $message->getDeliveryTag();
+        $this->messagePayloads[$jobId] = $message->getBody();
 
         return $job;
     }
@@ -87,13 +124,26 @@ class RabbitmqQueue implements QueueInterface
     public function size(
         ?string $queue = null,
     ): int {
-        return 0;
+        $queueName = $queue ?? $this->defaultQueue;
+        $channel = $this->connection->channel();
+
+        try {
+            [, $messageCount] = $channel->queue_declare($queueName, passive: true);
+
+            return $messageCount;
+        } catch (Exception) {
+            return 0;
+        }
     }
 
     public function clear(
         ?string $queue = null,
     ): int {
-        return 0;
+        $this->declare($queue);
+
+        $queueName = $queue ?? $this->defaultQueue;
+
+        return $this->connection->channel()->queue_purge($queueName);
     }
 
     public function delete(
@@ -113,7 +163,49 @@ class RabbitmqQueue implements QueueInterface
         string $jobId,
         int $delay = 0,
     ): bool {
-        return false;
+        if (!isset($this->deliveryTags[$jobId])) {
+            return false;
+        }
+
+        $deliveryTag = $this->deliveryTags[$jobId];
+        $channel = $this->connection->channel();
+
+        if ($delay === 0) {
+            $channel->basic_nack($deliveryTag, false, true);
+        } else {
+            $channel->basic_nack($deliveryTag, false, false);
+
+            $queueName = $this->defaultQueue;
+            $delayQueue = $queueName . '_delay';
+
+            $channel->queue_declare(
+                $delayQueue,
+                passive: false,
+                durable: true,
+                exclusive: false,
+                auto_delete: false,
+                arguments: new AMQPTable([
+                    'x-dead-letter-exchange' => $this->exchangeConfig->name,
+                    'x-dead-letter-routing-key' => $queueName,
+                ]),
+            );
+
+            $message = new AMQPMessage(
+                $this->messagePayloads[$jobId],
+                [
+                    'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                    'expiration' => (string) ($delay * 1000),
+                    'application_headers' => new AMQPTable(['job_id' => $jobId]),
+                ],
+            );
+
+            $channel->basic_publish($message, '', $delayQueue);
+        }
+
+        unset($this->deliveryTags[$jobId]);
+        unset($this->messagePayloads[$jobId]);
+
+        return true;
     }
 
     private function declare(

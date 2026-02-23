@@ -15,14 +15,20 @@ use PhpAmqpLib\Wire\AMQPTable;
 
 function createMockChannel(
     ?AMQPMessage $basicGetReturn = null,
+    int $queueMessageCount = 0,
+    int $queuePurgeCount = 0,
+    bool $passiveDeclareThrows = false,
 ): AMQPChannel {
-    return new class ($basicGetReturn) extends AMQPChannel
+    return new class ($basicGetReturn, $queueMessageCount, $queuePurgeCount, $passiveDeclareThrows) extends AMQPChannel
     {
         /** @var array<int, array<string, mixed>> */
         public array $calls = [];
 
         public function __construct(
             private ?AMQPMessage $basicGetReturn = null,
+            private int $queueMessageCount = 0,
+            private int $queuePurgeCount = 0,
+            private bool $passiveDeclareThrows = false,
         ) {}
 
         public function exchange_declare(
@@ -57,13 +63,19 @@ function createMockChannel(
             $arguments = [],
             $ticket = null,
         ): ?array {
+            if ($passive && $this->passiveDeclareThrows) {
+                throw new RuntimeException('NOT_FOUND - no queue');
+            }
+
             $this->calls[] = [
                 'method' => 'queue_declare',
                 'queue' => $queue,
+                'passive' => $passive,
                 'durable' => $durable,
+                'arguments' => $arguments,
             ];
 
-            return null;
+            return [$queue, $this->queueMessageCount, 0];
         }
 
         public function queue_bind(
@@ -121,6 +133,32 @@ function createMockChannel(
                 'method' => 'basic_ack',
                 'delivery_tag' => $delivery_tag,
             ];
+        }
+
+        public function basic_nack(
+            $delivery_tag,
+            $multiple = false,
+            $requeue = false,
+        ): void {
+            $this->calls[] = [
+                'method' => 'basic_nack',
+                'delivery_tag' => $delivery_tag,
+                'multiple' => $multiple,
+                'requeue' => $requeue,
+            ];
+        }
+
+        public function queue_purge(
+            $queue = '',
+            $nowait = false,
+            $ticket = null,
+        ): ?int {
+            $this->calls[] = [
+                'method' => 'queue_purge',
+                'queue' => $queue,
+            ];
+
+            return $this->queuePurgeCount;
         }
     };
 }
@@ -467,4 +505,291 @@ test('it uses configured exchange type for declaration', function (): void {
         ->and($exchangeDeclareCalls[0]['type'])->toBe('fanout')
         ->and($exchangeDeclareCalls[0]['durable'])->toBeFalse()
         ->and($exchangeDeclareCalls[0]['auto_delete'])->toBeTrue();
+});
+
+test('it queues delayed job with TTL expiration header', function (): void {
+    $channel = createMockChannel();
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $job = new TestJob('delayed test');
+
+    $queue->later(30, $job);
+
+    $publishCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_publish',
+    ));
+
+    expect($publishCalls)->toHaveCount(1);
+
+    /** @var AMQPMessage $msg */
+    $msg = $publishCalls[0]['msg'];
+
+    // TTL should be delay in milliseconds as string
+    expect($msg->get('expiration'))->toBe('30000')
+        ->and($msg->get('delivery_mode'))->toBe(AMQPMessage::DELIVERY_MODE_PERSISTENT);
+
+    // Verify the body is the serialized job
+    $unserialized = unserialize($msg->getBody());
+    expect($unserialized)->toBeInstanceOf(TestJob::class)
+        ->and($unserialized->message)->toBe('delayed test');
+});
+
+test('it declares delay queue with dead letter exchange configuration', function (): void {
+    $channel = createMockChannel();
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $job = new TestJob('dlx test');
+
+    $queue->later(60, $job);
+
+    // Find the delay queue declaration (not the main queue declaration)
+    $queueDeclareCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'queue_declare' && $call['queue'] === 'default_delay',
+    ));
+
+    expect($queueDeclareCalls)->toHaveCount(1)
+        ->and($queueDeclareCalls[0]['durable'])->toBeTrue();
+
+    /** @var AMQPTable $arguments */
+    $arguments = $queueDeclareCalls[0]['arguments'];
+    $nativeData = $arguments->getNativeData();
+
+    expect($nativeData)->toHaveKey('x-dead-letter-exchange')
+        ->and($nativeData['x-dead-letter-exchange'])->toBe('test-exchange')
+        ->and($nativeData)->toHaveKey('x-dead-letter-routing-key')
+        ->and($nativeData['x-dead-letter-routing-key'])->toBe('default');
+
+    // Verify message was published to delay queue, not the main exchange
+    $publishCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_publish',
+    ));
+
+    expect($publishCalls)->toHaveCount(1)
+        ->and($publishCalls[0]['exchange'])->toBe('')
+        ->and($publishCalls[0]['routing_key'])->toBe('default_delay');
+});
+
+test('it returns job ID for delayed job', function (): void {
+    $channel = createMockChannel();
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $job = new TestJob('id delayed test');
+
+    $id = $queue->later(10, $job);
+
+    expect($id)->toBeString()
+        ->and($id)->toMatch('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/')
+        ->and($job->id)->toBe($id);
+
+    // Verify the message header also has the job ID
+    $publishCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_publish',
+    ));
+
+    /** @var AMQPMessage $msg */
+    $msg = $publishCalls[0]['msg'];
+    $headers = $msg->get('application_headers')->getNativeData();
+
+    expect($headers['job_id'])->toBe($id);
+});
+
+test('it releases job back to queue immediately when no delay', function (): void {
+    $job = new TestJob('release test');
+    $job->setId('release-job-id');
+    $serialized = $job->serialize();
+
+    $amqpMessage = new AMQPMessage(
+        $serialized,
+        ['application_headers' => new AMQPTable(['job_id' => 'release-job-id'])],
+    );
+    $amqpMessage->setDeliveryTag(55);
+
+    $channel = createMockChannel(basicGetReturn: $amqpMessage);
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue->pop();
+
+    $result = $queue->release('release-job-id');
+
+    expect($result)->toBeTrue();
+
+    $nackCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_nack',
+    ));
+
+    expect($nackCalls)->toHaveCount(1)
+        ->and($nackCalls[0]['delivery_tag'])->toBe(55)
+        ->and($nackCalls[0]['requeue'])->toBeTrue();
+});
+
+test('it releases job with delay via delay queue mechanism', function (): void {
+    $job = new TestJob('delay release test');
+    $job->setId('delay-release-id');
+    $serialized = $job->serialize();
+
+    $amqpMessage = new AMQPMessage(
+        $serialized,
+        ['application_headers' => new AMQPTable(['job_id' => 'delay-release-id'])],
+    );
+    $amqpMessage->setDeliveryTag(66);
+
+    $channel = createMockChannel(basicGetReturn: $amqpMessage);
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue->pop();
+
+    $result = $queue->release('delay-release-id', 45);
+
+    expect($result)->toBeTrue();
+
+    // Should nack without requeue
+    $nackCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_nack',
+    ));
+
+    expect($nackCalls)->toHaveCount(1)
+        ->and($nackCalls[0]['delivery_tag'])->toBe(66)
+        ->and($nackCalls[0]['requeue'])->toBeFalse();
+
+    // Should declare the delay queue with DLX config
+    $delayQueueCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'queue_declare' && $call['queue'] === 'default_delay',
+    ));
+
+    expect($delayQueueCalls)->toHaveCount(1);
+
+    /** @var AMQPTable $arguments */
+    $arguments = $delayQueueCalls[0]['arguments'];
+    $nativeData = $arguments->getNativeData();
+
+    expect($nativeData['x-dead-letter-exchange'])->toBe('test-exchange')
+        ->and($nativeData['x-dead-letter-routing-key'])->toBe('default');
+
+    // Should publish to delay queue with TTL
+    $publishCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_publish' && $call['routing_key'] === 'default_delay',
+    ));
+
+    expect($publishCalls)->toHaveCount(1);
+
+    /** @var AMQPMessage $msg */
+    $msg = $publishCalls[0]['msg'];
+
+    expect($msg->get('expiration'))->toBe('45000')
+        ->and($msg->get('delivery_mode'))->toBe(AMQPMessage::DELIVERY_MODE_PERSISTENT);
+
+    $headers = $msg->get('application_headers')->getNativeData();
+    expect($headers['job_id'])->toBe('delay-release-id');
+});
+
+test('it returns false when releasing unknown job ID', function (): void {
+    $channel = createMockChannel();
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $result = $queue->release('nonexistent-job-id');
+
+    expect($result)->toBeFalse();
+
+    $nackCalls = array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_nack',
+    );
+
+    expect($nackCalls)->toHaveCount(0);
+});
+
+test('it returns queue size via passive declare', function (): void {
+    $channel = createMockChannel(queueMessageCount: 7);
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $size = $queue->size();
+
+    expect($size)->toBe(7);
+
+    $passiveCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'queue_declare' && $call['passive'] === true,
+    ));
+
+    expect($passiveCalls)->toHaveCount(1)
+        ->and($passiveCalls[0]['queue'])->toBe('default');
+});
+
+test('it returns zero size for empty or non-existent queue', function (): void {
+    $channel = createMockChannel(passiveDeclareThrows: true);
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $size = $queue->size('nonexistent-queue');
+
+    expect($size)->toBe(0);
+});
+
+test('it clears all messages from queue via purge', function (): void {
+    $channel = createMockChannel(queuePurgeCount: 15);
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $count = $queue->clear();
+
+    expect($count)->toBe(15);
+
+    $purgeCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'queue_purge',
+    ));
+
+    expect($purgeCalls)->toHaveCount(1)
+        ->and($purgeCalls[0]['queue'])->toBe('default');
 });
