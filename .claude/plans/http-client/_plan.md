@@ -4,7 +4,7 @@
 2026-02-23
 
 ## Status
-ready
+completed
 
 ## Objective
 Build `marko/http` (interface) and `marko/http-guzzle` (driver) — HTTP client for making outgoing requests.
@@ -24,9 +24,9 @@ Build `marko/http` (interface) and `marko/http-guzzle` (driver) — HTTP client 
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | Interface package (marko/http) | - | pending |
-| 002 | Guzzle package scaffolding and module tests | - | pending |
-| 003 | GuzzleHttpClient implementation and tests | 001, 002 | pending |
+| 001 | Interface package (marko/http) | - | completed |
+| 002 | Guzzle package scaffolding and module tests | - | completed |
+| 003 | GuzzleHttpClient implementation and tests | 001, 002 | completed |
 
 ## Architecture Notes
 - HttpClientInterface: request(method, url, options): HttpResponse

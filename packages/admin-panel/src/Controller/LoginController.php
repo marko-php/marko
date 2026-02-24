@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Marko\AdminPanel\Controller;
 
 use Marko\Admin\Config\AdminConfigInterface;
-use Marko\Auth\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;

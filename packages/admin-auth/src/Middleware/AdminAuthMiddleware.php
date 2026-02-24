@@ -9,7 +9,7 @@ use Marko\Admin\Config\AdminConfigInterface;
 use Marko\AdminAuth\Attributes\RequiresPermission;
 use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
 use Marko\AdminAuth\Entity\AdminUserInterface;
-use Marko\Auth\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;

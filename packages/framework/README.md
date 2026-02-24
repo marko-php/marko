@@ -66,12 +66,12 @@ composer require marko/session marko/session-file
 ### Authentication
 
 ```bash
-composer require marko/auth
+composer require marko/authentication
 ```
 
 | Package      | Description                      |
 |--------------|----------------------------------|
-| `marko/auth` | Authentication abstraction layer |
+| `marko/authentication` | Authentication abstraction layer |
 
 ### Logging
 
@@ -116,7 +116,7 @@ composer require marko/framework \
     marko/database marko/database-pgsql \
     marko/cache marko/cache-file \
     marko/session marko/session-file \
-    marko/auth \
+    marko/authentication \
     marko/log marko/log-file
 ```
 

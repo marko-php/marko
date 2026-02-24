@@ -224,7 +224,7 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 
 | Package | Type | Description |
 |---------|------|-------------|
-| `marko/auth` | Feature | Authentication services |
+| `marko/authentication` | Feature | Authentication services |
 | `marko/hashing` | Feature | Password hashing |
 | `marko/validation` | Feature | Input validation |
 | `marko/blog` | Module | Blog functionality |

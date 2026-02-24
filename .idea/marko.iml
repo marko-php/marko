@@ -20,8 +20,8 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/database-pgsql/tests" isTestSource="true" packagePrefix="Marko\Database\PgSql\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/database/src" isTestSource="false" packagePrefix="Marko\Database\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/database/tests" isTestSource="true" packagePrefix="Marko\Database\Tests\" />
-      <sourceFolder url="file://$MODULE_DIR$/packages/auth/src" isTestSource="false" packagePrefix="Marko\Auth\" />
-      <sourceFolder url="file://$MODULE_DIR$/packages/auth/tests" isTestSource="true" packagePrefix="Marko\Auth\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/authentication/src" isTestSource="false" packagePrefix="Marko\Authentication\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/authentication/tests" isTestSource="true" packagePrefix="Marko\Authentication\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/cache-file/src" isTestSource="false" packagePrefix="Marko\Cache\File\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/cache-file/tests" isTestSource="true" packagePrefix="Marko\Cache\File\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/cache/src" isTestSource="false" packagePrefix="Marko\Cache\" />

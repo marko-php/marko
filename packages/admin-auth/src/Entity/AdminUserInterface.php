@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AdminAuth\Entity;
 
-use Marko\Auth\AuthenticatableInterface;
+use Marko\Authentication\AuthenticatableInterface;
 
 interface AdminUserInterface extends AuthenticatableInterface
 {

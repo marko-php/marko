@@ -9,6 +9,7 @@
         "ext-fileinfo": "*"
     },
     "require-dev": {
+        "aws/aws-sdk-php": "^3.0",
         "friendsofphp/php-cs-fixer": "^3.92",
         "guzzlehttp/guzzle": "^7.0",
         "latte/latte": "^3.0",
@@ -43,6 +44,7 @@
             "Marko\\ErrorsSimple\\": "packages/errors-simple/src/",
             "Marko\\Filesystem\\": "packages/filesystem/src/",
             "Marko\\Filesystem\\Local\\": "packages/filesystem-local/src/",
+            "Marko\\Filesystem\\S3\\": "packages/filesystem-s3/src/",
             "Marko\\Hashing\\": "packages/hashing/src/",
             "Marko\\Http\\": "packages/http/src/",
             "Marko\\Http\\Guzzle\\": "packages/http-guzzle/src/",
@@ -56,7 +58,7 @@
             "Marko\\Session\\Database\\": "packages/session-database/src/",
             "Marko\\Session\\File\\": "packages/session-file/src/",
             "Marko\\Validation\\": "packages/validation/src/",
-            "Marko\\Auth\\": "packages/auth/src/",
+            "Marko\\Authentication\\": "packages/authentication/src/",
             "Marko\\Queue\\": "packages/queue/src/",
             "Marko\\Queue\\Sync\\": "packages/queue-sync/src/",
             "Marko\\Queue\\Database\\": "packages/queue-database/src/",
@@ -68,7 +70,14 @@
             "Marko\\Admin\\": "packages/admin/src/",
             "Marko\\AdminAuth\\": "packages/admin-auth/src/",
             "Marko\\AdminApi\\": "packages/admin-api/src/",
-            "Marko\\AdminPanel\\": "packages/admin-panel/src/"
+            "Marko\\AdminPanel\\": "packages/admin-panel/src/",
+            "Marko\\Authorization\\": "packages/authorization/src/",
+            "Marko\\Translation\\": "packages/translation/src/",
+            "Marko\\Translation\\File\\": "packages/translation-file/src/",
+            "Marko\\Notification\\": "packages/notification/src/",
+            "Marko\\Notification\\Database\\": "packages/notification-database/src/",
+            "Marko\\Pagination\\": "packages/pagination/src/",
+            "Marko\\Security\\": "packages/security/src/"
         }
     },
     "autoload-dev": {
@@ -77,6 +86,7 @@
             "Marko\\AdminAuth\\Tests\\": "packages/admin-auth/tests/",
             "Marko\\AdminApi\\Tests\\": "packages/admin-api/tests/",
             "Marko\\AdminPanel\\Tests\\": "packages/admin-panel/tests/",
+            "Marko\\Authorization\\Tests\\": "packages/authorization/tests/",
             "Marko\\Blog\\Tests\\": "packages/blog/tests/",
             "Marko\\Cache\\Tests\\": "packages/cache/tests/",
             "Marko\\Cache\\File\\Tests\\": "packages/cache-file/tests/",
@@ -96,6 +106,7 @@
             "Marko\\ErrorsSimple\\Tests\\": "packages/errors-simple/tests/",
             "Marko\\Filesystem\\Tests\\": "packages/filesystem/tests/",
             "Marko\\Filesystem\\Local\\Tests\\": "packages/filesystem-local/tests/",
+            "Marko\\Filesystem\\S3\\Tests\\": "packages/filesystem-s3/tests/",
             "Marko\\Framework\\Tests\\": "packages/framework/tests/",
             "Marko\\Hashing\\Tests\\": "packages/hashing/tests/",
             "Marko\\Http\\Tests\\": "packages/http/tests/",
@@ -110,7 +121,7 @@
             "Marko\\Session\\Database\\Tests\\": "packages/session-database/tests/",
             "Marko\\Session\\File\\Tests\\": "packages/session-file/tests/",
             "Marko\\Validation\\Tests\\": "packages/validation/tests/",
-            "Marko\\Auth\\Tests\\": "packages/auth/tests/",
+            "Marko\\Authentication\\Tests\\": "packages/authentication/tests/",
             "Marko\\Queue\\Tests\\": "packages/queue/tests/",
             "Marko\\Queue\\Sync\\Tests\\": "packages/queue-sync/tests/",
             "Marko\\Queue\\Database\\Tests\\": "packages/queue-database/tests/",
@@ -118,7 +129,13 @@
             "Marko\\RateLimiting\\Tests\\": "packages/rate-limiting/tests/",
             "Marko\\Scheduler\\Tests\\": "packages/scheduler/tests/",
             "Marko\\View\\Tests\\": "packages/view/tests/",
-            "Marko\\View\\Latte\\Tests\\": "packages/view-latte/tests/"
+            "Marko\\Translation\\Tests\\": "packages/translation/tests/",
+            "Marko\\Translation\\File\\Tests\\": "packages/translation-file/tests/",
+            "Marko\\View\\Latte\\Tests\\": "packages/view-latte/tests/",
+            "Marko\\Notification\\Tests\\": "packages/notification/tests/",
+            "Marko\\Notification\\Database\\Tests\\": "packages/notification-database/tests/",
+            "Marko\\Pagination\\Tests\\": "packages/pagination/tests/",
+            "Marko\\Security\\Tests\\": "packages/security/tests/"
         }
     },
     "scripts": {

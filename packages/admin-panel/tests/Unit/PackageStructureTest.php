@@ -17,7 +17,7 @@ it('has valid composer.json with admin, admin-auth, view, auth, session, routing
         ->and($composer['require']['marko/admin'])->toBe('@dev')
         ->and($composer['require']['marko/admin-auth'])->toBe('@dev')
         ->and($composer['require']['marko/view'])->toBe('@dev')
-        ->and($composer['require']['marko/auth'])->toBe('@dev')
+        ->and($composer['require']['marko/authentication'])->toBe('@dev')
         ->and($composer['require']['marko/session'])->toBe('@dev')
         ->and($composer['require']['marko/routing'])->toBe('@dev')
         ->and($composer['require-dev']['pestphp/pest'])->toBe('^4.0')

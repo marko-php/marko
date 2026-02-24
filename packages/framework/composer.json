@@ -22,7 +22,7 @@
         "marko/cache-file": "File-based cache driver",
         "marko/session": "Session abstraction layer",
         "marko/session-file": "File-based session driver",
-        "marko/auth": "Authentication abstraction layer",
+        "marko/authentication": "Authentication abstraction layer",
         "marko/log": "Logging abstraction layer",
         "marko/log-file": "File-based logging driver",
         "marko/filesystem": "Filesystem abstraction layer",

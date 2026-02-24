@@ -6,7 +6,7 @@ namespace Marko\AdminPanel\Controller;
 
 use Marko\Admin\Contracts\AdminSectionRegistryInterface;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
-use Marko\Auth\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Http\Request;

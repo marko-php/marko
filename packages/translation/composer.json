@@ -1,0 +1,44 @@
+{
+    "name": "marko/translation",
+    "description": "Translation interfaces and infrastructure for Marko Framework",
+    "license": "MIT",
+    "type": "marko-module",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../core"
+        },
+        {
+            "type": "path",
+            "url": "../config"
+        }
+    ],
+    "require": {
+        "php": "^8.5",
+        "marko/core": "@dev",
+        "marko/config": "@dev"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Translation\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Translation\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

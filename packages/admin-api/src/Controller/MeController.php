@@ -8,7 +8,7 @@ use JsonException;
 use Marko\AdminApi\ApiResponse;
 use Marko\AdminAuth\Entity\AdminUserInterface;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
-use Marko\Auth\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Http\Response;

@@ -4,7 +4,7 @@
 2026-02-23
 
 ## Status
-ready
+completed
 
 ## Objective
 Build `marko/scheduler` — task scheduling system for running recurring jobs via cron-like expressions.
@@ -25,9 +25,9 @@ Build `marko/scheduler` — task scheduling system for running recurring jobs vi
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | Package scaffolding and ScheduledTask value object | - | pending |
-| 002 | Schedule implementation with frequency methods | 001 | pending |
-| 003 | RunScheduleCommand and due task detection | 002 | pending |
+| 001 | Package scaffolding and ScheduledTask value object | - | completed |
+| 002 | Schedule implementation with frequency methods | 001 | completed |
+| 003 | RunScheduleCommand and due task detection | 002 | completed |
 
 ## Architecture Notes
 - Schedule holds array of ScheduledTask instances

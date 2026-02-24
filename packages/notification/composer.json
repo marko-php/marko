@@ -1,0 +1,39 @@
+{
+    "name": "marko/notification",
+    "description": "Notification system interfaces and channels for the Marko Framework",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "@dev",
+        "marko/config": "@dev"
+    },
+    "suggest": {
+        "marko/mail": "Required for mail channel notifications",
+        "marko/database": "Required for database channel notifications",
+        "marko/queue": "Required for queued notification sending"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Notification\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Notification\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

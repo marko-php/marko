@@ -4,7 +4,7 @@
 2026-02-23
 
 ## Status
-ready
+completed
 
 ## Objective
 Build `marko/rate-limiting` — rate limiter using cache backend with middleware integration.
@@ -24,9 +24,9 @@ Build `marko/rate-limiting` — rate limiter using cache backend with middleware
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | Package scaffolding, contracts, and value objects | - | pending |
-| 002 | RateLimiter implementation and tests | 001 | pending |
-| 003 | RateLimitMiddleware implementation and tests | 002 | pending |
+| 001 | Package scaffolding, contracts, and value objects | - | completed |
+| 002 | RateLimiter implementation and tests | 001 | completed |
+| 003 | RateLimitMiddleware implementation and tests | 002 | completed |
 
 ## Architecture Notes
 - RateLimiter::attempt(key, maxAttempts, decaySeconds): RateLimitResult

@@ -7,9 +7,9 @@ namespace Marko\AdminAuth;
 use Marko\AdminAuth\Entity\AdminUser;
 use Marko\AdminAuth\Repository\AdminUserRepositoryInterface;
 use Marko\AdminAuth\Repository\RoleRepositoryInterface;
-use Marko\Auth\AuthenticatableInterface;
-use Marko\Auth\Contracts\PasswordHasherInterface;
-use Marko\Auth\Contracts\UserProviderInterface;
+use Marko\Authentication\AuthenticatableInterface;
+use Marko\Authentication\Contracts\PasswordHasherInterface;
+use Marko\Authentication\Contracts\UserProviderInterface;
 
 readonly class AdminUserProvider implements UserProviderInterface
 {

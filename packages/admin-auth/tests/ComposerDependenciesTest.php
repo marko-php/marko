@@ -14,8 +14,8 @@ describe('AdminAuth Package Composer Dependencies', function (): void {
             ->and($composer['name'])->toBe('marko/admin-auth')
             ->and($composer['require'])->toHaveKey('marko/admin')
             ->and($composer['require']['marko/admin'])->toBe('@dev')
-            ->and($composer['require'])->toHaveKey('marko/auth')
-            ->and($composer['require']['marko/auth'])->toBe('@dev')
+            ->and($composer['require'])->toHaveKey('marko/authentication')
+            ->and($composer['require']['marko/authentication'])->toBe('@dev')
             ->and($composer['require'])->toHaveKey('marko/database')
             ->and($composer['require']['marko/database'])->toBe('@dev')
             ->and($composer['require'])->toHaveKey('marko/core')
@@ -31,7 +31,7 @@ describe('AdminAuth Package Composer Dependencies', function (): void {
 
         expect($composer['repositories'])->toBeArray();
 
-        $expectedRepos = ['../core', '../admin', '../auth', '../database', '../config'];
+        $expectedRepos = ['../core', '../admin', '../authentication', '../database', '../config'];
         $foundRepos = [];
 
         foreach ($composer['repositories'] as $repo) {

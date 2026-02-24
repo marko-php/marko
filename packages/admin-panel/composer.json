@@ -8,7 +8,7 @@
         {"type": "path", "url": "../admin"},
         {"type": "path", "url": "../admin-auth"},
         {"type": "path", "url": "../view"},
-        {"type": "path", "url": "../auth"},
+        {"type": "path", "url": "../authentication"},
         {"type": "path", "url": "../session"},
         {"type": "path", "url": "../routing"},
         {"type": "path", "url": "../config"}
@@ -19,7 +19,7 @@
         "marko/admin": "@dev",
         "marko/admin-auth": "@dev",
         "marko/view": "@dev",
-        "marko/auth": "@dev",
+        "marko/authentication": "@dev",
         "marko/session": "@dev",
         "marko/routing": "@dev",
         "marko/config": "@dev"

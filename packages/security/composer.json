@@ -1,0 +1,24 @@
+{
+    "name": "marko/security",
+    "description": "Security middleware for Marko Framework -- CSRF protection, CORS handling, and security headers",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "@dev",
+        "marko/config": "@dev",
+        "marko/routing": "@dev",
+        "marko/session": "@dev",
+        "marko/encryption": "@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Security\\": "src/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

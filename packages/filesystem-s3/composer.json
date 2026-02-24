@@ -1,0 +1,26 @@
+{
+    "name": "marko/filesystem-s3",
+    "description": "S3 filesystem driver for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "marko/filesystem": "@dev",
+        "aws/aws-sdk-php": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Filesystem\\S3\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Filesystem\\S3\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

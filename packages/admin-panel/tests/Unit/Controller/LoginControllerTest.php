@@ -6,9 +6,9 @@ namespace Marko\AdminPanel\Tests\Unit\Controller\Login;
 
 use Marko\Admin\Config\AdminConfigInterface;
 use Marko\AdminPanel\Controller\LoginController;
-use Marko\Auth\AuthenticatableInterface;
-use Marko\Auth\Contracts\GuardInterface;
-use Marko\Auth\Contracts\UserProviderInterface;
+use Marko\Authentication\AuthenticatableInterface;
+use Marko\Authentication\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;

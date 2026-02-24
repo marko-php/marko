@@ -8,7 +8,7 @@
         {"type": "path", "url": "../admin"},
         {"type": "path", "url": "../admin-auth"},
         {"type": "path", "url": "../routing"},
-        {"type": "path", "url": "../auth"},
+        {"type": "path", "url": "../authentication"},
         {"type": "path", "url": "../config"}
     ],
     "require": {
@@ -17,7 +17,7 @@
         "marko/admin": "@dev",
         "marko/admin-auth": "@dev",
         "marko/routing": "@dev",
-        "marko/auth": "@dev",
+        "marko/authentication": "@dev",
         "marko/config": "@dev"
     },
     "require-dev": {

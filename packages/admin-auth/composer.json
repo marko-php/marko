@@ -6,7 +6,7 @@
     "repositories": [
         {"type": "path", "url": "../core"},
         {"type": "path", "url": "../admin"},
-        {"type": "path", "url": "../auth"},
+        {"type": "path", "url": "../authentication"},
         {"type": "path", "url": "../database"},
         {"type": "path", "url": "../config"}
     ],
@@ -14,7 +14,7 @@
         "php": "^8.5",
         "marko/core": "@dev",
         "marko/admin": "@dev",
-        "marko/auth": "@dev",
+        "marko/authentication": "@dev",
         "marko/database": "@dev",
         "marko/config": "@dev"
     },

@@ -4,7 +4,7 @@
 2026-02-23
 
 ## Status
-ready
+completed
 
 ## Objective
 Build `marko/encryption` (interface) and `marko/encryption-openssl` (driver) — encryption services using the interface/driver split pattern.
@@ -25,9 +25,9 @@ Build `marko/encryption` (interface) and `marko/encryption-openssl` (driver) —
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | Interface package (marko/encryption) | - | pending |
-| 002 | OpenSSL package scaffolding and module tests | - | pending |
-| 003 | OpenSslEncryptor implementation and tests | 001, 002 | pending |
+| 001 | Interface package (marko/encryption) | - | completed |
+| 002 | OpenSSL package scaffolding and module tests | - | completed |
+| 003 | OpenSslEncryptor implementation and tests | 001, 002 | completed |
 
 ## Architecture Notes
 - EncryptorInterface: encrypt(string): string, decrypt(string): string

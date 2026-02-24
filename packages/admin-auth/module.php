@@ -11,8 +11,8 @@ use Marko\AdminAuth\Repository\PermissionRepository;
 use Marko\AdminAuth\Repository\PermissionRepositoryInterface;
 use Marko\AdminAuth\Repository\RoleRepository;
 use Marko\AdminAuth\Repository\RoleRepositoryInterface;
-use Marko\Auth\Contracts\PasswordHasherInterface;
-use Marko\Auth\Contracts\UserProviderInterface;
+use Marko\Authentication\Contracts\PasswordHasherInterface;
+use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Core\Container\ContainerInterface;
 
 return [

@@ -4,7 +4,7 @@
 2026-02-23
 
 ## Status
-ready
+completed
 
 ## Objective
 Build `marko/session-database` — a database-backed session handler implementing SessionHandlerInterface, following the session-file driver pattern.
@@ -23,8 +23,8 @@ Build `marko/session-database` — a database-backed session handler implementin
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | Package scaffolding and module tests | - | pending |
-| 002 | DatabaseSessionHandler implementation and tests | 001 | pending |
+| 001 | Package scaffolding and module tests | - | completed |
+| 002 | DatabaseSessionHandler implementation and tests | 001 | completed |
 
 ## Architecture Notes
 - Uses ConnectionInterface from marko/database for queries

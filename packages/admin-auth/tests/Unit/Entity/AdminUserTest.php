@@ -7,7 +7,7 @@ namespace Marko\AdminAuth\Tests\Unit\Entity;
 use Marko\AdminAuth\Entity\AdminUser;
 use Marko\AdminAuth\Entity\AdminUserInterface;
 use Marko\AdminAuth\Entity\Role;
-use Marko\Auth\AuthenticatableInterface;
+use Marko\Authentication\AuthenticatableInterface;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
