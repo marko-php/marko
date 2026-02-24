@@ -13,6 +13,7 @@
         "latte/latte": "^3.0",
         "pestphp/pest": "^4.3",
         "php-amqplib/php-amqplib": "^3.0",
+        "predis/predis": "^2.0",
         "rector/rector": "^2.3",
         "slevomat/coding-standard": "^8.26",
         "squizlabs/php_codesniffer": "^4.0"
@@ -26,6 +27,7 @@
             "Marko\\Cache\\": "packages/cache/src/",
             "Marko\\Cache\\File\\": "packages/cache-file/src/",
             "Marko\\Cache\\Memory\\": "packages/cache-array/src/",
+            "Marko\\Cache\\Redis\\": "packages/cache-redis/src/",
             "Marko\\Cli\\": "packages/cli/src/",
             "Marko\\Config\\": "packages/config/src/",
             "Marko\\Core\\": "packages/core/src/",
@@ -71,6 +73,7 @@
             "Marko\\Cache\\Tests\\": "packages/cache/tests/",
             "Marko\\Cache\\File\\Tests\\": "packages/cache-file/tests/",
             "Marko\\Cache\\Memory\\Tests\\": "packages/cache-array/tests/",
+            "Marko\\Cache\\Redis\\Tests\\": "packages/cache-redis/tests/",
             "Marko\\Cli\\Tests\\": "packages/cli/tests/",
             "Marko\\Config\\Tests\\": "packages/config/tests/",
             "Marko\\Core\\Tests\\": "packages/core/tests/",
