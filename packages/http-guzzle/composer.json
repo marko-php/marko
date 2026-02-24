@@ -1,0 +1,35 @@
+{
+    "name": "marko/http-guzzle",
+    "description": "Guzzle HTTP client driver for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "guzzlehttp/guzzle": "^7.0",
+        "marko/core": "@dev",
+        "marko/http": "@dev"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Http\\Guzzle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Http\\Guzzle\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
