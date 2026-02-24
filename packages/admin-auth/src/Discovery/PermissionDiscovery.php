@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace Marko\AdminAuth\Discovery;
 
 use Marko\Admin\Discovery\AdminSectionDiscovery;
+use Marko\Admin\Exceptions\AdminException;
 use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
+use ReflectionException;
 
-class PermissionDiscovery
+readonly class PermissionDiscovery
 {
     public function __construct(
-        private readonly PermissionRegistryInterface $registry,
-        private readonly AdminSectionDiscovery $sectionDiscovery,
+        private PermissionRegistryInterface $registry,
+        private AdminSectionDiscovery $sectionDiscovery,
     ) {}
 
     /**
@@ -22,16 +24,19 @@ class PermissionDiscovery
     public function discoverFromClass(
         string $className,
     ): void {
-        $definition = $this->sectionDiscovery->parseAdminSectionClass($className);
+        try {
+            $definition = $this->sectionDiscovery->parseAdminSectionClass($className);
 
-        foreach ($definition->permissions as $permission) {
-            $group = $this->deriveGroup($permission->id);
+            foreach ($definition->permissions as $permission) {
+                $group = $this->deriveGroup($permission->id);
 
-            $this->registry->register(
-                key: $permission->id,
-                label: $permission->label,
-                group: $group,
-            );
+                $this->registry->register(
+                    key: $permission->id,
+                    label: $permission->label,
+                    group: $group,
+                );
+            }
+        } catch (AdminException|ReflectionException) {
         }
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AdminAuth\Entity;
 
+use DateMalformedStringException;
 use DateTimeImmutable;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Table;
@@ -47,6 +48,9 @@ class Permission extends Entity implements PermissionInterface
         return $this->group;
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function getCreatedAt(): ?DateTimeImmutable
     {
         if ($this->createdAt === null) {

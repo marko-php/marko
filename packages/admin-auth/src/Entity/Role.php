@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AdminAuth\Entity;
 
+use DateMalformedStringException;
 use DateTimeImmutable;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Table;
@@ -58,6 +59,9 @@ class Role extends Entity implements RoleInterface
         return $this->isSuperAdmin === '1';
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function getCreatedAt(): ?DateTimeImmutable
     {
         if ($this->createdAt === null) {
@@ -67,6 +71,9 @@ class Role extends Entity implements RoleInterface
         return new DateTimeImmutable($this->createdAt);
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function getUpdatedAt(): ?DateTimeImmutable
     {
         if ($this->updatedAt === null) {

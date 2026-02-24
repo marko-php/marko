@@ -11,12 +11,12 @@ use Marko\Auth\AuthenticatableInterface;
 use Marko\Auth\Contracts\PasswordHasherInterface;
 use Marko\Auth\Contracts\UserProviderInterface;
 
-class AdminUserProvider implements UserProviderInterface
+readonly class AdminUserProvider implements UserProviderInterface
 {
     public function __construct(
-        private readonly AdminUserRepositoryInterface $userRepository,
-        private readonly RoleRepositoryInterface $roleRepository,
-        private readonly PasswordHasherInterface $passwordHasher,
+        private AdminUserRepositoryInterface $userRepository,
+        private RoleRepositoryInterface $roleRepository,
+        private PasswordHasherInterface $passwordHasher,
     ) {}
 
     public function retrieveById(

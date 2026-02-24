@@ -42,8 +42,36 @@ PSR-12 Extended Coding Style with additional Marko-specific rules.
   - `clone($obj, ['prop' => value])` for readonly objects
   - `#[\NoDiscard]` on functions where return value should be used
   - `array_first()` and `array_last()` instead of `reset()`/`end()`
+  - `array_any()` and `array_all()` instead of `foreach` + early return patterns
   - Final properties via constructor promotion
   - Closures in constant expressions for attributes
+
+### Prefer `array_any()` / `array_all()` Over Foreach Loops
+Replace `foreach` + conditional return patterns with PHP 8.5's `array_any()` and `array_all()`:
+
+```php
+// CORRECT - array_any()
+return array_any($this->roles, fn ($role) => $role->isSuperAdmin());
+
+// WRONG - verbose foreach loop
+foreach ($this->roles as $role) {
+    if ($role->isSuperAdmin()) {
+        return true;
+    }
+}
+return false;
+
+// CORRECT - array_all()
+return array_all($items, fn ($item) => $item->isValid());
+
+// WRONG - verbose foreach loop
+foreach ($items as $item) {
+    if (!$item->isValid()) {
+        return false;
+    }
+}
+return true;
+```
 
 ## Naming Conventions
 
@@ -164,7 +192,7 @@ public function __construct(string $name, array $dependencies)
 }
 ```
 
-### 4. Readonly (When Appropriate)
+### 5. Readonly (When Appropriate)
 Use `readonly` when immutability is the design intent - not as a blanket rule.
 
 **Good use cases:**
@@ -201,7 +229,7 @@ class OrderId
 }
 ```
 
-### 5. Asymmetric Visibility (PHP 8.4+)
+### 6. Asymmetric Visibility (PHP 8.4+)
 Use asymmetric visibility for properties that should be publicly readable but privately writable. This replaces getter methods and is cleaner than property hooks for simple cases.
 
 ```php
@@ -274,7 +302,7 @@ class Message
 - Property hooks with only `get` are implicitly read-only and block indirect modifications (like `$this->array[] = ...`)
 - Use property hooks only when you need computed values or validation logic
 
-### 6. Avoid Final (Blocks Extensibility)
+### 7. Avoid Final (Blocks Extensibility)
 `final` prevents Preferences from extending classes. Avoid it.
 
 ```php
@@ -290,7 +318,7 @@ class ProductService { }
 - Security-critical methods that must not be overridden
 - Always document WHY something is final
 
-### 7. Type Declarations Required
+### 8. Type Declarations Required
 All parameters, return types, and properties must have type declarations:
 ```php
 public function resolve(string $abstract): object
@@ -299,7 +327,7 @@ public function resolve(string $abstract): object
 }
 ```
 
-### 8. Import Classes (No Inline Fully Qualified Names)
+### 9. Import Classes (No Inline Fully Qualified Names)
 Always import classes at the top of the file with `use` statements. Never use fully qualified class names with leading backslash in code.
 
 ```php
@@ -340,10 +368,25 @@ class MyClass
 - Alphabetize within each group
 - Use short class name everywhere after import
 
-### 9. No Magic Methods
+### 10. Don't Pass Default Values as Arguments
+Never explicitly pass a value that matches the parameter's default. It adds noise and obscures the arguments that actually matter.
+
+```php
+// CORRECT - only pass non-default values
+$user = createTestAdminUser();
+$user = createTestAdminUser(isActive: '0');
+$userRepo = createMockUserRepo(findReturn: $user);
+
+// WRONG - passing values that match defaults
+$user = createTestAdminUser(id: 1, email: 'admin@example.com', name: 'Admin');
+$userRepo = createMockUserRepo(findReturn: null, rolesReturn: []);
+$connection = createEventMockConnection(isNew: true);
+```
+
+### 11. No Magic Methods
 Avoid `__get`, `__set`, `__call`, `__callStatic`. Be explicit.
 
-### 10. No Traits
+### 12. No Traits
 Traits inject behavior implicitly - you can't see at a glance where a method comes from. Use explicit composition instead.
 
 ```php
@@ -388,7 +431,7 @@ $dbHelper->seedTable('users', $rows);
 
 This keeps dependencies explicit and makes code easier to understand and trace.
 
-### 11. String Interpolation (No Unnecessary Curly Braces)
+### 13. String Interpolation (No Unnecessary Curly Braces)
 When interpolating simple variables in double-quoted strings, do NOT use curly braces.
 **Enforced by:** PhpStorm `PhpUnnecessaryCurlyVarSyntaxInspection`
 
@@ -414,7 +457,7 @@ $message = "Order {$order->id} processed";
 $message = "Found {$count}items"; // Without braces: $countitems would be a different variable
 ```
 
-### 12. Use #[\NoDiscard] for Important Returns
+### 14. Use #[\NoDiscard] for Important Returns
 ```php
 #[\NoDiscard]
 public function validate(): ValidationResult
@@ -423,7 +466,7 @@ public function validate(): ValidationResult
 }
 ```
 
-### 13. Multiline Method Signatures (Always)
+### 15. Multiline Method Signatures (Always)
 **ALL method parameters MUST be on their own line with a trailing comma**, regardless of parameter count:
 
 ```php
@@ -479,7 +522,7 @@ usort(
 usort($sections, fn (AdminSectionInterface $a, AdminSectionInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder());
 ```
 
-### 14. Anonymous Class Braces (Next Line)
+### 16. Anonymous Class Braces (Next Line)
 Anonymous classes follow the same brace placement as regular classes - opening brace on the **next line**.
 **Enforced by:** php-cs-fixer `braces_position.anonymous_classes_opening_brace`
 

@@ -14,6 +14,7 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Repository\Repository;
 
 class AdminUserRepository extends Repository implements AdminUserRepositoryInterface
@@ -43,6 +44,7 @@ class AdminUserRepository extends Repository implements AdminUserRepositoryInter
      * Get all roles for a user.
      *
      * @return array<Role>
+     * @throws EntityException
      */
     public function getRolesForUser(
         int $userId,

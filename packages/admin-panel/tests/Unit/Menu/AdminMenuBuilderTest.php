@@ -29,7 +29,7 @@ class StubMenuSectionRegistry implements AdminSectionRegistryInterface
 
         usort(
             $sections,
-            fn (AdminSectionInterface $a, AdminSectionInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder()
+            fn (AdminSectionInterface $a, AdminSectionInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder(),
         );
 
         return $sections;
@@ -93,6 +93,16 @@ class StubMenuAdminUser implements AdminUserInterface
         private array $permissionKeys = [],
         private bool $isSuperAdmin = false,
     ) {}
+
+    public function getEmail(): string
+    {
+        return 'admin@example.com';
+    }
+
+    public function getName(): string
+    {
+        return 'Admin';
+    }
 
     public function getAuthIdentifier(): int|string
     {
@@ -168,13 +178,13 @@ it('builds menu from registered admin sections', function (): void {
                 id: 'products',
                 label: 'Products',
                 url: '/admin/catalog/products',
-                permission: 'catalog.products.view'
+                permission: 'catalog.products.view',
             ),
             new MenuItem(
                 id: 'categories',
                 label: 'Categories',
                 url: '/admin/catalog/categories',
-                permission: 'catalog.categories.view'
+                permission: 'catalog.categories.view',
             ),
         ],
     ));
@@ -219,7 +229,7 @@ it('sorts sections by sortOrder', function (): void {
                 id: 'general',
                 label: 'General',
                 url: '/admin/settings/general',
-                permission: 'settings.general.view'
+                permission: 'settings.general.view',
             ),
         ],
     ));
@@ -233,7 +243,7 @@ it('sorts sections by sortOrder', function (): void {
                 id: 'products',
                 label: 'Products',
                 url: '/admin/catalog/products',
-                permission: 'catalog.products.view'
+                permission: 'catalog.products.view',
             ),
         ],
     ));
@@ -276,21 +286,21 @@ it('sorts menu items within each section by sortOrder', function (): void {
                 label: 'Inventory',
                 url: '/admin/catalog/inventory',
                 sortOrder: 30,
-                permission: 'catalog.inventory.view'
+                permission: 'catalog.inventory.view',
             ),
             new MenuItem(
                 id: 'products',
                 label: 'Products',
                 url: '/admin/catalog/products',
                 sortOrder: 10,
-                permission: 'catalog.products.view'
+                permission: 'catalog.products.view',
             ),
             new MenuItem(
                 id: 'categories',
                 label: 'Categories',
                 url: '/admin/catalog/categories',
                 sortOrder: 20,
-                permission: 'catalog.categories.view'
+                permission: 'catalog.categories.view',
             ),
         ],
     ));
@@ -324,19 +334,19 @@ it('filters out menu items the user lacks permission for', function (): void {
                 id: 'products',
                 label: 'Products',
                 url: '/admin/catalog/products',
-                permission: 'catalog.products.view'
+                permission: 'catalog.products.view',
             ),
             new MenuItem(
                 id: 'categories',
                 label: 'Categories',
                 url: '/admin/catalog/categories',
-                permission: 'catalog.categories.view'
+                permission: 'catalog.categories.view',
             ),
             new MenuItem(
                 id: 'inventory',
                 label: 'Inventory',
                 url: '/admin/catalog/inventory',
-                permission: 'catalog.inventory.view'
+                permission: 'catalog.inventory.view',
             ),
         ],
     ));
@@ -351,7 +361,7 @@ it('filters out menu items the user lacks permission for', function (): void {
                 id: 'blocks',
                 label: 'Blocks',
                 url: '/admin/content/blocks',
-                permission: 'content.blocks.view'
+                permission: 'content.blocks.view',
             ),
         ],
     ));
@@ -385,7 +395,7 @@ it('excludes sections where user has no permitted items', function (): void {
                 id: 'products',
                 label: 'Products',
                 url: '/admin/catalog/products',
-                permission: 'catalog.products.view'
+                permission: 'catalog.products.view',
             ),
         ],
     ));
@@ -399,7 +409,7 @@ it('excludes sections where user has no permitted items', function (): void {
                 id: 'general',
                 label: 'General',
                 url: '/admin/settings/general',
-                permission: 'settings.general.view'
+                permission: 'settings.general.view',
             ),
         ],
     ));
@@ -428,13 +438,13 @@ it('shows all menu items for super admin users', function (): void {
                 id: 'products',
                 label: 'Products',
                 url: '/admin/catalog/products',
-                permission: 'catalog.products.view'
+                permission: 'catalog.products.view',
             ),
             new MenuItem(
                 id: 'categories',
                 label: 'Categories',
                 url: '/admin/catalog/categories',
-                permission: 'catalog.categories.view'
+                permission: 'catalog.categories.view',
             ),
         ],
     ));
@@ -448,13 +458,13 @@ it('shows all menu items for super admin users', function (): void {
                 id: 'general',
                 label: 'General',
                 url: '/admin/settings/general',
-                permission: 'settings.general.view'
+                permission: 'settings.general.view',
             ),
             new MenuItem(
                 id: 'advanced',
                 label: 'Advanced',
                 url: '/admin/settings/advanced',
-                permission: 'settings.advanced.view'
+                permission: 'settings.advanced.view',
             ),
         ],
     ));
@@ -487,13 +497,13 @@ it('marks the active menu item based on current request path', function (): void
                 id: 'products',
                 label: 'Products',
                 url: '/admin/catalog/products',
-                permission: 'catalog.products.view'
+                permission: 'catalog.products.view',
             ),
             new MenuItem(
                 id: 'categories',
                 label: 'Categories',
                 url: '/admin/catalog/categories',
-                permission: 'catalog.categories.view'
+                permission: 'catalog.categories.view',
             ),
         ],
     ));
@@ -534,7 +544,7 @@ it('marks no active item when path does not match any menu item', function (): v
                 id: 'products',
                 label: 'Products',
                 url: '/admin/catalog/products',
-                permission: 'catalog.products.view'
+                permission: 'catalog.products.view',
             ),
         ],
     ));
@@ -577,13 +587,13 @@ it('builds dashboard section list filtered by user permissions', function (): vo
                 id: 'products',
                 label: 'Products',
                 url: '/admin/catalog/products',
-                permission: 'catalog.products.view'
+                permission: 'catalog.products.view',
             ),
             new MenuItem(
                 id: 'categories',
                 label: 'Categories',
                 url: '/admin/catalog/categories',
-                permission: 'catalog.categories.view'
+                permission: 'catalog.categories.view',
             ),
         ],
     ));
@@ -608,7 +618,7 @@ it('builds dashboard section list filtered by user permissions', function (): vo
                 id: 'general',
                 label: 'General',
                 url: '/admin/settings/general',
-                permission: 'settings.general.view'
+                permission: 'settings.general.view',
             ),
         ],
     ));
@@ -638,7 +648,7 @@ it('returns empty dashboard sections when user has no permissions', function ():
                 id: 'products',
                 label: 'Products',
                 url: '/admin/catalog/products',
-                permission: 'catalog.products.view'
+                permission: 'catalog.products.view',
             ),
         ],
     ));

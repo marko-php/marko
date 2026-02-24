@@ -23,9 +23,9 @@ it('implements UserProviderInterface', function (): void {
 });
 
 it('retrieves admin user by id via retrieveById', function (): void {
-    $user = createTestAdminUser(id: 1, email: 'admin@example.com', name: 'Admin');
+    $user = createTestAdminUser();
 
-    $userRepo = createMockUserRepo(findReturn: $user, rolesReturn: []);
+    $userRepo = createMockUserRepo(findReturn: $user);
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
@@ -39,7 +39,7 @@ it('retrieves admin user by id via retrieveById', function (): void {
 });
 
 it('returns null from retrieveById when user not found', function (): void {
-    $userRepo = createMockUserRepo(findReturn: null);
+    $userRepo = createMockUserRepo();
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
@@ -51,7 +51,7 @@ it('returns null from retrieveById when user not found', function (): void {
 });
 
 it('returns null from retrieveById when user is inactive', function (): void {
-    $user = createTestAdminUser(id: 1, isActive: '0');
+    $user = createTestAdminUser(isActive: '0');
 
     $userRepo = createMockUserRepo(findReturn: $user);
     $roleRepo = createMockRoleRepo();
@@ -65,9 +65,9 @@ it('returns null from retrieveById when user is inactive', function (): void {
 });
 
 it('retrieves admin user by email credentials via retrieveByCredentials', function (): void {
-    $user = createTestAdminUser(id: 1, email: 'admin@example.com', name: 'Admin');
+    $user = createTestAdminUser();
 
-    $userRepo = createMockUserRepo(findByEmailReturn: $user, rolesReturn: []);
+    $userRepo = createMockUserRepo(findByEmailReturn: $user);
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
@@ -81,7 +81,7 @@ it('retrieves admin user by email credentials via retrieveByCredentials', functi
 });
 
 it('returns null from retrieveByCredentials when email not found', function (): void {
-    $userRepo = createMockUserRepo(findByEmailReturn: null);
+    $userRepo = createMockUserRepo();
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
@@ -93,11 +93,11 @@ it('returns null from retrieveByCredentials when email not found', function (): 
 });
 
 it('validates credentials using PasswordHasherInterface', function (): void {
-    $user = createTestAdminUser(id: 1, password: 'hashed_password');
+    $user = createTestAdminUser();
 
     $userRepo = createMockUserRepo();
     $roleRepo = createMockRoleRepo();
-    $hasher = createMockHasher(verifyReturn: true);
+    $hasher = createMockHasher();
 
     $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
 
@@ -107,7 +107,7 @@ it('validates credentials using PasswordHasherInterface', function (): void {
 });
 
 it('returns false from validateCredentials when password is wrong', function (): void {
-    $user = createTestAdminUser(id: 1, password: 'hashed_password');
+    $user = createTestAdminUser();
 
     $userRepo = createMockUserRepo();
     $roleRepo = createMockRoleRepo();
@@ -121,7 +121,7 @@ it('returns false from validateCredentials when password is wrong', function ():
 });
 
 it('loads roles and permissions when retrieving a user', function (): void {
-    $user = createTestAdminUser(id: 1, email: 'admin@example.com');
+    $user = createTestAdminUser();
 
     $editorRole = new Role();
     $editorRole->id = 1;
@@ -175,9 +175,9 @@ it('loads roles and permissions when retrieving a user', function (): void {
 });
 
 it('retrieves user by remember token via retrieveByRememberToken', function (): void {
-    $user = createTestAdminUser(id: 1, email: 'admin@example.com', rememberToken: 'valid_token_123');
+    $user = createTestAdminUser(rememberToken: 'valid_token_123');
 
-    $userRepo = createMockUserRepo(findReturn: $user, rolesReturn: []);
+    $userRepo = createMockUserRepo(findReturn: $user);
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
@@ -191,7 +191,7 @@ it('retrieves user by remember token via retrieveByRememberToken', function (): 
 });
 
 it('updates remember token via updateRememberToken', function (): void {
-    $user = createTestAdminUser(id: 1, email: 'admin@example.com');
+    $user = createTestAdminUser();
 
     $userRepo = createMockUserRepo();
     $roleRepo = createMockRoleRepo();

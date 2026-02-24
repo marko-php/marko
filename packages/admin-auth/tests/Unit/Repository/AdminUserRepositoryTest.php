@@ -135,15 +135,15 @@ it('syncs roles for a user via syncRoles', function (): void {
 
     $repository->syncRoles(1, [10, 20]);
 
-    // First query should be DELETE of existing roles
+    // First query should be "DELETE" of existing roles
     expect($queryHistory[0]['sql'])->toContain('DELETE FROM admin_user_roles')
         ->and($queryHistory[0]['sql'])->toContain('user_id = ?')
-        ->and($queryHistory[0]['bindings'])->toBe([1]);
-
-    // Next 2 queries should be INSERTs
-    expect($queryHistory[1]['sql'])->toContain('INSERT INTO admin_user_roles')
+        ->and($queryHistory[0]['bindings'])->toBe([1])
+        ->and($queryHistory[1]['sql'])->toContain('INSERT INTO admin_user_roles')
         ->and($queryHistory[1]['bindings'])->toBe([1, 10])
         ->and($queryHistory[2]['bindings'])->toBe([1, 20]);
+
+    // Next 2 queries should be INSERTs
 });
 
 // Helper functions
@@ -156,7 +156,7 @@ function createAdminUserMockConnection(
 
 /**
  * @param array<array<string, mixed>> $queryResult
- * @param array<array{sql: string, bindings: array<mixed>}>|null $queryHistory
+ * @param array<array{sql: string, bindings: array}>|null $queryHistory
  */
 function createAdminUserMockConnectionWithHistory(
     array $queryResult = [],
@@ -168,10 +168,10 @@ function createAdminUserMockConnectionWithHistory(
     {
         /**
          * @param array<array<string, mixed>> $queryResult
-         * @param array<array{sql: string, bindings: array<mixed>}> $queryHistory
+         * @param array<array{sql: string, bindings: array}> $queryHistory
          */
         public function __construct(
-            private array $queryResult,
+            private readonly array $queryResult,
             private array &$queryHistory,
         ) {}
 
@@ -185,7 +185,8 @@ function createAdminUserMockConnectionWithHistory(
         }
 
         /**
-         * @param array<mixed> $bindings
+         * @param string $sql
+         * @param array $bindings
          * @return array<array<string, mixed>>
          */
         public function query(
@@ -198,7 +199,9 @@ function createAdminUserMockConnectionWithHistory(
         }
 
         /**
-         * @param array<mixed> $bindings
+         * @param string $sql
+         * @param array $bindings
+         * @return int
          */
         public function execute(
             string $sql,

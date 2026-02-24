@@ -72,7 +72,7 @@ it('syncFromRegistry method signature returns void', function (): void {
     $method = $reflection->getMethod('syncFromRegistry');
 
     $parameters = $method->getParameters();
-    expect($parameters)->toHaveCount(0);
+    expect($parameters)->toBeEmpty();
 
     $returnType = $method->getReturnType();
     expect($returnType->getName())->toBe('void');

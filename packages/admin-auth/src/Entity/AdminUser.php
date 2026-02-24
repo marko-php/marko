@@ -115,10 +115,8 @@ class AdminUser extends Entity implements AdminUserInterface
     public function hasPermission(
         string $key,
     ): bool {
-        foreach ($this->roles as $role) {
-            if ($role->isSuperAdmin()) {
-                return true;
-            }
+        if (array_any($this->roles, fn ($role) => $role->isSuperAdmin())) {
+            return true;
         }
 
         return in_array($key, $this->permissionKeys, true);
@@ -127,12 +125,6 @@ class AdminUser extends Entity implements AdminUserInterface
     public function hasRole(
         string $slug,
     ): bool {
-        foreach ($this->roles as $role) {
-            if ($role->getSlug() === $slug) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($this->roles, fn ($role) => $role->getSlug() === $slug);
     }
 }

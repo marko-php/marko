@@ -149,7 +149,6 @@ it('returns true for any permission when user has super admin role', function ()
 
     $user->setRoles(
         roles: [$superAdminRole],
-        permissionKeys: [],
     );
 
     expect($user->hasPermission('posts.create'))->toBeTrue()

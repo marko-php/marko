@@ -277,6 +277,8 @@ expect($value)->toBe(null);
 - `->toBe(true)` → `->toBeTrue()`
 - `->toBe(false)` → `->toBeFalse()`
 - `->toBe(null)` → `->toBeNull()`
+- `->toHaveCount(0)` → `->toBeEmpty()`
+- `->toBe([])` → `->toBeEmpty()`
 
 ## Test File Checklist (MANDATORY)
 

@@ -11,11 +11,10 @@ use Marko\Admin\Contracts\MenuItemInterface;
 use Marko\Admin\Discovery\AdminSectionDiscovery;
 use Marko\AdminAuth\Discovery\PermissionDiscovery;
 use Marko\AdminAuth\PermissionRegistry;
-use Marko\Core\Discovery\ClassFileParser;
 
 it('discovers permissions from AdminPermission attributes on AdminSection classes', function (): void {
     $registry = new PermissionRegistry();
-    $sectionDiscovery = new AdminSectionDiscovery(new ClassFileParser());
+    $sectionDiscovery = new AdminSectionDiscovery();
     $discovery = new PermissionDiscovery(
         registry: $registry,
         sectionDiscovery: $sectionDiscovery,
@@ -33,7 +32,7 @@ it('discovers permissions from AdminPermission attributes on AdminSection classe
 
 it('derives group from first segment of permission key', function (): void {
     $registry = new PermissionRegistry();
-    $sectionDiscovery = new AdminSectionDiscovery(new ClassFileParser());
+    $sectionDiscovery = new AdminSectionDiscovery();
     $discovery = new PermissionDiscovery(
         registry: $registry,
         sectionDiscovery: $sectionDiscovery,

@@ -270,7 +270,6 @@ it('passes through for super admin users regardless of permission', function ():
     // Super admin has NO explicit permission keys, but should still pass
     $user = createAdminUser(
         roles: [$superAdminRole],
-        permissionKeys: [],
     );
     $guard->setUser($user);
 
@@ -321,7 +320,7 @@ it('returns JSON 401 for unauthenticated API requests', function (): void {
         action: 'create',
     );
 
-    // API request: has Accept: application/json header
+    // API request: has "Accept: application/json" header
     $request = new Request(server: [
         'REQUEST_METHOD' => 'POST',
         'REQUEST_URI' => '/admin/api/posts',

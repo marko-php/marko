@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AdminAuth\Middleware;
 
+use JsonException;
 use Marko\Admin\Config\AdminConfigInterface;
 use Marko\AdminAuth\Attributes\RequiresPermission;
 use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
@@ -12,18 +13,22 @@ use Marko\Auth\Contracts\GuardInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
+use ReflectionException;
 use ReflectionMethod;
 
-class AdminAuthMiddleware implements MiddlewareInterface
+readonly class AdminAuthMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly GuardInterface $guard,
-        private readonly AdminConfigInterface $adminConfig,
-        private readonly PermissionRegistryInterface $permissionRegistry,
-        private readonly ?string $controller = null,
-        private readonly ?string $action = null,
+        private GuardInterface $guard,
+        private AdminConfigInterface $adminConfig,
+        private PermissionRegistryInterface $permissionRegistry,
+        private ?string $controller = null,
+        private ?string $action = null,
     ) {}
 
+    /**
+     * @throws ReflectionException|JsonException
+     */
     public function handle(
         Request $request,
         callable $next,
@@ -55,15 +60,15 @@ class AdminAuthMiddleware implements MiddlewareInterface
         }
 
         // Check wildcard patterns: iterate user's permission keys as patterns
-        foreach ($user->getPermissionKeys() as $permissionKey) {
-            if ($this->permissionRegistry->matches($permissionKey, $requiredPermission)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any(
+            $user->getPermissionKeys(),
+            fn ($permissionKey) => $this->permissionRegistry->matches($permissionKey, $requiredPermission),
+        );
     }
 
+    /**
+     * @throws JsonException
+     */
     private function unauthorizedResponse(
         Request $request,
     ): Response {
@@ -77,6 +82,9 @@ class AdminAuthMiddleware implements MiddlewareInterface
         return Response::redirect($this->adminConfig->getRoutePrefix() . '/login');
     }
 
+    /**
+     * @throws JsonException
+     */
     private function forbiddenResponse(
         Request $request,
     ): Response {
@@ -101,6 +109,9 @@ class AdminAuthMiddleware implements MiddlewareInterface
         return $accept !== null && str_contains($accept, 'application/json');
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function getRequiredPermission(): ?string
     {
         if ($this->controller === null || $this->action === null) {

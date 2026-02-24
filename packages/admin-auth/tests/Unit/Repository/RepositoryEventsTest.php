@@ -28,7 +28,7 @@ it('dispatches RoleCreated event when role is created', function (): void {
     $dispatchedEvents = [];
 
     $eventDispatcher = createEventDispatcher($dispatchedEvents);
-    $connection = createEventMockConnection(isNew: true);
+    $connection = createEventMockConnection();
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
 
@@ -112,7 +112,7 @@ it('dispatches AdminUserCreated event when user is created', function (): void {
     $dispatchedEvents = [];
 
     $eventDispatcher = createEventDispatcher($dispatchedEvents);
-    $connection = createEventMockConnection(isNew: true);
+    $connection = createEventMockConnection();
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
 
@@ -170,7 +170,7 @@ it('includes timestamp in all events', function (): void {
     $dispatchedEvents = [];
 
     $eventDispatcher = createEventDispatcher($dispatchedEvents);
-    $connection = createEventMockConnection(isNew: true);
+    $connection = createEventMockConnection();
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
 
@@ -225,7 +225,7 @@ function createEventMockConnection(
     return new class ($isNew) implements ConnectionInterface
     {
         public function __construct(
-            private bool $isNew,
+            private readonly bool $isNew,
         ) {}
 
         public function connect(): void {}

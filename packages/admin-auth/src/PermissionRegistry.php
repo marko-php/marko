@@ -12,6 +12,9 @@ class PermissionRegistry implements PermissionRegistryInterface
     /** @var array<string, RegisteredPermission> */
     private array $permissions = [];
 
+    /**
+     * @throws AdminAuthException
+     */
     public function register(
         string $key,
         string $label,

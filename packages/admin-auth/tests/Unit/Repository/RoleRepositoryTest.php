@@ -164,16 +164,16 @@ it('syncs permissions for a role via syncPermissions', function (): void {
 
     $repository->syncPermissions(1, [10, 20, 30]);
 
-    // First query should be DELETE of existing permissions
+    // First query should be "DELETE" of existing permissions
     expect($queryHistory[0]['sql'])->toContain('DELETE FROM role_permissions')
         ->and($queryHistory[0]['sql'])->toContain('role_id = ?')
-        ->and($queryHistory[0]['bindings'])->toBe([1]);
-
-    // Next 3 queries should be INSERTs
-    expect($queryHistory[1]['sql'])->toContain('INSERT INTO role_permissions')
+        ->and($queryHistory[0]['bindings'])->toBe([1])
+        ->and($queryHistory[1]['sql'])->toContain('INSERT INTO role_permissions')
         ->and($queryHistory[1]['bindings'])->toBe([1, 10])
         ->and($queryHistory[2]['bindings'])->toBe([1, 20])
         ->and($queryHistory[3]['bindings'])->toBe([1, 30]);
+
+    // Next 3 queries should be INSERTs
 });
 
 // Helper functions
@@ -186,7 +186,7 @@ function createRoleMockConnection(
 
 /**
  * @param array<array<string, mixed>> $queryResult
- * @param array<array{sql: string, bindings: array<mixed>}>|null $queryHistory
+ * @param array<array{sql: string, bindings: array}>|null $queryHistory
  */
 function createRoleMockConnectionWithHistory(
     array $queryResult = [],
@@ -198,10 +198,10 @@ function createRoleMockConnectionWithHistory(
     {
         /**
          * @param array<array<string, mixed>> $queryResult
-         * @param array<array{sql: string, bindings: array<mixed>}> $queryHistory
+         * @param array<array{sql: string, bindings: array}> $queryHistory
          */
         public function __construct(
-            private array $queryResult,
+            private readonly array $queryResult,
             private array &$queryHistory,
         ) {}
 
@@ -215,7 +215,8 @@ function createRoleMockConnectionWithHistory(
         }
 
         /**
-         * @param array<mixed> $bindings
+         * @param string $sql
+         * @param array $bindings
          * @return array<array<string, mixed>>
          */
         public function query(
@@ -228,7 +229,9 @@ function createRoleMockConnectionWithHistory(
         }
 
         /**
-         * @param array<mixed> $bindings
+         * @param string $sql
+         * @param array $bindings
+         * @return int
          */
         public function execute(
             string $sql,
