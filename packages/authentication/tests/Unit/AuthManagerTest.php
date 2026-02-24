@@ -8,91 +8,17 @@ use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Exceptions\AuthException;
 use Marko\Authentication\Guard\SessionGuard;
 use Marko\Authentication\Guard\TokenGuard;
-use Marko\Authentication\Tests\Integration\TestSession;
-use Marko\Authentication\Tests\Integration\TestUser;
-use Marko\Authentication\Tests\Integration\TestUserProvider;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
-
-// Helper class for config repository
-readonly class TestConfigRepository implements ConfigRepositoryInterface
-{
-    public function __construct(
-        private array $values = [],
-    ) {}
-
-    public function get(
-        string $key,
-        ?string $scope = null,
-    ): mixed {
-        if (!$this->has($key, $scope)) {
-            throw new ConfigNotFoundException($key);
-        }
-
-        return $this->values[$key];
-    }
-
-    public function getString(
-        string $key,
-        ?string $scope = null,
-    ): string {
-        return (string) $this->get($key, $scope);
-    }
-
-    public function getInt(
-        string $key,
-        ?string $scope = null,
-    ): int {
-        return (int) $this->get($key, $scope);
-    }
-
-    public function getBool(
-        string $key,
-        ?string $scope = null,
-    ): bool {
-        return (bool) $this->get($key, $scope);
-    }
-
-    public function getFloat(
-        string $key,
-        ?string $scope = null,
-    ): float {
-        return (float) $this->get($key, $scope);
-    }
-
-    public function getArray(
-        string $key,
-        ?string $scope = null,
-    ): array {
-        return (array) $this->get($key, $scope);
-    }
-
-    public function has(
-        string $key,
-        ?string $scope = null,
-    ): bool {
-        return isset($this->values[$key]);
-    }
-
-    public function all(
-        ?string $scope = null,
-    ): array {
-        return $this->values;
-    }
-
-    public function withScope(
-        string $scope,
-    ): ConfigRepositoryInterface {
-        return $this;
-    }
-}
+use Marko\Testing\Fake\FakeAuthenticatable;
+use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeSession;
+use Marko\Testing\Fake\FakeUserProvider;
 
 test('auth manager exists', function (): void {
     expect(class_exists(AuthManager::class))->toBeTrue();
 });
 
 test('it resolves default guard', function (): void {
-    $configRepo = new TestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -100,8 +26,9 @@ test('it resolves default guard', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider();
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -115,7 +42,7 @@ test('it resolves default guard', function (): void {
 });
 
 test('it resolves named guard', function (): void {
-    $configRepo = new TestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -124,8 +51,9 @@ test('it resolves named guard', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider();
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -140,7 +68,7 @@ test('it resolves named guard', function (): void {
 });
 
 test('it caches guard instances', function (): void {
-    $configRepo = new TestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -148,8 +76,9 @@ test('it caches guard instances', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider();
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -164,7 +93,7 @@ test('it caches guard instances', function (): void {
 });
 
 test('it proxies check to default guard', function (): void {
-    $configRepo = new TestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -172,8 +101,9 @@ test('it proxies check to default guard', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider();
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -186,7 +116,7 @@ test('it proxies check to default guard', function (): void {
 });
 
 test('it proxies user to default guard', function (): void {
-    $configRepo = new TestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -194,8 +124,9 @@ test('it proxies user to default guard', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider();
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -208,7 +139,7 @@ test('it proxies user to default guard', function (): void {
 });
 
 test('it proxies id to default guard', function (): void {
-    $configRepo = new TestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -216,8 +147,9 @@ test('it proxies id to default guard', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider();
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -230,8 +162,8 @@ test('it proxies id to default guard', function (): void {
 });
 
 test('it proxies attempt to default guard', function (): void {
-    $user = new TestUser(id: 42);
-    $configRepo = new TestConfigRepository([
+    $user = new FakeAuthenticatable(id: 42);
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -239,11 +171,9 @@ test('it proxies attempt to default guard', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider(
-        userByCredentials: $user,
-        credentialsValid: true,
-    );
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider([42 => $user]);
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -258,8 +188,8 @@ test('it proxies attempt to default guard', function (): void {
 });
 
 test('it proxies logout to default guard', function (): void {
-    $user = new TestUser(id: 42);
-    $configRepo = new TestConfigRepository([
+    $user = new FakeAuthenticatable(id: 42);
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -267,12 +197,9 @@ test('it proxies logout to default guard', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider(
-        userById: $user,
-        userByCredentials: $user,
-        credentialsValid: true,
-    );
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider([42 => $user]);
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -291,7 +218,7 @@ test('it proxies logout to default guard', function (): void {
 });
 
 test('it creates session guard for session driver', function (): void {
-    $configRepo = new TestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -299,8 +226,9 @@ test('it creates session guard for session driver', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider();
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -314,7 +242,7 @@ test('it creates session guard for session driver', function (): void {
 });
 
 test('it creates token guard for token driver', function (): void {
-    $configRepo = new TestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -323,8 +251,9 @@ test('it creates token guard for token driver', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider();
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -338,7 +267,7 @@ test('it creates token guard for token driver', function (): void {
 });
 
 test('it throws for unknown guard driver', function (): void {
-    $configRepo = new TestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'custom',
         'authentication.guards' => [
             'custom' => ['driver' => 'unknown_driver', 'provider' => 'users'],
@@ -346,8 +275,9 @@ test('it throws for unknown guard driver', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider();
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -359,7 +289,7 @@ test('it throws for unknown guard driver', function (): void {
 })->throws(AuthException::class, 'Unknown guard driver');
 
 test('it throws for unknown guard', function (): void {
-    $configRepo = new TestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -367,8 +297,9 @@ test('it throws for unknown guard', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider();
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -386,8 +317,8 @@ test('it throws for unknown guard', function (): void {
 });
 
 test('it handles multiple guards', function (): void {
-    $user = new TestUser(id: 42);
-    $configRepo = new TestConfigRepository([
+    $user = new FakeAuthenticatable(id: 42);
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -397,12 +328,9 @@ test('it handles multiple guards', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider(
-        userById: $user,
-        userByCredentials: $user,
-        credentialsValid: true,
-    );
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider([42 => $user]);
 
     $manager = new AuthManager(
         config: $authConfig,

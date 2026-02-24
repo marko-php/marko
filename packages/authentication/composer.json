@@ -7,6 +7,9 @@
         "php": "^8.5",
         "marko/core": "@dev"
     },
+    "require-dev": {
+        "marko/testing": "@dev"
+    },
     "autoload": {
         "psr-4": {
             "Marko\\Authentication\\": "src/"

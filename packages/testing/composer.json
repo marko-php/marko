@@ -49,7 +49,8 @@
     "autoload": {
         "psr-4": {
             "Marko\\Testing\\": "src/"
-        }
+        },
+        "files": ["src/Pest/Expectations.php"]
     },
     "autoload-dev": {
         "psr-4": {

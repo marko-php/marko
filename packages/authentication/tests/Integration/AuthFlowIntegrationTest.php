@@ -14,95 +14,19 @@ use Marko\Authentication\Event\LogoutEvent;
 use Marko\Authentication\Guard\SessionGuard;
 use Marko\Authentication\Guard\TokenGuard;
 use Marko\Authentication\Token\RememberTokenManager;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
-
-/**
- * Create a stub config repository for integration testing.
- *
- * @param array<string, mixed> $values
- */
-function createIntegrationConfigRepository(
-    array $values = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($values) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $values,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->values[$key];
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->values[$key]);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->values;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+use Marko\Testing\Fake\FakeAuthenticatable;
+use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeCookieJar;
+use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeSession;
+use Marko\Testing\Fake\FakeUserProvider;
 
 test('complete login flow works', function (): void {
-    $user = new TestUser(id: 42);
-    $session = new TestSession();
+    $user = new FakeAuthenticatable(id: 42);
+    $session = new FakeSession();
+    $session->start();
 
-    $configRepo = createIntegrationConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -110,11 +34,7 @@ test('complete login flow works', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $provider = new TestUserProvider(
-        userById: $user,
-        userByCredentials: $user,
-        credentialsValid: true,
-    );
+    $provider = new FakeUserProvider([42 => $user]);
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -135,14 +55,15 @@ test('complete login flow works', function (): void {
         ->and($manager->check())->toBeTrue()
         ->and($manager->user())->toBe($user)
         ->and($manager->id())->toBe(42)
-        ->and($session->regenerateCalled)->toBeTrue();
+        ->and($session->regenerated)->toBeTrue();
 });
 
 test('complete logout flow works', function (): void {
-    $user = new TestUser(id: 42);
-    $session = new TestSession();
+    $user = new FakeAuthenticatable(id: 42);
+    $session = new FakeSession();
+    $session->start();
 
-    $configRepo = createIntegrationConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -150,11 +71,7 @@ test('complete logout flow works', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $provider = new TestUserProvider(
-        userById: $user,
-        userByCredentials: $user,
-        credentialsValid: true,
-    );
+    $provider = new FakeUserProvider([42 => $user]);
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -176,16 +93,12 @@ test('complete logout flow works', function (): void {
 });
 
 test('remember me creates and uses token', function (): void {
-    $user = new TestUser(id: 42);
-    $session = new TestSession();
-    $cookieJar = new TestCookieJar();
+    $user = new FakeAuthenticatable(id: 42);
+    $session = new FakeSession();
+    $session->start();
+    $cookieJar = new FakeCookieJar();
     $tokenManager = new RememberTokenManager();
-    $provider = new TestUserProvider(
-        userById: $user,
-        userByCredentials: $user,
-        credentialsValid: true,
-        userByRememberToken: $user,
-    );
+    $provider = new FakeUserProvider([42 => $user]);
 
     $guard = new SessionGuard(
         session: $session,
@@ -199,7 +112,7 @@ test('remember me creates and uses token', function (): void {
     $guard->login($user, remember: true);
 
     // Verify remember token was created
-    expect($provider->lastUpdatedRememberToken)->not->toBeNull()
+    expect($provider->lastRememberTokenUpdate)->not->toBeNull()
         ->and($cookieJar->cookies)->toHaveKey('remember_web')
         ->and($cookieJar->cookies['remember_web'])->toContain('42|');
 
@@ -218,10 +131,11 @@ test('remember me creates and uses token', function (): void {
 });
 
 test('guard switching works correctly', function (): void {
-    $user = new TestUser(id: 42);
-    $session = new TestSession();
+    $user = new FakeAuthenticatable(id: 42);
+    $session = new FakeSession();
+    $session->start();
 
-    $configRepo = createIntegrationConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -231,11 +145,7 @@ test('guard switching works correctly', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $provider = new TestUserProvider(
-        userById: $user,
-        userByCredentials: $user,
-        credentialsValid: true,
-    );
+    $provider = new FakeUserProvider([42 => $user]);
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -296,7 +206,7 @@ test('module bindings resolve correctly', function (): void {
 });
 
 test('config loading works', function (): void {
-    $configRepo = createIntegrationConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'api',
         'authentication.default.provider' => 'customers',
         'authentication.guards' => [
@@ -344,14 +254,11 @@ test('config loading works', function (): void {
 });
 
 test('events dispatched during auth flow', function (): void {
-    $user = new TestUser(id: 42);
-    $session = new TestSession();
-    $dispatcher = new TestEventDispatcher();
-    $provider = new TestUserProvider(
-        userById: $user,
-        userByCredentials: $user,
-        credentialsValid: true,
-    );
+    $user = new FakeAuthenticatable(id: 42);
+    $session = new FakeSession();
+    $session->start();
+    $dispatcher = new FakeEventDispatcher();
+    $provider = new FakeUserProvider([42 => $user]);
 
     $guard = new SessionGuard(
         session: $session,
@@ -363,8 +270,8 @@ test('events dispatched during auth flow', function (): void {
     // Test successful login event
     $guard->login($user);
 
-    expect($dispatcher->events)->toHaveCount(1);
-    $loginEvent = $dispatcher->events[0];
+    expect($dispatcher->dispatched)->toHaveCount(1);
+    $loginEvent = $dispatcher->dispatched[0];
     assert($loginEvent instanceof LoginEvent);
     expect($loginEvent->user)->toBe($user)
         ->and($loginEvent->guard)->toBe('web')
@@ -374,20 +281,20 @@ test('events dispatched during auth flow', function (): void {
     $dispatcher->clear();
     $guard->logout();
 
-    expect($dispatcher->events)->toHaveCount(1);
-    $logoutEvent = $dispatcher->events[0];
+    expect($dispatcher->dispatched)->toHaveCount(1);
+    $logoutEvent = $dispatcher->dispatched[0];
     assert($logoutEvent instanceof LogoutEvent);
     expect($logoutEvent->user)->toBe($user)
         ->and($logoutEvent->guard)->toBe('web');
 
     // Reset events and test failed login
     $dispatcher->clear();
-    $invalidProvider = new TestUserProvider(
-        userByCredentials: $user,
-    );
+    $invalidProvider = new FakeUserProvider([42 => $user], fn () => false);
 
+    $failSession = new FakeSession();
+    $failSession->start();
     $failGuard = new SessionGuard(
-        session: new TestSession(),
+        session: $failSession,
         provider: $invalidProvider,
         name: 'web',
         eventDispatcher: $dispatcher,
@@ -396,8 +303,8 @@ test('events dispatched during auth flow', function (): void {
     $result = $failGuard->attempt(['email' => 'test@example.com', 'password' => 'wrong']);
 
     expect($result)->toBeFalse()
-        ->and($dispatcher->events)->toHaveCount(1);
-    $failedEvent = $dispatcher->events[0];
+        ->and($dispatcher->dispatched)->toHaveCount(1);
+    $failedEvent = $dispatcher->dispatched[0];
     assert($failedEvent instanceof FailedLoginEvent);
     expect($failedEvent->guard)->toBe('web')
         ->and($failedEvent->credentials)->toBe(['email' => 'test@example.com']);

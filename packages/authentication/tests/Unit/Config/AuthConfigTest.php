@@ -3,93 +3,16 @@
 declare(strict_types=1);
 
 use Marko\Authentication\Config\AuthConfig;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
-
-function createAuthMockConfigRepository(
-    array $configData = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->data[$key]);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+use Marko\Testing\Fake\FakeConfigRepository;
 
 it('creates AuthConfig class', function () {
-    $config = new AuthConfig(createAuthMockConfigRepository());
+    $config = new AuthConfig(new FakeConfigRepository());
 
     expect($config)->toBeInstanceOf(AuthConfig::class);
 });
 
 it('loads default guard name', function () {
-    $config = new AuthConfig(createAuthMockConfigRepository([
+    $config = new AuthConfig(new FakeConfigRepository([
         'authentication.default.guard' => 'session',
     ]));
 
@@ -97,7 +20,7 @@ it('loads default guard name', function () {
 });
 
 it('loads default provider name', function () {
-    $config = new AuthConfig(createAuthMockConfigRepository([
+    $config = new AuthConfig(new FakeConfigRepository([
         'authentication.default.provider' => 'users',
     ]));
 
@@ -109,7 +32,7 @@ it('loads guards configuration array', function () {
         'session' => ['driver' => 'session', 'provider' => 'users'],
         'token' => ['driver' => 'token', 'provider' => 'users'],
     ];
-    $config = new AuthConfig(createAuthMockConfigRepository([
+    $config = new AuthConfig(new FakeConfigRepository([
         'authentication.guards' => $guardsConfig,
     ]));
 
@@ -121,7 +44,7 @@ it('loads providers configuration array', function () {
         'users' => ['driver' => 'eloquent', 'model' => 'App\\User'],
         'admins' => ['driver' => 'database', 'table' => 'admins'],
     ];
-    $config = new AuthConfig(createAuthMockConfigRepository([
+    $config = new AuthConfig(new FakeConfigRepository([
         'authentication.providers' => $providersConfig,
     ]));
 
@@ -133,7 +56,7 @@ it('loads password hasher settings', function () {
         'driver' => 'bcrypt',
         'bcrypt' => ['cost' => 12],
     ];
-    $config = new AuthConfig(createAuthMockConfigRepository([
+    $config = new AuthConfig(new FakeConfigRepository([
         'authentication.password' => $passwordConfig,
     ]));
 
@@ -145,7 +68,7 @@ it('loads remember token settings', function () {
         'expiration' => 43200,
         'cookie' => 'remember_token',
     ];
-    $config = new AuthConfig(createAuthMockConfigRepository([
+    $config = new AuthConfig(new FakeConfigRepository([
         'authentication.remember' => $rememberConfig,
     ]));
 
@@ -153,7 +76,7 @@ it('loads remember token settings', function () {
 });
 
 it('provides getter for bcrypt cost', function () {
-    $config = new AuthConfig(createAuthMockConfigRepository([
+    $config = new AuthConfig(new FakeConfigRepository([
         'authentication.password.bcrypt.cost' => 14,
     ]));
 
@@ -161,7 +84,7 @@ it('provides getter for bcrypt cost', function () {
 });
 
 it('reads default guard from config without fallback', function () {
-    $config = new AuthConfig(createAuthMockConfigRepository([
+    $config = new AuthConfig(new FakeConfigRepository([
         'authentication.default.guard' => 'token',
     ]));
 
@@ -169,7 +92,7 @@ it('reads default guard from config without fallback', function () {
 });
 
 it('reads default provider from config without fallback', function () {
-    $config = new AuthConfig(createAuthMockConfigRepository([
+    $config = new AuthConfig(new FakeConfigRepository([
         'authentication.default.provider' => 'admins',
     ]));
 
@@ -177,7 +100,7 @@ it('reads default provider from config without fallback', function () {
 });
 
 it('reads bcrypt cost from config without fallback', function () {
-    $config = new AuthConfig(createAuthMockConfigRepository([
+    $config = new AuthConfig(new FakeConfigRepository([
         'authentication.password.bcrypt.cost' => 10,
     ]));
 

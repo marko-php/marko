@@ -5,92 +5,18 @@ declare(strict_types=1);
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
 use Marko\Authentication\Middleware\AuthMiddleware;
-use Marko\Authentication\Tests\Integration\TestSession;
-use Marko\Authentication\Tests\Integration\TestUser;
-use Marko\Authentication\Tests\Integration\TestUserProvider;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
-
-// Test helper for config repository
-readonly class MiddlewareTestConfigRepository implements ConfigRepositoryInterface
-{
-    public function __construct(
-        private array $values = [],
-    ) {}
-
-    public function get(
-        string $key,
-        ?string $scope = null,
-    ): mixed {
-        if (!$this->has($key, $scope)) {
-            throw new ConfigNotFoundException($key);
-        }
-
-        return $this->values[$key];
-    }
-
-    public function getString(
-        string $key,
-        ?string $scope = null,
-    ): string {
-        return (string) $this->get($key, $scope);
-    }
-
-    public function getInt(
-        string $key,
-        ?string $scope = null,
-    ): int {
-        return (int) $this->get($key, $scope);
-    }
-
-    public function getBool(
-        string $key,
-        ?string $scope = null,
-    ): bool {
-        return (bool) $this->get($key, $scope);
-    }
-
-    public function getFloat(
-        string $key,
-        ?string $scope = null,
-    ): float {
-        return (float) $this->get($key, $scope);
-    }
-
-    public function getArray(
-        string $key,
-        ?string $scope = null,
-    ): array {
-        return (array) $this->get($key, $scope);
-    }
-
-    public function has(
-        string $key,
-        ?string $scope = null,
-    ): bool {
-        return isset($this->values[$key]);
-    }
-
-    public function all(
-        ?string $scope = null,
-    ): array {
-        return $this->values;
-    }
-
-    public function withScope(
-        string $scope,
-    ): ConfigRepositoryInterface {
-        return $this;
-    }
-}
+use Marko\Testing\Fake\FakeAuthenticatable;
+use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeSession;
+use Marko\Testing\Fake\FakeUserProvider;
 
 // Helper function to create AuthManager with authenticated user
 function createAuthManagerWithUser(
-    ?TestUser $user = null,
+    ?FakeAuthenticatable $user = null,
 ): AuthManager {
-    $configRepo = new MiddlewareTestConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -99,12 +25,11 @@ function createAuthManagerWithUser(
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider(
-        userById: $user,
-        userByCredentials: $user,
-        credentialsValid: $user !== null,
-    );
+    $session = new FakeSession();
+    $session->start();
+    $provider = $user !== null
+        ? new FakeUserProvider([$user->getAuthIdentifier() => $user])
+        : new FakeUserProvider();
 
     $manager = new AuthManager(
         config: $authConfig,
@@ -121,7 +46,7 @@ function createAuthManagerWithUser(
 }
 
 test('it allows authenticated users through', function (): void {
-    $user = new TestUser(id: 1);
+    $user = new FakeAuthenticatable(id: 1);
     $authManager = createAuthManagerWithUser($user);
 
     $middleware = new AuthMiddleware($authManager);
@@ -201,8 +126,8 @@ test('it redirects for web guard when unauthenticated', function (): void {
 });
 
 test('it supports specifying guard via parameter', function (): void {
-    $user = new TestUser(id: 1);
-    $configRepo = new MiddlewareTestConfigRepository([
+    $user = new FakeAuthenticatable(id: 1);
+    $configRepo = new FakeConfigRepository([
         'authentication.default.guard' => 'web',
         'authentication.guards' => [
             'web' => ['driver' => 'session', 'provider' => 'users'],
@@ -211,12 +136,9 @@ test('it supports specifying guard via parameter', function (): void {
     ]);
 
     $authConfig = new AuthConfig($configRepo);
-    $session = new TestSession();
-    $provider = new TestUserProvider(
-        userById: $user,
-        userByCredentials: $user,
-        credentialsValid: true,
-    );
+    $session = new FakeSession();
+    $session->start();
+    $provider = new FakeUserProvider([1 => $user]);
 
     $authManager = new AuthManager(
         config: $authConfig,
@@ -245,7 +167,7 @@ test('it supports specifying guard via parameter', function (): void {
 });
 
 test('it uses default guard when not specified', function (): void {
-    $user = new TestUser(id: 1);
+    $user = new FakeAuthenticatable(id: 1);
     $authManager = createAuthManagerWithUser($user);
 
     // Middleware without guard parameter uses default (web)
