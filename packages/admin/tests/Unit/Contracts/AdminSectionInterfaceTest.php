@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Marko\Admin\Contracts\AdminSectionInterface;
 
-it('defines AdminSectionInterface with getId, getLabel, getIcon, getSortOrder, getMenuItems methods', function (): void {
+it('defines AdminSectionInterface with get methods', function (): void {
     $reflection = new ReflectionClass(AdminSectionInterface::class);
 
     expect($reflection->isInterface())->toBeTrue()

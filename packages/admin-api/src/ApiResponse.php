@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AdminApi;
 
+use JsonException;
 use Marko\Routing\Http\Response;
 
 class ApiResponse
@@ -11,6 +12,7 @@ class ApiResponse
     /**
      * @param array<string, mixed> $data
      * @param array<string, mixed> $meta
+     * @throws JsonException
      */
     public static function success(
         array $data = [],
@@ -21,13 +23,13 @@ class ApiResponse
                 'data' => $data,
                 'meta' => $meta,
             ],
-            statusCode: 200,
         );
     }
 
     /**
      * @param array<string, mixed> $data
      * @param array<string, mixed> $meta
+     * @throws JsonException
      */
     public static function created(
         array $data = [],
@@ -44,6 +46,7 @@ class ApiResponse
 
     /**
      * @param array<int, array<string, mixed>> $errors
+     * @throws JsonException
      */
     public static function error(
         array $errors,
@@ -59,6 +62,7 @@ class ApiResponse
 
     /**
      * @param array<int, array<string, mixed>> $data
+     * @throws JsonException
      */
     public static function paginated(
         array $data,
@@ -76,10 +80,12 @@ class ApiResponse
                     'total_pages' => (int) ceil($total / $perPage),
                 ],
             ],
-            statusCode: 200,
         );
     }
 
+    /**
+     * @throws JsonException
+     */
     public static function notFound(
         string $message = 'Not found',
     ): Response {
@@ -89,6 +95,9 @@ class ApiResponse
         );
     }
 
+    /**
+     * @throws JsonException
+     */
     public static function forbidden(
         string $message = 'Forbidden',
     ): Response {
@@ -98,6 +107,9 @@ class ApiResponse
         );
     }
 
+    /**
+     * @throws JsonException
+     */
     public static function unauthorized(
         string $message = 'Unauthorized',
     ): Response {

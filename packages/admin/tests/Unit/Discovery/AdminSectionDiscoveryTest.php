@@ -10,7 +10,6 @@ use Marko\Admin\Discovery\AdminPermissionDefinition;
 use Marko\Admin\Discovery\AdminSectionDefinition;
 use Marko\Admin\Discovery\AdminSectionDiscovery;
 use Marko\Admin\Exceptions\AdminException;
-use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Module\ModuleManifest;
 
 // Helper function for recursive directory cleanup
@@ -70,7 +69,7 @@ PHP;
         path: $tempDir,
     );
 
-    $discovery = new AdminSectionDiscovery(new ClassFileParser());
+    $discovery = new AdminSectionDiscovery();
     $files = $discovery->discoverInModule($manifest);
 
     expect($files)
@@ -105,7 +104,7 @@ PHP;
         path: $tempDir,
     );
 
-    $discovery = new AdminSectionDiscovery(new ClassFileParser());
+    $discovery = new AdminSectionDiscovery();
     $files = $discovery->discoverInModule($manifest);
 
     expect($files)
@@ -116,14 +115,14 @@ PHP;
 });
 
 it('throws AdminException when AdminSection class does not implement AdminSectionInterface', function (): void {
-    $discovery = new AdminSectionDiscovery(new ClassFileParser());
+    $discovery = new AdminSectionDiscovery();
 
     expect(fn () => $discovery->parseAdminSectionClass(InvalidAdminSectionNoInterface::class))
         ->toThrow(AdminException::class, 'does not implement AdminSectionInterface');
 });
 
 it('extracts section metadata from AdminSection attribute', function (): void {
-    $discovery = new AdminSectionDiscovery(new ClassFileParser());
+    $discovery = new AdminSectionDiscovery();
     $definition = $discovery->parseAdminSectionClass(ValidAdminSection::class);
 
     expect($definition)
@@ -136,7 +135,7 @@ it('extracts section metadata from AdminSection attribute', function (): void {
 });
 
 it('discovers AdminPermission attributes on AdminSection classes', function (): void {
-    $discovery = new AdminSectionDiscovery(new ClassFileParser());
+    $discovery = new AdminSectionDiscovery();
     $definition = $discovery->parseAdminSectionClass(AdminSectionWithPermissions::class);
 
     expect($definition->permissions)
@@ -175,7 +174,7 @@ PHP;
         path: $tempDir,
     );
 
-    $discovery = new AdminSectionDiscovery(new ClassFileParser());
+    $discovery = new AdminSectionDiscovery();
     $files = $discovery->discoverInModule($manifest);
 
     expect($files)->toBeArray()
@@ -250,7 +249,7 @@ PHP;
         path: $tempDir2,
     );
 
-    $discovery = new AdminSectionDiscovery(new ClassFileParser());
+    $discovery = new AdminSectionDiscovery();
 
     $files1 = $discovery->discoverInModule($manifest1);
     $files2 = $discovery->discoverInModule($manifest2);

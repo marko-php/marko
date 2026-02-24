@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Marko\Admin\Contracts\MenuItemInterface;
 
-it('defines MenuItemInterface with getId, getLabel, getUrl, getIcon, getSortOrder, getPermission methods', function (): void {
+it('defines MenuItemInterface with get methods', function (): void {
     $reflection = new ReflectionClass(MenuItemInterface::class);
 
     expect($reflection->isInterface())->toBeTrue()

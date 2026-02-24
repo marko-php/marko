@@ -191,13 +191,13 @@ it('filters sections by user permissions', function (): void {
             id: 'products',
             label: 'Products',
             url: '/admin/catalog/products',
-            permission: 'catalog.products.view'
+            permission: 'catalog.products.view',
         ),
         new MenuItem(
             id: 'categories',
             label: 'Categories',
             url: '/admin/catalog/categories',
-            permission: 'catalog.categories.view'
+            permission: 'catalog.categories.view',
         ),
     ]));
 
@@ -212,7 +212,7 @@ it('filters sections by user permissions', function (): void {
             id: 'config',
             label: 'Configuration',
             url: '/admin/system/config',
-            permission: 'system.config.view'
+            permission: 'system.config.view',
         ),
     ]));
 
@@ -250,7 +250,7 @@ it('returns section detail with menu items on GET /admin/api/v1/sections/{id}', 
             url: '/admin/catalog/products',
             icon: 'package',
             sortOrder: 10,
-            permission: 'catalog.products.view'
+            permission: 'catalog.products.view',
         ),
         new MenuItem(
             id: 'categories',
@@ -258,7 +258,7 @@ it('returns section detail with menu items on GET /admin/api/v1/sections/{id}', 
             url: '/admin/catalog/categories',
             icon: 'folder',
             sortOrder: 20,
-            permission: 'catalog.categories.view'
+            permission: 'catalog.categories.view',
         ),
     ]));
 

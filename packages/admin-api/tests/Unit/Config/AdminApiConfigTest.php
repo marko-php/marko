@@ -111,12 +111,12 @@ it('configures admin-api token guard for API authentication', function (): void 
     );
 
     expect($tokenGuard)->toBeInstanceOf(GuardInterface::class)
-        ->and($tokenGuard->getName())->toBe('admin-api');
-
-    // Without headers set, no user is authenticated
-    expect($tokenGuard->check())->toBeFalse()
+        ->and($tokenGuard->getName())->toBe('admin-api')
+        ->and($tokenGuard->check())->toBeFalse()
         ->and($tokenGuard->guest())->toBeTrue()
         ->and($tokenGuard->user())->toBeNull();
+
+    // Without headers set, no user is authenticated
 
     // Config reflects the guard name
     $config = new AdminApiConfig(createAdminApiMockConfigRepository([

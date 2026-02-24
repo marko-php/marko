@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AdminApi\Controller;
 
+use JsonException;
 use Marko\AdminApi\ApiResponse;
 use Marko\AdminAuth\Entity\AdminUserInterface;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
@@ -13,12 +14,15 @@ use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Http\Response;
 
 #[Middleware(AdminAuthMiddleware::class)]
-class MeController
+readonly class MeController
 {
     public function __construct(
-        private readonly GuardInterface $guard,
+        private GuardInterface $guard,
     ) {}
 
+    /**
+     * @throws JsonException
+     */
     #[Get('/admin/api/v1/me')]
     public function me(): Response
     {
@@ -39,8 +43,8 @@ class MeController
 
         return ApiResponse::success(data: [
             'id' => $user->getAuthIdentifier(),
-            'email' => $user->email,
-            'name' => $user->name,
+            'email' => $user->getEmail(),
+            'name' => $user->getName(),
             'roles' => $roles,
             'permissions' => $user->getPermissionKeys(),
         ]);

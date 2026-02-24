@@ -8,19 +8,15 @@ use Marko\Admin\Attributes\AdminPermission;
 use Marko\Admin\Attributes\AdminSection;
 use Marko\Admin\Contracts\AdminSectionInterface;
 use Marko\Admin\Exceptions\AdminException;
-use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Module\ModuleManifest;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
+use ReflectionException;
 use RegexIterator;
 
-class AdminSectionDiscovery
+readonly class AdminSectionDiscovery
 {
-    public function __construct(
-        private readonly ClassFileParser $classFileParser,
-    ) {}
-
     /**
      * Discover files containing AdminSection attribute in a module's src directory.
      *
@@ -55,7 +51,7 @@ class AdminSectionDiscovery
      * Parse a class with AdminSection attribute into a definition.
      *
      * @param class-string $className
-     * @throws AdminException When the class does not implement AdminSectionInterface
+     * @throws AdminException|ReflectionException
      */
     public function parseAdminSectionClass(
         string $className,

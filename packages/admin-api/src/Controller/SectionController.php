@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AdminApi\Controller;
 
+use JsonException;
 use Marko\Admin\Contracts\AdminSectionInterface;
 use Marko\Admin\Contracts\AdminSectionRegistryInterface;
 use Marko\Admin\Contracts\MenuItemInterface;
@@ -17,13 +18,16 @@ use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Http\Response;
 
 #[Middleware(AdminAuthMiddleware::class)]
-class SectionController
+readonly class SectionController
 {
     public function __construct(
-        private readonly AdminSectionRegistryInterface $sectionRegistry,
-        private readonly GuardInterface $guard,
+        private AdminSectionRegistryInterface $sectionRegistry,
+        private GuardInterface $guard,
     ) {}
 
+    /**
+     * @throws JsonException
+     */
     #[Get('/admin/api/v1/sections')]
     public function index(): Response
     {
@@ -51,6 +55,9 @@ class SectionController
         return ApiResponse::success(data: $data);
     }
 
+    /**
+     * @throws JsonException
+     */
     #[Get('/admin/api/v1/sections/{id}')]
     public function show(
         string $id,

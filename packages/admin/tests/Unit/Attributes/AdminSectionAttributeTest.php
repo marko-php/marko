@@ -12,14 +12,13 @@ class SalesSection {}
 
 it('creates AdminSection attribute targeting classes with id, label, icon, sortOrder properties', function (): void {
     $reflection = new ReflectionClass(AdminSection::class);
-    $attributes = $reflection->getAttributes(Attribute::class);
 
     // Verify it targets classes
     $attributeAttribute = $reflection->getAttributes(Attribute::class)[0]->newInstance();
-    expect($attributeAttribute->flags)->toBe(Attribute::TARGET_CLASS);
+    expect($attributeAttribute->flags)->toBe(Attribute::TARGET_CLASS)
+        ->and($reflection->isReadOnly())->toBeTrue();
 
     // Verify it's readonly
-    expect($reflection->isReadOnly())->toBeTrue();
 
     // Verify full attribute instantiation
     $catalogReflection = new ReflectionClass(CatalogSection::class);

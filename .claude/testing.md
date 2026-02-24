@@ -149,9 +149,16 @@ test('module loader discovers modules in all directories', function () {
 - Use present tense: "resolves", "throws", "returns"
 - Be specific about behavior being tested
 - Include the condition: "when", "with", "without"
+- **Keep test names concise** - don't enumerate every method or property name in the test title
 - **Never use "demonstrate" in test names** - tests verify behavior, they don't demonstrate it
 
 ```php
+// WRONG - enumerates every method name (too verbose, fragile)
+it('defines MenuItemInterface with getId, getLabel, getUrl, getIcon, getSortOrder, getPermission methods', ...);
+
+// RIGHT - concise, describes the concept
+it('defines MenuItemInterface with get methods', ...);
+
 // WRONG - "demonstrate" implies pseudo-functionality
 it('uses DisableRoute to demonstrate route removal', ...);
 
@@ -283,6 +290,16 @@ expect($value)->toBe(null);
   use Marko\Database\Migration\Migration;  // Appears in heredoc strings but not in code
   ```
 
+- [ ] **No unused variables** - Remove variable assignments where the value is never read. Use the expression directly.
+  ```php
+  // WRONG - $attributes assigned but never used
+  $attributes = $reflection->getAttributes(Attribute::class);
+  $attr = $reflection->getAttributes(Attribute::class)[0]->newInstance();
+
+  // CORRECT - use the expression directly
+  $attr = $reflection->getAttributes(Attribute::class)[0]->newInstance();
+  ```
+
 - [ ] **All classes imported with `use` statements** - Never use inline fully-qualified class names. Import at the top of the file.
   ```php
   // CORRECT
@@ -310,6 +327,14 @@ expect($value)->toBe(null);
   ```
 
 - [ ] **Test names use present tense verbs** - "resolves", "throws", "returns", not "should resolve" or "demonstrates"
+
+- [ ] **Test names are concise** - Don't enumerate every method or property in the title. Describe the concept.
+  ```php
+  // WRONG - lists every method name
+  it('defines MenuItemInterface with getId, getLabel, getUrl, getIcon, getSortOrder, getPermission methods', ...);
+  // CORRECT
+  it('defines MenuItemInterface with get methods', ...);
+  ```
 
 - [ ] **No "demonstrate" in test names** - Tests verify behavior, they don't demonstrate it
 
@@ -359,9 +384,18 @@ expect($value)->toBe(null);
   }
   ```
 
-- [ ] **Use `readonly` on appropriate properties** - Constructor-promoted properties that aren't reassigned should be `readonly`:
+- [ ] **Use `readonly` on appropriate properties and classes** - Constructor-promoted properties that aren't reassigned should be `readonly`. Anonymous classes whose properties are set once via constructor should use `readonly class`:
   ```php
-  // CORRECT
+  // CORRECT - readonly class for immutable anonymous class
+  return new readonly class ($id, $label) implements SectionInterface
+  {
+      public function __construct(
+          private string $id,
+          private string $label,
+      ) {}
+  };
+
+  // CORRECT - readonly on individual property
   public function __construct(
       private readonly array $storage,
   ) {}

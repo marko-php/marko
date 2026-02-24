@@ -35,6 +35,16 @@ class AdminUser extends Entity implements AdminUserInterface
     #[Column('updated_at')]
     public ?string $updatedAt = null;
 
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
     public function getAuthIdentifier(): int|string
     {
         return $this->id ?? 0;

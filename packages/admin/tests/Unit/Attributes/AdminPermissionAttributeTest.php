@@ -16,10 +16,10 @@ it('creates AdminPermission attribute targeting classes with repeatable support 
 
     // Verify it targets classes and is repeatable
     $attributeAttribute = $reflection->getAttributes(Attribute::class)[0]->newInstance();
-    expect($attributeAttribute->flags)->toBe(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE);
+    expect($attributeAttribute->flags)->toBe(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)
+        ->and($reflection->isReadOnly())->toBeTrue();
 
     // Verify it's readonly
-    expect($reflection->isReadOnly())->toBeTrue();
 
     // Verify repeatable usage
     $catalogReflection = new ReflectionClass(CatalogController::class);

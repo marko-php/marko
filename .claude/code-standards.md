@@ -117,7 +117,34 @@ public function doSomething(): void
 }
 ```
 
-### 3. Constructor Property Promotion (Always)
+### 3. No Dead Code
+Never leave unused imports, unused variables, or unused constructor dependencies in code. Review every `use` statement, variable assignment, and constructor parameter before finishing.
+
+```php
+// WRONG - $parser injected but never used
+public function __construct(
+    private readonly ClassFileParser $parser,
+) {}
+
+// CORRECT - remove unused dependency entirely
+// (If class has no remaining dependencies, make it `readonly class` with no constructor)
+
+// WRONG - variable assigned but never read
+$attributes = $reflection->getAttributes(Attribute::class);
+$attr = $reflection->getAttributes(Attribute::class)[0]->newInstance();
+
+// CORRECT - use the expression directly
+$attr = $reflection->getAttributes(Attribute::class)[0]->newInstance();
+```
+
+**Rules:**
+- Remove unused `use` imports
+- Remove unused variable assignments
+- Remove unused constructor dependencies (and the constructor itself if empty)
+- Remove unused method parameters when safe to do so
+- When removing a constructor dependency, update all call sites (tests, bindings, etc.)
+
+### 4. Constructor Property Promotion (Always)
 Always use constructor property promotion - reduces boilerplate:
 ```php
 // CORRECT - constructor property promotion
@@ -145,12 +172,17 @@ Use `readonly` when immutability is the design intent - not as a blanket rule.
 - DTOs (data transfer objects)
 - Configuration objects
 
+**Also use `readonly class` when:**
+- The class has no mutable state at all (even zero properties after refactoring)
+- The class is a stateless service with only `readonly` dependencies
+- Anonymous classes in tests where properties are set once via constructor
+
 **Not needed for:**
 - Entities with mutable state
 - Builders
 - Objects designed to change
 
-**If ALL properties are readonly, mark the class instead:**
+**If ALL properties are readonly (or there are none), mark the class instead:**
 ```php
 // CORRECT - readonly class when all properties are immutable
 readonly class OrderId
@@ -434,6 +466,19 @@ public function registerModule(
 - Opening brace `{` on same line as closing parenthesis/return type
 - Only zero-parameter methods stay on one line: `public function getName(): string {`
 
+**This also applies to function call arguments**, including closures passed to functions like `usort()`, `array_map()`, etc:
+
+```php
+// CORRECT - multiline when arguments are long
+usort(
+    $sections,
+    fn (AdminSectionInterface $a, AdminSectionInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder(),
+);
+
+// WRONG - single line exceeds readable length
+usort($sections, fn (AdminSectionInterface $a, AdminSectionInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder());
+```
+
 ### 14. Anonymous Class Braces (Next Line)
 Anonymous classes follow the same brace placement as regular classes - opening brace on the **next line**.
 **Enforced by:** php-cs-fixer `braces_position.anonymous_classes_opening_brace`
@@ -575,6 +620,8 @@ public function resolve(array $modules): array  // Throws exceptions without doc
 - Private methods that throw should also be documented if the exception propagates
 - Description after exception name is optional (omit if exception name is self-explanatory)
 - **Test files are exempt** from `@throws` requirements (inspection disabled for `packages/*/tests/`)
+
+> **CRITICAL:** Every method that contains a `throw` statement or calls a method that throws MUST have a `@throws` tag. This is the most commonly missed rule. After writing any method, scan it for `throw` keywords and method calls that propagate exceptions, and add the `@throws` PHPDoc block. Import the exception class if not already imported.
 
 **Enforced by:** Custom php-cs-fixer rule `Marko/phpdoc_consolidate_throws` automatically consolidates multiple `@throws` tags into one.
 

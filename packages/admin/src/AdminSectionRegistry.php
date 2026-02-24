@@ -13,6 +13,9 @@ class AdminSectionRegistry implements AdminSectionRegistryInterface
     /** @var array<string, AdminSectionInterface> */
     private array $sections = [];
 
+    /**
+     * @throws AdminException
+     */
     public function register(AdminSectionInterface $section): void
     {
         $id = $section->getId();
@@ -31,11 +34,17 @@ class AdminSectionRegistry implements AdminSectionRegistryInterface
     {
         $sections = array_values($this->sections);
 
-        usort($sections, fn (AdminSectionInterface $a, AdminSectionInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder());
+        usort(
+            $sections,
+            fn (AdminSectionInterface $a, AdminSectionInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder(),
+        );
 
         return $sections;
     }
 
+    /**
+     * @throws AdminException
+     */
     public function get(string $id): AdminSectionInterface
     {
         if (!isset($this->sections[$id])) {

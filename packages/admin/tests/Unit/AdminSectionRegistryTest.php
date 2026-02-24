@@ -55,7 +55,7 @@ it('throws AdminException when getting nonexistent section', function (): void {
 
 function createMockSection(string $id, string $label, int $sortOrder): AdminSectionInterface
 {
-    return new class ($id, $label, $sortOrder) implements AdminSectionInterface
+    return new readonly class ($id, $label, $sortOrder) implements AdminSectionInterface
     {
         public function __construct(
             private string $id,

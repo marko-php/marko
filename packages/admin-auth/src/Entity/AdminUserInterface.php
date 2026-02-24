@@ -8,6 +8,10 @@ use Marko\Auth\AuthenticatableInterface;
 
 interface AdminUserInterface extends AuthenticatableInterface
 {
+    public function getEmail(): string;
+
+    public function getName(): string;
+
     /**
      * Set the loaded roles and their aggregated permission keys.
      *

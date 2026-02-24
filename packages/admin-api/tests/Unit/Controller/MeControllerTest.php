@@ -200,7 +200,7 @@ it('applies AdminAuthMiddleware to all routes', function (): void {
 
     expect($middleware->middleware)->toContain(AdminAuthMiddleware::class);
 
-    // Verify route attribute exists on the me method
+    // Verify route attribute exists on the "me" method
     $meMethod = new ReflectionMethod(MeController::class, 'me');
     $meRouteAttributes = $meMethod->getAttributes(Get::class);
 
