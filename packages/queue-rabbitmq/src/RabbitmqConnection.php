@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Queue\Rabbitmq;
 
+use Exception;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
@@ -26,6 +27,9 @@ class RabbitmqConnection
         public readonly ?array $tlsOptions = null,
     ) {}
 
+    /**
+     * @throws Exception
+     */
     public function channel(): AMQPChannel
     {
         if ($this->channel === null) {
@@ -69,6 +73,8 @@ class RabbitmqConnection
 
     /**
      * Create the AMQP connection. Override in tests.
+     *
+     * @throws Exception
      */
     protected function createConnection(): AbstractConnection
     {

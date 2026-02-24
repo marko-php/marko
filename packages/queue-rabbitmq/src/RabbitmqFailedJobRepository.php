@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Marko\Queue\Rabbitmq;
 
+use DateMalformedStringException;
 use DateTimeImmutable;
+use Exception;
+use JsonException;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -14,9 +17,12 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
     private const string QUEUE_NAME = 'failed_jobs';
 
     public function __construct(
-        private RabbitmqConnection $connection,
+        private readonly RabbitmqConnection $connection,
     ) {}
 
+    /**
+     * @throws JsonException|Exception
+     */
     public function store(
         FailedJob $failedJob,
     ): void {
@@ -24,9 +30,7 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
 
         $channel->queue_declare(
             self::QUEUE_NAME,
-            passive: false,
             durable: true,
-            exclusive: false,
             auto_delete: false,
         );
 
@@ -46,6 +50,9 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
         $channel->basic_publish($message, '', self::QUEUE_NAME);
     }
 
+    /**
+     * @throws DateMalformedStringException|JsonException|Exception
+     */
     public function all(): array
     {
         $channel = $this->connection->channel();
@@ -59,6 +66,9 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
         return $failedJobs;
     }
 
+    /**
+     * @throws DateMalformedStringException|JsonException|Exception
+     */
     public function find(
         string $id,
     ): ?FailedJob {
@@ -76,6 +86,9 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
         return $found;
     }
 
+    /**
+     * @throws Exception
+     */
     public function delete(
         string $id,
     ): bool {
@@ -94,6 +107,9 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
         return $found;
     }
 
+    /**
+     * @throws Exception
+     */
     public function clear(): int
     {
         $channel = $this->connection->channel();
@@ -101,6 +117,9 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
         return (int) $channel->queue_purge(self::QUEUE_NAME);
     }
 
+    /**
+     * @throws Exception
+     */
     public function count(): int
     {
         $channel = $this->connection->channel();
@@ -110,6 +129,9 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
         return (int) $messageCount;
     }
 
+    /**
+     * @throws DateMalformedStringException|JsonException
+     */
     private function deserializeMessage(
         AMQPMessage $message,
     ): FailedJob {

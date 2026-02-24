@@ -13,140 +13,141 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
-function createFailedJobMockChannel(): AMQPChannel
+/** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
+class MockFailedJobChannel extends AMQPChannel
 {
-    return new class () extends AMQPChannel
-    {
-        /** @var list<array{body: string, properties: array<string, mixed>}> */
-        public array $publishedMessages = [];
+    /** @var list<array{body: string, properties: array<string, mixed>}> */
+    public array $publishedMessages = [];
 
-        /** @var list<int> */
-        public array $ackedTags = [];
+    /** @var list<int> */
+    public array $ackedTags = [];
 
-        /** @var list<array{tag: int, multiple: bool, requeue: bool}> */
-        public array $nackedTags = [];
+    /** @var list<array{tag: int, multiple: bool, requeue: bool}> */
+    public array $nackedTags = [];
 
-        public int $purgeCount = 0;
+    public int $purgeCount = 0;
 
-        public int $passiveDeclareCount = 0;
+    public int $passiveDeclareCount = 0;
 
-        /** @var list<array{body: string, message_id: string, delivery_tag: int}> */
-        public array $queuedMessages = [];
+    /** @var list<array{body: string, message_id: string, delivery_tag: int}> */
+    public array $queuedMessages = [];
 
-        private int $getIndex = 0;
+    private int $getIndex = 0;
 
-        public function __construct() {}
+    /** @noinspection PhpMissingParentConstructorInspection */
+    public function __construct() {}
 
-        public function queue_declare(
-            $queue = '',
-            $passive = false,
-            $durable = false,
-            $exclusive = false,
-            $auto_delete = true,
-            $nowait = false,
-            $arguments = [],
-            $ticket = null,
-        ): ?array {
-            if ($passive) {
-                return [$queue, $this->passiveDeclareCount, 0];
-            }
-
-            return [$queue, 0, 0];
+    public function queue_declare(
+        $queue = '',
+        $passive = false,
+        $durable = false,
+        $exclusive = false,
+        $auto_delete = true,
+        $nowait = false,
+        $arguments = [],
+        $ticket = null,
+    ): ?array {
+        if ($passive) {
+            return [$queue, $this->passiveDeclareCount, 0];
         }
 
-        public function basic_publish(
-            $msg,
-            $exchange = '',
-            $routing_key = '',
-            $mandatory = false,
-            $immediate = false,
-            $ticket = null,
-        ): void {
-            $this->publishedMessages[] = [
-                'body' => $msg->getBody(),
-                'properties' => $msg->get_properties(),
-            ];
+        return [$queue, 0, 0];
+    }
 
-            $this->queuedMessages[] = [
-                'body' => $msg->getBody(),
-                'message_id' => $msg->get('message_id'),
-                'delivery_tag' => count($this->queuedMessages) + 1,
-            ];
+    public function basic_publish(
+        $msg,
+        $exchange = '',
+        $routing_key = '',
+        $mandatory = false,
+        $immediate = false,
+        $ticket = null,
+    ): void {
+        $this->publishedMessages[] = [
+            'body' => $msg->getBody(),
+            'properties' => $msg->get_properties(),
+        ];
+
+        $this->queuedMessages[] = [
+            'body' => $msg->getBody(),
+            'message_id' => $msg->get('message_id'),
+            'delivery_tag' => count($this->queuedMessages) + 1,
+        ];
+    }
+
+    public function basic_get(
+        $queue = '',
+        $no_ack = false,
+        $ticket = null,
+    ): ?AMQPMessage {
+        if ($this->getIndex >= count($this->queuedMessages)) {
+            $this->getIndex = 0;
+
+            return null;
         }
 
-        public function basic_get(
-            $queue = '',
-            $no_ack = false,
-            $ticket = null,
-        ): ?AMQPMessage {
-            if ($this->getIndex >= count($this->queuedMessages)) {
-                $this->getIndex = 0;
+        $messageData = $this->queuedMessages[$this->getIndex];
+        $this->getIndex++;
 
-                return null;
-            }
+        $msg = new AMQPMessage(
+            $messageData['body'],
+            ['message_id' => $messageData['message_id']],
+        );
+        $msg->setDeliveryTag($messageData['delivery_tag']);
 
-            $messageData = $this->queuedMessages[$this->getIndex];
-            $this->getIndex++;
+        return $msg;
+    }
 
-            $msg = new AMQPMessage(
-                $messageData['body'],
-                ['message_id' => $messageData['message_id']],
-            );
-            $msg->setDeliveryTag($messageData['delivery_tag']);
+    public function basic_ack(
+        $delivery_tag,
+        $multiple = false,
+    ): void {
+        $this->ackedTags[] = $delivery_tag;
+    }
 
-            return $msg;
-        }
+    public function basic_nack(
+        $delivery_tag,
+        $multiple = false,
+        $requeue = false,
+    ): void {
+        $this->nackedTags[] = [
+            'tag' => $delivery_tag,
+            'multiple' => $multiple,
+            'requeue' => $requeue,
+        ];
+    }
 
-        public function basic_ack(
-            $delivery_tag,
-            $multiple = false,
-        ): void {
-            $this->ackedTags[] = $delivery_tag;
-        }
+    public function queue_purge(
+        $queue = '',
+        $nowait = false,
+        $ticket = null,
+    ): ?int {
+        $count = count($this->queuedMessages);
+        $this->queuedMessages = [];
+        $this->purgeCount++;
 
-        public function basic_nack(
-            $delivery_tag,
-            $multiple = false,
-            $requeue = false,
-        ): void {
-            $this->nackedTags[] = [
-                'tag' => $delivery_tag,
-                'multiple' => $multiple,
-                'requeue' => $requeue,
-            ];
-        }
-
-        public function queue_purge(
-            $queue = '',
-            $nowait = false,
-            $ticket = null,
-        ): ?int {
-            $count = count($this->queuedMessages);
-            $this->queuedMessages = [];
-            $this->purgeCount++;
-
-            return $count;
-        }
-    };
+        return $count;
+    }
 }
 
 function createFailedJobTestConnection(
-    AMQPChannel $mockChannel,
+    MockFailedJobChannel $mockChannel,
 ): RabbitmqConnection {
     return new class ($mockChannel) extends RabbitmqConnection
     {
         public function __construct(
-            private AMQPChannel $mockChannel,
+            private readonly MockFailedJobChannel $mockChannel,
         ) {
             parent::__construct();
         }
 
         protected function createConnection(): AbstractConnection
         {
+            /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
             return new class ($this->mockChannel) extends AbstractConnection
             {
+                /** @noinspection PhpMissingParentConstructorInspection */
                 public function __construct(
-                    private AMQPChannel $mockChannel,
+                    private readonly AMQPChannel $mockChannel,
                 ) {}
 
                 public function channel(
@@ -165,7 +166,7 @@ function createFailedJobTestConnection(
 }
 
 test('it implements FailedJobRepositoryInterface', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $connection = createFailedJobTestConnection($channel);
 
     $repository = new RabbitmqFailedJobRepository($connection);
@@ -174,7 +175,7 @@ test('it implements FailedJobRepositoryInterface', function (): void {
 });
 
 test('it stores failed job as message in failed jobs queue', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $connection = createFailedJobTestConnection($channel);
     $repository = new RabbitmqFailedJobRepository($connection);
 
@@ -200,7 +201,7 @@ test('it stores failed job as message in failed jobs queue', function (): void {
 });
 
 test('it stores job ID as message ID property', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $connection = createFailedJobTestConnection($channel);
     $repository = new RabbitmqFailedJobRepository($connection);
 
@@ -221,7 +222,7 @@ test('it stores job ID as message ID property', function (): void {
 });
 
 test('it retrieves all failed jobs from queue', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $connection = createFailedJobTestConnection($channel);
     $repository = new RabbitmqFailedJobRepository($connection);
 
@@ -250,14 +251,14 @@ test('it retrieves all failed jobs from queue', function (): void {
         ->and($failedJobs[0]->id)->toBe('failed-1')
         ->and($failedJobs[0]->queue)->toBe('default')
         ->and($failedJobs[1]->id)->toBe('failed-2')
-        ->and($failedJobs[1]->queue)->toBe('emails');
+        ->and($failedJobs[1]->queue)->toBe('emails')
+        ->and($channel->nackedTags)->toHaveCount(2);
 
     // Messages should be nacked/requeued (not acked/removed)
-    expect($channel->nackedTags)->toHaveCount(2);
 });
 
 test('it returns empty array when no failed jobs exist', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $connection = createFailedJobTestConnection($channel);
     $repository = new RabbitmqFailedJobRepository($connection);
 
@@ -267,7 +268,7 @@ test('it returns empty array when no failed jobs exist', function (): void {
 });
 
 test('it finds failed job by ID', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $connection = createFailedJobTestConnection($channel);
     $repository = new RabbitmqFailedJobRepository($connection);
 
@@ -299,7 +300,7 @@ test('it finds failed job by ID', function (): void {
 });
 
 test('it returns null when failed job not found', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $connection = createFailedJobTestConnection($channel);
     $repository = new RabbitmqFailedJobRepository($connection);
 
@@ -319,7 +320,7 @@ test('it returns null when failed job not found', function (): void {
 });
 
 test('it deletes failed job by ID and returns true', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $connection = createFailedJobTestConnection($channel);
     $repository = new RabbitmqFailedJobRepository($connection);
 
@@ -343,14 +344,14 @@ test('it deletes failed job by ID and returns true', function (): void {
 
     $result = $repository->delete('failed-1');
 
-    expect($result)->toBeTrue();
+    expect($result)->toBeTrue()
+        ->and($channel->ackedTags)->toHaveCount(1);
 
     // The target message should have been acked (removed)
-    expect($channel->ackedTags)->toHaveCount(1);
 });
 
 test('it returns false when deleting non-existent failed job', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $connection = createFailedJobTestConnection($channel);
     $repository = new RabbitmqFailedJobRepository($connection);
 
@@ -371,7 +372,7 @@ test('it returns false when deleting non-existent failed job', function (): void
 });
 
 test('it clears all failed jobs via queue purge', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $connection = createFailedJobTestConnection($channel);
     $repository = new RabbitmqFailedJobRepository($connection);
 
@@ -400,7 +401,7 @@ test('it clears all failed jobs via queue purge', function (): void {
 });
 
 test('it counts failed jobs via passive queue declare', function (): void {
-    $channel = createFailedJobMockChannel();
+    $channel = new MockFailedJobChannel();
     $channel->passiveDeclareCount = 5;
     $connection = createFailedJobTestConnection($channel);
     $repository = new RabbitmqFailedJobRepository($connection);

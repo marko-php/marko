@@ -5,21 +5,24 @@ declare(strict_types=1);
 namespace Marko\Queue\Rabbitmq\Tests;
 
 use Marko\Queue\Rabbitmq\RabbitmqConnection;
-use OpenSSLCertificate;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 
 function createMockAmqpConnection(): AbstractConnection
 {
+    /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
     $mockChannel = new class () extends AMQPChannel
     {
+        /** @noinspection PhpMissingParentConstructorInspection */
         public function __construct() {}
     };
 
+    /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
     return new class ($mockChannel) extends AbstractConnection
     {
+        /** @noinspection PhpMissingParentConstructorInspection */
         public function __construct(
-            private AMQPChannel $mockChannel,
+            private readonly AMQPChannel $mockChannel,
         ) {}
 
         public function channel(
@@ -36,24 +39,20 @@ function createMockAmqpConnection(): AbstractConnection
 }
 
 function createTestableConnection(
-    bool &$connectCalled,
     ?AbstractConnection $mockAmqpConnection = null,
 ): RabbitmqConnection {
     $mockAmqpConnection ??= createMockAmqpConnection();
 
-    return new class ($connectCalled, $mockAmqpConnection) extends RabbitmqConnection
+    return new class ($mockAmqpConnection) extends RabbitmqConnection
     {
         public function __construct(
-            private bool &$connectCalled,
-            private AbstractConnection $mockConnection,
+            private readonly AbstractConnection $mockConnection,
         ) {
             parent::__construct();
         }
 
         protected function createConnection(): AbstractConnection
         {
-            $this->connectCalled = true;
-
             return $this->mockConnection;
         }
     };
@@ -89,22 +88,20 @@ describe('RabbitmqConnection', function (): void {
     });
 
     it('lazily connects on first channel call', function (): void {
-        $connectCalled = false;
-        $connection = createTestableConnection($connectCalled);
+        $connection = createTestableConnection();
 
-        // Before calling channel(), connection should not have been created
-        expect($connectCalled)->toBeFalse();
+        // Before calling channel(), should not be connected
+        expect($connection->isConnected())->toBeFalse();
 
         // Call channel() - this should trigger lazy connection
         $channel = $connection->channel();
 
-        expect($connectCalled)->toBeTrue()
+        expect($connection->isConnected())->toBeTrue()
             ->and($channel)->toBeInstanceOf(AMQPChannel::class);
     });
 
     it('returns same channel on subsequent calls', function (): void {
-        $connectCalled = false;
-        $connection = createTestableConnection($connectCalled);
+        $connection = createTestableConnection();
 
         $channel1 = $connection->channel();
         $channel2 = $connection->channel();
@@ -113,8 +110,7 @@ describe('RabbitmqConnection', function (): void {
     });
 
     it('reports connected status correctly', function (): void {
-        $connectCalled = false;
-        $connection = createTestableConnection($connectCalled);
+        $connection = createTestableConnection();
 
         // Before connecting, should report not connected
         expect($connection->isConnected())->toBeFalse();
@@ -126,8 +122,7 @@ describe('RabbitmqConnection', function (): void {
     });
 
     it('disconnects and clears channel reference', function (): void {
-        $connectCalled = false;
-        $connection = createTestableConnection($connectCalled);
+        $connection = createTestableConnection();
 
         // Connect by requesting a channel
         $connection->channel();
@@ -138,12 +133,10 @@ describe('RabbitmqConnection', function (): void {
 
         expect($connection->isConnected())->toBeFalse();
 
-        // After disconnect, calling channel() again should create a new connection
-        $connectCalled = false;
+        // After disconnect, calling channel() again should reconnect
         $connection->channel();
 
-        expect($connectCalled)->toBeTrue()
-            ->and($connection->isConnected())->toBeTrue();
+        expect($connection->isConnected())->toBeTrue();
     });
 
     it('creates SSL connection when TLS options are provided', function (): void {
@@ -162,8 +155,9 @@ describe('RabbitmqConnection', function (): void {
         {
             public function __construct(
                 array $tlsOptions,
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
                 private mixed &$capturedContext,
-                private AbstractConnection $mockConnection,
+                private readonly AbstractConnection $mockConnection,
             ) {
                 parent::__construct(
                     port: 5671,
@@ -186,7 +180,7 @@ describe('RabbitmqConnection', function (): void {
 
         // Verify SSL context was created
         expect($capturedContext)->not->toBeNull()
-            ->and(is_resource($capturedContext) || $capturedContext instanceof OpenSSLCertificate || is_object($capturedContext))->toBeTrue();
+            ->and(is_resource($capturedContext) || is_object($capturedContext))->toBeTrue();
 
         // Verify stream context options contain SSL settings
         $options = stream_context_get_options($capturedContext);

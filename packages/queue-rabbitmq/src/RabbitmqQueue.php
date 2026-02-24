@@ -11,6 +11,7 @@ use Marko\Queue\Rabbitmq\Exchange\ExchangeConfig;
 use Marko\Queue\Rabbitmq\Exchange\ExchangeType;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
+use Random\RandomException;
 
 class RabbitmqQueue implements QueueInterface
 {
@@ -23,11 +24,14 @@ class RabbitmqQueue implements QueueInterface
     private array $messagePayloads = [];
 
     public function __construct(
-        private RabbitmqConnection $connection,
-        private ExchangeConfig $exchangeConfig,
-        private string $defaultQueue = 'default',
+        private readonly RabbitmqConnection $connection,
+        private readonly ExchangeConfig $exchangeConfig,
+        private readonly string $defaultQueue = 'default',
     ) {}
 
+    /**
+     * @throws RandomException|Exception
+     */
     public function push(
         JobInterface $job,
         ?string $queue = null,
@@ -56,6 +60,9 @@ class RabbitmqQueue implements QueueInterface
         return $id;
     }
 
+    /**
+     * @throws RandomException|Exception
+     */
     public function later(
         int $delay,
         JobInterface $job,
@@ -69,9 +76,7 @@ class RabbitmqQueue implements QueueInterface
         $channel = $this->connection->channel();
         $channel->queue_declare(
             $delayQueue,
-            passive: false,
             durable: true,
-            exclusive: false,
             auto_delete: false,
             arguments: new AMQPTable([
                 'x-dead-letter-exchange' => $this->exchangeConfig->name,
@@ -96,6 +101,9 @@ class RabbitmqQueue implements QueueInterface
         return $id;
     }
 
+    /**
+     * @throws Exception
+     */
     public function pop(
         ?string $queue = null,
     ): ?JobInterface {
@@ -121,6 +129,9 @@ class RabbitmqQueue implements QueueInterface
         return $job;
     }
 
+    /**
+     * @throws Exception
+     */
     public function size(
         ?string $queue = null,
     ): int {
@@ -136,6 +147,9 @@ class RabbitmqQueue implements QueueInterface
         }
     }
 
+    /**
+     * @throws Exception
+     */
     public function clear(
         ?string $queue = null,
     ): int {
@@ -146,6 +160,9 @@ class RabbitmqQueue implements QueueInterface
         return $this->connection->channel()->queue_purge($queueName);
     }
 
+    /**
+     * @throws Exception
+     */
     public function delete(
         string $jobId,
     ): bool {
@@ -159,6 +176,9 @@ class RabbitmqQueue implements QueueInterface
         return true;
     }
 
+    /**
+     * @throws Exception
+     */
     public function release(
         string $jobId,
         int $delay = 0,
@@ -173,16 +193,14 @@ class RabbitmqQueue implements QueueInterface
         if ($delay === 0) {
             $channel->basic_nack($deliveryTag, false, true);
         } else {
-            $channel->basic_nack($deliveryTag, false, false);
+            $channel->basic_nack($deliveryTag);
 
             $queueName = $this->defaultQueue;
             $delayQueue = $queueName . '_delay';
 
             $channel->queue_declare(
                 $delayQueue,
-                passive: false,
                 durable: true,
-                exclusive: false,
                 auto_delete: false,
                 arguments: new AMQPTable([
                     'x-dead-letter-exchange' => $this->exchangeConfig->name,
@@ -208,6 +226,9 @@ class RabbitmqQueue implements QueueInterface
         return true;
     }
 
+    /**
+     * @throws Exception
+     */
     private function declare(
         ?string $queue = null,
     ): void {
@@ -221,16 +242,13 @@ class RabbitmqQueue implements QueueInterface
         $channel->exchange_declare(
             $this->exchangeConfig->name,
             $this->exchangeConfig->type->value,
-            passive: false,
             durable: $this->exchangeConfig->durable,
             auto_delete: $this->exchangeConfig->autoDelete,
         );
 
         $channel->queue_declare(
             $queueName,
-            passive: false,
             durable: true,
-            exclusive: false,
             auto_delete: false,
         );
 
@@ -247,13 +265,14 @@ class RabbitmqQueue implements QueueInterface
         string $queueName,
     ): string {
         return match ($this->exchangeConfig->type) {
-            ExchangeType::Direct => $queueName,
-            ExchangeType::Fanout => '',
-            ExchangeType::Topic => $queueName,
-            ExchangeType::Headers => '',
+            ExchangeType::Direct, ExchangeType::Topic => $queueName,
+            ExchangeType::Fanout, ExchangeType::Headers => '',
         };
     }
 
+    /**
+     * @throws RandomException
+     */
     private function generateId(): string
     {
         return sprintf(

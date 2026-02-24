@@ -317,6 +317,16 @@ expect($value)->toBe(null);
 
 - [ ] **Anonymous class properties accessed via reflection have `@noinspection PhpUnused`** - When properties are only accessed through ORM/reflection
 
+- [ ] **Anonymous class stubs that skip parent constructor have `@noinspection PhpMissingParentConstructorInspection`** - When extending a class (not implementing an interface) and intentionally not calling `parent::__construct()`. Add on BOTH the instantiation line and the constructor:
+  ```php
+  /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
+  $mock = new class () extends AMQPChannel
+  {
+      /** @noinspection PhpMissingParentConstructorInspection */
+      public function __construct() {}
+  };
+  ```
+
 - [ ] **Reference properties have `@noinspection PhpPropertyOnlyWrittenInspection`** - When using reference properties (`private array &$log`) to track state from anonymous classes:
   ```php
   public function __construct(
@@ -325,17 +335,18 @@ expect($value)->toBe(null);
   ) {}
   ```
 
-- [ ] **Use `@var` annotations for polymorphic call warnings** - When accessing properties/methods on nullable or generic return types:
+- [ ] **Use `@var` annotations when accessing subclass properties on interface/parent return types** - When a method returns an interface or parent type but the test needs subclass-specific properties:
   ```php
-  // CORRECT - annotate the type before accessing properties
+  // CORRECT - narrow the type when pop() returns ?JobInterface but we need TestJob::$message
+  /** @var TestJob $popped */
+  $popped = $queue->pop();
+  expect($popped)->toBeInstanceOf(TestJob::class)
+      ->and($popped->message)->toBe('expected value');
+
+  // CORRECT - narrow the type when find() returns a generic type
   /** @var User $user */
   $user = $repository->find(1);
   expect($user->name)->toBe('Alice');
-
-  // CORRECT - annotate array element types
-  /** @var array<Product> $products */
-  $products = $repository->findBy(['active' => true]);
-  expect($products[0]->isActive)->toBeTrue();
   ```
 
 - [ ] **Remove unused properties from test fixtures** - Delete declared properties that are never used:
@@ -567,22 +578,46 @@ return new class () extends RealClass
 - When the parent class has no constructor
 - When you do call `parent::__construct()` in your stub
 
-### Stub Return Types with Custom Properties
-When a stub helper returns an anonymous class with custom properties, document them in the return type to avoid "potentially polymorphic call" warnings:
+### Stub Classes with Custom Properties (Named Class Pattern)
+When tests need to access custom properties on a stub that extends a real class, **extract the anonymous class into a named class** at the top of the test file. The `@return Type&object{...}` intersection annotation does NOT work in PhpStorm for this purpose.
+
 ```php
-/**
- * @return Migrator&object{rolledBack: array<string>, rollbackCallCount: int}
- */
-function createStubMigrator(): Migrator {
-    return new class () extends Migrator
+// CORRECT - Named class avoids "Potentially polymorphic call" warnings
+/** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
+class MockQueueChannel extends AMQPChannel
+{
+    /** @var array<int, array<string, mixed>> */
+    public array $calls = [];
+
+    /** @noinspection PhpMissingParentConstructorInspection */
+    public function __construct() {}
+
+    public function basic_publish($msg, ...): void
     {
-        public array $rolledBack = [];
-        public int $rollbackCallCount = 0;
-        // ...
+        $this->calls[] = ['method' => 'basic_publish', 'msg' => $msg];
+    }
+}
+
+// Tests can now access $channel->calls without warnings
+$channel = new MockQueueChannel();
+// ... use $channel in test ...
+$publishCalls = array_filter($channel->calls, fn ($c) => $c['method'] === 'basic_publish');
+
+// WRONG - Anonymous class causes "Potentially polymorphic call" on $channel->calls
+function createMockChannel(): AMQPChannel {
+    return new class () extends AMQPChannel {
+        public array $calls = [];  // PhpStorm can't see this through AMQPChannel return type
     };
 }
 ```
-The `&object{...}` syntax tells PhpStorm about the additional properties on the returned object.
+
+**When to extract to named class:**
+- The stub has custom public properties accessed in tests (e.g., `$mock->calls`, `$mock->publishedMessages`)
+- Multiple tests use the same stub and access its custom members
+
+**When anonymous class is fine:**
+- The stub only overrides parent/interface methods and has no custom properties
+- Custom properties are only accessed inside the anonymous class itself
 
 ### Using `readonly` Properties
 Always use `readonly` on constructor-promoted properties in anonymous classes:

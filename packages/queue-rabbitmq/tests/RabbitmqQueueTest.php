@@ -13,163 +13,169 @@ use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
+/** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
+class MockQueueChannel extends AMQPChannel
+{
+    /** @var array<int, array<string, mixed>> */
+    public array $calls = [];
+
+    /** @noinspection PhpMissingParentConstructorInspection */
+    public function __construct(
+        private readonly ?AMQPMessage $basicGetReturn = null,
+        private readonly int $queueMessageCount = 0,
+        private readonly int $queuePurgeCount = 0,
+        private readonly bool $passiveDeclareThrows = false,
+    ) {}
+
+    public function exchange_declare(
+        $exchange,
+        $type,
+        $passive = false,
+        $durable = false,
+        $auto_delete = true,
+        $internal = false,
+        $nowait = false,
+        $arguments = [],
+        $ticket = null,
+    ): null {
+        $this->calls[] = [
+            'method' => 'exchange_declare',
+            'exchange' => $exchange,
+            'type' => $type,
+            'durable' => $durable,
+            'auto_delete' => $auto_delete,
+        ];
+
+        return null;
+    }
+
+    public function queue_declare(
+        $queue = '',
+        $passive = false,
+        $durable = false,
+        $exclusive = false,
+        $auto_delete = true,
+        $nowait = false,
+        $arguments = [],
+        $ticket = null,
+    ): ?array {
+        if ($passive && $this->passiveDeclareThrows) {
+            throw new RuntimeException('NOT_FOUND - no queue');
+        }
+
+        $this->calls[] = [
+            'method' => 'queue_declare',
+            'queue' => $queue,
+            'passive' => $passive,
+            'durable' => $durable,
+            'arguments' => $arguments,
+        ];
+
+        return [$queue, $this->queueMessageCount, 0];
+    }
+
+    public function queue_bind(
+        $queue,
+        $exchange,
+        $routing_key = '',
+        $nowait = false,
+        $arguments = [],
+        $ticket = null,
+    ): null {
+        $this->calls[] = [
+            'method' => 'queue_bind',
+            'queue' => $queue,
+            'exchange' => $exchange,
+            'routing_key' => $routing_key,
+        ];
+
+        return null;
+    }
+
+    public function basic_publish(
+        $msg,
+        $exchange = '',
+        $routing_key = '',
+        $mandatory = false,
+        $immediate = false,
+        $ticket = null,
+    ): void {
+        $this->calls[] = [
+            'method' => 'basic_publish',
+            'msg' => $msg,
+            'exchange' => $exchange,
+            'routing_key' => $routing_key,
+        ];
+    }
+
+    public function basic_get(
+        $queue = '',
+        $no_ack = false,
+        $ticket = null,
+    ): ?AMQPMessage {
+        $this->calls[] = [
+            'method' => 'basic_get',
+            'queue' => $queue,
+        ];
+
+        return $this->basicGetReturn;
+    }
+
+    public function basic_ack(
+        $delivery_tag,
+        $multiple = false,
+    ): void {
+        $this->calls[] = [
+            'method' => 'basic_ack',
+            'delivery_tag' => $delivery_tag,
+        ];
+    }
+
+    public function basic_nack(
+        $delivery_tag,
+        $multiple = false,
+        $requeue = false,
+    ): void {
+        $this->calls[] = [
+            'method' => 'basic_nack',
+            'delivery_tag' => $delivery_tag,
+            'multiple' => $multiple,
+            'requeue' => $requeue,
+        ];
+    }
+
+    public function queue_purge(
+        $queue = '',
+        $nowait = false,
+        $ticket = null,
+    ): ?int {
+        $this->calls[] = [
+            'method' => 'queue_purge',
+            'queue' => $queue,
+        ];
+
+        return $this->queuePurgeCount;
+    }
+}
+
 function createMockChannel(
     ?AMQPMessage $basicGetReturn = null,
     int $queueMessageCount = 0,
     int $queuePurgeCount = 0,
     bool $passiveDeclareThrows = false,
-): AMQPChannel {
-    return new class ($basicGetReturn, $queueMessageCount, $queuePurgeCount, $passiveDeclareThrows) extends AMQPChannel
-    {
-        /** @var array<int, array<string, mixed>> */
-        public array $calls = [];
-
-        public function __construct(
-            private ?AMQPMessage $basicGetReturn = null,
-            private int $queueMessageCount = 0,
-            private int $queuePurgeCount = 0,
-            private bool $passiveDeclareThrows = false,
-        ) {}
-
-        public function exchange_declare(
-            $exchange,
-            $type,
-            $passive = false,
-            $durable = false,
-            $auto_delete = true,
-            $internal = false,
-            $nowait = false,
-            $arguments = [],
-            $ticket = null,
-        ): mixed {
-            $this->calls[] = [
-                'method' => 'exchange_declare',
-                'exchange' => $exchange,
-                'type' => $type,
-                'durable' => $durable,
-                'auto_delete' => $auto_delete,
-            ];
-
-            return null;
-        }
-
-        public function queue_declare(
-            $queue = '',
-            $passive = false,
-            $durable = false,
-            $exclusive = false,
-            $auto_delete = true,
-            $nowait = false,
-            $arguments = [],
-            $ticket = null,
-        ): ?array {
-            if ($passive && $this->passiveDeclareThrows) {
-                throw new RuntimeException('NOT_FOUND - no queue');
-            }
-
-            $this->calls[] = [
-                'method' => 'queue_declare',
-                'queue' => $queue,
-                'passive' => $passive,
-                'durable' => $durable,
-                'arguments' => $arguments,
-            ];
-
-            return [$queue, $this->queueMessageCount, 0];
-        }
-
-        public function queue_bind(
-            $queue,
-            $exchange,
-            $routing_key = '',
-            $nowait = false,
-            $arguments = [],
-            $ticket = null,
-        ): mixed {
-            $this->calls[] = [
-                'method' => 'queue_bind',
-                'queue' => $queue,
-                'exchange' => $exchange,
-                'routing_key' => $routing_key,
-            ];
-
-            return null;
-        }
-
-        public function basic_publish(
-            $msg,
-            $exchange = '',
-            $routing_key = '',
-            $mandatory = false,
-            $immediate = false,
-            $ticket = null,
-        ): void {
-            $this->calls[] = [
-                'method' => 'basic_publish',
-                'msg' => $msg,
-                'exchange' => $exchange,
-                'routing_key' => $routing_key,
-            ];
-        }
-
-        public function basic_get(
-            $queue = '',
-            $no_ack = false,
-            $ticket = null,
-        ): mixed {
-            $this->calls[] = [
-                'method' => 'basic_get',
-                'queue' => $queue,
-            ];
-
-            return $this->basicGetReturn;
-        }
-
-        public function basic_ack(
-            $delivery_tag,
-            $multiple = false,
-        ): void {
-            $this->calls[] = [
-                'method' => 'basic_ack',
-                'delivery_tag' => $delivery_tag,
-            ];
-        }
-
-        public function basic_nack(
-            $delivery_tag,
-            $multiple = false,
-            $requeue = false,
-        ): void {
-            $this->calls[] = [
-                'method' => 'basic_nack',
-                'delivery_tag' => $delivery_tag,
-                'multiple' => $multiple,
-                'requeue' => $requeue,
-            ];
-        }
-
-        public function queue_purge(
-            $queue = '',
-            $nowait = false,
-            $ticket = null,
-        ): ?int {
-            $this->calls[] = [
-                'method' => 'queue_purge',
-                'queue' => $queue,
-            ];
-
-            return $this->queuePurgeCount;
-        }
-    };
+): MockQueueChannel {
+    return new MockQueueChannel($basicGetReturn, $queueMessageCount, $queuePurgeCount, $passiveDeclareThrows);
 }
 
 function createTestableRabbitmqConnection(
-    AMQPChannel $mockChannel,
+    MockQueueChannel $mockChannel,
 ): RabbitmqConnection {
+    /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
     $mockAmqpConnection = new class ($mockChannel) extends AbstractConnection
     {
+        /** @noinspection PhpMissingParentConstructorInspection */
         public function __construct(
-            private AMQPChannel $mockChannel,
+            private readonly MockQueueChannel $mockChannel,
         ) {}
 
         public function channel(
@@ -187,7 +193,7 @@ function createTestableRabbitmqConnection(
     return new class ($mockAmqpConnection) extends RabbitmqConnection
     {
         public function __construct(
-            private AbstractConnection $mockAmqpConnection,
+            private readonly AbstractConnection $mockAmqpConnection,
         ) {
             parent::__construct();
         }
@@ -323,6 +329,8 @@ test('it pops next available job from queue', function (): void {
     );
 
     $queue = new RabbitmqQueue($connection, $exchangeConfig);
+
+    /** @var TestJob $popped */
     $popped = $queue->pop();
 
     expect($popped)->toBeInstanceOf(TestJob::class)
@@ -430,7 +438,7 @@ test('it returns false when deleting unknown job ID', function (): void {
         fn (array $call) => $call['method'] === 'basic_ack',
     );
 
-    expect($ackCalls)->toHaveCount(0);
+    expect($ackCalls)->toBeEmpty();
 });
 
 test('it declares exchange and queue on first operation', function (): void {
@@ -444,7 +452,7 @@ test('it declares exchange and queue on first operation', function (): void {
     $queue = new RabbitmqQueue($connection, $exchangeConfig);
 
     // No declarations before any operation
-    expect($channel->calls)->toHaveCount(0);
+    expect($channel->calls)->toBeEmpty();
 
     // First push triggers declaration
     $queue->push(new TestJob('first'));
@@ -733,7 +741,7 @@ test('it returns false when releasing unknown job ID', function (): void {
         fn (array $call) => $call['method'] === 'basic_nack',
     );
 
-    expect($nackCalls)->toHaveCount(0);
+    expect($nackCalls)->toBeEmpty();
 });
 
 test('it returns queue size via passive declare', function (): void {
