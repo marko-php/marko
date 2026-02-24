@@ -15,6 +15,7 @@ readonly class Request
         private array $server = [],
         private array $query = [],
         private array $post = [],
+        private string $body = '',
     ) {}
 
     public static function fromGlobals(): self
@@ -23,6 +24,7 @@ readonly class Request
             server: $_SERVER,
             query: $_GET,
             post: $_POST,
+            body: (string) file_get_contents('php://input'),
         );
     }
 
@@ -65,6 +67,11 @@ readonly class Request
         }
 
         return $this->post[$key] ?? $default;
+    }
+
+    public function body(): string
+    {
+        return $this->body;
     }
 
     public function header(

@@ -1,0 +1,46 @@
+{
+    "name": "marko/media-gd",
+    "description": "GD image processor driver for Marko Framework",
+    "license": "MIT",
+    "type": "marko-module",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../core"
+        },
+        {
+            "type": "path",
+            "url": "../media"
+        }
+    ],
+    "require": {
+        "php": "^8.5",
+        "ext-gd": "*",
+        "marko/core": "@dev",
+        "marko/media": "@dev"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\MediaGd\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\MediaGd\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

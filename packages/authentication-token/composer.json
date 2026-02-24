@@ -1,0 +1,59 @@
+{
+    "name": "marko/authentication-token",
+    "description": "Personal access token authentication for Marko Framework",
+    "type": "library",
+    "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../core"
+        },
+        {
+            "type": "path",
+            "url": "../authentication"
+        },
+        {
+            "type": "path",
+            "url": "../database"
+        },
+        {
+            "type": "path",
+            "url": "../config"
+        },
+        {
+            "type": "path",
+            "url": "../testing"
+        }
+    ],
+    "require": {
+        "php": "^8.5",
+        "marko/core": "@dev",
+        "marko/authentication": "@dev",
+        "marko/database": "@dev",
+        "marko/config": "@dev"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\AuthenticationToken\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\AuthenticationToken\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

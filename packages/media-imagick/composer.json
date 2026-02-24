@@ -1,0 +1,68 @@
+{
+    "name": "marko/media-imagick",
+    "description": "ImageMagick image processing driver for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": "^8.5",
+        "marko/core": "@dev",
+        "marko/media": "@dev",
+        "ext-imagick": "*"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "@dev"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../core"
+        },
+        {
+            "type": "path",
+            "url": "../media"
+        },
+        {
+            "type": "path",
+            "url": "../filesystem"
+        },
+        {
+            "type": "path",
+            "url": "../database"
+        },
+        {
+            "type": "path",
+            "url": "../validation"
+        },
+        {
+            "type": "path",
+            "url": "../config"
+        },
+        {
+            "type": "path",
+            "url": "../testing"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Marko\\MediaImagick\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\MediaImagick\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

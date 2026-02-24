@@ -33,6 +33,7 @@
             "Marko\\Cli\\": "packages/cli/src/",
             "Marko\\Config\\": "packages/config/src/",
             "Marko\\Core\\": "packages/core/src/",
+            "Marko\\Cors\\": "packages/cors/src/",
             "Marko\\Database\\": "packages/database/src/",
             "Marko\\Database\\MySql\\": "packages/database-mysql/src/",
             "Marko\\Database\\PgSql\\": "packages/database-pgsql/src/",
@@ -46,6 +47,7 @@
             "Marko\\Filesystem\\Local\\": "packages/filesystem-local/src/",
             "Marko\\Filesystem\\S3\\": "packages/filesystem-s3/src/",
             "Marko\\Hashing\\": "packages/hashing/src/",
+            "Marko\\Health\\": "packages/health/src/",
             "Marko\\Http\\": "packages/http/src/",
             "Marko\\Http\\Guzzle\\": "packages/http-guzzle/src/",
             "Marko\\Log\\": "packages/log/src/",
@@ -77,8 +79,15 @@
             "Marko\\Notification\\": "packages/notification/src/",
             "Marko\\Notification\\Database\\": "packages/notification-database/src/",
             "Marko\\Pagination\\": "packages/pagination/src/",
+            "Marko\\Search\\": "packages/search/src/",
             "Marko\\Security\\": "packages/security/src/",
-            "Marko\\Testing\\": "packages/testing/src/"
+            "Marko\\Testing\\": "packages/testing/src/",
+            "Marko\\Api\\": "packages/api/src/",
+            "Marko\\Webhook\\": "packages/webhook/src/",
+            "Marko\\AuthenticationToken\\": "packages/authentication-token/src/",
+            "Marko\\Media\\": "packages/media/src/",
+            "Marko\\MediaGd\\": "packages/media-gd/src/",
+            "Marko\\MediaImagick\\": "packages/media-imagick/src/"
         }
     },
     "autoload-dev": {
@@ -96,6 +105,7 @@
             "Marko\\Cli\\Tests\\": "packages/cli/tests/",
             "Marko\\Config\\Tests\\": "packages/config/tests/",
             "Marko\\Core\\Tests\\": "packages/core/tests/",
+            "Marko\\Cors\\Tests\\": "packages/cors/tests/",
             "Marko\\Database\\Tests\\": "packages/database/tests/",
             "Marko\\Database\\MySql\\Tests\\": "packages/database-mysql/tests/",
             "Marko\\Database\\PgSql\\Tests\\": "packages/database-pgsql/tests/",
@@ -110,6 +120,7 @@
             "Marko\\Filesystem\\S3\\Tests\\": "packages/filesystem-s3/tests/",
             "Marko\\Framework\\Tests\\": "packages/framework/tests/",
             "Marko\\Hashing\\Tests\\": "packages/hashing/tests/",
+            "Marko\\Health\\Tests\\": "packages/health/tests/",
             "Marko\\Http\\Tests\\": "packages/http/tests/",
             "Marko\\Http\\Guzzle\\Tests\\": "packages/http-guzzle/tests/",
             "Marko\\Log\\Tests\\": "packages/log/tests/",
@@ -136,8 +147,15 @@
             "Marko\\Notification\\Tests\\": "packages/notification/tests/",
             "Marko\\Notification\\Database\\Tests\\": "packages/notification-database/tests/",
             "Marko\\Pagination\\Tests\\": "packages/pagination/tests/",
+            "Marko\\Search\\Tests\\": "packages/search/tests/",
             "Marko\\Security\\Tests\\": "packages/security/tests/",
-            "Marko\\Testing\\Tests\\": "packages/testing/tests/"
+            "Marko\\Testing\\Tests\\": "packages/testing/tests/",
+            "Marko\\Api\\Tests\\": "packages/api/tests/",
+            "Marko\\Webhook\\Tests\\": "packages/webhook/tests/",
+            "Marko\\AuthenticationToken\\Tests\\": "packages/authentication-token/tests/",
+            "Marko\\Media\\Tests\\": "packages/media/tests/",
+            "Marko\\MediaGd\\Tests\\": "packages/media-gd/tests/",
+            "Marko\\MediaImagick\\Tests\\": "packages/media-imagick/tests/"
         }
     },
     "scripts": {
