@@ -210,9 +210,11 @@ Use `readonly` when immutability is the design intent - not as a blanket rule.
 - Builders
 - Objects designed to change
 
-**If ALL properties are readonly (or there are none), mark the class instead:**
+**CRITICAL: If ALL promoted properties are readonly, use `readonly class` instead:**
+Never write `private readonly` on individual properties when every property is readonly — promote `readonly` to the class level. This is the most commonly missed rule by code generators.
+
 ```php
-// CORRECT - readonly class when all properties are immutable
+// CORRECT - readonly on the class, not individual properties
 readonly class OrderId
 {
     public function __construct(
@@ -220,11 +222,29 @@ readonly class OrderId
     ) {}
 }
 
-// WRONG - redundant readonly on each property
+// CORRECT - service with only readonly dependencies
+readonly class UserService
+{
+    public function __construct(
+        private UserRepository $repo,
+        private LoggerInterface $logger,
+    ) {}
+}
+
+// WRONG - redundant readonly on each property (Rector will fix this)
 class OrderId
 {
     public function __construct(
         private readonly string $value,
+    ) {}
+}
+
+// WRONG - all properties are readonly but class is not
+class UserService
+{
+    public function __construct(
+        private readonly UserRepository $repo,
+        private readonly LoggerInterface $logger,
     ) {}
 }
 ```
@@ -330,7 +350,45 @@ public function resolve(string $abstract): object
 }
 ```
 
-### 9. Import Classes (No Inline Fully Qualified Names)
+**Avoid `mixed` — use the narrowest type possible.** If you know a method always returns a `string`, declare `: string`, not `: mixed`. Union types (`string|int`) are preferred over `mixed` when the actual types are known.
+
+```php
+// CORRECT - specific return type
+public function set(
+    string $key,
+    string $value,
+): string {
+    $this->storage[$key] = $value;
+
+    return 'OK';
+}
+
+// WRONG - lazy mixed when actual type is known
+public function set(
+    string $key,
+    string $value,
+): mixed {
+    $this->storage[$key] = $value;
+
+    return 'OK';
+}
+```
+
+### 9. No Parentheses Around `new` in Chains (PHP 8.4+)
+When chaining a method call on a newly created object, do NOT wrap `new` in parentheses. PHP 8.4+ allows direct member access on `new` expressions.
+**Enforced by:** `SlevomatCodingStandard.PHP.UselessParentheses`
+
+```php
+// CORRECT - no parentheses needed
+$date = new DateTimeImmutable()->setTimestamp(time() + $ttl);
+$response = new Response()->withHeader('Content-Type', 'text/html');
+
+// WRONG - unnecessary parentheses
+$date = (new DateTimeImmutable())->setTimestamp(time() + $ttl);
+$response = (new Response())->withHeader('Content-Type', 'text/html');
+```
+
+### 10. Import Classes (No Inline Fully Qualified Names)
 Always import classes at the top of the file with `use` statements. Never use fully qualified class names with leading backslash in code.
 
 ```php
@@ -371,7 +429,7 @@ class MyClass
 - Alphabetize within each group
 - Use short class name everywhere after import
 
-### 10. Don't Pass Default Values as Arguments
+### 11. Don't Pass Default Values as Arguments
 Never explicitly pass a value that matches the parameter's default. It adds noise and obscures the arguments that actually matter.
 
 ```php
@@ -386,10 +444,10 @@ $userRepo = createMockUserRepo(findReturn: null, rolesReturn: []);
 $connection = createEventMockConnection(isNew: true);
 ```
 
-### 11. No Magic Methods
+### 12. No Magic Methods
 Avoid `__get`, `__set`, `__call`, `__callStatic`. Be explicit.
 
-### 12. No Traits
+### 13. No Traits
 Traits inject behavior implicitly - you can't see at a glance where a method comes from. Use explicit composition instead.
 
 ```php
@@ -434,7 +492,7 @@ $dbHelper->seedTable('users', $rows);
 
 This keeps dependencies explicit and makes code easier to understand and trace.
 
-### 13. String Interpolation (No Unnecessary Curly Braces)
+### 14. String Interpolation (No Unnecessary Curly Braces)
 When interpolating simple variables in double-quoted strings, do NOT use curly braces.
 **Enforced by:** PhpStorm `PhpUnnecessaryCurlyVarSyntaxInspection`
 
@@ -460,7 +518,7 @@ $message = "Order {$order->id} processed";
 $message = "Found {$count}items"; // Without braces: $countitems would be a different variable
 ```
 
-### 14. Use #[\NoDiscard] for Important Returns
+### 15. Use #[\NoDiscard] for Important Returns
 ```php
 #[\NoDiscard]
 public function validate(): ValidationResult
@@ -469,7 +527,7 @@ public function validate(): ValidationResult
 }
 ```
 
-### 15. Multiline Method Signatures (Always)
+### 16. Multiline Method Signatures (Always)
 **ALL method parameters MUST be on their own line with a trailing comma**, regardless of parameter count:
 
 ```php
@@ -525,7 +583,7 @@ usort(
 usort($sections, fn (AdminSectionInterface $a, AdminSectionInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder());
 ```
 
-### 16. Anonymous Class Braces (Next Line)
+### 17. Anonymous Class Braces (Next Line)
 Anonymous classes follow the same brace placement as regular classes - opening brace on the **next line**.
 **Enforced by:** php-cs-fixer `braces_position.anonymous_classes_opening_brace`
 
