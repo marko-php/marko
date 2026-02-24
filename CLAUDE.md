@@ -90,10 +90,6 @@ Use this workflow for new features, multi-file changes, or anything requiring mu
 
 ## Project Details
 
-<architecture>
-@.claude/architecture.md
-</architecture>
-
 <testing>
 @.claude/testing.md
 </testing>
