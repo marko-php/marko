@@ -4,87 +4,10 @@ declare(strict_types=1);
 
 use Marko\AdminPanel\Config\AdminPanelConfig;
 use Marko\AdminPanel\Config\AdminPanelConfigInterface;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
-
-function createAdminPanelMockConfigRepository(
-    array $configData = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->data[$key]);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+use Marko\Testing\Fake\FakeConfigRepository;
 
 it('creates AdminPanelConfig with pageTitle and itemsPerPage settings', function (): void {
-    $config = new AdminPanelConfig(createAdminPanelMockConfigRepository([
+    $config = new AdminPanelConfig(new FakeConfigRepository([
         'admin-panel.page_title' => 'My Custom Admin',
         'admin-panel.items_per_page' => 50,
     ]));
@@ -95,7 +18,7 @@ it('creates AdminPanelConfig with pageTitle and itemsPerPage settings', function
 });
 
 it('provides default page title of Marko Admin', function (): void {
-    $config = new AdminPanelConfig(createAdminPanelMockConfigRepository([
+    $config = new AdminPanelConfig(new FakeConfigRepository([
         'admin-panel.page_title' => 'Marko Admin',
         'admin-panel.items_per_page' => 20,
     ]));
@@ -104,7 +27,7 @@ it('provides default page title of Marko Admin', function (): void {
 });
 
 it('provides default items per page of 20', function (): void {
-    $config = new AdminPanelConfig(createAdminPanelMockConfigRepository([
+    $config = new AdminPanelConfig(new FakeConfigRepository([
         'admin-panel.page_title' => 'Marko Admin',
         'admin-panel.items_per_page' => 20,
     ]));

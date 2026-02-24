@@ -11,6 +11,10 @@
         {
             "type": "path",
             "url": "../config"
+        },
+        {
+            "type": "path",
+            "url": "../testing"
         }
     ],
     "require": {
@@ -19,6 +23,7 @@
         "marko/config": "@dev"
     },
     "require-dev": {
+        "marko/testing": "@dev",
         "pestphp/pest": "^4.0"
     },
     "autoload": {

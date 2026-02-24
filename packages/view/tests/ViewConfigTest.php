@@ -2,93 +2,17 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\View\ViewConfig;
-
-function createViewConfigRepository(
-    array $values = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($values) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $values,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->values[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return array_key_exists($key, $this->values);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->values;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
 
 /**
  * Helper to create a config repository with all default view config values.
  */
 function createDefaultViewConfigRepository(
     array $overrides = [],
-): ConfigRepositoryInterface {
-    return createViewConfigRepository(array_merge([
+): FakeConfigRepository {
+    return new FakeConfigRepository(array_merge([
         'view.cache_directory' => '/tmp/views',
         'view.extension' => '.latte',
         'view.auto_refresh' => true,
@@ -149,7 +73,7 @@ it('ViewConfig has strict types property', function () {
 });
 
 it('ViewConfig loads all properties from config repository', function () {
-    $config = createViewConfigRepository([
+    $config = new FakeConfigRepository([
         'view.cache_directory' => '/custom/cache',
         'view.extension' => '.twig',
         'view.auto_refresh' => false,
@@ -176,9 +100,16 @@ it('ViewConfig uses default config values', function () {
 });
 
 it('ViewConfig throws exception when config key is missing', function () {
-    $config = createViewConfigRepository([]);
+    $config = new FakeConfigRepository([]);
 
     $viewConfig = new ViewConfig($config);
 
     $viewConfig->cacheDirectory();
 })->throws(ConfigNotFoundException::class);
+
+it('uses FakeConfigRepository in ViewConfigTest', function () {
+    $repo = new FakeConfigRepository(['view.cache_directory' => '/tmp/views', 'view.extension' => '.latte', 'view.auto_refresh' => true, 'view.strict_types' => true]);
+    $config = new ViewConfig($repo);
+
+    expect($config->cacheDirectory())->toBe('/tmp/views');
+});

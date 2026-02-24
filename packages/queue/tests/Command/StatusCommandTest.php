@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
@@ -14,6 +12,7 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobInterface;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
+use Marko\Testing\Fake\FakeConfigRepository;
 
 /**
  * Helper to capture command output for StatusCommand tests.
@@ -44,97 +43,13 @@ function getStatusOutputContent(
 }
 
 /**
- * Create a mock ConfigRepositoryInterface for StatusCommand tests.
- *
- * @param array<string, mixed> $values
- */
-function createStatusConfigRepository(
-    array $values = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($values) implements ConfigRepositoryInterface
-    {
-        /**
-         * @param array<string, mixed> $values
-         */
-        public function __construct(
-            private array $values,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->values[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return array_key_exists($key, $this->values);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->values;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
-
-/**
  * Create a QueueConfig for StatusCommand tests.
  */
 function createStatusQueueConfig(
     string $driver = 'database',
     string $queue = 'default',
 ): QueueConfig {
-    return new QueueConfig(createStatusConfigRepository([
+    return new QueueConfig(new FakeConfigRepository([
         'queue.driver' => $driver,
         'queue.queue' => $queue,
     ]));

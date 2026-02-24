@@ -19,19 +19,17 @@ use Marko\Blog\Services\CommentVerificationService;
 use Marko\Blog\Services\TokenRepositoryInterface;
 use Marko\Blog\Tests\Mocks\MockCommentRepository;
 use Marko\Blog\Tests\Mocks\MockPostRepository;
-use Marko\Core\Event\Event;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
-use Marko\Mail\Contracts\MailerInterface;
-use Marko\Mail\Message;
+use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeMailer;
 use RuntimeException;
 
 it('dispatches CommentCreated event when comment is submitted', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createCommentMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createCommentEventTestMockConnection(
         queryCallback: fn () => [],
@@ -47,7 +45,7 @@ it('dispatches CommentCreated event when comment is submitted', function (): voi
         $hydrator,
         $blogConfig,
         null,
-        $eventDispatcher,
+        $dispatcher,
     );
 
     $post = new Post(
@@ -67,13 +65,12 @@ it('dispatches CommentCreated event when comment is submitted', function (): voi
 
     $repository->save($comment);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(CommentCreated::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CommentCreated::class);
 });
 
 it('dispatches CommentVerified event when email is verified', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createCommentMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $post = new Post(
         title: 'Test Post',
@@ -91,17 +88,16 @@ it('dispatches CommentVerified event when email is verified', function (): void 
     $comment->content = 'Great post!';
     $comment->setPost($post);
 
-    $verificationService = createCommentEventVerificationService($eventDispatcher);
+    $verificationService = createCommentEventVerificationService($dispatcher);
 
     $verificationService->markAsVerified($comment, 'email');
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(CommentVerified::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CommentVerified::class);
 });
 
 it('dispatches CommentDeleted event when comment is removed', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createCommentMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createCommentEventTestMockConnection(
         queryCallback: fn () => [],
@@ -117,7 +113,7 @@ it('dispatches CommentDeleted event when comment is removed', function (): void 
         $hydrator,
         $blogConfig,
         null,
-        $eventDispatcher,
+        $dispatcher,
     );
 
     $post = new Post(
@@ -138,13 +134,12 @@ it('dispatches CommentDeleted event when comment is removed', function (): void 
 
     $repository->delete($comment);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(CommentDeleted::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CommentDeleted::class);
 });
 
 it('includes full comment entity in event data', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createCommentMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createCommentEventTestMockConnection(
         queryCallback: fn () => [],
@@ -160,7 +155,7 @@ it('includes full comment entity in event data', function (): void {
         $hydrator,
         $blogConfig,
         null,
-        $eventDispatcher,
+        $dispatcher,
     );
 
     $post = new Post(
@@ -180,10 +175,10 @@ it('includes full comment entity in event data', function (): void {
 
     $repository->save($comment);
 
-    expect($dispatchedEvents)->toHaveCount(1);
+    expect($dispatcher->dispatched)->toHaveCount(1);
 
     /** @var CommentCreated $event */
-    $event = $dispatchedEvents[0];
+    $event = $dispatcher->dispatched[0];
     $eventComment = $event->getComment();
 
     expect($eventComment)->toBeInstanceOf(CommentInterface::class)
@@ -193,8 +188,7 @@ it('includes full comment entity in event data', function (): void {
 });
 
 it('includes associated post in event data', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createCommentMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createCommentEventTestMockConnection(
         queryCallback: fn () => [],
@@ -210,7 +204,7 @@ it('includes associated post in event data', function (): void {
         $hydrator,
         $blogConfig,
         null,
-        $eventDispatcher,
+        $dispatcher,
     );
 
     $post = new Post(
@@ -230,10 +224,10 @@ it('includes associated post in event data', function (): void {
 
     $repository->save($comment);
 
-    expect($dispatchedEvents)->toHaveCount(1);
+    expect($dispatcher->dispatched)->toHaveCount(1);
 
     /** @var CommentCreated $event */
-    $event = $dispatchedEvents[0];
+    $event = $dispatcher->dispatched[0];
     $eventPost = $event->getPost();
 
     expect($eventPost)->toBeInstanceOf(PostInterface::class)
@@ -243,8 +237,7 @@ it('includes associated post in event data', function (): void {
 });
 
 it('includes verification method in CommentVerified event', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createCommentMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $post = new Post(
         title: 'Test Post',
@@ -262,21 +255,20 @@ it('includes verification method in CommentVerified event', function (): void {
     $comment->content = 'Great post!';
     $comment->setPost($post);
 
-    $verificationService = createCommentEventVerificationService($eventDispatcher);
+    $verificationService = createCommentEventVerificationService($dispatcher);
 
     $verificationService->markAsVerified($comment, 'browser_cookie');
 
-    expect($dispatchedEvents)->toHaveCount(1);
+    expect($dispatcher->dispatched)->toHaveCount(1);
 
     /** @var CommentVerified $event */
-    $event = $dispatchedEvents[0];
+    $event = $dispatcher->dispatched[0];
 
     expect($event->getVerificationMethod())->toBe('browser_cookie');
 });
 
 it('includes timestamp in all events', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createCommentMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createCommentEventTestMockConnection(
         queryCallback: fn () => [],
@@ -292,10 +284,10 @@ it('includes timestamp in all events', function (): void {
         $hydrator,
         $blogConfig,
         null,
-        $eventDispatcher,
+        $dispatcher,
     );
 
-    $verificationService = createCommentEventVerificationService($eventDispatcher);
+    $verificationService = createCommentEventVerificationService($dispatcher);
 
     $post = new Post(
         title: 'Test Post',
@@ -342,9 +334,9 @@ it('includes timestamp in all events', function (): void {
     $afterAll = new DateTimeImmutable();
 
     // All events should have timestamps within the test window
-    expect($dispatchedEvents)->toHaveCount(3);
+    expect($dispatcher->dispatched)->toHaveCount(3);
 
-    foreach ($dispatchedEvents as $event) {
+    foreach ($dispatcher->dispatched as $event) {
         expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
             ->and($event->getTimestamp() >= $beforeAll)->toBeTrue()
             ->and($event->getTimestamp() <= $afterAll)->toBeTrue();
@@ -397,21 +389,7 @@ function createCommentEventVerificationService(
 
     $postRepository = new MockPostRepository();
 
-    $mailer = new class () implements MailerInterface
-    {
-        public function send(
-            Message $message,
-        ): bool {
-            return true;
-        }
-
-        public function sendRaw(
-            string $to,
-            string $raw,
-        ): bool {
-            return true;
-        }
-    };
+    $mailer = new FakeMailer();
 
     $config = createCommentMockBlogConfig();
 
@@ -467,23 +445,6 @@ function createCommentMockBlogConfig(): BlogConfigInterface
         public function getSiteName(): string
         {
             return 'Test Blog';
-        }
-    };
-}
-
-function createCommentMockEventDispatcher(
-    array &$dispatchedEvents,
-): EventDispatcherInterface {
-    return new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$dispatchedEvents,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->dispatchedEvents[] = $event;
         }
     };
 }

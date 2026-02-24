@@ -14,33 +14,16 @@ use Marko\Blog\Events\Category\CategoryUpdated;
 use Marko\Blog\Repositories\CategoryRepository;
 use Marko\Blog\Services\SlugGeneratorInterface;
 use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use ReflectionClass;
 use RuntimeException;
 
 it('dispatches CategoryCreated event when category is created', function (): void {
-    $dispatchedEvents = new class ()
-    {
-        /** @var array<Event> */
-        public array $events = [];
-    };
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private object $capture,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->capture->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createMockEventConnection([], lastInsertId: 1);
     $metadataFactory = new EntityMetadataFactory();
@@ -52,7 +35,7 @@ it('dispatches CategoryCreated event when category is created', function (): voi
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $category = new Category();
@@ -61,29 +44,12 @@ it('dispatches CategoryCreated event when category is created', function (): voi
 
     $repository->save($category);
 
-    expect($dispatchedEvents->events)->toHaveCount(1)
-        ->and($dispatchedEvents->events[0])->toBeInstanceOf(CategoryCreated::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CategoryCreated::class);
 });
 
 it('dispatches CategoryUpdated event when category is modified', function (): void {
-    $dispatchedEvents = new class ()
-    {
-        /** @var array<Event> */
-        public array $events = [];
-    };
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private object $capture,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->capture->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createMockEventConnection([]);
     $metadataFactory = new EntityMetadataFactory();
@@ -95,7 +61,7 @@ it('dispatches CategoryUpdated event when category is modified', function (): vo
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $category = new Category();
@@ -105,29 +71,12 @@ it('dispatches CategoryUpdated event when category is modified', function (): vo
 
     $repository->save($category);
 
-    expect($dispatchedEvents->events)->toHaveCount(1)
-        ->and($dispatchedEvents->events[0])->toBeInstanceOf(CategoryUpdated::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CategoryUpdated::class);
 });
 
 it('dispatches CategoryDeleted event when category is removed', function (): void {
-    $dispatchedEvents = new class ()
-    {
-        /** @var array<Event> */
-        public array $events = [];
-    };
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private object $capture,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->capture->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createMockEventConnection(deletionAllowed: true);
     $metadataFactory = new EntityMetadataFactory();
@@ -139,7 +88,7 @@ it('dispatches CategoryDeleted event when category is removed', function (): voi
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $category = new Category();
@@ -149,29 +98,12 @@ it('dispatches CategoryDeleted event when category is removed', function (): voi
 
     $repository->delete($category);
 
-    expect($dispatchedEvents->events)->toHaveCount(1)
-        ->and($dispatchedEvents->events[0])->toBeInstanceOf(CategoryDeleted::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CategoryDeleted::class);
 });
 
 it('includes full category entity in event data', function (): void {
-    $dispatchedEvents = new class ()
-    {
-        /** @var array<Event> */
-        public array $events = [];
-    };
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private object $capture,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->capture->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createMockEventConnection([], lastInsertId: 1);
     $metadataFactory = new EntityMetadataFactory();
@@ -183,7 +115,7 @@ it('includes full category entity in event data', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $category = new Category();
@@ -193,7 +125,7 @@ it('includes full category entity in event data', function (): void {
     $repository->save($category);
 
     /** @var CategoryCreated $event */
-    $event = $dispatchedEvents->events[0];
+    $event = $dispatcher->dispatched[0];
 
     expect($event->getCategory())->toBeInstanceOf(CategoryInterface::class)
         ->and($event->getCategory()->getName())->toBe('Technology')
@@ -201,24 +133,7 @@ it('includes full category entity in event data', function (): void {
 });
 
 it('includes parent category in event data if exists', function (): void {
-    $dispatchedEvents = new class ()
-    {
-        /** @var array<Event> */
-        public array $events = [];
-    };
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private object $capture,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->capture->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     // Connection that returns parent category when queried
     $parentData = [
@@ -241,7 +156,7 @@ it('includes parent category in event data if exists', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $category = new Category();
@@ -252,31 +167,14 @@ it('includes parent category in event data if exists', function (): void {
     $repository->save($category);
 
     /** @var CategoryCreated $event */
-    $event = $dispatchedEvents->events[0];
+    $event = $dispatcher->dispatched[0];
 
     expect($event->getParent())->toBeInstanceOf(CategoryInterface::class)
         ->and($event->getParent()->getName())->toBe('Programming');
 });
 
 it('includes timestamp in all events', function (): void {
-    $dispatchedEvents = new class ()
-    {
-        /** @var array<Event> */
-        public array $events = [];
-    };
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private object $capture,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->capture->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createMockEventConnection([], lastInsertId: 1);
     $metadataFactory = new EntityMetadataFactory();
@@ -288,7 +186,7 @@ it('includes timestamp in all events', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $category = new Category();
@@ -300,7 +198,7 @@ it('includes timestamp in all events', function (): void {
     $afterSave = new DateTimeImmutable();
 
     /** @var CategoryCreated $event */
-    $event = $dispatchedEvents->events[0];
+    $event = $dispatcher->dispatched[0];
 
     expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
         ->and($event->getTimestamp()->getTimestamp())->toBeGreaterThanOrEqual($beforeSave->getTimestamp())

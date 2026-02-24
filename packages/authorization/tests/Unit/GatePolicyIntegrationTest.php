@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Marko\Authorization\Tests\Unit;
 
-use Marko\Authentication\AuthenticatableInterface;
-use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authorization\AuthorizableInterface;
 use Marko\Authorization\Exceptions\AuthorizationException;
 use Marko\Authorization\Gate;
 use Marko\Authorization\PolicyRegistry;
+use Marko\Testing\Fake\FakeGuard;
 
 // Entity classes for policy integration tests
 class Article
@@ -42,72 +40,6 @@ class ArticlePolicy
         Article $article,
     ): bool {
         return false;
-    }
-}
-
-// Guard stub for integration tests
-class IntegrationStubGuard implements GuardInterface
-{
-    private ?AuthenticatableInterface $authenticatedUser = null;
-
-    public ?UserProviderInterface $provider = null {
-        set {
-            $this->provider = $value;
-        }
-    }
-
-    public function setUser(
-        ?AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function check(): bool
-    {
-        return $this->authenticatedUser !== null;
-    }
-
-    public function guest(): bool
-    {
-        return !$this->check();
-    }
-
-    public function user(): ?AuthenticatableInterface
-    {
-        return $this->authenticatedUser;
-    }
-
-    public function id(): int|string|null
-    {
-        return $this->authenticatedUser?->getAuthIdentifier();
-    }
-
-    public function attempt(
-        array $credentials,
-    ): bool {
-        return false;
-    }
-
-    public function login(
-        AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function loginById(
-        int|string $id,
-    ): ?AuthenticatableInterface {
-        return null;
-    }
-
-    public function logout(): void
-    {
-        $this->authenticatedUser = null;
-    }
-
-    public function getName(): string
-    {
-        return 'integration-test';
     }
 }
 
@@ -156,17 +88,17 @@ class IntegrationStubUser implements AuthorizableInterface
 }
 
 function createIntegrationGate(
-    ?GuardInterface $guard = null,
+    ?FakeGuard $guard = null,
     ?PolicyRegistry $registry = null,
 ): Gate {
     return new Gate(
-        guard: $guard ?? new IntegrationStubGuard(),
+        guard: $guard ?? new FakeGuard(name: 'integration-test', attemptResult: false),
         policyRegistry: $registry ?? new PolicyRegistry(),
     );
 }
 
 it('delegates to policy when ability argument is an entity with registered policy', function (): void {
-    $guard = new IntegrationStubGuard();
+    $guard = new FakeGuard(name: 'integration-test', attemptResult: false);
     $guard->setUser(new IntegrationStubUser(id: 1));
 
     $gate = createIntegrationGate(guard: $guard);
@@ -180,7 +112,7 @@ it('delegates to policy when ability argument is an entity with registered polic
 });
 
 it('prefers gate closure over policy when both are defined', function (): void {
-    $guard = new IntegrationStubGuard();
+    $guard = new FakeGuard(name: 'integration-test', attemptResult: false);
     $guard->setUser(new IntegrationStubUser(id: 1));
 
     $gate = createIntegrationGate(guard: $guard);
@@ -196,7 +128,7 @@ it('prefers gate closure over policy when both are defined', function (): void {
 });
 
 it('falls back to policy when no gate closure matches', function (): void {
-    $guard = new IntegrationStubGuard();
+    $guard = new FakeGuard(name: 'integration-test', attemptResult: false);
     $guard->setUser(new IntegrationStubUser(id: 1));
 
     $gate = createIntegrationGate(guard: $guard);
@@ -229,7 +161,7 @@ it('registers policies via gate policy method', function (): void {
 });
 
 it('passes user and entity to policy method', function (): void {
-    $guard = new IntegrationStubGuard();
+    $guard = new FakeGuard(name: 'integration-test', attemptResult: false);
     $user = new IntegrationStubUser(id: 5);
     $guard->setUser($user);
 
@@ -248,7 +180,7 @@ it('passes user and entity to policy method', function (): void {
 });
 
 it('handles authorize with entity policies throwing on denial', function (): void {
-    $guard = new IntegrationStubGuard();
+    $guard = new FakeGuard(name: 'integration-test', attemptResult: false);
     $guard->setUser(new IntegrationStubUser(id: 1));
 
     $gate = createIntegrationGate(guard: $guard);

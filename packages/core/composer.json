@@ -8,6 +8,7 @@
         "psr/container": "^2.0"
     },
     "require-dev": {
+        "marko/testing": "*",
         "pestphp/pest": "^4.0"
     },
     "autoload": {

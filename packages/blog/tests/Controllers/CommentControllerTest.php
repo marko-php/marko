@@ -18,11 +18,10 @@ use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\CommentRateLimiterInterface;
 use Marko\Blog\Services\CommentVerificationServiceInterface;
 use Marko\Blog\Services\HoneypotValidatorInterface;
-use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Routing\Attributes\Post as PostRoute;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use ReflectionClass;
 
 it('accepts comment submission at POST /blog/{slug}/comment', function (): void {
@@ -607,8 +606,8 @@ it('dispatches CommentCreated event', function (): void {
         browserToken: 'valid-token',
     );
 
-    expect($eventDispatcher->dispatchedEvents)->toHaveCount(1);
-    $event = $eventDispatcher->dispatchedEvents[0];
+    expect($eventDispatcher->dispatched)->toHaveCount(1);
+    $event = $eventDispatcher->dispatched[0];
     expect($event)->toBeInstanceOf(CommentCreated::class);
 });
 
@@ -1131,17 +1130,7 @@ function createMockBlogConfig(
     };
 }
 
-function createMockEventDispatcher(): EventDispatcherInterface
+function createMockEventDispatcher(): FakeEventDispatcher
 {
-    return new class () implements EventDispatcherInterface
-    {
-        /** @var array<Event> */
-        public array $dispatchedEvents = [];
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->dispatchedEvents[] = $event;
-        }
-    };
+    return new FakeEventDispatcher();
 }

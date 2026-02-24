@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Session\Config\SessionConfig;
 use Marko\Session\Contracts\SessionHandlerInterface;
 use Marko\Session\File\Handler\FileSessionHandler;
+use Marko\Testing\Fake\FakeConfigRepository;
 
 function getSessionTestPath(): string
 {
@@ -32,74 +31,9 @@ function cleanupSessionTestPath(
 function createSessionConfig(
     string $path,
 ): SessionConfig {
-    $configRepo = new readonly class ($path) implements ConfigRepositoryInterface
-    {
-        public function __construct(private string $path) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if ($key === 'session.path') {
-                return $this->path;
-            }
-            throw new ConfigNotFoundException($key);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return $key === 'session.path';
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return [];
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
+    $configRepo = new FakeConfigRepository([
+        'session.path' => $path,
+    ]);
 
     return new SessionConfig($configRepo);
 }

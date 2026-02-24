@@ -17,9 +17,8 @@ use Marko\Blog\Events\Comment\CommentVerified;
 use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
-use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Entity\Entity;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Routing\Attributes\Delete;
 use Marko\Routing\Attributes\Get;
@@ -203,38 +202,38 @@ it('dispatches CommentVerified and CommentDeleted events', function (): void {
     // Test CommentVerified on verify
     $comment = createTestCommentEntity(1, 5, 'Alice', 'alice@example.com', 'Great post!', CommentStatus::Pending);
     $post = createTestCommentPost(5, 'Test Post', 'test-post');
-    $dispatchedEvents = [];
+    $dispatcher = new FakeEventDispatcher();
     $savedEntities = [];
     $controller = createCommentController(
         findComment: $comment,
         findPost: $post,
         savedEntities: $savedEntities,
-        dispatchedEvents: $dispatchedEvents,
+        eventDispatcher: $dispatcher,
     );
 
     $controller->verify(1);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(CommentVerified::class)
-        ->and($dispatchedEvents[0]->getComment()->getName())->toBe('Alice')
-        ->and($dispatchedEvents[0]->getVerificationMethod())->toBe('admin');
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CommentVerified::class)
+        ->and($dispatcher->dispatched[0]->getComment()->getName())->toBe('Alice')
+        ->and($dispatcher->dispatched[0]->getVerificationMethod())->toBe('admin');
 
     // Test CommentDeleted on destroy
     $comment2 = createTestCommentEntity(2, 5, 'Bob', 'bob@example.com', 'Spam!');
-    $dispatchedEvents2 = [];
+    $dispatcher2 = new FakeEventDispatcher();
     $deletedEntities2 = [];
     $controller2 = createCommentController(
         findComment: $comment2,
         findPost: $post,
         deletedEntities: $deletedEntities2,
-        dispatchedEvents: $dispatchedEvents2,
+        eventDispatcher: $dispatcher2,
     );
 
     $controller2->destroy(2);
 
-    expect($dispatchedEvents2)->toHaveCount(1)
-        ->and($dispatchedEvents2[0])->toBeInstanceOf(CommentDeleted::class)
-        ->and($dispatchedEvents2[0]->getComment()->getName())->toBe('Bob');
+    expect($dispatcher2->dispatched)->toHaveCount(1)
+        ->and($dispatcher2->dispatched[0])->toBeInstanceOf(CommentDeleted::class)
+        ->and($dispatcher2->dispatched[0]->getComment()->getName())->toBe('Bob');
 });
 
 // Helper functions
@@ -623,23 +622,6 @@ function createMockCommentAdminPagination(
     };
 }
 
-function createMockCommentAdminEventDispatcher(
-    array &$dispatchedEvents = [],
-): EventDispatcherInterface {
-    return new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$dispatchedEvents,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->dispatchedEvents[] = $event;
-        }
-    };
-}
-
 function createMockCommentAdminView(
     array &$capturedData = [],
 ): ViewInterface {
@@ -677,7 +659,7 @@ function createCommentController(
     array &$capturedData = [],
     array &$savedEntities = [],
     array &$deletedEntities = [],
-    array &$dispatchedEvents = [],
+    ?FakeEventDispatcher $eventDispatcher = null,
 ): CommentAdminController {
     return new CommentAdminController(
         commentRepository: createMockCommentAdminRepo(
@@ -690,7 +672,7 @@ function createCommentController(
             findResult: $findPost,
         ),
         paginationService: createMockCommentAdminPagination($comments, $totalComments),
-        eventDispatcher: createMockCommentAdminEventDispatcher($dispatchedEvents),
+        eventDispatcher: $eventDispatcher ?? new FakeEventDispatcher(),
         view: createMockCommentAdminView($capturedData),
     );
 }

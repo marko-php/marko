@@ -12,8 +12,7 @@ use Marko\Blog\Entity\CommentInterface;
 use Marko\Blog\Services\CommentVerificationServiceInterface;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
-use Marko\Session\Contracts\SessionInterface;
-use Marko\Session\Flash\FlashBag;
+use Marko\Testing\Fake\FakeSession;
 use Marko\View\ViewInterface;
 use ReflectionClass;
 use Throwable;
@@ -35,7 +34,7 @@ it('returns error page when token not found', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -57,7 +56,7 @@ it('returns error page when token is expired', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -85,7 +84,7 @@ it('marks comment as verified on valid token', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -112,7 +111,7 @@ it('sets browser cookie with verification token', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -139,7 +138,7 @@ it('uses configured cookie name from BlogConfig', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -165,7 +164,7 @@ it('uses configured cookie expiry days from BlogConfig', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -190,7 +189,7 @@ it('sets cookie as HttpOnly and Secure', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -217,7 +216,7 @@ it('redirects to post page after verification', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -242,7 +241,7 @@ it('starts session before setting flash message', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -253,7 +252,7 @@ it('starts session before setting flash message', function (): void {
 
     $controller->verify('valid-token');
 
-    expect($session->startCalled)->toBeTrue();
+    expect($session->started)->toBeTrue();
 });
 
 it('sets success flash message on redirect', function (): void {
@@ -266,7 +265,7 @@ it('sets success flash message on redirect', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -277,8 +276,8 @@ it('sets success flash message on redirect', function (): void {
 
     $controller->verify('valid-token');
 
-    expect($session->flashMessages)->toHaveKey('success')
-        ->and($session->flashMessages['success'][0])->toContain('verified');
+    expect($session->flash()->peek('success'))->not->toBeEmpty()
+        ->and($session->flash()->peek('success')[0])->toContain('verified');
 });
 
 it('dispatches CommentVerified event', function (): void {
@@ -295,7 +294,7 @@ it('dispatches CommentVerified event', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -324,7 +323,7 @@ it('deletes used email verification token', function (): void {
     );
     $view = createMockView();
     $cookieJar = new MockCookieJar();
-    $session = new MockSession();
+    $session = new FakeSession();
 
     $controller = new CommentVerifyController(
         verificationService: $verificationService,
@@ -362,103 +361,6 @@ class MockCookieJar implements CookieJarInterface
             'value' => $value,
             'options' => $options,
         ];
-    }
-}
-
-class MockSession implements SessionInterface
-{
-    /** @var array<string, array<string>> */
-    public array $flashMessages = [];
-
-    public bool $startCalled = false;
-
-    /** @var array<string, mixed> */
-    private array $sessionData = [];
-
-    public bool $started {
-        get => true;
-    }
-
-    public function start(): void
-    {
-        $this->startCalled = true;
-    }
-
-    public function get(
-        string $key,
-        mixed $default = null,
-    ): mixed {
-        return $this->sessionData[$key] ?? $default;
-    }
-
-    public function set(
-        string $key,
-        mixed $value,
-    ): void {
-        $this->sessionData[$key] = $value;
-    }
-
-    public function has(
-        string $key,
-    ): bool {
-        return isset($this->sessionData[$key]);
-    }
-
-    public function remove(
-        string $key,
-    ): void {
-        unset($this->sessionData[$key]);
-    }
-
-    public function clear(): void
-    {
-        $this->sessionData = [];
-    }
-
-    public function all(): array
-    {
-        return $this->sessionData;
-    }
-
-    public function regenerate(bool $deleteOldSession = true): void {}
-
-    public function destroy(): void
-    {
-        $this->sessionData = [];
-    }
-
-    public function getId(): string
-    {
-        return 'test-session-id';
-    }
-
-    public function setId(string $id): void {}
-
-    public function flash(): FlashBag
-    {
-        return new MockFlashBag($this);
-    }
-
-    public function save(): void {}
-}
-
-class MockFlashBag extends FlashBag
-{
-    public function __construct(
-        private readonly MockSession $mockSession,
-    ) {
-        $sessionData = [];
-        parent::__construct($sessionData);
-    }
-
-    public function add(
-        string $type,
-        string $message,
-    ): void {
-        if (!isset($this->mockSession->flashMessages[$type])) {
-            $this->mockSession->flashMessages[$type] = [];
-        }
-        $this->mockSession->flashMessages[$type][] = $message;
     }
 }
 

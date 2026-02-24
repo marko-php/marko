@@ -11,6 +11,9 @@
         "marko/session": "@dev",
         "marko/encryption": "@dev"
     },
+    "require-dev": {
+        "marko/testing": "*"
+    },
     "autoload": {
         "psr-4": {
             "Marko\\Security\\": "src/"

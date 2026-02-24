@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Log\LogLevel;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeGuard;
 use Marko\Testing\Fake\FakeLogger;
 use Marko\Testing\Fake\FakeMailer;
 use Marko\Testing\Fake\FakeQueue;
@@ -111,6 +112,51 @@ if (function_exists('expect')) {
         Assert::assertTrue(
             $found,
             "Expected message \"$message\" to be logged but it was not.",
+        );
+
+        return $this;
+    });
+
+    expect()->extend('toHaveAttempted', function (
+        ?callable $callback = null,
+    ): Expectation {
+        $fake = $this->value;
+
+        if (! $fake instanceof FakeGuard) {
+            throw new InvalidArgumentException(
+                'Expected FakeGuard, got ' . get_class($fake),
+            );
+        }
+
+        if ($callback === null) {
+            $hasAttempted = count($fake->attempts) > 0;
+            Assert::assertTrue(
+                $hasAttempted,
+                'Expected at least one authentication attempt but none were made.',
+            );
+        } else {
+            $found = array_any($fake->attempts, fn (array $credentials) => $callback($credentials));
+            Assert::assertTrue(
+                $found,
+                'Expected an authentication attempt matching the callback but none matched.',
+            );
+        }
+
+        return $this;
+    });
+
+    expect()->extend('toBeAuthenticated', function (): Expectation {
+        $fake = $this->value;
+
+        if (! $fake instanceof FakeGuard) {
+            throw new InvalidArgumentException(
+                'Expected FakeGuard, got ' . get_class($fake),
+            );
+        }
+
+        Assert::assertTrue(
+            $fake->check(),
+            'Expected user to be authenticated but no user is set.',
         );
 
         return $this;

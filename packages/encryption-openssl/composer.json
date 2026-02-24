@@ -11,6 +11,7 @@
         "ext-openssl": "*"
     },
     "require-dev": {
+        "marko/testing": "@dev",
         "pestphp/pest": "^4.0"
     },
     "autoload": {

@@ -2,90 +2,14 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Log\Config\LogConfig;
 use Marko\Log\Exceptions\InvalidLogLevelException;
 use Marko\Log\LogLevel;
-
-function createMockLogConfigRepository(
-    array $configData = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->data[$key]);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+use Marko\Testing\Fake\FakeConfigRepository;
 
 it('reads driver from config without fallback', function () {
-    $config = new LogConfig(createMockLogConfigRepository([
+    $config = new LogConfig(new FakeConfigRepository([
         'log.driver' => 'database',
     ]));
 
@@ -93,14 +17,14 @@ it('reads driver from config without fallback', function () {
 });
 
 it('throws when driver is not configured', function () {
-    $config = new LogConfig(createMockLogConfigRepository());
+    $config = new LogConfig(new FakeConfigRepository());
 
     expect(fn () => $config->driver())
         ->toThrow(ConfigNotFoundException::class);
 });
 
 it('reads path from config without fallback', function () {
-    $config = new LogConfig(createMockLogConfigRepository([
+    $config = new LogConfig(new FakeConfigRepository([
         'log.path' => '/var/log/app',
     ]));
 
@@ -108,14 +32,14 @@ it('reads path from config without fallback', function () {
 });
 
 it('throws when path is not configured', function () {
-    $config = new LogConfig(createMockLogConfigRepository());
+    $config = new LogConfig(new FakeConfigRepository());
 
     expect(fn () => $config->path())
         ->toThrow(ConfigNotFoundException::class);
 });
 
 it('reads level from config without fallback', function () {
-    $config = new LogConfig(createMockLogConfigRepository([
+    $config = new LogConfig(new FakeConfigRepository([
         'log.level' => 'error',
     ]));
 
@@ -123,14 +47,14 @@ it('reads level from config without fallback', function () {
 });
 
 it('throws when level is not configured', function () {
-    $config = new LogConfig(createMockLogConfigRepository());
+    $config = new LogConfig(new FakeConfigRepository());
 
     expect(fn () => $config->level())
         ->toThrow(ConfigNotFoundException::class);
 });
 
 it('throws InvalidLogLevelException for invalid level', function () {
-    $config = new LogConfig(createMockLogConfigRepository([
+    $config = new LogConfig(new FakeConfigRepository([
         'log.level' => 'invalid',
     ]));
 
@@ -139,7 +63,7 @@ it('throws InvalidLogLevelException for invalid level', function () {
 });
 
 it('reads channel from config without fallback', function () {
-    $config = new LogConfig(createMockLogConfigRepository([
+    $config = new LogConfig(new FakeConfigRepository([
         'log.channel' => 'api',
     ]));
 
@@ -147,14 +71,14 @@ it('reads channel from config without fallback', function () {
 });
 
 it('throws when channel is not configured', function () {
-    $config = new LogConfig(createMockLogConfigRepository());
+    $config = new LogConfig(new FakeConfigRepository());
 
     expect(fn () => $config->channel())
         ->toThrow(ConfigNotFoundException::class);
 });
 
 it('reads format from config without fallback', function () {
-    $config = new LogConfig(createMockLogConfigRepository([
+    $config = new LogConfig(new FakeConfigRepository([
         'log.format' => '{level}: {message}',
     ]));
 
@@ -162,14 +86,14 @@ it('reads format from config without fallback', function () {
 });
 
 it('throws when format is not configured', function () {
-    $config = new LogConfig(createMockLogConfigRepository());
+    $config = new LogConfig(new FakeConfigRepository());
 
     expect(fn () => $config->format())
         ->toThrow(ConfigNotFoundException::class);
 });
 
 it('reads date_format from config without fallback', function () {
-    $config = new LogConfig(createMockLogConfigRepository([
+    $config = new LogConfig(new FakeConfigRepository([
         'log.date_format' => 'd/m/Y H:i:s',
     ]));
 
@@ -177,14 +101,14 @@ it('reads date_format from config without fallback', function () {
 });
 
 it('throws when date_format is not configured', function () {
-    $config = new LogConfig(createMockLogConfigRepository());
+    $config = new LogConfig(new FakeConfigRepository());
 
     expect(fn () => $config->dateFormat())
         ->toThrow(ConfigNotFoundException::class);
 });
 
 it('reads max_files from config without fallback', function () {
-    $config = new LogConfig(createMockLogConfigRepository([
+    $config = new LogConfig(new FakeConfigRepository([
         'log.max_files' => 14,
     ]));
 
@@ -192,14 +116,14 @@ it('reads max_files from config without fallback', function () {
 });
 
 it('throws when max_files is not configured', function () {
-    $config = new LogConfig(createMockLogConfigRepository());
+    $config = new LogConfig(new FakeConfigRepository());
 
     expect(fn () => $config->maxFiles())
         ->toThrow(ConfigNotFoundException::class);
 });
 
 it('reads max_file_size from config without fallback', function () {
-    $config = new LogConfig(createMockLogConfigRepository([
+    $config = new LogConfig(new FakeConfigRepository([
         'log.max_file_size' => 5 * 1024 * 1024,
     ]));
 
@@ -207,7 +131,7 @@ it('reads max_file_size from config without fallback', function () {
 });
 
 it('throws when max_file_size is not configured', function () {
-    $config = new LogConfig(createMockLogConfigRepository());
+    $config = new LogConfig(new FakeConfigRepository());
 
     expect(fn () => $config->maxFileSize())
         ->toThrow(ConfigNotFoundException::class);
@@ -226,4 +150,11 @@ it('config file contains all required keys with defaults', function () {
         ->and($config)->toHaveKey('date_format')
         ->and($config)->toHaveKey('max_files')
         ->and($config)->toHaveKey('max_file_size');
+});
+
+it('uses FakeConfigRepository in LogConfigTest', function () {
+    $repo = new FakeConfigRepository(['log.driver' => 'file']);
+    $config = new LogConfig($repo);
+
+    expect($config->driver())->toBe('file');
 });

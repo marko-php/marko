@@ -15,16 +15,15 @@ use Marko\Blog\Events\Post\PostScheduled;
 use Marko\Blog\Events\Post\PostUpdated;
 use Marko\Blog\Repositories\PostRepository;
 use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use RuntimeException;
 
 it('dispatches PostCreated event when post is saved first time', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createPostMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createPostEventTestMockConnection(
         queryCallback: fn () => [],
@@ -37,7 +36,7 @@ it('dispatches PostCreated event when post is saved first time', function (): vo
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $post = new Post(
@@ -49,13 +48,12 @@ it('dispatches PostCreated event when post is saved first time', function (): vo
 
     $repository->save($post);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(PostCreated::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(PostCreated::class);
 });
 
 it('dispatches PostUpdated event when existing post is modified', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createPostMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     // Return post data when queried (simulating an existing record)
     $postData = [
@@ -83,7 +81,7 @@ it('dispatches PostUpdated event when existing post is modified', function (): v
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     // Fetch the post from "database" (this tracks original state)
@@ -94,13 +92,12 @@ it('dispatches PostUpdated event when existing post is modified', function (): v
 
     $repository->save($post);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(PostUpdated::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(PostUpdated::class);
 });
 
 it('dispatches PostPublished event when status changes to published', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createPostMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     // Return draft post data when queried
     $postData = [
@@ -128,7 +125,7 @@ it('dispatches PostPublished event when status changes to published', function (
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     // Fetch the draft post
@@ -141,7 +138,7 @@ it('dispatches PostPublished event when status changes to published', function (
 
     // Should dispatch both PostUpdated and PostPublished
     $publishedEvents = array_filter(
-        $dispatchedEvents,
+        $dispatcher->dispatched,
         fn (Event $event) => $event instanceof PostPublished,
     );
 
@@ -149,8 +146,7 @@ it('dispatches PostPublished event when status changes to published', function (
 });
 
 it('dispatches PostScheduled event when status changes to scheduled', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createPostMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     // Return draft post data when queried
     $postData = [
@@ -178,7 +174,7 @@ it('dispatches PostScheduled event when status changes to scheduled', function (
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     // Fetch the draft post
@@ -192,7 +188,7 @@ it('dispatches PostScheduled event when status changes to scheduled', function (
 
     // Should dispatch both PostUpdated and PostScheduled
     $scheduledEvents = array_filter(
-        $dispatchedEvents,
+        $dispatcher->dispatched,
         fn (Event $event) => $event instanceof PostScheduled,
     );
 
@@ -200,8 +196,7 @@ it('dispatches PostScheduled event when status changes to scheduled', function (
 });
 
 it('dispatches PostDeleted event when post is removed', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createPostMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createPostEventTestMockConnection(
         queryCallback: fn () => [],
@@ -214,7 +209,7 @@ it('dispatches PostDeleted event when post is removed', function (): void {
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $post = new Post(
@@ -227,13 +222,12 @@ it('dispatches PostDeleted event when post is removed', function (): void {
 
     $repository->delete($post);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(PostDeleted::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(PostDeleted::class);
 });
 
 it('includes full post entity in event data', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createPostMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createPostEventTestMockConnection(
         queryCallback: fn () => [],
@@ -246,7 +240,7 @@ it('includes full post entity in event data', function (): void {
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $post = new Post(
@@ -259,10 +253,10 @@ it('includes full post entity in event data', function (): void {
 
     $repository->save($post);
 
-    expect($dispatchedEvents)->toHaveCount(1);
+    expect($dispatcher->dispatched)->toHaveCount(1);
 
     /** @var PostCreated $event */
-    $event = $dispatchedEvents[0];
+    $event = $dispatcher->dispatched[0];
     $eventPost = $event->getPost();
 
     expect($eventPost)->toBeInstanceOf(PostInterface::class)
@@ -274,8 +268,7 @@ it('includes full post entity in event data', function (): void {
 });
 
 it('includes previous status in status change events', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createPostMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     // Return scheduled post data when queried
     $postData = [
@@ -303,7 +296,7 @@ it('includes previous status in status change events', function (): void {
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     // Fetch the scheduled post
@@ -316,7 +309,7 @@ it('includes previous status in status change events', function (): void {
 
     // Find the PostPublished event
     $publishedEvents = array_filter(
-        $dispatchedEvents,
+        $dispatcher->dispatched,
         fn (Event $event) => $event instanceof PostPublished,
     );
 
@@ -329,8 +322,7 @@ it('includes previous status in status change events', function (): void {
 });
 
 it('includes timestamp in all events', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createPostMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     // Return draft post data when queried
     $postData = [
@@ -358,7 +350,7 @@ it('includes timestamp in all events', function (): void {
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $beforeCreate = new DateTimeImmutable();
@@ -387,7 +379,7 @@ it('includes timestamp in all events', function (): void {
     $afterAll = new DateTimeImmutable();
 
     // All events should have timestamps within the test window
-    foreach ($dispatchedEvents as $event) {
+    foreach ($dispatcher->dispatched as $event) {
         expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
             ->and($event->getTimestamp() >= $beforeCreate)->toBeTrue()
             ->and($event->getTimestamp() <= $afterAll)->toBeTrue();
@@ -395,23 +387,6 @@ it('includes timestamp in all events', function (): void {
 });
 
 // Helper functions for post event tests
-
-function createPostMockEventDispatcher(
-    array &$dispatchedEvents,
-): EventDispatcherInterface {
-    return new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$dispatchedEvents,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->dispatchedEvents[] = $event;
-        }
-    };
-}
 
 function createPostEventTestMockConnection(
     callable $queryCallback,

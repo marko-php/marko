@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Marko\Mail\Tests\Integration;
 
 use Closure;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Mail\Config\MailConfig;
 use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Exception\MailException;
@@ -14,87 +12,7 @@ use Marko\Mail\Smtp\SmtpConfig;
 use Marko\Mail\Smtp\SmtpMailer;
 use Marko\Mail\Smtp\SmtpMailerFactory;
 use Marko\Mail\Smtp\SocketInterface;
-
-/**
- * Create a stub config repository for integration testing.
- *
- * @param array<string, mixed> $values
- */
-function createIntegrationConfigRepository(
-    array $values = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($values) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $values,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->values[$key];
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->values[$key]);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->values;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+use Marko\Testing\Fake\FakeConfigRepository;
 
 /**
  * Create a stub socket for integration testing.
@@ -134,7 +52,7 @@ function createIntegrationSocket(): SocketInterface
 }
 
 test('MailConfig loads from config file', function (): void {
-    $configRepo = createIntegrationConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'mail' => true, // Indicates config exists
         'mail.driver' => 'smtp',
         'mail.from.address' => 'noreply@example.com',
@@ -168,7 +86,7 @@ test('MailConfig loads from config file', function (): void {
 });
 
 test('SmtpConfig extracts SMTP settings from MailConfig', function (): void {
-    $configRepo = createIntegrationConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'mail' => true,
         'mail.smtp' => [
             'host' => 'mail.test.com',
@@ -194,7 +112,7 @@ test('SmtpConfig extracts SMTP settings from MailConfig', function (): void {
 });
 
 test('SmtpMailerFactory creates configured mailer', function (): void {
-    $configRepo = createIntegrationConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'mail' => true,
         'mail.driver' => 'smtp',
         'mail.smtp' => [
@@ -230,7 +148,7 @@ test('module bindings resolve correctly', function (): void {
 
 test('missing driver throws MailException', function (): void {
     // When no mail config exists, ensureConfigExists should throw
-    $configRepo = createIntegrationConfigRepository();
+    $configRepo = new FakeConfigRepository();
 
     $mailConfig = new MailConfig($configRepo);
 
@@ -244,4 +162,11 @@ test('MailException noDriverInstalled provides helpful message', function (): vo
     expect($exception->getMessage())->toBe('No mail driver installed.')
         ->and($exception->getContext())->toBe('Attempted to resolve MailerInterface but no implementation is bound.')
         ->and($exception->getSuggestion())->toBe('Install a mail driver package: composer require marko/mail-smtp');
+});
+
+test('it uses FakeConfigRepository in MailIntegrationTest', function (): void {
+    $repo = new FakeConfigRepository(['mail.driver' => 'smtp']);
+    $config = new MailConfig($repo);
+
+    expect($config->driver())->toBe('smtp');
 });

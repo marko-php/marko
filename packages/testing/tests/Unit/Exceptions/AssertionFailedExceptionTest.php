@@ -80,3 +80,17 @@ it('unexpectedEmpty produces correct message', function () {
 
     expect($exception->getMessage())->toBe('Expected at least one logs but none were found.');
 });
+
+it('creates assertion for expected authenticated', function (): void {
+    $exception = AssertionFailedException::expectedAuthenticated();
+
+    expect($exception)->toBeInstanceOf(AssertionFailedException::class)
+        ->and($exception->getMessage())->toBe('Expected user to be authenticated but no user is set.');
+});
+
+it('creates assertion for unexpected guest', function (): void {
+    $exception = AssertionFailedException::unexpectedGuest();
+
+    expect($exception)->toBeInstanceOf(AssertionFailedException::class)
+        ->and($exception->getMessage())->toBe('Expected user to be a guest but a user is authenticated.');
+});

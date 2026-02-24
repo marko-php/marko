@@ -2,41 +2,11 @@
 
 declare(strict_types=1);
 
-use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Event\LoginEvent;
+use Marko\Testing\Fake\FakeAuthenticatable;
 
 it('creates LoginEvent with user and guard name', function () {
-    $user = new class () implements AuthenticatableInterface
-    {
-        public function getAuthIdentifier(): int|string
-        {
-            return 1;
-        }
-
-        public function getAuthIdentifierName(): string
-        {
-            return 'id';
-        }
-
-        public function getAuthPassword(): string
-        {
-            return 'hashed_password';
-        }
-
-        public function getRememberToken(): ?string
-        {
-            return null;
-        }
-
-        public function setRememberToken(
-            ?string $token,
-        ): void {}
-
-        public function getRememberTokenName(): string
-        {
-            return 'remember_token';
-        }
-    };
+    $user = new FakeAuthenticatable(id: 1);
 
     $event = new LoginEvent(
         user: $user,
@@ -48,37 +18,7 @@ it('creates LoginEvent with user and guard name', function () {
 });
 
 it('creates LoginEvent with remember flag', function () {
-    $user = new class () implements AuthenticatableInterface
-    {
-        public function getAuthIdentifier(): int|string
-        {
-            return 1;
-        }
-
-        public function getAuthIdentifierName(): string
-        {
-            return 'id';
-        }
-
-        public function getAuthPassword(): string
-        {
-            return 'hashed_password';
-        }
-
-        public function getRememberToken(): ?string
-        {
-            return null;
-        }
-
-        public function setRememberToken(
-            ?string $token,
-        ): void {}
-
-        public function getRememberTokenName(): string
-        {
-            return 'remember_token';
-        }
-    };
+    $user = new FakeAuthenticatable(id: 1);
 
     $eventWithRemember = new LoginEvent(
         user: $user,

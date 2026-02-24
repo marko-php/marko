@@ -12,88 +12,12 @@ use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authentication\Guard\TokenGuard;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Routing\Attributes\Get;
-
-function createAdminApiMockConfigRepository(
-    array $configData = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->data[$key]);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeUserProvider;
 
 it('creates AdminApiConfig with version and rate limit settings', function (): void {
-    $config = new AdminApiConfig(createAdminApiMockConfigRepository([
+    $config = new AdminApiConfig(new FakeConfigRepository([
         'admin-api.version' => 'v1',
         'admin-api.rate_limit' => 60,
         'admin-api.guard' => 'admin-api',
@@ -119,7 +43,7 @@ it('configures admin-api token guard for API authentication', function (): void 
     // Without headers set, no user is authenticated
 
     // Config reflects the guard name
-    $config = new AdminApiConfig(createAdminApiMockConfigRepository([
+    $config = new AdminApiConfig(new FakeConfigRepository([
         'admin-api.version' => 'v1',
         'admin-api.rate_limit' => 60,
         'admin-api.guard' => 'admin-api',
@@ -221,40 +145,7 @@ it('returns JSON 401 for missing bearer token', function (): void {
 });
 
 it('returns JSON 401 for invalid bearer token', function (): void {
-    $provider = new class () implements UserProviderInterface
-    {
-        public function retrieveById(
-            int|string $identifier,
-        ): ?AuthenticatableInterface {
-            return null;
-        }
-
-        public function retrieveByCredentials(
-            array $credentials,
-        ): ?AuthenticatableInterface {
-            // Invalid token returns null
-            return null;
-        }
-
-        public function validateCredentials(
-            AuthenticatableInterface $user,
-            array $credentials,
-        ): bool {
-            return false;
-        }
-
-        public function retrieveByRememberToken(
-            int|string $identifier,
-            string $token,
-        ): ?AuthenticatableInterface {
-            return null;
-        }
-
-        public function updateRememberToken(
-            AuthenticatableInterface $user,
-            ?string $token,
-        ): void {}
-    };
+    $provider = new FakeUserProvider();
 
     $tokenGuard = new TokenGuard(
         name: 'admin-api',

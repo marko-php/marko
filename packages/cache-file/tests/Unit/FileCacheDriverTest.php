@@ -7,8 +7,7 @@ use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\Cache\File\Driver\FileCacheDriver;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Testing\Fake\FakeConfigRepository;
 
 function getCacheTestPath(): string
 {
@@ -35,81 +34,11 @@ function createTestCacheConfig(
     string $path,
     int $defaultTtl = 3600,
 ): CacheConfig {
-    $configRepo = new readonly class ($path, $defaultTtl) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private string $path,
-            private int $defaultTtl,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            return match ($key) {
-                'cache.path' => $this->path,
-                'cache.default_ttl' => $this->defaultTtl,
-                'cache.driver' => 'file',
-                default => throw new ConfigNotFoundException($key),
-            };
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return in_array($key, ['cache.path', 'cache.default_ttl', 'cache.driver'], true);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return [];
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-
-    return new CacheConfig($configRepo);
+    return new CacheConfig(new FakeConfigRepository([
+        'cache.path' => $path,
+        'cache.default_ttl' => $defaultTtl,
+        'cache.driver' => 'file',
+    ]));
 }
 
 /**

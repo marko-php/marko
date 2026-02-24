@@ -58,6 +58,38 @@ it('has an API reference section listing all public methods', function () {
         ->and($readme)->toContain('assertNothingLogged(');
 });
 
+it('documents FakeGuard in the available fakes table', function () {
+    $readme = file_get_contents(dirname(__DIR__) . '/README.md');
+
+    expect($readme)->toContain('FakeGuard');
+});
+
+it('includes FakeGuard usage example with guard configuration', function () {
+    $readme = file_get_contents(dirname(__DIR__) . '/README.md');
+
+    expect($readme)->toContain('### FakeGuard')
+        ->and($readme)->toContain('new FakeGuard(')
+        ->and($readme)->toContain('setUser(')
+        ->and($readme)->toContain('attempt(');
+});
+
+it('documents FakeGuard assertion methods', function () {
+    $readme = file_get_contents(dirname(__DIR__) . '/README.md');
+
+    expect($readme)->toContain('assertAuthenticated(')
+        ->and($readme)->toContain('assertGuest(')
+        ->and($readme)->toContain('assertAttempted(')
+        ->and($readme)->toContain('assertNotAttempted(')
+        ->and($readme)->toContain('assertLoggedOut(');
+});
+
+it('documents toHaveAttempted and toBeAuthenticated Pest expectations', function () {
+    $readme = file_get_contents(dirname(__DIR__) . '/README.md');
+
+    expect($readme)->toContain('toHaveAttempted')
+        ->and($readme)->toContain('toBeAuthenticated');
+});
+
 it('follows the Package README Standards from code-standards.md', function () {
     $readme = file_get_contents(dirname(__DIR__) . '/README.md');
 

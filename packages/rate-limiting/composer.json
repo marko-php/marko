@@ -11,6 +11,7 @@
         "marko/routing": "@dev"
     },
     "require-dev": {
+        "marko/testing": "*",
         "pestphp/pest": "^4.0"
     },
     "autoload": {

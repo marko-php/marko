@@ -12,29 +12,15 @@ use Marko\Blog\Events\Tag\TagDeleted;
 use Marko\Blog\Events\Tag\TagUpdated;
 use Marko\Blog\Repositories\TagRepository;
 use Marko\Blog\Services\SlugGenerator;
-use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use RuntimeException;
 
 it('dispatches TagCreated event when tag is created', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$events,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createTagEventMockConnection(isNew: true);
     $metadataFactory = new EntityMetadataFactory();
@@ -46,7 +32,7 @@ it('dispatches TagCreated event when tag is created', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        $eventDispatcher,
+        $dispatcher,
     );
 
     $tag = new Tag();
@@ -55,25 +41,12 @@ it('dispatches TagCreated event when tag is created', function (): void {
 
     $repository->save($tag);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(TagCreated::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(TagCreated::class);
 });
 
 it('dispatches TagUpdated event when tag is modified', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$events,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createTagEventMockConnection(isNew: false);
     $metadataFactory = new EntityMetadataFactory();
@@ -85,7 +58,7 @@ it('dispatches TagUpdated event when tag is modified', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        $eventDispatcher,
+        $dispatcher,
     );
 
     $tag = new Tag();
@@ -95,25 +68,12 @@ it('dispatches TagUpdated event when tag is modified', function (): void {
 
     $repository->save($tag);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(TagUpdated::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(TagUpdated::class);
 });
 
 it('dispatches TagDeleted event when tag is removed', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$events,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createTagEventMockConnection(isNew: false, hasAssociatedPosts: false);
     $metadataFactory = new EntityMetadataFactory();
@@ -125,7 +85,7 @@ it('dispatches TagDeleted event when tag is removed', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        $eventDispatcher,
+        $dispatcher,
     );
 
     $tag = new Tag();
@@ -135,25 +95,12 @@ it('dispatches TagDeleted event when tag is removed', function (): void {
 
     $repository->delete($tag);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(TagDeleted::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(TagDeleted::class);
 });
 
 it('includes full tag entity in event data', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$events,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createTagEventMockConnection(isNew: true);
     $metadataFactory = new EntityMetadataFactory();
@@ -165,7 +112,7 @@ it('includes full tag entity in event data', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        $eventDispatcher,
+        $dispatcher,
     );
 
     $tag = new Tag();
@@ -175,7 +122,7 @@ it('includes full tag entity in event data', function (): void {
     $repository->save($tag);
 
     /** @var TagCreated $event */
-    $event = $dispatchedEvents[0];
+    $event = $dispatcher->dispatched[0];
 
     expect($event->getTag())->toBeInstanceOf(TagInterface::class)
         ->and($event->getTag()->getName())->toBe('JavaScript')
@@ -183,20 +130,7 @@ it('includes full tag entity in event data', function (): void {
 });
 
 it('includes timestamp in all events', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$events,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->events[] = $event;
-        }
-    };
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createTagEventMockConnection(isNew: true);
     $metadataFactory = new EntityMetadataFactory();
@@ -208,7 +142,7 @@ it('includes timestamp in all events', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
-        $eventDispatcher,
+        $dispatcher,
     );
 
     $beforeSave = new DateTimeImmutable();
@@ -222,7 +156,7 @@ it('includes timestamp in all events', function (): void {
     $afterSave = new DateTimeImmutable();
 
     /** @var TagCreated $event */
-    $event = $dispatchedEvents[0];
+    $event = $dispatcher->dispatched[0];
 
     expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
         ->and($event->getTimestamp()->getTimestamp())->toBeGreaterThanOrEqual($beforeSave->getTimestamp())

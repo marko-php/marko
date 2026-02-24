@@ -16,9 +16,8 @@ use Marko\Blog\Events\Tag\TagUpdated;
 use Marko\Blog\Repositories\TagRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Blog\Services\SlugGeneratorInterface;
-use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Entity\Entity;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Routing\Attributes\Delete;
 use Marko\Routing\Attributes\Get;
@@ -272,11 +271,11 @@ it('applies AdminAuthMiddleware to TagAdminController', function (): void {
 
 it('dispatches TagCreated, TagUpdated, and TagDeleted events', function (): void {
     // Test TagCreated on store
-    $dispatchedEvents = [];
+    $dispatcher = new FakeEventDispatcher();
     $savedEntities = [];
     $controller = createTagController(
         savedEntities: $savedEntities,
-        dispatchedEvents: $dispatchedEvents,
+        eventDispatcher: $dispatcher,
     );
 
     $request = new Request(post: [
@@ -285,18 +284,18 @@ it('dispatches TagCreated, TagUpdated, and TagDeleted events', function (): void
 
     $controller->store($request);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(TagCreated::class)
-        ->and($dispatchedEvents[0]->getTag()->getName())->toBe('New Tag');
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(TagCreated::class)
+        ->and($dispatcher->dispatched[0]->getTag()->getName())->toBe('New Tag');
 
     // Test TagUpdated on update
     $existingTag = createTestTagEntity(1, 'Existing', 'existing');
-    $dispatchedEvents2 = [];
+    $dispatcher2 = new FakeEventDispatcher();
     $savedEntities2 = [];
     $controller2 = createTagController(
         findTag: $existingTag,
         savedEntities: $savedEntities2,
-        dispatchedEvents: $dispatchedEvents2,
+        eventDispatcher: $dispatcher2,
     );
 
     $request2 = new Request(post: [
@@ -305,25 +304,25 @@ it('dispatches TagCreated, TagUpdated, and TagDeleted events', function (): void
 
     $controller2->update(1, $request2);
 
-    expect($dispatchedEvents2)->toHaveCount(1)
-        ->and($dispatchedEvents2[0])->toBeInstanceOf(TagUpdated::class)
-        ->and($dispatchedEvents2[0]->getTag()->getName())->toBe('Updated Tag');
+    expect($dispatcher2->dispatched)->toHaveCount(1)
+        ->and($dispatcher2->dispatched[0])->toBeInstanceOf(TagUpdated::class)
+        ->and($dispatcher2->dispatched[0]->getTag()->getName())->toBe('Updated Tag');
 
     // Test TagDeleted on destroy
     $existingTag3 = createTestTagEntity(2, 'To Delete', 'to-delete');
-    $dispatchedEvents3 = [];
+    $dispatcher3 = new FakeEventDispatcher();
     $deletedEntities3 = [];
     $controller3 = createTagController(
         findTag: $existingTag3,
         deletedEntities: $deletedEntities3,
-        dispatchedEvents: $dispatchedEvents3,
+        eventDispatcher: $dispatcher3,
     );
 
     $controller3->destroy(2);
 
-    expect($dispatchedEvents3)->toHaveCount(1)
-        ->and($dispatchedEvents3[0])->toBeInstanceOf(TagDeleted::class)
-        ->and($dispatchedEvents3[0]->getTag()->getName())->toBe('To Delete');
+    expect($dispatcher3->dispatched)->toHaveCount(1)
+        ->and($dispatcher3->dispatched[0])->toBeInstanceOf(TagDeleted::class)
+        ->and($dispatcher3->dispatched[0]->getTag()->getName())->toBe('To Delete');
 });
 
 // Helper functions
@@ -492,23 +491,6 @@ function createMockTagAdminSlugGenerator(): SlugGeneratorInterface
     };
 }
 
-function createMockTagAdminEventDispatcher(
-    array &$dispatchedEvents = [],
-): EventDispatcherInterface {
-    return new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$dispatchedEvents,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->dispatchedEvents[] = $event;
-        }
-    };
-}
-
 function createMockTagAdminView(
     array &$capturedData = [],
 ): ViewInterface {
@@ -545,7 +527,7 @@ function createTagController(
     array &$capturedData = [],
     array &$savedEntities = [],
     array &$deletedEntities = [],
-    array &$dispatchedEvents = [],
+    ?FakeEventDispatcher $eventDispatcher = null,
 ): TagAdminController {
     return new TagAdminController(
         tagRepository: createMockTagAdminRepo(
@@ -556,7 +538,7 @@ function createTagController(
         ),
         paginationService: createMockTagAdminPagination($tags, $totalTags),
         slugGenerator: createMockTagAdminSlugGenerator(),
-        eventDispatcher: createMockTagAdminEventDispatcher($dispatchedEvents),
+        eventDispatcher: $eventDispatcher ?? new FakeEventDispatcher(),
         view: createMockTagAdminView($capturedData),
     );
 }

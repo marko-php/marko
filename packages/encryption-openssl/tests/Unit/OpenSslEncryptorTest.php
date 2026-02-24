@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Encryption\Contracts\EncryptorInterface;
 use Marko\Encryption\Exceptions\DecryptionException;
 use Marko\Encryption\Exceptions\EncryptionException;
 use Marko\Encryption\OpenSsl\OpenSslEncryptor;
+use Marko\Testing\Fake\FakeConfigRepository;
 
 function createTestEncryptionConfig(
     string $key = '',
@@ -18,81 +17,10 @@ function createTestEncryptionConfig(
         $key = base64_encode(random_bytes(32));
     }
 
-    $repository = new readonly class ($key, $cipher) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private string $key,
-            private string $cipher,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            return match ($key) {
-                'encryption.key' => $this->key,
-                'encryption.cipher' => $this->cipher,
-                default => throw new ConfigNotFoundException($key),
-            };
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return in_array($key, ['encryption.key', 'encryption.cipher'], true);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return [
-                'encryption.key' => $this->key,
-                'encryption.cipher' => $this->cipher,
-            ];
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
+    $repository = new FakeConfigRepository([
+        'encryption.key' => $key,
+        'encryption.cipher' => $cipher,
+    ]);
 
     return new EncryptionConfig($repository);
 }

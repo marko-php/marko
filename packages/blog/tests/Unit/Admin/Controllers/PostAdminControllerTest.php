@@ -22,9 +22,8 @@ use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Repositories\TagRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Blog\Services\SlugGeneratorInterface;
-use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Entity\Entity;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Routing\Attributes\Delete;
 use Marko\Routing\Attributes\Get;
@@ -424,11 +423,11 @@ it('syncs categories and tags on create and update', function (): void {
 
 it('dispatches PostCreated and PostUpdated events', function (): void {
     // Test PostCreated on store
-    $dispatchedEvents = [];
+    $dispatcher = new FakeEventDispatcher();
     $savedEntities = [];
     $controller = createController(
         savedEntities: $savedEntities,
-        dispatchedEvents: $dispatchedEvents,
+        eventDispatcher: $dispatcher,
     );
 
     $request = new Request(post: [
@@ -439,18 +438,18 @@ it('dispatches PostCreated and PostUpdated events', function (): void {
 
     $controller->store($request);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(PostCreated::class)
-        ->and($dispatchedEvents[0]->getPost()->title)->toBe('New Post');
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(PostCreated::class)
+        ->and($dispatcher->dispatched[0]->getPost()->title)->toBe('New Post');
 
     // Test PostUpdated on update
     $existingPost = createTestPost(1, 'Existing', 'existing');
-    $dispatchedEvents2 = [];
+    $dispatcher2 = new FakeEventDispatcher();
     $savedEntities2 = [];
     $controller2 = createController(
         findPost: $existingPost,
         savedEntities: $savedEntities2,
-        dispatchedEvents: $dispatchedEvents2,
+        eventDispatcher: $dispatcher2,
     );
 
     $request2 = new Request(post: [
@@ -461,9 +460,9 @@ it('dispatches PostCreated and PostUpdated events', function (): void {
 
     $controller2->update(1, $request2);
 
-    expect($dispatchedEvents2)->toHaveCount(1)
-        ->and($dispatchedEvents2[0])->toBeInstanceOf(PostUpdated::class)
-        ->and($dispatchedEvents2[0]->getPost()->title)->toBe('Updated Post');
+    expect($dispatcher2->dispatched)->toHaveCount(1)
+        ->and($dispatcher2->dispatched[0])->toBeInstanceOf(PostUpdated::class)
+        ->and($dispatcher2->dispatched[0]->getPost()->title)->toBe('Updated Post');
 });
 
 // Helper functions
@@ -1048,23 +1047,6 @@ function createMockSlugGenerator(): SlugGeneratorInterface
     };
 }
 
-function createMockEventDispatcher(
-    array &$dispatchedEvents = [],
-): EventDispatcherInterface {
-    return new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$dispatchedEvents,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->dispatchedEvents[] = $event;
-        }
-    };
-}
-
 function createMockAdminView(
     array &$capturedData = [],
 ): ViewInterface {
@@ -1108,7 +1090,7 @@ function createController(
     array &$deletedEntities = [],
     array &$syncedCategories = [],
     array &$syncedTags = [],
-    array &$dispatchedEvents = [],
+    ?FakeEventDispatcher $eventDispatcher = null,
 ): PostAdminController {
     return new PostAdminController(
         postRepository: createMockPostRepo(
@@ -1133,7 +1115,7 @@ function createController(
         ),
         paginationService: createMockPagination($posts, $totalPosts),
         slugGenerator: createMockSlugGenerator(),
-        eventDispatcher: createMockEventDispatcher($dispatchedEvents),
+        eventDispatcher: $eventDispatcher ?? new FakeEventDispatcher(),
         view: createMockAdminView($capturedData),
     );
 }

@@ -12,17 +12,16 @@ use Marko\Blog\Events\Author\AuthorDeleted;
 use Marko\Blog\Events\Author\AuthorUpdated;
 use Marko\Blog\Repositories\AuthorRepository;
 use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use ReflectionClass;
 use RuntimeException;
 
 it('dispatches AuthorCreated event when author is created', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createEventTestMockConnection(
         queryCallback: fn () => [],
@@ -35,7 +34,7 @@ it('dispatches AuthorCreated event when author is created', function (): void {
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $author = new Author();
@@ -45,13 +44,12 @@ it('dispatches AuthorCreated event when author is created', function (): void {
 
     $repository->save($author);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(AuthorCreated::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(AuthorCreated::class);
 });
 
 it('dispatches AuthorUpdated event when author is modified', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     // Return author data when queried (simulating an existing record)
     $authorData = [
@@ -75,7 +73,7 @@ it('dispatches AuthorUpdated event when author is modified', function (): void {
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     // Fetch the author from "database" (this tracks original state)
@@ -86,13 +84,12 @@ it('dispatches AuthorUpdated event when author is modified', function (): void {
 
     $repository->save($author);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(AuthorUpdated::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(AuthorUpdated::class);
 });
 
 it('dispatches AuthorDeleted event when author is removed', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createEventTestMockConnection(
         queryCallback: fn (string $sql) => str_contains($sql, 'COUNT(*)') ? [['count' => 0]] : [],
@@ -105,7 +102,7 @@ it('dispatches AuthorDeleted event when author is removed', function (): void {
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $author = new Author();
@@ -116,13 +113,12 @@ it('dispatches AuthorDeleted event when author is removed', function (): void {
 
     $repository->delete($author);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(AuthorDeleted::class);
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(AuthorDeleted::class);
 });
 
 it('includes full author entity in event data', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createEventTestMockConnection(
         queryCallback: fn () => [],
@@ -135,7 +131,7 @@ it('includes full author entity in event data', function (): void {
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $author = new Author();
@@ -146,9 +142,9 @@ it('includes full author entity in event data', function (): void {
 
     $repository->save($author);
 
-    expect($dispatchedEvents)->toHaveCount(1);
+    expect($dispatcher->dispatched)->toHaveCount(1);
 
-    $event = $dispatchedEvents[0];
+    $event = $dispatcher->dispatched[0];
     $eventAuthor = $event->getAuthor();
 
     expect($eventAuthor)->toBeInstanceOf(AuthorInterface::class)
@@ -159,8 +155,7 @@ it('includes full author entity in event data', function (): void {
 });
 
 it('includes timestamp in all events', function (): void {
-    $dispatchedEvents = [];
-    $eventDispatcher = createMockEventDispatcher($dispatchedEvents);
+    $dispatcher = new FakeEventDispatcher();
 
     $connection = createEventTestMockConnection(
         queryCallback: fn (string $sql) => str_contains($sql, 'COUNT(*)') ? [['count' => 0]] : [],
@@ -173,7 +168,7 @@ it('includes timestamp in all events', function (): void {
         $connection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     // Test AuthorCreated event
@@ -186,10 +181,10 @@ it('includes timestamp in all events', function (): void {
     $repository->save($author1);
     $afterCreate = new DateTimeImmutable();
 
-    expect($dispatchedEvents[0]->getTimestamp())
+    expect($dispatcher->dispatched[0]->getTimestamp())
         ->toBeInstanceOf(DateTimeImmutable::class)
-        ->and($dispatchedEvents[0]->getTimestamp() >= $beforeCreate)->toBeTrue()
-        ->and($dispatchedEvents[0]->getTimestamp() <= $afterCreate)->toBeTrue();
+        ->and($dispatcher->dispatched[0]->getTimestamp() >= $beforeCreate)->toBeTrue()
+        ->and($dispatcher->dispatched[0]->getTimestamp() <= $afterCreate)->toBeTrue();
 
     // For the update test, we need to fetch an existing author first
     // Reset the connection to return author data for find(), then accept update
@@ -212,7 +207,7 @@ it('includes timestamp in all events', function (): void {
         $updateConnection,
         $metadataFactory,
         $hydrator,
-        eventDispatcher: $eventDispatcher,
+        eventDispatcher: $dispatcher,
     );
 
     $author2 = $updateRepository->find(2);
@@ -222,10 +217,10 @@ it('includes timestamp in all events', function (): void {
     $updateRepository->save($author2);
     $afterUpdate = new DateTimeImmutable();
 
-    expect($dispatchedEvents[1]->getTimestamp())
+    expect($dispatcher->dispatched[1]->getTimestamp())
         ->toBeInstanceOf(DateTimeImmutable::class)
-        ->and($dispatchedEvents[1]->getTimestamp() >= $beforeUpdate)->toBeTrue()
-        ->and($dispatchedEvents[1]->getTimestamp() <= $afterUpdate)->toBeTrue();
+        ->and($dispatcher->dispatched[1]->getTimestamp() >= $beforeUpdate)->toBeTrue()
+        ->and($dispatcher->dispatched[1]->getTimestamp() <= $afterUpdate)->toBeTrue();
 
     // Test AuthorDeleted event
     $author3 = new Author();
@@ -238,10 +233,10 @@ it('includes timestamp in all events', function (): void {
     $repository->delete($author3);
     $afterDelete = new DateTimeImmutable();
 
-    expect($dispatchedEvents[2]->getTimestamp())
+    expect($dispatcher->dispatched[2]->getTimestamp())
         ->toBeInstanceOf(DateTimeImmutable::class)
-        ->and($dispatchedEvents[2]->getTimestamp() >= $beforeDelete)->toBeTrue()
-        ->and($dispatchedEvents[2]->getTimestamp() <= $afterDelete)->toBeTrue();
+        ->and($dispatcher->dispatched[2]->getTimestamp() >= $beforeDelete)->toBeTrue()
+        ->and($dispatcher->dispatched[2]->getTimestamp() <= $afterDelete)->toBeTrue();
 });
 
 it('creates AuthorCreated event that extends Event base class', function (): void {
@@ -320,23 +315,6 @@ it('creates immutable event classes with readonly properties', function (): void
 });
 
 // Helper functions for event tests
-
-function createMockEventDispatcher(
-    array &$dispatchedEvents,
-): EventDispatcherInterface {
-    return new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$dispatchedEvents,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->dispatchedEvents[] = $event;
-        }
-    };
-}
 
 function createEventTestMockConnection(
     callable $queryCallback,

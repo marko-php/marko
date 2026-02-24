@@ -4,7 +4,9 @@ Testing utilities for Marko — reusable fakes with built-in assertions that eli
 
 ## Overview
 
-This package provides in-memory fakes for the core Marko contracts: events, mail, queues, sessions, cookies, logging, config, and authentication. Each fake records interactions and exposes assertion methods so your tests stay focused on behavior rather than mock setup. Pest expectation extensions (`toHaveDispatched`, `toHaveSent`, `toHavePushed`, `toHaveLogged`) are included for fluent assertions.
+This package provides in-memory fakes for the core Marko contracts: events, mail, queues, sessions, cookies, logging, config, authentication, and guards. Each fake records interactions and exposes assertion methods so your tests stay focused on behavior rather than mock setup. Pest expectation extensions (`toHaveDispatched`, `toHaveSent`, `toHavePushed`, `toHaveLogged`, `toHaveAttempted`, `toBeAuthenticated`) are included for fluent assertions.
+
+Available fakes: `FakeEventDispatcher`, `FakeMailer`, `FakeQueue`, `FakeSession`, `FakeCookieJar`, `FakeLogger`, `FakeConfigRepository`, `FakeAuthenticatable`, `FakeUserProvider`, `FakeGuard`.
 
 ## Installation
 
@@ -121,6 +123,34 @@ expect($config->getString('app.name'))->toBe('Marko')
 
 $config->set('app.debug', true);
 expect($config->getBool('app.debug'))->toBeTrue();
+```
+
+### FakeGuard
+
+```php
+use Marko\Testing\Fake\FakeAuthenticatable;
+use Marko\Testing\Fake\FakeGuard;
+
+$guard = new FakeGuard(name: 'web', attemptResult: true);
+
+// Set current user directly
+$user = new FakeAuthenticatable(id: 1);
+$guard->setUser($user);
+
+expect($guard->check())->toBeTrue()
+    ->and($guard->id())->toBe(1);
+
+// Simulate a login attempt
+$guard->setUser(null);
+$guard->attempt(['email' => 'user@example.com', 'password' => 'secret']);
+
+$guard->assertAttempted();
+$guard->assertAttempted(fn (array $creds) => $creds['email'] === 'user@example.com');
+
+// Simulate logout
+$guard->logout();
+$guard->assertLoggedOut();
+$guard->assertGuest();
 ```
 
 ### FakeAuthenticatable and FakeUserProvider
@@ -282,6 +312,29 @@ public function retrieveByCredentials(array $credentials): ?AuthenticatableInter
 public function validateCredentials(AuthenticatableInterface $user, array $credentials): bool;
 public function retrieveByRememberToken(int|string $identifier, string $token): ?AuthenticatableInterface;
 public function updateRememberToken(AuthenticatableInterface $user, ?string $token): void;
+```
+
+### FakeGuard
+
+```php
+public function __construct(string $name = 'test', bool $attemptResult = true);
+public function check(): bool;
+public function guest(): bool;
+public function user(): ?AuthenticatableInterface;
+public function id(): int|string|null;
+public function attempt(array $credentials): bool;
+public function login(AuthenticatableInterface $user): void;
+public function loginById(int|string $id): ?AuthenticatableInterface;
+public function logout(): void;
+public function getName(): string;
+public function setUser(?AuthenticatableInterface $user): void;
+public function setAttemptResult(bool $result): void;
+public function assertAuthenticated(): void;
+public function assertGuest(): void;
+public function assertAttempted(?callable $callback = null): void;
+public function assertNotAttempted(): void;
+public function assertLoggedOut(): void;
+public function clear(): void;
 ```
 
 ### AssertionFailedException

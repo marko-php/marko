@@ -2,90 +2,17 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Security\Config\SecurityConfig;
 use Marko\Security\Middleware\CorsMiddleware;
+use Marko\Testing\Fake\FakeConfigRepository;
 
-function createCorsMockConfig(
+function createCorsConfig(
     array $configData = [],
 ): SecurityConfig {
-    $repo = new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->data[$key]);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-
-    return new SecurityConfig($repo);
+    return new SecurityConfig(new FakeConfigRepository($configData));
 }
 
 function defaultCorsConfig(
@@ -101,14 +28,14 @@ function defaultCorsConfig(
 
 describe('CorsMiddleware', function (): void {
     it('implements MiddlewareInterface', function (): void {
-        $config = createCorsMockConfig(defaultCorsConfig());
+        $config = createCorsConfig(defaultCorsConfig());
         $middleware = new CorsMiddleware($config);
 
         expect($middleware)->toBeInstanceOf(MiddlewareInterface::class);
     });
 
     it('passes request through when no Origin header present', function (): void {
-        $config = createCorsMockConfig(defaultCorsConfig());
+        $config = createCorsConfig(defaultCorsConfig());
         $middleware = new CorsMiddleware($config);
 
         $request = new Request(server: ['REQUEST_METHOD' => 'GET']);
@@ -122,7 +49,7 @@ describe('CorsMiddleware', function (): void {
     });
 
     it('adds CORS headers for allowed origin', function (): void {
-        $config = createCorsMockConfig(defaultCorsConfig());
+        $config = createCorsConfig(defaultCorsConfig());
         $middleware = new CorsMiddleware($config);
 
         $request = new Request(server: [
@@ -140,7 +67,7 @@ describe('CorsMiddleware', function (): void {
     });
 
     it('rejects request from disallowed origin', function (): void {
-        $config = createCorsMockConfig(defaultCorsConfig());
+        $config = createCorsConfig(defaultCorsConfig());
         $middleware = new CorsMiddleware($config);
 
         $request = new Request(server: [
@@ -157,7 +84,7 @@ describe('CorsMiddleware', function (): void {
     });
 
     it('handles preflight OPTIONS request with 204 response', function (): void {
-        $config = createCorsMockConfig(defaultCorsConfig());
+        $config = createCorsConfig(defaultCorsConfig());
         $middleware = new CorsMiddleware($config);
 
         $request = new Request(server: [
@@ -183,7 +110,7 @@ describe('CorsMiddleware', function (): void {
     });
 
     it('supports wildcard origin', function (): void {
-        $config = createCorsMockConfig(defaultCorsConfig([
+        $config = createCorsConfig(defaultCorsConfig([
             'security.cors.allowed_origins' => ['*'],
         ]));
         $middleware = new CorsMiddleware($config);
@@ -201,7 +128,7 @@ describe('CorsMiddleware', function (): void {
     });
 
     it('includes configured allowed methods and headers in preflight response', function (): void {
-        $config = createCorsMockConfig(defaultCorsConfig([
+        $config = createCorsConfig(defaultCorsConfig([
             'security.cors.allowed_methods' => ['GET', 'POST'],
             'security.cors.allowed_headers' => ['Content-Type', 'Authorization'],
         ]));
@@ -219,5 +146,14 @@ describe('CorsMiddleware', function (): void {
             ->and($response->headers()['Access-Control-Allow-Methods'])->toBe('GET, POST')
             ->and($response->headers())->toHaveKey('Access-Control-Allow-Headers')
             ->and($response->headers()['Access-Control-Allow-Headers'])->toBe('Content-Type, Authorization');
+    });
+
+    it('uses FakeConfigRepository instead of inline config stub in CorsMiddlewareTest', function (): void {
+        $repo = new FakeConfigRepository(defaultCorsConfig());
+        $config = new SecurityConfig($repo);
+        $middleware = new CorsMiddleware($config);
+
+        expect($repo)->toBeInstanceOf(FakeConfigRepository::class)
+            ->and($middleware)->toBeInstanceOf(MiddlewareInterface::class);
     });
 });

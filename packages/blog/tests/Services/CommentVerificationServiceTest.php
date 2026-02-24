@@ -16,19 +16,17 @@ use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\CommentVerificationService;
 use Marko\Blog\Services\TokenRepositoryInterface;
-use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
-use Marko\Mail\Contracts\MailerInterface;
-use Marko\Mail\Message;
+use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeMailer;
 use RuntimeException;
 
 it('generates unique verification token for comment', function (): void {
     $comment = createVerificationTestComment();
     $tokenRepository = new MockTokenRepository();
     $commentRepository = new MockCommentRepository();
-    $mailer = new MockMailer();
+    $mailer = new FakeMailer();
     $config = new MockBlogConfig();
-    $eventDispatcher = new MockEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
 
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
@@ -54,7 +52,7 @@ it('sends verification email with link to commenter', function (): void {
         name: 'John Doe',
     );
     $tokenRepository = new MockTokenRepository();
-    $mailer = new MockMailer();
+    $mailer = new FakeMailer();
 
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
@@ -62,14 +60,14 @@ it('sends verification email with link to commenter', function (): void {
         postRepository: new MockPostRepository(),
         mailer: $mailer,
         config: new MockBlogConfig(),
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     $token = $service->sendVerificationEmail($comment);
 
-    expect($mailer->sentMessages)->toHaveCount(1);
+    expect($mailer->sent)->toHaveCount(1);
 
-    $message = $mailer->sentMessages[0];
+    $message = $mailer->sent[0];
     expect($message->to[0]->email)->toBe('john@example.com')
         ->and($message->to[0]->name)->toBe('John Doe')
         ->and($message->subject)->toContain('Verify')
@@ -102,13 +100,13 @@ it('verifies comment when valid token provided', function (): void {
     $tokenRepository = new MockTokenRepository();
     $tokenRepository->findByTokenResult = $verificationToken;
 
-    $eventDispatcher = new MockEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
 
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
         commentRepository: $commentRepository,
         postRepository: $postRepository,
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: new MockBlogConfig(),
         eventDispatcher: $eventDispatcher,
     );
@@ -127,7 +125,7 @@ it('verifies comment when valid token provided', function (): void {
         ->and($commentRepository->savedComments[0]->status)->toBe(CommentStatus::Verified);
 
     // Should dispatch CommentVerified event
-    expect($eventDispatcher->dispatchedEvents)->toHaveCount(1);
+    expect($eventDispatcher->dispatched)->toHaveCount(1);
 });
 
 it('rejects expired verification tokens', function (): void {
@@ -145,9 +143,9 @@ it('rejects expired verification tokens', function (): void {
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
         postRepository: new MockPostRepository(),
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: new MockBlogConfig(),
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     expect(fn () => $service->verifyByToken($expiredToken->token))
@@ -162,9 +160,9 @@ it('rejects invalid verification tokens', function (): void {
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
         postRepository: new MockPostRepository(),
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: new MockBlogConfig(),
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     expect(fn () => $service->verifyByToken('invalid-token-value'))
@@ -193,9 +191,9 @@ it('creates browser token after successful verification', function (): void {
         tokenRepository: $tokenRepository,
         commentRepository: $commentRepository,
         postRepository: $postRepository,
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: new MockBlogConfig(),
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     $result = $service->verifyByToken($verificationToken->token);
@@ -226,9 +224,9 @@ it('checks if browser token is valid for email', function (): void {
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
         postRepository: new MockPostRepository(),
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: new MockBlogConfig(),
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     // Valid token for matching email
@@ -258,9 +256,9 @@ it('auto-approves comment when valid browser token exists', function (): void {
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
         postRepository: new MockPostRepository(),
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: new MockBlogConfig(),
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     // Should auto-approve when valid browser token exists for email
@@ -300,9 +298,9 @@ it('returns verification token cookie value after verification', function (): vo
         tokenRepository: $tokenRepository,
         commentRepository: $commentRepository,
         postRepository: $postRepository,
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: new MockBlogConfig(),
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     // verifyByToken returns a VerificationResult with the browser token value to store in cookie
@@ -332,9 +330,9 @@ it('uses configured token expiry days', function (): void {
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
         postRepository: new MockPostRepository(),
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: $config,
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     $beforeCreate = new DateTimeImmutable();
@@ -358,9 +356,9 @@ it('uses configured cookie name from BlogConfig', function (): void {
         tokenRepository: new MockTokenRepository(),
         commentRepository: new MockCommentRepository(),
         postRepository: new MockPostRepository(),
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: $config,
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     expect($service->getCookieName())->toBe('custom_blog_token');
@@ -373,9 +371,9 @@ it('returns cookie lifetime days from config', function (): void {
         tokenRepository: new MockTokenRepository(),
         commentRepository: new MockCommentRepository(),
         postRepository: new MockPostRepository(),
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: $config,
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     expect($service->getCookieLifetimeDays())->toBe(180);
@@ -384,7 +382,7 @@ it('returns cookie lifetime days from config', function (): void {
 it('allows resending verification email for pending comment', function (): void {
     $comment = createVerificationTestComment();
     $tokenRepository = new MockTokenRepository();
-    $mailer = new MockMailer();
+    $mailer = new FakeMailer();
 
     $service = new CommentVerificationService(
         tokenRepository: $tokenRepository,
@@ -392,7 +390,7 @@ it('allows resending verification email for pending comment', function (): void 
         postRepository: new MockPostRepository(),
         mailer: $mailer,
         config: new MockBlogConfig(),
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     // First send
@@ -406,7 +404,7 @@ it('allows resending verification email for pending comment', function (): void 
         ->and($token1)->not->toBe($token2);
 
     // Both should send emails
-    expect($mailer->sentMessages)->toHaveCount(2);
+    expect($mailer->sent)->toHaveCount(2);
 });
 
 it('invalidates old token when resending verification email', function (): void {
@@ -427,9 +425,9 @@ it('invalidates old token when resending verification email', function (): void 
         tokenRepository: $tokenRepository,
         commentRepository: new MockCommentRepository(),
         postRepository: new MockPostRepository(),
-        mailer: new MockMailer(),
+        mailer: new FakeMailer(),
         config: new MockBlogConfig(),
-        eventDispatcher: new MockEventDispatcher(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     // Resend verification email
@@ -617,27 +615,6 @@ class MockCommentRepository implements CommentRepositoryInterface
     ): void {}
 }
 
-class MockMailer implements MailerInterface
-{
-    /** @var array<Message> */
-    public array $sentMessages = [];
-
-    public function send(
-        Message $message,
-    ): bool {
-        $this->sentMessages[] = $message;
-
-        return true;
-    }
-
-    public function sendRaw(
-        string $to,
-        string $raw,
-    ): bool {
-        return true;
-    }
-}
-
 class MockBlogConfig implements BlogConfigInterface
 {
     public function __construct(
@@ -684,18 +661,6 @@ class MockBlogConfig implements BlogConfigInterface
     public function getSiteName(): string
     {
         return 'Test Blog';
-    }
-}
-
-class MockEventDispatcher implements EventDispatcherInterface
-{
-    /** @var array<Event> */
-    public array $dispatchedEvents = [];
-
-    public function dispatch(
-        Event $event,
-    ): void {
-        $this->dispatchedEvents[] = $event;
     }
 }
 

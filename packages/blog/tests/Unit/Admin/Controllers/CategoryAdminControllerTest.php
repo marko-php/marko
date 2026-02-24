@@ -16,9 +16,8 @@ use Marko\Blog\Events\Category\CategoryUpdated;
 use Marko\Blog\Repositories\CategoryRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Blog\Services\SlugGeneratorInterface;
-use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Entity\Entity;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Routing\Attributes\Delete;
 use Marko\Routing\Attributes\Get;
@@ -309,11 +308,11 @@ it('applies AdminAuthMiddleware to CategoryAdminController', function (): void {
 
 it('dispatches CategoryCreated, CategoryUpdated, and CategoryDeleted events', function (): void {
     // Test CategoryCreated on store
-    $dispatchedEvents = [];
+    $dispatcher = new FakeEventDispatcher();
     $savedEntities = [];
     $controller = createCategoryController(
         savedEntities: $savedEntities,
-        dispatchedEvents: $dispatchedEvents,
+        eventDispatcher: $dispatcher,
     );
 
     $request = new Request(post: [
@@ -322,18 +321,18 @@ it('dispatches CategoryCreated, CategoryUpdated, and CategoryDeleted events', fu
 
     $controller->store($request);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(CategoryCreated::class)
-        ->and($dispatchedEvents[0]->getCategory()->getName())->toBe('New Category');
+    expect($dispatcher->dispatched)->toHaveCount(1)
+        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CategoryCreated::class)
+        ->and($dispatcher->dispatched[0]->getCategory()->getName())->toBe('New Category');
 
     // Test CategoryUpdated on update
     $existingCategory = createTestCategoryEntity(1, 'Existing', 'existing');
-    $dispatchedEvents2 = [];
+    $dispatcher2 = new FakeEventDispatcher();
     $savedEntities2 = [];
     $controller2 = createCategoryController(
         findCategory: $existingCategory,
         savedEntities: $savedEntities2,
-        dispatchedEvents: $dispatchedEvents2,
+        eventDispatcher: $dispatcher2,
     );
 
     $request2 = new Request(post: [
@@ -342,25 +341,25 @@ it('dispatches CategoryCreated, CategoryUpdated, and CategoryDeleted events', fu
 
     $controller2->update(1, $request2);
 
-    expect($dispatchedEvents2)->toHaveCount(1)
-        ->and($dispatchedEvents2[0])->toBeInstanceOf(CategoryUpdated::class)
-        ->and($dispatchedEvents2[0]->getCategory()->getName())->toBe('Updated Category');
+    expect($dispatcher2->dispatched)->toHaveCount(1)
+        ->and($dispatcher2->dispatched[0])->toBeInstanceOf(CategoryUpdated::class)
+        ->and($dispatcher2->dispatched[0]->getCategory()->getName())->toBe('Updated Category');
 
     // Test CategoryDeleted on destroy
     $existingCategory3 = createTestCategoryEntity(2, 'To Delete', 'to-delete');
-    $dispatchedEvents3 = [];
+    $dispatcher3 = new FakeEventDispatcher();
     $deletedEntities3 = [];
     $controller3 = createCategoryController(
         findCategory: $existingCategory3,
         deletedEntities: $deletedEntities3,
-        dispatchedEvents: $dispatchedEvents3,
+        eventDispatcher: $dispatcher3,
     );
 
     $controller3->destroy(2);
 
-    expect($dispatchedEvents3)->toHaveCount(1)
-        ->and($dispatchedEvents3[0])->toBeInstanceOf(CategoryDeleted::class)
-        ->and($dispatchedEvents3[0]->getCategory()->getName())->toBe('To Delete');
+    expect($dispatcher3->dispatched)->toHaveCount(1)
+        ->and($dispatcher3->dispatched[0])->toBeInstanceOf(CategoryDeleted::class)
+        ->and($dispatcher3->dispatched[0]->getCategory()->getName())->toBe('To Delete');
 });
 
 // Helper functions
@@ -548,23 +547,6 @@ function createMockCategoryAdminSlugGenerator(): SlugGeneratorInterface
     };
 }
 
-function createMockCategoryAdminEventDispatcher(
-    array &$dispatchedEvents = [],
-): EventDispatcherInterface {
-    return new class ($dispatchedEvents) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$dispatchedEvents,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->dispatchedEvents[] = $event;
-        }
-    };
-}
-
 function createMockCategoryAdminView(
     array &$capturedData = [],
 ): ViewInterface {
@@ -601,7 +583,7 @@ function createCategoryController(
     array &$capturedData = [],
     array &$savedEntities = [],
     array &$deletedEntities = [],
-    array &$dispatchedEvents = [],
+    ?FakeEventDispatcher $eventDispatcher = null,
 ): CategoryAdminController {
     return new CategoryAdminController(
         categoryRepository: createMockCategoryAdminRepo(
@@ -612,7 +594,7 @@ function createCategoryController(
         ),
         paginationService: createMockCategoryAdminPagination($categories, $totalCategories),
         slugGenerator: createMockCategoryAdminSlugGenerator(),
-        eventDispatcher: createMockCategoryAdminEventDispatcher($dispatchedEvents),
+        eventDispatcher: $eventDispatcher ?? new FakeEventDispatcher(),
         view: createMockCategoryAdminView($capturedData),
     );
 }

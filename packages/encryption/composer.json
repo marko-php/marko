@@ -9,6 +9,7 @@
         "marko/config": "@dev"
     },
     "require-dev": {
+        "marko/testing": "@dev",
         "pestphp/pest": "^4.0"
     },
     "autoload": {

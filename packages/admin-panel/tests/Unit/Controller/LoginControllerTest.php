@@ -6,11 +6,10 @@ namespace Marko\AdminPanel\Tests\Unit\Controller\Login;
 
 use Marko\Admin\Config\AdminConfigInterface;
 use Marko\AdminPanel\Controller\LoginController;
-use Marko\Authentication\AuthenticatableInterface;
-use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Testing\Fake\FakeAuthenticatable;
+use Marko\Testing\Fake\FakeGuard;
 use Marko\View\ViewInterface;
 
 // Stub for ViewInterface
@@ -42,88 +41,6 @@ class LoginStubView implements ViewInterface
     }
 }
 
-// Stub for GuardInterface
-class LoginStubGuard implements GuardInterface
-{
-    private ?AuthenticatableInterface $authenticatedUser = null;
-
-    private bool $attemptResult = false;
-
-    /** @var array<string, mixed> */
-    public array $lastAttemptedCredentials = [];
-
-    public bool $logoutCalled = false;
-
-    public ?UserProviderInterface $provider = null {
-        set {
-            $this->provider = $value;
-        }
-    }
-
-    public function setUser(
-        ?AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function setAttemptResult(
-        bool $result,
-    ): void {
-        $this->attemptResult = $result;
-    }
-
-    public function check(): bool
-    {
-        return $this->authenticatedUser !== null;
-    }
-
-    public function guest(): bool
-    {
-        return !$this->check();
-    }
-
-    public function user(): ?AuthenticatableInterface
-    {
-        return $this->authenticatedUser;
-    }
-
-    public function id(): int|string|null
-    {
-        return $this->authenticatedUser?->getAuthIdentifier();
-    }
-
-    public function attempt(
-        array $credentials,
-    ): bool {
-        $this->lastAttemptedCredentials = $credentials;
-
-        return $this->attemptResult;
-    }
-
-    public function login(
-        AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function loginById(
-        int|string $id,
-    ): ?AuthenticatableInterface {
-        return null;
-    }
-
-    public function logout(): void
-    {
-        $this->logoutCalled = true;
-        $this->authenticatedUser = null;
-    }
-
-    public function getName(): string
-    {
-        return 'admin';
-    }
-}
-
 // Stub for AdminConfigInterface
 class LoginStubAdminConfig implements AdminConfigInterface
 {
@@ -143,57 +60,13 @@ class LoginStubAdminConfig implements AdminConfigInterface
     }
 }
 
-// Stub for AuthenticatableInterface
-class LoginStubAdminUser implements AuthenticatableInterface
-{
-    public function __construct(
-        private readonly int $id = 1,
-        private readonly string $name = 'Admin User',
-        private readonly string $email = 'admin@example.com',
-    ) {}
-
-    public function getAuthIdentifier(): int|string
-    {
-        return $this->id;
-    }
-
-    public function getAuthIdentifierName(): string
-    {
-        return 'id';
-    }
-
-    public function getAuthPassword(): string
-    {
-        return 'hashed';
-    }
-
-    public function getRememberToken(): ?string
-    {
-        return null;
-    }
-
-    public function setRememberToken(
-        ?string $token,
-    ): void {}
-
-    public function getRememberTokenName(): string
-    {
-        return 'remember_token';
-    }
-
-    public function getName(): string
-    {
-        return $this->name;
-    }
-}
-
 it('redirects authenticated users from login page to dashboard', function (): void {
     $view = new LoginStubView();
-    $guard = new LoginStubGuard();
+    $guard = new FakeGuard(name: 'admin');
     $adminConfig = new LoginStubAdminConfig();
 
     // User is already authenticated
-    $user = new LoginStubAdminUser();
+    $user = new FakeAuthenticatable(id: 1);
     $guard->setUser($user);
 
     $controller = new LoginController(
@@ -212,7 +85,7 @@ it('redirects authenticated users from login page to dashboard', function (): vo
 
 it('authenticates user on POST /admin/login with valid credentials', function (): void {
     $view = new LoginStubView();
-    $guard = new LoginStubGuard();
+    $guard = new FakeGuard(name: 'admin');
     $adminConfig = new LoginStubAdminConfig();
     $guard->setAttemptResult(true);
 
@@ -228,7 +101,9 @@ it('authenticates user on POST /admin/login with valid credentials', function ()
     ]);
     $response = $controller->authenticate($request);
 
-    expect($guard->lastAttemptedCredentials)->toBe([
+    $attempts = $guard->attempts;
+
+    expect(end($attempts))->toBe([
         'email' => 'admin@example.com',
         'password' => 'secret123',
     ]);
@@ -236,7 +111,7 @@ it('authenticates user on POST /admin/login with valid credentials', function ()
 
 it('redirects to dashboard after successful login', function (): void {
     $view = new LoginStubView();
-    $guard = new LoginStubGuard();
+    $guard = new FakeGuard(name: 'admin');
     $adminConfig = new LoginStubAdminConfig();
     $guard->setAttemptResult(true);
 
@@ -259,9 +134,8 @@ it('redirects to dashboard after successful login', function (): void {
 
 it('returns to login with error on invalid credentials', function (): void {
     $view = new LoginStubView();
-    $guard = new LoginStubGuard();
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
     $adminConfig = new LoginStubAdminConfig();
-    $guard->setAttemptResult(false);
 
     $controller = new LoginController(
         view: $view,
@@ -285,11 +159,11 @@ it('returns to login with error on invalid credentials', function (): void {
 
 it('logs out user on POST /admin/logout and redirects to login', function (): void {
     $view = new LoginStubView();
-    $guard = new LoginStubGuard();
+    $guard = new FakeGuard(name: 'admin');
     $adminConfig = new LoginStubAdminConfig();
 
     // User is authenticated
-    $user = new LoginStubAdminUser();
+    $user = new FakeAuthenticatable(id: 1);
     $guard->setUser($user);
 
     $controller = new LoginController(
@@ -309,7 +183,7 @@ it('logs out user on POST /admin/logout and redirects to login', function (): vo
 
 it('renders login form on GET /admin/login', function (): void {
     $view = new LoginStubView();
-    $guard = new LoginStubGuard();
+    $guard = new FakeGuard(name: 'admin');
     $adminConfig = new LoginStubAdminConfig();
 
     $controller = new LoginController(

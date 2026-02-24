@@ -16,18 +16,15 @@ use Marko\AdminAuth\Events\RoleDeleted;
 use Marko\AdminAuth\Events\RoleUpdated;
 use Marko\AdminAuth\Repository\AdminUserRepository;
 use Marko\AdminAuth\Repository\RoleRepository;
-use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use RuntimeException;
 
 it('dispatches RoleCreated event when role is created', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = createEventDispatcher($dispatchedEvents);
+    $eventDispatcher = new FakeEventDispatcher();
     $connection = createEventMockConnection();
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
@@ -46,16 +43,14 @@ it('dispatches RoleCreated event when role is created', function (): void {
 
     $repository->save($role);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(RoleCreated::class)
-        ->and($dispatchedEvents[0]->getRole())->toBeInstanceOf(RoleInterface::class)
-        ->and($dispatchedEvents[0]->getRole()->getName())->toBe('Editor');
+    expect($eventDispatcher->dispatched)->toHaveCount(1)
+        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(RoleCreated::class)
+        ->and($eventDispatcher->dispatched[0]->getRole())->toBeInstanceOf(RoleInterface::class)
+        ->and($eventDispatcher->dispatched[0]->getRole()->getName())->toBe('Editor');
 });
 
 it('dispatches RoleUpdated event when role is modified', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = createEventDispatcher($dispatchedEvents);
+    $eventDispatcher = new FakeEventDispatcher();
     $connection = createEventMockConnection(isNew: false);
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
@@ -75,15 +70,13 @@ it('dispatches RoleUpdated event when role is modified', function (): void {
 
     $repository->save($role);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(RoleUpdated::class)
-        ->and($dispatchedEvents[0]->getRole()->getName())->toBe('Editor Updated');
+    expect($eventDispatcher->dispatched)->toHaveCount(1)
+        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(RoleUpdated::class)
+        ->and($eventDispatcher->dispatched[0]->getRole()->getName())->toBe('Editor Updated');
 });
 
 it('dispatches RoleDeleted event when role is removed', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = createEventDispatcher($dispatchedEvents);
+    $eventDispatcher = new FakeEventDispatcher();
     $connection = createEventMockConnection(isNew: false);
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
@@ -103,15 +96,13 @@ it('dispatches RoleDeleted event when role is removed', function (): void {
 
     $repository->delete($role);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(RoleDeleted::class)
-        ->and($dispatchedEvents[0]->getRole()->getName())->toBe('Editor');
+    expect($eventDispatcher->dispatched)->toHaveCount(1)
+        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(RoleDeleted::class)
+        ->and($eventDispatcher->dispatched[0]->getRole()->getName())->toBe('Editor');
 });
 
 it('dispatches AdminUserCreated event when user is created', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = createEventDispatcher($dispatchedEvents);
+    $eventDispatcher = new FakeEventDispatcher();
     $connection = createEventMockConnection();
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
@@ -131,16 +122,14 @@ it('dispatches AdminUserCreated event when user is created', function (): void {
 
     $repository->save($user);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(AdminUserCreated::class)
-        ->and($dispatchedEvents[0]->getUser())->toBeInstanceOf(AdminUserInterface::class)
-        ->and($dispatchedEvents[0]->getUser()->getAuthIdentifier())->toBe(1);
+    expect($eventDispatcher->dispatched)->toHaveCount(1)
+        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(AdminUserCreated::class)
+        ->and($eventDispatcher->dispatched[0]->getUser())->toBeInstanceOf(AdminUserInterface::class)
+        ->and($eventDispatcher->dispatched[0]->getUser()->getAuthIdentifier())->toBe(1);
 });
 
 it('dispatches AdminUserUpdated event when user is modified', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = createEventDispatcher($dispatchedEvents);
+    $eventDispatcher = new FakeEventDispatcher();
     $connection = createEventMockConnection(isNew: false);
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
@@ -161,15 +150,13 @@ it('dispatches AdminUserUpdated event when user is modified', function (): void 
 
     $repository->save($user);
 
-    expect($dispatchedEvents)->toHaveCount(1)
-        ->and($dispatchedEvents[0])->toBeInstanceOf(AdminUserUpdated::class)
-        ->and($dispatchedEvents[0]->getUser()->getAuthIdentifier())->toBe(1);
+    expect($eventDispatcher->dispatched)->toHaveCount(1)
+        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(AdminUserUpdated::class)
+        ->and($eventDispatcher->dispatched[0]->getUser()->getAuthIdentifier())->toBe(1);
 });
 
 it('includes timestamp in all events', function (): void {
-    $dispatchedEvents = [];
-
-    $eventDispatcher = createEventDispatcher($dispatchedEvents);
+    $eventDispatcher = new FakeEventDispatcher();
     $connection = createEventMockConnection();
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
@@ -193,7 +180,7 @@ it('includes timestamp in all events', function (): void {
     $afterSave = new DateTimeImmutable();
 
     /** @var RoleCreated $event */
-    $event = $dispatchedEvents[0];
+    $event = $eventDispatcher->dispatched[0];
 
     expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
         ->and($event->getTimestamp()->getTimestamp())->toBeGreaterThanOrEqual($beforeSave->getTimestamp())
@@ -201,23 +188,6 @@ it('includes timestamp in all events', function (): void {
 });
 
 // Helper functions
-
-function createEventDispatcher(
-    array &$events,
-): EventDispatcherInterface {
-    return new class ($events) implements EventDispatcherInterface
-    {
-        public function __construct(
-            private array &$events,
-        ) {}
-
-        public function dispatch(
-            Event $event,
-        ): void {
-            $this->events[] = $event;
-        }
-    };
-}
 
 function createEventMockConnection(
     bool $isNew = true,

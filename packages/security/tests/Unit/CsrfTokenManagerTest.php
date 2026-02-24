@@ -7,79 +7,7 @@ use Marko\Security\Contracts\CsrfTokenManagerInterface;
 use Marko\Security\CsrfTokenManager;
 use Marko\Security\Exceptions\CsrfTokenMismatchException;
 use Marko\Security\Exceptions\SecurityException;
-use Marko\Session\Contracts\SessionInterface;
-use Marko\Session\Flash\FlashBag;
-
-function createStubSession(
-    array &$store = [],
-): SessionInterface {
-    return new class ($store) implements SessionInterface
-    {
-        public bool $started {
-            get => true;
-        }
-
-        public function __construct(
-            private array &$store,
-        ) {}
-
-        public function start(): void {}
-
-        public function get(
-            string $key,
-            mixed $default = null,
-        ): mixed {
-            return $this->store[$key] ?? $default;
-        }
-
-        public function set(
-            string $key,
-            mixed $value,
-        ): void {
-            $this->store[$key] = $value;
-        }
-
-        public function has(
-            string $key,
-        ): bool {
-            return isset($this->store[$key]);
-        }
-
-        public function remove(
-            string $key,
-        ): void {
-            unset($this->store[$key]);
-        }
-
-        public function clear(): void
-        {
-            $this->store = [];
-        }
-
-        public function all(): array
-        {
-            return $this->store;
-        }
-
-        public function regenerate(bool $deleteOldSession = true): void {}
-
-        public function destroy(): void {}
-
-        public function getId(): string
-        {
-            return 'test-session-id';
-        }
-
-        public function setId(string $id): void {}
-
-        public function flash(): FlashBag
-        {
-            return new FlashBag();
-        }
-
-        public function save(): void {}
-    };
-}
+use Marko\Testing\Fake\FakeSession;
 
 function createStubEncryptor(): EncryptorInterface
 {
@@ -127,8 +55,7 @@ describe('CsrfTokenManagerInterface', function (): void {
 
 describe('CsrfTokenManager', function (): void {
     it('generates a token and stores it in session', function (): void {
-        $store = [];
-        $session = createStubSession($store);
+        $session = new FakeSession();
         $encryptor = createStubEncryptor();
 
         $manager = new CsrfTokenManager(
@@ -140,13 +67,12 @@ describe('CsrfTokenManager', function (): void {
 
         expect($token)->toBeString()
             ->and($token)->not->toBeEmpty()
-            ->and($store)->toHaveKey('_csrf_token')
-            ->and($store['_csrf_token'])->toBe($token);
+            ->and($session->all())->toHaveKey('_csrf_token')
+            ->and($session->get('_csrf_token'))->toBe($token);
     });
 
     it('returns existing token from session on subsequent calls', function (): void {
-        $store = [];
-        $session = createStubSession($store);
+        $session = new FakeSession();
         $encryptor = createStubEncryptor();
 
         $manager = new CsrfTokenManager(
@@ -161,8 +87,7 @@ describe('CsrfTokenManager', function (): void {
     });
 
     it('validates correct token successfully', function (): void {
-        $store = [];
-        $session = createStubSession($store);
+        $session = new FakeSession();
         $encryptor = createStubEncryptor();
 
         $manager = new CsrfTokenManager(
@@ -176,8 +101,7 @@ describe('CsrfTokenManager', function (): void {
     });
 
     it('rejects invalid token', function (): void {
-        $store = [];
-        $session = createStubSession($store);
+        $session = new FakeSession();
         $encryptor = createStubEncryptor();
 
         $manager = new CsrfTokenManager(
@@ -191,8 +115,7 @@ describe('CsrfTokenManager', function (): void {
     });
 
     it('regenerates token replacing the previous one', function (): void {
-        $store = [];
-        $session = createStubSession($store);
+        $session = new FakeSession();
         $encryptor = createStubEncryptor();
 
         $manager = new CsrfTokenManager(
@@ -204,13 +127,12 @@ describe('CsrfTokenManager', function (): void {
         $regenerated = $manager->regenerate();
 
         expect($regenerated)->not->toBe($original)
-            ->and($store['_csrf_token'])->toBe($regenerated)
+            ->and($session->get('_csrf_token'))->toBe($regenerated)
             ->and($manager->get())->toBe($regenerated);
     });
 
     it('implements CsrfTokenManagerInterface', function (): void {
-        $store = [];
-        $session = createStubSession($store);
+        $session = new FakeSession();
         $encryptor = createStubEncryptor();
 
         $manager = new CsrfTokenManager(
@@ -219,6 +141,21 @@ describe('CsrfTokenManager', function (): void {
         );
 
         expect($manager)->toBeInstanceOf(CsrfTokenManagerInterface::class);
+    });
+
+    it('uses FakeSession instead of inline session stub in CsrfTokenManagerTest', function (): void {
+        $session = new FakeSession();
+        $encryptor = createStubEncryptor();
+
+        $manager = new CsrfTokenManager(
+            session: $session,
+            encryptor: $encryptor,
+        );
+
+        $token = $manager->get();
+
+        expect($session)->toBeInstanceOf(FakeSession::class)
+            ->and($session->get('_csrf_token'))->toBe($token);
     });
 });
 

@@ -2,90 +2,17 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Security\Config\SecurityConfig;
 use Marko\Security\Middleware\SecurityHeadersMiddleware;
+use Marko\Testing\Fake\FakeConfigRepository;
 
-function createHeadersMockConfig(
+function createHeadersConfig(
     array $configData = [],
 ): SecurityConfig {
-    $repo = new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return array_key_exists($key, $this->data);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-
-    return new SecurityConfig($repo);
+    return new SecurityConfig(new FakeConfigRepository($configData));
 }
 
 function defaultHeadersConfig(
@@ -103,14 +30,14 @@ function defaultHeadersConfig(
 
 describe('SecurityHeadersMiddleware', function (): void {
     it('implements MiddlewareInterface', function (): void {
-        $config = createHeadersMockConfig(defaultHeadersConfig());
+        $config = createHeadersConfig(defaultHeadersConfig());
         $middleware = new SecurityHeadersMiddleware($config);
 
         expect($middleware)->toBeInstanceOf(MiddlewareInterface::class);
     });
 
     it('adds all six security headers to response', function (): void {
-        $config = createHeadersMockConfig(defaultHeadersConfig());
+        $config = createHeadersConfig(defaultHeadersConfig());
         $middleware = new SecurityHeadersMiddleware($config);
 
         $request = new Request(server: ['REQUEST_METHOD' => 'GET']);
@@ -135,7 +62,7 @@ describe('SecurityHeadersMiddleware', function (): void {
     });
 
     it('uses configured header values from SecurityConfig', function (): void {
-        $config = createHeadersMockConfig(defaultHeadersConfig([
+        $config = createHeadersConfig(defaultHeadersConfig([
             'security.headers.x_frame_options' => 'DENY',
             'security.headers.referrer_policy' => 'no-referrer',
         ]));
@@ -153,7 +80,7 @@ describe('SecurityHeadersMiddleware', function (): void {
     });
 
     it('omits headers with empty string config value', function (): void {
-        $config = createHeadersMockConfig(defaultHeadersConfig([
+        $config = createHeadersConfig(defaultHeadersConfig([
             'security.headers.x_xss_protection' => '',
             'security.headers.content_security_policy' => '',
         ]));
@@ -175,7 +102,7 @@ describe('SecurityHeadersMiddleware', function (): void {
     });
 
     it('preserves existing response headers', function (): void {
-        $config = createHeadersMockConfig(defaultHeadersConfig());
+        $config = createHeadersConfig(defaultHeadersConfig());
         $middleware = new SecurityHeadersMiddleware($config);
 
         $request = new Request(server: ['REQUEST_METHOD' => 'GET']);
@@ -196,7 +123,7 @@ describe('SecurityHeadersMiddleware', function (): void {
     });
 
     it('preserves response body and status code', function (): void {
-        $config = createHeadersMockConfig(defaultHeadersConfig());
+        $config = createHeadersConfig(defaultHeadersConfig());
         $middleware = new SecurityHeadersMiddleware($config);
 
         $request = new Request(server: ['REQUEST_METHOD' => 'GET']);
@@ -208,5 +135,14 @@ describe('SecurityHeadersMiddleware', function (): void {
 
         expect($response->body())->toBe('Hello World')
             ->and($response->statusCode())->toBe(201);
+    });
+
+    it('uses FakeConfigRepository instead of inline config stub in SecurityHeadersMiddlewareTest', function (): void {
+        $repo = new FakeConfigRepository(defaultHeadersConfig());
+        $config = new SecurityConfig($repo);
+        $middleware = new SecurityHeadersMiddleware($config);
+
+        expect($repo)->toBeInstanceOf(FakeConfigRepository::class)
+            ->and($middleware)->toBeInstanceOf(MiddlewareInterface::class);
     });
 });

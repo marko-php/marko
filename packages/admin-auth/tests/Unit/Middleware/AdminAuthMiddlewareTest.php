@@ -11,11 +11,10 @@ use Marko\AdminAuth\Entity\AdminUser;
 use Marko\AdminAuth\Entity\Role;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
 use Marko\AdminAuth\PermissionRegistry;
-use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Testing\Fake\FakeGuard;
 
 // Test controller classes for attribute reflection
 class TestControllerWithPermission
@@ -41,72 +40,6 @@ class TestControllerWithWildcardPermission
     public function delete(): Response
     {
         return new Response(body: 'deleted', statusCode: 200);
-    }
-}
-
-// Simple stub for GuardInterface
-class StubGuard implements GuardInterface
-{
-    private ?AuthenticatableInterface $authenticatedUser = null;
-
-    public ?UserProviderInterface $provider = null {
-        set {
-            $this->provider = $value;
-        }
-    }
-
-    public function setUser(
-        ?AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function check(): bool
-    {
-        return $this->authenticatedUser !== null;
-    }
-
-    public function guest(): bool
-    {
-        return !$this->check();
-    }
-
-    public function user(): ?AuthenticatableInterface
-    {
-        return $this->authenticatedUser;
-    }
-
-    public function id(): int|string|null
-    {
-        return $this->authenticatedUser?->getAuthIdentifier();
-    }
-
-    public function attempt(
-        array $credentials,
-    ): bool {
-        return false;
-    }
-
-    public function login(
-        AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function loginById(
-        int|string $id,
-    ): ?AuthenticatableInterface {
-        return null;
-    }
-
-    public function logout(): void
-    {
-        $this->authenticatedUser = null;
-    }
-
-    public function getName(): string
-    {
-        return 'admin';
     }
 }
 
@@ -138,7 +71,7 @@ function createMiddleware(
     ?PermissionRegistryInterface $permissionRegistry = null,
 ): AdminAuthMiddleware {
     return new AdminAuthMiddleware(
-        guard: $guard ?? new StubGuard(),
+        guard: $guard ?? new FakeGuard(name: 'admin', attemptResult: false),
         adminConfig: $adminConfig ?? new StubAdminConfig(),
         permissionRegistry: $permissionRegistry ?? new PermissionRegistry(),
         controller: $controller,
@@ -169,7 +102,7 @@ function createSuccessNext(): callable
 }
 
 it('returns 401 when user is not authenticated', function (): void {
-    $guard = new StubGuard(); // No user set
+    $guard = new FakeGuard(name: 'admin', attemptResult: false); // No user set
     $middleware = createMiddleware(
         guard: $guard,
         controller: TestControllerWithPermission::class,
@@ -186,7 +119,7 @@ it('returns 401 when user is not authenticated', function (): void {
 });
 
 it('passes through when user is authenticated and no RequiresPermission attribute present', function (): void {
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
     $user = createAdminUser();
     $guard->setUser($user);
 
@@ -205,7 +138,7 @@ it('passes through when user is authenticated and no RequiresPermission attribut
 });
 
 it('passes through when user has the required permission', function (): void {
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
     $editorRole = new Role();
     $editorRole->id = 1;
     $editorRole->name = 'Editor';
@@ -232,7 +165,7 @@ it('passes through when user has the required permission', function (): void {
 });
 
 it('returns 403 when user lacks the required permission', function (): void {
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
     $editorRole = new Role();
     $editorRole->id = 1;
     $editorRole->name = 'Editor';
@@ -260,7 +193,7 @@ it('returns 403 when user lacks the required permission', function (): void {
 });
 
 it('passes through for super admin users regardless of permission', function (): void {
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
     $superAdminRole = new Role();
     $superAdminRole->id = 1;
     $superAdminRole->name = 'Super Admin';
@@ -288,7 +221,7 @@ it('passes through for super admin users regardless of permission', function ():
 });
 
 it('redirects to admin login for unauthenticated web requests', function (): void {
-    $guard = new StubGuard(); // No user
+    $guard = new FakeGuard(name: 'admin', attemptResult: false); // No user
     $adminConfig = new StubAdminConfig(routePrefix: '/admin');
 
     $middleware = createMiddleware(
@@ -312,7 +245,7 @@ it('redirects to admin login for unauthenticated web requests', function (): voi
 });
 
 it('returns JSON 401 for unauthenticated API requests', function (): void {
-    $guard = new StubGuard(); // No user
+    $guard = new FakeGuard(name: 'admin', attemptResult: false); // No user
 
     $middleware = createMiddleware(
         guard: $guard,
@@ -336,7 +269,7 @@ it('returns JSON 401 for unauthenticated API requests', function (): void {
 });
 
 it('returns JSON 403 for unauthorized API requests', function (): void {
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
     $viewerRole = new Role();
     $viewerRole->id = 1;
     $viewerRole->name = 'Viewer';
@@ -371,7 +304,7 @@ it('returns JSON 403 for unauthorized API requests', function (): void {
 });
 
 it('supports wildcard permission matching via user roles', function (): void {
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
     $managerRole = new Role();
     $managerRole->id = 1;
     $managerRole->name = 'Posts Manager';

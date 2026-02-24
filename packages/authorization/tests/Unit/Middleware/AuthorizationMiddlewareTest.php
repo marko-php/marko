@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\Authorization\Tests\Unit\Middleware;
 
-use Marko\Authentication\AuthenticatableInterface;
-use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authorization\Attributes\Can;
 use Marko\Authorization\AuthorizableInterface;
 use Marko\Authorization\Contracts\GateInterface;
@@ -15,6 +12,7 @@ use Marko\Authorization\Middleware\AuthorizationMiddleware;
 use Marko\Authorization\PolicyRegistry;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Testing\Fake\FakeGuard;
 
 // Test controllers
 class PostController
@@ -34,72 +32,6 @@ class PostController
     public function update(): Response
     {
         return new Response(body: 'updated', statusCode: 200);
-    }
-}
-
-// Guard stub for middleware tests
-class MiddlewareStubGuard implements GuardInterface
-{
-    private ?AuthenticatableInterface $authenticatedUser = null;
-
-    public ?UserProviderInterface $provider = null {
-        set {
-            $this->provider = $value;
-        }
-    }
-
-    public function setUser(
-        ?AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function check(): bool
-    {
-        return $this->authenticatedUser !== null;
-    }
-
-    public function guest(): bool
-    {
-        return !$this->check();
-    }
-
-    public function user(): ?AuthenticatableInterface
-    {
-        return $this->authenticatedUser;
-    }
-
-    public function id(): int|string|null
-    {
-        return $this->authenticatedUser?->getAuthIdentifier();
-    }
-
-    public function attempt(
-        array $credentials,
-    ): bool {
-        return false;
-    }
-
-    public function login(
-        AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function loginById(
-        int|string $id,
-    ): ?AuthenticatableInterface {
-        return null;
-    }
-
-    public function logout(): void
-    {
-        $this->authenticatedUser = null;
-    }
-
-    public function getName(): string
-    {
-        return 'middleware-test';
     }
 }
 
@@ -148,17 +80,17 @@ class MiddlewareStubUser implements AuthorizableInterface
 }
 
 function createMiddlewareGate(
-    ?GuardInterface $guard = null,
+    ?FakeGuard $guard = null,
 ): Gate {
     return new Gate(
-        guard: $guard ?? new MiddlewareStubGuard(),
+        guard: $guard ?? new FakeGuard(name: 'middleware-test', attemptResult: false),
         policyRegistry: new PolicyRegistry(),
     );
 }
 
 function createAuthMiddleware(
     GateInterface $gate,
-    GuardInterface $guard,
+    FakeGuard $guard,
     ?string $controller = null,
     ?string $action = null,
 ): AuthorizationMiddleware {
@@ -176,7 +108,7 @@ function createSuccessfulNext(): callable
 }
 
 it('allows request when gate allows the ability', function (): void {
-    $guard = new MiddlewareStubGuard();
+    $guard = new FakeGuard(name: 'middleware-test', attemptResult: false);
     $guard->setUser(new MiddlewareStubUser());
 
     $gate = createMiddlewareGate(guard: $guard);
@@ -197,7 +129,7 @@ it('allows request when gate allows the ability', function (): void {
 });
 
 it('returns 403 when gate denies the ability', function (): void {
-    $guard = new MiddlewareStubGuard();
+    $guard = new FakeGuard(name: 'middleware-test', attemptResult: false);
     $guard->setUser(new MiddlewareStubUser());
 
     $gate = createMiddlewareGate(guard: $guard);
@@ -218,7 +150,7 @@ it('returns 403 when gate denies the ability', function (): void {
 });
 
 it('returns JSON 403 for API requests when denied', function (): void {
-    $guard = new MiddlewareStubGuard();
+    $guard = new FakeGuard(name: 'middleware-test', attemptResult: false);
     $guard->setUser(new MiddlewareStubUser());
 
     $gate = createMiddlewareGate(guard: $guard);
@@ -243,7 +175,7 @@ it('returns JSON 403 for API requests when denied', function (): void {
 });
 
 it('skips authorization when no Can attribute is present', function (): void {
-    $guard = new MiddlewareStubGuard();
+    $guard = new FakeGuard(name: 'middleware-test', attemptResult: false);
     $guard->setUser(new MiddlewareStubUser());
 
     $gate = createMiddlewareGate(guard: $guard);
@@ -263,7 +195,7 @@ it('skips authorization when no Can attribute is present', function (): void {
 });
 
 it('reads Can attribute from controller method via reflection', function (): void {
-    $guard = new MiddlewareStubGuard();
+    $guard = new FakeGuard(name: 'middleware-test', attemptResult: false);
     $guard->setUser(new MiddlewareStubUser());
 
     $gate = createMiddlewareGate(guard: $guard);
@@ -285,7 +217,7 @@ it('reads Can attribute from controller method via reflection', function (): voi
 });
 
 it('returns 401 when user is not authenticated', function (): void {
-    $guard = new MiddlewareStubGuard(); // No user set
+    $guard = new FakeGuard(name: 'middleware-test', attemptResult: false); // No user set
 
     $gate = createMiddlewareGate(guard: $guard);
     $gate->define('create-post', fn (?AuthorizableInterface $user): bool => true);
@@ -306,7 +238,7 @@ it('returns 401 when user is not authenticated', function (): void {
 });
 
 it('returns plain 401 for web requests when not authenticated', function (): void {
-    $guard = new MiddlewareStubGuard(); // No user set
+    $guard = new FakeGuard(name: 'middleware-test', attemptResult: false); // No user set
 
     $gate = createMiddlewareGate(guard: $guard);
 
@@ -325,7 +257,7 @@ it('returns plain 401 for web requests when not authenticated', function (): voi
 });
 
 it('passes entity class from Can attribute to gate', function (): void {
-    $guard = new MiddlewareStubGuard();
+    $guard = new FakeGuard(name: 'middleware-test', attemptResult: false);
     $guard->setUser(new MiddlewareStubUser());
 
     $gate = createMiddlewareGate(guard: $guard);

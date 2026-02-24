@@ -11,12 +11,10 @@ use Marko\AdminApi\Controller\SectionController;
 use Marko\AdminAuth\Entity\AdminUser;
 use Marko\AdminAuth\Entity\Role;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
-use Marko\Authentication\AuthenticatableInterface;
-use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Http\Response;
+use Marko\Testing\Fake\FakeGuard;
 use ReflectionClass;
 use ReflectionMethod;
 
@@ -64,71 +62,6 @@ function createTestSection(
     };
 }
 
-class StubGuard implements GuardInterface
-{
-    private ?AuthenticatableInterface $authenticatedUser = null;
-
-    public ?UserProviderInterface $provider = null {
-        set {
-            $this->provider = $value;
-        }
-    }
-
-    public function setUser(
-        ?AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function check(): bool
-    {
-        return $this->authenticatedUser !== null;
-    }
-
-    public function guest(): bool
-    {
-        return !$this->check();
-    }
-
-    public function user(): ?AuthenticatableInterface
-    {
-        return $this->authenticatedUser;
-    }
-
-    public function id(): int|string|null
-    {
-        return $this->authenticatedUser?->getAuthIdentifier();
-    }
-
-    public function attempt(
-        array $credentials,
-    ): bool {
-        return false;
-    }
-
-    public function login(
-        AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function loginById(
-        int|string $id,
-    ): ?AuthenticatableInterface {
-        return null;
-    }
-
-    public function logout(): void
-    {
-        $this->authenticatedUser = null;
-    }
-
-    public function getName(): string
-    {
-        return 'admin-api';
-    }
-}
-
 function createTestAdminUser(
     array $roles = [],
     array $permissionKeys = [],
@@ -148,7 +81,7 @@ it('returns list of admin sections on GET /admin/api/v1/sections', function (): 
     $registry->register(createTestSection('catalog', 'Catalog', 'box', 10));
     $registry->register(createTestSection('sales', 'Sales', 'cart', 20));
 
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin-api', attemptResult: false);
     $superAdminRole = new Role();
     $superAdminRole->id = 1;
     $superAdminRole->name = 'Super Admin';
@@ -216,7 +149,7 @@ it('filters sections by user permissions', function (): void {
         ),
     ]));
 
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin-api', attemptResult: false);
     $editorRole = new Role();
     $editorRole->id = 2;
     $editorRole->name = 'Editor';
@@ -262,7 +195,7 @@ it('returns section detail with menu items on GET /admin/api/v1/sections/{id}', 
         ),
     ]));
 
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin-api', attemptResult: false);
     $superAdminRole = new Role();
     $superAdminRole->id = 1;
     $superAdminRole->name = 'Super Admin';
@@ -302,7 +235,7 @@ it('returns section detail with menu items on GET /admin/api/v1/sections/{id}', 
 it('returns 404 when section not found', function (): void {
     $registry = new AdminSectionRegistry();
 
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin-api', attemptResult: false);
     $superAdminRole = new Role();
     $superAdminRole->id = 1;
     $superAdminRole->name = 'Super Admin';
@@ -331,7 +264,7 @@ it('uses ApiResponse format for all responses', function (): void {
     $registry = new AdminSectionRegistry();
     $registry->register(createTestSection('catalog', 'Catalog', 'box', 10));
 
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'admin-api', attemptResult: false);
     $superAdminRole = new Role();
     $superAdminRole->id = 1;
     $superAdminRole->name = 'Super Admin';

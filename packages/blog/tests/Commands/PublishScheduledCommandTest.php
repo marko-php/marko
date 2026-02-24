@@ -13,9 +13,8 @@ use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
-use Marko\Core\Event\Event;
-use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Entity\Entity;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use ReflectionClass;
 use RuntimeException;
 
@@ -79,7 +78,7 @@ it('finds all posts with status scheduled and scheduled_at in the past', functio
     $capture = (object) ['findScheduledPostsDueCalled' => false];
 
     $postRepository = new StubPostRepository($capture, []);
-    $eventDispatcher = new StubEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
     $command = new PublishScheduledCommand($postRepository, $eventDispatcher);
 
     executeCommand($command);
@@ -101,7 +100,7 @@ it('changes status to published for matching posts', function (): void {
     $post->status = PostStatus::Scheduled;
 
     $postRepository = new StubPostRepository($capture, [$post]);
-    $eventDispatcher = new StubEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
     $command = new PublishScheduledCommand($postRepository, $eventDispatcher);
 
     executeCommand($command);
@@ -124,7 +123,7 @@ it('sets published_at to current datetime', function (): void {
     $post->status = PostStatus::Scheduled;
 
     $postRepository = new StubPostRepository($capture, [$post]);
-    $eventDispatcher = new StubEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
     $command = new PublishScheduledCommand($postRepository, $eventDispatcher);
 
     // Use same precision as stored datetime (no microseconds)
@@ -164,14 +163,14 @@ it('dispatches PostPublished event for each published post', function (): void {
     $post2->status = PostStatus::Scheduled;
 
     $postRepository = new StubPostRepository($capture, [$post1, $post2]);
-    $eventDispatcher = new StubEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
     $command = new PublishScheduledCommand($postRepository, $eventDispatcher);
 
     executeCommand($command);
 
-    expect($eventDispatcher->dispatchedEvents)->toHaveCount(2)
-        ->and($eventDispatcher->dispatchedEvents[0])->toBeInstanceOf(PostPublished::class)
-        ->and($eventDispatcher->dispatchedEvents[1])->toBeInstanceOf(PostPublished::class);
+    expect($eventDispatcher->dispatched)->toHaveCount(2)
+        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(PostPublished::class)
+        ->and($eventDispatcher->dispatched[1])->toBeInstanceOf(PostPublished::class);
 });
 
 it('reports count of posts published', function (): void {
@@ -198,7 +197,7 @@ it('reports count of posts published', function (): void {
     $post2->status = PostStatus::Scheduled;
 
     $postRepository = new StubPostRepository($capture, [$post1, $post2]);
-    $eventDispatcher = new StubEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
     $command = new PublishScheduledCommand($postRepository, $eventDispatcher);
 
     ['output' => $output] = executeCommand($command);
@@ -211,13 +210,13 @@ it('handles case when no scheduled posts are due', function (): void {
     $capture = (object) ['savedPosts' => []];
 
     $postRepository = new StubPostRepository($capture, []);
-    $eventDispatcher = new StubEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
     $command = new PublishScheduledCommand($postRepository, $eventDispatcher);
 
     ['output' => $output, 'exitCode' => $exitCode] = executeCommand($command);
 
     expect($capture->savedPosts)->toHaveCount(0)
-        ->and($eventDispatcher->dispatchedEvents)->toHaveCount(0)
+        ->and($eventDispatcher->dispatched)->toHaveCount(0)
         ->and($output)->toContain('0')
         ->and($exitCode)->toBe(0);
 });
@@ -246,7 +245,7 @@ it('provides verbose output option showing post titles', function (): void {
     $post2->status = PostStatus::Scheduled;
 
     $postRepository = new StubPostRepository($capture, [$post1, $post2]);
-    $eventDispatcher = new StubEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
     $command = new PublishScheduledCommand($postRepository, $eventDispatcher);
 
     ['output' => $output] = executeCommand($command, ['marko', 'blog:publish-scheduled', '--verbose']);
@@ -269,7 +268,7 @@ it('returns success exit code on completion', function (): void {
     $post->status = PostStatus::Scheduled;
 
     $postRepository = new StubPostRepository($capture, [$post]);
-    $eventDispatcher = new StubEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
     $command = new PublishScheduledCommand($postRepository, $eventDispatcher);
 
     ['exitCode' => $exitCode] = executeCommand($command);
@@ -300,30 +299,15 @@ it('is safe to run concurrently without double-publishing', function (): void {
     // StubPostRepository returns empty since no posts have status=Scheduled
     // (simulating what the real repository would do)
     $postRepository = new StubPostRepository($capture, []);
-    $eventDispatcher = new StubEventDispatcher();
+    $eventDispatcher = new FakeEventDispatcher();
     $command = new PublishScheduledCommand($postRepository, $eventDispatcher);
 
     executeCommand($command);
 
     // No posts should be saved or events dispatched
     expect($capture->savedPosts)->toHaveCount(0)
-        ->and($eventDispatcher->dispatchedEvents)->toHaveCount(0);
+        ->and($eventDispatcher->dispatched)->toHaveCount(0);
 });
-
-/**
- * Stub event dispatcher for testing.
- */
-class StubEventDispatcher implements EventDispatcherInterface
-{
-    /** @var array<Event> */
-    public array $dispatchedEvents = [];
-
-    public function dispatch(
-        Event $event,
-    ): void {
-        $this->dispatchedEvents[] = $event;
-    }
-}
 
 /**
  * Stub post repository for testing.

@@ -9,16 +9,14 @@ use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
 use Marko\AdminAuth\Entity\AdminUser;
 use Marko\AdminAuth\Entity\Role;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
-use Marko\Authentication\AuthenticatableInterface;
-use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Blog\Admin\Api\PostApiController;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Testing\Fake\FakeGuard;
 
 it('returns 401 when bearer token is missing', function (): void {
     // Create a guard that is not authenticated
-    $guard = new BlogApiStubGuard();
+    $guard = new FakeGuard(name: 'admin-api');
 
     $adminConfig = new BlogApiStubAdminConfig();
     $permissionRegistry = new BlogApiStubPermissionRegistry();
@@ -49,7 +47,7 @@ it('returns 401 when bearer token is missing', function (): void {
 
 it('returns 403 when user lacks required permission', function (): void {
     // Create a guard that is authenticated but without needed permissions
-    $guard = new BlogApiStubGuard();
+    $guard = new FakeGuard(name: 'admin-api');
     $user = new AdminUser();
     $user->id = 1;
     $user->email = 'editor@example.com';
@@ -93,71 +91,6 @@ it('returns 403 when user lacks required permission', function (): void {
 });
 
 // Stub classes for auth testing
-
-class BlogApiStubGuard implements GuardInterface
-{
-    private ?AuthenticatableInterface $authenticatedUser = null;
-
-    public ?UserProviderInterface $provider = null {
-        set {
-            $this->provider = $value;
-        }
-    }
-
-    public function setUser(
-        ?AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function check(): bool
-    {
-        return $this->authenticatedUser !== null;
-    }
-
-    public function guest(): bool
-    {
-        return !$this->check();
-    }
-
-    public function user(): ?AuthenticatableInterface
-    {
-        return $this->authenticatedUser;
-    }
-
-    public function id(): int|string|null
-    {
-        return $this->authenticatedUser?->getAuthIdentifier();
-    }
-
-    public function attempt(
-        array $credentials,
-    ): bool {
-        return false;
-    }
-
-    public function login(
-        AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function loginById(
-        int|string $id,
-    ): ?AuthenticatableInterface {
-        return null;
-    }
-
-    public function logout(): void
-    {
-        $this->authenticatedUser = null;
-    }
-
-    public function getName(): string
-    {
-        return 'admin-api';
-    }
-}
 
 class BlogApiStubAdminConfig implements AdminConfigInterface
 {

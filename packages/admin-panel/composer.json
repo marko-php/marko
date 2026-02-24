@@ -11,7 +11,8 @@
         {"type": "path", "url": "../authentication"},
         {"type": "path", "url": "../session"},
         {"type": "path", "url": "../routing"},
-        {"type": "path", "url": "../config"}
+        {"type": "path", "url": "../config"},
+        {"type": "path", "url": "../testing"}
     ],
     "require": {
         "php": "^8.5",
@@ -25,7 +26,8 @@
         "marko/config": "@dev"
     },
     "require-dev": {
-        "pestphp/pest": "^4.0"
+        "pestphp/pest": "^4.0",
+        "marko/testing": "@dev"
     },
     "autoload": {
         "psr-4": {

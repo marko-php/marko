@@ -2,89 +2,12 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Security\Config\SecurityConfig;
-
-function createSecurityMockConfigRepository(
-    array $configData = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return array_key_exists($key, $this->data);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+use Marko\Testing\Fake\FakeConfigRepository;
 
 describe('SecurityConfig', function (): void {
     it('creates SecurityConfig with CORS settings from config repository', function (): void {
-        $config = new SecurityConfig(createSecurityMockConfigRepository([
+        $config = new SecurityConfig(new FakeConfigRepository([
             'security.cors.allowed_origins' => ['https://example.com'],
             'security.cors.allowed_methods' => ['GET', 'POST'],
             'security.cors.allowed_headers' => ['Content-Type'],
@@ -98,7 +21,7 @@ describe('SecurityConfig', function (): void {
     });
 
     it('creates SecurityConfig with headers settings from config repository', function (): void {
-        $config = new SecurityConfig(createSecurityMockConfigRepository([
+        $config = new SecurityConfig(new FakeConfigRepository([
             'security.headers.x_content_type_options' => 'nosniff',
             'security.headers.x_frame_options' => 'DENY',
             'security.headers.x_xss_protection' => '1; mode=block',
@@ -116,11 +39,21 @@ describe('SecurityConfig', function (): void {
     });
 
     it('creates SecurityConfig with CSRF session key from config repository', function (): void {
-        $config = new SecurityConfig(createSecurityMockConfigRepository([
+        $config = new SecurityConfig(new FakeConfigRepository([
             'security.csrf.session_key' => '_csrf_token',
         ]));
 
         expect($config->csrfSessionKey())->toBe('_csrf_token');
+    });
+
+    it('uses FakeConfigRepository instead of inline config stub in SecurityConfigTest', function (): void {
+        $repo = new FakeConfigRepository([
+            'security.cors.allowed_origins' => ['*'],
+        ]);
+        $config = new SecurityConfig($repo);
+
+        expect($repo)->toBeInstanceOf(FakeConfigRepository::class)
+            ->and($config->corsAllowedOrigins())->toBe(['*']);
     });
 });
 

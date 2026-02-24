@@ -11,9 +11,9 @@ use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Blog\Tests\Mocks\MockAuthorRepository;
 use Marko\Blog\Tests\Mocks\MockCategoryRepository;
 use Marko\Blog\Tests\Mocks\MockCommentRepository;
-use Marko\Blog\Tests\Mocks\MockSession;
 use Marko\Database\Entity\Entity;
 use Marko\Routing\Http\Response;
+use Marko\Testing\Fake\FakeSession;
 use Marko\View\ViewInterface;
 
 it('has resources/views directory', function (): void {
@@ -61,7 +61,7 @@ it('renders post index template', function (): void {
         $commentRepository,
         $paginationService,
         $view,
-        new MockSession(),
+        new FakeSession(),
     );
     $response = $controller->index();
 
@@ -92,7 +92,7 @@ it('renders post show template', function (): void {
         $commentRepository,
         $paginationService,
         $view,
-        new MockSession(),
+        new FakeSession(),
     );
     $response = $controller->show('my-post');
 

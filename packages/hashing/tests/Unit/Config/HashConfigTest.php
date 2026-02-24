@@ -2,88 +2,18 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Hashing\Config\HashConfig;
+use Marko\Testing\Fake\FakeConfigRepository;
 
-function createHashConfigRepository(
-    array $configData = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
+it('uses FakeConfigRepository in HashConfigTest', function () {
+    $config = new FakeConfigRepository(['hashing.default' => 'bcrypt']);
 
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->data[$key]);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+    expect($config)->toBeInstanceOf(FakeConfigRepository::class);
+});
 
 it('reads default hasher from config without fallback', function () {
-    $config = new HashConfig(createHashConfigRepository([
+    $config = new HashConfig(new FakeConfigRepository([
         'hashing.default' => 'argon2id',
     ]));
 
@@ -91,13 +21,13 @@ it('reads default hasher from config without fallback', function () {
 });
 
 it('throws exception when default hasher not configured', function () {
-    $config = new HashConfig(createHashConfigRepository());
+    $config = new HashConfig(new FakeConfigRepository());
 
     $config->defaultHasher();
 })->throws(ConfigNotFoundException::class);
 
 it('reads bcrypt cost from config without fallback', function () {
-    $config = new HashConfig(createHashConfigRepository([
+    $config = new HashConfig(new FakeConfigRepository([
         'hashing.hashers.bcrypt.cost' => 14,
     ]));
 
@@ -105,13 +35,13 @@ it('reads bcrypt cost from config without fallback', function () {
 });
 
 it('throws exception when bcrypt cost not configured', function () {
-    $config = new HashConfig(createHashConfigRepository());
+    $config = new HashConfig(new FakeConfigRepository());
 
     $config->getBcryptCost();
 })->throws(ConfigNotFoundException::class);
 
 it('reads argon2id memory from config without fallback', function () {
-    $config = new HashConfig(createHashConfigRepository([
+    $config = new HashConfig(new FakeConfigRepository([
         'hashing.hashers.argon2id.memory' => 131072,
     ]));
 
@@ -119,13 +49,13 @@ it('reads argon2id memory from config without fallback', function () {
 });
 
 it('throws exception when argon2id memory not configured', function () {
-    $config = new HashConfig(createHashConfigRepository());
+    $config = new HashConfig(new FakeConfigRepository());
 
     $config->getArgon2Memory();
 })->throws(ConfigNotFoundException::class);
 
 it('reads argon2id time from config without fallback', function () {
-    $config = new HashConfig(createHashConfigRepository([
+    $config = new HashConfig(new FakeConfigRepository([
         'hashing.hashers.argon2id.time' => 8,
     ]));
 
@@ -133,13 +63,13 @@ it('reads argon2id time from config without fallback', function () {
 });
 
 it('throws exception when argon2id time not configured', function () {
-    $config = new HashConfig(createHashConfigRepository());
+    $config = new HashConfig(new FakeConfigRepository());
 
     $config->getArgon2Time();
 })->throws(ConfigNotFoundException::class);
 
 it('reads argon2id threads from config without fallback', function () {
-    $config = new HashConfig(createHashConfigRepository([
+    $config = new HashConfig(new FakeConfigRepository([
         'hashing.hashers.argon2id.threads' => 4,
     ]));
 
@@ -147,13 +77,13 @@ it('reads argon2id threads from config without fallback', function () {
 });
 
 it('throws exception when argon2id threads not configured', function () {
-    $config = new HashConfig(createHashConfigRepository());
+    $config = new HashConfig(new FakeConfigRepository());
 
     $config->getArgon2Threads();
 })->throws(ConfigNotFoundException::class);
 
 it('returns true when hasher is configured', function () {
-    $config = new HashConfig(createHashConfigRepository([
+    $config = new HashConfig(new FakeConfigRepository([
         'hashing.hashers.bcrypt' => ['cost' => 12],
     ]));
 
@@ -161,13 +91,13 @@ it('returns true when hasher is configured', function () {
 });
 
 it('returns false when hasher is not configured', function () {
-    $config = new HashConfig(createHashConfigRepository());
+    $config = new HashConfig(new FakeConfigRepository());
 
     expect($config->hasHasher('unknown'))->toBeFalse();
 });
 
 it('returns hasher config array', function () {
-    $config = new HashConfig(createHashConfigRepository([
+    $config = new HashConfig(new FakeConfigRepository([
         'hashing.hashers.bcrypt' => ['cost' => 14],
     ]));
 
@@ -175,7 +105,7 @@ it('returns hasher config array', function () {
 });
 
 it('throws exception when hasher config not found', function () {
-    $config = new HashConfig(createHashConfigRepository());
+    $config = new HashConfig(new FakeConfigRepository());
 
     $config->getHasherConfig('unknown');
 })->throws(ConfigNotFoundException::class);

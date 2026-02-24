@@ -81,4 +81,22 @@ class AssertionFailedException extends MarkoException
             suggestion: "Ensure at least one $type is created before asserting.",
         );
     }
+
+    public static function expectedAuthenticated(): self
+    {
+        return new self(
+            message: 'Expected user to be authenticated but no user is set.',
+            context: 'Guard has no authenticated user.',
+            suggestion: 'Call login() or setUser() before asserting authentication.',
+        );
+    }
+
+    public static function unexpectedGuest(): self
+    {
+        return new self(
+            message: 'Expected user to be a guest but a user is authenticated.',
+            context: 'Guard has an authenticated user.',
+            suggestion: 'Call logout() or setUser(null) before asserting guest state.',
+        );
+    }
 }

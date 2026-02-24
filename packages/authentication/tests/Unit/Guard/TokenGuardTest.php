@@ -8,6 +8,8 @@ use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authentication\Guard\TokenGuard;
+use Marko\Testing\Fake\FakeAuthenticatable;
+use Marko\Testing\Fake\FakeUserProvider;
 use ReflectionClass;
 
 test('it implements GuardInterface', function (): void {
@@ -36,35 +38,7 @@ test('it strips Bearer prefix from token', function (): void {
 });
 
 test('it returns user for valid token', function (): void {
-    $user = new class () implements AuthenticatableInterface
-    {
-        public function getAuthIdentifier(): int|string
-        {
-            return 1;
-        }
-
-        public function getAuthIdentifierName(): string
-        {
-            return 'id';
-        }
-
-        public function getAuthPassword(): string
-        {
-            return 'hashed';
-        }
-
-        public function getRememberToken(): ?string
-        {
-            return null;
-        }
-
-        public function setRememberToken(?string $token): void {}
-
-        public function getRememberTokenName(): string
-        {
-            return 'remember_token';
-        }
-    };
+    $user = new FakeAuthenticatable(id: 1);
 
     $provider = new readonly class ($user) implements UserProviderInterface
     {
@@ -118,40 +92,7 @@ test('it returns user for valid token', function (): void {
 });
 
 test('it returns null for invalid token', function (): void {
-    $provider = new class () implements UserProviderInterface
-    {
-        public function retrieveById(
-            int|string $identifier,
-        ): ?AuthenticatableInterface {
-            return null;
-        }
-
-        public function retrieveByCredentials(
-            array $credentials,
-        ): ?AuthenticatableInterface {
-            // Only return user for valid tokens
-            return null;
-        }
-
-        public function validateCredentials(
-            AuthenticatableInterface $user,
-            array $credentials,
-        ): bool {
-            return false;
-        }
-
-        public function retrieveByRememberToken(
-            int|string $identifier,
-            string $token,
-        ): ?AuthenticatableInterface {
-            return null;
-        }
-
-        public function updateRememberToken(
-            AuthenticatableInterface $user,
-            ?string $token,
-        ): void {}
-    };
+    $provider = new FakeUserProvider();
 
     $guard = new TokenGuard();
     $guard->provider = $provider;
@@ -163,35 +104,7 @@ test('it returns null for invalid token', function (): void {
 });
 
 test('it returns true from check when token valid', function (): void {
-    $user = new class () implements AuthenticatableInterface
-    {
-        public function getAuthIdentifier(): int|string
-        {
-            return 1;
-        }
-
-        public function getAuthIdentifierName(): string
-        {
-            return 'id';
-        }
-
-        public function getAuthPassword(): string
-        {
-            return 'hashed';
-        }
-
-        public function getRememberToken(): ?string
-        {
-            return null;
-        }
-
-        public function setRememberToken(?string $token): void {}
-
-        public function getRememberTokenName(): string
-        {
-            return 'remember_token';
-        }
-    };
+    $user = new FakeAuthenticatable(id: 1);
 
     $provider = new readonly class ($user) implements UserProviderInterface
     {
@@ -292,35 +205,7 @@ test('it supports configurable prefix', function (): void {
 });
 
 test('it handles logout as no-op for stateless token auth', function (): void {
-    $user = new class () implements AuthenticatableInterface
-    {
-        public function getAuthIdentifier(): int|string
-        {
-            return 1;
-        }
-
-        public function getAuthIdentifierName(): string
-        {
-            return 'id';
-        }
-
-        public function getAuthPassword(): string
-        {
-            return 'hashed';
-        }
-
-        public function getRememberToken(): ?string
-        {
-            return null;
-        }
-
-        public function setRememberToken(?string $token): void {}
-
-        public function getRememberTokenName(): string
-        {
-            return 'remember_token';
-        }
-    };
+    $user = new FakeAuthenticatable(id: 1);
 
     $provider = new readonly class ($user) implements UserProviderInterface
     {
@@ -402,35 +287,7 @@ test('it is stateless (no session dependency)', function (): void {
         ->and($propertyNames)->not->toContain('sessionId');
 
     // Verify login/logout are no-ops (stateless means no state to persist)
-    $user = new class () implements AuthenticatableInterface
-    {
-        public function getAuthIdentifier(): int|string
-        {
-            return 1;
-        }
-
-        public function getAuthIdentifierName(): string
-        {
-            return 'id';
-        }
-
-        public function getAuthPassword(): string
-        {
-            return 'hashed';
-        }
-
-        public function getRememberToken(): ?string
-        {
-            return null;
-        }
-
-        public function setRememberToken(?string $token): void {}
-
-        public function getRememberTokenName(): string
-        {
-            return 'remember_token';
-        }
-    };
+    $user = new FakeAuthenticatable(id: 1);
 
     $guard = new TokenGuard();
 

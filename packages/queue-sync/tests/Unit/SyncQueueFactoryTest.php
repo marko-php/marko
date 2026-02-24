@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Marko\Queue\Sync\Tests\Unit;
 
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Sync\Factory\SyncQueueFactory;
 use Marko\Queue\Sync\SyncQueue;
+use Marko\Testing\Fake\FakeConfigRepository;
+
+it('uses FakeConfigRepository in SyncQueueFactoryTest', function (): void {
+    $config = new FakeConfigRepository(['queue.driver' => 'sync']);
+
+    expect($config)->toBeInstanceOf(FakeConfigRepository::class);
+});
 
 it('SyncQueueFactory creates configured queue', function (): void {
     $config = createQueueConfigMock();
@@ -25,93 +30,13 @@ function createQueueConfigMock(
     string $driver = 'sync',
     string $queue = 'default',
 ): QueueConfig {
-    $repository = new readonly class ($driver, $queue) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private string $driver,
-            private string $queue,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            return match ($key) {
-                'queue.driver' => $this->driver,
-                'queue.queue' => $this->queue,
-                'queue.connection' => 'default',
-                'queue.retry_after' => 90,
-                'queue.max_attempts' => 3,
-                default => throw new ConfigNotFoundException($key),
-            };
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return in_array($key, [
-                'queue.driver',
-                'queue.queue',
-                'queue.connection',
-                'queue.retry_after',
-                'queue.max_attempts',
-            ], true);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return [
-                'queue.driver' => $this->driver,
-                'queue.queue' => $this->queue,
-                'queue.connection' => 'default',
-                'queue.retry_after' => 90,
-                'queue.max_attempts' => 3,
-            ];
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
+    $repository = new FakeConfigRepository([
+        'queue.driver' => $driver,
+        'queue.queue' => $queue,
+        'queue.connection' => 'default',
+        'queue.retry_after' => 90,
+        'queue.max_attempts' => 3,
+    ]);
 
     return new QueueConfig($repository);
 }

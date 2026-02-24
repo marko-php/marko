@@ -8,12 +8,11 @@ use Marko\Admin\Contracts\AdminSectionInterface;
 use Marko\Admin\Contracts\AdminSectionRegistryInterface;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
 use Marko\AdminPanel\Controller\DashboardController;
-use Marko\Authentication\AuthenticatableInterface;
-use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Testing\Fake\FakeAuthenticatable;
+use Marko\Testing\Fake\FakeGuard;
 use Marko\View\ViewInterface;
 use ReflectionMethod;
 
@@ -106,116 +105,6 @@ class StubAdminSection implements AdminSectionInterface
     }
 }
 
-// Stub for GuardInterface
-class DashboardStubGuard implements GuardInterface
-{
-    private ?AuthenticatableInterface $authenticatedUser = null;
-
-    public ?UserProviderInterface $provider = null {
-        set {
-            $this->provider = $value;
-        }
-    }
-
-    public function setUser(
-        ?AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function check(): bool
-    {
-        return $this->authenticatedUser !== null;
-    }
-
-    public function guest(): bool
-    {
-        return !$this->check();
-    }
-
-    public function user(): ?AuthenticatableInterface
-    {
-        return $this->authenticatedUser;
-    }
-
-    public function id(): int|string|null
-    {
-        return $this->authenticatedUser?->getAuthIdentifier();
-    }
-
-    public function attempt(
-        array $credentials,
-    ): bool {
-        return false;
-    }
-
-    public function login(
-        AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function loginById(
-        int|string $id,
-    ): ?AuthenticatableInterface {
-        return null;
-    }
-
-    public function logout(): void
-    {
-        $this->authenticatedUser = null;
-    }
-
-    public function getName(): string
-    {
-        return 'admin';
-    }
-}
-
-// Stub for AuthenticatableInterface
-class StubAdminUser implements AuthenticatableInterface
-{
-    public function __construct(
-        private readonly int $id = 1,
-        private readonly string $name = 'Admin User',
-        private readonly string $email = 'admin@example.com',
-    ) {}
-
-    public function getAuthIdentifier(): int|string
-    {
-        return $this->id;
-    }
-
-    public function getAuthIdentifierName(): string
-    {
-        return 'id';
-    }
-
-    public function getAuthPassword(): string
-    {
-        return 'hashed';
-    }
-
-    public function getRememberToken(): ?string
-    {
-        return null;
-    }
-
-    public function setRememberToken(
-        ?string $token,
-    ): void {}
-
-    public function getRememberTokenName(): string
-    {
-        return 'remember_token';
-    }
-
-    public function getName(): string
-    {
-        return $this->name;
-    }
-}
-
 it('requires authentication via AdminAuthMiddleware for dashboard', function (): void {
     $reflection = new ReflectionMethod(DashboardController::class, 'index');
     $middlewareAttributes = $reflection->getAttributes(Middleware::class);
@@ -230,14 +119,14 @@ it('requires authentication via AdminAuthMiddleware for dashboard', function ():
 it('renders dashboard template with registered sections on GET /admin', function (): void {
     $view = new StubView();
     $registry = new StubSectionRegistry();
-    $guard = new DashboardStubGuard();
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
 
     $section1 = new StubAdminSection(id: 'catalog', label: 'Catalog');
     $section2 = new StubAdminSection(id: 'content', label: 'Content');
     $registry->register($section1);
     $registry->register($section2);
 
-    $user = new StubAdminUser();
+    $user = new FakeAuthenticatable(id: 1);
     $guard->setUser($user);
 
     $controller = new DashboardController(
@@ -260,7 +149,7 @@ it('renders dashboard template with registered sections on GET /admin', function
 it('passes admin sections to dashboard template for display', function (): void {
     $view = new StubView();
     $registry = new StubSectionRegistry();
-    $guard = new DashboardStubGuard();
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
 
     $section1 = new StubAdminSection(id: 'catalog', label: 'Catalog', sortOrder: 10);
     $section2 = new StubAdminSection(id: 'content', label: 'Content', sortOrder: 20);
@@ -269,7 +158,7 @@ it('passes admin sections to dashboard template for display', function (): void 
     $registry->register($section2);
     $registry->register($section3);
 
-    $user = new StubAdminUser();
+    $user = new FakeAuthenticatable(id: 1);
     $guard->setUser($user);
 
     $controller = new DashboardController(
@@ -293,9 +182,9 @@ it('passes admin sections to dashboard template for display', function (): void 
 it('passes current user to base layout template', function (): void {
     $view = new StubView();
     $registry = new StubSectionRegistry();
-    $guard = new DashboardStubGuard();
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
 
-    $user = new StubAdminUser(id: 5, name: 'Jane Admin');
+    $user = new FakeAuthenticatable(id: 5);
     $guard->setUser($user);
 
     $controller = new DashboardController(

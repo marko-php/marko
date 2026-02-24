@@ -2,89 +2,12 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Mail\Config\MailConfig;
 use Marko\Mail\Smtp\SmtpConfig;
-
-function createSmtpMockConfigRepository(
-    array $configData = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->data[$key]);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+use Marko\Testing\Fake\FakeConfigRepository;
 
 it('extracts host from mail config', function (): void {
-    $configRepo = createSmtpMockConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'mail.smtp' => ['host' => 'smtp.example.com'],
     ]);
 
@@ -95,7 +18,7 @@ it('extracts host from mail config', function (): void {
 });
 
 it('extracts port from mail config', function (): void {
-    $configRepo = createSmtpMockConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'mail.smtp' => ['port' => 465],
     ]);
 
@@ -106,7 +29,7 @@ it('extracts port from mail config', function (): void {
 });
 
 it('extracts encryption setting', function (): void {
-    $configRepo = createSmtpMockConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'mail.smtp' => ['encryption' => 'ssl'],
     ]);
 
@@ -117,7 +40,7 @@ it('extracts encryption setting', function (): void {
 });
 
 it('extracts username and password', function (): void {
-    $configRepo = createSmtpMockConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'mail.smtp' => [
             'username' => 'user@example.com',
             'password' => 'secret123',
@@ -132,7 +55,7 @@ it('extracts username and password', function (): void {
 });
 
 it('extracts timeout setting', function (): void {
-    $configRepo = createSmtpMockConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'mail.smtp' => ['timeout' => 60],
     ]);
 
@@ -143,7 +66,7 @@ it('extracts timeout setting', function (): void {
 });
 
 it('extracts auth_mode setting', function (): void {
-    $configRepo = createSmtpMockConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'mail.smtp' => ['auth_mode' => 'plain'],
     ]);
 
@@ -154,7 +77,7 @@ it('extracts auth_mode setting', function (): void {
 });
 
 it('provides default values for optional settings', function (): void {
-    $configRepo = createSmtpMockConfigRepository([
+    $configRepo = new FakeConfigRepository([
         'mail.smtp' => [],
     ]);
 
@@ -168,4 +91,12 @@ it('provides default values for optional settings', function (): void {
         ->and($smtpConfig->password())->toBeNull()
         ->and($smtpConfig->timeout())->toBe(30)
         ->and($smtpConfig->authMode())->toBe('login');
+});
+
+it('uses FakeConfigRepository in SmtpConfigTest', function (): void {
+    $repo = new FakeConfigRepository(['mail.smtp' => ['host' => 'localhost']]);
+    $mailConfig = new MailConfig($repo);
+    $smtpConfig = new SmtpConfig($mailConfig);
+
+    expect($smtpConfig->host())->toBe('localhost');
 });

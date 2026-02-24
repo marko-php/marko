@@ -25,7 +25,8 @@
         "predis/predis": "^2.0"
     },
     "require-dev": {
-        "pestphp/pest": "^4.0"
+        "pestphp/pest": "^4.0",
+        "marko/testing": "*"
     },
     "autoload": {
         "psr-4": {

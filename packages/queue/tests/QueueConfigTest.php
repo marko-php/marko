@@ -2,89 +2,13 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Queue\QueueConfig;
-
-function createQueueConfigRepository(
-    array $values = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($values) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $values,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->values[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return array_key_exists($key, $this->values);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->values;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+use Marko\Testing\Fake\FakeConfigRepository;
 
 describe('QueueConfig', function (): void {
     it('loads driver setting', function (): void {
-        $config = createQueueConfigRepository([
+        $config = new FakeConfigRepository([
             'queue.driver' => 'database',
         ]);
 
@@ -94,7 +18,7 @@ describe('QueueConfig', function (): void {
     });
 
     it('loads connection setting', function (): void {
-        $config = createQueueConfigRepository([
+        $config = new FakeConfigRepository([
             'queue.connection' => 'redis',
         ]);
 
@@ -104,7 +28,7 @@ describe('QueueConfig', function (): void {
     });
 
     it('loads queue name setting', function (): void {
-        $config = createQueueConfigRepository([
+        $config = new FakeConfigRepository([
             'queue.queue' => 'high-priority',
         ]);
 
@@ -114,7 +38,7 @@ describe('QueueConfig', function (): void {
     });
 
     it('loads retry_after setting', function (): void {
-        $config = createQueueConfigRepository([
+        $config = new FakeConfigRepository([
             'queue.retry_after' => 120,
         ]);
 
@@ -124,7 +48,7 @@ describe('QueueConfig', function (): void {
     });
 
     it('loads max_attempts setting', function (): void {
-        $config = createQueueConfigRepository([
+        $config = new FakeConfigRepository([
             'queue.max_attempts' => 5,
         ]);
 
@@ -136,7 +60,7 @@ describe('QueueConfig', function (): void {
     it('uses default config values from config file', function (): void {
         // Defaults are now provided by config/queue.php, not fallback parameters
         // This test verifies the expected default values match config file
-        $config = createQueueConfigRepository([
+        $config = new FakeConfigRepository([
             'queue.driver' => 'sync',
             'queue.connection' => 'default',
             'queue.queue' => 'default',
@@ -154,14 +78,14 @@ describe('QueueConfig', function (): void {
     });
 
     it('throws ConfigNotFoundException when required config is missing', function (): void {
-        $emptyConfig = createQueueConfigRepository();
+        $emptyConfig = new FakeConfigRepository();
         $queueConfig = new QueueConfig($emptyConfig);
 
         expect(fn () => $queueConfig->driver())->toThrow(ConfigNotFoundException::class);
     });
 
     it('allows custom config values to override defaults', function (): void {
-        $customConfig = createQueueConfigRepository([
+        $customConfig = new FakeConfigRepository([
             'queue.driver' => 'database',
             'queue.connection' => 'mysql',
             'queue.queue' => 'high-priority',

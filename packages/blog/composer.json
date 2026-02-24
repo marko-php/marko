@@ -35,6 +35,10 @@
         {
             "type": "path",
             "url": "../session"
+        },
+        {
+            "type": "path",
+            "url": "../testing"
         }
     ],
     "require": {
@@ -56,7 +60,8 @@
         "marko/mail-smtp": "SMTP mail driver for production email sending"
     },
     "require-dev": {
-        "pestphp/pest": "^4.0"
+        "pestphp/pest": "^4.0",
+        "marko/testing": "@dev"
     },
     "autoload": {
         "psr-4": {

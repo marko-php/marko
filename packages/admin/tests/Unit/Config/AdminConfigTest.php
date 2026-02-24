@@ -5,87 +5,16 @@ declare(strict_types=1);
 use Marko\Admin\Config\AdminConfig;
 use Marko\Admin\Config\AdminConfigInterface;
 use Marko\Admin\Exceptions\InvalidAdminConfigException;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Testing\Fake\FakeConfigRepository;
 
-function createAdminMockConfigRepository(
-    array $configData = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
+it('uses FakeConfigRepository in AdminConfigTest', function (): void {
+    $config = new FakeConfigRepository(['admin.route_prefix' => '/admin']);
 
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->data[$key]);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+    expect($config)->toBeInstanceOf(FakeConfigRepository::class);
+});
 
 it('provides default admin route prefix of /admin', function (): void {
-    $config = new AdminConfig(createAdminMockConfigRepository([
+    $config = new AdminConfig(new FakeConfigRepository([
         'admin.route_prefix' => '/admin',
     ]));
 
@@ -93,7 +22,7 @@ it('provides default admin route prefix of /admin', function (): void {
 });
 
 it('provides configurable admin route prefix from config', function (): void {
-    $config = new AdminConfig(createAdminMockConfigRepository([
+    $config = new AdminConfig(new FakeConfigRepository([
         'admin.route_prefix' => '/backend',
     ]));
 
@@ -101,7 +30,7 @@ it('provides configurable admin route prefix from config', function (): void {
 });
 
 it('throws InvalidAdminConfigException when route prefix does not start with slash', function (): void {
-    $config = new AdminConfig(createAdminMockConfigRepository([
+    $config = new AdminConfig(new FakeConfigRepository([
         'admin.route_prefix' => 'admin',
     ]));
 
@@ -110,7 +39,7 @@ it('throws InvalidAdminConfigException when route prefix does not start with sla
 });
 
 it('provides default admin name of Admin', function (): void {
-    $config = new AdminConfig(createAdminMockConfigRepository([
+    $config = new AdminConfig(new FakeConfigRepository([
         'admin.name' => 'Admin',
     ]));
 
@@ -118,7 +47,7 @@ it('provides default admin name of Admin', function (): void {
 });
 
 it('provides configurable admin name from config', function (): void {
-    $config = new AdminConfig(createAdminMockConfigRepository([
+    $config = new AdminConfig(new FakeConfigRepository([
         'admin.name' => 'Dashboard',
     ]));
 

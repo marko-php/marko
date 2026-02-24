@@ -8,8 +8,8 @@ use Marko\Core\Event\EventDispatcher;
 use Marko\Core\Event\ObserverDefinition;
 use Marko\Core\Event\ObserverRegistry;
 use Marko\Queue\AsyncObserverJob;
-use Marko\Queue\JobInterface;
 use Marko\Queue\QueueInterface;
+use Marko\Testing\Fake\FakeQueue;
 
 // Test fixtures
 class DispatcherTestEvent extends Event
@@ -233,62 +233,7 @@ it('supports stopping event propagation from observer', function (): void {
 it('accepts optional queue', function (): void {
     $container = new Container();
     $registry = new ObserverRegistry();
-    $queue = new class () implements QueueInterface
-    {
-        public array $jobs = [];
-
-        public function push(
-            JobInterface $job,
-            ?string $queue = null,
-        ): string {
-            $id = uniqid();
-            $this->jobs[] = $job;
-
-            return $id;
-        }
-
-        public function later(
-            int $delay,
-            JobInterface $job,
-            ?string $queue = null,
-        ): string {
-            return $this->push($job, $queue);
-        }
-
-        public function pop(
-            ?string $queue = null,
-        ): ?JobInterface {
-            return array_shift($this->jobs);
-        }
-
-        public function size(
-            ?string $queue = null,
-        ): int {
-            return count($this->jobs);
-        }
-
-        public function clear(
-            ?string $queue = null,
-        ): int {
-            $count = count($this->jobs);
-            $this->jobs = [];
-
-            return $count;
-        }
-
-        public function delete(
-            string $jobId,
-        ): bool {
-            return true;
-        }
-
-        public function release(
-            string $jobId,
-            int $delay = 0,
-        ): bool {
-            return true;
-        }
-    };
+    $queue = new FakeQueue();
 
     // Create with queue
     $dispatcherWithQueue = new EventDispatcher($container, $registry, $queue);
@@ -321,62 +266,7 @@ class AsyncTestObserver
 it('queues async observers', function (): void {
     $container = new Container();
     $registry = new ObserverRegistry();
-    $queue = new class () implements QueueInterface
-    {
-        public array $jobs = [];
-
-        public function push(
-            JobInterface $job,
-            ?string $queue = null,
-        ): string {
-            $id = uniqid();
-            $this->jobs[] = $job;
-
-            return $id;
-        }
-
-        public function later(
-            int $delay,
-            JobInterface $job,
-            ?string $queue = null,
-        ): string {
-            return $this->push($job, $queue);
-        }
-
-        public function pop(
-            ?string $queue = null,
-        ): ?JobInterface {
-            return array_shift($this->jobs);
-        }
-
-        public function size(
-            ?string $queue = null,
-        ): int {
-            return count($this->jobs);
-        }
-
-        public function clear(
-            ?string $queue = null,
-        ): int {
-            $count = count($this->jobs);
-            $this->jobs = [];
-
-            return $count;
-        }
-
-        public function delete(
-            string $jobId,
-        ): bool {
-            return true;
-        }
-
-        public function release(
-            string $jobId,
-            int $delay = 0,
-        ): bool {
-            return true;
-        }
-    };
+    $queue = new FakeQueue();
 
     // Register an async observer
     $registry->register(new ObserverDefinition(
@@ -394,11 +284,11 @@ it('queues async observers', function (): void {
     expect($event->handledBy)->toBeEmpty();
 
     // Job was pushed to queue
-    expect($queue->jobs)->toHaveCount(1);
+    expect($queue->pushed)->toHaveCount(1);
 
     // Job is an AsyncObserverJob
-    expect($queue->jobs[0])->toBeInstanceOf(AsyncObserverJob::class);
-    expect($queue->jobs[0]->observerClass)->toBe(AsyncTestObserver::class);
+    expect($queue->pushed[0]['job'])->toBeInstanceOf(AsyncObserverJob::class);
+    expect($queue->pushed[0]['job']->observerClass)->toBe(AsyncTestObserver::class);
 });
 
 class SyncTestObserver
@@ -413,62 +303,7 @@ class SyncTestObserver
 it('executes sync observers immediately', function (): void {
     $container = new Container();
     $registry = new ObserverRegistry();
-    $queue = new class () implements QueueInterface
-    {
-        public array $jobs = [];
-
-        public function push(
-            JobInterface $job,
-            ?string $queue = null,
-        ): string {
-            $id = uniqid();
-            $this->jobs[] = $job;
-
-            return $id;
-        }
-
-        public function later(
-            int $delay,
-            JobInterface $job,
-            ?string $queue = null,
-        ): string {
-            return $this->push($job, $queue);
-        }
-
-        public function pop(
-            ?string $queue = null,
-        ): ?JobInterface {
-            return array_shift($this->jobs);
-        }
-
-        public function size(
-            ?string $queue = null,
-        ): int {
-            return count($this->jobs);
-        }
-
-        public function clear(
-            ?string $queue = null,
-        ): int {
-            $count = count($this->jobs);
-            $this->jobs = [];
-
-            return $count;
-        }
-
-        public function delete(
-            string $jobId,
-        ): bool {
-            return true;
-        }
-
-        public function release(
-            string $jobId,
-            int $delay = 0,
-        ): bool {
-            return true;
-        }
-    };
+    $queue = new FakeQueue();
 
     // Register a sync observer (async=false, the default)
     $registry->register(new ObserverDefinition(
@@ -486,7 +321,7 @@ it('executes sync observers immediately', function (): void {
     expect($event->handledBy)->toBe(['sync']);
 
     // No job was pushed to queue
-    expect($queue->jobs)->toBeEmpty();
+    expect($queue->pushed)->toBeEmpty();
 });
 
 class AsyncFallbackObserver

@@ -4,80 +4,12 @@ declare(strict_types=1);
 
 namespace Marko\Authorization\Tests\Unit;
 
-use Marko\Authentication\AuthenticatableInterface;
-use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authorization\AuthorizableInterface;
 use Marko\Authorization\Contracts\GateInterface;
 use Marko\Authorization\Exceptions\AuthorizationException;
 use Marko\Authorization\Gate;
 use Marko\Authorization\PolicyRegistry;
-
-// Stub for GuardInterface
-class StubGuard implements GuardInterface
-{
-    private ?AuthenticatableInterface $authenticatedUser = null;
-
-    public ?UserProviderInterface $provider = null {
-        set {
-            $this->provider = $value;
-        }
-    }
-
-    public function setUser(
-        ?AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function check(): bool
-    {
-        return $this->authenticatedUser !== null;
-    }
-
-    public function guest(): bool
-    {
-        return !$this->check();
-    }
-
-    public function user(): ?AuthenticatableInterface
-    {
-        return $this->authenticatedUser;
-    }
-
-    public function id(): int|string|null
-    {
-        return $this->authenticatedUser?->getAuthIdentifier();
-    }
-
-    public function attempt(
-        array $credentials,
-    ): bool {
-        return false;
-    }
-
-    public function login(
-        AuthenticatableInterface $user,
-    ): void {
-        $this->authenticatedUser = $user;
-    }
-
-    public function loginById(
-        int|string $id,
-    ): ?AuthenticatableInterface {
-        return null;
-    }
-
-    public function logout(): void
-    {
-        $this->authenticatedUser = null;
-    }
-
-    public function getName(): string
-    {
-        return 'test';
-    }
-}
+use Marko\Testing\Fake\FakeGuard;
 
 // Stub AuthorizableInterface user
 class StubUser implements AuthorizableInterface
@@ -124,9 +56,9 @@ class StubUser implements AuthorizableInterface
 }
 
 function createGate(
-    ?GuardInterface $guard = null,
+    ?FakeGuard $guard = null,
 ): Gate {
-    $stubGuard = $guard ?? new StubGuard();
+    $stubGuard = $guard ?? new FakeGuard(name: 'test', attemptResult: false);
 
     return new Gate(
         guard: $stubGuard,
@@ -157,7 +89,7 @@ it('checks if an ability is denied via denies method', function (): void {
 });
 
 it('passes the current user to ability closures', function (): void {
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'test', attemptResult: false);
     $user = new StubUser(id: 42);
     $guard->setUser($user);
 
@@ -177,7 +109,7 @@ it('passes the current user to ability closures', function (): void {
 });
 
 it('passes additional arguments to ability closures', function (): void {
-    $guard = new StubGuard();
+    $guard = new FakeGuard(name: 'test', attemptResult: false);
     $guard->setUser(new StubUser());
     $gate = createGate(guard: $guard);
 

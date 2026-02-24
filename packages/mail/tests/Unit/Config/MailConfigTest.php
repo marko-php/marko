@@ -2,89 +2,12 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Mail\Config\MailConfig;
 use Marko\Mail\Exception\MailException;
-
-function createMailMockConfigRepository(
-    array $configData = [],
-): ConfigRepositoryInterface {
-    return new readonly class ($configData) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private array $data,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if (!$this->has($key, $scope)) {
-                throw new ConfigNotFoundException($key);
-            }
-
-            return $this->data[$key];
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return isset($this->data[$key]);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return $this->data;
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-}
+use Marko\Testing\Fake\FakeConfigRepository;
 
 test('MailConfig loads driver setting', function () {
-    $config = new MailConfig(createMailMockConfigRepository([
+    $config = new MailConfig(new FakeConfigRepository([
         'mail.driver' => 'smtp',
     ]));
 
@@ -92,7 +15,7 @@ test('MailConfig loads driver setting', function () {
 });
 
 test('MailConfig loads from address', function () {
-    $config = new MailConfig(createMailMockConfigRepository([
+    $config = new MailConfig(new FakeConfigRepository([
         'mail.from.address' => 'hello@example.com',
     ]));
 
@@ -100,7 +23,7 @@ test('MailConfig loads from address', function () {
 });
 
 test('MailConfig loads from name', function () {
-    $config = new MailConfig(createMailMockConfigRepository([
+    $config = new MailConfig(new FakeConfigRepository([
         'mail.from.name' => 'Marko Application',
     ]));
 
@@ -113,7 +36,7 @@ test('MailConfig provides driver-specific config', function () {
         'port' => 587,
         'encryption' => 'tls',
     ];
-    $config = new MailConfig(createMailMockConfigRepository([
+    $config = new MailConfig(new FakeConfigRepository([
         'mail.smtp' => $smtpConfig,
     ]));
 
@@ -121,7 +44,7 @@ test('MailConfig provides driver-specific config', function () {
 });
 
 test('MailConfig throws on missing config file', function () {
-    $config = new MailConfig(createMailMockConfigRepository());
+    $config = new MailConfig(new FakeConfigRepository());
 
     expect(fn () => $config->ensureConfigExists())
         ->toThrow(MailException::class, 'Mail configuration file not found.');
@@ -135,7 +58,7 @@ test('provides default configuration file', function () {
 });
 
 test('it reads driver from config without fallback', function () {
-    $config = new MailConfig(createMailMockConfigRepository([
+    $config = new MailConfig(new FakeConfigRepository([
         'mail.driver' => 'sendmail',
     ]));
 
@@ -143,7 +66,7 @@ test('it reads driver from config without fallback', function () {
 });
 
 test('it reads from address from config without fallback', function () {
-    $config = new MailConfig(createMailMockConfigRepository([
+    $config = new MailConfig(new FakeConfigRepository([
         'mail.from.address' => 'test@example.org',
     ]));
 
@@ -151,7 +74,7 @@ test('it reads from address from config without fallback', function () {
 });
 
 test('it reads from name from config without fallback', function () {
-    $config = new MailConfig(createMailMockConfigRepository([
+    $config = new MailConfig(new FakeConfigRepository([
         'mail.from.name' => 'Test Sender',
     ]));
 
@@ -174,4 +97,11 @@ test('config file contains all required keys with defaults', function () {
     expect($config['driver'])->toBe('smtp')
         ->and($config['from']['address'])->toBe('hello@example.com')
         ->and($config['from']['name'])->toBe('Marko Application');
+});
+
+test('it uses FakeConfigRepository in MailConfigTest', function () {
+    $repo = new FakeConfigRepository(['mail.driver' => 'smtp']);
+    $config = new MailConfig($repo);
+
+    expect($config->driver())->toBe('smtp');
 });

@@ -8,8 +8,7 @@ use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
 use Marko\Cache\Redis\RedisConnection;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Testing\Fake\FakeConfigRepository;
 use Predis\Client;
 use Predis\ClientInterface;
 
@@ -121,80 +120,11 @@ function createMockClient(): MockRedisClient
 function createCacheConfig(
     int $defaultTtl = 3600,
 ): CacheConfig {
-    $configRepo = new readonly class ($defaultTtl) implements ConfigRepositoryInterface
-    {
-        public function __construct(
-            private int $defaultTtl,
-        ) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            return match ($key) {
-                'cache.path' => '/tmp/cache',
-                'cache.default_ttl' => $this->defaultTtl,
-                'cache.driver' => 'redis',
-                default => throw new ConfigNotFoundException($key),
-            };
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return in_array($key, ['cache.path', 'cache.default_ttl', 'cache.driver'], true);
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return [];
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-
-    return new CacheConfig($configRepo);
+    return new CacheConfig(new FakeConfigRepository([
+        'cache.path' => '/tmp/cache',
+        'cache.default_ttl' => $defaultTtl,
+        'cache.driver' => 'redis',
+    ]));
 }
 
 function createDriver(

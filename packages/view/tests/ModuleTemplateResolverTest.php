@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepository;
+use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\View\Exceptions\TemplateNotFoundException;
 use Marko\View\ModuleTemplateResolver;
 use Marko\View\TemplateResolverInterface;
@@ -14,76 +13,9 @@ use Marko\View\ViewConfig;
 function createTestViewConfig(
     string $extension = '.latte',
 ): ViewConfig {
-    $config = new readonly class ($extension) implements ConfigRepositoryInterface
-    {
-        public function __construct(private string $extension) {}
-
-        public function get(
-            string $key,
-            ?string $scope = null,
-        ): mixed {
-            if ($key === 'view.extension') {
-                return $this->extension;
-            }
-            throw new ConfigNotFoundException($key);
-        }
-
-        public function has(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return $key === 'view.extension';
-        }
-
-        public function getString(
-            string $key,
-            ?string $scope = null,
-        ): string {
-            return (string) $this->get($key, $scope);
-        }
-
-        public function getInt(
-            string $key,
-            ?string $scope = null,
-        ): int {
-            return (int) $this->get($key, $scope);
-        }
-
-        public function getFloat(
-            string $key,
-            ?string $scope = null,
-        ): float {
-            return (float) $this->get($key, $scope);
-        }
-
-        public function getBool(
-            string $key,
-            ?string $scope = null,
-        ): bool {
-            return (bool) $this->get($key, $scope);
-        }
-
-        public function getArray(
-            string $key,
-            ?string $scope = null,
-        ): array {
-            return (array) $this->get($key, $scope);
-        }
-
-        public function all(
-            ?string $scope = null,
-        ): array {
-            return [];
-        }
-
-        public function withScope(
-            string $scope,
-        ): ConfigRepositoryInterface {
-            return $this;
-        }
-    };
-
-    return new ViewConfig($config);
+    return new ViewConfig(new FakeConfigRepository([
+        'view.extension' => $extension,
+    ]));
 }
 
 it('ModuleTemplateResolver implements TemplateResolverInterface', function () {
@@ -382,4 +314,11 @@ it('ModuleTemplateResolver getSearchedPaths returns all paths checked', function
     // Cleanup
     rmdir($tempDir1);
     rmdir($tempDir2);
+});
+
+it('uses FakeConfigRepository in ModuleTemplateResolverTest', function () {
+    $repo = new FakeConfigRepository(['view.extension' => '.latte']);
+    $viewConfig = new ViewConfig($repo);
+
+    expect($viewConfig->extension())->toBe('.latte');
 });
