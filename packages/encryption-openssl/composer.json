@@ -1,0 +1,36 @@
+{
+    "name": "marko/encryption-openssl",
+    "description": "OpenSSL encryption driver for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "@dev",
+        "marko/config": "@dev",
+        "marko/encryption": "@dev",
+        "ext-openssl": "*"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Encryption\\OpenSsl\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Encryption\\OpenSsl\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
