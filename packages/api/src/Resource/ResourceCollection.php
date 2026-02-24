@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Api\Resource;
 
+use JsonException;
 use Marko\Api\Contracts\ResourceCollectionInterface;
 use Marko\Pagination\Contracts\PaginatorInterface;
 use Marko\Routing\Http\Response;
@@ -16,7 +17,7 @@ class ResourceCollection implements ResourceCollectionInterface
     private array $additionalMeta = [];
 
     /**
-     * @param array<mixed> $items
+     * @param array $items
      * @param class-string<JsonResource> $resourceClass
      */
     public function __construct(
@@ -30,11 +31,14 @@ class ResourceCollection implements ResourceCollectionInterface
     public function toArray(): array
     {
         return array_map(
-            fn (mixed $item): array => (new $this->resourceClass($item))->toArray(),
+            fn (mixed $item): array => new $this->resourceClass($item)->toArray(),
             $this->items,
         );
     }
 
+    /**
+     * @throws JsonException
+     */
     public function toResponse(): Response
     {
         $meta = $this->buildMeta();
@@ -50,8 +54,7 @@ class ResourceCollection implements ResourceCollectionInterface
 
     public function withPagination(
         PaginatorInterface $paginator,
-    ): static
-    {
+    ): static {
         $this->paginator = $paginator;
 
         return $this;
@@ -64,8 +67,7 @@ class ResourceCollection implements ResourceCollectionInterface
      */
     public function additional(
         array $meta,
-    ): static
-    {
+    ): static {
         $this->additionalMeta = array_merge($this->additionalMeta, $meta);
 
         return $this;

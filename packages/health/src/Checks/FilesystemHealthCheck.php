@@ -12,9 +12,9 @@ use Throwable;
 
 readonly class FilesystemHealthCheck implements HealthCheckInterface
 {
-    private const TEST_PATH = '.health_check_temp';
+    private const string TEST_PATH = '.health_check_temp';
 
-    private const TEST_CONTENTS = 'marko_health_check';
+    private const string TEST_CONTENTS = 'marko_health_check';
 
     public function __construct(
         private FilesystemInterface $filesystem,

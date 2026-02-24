@@ -13,9 +13,9 @@ use Throwable;
 
 readonly class CacheHealthCheck implements HealthCheckInterface
 {
-    private const TEST_KEY = 'marko_health_check';
+    private const string TEST_KEY = 'marko_health_check';
 
-    private const TEST_VALUE = 'ok';
+    private const string TEST_VALUE = 'ok';
 
     public function __construct(
         private CacheInterface $cache,

@@ -19,13 +19,17 @@ it('checks database connectivity via DatabaseHealthCheck', function () {
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
-        {
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
             return [['1' => '1']];
         }
 
-        public function execute(string $sql, array $bindings = []): int
-        {
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
             return 0;
         }
 
@@ -62,13 +66,17 @@ it('returns unhealthy status when database query fails', function () {
             return false;
         }
 
-        public function query(string $sql, array $bindings = []): array
-        {
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
             throw new RuntimeException('Connection refused');
         }
 
-        public function execute(string $sql, array $bindings = []): int
-        {
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
             return 0;
         }
 

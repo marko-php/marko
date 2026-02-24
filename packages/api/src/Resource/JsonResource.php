@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Api\Resource;
 
+use JsonException;
 use Marko\Api\Contracts\ResourceInterface;
 use Marko\Api\Value\ConditionalValue;
 use Marko\Api\Value\MissingValue;
@@ -24,6 +25,8 @@ abstract class JsonResource implements ResourceInterface
 
     /**
      * Transform the resource into a JSON HTTP response.
+     *
+     * @throws JsonException
      */
     public function toResponse(): Response
     {
@@ -36,8 +39,7 @@ abstract class JsonResource implements ResourceInterface
     protected function when(
         bool $condition,
         mixed $value,
-    ): ConditionalValue
-    {
+    ): ConditionalValue {
         return new ConditionalValue($condition, $value);
     }
 
@@ -57,8 +59,7 @@ abstract class JsonResource implements ResourceInterface
      */
     protected function filterArray(
         array $array,
-    ): array
-    {
+    ): array {
         $result = [];
 
         foreach ($array as $key => $value) {

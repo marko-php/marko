@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Webhook\Jobs;
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Queue\Job;
 use Marko\Queue\QueueInterface;
 use Marko\Webhook\Contracts\WebhookDispatcherInterface;
@@ -15,12 +16,12 @@ use Throwable;
 class DispatchWebhookJob extends Job
 {
     public function __construct(
-        private WebhookPayload $payload,
-        private WebhookDispatcherInterface $dispatcher,
-        private WebhookDeliveryService $deliveryService,
-        private ConfigRepositoryInterface $config,
-        private QueueInterface $queue,
-        private int $attemptNumber = 1,
+        private readonly WebhookPayload $payload,
+        private readonly WebhookDispatcherInterface $dispatcher,
+        private readonly WebhookDeliveryService $deliveryService,
+        private readonly ConfigRepositoryInterface $config,
+        private readonly QueueInterface $queue,
+        private readonly int $attemptNumber = 1,
     ) {}
 
     public function handle(): void
@@ -29,8 +30,15 @@ class DispatchWebhookJob extends Job
             $response = $this->dispatcher->dispatch($this->payload);
             $this->deliveryService->recordSuccess($this->payload, $response, $this->attemptNumber);
         } catch (Throwable $e) {
-            $maxRetries = $this->config->getInt('webhook.max_retries');
-            $retryDelay = $this->config->getInt('webhook.retry_delay');
+            try {
+                $maxRetries = $this->config->getInt('webhook.max_retries');
+                $retryDelay = $this->config->getInt('webhook.retry_delay');
+            } catch (ConfigNotFoundException) {
+                // If config values are missing, we won't retry and just log the failure.
+                $this->deliveryService->recordFailure($this->payload, $e->getMessage(), $this->attemptNumber);
+
+                return;
+            }
 
             $this->deliveryService->recordFailure($this->payload, $e->getMessage(), $this->attemptNumber);
 

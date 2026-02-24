@@ -8,6 +8,8 @@ use Marko\Authentication\AuthenticatableInterface;
 use Marko\AuthenticationToken\Contracts\NewAccessToken;
 use Marko\AuthenticationToken\Contracts\TokenRepositoryInterface;
 use Marko\AuthenticationToken\Entity\PersonalAccessToken;
+use Random\RandomException;
+use RuntimeException;
 
 readonly class TokenManager
 {
@@ -20,19 +22,23 @@ readonly class TokenManager
         string $name,
         array $abilities = [],
     ): NewAccessToken {
-        $rawToken = bin2hex(random_bytes(40));
-        $tokenHash = hash('sha256', $rawToken);
+        try {
+            $rawToken = bin2hex(random_bytes(40));
+            $tokenHash = hash('sha256', $rawToken);
 
-        $token = new PersonalAccessToken();
-        $token->tokenableType = get_class($user);
-        $token->tokenableId = $user->getAuthIdentifier();
-        $token->name = $name;
-        $token->tokenHash = $tokenHash;
-        $token->abilities = json_encode($abilities);
+            $token = new PersonalAccessToken();
+            $token->tokenableType = get_class($user);
+            $token->tokenableId = $user->getAuthIdentifier();
+            $token->name = $name;
+            $token->tokenHash = $tokenHash;
+            $token->abilities = json_encode($abilities);
 
-        $saved = $this->repository->create($token);
+            $saved = $this->repository->create($token);
 
-        return new NewAccessToken($saved, $rawToken);
+            return new NewAccessToken($saved, $rawToken);
+        } catch (RandomException) {
+            throw new RuntimeException('Failed to generate a secure token.');
+        }
     }
 
     public function revokeToken(

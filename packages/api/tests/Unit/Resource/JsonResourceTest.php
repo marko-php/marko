@@ -25,18 +25,6 @@ class TestJsonResource extends JsonResource
     }
 }
 
-class TestJsonResourceWithEmail extends JsonResource
-{
-    public function toArray(): array
-    {
-        return [
-            'id' => $this->resource->id,
-            'name' => $this->resource->name,
-            'email' => $this->resource->email,
-        ];
-    }
-}
-
 it('wraps an entity and exposes it via the resource property', function (): void {
     $entity = new TestEntity(id: 1, name: 'Alice', email: 'alice@example.com');
     $resource = new TestJsonResource($entity);

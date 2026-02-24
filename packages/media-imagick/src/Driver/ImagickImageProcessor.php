@@ -46,7 +46,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
             $format = strtolower($imagick->getImageFormat());
             $outputPath = sys_get_temp_dir() . '/' . uniqid('imagick_', true) . '.' . $format;
             $imagick->writeImage($outputPath);
-            $imagick->destroy();
+            $imagick->clear();
 
             return $outputPath;
         } catch (ImagickException $e) {
@@ -76,7 +76,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
             $format = strtolower($imagick->getImageFormat());
             $outputPath = sys_get_temp_dir() . '/' . uniqid('imagick_', true) . '.' . $format;
             $imagick->writeImage($outputPath);
-            $imagick->destroy();
+            $imagick->clear();
 
             return $outputPath;
         } catch (ImagickException $e) {
@@ -102,7 +102,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
 
             $outputPath = sys_get_temp_dir() . '/' . uniqid('imagick_', true) . '.' . strtolower($format);
             $imagick->writeImage($outputPath);
-            $imagick->destroy();
+            $imagick->clear();
 
             return $outputPath;
         } catch (ImagickException $e) {
@@ -129,7 +129,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
             $format = strtolower($imagick->getImageFormat());
             $outputPath = sys_get_temp_dir() . '/' . uniqid('imagick_', true) . '.' . $format;
             $imagick->writeImage($outputPath);
-            $imagick->destroy();
+            $imagick->clear();
 
             return $outputPath;
         } catch (ImagickException $e) {

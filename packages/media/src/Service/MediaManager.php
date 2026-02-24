@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Media\Service;
 
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Filesystem\Contracts\FilesystemInterface;
 use Marko\Media\Config\MediaConfig;
 use Marko\Media\Contracts\MediaManagerInterface;
@@ -21,7 +22,7 @@ readonly class MediaManager implements MediaManagerInterface
     ) {}
 
     /**
-     * @throws UploadException
+     * @throws UploadException|ConfigNotFoundException
      */
     public function upload(
         UploadedFile $file,

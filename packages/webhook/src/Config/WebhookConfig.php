@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Marko\Webhook\Config;
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 
+/** @noinspection PhpUnused */
 readonly class WebhookConfig
 {
     public int $timeout;
@@ -14,6 +16,9 @@ readonly class WebhookConfig
 
     public int $retryDelay;
 
+    /**
+     * @throws ConfigNotFoundException
+     */
     public function __construct(
         ConfigRepositoryInterface $config,
     ) {

@@ -5,16 +5,21 @@ declare(strict_types=1);
 namespace Marko\Webhook\Sending;
 
 use Marko\Http\Contracts\HttpClientInterface;
+use Marko\Http\Exceptions\ConnectionException;
+use Marko\Http\Exceptions\HttpException;
 use Marko\Webhook\Contracts\WebhookDispatcherInterface;
 use Marko\Webhook\Value\WebhookPayload;
 use Marko\Webhook\Value\WebhookResponse;
 
-class WebhookDispatcher implements WebhookDispatcherInterface
+readonly class WebhookDispatcher implements WebhookDispatcherInterface
 {
     public function __construct(
         private HttpClientInterface $httpClient,
     ) {}
 
+    /**
+     * @throws ConnectionException|HttpException
+     */
     public function dispatch(
         WebhookPayload $payload,
     ): WebhookResponse {

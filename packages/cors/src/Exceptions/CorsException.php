@@ -6,6 +6,5 @@ namespace Marko\Cors\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
 
-class CorsException extends MarkoException
-{
-}
+/** @noinspection PhpUnused */
+class CorsException extends MarkoException {}

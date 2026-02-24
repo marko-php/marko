@@ -6,6 +6,7 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Search\Contracts\SearchableInterface;
 use Marko\Search\Driver\DatabaseSearchDriver;
+use Marko\Search\Exceptions\SearchException;
 use Marko\Search\Value\FilterOperator;
 use Marko\Search\Value\SearchCriteria;
 use Marko\Search\Value\SearchFilter;
@@ -152,6 +153,80 @@ it('paginates results based on SearchCriteria page and per_page', function (): v
     expect($dataQuery['sql'])
         ->toContain('LIMIT 10')
         ->toContain('OFFSET 20');
+});
+
+it('rejects SQL injection in sort column names', function (): void {
+    $connection = new FakeSearchConnection();
+
+    $driver = new DatabaseSearchDriver($connection, 'posts', new PostSearchable());
+    $criteria = SearchCriteria::create('test')
+        ->withSort('id; DROP TABLE users --', 'asc');
+
+    expect(fn () => $driver->search('test', $criteria))
+        ->toThrow(SearchException::class, "Invalid sort column identifier");
+});
+
+it('rejects SQL injection in filter field names', function (): void {
+    $connection = new FakeSearchConnection();
+
+    $driver = new DatabaseSearchDriver($connection, 'posts', new PostSearchable());
+    $criteria = SearchCriteria::create('test')
+        ->withFilter(new SearchFilter("1=1; --", FilterOperator::Equals, 'value'));
+
+    expect(fn () => $driver->search('test', $criteria))
+        ->toThrow(SearchException::class, "Invalid filter column identifier");
+});
+
+it('rejects SQL injection in sort direction', function (): void {
+    $connection = new FakeSearchConnection();
+
+    $driver = new DatabaseSearchDriver($connection, 'posts', new PostSearchable());
+    $criteria = SearchCriteria::create('test')
+        ->withSort('created_at', 'asc; DROP TABLE posts');
+
+    expect(fn () => $driver->search('test', $criteria))
+        ->toThrow(SearchException::class, "Invalid sort direction");
+});
+
+it('rejects SQL injection in table names', function (): void {
+    $connection = new FakeSearchConnection();
+
+    $driver = new DatabaseSearchDriver($connection, 'posts; DROP TABLE users', new PostSearchable());
+    $criteria = SearchCriteria::create('test');
+
+    expect(fn () => $driver->search('test', $criteria))
+        ->toThrow(SearchException::class, "Invalid table identifier");
+});
+
+it('rejects SQL injection in searchable field names', function (): void {
+    $connection = new FakeSearchConnection();
+
+    $searchable = new readonly class implements SearchableInterface
+    {
+        public function getSearchableFields(): array
+        {
+            return ['title OR 1=1 --' => 1.0];
+        }
+    };
+
+    $driver = new DatabaseSearchDriver($connection, 'posts', $searchable);
+    $criteria = SearchCriteria::create('test');
+
+    expect(fn () => $driver->search('test', $criteria))
+        ->toThrow(SearchException::class, "Invalid column identifier");
+});
+
+it('allows valid identifiers with underscores', function (): void {
+    $connection = new FakeSearchConnection();
+
+    $driver = new DatabaseSearchDriver($connection, 'blog_posts', new PostSearchable());
+    $criteria = SearchCriteria::create('test')
+        ->withSort('created_at', 'desc')
+        ->withFilter(new SearchFilter('author_id', FilterOperator::Equals, 5));
+
+    $driver->search('test', $criteria);
+
+    expect($connection->queries)->toHaveCount(2);
 });
 
 it('returns SearchResult with total count and matched items', function (): void {

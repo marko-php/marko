@@ -7,7 +7,11 @@ namespace Marko\Search\Value;
 readonly class SearchResult
 {
     /**
-     * @param array<mixed> $items
+     * @param array $items
+     * @param int $total
+     * @param string $query
+     * @param int $page
+     * @param int $perPage
      */
     public function __construct(
         public array $items,

@@ -1,152 +1,82 @@
 # Code Standards
 
-## Style Guide
-PSR-12 Extended Coding Style with additional Marko-specific rules.
+## Auto-fixed by Pre-commit Hook
+
+The following are handled automatically by the pre-commit toolchain (Rector, php-cs-fixer, PHPCS, fix-multiline-params). Do NOT spend time checking or fixing these — focus on the rules below that require judgment:
+
+- Constructor property promotion (Rector)
+- Import organization, unused imports, alphabetization (php-cs-fixer)
+- Multiline method signatures with trailing commas (PHPCS + fix-multiline-params)
+- String interpolation curly brace removal (php-cs-fixer)
+- Parentheses around `new` in chains (PHPCS `UselessParentheses`)
+- Anonymous class brace placement (php-cs-fixer)
+- `@throws` tag consolidation — multiple tags merged to pipe-delimited (php-cs-fixer)
+- PSR-12 formatting, blank lines, whitespace (php-cs-fixer)
 
 ## Linting Tools
 
-### PHP_CodeSniffer (Detection)
 ```bash
-# Check for issues
-./vendor/bin/phpcs
-
-# Check specific file/directory
-./vendor/bin/phpcs packages/core/src/
-
-# Show detailed report
-./vendor/bin/phpcs --report=full
-```
-
-### PHP CS Fixer (Auto-fixing)
-```bash
-# Fix all issues
-./vendor/bin/php-cs-fixer fix
-
-# Dry run (show what would be fixed)
-./vendor/bin/php-cs-fixer fix --dry-run --diff
-
-# Fix specific directory
-./vendor/bin/php-cs-fixer fix packages/core/src/
-```
-
-### Combined Workflow
-```bash
-# Check first, then fix
-./vendor/bin/phpcs && ./vendor/bin/php-cs-fixer fix
+./vendor/bin/phpcs                        # Check for issues
+./vendor/bin/php-cs-fixer fix             # Auto-fix formatting
+./vendor/bin/phpcs && ./vendor/bin/php-cs-fixer fix  # Combined
 ```
 
 ## PHP Version Requirements
+
 - Minimum: PHP 8.5
-- Use all PHP 8.5 features where appropriate:
-  - Pipe operator (`|>`) for functional composition
-  - `clone($obj, ['prop' => value])` for readonly objects
-  - `#[\NoDiscard]` on functions where return value should be used
-  - `array_first()` and `array_last()` instead of `reset()`/`end()`
-  - `array_any()` and `array_all()` instead of `foreach` + early return patterns
-  - Final properties via constructor promotion
-  - Closures in constant expressions for attributes
+- Use PHP 8.5 features: pipe operator (`|>`), `clone()` with properties, `array_first()`/`array_last()`, closures in constant expressions
 
 ### Prefer `array_any()` / `array_all()` Over Foreach Loops
-Replace `foreach` + conditional return patterns with PHP 8.5's `array_any()` and `array_all()`:
 
 ```php
-// CORRECT - array_any()
+// CORRECT
 return array_any($this->roles, fn ($role) => $role->isSuperAdmin());
 
-// WRONG - verbose foreach loop
+// WRONG
 foreach ($this->roles as $role) {
     if ($role->isSuperAdmin()) {
         return true;
     }
 }
 return false;
-
-// CORRECT - array_all()
-return array_all($items, fn ($item) => $item->isValid());
-
-// WRONG - verbose foreach loop
-foreach ($items as $item) {
-    if (!$item->isValid()) {
-        return false;
-    }
-}
-return true;
 ```
 
 ## Naming Conventions
 
 ### Classes
-- **PascalCase**: `ModuleLoader`, `ContainerInterface`, `BindingException`
-- **Suffixes by type**:
-  - Interfaces: `*Interface` (e.g., `LoggerInterface`)
-  - Exceptions: `*Exception` (e.g., `BindingConflictException`)
-  - Attributes: Descriptive name (e.g., `Plugin`, `Observer`, `Get`)
-  - Abstract classes: `Abstract*` (e.g., `AbstractController`)
-
-### Methods
-- **camelCase**: `resolve()`, `getBindings()`, `dispatchEvent()`
-- **Verb prefixes**:
-  - `get*` - Returns a value
-  - `set*` - Sets a value (avoid; prefer immutable)
-  - `is*` / `has*` / `can*` - Returns boolean
-  - `create*` - Factory method
-  - `find*` - May return null
-  - `load*` - Loads from storage
-
-### Variables and Properties
-- **camelCase**: `$moduleLoader`, `$bindings`, `$eventDispatcher`
-- **No Hungarian notation**: Use `$modules` not `$arrModules`
-
-### Constants
-- **SCREAMING_SNAKE_CASE**: `DEFAULT_PRIORITY`, `MAX_RETRIES`
-
-### Files
-- One class per file
-- Filename matches class name: `ModuleLoader.php`
-- PSR-4 autoloading: `Marko\Core\ModuleLoader` → `packages/core/src/ModuleLoader.php`
+- Interfaces: `*Interface` (e.g., `LoggerInterface`)
+- Exceptions: `*Exception` (e.g., `BindingConflictException`)
+- Attributes: Descriptive name (e.g., `Plugin`, `Observer`, `Get`)
+- Abstract classes: `Abstract*` (e.g., `AbstractController`)
 
 ### Sibling Modules (Driver Packages)
 
-When creating packages that implement the same interface for different backends (e.g., `database-mysql`, `database-pgsql`), follow the **Sibling Module Standards** documented in [`.claude/sibling-modules.md`](sibling-modules.md).
+When creating packages that implement the same interface for different backends, follow [`.claude/sibling-modules.md`](sibling-modules.md).
 
 Key requirements:
 - Package naming: `marko/{base}-{driver}`
 - Class naming: `{Driver}{Component}` (e.g., `MySqlConnection`, `PgSqlConnection`)
 - Identical method names, visibilities, and patterns across all siblings
-- Multi-line PHPDoc format for property annotations
-- Test files must have proper PSR-4 namespaces
-- Use anonymous class testing pattern (not reflection)
-
-**Even single implementations should follow sibling conventions** if future siblings are planned. This prevents costly refactoring when adding drivers later.
+- **Even single implementations should follow sibling conventions** if future siblings are planned
 
 ## Code Structure Rules
 
 ### 1. Strict Types Required
-Every PHP file must declare strict types:
-```php
-<?php
-
-declare(strict_types=1);
-```
+Every PHP file: `declare(strict_types=1);`
 
 ### 2. Constructor Injection Only
-All dependencies must be injected via constructor:
 ```php
 // CORRECT
 public function __construct(
     private LoggerInterface $logger,
-    private EventDispatcher $events,
 ) {}
 
 // WRONG - service locator
-public function doSomething(): void
-{
-    $logger = Container::get(LoggerInterface::class);
-}
+$logger = Container::get(LoggerInterface::class);
 ```
 
 ### 3. No Dead Code
-Never leave unused imports, unused variables, or unused constructor dependencies in code. Review every `use` statement, variable assignment, and constructor parameter before finishing.
+Remove unused variables, unused constructor dependencies, and unused method parameters. When removing a constructor dependency, update all call sites.
 
 ```php
 // WRONG - $parser injected but never used
@@ -155,74 +85,15 @@ public function __construct(
 ) {}
 
 // CORRECT - remove unused dependency entirely
-// (If class has no remaining dependencies, make it `readonly class` with no constructor)
-
-// WRONG - variable assigned but never read
-$attributes = $reflection->getAttributes(Attribute::class);
-$attr = $reflection->getAttributes(Attribute::class)[0]->newInstance();
-
-// CORRECT - use the expression directly
-$attr = $reflection->getAttributes(Attribute::class)[0]->newInstance();
 ```
 
-**Rules:**
-- Remove unused `use` imports
-- Remove unused variable assignments
-- Remove unused constructor dependencies (and the constructor itself if empty)
-- Remove unused method parameters when safe to do so
-- When removing a constructor dependency, update all call sites (tests, bindings, etc.)
+### 4. Readonly (When Appropriate)
 
-### 4. Constructor Property Promotion (Always)
-Always use constructor property promotion - reduces boilerplate:
-```php
-// CORRECT - constructor property promotion
-public function __construct(
-    private string $name,
-    private array $dependencies,
-) {}
-
-// WRONG - verbose, unnecessary
-private string $name;
-private array $dependencies;
-
-public function __construct(string $name, array $dependencies)
-{
-    $this->name = $name;
-    $this->dependencies = $dependencies;
-}
-```
-
-### 5. Readonly (When Appropriate)
-Use `readonly` when immutability is the design intent - not as a blanket rule.
-
-**Good use cases:**
-- Value objects (`Money`, `Email`, `Address`)
-- DTOs (data transfer objects)
-- Configuration objects
-
-**Also use `readonly class` when:**
-- The class has no mutable state at all (even zero properties after refactoring)
-- The class is a stateless service with only `readonly` dependencies
-- Anonymous classes in tests where properties are set once via constructor
-
-**Not needed for:**
-- Entities with mutable state
-- Builders
-- Objects designed to change
-
-**CRITICAL: If ALL promoted properties are readonly, use `readonly class` instead:**
-Never write `private readonly` on individual properties when every property is readonly — promote `readonly` to the class level. This is the most commonly missed rule by code generators.
+**CRITICAL: If ALL promoted properties are readonly, use `readonly class` instead.**
+Never write `private readonly` on individual properties when every property is readonly — promote to class level. This is the most commonly missed rule.
 
 ```php
-// CORRECT - readonly on the class, not individual properties
-readonly class OrderId
-{
-    public function __construct(
-        private string $value,
-    ) {}
-}
-
-// CORRECT - service with only readonly dependencies
+// CORRECT - readonly on the class
 readonly class UserService
 {
     public function __construct(
@@ -231,15 +102,7 @@ readonly class UserService
     ) {}
 }
 
-// WRONG - redundant readonly on each property (Rector will fix this)
-class OrderId
-{
-    public function __construct(
-        private readonly string $value,
-    ) {}
-}
-
-// WRONG - all properties are readonly but class is not
+// WRONG - all properties readonly but class is not
 class UserService
 {
     public function __construct(
@@ -249,298 +112,160 @@ class UserService
 }
 ```
 
-**Mixed-mutability classes:** When a class has both mutable properties (arrays that get modified, counters, flags) and immutable constructor-promoted properties, mark the immutable ones as `readonly` individually. Only promote to `readonly class` when ALL properties are immutable.
+**Mixed-mutability classes:** Mark immutable properties as `readonly` individually. Only promote to `readonly class` when ALL properties are immutable.
 
 ```php
-// CORRECT - mixed mutability: some properties are readonly, some are mutable
+// CORRECT - mixed mutability
 class FakeQueue
 {
-    /** @var array<int, array{job: Job, queue: string, delay: int, id: string}> */
-    public array $pushed = [];              // mutable — no readonly
+    public array $pushed = [];              // mutable
 
     public function __construct(
-        private readonly string $defaultQueue = 'default',  // never reassigned — readonly
-    ) {}
-}
-
-// WRONG - missing readonly on never-reassigned property in mixed class
-class FakeQueue
-{
-    public array $pushed = [];
-
-    public function __construct(
-        private string $defaultQueue = 'default',  // should be readonly!
+        private readonly string $defaultQueue = 'default',  // immutable
     ) {}
 }
 ```
 
-### 6. Asymmetric Visibility (PHP 8.4+)
-Use asymmetric visibility for properties that should be publicly readable but privately writable. This replaces getter methods and is cleaner than property hooks for simple cases.
+**Use `readonly class` for:** value objects, DTOs, config objects, stateless services.
+**Not for:** entities with mutable state, builders, objects designed to change.
+
+### 5. Asymmetric Visibility (PHP 8.4+)
+Prefer `public private(set)` over property hooks or getter methods for simple read-only exposure.
 
 ```php
-// CORRECT - asymmetric visibility for public read, private write
+// CORRECT
 class Message
 {
     public private(set) ?string $subject = null;
-    public private(set) ?Address $from = null;
-
-    /** @var array<Address> */
     public private(set) array $to = [];
-
-    public function subject(
-        string $subject,
-    ): self {
-        $this->subject = $subject;
-        return $this;
-    }
-
-    public function to(
-        string $email,
-        ?string $name = null,
-    ): self {
-        $this->to[] = new Address($email, $name);  // Array modification works!
-        return $this;
-    }
-}
-
-// WRONG - traditional getters
-class Message
-{
-    private ?string $subject = null;
-
-    public function getSubject(): ?string
-    {
-        return $this->subject;
-    }
-}
-
-// WRONG - property hooks with only get (blocks array modification)
-class Message
-{
-    /** @var array<Address> */
-    public array $to = [] {
-        get {
-            return $this->to;
-        }
-    }
-
-    public function to(string $email): self
-    {
-        $this->to[] = new Address($email);  // ERROR: Indirect modification not allowed!
-        return $this;
-    }
-}
-```
-
-**When to use what:**
-
-| Pattern | Use When |
-|---------|----------|
-| `public private(set)` | Public read, private write (most common) |
-| `public protected(set)` | Public read, subclass can write |
-| `{ get => expr; }` | Computed/validated/lazy access |
-| `{ set => expr; }` | Validation or transformation on write |
-
-**Rules:**
-- Prefer `public private(set)` over property hooks for simple read-only exposure
-- Keep explicit `public` - explicit over implicit
-- Property hooks with only `get` are implicitly read-only and block indirect modifications (like `$this->array[] = ...`)
-- Use property hooks only when you need computed values or validation logic
-- Do NOT replace getter methods with property hooks when the getter satisfies an interface contract or when properties must remain writable (e.g., entity hydration)
-
-**Disabled inspection:** `PhpGetterAndSetterCanBeReplacedWithPropertyHooksInspection` — PhpStorm suggests replacing getters with `get` hooks, but this conflicts with our patterns: interface contracts require explicit methods, and property hooks make properties implicitly read-only which breaks entity hydration.
-
-### 7. Avoid Final (Blocks Extensibility)
-`final` prevents Preferences from extending classes. Avoid it.
-
-```php
-// WRONG - blocks Preference from overriding
-final class ProductService { }
-
-// CORRECT - extensible
-class ProductService { }
-```
-
-**When `final` IS appropriate:**
-- Internal implementation details that must not be part of extension API
-- Security-critical methods that must not be overridden
-- Always document WHY something is final
-
-### 8. Type Declarations Required
-All parameters, return types, and properties must have type declarations:
-```php
-public function resolve(string $abstract): object
-{
-    // ...
-}
-```
-
-**Avoid `mixed` — use the narrowest type possible.** If you know a method always returns a `string`, declare `: string`, not `: mixed`. Union types (`string|int`) are preferred over `mixed` when the actual types are known.
-
-```php
-// CORRECT - specific return type
-public function set(
-    string $key,
-    string $value,
-): string {
-    $this->storage[$key] = $value;
-
-    return 'OK';
-}
-
-// WRONG - lazy mixed when actual type is known
-public function set(
-    string $key,
-    string $value,
-): mixed {
-    $this->storage[$key] = $value;
-
-    return 'OK';
-}
-```
-
-### 9. No Parentheses Around `new` in Chains (PHP 8.4+)
-When chaining a method call on a newly created object, do NOT wrap `new` in parentheses. PHP 8.4+ allows direct member access on `new` expressions.
-**Enforced by:** `SlevomatCodingStandard.PHP.UselessParentheses`
-
-```php
-// CORRECT - no parentheses needed
-$date = new DateTimeImmutable()->setTimestamp(time() + $ttl);
-$response = new Response()->withHeader('Content-Type', 'text/html');
-
-// WRONG - unnecessary parentheses
-$date = (new DateTimeImmutable())->setTimestamp(time() + $ttl);
-$response = (new Response())->withHeader('Content-Type', 'text/html');
-```
-
-### 10. Import Classes (No Inline Fully Qualified Names)
-Always import classes at the top of the file with `use` statements. Never use fully qualified class names with leading backslash in code.
-
-```php
-// CORRECT - import at top of file
-use Closure;
-use Marko\Core\Container\Container;
-use Marko\Database\ConnectionInterface;
-
-class MyClass
-{
-    public function process(
-        Closure $callback,
-        ConnectionInterface $connection,
-    ): void {
-        if ($callback instanceof Closure) {
-            // ...
-        }
-    }
-}
-
-// WRONG - inline fully qualified names
-class MyClass
-{
-    public function process(
-        \Closure $callback,
-        \Marko\Database\ConnectionInterface $connection,
-    ): void {
-        if ($callback instanceof \Closure) {
-            // ...
-        }
-    }
 }
 ```
 
 **Rules:**
-- Import all classes used in the file with `use` statements
-- Group imports: global classes first, then vendor, then project classes
-- Alphabetize within each group
-- Use short class name everywhere after import
+- Property hooks with only `get` block indirect modifications (like `$this->array[] = ...`) — use asymmetric visibility instead
+- Do NOT replace getter methods with property hooks when the getter satisfies an interface contract or when properties must remain writable (entity hydration)
+- **Disabled inspection:** `PhpGetterAndSetterCanBeReplacedWithPropertyHooksInspection`
 
-### 11. Don't Pass Default Values as Arguments
-Never explicitly pass a value that matches the parameter's default. It adds noise and obscures the arguments that actually matter.
+### 6. Avoid Final (Blocks Extensibility)
+`final` prevents Preferences from extending classes. Only use when security-critical, and document why.
+
+### 7. Type Declarations Required
+All parameters, return types, and properties must have type declarations. **Use the narrowest type possible** — prefer `string` or `string|int` over `mixed`.
 
 ```php
-// CORRECT - only pass non-default values
+// CORRECT
+public function get(string $key): null { return null; }
+
+// WRONG - overly broad
+public function get(string $key): mixed { return null; }
+```
+
+### 8. Typed Constants (PHP 8.3+)
+All class constants must have explicit type declarations.
+
+```php
+// CORRECT
+private const string TEST_KEY = 'marko_health_check';
+private const int MAX_RETRIES = 3;
+private const array VALID_TYPES = ['json', 'xml'];
+
+// WRONG - untyped constants
+private const TEST_KEY = 'marko_health_check';
+private const MAX_RETRIES = 3;
+```
+
+### 9. Handle All Checked Exceptions
+PHP functions that throw checked exceptions (`random_bytes()` → `RandomException`, `json_encode()` → `JsonException`, config getters → `ConfigNotFoundException`) must be handled. Either:
+- **Propagate** by declaring `@throws` on the containing method
+- **Catch and convert** to a domain-specific exception
+
+**Never silently catch and ignore** — this violates the "loud errors" principle.
+
+```php
+// CORRECT - propagate
+/**
+ * @throws RandomException
+ */
+public function generateToken(): string {
+    return bin2hex(random_bytes(40));
+}
+
+// CORRECT - catch and convert to domain exception
+public function generateToken(): string {
+    try {
+        return bin2hex(random_bytes(40));
+    } catch (RandomException) {
+        throw new TokenException('Failed to generate secure token');
+    }
+}
+
+// WRONG - silent failure
+public function generateUrl(): string {
+    try {
+        return $this->config->urlPrefix() . '/path';
+    } catch (ConfigNotFoundException) {
+        return ''; // Violates loud errors!
+    }
+}
+```
+
+### 10. No Deprecated APIs
+Always use current API methods. When a method is deprecated, replace it immediately.
+
+```php
+// CORRECT
+$imagick->clear();
+
+// WRONG - deprecated
+$imagick->destroy();
+```
+
+### 11. SQL Identifier Validation
+Dynamic values used as SQL identifiers (table names, column names, sort directions) cannot use parameter binding. Validate them against a safe pattern before interpolation.
+
+```php
+private const string IDENTIFIER_PATTERN = '/^[a-zA-Z_][a-zA-Z0-9_]*$/';
+
+private function assertValidIdentifier(
+    string $identifier,
+    string $type,
+): void {
+    if (!preg_match(self::IDENTIFIER_PATTERN, $identifier)) {
+        throw SearchException::invalidIdentifier($identifier, $type);
+    }
+}
+```
+
+Sort directions must be validated against an allowlist (`['asc', 'desc']`).
+
+### 12. Don't Pass Default Values as Arguments
+```php
+// CORRECT
 $user = createTestAdminUser();
-$user = createTestAdminUser(isActive: '0');
 $userRepo = createMockUserRepo(findReturn: $user);
 
 // WRONG - passing values that match defaults
 $user = createTestAdminUser(id: 1, email: 'admin@example.com', name: 'Admin');
 $userRepo = createMockUserRepo(findReturn: null, rolesReturn: []);
-$connection = createEventMockConnection(isNew: true);
 ```
 
-### 12. No Magic Methods
+### 13. No Magic Methods
 Avoid `__get`, `__set`, `__call`, `__callStatic`. Be explicit.
 
-### 13. No Traits
-Traits inject behavior implicitly - you can't see at a glance where a method comes from. Use explicit composition instead.
+### 14. No Traits
+Use explicit composition instead. Traits hide where behavior comes from.
 
 ```php
-// WRONG - trait injects behavior implicitly
-trait LoggingTrait
-{
-    public function log(string $message): void { /* ... */ }
-}
+// WRONG
+class UserService { use LoggingTrait; }
 
-class UserService
-{
-    use LoggingTrait; // Where does log() come from? Have to hunt for it.
-}
-
-// CORRECT - explicit composition, visible dependency
+// CORRECT
 class UserService
 {
     public function __construct(
         private Logger $logger,
     ) {}
-
-    public function doSomething(): void
-    {
-        $this->logger->log('message'); // Clear where logging comes from
-    }
 }
-```
-
-**For testing utilities**, use helper classes instead of traits:
-
-```php
-// WRONG - trait for test helpers
-trait DatabaseTestCase
-{
-    protected function seedTable(...): void { /* ... */ }
-}
-
-// CORRECT - explicit helper class
-$dbHelper = new DatabaseTestHelper($connection);
-$dbHelper->seedTable('users', $rows);
-```
-
-This keeps dependencies explicit and makes code easier to understand and trace.
-
-### 14. String Interpolation (No Unnecessary Curly Braces)
-When interpolating simple variables in double-quoted strings, do NOT use curly braces.
-**Enforced by:** PhpStorm `PhpUnnecessaryCurlyVarSyntaxInspection`
-
-```php
-// CORRECT - no curly braces for simple variables
-$message = "No implementation bound for interface: $interface";
-$context = "While loading module '$moduleName'";
-
-// WRONG - unnecessary curly braces
-$message = "No implementation bound for interface: {$interface}";
-$context = "While loading module '{$moduleName}'";
-```
-
-**Only use curly braces when required** for complex expressions:
-```php
-// Curly braces required for array access
-$message = "User {$user['name']} not found";
-
-// Curly braces required for object properties
-$message = "Order {$order->id} processed";
-
-// Curly braces required to disambiguate
-$message = "Found {$count}items"; // Without braces: $countitems would be a different variable
 ```
 
 ### 15. Use #[\NoDiscard] for Important Returns
@@ -552,113 +277,18 @@ public function validate(): ValidationResult
 }
 ```
 
-### 16. Multiline Method Signatures (Always)
-**ALL method parameters MUST be on their own line with a trailing comma**, regardless of parameter count:
-
-```php
-// CORRECT - parameter on its own line with trailing comma
-public function registerModule(
-    ModuleManifest $module,
-): void {
-    // ...
-}
-
-public function __construct(
-    private LoggerInterface $logger,
-    private EventDispatcher $events,
-) {}
-
-public function extractClassName(
-    string $filePath,
-): ?string {
-    // ...
-}
-
-// WRONG - parameter on same line as method name
-public function registerModule(ModuleManifest $module): void
-{
-    // ...
-}
-
-// WRONG - opening brace on new line
-public function registerModule(
-    ModuleManifest $module,
-): void
-{
-    // ...
-}
-```
-
-**Rules:**
-- Each parameter on its own line (even if only one parameter)
-- Trailing comma after last parameter
-- Opening brace `{` on same line as closing parenthesis/return type
-- Only zero-parameter methods stay on one line: `public function getName(): string {`
-
-**This also applies to function call arguments**, including closures passed to functions like `usort()`, `array_map()`, etc:
-
-```php
-// CORRECT - multiline when arguments are long
-usort(
-    $sections,
-    fn (AdminSectionInterface $a, AdminSectionInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder(),
-);
-
-// WRONG - single line exceeds readable length
-usort($sections, fn (AdminSectionInterface $a, AdminSectionInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder());
-```
-
-### 17. Anonymous Class Braces (Next Line)
-Anonymous classes follow the same brace placement as regular classes - opening brace on the **next line**.
-**Enforced by:** php-cs-fixer `braces_position.anonymous_classes_opening_brace`
-
-```php
-// CORRECT - opening brace on next line
-$controller = new #[Preference(replaces: PostController::class)]
-class extends PostController
-{
-    public function show(): Response
-    {
-        return new Response('Custom');
-    }
-};
-
-// WRONG - opening brace on same line
-$controller = new class extends PostController {
-    // ...
-};
-```
-
 ## Attribute Standards
 
-### Attribute Placement
-Attributes go on their own line above the target:
-```php
-#[Plugin(ProductService::class)]
-class PriceModifierPlugin
-{
-    #[Before]
-    public function beforeGetPrice(Product $product): void
-    {
-        // ...
-    }
-}
-```
-
-### Multiple Attributes
-Stack vertically:
+Attributes go on their own line above the target. Stack multiple attributes vertically:
 ```php
 #[Get('/posts/{id}')]
 #[Middleware(AuthMiddleware::class)]
-public function show(int $id): Response
-{
-    // ...
-}
+public function show(int $id): Response {}
 ```
 
 ## Exception Standards (Loud Errors)
 
-All Marko exceptions extend `MarkoException` and provide three pieces of information via named parameters:
+All Marko exceptions extend `MarkoException` with three named parameters:
 
 ```php
 class BindingConflictException extends MarkoException
@@ -672,138 +302,105 @@ class BindingConflictException extends MarkoException
         return new self(
             message: "Multiple modules bind the same interface '$interface': $moduleList",
             context: "While loading module bindings for '$interface'",
-            suggestion: 'Use a Preference in a higher-priority module to resolve the conflict, or remove duplicate bindings',
+            suggestion: 'Use a Preference in a higher-priority module to resolve the conflict',
         );
     }
 }
 ```
 
-| Parameter    | Purpose                                        |
-|--------------|------------------------------------------------|
-| `message`    | What went wrong (specific, actionable)         |
-| `context`    | Where it happened (help locate the issue)      |
-| `suggestion` | How to fix it (guide toward the solution)      |
+| Parameter    | Purpose                                   |
+|--------------|-------------------------------------------|
+| `message`    | What went wrong (specific, actionable)    |
+| `context`    | Where it happened (help locate the issue) |
+| `suggestion` | How to fix it (guide toward the solution) |
 
-**Guidelines:**
-- Use static factory methods (e.g., `::multipleBindings()`) for common exception cases
-- Include variable values in messages (interface names, module names, etc.)
-- Keep suggestions actionable - tell the developer exactly what to do
-- Always use named parameters when creating exceptions
+Use static factory methods for common cases. Include variable values in messages. Always use named parameters.
 
 ## Documentation Standards
 
 ### When to Document
 - Public API methods on interfaces
-- Complex algorithms
-- Non-obvious design decisions
-- **Do NOT document**:
-  - Self-explanatory code
-  - Private implementation details
-  - Obvious getters/setters
+- Complex algorithms, non-obvious design decisions
+- **Do NOT document**: self-explanatory code, obvious getters/setters
 
 ### @throws Tags (Required)
-**All methods that throw exceptions MUST have `@throws` PHPDoc tags.** This is critical for:
-- IDE autocompletion and warnings
-- Static analysis tools (PHPStan)
-- Developers understanding what exceptions to catch
+**Every method that contains a `throw` statement or calls a method that throws MUST have a `@throws` tag.** This is the most commonly missed rule.
 
 ```php
-// CORRECT - use short class names (import at top of file) with pipe operator
-/**
- * @throws ModuleException|CircularDependencyException|BindingConflictException
- */
-public function boot(): void
-
-// CORRECT - single exception
-/**
- * @throws PluginException
- */
-private function discoverPlugins(): void
-
-// CORRECT - use interface exception types when calling interface methods
-// ContainerInterface::get() declares @throws ContainerExceptionInterface
+// CORRECT
 /**
  * @throws ContainerExceptionInterface|EventException
  */
 private function discoverObservers(): void
 {
-    $observerDiscovery = $this->container->get(ObserverDiscovery::class); // throws ContainerExceptionInterface
-    $observers = $observerDiscovery->discover($this->modules);            // throws EventException
+    $observerDiscovery = $this->container->get(ObserverDiscovery::class);
+    $observers = $observerDiscovery->discover($this->modules);
 }
-
-// WRONG - using fully qualified class names
-/**
- * @throws \Marko\Core\Exceptions\PluginException
- */
-
-// WRONG - missing @throws tags
-public function resolve(array $modules): array  // Throws exceptions without documenting them!
 ```
 
 **Rules:**
-- Import exception classes at top of file, use short names in `@throws`
 - Use pipe operator (`|`) to combine multiple exceptions on one line
-- **Never use multiple `@throws` tags** - consolidate into a single tag with pipe-delimited exceptions
 - Document ALL thrown exceptions, including those from called methods if not caught
-- When calling methods on interfaces, use the exception types declared by the interface (e.g., `ContainerExceptionInterface` not `BindingException`)
+- When calling interface methods, use the exception types declared by the interface
 - Private methods that throw should also be documented if the exception propagates
-- Description after exception name is optional (omit if exception name is self-explanatory)
-- **Test files are exempt** from `@throws` requirements (inspection disabled for `packages/*/tests/`)
+- **Test files are exempt** from `@throws` requirements
+- **Applies to ALL classes** — fakes, services, helpers, not just interfaces
 
-> **CRITICAL:** Every method that contains a `throw` statement or calls a method that throws MUST have a `@throws` tag. This is the most commonly missed rule. After writing any method, scan it for `throw` keywords and method calls that propagate exceptions, and add the `@throws` PHPDoc block. Import the exception class if not already imported.
-
-> **Applies to ALL classes, not just interfaces.** Fake/mock classes, service classes, helpers — any class with methods that throw must document them. The most commonly missed case is assertion methods (e.g., `assertSent()`, `assertPushed()`) on test fakes that throw custom exceptions.
-
-**Enforced by:** Custom php-cs-fixer rule `Marko/phpdoc_consolidate_throws` automatically consolidates multiple `@throws` tags into one.
+> After writing any method, scan it for `throw` keywords and method calls that propagate exceptions, and add the `@throws` PHPDoc block.
 
 ## Git Hooks
 
-**Location:** `.githooks/pre-commit`
+The pre-commit hook (`.githooks/pre-commit`) runs: Rector → fix-multiline-params → PHP-CS-Fixer → PHPCBF → PHPCS.
 
-The pre-commit hook runs automatically on commit (when configured via `git config core.hooksPath .githooks`). It performs the following in order:
-
-1. **Rector** - Auto-fixes code quality issues (`rector.php` config)
-2. **Multiline params fixer** - Forces params on separate lines (`tools/fix-multiline-params.php`)
-3. **PHP-CS-Fixer** - Auto-fixes formatting (`.php-cs-fixer.php` config)
-4. **PHPCBF** - Auto-fixes phpcs violations (`phpcs.xml` config)
-5. **PHPCS** - Final validation (fails commit if violations remain)
-
-Each tool auto-stages its fixes before the next tool runs.
-
-### Setup Git Hooks
 ```bash
-git config core.hooksPath .githooks
+git config core.hooksPath .githooks  # Setup
 ```
 
-### Related Config Files
-- `.githooks/pre-commit` - The hook script
-- `rector.php` - Rector rules (code modernization)
-- `.php-cs-fixer.php` - PHP-CS-Fixer rules (formatting)
-- `phpcs.xml` - PHP_CodeSniffer rules (style validation)
-- `tools/fix-multiline-params.php` - Custom multiline params script
+Config files: `rector.php`, `.php-cs-fixer.php`, `phpcs.xml`, `tools/fix-multiline-params.php`
 
-## Pre-commit Checks
-Before committing, ensure:
-1. `./vendor/bin/phpcs` passes with no errors
-2. `./vendor/bin/pest` passes all tests
-3. No `declare(strict_types=1)` missing
-4. All new public methods have type declarations
+## Configuration Standards
 
-## Code Review Checklist
-- [ ] Follows PSR-12 style
-- [ ] Uses strict types
-- [ ] Dependencies injected via constructor
-- [ ] No magic methods
-- [ ] Types declared on all parameters and returns
-- [ ] Tests written for new functionality
-- [ ] Loud errors with helpful messages
-- [ ] No silent failures or fallbacks
+### Defaults Belong in Config Files
+Default values must be defined in config files (`config/*.php`), not hardcoded in code.
+
+```php
+// config/blog.php
+return [
+    'posts_per_page' => 10,
+    'site_name' => 'My Blog',
+];
+```
+
+### No Fallback Parameters
+Config getters throw `ConfigNotFoundException` when keys are missing. Never pass fallback parameters.
+
+```php
+// CORRECT
+return $this->config->getInt('blog.posts_per_page');
+
+// WRONG - hardcoded fallback
+return $this->config->getInt('blog.posts_per_page', 10);
+```
+
+### Environment Variables in Config Files Only
+`$_ENV` should only be referenced in `config/*.php` files, never in application code.
+
+## Latte Template Standards
+
+Templates are pure presentation. Keep them clean, minimal, and consistent.
+
+- **No useless comments** — the filename says what the template is
+- **Use `n:if`** for single-element conditionals instead of `{if}...{/if}` blocks
+- **Prefer dual `n:if`** over `{if}/{else}` blocks for simple either/or
+- **Combine defaults** on one line: `{default $a = null, $b = null}`
+- **Use PHP truthiness** for cleaner conditions: `n:if="!$currentDepth"` not `n:if="$currentDepth === 0"`
+- **No variable extraction** — inline expressions, don't extract to `{var}`
+- **Remove dead variables** — if declared in `{default}` but never used, delete it
+- **Consistent style** — don't mix `{if}` blocks and `n:if` in the same template
 
 ## Package README Standards
 
-Every package in `packages/` must have a README.md. Keep it concise—developers want to quickly understand what it is, why they'd use it, and how to use it.
-
-### Structure
+Every package must have a README.md with these sections:
 
 | Section               | Purpose                                        |
 |-----------------------|------------------------------------------------|
@@ -816,268 +413,14 @@ Every package in `packages/` must have a README.md. Keep it concise—developers
 
 ### Interface vs Implementation Packages
 
-Marko uses an interface/implementation split. Make the distinction clear:
+**Interface packages** (e.g., `marko/errors`): Describe what it defines, note it has no implementation, show type-hinting.
 
-**Interface packages** (e.g., `marko/errors`):
-- One-liner: Describe what it defines, note it has no implementation
-- Overview: Explain the contracts it provides
-- Usage: Show how to type-hint against interfaces
-- Note which implementation packages exist
-
-**Implementation packages** (e.g., `marko/errors-simple`):
-- One-liner: Describe what it does (the actual behavior)
-- Overview: Explain the concrete benefit
-- Usage: Show it works automatically, plus customization options
-
-### Writing the One-Liner
-
-The one-liner must include the **practical benefit**—what developers gain.
-
-```markdown
-# Good
-Interfaces for error handling—defines how errors are captured and structured, not how they're displayed.
-
-The default error handler—catches exceptions and displays them with full context and fix suggestions.
-
-# Bad (no benefit)
-Error handling contracts for the Marko Framework.
-
-A simple error handler implementation.
-```
-
-### Writing the Usage Section
-
-This is the most important section. Focus on developers building modules in `app/` or `modules/`.
-
-**Lead with the common case:**
-- Most packages "just work"—show that first
-- Then show how to interact with it directly if needed
-
-**Include practical code examples:**
-```markdown
-## Usage
-
-### For Module Developers
-
-You don't need to do anything special—just throw exceptions:
-
-\`\`\`php
-throw new MarkoException(
-    message: 'User not found',
-    context: 'Loading user profile',
-    suggestion: 'Verify the user ID exists',
-);
-\`\`\`
-
-### Type-Hinting the Handler
-
-If you need direct access:
-
-\`\`\`php
-public function __construct(
-    private ErrorHandlerInterface $handler,
-) {}
-\`\`\`
-```
-
-### Code Examples in READMEs
-
-**Usage/Customization sections:** Follow full code standards—parameters on their own lines with trailing commas:
-
-```php
-// CORRECT - full code standards
-public function handle(
-    ErrorReport $report,
-): void {
-    // implementation
-}
-
-// WRONG - single line params
-public function handle(ErrorReport $report): void
-```
-
-**API Reference sections:** Single-line signatures are acceptable for readability:
-
-```php
-// OK in API Reference only
-public function handle(ErrorReport $report): void;
-public function format(ErrorReport $report, bool $isDevelopment): string;
-```
-
-Zero-parameter methods stay on one line everywhere: `public function index(): Response`
+**Implementation packages** (e.g., `marko/errors-simple`): Describe what it does, explain concrete benefit, show it works automatically.
 
 ### Guidelines
 
-**Do:**
-- State the benefit upfront
-- Show code examples for common scenarios
-- Keep prose minimal—let code speak
-- Use bullet points over paragraphs
-- Make interface vs implementation distinction clear
-- Follow code standards in Usage/Customization examples
-
-**Don't:**
-- Write long explanatory paragraphs
-- Use marketing speak ("designed to never fail")
-- Include internal implementation details
-- Repeat what's obvious from the code
-
-## Configuration Standards
-
-### Defaults Belong in Config Files
-Default values must be defined in config files (`config/*.php`), not hardcoded in code. This provides:
-- **Single source of truth** - All defaults visible in one place
-- **Easy overrides** - Other modules can override via higher-priority config files
-- **Transparency** - Developers can see all configurable options
-- **Loud errors** - Missing config fails immediately, not silently uses wrong default
-
-```php
-// config/blog.php - all defaults defined here
-return [
-    'posts_per_page' => 10,
-    'site_name' => 'My Blog',
-];
-```
-
-### No Fallback Parameters
-Config getter methods throw `ConfigNotFoundException` when keys are missing. Never pass fallback parameters - define all defaults in config files instead.
-
-```php
-// CORRECT - no fallback, config file is the source of truth
-public function getPostsPerPage(): int
-{
-    return $this->config->getInt('blog.posts_per_page');
-}
-
-// WRONG - hardcoded fallback hides missing config
-public function getPostsPerPage(): int
-{
-    return $this->config->getInt('blog.posts_per_page', 10);
-}
-```
-
-### Environment Variables in Config Files Only
-Environment variables should only be referenced in config files (`config/*.php`), never in application code. Config files act as the translation layer.
-
-```php
-// CORRECT - env var in config file
-// config/database.php
-return [
-    'host' => $_ENV['DB_HOST'] ?? 'localhost',
-];
-
-// Application code reads config
-$host = $config->getString('database.host');
-
-// WRONG - reading env vars in application code
-$host = $_ENV['DB_HOST'] ?? 'localhost';
-```
-
-## Latte Template Standards
-
-Templates are pure presentation. Keep them clean, minimal, and consistent.
-
-### No Useless Comments
-The filename already says what the template is. Don't add comments like `{* Blog post index template *}`.
-
-```latte
-{* WRONG - useless, filename says this *}
-{* Blog post index template *}
-<main>
-
-{* CORRECT - just start the template *}
-<main>
-```
-
-### Use `n:if` Attribute Syntax
-For single-element conditionals, use `n:if` on the element instead of wrapping in `{if}...{/if}` blocks.
-
-```latte
-{* WRONG - verbose block syntax *}
-{if $canonicalUrl}
-<link rel="canonical" href="{$canonicalUrl}">
-{/if}
-
-{* CORRECT - attribute syntax *}
-<link n:if="$canonicalUrl" rel="canonical" href="{$canonicalUrl}">
-```
-
-**When to use block syntax:** `{if}/{elseif}/{else}` chains with 3+ branches still use blocks.
-
-### Prefer Dual `n:if` Over `{if}/{else}` Blocks
-When showing either an empty state OR content, use `n:if` on both elements instead of a block.
-
-```latte
-{* WRONG - block syntax for simple either/or *}
-{if $posts->isEmpty()}
-    <p class="no-posts">No posts yet.</p>
-{else}
-    <ul class="post-list">
-        ...
-    </ul>
-{/if}
-
-{* CORRECT - n:if on both elements *}
-<p n:if="$posts->isEmpty()" class="no-posts">No posts yet.</p>
-<ul n:if="!$posts->isEmpty()" class="post-list">
-    ...
-</ul>
-```
-
-### Combine Default Declarations
-Declare multiple defaults on one line with commas.
-
-```latte
-{* WRONG - verbose *}
-{default $canonicalUrl = null}
-{default $metaDescription = null}
-{default $pageTitle = null}
-
-{* CORRECT - combined *}
-{default $canonicalUrl = null, $metaDescription = null, $pageTitle = null}
-```
-
-### Use PHP Truthiness for Cleaner Conditions
-Leverage PHP's falsy values (`0`, `null`, `''`, `[]`) for cleaner conditionals.
-
-```latte
-{* WRONG - verbose *}
-n:if="$currentDepth === 0"
-n:if="empty($comments)"
-n:if="$posts->isEmpty()"
-
-{* CORRECT - use truthiness *}
-n:if="!$currentDepth"
-n:if="!$comments"
-n:if="!$posts->isEmpty()"
-```
-
-### No Variable Extraction
-Templates are presentational - don't extract expressions into variables. Inline them.
-
-```latte
-{* WRONG - unnecessary variable *}
-{var $params = array_merge($queryParams, ['page' => $pageNumber])}
-<a href="{$baseUrl}?{http_build_query($params)}">
-
-{* CORRECT - inline *}
-<a href="{$baseUrl}?{http_build_query(array_merge($queryParams, ['page' => $pageNumber]))}">
-```
-
-### Remove Dead Variables
-If a variable is declared in `{default}` but never used (or only passed through), remove it.
-
-### Consistent Attribute Usage
-Don't mix `{if}` blocks and `n:if` for similar elements. Pick one style per template.
-
-```latte
-{* WRONG - inconsistent *}
-{if $hasPrev}
-    <a href="..." class="prev">Previous</a>
-{/if}
-<a n:if="$hasNext" href="..." class="next">Next</a>
-
-{* CORRECT - consistent *}
-<a n:if="$hasPrev" href="..." class="prev">Previous</a>
-<a n:if="$hasNext" href="..." class="next">Next</a>
-```
+- State the benefit upfront in the one-liner
+- Lead Usage with the common case ("just works")
+- Keep prose minimal — let code speak
+- Follow full code standards in Usage/Customization examples
+- Single-line signatures acceptable in API Reference only

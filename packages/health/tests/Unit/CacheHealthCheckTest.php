@@ -13,13 +13,18 @@ it('checks cache read/write via CacheHealthCheck', function () {
     {
         public function __construct(private array &$store) {}
 
-        public function get(string $key, mixed $default = null): mixed
-        {
+        public function get(
+            string $key,
+            mixed $default = null,
+        ): mixed {
             return $this->store[$key] ?? $default;
         }
 
-        public function set(string $key, mixed $value, ?int $ttl = null): bool
-        {
+        public function set(
+            string $key,
+            mixed $value,
+            ?int $ttl = null,
+        ): bool {
             $this->store[$key] = $value;
 
             return true;
@@ -49,13 +54,17 @@ it('checks cache read/write via CacheHealthCheck', function () {
             throw new RuntimeException('Not implemented');
         }
 
-        public function getMultiple(array $keys, mixed $default = null): iterable
-        {
+        public function getMultiple(
+            array $keys,
+            mixed $default = null,
+        ): iterable {
             return [];
         }
 
-        public function setMultiple(array $values, ?int $ttl = null): bool
-        {
+        public function setMultiple(
+            array $values,
+            ?int $ttl = null,
+        ): bool {
             return true;
         }
 
@@ -78,13 +87,18 @@ it('checks cache read/write via CacheHealthCheck', function () {
 it('returns unhealthy status when cache write fails', function () {
     $cache = new class () implements CacheInterface
     {
-        public function get(string $key, mixed $default = null): mixed
-        {
+        public function get(
+            string $key,
+            mixed $default = null,
+        ): null {
             return null;
         }
 
-        public function set(string $key, mixed $value, ?int $ttl = null): bool
-        {
+        public function set(
+            string $key,
+            mixed $value,
+            ?int $ttl = null,
+        ): bool {
             throw new RuntimeException('Cache unavailable');
         }
 
@@ -108,13 +122,17 @@ it('returns unhealthy status when cache write fails', function () {
             throw new RuntimeException('Not implemented');
         }
 
-        public function getMultiple(array $keys, mixed $default = null): iterable
-        {
+        public function getMultiple(
+            array $keys,
+            mixed $default = null,
+        ): iterable {
             return [];
         }
 
-        public function setMultiple(array $values, ?int $ttl = null): bool
-        {
+        public function setMultiple(
+            array $values,
+            ?int $ttl = null,
+        ): bool {
             return false;
         }
 

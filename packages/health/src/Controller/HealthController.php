@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Health\Controller;
 
+use JsonException;
 use Marko\Health\Registry\HealthCheckRegistry;
 use Marko\Health\Value\HealthResult;
 use Marko\Health\Value\HealthStatus;
@@ -16,6 +17,9 @@ readonly class HealthController
         private HealthCheckRegistry $registry,
     ) {}
 
+    /**
+     * @throws JsonException
+     */
     #[Get('/health')]
     public function index(): Response
     {

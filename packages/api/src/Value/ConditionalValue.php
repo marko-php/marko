@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Marko\Api\Value;
 
-class ConditionalValue
+readonly class ConditionalValue
 {
     public function __construct(
-        public readonly bool $condition,
-        public readonly mixed $value,
+        public bool $condition,
+        public mixed $value,
     ) {}
 
     /**

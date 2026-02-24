@@ -128,7 +128,7 @@ it('returns null user when no Authorization header is present', function (): voi
 });
 
 it('returns null user when token is not found or revoked', function (): void {
-    $repository = makeRepository(null); // no token found
+    $repository = makeRepository(); // no token found
     $request = makeRequest('Bearer some-revoked-token');
     $guard = new TokenGuard($repository, $request);
     $guard->provider = makeUserProvider();

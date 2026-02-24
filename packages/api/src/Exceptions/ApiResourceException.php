@@ -6,6 +6,4 @@ namespace Marko\Api\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
 
-class ApiResourceException extends MarkoException
-{
-}
+class ApiResourceException extends MarkoException {}

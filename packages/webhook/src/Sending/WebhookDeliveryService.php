@@ -10,7 +10,7 @@ use Marko\Webhook\Entity\WebhookAttempt;
 use Marko\Webhook\Value\WebhookPayload;
 use Marko\Webhook\Value\WebhookResponse;
 
-class WebhookDeliveryService
+readonly class WebhookDeliveryService
 {
     public function __construct(
         private WebhookAttemptRepositoryInterface $repository,
@@ -29,7 +29,7 @@ class WebhookDeliveryService
 
         $webhookAttempt->statusCode = $response->statusCode;
         $webhookAttempt->responseBody = $response->body;
-        $webhookAttempt->attemptedAt = (new DateTimeImmutable())->format('Y-m-d H:i:s');
+        $webhookAttempt->attemptedAt = new DateTimeImmutable()->format('Y-m-d H:i:s');
 
         $this->repository->save($webhookAttempt);
     }
@@ -46,7 +46,7 @@ class WebhookDeliveryService
         );
 
         $webhookAttempt->errorMessage = $error;
-        $webhookAttempt->attemptedAt = (new DateTimeImmutable())->format('Y-m-d H:i:s');
+        $webhookAttempt->attemptedAt = new DateTimeImmutable()->format('Y-m-d H:i:s');
 
         $this->repository->save($webhookAttempt);
     }

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Marko\AuthenticationToken\Contracts\TokenRepositoryInterface;
 use Marko\AuthenticationToken\Guard\TokenGuard;
 
 return [

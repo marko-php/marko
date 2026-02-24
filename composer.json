@@ -6,7 +6,9 @@
     "require": {
         "php": "^8.5",
         "ext-pdo": "*",
-        "ext-fileinfo": "*"
+        "ext-fileinfo": "*",
+        "ext-gd": "*",
+        "ext-imagick": "*"
     },
     "require-dev": {
         "aws/aws-sdk-php": "^3.0",

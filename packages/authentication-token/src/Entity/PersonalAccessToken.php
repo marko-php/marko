@@ -29,6 +29,7 @@ class PersonalAccessToken extends Entity
     #[Column(type: 'text')]
     public ?string $abilities = null;
 
+    /** @noinspection PhpUnused */
     #[Column('last_used_at')]
     public ?string $lastUsedAt = null;
 
