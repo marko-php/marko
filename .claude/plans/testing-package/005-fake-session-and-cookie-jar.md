@@ -1,6 +1,6 @@
 # Task 005: FakeSession and FakeCookieJar
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001
 **Retry count**: 0
 

@@ -1,6 +1,6 @@
 # Task 008: Auth Test Helpers (FakeAuthenticatable, FakeUserProvider)
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001
 **Retry count**: 0
 
