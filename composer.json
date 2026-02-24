@@ -77,7 +77,8 @@
             "Marko\\Notification\\": "packages/notification/src/",
             "Marko\\Notification\\Database\\": "packages/notification-database/src/",
             "Marko\\Pagination\\": "packages/pagination/src/",
-            "Marko\\Security\\": "packages/security/src/"
+            "Marko\\Security\\": "packages/security/src/",
+            "Marko\\Testing\\": "packages/testing/src/"
         }
     },
     "autoload-dev": {
@@ -135,7 +136,8 @@
             "Marko\\Notification\\Tests\\": "packages/notification/tests/",
             "Marko\\Notification\\Database\\Tests\\": "packages/notification-database/tests/",
             "Marko\\Pagination\\Tests\\": "packages/pagination/tests/",
-            "Marko\\Security\\Tests\\": "packages/security/tests/"
+            "Marko\\Security\\Tests\\": "packages/security/tests/",
+            "Marko\\Testing\\Tests\\": "packages/testing/tests/"
         }
     },
     "scripts": {
