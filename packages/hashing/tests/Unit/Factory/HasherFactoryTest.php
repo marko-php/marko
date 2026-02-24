@@ -9,7 +9,7 @@ use Marko\Hashing\Hash\Argon2Hasher;
 use Marko\Hashing\Hash\BcryptHasher;
 use Marko\Testing\Fake\FakeConfigRepository;
 
-it('uses FakeConfigRepository in HasherFactoryTest', function () {
+it('uses FakeConfigRepository in HasherFactoryTest', function (): void {
     $config = new FakeConfigRepository(['hashing.hashers.bcrypt.cost' => 4]);
 
     expect($config)->toBeInstanceOf(FakeConfigRepository::class);
@@ -21,7 +21,7 @@ function createFactoryWithConfig(
     return new HasherFactory(new HashConfig(new FakeConfigRepository($configData)));
 }
 
-it('creates bcrypt hasher', function () {
+it('creates bcrypt hasher', function (): void {
     $factory = createFactoryWithConfig([
         'hashing.hashers.bcrypt.cost' => 4,
     ]);
@@ -31,7 +31,7 @@ it('creates bcrypt hasher', function () {
     expect($hasher)->toBeInstanceOf(BcryptHasher::class);
 });
 
-it('creates argon2id hasher', function () {
+it('creates argon2id hasher', function (): void {
     $factory = createFactoryWithConfig([
         'hashing.hashers.argon2id.memory' => 1024,
         'hashing.hashers.argon2id.time' => 1,
@@ -43,7 +43,7 @@ it('creates argon2id hasher', function () {
     expect($hasher)->toBeInstanceOf(Argon2Hasher::class);
 });
 
-it('creates bcrypt hasher with configured cost', function () {
+it('creates bcrypt hasher with configured cost', function (): void {
     $factory = createFactoryWithConfig([
         'hashing.hashers.bcrypt.cost' => 4,
     ]);
@@ -54,7 +54,7 @@ it('creates bcrypt hasher with configured cost', function () {
     expect($hash)->toStartWith('$2y$04$');
 });
 
-it('creates argon2id hasher with configured parameters', function () {
+it('creates argon2id hasher with configured parameters', function (): void {
     $factory = createFactoryWithConfig([
         'hashing.hashers.argon2id.memory' => 1024,
         'hashing.hashers.argon2id.time' => 1,
@@ -67,14 +67,14 @@ it('creates argon2id hasher with configured parameters', function () {
         ->and($hasher->hash('password'))->toContain('argon2id');
 });
 
-it('throws HasherNotFoundException for unknown hasher name', function () {
+it('throws HasherNotFoundException for unknown hasher name', function (): void {
     $factory = createFactoryWithConfig();
 
     expect(fn () => $factory->make('sha256'))
         ->toThrow(HasherNotFoundException::class, "Hasher 'sha256' not found");
 });
 
-it('provides helpful suggestion in HasherNotFoundException', function () {
+it('provides helpful suggestion in HasherNotFoundException', function (): void {
     $factory = createFactoryWithConfig();
 
     try {
@@ -84,7 +84,7 @@ it('provides helpful suggestion in HasherNotFoundException', function () {
     }
 });
 
-it('creates bcrypt hasher with cost from config', function () {
+it('creates bcrypt hasher with cost from config', function (): void {
     $factory = createFactoryWithConfig([
         'hashing.hashers.bcrypt.cost' => 12,
     ]);
@@ -96,7 +96,7 @@ it('creates bcrypt hasher with cost from config', function () {
         ->and($hasher)->toBeInstanceOf(BcryptHasher::class);
 });
 
-it('creates argon2 hasher with parameters from config', function () {
+it('creates argon2 hasher with parameters from config', function (): void {
     $factory = createFactoryWithConfig([
         'hashing.hashers.argon2id.memory' => 65536,
         'hashing.hashers.argon2id.time' => 4,

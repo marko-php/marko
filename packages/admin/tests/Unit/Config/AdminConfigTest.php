@@ -56,12 +56,10 @@ it('provides configurable admin name from config', function (): void {
 
 it('has valid config/admin.php with default values', function (): void {
     $configPath = dirname(__DIR__, 3) . '/config/admin.php';
-
-    expect(file_exists($configPath))->toBeTrue();
-
     $configData = require $configPath;
 
-    expect($configData)->toBeArray()
+    expect(file_exists($configPath))->toBeTrue()
+        ->and($configData)->toBeArray()
         ->and($configData)->toHaveKey('name')
         ->and($configData)->toHaveKey('route_prefix')
         ->and($configData['name'])->toBe('Admin')
@@ -70,12 +68,10 @@ it('has valid config/admin.php with default values', function (): void {
 
 it('binds AdminConfigInterface to AdminConfig in module.php', function (): void {
     $modulePath = dirname(__DIR__, 3) . '/module.php';
-
-    expect(file_exists($modulePath))->toBeTrue();
-
     $module = require $modulePath;
 
-    expect($module)->toBeArray()
+    expect(file_exists($modulePath))->toBeTrue()
+        ->and($module)->toBeArray()
         ->and($module)->toHaveKey('bindings')
         ->and($module['bindings'])->toHaveKey(AdminConfigInterface::class)
         ->and($module['bindings'][AdminConfigInterface::class])

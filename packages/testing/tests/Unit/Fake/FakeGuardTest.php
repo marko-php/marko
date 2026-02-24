@@ -140,11 +140,10 @@ it('asserts attempted with callback filter', function (): void {
 
     expect(fn () => $guard->assertAttempted(
         fn (array $credentials) => $credentials['email'] === 'test@example.com',
-    ))->not->toThrow(AssertionFailedException::class);
-
-    expect(fn () => $guard->assertAttempted(
-        fn (array $credentials) => $credentials['email'] === 'other@example.com',
-    ))->toThrow(AssertionFailedException::class);
+    ))->not->toThrow(AssertionFailedException::class)
+        ->and(fn () => $guard->assertAttempted(
+            fn (array $credentials) => $credentials['email'] === 'other@example.com',
+        ))->toThrow(AssertionFailedException::class);
 });
 
 it('throws when asserting attempted with no attempts', function (): void {

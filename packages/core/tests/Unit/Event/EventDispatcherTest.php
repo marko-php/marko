@@ -237,21 +237,21 @@ it('accepts optional queue', function (): void {
 
     // Create with queue
     $dispatcherWithQueue = new EventDispatcher($container, $registry, $queue);
-    expect($dispatcherWithQueue)->toBeInstanceOf(EventDispatcher::class);
 
     // Create without queue (optional)
     $dispatcherWithoutQueue = new EventDispatcher($container, $registry);
-    expect($dispatcherWithoutQueue)->toBeInstanceOf(EventDispatcher::class);
 
     // Verify the type hint is properly defined (this will fail if parameter doesn't exist)
     $reflection = new ReflectionClass(EventDispatcher::class);
     $constructor = $reflection->getConstructor();
     $params = $constructor->getParameters();
 
-    expect($params)->toHaveCount(3);
-    expect($params[2]->getName())->toBe('queue');
-    expect($params[2]->isOptional())->toBeTrue();
-    expect($params[2]->getType()?->getName())->toBe(QueueInterface::class);
+    expect($dispatcherWithQueue)->toBeInstanceOf(EventDispatcher::class)
+        ->and($dispatcherWithoutQueue)->toBeInstanceOf(EventDispatcher::class)
+        ->and($params)->toHaveCount(3)
+        ->and($params[2]->getName())->toBe('queue')
+        ->and($params[2]->isOptional())->toBeTrue()
+        ->and($params[2]->getType()?->getName())->toBe(QueueInterface::class);
 });
 
 class AsyncTestObserver
@@ -280,15 +280,10 @@ it('queues async observers', function (): void {
 
     $dispatcher->dispatch($event);
 
-    // Event was NOT handled immediately (queued instead)
-    expect($event->handledBy)->toBeEmpty();
-
-    // Job was pushed to queue
-    expect($queue->pushed)->toHaveCount(1);
-
-    // Job is an AsyncObserverJob
-    expect($queue->pushed[0]['job'])->toBeInstanceOf(AsyncObserverJob::class);
-    expect($queue->pushed[0]['job']->observerClass)->toBe(AsyncTestObserver::class);
+    expect($event->handledBy)->toBeEmpty()
+        ->and($queue->pushed)->toHaveCount(1)
+        ->and($queue->pushed[0]['job'])->toBeInstanceOf(AsyncObserverJob::class)
+        ->and($queue->pushed[0]['job']->observerClass)->toBe(AsyncTestObserver::class);
 });
 
 class SyncTestObserver

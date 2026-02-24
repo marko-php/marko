@@ -365,7 +365,9 @@ readonly class StubPostRepository implements PostRepositoryInterface
         $this->capture->savedPosts[] = $entity;
     }
 
-    public function delete(Entity $entity): void {}
+    public function delete(
+        Entity $entity,
+    ): void {}
 
     public function findBySlug(
         string $slug,

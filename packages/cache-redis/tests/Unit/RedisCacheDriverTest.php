@@ -151,7 +151,7 @@ function createDriver(
 }
 
 describe('RedisCacheDriver', function (): void {
-    beforeEach(function () {
+    beforeEach(function (): void {
         $this->mockClient = createMockClient();
         $this->driver = createDriver($this->mockClient);
     });

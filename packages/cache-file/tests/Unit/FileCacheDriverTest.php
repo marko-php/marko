@@ -65,48 +65,48 @@ function writeExpiredCacheEntry(
     file_put_contents($filePath, serialize($data));
 }
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->cachePath = getCacheTestPath();
     $this->config = createTestCacheConfig($this->cachePath);
     $this->driver = new FileCacheDriver($this->config);
 });
 
-afterEach(function () {
+afterEach(function (): void {
     cleanupCacheTestPath($this->cachePath);
 });
 
-it('implements CacheInterface', function () {
+it('implements CacheInterface', function (): void {
     expect($this->driver)->toBeInstanceOf(CacheInterface::class);
 });
 
-it('returns default for missing key', function () {
+it('returns default for missing key', function (): void {
     expect($this->driver->get('missing'))->toBeNull();
 });
 
-it('returns custom default for missing key', function () {
+it('returns custom default for missing key', function (): void {
     expect($this->driver->get('missing', 'default'))->toBe('default');
 });
 
-it('sets and gets string value', function () {
+it('sets and gets string value', function (): void {
     $this->driver->set('key', 'value');
 
     expect($this->driver->get('key'))->toBe('value');
 });
 
-it('sets and gets integer value', function () {
+it('sets and gets integer value', function (): void {
     $this->driver->set('key', 42);
 
     expect($this->driver->get('key'))->toBe(42);
 });
 
-it('sets and gets array value', function () {
+it('sets and gets array value', function (): void {
     $value = ['name' => 'test', 'data' => [1, 2, 3]];
     $this->driver->set('key', $value);
 
     expect($this->driver->get('key'))->toBe($value);
 });
 
-it('sets and gets object value', function () {
+it('sets and gets object value', function (): void {
     $object = new stdClass();
     $object->name = 'test';
     $this->driver->set('key', $object);
@@ -114,45 +114,45 @@ it('sets and gets object value', function () {
     expect($this->driver->get('key'))->toEqual($object);
 });
 
-it('sets and gets null value', function () {
+it('sets and gets null value', function (): void {
     $this->driver->set('key', null);
 
     expect($this->driver->get('key'))->toBeNull()
         ->and($this->driver->has('key'))->toBeTrue();
 });
 
-it('returns true when setting value', function () {
+it('returns true when setting value', function (): void {
     expect($this->driver->set('key', 'value'))->toBeTrue();
 });
 
-it('returns true for existing key', function () {
+it('returns true for existing key', function (): void {
     $this->driver->set('key', 'value');
 
     expect($this->driver->has('key'))->toBeTrue();
 });
 
-it('returns false for missing key', function () {
+it('returns false for missing key', function (): void {
     expect($this->driver->has('missing'))->toBeFalse();
 });
 
-it('deletes existing key', function () {
+it('deletes existing key', function (): void {
     $this->driver->set('key', 'value');
     $this->driver->delete('key');
 
     expect($this->driver->has('key'))->toBeFalse();
 });
 
-it('returns true when deleting existing key', function () {
+it('returns true when deleting existing key', function (): void {
     $this->driver->set('key', 'value');
 
     expect($this->driver->delete('key'))->toBeTrue();
 });
 
-it('returns true when deleting missing key', function () {
+it('returns true when deleting missing key', function (): void {
     expect($this->driver->delete('missing'))->toBeTrue();
 });
 
-it('clears all items', function () {
+it('clears all items', function (): void {
     $this->driver->set('key1', 'value1');
     $this->driver->set('key2', 'value2');
 
@@ -162,29 +162,29 @@ it('clears all items', function () {
         ->and($this->driver->has('key2'))->toBeFalse();
 });
 
-it('returns true when clearing', function () {
+it('returns true when clearing', function (): void {
     $this->driver->set('key', 'value');
 
     expect($this->driver->clear())->toBeTrue();
 });
 
-it('returns true when clearing empty cache', function () {
+it('returns true when clearing empty cache', function (): void {
     expect($this->driver->clear())->toBeTrue();
 });
 
-it('expires items after ttl', function () {
+it('expires items after ttl', function (): void {
     writeExpiredCacheEntry($this->cachePath, 'key', 'value');
 
     expect($this->driver->get('key'))->toBeNull();
 });
 
-it('does not expire items with zero ttl', function () {
+it('does not expire items with zero ttl', function (): void {
     $this->driver->set('key', 'value', 0);
 
     expect($this->driver->get('key'))->toBe('value');
 });
 
-it('uses default ttl when not specified', function () {
+it('uses default ttl when not specified', function (): void {
     $cachePath = getCacheTestPath();
     $config = createTestCacheConfig($cachePath, 1);
     $driver = new FileCacheDriver($config);
@@ -195,7 +195,7 @@ it('uses default ttl when not specified', function () {
     cleanupCacheTestPath($cachePath);
 });
 
-it('returns cache item for hit', function () {
+it('returns cache item for hit', function (): void {
     $this->driver->set('key', 'value');
 
     $item = $this->driver->getItem('key');
@@ -205,7 +205,7 @@ it('returns cache item for hit', function () {
         ->and($item->get())->toBe('value');
 });
 
-it('returns cache item for miss', function () {
+it('returns cache item for miss', function (): void {
     $item = $this->driver->getItem('missing');
 
     expect($item)->toBeInstanceOf(CacheItemInterface::class)
@@ -213,7 +213,7 @@ it('returns cache item for miss', function () {
         ->and($item->get())->toBeNull();
 });
 
-it('returns cache item with expiration', function () {
+it('returns cache item with expiration', function (): void {
     $this->driver->set('key', 'value', 3600);
 
     $item = $this->driver->getItem('key');
@@ -221,7 +221,7 @@ it('returns cache item with expiration', function () {
     expect($item->expiresAt())->not->toBeNull();
 });
 
-it('gets multiple keys', function () {
+it('gets multiple keys', function (): void {
     $this->driver->set('key1', 'value1');
     $this->driver->set('key2', 'value2');
 
@@ -234,7 +234,7 @@ it('gets multiple keys', function () {
     ]);
 });
 
-it('gets multiple with custom default', function () {
+it('gets multiple with custom default', function (): void {
     $result = $this->driver->getMultiple(['missing1', 'missing2'], 'default');
 
     expect($result)->toBe([
@@ -243,7 +243,7 @@ it('gets multiple with custom default', function () {
     ]);
 });
 
-it('sets multiple keys', function () {
+it('sets multiple keys', function (): void {
     $this->driver->setMultiple([
         'key1' => 'value1',
         'key2' => 'value2',
@@ -253,11 +253,11 @@ it('sets multiple keys', function () {
         ->and($this->driver->get('key2'))->toBe('value2');
 });
 
-it('returns true when setting multiple', function () {
+it('returns true when setting multiple', function (): void {
     expect($this->driver->setMultiple(['key1' => 'value1']))->toBeTrue();
 });
 
-it('deletes multiple keys', function () {
+it('deletes multiple keys', function (): void {
     $this->driver->set('key1', 'value1');
     $this->driver->set('key2', 'value2');
     $this->driver->set('key3', 'value3');
@@ -269,19 +269,19 @@ it('deletes multiple keys', function () {
         ->and($this->driver->has('key3'))->toBeTrue();
 });
 
-it('returns true when deleting multiple', function () {
+it('returns true when deleting multiple', function (): void {
     expect($this->driver->deleteMultiple(['key1', 'key2']))->toBeTrue();
 });
 
-it('throws exception for empty key', function () {
+it('throws exception for empty key', function (): void {
     $this->driver->get('');
 })->throws(InvalidKeyException::class, 'Cache key cannot be empty');
 
-it('throws exception for key with invalid characters', function () {
+it('throws exception for key with invalid characters', function (): void {
     $this->driver->get('invalid/key');
 })->throws(InvalidKeyException::class, 'Invalid cache key');
 
-it('creates cache directory if not exists', function () {
+it('creates cache directory if not exists', function (): void {
     $newPath = sys_get_temp_dir() . '/marko-cache-new-' . uniqid();
     $config = createTestCacheConfig($newPath);
     $driver = new FileCacheDriver($config);
@@ -293,7 +293,7 @@ it('creates cache directory if not exists', function () {
     cleanupCacheTestPath($newPath);
 });
 
-it('handles concurrent access safely', function () {
+it('handles concurrent access safely', function (): void {
     $this->driver->set('key', 'initial');
 
     $result = $this->driver->set('key', 'updated');
@@ -302,13 +302,13 @@ it('handles concurrent access safely', function () {
         ->and($this->driver->get('key'))->toBe('updated');
 });
 
-it('removes expired item on has check', function () {
+it('removes expired item on has check', function (): void {
     writeExpiredCacheEntry($this->cachePath, 'key', 'value');
 
     expect($this->driver->has('key'))->toBeFalse();
 });
 
-it('removes expired item on getItem', function () {
+it('removes expired item on getItem', function (): void {
     writeExpiredCacheEntry($this->cachePath, 'key', 'value');
 
     $item = $this->driver->getItem('key');

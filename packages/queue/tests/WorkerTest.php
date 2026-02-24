@@ -163,8 +163,8 @@ class StopTestQueue implements QueueInterface
     }
 }
 
-describe('Worker', function () {
-    test('processes jobs from queue', function () {
+describe('Worker', function (): void {
+    test('processes jobs from queue', function (): void {
         $job = new class () extends Job
         {
             public static bool $handled = false;
@@ -254,7 +254,7 @@ describe('Worker', function () {
             ->and($queue->deleted)->toBeTrue();
     });
 
-    test('handles job failures with retry', function () {
+    test('handles job failures with retry', function (): void {
         $job = new class () extends Job
         {
             public protected(set) int $maxAttempts = 3;
@@ -347,7 +347,7 @@ describe('Worker', function () {
             ->and($failedRepository->count())->toBe(0);
     });
 
-    test('stores failed job after max attempts', function () {
+    test('stores failed job after max attempts', function (): void {
         $job = new FailingTestJob();
         $job->setId('job-1');
         // Simulate that job has already been attempted once
@@ -440,7 +440,7 @@ describe('Worker', function () {
             ->and($failedJob->exception)->toContain('Job failed permanently');
     });
 
-    test('stops when stop() is called', function () {
+    test('stops when stop() is called', function (): void {
         // Use a static counter and worker reference to stop after 3 jobs
         StopTestHelper::$popCount = 0;
         StopTestHelper::$worker = null;
@@ -461,7 +461,7 @@ describe('Worker', function () {
         expect(StopTestHelper::$popCount)->toBe(3);
     });
 
-    test('processes single job with once flag', function () {
+    test('processes single job with once flag', function (): void {
         $popCount = 0;
 
         $job = new class () extends Job
@@ -545,7 +545,7 @@ describe('Worker', function () {
             ->and($job::$handled)->toBeTrue();
     });
 
-    test('returns immediately when once flag is set and no jobs available', function () {
+    test('returns immediately when once flag is set and no jobs available', function (): void {
         $popCount = 0;
 
         $queue = new class ($popCount) implements QueueInterface
@@ -614,7 +614,7 @@ describe('Worker', function () {
         expect($popCount)->toBe(1);
     });
 
-    test('Worker uses exponential backoff', function () {
+    test('Worker uses exponential backoff', function (): void {
         // Test that retry delay follows formula: 2^attempts * 10 seconds
         // After 1st attempt (attempts=1): 2^1 * 10 = 20 seconds
         // After 2nd attempt (attempts=2): 2^2 * 10 = 40 seconds

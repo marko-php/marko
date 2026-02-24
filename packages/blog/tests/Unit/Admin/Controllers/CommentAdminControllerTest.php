@@ -18,7 +18,6 @@ use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Database\Entity\Entity;
-use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Routing\Attributes\Delete;
 use Marko\Routing\Attributes\Get;
@@ -26,6 +25,7 @@ use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post as PostRoute;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\View\ViewInterface;
 use ReflectionClass;
 

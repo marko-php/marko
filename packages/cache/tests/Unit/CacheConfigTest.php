@@ -6,7 +6,7 @@ use Marko\Cache\Config\CacheConfig;
 use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Testing\Fake\FakeConfigRepository;
 
-it('reads driver from config without fallback', function () {
+it('reads driver from config without fallback', function (): void {
     $config = new CacheConfig(new FakeConfigRepository([
         'cache.driver' => 'redis',
     ]));
@@ -14,7 +14,7 @@ it('reads driver from config without fallback', function () {
     expect($config->driver())->toBe('redis');
 });
 
-it('reads path from config without fallback', function () {
+it('reads path from config without fallback', function (): void {
     $config = new CacheConfig(new FakeConfigRepository([
         'cache.path' => '/var/cache',
     ]));
@@ -22,7 +22,7 @@ it('reads path from config without fallback', function () {
     expect($config->path())->toBe('/var/cache');
 });
 
-it('reads default_ttl from config without fallback', function () {
+it('reads default_ttl from config without fallback', function (): void {
     $config = new CacheConfig(new FakeConfigRepository([
         'cache.default_ttl' => 7200,
     ]));
@@ -30,28 +30,28 @@ it('reads default_ttl from config without fallback', function () {
     expect($config->defaultTtl())->toBe(7200);
 });
 
-it('throws ConfigNotFoundException when driver is missing', function () {
+it('throws ConfigNotFoundException when driver is missing', function (): void {
     $config = new CacheConfig(new FakeConfigRepository([]));
 
     $config->driver();
 })->throws(ConfigNotFoundException::class);
 
-it('throws ConfigNotFoundException when path is missing', function () {
+it('throws ConfigNotFoundException when path is missing', function (): void {
     $config = new CacheConfig(new FakeConfigRepository([]));
 
     $config->path();
 })->throws(ConfigNotFoundException::class);
 
-it('throws ConfigNotFoundException when default_ttl is missing', function () {
+it('throws ConfigNotFoundException when default_ttl is missing', function (): void {
     $config = new CacheConfig(new FakeConfigRepository([]));
 
     $config->defaultTtl();
 })->throws(ConfigNotFoundException::class);
 
-it('config file contains all required keys with defaults', function () {
+it('config file contains all required keys with defaults', function (): void {
     $configFile = require dirname(__DIR__, 2) . '/config/cache.php';
 
-    expect($configFile)->toHaveKey('driver');
-    expect($configFile)->toHaveKey('path');
-    expect($configFile)->toHaveKey('default_ttl');
+    expect($configFile)->toHaveKey('driver')
+        ->and($configFile)->toHaveKey('path')
+        ->and($configFile)->toHaveKey('default_ttl');
 });

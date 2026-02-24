@@ -350,7 +350,9 @@ function createCommentEventVerificationService(
 ): CommentVerificationService {
     $tokenRepository = new class () implements TokenRepositoryInterface
     {
-        public function save(VerificationToken $token): void {}
+        public function save(
+            VerificationToken $token,
+        ): void {}
 
         public function findByToken(
             string $token,
@@ -370,7 +372,9 @@ function createCommentEventVerificationService(
             return null;
         }
 
-        public function delete(VerificationToken $token): void {}
+        public function delete(
+            VerificationToken $token,
+        ): void {}
 
         public function deleteExpiredEmailTokens(
             int $expiryDays,

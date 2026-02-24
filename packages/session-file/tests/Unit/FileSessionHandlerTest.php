@@ -38,40 +38,40 @@ function createSessionConfig(
     return new SessionConfig($configRepo);
 }
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->sessionPath = getSessionTestPath();
     $this->handler = new FileSessionHandler(createSessionConfig($this->sessionPath));
 });
 
-afterEach(function () {
+afterEach(function (): void {
     cleanupSessionTestPath($this->sessionPath);
 });
 
-it('implements SessionHandlerInterface', function () {
+it('implements SessionHandlerInterface', function (): void {
     expect($this->handler)->toBeInstanceOf(SessionHandlerInterface::class);
 });
 
-it('creates directory on open', function () {
+it('creates directory on open', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
 
     expect(is_dir($this->sessionPath))->toBeTrue();
 });
 
-it('returns true on open', function () {
+it('returns true on open', function (): void {
     expect($this->handler->open($this->sessionPath, 'PHPSESSID'))->toBeTrue();
 });
 
-it('returns true on close', function () {
+it('returns true on close', function (): void {
     expect($this->handler->close())->toBeTrue();
 });
 
-it('returns empty string for missing session', function () {
+it('returns empty string for missing session', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
 
     expect($this->handler->read('nonexistent'))->toBe('');
 });
 
-it('writes and reads session data', function () {
+it('writes and reads session data', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
 
     $this->handler->write('test-session-id', 'session_data');
@@ -79,7 +79,7 @@ it('writes and reads session data', function () {
     expect($this->handler->read('test-session-id'))->toBe('session_data');
 });
 
-it('writes session file with correct prefix', function () {
+it('writes session file with correct prefix', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
 
     $this->handler->write('abc123', 'data');
@@ -87,7 +87,7 @@ it('writes session file with correct prefix', function () {
     expect(file_exists($this->sessionPath . '/sess_abc123'))->toBeTrue();
 });
 
-it('destroys session file', function () {
+it('destroys session file', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
     $this->handler->write('to-delete', 'data');
 
@@ -97,13 +97,13 @@ it('destroys session file', function () {
         ->and(file_exists($this->sessionPath . '/sess_to-delete'))->toBeFalse();
 });
 
-it('returns true when destroying nonexistent session', function () {
+it('returns true when destroying nonexistent session', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
 
     expect($this->handler->destroy('nonexistent'))->toBeTrue();
 });
 
-it('garbage collects expired sessions', function () {
+it('garbage collects expired sessions', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
 
     // Create a session file
@@ -119,7 +119,7 @@ it('garbage collects expired sessions', function () {
         ->and(file_exists($sessionFile))->toBeFalse();
 });
 
-it('does not garbage collect active sessions', function () {
+it('does not garbage collect active sessions', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
 
     $this->handler->write('active-session', 'data');
@@ -130,7 +130,7 @@ it('does not garbage collect active sessions', function () {
         ->and(file_exists($this->sessionPath . '/sess_active-session'))->toBeTrue();
 });
 
-it('handles concurrent reads', function () {
+it('handles concurrent reads', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
     $this->handler->write('concurrent', 'original-data');
 
@@ -141,7 +141,7 @@ it('handles concurrent reads', function () {
         ->and($data2)->toBe('original-data');
 });
 
-it('handles overwriting session data', function () {
+it('handles overwriting session data', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
 
     $this->handler->write('overwrite', 'first');
@@ -150,7 +150,7 @@ it('handles overwriting session data', function () {
     expect($this->handler->read('overwrite'))->toBe('second');
 });
 
-it('handles empty session data', function () {
+it('handles empty session data', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
 
     $this->handler->write('empty', '');
@@ -158,7 +158,7 @@ it('handles empty session data', function () {
     expect($this->handler->read('empty'))->toBe('');
 });
 
-it('returns true from write', function () {
+it('returns true from write', function (): void {
     $this->handler->open($this->sessionPath, 'PHPSESSID');
 
     expect($this->handler->write('test', 'data'))->toBeTrue();

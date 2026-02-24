@@ -63,7 +63,7 @@ it('renders post index template', function (): void {
         $view,
         new FakeSession(),
     );
-    $response = $controller->index();
+    $controller->index();
 
     expect($capture->template)->toBe('blog::post/index')
         ->and($capture->data)->toHaveKey('posts');
@@ -94,7 +94,7 @@ it('renders post show template', function (): void {
         $view,
         new FakeSession(),
     );
-    $response = $controller->show('my-post');
+    $controller->show('my-post');
 
     expect($capture->template)->toBe('blog::post/show')
         ->and($capture->data)->toHaveKey('post')

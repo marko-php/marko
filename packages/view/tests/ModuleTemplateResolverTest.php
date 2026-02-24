@@ -18,12 +18,12 @@ function createTestViewConfig(
     ]));
 }
 
-it('ModuleTemplateResolver implements TemplateResolverInterface', function () {
+it('ModuleTemplateResolver implements TemplateResolverInterface', function (): void {
     expect(class_exists(ModuleTemplateResolver::class))->toBeTrue()
         ->and(in_array(TemplateResolverInterface::class, class_implements(ModuleTemplateResolver::class)))->toBeTrue();
 });
 
-it('ModuleTemplateResolver resolves templates with module prefix', function () {
+it('ModuleTemplateResolver resolves templates with module prefix', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
     mkdir($tempDir . '/resources/views/post', 0755, true);
     file_put_contents($tempDir . '/resources/views/post/show.latte', 'test');
@@ -54,7 +54,7 @@ it('ModuleTemplateResolver resolves templates with module prefix', function () {
     rmdir($tempDir);
 });
 
-it('ModuleTemplateResolver resolves templates without module prefix', function () {
+it('ModuleTemplateResolver resolves templates without module prefix', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
     mkdir($tempDir . '/resources/views/shared', 0755, true);
     file_put_contents($tempDir . '/resources/views/shared/header.latte', 'header content');
@@ -86,7 +86,7 @@ it('ModuleTemplateResolver resolves templates without module prefix', function (
     rmdir($tempDir);
 });
 
-it('ModuleTemplateResolver searches in module priority order', function () {
+it('ModuleTemplateResolver searches in module priority order', function (): void {
     // app > modules > vendor (app overrides modules, modules override vendor)
     $vendorDir = sys_get_temp_dir() . '/marko-test-vendor-' . uniqid();
     $modulesDir = sys_get_temp_dir() . '/marko-test-modules-' . uniqid();
@@ -154,7 +154,7 @@ it('ModuleTemplateResolver searches in module priority order', function () {
     rmdir($appDir);
 });
 
-it('ModuleTemplateResolver respects app override priority', function () {
+it('ModuleTemplateResolver respects app override priority', function (): void {
     // App modules override vendor modules - app template is found first
     $vendorDir = sys_get_temp_dir() . '/marko-test-vendor-' . uniqid();
     $appDir = sys_get_temp_dir() . '/marko-test-app-' . uniqid();
@@ -205,7 +205,7 @@ it('ModuleTemplateResolver respects app override priority', function () {
     rmdir($appDir);
 });
 
-it('ModuleTemplateResolver throws TemplateNotFoundException when not found', function () {
+it('ModuleTemplateResolver throws TemplateNotFoundException when not found', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
     mkdir($tempDir . '/resources/views', 0755, true);
 
@@ -232,7 +232,7 @@ it('ModuleTemplateResolver throws TemplateNotFoundException when not found', fun
     rmdir($tempDir);
 });
 
-it('ModuleTemplateResolver includes all paths in not found error', function () {
+it('ModuleTemplateResolver includes all paths in not found error', function (): void {
     $tempDir1 = sys_get_temp_dir() . '/marko-test-app-' . uniqid();
     $tempDir2 = sys_get_temp_dir() . '/marko-test-vendor-' . uniqid();
     mkdir($tempDir1, 0755, true);
@@ -278,7 +278,7 @@ it('ModuleTemplateResolver includes all paths in not found error', function () {
     rmdir($tempDir2);
 });
 
-it('ModuleTemplateResolver getSearchedPaths returns all paths checked', function () {
+it('ModuleTemplateResolver getSearchedPaths returns all paths checked', function (): void {
     $tempDir1 = sys_get_temp_dir() . '/marko-test-1-' . uniqid();
     $tempDir2 = sys_get_temp_dir() . '/marko-test-2-' . uniqid();
     mkdir($tempDir1, 0755, true);
@@ -316,7 +316,7 @@ it('ModuleTemplateResolver getSearchedPaths returns all paths checked', function
     rmdir($tempDir2);
 });
 
-it('uses FakeConfigRepository in ModuleTemplateResolverTest', function () {
+it('uses FakeConfigRepository in ModuleTemplateResolverTest', function (): void {
     $repo = new FakeConfigRepository(['view.extension' => '.latte']);
     $viewConfig = new ViewConfig($repo);
 

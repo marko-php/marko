@@ -34,14 +34,6 @@ it('configures admin-api token guard for API authentication', function (): void 
         name: 'admin-api',
     );
 
-    expect($tokenGuard)->toBeInstanceOf(GuardInterface::class)
-        ->and($tokenGuard->getName())->toBe('admin-api')
-        ->and($tokenGuard->check())->toBeFalse()
-        ->and($tokenGuard->guest())->toBeTrue()
-        ->and($tokenGuard->user())->toBeNull();
-
-    // Without headers set, no user is authenticated
-
     // Config reflects the guard name
     $config = new AdminApiConfig(new FakeConfigRepository([
         'admin-api.version' => 'v1',
@@ -49,41 +41,32 @@ it('configures admin-api token guard for API authentication', function (): void 
         'admin-api.guard' => 'admin-api',
     ]));
 
-    expect($config->getGuardName())->toBe('admin-api');
+    // Without headers set, no user is authenticated
+    expect($tokenGuard)->toBeInstanceOf(GuardInterface::class)
+        ->and($tokenGuard->getName())->toBe('admin-api')
+        ->and($tokenGuard->check())->toBeFalse()
+        ->and($tokenGuard->guest())->toBeTrue()
+        ->and($tokenGuard->user())->toBeNull()
+        ->and($config->getGuardName())->toBe('admin-api');
 });
 
 it('registers API routes under /admin/api/v1 prefix', function (): void {
     // Verify MeController routes
-    $meMethod = new ReflectionMethod(MeController::class, 'me');
-    $meRouteAttributes = $meMethod->getAttributes(Get::class);
-
-    expect($meRouteAttributes)->toHaveCount(1);
-
-    $meRoute = $meRouteAttributes[0]->newInstance();
-
-    expect($meRoute->path)->toStartWith('/admin/api/v1/')
-        ->and($meRoute->path)->toBe('/admin/api/v1/me');
+    $meRouteAttributes = (new ReflectionMethod(MeController::class, 'me'))->getAttributes(Get::class);
 
     // Verify SectionController routes
-    $indexMethod = new ReflectionMethod(SectionController::class, 'index');
-    $indexRouteAttributes = $indexMethod->getAttributes(Get::class);
+    $indexRouteAttributes = (new ReflectionMethod(SectionController::class, 'index'))->getAttributes(Get::class);
+    $showRouteAttributes = (new ReflectionMethod(SectionController::class, 'show'))->getAttributes(Get::class);
 
-    expect($indexRouteAttributes)->toHaveCount(1);
-
-    $indexRoute = $indexRouteAttributes[0]->newInstance();
-
-    expect($indexRoute->path)->toStartWith('/admin/api/v1/')
-        ->and($indexRoute->path)->toBe('/admin/api/v1/sections');
-
-    $showMethod = new ReflectionMethod(SectionController::class, 'show');
-    $showRouteAttributes = $showMethod->getAttributes(Get::class);
-
-    expect($showRouteAttributes)->toHaveCount(1);
-
-    $showRoute = $showRouteAttributes[0]->newInstance();
-
-    expect($showRoute->path)->toStartWith('/admin/api/v1/')
-        ->and($showRoute->path)->toBe('/admin/api/v1/sections/{id}');
+    expect($meRouteAttributes)->toHaveCount(1)
+        ->and($meRouteAttributes[0]->newInstance()->path)->toStartWith('/admin/api/v1/')
+        ->and($meRouteAttributes[0]->newInstance()->path)->toBe('/admin/api/v1/me')
+        ->and($indexRouteAttributes)->toHaveCount(1)
+        ->and($indexRouteAttributes[0]->newInstance()->path)->toStartWith('/admin/api/v1/')
+        ->and($indexRouteAttributes[0]->newInstance()->path)->toBe('/admin/api/v1/sections')
+        ->and($showRouteAttributes)->toHaveCount(1)
+        ->and($showRouteAttributes[0]->newInstance()->path)->toStartWith('/admin/api/v1/')
+        ->and($showRouteAttributes[0]->newInstance()->path)->toBe('/admin/api/v1/sections/{id}');
 });
 
 it('does not conflict with admin-panel routes', function (): void {
@@ -130,17 +113,14 @@ it('returns JSON 401 for missing bearer token', function (): void {
     // The middleware handles the 401 response, but the guard correctly reports no auth
     $tokenGuard->setHeaders([]);
 
-    expect($tokenGuard->check())->toBeFalse();
-
     // Verify ApiResponse generates correct JSON 401
     $response = ApiResponse::unauthorized();
-
-    expect($response->statusCode())->toBe(401)
-        ->and($response->headers()['Content-Type'])->toBe('application/json');
-
     $body = json_decode($response->body(), true);
 
-    expect($body)->toHaveKey('errors')
+    expect($tokenGuard->check())->toBeFalse()
+        ->and($response->statusCode())->toBe(401)
+        ->and($response->headers()['Content-Type'])->toBe('application/json')
+        ->and($body)->toHaveKey('errors')
         ->and($body['errors'][0]['message'])->toBe('Unauthorized');
 });
 
@@ -159,13 +139,11 @@ it('returns JSON 401 for invalid bearer token', function (): void {
 
     // Verify ApiResponse generates correct JSON 401 for invalid tokens
     $response = ApiResponse::unauthorized();
-
-    expect($response->statusCode())->toBe(401)
-        ->and($response->headers()['Content-Type'])->toBe('application/json');
-
     $body = json_decode($response->body(), true);
 
-    expect($body)->toHaveKey('errors')
+    expect($response->statusCode())->toBe(401)
+        ->and($response->headers()['Content-Type'])->toBe('application/json')
+        ->and($body)->toHaveKey('errors')
         ->and($body['errors'][0]['message'])->toBe('Unauthorized');
 });
 
@@ -232,12 +210,10 @@ it('authenticates with valid bearer token and returns user', function (): void {
 
 it('has valid config/admin-api.php with default values', function (): void {
     $configPath = dirname(__DIR__, 3) . '/config/admin-api.php';
-
-    expect(file_exists($configPath))->toBeTrue();
-
     $configData = require $configPath;
 
-    expect($configData)->toBeArray()
+    expect(file_exists($configPath))->toBeTrue()
+        ->and($configData)->toBeArray()
         ->and($configData)->toHaveKey('version')
         ->and($configData)->toHaveKey('rate_limit')
         ->and($configData)->toHaveKey('guard')
@@ -248,12 +224,10 @@ it('has valid config/admin-api.php with default values', function (): void {
 
 it('has module.php with AdminApiConfig binding', function (): void {
     $modulePath = dirname(__DIR__, 3) . '/module.php';
-
-    expect(file_exists($modulePath))->toBeTrue();
-
     $module = require $modulePath;
 
-    expect($module)->toBeArray()
+    expect(file_exists($modulePath))->toBeTrue()
+        ->and($module)->toBeArray()
         ->and($module)->toHaveKey('bindings')
         ->and($module['bindings'])->toHaveKey(AdminApiConfigInterface::class)
         ->and($module['bindings'][AdminApiConfigInterface::class])

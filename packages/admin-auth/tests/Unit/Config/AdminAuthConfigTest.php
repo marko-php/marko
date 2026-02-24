@@ -41,12 +41,10 @@ it('creates AdminAuthConfig with guard name and super admin role slug', function
 
 it('binds AdminUserRepositoryInterface to AdminUserRepository in module.php', function (): void {
     $modulePath = dirname(__DIR__, 3) . '/module.php';
-
-    expect(file_exists($modulePath))->toBeTrue();
-
     $module = require $modulePath;
 
-    expect($module)->toBeArray()
+    expect(file_exists($modulePath))->toBeTrue()
+        ->and($module)->toBeArray()
         ->and($module)->toHaveKey('bindings')
         ->and($module['bindings'])->toHaveKey(AdminUserRepositoryInterface::class)
         ->and($module['bindings'][AdminUserRepositoryInterface::class])
@@ -159,12 +157,10 @@ it('creates PermissionsSynced event dispatched after registry sync', function ()
 
 it('has valid config/admin-auth.php with default values', function (): void {
     $configPath = dirname(__DIR__, 3) . '/config/admin-auth.php';
-
-    expect(file_exists($configPath))->toBeTrue();
-
     $configData = require $configPath;
 
-    expect($configData)->toBeArray()
+    expect(file_exists($configPath))->toBeTrue()
+        ->and($configData)->toBeArray()
         ->and($configData)->toHaveKey('guard')
         ->and($configData)->toHaveKey('super_admin_role')
         ->and($configData['guard'])->toBe('admin')
@@ -173,12 +169,10 @@ it('has valid config/admin-auth.php with default values', function (): void {
 
 it('has module.php with all required bindings', function (): void {
     $modulePath = dirname(__DIR__, 3) . '/module.php';
-
-    expect(file_exists($modulePath))->toBeTrue();
-
     $module = require $modulePath;
 
-    expect($module)->toBeArray()
+    expect(file_exists($modulePath))->toBeTrue()
+        ->and($module)->toBeArray()
         ->and($module)->toHaveKey('bindings')
         ->and($module['bindings'])->toHaveKey(AdminUserRepositoryInterface::class)
         ->and($module['bindings'])->toHaveKey(RoleRepositoryInterface::class)

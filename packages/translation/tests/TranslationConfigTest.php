@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Translation\Config\TranslationConfig;
 
-it('uses FakeConfigRepository in TranslationConfigTest (2 instances)', function () {
+it('uses FakeConfigRepository in TranslationConfigTest (2 instances)', function (): void {
     $config1 = new FakeConfigRepository([
         'translation.locale' => 'fr',
         'translation.fallback_locale' => 'en',
@@ -19,7 +19,7 @@ it('uses FakeConfigRepository in TranslationConfigTest (2 instances)', function 
         ->and($config2)->toBeInstanceOf(FakeConfigRepository::class);
 });
 
-it('creates TranslationConfig with locale and fallback locale from config', function () {
+it('creates TranslationConfig with locale and fallback locale from config', function (): void {
     $configRepo = new FakeConfigRepository([
         'translation.locale' => 'fr',
         'translation.fallback_locale' => 'en',
@@ -30,7 +30,7 @@ it('creates TranslationConfig with locale and fallback locale from config', func
     expect($config)->toBeInstanceOf(TranslationConfig::class);
 });
 
-it('provides locale and fallbackLocale as readonly properties', function () {
+it('provides locale and fallbackLocale as readonly properties', function (): void {
     $configRepo = new FakeConfigRepository([
         'translation.locale' => 'fr',
         'translation.fallback_locale' => 'en',

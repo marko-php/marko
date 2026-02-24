@@ -171,12 +171,11 @@ it('passes user and entity to policy method', function (): void {
     // Article author is 1 but user is 5, so update should be denied
     $article = new Article(id: 1, authorId: 1);
 
-    expect($gate->allows('update', $article))->toBeFalse();
-
     // Article author matches user
     $ownedArticle = new Article(id: 2, authorId: 5);
 
-    expect($gate->allows('update', $ownedArticle))->toBeTrue();
+    expect($gate->allows('update', $article))->toBeFalse()
+        ->and($gate->allows('update', $ownedArticle))->toBeTrue();
 });
 
 it('handles authorize with entity policies throwing on denial', function (): void {

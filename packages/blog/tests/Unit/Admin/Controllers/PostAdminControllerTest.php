@@ -23,7 +23,6 @@ use Marko\Blog\Repositories\TagRepositoryInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Blog\Services\SlugGeneratorInterface;
 use Marko\Database\Entity\Entity;
-use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Routing\Attributes\Delete;
 use Marko\Routing\Attributes\Get;
@@ -32,6 +31,7 @@ use Marko\Routing\Attributes\Post as PostRoute;
 use Marko\Routing\Attributes\Put;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\View\ViewInterface;
 use ReflectionClass;
 

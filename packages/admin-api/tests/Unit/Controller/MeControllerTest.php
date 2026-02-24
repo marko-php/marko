@@ -48,14 +48,12 @@ it('returns current user info with roles and permissions on GET /admin/api/v1/me
     );
 
     $response = $controller->me();
+    $body = json_decode($response->body(), true);
 
     expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(200)
-        ->and($response->headers()['Content-Type'])->toBe('application/json');
-
-    $body = json_decode($response->body(), true);
-
-    expect($body)->toHaveKey('data')
+        ->and($response->headers()['Content-Type'])->toBe('application/json')
+        ->and($body)->toHaveKey('data')
         ->and($body['data']['id'])->toBe(1)
         ->and($body['data']['email'])->toBe('admin@example.com')
         ->and($body['data']['name'])->toBe('Admin User')
@@ -74,14 +72,12 @@ it('returns 401 when not authenticated', function (): void {
     );
 
     $response = $controller->me();
+    $body = json_decode($response->body(), true);
 
     expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(401)
-        ->and($response->headers()['Content-Type'])->toBe('application/json');
-
-    $body = json_decode($response->body(), true);
-
-    expect($body)->toHaveKey('errors')
+        ->and($response->headers()['Content-Type'])->toBe('application/json')
+        ->and($body)->toHaveKey('errors')
         ->and($body['errors'][0]['message'])->toBe('Unauthorized');
 });
 
@@ -103,22 +99,18 @@ it('uses ApiResponse format for all responses', function (): void {
     );
 
     // Authenticated response has data and meta keys
-    $response = $controller->me();
-    $body = json_decode($response->body(), true);
-
-    expect($body)->toHaveKey('data')
-        ->and($body)->toHaveKey('meta');
+    $body = json_decode($controller->me()->body(), true);
 
     // Unauthenticated response has errors key
     $unauthGuard = new FakeGuard(name: 'admin-api', attemptResult: false);
     $unauthController = new MeController(
         guard: $unauthGuard,
     );
+    $unauthBody = json_decode($unauthController->me()->body(), true);
 
-    $unauthResponse = $unauthController->me();
-    $unauthBody = json_decode($unauthResponse->body(), true);
-
-    expect($unauthBody)->toHaveKey('errors');
+    expect($body)->toHaveKey('data')
+        ->and($body)->toHaveKey('meta')
+        ->and($unauthBody)->toHaveKey('errors');
 });
 
 it('applies AdminAuthMiddleware to all routes', function (): void {
@@ -127,19 +119,11 @@ it('applies AdminAuthMiddleware to all routes', function (): void {
     // Check class-level Middleware attribute
     $middlewareAttributes = $reflection->getAttributes(Middleware::class);
 
-    expect($middlewareAttributes)->toHaveCount(1);
-
-    $middleware = $middlewareAttributes[0]->newInstance();
-
-    expect($middleware->middleware)->toContain(AdminAuthMiddleware::class);
-
     // Verify route attribute exists on the "me" method
-    $meMethod = new ReflectionMethod(MeController::class, 'me');
-    $meRouteAttributes = $meMethod->getAttributes(Get::class);
+    $meRouteAttributes = (new ReflectionMethod(MeController::class, 'me'))->getAttributes(Get::class);
 
-    expect($meRouteAttributes)->toHaveCount(1);
-
-    $meRoute = $meRouteAttributes[0]->newInstance();
-
-    expect($meRoute->path)->toBe('/admin/api/v1/me');
+    expect($middlewareAttributes)->toHaveCount(1)
+        ->and($middlewareAttributes[0]->newInstance()->middleware)->toContain(AdminAuthMiddleware::class)
+        ->and($meRouteAttributes)->toHaveCount(1)
+        ->and($meRouteAttributes[0]->newInstance()->path)->toBe('/admin/api/v1/me');
 });

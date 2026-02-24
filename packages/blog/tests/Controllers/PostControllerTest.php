@@ -27,14 +27,14 @@ use Marko\Testing\Fake\FakeSession;
 use Marko\View\ViewInterface;
 use ReflectionClass;
 
-\it('injects PostRepositoryInterface not concrete PostRepository', function (): void {
+it('injects PostRepositoryInterface not concrete PostRepository', function (): void {
     $reflection = new ReflectionClass(PostController::class);
     $constructor = $reflection->getConstructor();
 
-    \expect($constructor)->not->toBeNull();
+    expect($constructor)->not->toBeNull();
 
     $parameters = $constructor->getParameters();
-    \expect($parameters)->toHaveCount(7)
+    expect($parameters)->toHaveCount(7)
         ->and($parameters[0]->getName())->toBe('repository')
         ->and($parameters[0]->getType()->getName())->toBe(PostRepositoryInterface::class)
         ->and($parameters[1]->getName())->toBe('authorRepository')
@@ -51,29 +51,29 @@ use ReflectionClass;
         ->and($parameters[6]->getType()->getName())->toBe(SessionInterface::class);
 });
 
-\it('has GET /blog route on index method', function (): void {
+it('has GET /blog route on index method', function (): void {
     $reflection = new ReflectionClass(PostController::class);
     $method = $reflection->getMethod('index');
     $attributes = $method->getAttributes(Get::class);
 
-    \expect($attributes)->toHaveCount(1);
+    expect($attributes)->toHaveCount(1);
 
     $routeAttribute = $attributes[0]->newInstance();
-    \expect($routeAttribute->path)->toBe('/blog');
+    expect($routeAttribute->path)->toBe('/blog');
 });
 
-\it('has GET /blog/{slug} route on show method', function (): void {
+it('has GET /blog/{slug} route on show method', function (): void {
     $reflection = new ReflectionClass(PostController::class);
     $method = $reflection->getMethod('show');
     $attributes = $method->getAttributes(Get::class);
 
-    \expect($attributes)->toHaveCount(1);
+    expect($attributes)->toHaveCount(1);
 
     $routeAttribute = $attributes[0]->newInstance();
-    \expect($routeAttribute->path)->toBe('/blog/{slug}');
+    expect($routeAttribute->path)->toBe('/blog/{slug}');
 });
 
-\it('returns response using view on index route', function (): void {
+it('returns response using view on index route', function (): void {
     $posts = [
         createPost(1, 'Post 1', 'post-1'),
         createPost(2, 'Post 2', 'post-2'),
@@ -95,12 +95,12 @@ use ReflectionClass;
     );
     $response = $controller->index();
 
-    \expect($response)->toBeInstanceOf(Response::class)
+    expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(200)
         ->and($response->body())->toContain('blog::post/index');
 });
 
-\it('returns response using view on show route', function (): void {
+it('returns response using view on show route', function (): void {
     $repository = createMockPostRepository(
         findBySlugResult: createPost(1, 'Hello World', 'hello-world'),
     );
@@ -120,12 +120,12 @@ use ReflectionClass;
     );
     $response = $controller->show('hello-world');
 
-    \expect($response)->toBeInstanceOf(Response::class)
+    expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(200)
         ->and($response->body())->toContain('blog::post/show');
 });
 
-\it('returns single post at GET /blog/{slug}', function (): void {
+it('returns single post at GET /blog/{slug}', function (): void {
     $author = createAuthor(1, 'John Doe', 'john-doe');
     $post = createPost(
         id: 1,
@@ -153,13 +153,13 @@ use ReflectionClass;
     );
     $response = $controller->show('test-post');
 
-    \expect($response->statusCode())->toBe(200)
+    expect($response->statusCode())->toBe(200)
         ->and($capturedData)->toHaveKey('post')
         ->and($capturedData['post']->getTitle())->toBe('Test Post')
         ->and($capturedData['post']->getSlug())->toBe('test-post');
 });
 
-\it('returns 404 when post slug not found', function (): void {
+it('returns 404 when post slug not found', function (): void {
     $repository = createMockPostRepository();
     $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
@@ -177,12 +177,12 @@ use ReflectionClass;
     );
     $response = $controller->show('non-existent');
 
-    \expect($response)->toBeInstanceOf(Response::class)
+    expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(404)
         ->and($response->body())->toContain('not found');
 });
 
-\it('returns 404 when post is not published', function (): void {
+it('returns 404 when post is not published', function (): void {
     $draftPost = createPost(
         id: 1,
         title: 'Draft Post',
@@ -207,12 +207,12 @@ use ReflectionClass;
     );
     $response = $controller->show('draft-post');
 
-    \expect($response)->toBeInstanceOf(Response::class)
+    expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(404)
         ->and($response->body())->toContain('not found');
 });
 
-\it('includes full post content in response', function (): void {
+it('includes full post content in response', function (): void {
     $author = createAuthor(1, 'John Doe', 'john-doe');
     $post = createPostWithContent(
         id: 1,
@@ -241,13 +241,13 @@ use ReflectionClass;
     );
     $controller->show('full-content-post');
 
-    \expect($capturedData)->toHaveKey('post')
+    expect($capturedData)->toHaveKey('post')
         ->and($capturedData['post']->getContent())->toBe(
             '<p>This is the full article content with <strong>formatting</strong>.</p>',
         );
 });
 
-\it('includes author information', function (): void {
+it('includes author information', function (): void {
     $author = createAuthor(1, 'Jane Smith', 'jane-smith');
     $post = createPost(
         id: 1,
@@ -275,12 +275,12 @@ use ReflectionClass;
     );
     $controller->show('post-with-author');
 
-    \expect($capturedData)->toHaveKey('post')
+    expect($capturedData)->toHaveKey('post')
         ->and($capturedData['post']->getAuthor()->getName())->toBe('Jane Smith')
         ->and($capturedData['post']->getAuthor()->getSlug())->toBe('jane-smith');
 });
 
-\it('includes post categories', function (): void {
+it('includes post categories', function (): void {
     $author = createAuthor(1, 'John Doe', 'john-doe');
     $post = createPost(
         id: 1,
@@ -316,13 +316,13 @@ use ReflectionClass;
     );
     $controller->show('post-with-categories');
 
-    \expect($capturedData)->toHaveKey('categories')
+    expect($capturedData)->toHaveKey('categories')
         ->and($capturedData['categories'])->toHaveCount(2)
         ->and($capturedData['categories'][0]->getName())->toBe('Technology')
         ->and($capturedData['categories'][1]->getName())->toBe('Programming');
 });
 
-\it('includes post tags', function (): void {
+it('includes post tags', function (): void {
     $author = createAuthor(1, 'John Doe', 'john-doe');
     $post = createPost(
         id: 1,
@@ -359,14 +359,14 @@ use ReflectionClass;
     );
     $controller->show('post-with-tags');
 
-    \expect($capturedData)->toHaveKey('tags')
+    expect($capturedData)->toHaveKey('tags')
         ->and($capturedData['tags'])->toHaveCount(3)
         ->and($capturedData['tags'][0]->getName())->toBe('PHP')
         ->and($capturedData['tags'][1]->getName())->toBe('Laravel')
         ->and($capturedData['tags'][2]->getName())->toBe('TDD');
 });
 
-\it('includes threaded verified comments', function (): void {
+it('includes threaded verified comments', function (): void {
     $author = createAuthor(1, 'John Doe', 'john-doe');
     $post = createPost(
         id: 1,
@@ -415,14 +415,14 @@ use ReflectionClass;
     );
     $controller->show('post-with-comments');
 
-    \expect($capturedData)->toHaveKey('comments')
+    expect($capturedData)->toHaveKey('comments')
         ->and($capturedData['comments'])->toHaveCount(1)
         ->and($capturedData['comments'][0]->content)->toBe('This is a root comment.')
         ->and($capturedData['comments'][0]->getChildren())->toHaveCount(1)
         ->and($capturedData['comments'][0]->getChildren()[0]->content)->toBe('This is a reply comment.');
 });
 
-\it('renders show using view template', function (): void {
+it('renders show using view template', function (): void {
     $author = createAuthor(1, 'John Doe', 'john-doe');
     $post = createPost(
         id: 1,
@@ -449,36 +449,36 @@ use ReflectionClass;
     );
     $response = $controller->show('view-template-test');
 
-    \expect($response->body())->toContain('blog::post/show');
+    expect($response->body())->toContain('blog::post/show');
 });
 
-\it('maintains existing route attributes for GET /blog and GET /blog/{slug}', function (): void {
+it('maintains existing route attributes for GET /blog and GET /blog/{slug}', function (): void {
     $reflection = new ReflectionClass(PostController::class);
 
     // Check index method route
     $indexMethod = $reflection->getMethod('index');
     $indexAttributes = $indexMethod->getAttributes(Get::class);
-    \expect($indexAttributes)->toHaveCount(1);
+    expect($indexAttributes)->toHaveCount(1);
     $indexRoute = $indexAttributes[0]->newInstance();
-    \expect($indexRoute->path)->toBe('/blog');
+    expect($indexRoute->path)->toBe('/blog');
 
     // Check show method route
     $showMethod = $reflection->getMethod('show');
     $showAttributes = $showMethod->getAttributes(Get::class);
-    \expect($showAttributes)->toHaveCount(1);
+    expect($showAttributes)->toHaveCount(1);
     $showRoute = $showAttributes[0]->newInstance();
-    \expect($showRoute->path)->toBe('/blog/{slug}');
+    expect($showRoute->path)->toBe('/blog/{slug}');
 });
 
-\it('returns paginated list of published posts at GET /blog', function (): void {
+it('returns paginated list of published posts at GET /blog', function (): void {
     // Verify the route attribute
     $reflection = new ReflectionClass(PostController::class);
     $method = $reflection->getMethod('index');
     $attributes = $method->getAttributes(Get::class);
 
-    \expect($attributes)->toHaveCount(1);
+    expect($attributes)->toHaveCount(1);
     $routeAttribute = $attributes[0]->newInstance();
-    \expect($routeAttribute->path)->toBe('/blog');
+    expect($routeAttribute->path)->toBe('/blog');
 
     // Verify that calling index returns paginated posts
     $posts = [
@@ -504,13 +504,13 @@ use ReflectionClass;
     );
     $response = $controller->index();
 
-    \expect($response->statusCode())->toBe(200)
+    expect($response->statusCode())->toBe(200)
         ->and($capturedData)->toHaveKey('posts')
         ->and($capturedData['posts'])->toBeInstanceOf(PaginatedResult::class)
         ->and($capturedData['posts']->items)->toHaveCount(2);
 });
 
-\it('orders posts by published date descending', function (): void {
+it('orders posts by published date descending', function (): void {
     // This test verifies the controller uses findPublishedPaginated
     // Ordering is handled by the repository (see PostRepository implementation)
     $posts = [
@@ -535,10 +535,10 @@ use ReflectionClass;
     );
     $response = $controller->index();
 
-    \expect($response->statusCode())->toBe(200);
+    expect($response->statusCode())->toBe(200);
 });
 
-\it('excludes draft and scheduled posts from listing', function (): void {
+it('excludes draft and scheduled posts from listing', function (): void {
     // This test verifies the controller uses findPublishedPaginated (not findAll)
     // which only returns posts with status = Published
     // Actual filtering is repository responsibility - controller calls the right method
@@ -569,12 +569,12 @@ use ReflectionClass;
     $controller->index();
 
     // Verify that only published posts are in the result
-    \expect($capturedData['posts'])->toBeInstanceOf(PaginatedResult::class)
+    expect($capturedData['posts'])->toBeInstanceOf(PaginatedResult::class)
         ->and($capturedData['posts']->items)->toHaveCount(1)
         ->and($capturedData['posts']->items[0]->status)->toBe(PostStatus::Published);
 });
 
-\it('accepts page query parameter for pagination', function (): void {
+it('accepts page query parameter for pagination', function (): void {
     $posts = [createPost(3, 'Post on Page 3', 'post-page-3')];
     $repository = createMockPostRepository(
         findPublishedPaginatedResult: $posts,
@@ -598,10 +598,10 @@ use ReflectionClass;
     );
     $controller->index(page: 3);
 
-    \expect($capturedData['posts']->currentPage)->toBe(3);
+    expect($capturedData['posts']->currentPage)->toBe(3);
 });
 
-\it('defaults to page 1 when no page parameter', function (): void {
+it('defaults to page 1 when no page parameter', function (): void {
     $posts = [createPost(1, 'Post 1', 'post-1')];
     $repository = createMockPostRepository(
         findPublishedPaginatedResult: $posts,
@@ -625,10 +625,10 @@ use ReflectionClass;
     );
     $controller->index();
 
-    \expect($capturedData['posts']->currentPage)->toBe(1);
+    expect($capturedData['posts']->currentPage)->toBe(1);
 });
 
-\it('returns 404 for invalid page numbers', function (): void {
+it('returns 404 for invalid page numbers', function (): void {
     $repository = createMockPostRepository(
         findPublishedPaginatedResult: [],
         countPublishedResult: 25,
@@ -651,18 +651,18 @@ use ReflectionClass;
 
     // Test page 0
     $response = $controller->index(page: 0);
-    \expect($response->statusCode())->toBe(404);
+    expect($response->statusCode())->toBe(404);
 
     // Test negative page
     $response = $controller->index(page: -1);
-    \expect($response->statusCode())->toBe(404);
+    expect($response->statusCode())->toBe(404);
 
     // Test page beyond total (25 posts / 10 per page = 3 pages max)
     $response = $controller->index(page: 10);
-    \expect($response->statusCode())->toBe(404);
+    expect($response->statusCode())->toBe(404);
 });
 
-\it('includes pagination metadata in response', function (): void {
+it('includes pagination metadata in response', function (): void {
     $posts = [createPost(1, 'Post 1', 'post-1')];
     $repository = createMockPostRepository(
         findPublishedPaginatedResult: $posts,
@@ -686,16 +686,16 @@ use ReflectionClass;
     );
     $controller->index();
 
-    \expect($capturedData['posts'])->toBeInstanceOf(PaginatedResult::class)
+    expect($capturedData['posts'])->toBeInstanceOf(PaginatedResult::class)
         ->and($capturedData['posts']->totalItems)->toBe(25)
         ->and($capturedData['posts']->totalPages)->toBe(3)
         ->and($capturedData['posts']->perPage)->toBe(10)
         ->and($capturedData['posts']->currentPage)->toBe(1)
-        ->and($capturedData['posts']->hasPreviousPage)->toBe(false)
-        ->and($capturedData['posts']->hasNextPage)->toBe(true);
+        ->and($capturedData['posts']->hasPreviousPage)->toBeFalse()
+        ->and($capturedData['posts']->hasNextPage)->toBeTrue();
 });
 
-\it('includes post title summary author and date in listing', function (): void {
+it('includes post title summary author and date in listing', function (): void {
     $author = createAuthor(1, 'John Doe', 'john-doe');
     $post = createPost(
         id: 1,
@@ -729,13 +729,13 @@ use ReflectionClass;
     $controller->index();
 
     $postInView = $capturedData['posts']->items[0];
-    \expect($postInView->getTitle())->toBe('My First Post')
+    expect($postInView->getTitle())->toBe('My First Post')
         ->and($postInView->getSummary())->toBe('This is the post summary.')
         ->and($postInView->getAuthor()->getName())->toBe('John Doe')
         ->and($postInView->getPublishedAt()->format('Y-m-d H:i:s'))->toBe('2024-06-15 10:30:00');
 });
 
-\it('renders using view template', function (): void {
+it('renders using view template', function (): void {
     $posts = [createPost(1, 'Post 1', 'post-1')];
     $repository = createMockPostRepository(
         findPublishedPaginatedResult: $posts,
@@ -758,10 +758,10 @@ use ReflectionClass;
     );
     $response = $controller->index();
 
-    \expect($response->body())->toContain('blog::post/index');
+    expect($response->body())->toContain('blog::post/index');
 });
 
-\it('includes categoryPaths with full hierarchy for each category', function (): void {
+it('includes categoryPaths with full hierarchy for each category', function (): void {
     $author = createAuthor(1, 'John Doe', 'john-doe');
     $post = createPost(
         id: 1,
@@ -806,7 +806,7 @@ use ReflectionClass;
     );
     $controller->show('post-with-hierarchy');
 
-    \expect($capturedData)->toHaveKey('categoryPaths')
+    expect($capturedData)->toHaveKey('categoryPaths')
         ->and($capturedData['categoryPaths'])->toHaveKey(3)
         ->and($capturedData['categoryPaths'][3])->toHaveCount(3)
         ->and($capturedData['categoryPaths'][3][0]->getName())->toBe('Technology')
@@ -814,7 +814,7 @@ use ReflectionClass;
         ->and($capturedData['categoryPaths'][3][2]->getName())->toBe('PHP');
 });
 
-\it('includes categoryPaths for multiple categories', function (): void {
+it('includes categoryPaths for multiple categories', function (): void {
     $author = createAuthor(1, 'John Doe', 'john-doe');
     $post = createPost(
         id: 1,
@@ -859,7 +859,7 @@ use ReflectionClass;
     );
     $controller->show('post-multiple-categories');
 
-    \expect($capturedData)->toHaveKey('categoryPaths')
+    expect($capturedData)->toHaveKey('categoryPaths')
         ->and($capturedData['categoryPaths'])->toHaveCount(2)
         ->and($capturedData['categoryPaths'][2])->toHaveCount(2)
         ->and($capturedData['categoryPaths'][2][0]->getName())->toBe('Technology')
@@ -868,7 +868,7 @@ use ReflectionClass;
         ->and($capturedData['categoryPaths'][3][0]->getName())->toBe('Tutorials');
 });
 
-\it('includes empty categoryPaths when post has no categories', function (): void {
+it('includes empty categoryPaths when post has no categories', function (): void {
     $author = createAuthor(1, 'John Doe', 'john-doe');
     $post = createPost(
         id: 1,
@@ -899,7 +899,7 @@ use ReflectionClass;
     );
     $controller->show('post-no-categories');
 
-    \expect($capturedData)->toHaveKey('categoryPaths')
+    expect($capturedData)->toHaveKey('categoryPaths')
         ->and($capturedData['categoryPaths'])->toBe([]);
 });
 
@@ -1307,9 +1307,13 @@ function createMockCategoryRepository(): CategoryRepositoryInterface
             return null;
         }
 
-        public function save(Entity $entity): void {}
+        public function save(
+            Entity $entity,
+        ): void {}
 
-        public function delete(Entity $entity): void {}
+        public function delete(
+            Entity $entity,
+        ): void {}
 
         public function findBySlug(
             string $slug,
@@ -1393,9 +1397,13 @@ function createMockCategoryRepositoryWithPaths(
             return null;
         }
 
-        public function save(Entity $entity): void {}
+        public function save(
+            Entity $entity,
+        ): void {}
 
-        public function delete(Entity $entity): void {}
+        public function delete(
+            Entity $entity,
+        ): void {}
 
         public function findBySlug(
             string $slug,

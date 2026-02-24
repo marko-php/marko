@@ -37,12 +37,10 @@ it('provides default items per page of 20', function (): void {
 
 it('has valid config/admin-panel.php with default values', function (): void {
     $configPath = dirname(__DIR__, 3) . '/config/admin-panel.php';
-
-    expect(file_exists($configPath))->toBeTrue();
-
     $configData = require $configPath;
 
-    expect($configData)->toBeArray()
+    expect(file_exists($configPath))->toBeTrue()
+        ->and($configData)->toBeArray()
         ->and($configData)->toHaveKey('page_title')
         ->and($configData)->toHaveKey('items_per_page')
         ->and($configData['page_title'])->toBe('Marko Admin')
@@ -51,12 +49,10 @@ it('has valid config/admin-panel.php with default values', function (): void {
 
 it('binds AdminPanelConfigInterface to AdminPanelConfig in module.php', function (): void {
     $modulePath = dirname(__DIR__, 3) . '/module.php';
-
-    expect(file_exists($modulePath))->toBeTrue();
-
     $module = require $modulePath;
 
-    expect($module)->toBeArray()
+    expect(file_exists($modulePath))->toBeTrue()
+        ->and($module)->toBeArray()
         ->and($module)->toHaveKey('bindings')
         ->and($module['bindings'])->toHaveKey(AdminPanelConfigInterface::class)
         ->and($module['bindings'][AdminPanelConfigInterface::class])

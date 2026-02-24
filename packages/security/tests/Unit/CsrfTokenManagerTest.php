@@ -41,15 +41,14 @@ describe('CsrfTokenManagerInterface', function (): void {
             ->and($reflection->hasMethod('regenerate'))->toBeTrue();
 
         $get = $reflection->getMethod('get');
-        expect($get->getReturnType()?->getName())->toBe('string');
-
         $validate = $reflection->getMethod('validate');
-        expect($validate->getReturnType()?->getName())->toBe('bool');
-        expect($validate->getParameters())->toHaveCount(1);
-        expect($validate->getParameters()[0]->getType()?->getName())->toBe('string');
-
         $regenerate = $reflection->getMethod('regenerate');
-        expect($regenerate->getReturnType()?->getName())->toBe('string');
+
+        expect($get->getReturnType()?->getName())->toBe('string')
+            ->and($validate->getReturnType()?->getName())->toBe('bool')
+            ->and($validate->getParameters())->toHaveCount(1)
+            ->and($validate->getParameters()[0]->getType()?->getName())->toBe('string')
+            ->and($regenerate->getReturnType()?->getName())->toBe('string');
     });
 });
 

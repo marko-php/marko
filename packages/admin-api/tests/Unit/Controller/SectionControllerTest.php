@@ -95,14 +95,12 @@ it('returns list of admin sections on GET /admin/api/v1/sections', function (): 
     );
 
     $response = $controller->index();
+    $body = json_decode($response->body(), true);
 
     expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(200)
-        ->and($response->headers()['Content-Type'])->toBe('application/json');
-
-    $body = json_decode($response->body(), true);
-
-    expect($body)->toHaveKey('data')
+        ->and($response->headers()['Content-Type'])->toBe('application/json')
+        ->and($body)->toHaveKey('data')
         ->and($body)->toHaveKey('meta')
         ->and($body['data'])->toHaveCount(2)
         ->and($body['data'][0]['id'])->toBe('catalog')
@@ -209,14 +207,12 @@ it('returns section detail with menu items on GET /admin/api/v1/sections/{id}', 
     );
 
     $response = $controller->show('catalog');
+    $body = json_decode($response->body(), true);
 
     expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(200)
-        ->and($response->headers()['Content-Type'])->toBe('application/json');
-
-    $body = json_decode($response->body(), true);
-
-    expect($body)->toHaveKey('data')
+        ->and($response->headers()['Content-Type'])->toBe('application/json')
+        ->and($body)->toHaveKey('data')
         ->and($body['data']['id'])->toBe('catalog')
         ->and($body['data']['label'])->toBe('Catalog')
         ->and($body['data']['icon'])->toBe('box')
@@ -249,14 +245,12 @@ it('returns 404 when section not found', function (): void {
     );
 
     $response = $controller->show('nonexistent');
+    $body = json_decode($response->body(), true);
 
     expect($response)->toBeInstanceOf(Response::class)
         ->and($response->statusCode())->toBe(404)
-        ->and($response->headers()['Content-Type'])->toBe('application/json');
-
-    $body = json_decode($response->body(), true);
-
-    expect($body)->toHaveKey('errors')
+        ->and($response->headers()['Content-Type'])->toBe('application/json')
+        ->and($body)->toHaveKey('errors')
         ->and($body['errors'][0]['message'])->toBe("Section 'nonexistent' not found");
 });
 
@@ -278,24 +272,19 @@ it('uses ApiResponse format for all responses', function (): void {
     );
 
     // Index response has data and meta keys
-    $indexResponse = $controller->index();
-    $indexBody = json_decode($indexResponse->body(), true);
-
-    expect($indexBody)->toHaveKey('data')
-        ->and($indexBody)->toHaveKey('meta');
+    $indexBody = json_decode($controller->index()->body(), true);
 
     // Show response has data and meta keys
-    $showResponse = $controller->show('catalog');
-    $showBody = json_decode($showResponse->body(), true);
-
-    expect($showBody)->toHaveKey('data')
-        ->and($showBody)->toHaveKey('meta');
+    $showBody = json_decode($controller->show('catalog')->body(), true);
 
     // Not found response has errors key
-    $notFoundResponse = $controller->show('nonexistent');
-    $notFoundBody = json_decode($notFoundResponse->body(), true);
+    $notFoundBody = json_decode($controller->show('nonexistent')->body(), true);
 
-    expect($notFoundBody)->toHaveKey('errors');
+    expect($indexBody)->toHaveKey('data')
+        ->and($indexBody)->toHaveKey('meta')
+        ->and($showBody)->toHaveKey('data')
+        ->and($showBody)->toHaveKey('meta')
+        ->and($notFoundBody)->toHaveKey('errors');
 });
 
 it('applies AdminAuthMiddleware to all routes', function (): void {
@@ -304,28 +293,14 @@ it('applies AdminAuthMiddleware to all routes', function (): void {
     // Check class-level Middleware attribute
     $middlewareAttributes = $reflection->getAttributes(Middleware::class);
 
-    expect($middlewareAttributes)->toHaveCount(1);
-
-    $middleware = $middlewareAttributes[0]->newInstance();
-
-    expect($middleware->middleware)->toContain(AdminAuthMiddleware::class);
-
     // Verify route attributes exist on methods
-    $indexMethod = new ReflectionMethod(SectionController::class, 'index');
-    $indexRouteAttributes = $indexMethod->getAttributes(Get::class);
+    $indexRouteAttributes = (new ReflectionMethod(SectionController::class, 'index'))->getAttributes(Get::class);
+    $showRouteAttributes = (new ReflectionMethod(SectionController::class, 'show'))->getAttributes(Get::class);
 
-    expect($indexRouteAttributes)->toHaveCount(1);
-
-    $indexRoute = $indexRouteAttributes[0]->newInstance();
-
-    expect($indexRoute->path)->toBe('/admin/api/v1/sections');
-
-    $showMethod = new ReflectionMethod(SectionController::class, 'show');
-    $showRouteAttributes = $showMethod->getAttributes(Get::class);
-
-    expect($showRouteAttributes)->toHaveCount(1);
-
-    $showRoute = $showRouteAttributes[0]->newInstance();
-
-    expect($showRoute->path)->toBe('/admin/api/v1/sections/{id}');
+    expect($middlewareAttributes)->toHaveCount(1)
+        ->and($middlewareAttributes[0]->newInstance()->middleware)->toContain(AdminAuthMiddleware::class)
+        ->and($indexRouteAttributes)->toHaveCount(1)
+        ->and($indexRouteAttributes[0]->newInstance()->path)->toBe('/admin/api/v1/sections')
+        ->and($showRouteAttributes)->toHaveCount(1)
+        ->and($showRouteAttributes[0]->newInstance()->path)->toBe('/admin/api/v1/sections/{id}');
 });

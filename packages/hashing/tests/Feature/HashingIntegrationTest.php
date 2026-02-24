@@ -8,7 +8,7 @@ use Marko\Hashing\Factory\HasherFactory;
 use Marko\Hashing\HashManager;
 use Marko\Testing\Fake\FakeConfigRepository;
 
-it('uses FakeConfigRepository in HashingIntegrationTest', function () {
+it('uses FakeConfigRepository in HashingIntegrationTest', function (): void {
     $config = new FakeConfigRepository(['hashing.default' => 'bcrypt']);
 
     expect($config)->toBeInstanceOf(FakeConfigRepository::class);
@@ -34,7 +34,7 @@ function createIntegrationManager(
     return new HashManager($hashConfig, $factory);
 }
 
-it('completes full password hashing workflow with bcrypt', function () {
+it('completes full password hashing workflow with bcrypt', function (): void {
     $manager = createIntegrationManager(['hashing.default' => 'bcrypt']);
     $password = 'my-secure-password';
 
@@ -48,7 +48,7 @@ it('completes full password hashing workflow with bcrypt', function () {
     // Verify wrong password
 });
 
-it('completes full password hashing workflow with argon2id', function () {
+it('completes full password hashing workflow with argon2id', function (): void {
     $manager = createIntegrationManager(['hashing.default' => 'argon2id']);
     $password = 'my-secure-password';
 
@@ -62,7 +62,7 @@ it('completes full password hashing workflow with argon2id', function () {
     // Verify wrong password
 });
 
-it('switches between hashers within same manager', function () {
+it('switches between hashers within same manager', function (): void {
     $manager = createIntegrationManager();
 
     $bcryptHash = $manager->hasher('bcrypt')->hash('password');
@@ -73,7 +73,7 @@ it('switches between hashers within same manager', function () {
         ->and($bcryptHash)->not->toBe($argon2Hash);
 });
 
-it('detects algorithm change requires rehash', function () {
+it('detects algorithm change requires rehash', function (): void {
     $bcryptManager = createIntegrationManager(['hashing.default' => 'bcrypt']);
     $argon2Manager = createIntegrationManager(['hashing.default' => 'argon2id']);
 
@@ -84,7 +84,7 @@ it('detects algorithm change requires rehash', function () {
     expect($argon2Manager->needsRehash($bcryptHash))->toBeTrue();
 });
 
-it('detects cost change requires rehash', function () {
+it('detects cost change requires rehash', function (): void {
     $lowCostManager = createIntegrationManager(['hashing.hashers.bcrypt.cost' => 4]);
     $highCostManager = createIntegrationManager(['hashing.hashers.bcrypt.cost' => 6]);
 
@@ -93,7 +93,7 @@ it('detects cost change requires rehash', function () {
     expect($highCostManager->needsRehash($lowCostHash))->toBeTrue();
 });
 
-it('can rehash password when cost changes', function () {
+it('can rehash password when cost changes', function (): void {
     $lowCostManager = createIntegrationManager(['hashing.hashers.bcrypt.cost' => 4]);
     $highCostManager = createIntegrationManager(['hashing.hashers.bcrypt.cost' => 6]);
 
@@ -114,21 +114,21 @@ it('can rehash password when cost changes', function () {
         ->and($highCostManager->verify($password, $newHash))->toBeTrue();
 });
 
-it('all hashers implement HasherInterface', function () {
+it('all hashers implement HasherInterface', function (): void {
     $manager = createIntegrationManager();
 
     expect($manager->hasher('bcrypt'))->toBeInstanceOf(HasherInterface::class)
         ->and($manager->hasher('argon2id'))->toBeInstanceOf(HasherInterface::class);
 });
 
-it('each hasher returns correct algorithm name', function () {
+it('each hasher returns correct algorithm name', function (): void {
     $manager = createIntegrationManager();
 
     expect($manager->hasher('bcrypt')->algorithm())->toBe('bcrypt')
         ->and($manager->hasher('argon2id')->algorithm())->toBe('argon2id');
 });
 
-it('handles empty password', function () {
+it('handles empty password', function (): void {
     $manager = createIntegrationManager();
 
     $hash = $manager->hash('');
@@ -137,7 +137,7 @@ it('handles empty password', function () {
         ->and($manager->verify('not-empty', $hash))->toBeFalse();
 });
 
-it('handles unicode password', function () {
+it('handles unicode password', function (): void {
     $manager = createIntegrationManager();
     $password = 'пароль日本語🔐';
 
@@ -147,7 +147,7 @@ it('handles unicode password', function () {
         ->and($manager->verify('different', $hash))->toBeFalse();
 });
 
-it('handles very long password', function () {
+it('handles very long password', function (): void {
     // Note: bcrypt truncates at 72 bytes, so we test with argon2id for long passwords
     $manager = createIntegrationManager(['hashing.default' => 'argon2id']);
     $password = str_repeat('a', 1000);
@@ -158,7 +158,7 @@ it('handles very long password', function () {
         ->and($manager->verify($password . 'b', $hash))->toBeFalse();
 });
 
-it('handles special characters in password', function () {
+it('handles special characters in password', function (): void {
     $manager = createIntegrationManager();
     $password = '!@#$%^&*()_+-=[]{}|;:\'",.<>?/`~\\';
 
@@ -167,7 +167,7 @@ it('handles special characters in password', function () {
     expect($manager->verify($password, $hash))->toBeTrue();
 });
 
-it('cross-verifies bcrypt hashes with password_verify', function () {
+it('cross-verifies bcrypt hashes with password_verify', function (): void {
     $manager = createIntegrationManager(['hashing.default' => 'bcrypt']);
 
     $hash = $manager->hash('password');
@@ -176,7 +176,7 @@ it('cross-verifies bcrypt hashes with password_verify', function () {
     expect(password_verify('password', $hash))->toBeTrue();
 });
 
-it('cross-verifies argon2id hashes with password_verify', function () {
+it('cross-verifies argon2id hashes with password_verify', function (): void {
     $manager = createIntegrationManager(['hashing.default' => 'argon2id']);
 
     $hash = $manager->hash('password');
@@ -185,7 +185,7 @@ it('cross-verifies argon2id hashes with password_verify', function () {
     expect(password_verify('password', $hash))->toBeTrue();
 });
 
-it('produces timing-safe verification', function () {
+it('produces timing-safe verification', function (): void {
     $manager = createIntegrationManager();
     $hash = $manager->hash('correct-password');
 

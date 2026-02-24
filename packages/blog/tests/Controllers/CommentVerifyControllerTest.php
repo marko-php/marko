@@ -201,8 +201,8 @@ it('sets cookie as HttpOnly and Secure', function (): void {
     $controller->verify('valid-token');
 
     expect($cookieJar->setCalls)->toHaveCount(1)
-        ->and($cookieJar->setCalls[0]['options']['httpOnly'])->toBe(true)
-        ->and($cookieJar->setCalls[0]['options']['secure'])->toBe(true)
+        ->and($cookieJar->setCalls[0]['options']['httpOnly'])->toBeTrue()
+        ->and($cookieJar->setCalls[0]['options']['secure'])->toBeTrue()
         ->and($cookieJar->setCalls[0]['options']['sameSite'])->toBe('Lax');
 });
 

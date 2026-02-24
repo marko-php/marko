@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-it('has a README.md with title and practical one-liner', function () {
+it('has a README.md with title and practical one-liner', function (): void {
     $readmePath = dirname(__DIR__) . '/README.md';
 
     expect(file_exists($readmePath))->toBeTrue()
@@ -10,20 +10,20 @@ it('has a README.md with title and practical one-liner', function () {
         ->and(file_get_contents($readmePath))->toMatch('/^# marko\/testing\n\n.+/m');
 });
 
-it('has an overview section explaining the benefit', function () {
+it('has an overview section explaining the benefit', function (): void {
     $readme = file_get_contents(dirname(__DIR__) . '/README.md');
 
     expect($readme)->toContain('## Overview');
 });
 
-it('has an installation section with composer command', function () {
+it('has an installation section with composer command', function (): void {
     $readme = file_get_contents(dirname(__DIR__) . '/README.md');
 
     expect($readme)->toContain('## Installation')
         ->and($readme)->toContain('composer require marko/testing');
 });
 
-it('has a usage section with code examples for each fake', function () {
+it('has a usage section with code examples for each fake', function (): void {
     $readme = file_get_contents(dirname(__DIR__) . '/README.md');
 
     expect($readme)->toContain('## Usage')
@@ -39,7 +39,7 @@ it('has a usage section with code examples for each fake', function () {
         ->and($readme)->toContain('```php');
 });
 
-it('has an API reference section listing all public methods', function () {
+it('has an API reference section listing all public methods', function (): void {
     $readme = file_get_contents(dirname(__DIR__) . '/README.md');
 
     expect($readme)->toContain('## API Reference')
@@ -58,13 +58,13 @@ it('has an API reference section listing all public methods', function () {
         ->and($readme)->toContain('assertNothingLogged(');
 });
 
-it('documents FakeGuard in the available fakes table', function () {
+it('documents FakeGuard in the available fakes table', function (): void {
     $readme = file_get_contents(dirname(__DIR__) . '/README.md');
 
     expect($readme)->toContain('FakeGuard');
 });
 
-it('includes FakeGuard usage example with guard configuration', function () {
+it('includes FakeGuard usage example with guard configuration', function (): void {
     $readme = file_get_contents(dirname(__DIR__) . '/README.md');
 
     expect($readme)->toContain('### FakeGuard')
@@ -73,7 +73,7 @@ it('includes FakeGuard usage example with guard configuration', function () {
         ->and($readme)->toContain('attempt(');
 });
 
-it('documents FakeGuard assertion methods', function () {
+it('documents FakeGuard assertion methods', function (): void {
     $readme = file_get_contents(dirname(__DIR__) . '/README.md');
 
     expect($readme)->toContain('assertAuthenticated(')
@@ -83,14 +83,14 @@ it('documents FakeGuard assertion methods', function () {
         ->and($readme)->toContain('assertLoggedOut(');
 });
 
-it('documents toHaveAttempted and toBeAuthenticated Pest expectations', function () {
+it('documents toHaveAttempted and toBeAuthenticated Pest expectations', function (): void {
     $readme = file_get_contents(dirname(__DIR__) . '/README.md');
 
     expect($readme)->toContain('toHaveAttempted')
         ->and($readme)->toContain('toBeAuthenticated');
 });
 
-it('follows the Package README Standards from code-standards.md', function () {
+it('follows the Package README Standards from code-standards.md', function (): void {
     $readme = file_get_contents(dirname(__DIR__) . '/README.md');
 
     expect($readme)->toContain('# marko/testing')
