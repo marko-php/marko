@@ -56,7 +56,8 @@ it('asserts message was logged', function () {
 
     $logger->info('User logged in');
 
-    $logger->assertLogged('User logged in');
+    expect(fn () => $logger->assertLogged('User logged in'))
+        ->not->toThrow(AssertionFailedException::class);
 });
 
 it('asserts message was logged at specific level', function () {
@@ -64,7 +65,8 @@ it('asserts message was logged at specific level', function () {
 
     $logger->error('Something failed');
 
-    $logger->assertLogged('Something failed', LogLevel::Error);
+    expect(fn () => $logger->assertLogged('Something failed', LogLevel::Error))
+        ->not->toThrow(AssertionFailedException::class);
 });
 
 it('throws AssertionFailedException when asserting logged message that was not logged', function () {
@@ -77,7 +79,8 @@ it('throws AssertionFailedException when asserting logged message that was not l
 it('asserts nothing was logged', function () {
     $logger = new FakeLogger();
 
-    $logger->assertNothingLogged();
+    expect(fn () => $logger->assertNothingLogged())
+        ->not->toThrow(AssertionFailedException::class);
 });
 
 it('clears all captured entries', function () {
