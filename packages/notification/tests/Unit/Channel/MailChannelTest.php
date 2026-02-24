@@ -63,7 +63,7 @@ test('it uses message to address when already set', function (): void {
     $mailer->expects($this->once())
         ->method('send')
         ->with(
-            $this->callback(fn (Message $msg) => $msg->to[0]->email === 'preset@example.com' && count($msg->to) === 1)
+            $this->callback(fn (Message $msg) => $msg->to[0]->email === 'preset@example.com' && count($msg->to) === 1),
         )
         ->willReturn(true);
 

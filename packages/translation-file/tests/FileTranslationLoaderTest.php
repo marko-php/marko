@@ -68,7 +68,7 @@ it('loads translation array from PHP file at lang/{locale}/{group}.php', functio
         $tmpDir,
         'en',
         'messages',
-        '<?php return ["welcome" => "Welcome!", "goodbye" => "Goodbye!"];'
+        '<?php return ["welcome" => "Welcome!", "goodbye" => "Goodbye!"];',
     );
 
     try {

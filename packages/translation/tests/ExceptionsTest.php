@@ -23,10 +23,10 @@ it(
     'defines MissingTranslationException extending TranslationException with factory method for missing key',
     function () {
         $exception = MissingTranslationException::forKey('messages.welcome', 'fr');
-    
+
         expect($exception)->toBeInstanceOf(TranslationException::class)
             ->and($exception)->toBeInstanceOf(MissingTranslationException::class);
-    }
+    },
 );
 
 it('includes key, locale, and resolution path in MissingTranslationException context', function () {

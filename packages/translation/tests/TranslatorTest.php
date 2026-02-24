@@ -76,7 +76,7 @@ it('replaces :placeholder tokens with provided replacements', function () {
 
     expect($translator->get('messages.welcome', ['name' => 'Mark']))->toBe('Welcome, Mark!')
         ->and($translator->get('messages.greeting', ['name' => 'Mark', 'place' => 'Marko']))->toBe(
-            'Hello Mark, welcome to Marko!'
+            'Hello Mark, welcome to Marko!',
         );
 });
 

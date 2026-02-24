@@ -49,13 +49,7 @@ if (function_exists('expect')) {
                 'Expected at least one message to be sent but none were.',
             );
         } else {
-            $found = false;
-            foreach ($fake->sent as $message) {
-                if ($callback($message)) {
-                    $found = true;
-                    break;
-                }
-            }
+            $found = array_any($fake->sent, fn ($message) => $callback($message));
             Assert::assertTrue(
                 $found,
                 'Expected a message matching the callback to be sent but none matched.',
@@ -85,14 +79,7 @@ if (function_exists('expect')) {
         $hasPushed = count($matches) > 0;
 
         if ($hasPushed && $callback !== null) {
-            $found = false;
-            foreach ($matches as $entry) {
-                if ($callback($entry['job'])) {
-                    $found = true;
-                    break;
-                }
-            }
-            $hasPushed = $found;
+            $hasPushed = array_any($matches, fn (array $entry) => $callback($entry['job']));
         }
 
         Assert::assertTrue(

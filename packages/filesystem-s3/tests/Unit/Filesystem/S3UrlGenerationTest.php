@@ -46,7 +46,7 @@ it('includes prefix in generated URLs', function () {
 it('generates pre-signed temporary URL with default expiration', function () {
     $mockRequest = new Request(
         'GET',
-        'https://test-bucket.s3.us-east-1.amazonaws.com/file.txt?X-Amz-Expires=3600&X-Amz-Signature=abc123'
+        'https://test-bucket.s3.us-east-1.amazonaws.com/file.txt?X-Amz-Expires=3600&X-Amz-Signature=abc123',
     );
 
     $client = MockS3Client::create([
@@ -59,7 +59,7 @@ it('generates pre-signed temporary URL with default expiration', function () {
     $url = $filesystem->temporaryUrl('file.txt');
 
     expect($url)->toBe(
-        'https://test-bucket.s3.us-east-1.amazonaws.com/file.txt?X-Amz-Expires=3600&X-Amz-Signature=abc123'
+        'https://test-bucket.s3.us-east-1.amazonaws.com/file.txt?X-Amz-Expires=3600&X-Amz-Signature=abc123',
     );
 
     // Verify getCommand was called

@@ -10,7 +10,7 @@ it(
     'defines PaginatorInterface with items, total, perPage, currentPage, lastPage, hasMorePages, previousPage, nextPage, toArray methods',
     function () {
         $reflection = new ReflectionClass(PaginatorInterface::class);
-    
+
         expect($reflection->isInterface())->toBeTrue()
             ->and($reflection->hasMethod('items'))->toBeTrue()
             ->and($reflection->hasMethod('total'))->toBeTrue()
@@ -21,14 +21,14 @@ it(
             ->and($reflection->hasMethod('previousPage'))->toBeTrue()
             ->and($reflection->hasMethod('nextPage'))->toBeTrue()
             ->and($reflection->hasMethod('toArray'))->toBeTrue();
-    }
+    },
 );
 
 it(
     'defines CursorPaginatorInterface with items, perPage, hasMorePages, cursor, nextCursor, previousCursor, toArray methods',
     function () {
         $reflection = new ReflectionClass(CursorPaginatorInterface::class);
-    
+
         expect($reflection->isInterface())->toBeTrue()
             ->and($reflection->hasMethod('items'))->toBeTrue()
             ->and($reflection->hasMethod('perPage'))->toBeTrue()
@@ -37,7 +37,7 @@ it(
             ->and($reflection->hasMethod('nextCursor'))->toBeTrue()
             ->and($reflection->hasMethod('previousCursor'))->toBeTrue()
             ->and($reflection->hasMethod('toArray'))->toBeTrue();
-    }
+    },
 );
 
 it('defines CursorInterface with parameters, parameter, encode methods and decode static factory', function () {

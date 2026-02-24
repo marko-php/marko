@@ -48,8 +48,9 @@ class FakeQueue implements QueueInterface
         return $id;
     }
 
-    public function pop(?string $queue = null): ?JobInterface
-    {
+    public function pop(
+        ?string $queue = null,
+    ): ?JobInterface {
         foreach ($this->pushed as $index => $entry) {
             if ($entry['queue'] === $queue) {
                 unset($this->pushed[$index]);
@@ -62,16 +63,18 @@ class FakeQueue implements QueueInterface
         return null;
     }
 
-    public function size(?string $queue = null): int
-    {
+    public function size(
+        ?string $queue = null,
+    ): int {
         return count(array_filter(
             $this->pushed,
             fn (array $entry) => $entry['queue'] === $queue,
         ));
     }
 
-    public function clear(?string $queue = null): int
-    {
+    public function clear(
+        ?string $queue = null,
+    ): int {
         $count = $this->size($queue);
         $this->pushed = array_values(array_filter(
             $this->pushed,
@@ -81,8 +84,9 @@ class FakeQueue implements QueueInterface
         return $count;
     }
 
-    public function delete(string $jobId): bool
-    {
+    public function delete(
+        string $jobId,
+    ): bool {
         foreach ($this->pushed as $index => $entry) {
             if ($entry['id'] === $jobId) {
                 unset($this->pushed[$index]);
@@ -110,8 +114,10 @@ class FakeQueue implements QueueInterface
         return false;
     }
 
-    public function assertPushed(string $jobClass, ?callable $callback = null): void
-    {
+    public function assertPushed(
+        string $jobClass,
+        ?callable $callback = null,
+    ): void {
         $matches = array_filter(
             $this->pushed,
             fn (array $entry) => $entry['job'] instanceof $jobClass,
@@ -122,21 +128,17 @@ class FakeQueue implements QueueInterface
         }
 
         if ($callback !== null) {
-            $passed = false;
-            foreach ($matches as $entry) {
-                if ($callback($entry['job'])) {
-                    $passed = true;
-                    break;
-                }
-            }
+            $passed = array_any($matches, fn (array $entry) => $callback($entry['job']));
+
             if (!$passed) {
                 throw AssertionFailedException::expectedContains('queue', $jobClass);
             }
         }
     }
 
-    public function assertNotPushed(string $jobClass): void
-    {
+    public function assertNotPushed(
+        string $jobClass,
+    ): void {
         $matches = array_filter(
             $this->pushed,
             fn (array $entry) => $entry['job'] instanceof $jobClass,
@@ -147,8 +149,9 @@ class FakeQueue implements QueueInterface
         }
     }
 
-    public function assertPushedCount(int $expected): void
-    {
+    public function assertPushedCount(
+        int $expected,
+    ): void {
         $actual = count($this->pushed);
 
         if ($actual !== $expected) {

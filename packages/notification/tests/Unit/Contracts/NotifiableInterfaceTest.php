@@ -8,12 +8,12 @@ test(
     'it defines NotifiableInterface with routeNotificationFor, getNotifiableId, and getNotifiableType methods',
     function (): void {
         $reflection = new ReflectionClass(NotifiableInterface::class);
-    
+
         expect($reflection->isInterface())->toBeTrue()
             ->and($reflection->hasMethod('routeNotificationFor'))->toBeTrue()
             ->and($reflection->hasMethod('getNotifiableId'))->toBeTrue()
             ->and($reflection->hasMethod('getNotifiableType'))->toBeTrue();
-    }
+    },
 );
 
 test('routeNotificationFor accepts string channel and returns mixed', function (): void {

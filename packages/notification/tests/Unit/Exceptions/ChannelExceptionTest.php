@@ -9,11 +9,11 @@ test(
     'it defines ChannelException extending NotificationException with routeMissing and deliveryFailed factories',
     function (): void {
         $reflection = new ReflectionClass(ChannelException::class);
-    
+
         expect($reflection->isSubclassOf(NotificationException::class))->toBeTrue()
             ->and($reflection->hasMethod('routeMissing'))->toBeTrue()
             ->and($reflection->hasMethod('deliveryFailed'))->toBeTrue();
-    }
+    },
 );
 
 test('it creates ChannelException with context and suggestion via routeMissing factory', function (): void {

@@ -44,13 +44,9 @@ class FakeMailer implements MailerInterface
             return;
         }
 
-        foreach ($this->sent as $message) {
-            if ($callback($message)) {
-                return;
-            }
+        if (!array_any($this->sent, fn ($message) => $callback($message))) {
+            throw AssertionFailedException::unexpectedEmpty('messages');
         }
-
-        throw AssertionFailedException::unexpectedEmpty('messages');
     }
 
     public function assertNothingSent(): void
