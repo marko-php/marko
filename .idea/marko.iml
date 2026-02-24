@@ -75,6 +75,8 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/cache-array/tests" isTestSource="true" packagePrefix="Marko\Cache\Memory\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/mail-log/src" isTestSource="false" packagePrefix="Marko\Mail\Log\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/mail-log/tests" isTestSource="true" packagePrefix="Marko\Mail\Log\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-rabbitmq/src" isTestSource="false" packagePrefix="Marko\Queue\Rabbitmq\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-rabbitmq/tests" isTestSource="true" packagePrefix="Marko\Queue\Rabbitmq\Tests\" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/brianium/paratest" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/composer" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/doctrine/deprecations" />
@@ -214,6 +216,10 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/theseer/tokenizer" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/webmozart/assert" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/latte/latte" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/paragonie/constant_time_encoding" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/paragonie/random_compat" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/php-amqplib/php-amqplib" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpseclib/phpseclib" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -1,21 +1,23 @@
 # Marko Framework
 
-> **Opinionated, not restrictive. There's always a way - it's just the right way.**
+Marko is a modular PHP 8.5+ framework combining Magento's extensibility with Laravel's developer experience.
 
-Marko is a PHP 8.5+ framework combining Magento's extensibility with Laravel's developer experience.
+## Core Principles
 
-## Quick Reference
+1. **Loud errors** - No silent failures, helpful messages
+2. **Explicit over implicit** - No magic, everything discoverable
+3. **Opinionated, not restrictive** - Guide toward better patterns
+4. **True modularity** - Interface/implementation split, clean boundaries
+5. **No pseudo-functionality** - Don't build fake features to demonstrate concepts; only build real functionality when core supports it. If there's nothing meaningful to build, build nothing.
 
-### Commands
+## Commands
+
 ```bash
 # Run tests
-./vendor/bin/pest
-
-# Run tests in parallel
 ./vendor/bin/pest --parallel
 
 # Run with coverage
-./vendor/bin/pest --coverage --min=80
+./vendor/bin/pest --parallel --coverage --min=80
 
 # Lint (check)
 ./vendor/bin/phpcs
@@ -24,7 +26,8 @@ Marko is a PHP 8.5+ framework combining Magento's extensibility with Laravel's d
 ./vendor/bin/php-cs-fixer fix
 ```
 
-### Key Conventions
+## Key Conventions
+
 - **No hardcoded versions in composer.json** - never add `"version"` to package composer.json files; let Composer infer from the branch
 - **Constructor property promotion** - always use it
 - **Strict types** - every file needs `declare(strict_types=1)`
@@ -33,54 +36,7 @@ Marko is a PHP 8.5+ framework combining Magento's extensibility with Laravel's d
 - **readonly** - use when appropriate for immutability, not as blanket rule
 - **Type declarations** - required on all parameters, returns, properties
 
-### Architecture
-- **Everything is a module** - framework, vendor, and app code
-- **Three directories**: `vendor/` → `modules/` → `app/` (override priority)
-- **DI with Preferences** - replace classes via `#[Preference]`
-- **Plugins** - `#[Before]` and `#[After]` only (no around)
-- **Events/Observers** - decouple "something happened" from reactions
-- **PHP config only** - no XML, YAML, or DSL
-
-### Package Decision Framework
-
-When deciding whether functionality belongs in `marko/core` or a separate package:
-
-| Question | If Yes → | If No → |
-|----------|----------|---------|
-| Does it have multiple valid implementations? | Separate package (interface/driver split) | Could be core |
-| Is it optional functionality not everyone needs? | Separate package | Could be core |
-| Is it core to the extensibility story? | In core | Separate package |
-| Would virtually every app depend on it anyway? | In core | Separate package |
-
-**Examples:**
-- Database drivers → Separate (MySQL vs PostgreSQL are swappable)
-- Plugin system → Core (fundamental extensibility, no alternative)
-- Event system → Core (fundamental extensibility, no alternative)
-- CLI → Separate (global install, thin client, different lifecycle)
-
-### Monorepo Structure
-```
-packages/
-  core/           # Bootstrap, DI, module loader
-  blog/           # Blog module (built alongside core)
-  routing/        # Route attributes, router
-  database/       # Database interfaces
-  database-mysql/ # MySQL driver
-  ...
-demo/             # Development test application (not a package)
-```
-
-### Blog Module (Lockstep Development)
-
-The `marko/blog` package is built **in lockstep with core** - we only add blog features when the corresponding core features exist. This ensures:
-
-1. **Real-world validation** - Core features are tested against actual use cases
-2. **No premature abstractions** - Blog only uses what's actually available
-3. **Living documentation** - Shows how to use each core feature properly
-
-**Current state:** Skeleton package with composer.json and empty src/ directory. Real functionality will be added as core features are built.
-
-### Demo Application
+## Demo Application
 
 The `demo/` directory contains minimal bootstrap infrastructure for testing that packages integrate correctly.
 
@@ -126,24 +82,22 @@ demo/
 
 ## Feature Development
 
-For any feature beyond a simple fix or quick change, use the `plan-create` skill to trigger the autonomous development workflow.
+For simple fixes and quick changes, use TDD (when at all possible).
 
-Use this workflow for: new features, multi-file changes, anything requiring multiple steps or tests.
+For any feature or request beyond simple ones, use the `hcf:plan-create` skill to trigger the autonomous development workflow. NEVER use Claude Code's built-in plan mode. After writing a plan, ask user if they would like to execute it. Also provide the command to run it later with the `hcf:plan-orchestrate` skill.
 
-Skip for: quick bug fixes, single-line changes, questions, documentation.
+Use this workflow for new features, multi-file changes, or anything requiring multiple steps or tests.
 
-## Documentation
+## Project Details
 
-See `.claude/` for detailed documentation:
-- `architecture.md` - Master architecture document (modules, DI, plugins, events, routing, CLI, etc.)
-- `project-overview.md` - Tech stack, principles, resources
-- `code-standards.md` - Coding standards and style guide
-- `testing.md` - Pest 4 testing configuration
+<architecture>
+@.claude/architecture.md
+</architecture>
 
-## Core Principles
+<testing>
+@.claude/testing.md
+</testing>
 
-1. **Loud errors** - No silent failures, helpful messages
-2. **Explicit over implicit** - No magic, everything discoverable
-3. **Opinionated, not restrictive** - Guide toward better patterns
-4. **True modularity** - Interface/implementation split, clean boundaries
-5. **No pseudo-functionality** - Don't build fake features to demonstrate concepts; only build real functionality when core supports it. If there's nothing meaningful to build, build nothing.
+<code-standards>
+@.claude/code-standards.md
+</code-standards>
