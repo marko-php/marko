@@ -72,7 +72,7 @@ it('prevents duplicate post tag combinations', function (): void {
         if ($index->unique && in_array('post_id', $index->columns, true) && in_array(
             'tag_id',
             $index->columns,
-            true
+            true,
         )) {
             $foundUniqueIndex = true;
             break;

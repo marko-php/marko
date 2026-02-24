@@ -107,7 +107,7 @@ class AdminMenuBuilder implements AdminMenuBuilderInterface
 
         usort(
             $sorted,
-            static fn (MenuItemInterface $a, MenuItemInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder()
+            static fn (MenuItemInterface $a, MenuItemInterface $b): int => $a->getSortOrder() <=> $b->getSortOrder(),
         );
 
         return $sorted;

@@ -70,13 +70,13 @@ class DiffCalculator
             columnsToModify: $this->findColumnsToModify(
                 $entityTable->columns,
                 $databaseTable->columns,
-                $entityTable->indexes
+                $entityTable->indexes,
             ),
             indexesToAdd: $this->findIndexesToAdd($entityTable->indexes, $databaseTable->indexes),
             indexesToDrop: $this->findIndexesToDrop(
                 $entityTable->indexes,
                 $databaseTable->indexes,
-                $entityTable->columns
+                $entityTable->columns,
             ),
             foreignKeysToAdd: $this->findForeignKeysToAdd($entityTable->foreignKeys, $databaseTable->foreignKeys),
             foreignKeysToDrop: $this->findForeignKeysToDrop($entityTable->foreignKeys, $databaseTable->foreignKeys),

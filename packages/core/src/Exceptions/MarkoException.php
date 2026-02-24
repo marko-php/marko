@@ -84,7 +84,7 @@ class MarkoException extends Exception
         if (preg_match(
             '/(?:Attribute class|Class|Interface|Trait|Enum)\s+"([^"]+)"\s+not found/',
             $error->getMessage(),
-            $matches
+            $matches,
         )) {
             return $matches[1];
         }

@@ -191,7 +191,7 @@ describe('LatteView', function (): void {
         $listPath = $cacheDir . '/list.latte';
         file_put_contents(
             $listPath,
-            '<ul>{foreach $items as $item}{include "blog::post/list/item", name: $item}{/foreach}</ul>'
+            '<ul>{foreach $items as $item}{include "blog::post/list/item", name: $item}{/foreach}</ul>',
         );
 
         $engine = new Engine();
