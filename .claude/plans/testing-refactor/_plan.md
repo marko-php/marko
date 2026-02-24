@@ -4,7 +4,7 @@
 2026-02-24
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Add FakeGuard to marko/testing, then refactor all packages across the framework to replace hand-rolled test stubs with marko/testing fakes — eliminating ~2,000+ lines of duplicated boilerplate across 30+ test files in 20+ packages.
