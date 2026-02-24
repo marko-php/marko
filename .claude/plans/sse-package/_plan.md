@@ -4,7 +4,7 @@
 2026-02-24
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Add Server-Sent Events (SSE) support to Marko by creating a `marko/sse` package with `SseEvent` (value object), `SseStream` (generator-based stream), and `StreamingResponse` (extends `Response` for SSE endpoints). Zero changes to `marko/routing`.
