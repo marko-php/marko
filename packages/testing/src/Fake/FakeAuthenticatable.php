@@ -9,11 +9,11 @@ use Marko\Authentication\AuthenticatableInterface;
 class FakeAuthenticatable implements AuthenticatableInterface
 {
     public function __construct(
-        private int|string $id = 1,
-        private string $password = 'hashed-password',
+        private readonly int|string $id = 1,
+        private readonly string $password = 'hashed-password',
         private ?string $rememberToken = null,
-        private string $identifierName = 'id',
-        private string $rememberTokenName = 'remember_token',
+        private readonly string $identifierName = 'id',
+        private readonly string $rememberTokenName = 'remember_token',
     ) {}
 
     public function getAuthIdentifier(): int|string

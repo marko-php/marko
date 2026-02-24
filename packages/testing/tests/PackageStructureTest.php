@@ -20,18 +20,21 @@ it('has PSR-4 autoloading configured for Marko\Testing namespace', function () {
         ->and($composer['autoload']['psr-4']['Marko\\Testing\\'])->toBe('src/');
 });
 
-it('requires interface packages as dependencies (core, config, mail, queue, session, log, authentication)', function () {
-    $composerPath = dirname(__DIR__) . '/composer.json';
-    $composer = json_decode(file_get_contents($composerPath), true);
+it(
+    'requires interface packages as dependencies (core, config, mail, queue, session, log, authentication)',
+    function () {
+        $composerPath = dirname(__DIR__) . '/composer.json';
+        $composer = json_decode(file_get_contents($composerPath), true);
 
-    expect($composer['require'])->toHaveKey('marko/core')
-        ->and($composer['require'])->toHaveKey('marko/config')
-        ->and($composer['require'])->toHaveKey('marko/mail')
-        ->and($composer['require'])->toHaveKey('marko/queue')
-        ->and($composer['require'])->toHaveKey('marko/session')
-        ->and($composer['require'])->toHaveKey('marko/log')
-        ->and($composer['require'])->toHaveKey('marko/authentication');
-});
+        expect($composer['require'])->toHaveKey('marko/core')
+            ->and($composer['require'])->toHaveKey('marko/config')
+            ->and($composer['require'])->toHaveKey('marko/mail')
+            ->and($composer['require'])->toHaveKey('marko/queue')
+            ->and($composer['require'])->toHaveKey('marko/session')
+            ->and($composer['require'])->toHaveKey('marko/log')
+            ->and($composer['require'])->toHaveKey('marko/authentication');
+    },
+);
 
 it('has a module.php with correct module configuration', function () {
     $modulePath = dirname(__DIR__) . '/module.php';

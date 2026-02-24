@@ -14,10 +14,9 @@ class FakeUserProvider implements UserProviderInterface
 
     /**
      * @param array<int|string, AuthenticatableInterface> $users keyed by identifier
-     * @param ?callable $credentialValidator receives (AuthenticatableInterface, array $credentials), returns bool
      */
     public function __construct(
-        private array $users = [],
+        private readonly array $users = [],
         private $credentialValidator = null,
     ) {}
 

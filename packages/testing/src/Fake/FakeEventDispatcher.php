@@ -31,6 +31,9 @@ class FakeEventDispatcher implements EventDispatcherInterface
         );
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertDispatched(
         string $eventClass,
     ): void {
@@ -39,6 +42,9 @@ class FakeEventDispatcher implements EventDispatcherInterface
         }
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertNotDispatched(
         string $eventClass,
     ): void {
@@ -47,6 +53,9 @@ class FakeEventDispatcher implements EventDispatcherInterface
         }
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertDispatchedCount(
         string $eventClass,
         int $expected,

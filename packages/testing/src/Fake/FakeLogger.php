@@ -91,6 +91,9 @@ class FakeLogger implements LoggerInterface
         ));
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertLogged(
         string $message,
         ?LogLevel $level = null,
@@ -106,6 +109,9 @@ class FakeLogger implements LoggerInterface
         }
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertNothingLogged(): void
     {
         if ($this->entries !== []) {

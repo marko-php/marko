@@ -56,13 +56,17 @@ it('expectedCount produces correct message', function () {
 it('expectedContains produces correct message', function () {
     $exception = AssertionFailedException::expectedContains('queue', 'App\\Jobs\\SendEmail');
 
-    expect($exception->getMessage())->toBe('Expected queue collection to contain App\\Jobs\\SendEmail but it was not found.');
+    expect($exception->getMessage())->toBe(
+        'Expected queue collection to contain App\\Jobs\\SendEmail but it was not found.',
+    );
 });
 
 it('unexpectedContains produces correct message', function () {
     $exception = AssertionFailedException::unexpectedContains('queue', 'App\\Jobs\\SendEmail');
 
-    expect($exception->getMessage())->toBe('Expected queue collection NOT to contain App\\Jobs\\SendEmail but it was found.');
+    expect($exception->getMessage())->toBe(
+        'Expected queue collection NOT to contain App\\Jobs\\SendEmail but it was found.',
+    );
 });
 
 it('expectedEmpty produces correct message', function () {

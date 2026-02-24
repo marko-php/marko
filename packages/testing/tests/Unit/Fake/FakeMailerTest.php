@@ -63,8 +63,8 @@ it('asserts sent count', function () {
     $mailer->send(Message::create()->to('a@example.com')->subject('First'));
     $mailer->send(Message::create()->to('b@example.com')->subject('Second'));
 
-    expect(fn () => $mailer->assertSentCount(2))->not->toThrow(AssertionFailedException::class);
-    expect(fn () => $mailer->assertSentCount(1))->toThrow(AssertionFailedException::class);
+    expect(fn () => $mailer->assertSentCount(2))->not->toThrow(AssertionFailedException::class)
+        ->and(fn () => $mailer->assertSentCount(1))->toThrow(AssertionFailedException::class);
 });
 
 it('clears all captured messages', function () {

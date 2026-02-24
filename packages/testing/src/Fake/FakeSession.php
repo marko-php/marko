@@ -6,6 +6,7 @@ namespace Marko\Testing\Fake;
 
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Flash\FlashBag;
+use Random\RandomException;
 
 class FakeSession implements SessionInterface
 {
@@ -68,6 +69,9 @@ class FakeSession implements SessionInterface
         return $this->data;
     }
 
+    /**
+     * @throws RandomException
+     */
     public function regenerate(
         bool $deleteOldSession = true,
     ): void {
@@ -81,6 +85,9 @@ class FakeSession implements SessionInterface
         $this->data = [];
     }
 
+    /**
+     * @throws RandomException
+     */
     public function getId(): string
     {
         if ($this->id === '') {

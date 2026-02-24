@@ -66,9 +66,8 @@ it('FakeSession generates and tracks session IDs', function () {
     $session = new FakeSession();
 
     $id = $session->getId();
-    expect($id)->toBeString()->not->toBeEmpty();
-
-    expect($session->getId())->toBe($id);
+    expect($id)->toBeString()->not->toBeEmpty()
+        ->and($session->getId())->toBe($id);
 
     $session->setId('custom-id');
     expect($session->getId())->toBe('custom-id');

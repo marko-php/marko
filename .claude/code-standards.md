@@ -249,6 +249,31 @@ class UserService
 }
 ```
 
+**Mixed-mutability classes:** When a class has both mutable properties (arrays that get modified, counters, flags) and immutable constructor-promoted properties, mark the immutable ones as `readonly` individually. Only promote to `readonly class` when ALL properties are immutable.
+
+```php
+// CORRECT - mixed mutability: some properties are readonly, some are mutable
+class FakeQueue
+{
+    /** @var array<int, array{job: Job, queue: string, delay: int, id: string}> */
+    public array $pushed = [];              // mutable — no readonly
+
+    public function __construct(
+        private readonly string $defaultQueue = 'default',  // never reassigned — readonly
+    ) {}
+}
+
+// WRONG - missing readonly on never-reassigned property in mixed class
+class FakeQueue
+{
+    public array $pushed = [];
+
+    public function __construct(
+        private string $defaultQueue = 'default',  // should be readonly!
+    ) {}
+}
+```
+
 ### 6. Asymmetric Visibility (PHP 8.4+)
 Use asymmetric visibility for properties that should be publicly readable but privately writable. This replaces getter methods and is cleaner than property hooks for simple cases.
 
@@ -726,6 +751,8 @@ public function resolve(array $modules): array  // Throws exceptions without doc
 - **Test files are exempt** from `@throws` requirements (inspection disabled for `packages/*/tests/`)
 
 > **CRITICAL:** Every method that contains a `throw` statement or calls a method that throws MUST have a `@throws` tag. This is the most commonly missed rule. After writing any method, scan it for `throw` keywords and method calls that propagate exceptions, and add the `@throws` PHPDoc block. Import the exception class if not already imported.
+
+> **Applies to ALL classes, not just interfaces.** Fake/mock classes, service classes, helpers — any class with methods that throw must document them. The most commonly missed case is assertion methods (e.g., `assertSent()`, `assertPushed()`) on test fakes that throw custom exceptions.
 
 **Enforced by:** Custom php-cs-fixer rule `Marko/phpdoc_consolidate_throws` automatically consolidates multiple `@throws` tags into one.
 

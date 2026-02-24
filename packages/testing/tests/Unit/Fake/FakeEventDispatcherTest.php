@@ -78,8 +78,8 @@ it('asserts dispatched count for a specific event class', function () {
     $dispatcher->dispatch($event);
     $dispatcher->dispatch($event);
 
-    expect(fn () => $dispatcher->assertDispatchedCount($class, 2))->not->toThrow(AssertionFailedException::class);
-    expect(fn () => $dispatcher->assertDispatchedCount($class, 3))
+    expect(fn () => $dispatcher->assertDispatchedCount($class, 2))->not->toThrow(AssertionFailedException::class)
+        ->and(fn () => $dispatcher->assertDispatchedCount($class, 3))
         ->toThrow(AssertionFailedException::class, 'Expected 3');
 });
 

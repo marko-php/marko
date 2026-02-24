@@ -114,6 +114,9 @@ class FakeQueue implements QueueInterface
         return false;
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertPushed(
         string $jobClass,
         ?callable $callback = null,
@@ -136,6 +139,9 @@ class FakeQueue implements QueueInterface
         }
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertNotPushed(
         string $jobClass,
     ): void {
@@ -149,6 +155,9 @@ class FakeQueue implements QueueInterface
         }
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertPushedCount(
         int $expected,
     ): void {
@@ -159,6 +168,9 @@ class FakeQueue implements QueueInterface
         }
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertNothingPushed(): void
     {
         if (count($this->pushed) > 0) {

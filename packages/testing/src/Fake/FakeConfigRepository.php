@@ -14,7 +14,7 @@ class FakeConfigRepository implements ConfigRepositoryInterface
      */
     public function __construct(
         private array $config = [],
-        private ?string $defaultScope = null,
+        private readonly ?string $defaultScope = null,
     ) {}
 
     public function get(

@@ -33,6 +33,9 @@ class FakeMailer implements MailerInterface
         return true;
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertSent(
         ?callable $callback = null,
     ): void {
@@ -49,6 +52,9 @@ class FakeMailer implements MailerInterface
         }
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertNothingSent(): void
     {
         if ($this->sent !== [] || $this->sentRaw !== []) {
@@ -56,6 +62,9 @@ class FakeMailer implements MailerInterface
         }
     }
 
+    /**
+     * @throws AssertionFailedException
+     */
     public function assertSentCount(
         int $expected,
     ): void {

@@ -138,9 +138,9 @@ it('deletes a specific job by ID', function () {
 
     expect($deleted)->toBeTrue()
         ->and($queue->pushed)->toHaveCount(1)
-        ->and($queue->pushed[0]['job'])->toBe($job2);
+        ->and($queue->pushed[0]['job'])->toBe($job2)
+        ->and($queue->delete('nonexistent'))->toBeFalse();
 
-    expect($queue->delete('nonexistent'))->toBeFalse();
 });
 
 it('asserts job was pushed by class name', function () {
@@ -174,8 +174,8 @@ it('asserts job was not pushed', function () {
 
     $queue->push($job, 'default');
 
-    expect(fn () => $queue->assertNotPushed($job::class))->toThrow(AssertionFailedException::class);
-    expect(fn () => $queue->assertNotPushed($otherJob::class))->not->toThrow(AssertionFailedException::class);
+    expect(fn () => $queue->assertNotPushed($job::class))->toThrow(AssertionFailedException::class)
+        ->and(fn () => $queue->assertNotPushed($otherJob::class))->not->toThrow(AssertionFailedException::class);
 });
 
 it('asserts pushed count', function () {
@@ -192,8 +192,8 @@ it('asserts pushed count', function () {
     $queue->push($job1, 'default');
     $queue->push($job2, 'default');
 
-    expect(fn () => $queue->assertPushedCount(2))->not->toThrow(AssertionFailedException::class);
-    expect(fn () => $queue->assertPushedCount(1))->toThrow(AssertionFailedException::class);
+    expect(fn () => $queue->assertPushedCount(2))->not->toThrow(AssertionFailedException::class)
+        ->and(fn () => $queue->assertPushedCount(1))->toThrow(AssertionFailedException::class);
 });
 
 it('asserts nothing was pushed', function () {

@@ -59,10 +59,10 @@ it('provides negated expectations (not->toHaveDispatched, etc.)', function () {
         public function handle(): void {}
     };
 
-    expect($dispatcher)->not->toHaveDispatched(Event::class);
-    expect($mailer)->not->toHaveSent();
-    expect($logger)->not->toHaveLogged('Nothing logged');
-    expect($queue)->not->toHavePushed($job::class);
+    expect($dispatcher)->not->toHaveDispatched(Event::class)
+        ->and($mailer)->not->toHaveSent()
+        ->and($logger)->not->toHaveLogged('Nothing logged')
+        ->and($queue)->not->toHavePushed($job::class);
 });
 
 it('throws clear error when expectation used on wrong type', function () {

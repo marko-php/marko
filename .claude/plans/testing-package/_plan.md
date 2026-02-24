@@ -4,7 +4,7 @@
 2026-02-24
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Build the `marko/testing` package providing reusable test fakes, assertion helpers, and Pest integration for all Marko framework packages and third-party modules. Then migrate the `marko/authentication` package tests as proof-of-concept to validate simplification.
