@@ -77,6 +77,22 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/mail-log/tests" isTestSource="true" packagePrefix="Marko\Mail\Log\Tests\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/queue-rabbitmq/src" isTestSource="false" packagePrefix="Marko\Queue\Rabbitmq\" />
       <sourceFolder url="file://$MODULE_DIR$/packages/queue-rabbitmq/tests" isTestSource="true" packagePrefix="Marko\Queue\Rabbitmq\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/authorization/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-redis/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/encryption-openssl/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/encryption/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem-s3/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/http-guzzle/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/http/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/notification-database/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/notification/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/pagination/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/rate-limiting/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/scheduler/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/security/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session-database/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/translation-file/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/translation/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/brianium/paratest" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/composer" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/doctrine/deprecations" />
@@ -220,6 +236,17 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/paragonie/random_compat" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/php-amqplib/php-amqplib" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/phpseclib/phpseclib" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/aws/aws-crt-php" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/aws/aws-sdk-php" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/guzzlehttp/guzzle" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/guzzlehttp/promises" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/guzzlehttp/psr7" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/mtdowling/jmespath.php" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/predis/predis" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/http-client" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/http-factory" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/http-message" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/ralouphie/getallheaders" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
