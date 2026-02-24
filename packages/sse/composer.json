@@ -1,0 +1,49 @@
+{
+    "name": "marko/sse",
+    "description": "Server-Sent Events (SSE) support for Marko Framework",
+    "license": "MIT",
+    "type": "marko-module",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../core"
+        },
+        {
+            "type": "path",
+            "url": "../routing"
+        },
+        {
+            "type": "path",
+            "url": "../testing"
+        }
+    ],
+    "require": {
+        "php": "^8.5",
+        "marko/core": "@dev",
+        "marko/routing": "@dev"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Sse\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Sse\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

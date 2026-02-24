@@ -89,7 +89,8 @@
             "Marko\\AuthenticationToken\\": "packages/authentication-token/src/",
             "Marko\\Media\\": "packages/media/src/",
             "Marko\\MediaGd\\": "packages/media-gd/src/",
-            "Marko\\MediaImagick\\": "packages/media-imagick/src/"
+            "Marko\\MediaImagick\\": "packages/media-imagick/src/",
+            "Marko\\Sse\\": "packages/sse/src/"
         }
     },
     "autoload-dev": {
@@ -157,7 +158,8 @@
             "Marko\\AuthenticationToken\\Tests\\": "packages/authentication-token/tests/",
             "Marko\\Media\\Tests\\": "packages/media/tests/",
             "Marko\\MediaGd\\Tests\\": "packages/media-gd/tests/",
-            "Marko\\MediaImagick\\Tests\\": "packages/media-imagick/tests/"
+            "Marko\\MediaImagick\\Tests\\": "packages/media-imagick/tests/",
+            "Marko\\Sse\\Tests\\": "packages/sse/tests/"
         }
     },
     "scripts": {
