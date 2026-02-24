@@ -22,6 +22,9 @@ use ReflectionClass;
  *
  * Concrete repositories must define the ENTITY_CLASS constant
  * specifying which entity class they manage.
+ *
+ * @template TEntity of Entity
+ * @implements RepositoryInterface<TEntity>
  */
 abstract class Repository implements RepositoryInterface
 {
@@ -51,6 +54,8 @@ abstract class Repository implements RepositoryInterface
 
     /**
      * Find an entity by its primary key.
+     *
+     * @return TEntity|null
      */
     public function find(
         int $id,
@@ -80,6 +85,7 @@ abstract class Repository implements RepositoryInterface
     /**
      * Find an entity by its primary key or throw an exception.
      *
+     * @return TEntity
      * @throws RepositoryException When entity is not found
      */
     public function findOrFail(
@@ -97,7 +103,7 @@ abstract class Repository implements RepositoryInterface
     /**
      * Find all entities in the repository.
      *
-     * @return array<Entity>
+     * @return array<TEntity>
      */
     public function findAll(): array
     {
@@ -118,7 +124,7 @@ abstract class Repository implements RepositoryInterface
      * Find entities matching the given criteria.
      *
      * @param array<string, mixed> $criteria Column-value pairs to match
-     * @return array<Entity>
+     * @return array<TEntity>
      */
     public function findBy(
         array $criteria,
@@ -153,6 +159,8 @@ abstract class Repository implements RepositoryInterface
 
     /**
      * Find a single entity matching the given criteria.
+     *
+     * @return TEntity|null
      */
     public function findOneBy(
         array $criteria,
@@ -254,6 +262,31 @@ abstract class Repository implements RepositoryInterface
         int $id,
     ): bool {
         return $this->find($id) !== null;
+    }
+
+    /**
+     * Check if a column value is unique, optionally excluding an entity by ID.
+     */
+    protected function isColumnUnique(
+        string $column,
+        mixed $value,
+        ?int $excludeId = null,
+    ): bool {
+        $sql = sprintf(
+            'SELECT * FROM %s WHERE %s = ?',
+            $this->metadata->tableName,
+            $column,
+        );
+        $bindings = [$value];
+
+        if ($excludeId !== null) {
+            $sql .= ' AND id != ?';
+            $bindings[] = $excludeId;
+        }
+
+        $rows = $this->connection->query($sql, $bindings);
+
+        return count($rows) === 0;
     }
 
     /**

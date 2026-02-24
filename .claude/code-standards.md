@@ -301,6 +301,9 @@ class Message
 - Keep explicit `public` - explicit over implicit
 - Property hooks with only `get` are implicitly read-only and block indirect modifications (like `$this->array[] = ...`)
 - Use property hooks only when you need computed values or validation logic
+- Do NOT replace getter methods with property hooks when the getter satisfies an interface contract or when properties must remain writable (e.g., entity hydration)
+
+**Disabled inspection:** `PhpGetterAndSetterCanBeReplacedWithPropertyHooksInspection` — PhpStorm suggests replacing getters with `get` hooks, but this conflicts with our patterns: interface contracts require explicit methods, and property hooks make properties implicitly read-only which breaks entity hydration.
 
 ### 7. Avoid Final (Blocks Extensibility)
 `final` prevents Preferences from extending classes. Avoid it.

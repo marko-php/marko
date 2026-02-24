@@ -19,6 +19,9 @@ use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
 
+/**
+ * @extends Repository<Tag>
+ */
 class TagRepository extends Repository implements TagRepositoryInterface
 {
     protected const string ENTITY_CLASS = Tag::class;
@@ -74,21 +77,7 @@ class TagRepository extends Repository implements TagRepositoryInterface
         string $slug,
         ?int $excludeId = null,
     ): bool {
-        if ($excludeId === null) {
-            $sql = sprintf(
-                'SELECT * FROM %s WHERE slug = ?',
-                $this->metadata->tableName,
-            );
-            $rows = $this->connection->query($sql, [$slug]);
-        } else {
-            $sql = sprintf(
-                'SELECT * FROM %s WHERE slug = ? AND id != ?',
-                $this->metadata->tableName,
-            );
-            $rows = $this->connection->query($sql, [$slug, $excludeId]);
-        }
-
-        return count($rows) === 0;
+        return $this->isColumnUnique('slug', $slug, $excludeId);
     }
 
     /**

@@ -14,6 +14,9 @@ use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
 
+/**
+ * @extends Repository<VerificationToken>
+ */
 class TokenRepository extends Repository implements TokenRepositoryInterface
 {
     protected const string ENTITY_CLASS = VerificationToken::class;

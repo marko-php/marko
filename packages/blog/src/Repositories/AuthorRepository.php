@@ -18,6 +18,9 @@ use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
 
+/**
+ * @extends Repository<Author>
+ */
 class AuthorRepository extends Repository implements AuthorRepositoryInterface
 {
     protected const string ENTITY_CLASS = Author::class;
@@ -73,28 +76,12 @@ class AuthorRepository extends Repository implements AuthorRepositoryInterface
 
     /**
      * Check if a slug is unique within the authors table.
-     *
-     * @param string $slug The slug to check
-     * @param int|null $excludeId Optional author ID to exclude (for updates)
      */
     public function isSlugUnique(
         string $slug,
         ?int $excludeId = null,
     ): bool {
-        $sql = sprintf(
-            'SELECT * FROM %s WHERE slug = ?',
-            $this->metadata->tableName,
-        );
-        $bindings = [$slug];
-
-        if ($excludeId !== null) {
-            $sql .= ' AND id != ?';
-            $bindings[] = $excludeId;
-        }
-
-        $rows = $this->connection->query($sql, $bindings);
-
-        return count($rows) === 0;
+        return $this->isColumnUnique('slug', $slug, $excludeId);
     }
 
     /**
@@ -120,9 +107,7 @@ class AuthorRepository extends Repository implements AuthorRepositoryInterface
 
         parent::delete($entity);
 
-        if ($this->eventDispatcher !== null) {
-            $this->eventDispatcher->dispatch(new AuthorDeleted($entity, new DateTimeImmutable()));
-        }
+        $this->eventDispatcher?->dispatch(new AuthorDeleted($entity, new DateTimeImmutable()));
     }
 
     /**

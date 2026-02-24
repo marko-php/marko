@@ -165,9 +165,9 @@ it('allows manual slug override', function (): void {
 it('ensures slug uniqueness within categories table via isSlugUnique', function (): void {
     $queryResults = [
         // First query: slug exists
-        [['count' => 1]],
+        [['id' => 1, 'slug' => 'existing-slug']],
         // Second query: slug does not exist
-        [['count' => 0]],
+        [],
     ];
 
     $connection = new class ($queryResults) implements ConnectionInterface
@@ -250,7 +250,7 @@ it('checks slug uniqueness excluding specific id', function (): void {
         ): array {
             $this->capture->bindings[] = $bindings;
 
-            return [['count' => 0]];
+            return [];
         }
 
         public function execute(

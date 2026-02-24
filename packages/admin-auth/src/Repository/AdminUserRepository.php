@@ -17,6 +17,9 @@ use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Repository\Repository;
 
+/**
+ * @extends Repository<AdminUser>
+ */
 class AdminUserRepository extends Repository implements AdminUserRepositoryInterface
 {
     protected const string ENTITY_CLASS = AdminUser::class;

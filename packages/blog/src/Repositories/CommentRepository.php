@@ -17,6 +17,9 @@ use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
 
+/**
+ * @extends Repository<Comment>
+ */
 class CommentRepository extends Repository implements CommentRepositoryInterface
 {
     protected const string ENTITY_CLASS = Comment::class;

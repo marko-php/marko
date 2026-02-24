@@ -12,6 +12,9 @@ use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
 
+/**
+ * @extends Repository<Permission>
+ */
 class PermissionRepository extends Repository implements PermissionRepositoryInterface
 {
     protected const string ENTITY_CLASS = Permission::class;

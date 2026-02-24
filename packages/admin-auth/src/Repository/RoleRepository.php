@@ -15,8 +15,12 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Repository\Repository;
 
+/**
+ * @extends Repository<Role>
+ */
 class RoleRepository extends Repository implements RoleRepositoryInterface
 {
     protected const string ENTITY_CLASS = Role::class;
@@ -101,6 +105,7 @@ class RoleRepository extends Repository implements RoleRepositoryInterface
      * Get all permissions for a role.
      *
      * @return array<Permission>
+     * @throws EntityException
      */
     public function getPermissionsForRole(
         int $roleId,
@@ -150,19 +155,6 @@ class RoleRepository extends Repository implements RoleRepositoryInterface
         string $slug,
         ?int $excludeId = null,
     ): bool {
-        $sql = sprintf(
-            'SELECT * FROM %s WHERE slug = ?',
-            $this->metadata->tableName,
-        );
-        $bindings = [$slug];
-
-        if ($excludeId !== null) {
-            $sql .= ' AND id != ?';
-            $bindings[] = $excludeId;
-        }
-
-        $rows = $this->connection->query($sql, $bindings);
-
-        return count($rows) === 0;
+        return $this->isColumnUnique('slug', $slug, $excludeId);
     }
 }

@@ -9,22 +9,22 @@ use Marko\Database\Exceptions\RepositoryException;
 
 /**
  * Interface for entity repositories providing data access methods.
+ *
+ * @template TEntity of Entity
  */
 interface RepositoryInterface
 {
     /**
      * Find an entity by its primary key.
      *
-     * @param int $id The entity ID
-     * @return Entity|null The entity or null if not found
+     * @return TEntity|null The entity or null if not found
      */
     public function find(int $id): ?Entity;
 
     /**
      * Find an entity by its primary key or throw an exception.
      *
-     * @param int $id The entity ID
-     * @return Entity The entity
+     * @return TEntity The entity
      * @throws RepositoryException When entity is not found
      */
     public function findOrFail(int $id): Entity;
@@ -32,7 +32,7 @@ interface RepositoryInterface
     /**
      * Find all entities in the repository.
      *
-     * @return array<Entity> All entities
+     * @return array<TEntity> All entities
      */
     public function findAll(): array;
 
@@ -40,7 +40,7 @@ interface RepositoryInterface
      * Find entities matching the given criteria.
      *
      * @param array<string, mixed> $criteria Column-value pairs to match
-     * @return array<Entity> Matching entities
+     * @return array<TEntity> Matching entities
      */
     public function findBy(array $criteria): array;
 
@@ -48,7 +48,7 @@ interface RepositoryInterface
      * Find a single entity matching the given criteria.
      *
      * @param array<string, mixed> $criteria Column-value pairs to match
-     * @return Entity|null The entity or null if not found
+     * @return TEntity|null The entity or null if not found
      */
     public function findOneBy(array $criteria): ?Entity;
 

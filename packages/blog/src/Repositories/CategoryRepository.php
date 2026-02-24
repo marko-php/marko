@@ -20,6 +20,9 @@ use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Database\Repository\Repository;
 
+/**
+ * @extends Repository<Category>
+ */
 class CategoryRepository extends Repository implements CategoryRepositoryInterface
 {
     protected const string ENTITY_CLASS = Category::class;
@@ -53,15 +56,7 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
         string $slug,
         ?int $excludeId = null,
     ): bool {
-        if ($excludeId !== null) {
-            $sql = 'SELECT COUNT(*) as count FROM categories WHERE slug = ? AND id != ?';
-            $result = $this->connection->query($sql, [$slug, $excludeId]);
-        } else {
-            $sql = 'SELECT COUNT(*) as count FROM categories WHERE slug = ?';
-            $result = $this->connection->query($sql, [$slug]);
-        }
-
-        return (int) ($result[0]['count'] ?? 0) === 0;
+        return $this->isColumnUnique('slug', $slug, $excludeId);
     }
 
     /**

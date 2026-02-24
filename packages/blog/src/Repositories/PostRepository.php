@@ -22,6 +22,9 @@ use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
 
+/**
+ * @extends Repository<Post>
+ */
 class PostRepository extends Repository implements PostRepositoryInterface
 {
     protected const string ENTITY_CLASS = Post::class;
