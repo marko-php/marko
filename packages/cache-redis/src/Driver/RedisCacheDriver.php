@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Marko\Cache\Redis\Driver;
 
+use DateTimeImmutable;
+use Marko\Cache\CacheItem;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\Cache\Redis\RedisConnection;
-use RuntimeException;
 
 class RedisCacheDriver implements CacheInterface
 {
@@ -95,30 +96,71 @@ class RedisCacheDriver implements CacheInterface
         return true;
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function getItem(
         string $key,
     ): CacheItemInterface {
-        throw new RuntimeException('Not implemented');
+        $this->validateKey($key);
+
+        $prefixedKey = $this->prefixKey($key);
+        $client = $this->connection->client();
+        $data = $client->get($prefixedKey);
+
+        if ($data === null) {
+            return CacheItem::miss($key);
+        }
+
+        $ttl = $client->ttl($prefixedKey);
+        $expiresAt = $ttl > 0
+            ? (new DateTimeImmutable())->setTimestamp(time() + $ttl)
+            : null;
+
+        return CacheItem::hit($key, unserialize($data), $expiresAt);
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function getMultiple(
         array $keys,
         mixed $default = null,
     ): iterable {
-        return [];
+        $result = [];
+
+        foreach ($keys as $key) {
+            $result[$key] = $this->get($key, $default);
+        }
+
+        return $result;
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function setMultiple(
         array $values,
         ?int $ttl = null,
     ): bool {
-        return false;
+        foreach ($values as $key => $value) {
+            $this->set($key, $value, $ttl);
+        }
+
+        return true;
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function deleteMultiple(
         array $keys,
     ): bool {
-        return false;
+        foreach ($keys as $key) {
+            $this->delete($key);
+        }
+
+        return true;
     }
 
     /**

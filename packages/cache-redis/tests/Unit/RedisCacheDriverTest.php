@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
+use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
 use Marko\Cache\Redis\RedisConnection;
@@ -345,5 +346,89 @@ describe('RedisCacheDriver', function (): void {
         $this->driver->set('mykey', 'val');
 
         expect(isset($this->mockClient->storage['marko:cache:mykey']))->toBeTrue();
+    });
+
+    it('returns cache item for hit', function (): void {
+        $this->driver->set('key', 'value');
+
+        $item = $this->driver->getItem('key');
+
+        expect($item)->toBeInstanceOf(CacheItemInterface::class)
+            ->and($item->isHit())->toBeTrue()
+            ->and($item->get())->toBe('value');
+    });
+
+    it('returns cache item for miss', function (): void {
+        $item = $this->driver->getItem('missing');
+
+        expect($item)->toBeInstanceOf(CacheItemInterface::class)
+            ->and($item->isHit())->toBeFalse()
+            ->and($item->get())->toBeNull();
+    });
+
+    it('returns cache item with expiration', function (): void {
+        $this->driver->set('key', 'value', 3600);
+
+        $item = $this->driver->getItem('key');
+
+        expect($item->expiresAt())->not->toBeNull();
+    });
+
+    it('returns cache item without expiration for persistent key', function (): void {
+        $this->driver->set('key', 'value', 0);
+
+        $item = $this->driver->getItem('key');
+
+        expect($item->isHit())->toBeTrue()
+            ->and($item->expiresAt())->toBeNull();
+    });
+
+    it('gets multiple keys', function (): void {
+        $this->driver->set('key1', 'value1');
+        $this->driver->set('key2', 'value2');
+
+        $result = $this->driver->getMultiple(['key1', 'key2', 'missing']);
+
+        expect($result)->toBe([
+            'key1' => 'value1',
+            'key2' => 'value2',
+            'missing' => null,
+        ]);
+    });
+
+    it('gets multiple with custom default', function (): void {
+        $result = $this->driver->getMultiple(['missing1', 'missing2'], 'default');
+
+        expect($result)->toBe([
+            'missing1' => 'default',
+            'missing2' => 'default',
+        ]);
+    });
+
+    it('sets multiple keys', function (): void {
+        $this->driver->setMultiple(['key1' => 'value1', 'key2' => 'value2']);
+
+        expect($this->driver->get('key1'))->toBe('value1')
+            ->and($this->driver->get('key2'))->toBe('value2');
+    });
+
+    it('returns true when setting multiple', function (): void {
+        expect($this->driver->setMultiple(['key1' => 'value1', 'key2' => 'value2']))->toBeTrue();
+    });
+
+    it('deletes multiple keys', function (): void {
+        $this->driver->set('key1', 'value1');
+        $this->driver->set('key2', 'value2');
+        $this->driver->set('key3', 'value3');
+
+        $this->driver->deleteMultiple(['key1', 'key2']);
+
+        expect($this->driver->has('key1'))->toBeFalse()
+            ->and($this->driver->has('key2'))->toBeFalse()
+            ->and($this->driver->has('key3'))->toBeTrue();
+    });
+
+    it('returns true when deleting multiple', function (): void {
+        expect($this->driver->deleteMultiple(['key1', 'key2']))->toBeTrue();
     });
 });
