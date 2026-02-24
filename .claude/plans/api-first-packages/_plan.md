@@ -4,7 +4,7 @@
 2026-02-24
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Build 9 new packages that transform Marko from a server-rendered framework into a modern API-first platform: API resources, CORS, token authentication, health checks, webhooks, search, and media management.
