@@ -72,10 +72,11 @@ Publish or create `config/dev.php` in your application:
 declare(strict_types=1);
 
 return [
-    'port'     => 8000,
-    'detach'   => false,
-    'docker'   => true,
-    'frontend' => true,
+    'port'      => 8000,
+    'detach'    => false,
+    'docker'    => true,
+    'frontend'  => true,
+    'processes' => [],
 ];
 ```
 
@@ -87,6 +88,7 @@ return [
 | `detach` | `bool` | `false` | Run services in background by default |
 | `docker` | `true\|string\|false` | `true` | Auto-detect Docker (`true`), custom command (`string`), or disable (`false`) |
 | `frontend` | `true\|string\|false` | `true` | Auto-detect frontend (`true`), custom command (`string`), or disable (`false`) |
+| `processes` | `array<string, string>` | `[]` | Named custom processes to run alongside the dev environment |
 
 ### The `true | string | false` pattern
 
@@ -102,6 +104,19 @@ The `docker` and `frontend` keys accept three forms:
 // Disabled: skip entirely
 'docker' => false,
 ```
+
+### Custom processes
+
+Use the `processes` key to run additional named processes alongside the standard services:
+
+```php
+'processes' => [
+    'tailwind' => './tailwindcss -i src/css/app.css -o public/css/app.css --watch',
+    'queue' => 'php marko queue:work',
+],
+```
+
+Each process is managed by `ProcessManager` — output is prefixed with the process name (e.g. `[tailwind]`), and processes are tracked in the PID file when running in detached mode.
 
 ### CLI flag overrides
 

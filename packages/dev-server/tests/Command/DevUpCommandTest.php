@@ -59,6 +59,7 @@ function createDevUpCommand(
         'dev.docker' => false,
         'dev.frontend' => false,
         'dev.detach' => false,
+        'dev.processes' => [],
     ];
     $fakeConfig = new FakeConfigRepository(array_merge($configDefaults, $config));
 
@@ -403,6 +404,88 @@ it('runs docker in foreground when not detached', function (): void {
     $command->execute($input, $output);
 
     expect($pm->started['docker'])->not->toContain('-d');
+});
+
+it('starts custom processes from config', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand([
+        'dev.processes' => [
+            'tailwind' => './tailwindcss -i src/css/app.css -o public/css/app.css --watch',
+        ],
+    ]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->started)->toHaveKey('tailwind')
+        ->and($pm->started['tailwind'])->toBe('./tailwindcss -i src/css/app.css -o public/css/app.css --watch');
+});
+
+it('starts multiple custom processes from config', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand([
+        'dev.processes' => [
+            'tailwind' => './tailwindcss --watch',
+            'queue' => 'php marko queue:work',
+        ],
+    ]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->started)->toHaveKey('tailwind')
+        ->and($pm->started['tailwind'])->toBe('./tailwindcss --watch')
+        ->and($pm->started)->toHaveKey('queue')
+        ->and($pm->started['queue'])->toBe('php marko queue:work');
+});
+
+it('skips custom processes when config is empty', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand([
+        'dev.processes' => [],
+    ]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    // Only php should be started (docker and frontend are false by default)
+    expect($pm->started)->toHaveCount(1)
+        ->and($pm->started)->toHaveKey('php');
+});
+
+it('outputs custom process names on startup', function (): void {
+    ['command' => $command] = createDevUpCommand([
+        'dev.processes' => [
+            'tailwind' => './tailwindcss --watch',
+        ],
+    ]);
+    ['stream' => $stream, 'output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    $content = readStream($stream);
+
+    expect($content)->toContain('Starting tailwind: ./tailwindcss --watch');
+});
+
+it('includes custom processes in PID file when detached', function (): void {
+    ['command' => $command, 'pidFile' => $pidFile] = createDevUpCommand([
+        'dev.detach' => true,
+        'dev.processes' => [
+            'tailwind' => './tailwindcss --watch',
+        ],
+    ]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    $entries = $pidFile->read();
+    $names = array_map(fn ($e) => $e->name, $entries);
+
+    expect($names)->toContain('tailwind')
+        ->and($names)->toContain('php');
 });
 
 it('runs docker detached when in detach mode', function (): void {

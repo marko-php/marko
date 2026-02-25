@@ -84,6 +84,21 @@ readonly class DevUpCommand implements CommandInterface
             }
         }
 
+        // Custom processes
+        /** @var array<string, string> $processes */
+        $processes = $this->config->get('dev.processes');
+        foreach ($processes as $name => $processCommand) {
+            $output->writeLine("  Starting $name: $processCommand");
+            $pid = $this->processManager->start($name, $processCommand);
+            $entries[] = new ProcessEntry(
+                name: $name,
+                pid: $pid,
+                command: $processCommand,
+                port: 0,
+                startedAt: date('c'),
+            );
+        }
+
         // PHP server (always)
         $phpCommand = "php -S localhost:$port -t public/";
         $output->writeLine("  Starting PHP server: php -S localhost:$port");

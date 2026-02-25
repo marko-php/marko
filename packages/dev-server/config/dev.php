@@ -7,4 +7,5 @@ return [
     'detach' => false,
     'docker' => true,
     'frontend' => true,
+    'processes' => [],
 ];
