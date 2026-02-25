@@ -4,7 +4,7 @@
 2026-02-25
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Add command aliases to marko/core and create a new `marko/dev-server` package that provides `dev:up`, `dev:down`, and `dev:status` commands for orchestrating local development services (Docker, frontend tooling, PHP built-in server).
@@ -43,20 +43,20 @@ Add command aliases to marko/core and create a new `marko/dev-server` package th
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
 | 001 | Add aliases to Command attribute and CommandDefinition | - | completed |
-| 002 | Update CommandRegistry for alias indexing | 001 | pending |
-| 003 | Update CommandRunner for alias resolution | 002 | pending |
-| 004 | Update ListCommand to display aliases | 002 | pending |
-| 005 | Update CommandDiscovery to extract aliases | 001 | pending |
+| 002 | Update CommandRegistry for alias indexing | 001 | completed |
+| 003 | Update CommandRunner for alias resolution | 002 | completed |
+| 004 | Update ListCommand to display aliases | 002 | completed |
+| 005 | Update CommandDiscovery to extract aliases | 001 | completed |
 | 006 | Create dev-server package scaffold | - | completed |
-| 007 | Implement DockerDetector | 006 | pending |
-| 008 | Implement FrontendDetector | 006 | pending |
-| 009 | Implement PidFile | 006 | pending |
-| 010 | Implement ProcessManager | 006 | pending |
-| 011 | Implement DevUpCommand | 007, 008, 009, 010 | pending |
-| 012 | Implement DevDownCommand | 009, 010 | pending |
-| 013 | Implement DevStatusCommand | 009 | pending |
-| 014 | Add config/dev.php and wire configuration | 011 | pending |
-| 015 | Create README.md for marko/dev-server | 014 | pending |
+| 007 | Implement DockerDetector | 006 | completed |
+| 008 | Implement FrontendDetector | 006 | completed |
+| 009 | Implement PidFile | 006 | completed |
+| 010 | Implement ProcessManager | 006 | completed |
+| 011 | Implement DevUpCommand | 007, 008, 009, 010 | completed |
+| 012 | Implement DevDownCommand | 009, 010 | completed |
+| 013 | Implement DevStatusCommand | 009 | completed |
+| 014 | Add config/dev.php and wire configuration | 011 | completed |
+| 015 | Create README.md for marko/dev-server | 014 | completed |
 
 ## Architecture Notes
 - Command aliases are a core feature added to `#[Command]` attribute via an `aliases` parameter
