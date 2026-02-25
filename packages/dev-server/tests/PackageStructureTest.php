@@ -29,7 +29,7 @@ it('has module.php with marko module marker', function (): void {
 
     $module = require $modulePath;
 
-    expect($module)->toHaveKey('enabled');
+    expect($module)->toHaveKey('bindings');
 });
 
 it('has DevServerException extending MarkoException', function (): void {
