@@ -14,6 +14,9 @@ class CommandRegistry
     /** @var array<string, CommandDefinition> */
     private array $commands = [];
 
+    /** @var array<string, CommandDefinition> */
+    private array $aliases = [];
+
     /**
      * Register a command definition.
      *
@@ -27,21 +30,29 @@ class CommandRegistry
         }
 
         $this->commands[$definition->name] = $definition;
+
+        foreach ($definition->aliases as $alias) {
+            if ($this->has($alias)) {
+                throw CommandException::duplicateCommandName($alias);
+            }
+
+            $this->aliases[$alias] = $definition;
+        }
     }
 
     public function get(
         string $name,
     ): ?CommandDefinition {
-        return $this->commands[$name] ?? null;
+        return $this->commands[$name] ?? $this->aliases[$name] ?? null;
     }
 
     /**
-     * Check if a command exists by name.
+     * Check if a command exists by name or alias.
      */
     public function has(
         string $name,
     ): bool {
-        return isset($this->commands[$name]);
+        return isset($this->commands[$name]) || isset($this->aliases[$name]);
     }
 
     /**

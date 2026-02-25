@@ -1,0 +1,34 @@
+{
+    "name": "marko/dev-server",
+    "description": "Marko Framework Dev Server",
+    "license": "MIT",
+    "type": "library",
+    "require": {
+        "php": "^8.5",
+        "marko/config": "*",
+        "marko/core": "*"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\DevServer\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\DevServer\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

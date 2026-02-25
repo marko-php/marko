@@ -12,7 +12,7 @@ use Marko\Core\Command\Output;
 
 /** @noinspection PhpUnused */
 #[Command(name: 'list', description: 'Show all available commands')]
-class ListCommand implements CommandInterface
+readonly class ListCommand implements CommandInterface
 {
     public function __construct(
         private CommandRegistry $registry,
@@ -30,10 +30,20 @@ class ListCommand implements CommandInterface
             return 0;
         }
 
-        // Calculate max name width for alignment
-        $maxNameWidth = 0;
+        // Build display names (name + aliases if present)
+        $displayNames = [];
         foreach ($commands as $definition) {
-            $maxNameWidth = max($maxNameWidth, strlen($definition->name));
+            if ($definition->aliases !== []) {
+                $displayNames[$definition->name] = $definition->name . ' (' . implode(', ', $definition->aliases) . ')';
+            } else {
+                $displayNames[$definition->name] = $definition->name;
+            }
+        }
+
+        // Calculate max display name width for alignment
+        $maxNameWidth = 0;
+        foreach ($displayNames as $displayName) {
+            $maxNameWidth = max($maxNameWidth, strlen($displayName));
         }
 
         // Add padding
@@ -42,7 +52,7 @@ class ListCommand implements CommandInterface
         // Output commands
         foreach ($commands as $definition) {
             $output->writeLine(
-                '  ' . str_pad($definition->name, $nameWidth) . $definition->description,
+                '  ' . str_pad($displayNames[$definition->name], $nameWidth) . $definition->description,
             );
         }
 

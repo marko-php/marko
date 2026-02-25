@@ -103,6 +103,115 @@ it('throws CommandException on duplicate command name registration', function ()
     );
 });
 
+it('resolves command by alias', function (): void {
+    $registry = new CommandRegistry();
+    $definition = new CommandDefinition(
+        commandClass: 'App\Command\TestCommand',
+        name: 'test:command',
+        description: 'A test command',
+        aliases: ['tc', 'test'],
+    );
+
+    $registry->register($definition);
+
+    expect($registry->get('tc'))->toBe($definition)
+        ->and($registry->get('test'))->toBe($definition);
+});
+
+it('reports alias exists via has method', function (): void {
+    $registry = new CommandRegistry();
+    $definition = new CommandDefinition(
+        commandClass: 'App\Command\TestCommand',
+        name: 'test:command',
+        description: 'A test command',
+        aliases: ['tc'],
+    );
+
+    $registry->register($definition);
+
+    expect($registry->has('tc'))->toBeTrue()
+        ->and($registry->has('unknown'))->toBeFalse();
+});
+
+it('throws CommandException when alias conflicts with existing command name', function (): void {
+    $registry = new CommandRegistry();
+    $existing = new CommandDefinition(
+        commandClass: 'App\Command\ExistingCommand',
+        name: 'test:command',
+        description: 'Existing command',
+    );
+    $conflicting = new CommandDefinition(
+        commandClass: 'App\Command\ConflictingCommand',
+        name: 'other:command',
+        description: 'Command with conflicting alias',
+        aliases: ['test:command'],
+    );
+
+    $registry->register($existing);
+
+    expect(fn () => $registry->register($conflicting))->toThrow(
+        CommandException::class,
+        "Command 'test:command' is already registered",
+    );
+});
+
+it('throws CommandException when alias conflicts with another alias', function (): void {
+    $registry = new CommandRegistry();
+    $first = new CommandDefinition(
+        commandClass: 'App\Command\FirstCommand',
+        name: 'first:command',
+        description: 'First command',
+        aliases: ['shared-alias'],
+    );
+    $second = new CommandDefinition(
+        commandClass: 'App\Command\SecondCommand',
+        name: 'second:command',
+        description: 'Second command with conflicting alias',
+        aliases: ['shared-alias'],
+    );
+
+    $registry->register($first);
+
+    expect(fn () => $registry->register($second))->toThrow(
+        CommandException::class,
+        "Command 'shared-alias' is already registered",
+    );
+});
+
+it('does not duplicate aliased commands in all method', function (): void {
+    $registry = new CommandRegistry();
+    $definition = new CommandDefinition(
+        commandClass: 'App\Command\TestCommand',
+        name: 'test:command',
+        description: 'A test command',
+        aliases: ['tc', 'test'],
+    );
+
+    $registry->register($definition);
+
+    $all = $registry->all();
+
+    expect($all)->toHaveCount(1)
+        ->and($all[0])->toBe($definition);
+});
+
+it('registers command with multiple aliases', function (): void {
+    $registry = new CommandRegistry();
+    $definition = new CommandDefinition(
+        commandClass: 'App\Command\TestCommand',
+        name: 'test:command',
+        description: 'A test command',
+        aliases: ['tc', 'test', 't:cmd'],
+    );
+
+    $registry->register($definition);
+
+    expect($registry->get('tc'))->toBe($definition)
+        ->and($registry->get('test'))->toBe($definition)
+        ->and($registry->get('t:cmd'))->toBe($definition)
+        ->and($registry->get('test:command'))->toBe($definition);
+});
+
 it('returns commands sorted alphabetically by name', function (): void {
     $registry = new CommandRegistry();
     $zebra = new CommandDefinition(

@@ -159,6 +159,119 @@ it('formats output with aligned columns', function (): void {
         ->and($listDescPos)->toBeGreaterThan(strlen('module:list'));
 });
 
+it('displays alias in parentheses after command name', function (): void {
+    $registry = new CommandRegistry();
+    $registry->register(new CommandDefinition(
+        commandClass: 'App\Commands\DevUpCommand',
+        name: 'dev:up',
+        description: 'Start the development environment',
+        aliases: ['up'],
+    ));
+
+    $command = new ListCommand($registry);
+
+    $stream = fopen('php://memory', 'r+');
+    $input = new Input([]);
+    $output = new Output($stream);
+
+    $command->execute($input, $output);
+
+    rewind($stream);
+    $result = stream_get_contents($stream);
+
+    expect($result)->toContain('dev:up (up)');
+});
+
+it('displays multiple aliases separated by commas', function (): void {
+    $registry = new CommandRegistry();
+    $registry->register(new CommandDefinition(
+        commandClass: 'App\Commands\DevUpCommand',
+        name: 'dev:up',
+        description: 'Start the development environment',
+        aliases: ['up', 'start'],
+    ));
+
+    $command = new ListCommand($registry);
+
+    $stream = fopen('php://memory', 'r+');
+    $input = new Input([]);
+    $output = new Output($stream);
+
+    $command->execute($input, $output);
+
+    rewind($stream);
+    $result = stream_get_contents($stream);
+
+    expect($result)->toContain('dev:up (up, start)');
+});
+
+it('does not show parentheses for commands without aliases', function (): void {
+    $registry = new CommandRegistry();
+    $registry->register(new CommandDefinition(
+        commandClass: 'App\Commands\ListCommand',
+        name: 'list',
+        description: 'Show all available commands',
+    ));
+
+    $command = new ListCommand($registry);
+
+    $stream = fopen('php://memory', 'r+');
+    $input = new Input([]);
+    $output = new Output($stream);
+
+    $command->execute($input, $output);
+
+    rewind($stream);
+    $result = stream_get_contents($stream);
+
+    expect($result)->not->toContain('(')
+        ->and($result)->not->toContain(')');
+});
+
+it('aligns descriptions correctly when some commands have aliases', function (): void {
+    $registry = new CommandRegistry();
+    $registry->register(new CommandDefinition(
+        commandClass: 'App\Commands\DevUpCommand',
+        name: 'dev:up',
+        description: 'Start the development environment',
+        aliases: ['up'],
+    ));
+    $registry->register(new CommandDefinition(
+        commandClass: 'App\Commands\ListCommand',
+        name: 'list',
+        description: 'Show all available commands',
+    ));
+
+    $command = new ListCommand($registry);
+
+    $stream = fopen('php://memory', 'r+');
+    $input = new Input([]);
+    $output = new Output($stream);
+
+    $command->execute($input, $output);
+
+    rewind($stream);
+    $result = stream_get_contents($stream);
+
+    $lines = array_values(array_filter(explode("\n", $result), fn ($line) => trim($line) !== ''));
+
+    $devUpLine = '';
+    $listLine = '';
+    foreach ($lines as $line) {
+        if (str_contains($line, 'Start the development environment')) {
+            $devUpLine = $line;
+        }
+        if (str_contains($line, 'Show all available commands')) {
+            $listLine = $line;
+        }
+    }
+
+    $devUpDescPos = strpos($devUpLine, 'Start the development environment');
+    $listDescPos = strpos($listLine, 'Show all available commands');
+
+    expect($devUpDescPos)->toBe($listDescPos);
+});
+
 it('shows message when no commands available', function (): void {
     $registry = new CommandRegistry();
 

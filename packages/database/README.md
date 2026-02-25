@@ -229,6 +229,56 @@ In production, `db:migrate` only applies existing migration files - it never gen
 4. **No context switching** - Everything about your model in one place
 5. **Reduced cognitive load** - One file to understand, not entity + migration + mapping
 
+## Switching Database Drivers
+
+Since entities are the single source of truth, switching between database systems is a config change — each driver's `SqlGenerator` translates entity attributes to native SQL automatically.
+
+### Example: MySQL to PostgreSQL
+
+1. Delete the migration files in `database/migrations/` — they contain MySQL-specific SQL:
+
+```bash
+rm database/migrations/*.php
+```
+
+2. Swap `marko/database-mysql` for `marko/database-pgsql` in `composer.json` and update:
+
+```bash
+composer remove marko/database-mysql
+composer require marko/database-pgsql
+```
+
+3. Update `config/database.php` to use the `pgsql` driver with your PostgreSQL credentials:
+
+```php
+return [
+    'driver' => 'pgsql',
+    'host' => '127.0.0.1',
+    'port' => 5432,
+    'database' => 'myapp',
+    'username' => 'postgres',
+    'password' => '',
+];
+```
+
+4. Create the PostgreSQL database:
+
+```bash
+createdb myapp
+```
+
+5. Run `marko db:migrate` to generate and apply new migrations:
+
+```bash
+marko db:migrate
+marko db:seed
+```
+
+`db:migrate` diffs entity attributes against the empty database, generates new migration files with PostgreSQL-native SQL (e.g., `SERIAL` instead of `AUTO_INCREMENT`, `BOOLEAN` instead of `TINYINT(1)`), and applies them. Your entity code and application logic remain unchanged.
+
+- Run `marko db:diff` first to preview what will be generated
+- Commit the newly generated migration files — they're what gets deployed to production
+
 ## Available Drivers
 
 - **marko/database-mysql** - MySQL/MariaDB driver

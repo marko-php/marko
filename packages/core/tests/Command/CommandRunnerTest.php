@@ -86,6 +86,7 @@ it('passes Input to execute method', function (): void {
     $command = new class ($receivedInput) implements CommandInterface
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private ?Input &$receivedInput,
         ) {}
 
@@ -124,6 +125,7 @@ it('passes Output to execute method', function (): void {
     $command = new class ($receivedOutput) implements CommandInterface
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private ?Output &$receivedOutput,
         ) {}
 
@@ -259,4 +261,118 @@ it('returns non-zero exit code on command failure', function (): void {
 
     expect($exitCode)->not->toBe(0)
         ->and($exitCode)->toBe(1);
+});
+
+it('executes command via alias name', function (): void {
+    $input = new Input(['marko', 'tc']);
+    $output = new Output(fopen('php://memory', 'w'));
+
+    $command = new class () implements CommandInterface
+    {
+        public bool $executed = false;
+
+        public function execute(
+            Input $input,
+            Output $output,
+        ): int {
+            $this->executed = true;
+
+            return 0;
+        }
+    };
+
+    $registry = new CommandRegistry();
+    $registry->register(new CommandDefinition(
+        commandClass: $command::class,
+        name: 'test:cmd',
+        description: 'A test command',
+        aliases: ['tc'],
+    ));
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->with($command::class)
+        ->willReturn($command);
+
+    $runner = new CommandRunner($container, $registry);
+    $runner->run('tc', $input, $output);
+
+    expect($command->executed)->toBeTrue();
+});
+
+it('returns correct exit code when invoked via alias', function (): void {
+    $input = new Input(['marko', 'tc']);
+    $output = new Output(fopen('php://memory', 'w'));
+
+    $command = new class () implements CommandInterface
+    {
+        public function execute(
+            Input $input,
+            Output $output,
+        ): int {
+            return 42;
+        }
+    };
+
+    $registry = new CommandRegistry();
+    $registry->register(new CommandDefinition(
+        commandClass: $command::class,
+        name: 'test:cmd',
+        description: 'A test command',
+        aliases: ['tc'],
+    ));
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturn($command);
+
+    $runner = new CommandRunner($container, $registry);
+    $exitCode = $runner->run('tc', $input, $output);
+
+    expect($exitCode)->toBe(42);
+});
+
+it('passes Input and Output when invoked via alias', function (): void {
+    $input = new Input(['marko', 'tc', 'hello', 'world']);
+    $output = new Output(fopen('php://memory', 'w'));
+
+    $receivedInput = null;
+    $receivedOutput = null;
+    $command = new class ($receivedInput, $receivedOutput) implements CommandInterface
+    {
+        public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+            private ?Input &$receivedInput,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+            private ?Output &$receivedOutput,
+        ) {}
+
+        public function execute(
+            Input $input,
+            Output $output,
+        ): int {
+            $this->receivedInput = $input;
+            $this->receivedOutput = $output;
+
+            return 0;
+        }
+    };
+
+    $registry = new CommandRegistry();
+    $registry->register(new CommandDefinition(
+        commandClass: $command::class,
+        name: 'test:cmd',
+        description: 'A test command',
+        aliases: ['tc'],
+    ));
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturn($command);
+
+    $runner = new CommandRunner($container, $registry);
+    $runner->run('tc', $input, $output);
+
+    expect($receivedInput)->toBe($input)
+        ->and($receivedOutput)->toBe($output);
 });

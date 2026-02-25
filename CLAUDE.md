@@ -6,7 +6,7 @@ Marko is a modular PHP 8.5+ framework combining Magento's extensibility with Lar
 
 1. **Loud errors** - No silent failures, helpful messages
 2. **Explicit over implicit** - No magic, everything discoverable
-3. **Opinionated, not restrictive** - Guide toward better patterns
+3. **Pragmatically opinionated** - Guide toward better patterns, grounded in real-world needs
 4. **True modularity** - Interface/implementation split, clean boundaries
 5. **No pseudo-functionality** - Don't build fake features to demonstrate concepts; only build real functionality when core supports it. If there's nothing meaningful to build, build nothing.
 

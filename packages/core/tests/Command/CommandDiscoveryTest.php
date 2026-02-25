@@ -87,7 +87,7 @@ PHP;
     $discovery = new CommandDiscovery(new ClassFileParser());
     $commands = $discovery->discover([$manifest]);
 
-    expect($commands)->toHaveCount(0);
+    expect($commands)->toBeEmpty();
 
     // Cleanup
     unlink($tempDir . '/src/NotACommand.php');
@@ -109,7 +109,7 @@ it('ignores directories without src folder', function (): void {
     $discovery = new CommandDiscovery(new ClassFileParser());
     $commands = $discovery->discover([$manifest]);
 
-    expect($commands)->toHaveCount(0);
+    expect($commands)->toBeEmpty();
 
     // Cleanup
     rmdir($tempDir);
@@ -334,6 +334,147 @@ PHP;
 
     // Cleanup
     unlink($tempDir . '/src/NoInterfaceCommand.php');
+    rmdir($tempDir . '/src');
+    rmdir($tempDir);
+});
+
+it('discovers aliases from Command attribute', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    mkdir($tempDir . '/src', 0755, true);
+
+    $commandCode = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace TestCommandModuleAliases1;
+
+use Marko\Core\Attributes\Command;
+use Marko\Core\Command\CommandInterface;
+use Marko\Core\Command\Input;
+use Marko\Core\Command\Output;
+
+#[Command(name: 'app:run', description: 'Run the app', aliases: ['run', 'r'])]
+class AliasedCommand implements CommandInterface
+{
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
+        return 0;
+    }
+}
+PHP;
+    file_put_contents($tempDir . '/src/AliasedCommand.php', $commandCode);
+
+    $manifest = new ModuleManifest(
+        name: 'test/module',
+        version: '1.0.0',
+        path: $tempDir,
+    );
+
+    $discovery = new CommandDiscovery(new ClassFileParser());
+    $commands = $discovery->discover([$manifest]);
+
+    expect($commands)->toHaveCount(1)
+        ->and($commands[0]->aliases)->toBe(['run', 'r']);
+
+    // Cleanup
+    unlink($tempDir . '/src/AliasedCommand.php');
+    rmdir($tempDir . '/src');
+    rmdir($tempDir);
+});
+
+it('creates CommandDefinition with empty aliases when none specified', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    mkdir($tempDir . '/src', 0755, true);
+
+    $commandCode = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace TestCommandModuleAliases2;
+
+use Marko\Core\Attributes\Command;
+use Marko\Core\Command\CommandInterface;
+use Marko\Core\Command\Input;
+use Marko\Core\Command\Output;
+
+#[Command(name: 'app:no-alias', description: 'No aliases here')]
+class NoAliasCommand implements CommandInterface
+{
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
+        return 0;
+    }
+}
+PHP;
+    file_put_contents($tempDir . '/src/NoAliasCommand.php', $commandCode);
+
+    $manifest = new ModuleManifest(
+        name: 'test/module',
+        version: '1.0.0',
+        path: $tempDir,
+    );
+
+    $discovery = new CommandDiscovery(new ClassFileParser());
+    $commands = $discovery->discover([$manifest]);
+
+    expect($commands)->toHaveCount(1)
+        ->and($commands[0]->aliases)->toBeEmpty();
+
+    // Cleanup
+    unlink($tempDir . '/src/NoAliasCommand.php');
+    rmdir($tempDir . '/src');
+    rmdir($tempDir);
+});
+
+it('creates CommandDefinition with aliases when specified in attribute', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    mkdir($tempDir . '/src', 0755, true);
+
+    $commandCode = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace TestCommandModuleAliases3;
+
+use Marko\Core\Attributes\Command;
+use Marko\Core\Command\CommandInterface;
+use Marko\Core\Command\Input;
+use Marko\Core\Command\Output;
+
+#[Command(name: 'db:migrate', description: 'Run migrations', aliases: ['migrate', 'migration:run'])]
+class MigrateCommand implements CommandInterface
+{
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
+        return 0;
+    }
+}
+PHP;
+    file_put_contents($tempDir . '/src/MigrateCommand.php', $commandCode);
+
+    $manifest = new ModuleManifest(
+        name: 'test/module',
+        version: '1.0.0',
+        path: $tempDir,
+    );
+
+    $discovery = new CommandDiscovery(new ClassFileParser());
+    $commands = $discovery->discover([$manifest]);
+
+    expect($commands)->toHaveCount(1)
+        ->and($commands[0]->aliases)->toBe(['migrate', 'migration:run']);
+
+    // Cleanup
+    unlink($tempDir . '/src/MigrateCommand.php');
     rmdir($tempDir . '/src');
     rmdir($tempDir);
 });

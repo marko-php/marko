@@ -34,6 +34,25 @@ it('creates CommandDefinition with description from attribute', function (): voi
     expect($definition->description)->toBe('A detailed description of the command');
 });
 
+it('stores aliases in CommandDefinition', function (): void {
+    $definition = new CommandDefinition(
+        commandClass: 'App\Command\TestCommand',
+        name: 'dev:up',
+        aliases: ['up'],
+    );
+
+    expect($definition->aliases)->toBe(['up']);
+});
+
+it('defaults aliases to empty array in CommandDefinition when not provided', function (): void {
+    $definition = new CommandDefinition(
+        commandClass: 'App\Command\TestCommand',
+        name: 'test:command',
+    );
+
+    expect($definition->aliases)->toBeEmpty();
+});
+
 it('marks CommandDefinition as readonly', function (): void {
     $reflection = new ReflectionClass(CommandDefinition::class);
 

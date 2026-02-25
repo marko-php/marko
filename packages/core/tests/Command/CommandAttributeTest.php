@@ -57,6 +57,28 @@ it('targets only classes with Command attribute', function (): void {
     expect($attribute->flags)->toBe(Attribute::TARGET_CLASS);
 });
 
+it('accepts aliases parameter in Command attribute', function (): void {
+    $command = new Command(name: 'test:cmd', aliases: ['cmd', 'tc']);
+
+    expect($command->aliases)->toBe(['cmd', 'tc']);
+});
+
+it('defaults aliases to empty array when not provided', function (): void {
+    $command = new Command(name: 'test:cmd');
+
+    expect($command->aliases)->toBeEmpty();
+});
+
+it('preserves existing Command attribute behavior without aliases', function (): void {
+    $reflection = new ReflectionClass(TestCommand::class);
+    $attributes = $reflection->getAttributes(Command::class);
+    $command = $attributes[0]->newInstance();
+
+    expect($command->name)->toBe('test:command')
+        ->and($command->description)->toBe('')
+        ->and($command->aliases)->toBeEmpty();
+});
+
 it('marks Command attribute as readonly', function (): void {
     $reflection = new ReflectionClass(Command::class);
 

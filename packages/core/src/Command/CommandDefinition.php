@@ -13,5 +13,6 @@ readonly class CommandDefinition
         public string $commandClass,
         public string $name,
         public string $description = '',
+        public array $aliases = [],
     ) {}
 }
