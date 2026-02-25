@@ -22,6 +22,7 @@ readonly class ModuleManifest
      * @param array<string> $after Modules to load before this one (from module.php)
      * @param array<string> $before Modules to load after this one (from module.php)
      * @param array<string, string|Closure> $bindings Interface to implementation bindings (from module.php)
+     * @param array<string, string|Closure> $singletons Shared interface to implementation bindings (from module.php)
      * @param string $path Absolute path to module directory
      * @param string $source Discovery source: vendor, modules, or app
      * @param array<string, string> $autoload PSR-4 autoload configuration from composer.json (namespace => path)
@@ -35,6 +36,7 @@ readonly class ModuleManifest
         public array $after = [],
         public array $before = [],
         public array $bindings = [],
+        public array $singletons = [],
         public string $path = '',
         public string $source = '',
         public array $autoload = [],

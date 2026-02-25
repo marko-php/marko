@@ -37,6 +37,7 @@ use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginRegistry;
 use Marko\Routing\Exceptions\RouteConflictException;
 use Marko\Routing\Exceptions\RouteException;
+use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Routing\Router;
 use Marko\Routing\RoutingBootstrapper;
 use Psr\Container\ContainerExceptionInterface;
@@ -290,6 +291,10 @@ class Application
         $this->commandRunner = new CommandRunner($this->container, $this->commandRegistry);
     }
 
+    private const array GLOBAL_MIDDLEWARE = [
+        'Marko\\Session\\Middleware\\SessionMiddleware',
+    ];
+
     /**
      * @throws RouteException|RouteConflictException
      */
@@ -307,6 +312,26 @@ class Application
             new ClassFileParser(),
         );
 
-        $this->_router = $bootstrapper->boot();
+        $globalMiddleware = $this->discoverGlobalMiddleware();
+
+        $this->_router = $bootstrapper->boot($globalMiddleware);
+    }
+
+    /**
+     * Discover available global middleware classes.
+     *
+     * @return array<class-string<MiddlewareInterface>>
+     */
+    private function discoverGlobalMiddleware(): array
+    {
+        $middleware = [];
+
+        foreach (self::GLOBAL_MIDDLEWARE as $class) {
+            if (class_exists($class)) {
+                $middleware[] = $class;
+            }
+        }
+
+        return $middleware;
     }
 }

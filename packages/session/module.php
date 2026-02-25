@@ -6,7 +6,8 @@ use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Session;
 
 return [
-    'bindings' => [
+    'bindings' => [],
+    'singletons' => [
         SessionInterface::class => Session::class,
     ],
 ];

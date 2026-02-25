@@ -73,6 +73,8 @@ class Container implements ContainerInterface
             return $this->instances[$id];
         }
 
+        $originalId = $id;
+
         // Check if there's a preference for this class (class → class replacement)
         if ($this->preferenceRegistry !== null) {
             $preference = $this->preferenceRegistry->getPreference($id);
@@ -89,8 +91,8 @@ class Container implements ContainerInterface
             if ($binding instanceof Closure) {
                 $instance = $binding($this);
 
-                if (isset($this->shared[$id])) {
-                    $this->instances[$id] = $instance;
+                if (isset($this->shared[$originalId])) {
+                    $this->instances[$originalId] = $instance;
                 }
 
                 return $instance;
@@ -141,8 +143,8 @@ class Container implements ContainerInterface
             $instance = $reflectionClass->newInstanceArgs($dependencies);
         }
 
-        if (isset($this->shared[$id])) {
-            $this->instances[$id] = $instance;
+        if (isset($this->shared[$originalId])) {
+            $this->instances[$originalId] = $instance;
         }
 
         return $instance;

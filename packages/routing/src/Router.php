@@ -7,8 +7,10 @@ namespace Marko\Routing;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Routing\Middleware\MiddlewarePipeline;
 use ReflectionMethod;
+use ReflectionNamedType;
 
 readonly class Router
 {
@@ -16,9 +18,13 @@ readonly class Router
 
     private MiddlewarePipeline $pipeline;
 
+    /**
+     * @param array<class-string<MiddlewareInterface>> $globalMiddleware
+     */
     public function __construct(
         private RouteCollection $routes,
         private ContainerInterface $container,
+        private array $globalMiddleware = [],
     ) {
         $this->matcher = new RouteMatcher($routes);
         $this->pipeline = new MiddlewarePipeline($container);
@@ -48,8 +54,10 @@ readonly class Router
             return $this->wrapResult($result);
         };
 
+        $middleware = [...$this->globalMiddleware, ...$matched->route->middleware];
+
         return $this->pipeline->process(
-            $matched->route->middleware,
+            $middleware,
             $request,
             $handler,
         );
@@ -72,6 +80,13 @@ readonly class Router
 
         foreach ($reflection->getParameters() as $param) {
             $name = $param->getName();
+            $type = $param->getType();
+
+            // Inject Request object when type-hinted
+            if ($type instanceof ReflectionNamedType && $type->getName() === Request::class) {
+                $parameters[] = $request;
+                continue;
+            }
 
             // Priority: route params > POST data > query string > default
             if (array_key_exists($name, $routeParams)) {

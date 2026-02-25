@@ -488,6 +488,186 @@ it('wraps array return in JSON Response', function (): void {
         ->and($response->headers())->toBe(['Content-Type' => 'application/json']);
 });
 
+it('injects Request into controller method parameter', function (): void {
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'GET',
+        path: '/with-request',
+        controller: 'App\\Controllers\\RequestController',
+        action: 'index',
+    ));
+
+    $receivedRequest = null;
+    $controller = new class ($receivedRequest)
+    {
+        public function __construct(
+            private ?Request &$receivedRequest,
+        ) {}
+
+        public function index(
+            Request $request,
+        ): Response {
+            $this->receivedRequest = $request;
+
+            return new Response('OK');
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturn($controller);
+
+    $router = new Router(
+        routes: $routes,
+        container: $container,
+    );
+
+    $request = new Request(server: [
+        'REQUEST_METHOD' => 'GET',
+        'REQUEST_URI' => '/with-request',
+    ]);
+
+    $response = $router->handle($request);
+
+    expect($receivedRequest)->toBeInstanceOf(Request::class)
+        ->and($response->body())->toBe('OK');
+});
+
+it('executes global middleware on every request', function (): void {
+    $globalExecuted = false;
+
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'GET',
+        path: '/hello',
+        controller: 'App\\Controllers\\HelloController',
+        action: 'index',
+    ));
+
+    $controller = new class ()
+    {
+        public function index(): Response
+        {
+            return new Response('Hello');
+        }
+    };
+
+    $globalMiddleware = new class ($globalExecuted) implements MiddlewareInterface
+    {
+        public function __construct(
+            private bool &$globalExecuted,
+        ) {}
+
+        public function handle(
+            Request $request,
+            callable $next,
+        ): Response {
+            $this->globalExecuted = true;
+
+            return $next($request);
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturnCallback(fn (string $class) => match ($class) {
+            'App\\Controllers\\HelloController' => $controller,
+            'App\\Middleware\\GlobalMiddleware' => $globalMiddleware,
+        });
+
+    $router = new Router(
+        routes: $routes,
+        container: $container,
+        globalMiddleware: ['App\\Middleware\\GlobalMiddleware'],
+    );
+
+    $request = new Request(server: [
+        'REQUEST_METHOD' => 'GET',
+        'REQUEST_URI' => '/hello',
+    ]);
+
+    $response = $router->handle($request);
+
+    expect($globalExecuted)->toBeTrue()
+        ->and($response->body())->toBe('Hello');
+});
+
+it('runs global middleware before route middleware', function (): void {
+    $order = [];
+
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'GET',
+        path: '/test',
+        controller: 'App\\Controllers\\TestCtrl',
+        action: 'index',
+        middleware: ['App\\Middleware\\RouteMiddleware'],
+    ));
+
+    $controller = new class ()
+    {
+        public function index(): Response
+        {
+            return new Response('OK');
+        }
+    };
+
+    $globalMiddleware = new class ($order) implements MiddlewareInterface
+    {
+        public function __construct(
+            private array &$order,
+        ) {}
+
+        public function handle(
+            Request $request,
+            callable $next,
+        ): Response {
+            $this->order[] = 'global';
+
+            return $next($request);
+        }
+    };
+
+    $routeMiddleware = new class ($order) implements MiddlewareInterface
+    {
+        public function __construct(
+            private array &$order,
+        ) {}
+
+        public function handle(
+            Request $request,
+            callable $next,
+        ): Response {
+            $this->order[] = 'route';
+
+            return $next($request);
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturnCallback(fn (string $class) => match ($class) {
+            'App\\Controllers\\TestCtrl' => $controller,
+            'App\\Middleware\\GlobalMiddleware' => $globalMiddleware,
+            'App\\Middleware\\RouteMiddleware' => $routeMiddleware,
+        });
+
+    $router = new Router(
+        routes: $routes,
+        container: $container,
+        globalMiddleware: ['App\\Middleware\\GlobalMiddleware'],
+    );
+
+    $request = new Request(server: [
+        'REQUEST_METHOD' => 'GET',
+        'REQUEST_URI' => '/test',
+    ]);
+
+    $router->handle($request);
+
+    expect($order)->toBe(['global', 'route']);
+});
+
 class TestController
 {
     public function index(): Response

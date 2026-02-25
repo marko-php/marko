@@ -33,30 +33,47 @@ class BindingRegistry
         $sourcePriority = self::SOURCE_PRIORITY[$module->source] ?? 0;
 
         foreach ($module->bindings as $interface => $implementation) {
-            if (isset($this->bindings[$interface])) {
-                $existingBinding = $this->bindings[$interface];
-                $existingPriority = self::SOURCE_PRIORITY[$existingBinding['source']] ?? 0;
+            $this->registerBinding($interface, $implementation, $module, $sourcePriority);
+        }
 
-                // Same priority = conflict
-                if ($sourcePriority === $existingPriority) {
-                    throw BindingConflictException::multipleBindings(
-                        $interface,
-                        [$existingBinding['module'], $module->name],
-                    );
-                }
+        foreach ($module->singletons as $interface => $implementation) {
+            $this->registerBinding($interface, $implementation, $module, $sourcePriority);
+            $this->container->singleton($interface);
+        }
+    }
 
-                // Lower priority cannot override higher priority
-                if ($sourcePriority < $existingPriority) {
-                    continue;
-                }
+    /**
+     * @throws BindingConflictException
+     */
+    private function registerBinding(
+        string $interface,
+        string|\Closure $implementation,
+        ModuleManifest $module,
+        int $sourcePriority,
+    ): void {
+        if (isset($this->bindings[$interface])) {
+            $existingBinding = $this->bindings[$interface];
+            $existingPriority = self::SOURCE_PRIORITY[$existingBinding['source']] ?? 0;
+
+            // Same priority = conflict
+            if ($sourcePriority === $existingPriority) {
+                throw BindingConflictException::multipleBindings(
+                    $interface,
+                    [$existingBinding['module'], $module->name],
+                );
             }
 
-            $this->bindings[$interface] = [
-                'module' => $module->name,
-                'source' => $module->source,
-            ];
-
-            $this->container->bind($interface, $implementation);
+            // Lower priority cannot override higher priority
+            if ($sourcePriority < $existingPriority) {
+                return;
+            }
         }
+
+        $this->bindings[$interface] = [
+            'module' => $module->name,
+            'source' => $module->source,
+        ];
+
+        $this->container->bind($interface, $implementation);
     }
 }

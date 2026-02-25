@@ -13,6 +13,7 @@ use Marko\Core\Module\ModuleManifest;
 use Marko\Routing\Attributes\Route;
 use Marko\Routing\Exceptions\RouteConflictException;
 use Marko\Routing\Exceptions\RouteException;
+use Marko\Routing\Middleware\MiddlewareInterface;
 use ReflectionClass;
 use ReflectionException;
 
@@ -44,10 +45,12 @@ class RoutingBootstrapper
     /**
      * Bootstrap the routing system: discover routes and register the Router in the container.
      *
+     * @param array<class-string<MiddlewareInterface>> $globalMiddleware
      * @throws RouteException|RouteConflictException|ReflectionException
      */
-    public function boot(): Router
-    {
+    public function boot(
+        array $globalMiddleware = [],
+    ): Router {
         // Discover routes from all modules
         $this->discoverRoutes();
 
@@ -55,7 +58,7 @@ class RoutingBootstrapper
         $this->container->instance(RouteCollection::class, $this->routes);
 
         // Create and register Router
-        $router = new Router($this->routes, $this->container);
+        $router = new Router($this->routes, $this->container, $globalMiddleware);
         $this->container->instance(Router::class, $router);
 
         return $router;
