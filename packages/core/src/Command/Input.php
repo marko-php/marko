@@ -53,23 +53,57 @@ readonly class Input
     }
 
     /**
-     * Checks if an option exists (e.g., --verbose or --queue=value).
+     * Checks if an option exists (e.g., --verbose, --queue=value, -d, -p=8000).
+     *
+     * Single-char names match short options (-x), multi-char names match long options (--name).
      */
     public function hasOption(
         string $name,
     ): bool {
-        return array_any($this->getArguments(), fn ($arg) => $arg === "--$name" || str_starts_with($arg, "--$name="));
+        if (strlen($name) === 1) {
+            return array_any(
+                $this->getArguments(),
+                fn ($arg) => $arg === "-$name" || str_starts_with($arg, "-$name="),
+            );
+        }
+
+        return array_any(
+            $this->getArguments(),
+            fn ($arg) => $arg === "--$name" || str_starts_with($arg, "--$name="),
+        );
     }
 
     /**
      * Returns the value of an option, or null if not found.
-     * For boolean flags (--verbose), returns "true".
-     * For value options (--queue=emails), returns the value.
+     * For boolean flags (--verbose, -d), returns "true".
+     * For value options (--queue=emails, -p=8000, -p 8000), returns the value.
+     *
+     * Single-char names match short options, multi-char names match long options.
      */
     public function getOption(
         string $name,
     ): ?string {
-        foreach ($this->getArguments() as $arg) {
+        $arguments = $this->getArguments();
+
+        if (strlen($name) === 1) {
+            foreach ($arguments as $index => $arg) {
+                if ($arg === "-$name") {
+                    $next = $arguments[$index + 1] ?? null;
+                    if ($next !== null && !str_starts_with($next, '-')) {
+                        return $next;
+                    }
+
+                    return 'true';
+                }
+                if (str_starts_with($arg, "-$name=")) {
+                    return substr($arg, strlen("-$name="));
+                }
+            }
+
+            return null;
+        }
+
+        foreach ($arguments as $arg) {
             if ($arg === "--$name") {
                 return 'true';
             }

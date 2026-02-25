@@ -117,3 +117,42 @@ it('returns true for boolean flag option', function (): void {
     expect($input->hasOption('verbose'))->toBeTrue()
         ->and($input->getOption('verbose'))->toBe('true');
 });
+
+it('checks if short option flag exists', function (): void {
+    $input = new Input(['marko', 'dev:up', '-d']);
+
+    expect($input->hasOption('d'))->toBeTrue()
+        ->and($input->hasOption('x'))->toBeFalse();
+});
+
+it('returns true for short boolean flag', function (): void {
+    $input = new Input(['marko', 'dev:up', '-d']);
+
+    expect($input->getOption('d'))->toBe('true');
+});
+
+it('returns short option value with equals syntax', function (): void {
+    $input = new Input(['marko', 'dev:up', '-p=8000']);
+
+    expect($input->hasOption('p'))->toBeTrue()
+        ->and($input->getOption('p'))->toBe('8000');
+});
+
+it('returns short option value with space syntax', function (): void {
+    $input = new Input(['marko', 'dev:up', '-p', '8000']);
+
+    expect($input->hasOption('p'))->toBeTrue()
+        ->and($input->getOption('p'))->toBe('8000');
+});
+
+it('does not match short options for multi-char names', function (): void {
+    $input = new Input(['marko', 'dev:up', '-d']);
+
+    expect($input->hasOption('detach'))->toBeFalse();
+});
+
+it('does not match long options for single-char names', function (): void {
+    $input = new Input(['marko', 'dev:up', '--detach']);
+
+    expect($input->hasOption('d'))->toBeFalse();
+});

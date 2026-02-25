@@ -34,8 +34,8 @@ readonly class DevUpCommand implements CommandInterface
      */
     public function execute(Input $input, Output $output): int
     {
-        $port = (int) ($input->getOption('port') ?? $this->config->getInt('dev.port'));
-        $detach = $input->hasOption('detach') || $this->config->getBool('dev.detach');
+        $port = (int) ($input->getOption('port') ?? $input->getOption('p') ?? $this->config->getInt('dev.port'));
+        $detach = $input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool('dev.detach');
         $dockerConfig = $this->config->get('dev.docker');
         $frontendConfig = $this->config->get('dev.frontend');
 
@@ -50,6 +50,9 @@ readonly class DevUpCommand implements CommandInterface
                 : $this->dockerDetector->detect()['upCommand'] ?? null;
 
             if ($dockerCommand !== null) {
+                if ($detach) {
+                    $dockerCommand .= ' -d';
+                }
                 $output->writeLine("  Starting Docker: $dockerCommand");
                 $pid = $this->processManager->start('docker', $dockerCommand);
                 $entries[] = new ProcessEntry(
@@ -100,6 +103,7 @@ readonly class DevUpCommand implements CommandInterface
             $output->writeLine("Run 'marko dev:down' to stop.");
         } else {
             $output->writeLine('Development environment running. Press Ctrl+C to stop.');
+            $this->processManager->runForeground();
         }
 
         return 0;

@@ -93,3 +93,74 @@ it('prefixes output lines with process name', function (): void {
 
     expect($result)->toContain('[php] Server started on port 8000');
 });
+
+it('streams prefixed output in foreground mode until processes exit', function (): void {
+    $stream = fopen('php://memory', 'r+');
+    $output = new Output($stream);
+    $manager = new ProcessManager($output);
+
+    $manager->start('echo', 'echo "hello from echo"');
+    $manager->runForeground();
+
+    rewind($stream);
+    $result = stream_get_contents($stream);
+
+    expect($result)->toContain('[echo] hello from echo');
+});
+
+it('streams output from multiple processes in foreground mode', function (): void {
+    $stream = fopen('php://memory', 'r+');
+    $output = new Output($stream);
+    $manager = new ProcessManager($output);
+
+    $manager->start('greet', 'echo "hi there"');
+    $manager->start('count', 'echo "one two three"');
+    $manager->runForeground();
+
+    rewind($stream);
+    $result = stream_get_contents($stream);
+
+    expect($result)->toContain('[greet] hi there')
+        ->and($result)->toContain('[count] one two three');
+});
+
+it('returns when all foreground processes have exited', function (): void {
+    $stream = fopen('php://memory', 'r+');
+    $output = new Output($stream);
+    $manager = new ProcessManager($output);
+
+    $manager->start('fast', 'echo done');
+
+    // runForeground should return once the process exits
+    $manager->runForeground();
+
+    expect($manager->getPids())->toBeEmpty();
+});
+
+it('reports process exit with success status', function (): void {
+    $stream = fopen('php://memory', 'r+');
+    $output = new Output($stream);
+    $manager = new ProcessManager($output);
+
+    $manager->start('task', 'echo done');
+    $manager->runForeground();
+
+    rewind($stream);
+    $result = stream_get_contents($stream);
+
+    expect($result)->toContain('[task] exited');
+});
+
+it('reports process exit with failure status', function (): void {
+    $stream = fopen('php://memory', 'r+');
+    $output = new Output($stream);
+    $manager = new ProcessManager($output);
+
+    $manager->start('fail', 'sh -c "exit 1"');
+    $manager->runForeground();
+
+    rewind($stream);
+    $result = stream_get_contents($stream);
+
+    expect($result)->toContain('[fail] exited with code 1');
+});

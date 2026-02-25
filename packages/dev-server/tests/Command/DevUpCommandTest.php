@@ -18,6 +18,8 @@ class FakeProcessManager extends ProcessManager
     /** @var array<string, string> */
     public array $started = [];
 
+    public bool $foregroundCalled = false;
+
     /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
     public function __construct() {}
 
@@ -28,6 +30,11 @@ class FakeProcessManager extends ProcessManager
         $this->started[$name] = $command;
 
         return 12345;
+    }
+
+    public function runForeground(): void
+    {
+        $this->foregroundCalled = true;
     }
 }
 
@@ -316,4 +323,101 @@ it('outputs service summary on startup', function (): void {
 
     expect($content)->toContain('Starting development environment...')
         ->and($content)->toContain('Starting PHP server');
+});
+
+it('calls runForeground when not detached', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.detach' => false]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->foregroundCalled)->toBeTrue();
+});
+
+it('does not call runForeground when detached', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.detach' => true]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->foregroundCalled)->toBeFalse();
+});
+
+it('does not call runForeground when --detach flag is used', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.detach' => false]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '--detach']);
+    $command->execute($input, $output);
+
+    expect($pm->foregroundCalled)->toBeFalse();
+});
+
+it('overrides config detach with -d short flag', function (): void {
+    ['command' => $command, 'processManager' => $pm, 'pidFile' => $pidFile] = createDevUpCommand([
+        'dev.detach' => false,
+    ]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '-d']);
+    $command->execute($input, $output);
+
+    expect($pm->foregroundCalled)->toBeFalse()
+        ->and($pidFile->read())->not->toBeEmpty();
+});
+
+it('overrides config port with -p short flag', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.port' => 8000]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '-p=9000']);
+    $command->execute($input, $output);
+
+    expect($pm->started['php'])->toContain('localhost:9000');
+});
+
+it('overrides config port with -p space syntax', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.port' => 8000]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '-p', '9000']);
+    $command->execute($input, $output);
+
+    expect($pm->started['php'])->toContain('localhost:9000');
+});
+
+it('runs docker in foreground when not detached', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko-docker-fg-test-' . uniqid();
+    mkdir($tempDir, 0755, true);
+    file_put_contents($tempDir . '/compose.yaml', "version: '3'\nservices:\n  app:\n    image: nginx\n");
+
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(
+        config: ['dev.docker' => true],
+        tempDir: $tempDir,
+    );
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->started['docker'])->not->toContain('-d');
+});
+
+it('runs docker detached when in detach mode', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko-docker-det-test-' . uniqid();
+    mkdir($tempDir, 0755, true);
+    file_put_contents($tempDir . '/compose.yaml', "version: '3'\nservices:\n  app:\n    image: nginx\n");
+
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(
+        config: ['dev.docker' => true, 'dev.detach' => true],
+        tempDir: $tempDir,
+    );
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->started['docker'])->toContain('-d');
 });

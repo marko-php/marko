@@ -31,7 +31,7 @@ readonly class DockerDetector
         $binary = 'docker compose';
 
         return [
-            'upCommand' => "$binary -f $composeFile up -d",
+            'upCommand' => "$binary -f $composeFile up",
             'downCommand' => "$binary -f $composeFile down",
         ];
     }

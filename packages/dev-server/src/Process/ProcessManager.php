@@ -127,6 +127,92 @@ class ProcessManager
     }
 
     /**
+     * Run in foreground mode: stream process output with prefixes until all processes exit or a signal is received.
+     *
+     * Registers SIGINT/SIGTERM handlers for graceful shutdown when pcntl is available.
+     */
+    public function runForeground(): void
+    {
+        $signaled = false;
+
+        if (function_exists('pcntl_signal')) {
+            $handler = function () use (&$signaled): void {
+                $signaled = true;
+            };
+            pcntl_signal(SIGINT, $handler);
+            pcntl_signal(SIGTERM, $handler);
+            pcntl_async_signals(true);
+        }
+
+        while (!$signaled && $this->processes !== []) {
+            $this->drainOutput();
+
+            // Remove exited processes and report their exit status
+            foreach (array_keys($this->processes) as $name) {
+                if (!$this->isRunning($name)) {
+                    $this->drainOutput($name);
+                    $exitCode = $this->getExitCode($name);
+                    if ($exitCode !== 0) {
+                        $this->writePrefix($name, "exited with code $exitCode");
+                    } else {
+                        $this->writePrefix($name, 'exited');
+                    }
+                    $this->stop($name);
+                }
+            }
+
+            if ($this->processes !== []) {
+                usleep(50000); // 50ms
+            }
+        }
+
+        if ($signaled) {
+            $this->stopAll();
+        }
+    }
+
+    /**
+     * Get the exit code of a process, or -1 if unknown.
+     */
+    private function getExitCode(string $name): int
+    {
+        if (!isset($this->processes[$name])) {
+            return -1;
+        }
+
+        $status = proc_get_status($this->processes[$name]['resource']);
+
+        return $status['exitcode'];
+    }
+
+    /**
+     * Read available output from process pipes and write with prefix.
+     */
+    private function drainOutput(?string $onlyName = null): void
+    {
+        $names = $onlyName !== null ? [$onlyName] : array_keys($this->processes);
+
+        foreach ($names as $name) {
+            if (!isset($this->processes[$name])) {
+                continue;
+            }
+
+            $pipes = $this->processes[$name]['pipes'];
+
+            // Read stdout (pipe 1) and stderr (pipe 2)
+            foreach ([1, 2] as $fd) {
+                if (!is_resource($pipes[$fd])) {
+                    continue;
+                }
+
+                while (($line = fgets($pipes[$fd])) !== false) {
+                    $this->writePrefix($name, rtrim($line, "\r\n"));
+                }
+            }
+        }
+    }
+
+    /**
      * Write a prefixed line to output.
      */
     public function writePrefix(string $name, string $line): void

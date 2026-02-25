@@ -44,7 +44,7 @@ it('returns null when no compose file exists', function (): void {
     rmdir($tmpDir);
 });
 
-it('returns up command with detached flag', function (): void {
+it('returns up command without detached flag', function (): void {
     $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . uniqid();
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/compose.yaml', 'version: "3"');
@@ -53,7 +53,7 @@ it('returns up command with detached flag', function (): void {
     $result = $detector->detect();
 
     expect($result)->toHaveKey('upCommand')
-        ->and($result['upCommand'])->toContain('-d');
+        ->and($result['upCommand'])->not->toContain('-d');
 
     unlink($tmpDir . '/compose.yaml');
     rmdir($tmpDir);
