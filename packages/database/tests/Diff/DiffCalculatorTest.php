@@ -54,7 +54,7 @@ describe('DiffCalculator', function (): void {
             ->and($diff->tablesToCreate[0]->name)->toBe('comments');
     });
 
-    it('detects tables that need to be dropped', function (): void {
+    it('leaves non-entity tables alone (no drops for migration-only tables)', function (): void {
         $entitySchema = [
             'posts' => new Table(
                 name: 'posts',
@@ -81,9 +81,8 @@ describe('DiffCalculator', function (): void {
 
         $diff = $this->calculator->calculate($entitySchema, $databaseSchema);
 
-        expect($diff->tablesToDrop)
-            ->toHaveCount(1)
-            ->and($diff->tablesToDrop[0]->name)->toBe('legacy_table');
+        // Tables in DB but not in entity schema are left alone
+        expect($diff->tablesToDrop)->toBeEmpty();
     });
 
     it('detects new columns in existing tables', function (): void {
@@ -435,12 +434,81 @@ describe('DiffCalculator', function (): void {
 
         $diff = $this->calculator->calculate($entitySchema, $databaseSchema);
 
+        // Non-entity tables (legacy_table) are not dropped
         expect($diff->hasDestructiveChanges())
             ->toBeTrue()
-            ->and($diff->getDestructiveChanges())->toContain('DROP TABLE legacy_table')
+            ->and($diff->getDestructiveChanges())->not->toContain('DROP TABLE legacy_table')
             ->and($diff->getDestructiveChanges())->toContain('DROP COLUMN posts.old_column')
             ->and($diff->getDestructiveChanges())->toContain('DROP INDEX posts.idx_old')
             ->and($diff->getDestructiveChanges())->toContain('DROP FOREIGN KEY posts.fk_old');
+    });
+
+    it('treats entity unique=true and db unique=false as equivalent when unique index exists', function (): void {
+        // PostgreSQL unique indexes don't set column constraint flag,
+        // so entity.unique=true and db.unique=false should be equivalent
+        $entitySchema = [
+            'posts' => new Table(
+                name: 'posts',
+                columns: [
+                    new Column(name: 'id', type: 'INT', primaryKey: true),
+                    new Column(name: 'slug', type: 'VARCHAR', length: 255, unique: true),
+                ],
+                indexes: [
+                    new Index(name: 'idx_posts_slug', columns: ['slug'], type: IndexType::Unique),
+                ],
+            ),
+        ];
+
+        $databaseSchema = [
+            'posts' => new Table(
+                name: 'posts',
+                columns: [
+                    new Column(name: 'id', type: 'INT', primaryKey: true),
+                    new Column(name: 'slug', type: 'VARCHAR', length: 255, unique: false),
+                ],
+                indexes: [
+                    new Index(name: 'idx_posts_slug', columns: ['slug'], type: IndexType::Unique),
+                ],
+            ),
+        ];
+
+        $diff = $this->calculator->calculate($entitySchema, $databaseSchema);
+
+        expect($diff->isEmpty())->toBeTrue();
+    });
+
+    it('treats entity unique=false with unique index and db unique=true as equivalent', function (): void {
+        // Entity has unique=false on column but a separate unique Index object
+        // DB reports unique=true as a column constraint
+        $entitySchema = [
+            'posts' => new Table(
+                name: 'posts',
+                columns: [
+                    new Column(name: 'id', type: 'INT', primaryKey: true),
+                    new Column(name: 'slug', type: 'VARCHAR', length: 255, unique: false),
+                ],
+                indexes: [
+                    new Index(name: 'idx_posts_slug', columns: ['slug'], type: IndexType::Unique),
+                ],
+            ),
+        ];
+
+        $databaseSchema = [
+            'posts' => new Table(
+                name: 'posts',
+                columns: [
+                    new Column(name: 'id', type: 'INT', primaryKey: true),
+                    new Column(name: 'slug', type: 'VARCHAR', length: 255, unique: true),
+                ],
+                indexes: [
+                    new Index(name: 'idx_posts_slug', columns: ['slug'], type: IndexType::Unique),
+                ],
+            ),
+        ];
+
+        $diff = $this->calculator->calculate($entitySchema, $databaseSchema);
+
+        expect($diff->isEmpty())->toBeTrue();
     });
 
     it('returns empty diff when schema matches database', function (): void {
@@ -507,10 +575,11 @@ describe('DiffCalculator', function (): void {
         $diff = $this->calculator->calculate($entitySchema, $databaseSchema);
         $summary = $diff->getSummary();
 
+        // Non-entity tables (legacy) are not dropped
         expect($summary)
             ->toContain('Create table: comments')
-            ->toContain('Drop table: legacy')
-            ->toContain('Alter table: posts')
+            ->not->toContain('Drop table: legacy')
+            ->and($summary)->toContain('Alter table: posts')
             ->toContain('Add column: slug')
             ->toContain('Modify column: title')
             ->toContain('Add index: idx_slug');

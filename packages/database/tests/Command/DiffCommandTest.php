@@ -51,11 +51,11 @@ it('introspects current database state', function (): void {
         indexes: [],
     );
 
+    // Non-entity tables in the database are left alone (not dropped)
     $command = Helpers::createDiffCommand(tables: ['users' => $existingTable]);
     ['output' => $output] = Helpers::executeDiffCommand($command);
 
-    expect($output)->toContain('Drop table: users')
-        ->and($output)->toContain('[DESTRUCTIVE]');
+    expect($output)->toContain('No changes detected');
 });
 
 it('calculates diff between entities and database', function (): void {
@@ -68,10 +68,11 @@ it('calculates diff between entities and database', function (): void {
         indexes: [],
     );
 
+    // Non-entity tables are left alone, so no diff detected
     $command = Helpers::createDiffCommand(tables: ['posts' => $dbTable]);
     ['exitCode' => $exitCode] = Helpers::executeDiffCommand($command);
 
-    expect($exitCode)->toBe(1);
+    expect($exitCode)->toBe(0);
 });
 
 it('displays tables to be created', function (): void {
@@ -301,9 +302,9 @@ it('excludes migrations table even when other tables need changes', function ():
     ]);
     ['output' => $output] = Helpers::executeDiffCommand($command);
 
-    // Should show users table needs to be dropped (no entity for it)
-    // But should NOT show migrations table
-    expect($output)->toContain('Drop table: users')
+    // Non-entity tables (users, migrations) are left alone — not dropped
+    expect($output)->toContain('No changes detected')
+        ->and($output)->not->toContain('Drop table: users')
         ->and($output)->not->toContain('Drop table: migrations');
 });
 

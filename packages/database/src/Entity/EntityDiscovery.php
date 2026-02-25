@@ -77,6 +77,10 @@ class EntityDiscovery
             $entities = array_merge($entities, $this->discoverInPath($entityDir));
         }
 
+        foreach (glob($appPath . '/*/src/Entity', GLOB_ONLYDIR) as $entityDir) {
+            $entities = array_merge($entities, $this->discoverInPath($entityDir));
+        }
+
         return $entities;
     }
 

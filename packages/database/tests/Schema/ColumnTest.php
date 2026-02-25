@@ -148,4 +148,33 @@ describe('Column', function (): void {
             ->and($authorWithRef->onDelete)->toBe('CASCADE')
             ->and($authorWithRef->onUpdate)->toBe('SET NULL');
     });
+
+    it('treats type comparison as case-insensitive', function (): void {
+        $upper = new Column(name: 'title', type: 'VARCHAR', length: 255);
+        $lower = new Column(name: 'title', type: 'varchar', length: 255);
+
+        expect($upper->equals($lower))->toBeTrue();
+    });
+
+    it('treats enum as equivalent to varchar via type aliases', function (): void {
+        $enum = new Column(name: 'status', type: 'enum', length: 20);
+        $varchar = new Column(name: 'status', type: 'varchar', length: 20);
+
+        expect($enum->equals($varchar))->toBeTrue();
+    });
+
+    it('treats datetime as equivalent to timestamp via type aliases', function (): void {
+        $datetime = new Column(name: 'created_at', type: 'datetime');
+        $timestamp = new Column(name: 'created_at', type: 'timestamp');
+
+        expect($datetime->equals($timestamp))->toBeTrue();
+    });
+
+    it('treats TEXT length comparison as case-insensitive', function (): void {
+        $text1 = new Column(name: 'content', type: 'text', length: null);
+        $text2 = new Column(name: 'content', type: 'TEXT', length: 65535);
+
+        // TEXT type ignores length differences
+        expect($text1->equals($text2))->toBeTrue();
+    });
 });

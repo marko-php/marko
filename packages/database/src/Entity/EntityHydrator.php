@@ -211,6 +211,10 @@ class EntityHydrator
             return null;
         }
 
+        if (is_bool($value)) {
+            return (int) $value;
+        }
+
         if ($value instanceof BackedEnum) {
             return $value->value;
         }

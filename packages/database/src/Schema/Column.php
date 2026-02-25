@@ -137,13 +137,34 @@ readonly class Column
         self $other,
     ): bool {
         return $this->name === $other->name
-            && $this->type === $other->type
+            && $this->typeEquals($other)
             && $this->lengthEquals($other)
             && $this->nullableEquals($other)
             && $this->defaultEquals($other)
             && $this->unique === $other->unique
             && $this->primaryKey === $other->primaryKey
             && $this->autoIncrement === $other->autoIncrement;
+    }
+
+    /**
+     * Types that are logically equivalent when stored in the database.
+     * For example, 'enum' is stored as 'varchar' in PostgreSQL.
+     */
+    private const array TYPE_ALIASES = [
+        'enum' => 'varchar',
+        'datetime' => 'timestamp',
+    ];
+
+    /**
+     * Compare types with case-insensitive matching and alias resolution.
+     */
+    private function typeEquals(
+        self $other,
+    ): bool {
+        $thisType = self::TYPE_ALIASES[strtolower($this->type)] ?? strtolower($this->type);
+        $otherType = self::TYPE_ALIASES[strtolower($other->type)] ?? strtolower($other->type);
+
+        return $thisType === $otherType;
     }
 
     /**
@@ -162,7 +183,7 @@ readonly class Column
         }
 
         // For TEXT type, length comparison is irrelevant (TEXT has no user-specified length)
-        if ($this->type === 'TEXT') {
+        if (strtolower($this->type) === 'text') {
             return true;
         }
 

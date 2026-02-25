@@ -92,7 +92,7 @@ it('extracts #[Index] attributes from class', function (): void {
         ->and($metadata->indexes[1]->unique)->toBeTrue();
 });
 
-it('infers column type from PHP property type (int to INT, string to VARCHAR, etc)', function (): void {
+it('infers column type from PHP property type (int to integer, string to varchar, etc)', function (): void {
     $entity = new #[Table('test')] class () extends Entity
     {
         /** @noinspection PhpUnused - Accessed via reflection metadata */
@@ -115,10 +115,10 @@ it('infers column type from PHP property type (int to INT, string to VARCHAR, et
     $metadata = $this->factory->parse($entity::class);
 
     expect($metadata->columns[0]->type)
-        ->toBe('INT')
-        ->and($metadata->columns[1]->type)->toBe('VARCHAR')
-        ->and($metadata->columns[2]->type)->toBe('DECIMAL')
-        ->and($metadata->columns[3]->type)->toBe('BOOLEAN');
+        ->toBe('integer')
+        ->and($metadata->columns[1]->type)->toBe('varchar')
+        ->and($metadata->columns[2]->type)->toBe('decimal')
+        ->and($metadata->columns[3]->type)->toBe('boolean');
 });
 
 it('infers nullable from nullable PHP type (?string)', function (): void {

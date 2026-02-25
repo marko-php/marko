@@ -86,11 +86,13 @@ readonly class PgSqlIntrospector implements IntrospectorInterface
         }
 
         $indexes = $this->getIndexes($name);
+        $foreignKeys = $this->getForeignKeys($name);
 
         return new Table(
             name: $name,
             columns: $columns,
             indexes: $indexes,
+            foreignKeys: $foreignKeys,
         );
     }
 
@@ -165,6 +167,10 @@ readonly class PgSqlIntrospector implements IntrospectorInterface
     public function getIndexes(
         string $table,
     ): array {
+        // Get primary key constraint index names so we can exclude them.
+        // Primary keys are tracked as column flags, not as Index objects.
+        $pkIndexNames = $this->getPrimaryKeyIndexNames($table);
+
         $sql = <<<'SQL'
             SELECT indexname, indexdef
             FROM pg_indexes
@@ -178,6 +184,12 @@ readonly class PgSqlIntrospector implements IntrospectorInterface
         $indexes = [];
         foreach ($rows as $row) {
             $name = $row['indexname'];
+
+            // Skip primary key indexes — they are represented as column flags
+            if (isset($pkIndexNames[$name])) {
+                continue;
+            }
+
             $indexDef = $row['indexdef'];
 
             $isUnique = str_contains($indexDef, 'UNIQUE INDEX');
@@ -273,6 +285,30 @@ readonly class PgSqlIntrospector implements IntrospectorInterface
         $rows = $this->connection->query($sql, [$table, $this->schema]);
 
         return array_column($rows, 'column_name');
+    }
+
+    /**
+     * Get the index names backing primary key constraints for a table.
+     *
+     * @return array<string, true>
+     */
+    private function getPrimaryKeyIndexNames(
+        string $table,
+    ): array {
+        $sql = <<<'SQL'
+            SELECT ic.relname AS index_name
+            FROM pg_constraint con
+            JOIN pg_class c ON c.oid = con.conrelid
+            JOIN pg_class ic ON ic.oid = con.conindid
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE con.contype = 'p'
+              AND c.relname = ?
+              AND n.nspname = ?
+            SQL;
+
+        $rows = $this->connection->query($sql, [$table, $this->schema]);
+
+        return array_fill_keys(array_column($rows, 'index_name'), true);
     }
 
     /**

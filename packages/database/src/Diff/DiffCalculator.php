@@ -33,12 +33,9 @@ class DiffCalculator
             }
         }
 
-        // Find tables to drop (in database but not in entity schema)
-        foreach ($databaseSchema as $tableName => $table) {
-            if (!isset($entitySchema[$tableName])) {
-                $tablesToDrop[] = $table;
-            }
-        }
+        // Tables in the database but not in entity schema are left alone.
+        // Only entity-managed tables participate in the diff. Migration-only
+        // tables (sessions, etc.) have no entity and must not be dropped.
 
         // Find tables to alter (exist in both but have differences)
         foreach ($entitySchema as $tableName => $entityTable) {
@@ -182,30 +179,33 @@ class DiffCalculator
             return true;
         }
 
-        // Check if the only difference is the unique flag
-        // If entity column has unique=false but has a unique index on it,
-        // and database column has unique=true, they're effectively equivalent
-        if (
-            !$entityColumn->unique
-            && $databaseColumn->unique
-            && in_array($entityColumn->name, $columnsWithUniqueIndex, true)
-        ) {
-            // Create a temporary column with unique=true to compare other properties
-            $entityColumnWithUnique = new Column(
-                name: $entityColumn->name,
-                type: $entityColumn->type,
-                length: $entityColumn->length,
-                nullable: $entityColumn->nullable,
-                default: $entityColumn->default,
-                unique: true,
-                primaryKey: $entityColumn->primaryKey,
-                autoIncrement: $entityColumn->autoIncrement,
-                references: $entityColumn->references,
-                onDelete: $entityColumn->onDelete,
-                onUpdate: $entityColumn->onUpdate,
-            );
+        // Check if the only difference is the unique flag.
+        // Unique indexes and unique column constraints are equivalent but
+        // represented differently depending on source:
+        // - Entity: unique=true on column + unique Index object
+        // - DB: may report unique=true (constraint) or unique=false (index only)
+        if ($entityColumn->unique !== $databaseColumn->unique) {
+            $hasUniqueIndex = in_array($entityColumn->name, $columnsWithUniqueIndex, true);
 
-            return $entityColumnWithUnique->equals($databaseColumn);
+            // entity.unique=false, db.unique=true: entity has a separate unique index
+            // entity.unique=true, db.unique=false: PostgreSQL unique indexes don't set column constraint flag
+            if ($hasUniqueIndex || $entityColumn->unique) {
+                $normalized = new Column(
+                    name: $entityColumn->name,
+                    type: $entityColumn->type,
+                    length: $entityColumn->length,
+                    nullable: $entityColumn->nullable,
+                    default: $entityColumn->default,
+                    unique: $databaseColumn->unique,
+                    primaryKey: $entityColumn->primaryKey,
+                    autoIncrement: $entityColumn->autoIncrement,
+                    references: $entityColumn->references,
+                    onDelete: $entityColumn->onDelete,
+                    onUpdate: $entityColumn->onUpdate,
+                );
+
+                return $normalized->equals($databaseColumn);
+            }
         }
 
         return false;

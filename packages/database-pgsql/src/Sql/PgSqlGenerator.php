@@ -36,6 +36,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
         'text' => 'TEXT',
         'boolean' => 'BOOLEAN',
         'datetime' => 'TIMESTAMP',
+        'timestamp' => 'TIMESTAMP',
         'date' => 'DATE',
         'time' => 'TIME',
         'decimal' => 'DECIMAL',
@@ -44,6 +45,7 @@ class PgSqlGenerator implements SqlGeneratorInterface
         'json' => 'JSONB',
         'uuid' => 'UUID',
         'binary' => 'BYTEA',
+        'enum' => 'VARCHAR',
     ];
 
     public function generateUp(
@@ -51,9 +53,17 @@ class PgSqlGenerator implements SqlGeneratorInterface
     ): array {
         $statements = [];
 
-        // Create new tables
+        // Create new tables (with their indexes and foreign keys)
         foreach ($diff->tablesToCreate as $table) {
             $statements[] = $this->generateCreateTable($table);
+
+            foreach ($table->indexes as $index) {
+                $statements[] = $this->generateAddIndex($table->name, $index);
+            }
+
+            foreach ($table->foreignKeys as $foreignKey) {
+                $statements[] = $this->generateAddForeignKey($table->name, $foreignKey);
+            }
         }
 
         // Drop tables

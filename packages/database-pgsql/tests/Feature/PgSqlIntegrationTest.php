@@ -218,8 +218,10 @@ describe('PostgreSQL Integration', function (): void {
         $upStatements = $generator->generateUp($diff);
         $downStatements = $generator->generateDown($diff);
 
-        expect($upStatements)->toHaveCount(1)
+        // PostgreSQL generates CREATE TABLE + separate CREATE INDEX statements
+        expect($upStatements)->toHaveCount(2)
             ->and($upStatements[0])->toContain('CREATE TABLE "products"')
+            ->and($upStatements[1])->toContain('CREATE INDEX "idx_name"')
             ->and($downStatements)->toHaveCount(1)
             ->and($downStatements[0])->toContain('DROP TABLE "products"');
     });

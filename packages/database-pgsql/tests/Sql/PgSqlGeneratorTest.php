@@ -128,6 +128,7 @@ describe('PgSqlGenerator', function (): void {
             ['type' => 'text', 'expected' => 'TEXT'],
             ['type' => 'boolean', 'expected' => 'BOOLEAN'],
             ['type' => 'datetime', 'expected' => 'TIMESTAMP'],
+            ['type' => 'timestamp', 'expected' => 'TIMESTAMP'],
             ['type' => 'date', 'expected' => 'DATE'],
             ['type' => 'time', 'expected' => 'TIME'],
             ['type' => 'decimal', 'expected' => 'DECIMAL'],
@@ -136,6 +137,7 @@ describe('PgSqlGenerator', function (): void {
             ['type' => 'json', 'expected' => 'JSONB'],
             ['type' => 'uuid', 'expected' => 'UUID'],
             ['type' => 'binary', 'expected' => 'BYTEA'],
+            ['type' => 'enum', 'length' => 50, 'expected' => 'VARCHAR(50)'],
         ];
 
         foreach ($types as $type) {
@@ -179,6 +181,40 @@ describe('PgSqlGenerator', function (): void {
             ->and($intSql)->toContain('DEFAULT 0')
             ->and($boolSql)->toContain('DEFAULT TRUE')
             ->and($nullSql)->not->toContain('DEFAULT');
+    });
+
+    it('generates separate index and foreign key statements for new tables in up SQL', function (): void {
+        $table = new Table(
+            name: 'posts',
+            columns: [
+                new Column(name: 'id', type: 'integer', primaryKey: true, autoIncrement: true),
+                new Column(name: 'user_id', type: 'integer'),
+                new Column(name: 'title', type: 'string', length: 255),
+            ],
+            indexes: [
+                new Index(name: 'idx_posts_title', columns: ['title']),
+                new Index(name: 'idx_posts_user_id', columns: ['user_id'], type: IndexType::Btree),
+            ],
+            foreignKeys: [
+                new ForeignKey(
+                    name: 'fk_posts_user_id',
+                    columns: ['user_id'],
+                    referencedTable: 'users',
+                    referencedColumns: ['id'],
+                    onDelete: 'CASCADE',
+                ),
+            ],
+        );
+
+        $diff = new SchemaDiff(tablesToCreate: [$table]);
+        $sql = $this->generator->generateUp($diff);
+
+        // CREATE TABLE + 2 CREATE INDEX + 1 ADD FOREIGN KEY
+        expect($sql)->toHaveCount(4)
+            ->and($sql[0])->toContain('CREATE TABLE "posts"')
+            ->and($sql[1])->toContain('CREATE INDEX "idx_posts_title"')
+            ->and($sql[2])->toContain('CREATE INDEX "idx_posts_user_id"')
+            ->and($sql[3])->toContain('ADD CONSTRAINT "fk_posts_user_id"');
     });
 
     it('generates down SQL that reverses up SQL', function (): void {

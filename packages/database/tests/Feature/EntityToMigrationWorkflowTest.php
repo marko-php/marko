@@ -348,7 +348,7 @@ describe('Entity to Migration Workflow', function (): void {
             ->and($diff->tablesToCreate[0]->name)->toBe('new_table');
     });
 
-    it('detects tables to drop', function (): void {
+    it('leaves non-entity tables alone (no drops)', function (): void {
         $diffCalculator = new DiffCalculator();
 
         $existingTable = new SchemaTable(
@@ -359,13 +359,12 @@ describe('Entity to Migration Workflow', function (): void {
             indexes: [],
         );
 
+        // Tables in DB but not in entity schema are left alone
         $diff = $diffCalculator->calculate(
             [], // No entities
             ['old_table' => $existingTable],
         );
 
-        expect($diff->tablesToDrop)
-            ->toHaveCount(1)
-            ->and($diff->tablesToDrop[0]->name)->toBe('old_table');
+        expect($diff->tablesToDrop)->toBeEmpty();
     });
 });

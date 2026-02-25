@@ -22,11 +22,11 @@ class EntityMetadataFactory
      * PHP type to database type mapping.
      */
     private const array TYPE_MAP = [
-        'int' => 'INT',
-        'string' => 'VARCHAR',
-        'float' => 'DECIMAL',
-        'bool' => 'BOOLEAN',
-        'array' => 'JSON',
+        'int' => 'integer',
+        'string' => 'varchar',
+        'float' => 'decimal',
+        'bool' => 'boolean',
+        'array' => 'json',
     ];
 
     /**
@@ -199,6 +199,6 @@ class EntityMetadataFactory
     private function inferDatabaseType(
         string $phpType,
     ): string {
-        return self::TYPE_MAP[$phpType] ?? 'VARCHAR';
+        return self::TYPE_MAP[$phpType] ?? 'varchar';
     }
 }

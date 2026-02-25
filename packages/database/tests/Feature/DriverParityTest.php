@@ -36,15 +36,17 @@ describe('Driver Parity', function (): void {
 
         $diff = new SchemaDiff(tablesToCreate: [$table]);
 
-        // Both should generate exactly 1 CREATE TABLE statement
+        // MySQL includes indexes inline in CREATE TABLE (1 statement)
+        // PostgreSQL generates separate CREATE INDEX statements (1 CREATE TABLE + 1 CREATE INDEX)
         $mysqlUp = $this->mysqlGenerator->generateUp($diff);
         $pgsqlUp = $this->pgsqlGenerator->generateUp($diff);
 
         expect($mysqlUp)
             ->toHaveCount(1)
-            ->and($pgsqlUp)->toHaveCount(1)
             ->and($mysqlUp[0])->toContain('CREATE TABLE')
-            ->and($pgsqlUp[0])->toContain('CREATE TABLE');
+            ->and($pgsqlUp[0])->toContain('CREATE TABLE')
+            ->and($pgsqlUp)->toHaveCount(2)
+            ->and($pgsqlUp[1])->toContain('CREATE INDEX');
 
         // Both should generate exactly 1 DROP TABLE for down
         $mysqlDown = $this->mysqlGenerator->generateDown($diff);
@@ -129,7 +131,7 @@ describe('Driver Parity', function (): void {
             ->toContain('ON DELETE CASCADE');
     });
 
-    it('generates same number of statements for complex migrations', function (): void {
+    it('generates correct statements for complex migrations on both drivers', function (): void {
         $table1 = new Table(
             name: 'categories',
             columns: [
@@ -156,12 +158,15 @@ describe('Driver Parity', function (): void {
             tablesToCreate: [$table1, $table2],
         );
 
+        // MySQL includes indexes inline: 2 CREATE TABLE statements
+        // PostgreSQL generates separate indexes: 2 CREATE TABLE + 1 CREATE INDEX
         $mysqlUp = $this->mysqlGenerator->generateUp($diff);
         $pgsqlUp = $this->pgsqlGenerator->generateUp($diff);
 
-        // Both should generate the same number of statements
-        expect(count($mysqlUp))->toBe(count($pgsqlUp));
+        expect($mysqlUp)->toHaveCount(2)
+            ->and($pgsqlUp)->toHaveCount(3);
 
+        // Down statements are the same count (just DROP TABLE)
         $mysqlDown = $this->mysqlGenerator->generateDown($diff);
         $pgsqlDown = $this->pgsqlGenerator->generateDown($diff);
 
