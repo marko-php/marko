@@ -59,12 +59,12 @@ it('has module.php with enabled set to true', function () {
     expect($config)->toBeArray();
 });
 
-it('has module.php with bindings array', function () {
+it('has module.php with singletons array', function () {
     $modulePath = dirname(__DIR__) . '/module.php';
     $config = require $modulePath;
 
-    expect($config)->toHaveKey('bindings')
-        ->and($config['bindings'])->toBeArray();
+    expect($config)->toHaveKey('singletons')
+        ->and($config['singletons'])->toBeArray();
 });
 
 it('has src directory for source code', function () {

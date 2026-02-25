@@ -163,6 +163,7 @@ readonly class ModuleDiscovery
             after: $manifest->after,
             before: $manifest->before,
             bindings: $manifest->bindings,
+            singletons: $manifest->singletons,
             path: $path,
             source: $source,
             autoload: $manifest->autoload,
