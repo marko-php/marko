@@ -66,7 +66,7 @@ class RouteDiscovery
                         path: $instance->path,
                         controller: $className,
                         action: $method->getName(),
-                        middleware: array_merge($classMiddleware, $methodMiddleware),
+                        middleware: array_merge($classMiddleware, $instance->middleware, $methodMiddleware),
                     );
                 }
             }

@@ -8,6 +8,7 @@ use Marko\Routing\RouteDiscovery;
 use Test\DiscoveryModule\DeleteController;
 use Test\DiscoveryModule\DisabledRouteController;
 use Test\DiscoveryModule\GetController;
+use Test\DiscoveryModule\InlineMiddlewareController;
 use Test\DiscoveryModule\MiddlewareController;
 use Test\DiscoveryModule\MissingAttributeController;
 use Test\DiscoveryModule\MultiRouteController;
@@ -166,6 +167,33 @@ it('handles multiple routes in same controller', function () {
         ->and($methods)->toContain('POST')
         ->and($methods)->toContain('PUT')
         ->and($methods)->toContain('DELETE');
+});
+
+it('includes middleware from route attribute inline parameter', function () {
+    require_once $this->fixturesPath . '/src/InlineMiddlewareController.php';
+
+    $routes = $this->discovery->discoverFromClass(InlineMiddlewareController::class);
+
+    $inlineRoute = array_values(array_filter(
+        $routes,
+        fn ($r) => $r->action === 'inlineOnly',
+    ))[0];
+
+    expect($inlineRoute->middleware)->toContain('ClassMiddleware')
+        ->and($inlineRoute->middleware)->toContain('InlineMiddleware');
+});
+
+it('orders class middleware before inline before method middleware', function () {
+    require_once $this->fixturesPath . '/src/InlineMiddlewareController.php';
+
+    $routes = $this->discovery->discoverFromClass(InlineMiddlewareController::class);
+
+    $combinedRoute = array_values(array_filter(
+        $routes,
+        fn ($r) => $r->action === 'combinedAll',
+    ))[0];
+
+    expect($combinedRoute->middleware)->toBe(['ClassMiddleware', 'InlineMiddleware', 'MethodMiddleware']);
 });
 
 it('skips missing Marko attribute classes and still discovers routes', function () {
