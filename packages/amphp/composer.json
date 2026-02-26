@@ -1,0 +1,51 @@
+{
+    "name": "marko/amphp",
+    "description": "Revolt event loop lifecycle and config integration for Marko Framework",
+    "license": "MIT",
+    "type": "marko-module",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../core"
+        },
+        {
+            "type": "path",
+            "url": "../config"
+        },
+        {
+            "type": "path",
+            "url": "../testing"
+        }
+    ],
+    "require": {
+        "php": "^8.5",
+        "amphp/amp": "^3",
+        "revolt/event-loop": "^1",
+        "marko/core": "@dev",
+        "marko/config": "@dev"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Amphp\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Amphp\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

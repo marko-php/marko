@@ -20,11 +20,23 @@ readonly class Request
 
     public static function fromGlobals(): self
     {
+        $body = (string) file_get_contents('php://input');
+        $post = $_POST;
+
+        // PHP only populates $_POST for POST requests; parse body for PUT/PATCH/DELETE
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        if ($post === [] && $body !== '' && in_array($method, ['PUT', 'PATCH', 'DELETE'], true)) {
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+            if (str_contains($contentType, 'application/x-www-form-urlencoded')) {
+                parse_str($body, $post);
+            }
+        }
+
         return new self(
             server: $_SERVER,
             query: $_GET,
-            post: $_POST,
-            body: (string) file_get_contents('php://input'),
+            post: $post,
+            body: $body,
         );
     }
 

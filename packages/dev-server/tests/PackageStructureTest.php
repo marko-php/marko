@@ -59,6 +59,13 @@ it('has config/dev.php with default values', function (): void {
         ->and($config['frontend'])->toBeTrue();
 });
 
+it('adds pubsub toggle to dev config with default true', function (): void {
+    $config = require __DIR__ . '/../config/dev.php';
+
+    expect($config)->toHaveKey('pubsub')
+        ->and($config['pubsub'])->toBeTrue();
+});
+
 it('provides default config values in config/dev.php', function (): void {
     $config = require __DIR__ . '/../config/dev.php';
 

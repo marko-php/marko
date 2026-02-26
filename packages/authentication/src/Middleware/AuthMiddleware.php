@@ -17,7 +17,7 @@ readonly class AuthMiddleware implements MiddlewareInterface
     public function __construct(
         private AuthManager $auth,
         private ?string $guard = null,
-        private ?string $redirectTo = null,
+        private ?string $redirectTo = '/login',
     ) {}
 
     /**

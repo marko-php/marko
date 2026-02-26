@@ -22,6 +22,9 @@
         "marko/core": "@dev",
         "marko/routing": "@dev"
     },
+    "suggest": {
+        "marko/pubsub": "For real-time pub/sub-driven SSE streams"
+    },
     "require-dev": {
         "pestphp/pest": "^4.0",
         "marko/testing": "@dev"

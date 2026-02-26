@@ -90,7 +90,7 @@ readonly class Router
 
             // Priority: route params > POST data > query string > default
             if (array_key_exists($name, $routeParams)) {
-                $parameters[] = $routeParams[$name];
+                $parameters[] = $this->castToType($routeParams[$name], $type);
             } elseif (($postValue = $request->post($name)) !== null) {
                 $parameters[] = $postValue;
             } elseif (($queryValue = $request->query($name)) !== null) {
@@ -103,6 +103,22 @@ readonly class Router
         }
 
         return $parameters;
+    }
+
+    private function castToType(
+        mixed $value,
+        ?\ReflectionType $type,
+    ): mixed {
+        if (!$type instanceof ReflectionNamedType) {
+            return $value;
+        }
+
+        return match ($type->getName()) {
+            'int' => (int) $value,
+            'float' => (float) $value,
+            'bool' => (bool) $value,
+            default => $value,
+        };
     }
 
     private function wrapResult(

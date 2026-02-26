@@ -11,6 +11,8 @@
         "ext-imagick": "*"
     },
     "require-dev": {
+        "amphp/postgres": "^2",
+        "amphp/redis": "^2.0",
         "aws/aws-sdk-php": "^3.0",
         "friendsofphp/php-cs-fixer": "^3.92",
         "guzzlehttp/guzzle": "^7.0",
@@ -91,7 +93,11 @@
             "Marko\\Media\\": "packages/media/src/",
             "Marko\\MediaGd\\": "packages/media-gd/src/",
             "Marko\\MediaImagick\\": "packages/media-imagick/src/",
-            "Marko\\Sse\\": "packages/sse/src/"
+            "Marko\\Sse\\": "packages/sse/src/",
+            "Marko\\PubSub\\": "packages/pubsub/src/",
+            "Marko\\PubSub\\PgSql\\": "packages/pubsub-pgsql/src/",
+            "Marko\\PubSub\\Redis\\": "packages/pubsub-redis/src/",
+            "Marko\\Amphp\\": "packages/amphp/src/"
         }
     },
     "autoload-dev": {
@@ -161,7 +167,11 @@
             "Marko\\Media\\Tests\\": "packages/media/tests/",
             "Marko\\MediaGd\\Tests\\": "packages/media-gd/tests/",
             "Marko\\MediaImagick\\Tests\\": "packages/media-imagick/tests/",
-            "Marko\\Sse\\Tests\\": "packages/sse/tests/"
+            "Marko\\Sse\\Tests\\": "packages/sse/tests/",
+            "Marko\\PubSub\\Tests\\": "packages/pubsub/tests/",
+            "Marko\\PubSub\\PgSql\\Tests\\": "packages/pubsub-pgsql/tests/",
+            "Marko\\PubSub\\Redis\\Tests\\": "packages/pubsub-redis/tests/",
+            "Marko\\Amphp\\Tests\\": "packages/amphp/tests/"
         }
     },
     "scripts": {

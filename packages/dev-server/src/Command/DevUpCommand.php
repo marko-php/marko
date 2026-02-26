@@ -12,6 +12,7 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\DevServer\Detection\DockerDetector;
 use Marko\DevServer\Detection\FrontendDetector;
+use Marko\DevServer\Detection\PubSubDetector;
 use Marko\DevServer\Exceptions\DevServerException;
 use Marko\DevServer\Process\PidFile;
 use Marko\DevServer\Process\ProcessEntry;
@@ -25,6 +26,7 @@ readonly class DevUpCommand implements CommandInterface
         private ConfigRepositoryInterface $config,
         private DockerDetector $dockerDetector,
         private FrontendDetector $frontendDetector,
+        private PubSubDetector $pubsubDetector,
         private PidFile $pidFile,
         private ProcessManager $processManager,
     ) {}
@@ -38,6 +40,7 @@ readonly class DevUpCommand implements CommandInterface
         $detach = $input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool('dev.detach');
         $dockerConfig = $this->config->get('dev.docker');
         $frontendConfig = $this->config->get('dev.frontend');
+        $pubsubConfig = $this->config->get('dev.pubsub');
 
         $output->writeLine('Starting development environment...');
 
@@ -84,6 +87,25 @@ readonly class DevUpCommand implements CommandInterface
             }
         }
 
+        // Pub/Sub listener
+        if ($pubsubConfig !== false) {
+            $pubsubCommand = is_string($pubsubConfig)
+                ? $pubsubConfig
+                : $this->pubsubDetector->detect();
+
+            if ($pubsubCommand !== null) {
+                $output->writeLine("  Starting pub/sub listener: $pubsubCommand");
+                $pid = $this->processManager->start('pubsub', $pubsubCommand);
+                $entries[] = new ProcessEntry(
+                    name: 'pubsub',
+                    pid: $pid,
+                    command: $pubsubCommand,
+                    port: 0,
+                    startedAt: date('c'),
+                );
+            }
+        }
+
         // Custom processes
         /** @var array<string, string> $processes */
         $processes = $this->config->get('dev.processes');
@@ -99,8 +121,8 @@ readonly class DevUpCommand implements CommandInterface
             );
         }
 
-        // PHP server (always)
-        $phpCommand = "php -S localhost:$port -t public/";
+        // PHP server (always) — multiple workers needed for SSE
+        $phpCommand = "PHP_CLI_SERVER_WORKERS=4 php -S localhost:$port -t public/";
         $output->writeLine("  Starting PHP server: php -S localhost:$port");
         $pid = $this->processManager->start('php', $phpCommand);
         $entries[] = new ProcessEntry(

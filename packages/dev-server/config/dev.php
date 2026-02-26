@@ -7,5 +7,6 @@ return [
     'detach' => false,
     'docker' => true,
     'frontend' => true,
+    'pubsub' => true,
     'processes' => [],
 ];

@@ -8,6 +8,7 @@ use Marko\Core\Command\Output;
 use Marko\DevServer\Command\DevUpCommand;
 use Marko\DevServer\Detection\DockerDetector;
 use Marko\DevServer\Detection\FrontendDetector;
+use Marko\DevServer\Detection\PubSubDetector;
 use Marko\DevServer\Process\PidFile;
 use Marko\DevServer\Process\ProcessManager;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -43,11 +44,13 @@ class FakeProcessManager extends ProcessManager
  *
  * @param array<string, mixed> $config
  * @param string|null $tempDir Directory to use for detectors (null = no files present)
+ * @param PubSubDetector|null $pubsubDetector Optional PubSubDetector override
  * @return array{command: DevUpCommand, processManager: FakeProcessManager, pidFile: PidFile, tempDir: string}
  */
 function createDevUpCommand(
     array $config = [],
     ?string $tempDir = null,
+    ?PubSubDetector $pubsubDetector = null,
 ): array {
     $dir = $tempDir ?? sys_get_temp_dir() . '/marko-test-' . uniqid();
     if (!is_dir($dir)) {
@@ -58,6 +61,7 @@ function createDevUpCommand(
         'dev.port' => 8000,
         'dev.docker' => false,
         'dev.frontend' => false,
+        'dev.pubsub' => false,
         'dev.detach' => false,
         'dev.processes' => [],
     ];
@@ -65,6 +69,7 @@ function createDevUpCommand(
 
     $dockerDetector = new DockerDetector($dir);
     $frontendDetector = new FrontendDetector($dir);
+    $resolvedPubsubDetector = $pubsubDetector ?? new PubSubDetector();
     $pidFile = new PidFile($dir);
     $processManager = new FakeProcessManager();
 
@@ -72,6 +77,7 @@ function createDevUpCommand(
         config: $fakeConfig,
         dockerDetector: $dockerDetector,
         frontendDetector: $frontendDetector,
+        pubsubDetector: $resolvedPubsubDetector,
         pidFile: $pidFile,
         processManager: $processManager,
     );
@@ -503,4 +509,47 @@ it('runs docker detached when in detach mode', function (): void {
     $command->execute($input, $output);
 
     expect($pm->started['docker'])->toContain('-d');
+});
+
+it('starts pubsub:listen as managed process in DevUpCommand when detected', function (): void {
+    $pubsubDetector = new class () extends PubSubDetector
+    {
+        protected function isPubSubInstalled(): bool
+        {
+            return true;
+        }
+    };
+
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(
+        config: ['dev.pubsub' => true],
+        pubsubDetector: $pubsubDetector,
+    );
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->started)->toHaveKey('pubsub')
+        ->and($pm->started['pubsub'])->toBe('marko pubsub:listen');
+});
+
+it('skips pubsub process when pubsub config is false', function (): void {
+    $pubsubDetector = new class () extends PubSubDetector
+    {
+        protected function isPubSubInstalled(): bool
+        {
+            return true;
+        }
+    };
+
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(
+        config: ['dev.pubsub' => false],
+        pubsubDetector: $pubsubDetector,
+    );
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->started)->not->toHaveKey('pubsub');
 });
