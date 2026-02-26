@@ -15,13 +15,16 @@ use Marko\ErrorsSimple\SimpleErrorHandler;
 use RuntimeException;
 
 /**
- * Test-friendly error handler that skips buffer clearing.
+ * Test-friendly error handler that skips buffer clearing and captures non-fatal reports.
  */
 class TestableErrorHandler extends SimpleErrorHandler
 {
     public int $buffersClearedCount = 0;
 
     public ?int $statusCodeSet = null;
+
+    /** @var ErrorReport[] */
+    public array $nonFatalReports = [];
 
     protected function clearOutputBuffers(): void
     {
@@ -33,6 +36,12 @@ class TestableErrorHandler extends SimpleErrorHandler
         int $code,
     ): void {
         $this->statusCodeSet = $code;
+    }
+
+    protected function handleNonFatal(
+        ErrorReport $report,
+    ): void {
+        $this->nonFatalReports[] = $report;
     }
 }
 
@@ -122,18 +131,78 @@ describe('SimpleErrorHandler', function (): void {
         $environment = new Environment(sapi: 'cli', envVars: ['MARKO_ENV' => 'development']);
         $handler = new TestableErrorHandler($environment);
 
-        // Ensure notices are reported
         $originalLevel = error_reporting();
         error_reporting(E_ALL);
 
         ob_start();
-        $handler->handleError(E_NOTICE, 'Undefined variable', '/app/code.php', 100);
+        $handler->handleError(E_WARNING, 'Undefined variable', '/app/code.php', 100);
         $output = ob_get_clean();
 
         error_reporting($originalLevel);
 
         // The output should reference ErrorException
         expect($output)->toContain('ErrorException');
+    });
+
+    it('handles deprecation notices loudly but non-destructively', function (): void {
+        $environment = new Environment(sapi: 'cli', envVars: ['MARKO_ENV' => 'development']);
+        $handler = new TestableErrorHandler($environment);
+
+        $originalLevel = error_reporting();
+        error_reporting(E_ALL);
+
+        ob_start();
+        $result = $handler->handleError(E_DEPRECATED, 'Function xyz() is deprecated', '/vendor/lib.php', 50);
+        $output = ob_get_clean();
+
+        error_reporting($originalLevel);
+
+        // Should be handled but not written to stdout or clear buffers
+        expect($result)->toBeTrue();
+        expect($output)->toBeEmpty();
+        expect($handler->buffersClearedCount)->toBe(0);
+        // Should still report the error loudly via handleNonFatal
+        expect($handler->nonFatalReports)->toHaveCount(1);
+        expect($handler->nonFatalReports[0]->severity)->toBe(Severity::Deprecated);
+        expect($handler->nonFatalReports[0]->message)->toBe('Function xyz() is deprecated');
+    });
+
+    it('handles notice-level errors loudly but non-destructively', function (): void {
+        $environment = new Environment(sapi: 'cli', envVars: ['MARKO_ENV' => 'development']);
+        $handler = new TestableErrorHandler($environment);
+
+        $originalLevel = error_reporting();
+        error_reporting(E_ALL);
+
+        ob_start();
+        $result = $handler->handleError(E_NOTICE, 'Undefined variable', '/app/code.php', 100);
+        $output = ob_get_clean();
+
+        error_reporting($originalLevel);
+
+        expect($result)->toBeTrue();
+        expect($output)->toBeEmpty();
+        expect($handler->nonFatalReports)->toHaveCount(1);
+        expect($handler->nonFatalReports[0]->severity)->toBe(Severity::Notice);
+    });
+
+    it('reports deprecation notices in production too', function (): void {
+        $environment = new Environment(sapi: 'cli', envVars: ['MARKO_ENV' => 'production']);
+        $handler = new TestableErrorHandler($environment);
+
+        $originalLevel = error_reporting();
+        error_reporting(E_ALL);
+
+        ob_start();
+        $result = $handler->handleError(E_DEPRECATED, 'Function xyz() is deprecated', '/vendor/lib.php', 50);
+        $output = ob_get_clean();
+
+        error_reporting($originalLevel);
+
+        expect($result)->toBeTrue();
+        expect($output)->toBeEmpty();
+        // Non-fatal errors are still reported, even in production
+        expect($handler->nonFatalReports)->toHaveCount(1);
     });
 
     it('outputs formatted error to stdout in CLI', function (): void {

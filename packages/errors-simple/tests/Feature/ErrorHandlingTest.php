@@ -21,6 +21,9 @@ use RuntimeException;
  */
 class TestableErrorHandler extends SimpleErrorHandler
 {
+    /** @var ErrorReport[] */
+    public array $nonFatalReports = [];
+
     protected function clearOutputBuffers(): void
     {
         // Skip actual buffer clearing in tests to preserve Pest's buffers
@@ -30,6 +33,12 @@ class TestableErrorHandler extends SimpleErrorHandler
         int $code,
     ): void {
         // Skip HTTP status code in tests
+    }
+
+    protected function handleNonFatal(
+        ErrorReport $report,
+    ): void {
+        $this->nonFatalReports[] = $report;
     }
 }
 
@@ -218,6 +227,30 @@ describe('Error Handling Integration', function (): void {
 
         expect($resolved)->toBeInstanceOf(ErrorHandlerInterface::class)
             ->and($resolved)->toBeInstanceOf(SimpleErrorHandler::class);
+    });
+
+    it('handles deprecation notices without clearing output buffers', function (): void {
+        $env = new Environment(sapi: 'cli', envVars: ['MARKO_ENV' => 'development']);
+        $handler = new TestableErrorHandler($env);
+
+        $originalLevel = error_reporting();
+        error_reporting(E_ALL);
+
+        // Simulate prior output that should be preserved
+        ob_start();
+        echo 'prior output';
+        $result = $handler->handleError(E_DEPRECATED, 'Using ${var} is deprecated', '/vendor/file.php', 10);
+        $output = ob_get_clean();
+
+        error_reporting($originalLevel);
+
+        // Deprecation should be handled but NOT wipe out prior output
+        expect($result)->toBeTrue();
+        expect($output)->toContain('prior output');
+        expect($output)->not->toContain('An error occurred');
+        // Should still be reported loudly
+        expect($handler->nonFatalReports)->toHaveCount(1);
+        expect($handler->nonFatalReports[0]->severity)->toBe(Severity::Deprecated);
     });
 
     it('registers and unregisters cleanly', function (): void {

@@ -84,6 +84,20 @@ class SimpleErrorHandler implements ErrorHandlerInterface
         $this->handle($report);
     }
 
+    protected function handleNonFatal(
+        ErrorReport $report,
+    ): void {
+        if (!$this->environment->isCli()) {
+            return;
+        }
+
+        $color = "\033[35m";
+        $reset = "\033[0m";
+        $label = $report->severity->label();
+
+        fwrite(STDERR, "{$color}[{$label}]{$reset} $report->message in $report->file:$report->line\n");
+    }
+
     public function handleError(
         int $level,
         string $message,
@@ -96,6 +110,17 @@ class SimpleErrorHandler implements ErrorHandlerInterface
         }
 
         $exception = new ErrorException($message, 0, $level, $file, $line);
+        $severity = Severity::fromErrorLevel($level);
+
+        // Non-fatal errors (deprecations, notices) are reported loudly to stderr
+        // but don't clear output buffers or halt execution.
+        if ($severity === Severity::Deprecated || $severity === Severity::Notice) {
+            $report = ErrorReport::fromThrowable($exception, $severity);
+            $this->handleNonFatal($report);
+
+            return true;
+        }
+
         $this->handleException($exception);
 
         return true;
