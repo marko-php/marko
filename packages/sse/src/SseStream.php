@@ -32,6 +32,11 @@ readonly class SseStream implements IteratorAggregate
         }
     }
 
+    public function close(): void
+    {
+        $this->subscription?->cancel();
+    }
+
     /**
      * @return Generator<int, string>
      * @throws JsonException

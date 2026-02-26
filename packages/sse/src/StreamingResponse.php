@@ -46,13 +46,17 @@ readonly class StreamingResponse extends Response
         ob_implicit_flush(true);
         set_time_limit(0);
 
-        foreach ($this->stream as $chunk) {
-            if (connection_aborted()) {
-                break;
-            }
+        try {
+            foreach ($this->stream as $chunk) {
+                if (connection_aborted()) {
+                    break;
+                }
 
-            echo $chunk;
-            flush();
+                echo $chunk;
+                flush();
+            }
+        } finally {
+            $this->stream->close();
         }
     }
 }
