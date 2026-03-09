@@ -36,38 +36,38 @@ it('creates PostApiController with list, show, create, update, delete, publish a
     // Check index method (list)
     $index = $reflection->getMethod('index');
     $indexRoute = $index->getAttributes(Get::class);
-    expect($indexRoute)->toHaveCount(1);
-    expect($indexRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts');
+    expect($indexRoute)->toHaveCount(1)
+        ->and($indexRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts');
 
     // Check show method
     $show = $reflection->getMethod('show');
     $showRoute = $show->getAttributes(Get::class);
-    expect($showRoute)->toHaveCount(1);
-    expect($showRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts/{id}');
+    expect($showRoute)->toHaveCount(1)
+        ->and($showRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts/{id}');
 
     // Check store method (create)
     $store = $reflection->getMethod('store');
     $storeRoute = $store->getAttributes(PostRoute::class);
-    expect($storeRoute)->toHaveCount(1);
-    expect($storeRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts');
+    expect($storeRoute)->toHaveCount(1)
+        ->and($storeRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts');
 
     // Check update method
     $update = $reflection->getMethod('update');
     $updateRoute = $update->getAttributes(Put::class);
-    expect($updateRoute)->toHaveCount(1);
-    expect($updateRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts/{id}');
+    expect($updateRoute)->toHaveCount(1)
+        ->and($updateRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts/{id}');
 
     // Check destroy method (delete)
     $destroy = $reflection->getMethod('destroy');
     $destroyRoute = $destroy->getAttributes(Delete::class);
-    expect($destroyRoute)->toHaveCount(1);
-    expect($destroyRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts/{id}');
+    expect($destroyRoute)->toHaveCount(1)
+        ->and($destroyRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts/{id}');
 
     // Check publish method
     $publish = $reflection->getMethod('publish');
     $publishRoute = $publish->getAttributes(PostRoute::class);
-    expect($publishRoute)->toHaveCount(1);
-    expect($publishRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts/{id}/publish');
+    expect($publishRoute)->toHaveCount(1)
+        ->and($publishRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/posts/{id}/publish');
 });
 
 it('returns paginated JSON list of posts with meta', function (): void {
@@ -153,7 +153,7 @@ it('returns 422 with validation errors for invalid post data', function (): void
         ->and($body['errors'][0]['message'])->toBe('Title is required')
         ->and($body['errors'][1]['message'])->toBe('Content is required')
         ->and($body['errors'][2]['message'])->toBe('Author is required')
-        ->and($savedEntities)->toHaveCount(0);
+        ->and($savedEntities)->toBeEmpty();
 });
 
 // Helper functions
@@ -192,7 +192,9 @@ function createApiMockPostRepo(
         public function __construct(
             private array $findAllResult,
             private ?Post $findResult,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$savedEntities,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$deletedEntities,
         ) {}
 
@@ -227,6 +229,12 @@ function createApiMockPostRepo(
             array $criteria,
         ): ?Entity {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function save(

@@ -11,6 +11,7 @@ use Marko\Blog\Events\Comment\CommentCreated;
 use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\CommentRateLimiterInterface;
+use Marko\Blog\Services\CommentThreadingServiceInterface;
 use Marko\Blog\Services\CommentVerificationServiceInterface;
 use Marko\Blog\Services\HoneypotValidatorInterface;
 use Marko\Core\Event\EventDispatcherInterface;
@@ -27,6 +28,7 @@ readonly class CommentController
         private CommentVerificationServiceInterface $verificationService,
         private BlogConfigInterface $blogConfig,
         private EventDispatcherInterface $eventDispatcher,
+        private CommentThreadingServiceInterface $commentThreadingService,
     ) {}
 
     #[PostRoute('/blog/{slug}/comment')]
@@ -184,7 +186,7 @@ readonly class CommentController
         }
 
         // Check reply depth doesn't exceed max depth
-        $parentDepth = $this->commentRepository->calculateDepth($parentId);
+        $parentDepth = $this->commentThreadingService->calculateDepth($parentId);
         $maxDepth = $this->blogConfig->getCommentMaxDepth();
 
         if ($parentDepth >= $maxDepth) {

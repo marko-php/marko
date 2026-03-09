@@ -215,8 +215,8 @@ it('handles case when no scheduled posts are due', function (): void {
 
     ['output' => $output, 'exitCode' => $exitCode] = executeCommand($command);
 
-    expect($capture->savedPosts)->toHaveCount(0)
-        ->and($eventDispatcher->dispatched)->toHaveCount(0)
+    expect($capture->savedPosts)->toBeEmpty()
+        ->and($eventDispatcher->dispatched)->toBeEmpty()
         ->and($output)->toContain('0')
         ->and($exitCode)->toBe(0);
 });
@@ -305,8 +305,8 @@ it('is safe to run concurrently without double-publishing', function (): void {
     executeCommand($command);
 
     // No posts should be saved or events dispatched
-    expect($capture->savedPosts)->toHaveCount(0)
-        ->and($eventDispatcher->dispatched)->toHaveCount(0);
+    expect($capture->savedPosts)->toBeEmpty()
+        ->and($eventDispatcher->dispatched)->toBeEmpty();
 });
 
 /**
@@ -356,6 +356,12 @@ readonly class StubPostRepository implements PostRepositoryInterface
         array $criteria,
     ): ?Entity {
         return null;
+    }
+
+    public function existsBy(
+        array $criteria,
+    ): bool {
+        return $this->findOneBy(criteria: $criteria) !== null;
     }
 
     public function save(

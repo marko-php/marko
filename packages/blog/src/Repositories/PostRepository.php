@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Repositories;
 
-use Closure;
 use DateTimeImmutable;
 use Marko\Blog\Entity\Category;
 use Marko\Blog\Entity\Post;
@@ -15,11 +14,7 @@ use Marko\Blog\Events\Post\PostDeleted;
 use Marko\Blog\Events\Post\PostPublished;
 use Marko\Blog\Events\Post\PostScheduled;
 use Marko\Blog\Events\Post\PostUpdated;
-use Marko\Core\Event\EventDispatcherInterface;
-use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
-use Marko\Database\Entity\EntityHydrator;
-use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
 
 /**
@@ -28,16 +23,6 @@ use Marko\Database\Repository\Repository;
 class PostRepository extends Repository implements PostRepositoryInterface
 {
     protected const string ENTITY_CLASS = Post::class;
-
-    public function __construct(
-        ConnectionInterface $connection,
-        EntityMetadataFactory $metadataFactory,
-        EntityHydrator $hydrator,
-        ?Closure $queryBuilderFactory = null,
-        private readonly ?EventDispatcherInterface $eventDispatcher = null,
-    ) {
-        parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory);
-    }
 
     /**
      * Save a post, dispatching appropriate events.

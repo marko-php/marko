@@ -153,6 +153,12 @@ function createResponseTestPostRepo(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {
@@ -361,6 +367,12 @@ function createResponseTestCommentRepo(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(Entity $entity): void {}
 
         public function delete(Entity $entity): void {}
@@ -372,12 +384,6 @@ function createResponseTestCommentRepo(
         }
 
         public function findPendingForPost(
-            int $postId,
-        ): array {
-            return [];
-        }
-
-        public function getThreadedCommentsForPost(
             int $postId,
         ): array {
             return [];
@@ -399,12 +405,6 @@ function createResponseTestCommentRepo(
             string $email,
         ): array {
             return [];
-        }
-
-        public function calculateDepth(
-            int $commentId,
-        ): int {
-            return 0;
         }
     };
 }

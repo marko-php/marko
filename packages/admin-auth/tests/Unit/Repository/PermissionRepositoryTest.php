@@ -16,6 +16,16 @@ use Marko\Database\Repository\Repository;
 use ReflectionClass;
 use RuntimeException;
 
+it('constructs PermissionRepository without constructor override', function (): void {
+    $reflection = new ReflectionClass(PermissionRepository::class);
+
+    $constructor = $reflection->getConstructor();
+
+    // PermissionRepository should have no constructor of its own — it inherits Repository's
+    expect($constructor)->not->toBeNull()
+        ->and($constructor->getDeclaringClass()->getName())->not->toBe(PermissionRepository::class);
+});
+
 it('creates PermissionRepository extending Repository', function (): void {
     $reflection = new ReflectionClass(PermissionRepository::class);
 
@@ -54,6 +64,27 @@ it('can find a permission by id using inherited find method', function (): void 
         ->and($permission->group)->toBe('blog');
 });
 
+it('finds permissions by key', function (): void {
+    $connection = createPermissionMockConnection([
+        [
+            'id' => 1,
+            'key' => 'blog.posts.create',
+            'label' => 'Create Posts',
+            'group' => 'blog',
+            'created_at' => '2024-01-01 00:00:00',
+        ],
+    ]);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+
+    $repository = new PermissionRepository($connection, $metadataFactory, $hydrator);
+
+    $permission = $repository->findByKey('blog.posts.create');
+
+    expect($permission)->toBeInstanceOf(Permission::class)
+        ->and($permission->key)->toBe('blog.posts.create');
+});
+
 it('provides findByKey convenience method for key lookups', function (): void {
     $connection = createPermissionMockConnection([
         [
@@ -73,6 +104,32 @@ it('provides findByKey convenience method for key lookups', function (): void {
 
     expect($permission)->toBeInstanceOf(Permission::class)
         ->and($permission->key)->toBe('blog.posts.create');
+});
+
+it('finds permissions by group', function (): void {
+    $queryHistory = [];
+    $connection = createPermissionMockConnectionWithHistory(
+        [
+            [
+                'id' => 1,
+                'key' => 'blog.posts.create',
+                'label' => 'Create Posts',
+                'group' => 'blog',
+                'created_at' => '2024-01-01 00:00:00',
+            ],
+        ],
+        $queryHistory,
+    );
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+
+    $repository = new PermissionRepository($connection, $metadataFactory, $hydrator);
+
+    $permissions = $repository->findByGroup('blog');
+
+    expect($permissions)->toHaveCount(1)
+        ->and($permissions[0])->toBeInstanceOf(Permission::class)
+        ->and($permissions[0]->group)->toBe('blog');
 });
 
 it('provides findByGroup method for group lookups', function (): void {
@@ -110,6 +167,28 @@ it('provides findByGroup method for group lookups', function (): void {
         ->and($queryHistory[0]['bindings'])->toContain('blog');
 });
 
+it('syncs permissions from registry when passed as parameter', function (): void {
+    $queryHistory = [];
+    $callCount = 0;
+
+    $connection = createPermissionSyncMockConnection($queryHistory, $callCount);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+
+    $registry = new PermissionRegistry();
+    $registry->register('blog.posts.create', 'Create Posts', 'blog');
+    $registry->register('blog.posts.edit', 'Edit Posts', 'blog');
+
+    $repository = new PermissionRepository($connection, $metadataFactory, $hydrator);
+    $repository->syncFromRegistry($registry);
+
+    $insertQueries = array_filter(
+        $queryHistory,
+        fn (array $entry): bool => str_contains($entry['sql'], 'INSERT'),
+    );
+    expect(count($insertQueries))->toBe(1);
+});
+
 it('syncs permissions from registry to database creating new and preserving existing', function (): void {
     $queryHistory = [];
     $callCount = 0;
@@ -126,15 +205,9 @@ it('syncs permissions from registry to database creating new and preserving exis
     $registry->register('blog.posts.create', 'Create Posts', 'blog');
     $registry->register('blog.posts.edit', 'Edit Posts', 'blog');
 
-    $repository = new PermissionRepository(
-        $connection,
-        $metadataFactory,
-        $hydrator,
-        null,
-        $registry,
-    );
+    $repository = new PermissionRepository($connection, $metadataFactory, $hydrator);
 
-    $repository->syncFromRegistry();
+    $repository->syncFromRegistry($registry);
 
     // Should have queried for both permissions by key
     $findByKeyQueries = array_filter(

@@ -53,6 +53,13 @@ interface RepositoryInterface
     public function findOneBy(array $criteria): ?Entity;
 
     /**
+     * Check if any entity matches the given criteria.
+     *
+     * @param array<string, mixed> $criteria Column-value pairs to match
+     */
+    public function existsBy(array $criteria): bool;
+
+    /**
      * Save an entity (insert or update).
      *
      * @param Entity $entity The entity to save

@@ -395,6 +395,12 @@ function authorControllerCreateAuthorRepository(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {}
@@ -595,6 +601,12 @@ function authorControllerCreatePostRepository(
             array $criteria,
         ): ?Entity {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function save(

@@ -273,6 +273,12 @@ function createMockUserRepo(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function findByEmail(
             string $email,
         ): ?AdminUser {
@@ -306,13 +312,13 @@ function createMockUserRepo(
 function createMockRoleRepo(
     array $permissionsMap = [],
 ): RoleRepositoryInterface {
-    return new class ($permissionsMap) implements RoleRepositoryInterface
+    return new readonly class ($permissionsMap) implements RoleRepositoryInterface
     {
         /**
          * @param array<int, array<Permission>> $permissionsMap
          */
         public function __construct(
-            private readonly array $permissionsMap,
+            private array $permissionsMap,
         ) {}
 
         public function find(
@@ -342,6 +348,12 @@ function createMockRoleRepo(
             array $criteria,
         ): ?Role {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function findBySlug(
@@ -377,10 +389,10 @@ function createMockRoleRepo(
 function createMockHasher(
     bool $verifyReturn = true,
 ): PasswordHasherInterface {
-    return new class ($verifyReturn) implements PasswordHasherInterface
+    return new readonly class ($verifyReturn) implements PasswordHasherInterface
     {
         public function __construct(
-            private readonly bool $verifyReturn,
+            private bool $verifyReturn,
         ) {}
 
         public function hash(

@@ -16,6 +16,7 @@ use Marko\Blog\Events\Comment\CommentCreated;
 use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\CommentRateLimiterInterface;
+use Marko\Blog\Services\CommentThreadingServiceInterface;
 use Marko\Blog\Services\CommentVerificationServiceInterface;
 use Marko\Blog\Services\HoneypotValidatorInterface;
 use Marko\Database\Entity\Entity;
@@ -35,6 +36,23 @@ it('accepts comment submission at POST /blog/{slug}/comment', function (): void 
     expect($routeAttribute->path)->toBe('/blog/{slug}/comment');
 });
 
+it('injects CommentThreadingServiceInterface in CommentController for calculateDepth', function (): void {
+    $reflection = new ReflectionClass(CommentController::class);
+    $constructor = $reflection->getConstructor();
+    $parameters = $constructor->getParameters();
+
+    $threadingParam = null;
+    foreach ($parameters as $param) {
+        if ($param->getName() === 'commentThreadingService') {
+            $threadingParam = $param;
+            break;
+        }
+    }
+
+    expect($threadingParam)->not->toBeNull()
+        ->and($threadingParam->getType()->getName())->toBe(CommentThreadingServiceInterface::class);
+});
+
 it('returns 404 when post slug not found', function (): void {
     $postRepository = createMockPostRepository();
     $commentRepository = createMockCommentRepository();
@@ -52,6 +70,7 @@ it('returns 404 when post slug not found', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -91,6 +110,7 @@ it('returns 404 when post is not published', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -124,6 +144,7 @@ it('validates name is required', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -160,6 +181,7 @@ it('validates email is required and valid format', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     // Test empty email
@@ -211,6 +233,7 @@ it('validates content is required and has minimum length', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     // Test empty content
@@ -262,6 +285,7 @@ it('rejects submission when honeypot field is filled', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -301,6 +325,7 @@ it('rejects submission when rate limit exceeded', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -337,6 +362,7 @@ it('returns rate limit wait time when rate limited', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -373,6 +399,7 @@ it('auto-approves comment when valid browser token exists', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -415,6 +442,7 @@ it('creates pending comment and sends verification email when no token', functio
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -464,6 +492,7 @@ it('accepts optional parent_id for threaded replies', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -511,6 +540,7 @@ it('validates parent comment belongs to same post', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -541,7 +571,7 @@ it('validates reply does not exceed configured max depth', function (): void {
 
     $postRepository = createMockPostRepository(findBySlugResult: $post);
     // Mock returns depth of 5 (at max)
-    $commentRepository = createMockCommentRepository(findResult: $parentComment, calculateDepthResult: 5);
+    $commentRepository = createMockCommentRepository(findResult: $parentComment);
     $honeypotValidator = createMockHoneypotValidator();
     $rateLimiter = createMockRateLimiter();
     $verificationService = createMockVerificationService();
@@ -557,6 +587,7 @@ it('validates reply does not exceed configured max depth', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(calculateDepthResult: 5),
     );
 
     $response = $controller->submit(
@@ -594,6 +625,7 @@ it('dispatches CommentCreated event', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $controller->submit(
@@ -606,9 +638,8 @@ it('dispatches CommentCreated event', function (): void {
         browserToken: 'valid-token',
     );
 
-    expect($eventDispatcher->dispatched)->toHaveCount(1);
-    $event = $eventDispatcher->dispatched[0];
-    expect($event)->toBeInstanceOf(CommentCreated::class);
+    expect($eventDispatcher->dispatched)->toHaveCount(1)
+        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(CommentCreated::class);
 });
 
 it('returns success response with next steps', function (): void {
@@ -629,6 +660,7 @@ it('returns success response with next steps', function (): void {
         verificationService: $verificationService,
         blogConfig: $blogConfig,
         eventDispatcher: $eventDispatcher,
+        commentThreadingService: createMockThreadingService(),
     );
 
     $response = $controller->submit(
@@ -855,6 +887,12 @@ function createMockPostRepository(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {}
@@ -867,16 +905,14 @@ function createMockPostRepository(
 
 function createMockCommentRepository(
     ?Comment $findResult = null,
-    int $calculateDepthResult = 0,
 ): CommentRepositoryInterface {
-    return new class ($findResult, $calculateDepthResult) implements CommentRepositoryInterface
+    return new class ($findResult) implements CommentRepositoryInterface
     {
         /** @var array<Comment> */
         public array $savedComments = [];
 
         public function __construct(
             private readonly ?Comment $findResult,
-            private readonly int $calculateDepthResult,
         ) {}
 
         public function find(
@@ -892,12 +928,6 @@ function createMockCommentRepository(
         }
 
         public function findPendingForPost(
-            int $postId,
-        ): array {
-            return [];
-        }
-
-        public function getThreadedCommentsForPost(
             int $postId,
         ): array {
             return [];
@@ -919,12 +949,6 @@ function createMockCommentRepository(
             string $email,
         ): array {
             return [];
-        }
-
-        public function calculateDepth(
-            int $commentId,
-        ): int {
-            return $this->calculateDepthResult;
         }
 
         public function findOrFail(
@@ -950,6 +974,12 @@ function createMockCommentRepository(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {
@@ -961,6 +991,27 @@ function createMockCommentRepository(
         public function delete(
             Entity $entity,
         ): void {}
+    };
+}
+
+function createMockThreadingService(
+    int $calculateDepthResult = 0,
+): CommentThreadingServiceInterface {
+    return new readonly class ($calculateDepthResult) implements CommentThreadingServiceInterface
+    {
+        public function __construct(
+            private int $calculateDepthResult,
+        ) {}
+
+        public function getThreadedComments(int $postId): array
+        {
+            return [];
+        }
+
+        public function calculateDepth(int $commentId): int
+        {
+            return $this->calculateDepthResult;
+        }
     };
 }
 

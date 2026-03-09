@@ -35,16 +35,6 @@ interface CommentRepositoryInterface extends RepositoryInterface
     ): array;
 
     /**
-     * Get threaded comments for a post as a tree structure.
-     * Returns only root-level comments with children populated.
-     *
-     * @return array<Comment>
-     */
-    public function getThreadedCommentsForPost(
-        int $postId,
-    ): array;
-
-    /**
      * Count total comments for a post (all statuses).
      */
     public function countForPost(
@@ -66,12 +56,4 @@ interface CommentRepositoryInterface extends RepositoryInterface
     public function findByEmail(
         string $email,
     ): array;
-
-    /**
-     * Calculate depth of a comment in the thread.
-     * Returns 0 for root comments, 1 for direct replies, etc.
-     */
-    public function calculateDepth(
-        int $commentId,
-    ): int;
 }

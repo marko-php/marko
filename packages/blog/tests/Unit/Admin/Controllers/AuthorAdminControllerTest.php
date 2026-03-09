@@ -161,7 +161,7 @@ it('returns validation errors on POST /admin/blog/authors with invalid data', fu
         ->and($capturedData)->toHaveKey('errors')
         ->and($capturedData['errors'])->toContain('Name is required')
         ->and($capturedData['errors'])->toContain('Email is required')
-        ->and($savedEntities)->toHaveCount(0);
+        ->and($savedEntities)->toBeEmpty();
 });
 
 it('renders edit form on GET /admin/blog/authors/{id}/edit with blog.authors.edit permission', function (): void {
@@ -371,7 +371,9 @@ function createMockAuthorAdminRepo(
         public function __construct(
             private array $findAllResult,
             private ?Author $findResult,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$savedEntities,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$deletedEntities,
         ) {}
 
@@ -406,6 +408,12 @@ function createMockAuthorAdminRepo(
             array $criteria,
         ): ?Entity {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function save(
@@ -506,6 +514,7 @@ function createMockAuthorAdminView(
     return new class ($capturedData) implements ViewInterface
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$capturedData,
         ) {}
 

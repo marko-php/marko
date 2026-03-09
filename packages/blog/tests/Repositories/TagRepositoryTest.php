@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Marko\Blog\Tests\Repositories;
 
 use Marko\Blog\Entity\Tag;
+use Marko\Blog\Events\Tag\TagCreated;
+use Marko\Blog\Events\Tag\TagDeleted;
+use Marko\Blog\Events\Tag\TagUpdated;
 use Marko\Blog\Exceptions\TagHasPostsException;
 use Marko\Blog\Repositories\TagRepository;
 use Marko\Blog\Repositories\TagRepositoryInterface;
@@ -14,6 +17,7 @@ use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use ReflectionClass;
 use RuntimeException;
 
@@ -420,6 +424,239 @@ it('auto-generates slug from name using SlugGenerator when saving new tag', func
     // The slug should have been auto-generated
     expect($tag->slug)->toBe('php-development');
 });
+
+it('constructs with SlugGeneratorInterface plus parent params forwarded', function (): void {
+    $connection = createMockTagConnection([]);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $slugGenerator = new SlugGenerator();
+    $queryBuilderFactory = fn () => null;
+    $dispatcher = new FakeEventDispatcher();
+
+    $repository = new TagRepository(
+        $connection,
+        $metadataFactory,
+        $hydrator,
+        $slugGenerator,
+        $queryBuilderFactory,
+        $dispatcher,
+    );
+
+    $reflection = new ReflectionClass($repository);
+
+    // SlugGeneratorInterface is promoted (private) in TagRepository
+    $slugProp = $reflection->getProperty('slugGenerator');
+    expect($slugProp->getDeclaringClass()->getName())->toBe(TagRepository::class);
+
+    // eventDispatcher is inherited from parent (not declared in TagRepository)
+    $dispatcherProp = $reflection->getProperty('eventDispatcher');
+    expect($dispatcherProp->getDeclaringClass()->getName())->toBe(Repository::class);
+
+    // queryBuilderFactory is inherited from parent
+    $qbfProp = $reflection->getProperty('queryBuilderFactory');
+    expect($qbfProp->getDeclaringClass()->getName())->toBe(Repository::class);
+
+    expect($repository)->toBeInstanceOf(TagRepository::class);
+});
+
+it('auto-generates slug on save', function (): void {
+    $connection = createTagSaveConnection(isNew: true);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $slugGenerator = new SlugGenerator();
+
+    $repository = new TagRepository($connection, $metadataFactory, $hydrator, $slugGenerator);
+
+    $tag = new Tag();
+    $tag->name = 'PHP Framework';
+
+    $repository->save($tag);
+
+    expect($tag->slug)->toBe('php-framework');
+});
+
+it('dispatches TagCreated event on new tag', function (): void {
+    $dispatcher = new FakeEventDispatcher();
+    $connection = createTagSaveConnection(isNew: true);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $slugGenerator = new SlugGenerator();
+
+    $repository = new TagRepository(
+        $connection,
+        $metadataFactory,
+        $hydrator,
+        $slugGenerator,
+        null,
+        $dispatcher,
+    );
+
+    $tag = new Tag();
+    $tag->name = 'PHP';
+    $tag->slug = 'php';
+
+    $repository->save($tag);
+
+    // Parent dispatches EntityCreating + EntityCreated; TagRepository adds TagCreated
+    expect($dispatcher->dispatched)->toHaveCount(3)
+        ->and($dispatcher->dispatched[2])->toBeInstanceOf(TagCreated::class);
+});
+
+it('dispatches TagUpdated event on existing tag', function (): void {
+    $dispatcher = new FakeEventDispatcher();
+    $connection = createTagSaveConnection(isNew: false);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $slugGenerator = new SlugGenerator();
+
+    $repository = new TagRepository(
+        $connection,
+        $metadataFactory,
+        $hydrator,
+        $slugGenerator,
+        null,
+        $dispatcher,
+    );
+
+    $tag = new Tag();
+    $tag->id = 1;
+    $tag->name = 'PHP Updated';
+    $tag->slug = 'php-updated';
+
+    $repository->save($tag);
+
+    // Parent dispatches EntityUpdating + EntityUpdated; TagRepository adds TagUpdated
+    expect($dispatcher->dispatched)->toHaveCount(3)
+        ->and($dispatcher->dispatched[2])->toBeInstanceOf(TagUpdated::class);
+});
+
+it('dispatches TagDeleted event on delete', function (): void {
+    $dispatcher = new FakeEventDispatcher();
+    $connection = createTagDeleteConnection(hasAssociatedPosts: false);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $slugGenerator = new SlugGenerator();
+
+    $repository = new TagRepository(
+        $connection,
+        $metadataFactory,
+        $hydrator,
+        $slugGenerator,
+        null,
+        $dispatcher,
+    );
+
+    $tag = new Tag();
+    $tag->id = 1;
+    $tag->name = 'PHP';
+    $tag->slug = 'php';
+
+    $repository->delete($tag);
+
+    // Parent dispatches EntityDeleting + EntityDeleted; TagRepository adds TagDeleted
+    expect($dispatcher->dispatched)->toHaveCount(3)
+        ->and($dispatcher->dispatched[2])->toBeInstanceOf(TagDeleted::class);
+});
+
+it('throws TagHasPostsException when deleting tag with posts', function (): void {
+    $connection = createTagDeleteConnection(hasAssociatedPosts: true);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $slugGenerator = new SlugGenerator();
+
+    $repository = new TagRepository($connection, $metadataFactory, $hydrator, $slugGenerator);
+
+    $tag = new Tag();
+    $tag->id = 1;
+    $tag->name = 'PHP';
+    $tag->slug = 'php';
+
+    expect(fn () => $repository->delete($tag))->toThrow(TagHasPostsException::class);
+});
+
+// Helper function to create mock connection for save tests
+function createTagSaveConnection(bool $isNew): ConnectionInterface
+{
+    return new class ($isNew) implements ConnectionInterface
+    {
+        public function __construct(
+            private readonly bool $isNew,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(string $sql, array $bindings = []): array
+        {
+            return [];
+        }
+
+        public function execute(string $sql, array $bindings = []): int
+        {
+            return 1;
+        }
+
+        public function prepare(string $sql): StatementInterface
+        {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return $this->isNew ? 1 : 0;
+        }
+    };
+}
+
+// Helper function to create mock connection for delete tests
+function createTagDeleteConnection(bool $hasAssociatedPosts): ConnectionInterface
+{
+    return new class ($hasAssociatedPosts) implements ConnectionInterface
+    {
+        public function __construct(
+            private readonly bool $hasAssociatedPosts,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(string $sql, array $bindings = []): array
+        {
+            if (str_contains($sql, 'COUNT') && str_contains($sql, 'post_tags')) {
+                return [['count' => $this->hasAssociatedPosts ? 1 : 0]];
+            }
+
+            return [];
+        }
+
+        public function execute(string $sql, array $bindings = []): int
+        {
+            return 1;
+        }
+
+        public function prepare(string $sql): StatementInterface
+        {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 1;
+        }
+    };
+}
 
 // Helper function to create mock connection
 function createMockTagConnection(

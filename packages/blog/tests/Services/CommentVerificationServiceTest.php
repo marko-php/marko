@@ -513,6 +513,12 @@ class MockTokenRepository implements TokenRepositoryInterface
         $this->deletedTokens[] = $token;
     }
 
+    public function existsBy(
+        array $criteria,
+    ): bool {
+        return false;
+    }
+
     public function deleteExpiredEmailTokens(
         int $expiryDays,
     ): int {
@@ -562,6 +568,12 @@ class MockCommentRepository implements CommentRepositoryInterface
         return null;
     }
 
+    public function existsBy(
+        array $criteria,
+    ): bool {
+        return $this->findOneBy(criteria: $criteria) !== null;
+    }
+
     public function findVerifiedForPost(
         int $postId,
     ): array {
@@ -569,12 +581,6 @@ class MockCommentRepository implements CommentRepositoryInterface
     }
 
     public function findPendingForPost(
-        int $postId,
-    ): array {
-        return [];
-    }
-
-    public function getThreadedCommentsForPost(
         int $postId,
     ): array {
         return [];
@@ -596,12 +602,6 @@ class MockCommentRepository implements CommentRepositoryInterface
         string $email,
     ): array {
         return [];
-    }
-
-    public function calculateDepth(
-        int $commentId,
-    ): int {
-        return 0;
     }
 
     public function save(
@@ -695,6 +695,12 @@ class MockPostRepository implements PostRepositoryInterface
         array $criteria,
     ): ?Post {
         return null;
+    }
+
+    public function existsBy(
+        array $criteria,
+    ): bool {
+        return $this->findOneBy(criteria: $criteria) !== null;
     }
 
     public function save(object $entity): void {}

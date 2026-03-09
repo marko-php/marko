@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AdminAuth\Repository;
 
+use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
 use Marko\AdminAuth\Entity\Permission;
 use Marko\Database\Repository\RepositoryInterface;
 
@@ -34,5 +35,5 @@ interface PermissionRepositoryInterface extends RepositoryInterface
      * Creates new permissions that exist in the registry but not in the database.
      * Preserves existing permissions.
      */
-    public function syncFromRegistry(): void;
+    public function syncFromRegistry(PermissionRegistryInterface $registry): void;
 }

@@ -7,24 +7,24 @@ namespace Marko\Blog\Controllers;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Repositories\AuthorRepositoryInterface;
 use Marko\Blog\Repositories\CategoryRepositoryInterface;
-use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
+use Marko\Blog\Services\CommentThreadingServiceInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\View\ViewInterface;
 
-class PostController
+readonly class PostController
 {
     public function __construct(
-        private readonly PostRepositoryInterface $repository,
-        private readonly AuthorRepositoryInterface $authorRepository,
-        private readonly CategoryRepositoryInterface $categoryRepository,
-        private readonly CommentRepositoryInterface $commentRepository,
-        private readonly PaginationServiceInterface $paginationService,
-        private readonly ViewInterface $view,
-        private readonly SessionInterface $session,
+        private PostRepositoryInterface $repository,
+        private AuthorRepositoryInterface $authorRepository,
+        private CategoryRepositoryInterface $categoryRepository,
+        private PaginationServiceInterface $paginationService,
+        private ViewInterface $view,
+        private SessionInterface $session,
+        private CommentThreadingServiceInterface $commentThreadingService,
     ) {}
 
     #[Get('/blog')]
@@ -101,7 +101,7 @@ class PostController
 
         $categories = $this->repository->getCategoriesForPost($post->getId());
         $tags = $this->repository->getTagsForPost($post->getId());
-        $comments = $this->commentRepository->getThreadedCommentsForPost($post->getId());
+        $comments = $this->commentThreadingService->getThreadedComments($post->getId());
 
         // Build category paths for breadcrumb display
         $categoryPaths = [];

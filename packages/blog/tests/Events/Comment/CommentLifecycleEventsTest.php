@@ -37,13 +37,11 @@ it('dispatches CommentCreated event when comment is submitted', function (): voi
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createCommentMockBlogConfig();
 
     $repository = new CommentRepository(
         $connection,
         $metadataFactory,
         $hydrator,
-        $blogConfig,
         null,
         $dispatcher,
     );
@@ -65,8 +63,9 @@ it('dispatches CommentCreated event when comment is submitted', function (): voi
 
     $repository->save($comment);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CommentCreated::class);
+    $commentCreatedEvents = $dispatcher->dispatched(CommentCreated::class);
+    expect($commentCreatedEvents)->toHaveCount(1)
+        ->and($commentCreatedEvents[0])->toBeInstanceOf(CommentCreated::class);
 });
 
 it('dispatches CommentVerified event when email is verified', function (): void {
@@ -105,13 +104,10 @@ it('dispatches CommentDeleted event when comment is removed', function (): void 
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createCommentMockBlogConfig();
-
     $repository = new CommentRepository(
         $connection,
         $metadataFactory,
         $hydrator,
-        $blogConfig,
         null,
         $dispatcher,
     );
@@ -134,8 +130,9 @@ it('dispatches CommentDeleted event when comment is removed', function (): void 
 
     $repository->delete($comment);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CommentDeleted::class);
+    $commentDeletedEvents = $dispatcher->dispatched(CommentDeleted::class);
+    expect($commentDeletedEvents)->toHaveCount(1)
+        ->and($commentDeletedEvents[0])->toBeInstanceOf(CommentDeleted::class);
 });
 
 it('includes full comment entity in event data', function (): void {
@@ -147,13 +144,11 @@ it('includes full comment entity in event data', function (): void {
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createCommentMockBlogConfig();
 
     $repository = new CommentRepository(
         $connection,
         $metadataFactory,
         $hydrator,
-        $blogConfig,
         null,
         $dispatcher,
     );
@@ -175,10 +170,11 @@ it('includes full comment entity in event data', function (): void {
 
     $repository->save($comment);
 
-    expect($dispatcher->dispatched)->toHaveCount(1);
+    $commentCreatedEvents = $dispatcher->dispatched(CommentCreated::class);
+    expect($commentCreatedEvents)->toHaveCount(1);
 
     /** @var CommentCreated $event */
-    $event = $dispatcher->dispatched[0];
+    $event = $commentCreatedEvents[0];
     $eventComment = $event->getComment();
 
     expect($eventComment)->toBeInstanceOf(CommentInterface::class)
@@ -196,13 +192,11 @@ it('includes associated post in event data', function (): void {
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createCommentMockBlogConfig();
 
     $repository = new CommentRepository(
         $connection,
         $metadataFactory,
         $hydrator,
-        $blogConfig,
         null,
         $dispatcher,
     );
@@ -224,10 +218,11 @@ it('includes associated post in event data', function (): void {
 
     $repository->save($comment);
 
-    expect($dispatcher->dispatched)->toHaveCount(1);
+    $commentCreatedEvents = $dispatcher->dispatched(CommentCreated::class);
+    expect($commentCreatedEvents)->toHaveCount(1);
 
     /** @var CommentCreated $event */
-    $event = $dispatcher->dispatched[0];
+    $event = $commentCreatedEvents[0];
     $eventPost = $event->getPost();
 
     expect($eventPost)->toBeInstanceOf(PostInterface::class)
@@ -276,13 +271,11 @@ it('includes timestamp in all events', function (): void {
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createCommentMockBlogConfig();
 
     $repository = new CommentRepository(
         $connection,
         $metadataFactory,
         $hydrator,
-        $blogConfig,
         null,
         $dispatcher,
     );
@@ -333,10 +326,16 @@ it('includes timestamp in all events', function (): void {
 
     $afterAll = new DateTimeImmutable();
 
-    // All events should have timestamps within the test window
-    expect($dispatcher->dispatched)->toHaveCount(3);
+    // All blog domain events should have timestamps within the test window
+    $domainEvents = [
+        ...$dispatcher->dispatched(CommentCreated::class),
+        ...$dispatcher->dispatched(CommentVerified::class),
+        ...$dispatcher->dispatched(CommentDeleted::class),
+    ];
 
-    foreach ($dispatcher->dispatched as $event) {
+    expect($domainEvents)->toHaveCount(3);
+
+    foreach ($domainEvents as $event) {
         expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
             ->and($event->getTimestamp() >= $beforeAll)->toBeTrue()
             ->and($event->getTimestamp() <= $afterAll)->toBeTrue();
@@ -375,6 +374,12 @@ function createCommentEventVerificationService(
         public function delete(
             VerificationToken $token,
         ): void {}
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return false;
+        }
 
         public function deleteExpiredEmailTokens(
             int $expiryDays,

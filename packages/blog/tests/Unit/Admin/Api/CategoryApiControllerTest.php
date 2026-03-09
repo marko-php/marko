@@ -33,38 +33,38 @@ it('creates CategoryApiController with CRUD actions returning JSON', function ()
     // Check index method (list)
     $index = $reflection->getMethod('index');
     $indexRoute = $index->getAttributes(Get::class);
-    expect($indexRoute)->toHaveCount(1);
-    expect($indexRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/categories');
+    expect($indexRoute)->toHaveCount(1)
+        ->and($indexRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/categories');
     $indexPerm = $index->getAttributes(RequiresPermission::class);
-    expect($indexPerm)->toHaveCount(1);
-    expect($indexPerm[0]->newInstance()->permission)->toBe('blog.categories.view');
+    expect($indexPerm)->toHaveCount(1)
+        ->and($indexPerm[0]->newInstance()->permission)->toBe('blog.categories.view');
 
     // Check store method
     $store = $reflection->getMethod('store');
     $storeRoute = $store->getAttributes(PostRoute::class);
-    expect($storeRoute)->toHaveCount(1);
-    expect($storeRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/categories');
+    expect($storeRoute)->toHaveCount(1)
+        ->and($storeRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/categories');
     $storePerm = $store->getAttributes(RequiresPermission::class);
-    expect($storePerm)->toHaveCount(1);
-    expect($storePerm[0]->newInstance()->permission)->toBe('blog.categories.create');
+    expect($storePerm)->toHaveCount(1)
+        ->and($storePerm[0]->newInstance()->permission)->toBe('blog.categories.create');
 
     // Check show method
     $show = $reflection->getMethod('show');
     $showRoute = $show->getAttributes(Get::class);
-    expect($showRoute)->toHaveCount(1);
-    expect($showRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/categories/{id}');
+    expect($showRoute)->toHaveCount(1)
+        ->and($showRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/categories/{id}');
 
     // Check update method
     $update = $reflection->getMethod('update');
     $updateRoute = $update->getAttributes(Put::class);
-    expect($updateRoute)->toHaveCount(1);
-    expect($updateRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/categories/{id}');
+    expect($updateRoute)->toHaveCount(1)
+        ->and($updateRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/categories/{id}');
 
     // Check destroy method
     $destroy = $reflection->getMethod('destroy');
     $destroyRoute = $destroy->getAttributes(Delete::class);
-    expect($destroyRoute)->toHaveCount(1);
-    expect($destroyRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/categories/{id}');
+    expect($destroyRoute)->toHaveCount(1)
+        ->and($destroyRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/categories/{id}');
 
     // Test list returns JSON
     $categories = [createApiTestCategory(1, 'Tech', 'tech')];
@@ -145,7 +145,9 @@ function createApiMockCategoryRepo(
         public function __construct(
             private array $findAllResult,
             private ?Category $findResult,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$savedEntities,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$deletedEntities,
         ) {}
 
@@ -180,6 +182,12 @@ function createApiMockCategoryRepo(
             array $criteria,
         ): ?Entity {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function save(

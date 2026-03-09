@@ -48,8 +48,9 @@ it('dispatches PostCreated event when post is saved first time', function (): vo
 
     $repository->save($post);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(PostCreated::class);
+    $postCreatedEvents = $dispatcher->dispatched(PostCreated::class);
+    expect($postCreatedEvents)->toHaveCount(1)
+        ->and($postCreatedEvents[0])->toBeInstanceOf(PostCreated::class);
 });
 
 it('dispatches PostUpdated event when existing post is modified', function (): void {
@@ -92,8 +93,9 @@ it('dispatches PostUpdated event when existing post is modified', function (): v
 
     $repository->save($post);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(PostUpdated::class);
+    $postUpdatedEvents = $dispatcher->dispatched(PostUpdated::class);
+    expect($postUpdatedEvents)->toHaveCount(1)
+        ->and($postUpdatedEvents[0])->toBeInstanceOf(PostUpdated::class);
 });
 
 it('dispatches PostPublished event when status changes to published', function (): void {
@@ -222,8 +224,9 @@ it('dispatches PostDeleted event when post is removed', function (): void {
 
     $repository->delete($post);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(PostDeleted::class);
+    $postDeletedEvents = $dispatcher->dispatched(PostDeleted::class);
+    expect($postDeletedEvents)->toHaveCount(1)
+        ->and($postDeletedEvents[0])->toBeInstanceOf(PostDeleted::class);
 });
 
 it('includes full post entity in event data', function (): void {
@@ -253,10 +256,10 @@ it('includes full post entity in event data', function (): void {
 
     $repository->save($post);
 
-    expect($dispatcher->dispatched)->toHaveCount(1);
+    $postCreatedEvents = $dispatcher->dispatched(PostCreated::class);
+    expect($postCreatedEvents)->toHaveCount(1);
 
-    /** @var PostCreated $event */
-    $event = $dispatcher->dispatched[0];
+    $event = $postCreatedEvents[0];
     $eventPost = $event->getPost();
 
     expect($eventPost)->toBeInstanceOf(PostInterface::class)
@@ -378,11 +381,14 @@ it('includes timestamp in all events', function (): void {
 
     $afterAll = new DateTimeImmutable();
 
-    // All events should have timestamps within the test window
-    foreach ($dispatcher->dispatched as $event) {
-        expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
-            ->and($event->getTimestamp() >= $beforeCreate)->toBeTrue()
-            ->and($event->getTimestamp() <= $afterAll)->toBeTrue();
+    // All domain events (which have getTimestamp()) should have timestamps within the test window
+    $domainEventClasses = [PostCreated::class, PostUpdated::class, PostPublished::class, PostDeleted::class];
+    foreach ($domainEventClasses as $eventClass) {
+        foreach ($dispatcher->dispatched($eventClass) as $event) {
+            expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
+                ->and($event->getTimestamp() >= $beforeCreate)->toBeTrue()
+                ->and($event->getTimestamp() <= $afterAll)->toBeTrue();
+        }
     }
 });
 

@@ -408,6 +408,12 @@ function createMockCategoryRepository(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {}
@@ -609,6 +615,12 @@ function createMockPostRepository(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {}
@@ -688,6 +700,7 @@ function createMockViewWithCapture(
     return new class ($capturedData) implements ViewInterface
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$capturedData,
         ) {}
 
@@ -902,6 +915,12 @@ function createMockPostRepositoryWithCapture(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(Entity $entity): void {}
 
         public function delete(Entity $entity): void {}
@@ -914,6 +933,7 @@ function createMockPostRepositoryCapturingCategoryIds(
     return new class ($capturedCategoryIds) implements PostRepositoryInterface
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$capturedCategoryIds,
         ) {}
 
@@ -1097,6 +1117,12 @@ function createMockPostRepositoryCapturingCategoryIds(
             array $criteria,
         ): ?Entity {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function save(Entity $entity): void {}

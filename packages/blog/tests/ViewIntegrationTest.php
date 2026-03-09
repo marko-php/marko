@@ -7,6 +7,7 @@ use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Enum\PostStatus;
 use Marko\Blog\Repositories\PostRepositoryInterface;
+use Marko\Blog\Services\CommentThreadingServiceInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Blog\Tests\Mocks\MockAuthorRepository;
 use Marko\Blog\Tests\Mocks\MockCategoryRepository;
@@ -62,6 +63,7 @@ it('renders post index template', function (): void {
         $paginationService,
         $view,
         new FakeSession(),
+        createViewTestMockCommentThreadingService(),
     );
     $controller->index();
 
@@ -93,6 +95,7 @@ it('renders post show template', function (): void {
         $paginationService,
         $view,
         new FakeSession(),
+        createViewTestMockCommentThreadingService(),
     );
     $controller->show('my-post');
 
@@ -159,6 +162,12 @@ function createViewTestMockRepository(
             array $criteria,
         ): ?Post {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function findBySlug(
@@ -384,6 +393,22 @@ function createViewTestCapturingMockView(
             $this->capture->data = $data;
 
             return 'rendered';
+        }
+    };
+}
+
+function createViewTestMockCommentThreadingService(): CommentThreadingServiceInterface
+{
+    return new readonly class () implements CommentThreadingServiceInterface
+    {
+        public function getThreadedComments(int $postId): array
+        {
+            return [];
+        }
+
+        public function calculateDepth(int $commentId): int
+        {
+            return 0;
         }
     };
 }

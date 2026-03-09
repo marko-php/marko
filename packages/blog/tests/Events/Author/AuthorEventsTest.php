@@ -44,8 +44,9 @@ it('dispatches AuthorCreated event when author is created', function (): void {
 
     $repository->save($author);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(AuthorCreated::class);
+    $authorCreatedEvents = $dispatcher->dispatched(AuthorCreated::class);
+    expect($authorCreatedEvents)->toHaveCount(1)
+        ->and($authorCreatedEvents[0])->toBeInstanceOf(AuthorCreated::class);
 });
 
 it('dispatches AuthorUpdated event when author is modified', function (): void {
@@ -84,8 +85,9 @@ it('dispatches AuthorUpdated event when author is modified', function (): void {
 
     $repository->save($author);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(AuthorUpdated::class);
+    $authorUpdatedEvents = $dispatcher->dispatched(AuthorUpdated::class);
+    expect($authorUpdatedEvents)->toHaveCount(1)
+        ->and($authorUpdatedEvents[0])->toBeInstanceOf(AuthorUpdated::class);
 });
 
 it('dispatches AuthorDeleted event when author is removed', function (): void {
@@ -113,8 +115,9 @@ it('dispatches AuthorDeleted event when author is removed', function (): void {
 
     $repository->delete($author);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(AuthorDeleted::class);
+    $authorDeletedEvents = $dispatcher->dispatched(AuthorDeleted::class);
+    expect($authorDeletedEvents)->toHaveCount(1)
+        ->and($authorDeletedEvents[0])->toBeInstanceOf(AuthorDeleted::class);
 });
 
 it('includes full author entity in event data', function (): void {
@@ -142,9 +145,10 @@ it('includes full author entity in event data', function (): void {
 
     $repository->save($author);
 
-    expect($dispatcher->dispatched)->toHaveCount(1);
+    $authorCreatedEvents = $dispatcher->dispatched(AuthorCreated::class);
+    expect($authorCreatedEvents)->toHaveCount(1);
 
-    $event = $dispatcher->dispatched[0];
+    $event = $authorCreatedEvents[0];
     $eventAuthor = $event->getAuthor();
 
     expect($eventAuthor)->toBeInstanceOf(AuthorInterface::class)
@@ -181,10 +185,11 @@ it('includes timestamp in all events', function (): void {
     $repository->save($author1);
     $afterCreate = new DateTimeImmutable();
 
-    expect($dispatcher->dispatched[0]->getTimestamp())
+    $createdEvent = $dispatcher->dispatched(AuthorCreated::class)[0];
+    expect($createdEvent->getTimestamp())
         ->toBeInstanceOf(DateTimeImmutable::class)
-        ->and($dispatcher->dispatched[0]->getTimestamp() >= $beforeCreate)->toBeTrue()
-        ->and($dispatcher->dispatched[0]->getTimestamp() <= $afterCreate)->toBeTrue();
+        ->and($createdEvent->getTimestamp() >= $beforeCreate)->toBeTrue()
+        ->and($createdEvent->getTimestamp() <= $afterCreate)->toBeTrue();
 
     // For the update test, we need to fetch an existing author first
     // Reset the connection to return author data for find(), then accept update
@@ -217,10 +222,11 @@ it('includes timestamp in all events', function (): void {
     $updateRepository->save($author2);
     $afterUpdate = new DateTimeImmutable();
 
-    expect($dispatcher->dispatched[1]->getTimestamp())
+    $updatedEvent = $dispatcher->dispatched(AuthorUpdated::class)[0];
+    expect($updatedEvent->getTimestamp())
         ->toBeInstanceOf(DateTimeImmutable::class)
-        ->and($dispatcher->dispatched[1]->getTimestamp() >= $beforeUpdate)->toBeTrue()
-        ->and($dispatcher->dispatched[1]->getTimestamp() <= $afterUpdate)->toBeTrue();
+        ->and($updatedEvent->getTimestamp() >= $beforeUpdate)->toBeTrue()
+        ->and($updatedEvent->getTimestamp() <= $afterUpdate)->toBeTrue();
 
     // Test AuthorDeleted event
     $author3 = new Author();
@@ -233,10 +239,11 @@ it('includes timestamp in all events', function (): void {
     $repository->delete($author3);
     $afterDelete = new DateTimeImmutable();
 
-    expect($dispatcher->dispatched[2]->getTimestamp())
+    $deletedEvent = $dispatcher->dispatched(AuthorDeleted::class)[0];
+    expect($deletedEvent->getTimestamp())
         ->toBeInstanceOf(DateTimeImmutable::class)
-        ->and($dispatcher->dispatched[2]->getTimestamp() >= $beforeDelete)->toBeTrue()
-        ->and($dispatcher->dispatched[2]->getTimestamp() <= $afterDelete)->toBeTrue();
+        ->and($deletedEvent->getTimestamp() >= $beforeDelete)->toBeTrue()
+        ->and($deletedEvent->getTimestamp() <= $afterDelete)->toBeTrue();
 });
 
 it('creates AuthorCreated event that extends Event base class', function (): void {

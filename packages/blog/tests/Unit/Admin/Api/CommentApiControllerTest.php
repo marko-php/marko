@@ -31,35 +31,35 @@ it('creates CommentApiController with list, show, verify, delete actions', funct
     // Check index method (list)
     $index = $reflection->getMethod('index');
     $indexRoute = $index->getAttributes(Get::class);
-    expect($indexRoute)->toHaveCount(1);
-    expect($indexRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/comments');
+    expect($indexRoute)->toHaveCount(1)
+        ->and($indexRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/comments');
     $indexPerm = $index->getAttributes(RequiresPermission::class);
-    expect($indexPerm)->toHaveCount(1);
-    expect($indexPerm[0]->newInstance()->permission)->toBe('blog.comments.view');
+    expect($indexPerm)->toHaveCount(1)
+        ->and($indexPerm[0]->newInstance()->permission)->toBe('blog.comments.view');
 
     // Check show method
     $show = $reflection->getMethod('show');
     $showRoute = $show->getAttributes(Get::class);
-    expect($showRoute)->toHaveCount(1);
-    expect($showRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/comments/{id}');
+    expect($showRoute)->toHaveCount(1)
+        ->and($showRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/comments/{id}');
 
     // Check verify method
     $verify = $reflection->getMethod('verify');
     $verifyRoute = $verify->getAttributes(PostRoute::class);
-    expect($verifyRoute)->toHaveCount(1);
-    expect($verifyRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/comments/{id}/verify');
+    expect($verifyRoute)->toHaveCount(1)
+        ->and($verifyRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/comments/{id}/verify');
     $verifyPerm = $verify->getAttributes(RequiresPermission::class);
-    expect($verifyPerm)->toHaveCount(1);
-    expect($verifyPerm[0]->newInstance()->permission)->toBe('blog.comments.edit');
+    expect($verifyPerm)->toHaveCount(1)
+        ->and($verifyPerm[0]->newInstance()->permission)->toBe('blog.comments.edit');
 
     // Check destroy method
     $destroy = $reflection->getMethod('destroy');
     $destroyRoute = $destroy->getAttributes(Delete::class);
-    expect($destroyRoute)->toHaveCount(1);
-    expect($destroyRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/comments/{id}');
+    expect($destroyRoute)->toHaveCount(1)
+        ->and($destroyRoute[0]->newInstance()->path)->toBe('/admin/api/v1/blog/comments/{id}');
     $destroyPerm = $destroy->getAttributes(RequiresPermission::class);
-    expect($destroyPerm)->toHaveCount(1);
-    expect($destroyPerm[0]->newInstance()->permission)->toBe('blog.comments.delete');
+    expect($destroyPerm)->toHaveCount(1)
+        ->and($destroyPerm[0]->newInstance()->permission)->toBe('blog.comments.delete');
 
     // Test list returns JSON
     $comments = [createApiTestComment(1, 'John', 'john@test.com', 'Great post!', 1)];
@@ -146,7 +146,9 @@ function createApiMockCommentRepo(
         public function __construct(
             private array $findAllResult,
             private ?Comment $findResult,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$savedEntities,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$deletedEntities,
         ) {}
 
@@ -183,6 +185,12 @@ function createApiMockCommentRepo(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {
@@ -207,12 +215,6 @@ function createApiMockCommentRepo(
             return [];
         }
 
-        public function getThreadedCommentsForPost(
-            int $postId,
-        ): array {
-            return [];
-        }
-
         public function countForPost(
             int $postId,
         ): int {
@@ -229,12 +231,6 @@ function createApiMockCommentRepo(
             string $email,
         ): array {
             return [];
-        }
-
-        public function calculateDepth(
-            int $commentId,
-        ): int {
-            return 0;
         }
     };
 }

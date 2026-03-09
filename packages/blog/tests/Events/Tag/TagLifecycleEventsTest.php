@@ -32,6 +32,7 @@ it('dispatches TagCreated event when tag is created', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
+        null,
         $dispatcher,
     );
 
@@ -41,8 +42,9 @@ it('dispatches TagCreated event when tag is created', function (): void {
 
     $repository->save($tag);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(TagCreated::class);
+    // Parent dispatches EntityCreating + EntityCreated; TagRepository adds TagCreated
+    expect($dispatcher->dispatched)->toHaveCount(3)
+        ->and($dispatcher->dispatched[2])->toBeInstanceOf(TagCreated::class);
 });
 
 it('dispatches TagUpdated event when tag is modified', function (): void {
@@ -58,6 +60,7 @@ it('dispatches TagUpdated event when tag is modified', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
+        null,
         $dispatcher,
     );
 
@@ -68,8 +71,9 @@ it('dispatches TagUpdated event when tag is modified', function (): void {
 
     $repository->save($tag);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(TagUpdated::class);
+    // Parent dispatches EntityUpdating + EntityUpdated; TagRepository adds TagUpdated
+    expect($dispatcher->dispatched)->toHaveCount(3)
+        ->and($dispatcher->dispatched[2])->toBeInstanceOf(TagUpdated::class);
 });
 
 it('dispatches TagDeleted event when tag is removed', function (): void {
@@ -85,6 +89,7 @@ it('dispatches TagDeleted event when tag is removed', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
+        null,
         $dispatcher,
     );
 
@@ -95,8 +100,9 @@ it('dispatches TagDeleted event when tag is removed', function (): void {
 
     $repository->delete($tag);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(TagDeleted::class);
+    // Parent dispatches EntityDeleting + EntityDeleted; TagRepository adds TagDeleted
+    expect($dispatcher->dispatched)->toHaveCount(3)
+        ->and($dispatcher->dispatched[2])->toBeInstanceOf(TagDeleted::class);
 });
 
 it('includes full tag entity in event data', function (): void {
@@ -112,6 +118,7 @@ it('includes full tag entity in event data', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
+        null,
         $dispatcher,
     );
 
@@ -122,7 +129,7 @@ it('includes full tag entity in event data', function (): void {
     $repository->save($tag);
 
     /** @var TagCreated $event */
-    $event = $dispatcher->dispatched[0];
+    $event = $dispatcher->dispatched[2];
 
     expect($event->getTag())->toBeInstanceOf(TagInterface::class)
         ->and($event->getTag()->getName())->toBe('JavaScript')
@@ -142,6 +149,7 @@ it('includes timestamp in all events', function (): void {
         $metadataFactory,
         $hydrator,
         $slugGenerator,
+        null,
         $dispatcher,
     );
 
@@ -156,7 +164,7 @@ it('includes timestamp in all events', function (): void {
     $afterSave = new DateTimeImmutable();
 
     /** @var TagCreated $event */
-    $event = $dispatcher->dispatched[0];
+    $event = $dispatcher->dispatched[2];
 
     expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
         ->and($event->getTimestamp()->getTimestamp())->toBeGreaterThanOrEqual($beforeSave->getTimestamp())

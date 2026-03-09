@@ -19,6 +19,8 @@ use Marko\Blog\Repositories\TagRepositoryInterface;
 use Marko\Blog\Repositories\TokenRepository;
 use Marko\Blog\Services\CommentRateLimiter;
 use Marko\Blog\Services\CommentRateLimiterInterface;
+use Marko\Blog\Services\CommentThreadingService;
+use Marko\Blog\Services\CommentThreadingServiceInterface;
 use Marko\Blog\Services\CommentVerificationService;
 use Marko\Blog\Services\CommentVerificationServiceInterface;
 use Marko\Blog\Services\HoneypotValidator;
@@ -50,5 +52,6 @@ return [
         PaginationServiceInterface::class => PaginationService::class,
         SearchServiceInterface::class => SearchService::class,
         SeoMetaServiceInterface::class => SeoMetaService::class,
+        CommentThreadingServiceInterface::class => CommentThreadingService::class,
     ],
 ];

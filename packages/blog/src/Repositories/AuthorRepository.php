@@ -4,18 +4,13 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Repositories;
 
-use Closure;
 use DateTimeImmutable;
 use Marko\Blog\Entity\Author;
 use Marko\Blog\Events\Author\AuthorCreated;
 use Marko\Blog\Events\Author\AuthorDeleted;
 use Marko\Blog\Events\Author\AuthorUpdated;
 use Marko\Blog\Exceptions\AuthorHasPostsException;
-use Marko\Core\Event\EventDispatcherInterface;
-use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
-use Marko\Database\Entity\EntityHydrator;
-use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
 
 /**
@@ -24,16 +19,6 @@ use Marko\Database\Repository\Repository;
 class AuthorRepository extends Repository implements AuthorRepositoryInterface
 {
     protected const string ENTITY_CLASS = Author::class;
-
-    public function __construct(
-        ConnectionInterface $connection,
-        EntityMetadataFactory $metadataFactory,
-        EntityHydrator $hydrator,
-        ?Closure $queryBuilderFactory = null,
-        private readonly ?EventDispatcherInterface $eventDispatcher = null,
-    ) {
-        parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory);
-    }
 
     /**
      * Save an author entity and dispatch lifecycle events.

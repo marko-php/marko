@@ -7,12 +7,19 @@ namespace Marko\Database\Repository;
 use BackedEnum;
 use Closure;
 use DateTimeImmutable;
+use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\PropertyMetadata;
+use Marko\Database\Events\EntityCreated;
+use Marko\Database\Events\EntityCreating;
+use Marko\Database\Events\EntityDeleted;
+use Marko\Database\Events\EntityDeleting;
+use Marko\Database\Events\EntityUpdated;
+use Marko\Database\Events\EntityUpdating;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Database\Query\QueryBuilderInterface;
 use ReflectionClass;
@@ -41,12 +48,16 @@ abstract class Repository implements RepositoryInterface
      * @param EntityMetadataFactory $metadataFactory Factory for entity metadata
      * @param EntityHydrator $hydrator Entity hydrator
      * @param Closure|null $queryBuilderFactory Optional factory that creates QueryBuilderInterface instances
+     * @param EventDispatcherInterface|null $eventDispatcher Optional event dispatcher for lifecycle events
+     *
+     * @throws RepositoryException
      */
     public function __construct(
         protected readonly ConnectionInterface $connection,
         protected readonly EntityMetadataFactory $metadataFactory,
         protected readonly EntityHydrator $hydrator,
         protected readonly ?Closure $queryBuilderFactory = null,
+        protected readonly ?EventDispatcherInterface $eventDispatcher = null,
     ) {
         $this->validateEntityClass();
         $this->metadata = $this->metadataFactory->parse(static::ENTITY_CLASS);
@@ -172,6 +183,8 @@ abstract class Repository implements RepositoryInterface
 
     /**
      * Save an entity (insert or update).
+     *
+     * @throws RepositoryException
      */
     public function save(
         Entity $entity,
@@ -179,14 +192,20 @@ abstract class Repository implements RepositoryInterface
         $this->validateEntityType($entity);
 
         if ($this->hydrator->isNew($entity, $this->metadata)) {
+            $this->eventDispatcher?->dispatch(new EntityCreating($entity, static::ENTITY_CLASS));
             $this->insert($entity);
+            $this->eventDispatcher?->dispatch(new EntityCreated($entity, static::ENTITY_CLASS));
         } else {
+            $this->eventDispatcher?->dispatch(new EntityUpdating($entity, static::ENTITY_CLASS));
             $this->update($entity);
+            $this->eventDispatcher?->dispatch(new EntityUpdated($entity, static::ENTITY_CLASS));
         }
     }
 
     /**
      * Delete an entity.
+     *
+     * @throws RepositoryException
      */
     public function delete(
         Entity $entity,
@@ -206,7 +225,9 @@ abstract class Repository implements RepositoryInterface
             $columnName,
         );
 
+        $this->eventDispatcher?->dispatch(new EntityDeleting($entity, static::ENTITY_CLASS));
         $this->connection->execute($sql, [$id]);
+        $this->eventDispatcher?->dispatch(new EntityDeleted($entity, static::ENTITY_CLASS));
     }
 
     /**
@@ -261,7 +282,18 @@ abstract class Repository implements RepositoryInterface
     public function exists(
         int $id,
     ): bool {
-        return $this->find($id) !== null;
+        return $this->find(id: $id) !== null;
+    }
+
+    /**
+     * Check if any entity matches the given criteria.
+     *
+     * @param array<string, mixed> $criteria Column-value pairs to match
+     */
+    public function existsBy(
+        array $criteria,
+    ): bool {
+        return $this->findOneBy(criteria: $criteria) !== null;
     }
 
     /**

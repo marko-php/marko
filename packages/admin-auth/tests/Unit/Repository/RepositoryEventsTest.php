@@ -20,6 +20,12 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Database\Events\EntityCreated;
+use Marko\Database\Events\EntityCreating;
+use Marko\Database\Events\EntityDeleted;
+use Marko\Database\Events\EntityDeleting;
+use Marko\Database\Events\EntityUpdated;
+use Marko\Database\Events\EntityUpdating;
 use Marko\Testing\Fake\FakeEventDispatcher;
 use RuntimeException;
 
@@ -43,10 +49,17 @@ it('dispatches RoleCreated event when role is created', function (): void {
 
     $repository->save($role);
 
-    expect($eventDispatcher->dispatched)->toHaveCount(1)
-        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(RoleCreated::class)
-        ->and($eventDispatcher->dispatched[0]->getRole())->toBeInstanceOf(RoleInterface::class)
-        ->and($eventDispatcher->dispatched[0]->getRole()->getName())->toBe('Editor');
+    $classes = array_map(fn (object $e): string => $e::class, $eventDispatcher->dispatched);
+
+    expect($classes)->toContain(EntityCreating::class)
+        ->and($classes)->toContain(EntityCreated::class)
+        ->and($classes)->toContain(RoleCreated::class);
+
+    $domainEvent = $eventDispatcher->dispatched[array_search(RoleCreated::class, $classes)];
+
+    expect($domainEvent)->toBeInstanceOf(RoleCreated::class)
+        ->and($domainEvent->getRole())->toBeInstanceOf(RoleInterface::class)
+        ->and($domainEvent->getRole()->getName())->toBe('Editor');
 });
 
 it('dispatches RoleUpdated event when role is modified', function (): void {
@@ -70,9 +83,15 @@ it('dispatches RoleUpdated event when role is modified', function (): void {
 
     $repository->save($role);
 
-    expect($eventDispatcher->dispatched)->toHaveCount(1)
-        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(RoleUpdated::class)
-        ->and($eventDispatcher->dispatched[0]->getRole()->getName())->toBe('Editor Updated');
+    $classes = array_map(fn (object $e): string => $e::class, $eventDispatcher->dispatched);
+
+    expect($classes)->toContain(EntityUpdating::class)
+        ->and($classes)->toContain(EntityUpdated::class)
+        ->and($classes)->toContain(RoleUpdated::class);
+
+    $domainEvent = $eventDispatcher->dispatched[array_search(RoleUpdated::class, $classes)];
+
+    expect($domainEvent->getRole()->getName())->toBe('Editor Updated');
 });
 
 it('dispatches RoleDeleted event when role is removed', function (): void {
@@ -96,9 +115,15 @@ it('dispatches RoleDeleted event when role is removed', function (): void {
 
     $repository->delete($role);
 
-    expect($eventDispatcher->dispatched)->toHaveCount(1)
-        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(RoleDeleted::class)
-        ->and($eventDispatcher->dispatched[0]->getRole()->getName())->toBe('Editor');
+    $classes = array_map(fn (object $e): string => $e::class, $eventDispatcher->dispatched);
+
+    expect($classes)->toContain(EntityDeleting::class)
+        ->and($classes)->toContain(EntityDeleted::class)
+        ->and($classes)->toContain(RoleDeleted::class);
+
+    $domainEvent = $eventDispatcher->dispatched[array_search(RoleDeleted::class, $classes)];
+
+    expect($domainEvent->getRole()->getName())->toBe('Editor');
 });
 
 it('dispatches AdminUserCreated event when user is created', function (): void {
@@ -122,10 +147,17 @@ it('dispatches AdminUserCreated event when user is created', function (): void {
 
     $repository->save($user);
 
-    expect($eventDispatcher->dispatched)->toHaveCount(1)
-        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(AdminUserCreated::class)
-        ->and($eventDispatcher->dispatched[0]->getUser())->toBeInstanceOf(AdminUserInterface::class)
-        ->and($eventDispatcher->dispatched[0]->getUser()->getAuthIdentifier())->toBe(1);
+    $classes = array_map(fn (object $e): string => $e::class, $eventDispatcher->dispatched);
+
+    expect($classes)->toContain(EntityCreating::class)
+        ->and($classes)->toContain(EntityCreated::class)
+        ->and($classes)->toContain(AdminUserCreated::class);
+
+    $domainEvent = $eventDispatcher->dispatched[array_search(AdminUserCreated::class, $classes)];
+
+    expect($domainEvent)->toBeInstanceOf(AdminUserCreated::class)
+        ->and($domainEvent->getUser())->toBeInstanceOf(AdminUserInterface::class)
+        ->and($domainEvent->getUser()->getAuthIdentifier())->toBe(1);
 });
 
 it('dispatches AdminUserUpdated event when user is modified', function (): void {
@@ -150,9 +182,15 @@ it('dispatches AdminUserUpdated event when user is modified', function (): void 
 
     $repository->save($user);
 
-    expect($eventDispatcher->dispatched)->toHaveCount(1)
-        ->and($eventDispatcher->dispatched[0])->toBeInstanceOf(AdminUserUpdated::class)
-        ->and($eventDispatcher->dispatched[0]->getUser()->getAuthIdentifier())->toBe(1);
+    $classes = array_map(fn (object $e): string => $e::class, $eventDispatcher->dispatched);
+
+    expect($classes)->toContain(EntityUpdating::class)
+        ->and($classes)->toContain(EntityUpdated::class)
+        ->and($classes)->toContain(AdminUserUpdated::class);
+
+    $domainEvent = $eventDispatcher->dispatched[array_search(AdminUserUpdated::class, $classes)];
+
+    expect($domainEvent->getUser()->getAuthIdentifier())->toBe(1);
 });
 
 it('includes timestamp in all events', function (): void {
@@ -179,12 +217,12 @@ it('includes timestamp in all events', function (): void {
 
     $afterSave = new DateTimeImmutable();
 
-    /** @var RoleCreated $event */
-    $event = $eventDispatcher->dispatched[0];
+    $classes = array_map(fn (object $e): string => $e::class, $eventDispatcher->dispatched);
+    $domainEvent = $eventDispatcher->dispatched[array_search(RoleCreated::class, $classes)];
 
-    expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
-        ->and($event->getTimestamp()->getTimestamp())->toBeGreaterThanOrEqual($beforeSave->getTimestamp())
-        ->and($event->getTimestamp()->getTimestamp())->toBeLessThanOrEqual($afterSave->getTimestamp());
+    expect($domainEvent->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
+        ->and($domainEvent->getTimestamp()->getTimestamp())->toBeGreaterThanOrEqual($beforeSave->getTimestamp())
+        ->and($domainEvent->getTimestamp()->getTimestamp())->toBeLessThanOrEqual($afterSave->getTimestamp());
 });
 
 // Helper functions
@@ -192,10 +230,10 @@ it('includes timestamp in all events', function (): void {
 function createEventMockConnection(
     bool $isNew = true,
 ): ConnectionInterface {
-    return new class ($isNew) implements ConnectionInterface
+    return new readonly class ($isNew) implements ConnectionInterface
     {
         public function __construct(
-            private readonly bool $isNew,
+            private bool $isNew,
         ) {}
 
         public function connect(): void {}

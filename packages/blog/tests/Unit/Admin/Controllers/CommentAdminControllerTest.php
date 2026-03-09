@@ -287,7 +287,9 @@ function createMockCommentAdminRepo(
         public function __construct(
             private array $findAllResult,
             private ?Comment $findResult,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$savedEntities,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$deletedEntities,
         ) {}
 
@@ -324,6 +326,12 @@ function createMockCommentAdminRepo(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {
@@ -348,12 +356,6 @@ function createMockCommentAdminRepo(
             return [];
         }
 
-        public function getThreadedCommentsForPost(
-            int $postId,
-        ): array {
-            return [];
-        }
-
         public function countForPost(
             int $postId,
         ): int {
@@ -370,12 +372,6 @@ function createMockCommentAdminRepo(
             string $email,
         ): array {
             return [];
-        }
-
-        public function calculateDepth(
-            int $commentId,
-        ): int {
-            return 0;
         }
     };
 }
@@ -420,6 +416,12 @@ function createMockCommentPostRepo(
             array $criteria,
         ): ?Entity {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function save(Entity $entity): void {}
@@ -628,6 +630,7 @@ function createMockCommentAdminView(
     return new class ($capturedData) implements ViewInterface
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$capturedData,
         ) {}
 

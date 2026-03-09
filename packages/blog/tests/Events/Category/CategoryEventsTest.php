@@ -44,8 +44,13 @@ it('dispatches CategoryCreated event when category is created', function (): voi
 
     $repository->save($category);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CategoryCreated::class);
+    $categoryCreatedEvents = array_values(array_filter(
+        $dispatcher->dispatched,
+        fn (object $e): bool => $e instanceof CategoryCreated,
+    ));
+
+    expect($categoryCreatedEvents)->toHaveCount(1)
+        ->and($categoryCreatedEvents[0])->toBeInstanceOf(CategoryCreated::class);
 });
 
 it('dispatches CategoryUpdated event when category is modified', function (): void {
@@ -71,8 +76,13 @@ it('dispatches CategoryUpdated event when category is modified', function (): vo
 
     $repository->save($category);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CategoryUpdated::class);
+    $categoryUpdatedEvents = array_values(array_filter(
+        $dispatcher->dispatched,
+        fn (object $e): bool => $e instanceof CategoryUpdated,
+    ));
+
+    expect($categoryUpdatedEvents)->toHaveCount(1)
+        ->and($categoryUpdatedEvents[0])->toBeInstanceOf(CategoryUpdated::class);
 });
 
 it('dispatches CategoryDeleted event when category is removed', function (): void {
@@ -98,8 +108,13 @@ it('dispatches CategoryDeleted event when category is removed', function (): voi
 
     $repository->delete($category);
 
-    expect($dispatcher->dispatched)->toHaveCount(1)
-        ->and($dispatcher->dispatched[0])->toBeInstanceOf(CategoryDeleted::class);
+    $categoryDeletedEvents = array_values(array_filter(
+        $dispatcher->dispatched,
+        fn (object $e): bool => $e instanceof CategoryDeleted,
+    ));
+
+    expect($categoryDeletedEvents)->toHaveCount(1)
+        ->and($categoryDeletedEvents[0])->toBeInstanceOf(CategoryDeleted::class);
 });
 
 it('includes full category entity in event data', function (): void {
@@ -124,8 +139,13 @@ it('includes full category entity in event data', function (): void {
 
     $repository->save($category);
 
+    $events = array_values(array_filter(
+        $dispatcher->dispatched,
+        fn (object $e): bool => $e instanceof CategoryCreated,
+    ));
+
     /** @var CategoryCreated $event */
-    $event = $dispatcher->dispatched[0];
+    $event = $events[0];
 
     expect($event->getCategory())->toBeInstanceOf(CategoryInterface::class)
         ->and($event->getCategory()->getName())->toBe('Technology')
@@ -166,8 +186,13 @@ it('includes parent category in event data if exists', function (): void {
 
     $repository->save($category);
 
+    $events = array_values(array_filter(
+        $dispatcher->dispatched,
+        fn (object $e): bool => $e instanceof CategoryCreated,
+    ));
+
     /** @var CategoryCreated $event */
-    $event = $dispatcher->dispatched[0];
+    $event = $events[0];
 
     expect($event->getParent())->toBeInstanceOf(CategoryInterface::class)
         ->and($event->getParent()->getName())->toBe('Programming');
@@ -197,8 +222,13 @@ it('includes timestamp in all events', function (): void {
     $repository->save($category);
     $afterSave = new DateTimeImmutable();
 
+    $events = array_values(array_filter(
+        $dispatcher->dispatched,
+        fn (object $e): bool => $e instanceof CategoryCreated,
+    ));
+
     /** @var CategoryCreated $event */
-    $event = $dispatcher->dispatched[0];
+    $event = $events[0];
 
     expect($event->getTimestamp())->toBeInstanceOf(DateTimeImmutable::class)
         ->and($event->getTimestamp()->getTimestamp())->toBeGreaterThanOrEqual($beforeSave->getTimestamp())

@@ -4,14 +4,9 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Repositories;
 
-use Closure;
 use DateTimeImmutable;
 use Marko\Blog\Entity\VerificationToken;
 use Marko\Blog\Services\TokenRepositoryInterface;
-use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Entity\Entity;
-use Marko\Database\Entity\EntityHydrator;
-use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
 
 /**
@@ -20,21 +15,6 @@ use Marko\Database\Repository\Repository;
 class TokenRepository extends Repository implements TokenRepositoryInterface
 {
     protected const string ENTITY_CLASS = VerificationToken::class;
-
-    public function __construct(
-        ConnectionInterface $connection,
-        EntityMetadataFactory $metadataFactory,
-        EntityHydrator $hydrator,
-        ?Closure $queryBuilderFactory = null,
-    ) {
-        parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory);
-    }
-
-    public function save(
-        VerificationToken|Entity $token,
-    ): void {
-        parent::save($token);
-    }
 
     public function findByToken(
         string $token,
@@ -55,12 +35,6 @@ class TokenRepository extends Repository implements TokenRepositoryInterface
             'email' => $email,
             'type' => 'browser',
         ]);
-    }
-
-    public function delete(
-        VerificationToken|Entity $token,
-    ): void {
-        parent::delete($token);
     }
 
     public function deleteExpiredEmailTokens(

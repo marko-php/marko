@@ -26,10 +26,21 @@ The following are handled automatically by the pre-commit toolchain (Rector, php
 - Minimum: PHP 8.5
 - Use PHP 8.5 features: pipe operator (`|>`), `clone()` with properties, `array_first()`/`array_last()`, closures in constant expressions
 
-### Prefer `array_any()` / `array_all()` Over Foreach Loops
+### Prefer `array_find()` / `array_any()` / `array_all()` Over Foreach Loops
 
 ```php
-// CORRECT
+// CORRECT — find a single item
+return array_find($this->all, fn(Space $space) => $space->id === $id);
+
+// WRONG
+foreach ($this->all as $space) {
+    if ($space->id === $id) {
+        return $space;
+    }
+}
+return null;
+
+// CORRECT — check if any match
 return array_any($this->roles, fn ($role) => $role->isSuperAdmin());
 
 // WRONG

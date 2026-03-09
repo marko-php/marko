@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Marko\AdminAuth\Tests\Unit\Repository;
 
+use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
 use Marko\AdminAuth\Entity\Permission;
 use Marko\AdminAuth\Repository\PermissionRepositoryInterface;
 use Marko\Database\Repository\RepositoryInterface;
 use ReflectionClass;
 
-it('creates PermissionRepositoryInterface with find, findByKey, all, findByGroup methods', function (): void {
+it('extends RepositoryInterface with permission-specific methods', function (): void {
     $reflection = new ReflectionClass(PermissionRepositoryInterface::class);
 
     expect($reflection->isInterface())->toBeTrue()
@@ -23,12 +24,11 @@ it('creates PermissionRepositoryInterface with find, findByKey, all, findByGroup
     ];
 
     foreach ($expectedMethods as $method) {
+        $methodReflection = $reflection->getMethod($method);
         expect($reflection->hasMethod($method))->toBeTrue(
             "PermissionRepositoryInterface should have method: $method",
-        );
-
-        $methodReflection = $reflection->getMethod($method);
-        expect($methodReflection->isPublic())->toBeTrue();
+        )
+            ->and($methodReflection->isPublic())->toBeTrue();
     }
 
     // Verify inherited methods from RepositoryInterface are available
@@ -71,9 +71,16 @@ it('syncFromRegistry method signature returns void', function (): void {
     $reflection = new ReflectionClass(PermissionRepositoryInterface::class);
     $method = $reflection->getMethod('syncFromRegistry');
 
-    $parameters = $method->getParameters();
-    expect($parameters)->toBeEmpty();
-
     $returnType = $method->getReturnType();
     expect($returnType->getName())->toBe('void');
+});
+
+it('updates PermissionRepositoryInterface to accept registry parameter', function (): void {
+    $reflection = new ReflectionClass(PermissionRepositoryInterface::class);
+    $method = $reflection->getMethod('syncFromRegistry');
+
+    $parameters = $method->getParameters();
+    expect($parameters)->toHaveCount(1)
+        ->and($parameters[0]->getName())->toBe('registry')
+        ->and($parameters[0]->getType()->getName())->toBe(PermissionRegistryInterface::class);
 });

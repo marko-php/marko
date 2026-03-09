@@ -33,9 +33,9 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
         EntityHydrator $hydrator,
         private readonly SlugGeneratorInterface $slugGenerator,
         ?Closure $queryBuilderFactory = null,
-        private readonly ?EventDispatcherInterface $eventDispatcher = null,
+        ?EventDispatcherInterface $eventDispatcher = null,
     ) {
-        parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory);
+        parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory, $eventDispatcher);
     }
 
     /**
@@ -63,6 +63,7 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
      * Find all child categories of a parent.
      *
      * @return array<Category>
+     * @throws RepositoryException
      */
     public function findChildren(
         Category $parent,
@@ -126,6 +127,8 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
 
     /**
      * Save a category, auto-generating slug if not set.
+     *
+     * @throws RepositoryException
      */
     public function save(
         Entity $entity,
@@ -190,6 +193,8 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
 
     /**
      * Delete a category, preventing deletion if it has posts or children.
+     *
+     * @throws RepositoryException
      */
     public function delete(
         Entity $entity,

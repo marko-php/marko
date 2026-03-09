@@ -8,6 +8,7 @@ use Marko\Blog\Repositories\AuthorRepositoryInterface;
 use Marko\Blog\Repositories\CategoryRepositoryInterface;
 use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
+use Marko\Blog\Services\CommentThreadingServiceInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Blog\Tests\Mocks\MockAuthorRepository;
 use Marko\Blog\Tests\Mocks\MockCategoryRepository;
@@ -48,6 +49,7 @@ it('demo app/blog overrides PostController via Preference', function (): void {
         $mockPaginationService,
         $mockView,
         new FakeSession(),
+        createMockCommentThreadingServiceForPreferenceTest(),
     ) extends PostController
     {
         public function show(
@@ -70,6 +72,7 @@ it('demo app/blog overrides PostController via Preference', function (): void {
     $container->instance(PaginationServiceInterface::class, $mockPaginationService);
     $container->instance(ViewInterface::class, $mockView);
     $container->instance(SessionInterface::class, new FakeSession());
+    $container->instance(CommentThreadingServiceInterface::class, createMockCommentThreadingServiceForPreferenceTest());
 
     // When requesting the original controller, we get the Preference instead
     $resolvedController = $container->get(PostController::class);
@@ -95,6 +98,7 @@ it('app PostController modifies show method response', function (): void {
         $mockPaginationService,
         $mockView,
         new FakeSession(),
+        createMockCommentThreadingServiceForPreferenceTest(),
     ) extends PostController
     {
         public function show(
@@ -129,6 +133,7 @@ it('DisableRoute attribute removes route from Preference override', function ():
         $mockPaginationService,
         $mockView,
         new FakeSession(),
+        createMockCommentThreadingServiceForPreferenceTest(),
     ) extends PostController
     {
         #[DisableRoute]
@@ -229,6 +234,22 @@ function createMockViewForPreferenceTest(): ViewInterface
             array $data = [],
         ): string {
             return "rendered: $template";
+        }
+    };
+}
+
+function createMockCommentThreadingServiceForPreferenceTest(): CommentThreadingServiceInterface
+{
+    return new readonly class () implements CommentThreadingServiceInterface
+    {
+        public function getThreadedComments(int $postId): array
+        {
+            return [];
+        }
+
+        public function calculateDepth(int $commentId): int
+        {
+            return 0;
         }
     };
 }

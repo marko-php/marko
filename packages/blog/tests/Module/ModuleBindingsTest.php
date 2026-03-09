@@ -29,6 +29,8 @@ use Marko\Blog\Services\PaginationService;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Blog\Services\SearchService;
 use Marko\Blog\Services\SearchServiceInterface;
+use Marko\Blog\Services\CommentThreadingService;
+use Marko\Blog\Services\CommentThreadingServiceInterface;
 use Marko\Blog\Services\SeoMetaService;
 use Marko\Blog\Services\SeoMetaServiceInterface;
 use Marko\Blog\Services\SlugGenerator;
@@ -161,6 +163,51 @@ describe('Blog module.php bindings', function (): void {
 
         expect($config['bindings'])->toHaveKey(SeoMetaServiceInterface::class)
             ->and($config['bindings'][SeoMetaServiceInterface::class])->toBe(SeoMetaService::class);
+    });
+
+    it('binds CommentThreadingServiceInterface to CommentThreadingService', function (): void {
+        $modulePath = dirname(__DIR__, 2) . '/module.php';
+        $config = require $modulePath;
+
+        expect($config['bindings'])->toHaveKey(CommentThreadingServiceInterface::class)
+            ->and($config['bindings'][CommentThreadingServiceInterface::class])->toBe(CommentThreadingService::class);
+    });
+
+    it('preserves all existing bindings', function (): void {
+        $modulePath = dirname(__DIR__, 2) . '/module.php';
+        $config = require $modulePath;
+        $bindings = $config['bindings'];
+
+        expect($bindings)->toHaveKey(CookieJarInterface::class)
+            ->and($bindings[CookieJarInterface::class])->toBe(CookieJar::class)
+            ->and($bindings)->toHaveKey(BlogConfigInterface::class)
+            ->and($bindings[BlogConfigInterface::class])->toBe(BlogConfig::class)
+            ->and($bindings)->toHaveKey(SlugGeneratorInterface::class)
+            ->and($bindings[SlugGeneratorInterface::class])->toBe(SlugGenerator::class)
+            ->and($bindings)->toHaveKey(AuthorRepositoryInterface::class)
+            ->and($bindings[AuthorRepositoryInterface::class])->toBe(AuthorRepository::class)
+            ->and($bindings)->toHaveKey(CategoryRepositoryInterface::class)
+            ->and($bindings[CategoryRepositoryInterface::class])->toBe(CategoryRepository::class)
+            ->and($bindings)->toHaveKey(TagRepositoryInterface::class)
+            ->and($bindings[TagRepositoryInterface::class])->toBe(TagRepository::class)
+            ->and($bindings)->toHaveKey(PostRepositoryInterface::class)
+            ->and($bindings[PostRepositoryInterface::class])->toBe(PostRepository::class)
+            ->and($bindings)->toHaveKey(CommentRepositoryInterface::class)
+            ->and($bindings[CommentRepositoryInterface::class])->toBe(CommentRepository::class)
+            ->and($bindings)->toHaveKey(TokenRepositoryInterface::class)
+            ->and($bindings[TokenRepositoryInterface::class])->toBe(TokenRepository::class)
+            ->and($bindings)->toHaveKey(CommentVerificationServiceInterface::class)
+            ->and($bindings[CommentVerificationServiceInterface::class])->toBe(CommentVerificationService::class)
+            ->and($bindings)->toHaveKey(CommentRateLimiterInterface::class)
+            ->and($bindings[CommentRateLimiterInterface::class])->toBe(CommentRateLimiter::class)
+            ->and($bindings)->toHaveKey(HoneypotValidatorInterface::class)
+            ->and($bindings[HoneypotValidatorInterface::class])->toBe(HoneypotValidator::class)
+            ->and($bindings)->toHaveKey(PaginationServiceInterface::class)
+            ->and($bindings[PaginationServiceInterface::class])->toBe(PaginationService::class)
+            ->and($bindings)->toHaveKey(SearchServiceInterface::class)
+            ->and($bindings[SearchServiceInterface::class])->toBe(SearchService::class)
+            ->and($bindings)->toHaveKey(SeoMetaServiceInterface::class)
+            ->and($bindings[SeoMetaServiceInterface::class])->toBe(SeoMetaService::class);
     });
 });
 

@@ -354,6 +354,12 @@ function createTagRepository(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {}
@@ -556,6 +562,12 @@ function createPostRepository(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {}
@@ -577,6 +589,7 @@ function createPostRepositoryWithCallTracking(
         public function __construct(
             private readonly array $findPublishedByTagResult,
             private readonly int $countPublishedByTagResult,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$methodCalls,
         ) {}
 
@@ -764,6 +777,12 @@ function createPostRepositoryWithCallTracking(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(Entity $entity): void {}
 
         public function delete(Entity $entity): void {}
@@ -833,6 +852,7 @@ function createViewWithCapture(
     return new class ($capturedData) implements ViewInterface
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$capturedData,
         ) {}
 
@@ -863,6 +883,7 @@ function createViewWithTemplateCapture(
     return new class ($capturedTemplate) implements ViewInterface
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private ?string &$capturedTemplate,
         ) {}
 

@@ -40,6 +40,12 @@ class MockCategoryRepository implements CategoryRepositoryInterface
         return null;
     }
 
+    public function existsBy(
+        array $criteria,
+    ): bool {
+        return $this->findOneBy(criteria: $criteria) !== null;
+    }
+
     public function findBySlug(
         string $slug,
     ): ?Category {

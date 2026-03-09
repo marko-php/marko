@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Repositories;
 
+use Closure;
 use DateTimeImmutable;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
@@ -30,10 +31,11 @@ class TagRepository extends Repository implements TagRepositoryInterface
         ConnectionInterface $connection,
         EntityMetadataFactory $metadataFactory,
         EntityHydrator $hydrator,
-        protected readonly SlugGeneratorInterface $slugGenerator,
-        protected readonly ?EventDispatcherInterface $eventDispatcher = null,
+        private readonly SlugGeneratorInterface $slugGenerator,
+        ?Closure $queryBuilderFactory = null,
+        ?EventDispatcherInterface $eventDispatcher = null,
     ) {
-        parent::__construct($connection, $metadataFactory, $hydrator);
+        parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory, $eventDispatcher);
     }
 
     /**

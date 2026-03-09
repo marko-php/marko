@@ -133,6 +133,7 @@ All blog module bindings can be overridden:
 | `HoneypotValidatorInterface` | `HoneypotValidator` |
 | `CommentRateLimiterInterface` | `CommentRateLimiter` |
 | `CommentVerificationServiceInterface` | `CommentVerificationService` |
+| `CommentThreadingServiceInterface` | `CommentThreadingService` |
 
 ### Hooking Methods (Plugins)
 
@@ -284,10 +285,22 @@ public function delete(PostInterface $post): void;
 
 ```php
 public function find(int $id): ?CommentInterface;
-public function getThreadedCommentsForPost(int $postId): array;
-public function calculateDepth(int $commentId): int;
+public function findVerifiedForPost(int $postId): array;
+public function findPendingForPost(int $postId): array;
+public function countForPost(int $postId): int;
+public function countVerifiedForPost(int $postId): int;
+public function findByEmail(string $email): array;
 public function save(CommentInterface $comment): void;
 public function delete(CommentInterface $comment): void;
+```
+
+### CommentThreadingServiceInterface
+
+Handles comment tree-building and depth calculation. Injected into controllers that need threaded comment display or reply depth validation.
+
+```php
+public function getThreadedComments(int $postId): array;
+public function calculateDepth(int $commentId): int;
 ```
 
 ### SearchServiceInterface

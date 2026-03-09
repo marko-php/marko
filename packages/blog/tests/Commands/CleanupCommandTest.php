@@ -263,6 +263,12 @@ readonly class StubTokenRepository implements TokenRepositoryInterface
         VerificationToken $token,
     ): void {}
 
+    public function existsBy(
+        array $criteria,
+    ): bool {
+        return false;
+    }
+
     public function deleteExpiredEmailTokens(
         int $expiryDays,
     ): int {

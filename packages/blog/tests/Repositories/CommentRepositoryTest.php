@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Tests\Repositories;
 
-use Marko\Blog\Config\BlogConfigInterface;
 use Marko\Blog\Entity\Comment;
 use Marko\Blog\Repositories\CommentRepository;
 use Marko\Database\Connection\ConnectionInterface;
@@ -29,9 +28,8 @@ it('finds comment by id', function (): void {
     ]);
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createMockBlogConfig();
 
-    $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
+    $repository = new CommentRepository($connection, $metadataFactory, $hydrator);
 
     $comment = $repository->find(1);
 
@@ -74,9 +72,8 @@ it('finds all verified comments for a post', function (): void {
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createMockBlogConfig();
 
-    $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
+    $repository = new CommentRepository($connection, $metadataFactory, $hydrator);
 
     $comments = $repository->findVerifiedForPost(10);
 
@@ -110,9 +107,8 @@ it('finds pending comments for a post', function (): void {
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createMockBlogConfig();
 
-    $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
+    $repository = new CommentRepository($connection, $metadataFactory, $hydrator);
 
     $comments = $repository->findPendingForPost(10);
 
@@ -125,165 +121,6 @@ it('finds pending comments for a post', function (): void {
         ->and($queryHistory[0]['bindings'])->toContain('pending');
 });
 
-it('returns comments as threaded tree structure', function (): void {
-    // Structure:
-    // - Comment 1 (root)
-    //   - Comment 2 (reply to 1)
-    //     - Comment 3 (reply to 2)
-    // - Comment 4 (root)
-    $connection = createCommentMockConnection([
-        [
-            'id' => 1,
-            'post_id' => 10,
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-            'content' => 'Root comment 1',
-            'status' => 'verified',
-            'parent_id' => null,
-            'verified_at' => '2024-01-01 12:00:00',
-            'created_at' => '2024-01-01 10:00:00',
-        ],
-        [
-            'id' => 2,
-            'post_id' => 10,
-            'name' => 'Jane Doe',
-            'email' => 'jane@example.com',
-            'content' => 'Reply to comment 1',
-            'status' => 'verified',
-            'parent_id' => 1,
-            'verified_at' => '2024-01-01 13:00:00',
-            'created_at' => '2024-01-01 11:00:00',
-        ],
-        [
-            'id' => 3,
-            'post_id' => 10,
-            'name' => 'Bob Smith',
-            'email' => 'bob@example.com',
-            'content' => 'Reply to comment 2',
-            'status' => 'verified',
-            'parent_id' => 2,
-            'verified_at' => '2024-01-01 14:00:00',
-            'created_at' => '2024-01-01 12:00:00',
-        ],
-        [
-            'id' => 4,
-            'post_id' => 10,
-            'name' => 'Alice Jones',
-            'email' => 'alice@example.com',
-            'content' => 'Root comment 2',
-            'status' => 'verified',
-            'parent_id' => null,
-            'verified_at' => '2024-01-01 15:00:00',
-            'created_at' => '2024-01-01 13:00:00',
-        ],
-    ]);
-    $metadataFactory = new EntityMetadataFactory();
-    $hydrator = new EntityHydrator();
-    $blogConfig = createMockBlogConfig();
-
-    $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
-
-    $tree = $repository->getThreadedCommentsForPost(10);
-
-    // Should only have 2 root comments
-    expect($tree)->toHaveCount(2)
-        ->and($tree[0]->content)->toBe('Root comment 1')
-        ->and($tree[1]->content)->toBe('Root comment 2');
-
-    // First root has children
-    $children = $tree[0]->getChildren();
-    expect($children)->toHaveCount(1)
-        ->and($children[0]->content)->toBe('Reply to comment 1');
-
-    // Nested child
-    $nestedChildren = $children[0]->getChildren();
-    expect($nestedChildren)->toHaveCount(1)
-        ->and($nestedChildren[0]->content)->toBe('Reply to comment 2');
-
-    // Second root has no children
-    expect($tree[1]->getChildren())->toHaveCount(0);
-});
-
-it('respects max depth configuration when building tree', function (): void {
-    // Structure (maxDepth = 2):
-    // - Comment 1 (depth 0)
-    //   - Comment 2 (depth 1)
-    //     - Comment 3 (depth 2) - should be cut off as max depth
-    //       - Comment 4 (depth 3) - would exceed max depth, should be flat at depth 2
-    $connection = createCommentMockConnection([
-        [
-            'id' => 1,
-            'post_id' => 10,
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-            'content' => 'Root comment (depth 0)',
-            'status' => 'verified',
-            'parent_id' => null,
-            'verified_at' => '2024-01-01 12:00:00',
-            'created_at' => '2024-01-01 10:00:00',
-        ],
-        [
-            'id' => 2,
-            'post_id' => 10,
-            'name' => 'Jane Doe',
-            'email' => 'jane@example.com',
-            'content' => 'Reply depth 1',
-            'status' => 'verified',
-            'parent_id' => 1,
-            'verified_at' => '2024-01-01 13:00:00',
-            'created_at' => '2024-01-01 11:00:00',
-        ],
-        [
-            'id' => 3,
-            'post_id' => 10,
-            'name' => 'Bob Smith',
-            'email' => 'bob@example.com',
-            'content' => 'Reply depth 2 (max)',
-            'status' => 'verified',
-            'parent_id' => 2,
-            'verified_at' => '2024-01-01 14:00:00',
-            'created_at' => '2024-01-01 12:00:00',
-        ],
-        [
-            'id' => 4,
-            'post_id' => 10,
-            'name' => 'Alice Jones',
-            'email' => 'alice@example.com',
-            'content' => 'Would be depth 3 but flattened to max',
-            'status' => 'verified',
-            'parent_id' => 3,
-            'verified_at' => '2024-01-01 15:00:00',
-            'created_at' => '2024-01-01 13:00:00',
-        ],
-    ]);
-    $metadataFactory = new EntityMetadataFactory();
-    $hydrator = new EntityHydrator();
-    // Set max depth to 2 (root=0, child=1, grandchild=2)
-    $blogConfig = createMockBlogConfig(2);
-
-    $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
-
-    $tree = $repository->getThreadedCommentsForPost(10);
-
-    // Root comment
-    expect($tree)->toHaveCount(1)
-        ->and($tree[0]->content)->toBe('Root comment (depth 0)');
-
-    // Depth 1
-    $depth1 = $tree[0]->getChildren();
-    expect($depth1)->toHaveCount(1)
-        ->and($depth1[0]->content)->toBe('Reply depth 1');
-
-    // Depth 2 (max) - should have both comment 3 and flattened comment 4
-    $depth2 = $depth1[0]->getChildren();
-    expect($depth2)->toHaveCount(2)
-        ->and($depth2[0]->content)->toBe('Reply depth 2 (max)')
-        ->and($depth2[1]->content)->toBe('Would be depth 3 but flattened to max');
-
-    // Comment 3 should have no children as they were moved up
-    expect($depth2[0]->getChildren())->toHaveCount(0);
-});
-
 it('orders comments by created_at ascending', function (): void {
     $queryHistory = [];
     $connection = createCommentMockConnectionWithHistory(
@@ -292,9 +129,8 @@ it('orders comments by created_at ascending', function (): void {
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createMockBlogConfig();
 
-    $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
+    $repository = new CommentRepository($connection, $metadataFactory, $hydrator);
 
     $repository->findVerifiedForPost(10);
 
@@ -309,9 +145,8 @@ it('counts total comments for a post', function (): void {
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createMockBlogConfig();
 
-    $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
+    $repository = new CommentRepository($connection, $metadataFactory, $hydrator);
 
     $count = $repository->countForPost(10);
 
@@ -329,9 +164,8 @@ it('counts verified comments for a post', function (): void {
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createMockBlogConfig();
 
-    $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
+    $repository = new CommentRepository($connection, $metadataFactory, $hydrator);
 
     $count = $repository->countVerifiedForPost(10);
 
@@ -374,9 +208,8 @@ it('finds comments by author email', function (): void {
     );
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
-    $blogConfig = createMockBlogConfig();
 
-    $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
+    $repository = new CommentRepository($connection, $metadataFactory, $hydrator);
 
     $comments = $repository->findByEmail('john@example.com');
 
@@ -385,61 +218,6 @@ it('finds comments by author email', function (): void {
         ->and($comments[1]->email)->toBe('john@example.com')
         ->and($queryHistory[0]['sql'])->toContain('email = ?')
         ->and($queryHistory[0]['bindings'])->toContain('john@example.com');
-});
-
-it('calculates depth of a comment in thread', function (): void {
-    // Structure:
-    // - Comment 1 (root, depth 0)
-    //   - Comment 2 (reply to 1, depth 1)
-    //     - Comment 3 (reply to 2, depth 2)
-    $commentsById = [
-        1 => [
-            'id' => 1,
-            'post_id' => 10,
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-            'content' => 'Root comment',
-            'status' => 'verified',
-            'parent_id' => null,
-            'verified_at' => '2024-01-01 12:00:00',
-            'created_at' => '2024-01-01 10:00:00',
-        ],
-        2 => [
-            'id' => 2,
-            'post_id' => 10,
-            'name' => 'Jane Doe',
-            'email' => 'jane@example.com',
-            'content' => 'Reply',
-            'status' => 'verified',
-            'parent_id' => 1,
-            'verified_at' => '2024-01-01 13:00:00',
-            'created_at' => '2024-01-01 11:00:00',
-        ],
-        3 => [
-            'id' => 3,
-            'post_id' => 10,
-            'name' => 'Bob Smith',
-            'email' => 'bob@example.com',
-            'content' => 'Nested reply',
-            'status' => 'verified',
-            'parent_id' => 2,
-            'verified_at' => '2024-01-01 14:00:00',
-            'created_at' => '2024-01-01 12:00:00',
-        ],
-    ];
-    $connection = createCommentMockConnectionForFindById($commentsById);
-    $metadataFactory = new EntityMetadataFactory();
-    $hydrator = new EntityHydrator();
-    $blogConfig = createMockBlogConfig();
-
-    $repository = new CommentRepository($connection, $metadataFactory, $hydrator, $blogConfig);
-
-    // Calculate depth for comment 3 (should be 2)
-    expect($repository->calculateDepth(3))->toBe(2)
-        // Root comment should have depth 0
-        ->and($repository->calculateDepth(1))->toBe(0)
-        // Comment 2 should have depth 1
-        ->and($repository->calculateDepth(2))->toBe(1);
 });
 
 // Helper function to create mock connection
@@ -586,57 +364,6 @@ function createCommentMockConnectionWithHistory(
         public function lastInsertId(): int
         {
             return 1;
-        }
-    };
-}
-
-function createMockBlogConfig(
-    int $maxDepth = 5,
-): BlogConfigInterface {
-    return new class ($maxDepth) implements BlogConfigInterface
-    {
-        public function __construct(
-            private int $maxDepth,
-        ) {}
-
-        public function getPostsPerPage(): int
-        {
-            return 10;
-        }
-
-        public function getCommentMaxDepth(): int
-        {
-            return $this->maxDepth;
-        }
-
-        public function getCommentRateLimitSeconds(): int
-        {
-            return 30;
-        }
-
-        public function getVerificationTokenExpiryDays(): int
-        {
-            return 7;
-        }
-
-        public function getVerificationCookieDays(): int
-        {
-            return 365;
-        }
-
-        public function getRoutePrefix(): string
-        {
-            return '/blog';
-        }
-
-        public function getVerificationCookieName(): string
-        {
-            return 'blog_verified';
-        }
-
-        public function getSiteName(): string
-        {
-            return 'Test Blog';
         }
     };
 }

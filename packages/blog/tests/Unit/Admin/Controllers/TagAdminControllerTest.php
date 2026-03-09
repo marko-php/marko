@@ -155,7 +155,7 @@ it('returns validation errors on POST /admin/blog/tags with invalid data', funct
         ->and($response->body())->toContain('blog::admin/tag/create')
         ->and($capturedData)->toHaveKey('errors')
         ->and($capturedData['errors'])->toContain('Name is required')
-        ->and($savedEntities)->toHaveCount(0);
+        ->and($savedEntities)->toBeEmpty();
 });
 
 it('renders edit form on GET /admin/blog/tags/{id}/edit with blog.tags.edit permission', function (): void {
@@ -356,7 +356,9 @@ function createMockTagAdminRepo(
         public function __construct(
             private array $findAllResult,
             private ?Tag $findResult,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$savedEntities,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$deletedEntities,
         ) {}
 
@@ -391,6 +393,12 @@ function createMockTagAdminRepo(
             array $criteria,
         ): ?Entity {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function save(
@@ -497,6 +505,7 @@ function createMockTagAdminView(
     return new class ($capturedData) implements ViewInterface
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$capturedData,
         ) {}
 

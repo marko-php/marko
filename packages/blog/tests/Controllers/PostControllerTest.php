@@ -15,8 +15,8 @@ use Marko\Blog\Enum\CommentStatus;
 use Marko\Blog\Enum\PostStatus;
 use Marko\Blog\Repositories\AuthorRepositoryInterface;
 use Marko\Blog\Repositories\CategoryRepositoryInterface;
-use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
+use Marko\Blog\Services\CommentThreadingServiceInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Exceptions\RepositoryException;
@@ -41,14 +41,31 @@ it('injects PostRepositoryInterface not concrete PostRepository', function (): v
         ->and($parameters[1]->getType()->getName())->toBe(AuthorRepositoryInterface::class)
         ->and($parameters[2]->getName())->toBe('categoryRepository')
         ->and($parameters[2]->getType()->getName())->toBe(CategoryRepositoryInterface::class)
-        ->and($parameters[3]->getName())->toBe('commentRepository')
-        ->and($parameters[3]->getType()->getName())->toBe(CommentRepositoryInterface::class)
-        ->and($parameters[4]->getName())->toBe('paginationService')
-        ->and($parameters[4]->getType()->getName())->toBe(PaginationServiceInterface::class)
-        ->and($parameters[5]->getName())->toBe('view')
-        ->and($parameters[5]->getType()->getName())->toBe(ViewInterface::class)
-        ->and($parameters[6]->getName())->toBe('session')
-        ->and($parameters[6]->getType()->getName())->toBe(SessionInterface::class);
+        ->and($parameters[3]->getName())->toBe('paginationService')
+        ->and($parameters[3]->getType()->getName())->toBe(PaginationServiceInterface::class)
+        ->and($parameters[4]->getName())->toBe('view')
+        ->and($parameters[4]->getType()->getName())->toBe(ViewInterface::class)
+        ->and($parameters[5]->getName())->toBe('session')
+        ->and($parameters[5]->getType()->getName())->toBe(SessionInterface::class)
+        ->and($parameters[6]->getName())->toBe('commentThreadingService')
+        ->and($parameters[6]->getType()->getName())->toBe(CommentThreadingServiceInterface::class);
+});
+
+it('injects CommentThreadingServiceInterface in PostController for getThreadedComments', function (): void {
+    $reflection = new ReflectionClass(PostController::class);
+    $constructor = $reflection->getConstructor();
+    $parameters = $constructor->getParameters();
+
+    $threadingParam = null;
+    foreach ($parameters as $param) {
+        if ($param->getName() === 'commentThreadingService') {
+            $threadingParam = $param;
+            break;
+        }
+    }
+
+    expect($threadingParam)->not->toBeNull()
+        ->and($threadingParam->getType()->getName())->toBe(CommentThreadingServiceInterface::class);
 });
 
 it('has GET /blog route on index method', function (): void {
@@ -79,7 +96,6 @@ it('returns response using view on index route', function (): void {
         createPost(2, 'Post 2', 'post-2'),
     ];
     $repository = createMockPostRepository(findPublishedPaginatedResult: $posts, countPublishedResult: 2);
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 2);
     $view = createMockView();
     $authorRepository = createMockAuthorRepository();
@@ -88,10 +104,10 @@ it('returns response using view on index route', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $response = $controller->index();
 
@@ -104,7 +120,6 @@ it('returns response using view on show route', function (): void {
     $repository = createMockPostRepository(
         findBySlugResult: createPost(1, 'Hello World', 'hello-world'),
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $view = createMockView();
     $authorRepository = createMockAuthorRepository();
@@ -113,10 +128,10 @@ it('returns response using view on show route', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $response = $controller->show('hello-world');
 
@@ -135,7 +150,6 @@ it('returns single post at GET /blog/{slug}', function (): void {
     );
 
     $repository = createMockPostRepository(findBySlugResult: $post);
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -146,10 +160,10 @@ it('returns single post at GET /blog/{slug}', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $response = $controller->show('test-post');
 
@@ -161,7 +175,6 @@ it('returns single post at GET /blog/{slug}', function (): void {
 
 it('returns 404 when post slug not found', function (): void {
     $repository = createMockPostRepository();
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $view = createMockView();
     $authorRepository = createMockAuthorRepository();
@@ -170,10 +183,10 @@ it('returns 404 when post slug not found', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $response = $controller->show('non-existent');
 
@@ -191,7 +204,6 @@ it('returns 404 when post is not published', function (): void {
     );
 
     $repository = createMockPostRepository(findBySlugResult: $draftPost);
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $view = createMockView();
     $authorRepository = createMockAuthorRepository();
@@ -200,10 +212,10 @@ it('returns 404 when post is not published', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $response = $controller->show('draft-post');
 
@@ -223,7 +235,6 @@ it('includes full post content in response', function (): void {
     );
 
     $repository = createMockPostRepository(findBySlugResult: $post);
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -234,10 +245,10 @@ it('includes full post content in response', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->show('full-content-post');
 
@@ -257,7 +268,6 @@ it('includes author information', function (): void {
     );
 
     $repository = createMockPostRepository(findBySlugResult: $post);
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -268,10 +278,10 @@ it('includes author information', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->show('post-with-author');
 
@@ -298,7 +308,6 @@ it('includes post categories', function (): void {
         findBySlugResult: $post,
         categoriesForPost: $categories,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -309,10 +318,10 @@ it('includes post categories', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->show('post-with-categories');
 
@@ -341,7 +350,6 @@ it('includes post tags', function (): void {
         findBySlugResult: $post,
         tagsForPost: $tags,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -352,10 +360,10 @@ it('includes post tags', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->show('post-with-tags');
 
@@ -397,7 +405,6 @@ it('includes threaded verified comments', function (): void {
     $threadedComments = [$parentComment];
 
     $repository = createMockPostRepository(findBySlugResult: $post);
-    $commentRepository = createMockCommentRepository(threadedComments: $threadedComments);
     $pagination = createMockPaginationService();
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -408,10 +415,10 @@ it('includes threaded verified comments', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(threadedComments: $threadedComments),
     );
     $controller->show('post-with-comments');
 
@@ -432,7 +439,6 @@ it('renders show using view template', function (): void {
     );
 
     $repository = createMockPostRepository(findBySlugResult: $post);
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $view = createMockView();
 
@@ -442,10 +448,10 @@ it('renders show using view template', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $response = $controller->show('view-template-test');
 
@@ -486,7 +492,6 @@ it('returns paginated list of published posts at GET /blog', function (): void {
         createPost(2, 'Post 2', 'post-2'),
     ];
     $repository = createMockPostRepository(findPublishedPaginatedResult: $posts, countPublishedResult: 2);
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 2);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -497,10 +502,10 @@ it('returns paginated list of published posts at GET /blog', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $response = $controller->index();
 
@@ -518,7 +523,6 @@ it('orders posts by published date descending', function (): void {
         createPost(2, 'Older Post', 'older-post', publishedAt: '2024-01-01 12:00:00'),
     ];
     $repository = createMockPostRepository(findPublishedPaginatedResult: $posts, countPublishedResult: 2);
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 2);
     $view = createMockView();
 
@@ -528,10 +532,10 @@ it('orders posts by published date descending', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $response = $controller->index();
 
@@ -550,7 +554,6 @@ it('excludes draft and scheduled posts from listing', function (): void {
         findPublishedPaginatedResult: $publishedPosts,
         countPublishedResult: 1,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($publishedPosts, 1);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -561,10 +564,10 @@ it('excludes draft and scheduled posts from listing', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->index();
 
@@ -580,7 +583,6 @@ it('accepts page query parameter for pagination', function (): void {
         findPublishedPaginatedResult: $posts,
         countPublishedResult: 25,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 25);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -591,10 +593,10 @@ it('accepts page query parameter for pagination', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->index(page: 3);
 
@@ -607,7 +609,6 @@ it('defaults to page 1 when no page parameter', function (): void {
         findPublishedPaginatedResult: $posts,
         countPublishedResult: 10,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 10);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -618,10 +619,10 @@ it('defaults to page 1 when no page parameter', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->index();
 
@@ -633,7 +634,6 @@ it('returns 404 for invalid page numbers', function (): void {
         findPublishedPaginatedResult: [],
         countPublishedResult: 25,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService([], 25);
     $view = createMockView();
 
@@ -643,10 +643,10 @@ it('returns 404 for invalid page numbers', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
 
     // Test page 0
@@ -668,7 +668,6 @@ it('includes pagination metadata in response', function (): void {
         findPublishedPaginatedResult: $posts,
         countPublishedResult: 25,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 25);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -679,10 +678,10 @@ it('includes pagination metadata in response', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->index();
 
@@ -710,7 +709,6 @@ it('includes post title summary author and date in listing', function (): void {
         findPublishedPaginatedResult: [$post],
         countPublishedResult: 1,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService([$post], 1);
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -721,10 +719,10 @@ it('includes post title summary author and date in listing', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->index();
 
@@ -741,7 +739,6 @@ it('renders using view template', function (): void {
         findPublishedPaginatedResult: $posts,
         countPublishedResult: 1,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService($posts, 1);
     $view = createMockView();
 
@@ -751,10 +748,10 @@ it('renders using view template', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $response = $controller->index();
 
@@ -788,7 +785,6 @@ it('includes categoryPaths with full hierarchy for each category', function (): 
         findBySlugResult: $post,
         categoriesForPost: $categories,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -799,10 +795,10 @@ it('includes categoryPaths with full hierarchy for each category', function (): 
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->show('post-with-hierarchy');
 
@@ -841,7 +837,6 @@ it('includes categoryPaths for multiple categories', function (): void {
         findBySlugResult: $post,
         categoriesForPost: $categories,
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -852,10 +847,10 @@ it('includes categoryPaths for multiple categories', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->show('post-multiple-categories');
 
@@ -881,7 +876,6 @@ it('includes empty categoryPaths when post has no categories', function (): void
         findBySlugResult: $post,
         categoriesForPost: [],
     );
-    $commentRepository = createMockCommentRepository();
     $pagination = createMockPaginationService();
     $capturedData = [];
     $view = createMockViewWithCapture($capturedData);
@@ -892,15 +886,15 @@ it('includes empty categoryPaths when post has no categories', function (): void
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $pagination,
         $view,
         createMockSession(),
+        createMockThreadingService(),
     );
     $controller->show('post-no-categories');
 
     expect($capturedData)->toHaveKey('categoryPaths')
-        ->and($capturedData['categoryPaths'])->toBe([]);
+        ->and($capturedData['categoryPaths'])->toBeEmpty();
 });
 
 // Helper functions
@@ -1193,6 +1187,12 @@ function createMockPostRepository(
             return null;
         }
 
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
+        }
+
         public function save(
             Entity $entity,
         ): void {}
@@ -1243,6 +1243,12 @@ function createMockAuthorRepository(
             array $criteria,
         ): ?Entity {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function save(
@@ -1305,6 +1311,12 @@ function createMockCategoryRepository(): CategoryRepositoryInterface
             array $criteria,
         ): ?Entity {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function save(
@@ -1395,6 +1407,12 @@ function createMockCategoryRepositoryWithPaths(
             array $criteria,
         ): ?Entity {
             return null;
+        }
+
+        public function existsBy(
+            array $criteria,
+        ): bool {
+            return $this->findOneBy(criteria: $criteria) !== null;
         }
 
         public function save(
@@ -1523,6 +1541,7 @@ function createMockViewWithCapture(
     return new class ($capturedData) implements ViewInterface
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private array &$capturedData,
         ) {}
 
@@ -1546,93 +1565,24 @@ function createMockViewWithCapture(
     };
 }
 
-function createMockCommentRepository(
+function createMockThreadingService(
     array $threadedComments = [],
-): CommentRepositoryInterface {
-    return new readonly class ($threadedComments) implements CommentRepositoryInterface
+): CommentThreadingServiceInterface {
+    return new readonly class ($threadedComments) implements CommentThreadingServiceInterface
     {
         public function __construct(
             private array $threadedComments,
         ) {}
 
-        public function find(
-            int $id,
-        ): ?Comment {
-            return null;
-        }
-
-        public function findVerifiedForPost(
-            int $postId,
-        ): array {
-            return [];
-        }
-
-        public function findPendingForPost(
-            int $postId,
-        ): array {
-            return [];
-        }
-
-        public function getThreadedCommentsForPost(
-            int $postId,
-        ): array {
+        public function getThreadedComments(int $postId): array
+        {
             return $this->threadedComments;
         }
 
-        public function countForPost(
-            int $postId,
-        ): int {
-            return 0;
-        }
-
-        public function countVerifiedForPost(
-            int $postId,
-        ): int {
-            return count($this->threadedComments);
-        }
-
-        public function findByEmail(
-            string $email,
-        ): array {
-            return [];
-        }
-
-        public function calculateDepth(
-            int $commentId,
-        ): int {
-            return 0;
-        }
-
-        public function findOrFail(
-            int $id,
-        ): Entity {
-            throw RepositoryException::notFound(Comment::class, $id);
-        }
-
-        public function findAll(): array
+        public function calculateDepth(int $commentId): int
         {
-            return [];
+            return 0;
         }
-
-        public function findBy(
-            array $criteria,
-        ): array {
-            return [];
-        }
-
-        public function findOneBy(
-            array $criteria,
-        ): ?Entity {
-            return null;
-        }
-
-        public function save(
-            Entity $entity,
-        ): void {}
-
-        public function delete(
-            Entity $entity,
-        ): void {}
     };
 }
 
