@@ -36,7 +36,7 @@ return [
     'bindings' => [
         MailerInterface::class => SmtpMailer::class,
     ],
-    'boot' => function ($container) {
+    'boot' => function (ContainerInterface $container): void {
         if (($_ENV['APP_ENV'] ?? 'production') === 'development') {
             $container->bind(
                 MailerInterface::class,

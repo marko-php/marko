@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Container\ContainerInterface;
 use Marko\Errors\Contracts\ErrorHandlerInterface;
 use Marko\ErrorsSimple\SimpleErrorHandler;
 
@@ -12,7 +13,7 @@ return [
     'bindings' => [
         ErrorHandlerInterface::class => SimpleErrorHandler::class,
     ],
-    'boot' => function ($container) {
+    'boot' => function (ContainerInterface $container) {
         // Get the error handler and register it
         $handler = $container->get(ErrorHandlerInterface::class);
         $handler->register();

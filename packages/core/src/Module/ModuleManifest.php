@@ -26,7 +26,7 @@ readonly class ModuleManifest
      * @param string $path Absolute path to module directory
      * @param string $source Discovery source: vendor, modules, or app
      * @param array<string, string> $autoload PSR-4 autoload configuration from composer.json (namespace => path)
-     * @param Closure|null $boot Boot callback to run after bindings are registered (from module.php)
+     * @param Closure|null $boot Boot callback to run after bindings are registered (from module.php). Parameters are auto-injected from the container — type-hint any registered dependency, including ContainerInterface.
      */
     public function __construct(
         public string $name,

@@ -206,6 +206,62 @@ it('resolves class dependencies while using default scalar values', function ():
         ->and($instance->name)->toBe('default');
 });
 
+it('calls a closure with no parameters', function (): void {
+    $container = new Container();
+
+    $result = $container->call(fn () => 'hello');
+
+    expect($result)->toBe('hello');
+});
+
+it('resolves nullable typed parameters to null when not bound in container', function (): void {
+    $container = new Container();
+
+    $result = $container->call(fn (?UnboundInterface $dep) => $dep);
+
+    expect($result)->toBeNull();
+});
+
+it('returns the callable return value', function (): void {
+    $container = new Container();
+
+    $result = $container->call(fn () => 42);
+
+    expect($result)->toBe(42);
+});
+
+it('throws BindingException for unresolvable callable parameters', function (): void {
+    $container = new Container();
+
+    expect(fn () => $container->call(fn (string $name) => $name))
+        ->toThrow(BindingException::class, "Cannot resolve parameter '\$name' in callable");
+});
+
+it('uses default values for scalar parameters in callables', function (): void {
+    $container = new Container();
+
+    $result = $container->call(fn (string $name = 'world') => "hello $name");
+
+    expect($result)->toBe('hello world');
+});
+
+it('resolves multiple parameters from the container', function (): void {
+    $container = new Container();
+
+    $result = $container->call(fn (SimpleClass $simple, DependencyClass $dep) => [$simple, $dep]);
+
+    expect($result[0])->toBeInstanceOf(SimpleClass::class)
+        ->and($result[1])->toBeInstanceOf(DependencyClass::class);
+});
+
+it('resolves typed parameters from the container when calling a closure', function (): void {
+    $container = new Container();
+
+    $result = $container->call(fn (SimpleClass $simple) => $simple);
+
+    expect($result)->toBeInstanceOf(SimpleClass::class);
+});
+
 it('uses default null for nullable Closure parameters', function (): void {
     $container = new Container();
 

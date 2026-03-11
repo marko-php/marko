@@ -8,6 +8,7 @@ use Closure;
 use Marko\Core\Exceptions\BindingException;
 use ReflectionClass;
 use ReflectionException;
+use ReflectionFunction;
 use ReflectionNamedType;
 
 class Container implements ContainerInterface
@@ -61,6 +62,39 @@ class Container implements ContainerInterface
         object $instance,
     ): void {
         $this->instances[$id] = $instance;
+    }
+
+    /**
+     * @throws BindingException|ReflectionException
+     */
+    public function call(Closure $callable): mixed
+    {
+        $reflection = new ReflectionFunction($callable);
+        $parameters = $reflection->getParameters();
+        $dependencies = [];
+
+        foreach ($parameters as $parameter) {
+            $type = $parameter->getType();
+
+            if (!$type instanceof ReflectionNamedType || $type->isBuiltin()) {
+                if ($parameter->isDefaultValueAvailable()) {
+                    $dependencies[] = $parameter->getDefaultValue();
+                    continue;
+                }
+                throw BindingException::unresolvableCallableParameter($parameter->getName());
+            }
+
+            $typeName = $type->getName();
+
+            if ($type->allowsNull() && !$this->has($typeName)) {
+                $dependencies[] = null;
+                continue;
+            }
+
+            $dependencies[] = $this->resolve($typeName);
+        }
+
+        return $callable(...$dependencies);
     }
 
     /**

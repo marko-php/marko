@@ -116,15 +116,14 @@ return [
 ];
 ```
 
-The `boot` callback runs after all module bindings are registered and receives the container:
+The `boot` callback runs after all module bindings are registered. Parameters are auto-injected from the container — type-hint any registered dependency:
 
 ```php
 return [
     'bindings' => [
         PaymentInterface::class => StripePayment::class,
     ],
-    'boot' => function ($container) {
-        $handler = $container->get(ErrorHandlerInterface::class);
+    'boot' => function (ErrorHandlerInterface $handler): void {
         $handler->register();
     },
 ];
@@ -140,7 +139,7 @@ return [
         // Default binding — used in all environments
         PaymentGatewayInterface::class => StripePaymentGateway::class,
     ],
-    'boot' => function ($container) {
+    'boot' => function (ContainerInterface $container): void {
         if (($_ENV['APP_ENV'] ?? 'production') === 'development') {
             $container->bind(
                 PaymentGatewayInterface::class,

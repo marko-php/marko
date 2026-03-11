@@ -40,7 +40,7 @@ use Marko\Cache\Redis\RedisConnection;
 'bindings' => [
     RedisConnection::class => RedisConnection::class,
 ],
-'boot' => function ($container) {
+'boot' => function (ContainerInterface $container): void {
     $container->bind(
         RedisConnection::class,
         fn () => new RedisConnection(

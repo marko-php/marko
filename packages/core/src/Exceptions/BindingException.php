@@ -118,4 +118,14 @@ class BindingException extends MarkoException implements ContainerExceptionInter
             suggestion: "Add a class or interface type hint, or register a factory for '$class'",
         );
     }
+
+    public static function unresolvableCallableParameter(
+        string $parameter,
+    ): self {
+        return new self(
+            message: "Cannot resolve parameter '\$$parameter' in callable",
+            context: 'Parameter has no type declaration or is a built-in type that cannot be autowired',
+            suggestion: "Add a class or interface type hint to the parameter",
+        );
+    }
 }

@@ -513,14 +513,18 @@ If multiple modules bind the same interface without one explicitly overriding th
 
 For cases where different environments need different implementations (e.g., a mock payment gateway in development vs a real one in production), use the `boot` callback in `module.php` to conditionally register bindings based on `$_ENV['APP_ENV']`.
 
+Boot callbacks support auto-injection: any dependency registered in the container can be type-hinted as a parameter, and the container resolves it automatically. Use `ContainerInterface` when you need dynamic binding, or type-hint other dependencies directly:
+
 ```php
 // module.php
+use Psr\Container\ContainerInterface;
+
 return [
     'bindings' => [
         // Default binding used in all environments
         PaymentGatewayInterface::class => StripePaymentGateway::class,
     ],
-    'boot' => function ($container) {
+    'boot' => function (ContainerInterface $container) {
         // Override for development only
         if (($_ENV['APP_ENV'] ?? 'production') === 'development') {
             $container->bind(
@@ -531,6 +535,16 @@ return [
     },
 ];
 ```
+
+Any registered dependency can be type-hinted directly — not just `ContainerInterface`:
+
+```php
+'boot' => function (HealthCheckRegistry $registry, MetricsCollector $metrics): void {
+    $registry->register($metrics->asHealthCheck());
+},
+```
+
+Both styles are valid. Use `ContainerInterface` when you need to call `bind()` or `get()` dynamically. Type-hint specific dependencies when you only need to call methods on them.
 
 Boot callbacks run after all module bindings are registered, so `$container->bind()` in a boot callback overrides the static binding from the same module. This keeps the override explicit and visible in the module's own configuration.
 
@@ -545,7 +559,7 @@ Boot callbacks run after all module bindings are registered, so `$container->bin
 
 ```php
 // WRONG - don't use boot callbacks for config-level differences
-'boot' => function ($container) {
+'boot' => function (ContainerInterface $container) {
     if ($_ENV['APP_ENV'] === 'development') {
         $container->bind(MailerInterface::class, SandboxMailer::class);
     }

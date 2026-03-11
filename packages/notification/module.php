@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Container\ContainerInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Mail\Contracts\MailerInterface;
 use Marko\Notification\Channel\DatabaseChannel;
@@ -17,7 +18,7 @@ return [
         NotificationManager::class => NotificationManager::class,
         NotificationSender::class => NotificationSender::class,
     ],
-    'boot' => function ($container) {
+    'boot' => function (ContainerInterface $container) {
         $manager = $container->get(NotificationManager::class);
 
         // Register mail channel if mailer is available

@@ -1206,7 +1206,7 @@ it('calls module boot callbacks after bindings are registered', function (): voi
 declare(strict_types=1);
 
 return [
-    'boot' => function ($container) {
+    'boot' => function (\Marko\Core\Container\ContainerInterface $container) {
         // Set a flag that we can check after boot
         $GLOBALS['__marko_boot_test_called'] = true;
     },
@@ -1258,7 +1258,7 @@ it('passes container to boot callbacks', function (): void {
 declare(strict_types=1);
 
 return [
-    'boot' => function ($container) {
+    'boot' => function (\Marko\Core\Container\ContainerInterface $container) {
         $GLOBALS['__marko_boot_container_class'] = $container::class;
     },
 ];
@@ -1279,5 +1279,118 @@ PHP;
     expect($GLOBALS['__marko_boot_container_class'] ?? '')->toBe('Marko\Core\Container\Container');
 
     unset($GLOBALS['__marko_boot_container_class']);
+    appTestCleanupDirectory($baseDir);
+});
+
+it('auto-injects dependencies into module boot callbacks', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    $modulePath = $vendorDir . '/acme/bootable';
+    mkdir($modulePath, 0755, true);
+
+    file_put_contents($modulePath . '/composer.json', json_encode([
+        'name' => 'acme/bootable',
+        'version' => '1.0.0',
+        'extra' => ['marko' => ['module' => true]],
+        'bindings' => [
+            'Marko\Core\Path\ProjectPaths' => 'Marko\Core\Path\ProjectPaths',
+        ],
+    ], JSON_PRETTY_PRINT));
+
+    // Boot callback that declares ProjectPaths as a typed parameter (auto-injected, not positionally passed)
+    $modulePhpContent = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+use Marko\Core\Path\ProjectPaths;
+
+return [
+    'boot' => function (ProjectPaths $paths) {
+        $GLOBALS['__marko_auto_inject_paths'] = $paths::class;
+    },
+];
+PHP;
+    file_put_contents($modulePath . '/module.php', $modulePhpContent);
+
+    unset($GLOBALS['__marko_auto_inject_paths']);
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    expect($GLOBALS['__marko_auto_inject_paths'] ?? '')->toBe('Marko\Core\Path\ProjectPaths');
+
+    unset($GLOBALS['__marko_auto_inject_paths']);
+    appTestCleanupDirectory($baseDir);
+});
+
+it('continues to work with boot callbacks that receive ContainerInterface', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    $modulePath = $vendorDir . '/acme/bootable';
+    mkdir($modulePath, 0755, true);
+
+    file_put_contents($modulePath . '/composer.json', json_encode([
+        'name' => 'acme/bootable',
+        'version' => '1.0.0',
+        'extra' => ['marko' => ['module' => true]],
+    ], JSON_PRETTY_PRINT));
+
+    $modulePhpContent = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+return [
+    'boot' => function (\Marko\Core\Container\ContainerInterface $container) {
+        $GLOBALS['__marko_ci_boot_class'] = $container::class;
+    },
+];
+PHP;
+    file_put_contents($modulePath . '/module.php', $modulePhpContent);
+
+    unset($GLOBALS['__marko_ci_boot_class']);
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    expect($GLOBALS['__marko_ci_boot_class'] ?? '')->toBe('Marko\Core\Container\Container');
+
+    unset($GLOBALS['__marko_ci_boot_class']);
+    appTestCleanupDirectory($baseDir);
+});
+
+it('registers the container as an instance of ContainerInterface', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $vendorDir = $baseDir . '/vendor';
+
+    appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    $resolved = $app->container->get(ContainerInterface::class);
+
+    expect($resolved)->toBe($app->container);
+
     appTestCleanupDirectory($baseDir);
 });

@@ -102,6 +102,7 @@ class Application
         $this->classFileParser = new ClassFileParser();
         $this->preferenceRegistry = new PreferenceRegistry();
         $this->container = new Container($this->preferenceRegistry);
+        $this->container->instance(ContainerInterface::class, $this->container);
         $bindingRegistry = new BindingRegistry($this->container);
 
         // Register ProjectPaths for dependency injection (base path derived from vendor path)
@@ -116,7 +117,7 @@ class Application
         // Call module boot callbacks (e.g., error handler registration)
         foreach ($this->modules as $module) {
             if ($module->boot !== null) {
-                ($module->boot)($this->container);
+                $this->container->call($module->boot);
             }
         }
 

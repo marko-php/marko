@@ -22,9 +22,7 @@ Inject `Schedule` and register tasks in a module's boot callback:
 use Marko\Scheduler\Schedule;
 
 return [
-    'boot' => function ($container) {
-        $schedule = $container->get(Schedule::class);
-
+    'boot' => function (Schedule $schedule): void {
         $schedule->call(function () {
             // Clean up temp files...
         })->daily()->description('Clean temp files');

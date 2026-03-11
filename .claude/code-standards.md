@@ -86,6 +86,27 @@ public function __construct(
 $logger = Container::get(LoggerInterface::class);
 ```
 
+### Constructor Parameter Naming
+When injecting an interface via constructor, the parameter name MUST be the interface name minus the `Interface` suffix, in camelCase. Never use abbreviated or generic names.
+
+```php
+// CORRECT
+public function __construct(
+    private SpaceMembershipRepositoryInterface $spaceMembershipRepository,
+    private ReactionRepositoryInterface $reactionRepository,
+    private PublisherInterface $publisher,
+    private UserRepositoryInterface $userRepository,
+) {}
+
+// WRONG - abbreviated/generic names
+public function __construct(
+    private SpaceMembershipRepositoryInterface $memberships,
+    private ReactionRepositoryInterface $reactions,
+    private PublisherInterface $pub,
+    private UserRepositoryInterface $users,
+) {}
+```
+
 ### 3. No Dead Code
 Remove unused variables, unused constructor dependencies, and unused method parameters. When removing a constructor dependency, update all call sites.
 
@@ -350,6 +371,7 @@ private function discoverObservers(): void
 ```
 
 **Rules:**
+- Always `use`-import exception classes and reference them by simple name — never use FQCNs (e.g. `\Marko\Config\Exceptions\ConfigNotFoundException`) in `@throws` tags
 - Use pipe operator (`|`) to combine multiple exceptions on one line
 - Document ALL thrown exceptions, including those from called methods if not caught
 - When calling interface methods, use the exception types declared by the interface

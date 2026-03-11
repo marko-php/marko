@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Core\Container;
 
+use Closure;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 interface ContainerInterface extends PsrContainerInterface
@@ -20,4 +21,9 @@ interface ContainerInterface extends PsrContainerInterface
         string $id,
         object $instance,
     ): void;
+
+    /**
+     * Invoke a callable with auto-resolved dependencies.
+     */
+    public function call(Closure $callable): mixed;
 }
