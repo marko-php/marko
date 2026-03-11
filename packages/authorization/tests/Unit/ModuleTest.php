@@ -18,11 +18,13 @@ it('creates module.php with Gate binding', function (): void {
         ->and($module['bindings'])->toHaveKey(GateInterface::class);
 });
 
-it('creates module.php with PolicyRegistry binding', function (): void {
+it('registers PolicyRegistry and GateInterface as singletons', function (): void {
     $modulePath = dirname(__DIR__, 2) . '/module.php';
     $module = require $modulePath;
 
-    expect($module['bindings'])->toHaveKey(PolicyRegistry::class);
+    expect($module)->toHaveKey('singletons')
+        ->and($module['singletons'])->toContain(PolicyRegistry::class)
+        ->and($module['singletons'])->toContain(GateInterface::class);
 });
 
 it('wires Gate with factory closure', function (): void {

@@ -242,6 +242,31 @@ it('resolves interface to bound implementation via container', function (): void
         ->and($instance)->toBeInstanceOf(StripePayment::class);
 });
 
+it('marks classes as singletons from list-style singletons without registering a binding', function (): void {
+    $container = new Container();
+    $registry = new BindingRegistry($container);
+
+    $module = new ModuleManifest(
+        name: 'vendor/auth',
+        version: '1.0.0',
+        bindings: [
+            PaymentInterface::class => StripePayment::class,
+        ],
+        singletons: [
+            PaymentInterface::class,
+        ],
+        source: 'vendor',
+    );
+
+    $registry->registerModule($module);
+
+    $instance1 = $container->get(PaymentInterface::class);
+    $instance2 = $container->get(PaymentInterface::class);
+
+    expect($instance1)->toBeInstanceOf(StripePayment::class)
+        ->and($instance1)->toBe($instance2);
+});
+
 it('processes bindings in module load order', function (): void {
     $container = new Container();
     $registry = new BindingRegistry($container);

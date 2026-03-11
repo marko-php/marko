@@ -11,9 +11,6 @@ use Marko\Core\Container\ContainerInterface;
 
 return [
     'bindings' => [
-        PolicyRegistry::class => function (): PolicyRegistry {
-            return new PolicyRegistry();
-        },
         GateInterface::class => function (ContainerInterface $container): GateInterface {
             $authManager = $container->get(AuthManager::class);
             $config = $container->get(AuthorizationConfig::class);
@@ -24,5 +21,9 @@ return [
                 policyRegistry: $container->get(PolicyRegistry::class),
             );
         },
+    ],
+    'singletons' => [
+        PolicyRegistry::class,
+        GateInterface::class,
     ],
 ];

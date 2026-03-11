@@ -37,6 +37,11 @@ class BindingRegistry
         }
 
         foreach ($module->singletons as $interface => $implementation) {
+            if (is_int($interface)) {
+                // List-style: just mark as singleton, binding comes from 'bindings' or autowiring
+                $this->container->singleton($implementation);
+                continue;
+            }
             $this->registerBinding($interface, $implementation, $module, $sourcePriority);
             $this->container->singleton($interface);
         }
