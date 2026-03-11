@@ -1374,6 +1374,52 @@ PHP;
     appTestCleanupDirectory($baseDir);
 });
 
+it('runs boot callbacks after all framework services are registered', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    $modulePath = $vendorDir . '/acme/bootable';
+    mkdir($modulePath, 0755, true);
+
+    file_put_contents($modulePath . '/composer.json', json_encode([
+        'name' => 'acme/bootable',
+        'version' => '1.0.0',
+        'extra' => ['marko' => ['module' => true]],
+    ], JSON_PRETTY_PRINT));
+
+    // Boot callback that resolves EventDispatcherInterface — a service registered
+    // late in the boot sequence. This verifies boot callbacks run after the full
+    // container is assembled, not partway through.
+    $modulePhpContent = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+return [
+    'boot' => function (\Marko\Core\Event\EventDispatcherInterface $dispatcher) {
+        $GLOBALS['__marko_boot_order_test'] = $dispatcher::class;
+    },
+];
+PHP;
+    file_put_contents($modulePath . '/module.php', $modulePhpContent);
+
+    unset($GLOBALS['__marko_boot_order_test']);
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->boot();
+
+    expect($GLOBALS['__marko_boot_order_test'] ?? '')->toBe('Marko\Core\Event\EventDispatcher');
+
+    unset($GLOBALS['__marko_boot_order_test']);
+    appTestCleanupDirectory($baseDir);
+});
+
 it('registers the container as an instance of ContainerInterface', function (): void {
     $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
     $vendorDir = $baseDir . '/vendor';

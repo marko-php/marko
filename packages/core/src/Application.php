@@ -114,13 +114,6 @@ class Application
             $bindingRegistry->registerModule($module);
         }
 
-        // Call module boot callbacks (e.g., error handler registration)
-        foreach ($this->modules as $module) {
-            if ($module->boot !== null) {
-                $this->container->call($module->boot);
-            }
-        }
-
         // Discover and register preferences
         $this->discoverPreferences();
 
@@ -143,6 +136,14 @@ class Application
 
         // Discover and register routes (if routing package is available)
         $this->discoverRoutes();
+
+        // Call module boot callbacks last — the full container is assembled so
+        // auto-injected dependencies (via call()) resolve without ordering issues.
+        foreach ($this->modules as $module) {
+            if ($module->boot !== null) {
+                $this->container->call($module->boot);
+            }
+        }
     }
 
     /**
