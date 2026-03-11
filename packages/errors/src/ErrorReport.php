@@ -13,7 +13,7 @@ readonly class ErrorReport
     private function __construct(
         public string $id,
         public string $message,
-        public int $code,
+        public int|string $code,
         public Throwable $throwable,
         public array $trace,
         public string $file,

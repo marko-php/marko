@@ -12,6 +12,7 @@ use Marko\Database\Exceptions\TransactionException;
 use Marko\Database\PgSql\Exceptions\ConnectionException;
 use PDO;
 use PDOException;
+use PDOStatement;
 use Throwable;
 
 class PgSqlConnection implements ConnectionInterface, TransactionInterface
@@ -124,7 +125,8 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         $this->ensureConnected();
 
         $statement = $this->pdo->prepare($sql);
-        $statement->execute($bindings);
+        $this->bindValues($statement, $bindings);
+        $statement->execute();
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -139,7 +141,8 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         $this->ensureConnected();
 
         $statement = $this->pdo->prepare($sql);
-        $statement->execute($bindings);
+        $this->bindValues($statement, $bindings);
+        $statement->execute();
 
         return $statement->rowCount();
     }
@@ -155,6 +158,23 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         $pdoStatement = $this->pdo->prepare($sql);
 
         return new PgSqlStatement($pdoStatement);
+    }
+
+    /**
+     * @param array<int|string, mixed> $bindings
+     */
+    private function bindValues(PDOStatement $statement, array $bindings): void
+    {
+        foreach ($bindings as $key => $value) {
+            $param = is_int($key) ? $key + 1 : $key;
+            $type = match (true) {
+                is_bool($value) => PDO::PARAM_BOOL,
+                is_null($value) => PDO::PARAM_NULL,
+                is_int($value) => PDO::PARAM_INT,
+                default => PDO::PARAM_STR,
+            };
+            $statement->bindValue($param, $value, $type);
+        }
     }
 
     /**

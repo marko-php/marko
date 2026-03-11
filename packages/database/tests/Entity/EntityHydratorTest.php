@@ -271,7 +271,7 @@ it('extracts entity data to row array for persistence', function (): void {
         'id' => 1,
         'name' => 'John Doe',
         'email_address' => 'john@example.com',
-        'is_active' => 1,
+        'is_active' => true,
         'bio' => 'Developer',
     ]);
 });

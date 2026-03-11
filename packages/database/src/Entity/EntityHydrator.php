@@ -212,7 +212,7 @@ class EntityHydrator
         }
 
         if (is_bool($value)) {
-            return (int) $value;
+            return $value;
         }
 
         if ($value instanceof BackedEnum) {
