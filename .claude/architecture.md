@@ -370,6 +370,7 @@ Module configuration is split between two files with clear responsibilities:
 - `enabled` - Whether module is active (default: true)
 - `sequence` - Load order hints (after/before other modules)
 - `bindings` - Interface → implementation mappings
+- `singletons` - Shared instances (see Dependency Injection section)
 - `boot` - Closure that runs after all bindings are registered (receives the Container)
 
 This split keeps standard PHP metadata in the standard location (composer.json) while Marko-specific config lives in module.php. A minimal module only needs a composer.json with a `name` field.
@@ -489,6 +490,36 @@ The container reads constructor signatures and automatically resolves dependenci
 Bindings map interfaces to implementations. Defined in module manifests.
 
 When something requests an interface, the container provides the bound implementation.
+
+### Singletons
+
+By default, the container creates a new instance on every `get()` call. To share a single instance across the entire request, use the `singletons` key in `module.php`.
+
+**Two formats:**
+
+```php
+// Key-value: bind AND share (interface → implementation + singleton)
+'singletons' => [
+    SessionInterface::class => Session::class,
+],
+
+// List-style: share only (binding comes from 'bindings' key or autowiring)
+'bindings' => [
+    GateInterface::class => function (ContainerInterface $container): GateInterface {
+        // complex wiring...
+    },
+],
+'singletons' => [
+    PolicyRegistry::class,   // autowired, shared
+    GateInterface::class,    // bound above, shared
+],
+```
+
+**When to use key-value:** The class needs both a binding and singleton behavior. This is the common case for simple interface → implementation mappings.
+
+**When to use list-style:** The class already has a binding in `bindings` (e.g., a closure factory) or is a concrete class that can be autowired. You just want to mark it as shared.
+
+**When singletons matter:** Any service where state is registered at boot time and consumed at request time (e.g., policy registries, event dispatchers) must be a singleton. Otherwise, boot callbacks write to one instance and request handlers get a different empty one.
 
 ### Preferences
 
