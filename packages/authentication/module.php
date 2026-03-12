@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
+use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
 use Marko\Core\Container\ContainerInterface;
-use Marko\Session\Contracts\SessionInterface;
 
 return [
     'bindings' => [
@@ -19,12 +18,12 @@ return [
                 cost: $config->bcryptCost(),
             );
         },
-        AuthManager::class => function (ContainerInterface $container): AuthManager {
-            return new AuthManager(
-                config: $container->get(AuthConfig::class),
-                session: $container->get(SessionInterface::class),
-                provider: $container->get(UserProviderInterface::class),
-            );
+        GuardInterface::class => function (ContainerInterface $container): GuardInterface {
+            return $container->get(AuthManager::class)->guard();
         },
+    ],
+    'singletons' => [
+        AuthManager::class,
+        GuardInterface::class,
     ],
 ];

@@ -7,6 +7,7 @@ namespace Marko\Authentication\Tests\Integration;
 use Closure;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
+use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
 use Marko\Authentication\Event\FailedLoginEvent;
 use Marko\Authentication\Event\LoginEvent;
@@ -196,13 +197,12 @@ test('module bindings resolve correctly', function (): void {
         ->and($config)->toHaveKey('bindings')
         ->and($config['bindings'])->toBeArray()
         ->and($config['bindings'])->toHaveKey(PasswordHasherInterface::class)
-        ->and($config['bindings'])->toHaveKey(AuthManager::class)
+        ->and($config['bindings'])->toHaveKey(GuardInterface::class)
         ->and($config['bindings'][PasswordHasherInterface::class])->toBeInstanceOf(Closure::class)
-        ->and($config['bindings'][AuthManager::class])->toBeInstanceOf(Closure::class);
-
-    // Verify required bindings exist
-
-    // Verify bindings are closures
+        ->and($config['bindings'][GuardInterface::class])->toBeInstanceOf(Closure::class)
+        ->and($config)->toHaveKey('singletons')
+        ->and($config['singletons'])->toContain(AuthManager::class)
+        ->and($config['singletons'])->toContain(GuardInterface::class);
 });
 
 test('config loading works', function (): void {

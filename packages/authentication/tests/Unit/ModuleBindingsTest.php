@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
+use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
 use Marko\Core\Container\ContainerInterface;
-use Marko\Session\Contracts\SessionInterface;
 
 it('has enabled set to true', function () {
     $modulePath = dirname(__DIR__, 2) . '/module.php';
@@ -36,12 +35,12 @@ it('binds PasswordHasherInterface to BcryptPasswordHasher', function () {
         ->and($config['bindings'][PasswordHasherInterface::class])->toBeInstanceOf(Closure::class);
 });
 
-it('binds AuthManager with factory', function () {
+it('binds GuardInterface with factory', function () {
     $modulePath = dirname(__DIR__, 2) . '/module.php';
     $config = require $modulePath;
 
-    expect($config['bindings'])->toHaveKey(AuthManager::class)
-        ->and($config['bindings'][AuthManager::class])->toBeInstanceOf(Closure::class);
+    expect($config['bindings'])->toHaveKey(GuardInterface::class)
+        ->and($config['bindings'][GuardInterface::class])->toBeInstanceOf(Closure::class);
 });
 
 it('creates password hasher with config cost', function () {
@@ -66,27 +65,40 @@ it('creates password hasher with config cost', function () {
         ->and($result)->toBeInstanceOf(PasswordHasherInterface::class);
 });
 
-it('creates auth manager with container and config', function () {
+it('creates guard via AuthManager', function () {
     $modulePath = dirname(__DIR__, 2) . '/module.php';
     $config = require $modulePath;
-    $binding = $config['bindings'][AuthManager::class];
+    $binding = $config['bindings'][GuardInterface::class];
 
-    $authConfig = $this->createMock(AuthConfig::class);
-    $session = $this->createMock(SessionInterface::class);
-    $provider = $this->createMock(UserProviderInterface::class);
+    $guard = $this->createMock(GuardInterface::class);
+
+    $authManager = $this->createMock(AuthManager::class);
+    $authManager->expects($this->once())
+        ->method('guard')
+        ->willReturn($guard);
 
     $container = $this->createMock(ContainerInterface::class);
-    $container->expects($this->exactly(3))
+    $container->expects($this->once())
         ->method('get')
-        ->willReturnCallback(function (string $id) use ($authConfig, $session, $provider) {
-            return match ($id) {
-                AuthConfig::class => $authConfig,
-                SessionInterface::class => $session,
-                UserProviderInterface::class => $provider,
-            };
-        });
+        ->with(AuthManager::class)
+        ->willReturn($authManager);
 
     $result = $binding($container);
 
-    expect($result)->toBeInstanceOf(AuthManager::class);
+    expect($result)->toBeInstanceOf(GuardInterface::class);
+});
+
+it('registers AuthManager as singleton', function () {
+    $modulePath = dirname(__DIR__, 2) . '/module.php';
+    $config = require $modulePath;
+
+    expect($config)->toHaveKey('singletons')
+        ->and($config['singletons'])->toContain(AuthManager::class);
+});
+
+it('registers GuardInterface as singleton', function () {
+    $modulePath = dirname(__DIR__, 2) . '/module.php';
+    $config = require $modulePath;
+
+    expect($config['singletons'])->toContain(GuardInterface::class);
 });
