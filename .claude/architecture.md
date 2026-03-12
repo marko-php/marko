@@ -487,39 +487,72 @@ The container reads constructor signatures and automatically resolves dependenci
 
 ### Bindings
 
-Bindings map interfaces to implementations. Defined in module manifests.
+Bindings tell the container what to create when something requests an interface. Defined in `module.php`.
 
-When something requests an interface, the container provides the bound implementation.
+**Simple bindings** map an interface to a class. The container autowires the class (reads its constructor, resolves params automatically):
+
+```php
+'bindings' => [
+    UserRepositoryInterface::class => UserRepository::class,
+],
+```
+
+**Closure bindings** are for when a simple class mapping isn't enough — when you need custom build logic like calling a method, reading config, or passing specific constructor values:
+
+```php
+'bindings' => [
+    // Can't express "call a method on another service" as a class mapping
+    GuardInterface::class => function (ContainerInterface $container): GuardInterface {
+        return $container->get(AuthManager::class)->guard();
+    },
+
+    // Need to pass a config value to the constructor
+    PasswordHasherInterface::class => function (ContainerInterface $container): PasswordHasherInterface {
+        $config = $container->get(AuthConfig::class);
+
+        return new BcryptPasswordHasher(
+            cost: $config->bcryptCost(),
+        );
+    },
+],
+```
+
+**Prefer simple bindings.** Only use closures when autowiring can't express what you need. If a class takes only type-hinted interfaces/classes as constructor params, it's autowirable — no closure needed.
 
 ### Singletons
 
-By default, the container creates a new instance on every `get()` call. To share a single instance across the entire request, use the `singletons` key in `module.php`.
+By default, the container creates a new instance every time something asks for a class. Singletons tell the container: **build it once, then reuse that same instance for every subsequent request.**
 
-**Two formats:**
+**Key-value format** — binds and shares in one step. Use this for simple interface → implementation mappings that should be shared:
 
 ```php
-// Key-value: bind AND share (interface → implementation + singleton)
 'singletons' => [
     SessionInterface::class => Session::class,
 ],
 
-// List-style: share only (binding comes from 'bindings' key or autowiring)
+// Equivalent to writing both:
+// 'bindings'   => [SessionInterface::class => Session::class],
+// 'singletons' => [SessionInterface::class],
+```
+
+**List-style format** — only marks as singleton. The container already knows how to build the class (from a `bindings` closure or via autowiring). You're just saying "only build it once":
+
+```php
 'bindings' => [
-    GateInterface::class => function (ContainerInterface $container): GateInterface {
-        // complex wiring...
+    // Closure binding — container needs custom logic to build this
+    GuardInterface::class => function (ContainerInterface $container): GuardInterface {
+        return $container->get(AuthManager::class)->guard();
     },
 ],
 'singletons' => [
-    PolicyRegistry::class,   // autowired, shared
-    GateInterface::class,    // bound above, shared
+    AuthManager::class,      // Autowirable concrete class — just share it
+    GuardInterface::class,   // Has a closure binding above — don't re-run the closure, reuse the result
 ],
 ```
 
-**When to use key-value:** The class needs both a binding and singleton behavior. This is the common case for simple interface → implementation mappings.
+Why not use key-value for `GuardInterface`? Because key-value (`GuardInterface::class => SomeClass::class`) would replace the closure with a simple class mapping, losing the custom build logic.
 
-**When to use list-style:** The class already has a binding in `bindings` (e.g., a closure factory) or is a concrete class that can be autowired. You just want to mark it as shared.
-
-**When singletons matter:** Any service where state is registered at boot time and consumed at request time (e.g., policy registries, event dispatchers) must be a singleton. Otherwise, boot callbacks write to one instance and request handlers get a different empty one.
+**When singletons matter:** Any service that holds state across the request must be a singleton. For example, if a boot callback registers policies into a `PolicyRegistry`, that registry must be a singleton — otherwise boot writes to one instance and request handlers get a different, empty one.
 
 ### Preferences
 
