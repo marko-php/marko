@@ -113,28 +113,18 @@ Combine with `marko/sse` to push database notifications to the browser:
 
 ```php
 use Marko\PubSub\SubscriberInterface;
-use Marko\Routing\Http\Request;
 use Marko\Routing\Route\Get;
-use Marko\Sse\SseEvent;
 use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
 
 #[Get('/orders/stream')]
-public function stream(Request $request): StreamingResponse
+public function stream(): StreamingResponse
 {
     $subscription = $this->subscriber->subscribe('orders');
 
     $stream = new SseStream(
-        dataProvider: function () use ($subscription): array {
-            $events = [];
-
-            foreach ($subscription as $message) {
-                $events[] = new SseEvent(data: json_decode($message->payload, true));
-                break;
-            }
-
-            return $events;
-        },
+        subscription: $subscription,
+        timeout: 300,
     );
 
     return new StreamingResponse($stream);

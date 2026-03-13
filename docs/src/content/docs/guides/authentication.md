@@ -43,7 +43,7 @@ return [
 
 ## Using Authentication
 
-Inject the `AuthManagerInterface` to check authentication state:
+Inject `AuthManager` to check authentication state:
 
 ```php title="app/dashboard/Controller/DashboardController.php"
 <?php
@@ -52,9 +52,9 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use Marko\Authentication\AuthManagerInterface;
-use Marko\Routing\Attribute\Get;
-use Marko\Routing\Attribute\Middleware;
+use Marko\Authentication\AuthManager;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Http\ResponseInterface;
 use Marko\Http\JsonResponse;
@@ -62,7 +62,7 @@ use Marko\Http\JsonResponse;
 class DashboardController
 {
     public function __construct(
-        private readonly AuthManagerInterface $authManager,
+        private readonly AuthManager $authManager,
     ) {}
 
     #[Get('/dashboard')]
@@ -138,19 +138,29 @@ declare(strict_types=1);
 
 namespace App\MyApp\Auth;
 
-use Marko\Authentication\GuardInterface;
+use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\AuthenticatableInterface;
 
 class ApiKeyGuard implements GuardInterface
 {
+    public function check(): bool
+    {
+        return $this->user() !== null;
+    }
+
+    public function guest(): bool
+    {
+        return !$this->check();
+    }
+
     public function user(): ?AuthenticatableInterface
     {
         // Look up user by API key from request header
     }
 
-    public function check(): bool
+    public function id(): int|string|null
     {
-        return $this->user() !== null;
+        return $this->user()?->getAuthIdentifier();
     }
 
     public function attempt(array $credentials): bool
@@ -158,9 +168,24 @@ class ApiKeyGuard implements GuardInterface
         // Validate API key credentials
     }
 
+    public function login(AuthenticatableInterface $user): void
+    {
+        // Store the authenticated user
+    }
+
+    public function loginById(int|string $id): ?AuthenticatableInterface
+    {
+        // Find and log in a user by ID
+    }
+
     public function logout(): void
     {
         // Invalidate the API key
+    }
+
+    public function getName(): string
+    {
+        return 'api-key';
     }
 }
 ```
@@ -168,7 +193,7 @@ class ApiKeyGuard implements GuardInterface
 Register it via Preference in your `module.php`:
 
 ```php title="module.php"
-use Marko\Authentication\GuardInterface;
+use Marko\Authentication\Contracts\GuardInterface;
 use App\MyApp\Auth\ApiKeyGuard;
 
 return [

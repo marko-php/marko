@@ -108,28 +108,18 @@ Combine with `marko/sse` to stream pub/sub messages to the browser:
 
 ```php
 use Marko\PubSub\SubscriberInterface;
-use Marko\Routing\Http\Request;
 use Marko\Routing\Route\Get;
-use Marko\Sse\SseEvent;
 use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
 
 #[Get('/users/{userId}/notifications')]
-public function stream(Request $request, int $userId): StreamingResponse
+public function stream(int $userId): StreamingResponse
 {
     $subscription = $this->subscriber->subscribe("user.$userId");
 
     $stream = new SseStream(
-        dataProvider: function () use ($subscription): array {
-            $events = [];
-
-            foreach ($subscription as $message) {
-                $events[] = new SseEvent(data: json_decode($message->payload, true));
-                break; // yield one batch per poll
-            }
-
-            return $events;
-        },
+        subscription: $subscription,
+        timeout: 300,
     );
 
     return new StreamingResponse($stream);

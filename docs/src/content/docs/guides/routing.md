@@ -14,9 +14,9 @@ declare(strict_types=1);
 
 namespace App\Blog\Controller;
 
-use Marko\Routing\Attribute\Get;
-use Marko\Routing\Attribute\Post;
-use Marko\Routing\Attribute\Delete;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Post;
+use Marko\Routing\Attributes\Delete;
 use Marko\Http\ResponseInterface;
 use Marko\Http\JsonResponse;
 
@@ -75,8 +75,8 @@ public function show(int $userId, int $postId): ResponseInterface
 Apply middleware to routes using the `#[Middleware]` attribute:
 
 ```php
-use Marko\Routing\Attribute\Get;
-use Marko\Routing\Attribute\Middleware;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
 use Marko\Authentication\Middleware\AuthMiddleware;
 
 class AdminController
@@ -112,14 +112,16 @@ Higher-priority modules can override routes from lower-priority modules. If `ven
 
 ## Disabling Routes
 
-To remove a vendor route without replacing it, use the `#[DisableRoute]` attribute:
+To remove a vendor route without replacing it, use the `#[DisableRoute]` attribute. Place it on a method that also has the route attribute you want to disable --- `#[DisableRoute]` takes no parameters and simply disables the route defined by the preceding routing attribute:
 
 ```php
-use Marko\Routing\Attribute\DisableRoute;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\DisableRoute;
 
 class BlogRouteOverrides
 {
-    #[DisableRoute(method: 'GET', path: '/blog/rss')]
+    #[Get('/blog/rss')]
+    #[DisableRoute]
     public function disableRss(): void {}
 }
 ```
@@ -137,7 +139,7 @@ namespace App\MyApp\Middleware;
 
 use Marko\Http\RequestInterface;
 use Marko\Http\ResponseInterface;
-use Marko\Routing\MiddlewareInterface;
+use Marko\Routing\Middleware\MiddlewareInterface;
 
 class RateLimitMiddleware implements MiddlewareInterface
 {

@@ -1,6 +1,6 @@
 ---
 title: Build a REST API
-description: Create a JSON API with Marko — routing, validation, and authentication.
+description: Create a JSON API with Marko --- routing, validation, and authentication.
 ---
 
 Build a RESTful API for managing articles, complete with authentication, validation, and proper HTTP responses.
@@ -68,44 +68,44 @@ declare(strict_types=1);
 
 namespace App\Api\Repository;
 
-use Marko\Database\ConnectionInterface;
+use Marko\Database\Query\QueryBuilderInterface;
 
 class ArticleRepository
 {
     public function __construct(
-        private readonly ConnectionInterface $connection,
+        private readonly QueryBuilderInterface $queryBuilder,
     ) {}
 
     public function all(): array
     {
-        return $this->connection->table('articles')
-            ->orderBy('created_at', 'desc')
+        return $this->queryBuilder->table('articles')
+            ->orderBy('created_at', 'DESC')
             ->get();
     }
 
     public function find(int $id): ?array
     {
-        return $this->connection->table('articles')
-            ->where('id', $id)
+        return $this->queryBuilder->table('articles')
+            ->where('id', '=', $id)
             ->first();
     }
 
     public function create(array $data): int
     {
-        return $this->connection->table('articles')->insert($data);
+        return $this->queryBuilder->table('articles')->insert($data);
     }
 
     public function update(int $id, array $data): void
     {
-        $this->connection->table('articles')
-            ->where('id', $id)
+        $this->queryBuilder->table('articles')
+            ->where('id', '=', $id)
             ->update($data);
     }
 
     public function delete(int $id): void
     {
-        $this->connection->table('articles')
-            ->where('id', $id)
+        $this->queryBuilder->table('articles')
+            ->where('id', '=', $id)
             ->delete();
     }
 }
@@ -121,16 +121,16 @@ declare(strict_types=1);
 namespace App\Api\Controller;
 
 use App\Api\Repository\ArticleRepository;
-use Marko\Http\JsonResponse;
-use Marko\Http\RequestInterface;
-use Marko\Http\ResponseInterface;
-use Marko\Routing\Attribute\Delete;
-use Marko\Routing\Attribute\Get;
-use Marko\Routing\Attribute\Middleware;
-use Marko\Routing\Attribute\Post;
-use Marko\Routing\Attribute\Put;
+use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
-use Marko\Validation\ValidatorInterface;
+use Marko\Routing\Attributes\Delete;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
+use Marko\Routing\Attributes\Post;
+use Marko\Routing\Attributes\Put;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
+use Marko\Validation\Contracts\ValidatorInterface;
 use DateTimeImmutable;
 
 class ArticleController
@@ -138,75 +138,97 @@ class ArticleController
     public function __construct(
         private readonly ArticleRepository $articles,
         private readonly ValidatorInterface $validator,
+        private readonly AuthManager $authManager,
     ) {}
 
     #[Get('/api/articles')]
-    public function index(): ResponseInterface
+    public function index(): Response
     {
-        return new JsonResponse(data: $this->articles->all());
+        return Response::json(data: $this->articles->all());
     }
 
     #[Get('/api/articles/{id}')]
-    public function show(int $id): ResponseInterface
+    public function show(int $id): Response
     {
         $article = $this->articles->find($id);
 
         if ($article === null) {
-            return new JsonResponse(
+            return Response::json(
                 data: ['error' => 'Article not found'],
-                status: 404,
+                statusCode: 404,
             );
         }
 
-        return new JsonResponse(data: $article);
+        return Response::json(data: $article);
     }
 
     #[Post('/api/articles')]
     #[Middleware(AuthMiddleware::class)]
-    public function store(RequestInterface $request): ResponseInterface
+    public function store(Request $request): Response
     {
-        $data = $this->validator->validate($request->json(), [
+        $data = json_decode($request->body(), true, flags: JSON_THROW_ON_ERROR);
+
+        $errors = $this->validator->validate($data, [
             'title' => ['required', 'string', 'min:3', 'max:200'],
             'body' => ['required', 'string'],
         ]);
 
+        if ($errors->isNotEmpty()) {
+            return Response::json(
+                data: ['errors' => $errors->all()],
+                statusCode: 422,
+            );
+        }
+
+        $user = $this->authManager->user();
+
         $id = $this->articles->create([
-            ...$data,
-            'author_email' => $request->user()->email,
+            'title' => $data['title'],
+            'body' => $data['body'],
+            'author_email' => $user?->getIdentifier(),
             'created_at' => new DateTimeImmutable(),
             'updated_at' => new DateTimeImmutable(),
         ]);
 
-        return new JsonResponse(
+        return Response::json(
             data: $this->articles->find($id),
-            status: 201,
+            statusCode: 201,
         );
     }
 
     #[Put('/api/articles/{id}')]
     #[Middleware(AuthMiddleware::class)]
-    public function update(int $id, RequestInterface $request): ResponseInterface
+    public function update(int $id, Request $request): Response
     {
-        $data = $this->validator->validate($request->json(), [
+        $data = json_decode($request->body(), true, flags: JSON_THROW_ON_ERROR);
+
+        $errors = $this->validator->validate($data, [
             'title' => ['string', 'min:3', 'max:200'],
             'body' => ['string'],
         ]);
+
+        if ($errors->isNotEmpty()) {
+            return Response::json(
+                data: ['errors' => $errors->all()],
+                statusCode: 422,
+            );
+        }
 
         $this->articles->update($id, [
             ...$data,
             'updated_at' => new DateTimeImmutable(),
         ]);
 
-        return new JsonResponse(data: $this->articles->find($id));
+        return Response::json(data: $this->articles->find($id));
     }
 
     #[Delete('/api/articles/{id}')]
     #[Middleware(AuthMiddleware::class)]
-    public function destroy(int $id): ResponseInterface
+    public function destroy(int $id): Response
     {
         $this->articles->delete($id);
 
-        return new JsonResponse(status: 204);
+        return Response::json(data: null, statusCode: 204);
     }
 }
 ```
@@ -235,12 +257,11 @@ curl -X DELETE http://localhost:8000/api/articles/1 \
 
 - Minimal Marko installation for APIs (no views, no sessions)
 - RESTful controller with full CRUD
-- Request validation
-- Token-based authentication middleware
-- Proper HTTP status codes
+- Request validation with [`ValidatorInterface`](/docs/packages/validation/)
+- Token-based authentication with [`AuthMiddleware`](/docs/packages/authentication/)
+- Proper HTTP status codes using [`Response::json()`](/docs/packages/routing/)
 
 ## Next Steps
 
-- [CORS](/docs/packages/cors/) — enable cross-origin requests
-- [Rate Limiting](/docs/packages/rate-limiting/) — protect your endpoints
-- [API package](/docs/packages/api/) — API-specific utilities
+- [Build a Blog](/docs/tutorials/build-a-blog/) --- build a full blog application
+- [Create a Custom Module](/docs/tutorials/custom-module/) --- build a reusable Composer package

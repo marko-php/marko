@@ -96,7 +96,9 @@ marko db:status
 
 ## Querying
 
-Use the `ConnectionInterface` for database queries:
+### Query Builder
+
+Use `QueryBuilderInterface` for fluent query building:
 
 ```php title="app/blog/Repository/PostRepository.php"
 <?php
@@ -105,33 +107,33 @@ declare(strict_types=1);
 
 namespace App\Blog\Repository;
 
-use Marko\Database\ConnectionInterface;
+use Marko\Database\Query\QueryBuilderInterface;
 use DateTimeImmutable;
 
 class PostRepository
 {
     public function __construct(
-        private readonly ConnectionInterface $connection,
+        private readonly QueryBuilderInterface $queryBuilder,
     ) {}
 
     public function findById(int $id): ?array
     {
-        return $this->connection->table('posts')
-            ->where('id', $id)
+        return $this->queryBuilder->table('posts')
+            ->where('id', '=', $id)
             ->first();
     }
 
     public function findPublished(): array
     {
-        return $this->connection->table('posts')
-            ->where('published', true)
-            ->orderBy('created_at', 'desc')
+        return $this->queryBuilder->table('posts')
+            ->where('published', '=', true)
+            ->orderBy('created_at', 'DESC')
             ->get();
     }
 
     public function create(string $title, string $body): int
     {
-        return $this->connection->table('posts')->insert([
+        return $this->queryBuilder->table('posts')->insert([
             'title' => $title,
             'body' => $body,
             'published' => false,
@@ -152,19 +154,19 @@ declare(strict_types=1);
 
 namespace App\Blog\Database\Seeder;
 
-use Marko\Database\ConnectionInterface;
+use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\SeederInterface;
 use DateTimeImmutable;
 
 class PostSeeder implements SeederInterface
 {
     public function __construct(
-        private readonly ConnectionInterface $connection,
+        private readonly QueryBuilderInterface $queryBuilder,
     ) {}
 
     public function run(): void
     {
-        $this->connection->table('posts')->insert([
+        $this->queryBuilder->table('posts')->insert([
             'title' => 'Hello World',
             'body' => 'Welcome to Marko.',
             'published' => true,

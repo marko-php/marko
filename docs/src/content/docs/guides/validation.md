@@ -3,7 +3,7 @@ title: Validation
 description: Validate input data with clear, composable rules.
 ---
 
-Marko's validation system provides clear, composable rules for validating input data. Inject `ValidatorInterface` and define rules as simple arrays -- validation failures throw exceptions with detailed error information.
+Marko's validation system provides clear, composable rules for validating input data. Inject `ValidatorInterface` and define rules as simple arrays --- `validate()` returns a `ValidationErrors` object you can inspect, or use `validateOrFail()` to throw on failure.
 
 ## Setup
 
@@ -18,7 +18,8 @@ composer require marko/validation
 
 declare(strict_types=1);
 
-use Marko\Validation\ValidatorInterface;
+use Marko\Validation\Contracts\ValidatorInterface;
+use Marko\Validation\Validation\ValidationErrors;
 
 class PostController
 {
@@ -28,30 +29,49 @@ class PostController
 
     public function store(array $data): void
     {
-        $validated = $this->validator->validate($data, [
+        $errors = $this->validator->validate($data, [
             'title' => ['required', 'string', 'min:3', 'max:200'],
             'body' => ['required', 'string'],
             'email' => ['required', 'email'],
             'status' => ['in:draft,published'],
         ]);
 
-        // $validated contains only the validated fields
+        if ($errors->isNotEmpty()) {
+            // Handle validation errors
+            // $errors->all() returns ['field' => ['message', ...]]
+        }
     }
 }
 ```
 
 ## Handling Validation Errors
 
-When validation fails, a `ValidationException` is thrown with all error details:
+The `validate()` method returns a `ValidationErrors` object:
 
 ```php
-use Marko\Validation\ValidationException;
+use Marko\Validation\Contracts\ValidatorInterface;
+use Marko\Validation\Validation\ValidationErrors;
+
+$errors = $this->validator->validate($data, $rules);
+
+if ($errors->isNotEmpty()) {
+    $errors->all();           // ['title' => ['The title field is required.']]
+    $errors->has('title');    // true
+    $errors->get('title');    // ['The title field is required.']
+    $errors->first('title');  // 'The title field is required.'
+}
+```
+
+To throw an exception on validation failure, use `validateOrFail()`:
+
+```php
+use Marko\Validation\Contracts\ValidatorInterface;
+use Marko\Validation\Exceptions\ValidationException;
 
 try {
-    $validated = $this->validator->validate($data, $rules);
+    $this->validator->validateOrFail($data, $rules);
 } catch (ValidationException $e) {
-    $errors = $e->errors();
-    // ['title' => ['The title field is required.']]
+    $errors = $e->errors(); // ValidationErrors instance
 }
 ```
 

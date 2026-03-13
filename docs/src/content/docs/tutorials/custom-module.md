@@ -1,6 +1,6 @@
 ---
 title: Create a Custom Module
-description: Build a reusable Marko module from scratch — the right way.
+description: Build a reusable Marko module from scratch --- the right way.
 ---
 
 This tutorial walks you through creating a module that other Marko applications can install via Composer. We'll build a simple analytics module that tracks page views.
@@ -69,18 +69,18 @@ declare(strict_types=1);
 
 namespace Marko\Analytics;
 
-use Marko\Database\ConnectionInterface;
+use Marko\Database\Query\QueryBuilderInterface;
 use DateTimeImmutable;
 
 class DatabaseAnalytics implements AnalyticsInterface
 {
     public function __construct(
-        private readonly ConnectionInterface $connection,
+        private readonly QueryBuilderInterface $queryBuilder,
     ) {}
 
     public function trackPageView(string $path, ?string $userId = null): void
     {
-        $this->connection->table('page_views')->insert([
+        $this->queryBuilder->table('page_views')->insert([
             'path' => $path,
             'user_id' => $userId,
             'viewed_at' => new DateTimeImmutable(),
@@ -89,8 +89,8 @@ class DatabaseAnalytics implements AnalyticsInterface
 
     public function getPageViews(string $path): int
     {
-        return $this->connection->table('page_views')
-            ->where('path', $path)
+        return $this->queryBuilder->table('page_views')
+            ->where('path', '=', $path)
             ->count();
     }
 }
@@ -151,26 +151,30 @@ declare(strict_types=1);
 namespace Marko\Analytics\Middleware;
 
 use Marko\Analytics\AnalyticsInterface;
-use Marko\Http\RequestInterface;
-use Marko\Http\ResponseInterface;
-use Marko\Routing\MiddlewareInterface;
+use Marko\Authentication\AuthManager;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
+use Marko\Routing\Middleware\MiddlewareInterface;
 
 class TrackPageViewMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private readonly AnalyticsInterface $analytics,
+        private readonly AuthManager $authManager,
     ) {}
 
     public function handle(
-        RequestInterface $request,
+        Request $request,
         callable $next,
-    ): ResponseInterface {
+    ): Response {
         $response = $next($request);
 
         // Track after the response to avoid slowing down the request
+        $user = $this->authManager->user();
+
         $this->analytics->trackPageView(
             path: $request->path(),
-            userId: $request->user()?->getId(),
+            userId: $user?->getIdentifier(),
         );
 
         return $response;
@@ -189,7 +193,7 @@ use Marko\Analytics\DatabaseAnalytics;
 
 test('tracks a page view', function () {
     $connection = createTestConnection();
-    $analytics = new DatabaseAnalytics(connection: $connection);
+    $analytics = new DatabaseAnalytics(queryBuilder: $connection);
 
     $analytics->trackPageView('/blog/hello-world');
 
@@ -198,7 +202,7 @@ test('tracks a page view', function () {
 
 test('counts page views for a specific path', function () {
     $connection = createTestConnection();
-    $analytics = new DatabaseAnalytics(connection: $connection);
+    $analytics = new DatabaseAnalytics(queryBuilder: $connection);
 
     $analytics->trackPageView('/blog/hello-world');
     $analytics->trackPageView('/blog/hello-world');
@@ -215,11 +219,11 @@ test('counts page views for a specific path', function () {
 - Separating interface from implementation for extensibility
 - Wiring bindings and singletons in `module.php`
 - Creating a `composer.json` with the `marko-module` type
-- Building middleware that integrates with the request lifecycle
+- Building middleware that integrates with the [request lifecycle](/docs/packages/routing/)
 - Writing unit tests for module functionality
 
 ## Next Steps
 
-- [Modularity](/docs/concepts/modularity/) — understand the module system in depth
-- [Preferences](/docs/concepts/preferences/) — let users swap your implementation
-- [Plugins](/docs/concepts/plugins/) — let users extend your methods
+- [Modularity](/docs/concepts/modularity/) --- understand the module system in depth
+- [Preferences](/docs/concepts/preferences/) --- let users swap your implementation
+- [Plugins](/docs/concepts/plugins/) --- let users extend your methods

@@ -1,6 +1,6 @@
 ---
 title: Build a Blog
-description: Step-by-step tutorial — build a blog with Marko from scratch.
+description: Step-by-step tutorial --- build a blog with Marko from scratch.
 ---
 
 This tutorial walks you through building a fully functional blog with posts, comments, and authentication using Marko.
@@ -47,25 +47,17 @@ Run the migrations:
 marko db:migrate
 ```
 
-This creates the `posts`, `comments`, and related tables from the blog package's entities.
+This creates the `posts`, `comments`, and related tables from the blog package's migrations.
 
-## Step 3: Seed Sample Data
-
-```bash
-marko db:seed
-```
-
-The blog package includes seeders that create sample posts.
-
-## Step 4: Start the Server
+## Step 3: Start the Server
 
 ```bash
 marko up
 ```
 
-Visit `http://localhost:8000/blog` — you should see the blog index with sample posts.
+Visit `http://localhost:8000/blog` --- you should see the blog index.
 
-## Step 5: Explore the Routes
+## Step 4: Explore the Routes
 
 The `marko/blog` package registers these routes automatically:
 
@@ -73,10 +65,13 @@ The `marko/blog` package registers these routes automatically:
 |---|---|
 | `GET /blog` | Post listing |
 | `GET /blog/{slug}` | Single post |
-| `POST /blog/{slug}/comments` | Add comment |
+| `POST /blog/{slug}/comment` | Add comment |
 | `GET /blog/category/{slug}` | Posts by category |
+| `GET /blog/tag/{slug}` | Posts by tag |
+| `GET /blog/author/{slug}` | Posts by author |
+| `GET /blog/search` | Search posts |
 
-## Step 6: Customize Templates
+## Step 5: Customize Templates
 
 Blog templates use Latte and can be overridden by placing files in your app module:
 
@@ -103,7 +98,7 @@ For example, override the post listing:
 {/foreach}
 ```
 
-## Step 7: Add Authentication
+## Step 6: Add Authentication
 
 Protect the comment form so only logged-in users can comment:
 
@@ -111,22 +106,26 @@ Protect the comment form so only logged-in users can comment:
 composer require marko/authentication
 ```
 
-The blog package already dispatches events you can observe:
+The blog package dispatches events you can observe:
 
 ```php title="app/blog/module.php"
-use Marko\Blog\Event\CommentCreatedEvent;
+<?php
+
+declare(strict_types=1);
+
+use Marko\Blog\Events\Comment\CommentCreated;
 use App\Blog\Observer\NotifyAuthorOfComment;
 
 return [
     'observers' => [
-        CommentCreatedEvent::class => [
+        CommentCreated::class => [
             NotifyAuthorOfComment::class,
         ],
     ],
 ];
 ```
 
-## Step 8: Extend with Plugins
+## Step 7: Extend with Plugins
 
 Want to add reading time to every post? Use a plugin:
 
@@ -137,7 +136,7 @@ declare(strict_types=1);
 
 namespace App\Blog\Plugin;
 
-use Marko\Blog\Repository\PostRepository;
+use Marko\Blog\Repositories\PostRepository;
 
 class AddReadingTimePlugin
 {
@@ -158,7 +157,11 @@ class AddReadingTimePlugin
 Register it:
 
 ```php title="app/blog/module.php"
-use Marko\Blog\Repository\PostRepository;
+<?php
+
+declare(strict_types=1);
+
+use Marko\Blog\Repositories\PostRepository;
 use App\Blog\Plugin\AddReadingTimePlugin;
 
 return [
@@ -173,13 +176,12 @@ return [
 ## What You've Learned
 
 - How to scaffold a Marko project and install packages
-- Database setup with migrations and seeders
+- Database setup with migrations
 - Template overriding for customization
-- Events and observers for reactive behavior
-- Plugins for modifying existing functionality
+- [Events and observers](/docs/concepts/events/) for reactive behavior
+- [Plugins](/docs/concepts/plugins/) for modifying existing functionality
 
 ## Next Steps
 
-- [Build a REST API](/docs/tutorials/build-a-rest-api/) — create a JSON API
-- [Authentication deep dive](/docs/guides/authentication/) — custom guards and providers
-- [Deploy your application](#) — production deployment guide (coming soon)
+- [Build a REST API](/docs/tutorials/build-a-rest-api/) --- create a JSON API
+- [Create a Custom Module](/docs/tutorials/custom-module/) --- build a reusable Composer package
