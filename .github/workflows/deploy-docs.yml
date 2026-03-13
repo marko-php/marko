@@ -1,0 +1,35 @@
+name: Deploy Docs
+
+on:
+  push:
+    branches: [develop]
+    paths: [docs/**]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install and build
+        working-directory: docs
+        run: |
+          npm ci
+          npm run build
+
+      - name: Push to marko.build repo
+        run: |
+          git clone --depth 1 https://x-access-token:${{ secrets.MARKO_BUILD_PAT }}@github.com/markshust/marko.build.git /tmp/marko.build
+          rm -rf /tmp/marko.build/docs
+          cp -r docs/dist /tmp/marko.build/docs
+          cd /tmp/marko.build
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet && echo "No changes to deploy" && exit 0
+          git commit -m "Deploy docs from markshust/marko@${GITHUB_SHA::7}"
+          git push
