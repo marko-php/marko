@@ -64,15 +64,26 @@
   --sl-color-hairline-light: #2a2a3e;
 }
 
-/* Light mode kept minimal — brand says dark only,
-   but Starlight users may toggle, so keep it usable */
+/* Brand rule: "Dark theme only. No light mode. Ever."
+   Light mode forced to match dark — prevents flash if
+   theme script hasn't run yet */
 :root[data-theme='light'] {
-  --sl-color-accent-low: #e8f0fe;
-  --sl-color-accent: #2c7cd6;
-  --sl-color-accent-high: #1a5276;
-  --sl-color-bg: #fcfcfc;
-  --sl-color-bg-nav: #f0f0f4;
-  --sl-color-bg-sidebar: #f5f5f8;
+  --sl-color-accent-low: #1a1a2e;
+  --sl-color-accent: #3498db;
+  --sl-color-accent-high: #7ec8e3;
+  --sl-color-bg: #0c0c1d;
+  --sl-color-bg-nav: #0f0f1f;
+  --sl-color-bg-sidebar: #0f0f1f;
+  --sl-color-hairline-shade: #1a1a2e;
+  --sl-color-hairline-light: #2a2a3e;
+  --sl-color-white: #fcfcfc;
+  --sl-color-gray-1: #e8e8e8;
+  --sl-color-gray-2: #bcbcbc;
+  --sl-color-gray-3: #7c7c7c;
+  --sl-color-gray-4: #3a3a4e;
+  --sl-color-gray-5: #1a1a2e;
+  --sl-color-gray-6: #0c0c1d;
+  --sl-color-black: #0f0f0f;
 }
 
 /* ============================================

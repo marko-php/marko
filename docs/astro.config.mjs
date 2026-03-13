@@ -43,8 +43,20 @@ export default defineConfig({
 					},
 				},
 				{
+					tag: 'meta',
+					attrs: {
+						name: 'color-scheme',
+						content: 'dark',
+					},
+				},
+				{
 					tag: 'script',
-					content: `document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('.social-icons a').forEach(a=>{a.setAttribute('target','_blank');a.setAttribute('rel','me noopener')})})`,
+					attrs: { is: 'inline' },
+					content: `document.documentElement.dataset.theme='dark';try{localStorage.setItem('starlight-theme','dark')}catch(e){}`,
+				},
+				{
+					tag: 'script',
+					content: `document.addEventListener('DOMContentLoaded',()=>{document.documentElement.dataset.theme='dark';document.querySelectorAll('.social-icons a').forEach(a=>{a.setAttribute('target','_blank');a.setAttribute('rel','me noopener')})})`,
 				},
 			],
 			sidebar: [
