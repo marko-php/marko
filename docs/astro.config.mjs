@@ -14,6 +14,9 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'MARKO DOCS',
+			components: {
+				ThemeSelect: './src/components/ThemeSelect.astro',
+			},
 			expressiveCode: {
 				themes: [arcadeDark],
 			},
