@@ -100,54 +100,136 @@ return [
 ];
 ```
 
-## Step 4: Set Up the Database Tables
+## Step 4: Set Up the Database Schema
 
-The admin auth system uses four tables. Create them in your database:
+The admin auth system uses entity classes with `#[Table]`, `#[Column]`, and `#[Index]` attributes to define the database schema. These entities are provided by `marko/admin-auth` --- you do not need to create them yourself. Here is what they look like:
 
-```sql
-CREATE TABLE admin_users (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    remember_token VARCHAR(100),
-    is_active VARCHAR(1) DEFAULT '1',
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
-);
+The `AdminUser` entity maps to the `admin_users` table:
 
-CREATE TABLE roles (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) UNIQUE NOT NULL,
-    description TEXT,
-    is_super_admin VARCHAR(1) DEFAULT '0',
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
-);
+```php title="packages/admin-auth/src/Entity/AdminUser.php"
+<?php
 
-CREATE TABLE permissions (
-    id SERIAL PRIMARY KEY,
-    key VARCHAR(255) UNIQUE NOT NULL,
-    label VARCHAR(255) NOT NULL,
-    "group" VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP
-);
+declare(strict_types=1);
 
-CREATE TABLE role_permissions (
-    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
-    UNIQUE (role_id, permission_id)
-);
+namespace Marko\AdminAuth\Entity;
 
-CREATE TABLE admin_user_roles (
-    user_id INTEGER NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
-    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    UNIQUE (user_id, role_id)
-);
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('admin_users')]
+class AdminUser extends Entity implements AdminUserInterface
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    #[Column(unique: true)]
+    public string $email;
+
+    #[Column]
+    public string $password;
+
+    #[Column]
+    public string $name;
+
+    #[Column('remember_token')]
+    public ?string $rememberToken = null;
+
+    #[Column('is_active', default: '1')]
+    public string $isActive = '1';
+
+    #[Column('created_at')]
+    public ?string $createdAt = null;
+
+    #[Column('updated_at')]
+    public ?string $updatedAt = null;
+
+    // ... authentication and role/permission methods
+}
 ```
 
+The `Role`, `Permission`, and `RolePermission` entities follow the same pattern:
+
+```php title="packages/admin-auth/src/Entity/Role.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Marko\AdminAuth\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('roles')]
+class Role extends Entity implements RoleInterface
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    #[Column]
+    public string $name;
+
+    #[Column(unique: true)]
+    public string $slug;
+
+    #[Column(type: 'TEXT')]
+    public ?string $description = null;
+
+    #[Column('is_super_admin', default: '0')]
+    public string $isSuperAdmin = '0';
+
+    #[Column('created_at')]
+    public ?string $createdAt = null;
+
+    #[Column('updated_at')]
+    public ?string $updatedAt = null;
+
+    // ...
+}
+```
+
+The `RolePermission` pivot entity uses `#[Index]` for the composite unique constraint and `#[Column]` with `references` for foreign keys:
+
+```php title="packages/admin-auth/src/Entity/RolePermission.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Marko\AdminAuth\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('role_permissions')]
+#[Index('idx_role_permissions_unique', ['role_id', 'permission_id'], unique: true)]
+class RolePermission extends Entity implements RolePermissionInterface
+{
+    #[Column('role_id', references: 'roles.id', onDelete: 'CASCADE')]
+    public int $roleId;
+
+    #[Column('permission_id', references: 'permissions.id', onDelete: 'CASCADE')]
+    public int $permissionId;
+}
+```
+
+Generate and run the migrations from these entity definitions:
+
+```bash
+marko db:migrate
+```
+
+Marko reads the `#[Table]`, `#[Column]`, `#[Index]`, and `#[ForeignKey]` attributes from your entity classes, diffs them against the current database state, and auto-generates the necessary migration SQL.
+
 Seed a super admin role and an initial admin user:
+
+```bash
+marko db:seed
+```
+
+Or insert them manually:
 
 ```sql
 INSERT INTO roles (name, slug, description, is_super_admin)
@@ -300,7 +382,7 @@ The `AdminMenuBuilder` from `marko/admin-panel` automatically filters menu items
 
 ## Step 7: Build an Admin Controller with CRUD
 
-Create a controller with routes protected by `AdminAuthMiddleware`. Use the `#[RequiresPermission]` attribute for fine-grained permission checks:
+Create a controller with routes protected by `AdminAuthMiddleware`. Use the `#[RequiresPermission]` attribute for fine-grained permission checks, and `ViewInterface` to render Latte templates:
 
 ```php title="app/admin/src/Controller/PostController.php"
 <?php
@@ -318,24 +400,31 @@ use Marko\Routing\Attributes\Post;
 use Marko\Routing\Attributes\Put;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\View\ViewInterface;
 
 #[Middleware(AdminAuthMiddleware::class)]
 class PostController
 {
+    public function __construct(
+        private readonly ViewInterface $view,
+    ) {}
+
     #[Get(path: '/admin/posts')]
     #[RequiresPermission(permission: 'posts.view')]
     public function index(Request $request): Response
     {
-        // Fetch and display all posts
-        return Response::html('<h1>All Posts</h1>');
+        $posts = []; // Fetch from your repository
+
+        return $this->view->render('admin::post/index', [
+            'posts' => $posts,
+        ]);
     }
 
     #[Get(path: '/admin/posts/create')]
     #[RequiresPermission(permission: 'posts.create')]
     public function create(Request $request): Response
     {
-        // Show create form
-        return Response::html('<h1>Create Post</h1>');
+        return $this->view->render('admin::post/create');
     }
 
     #[Post(path: '/admin/posts')]
@@ -354,8 +443,10 @@ class PostController
     #[RequiresPermission(permission: 'posts.edit')]
     public function edit(int $id, Request $request): Response
     {
-        // Fetch post and show edit form
-        return Response::html('<h1>Edit Post #' . $id . '</h1>');
+        // Fetch post from your repository
+        return $this->view->render('admin::post/edit', [
+            'post' => $post,
+        ]);
     }
 
     #[Put(path: '/admin/posts/{id}')]
@@ -380,6 +471,39 @@ class PostController
     }
 }
 ```
+
+The templates live in your module's `resources/views/` directory. For example, the post index template:
+
+```latte title="app/admin/resources/views/post/index.latte"
+{layout 'admin-panel::layout/base'}
+
+{block content}
+    <h1>All Posts</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {foreach $posts as $post}
+                <tr>
+                    <td>{$post->getTitle()}</td>
+                    <td>{$post->getStatus()->value}</td>
+                    <td>
+                        <a href="/admin/posts/{$post->getId()}">Edit</a>
+                    </td>
+                </tr>
+            {/foreach}
+        </tbody>
+    </table>
+{/block}
+```
+
+Templates use the `admin-panel::layout/base` layout provided by `marko/admin-panel`, which includes the sidebar navigation and common admin chrome. The `{block content}` section is where your page content goes.
 
 The `#[Middleware(AdminAuthMiddleware::class)]` attribute on the class applies authentication to every route in this controller. The `AdminAuthMiddleware` does two things:
 
@@ -617,9 +741,14 @@ declare(strict_types=1);
 namespace App\Admin\Widget;
 
 use Marko\Admin\Contracts\DashboardWidgetInterface;
+use Marko\View\ViewInterface;
 
 class RecentPostsWidget implements DashboardWidgetInterface
 {
+    public function __construct(
+        private readonly ViewInterface $view,
+    ) {}
+
     public function getId(): string
     {
         return 'recent-posts';
@@ -637,10 +766,29 @@ class RecentPostsWidget implements DashboardWidgetInterface
 
     public function render(): string
     {
-        // Fetch recent posts and render HTML
-        return '<div class="widget"><h3>Recent Posts</h3><p>5 posts this week</p></div>';
+        $posts = []; // Fetch recent posts from your repository
+
+        return $this->view->renderToString('admin::widget/recent-posts', [
+            'posts' => $posts,
+        ]);
     }
 }
+```
+
+With a corresponding Latte template:
+
+```latte title="app/admin/resources/views/widget/recent-posts.latte"
+<div class="widget">
+    <h3>Recent Posts</h3>
+    <ul n:if="$posts">
+        {foreach $posts as $post}
+            <li>
+                <a href="/admin/posts/{$post->getId()}">{$post->getTitle()}</a>
+            </li>
+        {/foreach}
+    </ul>
+    <p n:if="!$posts">No recent posts.</p>
+</div>
 ```
 
 ## What You've Learned

@@ -8,6 +8,7 @@ This tutorial walks you through creating a module that other Marko applications 
 ## What You'll Build
 
 - A reusable Composer-installable Marko module
+- An entity-driven database schema for page views
 - An interface/implementation pair for page view analytics
 - Middleware that automatically tracks page views
 - Unit tests for the analytics logic
@@ -27,21 +28,70 @@ packages/analytics/
 ├── src/
 │   ├── AnalyticsInterface.php
 │   ├── DatabaseAnalytics.php
-│   ├── Middleware/
-│   │   └── TrackPageViewMiddleware.php
-│   └── Observer/
-│       └── LogPageView.php
+│   ├── Entity/
+│   │   └── PageView.php
+│   └── Middleware/
+│       └── TrackPageViewMiddleware.php
 ├── config/
 │   └── analytics.php
-├── database/
-│   └── migrations/
 ├── tests/
 │   └── Unit/
 ├── composer.json
 └── module.php
 ```
 
-## Step 2: Define the Interface
+## Step 2: Define the Entity
+
+Marko uses entity-driven schemas --- define your database structure with attributes on an Entity class, then `marko db:migrate` auto-generates migrations:
+
+```php title="src/Entity/PageView.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Marko\Analytics\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('page_views')]
+#[Index('idx_page_views_path', ['path'])]
+#[Index('idx_page_views_user_id', ['user_id'])]
+class PageView extends Entity
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    #[Column]
+    public string $path;
+
+    #[Column('user_id')]
+    public ?string $userId = null;
+
+    #[Column('viewed_at')]
+    public string $viewedAt;
+
+    public function __construct(
+        string $path,
+        ?string $userId = null,
+        ?string $viewedAt = null,
+    ) {
+        $this->path = $path;
+        $this->userId = $userId;
+        $this->viewedAt = $viewedAt ?? date('Y-m-d H:i:s');
+    }
+}
+```
+
+Then generate and run the migration:
+
+```bash
+marko db:migrate
+```
+
+## Step 3: Define the Interface
 
 Always start with the contract:
 
@@ -60,7 +110,7 @@ interface AnalyticsInterface
 }
 ```
 
-## Step 3: Implement It
+## Step 4: Implement It
 
 ```php title="src/DatabaseAnalytics.php"
 <?php
@@ -70,7 +120,6 @@ declare(strict_types=1);
 namespace Marko\Analytics;
 
 use Marko\Database\Query\QueryBuilderInterface;
-use DateTimeImmutable;
 
 class DatabaseAnalytics implements AnalyticsInterface
 {
@@ -83,7 +132,7 @@ class DatabaseAnalytics implements AnalyticsInterface
         $this->queryBuilder->table('page_views')->insert([
             'path' => $path,
             'user_id' => $userId,
-            'viewed_at' => new DateTimeImmutable(),
+            'viewed_at' => date('Y-m-d H:i:s'),
         ]);
     }
 
@@ -96,7 +145,7 @@ class DatabaseAnalytics implements AnalyticsInterface
 }
 ```
 
-## Step 4: Wire It Up
+## Step 5: Wire It Up
 
 ```php title="module.php"
 <?php
@@ -116,7 +165,7 @@ return [
 ];
 ```
 
-## Step 5: Create the `composer.json`
+## Step 6: Create the `composer.json`
 
 ```json title="composer.json"
 {
@@ -141,7 +190,7 @@ return [
 }
 ```
 
-## Step 6: Add Middleware
+## Step 7: Add Middleware
 
 ```php title="src/Middleware/TrackPageViewMiddleware.php"
 <?php
@@ -182,7 +231,7 @@ class TrackPageViewMiddleware implements MiddlewareInterface
 }
 ```
 
-## Step 7: Write Tests
+## Step 8: Write Tests
 
 ```php title="tests/Unit/DatabaseAnalyticsTest.php"
 <?php
@@ -216,6 +265,7 @@ test('counts page views for a specific path', function () {
 ## What You've Learned
 
 - How to structure a Marko module with proper directory layout
+- Defining entity-driven database schemas with `#[Table]`, `#[Column]`, and `#[Index]` attributes
 - Separating interface from implementation for extensibility
 - Wiring bindings and singletons in `module.php`
 - Creating a `composer.json` with the `marko-module` type

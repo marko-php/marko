@@ -30,6 +30,8 @@ composer require marko/core marko/routing marko/config marko/env \
 
 ## Step 2: Define the Entity
 
+Marko uses attribute-driven entities --- define your schema with `#[Table]` and `#[Column]` attributes, then `marko db:migrate` auto-generates migrations.
+
 ```php title="app/api/src/Entity/Article.php"
 <?php
 
@@ -37,26 +39,39 @@ declare(strict_types=1);
 
 namespace App\Api\Entity;
 
-use Marko\Database\Attribute\Entity;
-use Marko\Database\Attribute\Id;
-use DateTimeImmutable;
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
 
-#[Entity(table: 'articles')]
-class Article
+#[Table('articles')]
+#[Index('idx_articles_author_email', ['author_email'])]
+class Article extends Entity
 {
-    #[Id]
-    public int $id;
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
 
+    #[Column(length: 200)]
     public string $title;
 
+    #[Column(type: 'TEXT')]
     public string $body;
 
+    #[Column('author_email')]
     public string $authorEmail;
 
-    public DateTimeImmutable $createdAt;
+    #[Column('created_at')]
+    public ?string $createdAt = null;
 
-    public DateTimeImmutable $updatedAt;
+    #[Column('updated_at')]
+    public ?string $updatedAt = null;
 }
+```
+
+Generate and run the migration:
+
+```bash
+marko db:migrate
 ```
 
 ## Step 3: Create the Repository
@@ -136,7 +151,7 @@ use DateTimeImmutable;
 class ArticleController
 {
     public function __construct(
-        private readonly ArticleRepository $articles,
+        private readonly ArticleRepository $articleRepository,
         private readonly ValidatorInterface $validator,
         private readonly AuthManager $authManager,
     ) {}
@@ -144,13 +159,13 @@ class ArticleController
     #[Get('/api/articles')]
     public function index(): Response
     {
-        return Response::json(data: $this->articles->all());
+        return Response::json(data: $this->articleRepository->all());
     }
 
     #[Get('/api/articles/{id}')]
     public function show(int $id): Response
     {
-        $article = $this->articles->find($id);
+        $article = $this->articleRepository->find($id);
 
         if ($article === null) {
             return Response::json(
@@ -182,7 +197,7 @@ class ArticleController
 
         $user = $this->authManager->user();
 
-        $id = $this->articles->create([
+        $id = $this->articleRepository->create([
             'title' => $data['title'],
             'body' => $data['body'],
             'author_email' => $user?->getIdentifier(),
@@ -191,7 +206,7 @@ class ArticleController
         ]);
 
         return Response::json(
-            data: $this->articles->find($id),
+            data: $this->articleRepository->find($id),
             statusCode: 201,
         );
     }
@@ -214,26 +229,32 @@ class ArticleController
             );
         }
 
-        $this->articles->update($id, [
+        $this->articleRepository->update($id, [
             ...$data,
             'updated_at' => new DateTimeImmutable(),
         ]);
 
-        return Response::json(data: $this->articles->find($id));
+        return Response::json(data: $this->articleRepository->find($id));
     }
 
     #[Delete('/api/articles/{id}')]
     #[Middleware(AuthMiddleware::class)]
     public function destroy(int $id): Response
     {
-        $this->articles->delete($id);
+        $this->articleRepository->delete($id);
 
         return Response::json(data: null, statusCode: 204);
     }
 }
 ```
 
-## Step 5: Test with cURL
+## Step 5: Start the Server
+
+```bash
+marko up
+```
+
+## Step 6: Test with cURL
 
 ```bash
 # List articles
@@ -256,6 +277,7 @@ curl -X DELETE http://localhost:8000/api/articles/1 \
 ## What You've Learned
 
 - Minimal Marko installation for APIs (no views, no sessions)
+- Entity-driven database schemas with `#[Table]` and `#[Column]` attributes
 - RESTful controller with full CRUD
 - Request validation with [`ValidatorInterface`](/docs/packages/validation/)
 - Token-based authentication with [`AuthMiddleware`](/docs/packages/authentication/)

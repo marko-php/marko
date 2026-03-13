@@ -47,7 +47,58 @@ Run the migrations:
 marko db:migrate
 ```
 
-This creates the `posts`, `comments`, and related tables from the blog package's migrations.
+The blog package defines its schema using entity attributes --- `#[Table]`, `#[Column]`, and `#[Index]` --- on entity classes like `Post` and `Comment`. When you run `marko db:migrate`, it reads these attributes and auto-generates the migrations. Here is a simplified view of the `Post` entity:
+
+```php title="packages/blog/src/Entity/Post.php"
+<?php
+
+declare(strict_types=1);
+
+namespace Marko\Blog\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('posts')]
+#[Index('idx_posts_author_id', ['author_id'])]
+#[Index('idx_posts_status', ['status'])]
+#[Index('idx_posts_published_at', ['published_at'])]
+class Post extends Entity implements PostInterface
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    #[Column(unique: true)]
+    public string $slug;
+
+    #[Column]
+    public string $title = '';
+
+    #[Column(type: 'TEXT')]
+    public string $content = '';
+
+    #[Column('author_id', references: 'authors.id')]
+    public int $authorId = 0;
+
+    #[Column(type: 'TEXT')]
+    public ?string $summary = null;
+
+    #[Column('published_at')]
+    public ?string $publishedAt = null;
+
+    #[Column('created_at')]
+    public ?string $createdAt = null;
+
+    #[Column('updated_at')]
+    public ?string $updatedAt = null;
+
+    // ...
+}
+```
+
+You never write SQL or migration files by hand --- the entity attributes are the single source of truth.
 
 ## Step 3: Start the Server
 
@@ -73,7 +124,7 @@ The `marko/blog` package registers these routes automatically:
 
 ## Step 5: Customize Templates
 
-Blog templates use Latte and can be overridden by placing files in your app module:
+Blog templates use [Latte](https://latte.nette.org/) and can be overridden by placing files in your app module:
 
 ```
 app/blog/resources/views/
@@ -86,17 +137,27 @@ app/blog/resources/views/
 
 For example, override the post listing:
 
-```html title="app/blog/resources/views/post/index.latte"
-<h1>My Blog</h1>
-
-{foreach $posts as $post}
-    <article>
-        <h2><a href="/blog/{$post->slug}">{$post->title}</a></h2>
-        <p>{$post->excerpt}</p>
-        <time>{$post->createdAt|date:'M j, Y'}</time>
-    </article>
-{/foreach}
+```latte title="app/blog/resources/views/post/index.latte"
+<main>
+    <h1>My Blog</h1>
+    <p n:if="$posts->isEmpty()" class="no-posts">There are no posts yet.</p>
+    <ul n:if="!$posts->isEmpty()" class="post-list">
+        {foreach $posts->items as $post}
+            <li>
+                <article>
+                    <h2><a href="/blog/{$post->slug}">{$post->title}</a></h2>
+                    <p n:if="$post->summary">{$post->summary}</p>
+                    <time datetime="{$post->publishedAt}">
+                        {$post->getPublishedAt()->format('F j, Y')}
+                    </time>
+                </article>
+            </li>
+        {/foreach}
+    </ul>
+</main>
 ```
+
+Templates access entity properties directly --- `$post->title`, `$post->slug`, `$post->summary` --- and use getter methods like `$post->getPublishedAt()` for computed values.
 
 ## Step 6: Add Authentication
 
@@ -136,18 +197,19 @@ declare(strict_types=1);
 
 namespace App\Blog\Plugin;
 
-use Marko\Blog\Repositories\PostRepository;
+use Marko\Blog\Entity\Post;
+use Marko\Blog\Repositories\PostRepositoryInterface;
 
 class AddReadingTimePlugin
 {
-    public function afterFindBySlug(PostRepository $subject, ?array $result): ?array
+    public function afterFindBySlug(PostRepositoryInterface $subject, ?Post $result): ?Post
     {
         if ($result === null) {
             return null;
         }
 
-        $wordCount = str_word_count($result['body']);
-        $result['reading_time_minutes'] = max(1, (int) ceil($wordCount / 200));
+        $wordCount = str_word_count($result->content);
+        $result->readingTimeMinutes = max(1, (int) ceil($wordCount / 200));
 
         return $result;
     }
@@ -161,12 +223,12 @@ Register it:
 
 declare(strict_types=1);
 
-use Marko\Blog\Repositories\PostRepository;
+use Marko\Blog\Repositories\PostRepositoryInterface;
 use App\Blog\Plugin\AddReadingTimePlugin;
 
 return [
     'plugins' => [
-        PostRepository::class => [
+        PostRepositoryInterface::class => [
             AddReadingTimePlugin::class,
         ],
     ],
@@ -176,8 +238,8 @@ return [
 ## What You've Learned
 
 - How to scaffold a Marko project and install packages
-- Database setup with migrations
-- Template overriding for customization
+- Entity-driven database schema with `#[Table]`, `#[Column]`, and `#[Index]` attributes
+- Template overriding with Latte for customization
 - [Events and observers](/docs/concepts/events/) for reactive behavior
 - [Plugins](/docs/concepts/plugins/) for modifying existing functionality
 

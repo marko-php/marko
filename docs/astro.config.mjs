@@ -94,11 +94,11 @@ export default defineConfig({
 				{
 					label: 'Tutorials',
 					items: [
+						{ label: 'Create a Custom Module', slug: 'tutorials/custom-module' },
 						{ label: 'Build a Blog', slug: 'tutorials/build-a-blog' },
 						{ label: 'Build a REST API', slug: 'tutorials/build-a-rest-api' },
 						{ label: 'Build a Real-time Chat', slug: 'tutorials/build-a-chat' },
 						{ label: 'Build an Admin Panel', slug: 'tutorials/build-an-admin-panel' },
-						{ label: 'Create a Custom Module', slug: 'tutorials/custom-module' },
 					],
 				},
 			],

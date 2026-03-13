@@ -28,7 +28,8 @@ cd my-chat
 composer require marko/core marko/routing marko/config marko/env \
     marko/database marko/database-pgsql \
     marko/authentication marko/session marko/session-database \
-    marko/pubsub marko/pubsub-redis marko/sse
+    marko/pubsub marko/pubsub-redis marko/sse \
+    marko/view marko/view-latte marko/dev-server
 ```
 
 ## Step 2: Configure Redis PubSub
@@ -46,20 +47,47 @@ return [
 
 The prefix ensures all chat channels are namespaced under `chat:` in Redis, keeping them separate from other PubSub traffic in your application.
 
-## Step 3: Create the Messages Table
+## Step 3: Define the Message Entity
 
-Create a migration for persisting chat messages:
+Marko uses entity-driven schemas --- define your table structure as a PHP class with attributes, then run `marko db:migrate` to auto-generate and apply the migration.
 
-```sql title="migrations/001_create_messages.sql"
-CREATE TABLE messages (
-    id SERIAL PRIMARY KEY,
-    room VARCHAR(100) NOT NULL,
-    username VARCHAR(100) NOT NULL,
-    body TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
+```php title="app/chat/src/Entity/Message.php"
+<?php
 
-CREATE INDEX idx_messages_room_id ON messages (room, id);
+declare(strict_types=1);
+
+namespace App\Chat\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Index;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('messages')]
+#[Index('idx_messages_room_id', ['room', 'id'])]
+class Message extends Entity
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    #[Column(length: 100)]
+    public string $room;
+
+    #[Column(length: 100)]
+    public string $username;
+
+    #[Column(type: 'TEXT')]
+    public string $body;
+
+    #[Column('created_at')]
+    public ?string $createdAt = null;
+}
+```
+
+Then generate and run the migration:
+
+```bash
+marko db:migrate
 ```
 
 The composite index on `(room, id)` ensures efficient lookups when fetching message history and recovering missed messages after reconnection.
@@ -124,6 +152,7 @@ declare(strict_types=1);
 namespace App\Chat\Controller;
 
 use App\Chat\Repository\MessageRepository;
+use JsonException;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\PubSub\Message;
@@ -133,7 +162,7 @@ use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
-use JsonException;
+use Marko\View\ViewInterface;
 
 #[Middleware(AuthMiddleware::class)]
 class ChatController
@@ -142,6 +171,7 @@ class ChatController
         private readonly MessageRepository $messageRepository,
         private readonly PublisherInterface $publisher,
         private readonly AuthManager $authManager,
+        private readonly ViewInterface $view,
     ) {}
 
     #[Get('/chat/{room}')]
@@ -149,7 +179,7 @@ class ChatController
     {
         $messages = $this->messageRepository->forRoom($room);
 
-        return Response::json(data: [
+        return $this->view->render('chat::message/room', [
             'room' => $room,
             'messages' => $messages,
         ]);
@@ -183,7 +213,7 @@ class ChatController
 }
 ```
 
-The `#[Middleware(AuthMiddleware::class)]` attribute at the class level protects every endpoint in this controller. The `PublisherInterface` is injected by the DI container --- since `marko/pubsub-redis` is installed, it resolves to the `RedisPublisher` automatically.
+The `#[Middleware(AuthMiddleware::class)]` attribute at the class level protects every endpoint in this controller. The `PublisherInterface` is injected by the DI container --- since `marko/pubsub-redis` is installed, it resolves to the `RedisPublisher` automatically. The `room` method renders a Latte template via `ViewInterface` --- the template name `'chat::message/room'` resolves to `resources/views/message/room.latte` within the chat module.
 
 ## Step 6: Build the SSE Streaming Endpoint
 
@@ -256,14 +286,16 @@ Key design decisions:
 - **`timeout: 300`** --- The stream closes after 5 minutes. The client's `EventSource` will automatically reconnect, sending `Last-Event-ID` so no messages are lost.
 - **Replay on reconnect** --- Before subscribing to the live stream, `replayMissed` sends any messages the client missed during the disconnection gap.
 
-## Step 7: Add Client-Side JavaScript
+## Step 7: Add the Chat View
 
-```html title="public/chat.html"
+Marko uses Latte templates stored in `resources/views/` within each module. The template name `'chat::message/room'` in the controller resolves to this file:
+
+```latte title="app/chat/resources/views/message/room.latte"
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Marko Chat</title>
+    <title>Marko Chat — {$room}</title>
     <style>
         #messages { height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 1rem; }
         .message { margin-bottom: 0.5rem; }
@@ -272,16 +304,22 @@ Key design decisions:
     </style>
 </head>
 <body>
-    <h1>Chat Room</h1>
+    <h1>Chat Room: {$room}</h1>
     <div id="status">Connecting...</div>
-    <div id="messages"></div>
+    <div id="messages">
+        {foreach $messages as $message}
+            <div class="message">
+                <span class="username">{$message['username']}:</span> {$message['body']}
+            </div>
+        {/foreach}
+    </div>
     <form id="send-form">
         <input type="text" id="body" placeholder="Type a message..." autocomplete="off" />
         <button type="submit">Send</button>
     </form>
 
     <script>
-        const room = 'general';
+        const room = {$room|json};
         const messagesDiv = document.getElementById('messages');
         const statusDiv = document.getElementById('status');
 
@@ -328,6 +366,8 @@ Key design decisions:
 </body>
 </html>
 ```
+
+The template receives `$room` and `$messages` from the controller. Existing messages are rendered server-side in the `{foreach}` loop, while new messages arrive in real-time via the SSE connection below.
 
 The `EventSource` API handles reconnection automatically. When the SSE stream closes (after the 300-second timeout or a network interruption), the browser reconnects and sends the last received event ID via the `Last-Event-ID` header. The server uses this to replay any missed messages before resuming the live stream.
 
@@ -404,11 +444,11 @@ The replay loop creates `SseEvent` objects with explicit `id` values. When the b
 
 ## Step 9: Start the Server and Test
 
-Start the built-in PHP server:
-
 ```bash
-php -S localhost:8000 -t public
+marko up
 ```
+
+`marko up` (alias for `dev:up`) starts the full development environment automatically --- PHP server, Docker if detected, pub/sub listener if pubsub packages are installed, and frontend build tools if detected. For SSE applications this is important: `marko up` starts PHP with `PHP_CLI_SERVER_WORKERS=4` by default, so the SSE connection does not block all other requests on the single-threaded PHP built-in server. MarkoTalk (the reference chat implementation) uses this same approach.
 
 In separate terminals, test the flow:
 
