@@ -532,10 +532,7 @@ site-search button {
   font-family: 'Press Start 2P', monospace !important;
   font-size: 1rem !important;
   color: var(--arcade-white) !important;
-  text-shadow:
-    0 0 6px rgba(52, 152, 219, 0.6),
-    0 0 14px rgba(52, 152, 219, 0.3),
-    2px 2px 0 var(--arcade-blue);
+  text-shadow: 2px 2px 0 var(--arcade-blue);
   letter-spacing: 4px !important;
 }
 
