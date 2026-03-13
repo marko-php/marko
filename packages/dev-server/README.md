@@ -1,10 +1,6 @@
-# Marko Dev Server
+# marko/dev-server
 
 Start your full development environment with a single command.
-
-## Overview
-
-The Dev Server package provides `dev:up`, `dev:down`, and `dev:status` CLI commands that orchestrate your PHP built-in server, Docker Compose services, and frontend build tools together. It auto-detects your project's Docker Compose file and package manager, so zero configuration is required for most projects. All services are managed as background processes tracked via a PID file, letting you stop everything cleanly with `dev:down`.
 
 ## Installation
 
@@ -12,177 +8,14 @@ The Dev Server package provides `dev:up`, `dev:down`, and `dev:status` CLI comma
 composer require marko/dev-server
 ```
 
-## Usage
-
-### Starting the environment
+## Quick Example
 
 ```bash
-marko dev:up
-# alias: marko up
+marko dev:up        # Start PHP server, Docker, and frontend tools
+marko dev:status    # Check what's running
+marko dev:down      # Stop everything
 ```
 
-This starts all detected services:
+## Documentation
 
-- **PHP server** — always started at `http://localhost:8000` (serving `public/`)
-- **Docker** — started if a `compose.yaml` / `docker-compose.yml` file is found
-- **Frontend** — started if `package.json` has a `dev` script (uses bun, pnpm, yarn, or npm)
-
-By default `dev:up` runs in the foreground. Press `Ctrl+C` to stop all services.
-
-### Detached mode
-
-```bash
-marko dev:up --detach
-```
-
-Starts services in the background. Use `dev:status` and `dev:down` to manage them.
-
-### Checking status
-
-```bash
-marko dev:status
-```
-
-Shows the name, PID, status (running/stopped), port, and start time for each managed process.
-
-### Stopping the environment
-
-```bash
-marko dev:down
-# alias: marko down
-```
-
-Stops all processes started by `dev:up --detach`.
-
-### Changing the port
-
-```bash
-marko dev:up --port=8080
-```
-
-Overrides the configured port for the PHP built-in server.
-
-## Configuration
-
-Publish or create `config/dev.php` in your application:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-return [
-    'port'      => 8000,
-    'detach'    => false,
-    'docker'    => true,
-    'frontend'  => true,
-    'processes' => [],
-];
-```
-
-### Configuration options
-
-| Key | Type | Default | Description |
-|---|---|---|---|
-| `port` | `int` | `8000` | Port for the PHP built-in server |
-| `detach` | `bool` | `false` | Run services in background by default |
-| `docker` | `true\|string\|false` | `true` | Auto-detect Docker (`true`), custom command (`string`), or disable (`false`) |
-| `frontend` | `true\|string\|false` | `true` | Auto-detect frontend (`true`), custom command (`string`), or disable (`false`) |
-| `processes` | `array<string, string>` | `[]` | Named custom processes to run alongside the dev environment |
-
-### The `true | string | false` pattern
-
-The `docker` and `frontend` keys accept three forms:
-
-```php
-// Auto-detect (default): scan for compose file / package.json
-'docker' => true,
-
-// Custom command: run exactly this
-'docker' => 'docker compose -f infrastructure/compose.yaml up -d',
-
-// Disabled: skip entirely
-'docker' => false,
-```
-
-### Custom processes
-
-Use the `processes` key to run additional named processes alongside the standard services:
-
-```php
-'processes' => [
-    'tailwind' => './tailwindcss -i src/css/app.css -o public/css/app.css --watch',
-    'queue' => 'php marko queue:work',
-],
-```
-
-Each process is managed by `ProcessManager` — output is prefixed with the process name (e.g. `[tailwind]`), and processes are tracked in the PID file when running in detached mode.
-
-### CLI flag overrides
-
-Flags passed to `dev:up` take precedence over config file values:
-
-| Flag | Description |
-|---|---|
-| `--port=N` | Override the server port |
-| `--detach` | Run in background (detached mode) |
-
-## API Reference
-
-### DevUpCommand
-
-```php
-#[Command(name: 'dev:up', description: 'Start the development environment', aliases: ['up'])]
-public function execute(Input $input, Output $output): int;
-```
-
-### DevDownCommand
-
-```php
-#[Command(name: 'dev:down', description: 'Stop the development environment', aliases: ['down'])]
-public function execute(Input $input, Output $output): int;
-```
-
-### DevStatusCommand
-
-```php
-#[Command(name: 'dev:status', description: 'Show development environment status')]
-public function execute(Input $input, Output $output): int;
-```
-
-### DockerDetector
-
-```php
-public function __construct(private readonly string $projectRoot);
-/** @return array{upCommand: string, downCommand: string}|null */
-public function detect(): ?array;
-```
-
-### FrontendDetector
-
-```php
-public function __construct(private readonly string $projectRoot);
-public function detect(): ?string;
-```
-
-### ProcessManager
-
-```php
-/** @throws DevServerException */
-public function start(string $name, string $command): int;
-public function stop(string $name): void;
-public function stopAll(): void;
-public function getPid(string $name): ?int;
-public function isRunning(string $name): bool;
-```
-
-### PidFile
-
-```php
-/** @param array<ProcessEntry> $entries */
-public function write(array $entries): void;
-/** @return array<ProcessEntry> */
-public function read(): array;
-public function clear(): void;
-public function isRunning(int $pid): bool;
-```
+Full usage, configuration, and API reference: [marko/dev-server](https://marko.build/docs/packages/dev-server/)

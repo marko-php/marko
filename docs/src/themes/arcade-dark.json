@@ -1,0 +1,222 @@
+{
+  "name": "arcade-dark",
+  "type": "dark",
+  "colors": {
+    "editor.background": "#1a1a2e",
+    "editor.foreground": "#bcbcbc",
+    "editorLineNumber.foreground": "#7c7c7c",
+    "editor.selectionBackground": "#3498db55"
+  },
+  "tokenColors": [
+    {
+      "name": "Comments",
+      "scope": ["comment", "punctuation.definition.comment"],
+      "settings": {
+        "foreground": "#7c7c7c",
+        "fontStyle": ""
+      }
+    },
+    {
+      "name": "Keywords",
+      "scope": [
+        "keyword",
+        "storage.type",
+        "storage.modifier",
+        "keyword.control",
+        "keyword.operator.new",
+        "keyword.other.use",
+        "keyword.other.namespace",
+        "keyword.other.type",
+        "constant.language.boolean",
+        "constant.language.null"
+      ],
+      "settings": {
+        "foreground": "#9b59b6"
+      }
+    },
+    {
+      "name": "Strings",
+      "scope": [
+        "string",
+        "string.quoted",
+        "punctuation.definition.string"
+      ],
+      "settings": {
+        "foreground": "#2ecc40"
+      }
+    },
+    {
+      "name": "Numbers",
+      "scope": ["constant.numeric"],
+      "settings": {
+        "foreground": "#fcbf49"
+      }
+    },
+    {
+      "name": "Classes & Types",
+      "scope": [
+        "entity.name.type",
+        "entity.name.class",
+        "entity.other.inherited-class",
+        "support.class",
+        "entity.name.namespace",
+        "storage.type.class",
+        "meta.use entity.other.alias",
+        "support.type"
+      ],
+      "settings": {
+        "foreground": "#7ec8e3"
+      }
+    },
+    {
+      "name": "Interfaces",
+      "scope": [
+        "entity.name.type.interface"
+      ],
+      "settings": {
+        "foreground": "#7ec8e3"
+      }
+    },
+    {
+      "name": "Functions & Methods",
+      "scope": [
+        "entity.name.function",
+        "support.function",
+        "meta.function-call",
+        "keyword.other.special-method"
+      ],
+      "settings": {
+        "foreground": "#f39c12"
+      }
+    },
+    {
+      "name": "Variables",
+      "scope": [
+        "variable",
+        "variable.other",
+        "variable.language",
+        "punctuation.definition.variable"
+      ],
+      "settings": {
+        "foreground": "#fcfcfc"
+      }
+    },
+    {
+      "name": "Operators & Punctuation",
+      "scope": [
+        "keyword.operator",
+        "punctuation",
+        "meta.brace",
+        "punctuation.section",
+        "punctuation.separator",
+        "punctuation.terminator",
+        "keyword.operator.assignment",
+        "keyword.operator.double-arrow"
+      ],
+      "settings": {
+        "foreground": "#bcbcbc"
+      }
+    },
+    {
+      "name": "Attributes / Decorators",
+      "scope": [
+        "meta.attribute",
+        "entity.name.type.attribute",
+        "punctuation.definition.attribute",
+        "support.attribute"
+      ],
+      "settings": {
+        "foreground": "#fcbf49"
+      }
+    },
+    {
+      "name": "Tags (HTML/XML)",
+      "scope": [
+        "entity.name.tag",
+        "punctuation.definition.tag"
+      ],
+      "settings": {
+        "foreground": "#e74c3c"
+      }
+    },
+    {
+      "name": "Tag attributes (HTML)",
+      "scope": [
+        "entity.other.attribute-name"
+      ],
+      "settings": {
+        "foreground": "#fcbf49"
+      }
+    },
+    {
+      "name": "CSS Properties",
+      "scope": [
+        "support.type.property-name",
+        "meta.property-name"
+      ],
+      "settings": {
+        "foreground": "#7ec8e3"
+      }
+    },
+    {
+      "name": "CSS Values",
+      "scope": [
+        "support.constant.property-value",
+        "meta.property-value"
+      ],
+      "settings": {
+        "foreground": "#f39c12"
+      }
+    },
+    {
+      "name": "Constants",
+      "scope": [
+        "constant.other",
+        "constant.language"
+      ],
+      "settings": {
+        "foreground": "#fcbf49"
+      }
+    },
+    {
+      "name": "PHP this/self",
+      "scope": [
+        "variable.language.this",
+        "variable.language.self"
+      ],
+      "settings": {
+        "foreground": "#e74c3c"
+      }
+    },
+    {
+      "name": "Bash/Shell commands",
+      "scope": [
+        "support.function.builtin",
+        "entity.name.command"
+      ],
+      "settings": {
+        "foreground": "#f39c12"
+      }
+    },
+    {
+      "name": "PHP double-arrow, scope resolution",
+      "scope": [
+        "keyword.operator.class",
+        "punctuation.accessor"
+      ],
+      "settings": {
+        "foreground": "#bcbcbc"
+      }
+    },
+    {
+      "name": "Default text",
+      "scope": [
+        "source",
+        "text"
+      ],
+      "settings": {
+        "foreground": "#bcbcbc"
+      }
+    }
+  ]
+}

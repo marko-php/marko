@@ -1,0 +1,551 @@
+/* ============================================
+   MARKO DOCS — 8-BIT ARCADE THEME
+   Matches marko.build/design-guide specs exactly
+   Deviation: Inter for body/headings, JetBrains Mono
+   for code (readability for docs)
+   ============================================ */
+
+:root {
+  /* Arcade Color Palette (from design-guide/shared.css) */
+  --arcade-black: #0f0f0f;
+  --arcade-navy: #1a1a2e;
+  --arcade-midnight: #0c0c1d;
+  --arcade-blue: #3498db;
+  --arcade-sky: #7ec8e3;
+  --arcade-green: #2ecc40;
+  --arcade-lime: #7dff7d;
+  --arcade-red: #e74c3c;
+  --arcade-orange: #f39c12;
+  --arcade-yellow: #fcbf49;
+  --arcade-gold: #ffd700;
+  --arcade-purple: #9b59b6;
+  --arcade-pink: #ff6b9d;
+  --arcade-white: #fcfcfc;
+  --arcade-gray: #7c7c7c;
+  --arcade-silver: #bcbcbc;
+  --arcade-coral: #ff7b7b;
+  --arcade-lavender: #d4a5ff;
+  --arcade-steel: #1a5276;
+  --arcade-ink: #2c3e50;
+
+  --world2-mid: #1a3a5c;
+
+  --pixel: 4px;
+  --pixel-border: var(--pixel) solid;
+
+  /* Starlight token overrides */
+  --sl-color-accent-low: #1a1a2e;
+  --sl-color-accent: #3498db;
+  --sl-color-accent-high: #7ec8e3;
+
+  --sl-color-white: #fcfcfc;
+  --sl-color-gray-1: #e8e8e8;
+  --sl-color-gray-2: #bcbcbc;
+  --sl-color-gray-3: #7c7c7c;
+  --sl-color-gray-4: #3a3a4e;
+  --sl-color-gray-5: #1a1a2e;
+  --sl-color-gray-6: #0c0c1d;
+  --sl-color-black: #0f0f0f;
+
+  /* Typography — readable deviation for docs */
+  --sl-font: 'Inter', sans-serif;
+  --sl-font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ============================================
+   DARK MODE — arcade-midnight background
+   Brand rule: "Dark theme only. No light mode. Ever."
+   ============================================ */
+:root[data-theme='dark'] {
+  --sl-color-bg: #0c0c1d;
+  --sl-color-bg-nav: #0f0f1f;
+  --sl-color-bg-sidebar: #0f0f1f;
+  --sl-color-hairline-shade: #1a1a2e;
+  --sl-color-hairline-light: #2a2a3e;
+}
+
+/* Light mode kept minimal — brand says dark only,
+   but Starlight users may toggle, so keep it usable */
+:root[data-theme='light'] {
+  --sl-color-accent-low: #e8f0fe;
+  --sl-color-accent: #2c7cd6;
+  --sl-color-accent-high: #1a5276;
+  --sl-color-bg: #fcfcfc;
+  --sl-color-bg-nav: #f0f0f4;
+  --sl-color-bg-sidebar: #f5f5f8;
+}
+
+/* ============================================
+   CRT SCANLINE OVERLAY (from design-guide/brand.html)
+   "Scanline overlay is always present"
+   ============================================ */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10000;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+}
+
+/* ============================================
+   SELECTION & SCROLLBAR (from design-guide/shared.css)
+   ============================================ */
+::selection {
+  background: var(--arcade-blue);
+  color: var(--arcade-white);
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--arcade-navy); }
+::-webkit-scrollbar-thumb { background: var(--arcade-gray); border: 2px solid var(--arcade-navy); }
+::-webkit-scrollbar-thumb:hover { background: var(--arcade-silver); }
+
+/* ============================================
+   HEADINGS — Press Start 2P (arcade font)
+   Sized down because pixel font reads large
+   ============================================ */
+h1, h2, h3, h4, h5, h6,
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4 {
+  font-family: 'Press Start 2P', monospace !important;
+  letter-spacing: 0.5px;
+  line-height: 1.8;
+}
+
+.sl-markdown-content h1 { font-size: 1.3rem; text-transform: uppercase; }
+.sl-markdown-content h2 { font-size: 1rem; text-transform: uppercase; }
+.sl-markdown-content h3 { font-size: 0.8rem; text-transform: uppercase; }
+.sl-markdown-content h4 { font-size: 0.7rem; text-transform: uppercase; }
+
+/* Heading anchor link — push to the right, don't overlap */
+.sl-heading-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sl-heading-wrapper .sl-anchor-link {
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+/* Hero title — Press Start 2P like the main site */
+.hero h1 {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: clamp(16px, 4vw, 28px) !important;
+  letter-spacing: 3px !important;
+  color: var(--arcade-white) !important;
+  text-shadow:
+    3px 3px 0 var(--arcade-blue),
+    0 0 20px rgba(52, 152, 219, 0.3);
+}
+
+/* ============================================
+   PIXEL BUTTONS (from design-guide/buttons.html)
+   .pixel-btn: font 10px, padding 14px 28px,
+   bg --arcade-black, border 4px solid white,
+   hover: translate(-2px,-2px) + 4px shadow,
+   active: translate(2px,2px) + no shadow
+   ============================================ */
+
+/* Hero action buttons get the full pixel-btn treatment */
+.hero .sl-link-button,
+.hero .action a {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 10px !important;
+  padding: 14px 28px !important;
+  background: var(--arcade-black) !important;
+  color: var(--arcade-white) !important;
+  border: var(--pixel-border) var(--arcade-white) !important;
+  cursor: pointer;
+  text-decoration: none !important;
+  display: inline-block;
+  transition: transform 0.1s, box-shadow 0.1s, background 0.1s !important;
+  text-transform: uppercase;
+  image-rendering: pixelated;
+  border-radius: 0 !important;
+  line-height: 1.6 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.hero .sl-link-button svg,
+.hero .action a svg {
+  width: 14px !important;
+  height: 14px !important;
+  flex-shrink: 0;
+}
+
+.hero .sl-link-button:hover,
+.hero .action a:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 4px 4px 0 var(--arcade-gray) !important;
+}
+
+.hero .sl-link-button:active,
+.hero .action a:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: none !important;
+}
+
+/* Primary button (from buttons.html) */
+.hero .sl-link-button.primary,
+.hero .action.primary a {
+  background: var(--arcade-blue) !important;
+  border-color: var(--arcade-sky) !important;
+  color: var(--arcade-white) !important;
+}
+
+.hero .sl-link-button.primary:hover,
+.hero .action.primary a:hover {
+  background: var(--arcade-sky) !important;
+  box-shadow: 4px 4px 0 var(--world2-mid) !important;
+}
+
+/* Secondary/minimal button (from buttons.html) */
+.hero .sl-link-button.minimal,
+.hero .action.minimal a {
+  background: transparent !important;
+  border-color: var(--arcade-gray) !important;
+  color: var(--arcade-silver) !important;
+}
+
+.hero .sl-link-button.minimal:hover,
+.hero .action.minimal a:hover {
+  border-color: var(--arcade-white) !important;
+  color: var(--arcade-white) !important;
+  box-shadow: 4px 4px 0 rgba(124,124,124,0.3) !important;
+}
+
+/* ============================================
+   CODE BLOCKS (from design-guide/layout.html)
+   code-window spec:
+   - background: var(--arcade-navy)
+   - border: 2px solid var(--arcade-gray)
+   - header: 8px 12px padding, three square dots
+     (8x8, border-radius:0) in red/yellow/green
+   - header border-bottom: 1px solid rgba(124,124,124,0.2)
+   - body: 16px padding
+   ============================================ */
+
+/* Remove all rounding — "nothing in Arcade is round" */
+.expressive-code,
+.expressive-code .frame,
+.expressive-code pre,
+.expressive-code .copy button {
+  border-radius: 0 !important;
+}
+
+/* Frame border matches code-window spec */
+.expressive-code .frame {
+  border: 2px solid var(--arcade-gray) !important;
+  overflow: hidden;
+}
+
+/* Pre/code area */
+.expressive-code pre {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.875rem;
+  padding: 16px !important;
+}
+
+:root[data-theme='dark'] .expressive-code pre {
+  background: var(--arcade-navy) !important;
+}
+
+/* Hide header bar when no title — untitled blocks don't need the dots */
+.expressive-code .frame:not(.has-title) .header {
+  display: none !important;
+}
+
+/* Header bar — matches code-window from layout.html */
+:root[data-theme='dark'] .expressive-code .frame.has-title .header {
+  background: var(--arcade-navy) !important;
+  border-bottom: 1px solid rgba(124, 124, 124, 0.2) !important;
+}
+
+/* Tab title — restyle as arcade code-window header */
+:root[data-theme='dark'] .expressive-code .frame.has-title:not(.is-terminal) .title {
+  color: var(--arcade-silver) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.75rem !important;
+  background: var(--arcade-navy) !important;
+  border-color: transparent !important;
+  overflow: visible !important;
+  margin-top: 28px !important;
+  padding-inline: 12px !important;
+}
+
+/* Remove the tab indicator bars that EC adds */
+:root[data-theme='dark'] .expressive-code .frame.has-title:not(.is-terminal) .title::after {
+  display: none !important;
+}
+
+/* Three square dots — red, yellow, green (via box-shadow)
+   Positioned above the title text using .title::before */
+:root[data-theme='dark'] .expressive-code .frame.has-title:not(.is-terminal) .title::before {
+  content: '' !important;
+  position: absolute !important;
+  top: -20px !important;
+  left: 12px !important;
+  width: 10px !important;
+  height: 10px !important;
+  background: var(--arcade-red) !important;
+  border-radius: 0 !important;
+  box-shadow:
+    16px 0 0 0 var(--arcade-yellow),
+    32px 0 0 0 var(--arcade-green) !important;
+  pointer-events: none !important;
+}
+
+/* Copy button — pin to top-right of frame */
+.expressive-code .copy {
+  position: absolute !important;
+  top: 4px !important;
+  right: 4px !important;
+  inset-block-start: 4px !important;
+}
+
+:root[data-theme='dark'] .expressive-code .copy button {
+  background: var(--arcade-navy) !important;
+  border: 2px solid var(--arcade-gray) !important;
+  color: var(--arcade-silver) !important;
+}
+
+:root[data-theme='dark'] .expressive-code .copy button:hover {
+  border-color: var(--arcade-blue) !important;
+  color: var(--arcade-white) !important;
+}
+
+/* ============================================
+   INLINE CODE
+   ============================================ */
+.sl-markdown-content :not(pre) > code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  padding: 0.15em 0.35em;
+  border-radius: 0;
+  border: 1px solid var(--sl-color-gray-4);
+  white-space: nowrap;
+}
+
+/* Inline code in headings should match the heading size */
+.sl-markdown-content h1 code,
+.sl-markdown-content h2 code,
+.sl-markdown-content h3 code,
+.sl-markdown-content h4 code {
+  font-size: inherit;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+nav.sidebar-content {
+  font-size: 0.875rem;
+}
+
+nav.sidebar-content a[aria-current="page"] {
+  border-left: 3px solid var(--arcade-blue);
+  font-weight: 600;
+}
+
+/* Sidebar group labels — Press Start 2P for section feel */
+.sidebar-content .top-level > li > details > summary span,
+.sidebar-content .top-level > li > a span {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ============================================
+   HERO
+   ============================================ */
+.hero {
+  text-align: center;
+}
+
+.hero .tagline {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;
+  max-width: 40ch;
+}
+
+/* ============================================
+   CARDS — pixel border + lift hover
+   (from design-guide/index.html section-card spec)
+   ============================================ */
+.card {
+  border: 2px solid var(--arcade-gray) !important;
+  border-radius: 0 !important;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.card .title,
+.sl-link-card .title {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.65rem !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.card:hover {
+  border-color: var(--arcade-blue) !important;
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--arcade-gray);
+}
+
+.sl-link-card {
+  border: 2px solid var(--arcade-gray);
+  border-radius: 0;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.sl-link-card:hover {
+  border-color: var(--arcade-blue);
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--arcade-gray);
+}
+
+/* ============================================
+   TABLES — arcade style (from design-guide spec-table)
+   ============================================ */
+.sl-markdown-content table {
+  border: 2px solid var(--arcade-gray);
+  border-radius: 0;
+  border-collapse: collapse;
+  width: 100%;
+  display: table;
+  table-layout: auto;
+}
+
+.sl-markdown-content thead {
+  width: 100%;
+}
+
+.sl-markdown-content thead tr {
+  background: rgba(252, 191, 73, 0.08);
+}
+
+.sl-markdown-content th {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--arcade-yellow);
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--arcade-yellow);
+  text-align: left;
+  background: rgba(252, 191, 73, 0.08);
+}
+
+.sl-markdown-content td {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(124, 124, 124, 0.15);
+  font-size: 0.875rem;
+  color: var(--arcade-silver);
+}
+
+.sl-markdown-content tr:last-child td {
+  border-bottom: none;
+}
+
+.sl-markdown-content tr:hover {
+  background: rgba(52, 152, 219, 0.05);
+}
+
+/* ============================================
+   BLOCKQUOTES
+   ============================================ */
+.sl-markdown-content blockquote {
+  border-left: 4px solid var(--arcade-blue);
+  border-radius: 0;
+}
+
+/* ============================================
+   ASIDES / CALLOUTS — sharp corners
+   ============================================ */
+.starlight-aside {
+  border-radius: 0;
+  border-width: 2px;
+}
+
+/* ============================================
+   PAGINATION (prev/next) — pixel lift hover
+   ============================================ */
+.pagination-links a {
+  border: 2px solid var(--arcade-gray) !important;
+  border-radius: 0 !important;
+  transition: transform 0.1s, box-shadow 0.1s, border-color 0.2s;
+}
+
+.pagination-links a:hover {
+  border-color: var(--arcade-blue) !important;
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--arcade-gray);
+}
+
+/* ============================================
+   SEARCH — sharp corners
+   ============================================ */
+site-search button {
+  border-radius: 0 !important;
+}
+
+/* ============================================
+   LOGO — wordmark with blue glow
+   (from design-guide/brand.html logo-demo-wordmark)
+   ============================================ */
+.site-title,
+.title-wrapper,
+.title-wrapper * {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.site-title {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 1rem !important;
+  color: var(--arcade-white) !important;
+  text-shadow:
+    0 0 6px rgba(52, 152, 219, 0.6),
+    0 0 14px rgba(52, 152, 219, 0.3),
+    2px 2px 0 var(--arcade-blue);
+  letter-spacing: 4px !important;
+}
+
+/* ============================================
+   RESPONSIVE (from design-guide/shared.css)
+   Pixel size scales: 4px → 3px → 2px
+   ============================================ */
+@media (max-width: 768px) {
+  :root { --pixel: 3px; }
+
+  .hero .action a {
+    font-size: 10px !important;
+    padding: 12px 24px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  :root { --pixel: 2px; }
+
+  .hero .action a {
+    width: 100% !important;
+    text-align: center !important;
+  }
+}

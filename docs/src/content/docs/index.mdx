@@ -1,0 +1,54 @@
+---
+title: MARKO
+description: The modular PHP framework — Magento's extensibility meets Laravel's developer experience.
+template: splash
+hero:
+  tagline: A modular PHP 8.5+ framework combining Magento's extensibility with Laravel's developer experience. Loud errors, true modularity, zero magic.
+  actions:
+    - text: Get Started
+      link: /docs/getting-started/introduction/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/markshust/marko
+      icon: external
+      variant: minimal
+      attrs:
+        target: _blank
+        rel: noopener
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## Why Marko?
+
+<CardGrid>
+  <Card title="True Modularity" icon="puzzle">
+    Every feature is a Composer package. Interface and implementation are split. Swap any piece without touching the rest.
+  </Card>
+  <Card title="Loud Errors" icon="warning">
+    No silent failures. Every error includes what went wrong, the context, and a suggestion for how to fix it.
+  </Card>
+  <Card title="Explicit Over Implicit" icon="open-book">
+    No magic methods, no hidden conventions. Everything is discoverable and type-safe.
+  </Card>
+  <Card title="Extensibility Built In" icon="setting">
+    Preferences, Plugins, Events, and Observers — customize any behavior without modifying vendor code.
+  </Card>
+</CardGrid>
+
+## Quick Start
+
+```bash
+composer create-project marko/skeleton my-app
+cd my-app
+marko up
+```
+
+## Explore
+
+<CardGrid>
+  <LinkCard title="Installation" href="/docs/getting-started/installation/" description="Get Marko up and running in minutes." />
+  <LinkCard title="Core Concepts" href="/docs/concepts/modularity/" description="Understand modules, DI, preferences, and plugins." />
+  <LinkCard title="Build a Blog" href="/docs/tutorials/build-a-blog/" description="Step-by-step tutorial from zero to deployed blog." />
+  <LinkCard title="Package Reference" href="/docs/packages/core/" description="Browse all 70+ packages in the ecosystem." />
+</CardGrid>

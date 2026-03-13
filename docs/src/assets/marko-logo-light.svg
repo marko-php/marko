@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 32">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap');
+    text { font-family: 'Press Start 2P', monospace; }
+  </style>
+  <text x="0" y="24" font-size="20" fill="#1a5276">MARKO</text>
+  <text x="130" y="24" font-size="8" fill="#7c7c7c">docs</text>
+</svg>
