@@ -13,9 +13,9 @@ composer require marko/sse
 
 ## Usage
 
-### Basic streaming endpoint
+### Polling endpoint
 
-Return a `StreamingResponse` from any controller action. The `dataProvider` closure is called on each poll interval and should return an array of `SseEvent` objects.
+The `dataProvider` approach polls a data source on a configurable interval (default: 1 second). This is suitable for data that doesn't need to arrive instantly, such as progress updates or periodic status checks. For real-time delivery, use the [PubSub integration](#pubsub-integration) instead.
 
 ```php
 use Marko\Routing\Http\Request;
@@ -105,7 +105,7 @@ new SseEvent(
 
 ### PubSub integration
 
-`SseStream` accepts a `Subscription` from `marko/pubsub` as an alternative to the `dataProvider` closure. Messages from the subscription are automatically converted to SSE events, with the channel as the event name and the payload as data. You must provide exactly one source --- either a `dataProvider` or a `subscription`, not both.
+`SseStream` accepts a `Subscription` from `marko/pubsub` as an alternative to the `dataProvider` closure. Unlike the polling `dataProvider` approach, subscription mode delivers events instantly --- the stream blocks on the pub/sub channel and yields each message the moment it arrives. Messages are automatically converted to SSE events, with the channel as the event name and the payload as data. You must provide exactly one source --- either a `dataProvider` or a `subscription`, not both.
 
 ```php
 use Marko\PubSub\Subscription;
@@ -114,7 +114,6 @@ use Marko\Sse\StreamingResponse;
 
 $stream = new SseStream(
     subscription: $subscription,
-    heartbeatInterval: 15,
     timeout: 300,
 );
 
@@ -166,6 +165,12 @@ public function close(): void;
 /** @return Generator<int, string> @throws JsonException */
 public function getIterator(): Generator;
 ```
+
+| Parameter | dataProvider | subscription |
+|---|---|---|
+| `timeout` | Yes | Yes |
+| `pollInterval` | Yes | No — events arrive instantly |
+| `heartbeatInterval` | Yes | No — no keepalives sent |
 
 ### StreamingResponse
 
