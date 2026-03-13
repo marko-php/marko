@@ -26,6 +26,7 @@ use Marko\Core\Exceptions\CommandException;
 use Marko\Core\Exceptions\EventException;
 use Marko\Core\Exceptions\ModuleException;
 use Marko\Core\Exceptions\PluginException;
+use Marko\Core\Exceptions\PreferenceConflictException;
 use Marko\Core\Module\DependencyResolver;
 use Marko\Core\Module\ManifestParser;
 use Marko\Core\Module\ModuleDiscovery;
@@ -78,7 +79,7 @@ class Application
     ) {}
 
     /**
-     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException
      */
     public function boot(): void
     {
@@ -218,7 +219,7 @@ class Application
                 }
 
                 $preference = $attributes[0]->newInstance();
-                $this->preferenceRegistry->register($preference->replaces, $className);
+                $this->preferenceRegistry->register($preference->replaces, $className, $module->name, $module->source);
             }
         }
     }

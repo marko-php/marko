@@ -11,7 +11,6 @@ use Marko\Blog\Services\CommentThreadingServiceInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Blog\Tests\Mocks\MockAuthorRepository;
 use Marko\Blog\Tests\Mocks\MockCategoryRepository;
-use Marko\Blog\Tests\Mocks\MockCommentRepository;
 use Marko\Database\Entity\Entity;
 use Marko\Routing\Http\Response;
 use Marko\Testing\Fake\FakeSession;
@@ -50,7 +49,6 @@ it('renders post index template', function (): void {
     $repository = createViewTestMockRepository($posts);
     $authorRepository = new MockAuthorRepository();
     $categoryRepository = new MockCategoryRepository();
-    $commentRepository = new MockCommentRepository();
     $paginationService = createViewTestMockPaginationService();
     $capture = new stdClass();
     $view = createViewTestCapturingMockView($capture);
@@ -59,7 +57,6 @@ it('renders post index template', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $paginationService,
         $view,
         new FakeSession(),
@@ -82,7 +79,6 @@ it('renders post show template', function (): void {
     $repository = createViewTestMockRepository([], $post);
     $authorRepository = new MockAuthorRepository();
     $categoryRepository = new MockCategoryRepository();
-    $commentRepository = new MockCommentRepository();
     $paginationService = createViewTestMockPaginationService();
     $capture = new stdClass();
     $view = createViewTestCapturingMockView($capture);
@@ -91,7 +87,6 @@ it('renders post show template', function (): void {
         $repository,
         $authorRepository,
         $categoryRepository,
-        $commentRepository,
         $paginationService,
         $view,
         new FakeSession(),

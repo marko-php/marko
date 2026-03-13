@@ -6,13 +6,11 @@ use Marko\Blog\Controllers\PostController;
 use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Repositories\AuthorRepositoryInterface;
 use Marko\Blog\Repositories\CategoryRepositoryInterface;
-use Marko\Blog\Repositories\CommentRepositoryInterface;
 use Marko\Blog\Repositories\PostRepositoryInterface;
 use Marko\Blog\Services\CommentThreadingServiceInterface;
 use Marko\Blog\Services\PaginationServiceInterface;
 use Marko\Blog\Tests\Mocks\MockAuthorRepository;
 use Marko\Blog\Tests\Mocks\MockCategoryRepository;
-use Marko\Blog\Tests\Mocks\MockCommentRepository;
 use Marko\Blog\Tests\Mocks\MockPostRepository;
 use Marko\Core\Attributes\Preference;
 use Marko\Core\Container\Container;
@@ -35,17 +33,15 @@ it('demo app/blog overrides PostController via Preference', function (): void {
     $mockRepository = new MockPostRepository();
     $mockAuthorRepository = new MockAuthorRepository();
     $mockCategoryRepository = new MockCategoryRepository();
-    $mockCommentRepository = new MockCommentRepository();
     $mockPaginationService = createMockPaginationServiceForPreferenceTest();
     $mockView = createMockViewForPreferenceTest();
 
     // Test fixture simulating demo/app/blog/Controllers/PostController
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class (
+    readonly class (
         $mockRepository,
         $mockAuthorRepository,
         $mockCategoryRepository,
-        $mockCommentRepository,
         $mockPaginationService,
         $mockView,
         new FakeSession(),
@@ -68,7 +64,6 @@ it('demo app/blog overrides PostController via Preference', function (): void {
     $container->instance(PostRepositoryInterface::class, $mockRepository);
     $container->instance(AuthorRepositoryInterface::class, $mockAuthorRepository);
     $container->instance(CategoryRepositoryInterface::class, $mockCategoryRepository);
-    $container->instance(CommentRepositoryInterface::class, $mockCommentRepository);
     $container->instance(PaginationServiceInterface::class, $mockPaginationService);
     $container->instance(ViewInterface::class, $mockView);
     $container->instance(SessionInterface::class, new FakeSession());
@@ -84,17 +79,15 @@ it('app PostController modifies show method response', function (): void {
     $mockRepository = new MockPostRepository();
     $mockAuthorRepository = new MockAuthorRepository();
     $mockCategoryRepository = new MockCategoryRepository();
-    $mockCommentRepository = new MockCommentRepository();
     $mockPaginationService = createMockPaginationServiceForPreferenceTest();
     $mockView = createMockViewForPreferenceTest();
 
     // Test fixture simulating demo/app/blog/Controllers/PostController
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class (
+    readonly class (
         $mockRepository,
         $mockAuthorRepository,
         $mockCategoryRepository,
-        $mockCommentRepository,
         $mockPaginationService,
         $mockView,
         new FakeSession(),
@@ -119,17 +112,15 @@ it('DisableRoute attribute removes route from Preference override', function ():
     $mockRepository = new MockPostRepository();
     $mockAuthorRepository = new MockAuthorRepository();
     $mockCategoryRepository = new MockCategoryRepository();
-    $mockCommentRepository = new MockCommentRepository();
     $mockPaginationService = createMockPaginationServiceForPreferenceTest();
     $mockView = createMockViewForPreferenceTest();
 
     // Test fixture: child controller disables parent route
     $appPostController = new #[Preference(replaces: PostController::class)]
-    class (
+    readonly class (
         $mockRepository,
         $mockAuthorRepository,
         $mockCategoryRepository,
-        $mockCommentRepository,
         $mockPaginationService,
         $mockView,
         new FakeSession(),

@@ -6,6 +6,7 @@ use Marko\Core\Attributes\Preference;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\PreferenceDiscovery;
 use Marko\Core\Container\PreferenceRegistry;
+use Marko\Core\Exceptions\PreferenceConflictException;
 use Marko\Core\Module\ModuleManifest;
 
 // Helper function for recursive directory cleanup
@@ -124,4 +125,64 @@ it('chains preferences when A replaces B and C replaces A', function (): void {
 
     // Should resolve to FinalPreferredService through the chain
     expect($instance)->toBeInstanceOf(FinalPreferredService::class);
+});
+
+it('throws PreferenceConflictException when two same-priority modules prefer the same class', function (): void {
+    $registry = new PreferenceRegistry();
+
+    $registry->register(
+        original: OriginalService::class,
+        replacement: PreferredService::class,
+        moduleName: 'vendor/module-a',
+        moduleSource: 'vendor',
+    );
+
+    $registry->register(
+        original: OriginalService::class,
+        replacement: FinalPreferredService::class,
+        moduleName: 'vendor/module-b',
+        moduleSource: 'vendor',
+    );
+})->throws(PreferenceConflictException::class, 'Multiple modules define a Preference for the same class');
+
+it('allows higher-priority module to override lower-priority preference', function (): void {
+    $registry = new PreferenceRegistry();
+
+    $registry->register(
+        original: OriginalService::class,
+        replacement: PreferredService::class,
+        moduleName: 'marko/blog',
+        moduleSource: 'vendor',
+    );
+
+    $registry->register(
+        original: OriginalService::class,
+        replacement: FinalPreferredService::class,
+        moduleName: 'app/blog',
+        moduleSource: 'app',
+    );
+
+    expect($registry->getPreference(OriginalService::class))
+        ->toBe(FinalPreferredService::class);
+});
+
+it('ignores lower-priority preference when higher-priority already registered', function (): void {
+    $registry = new PreferenceRegistry();
+
+    $registry->register(
+        original: OriginalService::class,
+        replacement: FinalPreferredService::class,
+        moduleName: 'app/blog',
+        moduleSource: 'app',
+    );
+
+    $registry->register(
+        original: OriginalService::class,
+        replacement: PreferredService::class,
+        moduleName: 'marko/blog',
+        moduleSource: 'vendor',
+    );
+
+    expect($registry->getPreference(OriginalService::class))
+        ->toBe(FinalPreferredService::class);
 });
