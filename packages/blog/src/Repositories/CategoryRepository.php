@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Repositories;
 
-use Closure;
 use Marko\Blog\Entity\Category;
 use Marko\Blog\Entity\CategoryInterface;
 use Marko\Blog\Entity\Post;
@@ -18,6 +17,7 @@ use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Exceptions\RepositoryException;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Repository\Repository;
 
 /**
@@ -32,7 +32,7 @@ class CategoryRepository extends Repository implements CategoryRepositoryInterfa
         EntityMetadataFactory $metadataFactory,
         EntityHydrator $hydrator,
         private readonly SlugGeneratorInterface $slugGenerator,
-        ?Closure $queryBuilderFactory = null,
+        ?QueryBuilderFactoryInterface $queryBuilderFactory = null,
         ?EventDispatcherInterface $eventDispatcher = null,
     ) {
         parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory, $eventDispatcher);

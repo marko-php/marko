@@ -16,6 +16,8 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
+use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Repository\Repository;
 use Marko\Testing\Fake\FakeEventDispatcher;
 use ReflectionClass;
@@ -430,7 +432,13 @@ it('constructs with SlugGeneratorInterface plus parent params forwarded', functi
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
     $slugGenerator = new SlugGenerator();
-    $queryBuilderFactory = fn () => null;
+    $queryBuilderFactory = new class () implements QueryBuilderFactoryInterface
+    {
+        public function create(): QueryBuilderInterface
+        {
+            throw new RuntimeException('Not implemented');
+        }
+    };
     $dispatcher = new FakeEventDispatcher();
 
     $repository = new TagRepository(

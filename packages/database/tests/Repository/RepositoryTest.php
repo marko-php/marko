@@ -13,6 +13,7 @@ use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Exceptions\RepositoryException;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Repository\Repository;
 use Marko\Database\Repository\RepositoryInterface;
@@ -709,8 +710,7 @@ it('provides query() method returning QueryBuilder for custom queries', function
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
 
-    $mockQueryBuilder = createMockQueryBuilder($connection);
-    $queryBuilderFactory = fn () => createMockQueryBuilder($connection);
+    $queryBuilderFactory = createMockQueryBuilderFactory($connection);
 
     $repository = new UserRepository($connection, $metadataFactory, $hydrator, $queryBuilderFactory);
 
@@ -726,7 +726,7 @@ it('hydrates results from query() automatically', function (): void {
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
 
-    $queryBuilderFactory = fn () => createMockQueryBuilder($connection);
+    $queryBuilderFactory = createMockQueryBuilderFactory($connection);
 
     $repository = new UserRepository($connection, $metadataFactory, $hydrator, $queryBuilderFactory);
 
@@ -1052,6 +1052,22 @@ function createMockQueryBuilder(
             array $bindings = [],
         ): array {
             return $this->connection->query($sql, $bindings);
+        }
+    };
+}
+
+function createMockQueryBuilderFactory(
+    ConnectionInterface $connection,
+): QueryBuilderFactoryInterface {
+    return new class ($connection) implements QueryBuilderFactoryInterface
+    {
+        public function __construct(
+            private readonly ConnectionInterface $connection,
+        ) {}
+
+        public function create(): QueryBuilderInterface
+        {
+            return createMockQueryBuilder($this->connection);
         }
     };
 }

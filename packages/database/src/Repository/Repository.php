@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Marko\Database\Repository;
 
 use BackedEnum;
-use Closure;
 use DateTimeImmutable;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
@@ -21,6 +20,7 @@ use Marko\Database\Events\EntityDeleting;
 use Marko\Database\Events\EntityUpdated;
 use Marko\Database\Events\EntityUpdating;
 use Marko\Database\Exceptions\RepositoryException;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 use ReflectionClass;
 
@@ -47,7 +47,7 @@ abstract class Repository implements RepositoryInterface
      * @param ConnectionInterface $connection Database connection
      * @param EntityMetadataFactory $metadataFactory Factory for entity metadata
      * @param EntityHydrator $hydrator Entity hydrator
-     * @param Closure|null $queryBuilderFactory Optional factory that creates QueryBuilderInterface instances
+     * @param QueryBuilderFactoryInterface|null $queryBuilderFactory Optional factory that creates QueryBuilderInterface instances
      * @param EventDispatcherInterface|null $eventDispatcher Optional event dispatcher for lifecycle events
      *
      * @throws RepositoryException
@@ -56,7 +56,7 @@ abstract class Repository implements RepositoryInterface
         protected readonly ConnectionInterface $connection,
         protected readonly EntityMetadataFactory $metadataFactory,
         protected readonly EntityHydrator $hydrator,
-        protected readonly ?Closure $queryBuilderFactory = null,
+        protected readonly ?QueryBuilderFactoryInterface $queryBuilderFactory = null,
         protected readonly ?EventDispatcherInterface $eventDispatcher = null,
     ) {
         $this->validateEntityClass();
@@ -244,11 +244,7 @@ abstract class Repository implements RepositoryInterface
             throw RepositoryException::queryBuilderNotConfigured(static::class);
         }
 
-        $queryBuilder = ($this->queryBuilderFactory)();
-
-        if (!$queryBuilder instanceof QueryBuilderInterface) {
-            throw RepositoryException::invalidQueryBuilder(static::class);
-        }
+        $queryBuilder = $this->queryBuilderFactory->create();
 
         // Pre-configure the query builder with the table name
         $queryBuilder->table($this->metadata->tableName);

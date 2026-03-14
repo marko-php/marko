@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Repositories;
 
-use Closure;
 use DateTimeImmutable;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
@@ -18,6 +17,7 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Repository\Repository;
 
 /**
@@ -32,7 +32,7 @@ class TagRepository extends Repository implements TagRepositoryInterface
         EntityMetadataFactory $metadataFactory,
         EntityHydrator $hydrator,
         private readonly SlugGeneratorInterface $slugGenerator,
-        ?Closure $queryBuilderFactory = null,
+        ?QueryBuilderFactoryInterface $queryBuilderFactory = null,
         ?EventDispatcherInterface $eventDispatcher = null,
     ) {
         parent::__construct($connection, $metadataFactory, $hydrator, $queryBuilderFactory, $eventDispatcher);

@@ -8,7 +8,9 @@ use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\PgSql\Connection\PgSqlConnection;
 use Marko\Database\PgSql\Introspection\PgSqlIntrospector;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilder;
+use Marko\Database\PgSql\Query\PgSqlQueryBuilderFactory;
 use Marko\Database\PgSql\Sql\PgSqlGenerator;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 
 // Marko-specific configuration for this module.
@@ -20,5 +22,6 @@ return [
         SqlGeneratorInterface::class => PgSqlGenerator::class,
         IntrospectorInterface::class => PgSqlIntrospector::class,
         QueryBuilderInterface::class => PgSqlQueryBuilder::class,
+        QueryBuilderFactoryInterface::class => PgSqlQueryBuilderFactory::class,
     ],
 ];
