@@ -3,25 +3,11 @@
     "description": "File-based translation driver for Marko Framework",
     "license": "MIT",
     "type": "marko-module",
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../core"
-        },
-        {
-            "type": "path",
-            "url": "../config"
-        },
-        {
-            "type": "path",
-            "url": "../translation"
-        }
-    ],
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/config": "@dev",
-        "marko/translation": "@dev"
+        "marko/core": "self.version",
+        "marko/config": "self.version",
+        "marko/translation": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

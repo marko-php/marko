@@ -6,8 +6,8 @@
     "require": {
         "php": "^8.5",
         "guzzlehttp/guzzle": "^7.0",
-        "marko/core": "@dev",
-        "marko/http": "@dev"
+        "marko/core": "self.version",
+        "marko/http": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

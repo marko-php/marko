@@ -3,22 +3,15 @@
     "description": "API resource interfaces and value objects for Marko Framework",
     "license": "MIT",
     "type": "marko-module",
-    "repositories": [
-        {"type": "path", "url": "../core"},
-        {"type": "path", "url": "../config"},
-        {"type": "path", "url": "../routing"},
-        {"type": "path", "url": "../pagination"},
-        {"type": "path", "url": "../testing"}
-    ],
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/routing": "@dev",
-        "marko/pagination": "@dev"
+        "marko/core": "self.version",
+        "marko/routing": "self.version",
+        "marko/pagination": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0",
-        "marko/testing": "@dev"
+        "marko/testing": "self.version"
     },
     "autoload": {
         "psr-4": {

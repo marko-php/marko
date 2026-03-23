@@ -13,36 +13,22 @@ describe('AdminAuth Package Composer Dependencies', function (): void {
         expect($composer)->not->toBeNull()
             ->and($composer['name'])->toBe('marko/admin-auth')
             ->and($composer['require'])->toHaveKey('marko/admin')
-            ->and($composer['require']['marko/admin'])->toBe('@dev')
+            ->and($composer['require']['marko/admin'])->toBe('self.version')
             ->and($composer['require'])->toHaveKey('marko/authentication')
-            ->and($composer['require']['marko/authentication'])->toBe('@dev')
+            ->and($composer['require']['marko/authentication'])->toBe('self.version')
             ->and($composer['require'])->toHaveKey('marko/database')
-            ->and($composer['require']['marko/database'])->toBe('@dev')
+            ->and($composer['require']['marko/database'])->toBe('self.version')
             ->and($composer['require'])->toHaveKey('marko/core')
-            ->and($composer['require']['marko/core'])->toBe('@dev')
+            ->and($composer['require']['marko/core'])->toBe('self.version')
             ->and($composer['require'])->toHaveKey('marko/config')
-            ->and($composer['require']['marko/config'])->toBe('@dev');
+            ->and($composer['require']['marko/config'])->toBe('self.version');
     });
 
-    it('adds path repositories for dependencies in development', function (): void {
+    it('has no path repositories (uses self.version for Packagist publishing)', function (): void {
         $composerPath = dirname(__DIR__) . '/composer.json';
-
         $composer = json_decode(file_get_contents($composerPath), true);
 
-        expect($composer['repositories'])->toBeArray();
-
-        $expectedRepos = ['../core', '../admin', '../authentication', '../database', '../config'];
-        $foundRepos = [];
-
-        foreach ($composer['repositories'] as $repo) {
-            if ($repo['type'] === 'path') {
-                $foundRepos[] = $repo['url'];
-            }
-        }
-
-        foreach ($expectedRepos as $expectedUrl) {
-            expect($foundRepos)->toContain($expectedUrl);
-        }
+        expect($composer)->not->toHaveKey('repositories');
     });
 
     it('does not depend on any specific database driver', function (): void {

@@ -5,8 +5,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
-        "marko/session": "@dev",
-        "marko/database": "@dev"
+        "marko/session": "self.version",
+        "marko/database": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

@@ -5,13 +5,9 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/config": "@dev"
+        "marko/core": "self.version",
+        "marko/config": "self.version"
     },
-    "repositories": [
-        { "type": "path", "url": "../core" },
-        { "type": "path", "url": "../config" }
-    ],
     "autoload": {
         "psr-4": {
             "Marko\\Session\\": "src/"

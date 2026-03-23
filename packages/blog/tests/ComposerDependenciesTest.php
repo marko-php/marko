@@ -12,25 +12,14 @@ describe('Blog Package Composer Dependencies', function (): void {
 
         expect($composer)->not->toBeNull()
             ->and($composer['require'])->toHaveKey('marko/database')
-            ->and($composer['require']['marko/database'])->toBe('@dev');
+            ->and($composer['require']['marko/database'])->toBe('self.version');
     });
 
-    it('adds path repository for database package in development', function (): void {
+    it('has no path repositories (uses self.version for Packagist publishing)', function (): void {
         $composerPath = dirname(__DIR__) . '/composer.json';
-
         $composer = json_decode(file_get_contents($composerPath), true);
 
-        expect($composer['repositories'])->toBeArray();
-
-        $databaseRepoFound = false;
-        foreach ($composer['repositories'] as $repo) {
-            if ($repo['type'] === 'path' && $repo['url'] === '../database') {
-                $databaseRepoFound = true;
-                break;
-            }
-        }
-
-        expect($databaseRepoFound)->toBeTrue();
+        expect($composer)->not->toHaveKey('repositories');
     });
 
     it('does not depend on any specific database driver', function (): void {
@@ -42,7 +31,7 @@ describe('Blog Package Composer Dependencies', function (): void {
             ->and($composer['require'])->not->toHaveKey('marko/database-pgsql');
     });
 
-    it('blog composer.json suggests marko/mail-log driver', function (): void {
+    it('suggests marko/mail-log driver', function (): void {
         $composerPath = dirname(__DIR__) . '/composer.json';
 
         $composer = json_decode(file_get_contents($composerPath), true);
@@ -51,7 +40,7 @@ describe('Blog Package Composer Dependencies', function (): void {
             ->and($composer['suggest'])->toHaveKey('marko/mail-log');
     });
 
-    it('blog composer.json suggests marko/mail-smtp driver', function (): void {
+    it('suggests marko/mail-smtp driver', function (): void {
         $composerPath = dirname(__DIR__) . '/composer.json';
 
         $composer = json_decode(file_get_contents($composerPath), true);

@@ -5,14 +5,14 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/config": "@dev",
-        "marko/routing": "@dev",
-        "marko/session": "@dev",
-        "marko/encryption": "@dev"
+        "marko/core": "self.version",
+        "marko/config": "self.version",
+        "marko/routing": "self.version",
+        "marko/session": "self.version",
+        "marko/encryption": "self.version"
     },
     "require-dev": {
-        "marko/testing": "*"
+        "marko/testing": "self.version"
     },
     "autoload": {
         "psr-4": {

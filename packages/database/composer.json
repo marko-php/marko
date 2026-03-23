@@ -5,14 +5,8 @@
     "type": "library",
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev"
+        "marko/core": "self.version"
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../core"
-        }
-    ],
     "require-dev": {
         "pestphp/pest": "^4.0"
     },

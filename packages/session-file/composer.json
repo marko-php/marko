@@ -5,10 +5,10 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
-        "marko/session": "@dev"
+        "marko/session": "self.version"
     },
     "require-dev": {
-        "marko/testing": "@dev"
+        "marko/testing": "self.version"
     },
     "autoload": {
         "psr-4": {

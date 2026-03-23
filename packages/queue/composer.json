@@ -5,10 +5,10 @@
     "type": "library",
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev"
+        "marko/core": "self.version"
     },
     "require-dev": {
-        "marko/testing": "*",
+        "marko/testing": "self.version",
         "pestphp/pest": "^4.0"
     },
     "autoload": {

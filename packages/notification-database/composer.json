@@ -5,9 +5,9 @@
     "type": "marko-module",
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/notification": "@dev",
-        "marko/database": "@dev"
+        "marko/core": "self.version",
+        "marko/notification": "self.version",
+        "marko/database": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

@@ -6,6 +6,9 @@
          cacheDirectory=".phpunit.cache"
 >
     <testsuites>
+        <testsuite name="Monorepo">
+            <directory>tests</directory>
+        </testsuite>
         <testsuite name="Packages">
             <directory>packages/*/tests</directory>
         </testsuite>

@@ -21,10 +21,10 @@
 
 ## Repository Structure
 
-- **Type**: Monorepo at `github.com/devtomic/marko`
-- **Organization**: `github.com/devtomic`
+- **Type**: Monorepo at `github.com/marko-php/marko`
+- **Organization**: `github.com/marko-php` (owned by Devtomic LLC)
 - **Packages**: 70+ packages in `packages/` directory
-- **Split repos**: Each package auto-split to read-only repos for Packagist
+- **Split repos**: Each package auto-split to read-only `github.com/marko-php/marko-{package}` repos for Packagist
 - **Versioning**: Unified — all packages share the same version number
 
 ## Architecture Summary
@@ -40,7 +40,6 @@
 
 ```
 packages/       # All framework packages (monorepo)
-demo/           # Minimal integration bootstrap (not for demos/showcases)
 docs/           # Documentation site content
 ```
 

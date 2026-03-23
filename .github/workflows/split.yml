@@ -1,0 +1,64 @@
+name: Split Packages
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+
+concurrency:
+  group: split-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SPLIT_ORG: marko-php
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.list.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: List packages
+        id: list
+        run: |
+          packages=$(ls packages/ | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "packages=$packages" >> $GITHUB_OUTPUT
+
+  split:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: ${{ fromJson(needs.setup.outputs.packages) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+      - name: Install splitsh-lite
+        run: |
+          curl -sL https://github.com/splitsh/lite/releases/latest/download/lite_linux_amd64.tar.gz | tar xz
+          sudo mv splitsh-lite /usr/local/bin/splitsh-lite
+
+      - name: Split and push
+        env:
+          SPLIT_TOKEN: ${{ secrets.SPLIT_TOKEN }}
+        run: |
+          REPO="https://${SPLIT_TOKEN}@github.com/${SPLIT_ORG}/marko-${{ matrix.package }}.git"
+          SHA=$(splitsh-lite --prefix="packages/${{ matrix.package }}")
+
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            git push --force "$REPO" "${SHA}:refs/heads/main"
+            git push --force "$REPO" "${SHA}:refs/tags/${TAG}"
+          else
+            BRANCH="${GITHUB_REF#refs/heads/}"
+            git push --force "$REPO" "${SHA}:refs/heads/${BRANCH}"
+          fi

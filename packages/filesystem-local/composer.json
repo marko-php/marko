@@ -5,7 +5,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
-        "marko/filesystem": "@dev",
+        "marko/filesystem": "self.version",
         "ext-fileinfo": "*"
     },
     "autoload": {

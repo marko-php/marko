@@ -5,8 +5,8 @@
     "type": "library",
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/queue": "@dev",
+        "marko/core": "self.version",
+        "marko/queue": "self.version",
         "php-amqplib/php-amqplib": "^3.0"
     },
     "require-dev": {

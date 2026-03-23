@@ -5,8 +5,8 @@
     "type": "marko-module",
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/config": "@dev"
+        "marko/core": "self.version",
+        "marko/config": "self.version"
     },
     "suggest": {
         "marko/mail": "Required for mail channel notifications",

@@ -3,31 +3,20 @@
     "description": "Admin panel UI for Marko Framework",
     "type": "marko-module",
     "license": "MIT",
-    "repositories": [
-        {"type": "path", "url": "../core"},
-        {"type": "path", "url": "../admin"},
-        {"type": "path", "url": "../admin-auth"},
-        {"type": "path", "url": "../view"},
-        {"type": "path", "url": "../authentication"},
-        {"type": "path", "url": "../session"},
-        {"type": "path", "url": "../routing"},
-        {"type": "path", "url": "../config"},
-        {"type": "path", "url": "../testing"}
-    ],
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/admin": "@dev",
-        "marko/admin-auth": "@dev",
-        "marko/view": "@dev",
-        "marko/authentication": "@dev",
-        "marko/session": "@dev",
-        "marko/routing": "@dev",
-        "marko/config": "@dev"
+        "marko/core": "self.version",
+        "marko/admin": "self.version",
+        "marko/admin-auth": "self.version",
+        "marko/view": "self.version",
+        "marko/authentication": "self.version",
+        "marko/session": "self.version",
+        "marko/routing": "self.version",
+        "marko/config": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0",
-        "marko/testing": "@dev"
+        "marko/testing": "self.version"
     },
     "autoload": {
         "psr-4": {

@@ -3,30 +3,16 @@
     "description": "Revolt event loop lifecycle and config integration for Marko Framework",
     "license": "MIT",
     "type": "marko-module",
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../core"
-        },
-        {
-            "type": "path",
-            "url": "../config"
-        },
-        {
-            "type": "path",
-            "url": "../testing"
-        }
-    ],
     "require": {
         "php": "^8.5",
         "amphp/amp": "^3",
         "revolt/event-loop": "^1",
-        "marko/core": "@dev",
-        "marko/config": "@dev"
+        "marko/core": "self.version",
+        "marko/config": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0",
-        "marko/testing": "@dev"
+        "marko/testing": "self.version"
     },
     "autoload": {
         "psr-4": {

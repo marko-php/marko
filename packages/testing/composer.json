@@ -3,45 +3,15 @@
     "description": "Testing utilities for the Marko framework - fakes, assertions, and Pest integration",
     "license": "MIT",
     "type": "marko-module",
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../core"
-        },
-        {
-            "type": "path",
-            "url": "../config"
-        },
-        {
-            "type": "path",
-            "url": "../mail"
-        },
-        {
-            "type": "path",
-            "url": "../queue"
-        },
-        {
-            "type": "path",
-            "url": "../session"
-        },
-        {
-            "type": "path",
-            "url": "../log"
-        },
-        {
-            "type": "path",
-            "url": "../authentication"
-        }
-    ],
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/config": "@dev",
-        "marko/mail": "@dev",
-        "marko/queue": "@dev",
-        "marko/session": "@dev",
-        "marko/log": "@dev",
-        "marko/authentication": "@dev"
+        "marko/core": "self.version",
+        "marko/config": "self.version",
+        "marko/mail": "self.version",
+        "marko/queue": "self.version",
+        "marko/session": "self.version",
+        "marko/log": "self.version",
+        "marko/authentication": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"
@@ -50,7 +20,9 @@
         "psr-4": {
             "Marko\\Testing\\": "src/"
         },
-        "files": ["src/Pest/Expectations.php"]
+        "files": [
+            "src/Pest/Expectations.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

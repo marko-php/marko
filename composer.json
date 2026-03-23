@@ -3,12 +3,364 @@
     "description": "Marko Framework - Enterprise-grade extensibility with modern developer experience",
     "type": "project",
     "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "packages/admin"
+        },
+        {
+            "type": "path",
+            "url": "packages/admin-api"
+        },
+        {
+            "type": "path",
+            "url": "packages/admin-auth"
+        },
+        {
+            "type": "path",
+            "url": "packages/admin-panel"
+        },
+        {
+            "type": "path",
+            "url": "packages/amphp"
+        },
+        {
+            "type": "path",
+            "url": "packages/api"
+        },
+        {
+            "type": "path",
+            "url": "packages/authentication"
+        },
+        {
+            "type": "path",
+            "url": "packages/authentication-token"
+        },
+        {
+            "type": "path",
+            "url": "packages/authorization"
+        },
+        {
+            "type": "path",
+            "url": "packages/blog"
+        },
+        {
+            "type": "path",
+            "url": "packages/cache"
+        },
+        {
+            "type": "path",
+            "url": "packages/cache-array"
+        },
+        {
+            "type": "path",
+            "url": "packages/cache-file"
+        },
+        {
+            "type": "path",
+            "url": "packages/cache-redis"
+        },
+        {
+            "type": "path",
+            "url": "packages/cli"
+        },
+        {
+            "type": "path",
+            "url": "packages/config"
+        },
+        {
+            "type": "path",
+            "url": "packages/core"
+        },
+        {
+            "type": "path",
+            "url": "packages/cors"
+        },
+        {
+            "type": "path",
+            "url": "packages/database"
+        },
+        {
+            "type": "path",
+            "url": "packages/database-mysql"
+        },
+        {
+            "type": "path",
+            "url": "packages/database-pgsql"
+        },
+        {
+            "type": "path",
+            "url": "packages/dev-server"
+        },
+        {
+            "type": "path",
+            "url": "packages/encryption"
+        },
+        {
+            "type": "path",
+            "url": "packages/encryption-openssl"
+        },
+        {
+            "type": "path",
+            "url": "packages/env"
+        },
+        {
+            "type": "path",
+            "url": "packages/errors"
+        },
+        {
+            "type": "path",
+            "url": "packages/errors-advanced"
+        },
+        {
+            "type": "path",
+            "url": "packages/errors-simple"
+        },
+        {
+            "type": "path",
+            "url": "packages/filesystem"
+        },
+        {
+            "type": "path",
+            "url": "packages/filesystem-local"
+        },
+        {
+            "type": "path",
+            "url": "packages/filesystem-s3"
+        },
+        {
+            "type": "path",
+            "url": "packages/framework"
+        },
+        {
+            "type": "path",
+            "url": "packages/hashing"
+        },
+        {
+            "type": "path",
+            "url": "packages/health"
+        },
+        {
+            "type": "path",
+            "url": "packages/http"
+        },
+        {
+            "type": "path",
+            "url": "packages/http-guzzle"
+        },
+        {
+            "type": "path",
+            "url": "packages/log"
+        },
+        {
+            "type": "path",
+            "url": "packages/log-file"
+        },
+        {
+            "type": "path",
+            "url": "packages/mail"
+        },
+        {
+            "type": "path",
+            "url": "packages/mail-log"
+        },
+        {
+            "type": "path",
+            "url": "packages/mail-smtp"
+        },
+        {
+            "type": "path",
+            "url": "packages/media"
+        },
+        {
+            "type": "path",
+            "url": "packages/media-gd"
+        },
+        {
+            "type": "path",
+            "url": "packages/media-imagick"
+        },
+        {
+            "type": "path",
+            "url": "packages/notification"
+        },
+        {
+            "type": "path",
+            "url": "packages/notification-database"
+        },
+        {
+            "type": "path",
+            "url": "packages/pagination"
+        },
+        {
+            "type": "path",
+            "url": "packages/pubsub"
+        },
+        {
+            "type": "path",
+            "url": "packages/pubsub-pgsql"
+        },
+        {
+            "type": "path",
+            "url": "packages/pubsub-redis"
+        },
+        {
+            "type": "path",
+            "url": "packages/queue"
+        },
+        {
+            "type": "path",
+            "url": "packages/queue-database"
+        },
+        {
+            "type": "path",
+            "url": "packages/queue-rabbitmq"
+        },
+        {
+            "type": "path",
+            "url": "packages/queue-sync"
+        },
+        {
+            "type": "path",
+            "url": "packages/rate-limiting"
+        },
+        {
+            "type": "path",
+            "url": "packages/routing"
+        },
+        {
+            "type": "path",
+            "url": "packages/scheduler"
+        },
+        {
+            "type": "path",
+            "url": "packages/search"
+        },
+        {
+            "type": "path",
+            "url": "packages/security"
+        },
+        {
+            "type": "path",
+            "url": "packages/session"
+        },
+        {
+            "type": "path",
+            "url": "packages/session-database"
+        },
+        {
+            "type": "path",
+            "url": "packages/session-file"
+        },
+        {
+            "type": "path",
+            "url": "packages/sse"
+        },
+        {
+            "type": "path",
+            "url": "packages/testing"
+        },
+        {
+            "type": "path",
+            "url": "packages/translation"
+        },
+        {
+            "type": "path",
+            "url": "packages/translation-file"
+        },
+        {
+            "type": "path",
+            "url": "packages/validation"
+        },
+        {
+            "type": "path",
+            "url": "packages/view"
+        },
+        {
+            "type": "path",
+            "url": "packages/view-latte"
+        },
+        {
+            "type": "path",
+            "url": "packages/webhook"
+        }
+    ],
     "require": {
         "php": "^8.5",
-        "ext-pdo": "*",
         "ext-fileinfo": "*",
         "ext-gd": "*",
-        "ext-imagick": "*"
+        "ext-imagick": "*",
+        "ext-pdo": "*",
+        "marko/admin": "self.version",
+        "marko/admin-api": "self.version",
+        "marko/admin-auth": "self.version",
+        "marko/admin-panel": "self.version",
+        "marko/amphp": "self.version",
+        "marko/api": "self.version",
+        "marko/authentication": "self.version",
+        "marko/authentication-token": "self.version",
+        "marko/authorization": "self.version",
+        "marko/blog": "self.version",
+        "marko/cache": "self.version",
+        "marko/cache-array": "self.version",
+        "marko/cache-file": "self.version",
+        "marko/cache-redis": "self.version",
+        "marko/cli": "self.version",
+        "marko/config": "self.version",
+        "marko/core": "self.version",
+        "marko/cors": "self.version",
+        "marko/database": "self.version",
+        "marko/database-mysql": "self.version",
+        "marko/database-pgsql": "self.version",
+        "marko/dev-server": "self.version",
+        "marko/encryption": "self.version",
+        "marko/encryption-openssl": "self.version",
+        "marko/env": "self.version",
+        "marko/errors": "self.version",
+        "marko/errors-advanced": "self.version",
+        "marko/errors-simple": "self.version",
+        "marko/filesystem": "self.version",
+        "marko/filesystem-local": "self.version",
+        "marko/filesystem-s3": "self.version",
+        "marko/framework": "self.version",
+        "marko/hashing": "self.version",
+        "marko/health": "self.version",
+        "marko/http": "self.version",
+        "marko/http-guzzle": "self.version",
+        "marko/log": "self.version",
+        "marko/log-file": "self.version",
+        "marko/mail": "self.version",
+        "marko/mail-log": "self.version",
+        "marko/mail-smtp": "self.version",
+        "marko/media": "self.version",
+        "marko/media-gd": "self.version",
+        "marko/media-imagick": "self.version",
+        "marko/notification": "self.version",
+        "marko/notification-database": "self.version",
+        "marko/pagination": "self.version",
+        "marko/pubsub": "self.version",
+        "marko/pubsub-pgsql": "self.version",
+        "marko/pubsub-redis": "self.version",
+        "marko/queue": "self.version",
+        "marko/queue-database": "self.version",
+        "marko/queue-rabbitmq": "self.version",
+        "marko/queue-sync": "self.version",
+        "marko/rate-limiting": "self.version",
+        "marko/routing": "self.version",
+        "marko/scheduler": "self.version",
+        "marko/search": "self.version",
+        "marko/security": "self.version",
+        "marko/session": "self.version",
+        "marko/session-database": "self.version",
+        "marko/session-file": "self.version",
+        "marko/sse": "self.version",
+        "marko/testing": "self.version",
+        "marko/translation": "self.version",
+        "marko/translation-file": "self.version",
+        "marko/validation": "self.version",
+        "marko/view": "self.version",
+        "marko/view-latte": "self.version",
+        "marko/webhook": "self.version"
     },
     "require-dev": {
         "amphp/postgres": "^2",
@@ -24,82 +376,24 @@
         "slevomat/coding-standard": "^8.26",
         "squizlabs/php_codesniffer": "^4.0"
     },
-    "autoload": {
-        "files": [
-            "packages/env/src/functions.php"
+    "scripts": {
+        "test": "pest -c phpunit.xml --parallel",
+        "cs:check": "phpcs --standard=phpcs.xml",
+        "cs:fix": [
+            "php-cs-fixer fix --config=.php-cs-fixer.php",
+            "phpcbf --standard=phpcs.xml || true"
         ],
-        "psr-4": {
-            "Marko\\Blog\\": "packages/blog/src/",
-            "Marko\\Cache\\": "packages/cache/src/",
-            "Marko\\Cache\\File\\": "packages/cache-file/src/",
-            "Marko\\Cache\\Memory\\": "packages/cache-array/src/",
-            "Marko\\Cache\\Redis\\": "packages/cache-redis/src/",
-            "Marko\\Cli\\": "packages/cli/src/",
-            "Marko\\Config\\": "packages/config/src/",
-            "Marko\\Core\\": "packages/core/src/",
-            "Marko\\Cors\\": "packages/cors/src/",
-            "Marko\\Database\\": "packages/database/src/",
-            "Marko\\DevServer\\": "packages/dev-server/src/",
-            "Marko\\Database\\MySql\\": "packages/database-mysql/src/",
-            "Marko\\Database\\PgSql\\": "packages/database-pgsql/src/",
-            "Marko\\Encryption\\": "packages/encryption/src/",
-            "Marko\\Encryption\\OpenSsl\\": "packages/encryption-openssl/src/",
-            "Marko\\Env\\": "packages/env/src/",
-            "Marko\\Errors\\": "packages/errors/src/",
-            "Marko\\ErrorsAdvanced\\": "packages/errors-advanced/src/",
-            "Marko\\ErrorsSimple\\": "packages/errors-simple/src/",
-            "Marko\\Filesystem\\": "packages/filesystem/src/",
-            "Marko\\Filesystem\\Local\\": "packages/filesystem-local/src/",
-            "Marko\\Filesystem\\S3\\": "packages/filesystem-s3/src/",
-            "Marko\\Hashing\\": "packages/hashing/src/",
-            "Marko\\Health\\": "packages/health/src/",
-            "Marko\\Http\\": "packages/http/src/",
-            "Marko\\Http\\Guzzle\\": "packages/http-guzzle/src/",
-            "Marko\\Log\\": "packages/log/src/",
-            "Marko\\Log\\File\\": "packages/log-file/src/",
-            "Marko\\Mail\\": "packages/mail/src/",
-            "Marko\\Mail\\Log\\": "packages/mail-log/src/",
-            "Marko\\Mail\\Smtp\\": "packages/mail-smtp/src/",
-            "Marko\\Routing\\": "packages/routing/src/",
-            "Marko\\Session\\": "packages/session/src/",
-            "Marko\\Session\\Database\\": "packages/session-database/src/",
-            "Marko\\Session\\File\\": "packages/session-file/src/",
-            "Marko\\Validation\\": "packages/validation/src/",
-            "Marko\\Authentication\\": "packages/authentication/src/",
-            "Marko\\Queue\\": "packages/queue/src/",
-            "Marko\\Queue\\Sync\\": "packages/queue-sync/src/",
-            "Marko\\Queue\\Database\\": "packages/queue-database/src/",
-            "Marko\\Queue\\Rabbitmq\\": "packages/queue-rabbitmq/src/",
-            "Marko\\RateLimiting\\": "packages/rate-limiting/src/",
-            "Marko\\Scheduler\\": "packages/scheduler/src/",
-            "Marko\\View\\": "packages/view/src/",
-            "Marko\\View\\Latte\\": "packages/view-latte/src/",
-            "Marko\\Admin\\": "packages/admin/src/",
-            "Marko\\AdminAuth\\": "packages/admin-auth/src/",
-            "Marko\\AdminApi\\": "packages/admin-api/src/",
-            "Marko\\AdminPanel\\": "packages/admin-panel/src/",
-            "Marko\\Authorization\\": "packages/authorization/src/",
-            "Marko\\Translation\\": "packages/translation/src/",
-            "Marko\\Translation\\File\\": "packages/translation-file/src/",
-            "Marko\\Notification\\": "packages/notification/src/",
-            "Marko\\Notification\\Database\\": "packages/notification-database/src/",
-            "Marko\\Pagination\\": "packages/pagination/src/",
-            "Marko\\Search\\": "packages/search/src/",
-            "Marko\\Security\\": "packages/security/src/",
-            "Marko\\Testing\\": "packages/testing/src/",
-            "Marko\\Api\\": "packages/api/src/",
-            "Marko\\Webhook\\": "packages/webhook/src/",
-            "Marko\\AuthenticationToken\\": "packages/authentication-token/src/",
-            "Marko\\Media\\": "packages/media/src/",
-            "Marko\\MediaGd\\": "packages/media-gd/src/",
-            "Marko\\MediaImagick\\": "packages/media-imagick/src/",
-            "Marko\\Sse\\": "packages/sse/src/",
-            "Marko\\PubSub\\": "packages/pubsub/src/",
-            "Marko\\PubSub\\PgSql\\": "packages/pubsub-pgsql/src/",
-            "Marko\\PubSub\\Redis\\": "packages/pubsub-redis/src/",
-            "Marko\\Amphp\\": "packages/amphp/src/"
+        "rector": "rector process"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "pestphp/pest-plugin": true
         }
     },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "autoload-dev": {
         "psr-4": {
             "Marko\\Admin\\Tests\\": "packages/admin/tests/",
@@ -159,7 +453,7 @@
             "Marko\\Notification\\Database\\Tests\\": "packages/notification-database/tests/",
             "Marko\\Pagination\\Tests\\": "packages/pagination/tests/",
             "Marko\\Search\\Tests\\": "packages/search/tests/",
-            "Marko\\Security\\Tests\\": "packages/security/tests/",
+            "Marko\\Security\\": "packages/security/src/",
             "Marko\\Testing\\Tests\\": "packages/testing/tests/",
             "Marko\\Api\\Tests\\": "packages/api/tests/",
             "Marko\\Webhook\\Tests\\": "packages/webhook/tests/",
@@ -173,23 +467,5 @@
             "Marko\\PubSub\\Redis\\Tests\\": "packages/pubsub-redis/tests/",
             "Marko\\Amphp\\Tests\\": "packages/amphp/tests/"
         }
-    },
-    "scripts": {
-        "test": "pest -c phpunit.xml --parallel",
-        "cs:check": "phpcs --standard=phpcs.xml",
-        "cs:fix": [
-            "php-cs-fixer fix --config=.php-cs-fixer.php",
-            "phpcbf --standard=phpcs.xml || true"
-        ],
-        "rector": "rector process"
-    },
-    "config": {
-        "sort-packages": true,
-        "allow-plugins": {
-            "dealerdirect/phpcodesniffer-composer-installer": true,
-            "pestphp/pest-plugin": true
-        }
-    },
-    "minimum-stability": "stable",
-    "prefer-stable": true
+    }
 }

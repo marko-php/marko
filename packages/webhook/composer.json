@@ -3,43 +3,17 @@
     "description": "Webhook sending package for Marko Framework",
     "type": "library",
     "license": "MIT",
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../core"
-        },
-        {
-            "type": "path",
-            "url": "../routing"
-        },
-        {
-            "type": "path",
-            "url": "../http"
-        },
-        {
-            "type": "path",
-            "url": "../queue"
-        },
-        {
-            "type": "path",
-            "url": "../config"
-        },
-        {
-            "type": "path",
-            "url": "../testing"
-        }
-    ],
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev",
-        "marko/routing": "@dev",
-        "marko/http": "@dev",
-        "marko/queue": "@dev",
-        "marko/config": "@dev"
+        "marko/core": "self.version",
+        "marko/routing": "self.version",
+        "marko/http": "self.version",
+        "marko/queue": "self.version",
+        "marko/config": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0",
-        "marko/testing": "@dev"
+        "marko/testing": "self.version"
     },
     "autoload": {
         "psr-4": {

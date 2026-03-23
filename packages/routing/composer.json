@@ -3,15 +3,9 @@
     "description": "Marko Framework Routing",
     "license": "MIT",
     "type": "library",
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../core"
-        }
-    ],
     "require": {
         "php": "^8.5",
-        "marko/core": "@dev"
+        "marko/core": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"
