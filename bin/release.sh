@@ -66,6 +66,10 @@ echo "Creating tag ${TAG}..."
 git tag -a "$TAG" -m "Release ${VERSION}"
 git push origin "$TAG"
 
+# Return to develop branch
+git checkout develop
+git merge main
+
 echo ""
 echo "✓ Released ${TAG}!"
 echo ""
