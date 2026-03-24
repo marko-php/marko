@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="WEB_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/packages/blog/src" isTestSource="false" packagePrefix="Marko\Blog\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/blog/tests" isTestSource="true" packagePrefix="Marko\Blog\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/core/src" isTestSource="false" packagePrefix="Marko\Core\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/core/tests" isTestSource="true" packagePrefix="Marko\Core\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/routing/src" isTestSource="false" packagePrefix="Marko\Routing\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/routing/tests" isTestSource="true" packagePrefix="Marko\Routing\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cli/src" isTestSource="false" packagePrefix="Marko\Cli\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cli/tests" isTestSource="true" packagePrefix="Marko\Cli\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors-simple/src" isTestSource="false" packagePrefix="Marko\ErrorsSimple\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors-simple/tests" isTestSource="true" packagePrefix="Marko\ErrorsSimple\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors/src" isTestSource="false" packagePrefix="Marko\Errors\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors/tests" isTestSource="true" packagePrefix="Marko\Errors\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database-mysql/src" isTestSource="false" packagePrefix="Marko\Database\MySql\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database-mysql/tests" isTestSource="true" packagePrefix="Marko\Database\MySql\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database-pgsql/src" isTestSource="false" packagePrefix="Marko\Database\PgSql\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database-pgsql/tests" isTestSource="true" packagePrefix="Marko\Database\PgSql\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database/src" isTestSource="false" packagePrefix="Marko\Database\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/database/tests" isTestSource="true" packagePrefix="Marko\Database\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/authentication/src" isTestSource="false" packagePrefix="Marko\Authentication\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/authentication/tests" isTestSource="true" packagePrefix="Marko\Authentication\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-file/src" isTestSource="false" packagePrefix="Marko\Cache\File\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-file/tests" isTestSource="true" packagePrefix="Marko\Cache\File\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache/src" isTestSource="false" packagePrefix="Marko\Cache\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache/tests" isTestSource="true" packagePrefix="Marko\Cache\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/config/src" isTestSource="false" packagePrefix="Marko\Config\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/config/tests" isTestSource="true" packagePrefix="Marko\Config\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors-advanced/src" isTestSource="false" packagePrefix="Marko\ErrorsAdvanced\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/errors-advanced/tests" isTestSource="true" packagePrefix="Marko\ErrorsAdvanced\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem-local/src" isTestSource="false" packagePrefix="Marko\Filesystem\Local\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem-local/tests" isTestSource="true" packagePrefix="Marko\Filesystem\Local\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem/src" isTestSource="false" packagePrefix="Marko\Filesystem\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem/tests" isTestSource="true" packagePrefix="Marko\Filesystem\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/framework/tests" isTestSource="true" packagePrefix="Marko\Framework\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/hashing/src" isTestSource="false" packagePrefix="Marko\Hashing\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/hashing/tests" isTestSource="true" packagePrefix="Marko\Hashing\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/log-file/src" isTestSource="false" packagePrefix="Marko\Log\File\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/log-file/tests" isTestSource="true" packagePrefix="Marko\Log\File\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/log/src" isTestSource="false" packagePrefix="Marko\Log\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/log/tests" isTestSource="true" packagePrefix="Marko\Log\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail-smtp/src" isTestSource="false" packagePrefix="Marko\Mail\Smtp\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail-smtp/tests" isTestSource="true" packagePrefix="Marko\Mail\Smtp\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail/src" isTestSource="false" packagePrefix="Marko\Mail\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail/tests" isTestSource="true" packagePrefix="Marko\Mail\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-database/src" isTestSource="false" packagePrefix="Marko\Queue\Database\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-database/tests" isTestSource="true" packagePrefix="Marko\Queue\Database\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-sync/src" isTestSource="false" packagePrefix="Marko\Queue\Sync\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-sync/tests" isTestSource="true" packagePrefix="Marko\Queue\Sync\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue/src" isTestSource="false" packagePrefix="Marko\Queue\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue/tests" isTestSource="true" packagePrefix="Marko\Queue\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session-file/src" isTestSource="false" packagePrefix="Marko\Session\File\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session-file/tests" isTestSource="true" packagePrefix="Marko\Session\File\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session/src" isTestSource="false" packagePrefix="Marko\Session\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session/tests" isTestSource="true" packagePrefix="Marko\Session\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/validation/src" isTestSource="false" packagePrefix="Marko\Validation\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/validation/tests" isTestSource="true" packagePrefix="Marko\Validation\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/view-latte/src" isTestSource="false" packagePrefix="Marko\View\Latte\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/view-latte/tests" isTestSource="true" packagePrefix="Marko\View\Latte\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/view/src" isTestSource="false" packagePrefix="Marko\View\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/view/tests" isTestSource="true" packagePrefix="Marko\View\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/env/src" isTestSource="false" packagePrefix="Marko\Env\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/env/tests" isTestSource="true" packagePrefix="Marko\Env\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-api/src" isTestSource="false" packagePrefix="Marko\AdminApi\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-api/tests" isTestSource="true" packagePrefix="Marko\AdminApi\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-auth/src" isTestSource="false" packagePrefix="Marko\AdminAuth\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-auth/tests" isTestSource="true" packagePrefix="Marko\AdminAuth\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-panel/src" isTestSource="false" packagePrefix="Marko\AdminPanel\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin-panel/tests" isTestSource="true" packagePrefix="Marko\AdminPanel\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin/src" isTestSource="false" packagePrefix="Marko\Admin\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/admin/tests" isTestSource="true" packagePrefix="Marko\Admin\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-array/src" isTestSource="false" packagePrefix="Marko\Cache\Memory\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-array/tests" isTestSource="true" packagePrefix="Marko\Cache\Memory\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail-log/src" isTestSource="false" packagePrefix="Marko\Mail\Log\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/mail-log/tests" isTestSource="true" packagePrefix="Marko\Mail\Log\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-rabbitmq/src" isTestSource="false" packagePrefix="Marko\Queue\Rabbitmq\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/queue-rabbitmq/tests" isTestSource="true" packagePrefix="Marko\Queue\Rabbitmq\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/authorization/src" isTestSource="false" packagePrefix="Marko\Authorization\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/authorization/tests" isTestSource="true" packagePrefix="Marko\Authorization\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-redis/src" isTestSource="false" packagePrefix="Marko\Cache\Redis\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/cache-redis/tests" isTestSource="true" packagePrefix="Marko\Cache\Redis\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/encryption-openssl/src" isTestSource="false" packagePrefix="Marko\Encryption\OpenSsl\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/encryption-openssl/tests" isTestSource="true" packagePrefix="Marko\Encryption\OpenSsl\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/encryption/src" isTestSource="false" packagePrefix="Marko\Encryption\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/encryption/tests" isTestSource="true" packagePrefix="Marko\Encryption\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem-s3/src" isTestSource="false" packagePrefix="Marko\Filesystem\S3\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/filesystem-s3/tests" isTestSource="true" packagePrefix="Marko\Filesystem\S3\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/http-guzzle/src" isTestSource="false" packagePrefix="Marko\Http\Guzzle\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/http-guzzle/tests" isTestSource="true" packagePrefix="Marko\Http\Guzzle\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/http/src" isTestSource="false" packagePrefix="Marko\Http\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/http/tests" isTestSource="true" packagePrefix="Marko\Http\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/notification-database/src" isTestSource="false" packagePrefix="Marko\Notification\Database\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/notification-database/tests" isTestSource="true" packagePrefix="Marko\Notification\Database\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/notification/src" isTestSource="false" packagePrefix="Marko\Notification\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/notification/tests" isTestSource="true" packagePrefix="Marko\Notification\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/pagination/src" isTestSource="false" packagePrefix="Marko\Pagination\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/pagination/tests" isTestSource="true" packagePrefix="Marko\Pagination\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/rate-limiting/src" isTestSource="false" packagePrefix="Marko\RateLimiting\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/rate-limiting/tests" isTestSource="true" packagePrefix="Marko\RateLimiting\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/scheduler/src" isTestSource="false" packagePrefix="Marko\Scheduler\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/scheduler/tests" isTestSource="true" packagePrefix="Marko\Scheduler\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/security/src" isTestSource="false" packagePrefix="Marko\Security\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/security/tests" isTestSource="true" packagePrefix="Marko\Security\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session-database/src" isTestSource="false" packagePrefix="Marko\Session\Database\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/session-database/tests" isTestSource="true" packagePrefix="Marko\Session\Database\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/testing/src" isTestSource="false" packagePrefix="Marko\Testing\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/testing/tests" isTestSource="true" packagePrefix="Marko\Testing\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/translation-file/src" isTestSource="false" packagePrefix="Marko\Translation\File\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/translation-file/tests" isTestSource="true" packagePrefix="Marko\Translation\File\Tests\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/translation/src" isTestSource="false" packagePrefix="Marko\Translation\" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/translation/tests" isTestSource="true" packagePrefix="Marko\Translation\Tests\" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/brianium/paratest" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/composer" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/doctrine/deprecations" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/fidry/cpu-core-counter" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/filp/whoops" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/jean85/pretty-package-versions" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/myclabs/deep-copy" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/nikic/php-parser" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/nunomaduro/collision" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/nunomaduro/termwind" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/pestphp/pest" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/pestphp/pest-plugin" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/pestphp/pest-plugin-arch" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/pestphp/pest-plugin-mutate" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/pestphp/pest-plugin-profanity" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phar-io/manifest" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phar-io/version" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phpdocumentor/reflection-common" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phpdocumentor/reflection-docblock" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phpdocumentor/type-resolver" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phpstan/phpdoc-parser" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phpunit/php-code-coverage" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phpunit/php-file-iterator" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phpunit/php-invoker" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phpunit/php-text-template" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phpunit/php-timer" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/phpunit/phpunit" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/psr/container" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/psr/log" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/psr/simple-cache" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/cli-parser" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/comparator" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/complexity" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/diff" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/environment" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/exporter" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/global-state" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/lines-of-code" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/object-enumerator" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/object-reflector" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/recursion-context" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/type" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/sebastian/version" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/staabm/side-effects-detector" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/symfony/console" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/symfony/deprecation-contracts" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/symfony/finder" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/symfony/polyfill-ctype" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/symfony/polyfill-intl-grapheme" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/symfony/polyfill-intl-normalizer" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/symfony/polyfill-mbstring" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/symfony/process" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/symfony/service-contracts" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/symfony/string" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/ta-tikoma/phpunit-architecture-test" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/theseer/tokenizer" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/vendor/webmozart/assert" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/brianium/paratest" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/clue/ndjson-react" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/composer" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/dealerdirect/phpcodesniffer-composer-installer" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/doctrine/deprecations" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/evenement/evenement" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/fidry/cpu-core-counter" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/filp/whoops" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/friendsofphp/php-cs-fixer" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/jean85/pretty-package-versions" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/myclabs/deep-copy" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/nikic/php-parser" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/nunomaduro/collision" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/nunomaduro/termwind" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/pestphp/pest" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/pestphp/pest-plugin" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/pestphp/pest-plugin-arch" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/pestphp/pest-plugin-mutate" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/pestphp/pest-plugin-profanity" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phar-io/manifest" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phar-io/version" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpdocumentor/reflection-common" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpdocumentor/reflection-docblock" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpdocumentor/type-resolver" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpstan/phpdoc-parser" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpstan/phpstan" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpunit/php-code-coverage" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpunit/php-file-iterator" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpunit/php-invoker" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpunit/php-text-template" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpunit/php-timer" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpunit/phpunit" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/container" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/event-dispatcher" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/log" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/simple-cache" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/cache" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/child-process" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/dns" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/event-loop" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/promise" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/socket" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/react/stream" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/rector/rector" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/cli-parser" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/comparator" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/complexity" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/diff" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/environment" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/exporter" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/global-state" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/lines-of-code" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/object-enumerator" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/object-reflector" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/recursion-context" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/type" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/sebastian/version" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/slevomat/coding-standard" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/squizlabs/php_codesniffer" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/staabm/side-effects-detector" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/console" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/deprecation-contracts" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/event-dispatcher" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/event-dispatcher-contracts" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/filesystem" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/finder" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/options-resolver" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-ctype" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-intl-grapheme" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-intl-normalizer" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-mbstring" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-php80" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-php81" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-php84" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/process" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/service-contracts" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/stopwatch" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/string" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/ta-tikoma/phpunit-architecture-test" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/theseer/tokenizer" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/webmozart/assert" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/latte/latte" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/paragonie/constant_time_encoding" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/paragonie/random_compat" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/php-amqplib/php-amqplib" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/phpseclib/phpseclib" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/aws/aws-crt-php" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/aws/aws-sdk-php" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/guzzlehttp/guzzle" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/guzzlehttp/promises" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/guzzlehttp/psr7" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/mtdowling/jmespath.php" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/predis/predis" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/http-client" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/http-factory" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/http-message" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/ralouphie/getallheaders" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

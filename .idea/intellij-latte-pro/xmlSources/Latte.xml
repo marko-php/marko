@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE latte PUBLIC "-//LATTE//Latte plugin XML V0.0.1//EN" "Latte.xsd">
+<latte vendor="latte" version="1">
+	<tags>
+		<tag name="_" type="UNPAIRED" allowFilters="true" documentation="prints translated" documentationUrl="https://latte.nette.org/en/tags#toc-translation">
+			<arguments>
+				<argument name="expression" types="PHP_EXPRESSION" type="string" required="true" />
+			</arguments>
+		</tag>
+		<tag name="=" type="UNPAIRED" allowFilters="true" documentation="prints an escaped variable or expression" documentationUrl="https://latte.nette.org/en/tags#toc-printing">
+			<arguments>
+				<argument name="expression" types="PHP_EXPRESSION" type="string" required="true" />
+			</arguments>
+		</tag>
+		<tag name="block" type="AUTO_EMPTY" allowFilters="true" multiLine="true" documentation="block definition" documentationUrl="https://latte.nette.org/en/template-inheritance#toc-blocks">
+			<arguments>
+				<argument name="name" types="PHP_IDENTIFIER,VARIABLE,PHP_EXPRESSION" type="string" required="true" />
+			</arguments>
+		</tag>
+		<tag name="breakIf" type="UNPAIRED" documentation="breaks loop" documentationUrl="https://latte.nette.org/en/tags#toc-continueif-skipif-breakif">
+			<arguments>
+				<argument name="condition" types="PHP_CONDITION" type="bool" required="true" />
+			</arguments>
+		</tag>
+		<tag name="capture" type="PAIR" allowFilters="true" multiLine="true" documentation="captures a section to a variable" documentationUrl="https://latte.nette.org/en/tags#toc-capture">
+			<arguments>
+				<argument name="variable" types="VARIABLE_DEFINITION" required="true" />
+			</arguments>
+		</tag>
+		<tag name="case" type="UNPAIRED" documentation="condition switch" documentationUrl="https://latte.nette.org/en/tags#toc-switch-case-default">
+			<arguments>
+				<argument name="condition" types="PHP_CONDITION" required="true" repeatable="true" />
+			</arguments>
+		</tag>
+		<tag name="catch" type="UNPAIRED" documentation="catching exceptions" documentationUrl="https://latte.nette.org/en/tags#toc-try">
+			<arguments>
+				<argument name="condition" types="PHP_CONDITION" type="bool" required="true" />
+			</arguments>
+		</tag>
+		<tag name="contentType" type="UNPAIRED" documentation="switches the escaping mode and sends HTTP header" documentationUrl="https://latte.nette.org/en/tags#toc-contenttype">
+			<arguments>
+				<argument name="content-type" types="CONTENT_TYPE" type="string" required="true" />
+			</arguments>
+		</tag>
+		<tag name="continueIf" type="UNPAIRED" documentation="continue to next iteration" documentationUrl="https://latte.nette.org/en/tags#toc-continueif-skipif-breakif">
+			<arguments>
+				<argument name="condition" types="PHP_CONDITION" type="bool" required="true" />
+			</arguments>
+		</tag>
+		<tag name="debugbreak" type="UNPAIRED" documentation="sets breakpoint to the code" documentationUrl="https://latte.nette.org/en/tags#toc-debugbreak">
+			<arguments>
+				<argument name="expression" types="PHP_EXPRESSION" required="true" />
+			</arguments>
+		</tag>
+		<tag name="default" type="UNPAIRED" documentation="default value when variable isn't declared" documentationUrl="https://latte.nette.org/en/tags#toc-var-default">
+			<arguments>
+				<argument name="variable" types="VARIABLE_DEFINITION_EXPRESSION" required="true" repeatable="true" />
+			</arguments>
+		</tag>
+		<tag name="parameters" type="UNPAIRED" documentation="declares variables, types a default values" documentationUrl="https://latte.nette.org/en/tags#toc-parameters">
+			<arguments>
+				<argument name="parameter" types="VARIABLE_DEFINITION_EXPRESSION" required="true" repeatable="true" />
+			</arguments>
+		</tag>
+		<tag name="define" multiLine="true" type="PAIR" documentation="block defintion for future use" documentationUrl="https://latte.nette.org/en/template-inheritance#toc-definitions">
+			<arguments>
+				<argument name="name" types="PHP_IDENTIFIER,VARIABLE,PHP_EXPRESSION" required="true" />
+				<argument name="variable" types="VARIABLE_DEFINITION_ITEM" repeatable="true" />
+			</arguments>
+		</tag>
+		<tag name="do" type="UNPAIRED" allowFilters="true" documentation="evaluates an expression without printing it" documentationUrl="https://latte.nette.org/en/tags#toc-do">
+			<arguments>
+				<argument name="expression" types="PHP_EXPRESSION" required="true" />
+			</arguments>
+		</tag>
+		<tag name="dump" type="UNPAIRED" documentation="dumps variables to the Tracy Bar" documentationUrl="https://latte.nette.org/en/tags#toc-dump">
+			<arguments>
+				<argument name="expression" types="PHP_EXPRESSION" required="true" />
+			</arguments>
+		</tag>
+		<tag name="else" type="UNPAIRED_ATTR" documentation="condition if" documentationUrl="https://latte.nette.org/en/tags#toc-if-elseif-else" />
+		<tag name="elseif" type="UNPAIRED" documentation="condition if" documentationUrl="https://latte.nette.org/en/tags#toc-if-elseif-else">
+			<arguments>
+				<argument name="condition" types="PHP_CONDITION" type="bool" required="true" />
+			</arguments>
+		</tag>
+		<tag name="elseifset" type="UNPAIRED" documentation="condition ifset" documentationUrl="https://latte.nette.org/en/tags#toc-ifset-elseifset">
+			<arguments>
+				<argument name="var" types="VARIABLE,BLOCK" type="string" required="true" />
+			</arguments>
+		</tag>
+		<tag name="exitIf" type="UNPAIRED" documentation="Ends the rendering of a template or block when a condition is met (i.e. “early exit”)." documentationUrl="https://latte.nette.org/en/tags#toc-exitif">
+			<arguments>
+				<argument name="message" types="PHP_IDENTIFIER,VARIABLE,PHP_EXPRESSION" type="string" required="true" />
+			</arguments>
+		</tag>
+		<tag name="extends" type="UNPAIRED" documentation="specifies a layout file" documentationUrl="https://latte.nette.org/en/template-inheritance#toc-layout-inheritance">
+			<arguments>
+				<argument name="file" types="PHP_IDENTIFIER,VARIABLE,PHP_EXPRESSION,NONE" type="string" required="true" />
+			</arguments>
+		</tag>
+		<tag name="first" type="PAIR" documentation="is it the first iteration?" documentationUrl="https://latte.nette.org/en/tags#toc-first-last-sep">
+			<arguments>
+				<argument name="width" types="PHP_IDENTIFIER,PHP_EXPRESSION" type="int" required="true" />
+			</arguments>
+		</tag>
+		<tag name="for" type="PAIR" arguments="initialization; condition; afterthought" multiLine="true" documentation="for" documentationUrl="https://latte.nette.org/en/tags#toc-for" />
+		<tag name="foreach" type="PAIR" arguments="expression as [$key =>] $value" allowFilters="true" multiLine="true" documentation="foreach" documentationUrl="https://latte.nette.org/en/tags#toc-foreach" />
+		<tag name="if" type="PAIR" documentation="condition if" documentationUrl="https://latte.nette.org/en/tags#toc-if-elseif-else">
+			<arguments>
+				<argument name="condition" types="PHP_CONDITION" type="bool" required="true" />
+			</arguments>
+		</tag>
+		<tag name="ifset" type="PAIR" documentation="condition ifset" documentationUrl="https://latte.nette.org/en/tags#toc-ifset-elseifset">
+			<arguments>
+				<argument name="var" types="VARIABLE,BLOCK,PHP_EXPRESSION" type="string" required="true" />
+			</arguments>
+		</tag>
+		<tag name="import" type="UNPAIRED" documentation="loads blocks from another template" documentationUrl="https://latte.nette.org/en/template-inheritance#toc-horizontal-reuse">
+			<arguments>
+				<argument name="file" types="PHP_IDENTIFIER,VARIABLE,PHP_EXPRESSION" type="string" required="true" />
+			</arguments>
+		</tag>
+		<tag name="include" type="UNPAIRED" allowFilters="true" documentation="prints or file" documentationUrl="https://latte.nette.org/en/template-inheritance#toc-printing-blocks">
+			<arguments>
+				<argument name="file" types="BLOCK,IDENTIFIER,PHP_EXPRESSION" type="string" required="true" />
+				<argument name="arguments" types="KEY_VALUE" repeatable="true" />
+			</arguments>
+		</tag>
+		<tag name="l" type="UNPAIRED" documentation="prints { character" />
+		<tag name="last" type="PAIR" documentation="is it the last iteration?" documentationUrl="https://latte.nette.org/en/tags#toc-first-last-sep">
+			<arguments>
+				<argument name="width" types="PHP_IDENTIFIER,PHP_EXPRESSION" type="int" required="true" />
+			</arguments>
+		</tag>
+		<tag name="layout" type="UNPAIRED" documentation="specifies a layout file" documentationUrl="https://latte.nette.org/en/template-inheritance#toc-layout-inheritance">
+			<arguments>
+				<argument name="file" types="PHP_IDENTIFIER,VARIABLE,PHP_EXPRESSION,NONE" type="string" required="true" />
+			</arguments>
+		</tag>
+		<tag name="class" type="ATTR_ONLY" arguments="class" documentation="smart class attribute" documentationUrl="https://latte.nette.org/en/tags#toc-n-class" />
+		<tag name="attr" type="ATTR_ONLY" arguments="attr" documentation="smart HTML attributes" documentationUrl="https://latte.nette.org/en/tags#toc-n-attr" />
+		<tag name="ifcontent" type="ATTR_ONLY" documentation="Omit empty HTML tag" documentationUrl="https://latte.nette.org/en/tags#toc-n-ifcontent" />
+		<tag name="php" type="UNPAIRED" allowFilters="true" documentation="evaluates an expression without printing it" documentationUrl="https://latte.nette.org/en/tags#toc-do">
+			<arguments>
+				<argument name="expression" types="PHP_EXPRESSION" required="true" />
+			</arguments>
+		</tag>
+		<tag name="r" type="UNPAIRED" documentation="prints } character" />
+		<tag name="sandbox" type="UNPAIRED" documentation="includes a template in sandbox mode" documentationUrl="https://latte.nette.org/en/tags#toc-sandbox">
+			<arguments>
+				<argument name="file" types="BLOCK,PHP_IDENTIFIER,VARIABLE,PHP_EXPRESSION" type="string" required="true" />
+				<argument name="key-value" types="KEY_VALUE" repeatable="true" />
+			</arguments>
+		</tag>
+		<tag name="sep" type="PAIR" documentation="will next iteration follow?" documentationUrl="https://latte.nette.org/en/tags#toc-first-last-sep">
+			<arguments>
+				<argument name="width" types="PHP_IDENTIFIER,PHP_EXPRESSION" type="int" />
+			</arguments>
+		</tag>
+		<tag name="spaceless" type="PAIR" documentation="removes unnecessary whitespace" documentationUrl="https://latte.nette.org/en/tags#toc-spaceless" />
+		<tag name="switch" type="PAIR" multiLine="true" documentation="condition switch" documentationUrl="https://latte.nette.org/en/tags#toc-switch-case-default">
+			<arguments>
+				<argument name="expression" types="PHP_EXPRESSION" />
+			</arguments>
+		</tag>
+		<tag name="syntax" type="PAIR" arguments="off | double | latte" multiLine="true" documentation="switches the syntax at runtime" documentationUrl="https://latte.nette.org/en/tags#toc-syntax" />
+		<tag name="templatePrint" type="UNPAIRED" documentation="generates class with properties" documentationUrl="https://latte.nette.org/en/type-system#toc-templateprint">
+			<arguments>
+				<argument name="class-name" types="PHP_CLASS_NAME" />
+			</arguments>
+		</tag>
+		<tag name="templateType" type="UNPAIRED" documentation="declares types of variables using class" documentationUrl="https://latte.nette.org/en/type-system#toc-templatetype">
+			<arguments>
+				<argument name="class-name" types="PHP_CLASS_NAME" required="true" />
+			</arguments>
+		</tag>
+		<tag name="try" type="PAIR" documentation="catching exceptions" documentationUrl="https://latte.nette.org/en/tags#toc-try" />
+		<tag name="rollback" type="UNPAIRED" documentation="discards try block" documentationUrl="https://latte.nette.org/en/tags#toc-rollback" />
+		<tag name="tag" type="ATTR_ONLY" documentation="dynamic name of HTML element" documentationUrl="https://latte.nette.org/en/tags#toc-n-tag">
+			<arguments>
+				<argument name="expression" types="PHP_EXPRESSION" required="true" type="string" repeatable="true" />
+			</arguments>
+		</tag>
+		<tag name="translate" type="PAIR" documentation="to make the translation tags work, you need to set up translator. You can also use the translate filter for translation." documentationUrl="https://latte.nette.org/en/tags#toc-translate">
+			<arguments>
+				<argument name="args" types="PHP_EXPRESSION,KEY_VALUE" type="mixed" repeatable="true" />
+			</arguments>
+		</tag>
+		<tag name="ifchanged" type="PAIR" documentation="test if there has been a change" documentationUrl="https://latte.nette.org/en/tags#toc-ifchanged">
+			<arguments>
+				<argument name="expression" types="PHP_EXPRESSION" required="true" repeatable="true" />
+			</arguments>
+		</tag>
+		<tag name="skipIf" type="UNPAIRED" documentation="skip the current loop iteration" documentationUrl="https://latte.nette.org/en/tags#toc-continueif-skipif-breakif">
+			<arguments>
+				<argument name="condition" types="PHP_CONDITION" type="bool" required="true" />
+			</arguments>
+		</tag>
+		<tag name="var" type="UNPAIRED" documentation="variable creation" documentationUrl="https://latte.nette.org/en/tags#toc-var-default">
+			<arguments>
+				<argument name="variable" types="VARIABLE_DEFINITION_EXPRESSION" required="true" repeatable="true" />
+			</arguments>
+		</tag>
+		<tag name="trace" type="UNPAIRED" documentation="shows stack trace" documentationUrl="https://latte.nette.org/en/tags#toc-trace" />
+		<tag name="varPrint" type="UNPAIRED" arguments="all" documentation="suggests types of variables" documentationUrl="https://latte.nette.org/en/type-system#toc-varprint" />
+		<tag name="varType" type="UNPAIRED" documentation="declares type of variable" documentationUrl="https://latte.nette.org/en/type-system#toc-vartype">
+			<arguments>
+				<argument name="file" types="PHP_TYPE" required="true" />
+				<argument name="variable" types="VARIABLE_DEFINITION" required="true" />
+			</arguments>
+		</tag>
+		<tag name="while" type="PAIR" multiLine="true" documentation="while" documentationUrl="https://latte.nette.org/en/tags#toc-while">
+			<arguments>
+				<argument name="condition" types="PHP_CONDITION" type="bool" required="true" />
+			</arguments>
+		</tag>
+		<tag name="iterateWhile" type="PAIR" multiLine="true" documentation="structured foreach" documentationUrl="https://latte.nette.org/en/tags#toc-iteratewhile" />
+		<tag name="embed" type="PAIR" multiLine="true" documentation="loads the template or block and allows you to overwrite the blocks" documentationUrl="https://latte.nette.org/en/template-inheritance#toc-unit-inheritance">
+			<arguments>
+				<argument name="file" types="BLOCK_USAGE,PHP_IDENTIFIER,VARIABLE,PHP_EXPRESSION" type="string" required="true" />
+				<argument name="key-value" types="KEY_VALUE" repeatable="true" />
+			</arguments>
+		</tag>
+		<!-- @deprecated - latte -->
+		<tag name="assign" type="UNPAIRED" arguments="$variable = expr" deprecatedMessage="Use {var } instead" />
+		<tag name="?" type="UNPAIRED" arguments="expression" deprecatedMessage="Tag {? ...} is deprecated in Latte 2.4. For variable definitions use {var ...} or {php ...} in other cases." />
+		<tag name="includeblock" arguments="file" type="UNPAIRED" deprecatedMessage="Use {include} instead" />
+	</tags>
+	<filters>
+		<filter name="truncate" description="shortens the length preserving whole words" documentationUrl="https://latte.nette.org/en/filters#toc-truncate">
+			<filterArguments>
+				<filterArgument name="length" type="int" />
+				<filterArgument name="append" type="string" defaultValue="'…'" />
+			</filterArguments>
+		</filter>
+		<filter name="substr" description="returns part of the string" documentationUrl="https://latte.nette.org/en/filters#toc-substr">
+			<filterArguments>
+				<filterArgument name="offset" type="int" />
+				<filterArgument name="length" type="int" defaultValue="null" />
+			</filterArguments>
+		</filter>
+		<filter name="trim" description="strips whitespace or other characters from the beginning and end of the string" documentationUrl="https://latte.nette.org/en/filters#toc-trim">
+			<filterArguments>
+				<filterArgument name="charlist" type="string" defaultValue="' \t\n\r\0\x0B\u{A0}'" />
+			</filterArguments>
+		</filter>
+		<filter name="translate" description="it translates expressions into other languages. To make the filter available, you need set up translator." documentationUrl="https://latte.nette.org/en/filters#toc-translate">
+			<filterArguments>
+				<filterArgument name="args" type="mixed" repeatable="true" defaultValue="null" />
+			</filterArguments>
+		</filter>
+		<filter name="stripHtml" description="removes HTML tags and converts HTML entities to text" documentationUrl="https://latte.nette.org/en/filters#toc-striphtml" />
+		<filter name="strip" description="removes whitespace" documentationUrl="https://latte.nette.org/en/filters#toc-spaceless" />
+		<filter name="indent" description="indents the text from left with number of tabs" documentationUrl="https://latte.nette.org/en/filters#toc-indent">
+			<filterArguments>
+				<filterArgument name="level" type="int" />
+				<filterArgument name="char" type="string" defaultValue="'\t'" />
+			</filterArguments>
+		</filter>
+		<filter name="replace" description="replaces all occurrences of the search string with the replacement" documentationUrl="https://latte.nette.org/en/filters#toc-replace">
+			<filterArguments>
+				<filterArgument name="search" type="string|array" />
+				<filterArgument name="replace" type="string" defaultValue="''" />
+			</filterArguments>
+		</filter>
+		<filter name="replaceRE" inputType="string" description="replaces all occurrences according to regular expression" documentationUrl="https://latte.nette.org/en/filters#toc-replacere">
+			<filterArguments>
+				<filterArgument name="pattern" type="string" />
+				<filterArgument name="replace" type="string" defaultValue="''" />
+			</filterArguments>
+		</filter>
+		<filter name="padLeft" inputType="string|int|bool|float|null" description="completes the string to given length from left" documentationUrl="https://latte.nette.org/en/filters#toc-padleft">
+			<filterArguments>
+				<filterArgument name="length" type="int" />
+				<filterArgument name="pad" type="string" defaultValue="' '" />
+			</filterArguments>
+		</filter>
+		<filter name="padRight" inputType="string|int|bool|float|null" description="completes the string to given length from right" documentationUrl="https://latte.nette.org/en/filters#toc-padright">
+			<filterArguments>
+				<filterArgument name="length" type="int" />
+				<filterArgument name="pad" type="string" defaultValue="' '" />
+			</filterArguments>
+		</filter>
+		<filter name="repeat" description="repeats the string" documentationUrl="https://latte.nette.org/en/filters#toc-repeat">
+			<filterArguments>
+				<filterArgument name="count" type="int" />
+			</filterArguments>
+		</filter>
+		<filter name="implode" inputType="string[]" description="joins an array to a string" documentationUrl="https://latte.nette.org/en/filters#toc-implode">
+			<filterArguments>
+				<filterArgument name="glue" type="string" defaultValue="''" />
+			</filterArguments>
+		</filter>
+		<filter name="webalize" description="adjusts the UTF-8 string to the shape used in the URL" documentationUrl="https://latte.nette.org/en/filters#toc-webalize" />
+		<filter name="breakLines" description="inserts HTML line breaks before all newlines" documentationUrl="https://latte.nette.org/en/filters#toc-breaklines" />
+		<filter name="length" inputType="array|\Countable|\Traversable|string" returnType="int" description="returns length of a string or array" />
+		<filter name="sort" inputType="array" returnType="array" description="simply sorts array" documentationUrl="https://latte.nette.org/en/filters#toc-sort" />
+		<filter name="reverse" inputType="string|iterable" returnType="string|array" description="reverses an UTF‑8 string or array" documentationUrl="https://latte.nette.org/en/filters#toc-reverse" />
+		<filter name="batch" inputType="iterable" returnType="\Generator" description="returns length of a string or array" documentationUrl="https://latte.nette.org/en/filters#toc-batch">
+			<filterArguments>
+				<filterArgument name="array" type="array"/>
+				<filterArgument name="length" type="int"/>
+				<filterArgument name="item" type="mixed" defaultValue="null"/>
+			</filterArguments>
+		</filter>
+
+		<filter name="clamp" inputType="int|float" returnType="int|float" description="returns value clamped to the inclusive range of min and max." documentationUrl="https://latte.nette.org/en/filters#toc-clamp">
+			<filterArguments>
+				<filterArgument name="min" type="int|float"/>
+				<filterArgument name="max" type="int|float"/>
+			</filterArguments>
+		</filter>
+
+		<filter name="lower" inputType="string|int|bool|float|null" description="makes a string lower case" documentationUrl="https://latte.nette.org/en/filters#toc-lower" />
+		<filter name="upper" inputType="string|int|bool|float|null" description="makes a string upper case" documentationUrl="https://latte.nette.org/en/filters#toc-upper" />
+		<filter name="firstUpper" inputType="string|int|bool|float|null" description="makes the first letter upper case" documentationUrl="https://latte.nette.org/en/filters#toc-firstupper" />
+		<filter name="capitalize" inputType="string|int|bool|float|null" description="lower case, the first letter of each word upper case" documentationUrl="https://latte.nette.org/en/filters#toc-capitalize" />
+
+		<filter name="date" inputType="string|int|\DateTimeInterface|\DateInterval|null" returnType="string|null" description="formats date" documentationUrl="https://latte.nette.org/en/filters#toc-date">
+			<filterArguments>
+				<filterArgument name="format" type="string"/>
+			</filterArguments>
+		</filter>
+
+		<filter name="number" inputType="string|int|float|null" description="format number" documentationUrl="https://latte.nette.org/en/filters#toc-number">
+			<filterArguments>
+				<filterArgument name="decimals" type="int" defaultValue="0"/>
+				<filterArgument name="decPoint" type="string" defaultValue="'.'"/>
+				<filterArgument name="thousandsSep" type="string" defaultValue="','"/>
+			</filterArguments>
+		</filter>
+
+		<filter name="bytes" inputType="float|int" description="formats size in bytes" documentationUrl="https://latte.nette.org/en/filters#toc-bytes">
+			<filterArguments>
+				<filterArgument name="precision" type="int" defaultValue="2"/>
+			</filterArguments>
+		</filter>
+
+		<filter name="dataStream" inputType="string" description="Data URI protocol conversion" documentationUrl="https://latte.nette.org/en/filters#toc-datastream">
+			<filterArguments>
+				<filterArgument name="mimeType" type="string" defaultValue="detect"/>
+			</filterArguments>
+		</filter>
+
+		<filter name="noescape" description="prints a variable without escaping" documentationUrl="https://latte.nette.org/en/filters#toc-noescape" />
+		<filter name="escapeurl" inputType="string" description="escapes parameter in URL" documentationUrl="https://latte.nette.org/en/filters#toc-escapeurl" />
+
+		<filter name="nocheck" inputType="string" description="prevents automatic URL sanitization" documentationUrl="https://latte.nette.org/en/filters#toc-nocheck" />
+		<filter name="checkurl" inputType="string" description="sanitizes string for use inside href attribute" documentationUrl="https://latte.nette.org/en/filters#toc-checkurl" />
+
+		<filter name="query" inputType="string|array" description="generates a query string in the URL" documentationUrl="https://latte.nette.org/en/filters#toc-query" />
+		<filter name="ceil" inputType="float" returnType="float" description="rounds a number up to a given precision" documentationUrl="https://latte.nette.org/en/filters#toc-ceil">
+			<filterArguments>
+				<filterArgument name="precision" type="int" defaultValue="0" />
+			</filterArguments>
+		</filter>
+
+		<filter name="explode" inputType="string" returnType="string[]" description="splits a string by the given delimiter" documentationUrl="https://latte.nette.org/en/filters#toc-explode">
+			<filterArguments>
+				<filterArgument name="separator" type="string" defaultValue="''"/>
+			</filterArguments>
+		</filter>
+		<filter name="first" inputType="string|array" returnType="mixed" description="returns first element of array or character of string" documentationUrl="https://latte.nette.org/en/filters#toc-first" />
+		<filter name="floor" inputType="float" returnType="float" description="rounds a number down to a given precision" documentationUrl="https://latte.nette.org/en/filters#toc-floor">
+			<filterArguments>
+				<filterArgument name="precision" type="int" defaultValue="0"/>
+			</filterArguments>
+		</filter>
+		<filter name="join" description="joins an array to a string" documentationUrl="https://latte.nette.org/en/filters#toc-implode">
+			<filterArguments>
+				<filterArgument name="glue" type="string" defaultValue="''"/>
+			</filterArguments>
+		</filter>
+		<filter name="last" inputType="string|array" returnType="mixed" description="returns last element of array or character of string" documentationUrl="https://latte.nette.org/en/filters#toc-last" />
+		<filter name="random" inputType="string|array" returnType="mixed" description="returns random element of array or character of string" documentationUrl="https://latte.nette.org/en/filters#toc-random" />
+		<filter name="round" inputType="float" returnType="float" description="rounds a number to a given precision" documentationUrl="https://latte.nette.org/en/filters#toc-round">
+			<filterArguments>
+				<filterArgument name="precision" type="int" defaultValue="0"/>
+			</filterArguments>
+		</filter>
+		<filter name="slice" inputType="string|array" returnType="string|array" description="extracts a slice of an array or a string" documentationUrl="https://latte.nette.org/en/filters#toc-slice">
+			<filterArguments>
+				<filterArgument name="start" type="int"/>
+				<filterArgument name="length" type="int|null" defaultValue="null"/>
+				<filterArgument name="preserveKeys" type="bool" defaultValue="false"/>
+			</filterArguments>
+		</filter>
+		<filter name="spaceless" description="removes whitespace similar to {spaceless} tag" documentationUrl="https://latte.nette.org/en/filters#toc-spaceless" />
+		<filter name="split" description="splits a string by the given delimiter" documentationUrl="https://latte.nette.org/en/filters#toc-explode">
+			<filterArguments>
+				<filterArgument name="separator" type="string" defaultValue="''"/>
+			</filterArguments>
+		</filter>
+	</filters>
+	<functions>
+		<function name="clamp" returnType="int|float" documentation="clamps value to the inclusive range of min and max">
+			<functionArguments>
+				<functionArgument name="value" type="int|float"/>
+				<functionArgument name="min" type="int|float"/>
+				<functionArgument name="max" type="int|float"/>
+			</functionArguments>
+		</function>
+		<function name="divisibleBy" returnType="bool" documentation="checks if a variable is divisible by a number">
+			<functionArguments>
+				<functionArgument name="value" type="int"/>
+			</functionArguments>
+		</function>
+		<function name="even" returnType="bool" documentation="checks if the given number is even">
+			<functionArguments>
+				<functionArgument name="value" type="int"/>
+			</functionArguments>
+		</function>
+		<function name="hasBlock" returnType="bool" documentation="checks if the block of the specified name exists">
+			<functionArguments>
+				<functionArgument name="name" type="string"/>
+			</functionArguments>
+		</function>
+		<function name="first" returnType="mixed" documentation="returns first element of array or character of string">
+			<functionArguments>
+				<functionArgument name="value" type="string|array"/>
+			</functionArguments>
+		</function>
+		<function name="last" returnType="mixed" documentation="returns last element of array or character of string">
+			<functionArguments>
+				<functionArgument name="value" type="string|array"/>
+			</functionArguments>
+		</function>
+		<function name="odd" returnType="bool" documentation="checks if the given number is odd">
+			<functionArguments>
+				<functionArgument name="value" type="int"/>
+			</functionArguments>
+		</function>
+		<function name="slice" returnType="string|array" documentation="extracts a slice of an array or a string">
+			<functionArguments>
+				<functionArgument name="value" type="string|array"/>
+				<functionArgument name="start" type="int"/>
+				<functionArgument name="length" type="int|null" defaultValue="null"/>
+				<functionArgument name="preserveKeys" type="bool" defaultValue="false"/>
+			</functionArguments>
+		</function>
+	</functions>
+</latte>

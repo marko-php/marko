@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE latte PUBLIC "-//LATTE//Latte plugin configuration XML V0.0.1//EN" "Latte.xsd">
+<latte version="1" vendor="nette/application">
+    <tags>
+        <!-- nette/application tags -->
+        <tag name="cache" type="PAIR" arguments="if => expr, key, …" documentation="caches a template section" documentationUrl="https://doc.nette.org/en/caching#toc-caching-in-latte">
+            <arguments>
+                <argument name="name[:part]" types="KEY_VALUE" type="string" required="true" />
+                <argument name="arguments" types="PHP_EXPRESSION" repeatable="true" />
+            </arguments>
+        </tag>
+        <tag name="control" type="UNPAIRED" documentation="prints a component" documentationUrl="https://doc.nette.org/en/application/components#toc-rendering">
+            <arguments>
+                <argument name="name[:part]" types="PHP_IDENTIFIER,PHP_EXPRESSION" type="string" required="true" />
+                <argument name="arguments" types="PHP_EXPRESSION" repeatable="true" />
+            </arguments>
+        </tag>
+        <tag name="link" type="UNPAIRED" documentation="prints a link" documentationUrl="https://doc.nette.org/en/application/creating-links#toc-in-the-presenter-template">
+            <arguments>
+                <argument name="destination" types="LINK_DESTINATION,PHP_EXPRESSION" type="string" required="true" />
+                <argument name="arguments" types="LINK_PARAMETERS" repeatable="true" />
+            </arguments>
+        </tag>
+        <tag name="href" type="ATTR_ONLY" documentation="link in <a> HTML elements" documentationUrl="https://doc.nette.org/en/application/creating-links#toc-in-the-presenter-template">
+            <arguments>
+                <argument name="destination" types="LINK_DESTINATION,PHP_EXPRESSION" type="string" required="true" />
+                <argument name="arguments" types="LINK_PARAMETERS" repeatable="true" />
+            </arguments>
+        </tag>
+        <tag name="nonce" type="ATTR_ONLY" />
+        <tag name="plink" type="UNPAIRED" documentation="prints a link to a presenter" documentationUrl="https://doc.nette.org/en/application/creating-links#toc-in-the-presenter-template">
+            <arguments>
+                <argument name="destination" types="LINK_DESTINATION,PHP_EXPRESSION" type="string" required="true" />
+                <argument name="arguments" types="LINK_PARAMETERS" repeatable="true" />
+            </arguments>
+        </tag>
+        <tag name="snippet" type="PAIR" multiLine="true" documentation="a template snippet that can be sent by AJAX" documentationUrl="https://doc.nette.org/en/application/ajax#toc-tag-snippet">
+            <arguments>
+                <argument name="name" types="PHP_IDENTIFIER,VARIABLE,PHP_EXPRESSION" type="string" />
+            </arguments>
+        </tag>
+        <tag name="snippetArea" type="PAIR" multiLine="true" documentation="snippets envelope">
+            <arguments>
+                <argument name="name" types="PHP_IDENTIFIER,PHP_EXPRESSION" type="string" required="true" />
+            </arguments>
+        </tag>
+        <!-- @deprecated - nette/application -->
+        <tag name="ifCurrent" type="PAIR" deprecatedMessage="Tag {ifCurrent} is deprecated in Latte 2.6. Use custom function isLinkCurrent() instead.">
+            <arguments>
+                <argument name="destination" types="LINK_DESTINATION,PHP_EXPRESSION" type="string" required="true" />
+                <argument name="arguments" types="LINK_PARAMETERS" repeatable="true" />
+            </arguments>
+        </tag>
+    </tags>
+    <functions>
+        <function name="isLinkCurrent" returnType="bool">
+            <functionArguments>
+                <functionArgument name="destination" type="string"/>
+                <functionArgument name="args" type="mixed" defaultValue="[]"/>
+            </functionArguments>
+        </function>
+        <function name="isModuleCurrent" returnType="bool">
+            <functionArguments>
+                <functionArgument name="moduleName" type="string"/>
+            </functionArguments>
+        </function>
+    </functions>
+</latte>

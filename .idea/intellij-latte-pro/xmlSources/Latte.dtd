@@ -1,0 +1,69 @@
+<?xml encoding="UTF-8"?>
+
+<!ELEMENT latte (tags,filters,variables,functions)>
+<!ATTLIST latte vendor #REQUIRED>
+<!ATTLIST latte version #REQUIRED>
+
+<!ELEMENT tags (tag)+>
+
+<!ELEMENT tag (arguments)?>
+<!ATTLIST tag name CDATA #REQUIRED>
+<!ATTLIST tag type (PAIR|UNPAIRED|UNPAIRED_ATTR|ATTR_ONLY|AUTO_EMPTY) #REQUIRED>
+<!ATTLIST tag allowFilters (true|false) #IMPLIED>
+<!ATTLIST tag arguments CDATA #IMPLIED>
+<!ATTLIST tag deprecatedMessage CDATA #IMPLIED>
+<!ATTLIST tag multiLine (true|false) #IMPLIED>
+<!ATTLIST tag description #IMPLIED>
+<!ATTLIST tag documentation #IMPLIED>
+<!ATTLIST tag documentationUrl #IMPLIED>
+
+<!ELEMENT arguments (argument)+>
+
+<!ELEMENT argument EMPTY>
+<!ATTLIST argument name #REQUIRED>
+<!ATTLIST argument types CDATA #REQUIRED>
+<!ATTLIST argument repeatable (true|false) #IMPLIED>
+<!ATTLIST argument required (true|false) #IMPLIED>
+<!ATTLIST argument type  #IMPLIED>
+
+<!ELEMENT filters (filter)+>
+
+<!ELEMENT filter (filterArguments)?>
+<!ATTLIST filter name #REQUIRED>
+<!ATTLIST filter description CDATA #IMPLIED>
+<!ATTLIST filter inputType #IMPLIED>
+<!ATTLIST filter returnType #IMPLIED>
+<!ATTLIST filter documentation CDATA #IMPLIED>
+<!ATTLIST filter documentationUrl CDATA #IMPLIED>
+
+<!ELEMENT filterArguments (filterArgument)+>
+
+<!ELEMENT filterArgument EMPTY>
+<!ATTLIST filterArgument name #REQUIRED>
+<!ATTLIST filterArgument type #REQUIRED>
+<!ATTLIST filterArgument defaultValue #IMPLIED>
+<!ATTLIST filterArgument description #IMPLIED>
+<!ATTLIST filterArgument repeatable (true|false) #IMPLIED>
+
+<!ELEMENT variables (variable)+>
+
+<!ELEMENT variable EMPTY>
+<!ATTLIST variable name #REQUIRED>
+<!ATTLIST variable type CDATA #REQUIRED>
+
+<!ELEMENT functions (function)+>
+
+<!ELEMENT function (functionArguments)?>
+<!ATTLIST function name #REQUIRED>
+<!ATTLIST function returnType  #IMPLIED>
+<!ATTLIST function documentation CDATA #IMPLIED>
+<!ATTLIST function documentationUrl CDATA #IMPLIED>
+<!ATTLIST function deprecatedMessage CDATA #IMPLIED>
+
+<!ELEMENT functionArguments (functionArgument)+>
+
+<!ELEMENT functionArgument EMPTY>
+<!ATTLIST functionArgument name #REQUIRED>
+<!ATTLIST functionArgument type #REQUIRED>
+<!ATTLIST functionArgument defaultValue #IMPLIED>
+<!ATTLIST functionArgument description #IMPLIED>

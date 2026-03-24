@@ -1,6 +1,10 @@
 .DS_Store
 .claude/ralph-loop.local.md
-.idea/
+.idea/copilot.data.migration.*
+.idea/shelf/
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/workspace.xml
 .php-cs-fixer.cache
 .phpstan-cache/
 **/.phpunit.cache/
