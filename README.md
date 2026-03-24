@@ -10,11 +10,11 @@
 
 Override anything. Intercept any method. Extend any module — all without touching vendor code.
 
-[![Latest Version](https://img.shields.io/packagist/v/marko/core?style=flat-square)](https://packagist.org/packages/marko/core)
-[![Total Downloads](https://img.shields.io/packagist/dt/marko/core?style=flat-square)](https://packagist.org/packages/marko/core)
 [![PHP 8.5+](https://img.shields.io/badge/PHP-8.5%2B-7A86B8?style=flat-square)](https://www.php.net/releases/8.5/en.php)
 [![License: MIT](https://img.shields.io/badge/License-MIT-E8B931?style=flat-square)](LICENSE)
 [![Active Development](https://img.shields.io/badge/Status-Active%20Development-00C853?style=flat-square)](#status)
+[![Latest Version](https://img.shields.io/packagist/v/marko/core?style=flat-square)](https://packagist.org/packages/marko/core)
+[![Total Downloads](https://img.shields.io/packagist/dt/marko/core?style=flat-square)](https://packagist.org/packages/marko/core)
 
 ---
 
@@ -357,6 +357,10 @@ composer install
 ## Learn More
 
 Visit [marko.build](https://marko.build) for documentation and updates.
+
+## Credits
+
+Created by [Mark Shust](https://markshust.com)
 
 ## License
 
