@@ -54,9 +54,8 @@ it('validates the working directory is clean (no uncommitted changes)', function
 it('validates the current branch is main', function () use ($script): void {
     $contents = file_get_contents($script);
 
-    expect($contents)->toContain('main')
-        ->and($contents)->toContain('git branch --show-current')
-        ->and($contents)->toContain("Must be on 'main' branch");
+    expect($contents)->toContain('git checkout main')
+        ->and($contents)->toContain('git merge develop');
 });
 
 it('validates semver format (rejects invalid versions like 1.0 or v1.0.0)', function () use ($script): void {

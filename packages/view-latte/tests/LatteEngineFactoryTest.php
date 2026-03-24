@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Latte\Engine;
+use Latte\Feature;
 use Marko\View\Latte\LatteEngineFactory;
 use Marko\View\ViewConfig;
 
@@ -95,10 +96,7 @@ describe('LatteEngineFactory', function (): void {
         $factory = new LatteEngineFactory($viewConfig);
         $engine = $factory->create();
 
-        // Use reflection to check strictTypes property
-        $reflection = new ReflectionClass($engine);
-        $strictTypesProperty = $reflection->getProperty('strictTypes');
-        expect($strictTypesProperty->getValue($engine))->toBeTrue();
+        expect($engine->hasFeature(Feature::StrictTypes))->toBeTrue();
 
         // Test with strict types disabled
         $viewConfig2 = $this->createMock(ViewConfig::class);
@@ -109,7 +107,7 @@ describe('LatteEngineFactory', function (): void {
         $factory2 = new LatteEngineFactory($viewConfig2);
         $engine2 = $factory2->create();
 
-        expect($strictTypesProperty->getValue($engine2))->toBeFalse();
+        expect($engine2->hasFeature(Feature::StrictTypes))->toBeFalse();
 
         // Cleanup
         array_map('unlink', glob($cacheDir . '/*'));

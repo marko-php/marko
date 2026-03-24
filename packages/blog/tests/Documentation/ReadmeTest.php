@@ -11,7 +11,7 @@ describe('Blog module README.md', function (): void {
     it('has title and one-liner describing the module', function () use ($readme): void {
         $content = $readme();
 
-        expect($content)->toContain('# Marko Blog')
+        expect($content)->toContain('# marko/blog')
             ->and($content)->toMatch('/WordPress-like blog.*posts.*authors.*categories.*tags.*comments/i');
     });
 

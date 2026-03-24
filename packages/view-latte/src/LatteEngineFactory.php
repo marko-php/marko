@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Marko\View\Latte;
 
 use Latte\Engine;
+use Latte\Feature;
 use Marko\View\ViewConfig;
 
-class LatteEngineFactory
+readonly class LatteEngineFactory
 {
     public function __construct(
         private ViewConfig $viewConfig,
@@ -18,7 +19,7 @@ class LatteEngineFactory
         $engine = new Engine();
         $engine->setTempDirectory($this->viewConfig->cacheDirectory());
         $engine->setAutoRefresh($this->viewConfig->autoRefresh());
-        $engine->setStrictTypes($this->viewConfig->strictTypes());
+        $engine->setFeature(Feature::StrictTypes, $this->viewConfig->strictTypes());
 
         return $engine;
     }
