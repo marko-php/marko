@@ -24,7 +24,7 @@ for pkg_dir in "$REPO_ROOT"/packages/*/; do
         -H "Content-Type: application/json" \
         -d "{\"repository\":{\"url\":\"${repo_url}\"}}")
 
-    if [[ "$response" == "200" || "$response" == "201" ]]; then
+    if [[ "$response" == "200" || "$response" == "201" || "$response" == "202" ]]; then
         echo "  ✓ Registered marko/${pkg}"
     elif [[ "$response" == "400" ]]; then
         echo "  ⚠ marko/${pkg} may already be registered (HTTP 400) — skipping"
