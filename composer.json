@@ -453,7 +453,7 @@
             "Marko\\Notification\\Database\\Tests\\": "packages/notification-database/tests/",
             "Marko\\Pagination\\Tests\\": "packages/pagination/tests/",
             "Marko\\Search\\Tests\\": "packages/search/tests/",
-            "Marko\\Security\\": "packages/security/src/",
+            "Marko\\Security\\Tests\\": "packages/security/tests/",
             "Marko\\Testing\\Tests\\": "packages/testing/tests/",
             "Marko\\Api\\Tests\\": "packages/api/tests/",
             "Marko\\Webhook\\Tests\\": "packages/webhook/tests/",

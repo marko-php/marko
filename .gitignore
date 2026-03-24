@@ -1,6 +1,8 @@
 .DS_Store
 .claude/ralph-loop.local.md
+.idea/
 .php-cs-fixer.cache
 .phpstan-cache/
 **/.phpunit.cache/
+composer.lock
 vendor/

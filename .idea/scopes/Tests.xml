@@ -1,1 +1,0 @@
-<scope name="Tests" pattern="file[marko]:packages/*/tests//*" />
