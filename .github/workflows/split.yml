@@ -3,7 +3,7 @@ name: Split Packages
 on:
   push:
     branches: [main, develop]
-    tags: ['v*']
+    tags: ['[0-9]*']
 
 concurrency:
   group: split-${{ github.ref }}

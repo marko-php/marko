@@ -2,7 +2,7 @@
 set -euo pipefail
 
 VERSION="${1:?Usage: ./bin/release.sh <version> (e.g., 0.1.0)}"
-TAG="v${VERSION}"
+TAG="${VERSION}"
 
 echo "Preparing release ${TAG}..."
 

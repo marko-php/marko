@@ -88,7 +88,7 @@ Set up complete Packagist publishing infrastructure for the Marko monorepo — i
 ### Branch Strategy
 - `develop` — active development, PRs target here
 - `main` — release-ready, merges from develop
-- Tags cut from `main` (e.g., `v0.1.0`)
+- Tags cut from `main` (e.g., `0.1.0`)
 
 ### GitHub Organization
 - `marko-php` org under Devtomic LLC — $0 for public repos

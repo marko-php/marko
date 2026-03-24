@@ -9,8 +9,8 @@ it('creates a split workflow at .github/workflows/split.yml', function () use ($
     expect(file_exists($workflowPath))->toBeTrue();
 });
 
-it('triggers on tag push matching v* pattern', function () use ($workflowContent): void {
-    expect($workflowContent)->toContain("tags: ['v*']");
+it('triggers on tag push matching semver pattern', function () use ($workflowContent): void {
+    expect($workflowContent)->toContain("tags: ['[0-9]*']");
 });
 
 it('triggers on push to main and develop branches', function () use ($workflowContent): void {

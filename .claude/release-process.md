@@ -76,7 +76,7 @@ gh auth login
 |--------|---------|
 | `develop` | Active development. All work happens here. |
 | `main` | Release-ready code only. Never commit directly — always merge from `develop`. |
-| Tags (e.g., `v0.1.0`) | Cut from `main`. These trigger the split workflow and Packagist updates. |
+| Tags (e.g., `0.1.0`) | Cut from `main`. These trigger the split workflow and Packagist updates. |
 
 **Rule:** Never commit directly to `main`. Merge from `develop`, then release.
 
@@ -125,7 +125,7 @@ The release script (`bin/release.sh`) does the following:
 - Confirms working directory is clean
 - Confirms tag does not already exist
 - Runs the full test suite (must pass)
-- Creates annotated tag `v0.2.0`
+- Creates annotated tag `0.2.0`
 - Pushes tag to `origin`
 
 After pushing the tag, everything else is automatic:

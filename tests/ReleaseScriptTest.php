@@ -20,10 +20,10 @@ it('pushes the tag to origin', function () use ($script): void {
     expect($contents)->toContain('git push origin "$TAG"');
 });
 
-it('creates an annotated git tag with v prefix', function () use ($script): void {
+it('creates an annotated git tag with version as tag name', function () use ($script): void {
     $contents = file_get_contents($script);
 
-    expect($contents)->toContain('TAG="v${VERSION}"')
+    expect($contents)->toContain('TAG="${VERSION}"')
         ->and($contents)->toContain('git tag -a "$TAG"')
         ->and($contents)->toContain('-m "Release ${VERSION}"');
 });
