@@ -44,7 +44,7 @@ jobs:
 
       - name: Install splitsh-lite
         run: |
-          curl -sL https://github.com/splitsh/lite/releases/latest/download/lite_linux_amd64.tar.gz | tar xz
+          curl -sL https://github.com/splitsh/lite/releases/download/v1.0.1/lite_linux_amd64.tar.gz | tar xz
           sudo mv splitsh-lite /usr/local/bin/splitsh-lite
 
       - name: Split and push
