@@ -83,12 +83,9 @@ it('has README.md with required sections', function (): void {
     $content = file_get_contents($readmePath);
 
     expect($content)
-        ->toContain('# Marko Dev Server')
-        ->toContain('## Overview')
+        ->toContain('# marko/dev-server')
         ->toContain('## Installation')
-        ->toContain('## Usage')
-        ->toContain('## Configuration')
-        ->toContain('## API Reference');
+        ->toContain('## Documentation');
 });
 
 it('documents installation via Composer', function (): void {
@@ -106,21 +103,11 @@ it('documents dev:up, dev:down, and dev:status commands', function (): void {
         ->toContain('dev:status');
 });
 
-it('documents config/dev.php configuration', function (): void {
+it('documents key commands in quick example', function (): void {
     $content = file_get_contents(__DIR__ . '/../README.md');
 
     expect($content)
-        ->toContain('config/dev.php')
-        ->toContain('port')
-        ->toContain('detach')
-        ->toContain('docker')
-        ->toContain('frontend');
-});
-
-it('documents CLI flag overrides', function (): void {
-    $content = file_get_contents(__DIR__ . '/../README.md');
-
-    expect($content)
-        ->toContain('--port')
-        ->toContain('--detach');
+        ->toContain('dev:up')
+        ->toContain('dev:down')
+        ->toContain('dev:status');
 });

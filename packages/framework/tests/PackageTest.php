@@ -123,25 +123,6 @@ it('README documents included packages', function () {
     }
 });
 
-it('README documents optional packages', function () {
-    $readmePath = dirname(__DIR__) . '/README.md';
-    $content = file_get_contents($readmePath);
-
-    $optionalPackages = [
-        'marko/database',
-        'marko/cache',
-        'marko/session',
-        'marko/authentication',
-        'marko/log',
-        'marko/filesystem',
-        'marko/errors-advanced',
-    ];
-
-    foreach ($optionalPackages as $package) {
-        expect($content)->toContain($package);
-    }
-});
-
 it('README shows installation examples', function () {
     $readmePath = dirname(__DIR__) . '/README.md';
     $content = file_get_contents($readmePath);

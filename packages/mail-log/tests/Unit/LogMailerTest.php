@@ -64,7 +64,7 @@ test('it logs email sent message at info level', function (): void {
     $logger = $this->createMock(LoggerInterface::class);
     $logger->expects($this->once())
         ->method('info')
-        ->with('Email sent', $this->isType('array'));
+        ->with('Email sent', $this->isArray());
 
     $mailer = new LogMailer($logger);
 
