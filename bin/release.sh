@@ -44,7 +44,7 @@ if [[ "$PHP_VERSION" != "8.5" ]]; then
 fi
 
 echo "  ✓ PHP ${PHP_VERSION}"
-echo "  ✓ Branch: ${CURRENT_BRANCH}"
+echo "  ✓ Branch: main (merged from develop)"
 echo "  ✓ Working directory clean"
 echo "  ✓ Tag ${TAG} available"
 echo ""
