@@ -12,20 +12,18 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     exit 1
 fi
 
-# Validate branch
-CURRENT_BRANCH=$(git branch --show-current)
-if [[ "$CURRENT_BRANCH" != "main" ]]; then
-    echo "Error: Must be on 'main' branch to release. Currently on '${CURRENT_BRANCH}'."
-    echo "  Merge your changes to main first: git checkout main && git merge develop"
-    exit 1
-fi
-
 # Validate clean working directory
 if ! git diff --quiet || ! git diff --cached --quiet; then
     echo "Error: Working directory has uncommitted changes. Commit or stash them first."
     git status --short
     exit 1
 fi
+
+# Checkout main and merge develop
+echo "Merging develop into main..."
+git checkout main
+git pull origin main
+git merge develop
 
 # Validate tag doesn't already exist
 if git rev-parse "$TAG" >/dev/null 2>&1; then
@@ -61,8 +59,10 @@ echo "Running test suite..."
 echo ""
 echo "  ✓ All tests passing"
 echo ""
-echo "Creating tag ${TAG}..."
+echo "Pushing main branch..."
+git push origin main
 
+echo "Creating tag ${TAG}..."
 git tag -a "$TAG" -m "Release ${VERSION}"
 git push origin "$TAG"
 
