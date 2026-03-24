@@ -65,6 +65,10 @@ class ClassFileParser
         string $filePath,
         string $className,
     ): bool {
+        if (class_exists($className, false)) {
+            return true;
+        }
+
         try {
             require_once $filePath;
 
