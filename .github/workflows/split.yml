@@ -51,7 +51,7 @@ jobs:
         env:
           SPLIT_TOKEN: ${{ secrets.SPLIT_TOKEN }}
         run: |
-          REPO="https://${SPLIT_TOKEN}@github.com/${SPLIT_ORG}/marko-${{ matrix.package }}.git"
+          REPO="https://x-access-token:${SPLIT_TOKEN}@github.com/${SPLIT_ORG}/marko-${{ matrix.package }}.git"
           SHA=$(splitsh-lite --prefix="packages/${{ matrix.package }}")
 
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
