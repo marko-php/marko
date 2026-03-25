@@ -50,14 +50,14 @@ Register your first module in `app/hello/composer.json`:
 ```json
 {
     "name": "app/hello",
-    "extra": {
-        "marko": {
-            "module": true
-        }
-    },
     "autoload": {
         "psr-4": {
             "App\\Hello\\": "src/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
         }
     }
 }
