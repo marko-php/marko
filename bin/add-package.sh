@@ -47,13 +47,25 @@ fi
 
 # Step 3: Update root composer.json
 ROOT_COMPOSER="$REPO_ROOT/composer.json"
+PKG_TYPE=$(jq -r '.type // "library"' "$PKG_DIR/composer.json")
 echo "  Updating root composer.json..."
-jq \
-    --arg pkg "marko/${PACKAGE}" \
-    --arg path "packages/${PACKAGE}" \
-    '.require[$pkg] = "self.version" | .replace[$pkg] = "self.version" | .repositories += [{"type": "path", "url": $path}]' \
-    "$ROOT_COMPOSER" > "${ROOT_COMPOSER}.tmp" && mv "${ROOT_COMPOSER}.tmp" "$ROOT_COMPOSER"
-echo "  ✓ Updated root composer.json"
+
+if [[ "$PKG_TYPE" == "project" ]]; then
+    # Project-type packages (e.g., skeleton) are used via create-project, not require'd as dependencies.
+    # They only need a path repository entry — no require or replace.
+    jq \
+        --arg path "packages/${PACKAGE}" \
+        '.repositories += [{"type": "path", "url": $path}]' \
+        "$ROOT_COMPOSER" > "${ROOT_COMPOSER}.tmp" && mv "${ROOT_COMPOSER}.tmp" "$ROOT_COMPOSER"
+    echo "  ✓ Updated root composer.json (path repository only — type:project skips require/replace)"
+else
+    jq \
+        --arg pkg "marko/${PACKAGE}" \
+        --arg path "packages/${PACKAGE}" \
+        '.require[$pkg] = "self.version" | .replace[$pkg] = "self.version" | .repositories += [{"type": "path", "url": $path}]' \
+        "$ROOT_COMPOSER" > "${ROOT_COMPOSER}.tmp" && mv "${ROOT_COMPOSER}.tmp" "$ROOT_COMPOSER"
+    echo "  ✓ Updated root composer.json"
+fi
 
 echo ""
 echo "Done! Next steps:"
