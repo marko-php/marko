@@ -3,7 +3,7 @@ title: marko/dev-server
 description: Start your full development environment with a single command.
 ---
 
-Start your full development environment with a single command. The Dev Server package provides `dev:up`, `dev:down`, and `dev:status` CLI commands that orchestrate your PHP built-in server, Docker Compose services, and frontend build tools together. It auto-detects your project's Docker Compose file and package manager, so zero configuration is required for most projects. All services are managed as background processes tracked via a PID file, letting you stop everything cleanly with `dev:down`.
+Start your full development environment with a single command. The Dev Server package provides `up`, `down`, and `status` CLI commands (aliases for `dev:up`, `dev:down`, `dev:status`) that orchestrate your PHP built-in server, Docker Compose services, and frontend build tools together. It auto-detects your project's Docker Compose file and package manager, so zero configuration is required for most projects. All services are managed as background processes tracked via a PID file, letting you stop everything cleanly with `marko down`.
 
 ## Installation
 
@@ -16,8 +16,7 @@ composer require marko/dev-server
 ### Starting the Environment
 
 ```bash
-marko dev:up
-# alias: marko up
+marko up
 ```
 
 This starts all detected services:
@@ -26,7 +25,7 @@ This starts all detected services:
 - **Docker** --- started if a `compose.yaml` / `docker-compose.yml` file is found
 - **Frontend** --- started if `package.json` has a `dev` script (uses bun, pnpm, yarn, or npm)
 
-By default `dev:up` runs in detached (background) mode. Use `dev:status` and `dev:down` to manage running services.
+By default `marko up` runs in detached (background) mode. Use `marko status` and `marko down` to manage running services.
 
 ### Foreground Mode
 
@@ -42,15 +41,15 @@ Runs services in the foreground. Press `Ctrl+C` to stop all services. This overr
 `marko up` runs detached by default. You can also make this explicit:
 
 ```bash
-marko dev:up --detach
+marko up --detach
 ```
 
-Use `dev:status` and `dev:down` to manage background services.
+Use `marko status` and `marko down` to manage background services.
 
 ### Checking Status
 
 ```bash
-marko dev:status
+marko status
 ```
 
 Shows the name, PID, status (running/stopped), port, and start time for each managed process.
@@ -58,11 +57,10 @@ Shows the name, PID, status (running/stopped), port, and start time for each man
 ### Stopping the Environment
 
 ```bash
-marko dev:down
-# alias: marko down
+marko down
 ```
 
-Stops all processes started by `dev:up --detach`.
+Stops all processes started by `marko up`.
 
 ### Application Entry Point Requirement
 
@@ -185,7 +183,7 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
-#[Command(name: 'dev:status', description: 'Show development environment status')]
+#[Command(name: 'dev:status', description: 'Show development environment status', aliases: ['status'])]
 public function execute(Input $input, Output $output): int;
 ```
 
@@ -268,6 +266,6 @@ readonly class ProcessEntry
 
 Extends `MarkoException` with contextual error messages and suggestions:
 
-- `processFailedToStart(string $name, string $command)` --- thrown when a process fails to start. Suggests checking the command and running `marko dev:status`.
+- `processFailedToStart(string $name, string $command)` --- thrown when a process fails to start. Suggests checking the command and running `marko status`.
 - `portInUse(int $port)` --- thrown when the PHP server port is already in use. Suggests using `--port=XXXX` to pick a different port.
 - `missingEntryPoint(string $path)` --- thrown when `public/index.php` does not exist. Displays the bootstrap code needed to create it.

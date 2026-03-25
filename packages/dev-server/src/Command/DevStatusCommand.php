@@ -11,7 +11,7 @@ use Marko\Core\Command\Output;
 use Marko\DevServer\Process\PidFile;
 
 /** @noinspection PhpUnused */
-#[Command(name: 'dev:status', description: 'Show development environment status')]
+#[Command(name: 'dev:status', description: 'Show development environment status', aliases: ['status'])]
 readonly class DevStatusCommand implements CommandInterface
 {
     public function __construct(

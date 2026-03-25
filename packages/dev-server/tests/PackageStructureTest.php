@@ -94,20 +94,20 @@ it('documents installation via Composer', function (): void {
     expect($content)->toContain('composer require marko/dev-server');
 });
 
-it('documents dev:up, dev:down, and dev:status commands', function (): void {
+it('documents up, down, and marko status commands', function (): void {
     $content = file_get_contents(__DIR__ . '/../README.md');
 
     expect($content)
-        ->toContain('dev:up')
-        ->toContain('dev:down')
-        ->toContain('dev:status');
+        ->toContain('marko up')
+        ->toContain('marko down')
+        ->toContain('marko status');
 });
 
 it('documents key commands in quick example', function (): void {
     $content = file_get_contents(__DIR__ . '/../README.md');
 
     expect($content)
-        ->toContain('dev:up')
-        ->toContain('dev:down')
-        ->toContain('dev:status');
+        ->toContain('marko up')
+        ->toContain('marko down')
+        ->toContain('marko status');
 });
