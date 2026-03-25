@@ -37,7 +37,7 @@ response=$(curl -s -o /dev/null -w "%{http_code}" \
     -H "Content-Type: application/json" \
     -d "{\"repository\":{\"url\":\"${REPO_URL}\"}}")
 
-if [[ "$response" == "200" || "$response" == "201" ]]; then
+if [[ "$response" == "200" || "$response" == "201" || "$response" == "202" ]]; then
     echo "  ✓ Registered on Packagist"
 elif [[ "$response" == "400" ]]; then
     echo "  ⚠ Already registered on Packagist (HTTP 400)"
