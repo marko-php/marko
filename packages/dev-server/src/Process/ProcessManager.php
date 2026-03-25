@@ -75,9 +75,11 @@ class ProcessManager
     ): int {
         $wrappedCommand = $this->wrapWithNewProcessGroup($command);
 
-        // Start fully detached: redirect output to /dev/null and background
+        // Start fully detached: pipe stdin from tail to keep it open (some tools
+        // like tailwind --watch exit when stdin closes), redirect output to
+        // /dev/null, and background the process.
         $pid = (int) trim((string) shell_exec(
-            "$wrappedCommand > /dev/null 2>&1 & echo $!",
+            "tail -f /dev/null | $wrappedCommand > /dev/null 2>&1 & echo $!",
         ));
 
         if ($pid <= 0) {
