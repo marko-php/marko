@@ -36,14 +36,30 @@ readonly class DevUpCommand implements CommandInterface
     /**
      * @throws ConfigNotFoundException|DevServerException
      */
-    public function execute(Input $input, Output $output): int
-    {
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
         $port = (int) ($input->getOption('port') ?? $input->getOption('p') ?? $this->config->getInt('dev.port'));
         $foreground = $input->hasOption('foreground') || $input->hasOption('f');
-        $detach = !$foreground && ($input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool('dev.detach'));
+        $detach = !$foreground && ($input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool(
+            'dev.detach',
+        ));
         $dockerConfig = $this->config->get('dev.docker');
         $frontendConfig = $this->config->get('dev.frontend');
         $pubsubConfig = $this->config->get('dev.pubsub');
+
+        // Guard: check if services are already running
+        $existingEntries = $this->pidFile->read();
+        foreach ($existingEntries as $entry) {
+            if ($this->pidFile->isRunning($entry->pid)) {
+                throw new DevServerException(
+                    message: 'Development environment is already running.',
+                    context: "Process '{$entry->name}' (PID {$entry->pid}) is still active",
+                    suggestion: "Stop the existing environment first with 'marko down', then run 'marko up' again.",
+                );
+            }
+        }
 
         $indexPath = $this->paths->base . '/public/index.php';
         if (!file_exists($indexPath)) {

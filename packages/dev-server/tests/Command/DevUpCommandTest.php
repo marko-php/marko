@@ -12,6 +12,7 @@ use Marko\DevServer\Detection\FrontendDetector;
 use Marko\DevServer\Detection\PubSubDetector;
 use Marko\DevServer\Exceptions\DevServerException;
 use Marko\DevServer\Process\PidFile;
+use Marko\DevServer\Process\ProcessEntry;
 use Marko\DevServer\Process\ProcessManager;
 use Marko\Testing\Fake\FakeConfigRepository;
 
@@ -773,4 +774,62 @@ it('skips pubsub process when pubsub config is false', function (): void {
     $command->execute($input, $output);
 
     expect($pm->started)->not->toHaveKey('pubsub');
+});
+
+it('throws DevServerException when services are already running', function (): void {
+    $tmpDir = sys_get_temp_dir() . '/marko-already-running-' . uniqid();
+    mkdir($tmpDir, 0755, true);
+
+    $pidFile = new PidFile($tmpDir);
+    // Write a PID entry using current process PID (guaranteed to be "running")
+    $pidFile->write([
+        new ProcessEntry('php', getmypid(), 'php -S localhost:8000', 8000, '2026-02-25T10:00:00+00:00'),
+    ]);
+
+    ['command' => $command] = createDevUpCommand(tempDir: $tmpDir);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+})->throws(DevServerException::class, 'Development environment is already running');
+
+it('allows dev:up when PID file has only stopped processes', function (): void {
+    $tmpDir = sys_get_temp_dir() . '/marko-stopped-' . uniqid();
+    mkdir($tmpDir, 0755, true);
+
+    $pidFile = new PidFile($tmpDir);
+    // PID 99999 is almost certainly not running
+    $pidFile->write([
+        new ProcessEntry('php', 99999, 'php -S localhost:8000', 8000, '2026-02-25T10:00:00+00:00'),
+    ]);
+
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(tempDir: $tmpDir);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->started)->toHaveKey('php');
+});
+
+it('suggests marko down in exception when services are already running', function (): void {
+    $tmpDir = sys_get_temp_dir() . '/marko-suggest-down-' . uniqid();
+    mkdir($tmpDir, 0755, true);
+
+    $pidFile = new PidFile($tmpDir);
+    $pidFile->write([
+        new ProcessEntry('php', getmypid(), 'php -S localhost:8000', 8000, '2026-02-25T10:00:00+00:00'),
+    ]);
+
+    ['command' => $command] = createDevUpCommand(tempDir: $tmpDir);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+
+    try {
+        $command->execute($input, $output);
+        expect(false)->toBeTrue('Expected DevServerException was not thrown');
+    } catch (DevServerException $e) {
+        expect($e->getSuggestion())->toContain('marko down');
+    }
 });
