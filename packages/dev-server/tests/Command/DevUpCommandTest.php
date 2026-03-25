@@ -418,7 +418,7 @@ it('overrides config port with -p space syntax', function (): void {
     expect($pm->started['php'])->toContain('localhost:9000');
 });
 
-it('runs docker in foreground when not detached', function (): void {
+it('runs docker without -d flag as a managed process', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko-docker-fg-test-' . uniqid();
     mkdir($tempDir, 0755, true);
     file_put_contents($tempDir . '/compose.yaml', "version: '3'\nservices:\n  app:\n    image: nginx\n");
@@ -517,7 +517,7 @@ it('includes custom processes in PID file when detached', function (): void {
         ->and($names)->toContain('php');
 });
 
-it('runs docker detached when in detach mode', function (): void {
+it('never appends -d to docker command even in detach mode', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko-docker-det-test-' . uniqid();
     mkdir($tempDir, 0755, true);
     file_put_contents($tempDir . '/compose.yaml', "version: '3'\nservices:\n  app:\n    image: nginx\n");
@@ -531,7 +531,7 @@ it('runs docker detached when in detach mode', function (): void {
     $input = new Input(['marko', 'dev:up']);
     $command->execute($input, $output);
 
-    expect($pm->started['docker'])->toContain('-d');
+    expect($pm->started['docker'])->not->toContain('-d');
 });
 
 it('starts pubsub:listen as managed process in DevUpCommand when detected', function (): void {

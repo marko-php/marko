@@ -87,9 +87,6 @@ readonly class DevUpCommand implements CommandInterface
                 : $this->dockerDetector->detect()['upCommand'] ?? null;
 
             if ($dockerCommand !== null) {
-                if ($detach) {
-                    $dockerCommand .= ' -d';
-                }
                 $output->writeLine("  Starting Docker: $dockerCommand");
                 $pid = $this->processManager->start('docker', $dockerCommand);
                 $entries[] = new ProcessEntry(
