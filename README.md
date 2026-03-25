@@ -121,18 +121,18 @@ return [
 **Plugins** — Intercept any public method:
 
 ```php
-#[Plugin(OrderService::class)]
+#[Plugin(target: OrderService::class)]
 class OrderPlugin
 {
-    #[Before('place')]
-    public function validateInventory(Order $order): array
+    #[Before]
+    public function beforePlace(Order $order): null
     {
         // Runs before OrderService::place()
-        return [$order];
+        return null;
     }
 
-    #[After('place')]
-    public function sendConfirmation(Order $order, OrderResult $result): OrderResult
+    #[After]
+    public function afterPlace(OrderResult $result, Order $order): OrderResult
     {
         // Runs after OrderService::place()
         return $result;
