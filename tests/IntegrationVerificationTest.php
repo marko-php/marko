@@ -10,18 +10,23 @@ $packages = array_values(array_filter(
     fn(string $entry): bool => $entry !== '.' && $entry !== '..' && is_dir($packagesRoot . '/' . $entry),
 ));
 
-it('validates all 71 package composer.json files are valid JSON with required keys (name, require) via structural check', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(71);
-
-    foreach ($packages as $package) {
-        $file = $packagesRoot . '/' . $package . '/composer.json';
-        expect(file_exists($file))->toBeTrue("Missing composer.json in packages/{$package}");
-
-        $data = json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
-        expect(array_key_exists('name', $data))->toBeTrue("packages/{$package}/composer.json missing 'name' key")
-            ->and(array_key_exists('require', $data))->toBeTrue("packages/{$package}/composer.json missing 'require' key");
+it(
+    'validates all 71 package composer.json files are valid JSON with required keys (name, require) via structural check',
+    function () use ($packagesRoot, $packages): void {
+        expect($packages)->toHaveCount(71);
+    
+        foreach ($packages as $package) {
+            $file = $packagesRoot . '/' . $package . '/composer.json';
+            expect(file_exists($file))->toBeTrue("Missing composer.json in packages/{$package}");
+    
+            $data = json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
+            expect(array_key_exists('name', $data))->toBeTrue("packages/{$package}/composer.json missing 'name' key")
+                ->and(array_key_exists('require', $data))->toBeTrue(
+                    "packages/{$package}/composer.json missing 'require' key"
+                );
+        }
     }
-});
+);
 
 it('validates the root composer.json passes composer validate', function () use ($root): void {
     $output = [];
@@ -35,11 +40,13 @@ it('validates the root composer.json passes composer validate', function () use 
 // The subprocess handles: remove lock+vendor, run composer update, run test suite.
 // The result is conveyed back via a temp file so the live vendor/ is never touched
 // by the running pest process.
-it('removes composer.lock and vendor/ before running composer update to ensure clean resolution', function () use ($root): void {
-    $php = '/opt/homebrew/Cellar/php/8.5.1_2/bin/php';
-    $resultFile = tempnam(sys_get_temp_dir(), 'marko_result_');
-
-    $script = <<<'SCRIPT'
+it(
+    'removes composer.lock and vendor/ before running composer update to ensure clean resolution',
+    function () use ($root): void {
+        $php = '/opt/homebrew/Cellar/php/8.5.1_2/bin/php';
+        $resultFile = tempnam(sys_get_temp_dir(), 'marko_result_');
+    
+        $script = <<<'SCRIPT'
 <?php
 [$root, $resultFile] = [$argv[1], $argv[2]];
 
@@ -69,7 +76,7 @@ $results['composer_update_output'] = implode("\n", array_slice($updateOutput, -5
 // Step 3: Run test suite (exclude destructive group to avoid recursion)
 $php = '/opt/homebrew/Cellar/php/8.5.1_2/bin/php';
 exec(
-    'cd ' . escapeshellarg($root) . ' && ' . $php . ' vendor/bin/pest --exclude-group=integration-destructive 2>&1',
+    'cd ' . escapeshellarg($root) . ' && ' . $php . ' vendor/bin/pest --parallel --exclude-group=integration-destructive 2>&1',
     $testOutput,
     $testExit,
 );
@@ -81,26 +88,27 @@ $results['test_summary'] = implode("\n", array_slice($testOutput, -3));
 
 file_put_contents($resultFile, json_encode($results));
 SCRIPT;
-
-    $scriptFile = tempnam(sys_get_temp_dir(), 'marko_script_');
-    file_put_contents($scriptFile, $script);
-
-    exec(
-        $php . ' ' . escapeshellarg($scriptFile)
-        . ' ' . escapeshellarg($root)
-        . ' ' . escapeshellarg($resultFile)
-        . ' 2>/dev/null',
-    );
-
-    unlink($scriptFile);
-
-    expect(file_exists($resultFile))->toBeTrue('Subprocess script did not produce a result file');
-    $results = json_decode(file_get_contents($resultFile), true);
-    unlink($resultFile);
-
-    expect($results['lock_removed'])->toBeTrue('composer.lock was not removed')
-        ->and($results['vendor_removed'])->toBeTrue('vendor/ was not removed');
-})->group('integration-destructive');
+    
+        $scriptFile = tempnam(sys_get_temp_dir(), 'marko_script_');
+        file_put_contents($scriptFile, $script);
+    
+        exec(
+            $php . ' ' . escapeshellarg($scriptFile)
+            . ' ' . escapeshellarg($root)
+            . ' ' . escapeshellarg($resultFile)
+            . ' 2>/dev/null',
+        );
+    
+        unlink($scriptFile);
+    
+        expect(file_exists($resultFile))->toBeTrue('Subprocess script did not produce a result file');
+        $results = json_decode(file_get_contents($resultFile), true);
+        unlink($resultFile);
+    
+        expect($results['lock_removed'])->toBeTrue('composer.lock was not removed')
+            ->and($results['vendor_removed'])->toBeTrue('vendor/ was not removed');
+    }
+)->group('integration-destructive');
 
 it('runs composer update from root successfully', function () use ($root): void {
     // Verify vendor/ and composer.lock exist (restored by the previous destructive test's subprocess)
@@ -117,7 +125,9 @@ it('runs the full test suite and all tests pass', function () use ($root): void 
     $output = [];
     $exitCode = 0;
     exec(
-        'cd ' . escapeshellarg($root) . ' && ' . $php . ' vendor/bin/pest --exclude-group=integration-destructive 2>&1',
+        'cd ' . escapeshellarg(
+            $root
+        ) . ' && ' . $php . ' vendor/bin/pest --parallel --exclude-group=integration-destructive 2>&1',
         $output,
         $exitCode,
     );

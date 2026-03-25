@@ -50,7 +50,7 @@ echo "  ✓ Tag ${TAG} available"
 echo ""
 echo "Running test suite..."
 
-"$PHP_BIN" vendor/bin/pest --parallel || {
+"$PHP_BIN" vendor/bin/pest --parallel --exclude-group=integration-destructive || {
     echo ""
     echo "Error: Tests failed. Fix failing tests before releasing."
     exit 1
