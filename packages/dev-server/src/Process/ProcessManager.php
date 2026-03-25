@@ -244,9 +244,10 @@ class ProcessManager
         $encoded = base64_encode($command);
         $php = PHP_BINARY;
 
+        // Use double quotes inside the PHP code to avoid escapeshellarg single-quote conflicts
         return "$php -r " . escapeshellarg(
-            "posix_setsid();"
-            . "pcntl_exec('/bin/sh', ['-c', base64_decode('$encoded')]);",
+            'posix_setsid();'
+            . 'pcntl_exec("/bin/sh", ["-c", base64_decode("' . $encoded . '")]);',
         );
     }
 }
