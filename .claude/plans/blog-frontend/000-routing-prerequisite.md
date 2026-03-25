@@ -145,7 +145,7 @@ class ArticleController extends PostController { ... }
 Plugins work at the class/method level, unaffected by route prefix:
 
 ```php
-#[Plugin(for: PostController::class)]
+#[Plugin(target: PostController::class)]
 class PostControllerPlugin
 {
     // This hooks PostController::index regardless of URL

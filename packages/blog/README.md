@@ -59,7 +59,7 @@ Publish or set the following keys in your config:
 Use the `#[Preference]` attribute to swap any blog class with your own implementation. This lets you replace or override core behavior without forking:
 
 ```php
-use Marko\Framework\Attribute\Preference;
+use Marko\Core\Attributes\Preference;
 
 #[Preference(PostRepositoryInterface::class)]
 class MyPostRepository implements PostRepositoryInterface
@@ -73,22 +73,22 @@ class MyPostRepository implements PostRepositoryInterface
 Use `#[Plugin]` with `#[Before]` and `#[After]` attributes to hook into any public method without overriding the entire class:
 
 ```php
-use Marko\Framework\Attribute\Plugin;
-use Marko\Framework\Attribute\Before;
-use Marko\Framework\Attribute\After;
+use Marko\Core\Attributes\Plugin;
+use Marko\Core\Attributes\Before;
+use Marko\Core\Attributes\After;
 
-#[Plugin(PostService::class)]
+#[Plugin(target: PostService::class)]
 class PostServicePlugin
 {
-    #[Before('createPost')]
-    public function beforeCreate(array $data): array
+    #[Before]
+    public function beforeCreatePost(array $data): null
     {
         // modify data before createPost runs
-        return $data;
+        return null;
     }
 
-    #[After('createPost')]
-    public function afterCreate(Post $post): Post
+    #[After]
+    public function afterCreatePost(Post $post): Post
     {
         // act on result after createPost runs
         return $post;
@@ -101,7 +101,7 @@ class PostServicePlugin
 Use `#[Observer]` to react to blog lifecycle events without modifying core classes:
 
 ```php
-use Marko\Framework\Attribute\Observer;
+use Marko\Core\Attributes\Observer;
 use Marko\Blog\Events\Post\PostCreated;
 
 #[Observer]
