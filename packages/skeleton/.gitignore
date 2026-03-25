@@ -1,3 +1,4 @@
 /vendor/
+/.marko/
 .env
 composer.lock
