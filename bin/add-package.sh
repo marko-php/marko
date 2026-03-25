@@ -26,6 +26,10 @@ else
     pkg_description=$(jq -r '.description // empty' "$PKG_DIR/composer.json")
     description="[READ-ONLY] ${pkg_description:-Subtree split of marko/${PACKAGE}}. Issues and PRs at https://github.com/marko-php/marko"
     gh repo create "$REPO" --public --description "$description" --disable-issues --disable-wiki
+
+    # Sync repo settings and workflow
+    "$SCRIPT_DIR/sync-split-repo-config.sh" "marko-${PACKAGE}"
+
     echo "  ✓ Created split repo ${REPO}"
 fi
 
