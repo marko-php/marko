@@ -48,23 +48,43 @@ fi
 # Step 3: Update root composer.json
 ROOT_COMPOSER="$REPO_ROOT/composer.json"
 PKG_TYPE=$(jq -r '.type // "library"' "$PKG_DIR/composer.json")
+PKG_PATH="packages/${PACKAGE}"
 echo "  Updating root composer.json..."
+
+# Check if repository entry already exists
+if jq -e --arg path "$PKG_PATH" '.repositories[] | select(.url == $path)' "$ROOT_COMPOSER" >/dev/null 2>&1; then
+    REPO_EXISTS=true
+else
+    REPO_EXISTS=false
+fi
 
 if [[ "$PKG_TYPE" == "project" ]]; then
     # Project-type packages (e.g., skeleton) are used via create-project, not require'd as dependencies.
     # They only need a path repository entry — no require or replace.
-    jq \
-        --arg path "packages/${PACKAGE}" \
-        '.repositories += [{"type": "path", "url": $path}]' \
-        "$ROOT_COMPOSER" > "${ROOT_COMPOSER}.tmp" && mv "${ROOT_COMPOSER}.tmp" "$ROOT_COMPOSER"
-    echo "  ✓ Updated root composer.json (path repository only — type:project skips require/replace)"
+    if [[ "$REPO_EXISTS" == "true" ]]; then
+        echo "  ✓ Root composer.json already has repository entry (type:project — no require/replace needed)"
+    else
+        jq --indent 4 \
+            --arg path "$PKG_PATH" \
+            '.repositories += [{"type": "path", "url": $path}]' \
+            "$ROOT_COMPOSER" > "${ROOT_COMPOSER}.tmp" && mv "${ROOT_COMPOSER}.tmp" "$ROOT_COMPOSER"
+        echo "  ✓ Updated root composer.json (path repository only — type:project skips require/replace)"
+    fi
 else
-    jq \
-        --arg pkg "marko/${PACKAGE}" \
-        --arg path "packages/${PACKAGE}" \
-        '.require[$pkg] = "self.version" | .replace[$pkg] = "self.version" | .repositories += [{"type": "path", "url": $path}]' \
-        "$ROOT_COMPOSER" > "${ROOT_COMPOSER}.tmp" && mv "${ROOT_COMPOSER}.tmp" "$ROOT_COMPOSER"
-    echo "  ✓ Updated root composer.json"
+    if [[ "$REPO_EXISTS" == "true" ]] && jq -e --arg pkg "marko/${PACKAGE}" '.require[$pkg]' "$ROOT_COMPOSER" >/dev/null 2>&1; then
+        echo "  ✓ Root composer.json already has entries for marko/${PACKAGE}"
+    else
+        jq --indent 4 \
+            --arg pkg "marko/${PACKAGE}" \
+            --arg path "$PKG_PATH" \
+            '(.repositories // []) as $repos |
+            if ($repos | map(select(.url == $path)) | length) > 0
+            then .require[$pkg] = "self.version" | .replace[$pkg] = "self.version"
+            else .require[$pkg] = "self.version" | .replace[$pkg] = "self.version" | .repositories += [{"type": "path", "url": $path}]
+            end' \
+            "$ROOT_COMPOSER" > "${ROOT_COMPOSER}.tmp" && mv "${ROOT_COMPOSER}.tmp" "$ROOT_COMPOSER"
+        echo "  ✓ Updated root composer.json"
+    fi
 fi
 
 echo ""
