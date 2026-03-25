@@ -3,7 +3,7 @@ title: marko/dev-server
 description: Start your full development environment with a single command.
 ---
 
-Start your full development environment with a single command. The Dev Server package provides `up`, `down`, and `status` CLI commands (aliases for `dev:up`, `dev:down`, `dev:status`) that orchestrate your PHP built-in server, Docker Compose services, and frontend build tools together. It auto-detects your project's Docker Compose file and package manager, so zero configuration is required for most projects. All services are managed as background processes tracked via a PID file, letting you stop everything cleanly with `marko down`.
+Start your full development environment with a single command. The Dev Server package provides `up`, `down`, `status`, and `open` CLI commands (aliases for `dev:up`, `dev:down`, `dev:status`, `dev:open`) that orchestrate your PHP built-in server, Docker Compose services, and frontend build tools together. It auto-detects your project's Docker Compose file and package manager, so zero configuration is required for most projects. All services are managed as background processes tracked via a PID file, letting you stop everything cleanly with `marko down`.
 
 ## Installation
 
@@ -53,6 +53,14 @@ marko status
 ```
 
 Shows the name, PID, status (running/stopped), port, and start time for each managed process.
+
+### Opening in Browser
+
+```bash
+marko open
+```
+
+Opens the running PHP development server in your default browser. The URL is determined dynamically from the running process, so it works with custom ports (e.g. `--port=8080`). Throws a helpful error if no dev environment is running.
 
 ### Stopping the Environment
 
@@ -173,6 +181,17 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 
 #[Command(name: 'dev:down', description: 'Stop the development environment', aliases: ['down'])]
+public function execute(Input $input, Output $output): int;
+```
+
+### DevOpenCommand
+
+```php
+use Marko\Core\Attributes\Command;
+use Marko\Core\Command\Input;
+use Marko\Core\Command\Output;
+
+#[Command(name: 'dev:open', description: 'Open the running development server in a browser', aliases: ['open'])]
 public function execute(Input $input, Output $output): int;
 ```
 
