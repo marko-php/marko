@@ -159,6 +159,13 @@ readonly class DevUpCommand implements CommandInterface
         $phpCommand = "env PHP_CLI_SERVER_WORKERS=4 php -S localhost:$port -t public/";
         $output->writeLine("  Starting PHP server: php -S localhost:$port");
         $pid = $this->processManager->start('php', $phpCommand);
+
+        // Verify the PHP server is still alive — if it died immediately, the port is likely in use
+        usleep(100000); // 100ms — give the server time to attempt binding
+        if (!$this->processManager->isRunning('php')) {
+            throw DevServerException::portInUse($port);
+        }
+
         $entries[] = new ProcessEntry(
             name: 'php',
             pid: $pid,

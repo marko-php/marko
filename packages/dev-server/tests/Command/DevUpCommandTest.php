@@ -24,6 +24,9 @@ class FakeProcessManager extends ProcessManager
 
     public bool $foregroundCalled = false;
 
+    /** @var array<string, bool> Override isRunning results per process name */
+    public array $runningOverrides = [];
+
     /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
     public function __construct() {}
 
@@ -34,6 +37,11 @@ class FakeProcessManager extends ProcessManager
         $this->started[$name] = $command;
 
         return 12345;
+    }
+
+    public function isRunning(string $name): bool
+    {
+        return $this->runningOverrides[$name] ?? true;
     }
 
     public function runForeground(): void
@@ -832,4 +840,26 @@ it('suggests marko down in exception when services are already running', functio
     } catch (DevServerException $e) {
         expect($e->getSuggestion())->toContain('marko down');
     }
+});
+
+it('throws DevServerException when PHP server dies immediately after start', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.port' => 8000]);
+    // Simulate PHP server dying immediately (port in use)
+    $pm->runningOverrides['php'] = false;
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+})->throws(DevServerException::class, 'Port 8000 is already in use');
+
+it('does not throw when PHP server stays running after start', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.port' => 8000]);
+    // PHP server stays alive (default behavior)
+    $pm->runningOverrides['php'] = true;
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $result = $command->execute($input, $output);
+
+    expect($result)->toBe(0);
 });
