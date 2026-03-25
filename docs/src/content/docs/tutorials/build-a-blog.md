@@ -209,7 +209,7 @@ use Marko\Core\Attributes\Plugin;
 class AddReadingTimePlugin
 {
     #[After]
-    public function afterFindBySlug(?Post $result): ?Post
+    public function findBySlug(?Post $result): ?Post
     {
         if ($result === null) {
             return null;

@@ -45,18 +45,22 @@ use Marko\Core\Attributes\Before;
 use Marko\Core\Attributes\After;
 
 #[Plugin(target: PaymentService::class)]
-class PaymentPlugin
+class PaymentValidationPlugin
 {
     #[Before]
-    public function beforeCharge(
+    public function charge(
         float $amount,
     ): ?float {
-        // Modify input or return early
+        // Modify input — method name matches target
         return $amount * 1.1; // Add 10% fee
     }
+}
 
+#[Plugin(target: PaymentService::class)]
+class PaymentAuditPlugin
+{
     #[After]
-    public function afterCharge(
+    public function charge(
         Receipt $result,
     ): Receipt {
         // Modify output
