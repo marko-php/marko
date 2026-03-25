@@ -173,6 +173,7 @@ readonly class DevUpCommand implements CommandInterface
 
         if ($detach) {
             $this->pidFile->write($entries);
+            $this->processManager->detachAll();
             $output->writeLine('Development environment started in background.');
             $output->writeLine("Run 'marko dev:status' to check status.");
             $output->writeLine("Run 'marko dev:down' to stop.");

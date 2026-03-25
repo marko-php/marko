@@ -64,6 +64,33 @@ class ProcessManager
     }
 
     /**
+     * Detach all managed processes so they survive PHP exit.
+     *
+     * Closes pipes and releases proc_open resources without terminating
+     * the processes. Used in detached mode before the CLI exits.
+     */
+    public function detachAll(): void
+    {
+        foreach (array_keys($this->processes) as $name) {
+            $pipes = $this->processes[$name]['pipes'];
+
+            // Close pipes so the child doesn't get SIGPIPE when PHP exits
+            foreach ($pipes as $pipe) {
+                if (is_resource($pipe)) {
+                    fclose($pipe);
+                }
+            }
+
+            // Release the resource without terminating — process continues running
+            $process = $this->processes[$name]['resource'];
+            // proc_close would wait/kill, so just let PHP's GC handle it
+            // after pipes are closed and process is in its own session
+        }
+
+        $this->processes = [];
+    }
+
+    /**
      * Stop a named process.
      */
     public function stop(string $name): void

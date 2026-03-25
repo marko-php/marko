@@ -44,6 +44,11 @@ class FakeProcessManager extends ProcessManager
         return $this->runningOverrides[$name] ?? true;
     }
 
+    public function detachAll(): void
+    {
+        // No-op in tests
+    }
+
     public function runForeground(): void
     {
         $this->foregroundCalled = true;
