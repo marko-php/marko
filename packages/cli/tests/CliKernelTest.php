@@ -82,7 +82,7 @@ function createMockApplicationFactory(
                 public object $commandRunner,
             ) {}
 
-            public function boot(): void
+            public function initialize(): void
             {
                 if ($this->onBoot !== null) {
                     ($this->onBoot)();
@@ -129,13 +129,13 @@ it('throws ProjectNotFoundException when not in project', function () {
 
     $exitCode = $kernel->run(['marko', 'list']);
 
-    // Exception should be caught and displayed, returning exit code 1
-    expect($exitCode)->toBe(1);
-
     // Check that the error was written to output
     rewind($outputStream);
     $errorOutput = stream_get_contents($outputStream);
-    expect($errorOutput)->toContain('No Marko project found');
+
+    // Exception should be caught and displayed, returning exit code 1
+    expect($exitCode)->toBe(1)
+        ->and($errorOutput)->toContain('No Marko project found');
 
     fclose($outputStream);
 });
@@ -233,7 +233,7 @@ it('delegates command execution to Application commandRunner', function () {
                 public object $commandRunner,
             ) {}
 
-            public function boot(): void {}
+            public function initialize(): void {}
         };
 
         $kernel = new CliKernel(
@@ -358,13 +358,13 @@ it('catches and displays exceptions with helpful messages', function () {
 
         $exitCode = $kernel->run(['marko', 'test']);
 
-        // Check exit code is non-zero
-        expect($exitCode)->toBe(1);
-
         // Check that the error was written to output
         rewind($outputStream);
         $errorOutput = stream_get_contents($outputStream);
-        expect($errorOutput)->toContain('Something went wrong');
+
+        // Check exit code is non-zero and error message was written
+        expect($exitCode)->toBe(1)
+            ->and($errorOutput)->toContain('Something went wrong');
 
         fclose($outputStream);
     } finally {

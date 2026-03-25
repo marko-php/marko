@@ -75,7 +75,7 @@ readonly class CliKernel
 
         // Create and boot the application
         $app = ($this->applicationFactory)($projectRoot);
-        $app->boot();
+        $app->initialize();
 
         // Parse input and create output
         $input = new Input($argv);

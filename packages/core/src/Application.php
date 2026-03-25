@@ -36,8 +36,11 @@ use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginRegistry;
+use Marko\Env\EnvLoader;
 use Marko\Routing\Exceptions\RouteConflictException;
 use Marko\Routing\Exceptions\RouteException;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Routing\Router;
 use Marko\Routing\RoutingBootstrapper;
@@ -64,10 +67,12 @@ class Application
 
     public private(set) CommandRunner $commandRunner;
 
-    private ?Router $_router = null;
+    /** @var ?Router */
+    private ?object $_router = null;
 
-    public Router $router {
-        get => $this->_router ?? throw new RuntimeException('Router not available. Call boot() first.');
+    /** @var Router */
+    public object $router {
+        get => $this->_router ?? throw new RuntimeException('Router not available. Install marko/routing: composer require marko/routing');
     }
 
     private ClassFileParser $classFileParser;
@@ -81,8 +86,34 @@ class Application
     /**
      * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException
      */
-    public function boot(): void
+    public static function boot(string $basePath): self
     {
+        if (!is_dir($basePath)) {
+            throw new RuntimeException("Base path does not exist: {$basePath}");
+        }
+
+        $app = new self(
+            vendorPath: $basePath . '/vendor',
+            modulesPath: $basePath . '/modules',
+            appPath: $basePath . '/app',
+        );
+
+        $app->initialize();
+
+        return $app;
+    }
+
+    /**
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException
+     */
+    public function initialize(): void
+    {
+        // Load environment variables if marko/env is installed
+        if (class_exists(EnvLoader::class)) {
+            $basePath = dirname($this->vendorPath);
+            (new EnvLoader())->load($basePath);
+        }
+
         $parser = new ManifestParser();
         $discovery = new ModuleDiscovery($parser);
         $resolver = new DependencyResolver();
@@ -318,6 +349,22 @@ class Application
         $globalMiddleware = $this->discoverGlobalMiddleware();
 
         $this->_router = $bootstrapper->boot($globalMiddleware);
+    }
+
+    /**
+     * @throws RuntimeException
+     */
+    public function handleRequest(): void
+    {
+        if ($this->_router === null) {
+            throw new RuntimeException(
+                'Cannot handle HTTP requests: marko/routing is not installed. Run: composer require marko/routing'
+            );
+        }
+
+        $request = Request::fromGlobals();
+        $response = $this->_router->handle($request);
+        $response->send();
     }
 
     /**

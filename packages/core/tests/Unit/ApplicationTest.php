@@ -10,6 +10,8 @@ use Marko\Core\Command\Output;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Exceptions\CircularDependencyException;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
 
 it('creates Application class as main entry point', function (): void {
     $app = new Application();
@@ -102,7 +104,7 @@ it('scans all three directories for modules during boot', function (): void {
         appPath: $appDir,
     );
 
-    $app->boot();
+    $app->initialize();
 
     $modules = $app->modules;
     $moduleNames = array_map(fn ($m) => $m->name, $modules);
@@ -135,7 +137,7 @@ it('ignores dependencies that are not discovered Marko modules', function (): vo
     );
 
     // Should boot successfully - non-Marko dependencies are ignored
-    $app->boot();
+    $app->initialize();
 
     expect($app->modules)->toHaveCount(1)
         ->and($app->modules[0]->name)->toBe('acme/blog');
@@ -167,7 +169,7 @@ it('detects and reports circular dependencies', function (): void {
         appPath: '',
     );
 
-    expect(fn () => $app->boot())->toThrow(CircularDependencyException::class);
+    expect(fn () => $app->initialize())->toThrow(CircularDependencyException::class);
 
     appTestCleanupDirectory($baseDir);
 });
@@ -187,7 +189,7 @@ it('sorts modules in correct load order', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $modules = $app->modules;
     $moduleNames = array_map(fn ($m) => $m->name, $modules);
@@ -226,7 +228,7 @@ it('registers bindings from all modules', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $container = $app->container;
 
@@ -297,7 +299,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     // The container should resolve the original class to the replacement
     $container = $app->container;
@@ -374,7 +376,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     // The plugin registry should have the plugin registered
     $pluginRegistry = $app->pluginRegistry;
@@ -445,7 +447,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     // The observer registry should have observers for the event
     $observerRegistry = $app->observerRegistry;
@@ -469,7 +471,7 @@ it('provides access to configured container', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $container = $app->container;
 
@@ -490,7 +492,7 @@ it('provides access to event dispatcher', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $dispatcher = $app->eventDispatcher;
 
@@ -552,7 +554,7 @@ it('parses all discovered module manifests', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $modules = $app->modules;
 
@@ -622,7 +624,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     // The class should now be autoloadable via the PSR-4 autoloader
     expect(class_exists($className))->toBeTrue('Class should be autoloadable after boot');
@@ -687,7 +689,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $autoloaderCountAfter = count(spl_autoload_functions());
 
@@ -780,7 +782,7 @@ PHP;
         appPath: $appDir,
     );
 
-    $app->boot();
+    $app->initialize();
 
     // Classes should now be autoloadable
     expect(class_exists($controllerClass))->toBeTrue('Controller should be autoloadable')
@@ -852,7 +854,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     // Class should now be autoloadable
     expect(class_exists($serviceClass))->toBeTrue('Service should be autoloadable');
@@ -907,7 +909,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     // The command registry should have the command registered
     $commandRegistry = $app->commandRegistry;
@@ -928,7 +930,7 @@ it('exposes commandRegistry property on Application', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     expect($app->commandRegistry)->toBeInstanceOf(CommandRegistry::class);
 
@@ -947,7 +949,7 @@ it('exposes commandRunner property on Application', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     expect($app->commandRunner)->toBeInstanceOf(CommandRunner::class);
 
@@ -1057,7 +1059,7 @@ PHP;
         appPath: $appDir,
     );
 
-    $app->boot();
+    $app->initialize();
 
     // All commands from all modules should be registered
     $commandRegistry = $app->commandRegistry;
@@ -1082,7 +1084,7 @@ it('skips modules without src directory during command discovery', function (): 
     );
 
     // Should not throw, and registry should be empty
-    $app->boot();
+    $app->initialize();
 
     expect($app->commandRegistry->all())->toBeEmpty();
 
@@ -1120,7 +1122,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     expect($app->commandRegistry->all())->toBeEmpty();
 
@@ -1169,7 +1171,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     // commandRunner should be available and functional
     $input = new Input([]);
@@ -1226,7 +1228,7 @@ PHP;
     // Before boot, the flag should not be set
     expect($GLOBALS['__marko_boot_test_called'] ?? false)->toBeFalse();
 
-    $app->boot();
+    $app->initialize();
 
     // After boot, the flag should be set
     expect($GLOBALS['__marko_boot_test_called'] ?? false)->toBeTrue();
@@ -1273,7 +1275,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     // The boot callback should have received the container
     expect($GLOBALS['__marko_boot_container_class'] ?? '')->toBe('Marko\Core\Container\Container');
@@ -1323,7 +1325,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     expect($GLOBALS['__marko_auto_inject_paths'] ?? '')->toBe('Marko\Core\Path\ProjectPaths');
 
@@ -1366,7 +1368,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     expect($GLOBALS['__marko_ci_boot_class'] ?? '')->toBe('Marko\Core\Container\Container');
 
@@ -1412,7 +1414,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     expect($GLOBALS['__marko_boot_order_test'] ?? '')->toBe('Marko\Core\Event\EventDispatcher');
 
@@ -1432,11 +1434,279 @@ it('registers the container as an instance of ContainerInterface', function (): 
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $resolved = $app->container->get(ContainerInterface::class);
 
     expect($resolved)->toBe($app->container);
 
     appTestCleanupDirectory($baseDir);
+});
+
+it('loads Application class without marko/routing installed (no Router type fatal)', function (): void {
+    // This test verifies that instantiating Application does not cause a fatal
+    // error due to PHP resolving the Router type at class-load time.
+    // The property types must be ?object / object, not ?Router / Router.
+    $app = new Application();
+
+    expect($app)->toBeInstanceOf(Application::class);
+});
+
+it('stores router as nullable object property', function (): void {
+    $reflection = new ReflectionClass(Application::class);
+    $property = $reflection->getProperty('_router');
+
+    // The backing property must be typed as ?object (not ?Router)
+    expect($property->getType()->getName())->toBe('object')
+        ->and($property->getType()->allowsNull())->toBeTrue();
+});
+
+it('exposes router via public property hook that throws RuntimeException("Router not available. Install marko/routing: composer require marko/routing") when null', function (): void {
+    $app = new Application();
+
+    expect(fn () => $app->router)
+        ->toThrow(
+            RuntimeException::class,
+            'Router not available. Install marko/routing: composer require marko/routing',
+        );
+});
+
+it('still assigns Router instance correctly when routing is available', function (): void {
+    // When routing IS available (it is in the test environment), booting the
+    // app should populate $_router so $app->router returns an object.
+    $baseDir = sys_get_temp_dir() . '/marko_router_test_' . uniqid();
+    $vendorDir = $baseDir . '/vendor';
+    mkdir($vendorDir, 0o777, true);
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->initialize();
+
+    // marko/routing IS a dev dependency, so the router must be set after boot
+    expect($app->router)->toBeObject();
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('has an initialize() method that performs all discovery and wiring', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $vendorDir = $baseDir . '/vendor';
+
+    appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->initialize();
+
+    expect($app->modules)->toHaveCount(1)
+        ->and($app->container)->toBeInstanceOf(ContainerInterface::class);
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('no longer has a public boot() instance method', function (): void {
+    $reflection = new ReflectionClass(Application::class);
+
+    $hasPublicInstanceBoot = $reflection->hasMethod('boot')
+        && $reflection->getMethod('boot')->isPublic()
+        && !$reflection->getMethod('boot')->isStatic();
+
+    expect($hasPublicInstanceBoot)->toBeFalse();
+});
+
+it('updates router property hook error message to "Router not available. Install marko/routing: composer require marko/routing"', function (): void {
+    $app = new Application();
+
+    expect(fn () => $app->router)->toThrow(
+        RuntimeException::class,
+        'Router not available. Install marko/routing: composer require marko/routing',
+    );
+});
+
+it('bootstrap.php calls initialize() instead of boot()', function (): void {
+    $bootstrapPath = dirname(__DIR__, 2) . '/bootstrap.php';
+    $content = file_get_contents($bootstrapPath);
+
+    expect($content)->toContain('$app->initialize()')
+        ->and($content)->not->toContain('$app->boot()');
+});
+
+it('CliKernel.php calls initialize() instead of boot()', function (): void {
+    $cliKernelPath = realpath(dirname(__DIR__, 3) . '/cli/src/CliKernel.php');
+    $content = file_get_contents($cliKernelPath);
+
+    expect($content)->toContain('$app->initialize()')
+        ->and($content)->not->toContain('$app->boot()');
+});
+
+it('creates an application with inferred paths from base path using Application::boot()', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    mkdir($baseDir, 0755, true);
+
+    $app = Application::boot($baseDir);
+
+    expect($app)->toBeInstanceOf(Application::class);
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('sets vendorPath to basePath/vendor', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    mkdir($baseDir, 0755, true);
+
+    $app = Application::boot($baseDir);
+
+    expect($app->vendorPath)->toBe($baseDir . '/vendor');
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('sets modulesPath to basePath/modules', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    mkdir($baseDir, 0755, true);
+
+    $app = Application::boot($baseDir);
+
+    expect($app->modulesPath)->toBe($baseDir . '/modules');
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('sets appPath to basePath/app', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    mkdir($baseDir, 0755, true);
+
+    $app = Application::boot($baseDir);
+
+    expect($app->appPath)->toBe($baseDir . '/app');
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('calls initialize() during boot() so the application is fully initialized', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    mkdir($baseDir, 0755, true);
+
+    $app = Application::boot($baseDir);
+
+    // After boot(), container and registries should be initialized
+    expect($app->container)->not->toBeNull()
+        ->and($app->preferenceRegistry)->not->toBeNull()
+        ->and($app->observerRegistry)->not->toBeNull()
+        ->and($app->eventDispatcher)->not->toBeNull();
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('returns the Application instance (return type self)', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    mkdir($baseDir, 0755, true);
+
+    $result = Application::boot($baseDir);
+
+    expect($result)->toBeInstanceOf(Application::class);
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('throws RuntimeException when basePath is not a valid directory', function (): void {
+    expect(fn () => Application::boot('/non/existent/path'))
+        ->toThrow(RuntimeException::class, 'Base path does not exist: /non/existent/path');
+});
+
+it('throws RuntimeException with helpful message when routing package is not installed', function (): void {
+    $app = new Application();
+
+    expect(fn () => $app->handleRequest())
+        ->toThrow(RuntimeException::class, 'Cannot handle HTTP requests: marko/routing is not installed. Run: composer require marko/routing');
+});
+
+it('creates a request from globals and routes it through the router', function (): void {
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+    $_SERVER['REQUEST_URI'] = '/';
+
+    $handledRequest = null;
+    $mockRouter = new class ($handledRequest) {
+        public function __construct(
+            public mixed &$capturedRequest,
+        ) {}
+
+        public function handle(Request $request): Response
+        {
+            $this->capturedRequest = $request;
+
+            return new Response('hello');
+        }
+    };
+
+    $app = new Application();
+    $reflection = new ReflectionClass($app);
+    $property = $reflection->getProperty('_router');
+    $property->setAccessible(true);
+    $property->setValue($app, $mockRouter);
+
+    ob_start();
+    $app->handleRequest();
+    ob_get_clean();
+
+    expect($mockRouter->capturedRequest)->toBeInstanceOf(Request::class);
+});
+
+it('sends the response after routing', function (): void {
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+    $_SERVER['REQUEST_URI'] = '/';
+
+    $mockRouter = new class {
+        public function handle(Request $request): Response
+        {
+            return new Response('response body');
+        }
+    };
+
+    $app = new Application();
+    $reflection = new ReflectionClass($app);
+    $property = $reflection->getProperty('_router');
+    $property->setAccessible(true);
+    $property->setValue($app, $mockRouter);
+
+    ob_start();
+    $app->handleRequest();
+    $output = ob_get_clean();
+
+    expect($output)->toBe('response body');
+});
+
+it('returns void', function (): void {
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+    $_SERVER['REQUEST_URI'] = '/';
+
+    $mockRouter = new class {
+        public function handle(Request $request): Response
+        {
+            return new Response('');
+        }
+    };
+
+    $app = new Application();
+    $reflection = new ReflectionClass($app);
+    $property = $reflection->getProperty('_router');
+    $property->setAccessible(true);
+    $property->setValue($app, $mockRouter);
+
+    ob_start();
+    $result = $app->handleRequest();
+    ob_get_clean();
+
+    $reflectionMethod = $reflection->getMethod('handleRequest');
+
+    expect($result)->toBeNull()
+        ->and($reflectionMethod->getReturnType()->getName())->toBe('void');
 });

@@ -81,7 +81,7 @@ it('registers Router in container during boot', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $container = $app->container;
 
@@ -134,7 +134,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $router = $app->router;
     $routes = $app->container->get(RouteCollection::class);
@@ -158,7 +158,7 @@ it('resolves RouteCollection through container', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $container = $app->container;
     $routes = $container->get(RouteCollection::class);
@@ -252,7 +252,7 @@ PHP;
         appPath: $appDir,
     );
 
-    $app->boot();
+    $app->initialize();
 
     $routes = $app->container->get(RouteCollection::class);
     $route = $routes->get('GET', '/blog');
@@ -277,7 +277,7 @@ it('provides getRouter method on Application', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $router = $app->router;
 
@@ -299,7 +299,7 @@ it('returns Router as singleton in container', function (): void {
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $container = $app->container;
     $router1 = $container->get(Router::class);
@@ -386,7 +386,7 @@ PHP;
         appPath: '',
     );
 
-    $app->boot();
+    $app->initialize();
 
     $routes = $app->container->get(RouteCollection::class);
 
@@ -472,7 +472,7 @@ PHP;
         appPath: '',
     );
 
-    expect(fn () => $app->boot())->toThrow(RouteConflictException::class);
+    expect(fn () => $app->initialize())->toThrow(RouteConflictException::class);
 
     routingTestCleanupDirectory($baseDir);
 });
@@ -586,7 +586,7 @@ PHP;
         appPath: $appDir,
     );
 
-    $app->boot();
+    $app->initialize();
 
     $routes = $app->container->get(RouteCollection::class);
 
