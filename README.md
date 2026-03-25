@@ -45,7 +45,25 @@ composer create-project marko/skeleton my-app
 cd my-app
 ```
 
-Create your first controller at `app/hello/src/Controller/HelloController.php`:
+Register your first module in `app/hello/composer.json`:
+
+```json
+{
+    "name": "app/hello",
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\Hello\\": "src/"
+        }
+    }
+}
+```
+
+Create a controller at `app/hello/src/Controller/HelloController.php`:
 
 ```php
 <?php
@@ -63,19 +81,6 @@ class HelloController
     public function index(): Response
     {
         return new Response('Hello from Marko!');
-    }
-}
-```
-
-Register the namespace in `app/hello/composer.json`:
-
-```json
-{
-    "name": "app/hello",
-    "autoload": {
-        "psr-4": {
-            "App\\Hello\\": "src/"
-        }
     }
 }
 ```
