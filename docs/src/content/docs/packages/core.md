@@ -50,9 +50,9 @@ class PaymentValidationPlugin
     #[Before]
     public function charge(
         float $amount,
-    ): ?float {
-        // Modify input — method name matches target
-        return $amount * 1.1; // Add 10% fee
+    ): null|array {
+        // Modify input — return an array to replace the arguments
+        return [$amount * 1.1]; // Add 10% fee
     }
 }
 

@@ -651,8 +651,8 @@ Plugins modify the behavior of any public method without touching source code. T
 
 Marko supports only two plugin types:
 
-1. **Before**: Runs before the original method. Can short-circuit by returning early.
-2. **After**: Runs after the original method. Can modify the return value.
+1. **Before**: Runs before the original method. Return `null` to pass through, return an `array` to modify the arguments passed to the original method, or return any other non-null value to short-circuit (skip the original method entirely).
+2. **After**: Runs after the original method. Can modify the return value. When multiple after plugins target the same method, each after plugin's return value is passed as `$result` to the next after plugin in sort order (chaining).
 
 ### No Around Plugins
 
@@ -668,7 +668,7 @@ Sort order determines execution sequence when multiple plugins target the same m
 
 ### Plugin Discovery
 
-Plugins are discovered via the `#[Plugin]` attribute on classes. Methods with `#[Before]` or `#[After]` attributes are interceptors. The method name determines which target method is intercepted — a method named `save()` with `#[Before]` intercepts `save()` on the target. Use `#[Before(method: 'targetMethod')]` to target a specific method when the plugin method has a different name.
+Plugins are discovered via the `#[Plugin]` attribute on classes. Methods with `#[Before]` or `#[After]` attributes are interceptors. The method name determines which target method is intercepted — a method named `save()` with `#[Before]` intercepts `save()` on the target. Use `#[Before(method: 'targetMethod')]` to target a specific method when the plugin method has a different name. Before plugins have three return behaviors: `null` (pass through), `array` (modify arguments), or any other non-null value (short-circuit). After plugins receive the result and must return the (possibly modified) result; when multiple after plugins target the same method they chain — each one's return value becomes the next one's input.
 
 ---
 

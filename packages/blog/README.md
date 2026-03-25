@@ -80,17 +80,28 @@ use Marko\Core\Attributes\After;
 #[Plugin(target: PostService::class)]
 class PostServicePlugin
 {
+    /**
+     * The method name matches the target method. #[Before] determines timing.
+     * Return null to pass through, an array to modify arguments, or a non-null
+     * non-array value to short-circuit and skip the original method.
+     */
     #[Before]
-    public function beforeCreatePost(array $data): null
+    public function createPost(array $data): null|array
     {
-        // modify data before createPost runs
-        return null;
-    }
+        // Modify the data before createPost runs by returning an array
+        $data['slug'] = strtolower(trim($data['slug']));
 
+        return [$data];
+    }
+}
+
+#[Plugin(target: PostService::class)]
+class PostServiceAuditPlugin
+{
     #[After]
-    public function afterCreatePost(Post $post): Post
+    public function createPost(Post $post): Post
     {
-        // act on result after createPost runs
+        // Act on the result after createPost runs
         return $post;
     }
 }

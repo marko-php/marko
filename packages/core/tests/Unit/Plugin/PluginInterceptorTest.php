@@ -8,6 +8,7 @@ use Marko\Core\Container\Container;
 use Marko\Core\Plugin\PluginDefinition;
 use Marko\Core\Plugin\PluginInterceptor;
 use Marko\Core\Plugin\PluginProxy;
+use Marko\Core\Plugin\PluginArgumentCountException;
 use Marko\Core\Plugin\PluginRegistry;
 
 // Test fixtures for interceptor tests
@@ -807,7 +808,10 @@ it('executes plugins using explicit method param with different method names', f
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
-    $proxy = $interceptor->createProxy(ExplicitMethodParamTargetService::class, new ExplicitMethodParamTargetService());
+    $proxy = $interceptor->createProxy(
+        ExplicitMethodParamTargetService::class,
+        new ExplicitMethodParamTargetService()
+    );
 
     $result = $proxy->save('test data');
 
@@ -816,3 +820,432 @@ it('executes plugins using explicit method param with different method names', f
         ->and(ExplicitMethodParamTargetService::$callLog)->toBe(['ExplicitMethodParamTargetService::save(test data)'])
         ->and($result)->toBe('saved: test data');
 });
+
+// ---- Argument modification tests ----
+
+class ArgModService
+{
+    public function process(
+        string $name,
+        int $count,
+    ): string {
+        return "processed: $name, $count";
+    }
+}
+
+class ArgModifyingBeforePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function process(
+        string $name,
+        int $count,
+    ): ?array {
+        return ['modified-name', $count + 10];
+    }
+}
+
+it('modifies arguments when before plugin returns an array', function (): void {
+    $container = new Container();
+    $registry = new PluginRegistry();
+
+    $registry->register(new PluginDefinition(
+        pluginClass: ArgModifyingBeforePlugin::class,
+        targetClass: ArgModService::class,
+        beforeMethods: ['process' => ['pluginMethod' => 'process', 'sortOrder' => 10]],
+    ));
+
+    $interceptor = new PluginInterceptor($container, $registry);
+    $proxy = $interceptor->createProxy(ArgModService::class, new ArgModService());
+
+    $result = $proxy->process('original', 5);
+
+    expect($result)->toBe('processed: modified-name, 15');
+});
+
+class ArgPassTargetService
+{
+    public static array $receivedArgs = [];
+
+    public function compute(
+        string $label,
+        int $value,
+    ): string {
+        self::$receivedArgs = ['label' => $label, 'value' => $value];
+
+        return "computed: $label=$value";
+    }
+}
+
+class ArgPassBeforePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function compute(
+        string $label,
+        int $value,
+    ): ?array {
+        return ['new-label', $value * 2];
+    }
+}
+
+it('passes modified arguments to the target method', function (): void {
+    ArgPassTargetService::$receivedArgs = [];
+
+    $container = new Container();
+    $registry = new PluginRegistry();
+
+    $registry->register(new PluginDefinition(
+        pluginClass: ArgPassBeforePlugin::class,
+        targetClass: ArgPassTargetService::class,
+        beforeMethods: ['compute' => ['pluginMethod' => 'compute', 'sortOrder' => 10]],
+    ));
+
+    $interceptor = new PluginInterceptor($container, $registry);
+    $proxy = $interceptor->createProxy(ArgPassTargetService::class, new ArgPassTargetService());
+
+    $proxy->compute('original', 7);
+
+    expect(ArgPassTargetService::$receivedArgs)->toBe(['label' => 'new-label', 'value' => 14]);
+});
+
+class ChainArgService
+{
+    public function transform(
+        string $text,
+        int $multiplier,
+    ): string {
+        return "result: $text x$multiplier";
+    }
+}
+
+class ChainArgPluginFirst
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function transform(
+        string $text,
+        int $multiplier,
+    ): ?array {
+        return ["$text-first", $multiplier + 1];
+    }
+}
+
+class ChainArgPluginSecond
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function transform(
+        string $text,
+        int $multiplier,
+    ): ?array {
+        return ["$text-second", $multiplier + 1];
+    }
+}
+
+it('chains argument modifications through multiple before plugins', function (): void {
+    $container = new Container();
+    $registry = new PluginRegistry();
+
+    $registry->register(new PluginDefinition(
+        pluginClass: ChainArgPluginFirst::class,
+        targetClass: ChainArgService::class,
+        beforeMethods: ['transform' => ['pluginMethod' => 'transform', 'sortOrder' => 10]],
+    ));
+
+    $registry->register(new PluginDefinition(
+        pluginClass: ChainArgPluginSecond::class,
+        targetClass: ChainArgService::class,
+        beforeMethods: ['transform' => ['pluginMethod' => 'transform', 'sortOrder' => 20]],
+    ));
+
+    $interceptor = new PluginInterceptor($container, $registry);
+    $proxy = $interceptor->createProxy(ChainArgService::class, new ChainArgService());
+
+    $result = $proxy->transform('hello', 1);
+
+    // First plugin: ['hello-first', 2], Second plugin: ['hello-first-second', 3]
+    expect($result)->toBe('result: hello-first-second x3');
+});
+
+class AfterModArgsService
+{
+    public function run(
+        string $input,
+        int $times,
+    ): string {
+        return "ran: $input x$times";
+    }
+}
+
+class AfterModArgsBeforePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function run(
+        string $input,
+        int $times,
+    ): ?array {
+        return ['modified-input', $times + 5];
+    }
+}
+
+class AfterModArgsAfterPlugin
+{
+    public static array $receivedArgs = [];
+
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function run(
+        mixed $result,
+        string $input,
+        int $times,
+    ): mixed {
+        self::$receivedArgs = ['input' => $input, 'times' => $times];
+
+        return $result;
+    }
+}
+
+it('passes modified arguments to after plugins', function (): void {
+    AfterModArgsAfterPlugin::$receivedArgs = [];
+
+    $container = new Container();
+    $registry = new PluginRegistry();
+
+    $registry->register(new PluginDefinition(
+        pluginClass: AfterModArgsBeforePlugin::class,
+        targetClass: AfterModArgsService::class,
+        beforeMethods: ['run' => ['pluginMethod' => 'run', 'sortOrder' => 10]],
+    ));
+
+    $registry->register(new PluginDefinition(
+        pluginClass: AfterModArgsAfterPlugin::class,
+        targetClass: AfterModArgsService::class,
+        afterMethods: ['run' => ['pluginMethod' => 'run', 'sortOrder' => 10]],
+    ));
+
+    $interceptor = new PluginInterceptor($container, $registry);
+    $proxy = $interceptor->createProxy(AfterModArgsService::class, new AfterModArgsService());
+
+    $proxy->run('original', 1);
+
+    // After plugin should receive the modified arguments, not the originals
+    expect(AfterModArgsAfterPlugin::$receivedArgs)->toBe(['input' => 'modified-input', 'times' => 6]);
+});
+
+class StillShortCircuitService
+{
+    public static bool $called = false;
+
+    public function fetch(string $key): string
+    {
+        self::$called = true;
+
+        return "fetched: $key";
+    }
+}
+
+class StillShortCircuitPlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function fetch(string $key): string
+    {
+        return 'short-circuited';
+    }
+}
+
+it('still short-circuits when before plugin returns non-null non-array', function (): void {
+    StillShortCircuitService::$called = false;
+
+    $container = new Container();
+    $registry = new PluginRegistry();
+
+    $registry->register(new PluginDefinition(
+        pluginClass: StillShortCircuitPlugin::class,
+        targetClass: StillShortCircuitService::class,
+        beforeMethods: ['fetch' => ['pluginMethod' => 'fetch', 'sortOrder' => 10]],
+    ));
+
+    $interceptor = new PluginInterceptor($container, $registry);
+    $proxy = $interceptor->createProxy(StillShortCircuitService::class, new StillShortCircuitService());
+
+    $result = $proxy->fetch('mykey');
+
+    expect($result)->toBe('short-circuited')
+        ->and(StillShortCircuitService::$called)->toBeFalse();
+});
+
+class PassThroughNullService
+{
+    public static bool $called = false;
+
+    public function execute(string $input): string
+    {
+        self::$called = true;
+
+        return "executed: $input";
+    }
+}
+
+class PassThroughNullPlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function execute(string $input): ?string
+    {
+        return null;
+    }
+}
+
+it('still passes through when before plugin returns null', function (): void {
+    PassThroughNullService::$called = false;
+
+    $container = new Container();
+    $registry = new PluginRegistry();
+
+    $registry->register(new PluginDefinition(
+        pluginClass: PassThroughNullPlugin::class,
+        targetClass: PassThroughNullService::class,
+        beforeMethods: ['execute' => ['pluginMethod' => 'execute', 'sortOrder' => 10]],
+    ));
+
+    $interceptor = new PluginInterceptor($container, $registry);
+    $proxy = $interceptor->createProxy(PassThroughNullService::class, new PassThroughNullService());
+
+    $result = $proxy->execute('hello');
+
+    expect($result)->toBe('executed: hello')
+        ->and(PassThroughNullService::$called)->toBeTrue();
+});
+
+class RequiredParamsService
+{
+    public function create(
+        string $name,
+        int $age,
+    ): string
+    {
+        return "$name is $age";
+    }
+}
+
+class EmptyArrayBeforePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function create(
+        string $name,
+        int $age,
+    ): ?array
+    {
+        return [];
+    }
+}
+
+it(
+    'throws PluginArgumentCountException when before plugin returns empty array and target has required params',
+    function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+    
+        $registry->register(new PluginDefinition(
+            pluginClass: EmptyArrayBeforePlugin::class,
+            targetClass: RequiredParamsService::class,
+            beforeMethods: ['create' => ['pluginMethod' => 'create', 'sortOrder' => 10]],
+        ));
+    
+        $interceptor = new PluginInterceptor($container, $registry);
+        $proxy = $interceptor->createProxy(RequiredParamsService::class, new RequiredParamsService());
+    
+        expect(fn() => $proxy->create('Alice', 30))
+            ->toThrow(PluginArgumentCountException::class);
+    }
+);
+
+class WrongCountService
+{
+    public function charge(
+        string $card,
+        int $amount,
+    ): string
+    {
+        return "charged $card: $amount";
+    }
+}
+
+class WrongCountBeforePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function charge(
+        string $card,
+        int $amount,
+    ): ?array
+    {
+        return ['card1', 100, 'extra-arg'];
+    }
+}
+
+it(
+    'throws PluginArgumentCountException when before plugin returns array with wrong argument count',
+    function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+    
+        $registry->register(new PluginDefinition(
+            pluginClass: WrongCountBeforePlugin::class,
+            targetClass: WrongCountService::class,
+            beforeMethods: ['charge' => ['pluginMethod' => 'charge', 'sortOrder' => 10]],
+        ));
+    
+        $interceptor = new PluginInterceptor($container, $registry);
+        $proxy = $interceptor->createProxy(WrongCountService::class, new WrongCountService());
+    
+        expect(fn() => $proxy->charge('visa', 50))
+            ->toThrow(PluginArgumentCountException::class);
+    }
+);
+
+class ExceptionMessageService
+{
+    public function process(
+        string $input,
+        int $count,
+    ): string
+    {
+        return "$input x$count";
+    }
+}
+
+class ExceptionMessagePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function process(
+        string $input,
+        int $count,
+    ): ?array
+    {
+        return ['only-one'];
+    }
+}
+
+it(
+    'includes plugin class name, target method, expected and actual counts in the exception message',
+    function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+    
+        $registry->register(new PluginDefinition(
+            pluginClass: ExceptionMessagePlugin::class,
+            targetClass: ExceptionMessageService::class,
+            beforeMethods: ['process' => ['pluginMethod' => 'process', 'sortOrder' => 10]],
+        ));
+    
+        $interceptor = new PluginInterceptor($container, $registry);
+        $proxy = $interceptor->createProxy(ExceptionMessageService::class, new ExceptionMessageService());
+    
+        try {
+            $proxy->process('hello', 5);
+            expect(false)->toBeTrue('Exception was not thrown');
+        } catch (PluginArgumentCountException $e) {
+            expect($e->getMessage())
+                ->toContain('ExceptionMessagePlugin')
+                ->toContain('ExceptionMessageService')
+                ->toContain('process')
+                ->toContain('2')  // expected
+                ->toContain('1'); // actual
+        }
+    }
+);

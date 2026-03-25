@@ -38,17 +38,18 @@ use Marko\Core\Attributes\Plugin;
 class PostRepositoryPlugin
 {
     /**
-     * Runs before getPost() — return null to continue, or non-null to short-circuit.
+     * Runs before getPost() — return null to pass through, return an array to modify
+     * the arguments, or return a non-null non-array value to short-circuit entirely.
      */
     #[Before]
     public function getPost(int $id): null
     {
-        // Log or validate the input
+        // Log or validate the input without changing anything
         return null;
     }
 
     /**
-     * Runs after find() — receives the result, then the original arguments.
+     * Runs after find() — receives the result, then the arguments (possibly modified by before plugins).
      */
     #[After]
     public function find(mixed $result, int $id): mixed
@@ -74,9 +75,43 @@ The method name is the target method name. The attribute determines timing:
 - `#[Before]` on a method named `save` — runs before `save()`
 - `#[After]` on a method named `save` — runs after `save()`
 
-For `before` plugins, parameters match the original method's signature. Return `null` to continue to the original method, or return a non-null value to short-circuit and use that as the result.
+For `before` plugins, parameters match the original method's signature. There are three possible return behaviors:
 
-For `after` plugins, the first parameter is the result from the original method, followed by the original arguments. Return the (possibly modified) result.
+- Return `null` — pass through and continue to the original method unchanged
+- Return an `array` — replace the method's arguments with the array values before calling the original method
+- Return any other non-null value — short-circuit: the original method is skipped and this value becomes the result
+
+**Argument modification example** — return an array to replace the arguments:
+
+```php
+#[Before]
+public function applyDiscount(float $price, int $quantity): null|array
+{
+    // Apply bulk discount when ordering 10 or more
+    if ($quantity >= 10) {
+        return [$price * 0.9, $quantity]; // 10% discount on price
+    }
+
+    return null; // No modification — continue with original arguments
+}
+```
+
+**Short-circuit example** — return a non-null, non-array value to skip the original method:
+
+```php
+#[Before]
+public function show(string $slug): ?string
+{
+    // Redirect old slugs to the canonical one
+    if ($slug === 'old-post') {
+        return 'new-post'; // Short-circuit — original method is never called
+    }
+
+    return null; // Continue to original method
+}
+```
+
+For `after` plugins, the first parameter is the result from the original method, followed by the arguments (possibly modified by before plugins). Return the (possibly modified) result.
 
 ### Sort Order
 
@@ -138,6 +173,28 @@ When multiple plugins target the same method:
 1. All `before` plugins run (in sort order)
 2. The original method runs (unless a before plugin short-circuited)
 3. All `after` plugins run (in sort order)
+
+### After Plugin Result Chaining
+
+When multiple after plugins target the same method, each plugin's return value becomes the next plugin's `$result` input. The plugins form a chain — the final result is whatever the last after plugin returns.
+
+```php
+// Target method returns: 10
+
+#[After(sortOrder: 10)]
+public function double(int $result): int
+{
+    return $result * 2; // 10 → 20
+}
+
+#[After(sortOrder: 20)]
+public function addBonus(int $result): int
+{
+    return $result + 5; // 20 → 25
+}
+
+// Final result: 25
+```
 
 ## When to Use Plugins
 

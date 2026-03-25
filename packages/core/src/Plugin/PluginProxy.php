@@ -7,6 +7,7 @@ namespace Marko\Core\Plugin;
 use Marko\Core\Container\ContainerInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use ReflectionMethod;
 
 readonly class PluginProxy
 {
@@ -27,7 +28,7 @@ readonly class PluginProxy
      * @param string $method
      * @param array $arguments
      * @return mixed
-     * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface|NotFoundExceptionInterface|PluginArgumentCountException
      */
     public function __call(
         string $method,
@@ -39,8 +40,21 @@ readonly class PluginProxy
             $plugin = $this->container->get($beforeMethod['pluginClass']);
             $result = $plugin->{$beforeMethod['method']}(...$arguments);
 
-            // Short-circuit if before plugin returns non-null
-            if ($result !== null) {
+            if (is_array($result)) {
+                // Validate argument count matches target method
+                $expectedCount = (new ReflectionMethod($this->target, $method))->getNumberOfParameters();
+                if (count($result) !== $expectedCount) {
+                    throw PluginArgumentCountException::wrongCount(
+                        pluginClass: $beforeMethod['pluginClass'],
+                        targetClass: $this->targetClass,
+                        targetMethod: $method,
+                        expectedCount: $expectedCount,
+                        actualCount: count($result),
+                    );
+                }
+                $arguments = $result;
+            } elseif ($result !== null) {
+                // Short-circuit if before plugin returns non-null non-array
                 return $result;
             }
         }
