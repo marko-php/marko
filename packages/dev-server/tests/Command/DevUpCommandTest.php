@@ -44,9 +44,13 @@ class FakeProcessManager extends ProcessManager
         return $this->runningOverrides[$name] ?? true;
     }
 
-    public function detachAll(): void
-    {
-        // No-op in tests
+    public function startDetached(
+        string $name,
+        string $command,
+    ): int {
+        $this->started[$name] = $command;
+
+        return 12345;
     }
 
     public function runForeground(): void
@@ -847,8 +851,11 @@ it('suggests marko down in exception when services are already running', functio
     }
 });
 
-it('throws DevServerException when PHP server dies immediately after start', function (): void {
-    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.port' => 8000]);
+it('throws DevServerException when PHP server dies immediately after start in foreground mode', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand([
+        'dev.port' => 8000,
+        'dev.detach' => false,
+    ]);
     // Simulate PHP server dying immediately (port in use)
     $pm->runningOverrides['php'] = false;
     ['output' => $output] = createMemoryOutput();
@@ -857,8 +864,11 @@ it('throws DevServerException when PHP server dies immediately after start', fun
     $command->execute($input, $output);
 })->throws(DevServerException::class, 'Port 8000 is already in use');
 
-it('does not throw when PHP server stays running after start', function (): void {
-    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.port' => 8000]);
+it('does not throw when PHP server stays running after start in foreground mode', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand([
+        'dev.port' => 8000,
+        'dev.detach' => false,
+    ]);
     // PHP server stays alive (default behavior)
     $pm->runningOverrides['php'] = true;
     ['output' => $output] = createMemoryOutput();

@@ -79,6 +79,9 @@ readonly class DevUpCommand implements CommandInterface
         $output->writeLine('Starting development environment...');
 
         $entries = [];
+        $startProcess = $detach
+            ? $this->processManager->startDetached(...)
+            : $this->processManager->start(...);
 
         // Docker
         if ($dockerConfig !== false) {
@@ -88,7 +91,7 @@ readonly class DevUpCommand implements CommandInterface
 
             if ($dockerCommand !== null) {
                 $output->writeLine("  Starting Docker: $dockerCommand");
-                $pid = $this->processManager->start('docker', $dockerCommand);
+                $pid = $startProcess('docker', $dockerCommand);
                 $entries[] = new ProcessEntry(
                     name: 'docker',
                     pid: $pid,
@@ -107,7 +110,7 @@ readonly class DevUpCommand implements CommandInterface
 
             if ($frontendCommand !== null) {
                 $output->writeLine("  Starting frontend: $frontendCommand");
-                $pid = $this->processManager->start('frontend', $frontendCommand);
+                $pid = $startProcess('frontend', $frontendCommand);
                 $entries[] = new ProcessEntry(
                     name: 'frontend',
                     pid: $pid,
@@ -126,7 +129,7 @@ readonly class DevUpCommand implements CommandInterface
 
             if ($pubsubCommand !== null) {
                 $output->writeLine("  Starting pub/sub listener: $pubsubCommand");
-                $pid = $this->processManager->start('pubsub', $pubsubCommand);
+                $pid = $startProcess('pubsub', $pubsubCommand);
                 $entries[] = new ProcessEntry(
                     name: 'pubsub',
                     pid: $pid,
@@ -142,7 +145,7 @@ readonly class DevUpCommand implements CommandInterface
         $processes = $this->config->get('dev.processes');
         foreach ($processes as $name => $processCommand) {
             $output->writeLine("  Starting $name: $processCommand");
-            $pid = $this->processManager->start($name, $processCommand);
+            $pid = $startProcess($name, $processCommand);
             $entries[] = new ProcessEntry(
                 name: $name,
                 pid: $pid,
@@ -155,12 +158,15 @@ readonly class DevUpCommand implements CommandInterface
         // PHP server (always) — multiple workers needed for SSE
         $phpCommand = "env PHP_CLI_SERVER_WORKERS=4 php -S localhost:$port -t public/";
         $output->writeLine("  Starting PHP server: php -S localhost:$port");
-        $pid = $this->processManager->start('php', $phpCommand);
+        $pid = $startProcess('php', $phpCommand);
 
-        // Verify the PHP server is still alive — if it died immediately, the port is likely in use
-        usleep(100000); // 100ms — give the server time to attempt binding
-        if (!$this->processManager->isRunning('php')) {
-            throw DevServerException::portInUse($port);
+        // In foreground mode, verify PHP server is alive — if it died, port is likely in use.
+        // In detached mode, startDetached() already checks for immediate failure.
+        if (!$detach) {
+            usleep(100000); // 100ms — give the server time to attempt binding
+            if (!$this->processManager->isRunning('php')) {
+                throw DevServerException::portInUse($port);
+            }
         }
 
         $entries[] = new ProcessEntry(
@@ -173,7 +179,6 @@ readonly class DevUpCommand implements CommandInterface
 
         if ($detach) {
             $this->pidFile->write($entries);
-            $this->processManager->detachAll();
             $output->writeLine('Development environment started in background.');
             $output->writeLine("Run 'marko dev:status' to check status.");
             $output->writeLine("Run 'marko dev:down' to stop.");

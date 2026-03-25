@@ -64,30 +64,52 @@ class ProcessManager
     }
 
     /**
-     * Detach all managed processes so they survive PHP exit.
+     * Start a named process in the background, fully detached from PHP.
      *
-     * Closes pipes and releases proc_open resources without terminating
-     * the processes. Used in detached mode before the CLI exits.
+     * Uses shell exec with output redirection instead of proc_open,
+     * so the process survives PHP exit. Returns the PID.
      */
-    public function detachAll(): void
-    {
-        foreach (array_keys($this->processes) as $name) {
-            $pipes = $this->processes[$name]['pipes'];
+    public function startDetached(
+        string $name,
+        string $command,
+    ): int {
+        $wrappedCommand = $this->wrapWithNewProcessGroup($command);
 
-            // Close pipes so the child doesn't get SIGPIPE when PHP exits
-            foreach ($pipes as $pipe) {
-                if (is_resource($pipe)) {
-                    fclose($pipe);
-                }
-            }
+        // Start fully detached: redirect output to /dev/null and background
+        $pid = (int) trim((string) shell_exec(
+            "$wrappedCommand > /dev/null 2>&1 & echo $!",
+        ));
 
-            // Release the resource without terminating — process continues running
-            $process = $this->processes[$name]['resource'];
-            // proc_close would wait/kill, so just let PHP's GC handle it
-            // after pipes are closed and process is in its own session
+        if ($pid <= 0) {
+            throw DevServerException::processFailedToStart($name, $command);
         }
 
-        $this->processes = [];
+        // Brief check to see if process died immediately
+        // (e.g. command not found, port in use)
+        usleep(150000); // 150ms
+        if (!$this->isDetachedRunning($pid)) {
+            throw DevServerException::processFailedToStart($name, $command);
+        }
+
+        $this->pids[$name] = $pid;
+
+        return $pid;
+    }
+
+    /**
+     * Check if a detached process (or its process group) is still running.
+     */
+    private function isDetachedRunning(int $pid): bool
+    {
+        if (!function_exists('posix_kill')) {
+            return false;
+        }
+
+        try {
+            return @posix_kill(-$pid, 0) || posix_kill($pid, 0);
+        } catch (\ValueError) {
+            return false;
+        }
     }
 
     /**
