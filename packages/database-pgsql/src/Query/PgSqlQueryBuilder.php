@@ -245,8 +245,8 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         );
 
         $placeholders = [];
-        foreach ($values as $index => $value) {
-            $placeholders[] = '$' . ($index + 1);
+        foreach ($values as $value) {
+            $placeholders[] = '?';
             $this->bindings[] = $value;
         }
 
@@ -268,16 +268,13 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
     ): int {
         $this->bindings = [];
         $setParts = [];
-        $paramIndex = 1;
 
         foreach ($data as $column => $value) {
             $setParts[] = sprintf(
-                '%s = $%d',
+                '%s = ?',
                 $this->quoteIdentifier($column),
-                $paramIndex,
             );
             $this->bindings[] = $value;
-            $paramIndex++;
         }
 
         $sql = sprintf(
@@ -286,7 +283,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
             implode(', ', $setParts),
         );
 
-        $sql .= $this->buildWhereClause($paramIndex);
+        $sql .= $this->buildWhereClause();
 
         return $this->connection->execute($sql, $this->bindings);
     }
@@ -300,7 +297,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
             $this->quoteIdentifier($this->table),
         );
 
-        $sql .= $this->buildWhereClause(1);
+        $sql .= $this->buildWhereClause();
 
         return $this->connection->execute($sql, $this->bindings);
     }
@@ -312,7 +309,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
             $this->quoteIdentifier($this->table),
         );
 
-        $sql .= $this->buildWhereClause(1);
+        $sql .= $this->buildWhereClause();
 
         $result = $this->connection->query($sql, $this->bindings);
 
@@ -366,7 +363,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         );
 
         $sql .= $this->buildJoinClause();
-        $sql .= $this->buildWhereClause(1);
+        $sql .= $this->buildWhereClause();
         $sql .= $this->buildOrderByClause();
         $sql .= $this->buildLimitOffsetClause();
 
@@ -395,19 +392,16 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return implode('', $clauses);
     }
 
-    private function buildWhereClause(
-        int $startIndex,
-    ): string {
+    private function buildWhereClause(): string
+    {
         $conditions = [];
-        $paramIndex = $startIndex;
 
         // Regular WHERE conditions
         foreach ($this->wheres as $index => $where) {
             $condition = sprintf(
-                '%s %s $%d',
+                '%s %s ?',
                 $this->quoteIdentifier($where['column']),
                 $where['operator'],
-                $paramIndex,
             );
 
             if ($index === 0 && empty($conditions)) {
@@ -417,16 +411,14 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
             }
 
             $this->bindings[] = $where['value'];
-            $paramIndex++;
         }
 
         // WHERE IN conditions
         foreach ($this->whereIns as $whereIn) {
             $placeholders = [];
             foreach ($whereIn['values'] as $value) {
-                $placeholders[] = '$' . $paramIndex;
+                $placeholders[] = '?';
                 $this->bindings[] = $value;
-                $paramIndex++;
             }
 
             $condition = sprintf(
