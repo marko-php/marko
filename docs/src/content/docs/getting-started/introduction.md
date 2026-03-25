@@ -48,6 +48,10 @@ marko/cache-redis    → RedisCacheDriver (Redis implementation)
 
 You code against the interface. Swap implementations by changing a single binding — no other code changes needed.
 
+## See It in Action
+
+[MarkoTalk](https://github.com/marko-php/markotalk) is a real-time community chat app built with Marko. It dogfoods the framework's module system, plugins, preferences, events, SSE, and admin panel in a production-quality application. It's the best way to see how everything fits together.
+
 ## What's Next?
 
 - [Install Marko](/docs/getting-started/installation/) and create your first project

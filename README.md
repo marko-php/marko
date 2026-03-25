@@ -321,6 +321,12 @@ Marko ships as composable packages — require only what you need. Every package
 |---------|-------------|
 | [testing](packages/testing/README.md) | Test fakes, assertions, and Pest expectations |
 
+## Example Applications
+
+| App | Description |
+|-----|-------------|
+| [MarkoTalk](https://github.com/marko-php/markotalk) | Real-time community chat — dogfoods plugins, preferences, events, SSE, and the admin panel |
+
 ## Requirements
 
 - PHP 8.5+

@@ -448,7 +448,7 @@ The replay loop creates `SseEvent` objects with explicit `id` values. When the b
 marko up
 ```
 
-`marko up` (alias for `dev:up`) starts the full development environment automatically --- PHP server, Docker if detected, pub/sub listener if pubsub packages are installed, and frontend build tools if detected. For SSE applications this is important: `marko up` starts PHP with `PHP_CLI_SERVER_WORKERS=4` by default, so the SSE connection does not block all other requests on the single-threaded PHP built-in server. MarkoTalk (the reference chat implementation) uses this same approach.
+`marko up` (alias for `dev:up`) starts the full development environment automatically --- PHP server, Docker if detected, pub/sub listener if pubsub packages are installed, and frontend build tools if detected. For SSE applications this is important: `marko up` starts PHP with `PHP_CLI_SERVER_WORKERS=4` by default, so the SSE connection does not block all other requests on the single-threaded PHP built-in server. [MarkoTalk](https://github.com/marko-php/markotalk) (the reference chat implementation) uses this same approach.
 
 In separate terminals, test the flow:
 
