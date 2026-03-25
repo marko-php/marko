@@ -26,15 +26,26 @@ This starts all detected services:
 - **Docker** --- started if a `compose.yaml` / `docker-compose.yml` file is found
 - **Frontend** --- started if `package.json` has a `dev` script (uses bun, pnpm, yarn, or npm)
 
-By default `dev:up` runs in the foreground. Press `Ctrl+C` to stop all services.
+By default `dev:up` runs in detached (background) mode. Use `dev:status` and `dev:down` to manage running services.
+
+### Foreground Mode
+
+```bash
+marko up --foreground
+# alias: marko up -f
+```
+
+Runs services in the foreground. Press `Ctrl+C` to stop all services. This overrides the `detach` default.
 
 ### Detached Mode
+
+`marko up` runs detached by default. You can also make this explicit:
 
 ```bash
 marko dev:up --detach
 ```
 
-Starts services in the background. Use `dev:status` and `dev:down` to manage them.
+Use `dev:status` and `dev:down` to manage background services.
 
 ### Checking Status
 
@@ -52,6 +63,22 @@ marko dev:down
 ```
 
 Stops all processes started by `dev:up --detach`.
+
+### Application Entry Point Requirement
+
+`marko up` requires a `public/index.php` entry point. If the file is missing, a `DevServerException` is thrown with a helpful message showing the bootstrap code to create it:
+
+```php title="public/index.php"
+<?php
+
+declare(strict_types=1);
+
+use Marko\Core\Application;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+Application::boot(dirname(__DIR__))->handleRequest();
+```
 
 ### Changing the Port
 
@@ -72,7 +99,7 @@ declare(strict_types=1);
 
 return [
     'port'      => 8000,
-    'detach'    => false,
+    'detach'    => true,
     'docker'    => true,
     'frontend'  => true,
     'processes' => [],
@@ -84,7 +111,7 @@ return [
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `port` | `int` | `8000` | Port for the PHP built-in server |
-| `detach` | `bool` | `false` | Run services in background by default |
+| `detach` | `bool` | `true` | Run services in background by default (default: true) |
 | `docker` | `true\|string\|false` | `true` | Auto-detect Docker (`true`), custom command (`string`), or disable (`false`) |
 | `frontend` | `true\|string\|false` | `true` | Auto-detect frontend (`true`), custom command (`string`), or disable (`false`) |
 | `processes` | `array<string, string>` | `[]` | Named custom processes to run alongside the dev environment |
@@ -125,6 +152,7 @@ Flags passed to `dev:up` take precedence over config file values:
 |---|---|
 | `--port=N` | Override the server port |
 | `--detach` | Run in background (detached mode) |
+| `--foreground`, `-f` | Run in foreground mode (overrides detach default) |
 
 ## API Reference
 
@@ -242,3 +270,4 @@ Extends `MarkoException` with contextual error messages and suggestions:
 
 - `processFailedToStart(string $name, string $command)` --- thrown when a process fails to start. Suggests checking the command and running `marko dev:status`.
 - `portInUse(int $port)` --- thrown when the PHP server port is already in use. Suggests using `--port=XXXX` to pick a different port.
+- `missingEntryPoint(string $path)` --- thrown when `public/index.php` does not exist. Displays the bootstrap code needed to create it.

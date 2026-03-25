@@ -254,6 +254,10 @@
         },
         {
             "type": "path",
+            "url": "packages/skeleton"
+        },
+        {
+            "type": "path",
             "url": "packages/sse"
         },
         {

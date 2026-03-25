@@ -23,14 +23,13 @@ declare(strict_types=1);
 
 namespace App\Foo\Controller;
 
-use Marko\Routing\Attribute\Get;
-use Marko\Http\Response;
-use Marko\Http\ResponseInterface;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Http\Response;
 
 class GreetingController
 {
     #[Get('/hello/{name}')]
-    public function greet(string $name): ResponseInterface
+    public function greet(string $name): Response
     {
         return new Response(
             body: "Hello, {$name}! Welcome to Marko.",
@@ -85,17 +84,17 @@ declare(strict_types=1);
 
 namespace App\Foo\Controller;
 
-use Marko\Routing\Attribute\Get;
-use Marko\Http\JsonResponse;
-use Marko\Http\ResponseInterface;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Http\Response;
 
 class ApiController
 {
     #[Get('/api/hello/{name}')]
-    public function greet(string $name): ResponseInterface
+    public function greet(string $name): Response
     {
-        return new JsonResponse(
-            data: ['message' => "Hello, {$name}!", 'framework' => 'Marko'],
+        return new Response(
+            body: json_encode(['message' => "Hello, {$name}!", 'framework' => 'Marko']),
+            headers: ['Content-Type' => 'application/json'],
         );
     }
 }

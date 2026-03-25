@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'port' => 8000,
-    'detach' => false,
+    'detach' => true,
     'docker' => true,
     'frontend' => true,
     'pubsub' => true,

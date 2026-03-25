@@ -10,6 +10,7 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Path\ProjectPaths;
 use Marko\DevServer\Detection\DockerDetector;
 use Marko\DevServer\Detection\FrontendDetector;
 use Marko\DevServer\Detection\PubSubDetector;
@@ -29,6 +30,7 @@ readonly class DevUpCommand implements CommandInterface
         private PubSubDetector $pubsubDetector,
         private PidFile $pidFile,
         private ProcessManager $processManager,
+        private ProjectPaths $paths,
     ) {}
 
     /**
@@ -37,10 +39,26 @@ readonly class DevUpCommand implements CommandInterface
     public function execute(Input $input, Output $output): int
     {
         $port = (int) ($input->getOption('port') ?? $input->getOption('p') ?? $this->config->getInt('dev.port'));
-        $detach = $input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool('dev.detach');
+        $foreground = $input->hasOption('foreground') || $input->hasOption('f');
+        $detach = !$foreground && ($input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool('dev.detach'));
         $dockerConfig = $this->config->get('dev.docker');
         $frontendConfig = $this->config->get('dev.frontend');
         $pubsubConfig = $this->config->get('dev.pubsub');
+
+        $indexPath = $this->paths->base . '/public/index.php';
+        if (!file_exists($indexPath)) {
+            throw new DevServerException(
+                message: 'Cannot start PHP server: public/index.php not found.',
+                context: "While starting PHP development server (expected at $indexPath)",
+                suggestion: "Create public/index.php with:\n\n" .
+                    "<?php\n\n" .
+                    "declare(strict_types=1);\n\n" .
+                    "require __DIR__ . '/../vendor/autoload.php';\n\n" .
+                    "use Marko\\Core\\Application;\n\n" .
+                    "\$app = Application::boot(dirname(__DIR__));\n" .
+                    "\$app->handleRequest();\n",
+            );
+        }
 
         $output->writeLine('Starting development environment...');
 

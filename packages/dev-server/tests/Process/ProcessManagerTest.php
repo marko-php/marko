@@ -164,3 +164,59 @@ it('reports process exit with failure status', function (): void {
 
     expect($result)->toContain('[fail] exited with code 1');
 });
+
+it('captures the actual command PID not the shell wrapper PID', function (): void {
+    $output = new Output(fopen('php://memory', 'r+'));
+    $manager = new ProcessManager($output);
+
+    $pid = $manager->start('sleep', 'sleep 10');
+
+    // The stored PID must be the sleep process itself.
+    // With exec prefix, posix_kill($pid, 0) returns true because the PID
+    // is the actual long-running command, not a transient shell wrapper.
+    expect(posix_kill($pid, 0))->toBeTrue();
+
+    $manager->stop('sleep');
+});
+
+it('reports running processes as running in dev:status', function (): void {
+    $output = new Output(fopen('php://memory', 'r+'));
+    $manager = new ProcessManager($output);
+
+    $pid = $manager->start('sleep', 'sleep 10');
+
+    // Simulate what dev:status does: check the stored PID via posix_kill
+    // The PID must still be alive after the start() call returns
+    expect(posix_kill($pid, 0))->toBeTrue();
+
+    $manager->stop('sleep');
+});
+
+it('reports stopped processes as stopped in dev:status', function (): void {
+    $output = new Output(fopen('php://memory', 'r+'));
+    $manager = new ProcessManager($output);
+
+    $pid = $manager->start('sleep', 'sleep 10');
+    $manager->stop('sleep');
+
+    // After stop, the process should no longer be alive
+    // Give the OS a moment to clean up
+    usleep(50000);
+    expect(posix_kill($pid, 0))->toBeFalse();
+});
+
+it('correctly tracks PID for long-running processes', function (): void {
+    $output = new Output(fopen('php://memory', 'r+'));
+    $manager = new ProcessManager($output);
+
+    $pid = $manager->start('sleep', 'sleep 30');
+
+    // Wait a bit to ensure any shell wrapper has had time to exit
+    usleep(100000); // 100ms
+
+    // The PID must still be the running process (not a dead shell wrapper)
+    expect(posix_kill($pid, 0))->toBeTrue()
+        ->and($pid)->toBe($manager->getPid('sleep'));
+
+    $manager->stop('sleep');
+});

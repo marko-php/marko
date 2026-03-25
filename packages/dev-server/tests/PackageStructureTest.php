@@ -54,7 +54,7 @@ it('has config/dev.php with default values', function (): void {
         ->and($config)->toHaveKey('docker')
         ->and($config)->toHaveKey('frontend')
         ->and($config['port'])->toBe(8000)
-        ->and($config['detach'])->toBeFalse()
+        ->and($config['detach'])->toBeTrue()
         ->and($config['docker'])->toBeTrue()
         ->and($config['frontend'])->toBeTrue();
 });
@@ -70,7 +70,7 @@ it('provides default config values in config/dev.php', function (): void {
     $config = require __DIR__ . '/../config/dev.php';
 
     expect($config['port'])->toBe(8000)
-        ->and($config['detach'])->toBeFalse()
+        ->and($config['detach'])->toBeTrue()
         ->and($config['docker'])->toBeTrue()
         ->and($config['frontend'])->toBeTrue();
 });

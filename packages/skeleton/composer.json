@@ -1,0 +1,20 @@
+{
+    "name": "marko/skeleton",
+    "description": "Marko Framework - Application Skeleton",
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php": "^8.5",
+        "marko/env": "*",
+        "marko/framework": "*"
+    },
+    "require-dev": {
+        "marko/dev-server": "*",
+        "pestphp/pest": "^4.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

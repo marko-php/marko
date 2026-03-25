@@ -5,10 +5,12 @@ declare(strict_types=1);
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Path\ProjectPaths;
 use Marko\DevServer\Command\DevUpCommand;
 use Marko\DevServer\Detection\DockerDetector;
 use Marko\DevServer\Detection\FrontendDetector;
 use Marko\DevServer\Detection\PubSubDetector;
+use Marko\DevServer\Exceptions\DevServerException;
 use Marko\DevServer\Process\PidFile;
 use Marko\DevServer\Process\ProcessManager;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -57,12 +59,20 @@ function createDevUpCommand(
         mkdir($dir, 0755, true);
     }
 
+    // Create public/index.php so existing tests don't trigger the guard
+    if (!is_dir($dir . '/public')) {
+        mkdir($dir . '/public', 0755, true);
+    }
+    if (!file_exists($dir . '/public/index.php')) {
+        file_put_contents($dir . '/public/index.php', '<?php');
+    }
+
     $configDefaults = [
         'dev.port' => 8000,
         'dev.docker' => false,
         'dev.frontend' => false,
         'dev.pubsub' => false,
-        'dev.detach' => false,
+        'dev.detach' => true,
         'dev.processes' => [],
     ];
     $fakeConfig = new FakeConfigRepository(array_merge($configDefaults, $config));
@@ -72,6 +82,7 @@ function createDevUpCommand(
     $resolvedPubsubDetector = $pubsubDetector ?? new PubSubDetector();
     $pidFile = new PidFile($dir);
     $processManager = new FakeProcessManager();
+    $paths = new ProjectPaths($dir);
 
     $command = new DevUpCommand(
         config: $fakeConfig,
@@ -80,6 +91,7 @@ function createDevUpCommand(
         pubsubDetector: $resolvedPubsubDetector,
         pidFile: $pidFile,
         processManager: $processManager,
+        paths: $paths,
     );
 
     return ['command' => $command, 'processManager' => $processManager, 'pidFile' => $pidFile, 'tempDir' => $dir];
@@ -123,6 +135,7 @@ it('reads port from config', function (): void {
 it('reads docker setting from config', function (): void {
     ['command' => $command, 'processManager' => $pm] = createDevUpCommand([
         'dev.docker' => 'custom-docker-up',
+        'dev.detach' => false,
     ]);
     ['output' => $output] = createMemoryOutput();
 
@@ -252,6 +265,7 @@ it('skips Docker when docker config is false', function (): void {
 it('uses custom Docker command when docker config is a string', function (): void {
     ['command' => $command, 'processManager' => $pm] = createDevUpCommand([
         'dev.docker' => 'custom-docker up --detach',
+        'dev.detach' => false,
     ]);
     ['output' => $output] = createMemoryOutput();
 
@@ -401,7 +415,7 @@ it('runs docker in foreground when not detached', function (): void {
     file_put_contents($tempDir . '/compose.yaml', "version: '3'\nservices:\n  app:\n    image: nginx\n");
 
     ['command' => $command, 'processManager' => $pm] = createDevUpCommand(
-        config: ['dev.docker' => true],
+        config: ['dev.docker' => true, 'dev.detach' => false],
         tempDir: $tempDir,
     );
     ['output' => $output] = createMemoryOutput();
@@ -531,6 +545,213 @@ it('starts pubsub:listen as managed process in DevUpCommand when detected', func
 
     expect($pm->started)->toHaveKey('pubsub')
         ->and($pm->started['pubsub'])->toBe('marko pubsub:listen');
+});
+
+it('throws DevServerException when public/index.php does not exist', function (): void {
+    $dir = sys_get_temp_dir() . '/marko-no-index-' . uniqid();
+    mkdir($dir, 0755, true);
+    // Deliberately no public/index.php created
+
+    $fakeConfig = new FakeConfigRepository([
+        'dev.port' => 8000,
+        'dev.docker' => false,
+        'dev.frontend' => false,
+        'dev.pubsub' => false,
+        'dev.detach' => false,
+        'dev.processes' => [],
+    ]);
+    $command = new DevUpCommand(
+        config: $fakeConfig,
+        dockerDetector: new DockerDetector($dir),
+        frontendDetector: new FrontendDetector($dir),
+        pubsubDetector: new PubSubDetector(),
+        pidFile: new PidFile($dir),
+        processManager: new FakeProcessManager(),
+        paths: new ProjectPaths($dir),
+    );
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+})->throws(DevServerException::class);
+
+it('includes helpful message with bootstrap code in the exception', function (): void {
+    $dir = sys_get_temp_dir() . '/marko-no-index-msg-' . uniqid();
+    mkdir($dir, 0755, true);
+
+    $fakeConfig = new FakeConfigRepository([
+        'dev.port' => 8000,
+        'dev.docker' => false,
+        'dev.frontend' => false,
+        'dev.pubsub' => false,
+        'dev.detach' => false,
+        'dev.processes' => [],
+    ]);
+    $command = new DevUpCommand(
+        config: $fakeConfig,
+        dockerDetector: new DockerDetector($dir),
+        frontendDetector: new FrontendDetector($dir),
+        pubsubDetector: new PubSubDetector(),
+        pidFile: new PidFile($dir),
+        processManager: new FakeProcessManager(),
+        paths: new ProjectPaths($dir),
+    );
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+
+    try {
+        $command->execute($input, $output);
+        expect(false)->toBeTrue('Expected DevServerException was not thrown');
+    } catch (DevServerException $e) {
+        expect($e->getMessage())->toContain('public/index.php not found')
+            ->and($e->getSuggestion())->toContain('Application::boot(')
+            ->and($e->getSuggestion())->toContain('handleRequest()');
+    }
+});
+
+it('throws before any processes start when public/index.php is missing', function (): void {
+    $dir = sys_get_temp_dir() . '/marko-no-index-proc-' . uniqid();
+    mkdir($dir, 0755, true);
+
+    $fakeConfig = new FakeConfigRepository([
+        'dev.port' => 8000,
+        'dev.docker' => 'docker compose up',
+        'dev.frontend' => 'yarn dev',
+        'dev.pubsub' => false,
+        'dev.detach' => false,
+        'dev.processes' => [],
+    ]);
+    $pm = new FakeProcessManager();
+    $command = new DevUpCommand(
+        config: $fakeConfig,
+        dockerDetector: new DockerDetector($dir),
+        frontendDetector: new FrontendDetector($dir),
+        pubsubDetector: new PubSubDetector(),
+        pidFile: new PidFile($dir),
+        processManager: $pm,
+        paths: new ProjectPaths($dir),
+    );
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+
+    try {
+        $command->execute($input, $output);
+    } catch (DevServerException) {
+        // expected
+    }
+
+    expect($pm->started)->toBeEmpty();
+});
+
+it('starts PHP server normally when public/index.php exists', function (): void {
+    $dir = sys_get_temp_dir() . '/marko-with-index-' . uniqid();
+    mkdir($dir . '/public', 0755, true);
+    file_put_contents($dir . '/public/index.php', '<?php');
+
+    $fakeConfig = new FakeConfigRepository([
+        'dev.port' => 8000,
+        'dev.docker' => false,
+        'dev.frontend' => false,
+        'dev.pubsub' => false,
+        'dev.detach' => false,
+        'dev.processes' => [],
+    ]);
+    $pm = new FakeProcessManager();
+    $command = new DevUpCommand(
+        config: $fakeConfig,
+        dockerDetector: new DockerDetector($dir),
+        frontendDetector: new FrontendDetector($dir),
+        pubsubDetector: new PubSubDetector(),
+        pidFile: new PidFile($dir),
+        processManager: $pm,
+        paths: new ProjectPaths($dir),
+    );
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->started)->toHaveKey('php')
+        ->and($pm->started['php'])->toContain('localhost:8000');
+});
+
+it('calls runForeground when --foreground flag is used', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand();
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '--foreground']);
+    $command->execute($input, $output);
+
+    expect($pm->foregroundCalled)->toBeTrue();
+});
+
+it('does not call runForeground in default detached mode', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand();
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->foregroundCalled)->toBeFalse();
+});
+
+it('writes PID file in default detached mode', function (): void {
+    ['command' => $command, 'pidFile' => $pidFile] = createDevUpCommand();
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    $entries = $pidFile->read();
+
+    expect($entries)->not->toBeEmpty()
+        ->and($entries[0]->name)->toBe('php')
+        ->and($entries[0]->pid)->toBe(12345);
+});
+
+it('reads foreground setting from config when dev.detach is false', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand([
+        'dev.detach' => false,
+    ]);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->foregroundCalled)->toBeTrue();
+});
+
+it('runs in foreground mode when -f flag is used', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand();
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '-f']);
+    $command->execute($input, $output);
+
+    expect($pm->foregroundCalled)->toBeTrue();
+});
+
+it('runs in foreground mode when --foreground flag is used', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand();
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '--foreground']);
+    $command->execute($input, $output);
+
+    expect($pm->foregroundCalled)->toBeTrue();
+});
+
+it('defaults to detached mode when no flags are passed', function (): void {
+    ['command' => $command, 'processManager' => $pm, 'pidFile' => $pidFile] = createDevUpCommand();
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->foregroundCalled)->toBeFalse()
+        ->and($pidFile->read())->not->toBeEmpty();
 });
 
 it('skips pubsub process when pubsub config is false', function (): void {

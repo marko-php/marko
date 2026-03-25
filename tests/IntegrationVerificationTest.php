@@ -10,8 +10,8 @@ $packages = array_values(array_filter(
     fn(string $entry): bool => $entry !== '.' && $entry !== '..' && is_dir($packagesRoot . '/' . $entry),
 ));
 
-it('validates all 70 package composer.json files are valid JSON with required keys (name, require) via structural check', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(70);
+it('validates all 71 package composer.json files are valid JSON with required keys (name, require) via structural check', function () use ($packagesRoot, $packages): void {
+    expect($packages)->toHaveCount(71);
 
     foreach ($packages as $package) {
         $file = $packagesRoot . '/' . $package . '/composer.json';
@@ -153,7 +153,14 @@ it('verifies no package composer.json contains a version key', function () use (
 });
 
 it('verifies all marko/* dependencies use self.version constraint', function () use ($packagesRoot, $packages): void {
+    // skeleton is type:project installed via composer create-project; self.version is not valid there
+    $projectTypePackages = ['skeleton'];
+
     foreach ($packages as $package) {
+        if (in_array($package, $projectTypePackages, true)) {
+            continue;
+        }
+
         $file = $packagesRoot . '/' . $package . '/composer.json';
         $data = json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
 
@@ -174,7 +181,7 @@ it('verifies all marko/* dependencies use self.version constraint', function () 
 });
 
 it('verifies every package directory has a .gitattributes file', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(70);
+    expect($packages)->toHaveCount(71);
 
     foreach ($packages as $package) {
         $path = $packagesRoot . '/' . $package . '/.gitattributes';
@@ -183,7 +190,7 @@ it('verifies every package directory has a .gitattributes file', function () use
 });
 
 it('verifies every package directory has a LICENSE file', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(70);
+    expect($packages)->toHaveCount(71);
 
     foreach ($packages as $package) {
         $path = $packagesRoot . '/' . $package . '/LICENSE';

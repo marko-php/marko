@@ -32,7 +32,7 @@ class ProcessManager
             2 => ['pipe', 'w'],  // stderr
         ];
 
-        $process = proc_open($command, $descriptors, $pipes);
+        $process = proc_open("exec $command", $descriptors, $pipes);
 
         if (!is_resource($process)) {
             throw DevServerException::processFailedToStart($name, $command);
@@ -51,7 +51,7 @@ class ProcessManager
         // Wait briefly and check if the process exited immediately with an error
         usleep(50000); // 50ms
         $status = proc_get_status($process);
-        if (!$status['running'] && $status['exitcode'] === 127) {
+        if (!$status['running'] && in_array($status['exitcode'], [126, 127], true)) {
             $this->stop($name);
             throw DevServerException::processFailedToStart($name, $command);
         }

@@ -10,7 +10,7 @@ function getPackageComposerFiles(): array
     return array_filter($files, fn(string $f) => !str_contains($f, '/vendor/'));
 }
 
-it('removes repositories key from all 38 package composer.json files that have path repos', function () {
+it('removes repositories key from all 38 package composer.json files that have path repos', function (): void {
     $files = getPackageComposerFiles();
 
     $withRepos = [];
@@ -24,16 +24,23 @@ it('removes repositories key from all 38 package composer.json files that have p
     expect($withRepos)->toBeEmpty('These package composer.json files still contain a "repositories" key: ' . implode(', ', array_map('basename', array_map('dirname', $withRepos))));
 });
 
-it('changes all internal marko/* require constraints from @dev to self.version', function () {
+it('changes all internal marko/* require constraints from @dev to self.version', function (): void {
     $files = getPackageComposerFiles();
+
+    // skeleton is type:project installed via composer create-project; self.version is invalid in that context
+    $projectTypePackages = ['skeleton'];
 
     $violations = [];
     foreach ($files as $file) {
+        $packageName = basename(dirname($file));
+        if (in_array($packageName, $projectTypePackages, true)) {
+            continue;
+        }
         $data = json_decode(file_get_contents($file), true);
         $require = $data['require'] ?? [];
         foreach ($require as $package => $constraint) {
             if (str_starts_with($package, 'marko/') && $constraint !== 'self.version') {
-                $violations[] = basename(dirname($file)) . ": $package=$constraint";
+                $violations[] = $packageName . ": $package=$constraint";
             }
         }
     }
@@ -41,16 +48,23 @@ it('changes all internal marko/* require constraints from @dev to self.version',
     expect($violations)->toBeEmpty('These require constraints are not self.version: ' . implode(', ', $violations));
 });
 
-it('changes all internal marko/* require-dev constraints from @dev to self.version', function () {
+it('changes all internal marko/* require-dev constraints from @dev to self.version', function (): void {
     $files = getPackageComposerFiles();
+
+    // skeleton is type:project installed via composer create-project; self.version is invalid in that context
+    $projectTypePackages = ['skeleton'];
 
     $violations = [];
     foreach ($files as $file) {
+        $packageName = basename(dirname($file));
+        if (in_array($packageName, $projectTypePackages, true)) {
+            continue;
+        }
         $data = json_decode(file_get_contents($file), true);
         $requireDev = $data['require-dev'] ?? [];
         foreach ($requireDev as $package => $constraint) {
             if (str_starts_with($package, 'marko/') && $constraint !== 'self.version') {
-                $violations[] = basename(dirname($file)) . ": $package=$constraint";
+                $violations[] = $packageName . ": $package=$constraint";
             }
         }
     }
@@ -58,7 +72,7 @@ it('changes all internal marko/* require-dev constraints from @dev to self.versi
     expect($violations)->toBeEmpty('These require-dev constraints are not self.version: ' . implode(', ', $violations));
 });
 
-it('changes marko/dev-server wildcard constraints to self.version', function () {
+it('changes marko/dev-server wildcard constraints to self.version', function (): void {
     $devServerComposer = dirname(__DIR__, 3) . '/packages/dev-server/composer.json';
     $data = json_decode(file_get_contents($devServerComposer), true);
 
@@ -72,16 +86,23 @@ it('changes marko/dev-server wildcard constraints to self.version', function () 
     expect($violations)->toBeEmpty('dev-server has non-self.version marko/* constraints: ' . implode(', ', $violations));
 });
 
-it('changes any remaining wildcard marko/* constraints to self.version', function () {
+it('changes any remaining wildcard marko/* constraints to self.version', function (): void {
     $files = getPackageComposerFiles();
+
+    // skeleton is type:project installed via composer create-project; self.version is invalid in that context
+    $projectTypePackages = ['skeleton'];
 
     $violations = [];
     foreach ($files as $file) {
+        $packageName = basename(dirname($file));
+        if (in_array($packageName, $projectTypePackages, true)) {
+            continue;
+        }
         $data = json_decode(file_get_contents($file), true);
         foreach (['require', 'require-dev'] as $section) {
             foreach (($data[$section] ?? []) as $package => $constraint) {
                 if (str_starts_with($package, 'marko/') && $constraint === '*') {
-                    $violations[] = basename(dirname($file)) . " [$section]: $package=$constraint";
+                    $violations[] = $packageName . " [$section]: $package=$constraint";
                 }
             }
         }
@@ -90,7 +111,7 @@ it('changes any remaining wildcard marko/* constraints to self.version', functio
     expect($violations)->toBeEmpty('These wildcard marko/* constraints remain: ' . implode(', ', $violations));
 });
 
-it('preserves all non-marko dependency constraints unchanged (php, psr/*, ext-*, pestphp/*, etc.)', function () {
+it('preserves all non-marko dependency constraints unchanged (php, psr/*, ext-*, pestphp/*, etc.)', function (): void {
     $files = getPackageComposerFiles();
 
     $violations = [];
@@ -108,7 +129,7 @@ it('preserves all non-marko dependency constraints unchanged (php, psr/*, ext-*,
     expect($violations)->toBeEmpty('These non-marko dependencies incorrectly use self.version: ' . implode(', ', $violations));
 });
 
-it('preserves all other composer.json keys (autoload, extra, config, suggest, etc.) unchanged', function () {
+it('preserves all other composer.json keys (autoload, extra, config, suggest, etc.) unchanged', function (): void {
     $files = getPackageComposerFiles();
 
     $violations = [];
