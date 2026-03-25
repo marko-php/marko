@@ -134,7 +134,7 @@ describe('PgSqlQueryBuilder', function (): void {
             ->where('status', '=', 'active')
             ->get();
 
-        expect($connection->lastQuerySql)->toBe('SELECT * FROM "users" WHERE "status" = $1')
+        expect($connection->lastQuerySql)->toBe('SELECT * FROM "users" WHERE "status" = ?')
             ->and($connection->lastQueryBindings)->toBe(['active'])
             ->and($result)->toBe([
                 ['id' => 1, 'status' => 'active'],
@@ -156,7 +156,7 @@ describe('PgSqlQueryBuilder', function (): void {
             ->whereIn('id', [1, 2, 3])
             ->get();
 
-        expect($connection->lastQuerySql)->toBe('SELECT * FROM "users" WHERE "id" IN ($1, $2, $3)')
+        expect($connection->lastQuerySql)->toBe('SELECT * FROM "users" WHERE "id" IN (?, ?, ?)')
             ->and($connection->lastQueryBindings)->toBe([1, 2, 3])
             ->and($result)->toHaveCount(3);
     });
@@ -214,7 +214,7 @@ describe('PgSqlQueryBuilder', function (): void {
             ]);
 
         expect($connection->lastQuerySql)->toBe(
-            'INSERT INTO "users" ("name", "email") VALUES ($1, $2) RETURNING "id"',
+            'INSERT INTO "users" ("name", "email") VALUES (?, ?) RETURNING "id"',
         )
             ->and($connection->lastQueryBindings)->toBe(['John', 'john@example.com'])
             ->and($id)->toBe(42);
@@ -233,7 +233,7 @@ describe('PgSqlQueryBuilder', function (): void {
             ]);
 
         expect($connection->lastExecuteSql)->toBe(
-            'UPDATE "users" SET "name" = $1, "status" = $2 WHERE "id" = $3',
+            'UPDATE "users" SET "name" = ?, "status" = ? WHERE "id" = ?',
         )
             ->and($connection->lastExecuteBindings)->toBe(['Jane', 'inactive', 1])
             ->and($affected)->toBe(1);
@@ -248,7 +248,7 @@ describe('PgSqlQueryBuilder', function (): void {
             ->where('id', '=', 1)
             ->delete();
 
-        expect($connection->lastExecuteSql)->toBe('DELETE FROM "users" WHERE "id" = $1')
+        expect($connection->lastExecuteSql)->toBe('DELETE FROM "users" WHERE "id" = ?')
             ->and($connection->lastExecuteBindings)->toBe([1])
             ->and($affected)->toBe(1);
     });
@@ -264,7 +264,7 @@ describe('PgSqlQueryBuilder', function (): void {
             ->insert(['title' => 'My Post']);
 
         expect($connection->lastQuerySql)->toBe(
-            'INSERT INTO "posts" ("title") VALUES ($1) RETURNING "id"',
+            'INSERT INTO "posts" ("title") VALUES (?) RETURNING "id"',
         )
             ->and($id)->toBe(123);
     });
@@ -279,7 +279,7 @@ describe('PgSqlQueryBuilder', function (): void {
             ->update(['status' => 'inactive']);
 
         expect($connection->lastExecuteSql)->toBe(
-            'UPDATE "users" SET "status" = $1 WHERE "role" = $2',
+            'UPDATE "users" SET "status" = ? WHERE "role" = ?',
         )
             ->and($connection->lastExecuteBindings)->toBe(['inactive', 'guest'])
             ->and($affected)->toBe(5);

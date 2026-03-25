@@ -6,17 +6,9 @@ use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Author;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Enum\PostStatus;
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Search Results View', function (): void {
     it('includes search bar component with current query', function (): void {
-        $view = createSearchResultsTestView();
+        $view = createBlogTestView();
 
         $posts = createSearchTestPaginatedResult();
 
@@ -31,7 +23,7 @@ describe('Search Results View', function (): void {
     });
 
     it('displays result count for query', function (): void {
-        $view = createSearchResultsTestView();
+        $view = createBlogTestView();
 
         $postList = [
             createSearchTestPost(1, 'PHP Basics'),
@@ -51,7 +43,7 @@ describe('Search Results View', function (): void {
     });
 
     it('renders matching posts', function (): void {
-        $view = createSearchResultsTestView();
+        $view = createBlogTestView();
 
         $postList = [
             createSearchTestPost(1, 'Getting Started with PHP'),
@@ -72,7 +64,7 @@ describe('Search Results View', function (): void {
     });
 
     it('displays post title summary author and date', function (): void {
-        $view = createSearchResultsTestView();
+        $view = createBlogTestView();
 
         $author = createSearchTestAuthor(name: 'Jane Smith');
         $postList = [
@@ -100,7 +92,7 @@ describe('Search Results View', function (): void {
     });
 
     it('includes pagination component', function (): void {
-        $view = createSearchResultsTestView();
+        $view = createBlogTestView();
 
         $postList = [
             createSearchTestPost(1, 'Post 1'),
@@ -128,7 +120,7 @@ describe('Search Results View', function (): void {
     });
 
     it('preserves search query in pagination links', function (): void {
-        $view = createSearchResultsTestView();
+        $view = createBlogTestView();
 
         $postList = [
             createSearchTestPost(1, 'Post 1'),
@@ -155,7 +147,7 @@ describe('Search Results View', function (): void {
     });
 
     it('shows no results message when empty', function (): void {
-        $view = createSearchResultsTestView();
+        $view = createBlogTestView();
 
         $posts = createSearchTestPaginatedResult(items: [], totalItems: 0);
 
@@ -169,7 +161,7 @@ describe('Search Results View', function (): void {
     });
 
     it('has semantic HTML structure', function (): void {
-        $view = createSearchResultsTestView();
+        $view = createBlogTestView();
 
         $postList = [createSearchTestPost(1, 'Post 1')];
         $posts = createSearchTestPaginatedResult(items: $postList, totalItems: 1);
@@ -185,7 +177,7 @@ describe('Search Results View', function (): void {
     });
 
     it('includes search input with label', function (): void {
-        $view = createSearchResultsTestView();
+        $view = createBlogTestView();
 
         $posts = createSearchTestPaginatedResult();
 
@@ -199,38 +191,6 @@ describe('Search Results View', function (): void {
             ->and($html)->toMatch('/<input[^>]*id\s*=\s*["\']search-input["\']/i');
     });
 });
-
-function createSearchResultsTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-search-results-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}
 
 function createSearchTestAuthor(
     int $id = 1,

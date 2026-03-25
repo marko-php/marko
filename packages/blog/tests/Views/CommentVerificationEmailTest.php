@@ -8,17 +8,9 @@ use Marko\Blog\Entity\Comment;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Enum\CommentStatus;
 use Marko\Blog\Enum\PostStatus;
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Comment Verification Email Template', function (): void {
     it('renders email subject with post title', function (): void {
-        $view = createVerificationEmailTestView();
+        $view = \createBlogTestView();
 
         $post = createVerificationEmailPost(1, 'How to Build APIs', 'how-to-build-apis');
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
@@ -35,7 +27,7 @@ describe('Comment Verification Email Template', function (): void {
     });
 
     it('includes commenter name in greeting', function (): void {
-        $view = createVerificationEmailTestView();
+        $view = \createBlogTestView();
 
         $post = createVerificationEmailPost(1, 'Test Post', 'test-post');
         $comment = createVerificationEmailComment($post, 'Jane Smith', 'jane@example.com');
@@ -52,7 +44,7 @@ describe('Comment Verification Email Template', function (): void {
     });
 
     it('includes post title they commented on', function (): void {
-        $view = createVerificationEmailTestView();
+        $view = \createBlogTestView();
 
         $post = createVerificationEmailPost(1, 'Advanced PHP Patterns', 'advanced-php-patterns');
         $comment = createVerificationEmailComment($post, 'Bob Wilson', 'bob@example.com');
@@ -69,7 +61,7 @@ describe('Comment Verification Email Template', function (): void {
     });
 
     it('includes clickable verification link', function (): void {
-        $view = createVerificationEmailTestView();
+        $view = \createBlogTestView();
 
         $post = createVerificationEmailPost(1, 'Test Post', 'test-post');
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
@@ -87,7 +79,7 @@ describe('Comment Verification Email Template', function (): void {
     });
 
     it('includes link expiration notice', function (): void {
-        $view = createVerificationEmailTestView();
+        $view = \createBlogTestView();
 
         $post = createVerificationEmailPost(1, 'Test Post', 'test-post');
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
@@ -104,7 +96,7 @@ describe('Comment Verification Email Template', function (): void {
     });
 
     it('includes plain text alternative', function (): void {
-        $view = createVerificationEmailTestView();
+        $view = \createBlogTestView();
 
         $post = createVerificationEmailPost(1, 'Test Post', 'test-post');
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
@@ -127,7 +119,7 @@ describe('Comment Verification Email Template', function (): void {
     });
 
     it('has professional formatting', function (): void {
-        $view = createVerificationEmailTestView();
+        $view = \createBlogTestView();
 
         $post = createVerificationEmailPost(1, 'Test Post', 'test-post');
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
@@ -149,7 +141,7 @@ describe('Comment Verification Email Template', function (): void {
     });
 
     it('is mobile-responsive', function (): void {
-        $view = createVerificationEmailTestView();
+        $view = \createBlogTestView();
 
         $post = createVerificationEmailPost(1, 'Test Post', 'test-post');
         $comment = createVerificationEmailComment($post, 'John Doe', 'john@example.com');
@@ -166,38 +158,6 @@ describe('Comment Verification Email Template', function (): void {
             ->and($html)->toMatch('/@media[^{]*\(/i');
     });
 });
-
-function createVerificationEmailTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-verification-email-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}
 
 function createVerificationEmailPost(
     int $id,

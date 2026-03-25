@@ -2,17 +2,9 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Comment Form Component', function (): void {
     it('renders form with POST action to comment endpoint', function (): void {
-        $view = createCommentFormTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
@@ -25,7 +17,7 @@ describe('Comment Form Component', function (): void {
     });
 
     it('includes name input field with label', function (): void {
-        $view = createCommentFormTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
@@ -39,7 +31,7 @@ describe('Comment Form Component', function (): void {
     });
 
     it('includes email input field with label', function (): void {
-        $view = createCommentFormTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
@@ -53,7 +45,7 @@ describe('Comment Form Component', function (): void {
     });
 
     it('includes content textarea with label', function (): void {
-        $view = createCommentFormTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
@@ -68,7 +60,7 @@ describe('Comment Form Component', function (): void {
     });
 
     it('includes hidden parent_id field for replies', function (): void {
-        $view = createCommentFormTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
@@ -82,7 +74,7 @@ describe('Comment Form Component', function (): void {
     });
 
     it('includes honeypot field hidden by CSS', function (): void {
-        $view = createCommentFormTestView();
+        $view = createBlogTestView();
         $honeypotField = '<div style="position:absolute;left:-9999px;"><input type="text" name="hp_abc123" value="" autocomplete="off" tabindex="-1" /></div>';
 
         $html = $view->renderToString('blog::comment/form', [
@@ -94,7 +86,7 @@ describe('Comment Form Component', function (): void {
     });
 
     it('includes submit button', function (): void {
-        $view = createCommentFormTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
@@ -105,7 +97,7 @@ describe('Comment Form Component', function (): void {
     });
 
     it('shows validation error messages when provided', function (): void {
-        $view = createCommentFormTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
@@ -123,7 +115,7 @@ describe('Comment Form Component', function (): void {
     });
 
     it('preserves input values on validation failure', function (): void {
-        $view = createCommentFormTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
@@ -141,7 +133,7 @@ describe('Comment Form Component', function (): void {
     });
 
     it('has proper form accessibility labels', function (): void {
-        $view = createCommentFormTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::comment/form', [
             'postId' => 1,
@@ -156,35 +148,3 @@ describe('Comment Form Component', function (): void {
             ->and($html)->toMatch('/aria-label\s*=\s*["\'].*comment.*["\']/i');
     });
 });
-
-function createCommentFormTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-comment-form-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}

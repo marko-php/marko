@@ -7,17 +7,9 @@ use Marko\Blog\Entity\Author;
 use Marko\Blog\Entity\Category;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Enum\PostStatus;
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Category Show View', function (): void {
     it('renders category name as page title', function (): void {
-        $view = createCategoryShowTestView();
+        $view = createBlogTestView();
         $category = createCategoryShowCategory(1, 'Technology', 'technology');
         $posts = createCategoryShowEmptyPaginatedResult();
 
@@ -31,7 +23,7 @@ describe('Category Show View', function (): void {
     });
 
     it('displays category hierarchy path as breadcrumbs', function (): void {
-        $view = createCategoryShowTestView();
+        $view = createBlogTestView();
 
         $parent = createCategoryShowCategory(1, 'Technology', 'technology');
         $child = createCategoryShowCategory(2, 'Programming', 'programming', 1);
@@ -51,7 +43,7 @@ describe('Category Show View', function (): void {
     });
 
     it('renders list of posts in category', function (): void {
-        $view = createCategoryShowTestView();
+        $view = createBlogTestView();
         $category = createCategoryShowCategory(1, 'Technology', 'technology');
 
         $posts = [
@@ -71,7 +63,7 @@ describe('Category Show View', function (): void {
     });
 
     it('displays post title summary author and date', function (): void {
-        $view = createCategoryShowTestView();
+        $view = createBlogTestView();
         $category = createCategoryShowCategory(1, 'Technology', 'technology');
 
         $post = createCategoryShowPost(
@@ -95,7 +87,7 @@ describe('Category Show View', function (): void {
     });
 
     it('includes pagination component', function (): void {
-        $view = createCategoryShowTestView();
+        $view = createBlogTestView();
         $category = createCategoryShowCategory(1, 'Technology', 'technology');
 
         $posts = [];
@@ -119,7 +111,7 @@ describe('Category Show View', function (): void {
     });
 
     it('shows message when category has no posts', function (): void {
-        $view = createCategoryShowTestView();
+        $view = createBlogTestView();
         $category = createCategoryShowCategory(1, 'Empty Category', 'empty-category');
         $posts = createCategoryShowEmptyPaginatedResult();
 
@@ -133,7 +125,7 @@ describe('Category Show View', function (): void {
     });
 
     it('has semantic HTML structure', function (): void {
-        $view = createCategoryShowTestView();
+        $view = createBlogTestView();
         $category = createCategoryShowCategory(1, 'Technology', 'technology');
 
         $post = createCategoryShowPost(1, 'Test Post', 'test-post');
@@ -152,7 +144,7 @@ describe('Category Show View', function (): void {
     });
 
     it('includes proper canonical URL', function (): void {
-        $view = createCategoryShowTestView();
+        $view = createBlogTestView();
         $category = createCategoryShowCategory(1, 'Technology', 'technology');
         $posts = createCategoryShowEmptyPaginatedResult();
 
@@ -168,38 +160,6 @@ describe('Category Show View', function (): void {
         );
     });
 });
-
-function createCategoryShowTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-category-show-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}
 
 function createCategoryShowCategory(
     int $id,

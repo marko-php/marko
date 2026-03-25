@@ -3,17 +3,9 @@
 declare(strict_types=1);
 
 use Marko\Blog\Entity\Comment;
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Comment Thread Component', function (): void {
     it('renders single comment with author name and content', function (): void {
-        $view = createCommentThreadTestView();
+        $view = createBlogTestView();
 
         $comment = createTestComment(
             id: 1,
@@ -32,7 +24,7 @@ describe('Comment Thread Component', function (): void {
     });
 
     it('displays comment created date', function (): void {
-        $view = createCommentThreadTestView();
+        $view = createBlogTestView();
 
         $comment = createTestComment(
             id: 1,
@@ -52,7 +44,7 @@ describe('Comment Thread Component', function (): void {
     });
 
     it('renders nested replies with indentation', function (): void {
-        $view = createCommentThreadTestView();
+        $view = createBlogTestView();
 
         $childComment = createTestComment(
             id: 2,
@@ -82,7 +74,7 @@ describe('Comment Thread Component', function (): void {
     });
 
     it('respects max depth configuration', function (): void {
-        $view = createCommentThreadTestView();
+        $view = createBlogTestView();
 
         // Create deeply nested comments: level 0 -> level 1 -> level 2
         $level2Comment = createTestComment(
@@ -121,7 +113,7 @@ describe('Comment Thread Component', function (): void {
     });
 
     it('shows reply link for comments under max depth', function (): void {
-        $view = createCommentThreadTestView();
+        $view = createBlogTestView();
 
         $comment = createTestComment(
             id: 1,
@@ -140,7 +132,7 @@ describe('Comment Thread Component', function (): void {
     });
 
     it('hides reply link at max depth', function (): void {
-        $view = createCommentThreadTestView();
+        $view = createBlogTestView();
 
         $childComment = createTestComment(
             id: 2,
@@ -172,7 +164,7 @@ describe('Comment Thread Component', function (): void {
     });
 
     it('shows message when no comments', function (): void {
-        $view = createCommentThreadTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::comment/thread', [
             'comments' => [],
@@ -184,7 +176,7 @@ describe('Comment Thread Component', function (): void {
     });
 
     it('has semantic HTML structure', function (): void {
-        $view = createCommentThreadTestView();
+        $view = createBlogTestView();
 
         $comment = createTestComment(
             id: 1,
@@ -206,7 +198,7 @@ describe('Comment Thread Component', function (): void {
     });
 
     it('includes proper ARIA labels for accessibility', function (): void {
-        $view = createCommentThreadTestView();
+        $view = createBlogTestView();
 
         $comment = createTestComment(
             id: 1,
@@ -225,7 +217,7 @@ describe('Comment Thread Component', function (): void {
     });
 
     it('displays comment count', function (): void {
-        $view = createCommentThreadTestView();
+        $view = createBlogTestView();
 
         $comment1 = createTestComment(
             id: 1,
@@ -256,38 +248,6 @@ describe('Comment Thread Component', function (): void {
         expect($html)->toMatch('/3\s+[Cc]omments/');
     });
 });
-
-function createCommentThreadTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-comment-thread-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}
 
 function createTestComment(
     int $id,

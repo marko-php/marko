@@ -3,17 +3,9 @@
 declare(strict_types=1);
 
 use Marko\Blog\Dto\PaginatedResult;
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Pagination Component', function (): void {
     it('renders previous link when not on first page', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 3,
@@ -32,7 +24,7 @@ describe('Pagination Component', function (): void {
     });
 
     it('hides previous link on first page', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 1,
@@ -51,7 +43,7 @@ describe('Pagination Component', function (): void {
     });
 
     it('renders next link when not on last page', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 3,
@@ -70,7 +62,7 @@ describe('Pagination Component', function (): void {
     });
 
     it('hides next link on last page', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 10,
@@ -89,7 +81,7 @@ describe('Pagination Component', function (): void {
     });
 
     it('renders numbered page links', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 1,
@@ -112,7 +104,7 @@ describe('Pagination Component', function (): void {
     });
 
     it('highlights current page', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 3,
@@ -133,7 +125,7 @@ describe('Pagination Component', function (): void {
     });
 
     it('shows ellipsis for large page ranges', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 5,
@@ -152,7 +144,7 @@ describe('Pagination Component', function (): void {
     });
 
     it('includes proper href with page parameter', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 1,
@@ -171,7 +163,7 @@ describe('Pagination Component', function (): void {
     });
 
     it('preserves existing query parameters in links', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 1,
@@ -191,7 +183,7 @@ describe('Pagination Component', function (): void {
     });
 
     it('renders nothing when only one page', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 1,
@@ -211,7 +203,7 @@ describe('Pagination Component', function (): void {
     });
 
     it('has semantic HTML with nav and aria labels', function (): void {
-        $view = createPaginationTestView();
+        $view = createBlogTestView();
 
         $pagination = createPaginatedResult(
             currentPage: 2,
@@ -230,38 +222,6 @@ describe('Pagination Component', function (): void {
             ->and($html)->toMatch('/aria-label\s*=\s*["\']Page navigation["\']/i');
     });
 });
-
-function createPaginationTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-pagination-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}
 
 function createPaginatedResult(
     int $currentPage,

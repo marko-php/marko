@@ -8,17 +8,9 @@ use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Author;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Enum\PostStatus;
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Post List View', function (): void {
     it('renders list of posts', function (): void {
-        $view = createPostListTestView();
+        $view = \createBlogTestView();
 
         $posts = [
             createPostListPost(1, 'First Post', 'first-post'),
@@ -35,7 +27,7 @@ describe('Post List View', function (): void {
     });
 
     it('displays post title as link to full post', function (): void {
-        $view = createPostListTestView();
+        $view = \createBlogTestView();
 
         $post = createPostListPost(1, 'My Amazing Post', 'my-amazing-post');
         $pagination = createPostListPaginatedResult([$post]);
@@ -49,7 +41,7 @@ describe('Post List View', function (): void {
     });
 
     it('displays post summary', function (): void {
-        $view = createPostListTestView();
+        $view = \createBlogTestView();
 
         $post = createPostListPost(
             1,
@@ -67,7 +59,7 @@ describe('Post List View', function (): void {
     });
 
     it('displays author name as link to author archive', function (): void {
-        $view = createPostListTestView();
+        $view = \createBlogTestView();
 
         $author = createPostListAuthor(1, 'Jane Smith', 'jane-smith');
         $post = createPostListPost(1, 'Test Post', 'test-post');
@@ -83,7 +75,7 @@ describe('Post List View', function (): void {
     });
 
     it('displays published date', function (): void {
-        $view = createPostListTestView();
+        $view = \createBlogTestView();
 
         $post = createPostListPost(1, 'Test Post', 'test-post', null, '2025-03-15 14:30:00');
         $pagination = createPostListPaginatedResult([$post]);
@@ -97,7 +89,7 @@ describe('Post List View', function (): void {
     });
 
     it('includes pagination component', function (): void {
-        $view = createPostListTestView();
+        $view = \createBlogTestView();
 
         $posts = [];
         for ($i = 1; $i <= 10; $i++) {
@@ -121,7 +113,7 @@ describe('Post List View', function (): void {
     });
 
     it('shows message when no posts found', function (): void {
-        $view = createPostListTestView();
+        $view = \createBlogTestView();
 
         $pagination = createPostListEmptyPaginatedResult();
 
@@ -133,7 +125,7 @@ describe('Post List View', function (): void {
     });
 
     it('has semantic HTML structure', function (): void {
-        $view = createPostListTestView();
+        $view = \createBlogTestView();
 
         $post = createPostListPost(1, 'Test Post', 'test-post', 'A summary', '2025-03-15 10:00:00');
         $pagination = createPostListPaginatedResult([$post]);
@@ -148,38 +140,6 @@ describe('Post List View', function (): void {
             ->and($html)->toMatch('/<time[^>]*datetime\s*=/i');
     });
 });
-
-function createPostListTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-post-list-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}
 
 function createPostListPost(
     int $id,

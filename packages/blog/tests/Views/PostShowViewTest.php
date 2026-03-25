@@ -8,17 +8,9 @@ use Marko\Blog\Entity\Comment;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
 use Marko\Blog\Enum\PostStatus;
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Post Show View', function (): void {
     it('renders post title', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost(title: 'My Amazing Blog Post');
 
@@ -30,7 +22,7 @@ describe('Post Show View', function (): void {
     });
 
     it('renders full post content', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost(
             content: '<p>This is the full post content.</p><p>Second paragraph with more details.</p>',
@@ -45,7 +37,7 @@ describe('Post Show View', function (): void {
     });
 
     it('displays author name with link to archive', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $author = createPostShowTestAuthor(name: 'John Doe', slug: 'john-doe');
         $post = createPostShowTestPost();
@@ -62,7 +54,7 @@ describe('Post Show View', function (): void {
     });
 
     it('displays author bio', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $author = createPostShowTestAuthor(bio: 'A passionate developer and tech writer.');
         $post = createPostShowTestPost();
@@ -76,7 +68,7 @@ describe('Post Show View', function (): void {
     });
 
     it('displays published date', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost(publishedAt: '2025-03-20 14:30:00');
 
@@ -89,7 +81,7 @@ describe('Post Show View', function (): void {
     });
 
     it('displays last updated date when updated_at is after published_at', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost(
             publishedAt: '2025-03-20 14:30:00',
@@ -106,7 +98,7 @@ describe('Post Show View', function (): void {
     });
 
     it('hides last updated date when post has not been modified', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost(
             publishedAt: '2025-03-20 14:30:00',
@@ -121,7 +113,7 @@ describe('Post Show View', function (): void {
     });
 
     it('displays categories as links', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
         $post->setCategories([
@@ -142,7 +134,7 @@ describe('Post Show View', function (): void {
     });
 
     it('displays tags as links', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
         $post->setTags([
@@ -159,7 +151,7 @@ describe('Post Show View', function (): void {
     });
 
     it('has placeholder for comment section', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
 
@@ -172,7 +164,7 @@ describe('Post Show View', function (): void {
     });
 
     it('has semantic HTML with article element', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
 
@@ -189,7 +181,7 @@ describe('Post Show View', function (): void {
     });
 
     it('includes proper heading hierarchy', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost(title: 'Main Article Title');
         $post->setCategories([
@@ -212,7 +204,7 @@ describe('Post Show View', function (): void {
     });
 
     it('includes comment thread component after post content', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
         $comment = createPostShowTestComment(
@@ -234,7 +226,7 @@ describe('Post Show View', function (): void {
     });
 
     it('includes comment form component', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
 
@@ -252,7 +244,7 @@ describe('Post Show View', function (): void {
     });
 
     it('passes verified comments to thread component', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
         $verifiedComment = createPostShowTestComment(
@@ -282,7 +274,7 @@ describe('Post Show View', function (): void {
     });
 
     it('passes post slug to form for action URL', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost(
             id: 42,
@@ -298,7 +290,7 @@ describe('Post Show View', function (): void {
     });
 
     it('displays verification success message when present', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
 
@@ -312,7 +304,7 @@ describe('Post Show View', function (): void {
     });
 
     it('shows comment count in heading', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
         $comment1 = createPostShowTestComment(
@@ -337,7 +329,7 @@ describe('Post Show View', function (): void {
     });
 
     it('handles reply form display via JavaScript data attribute', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
         $comment = createPostShowTestComment(
@@ -356,7 +348,7 @@ describe('Post Show View', function (): void {
     });
 
     it('maintains proper section structure', function (): void {
-        $view = createPostShowTestView();
+        $view = createBlogTestView();
 
         $post = createPostShowTestPost();
         $comment = createPostShowTestComment(
@@ -384,38 +376,6 @@ describe('Post Show View', function (): void {
             ->and($html)->toMatch('/<form[^>]*class\s*=\s*["\'][^"\']*comment-form[^"\']*["\']/i');
     });
 });
-
-function createPostShowTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-post-show-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}
 
 function createPostShowTestPost(
     int $id = 1,

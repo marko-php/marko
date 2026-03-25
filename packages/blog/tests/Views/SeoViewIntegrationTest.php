@@ -10,17 +10,9 @@ use Marko\Blog\Entity\Category;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
 use Marko\Blog\Enum\PostStatus;
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('SEO View Integration', function (): void {
     it('includes canonical link in post page head', function (): void {
-        $view = createSeoTestView();
+        $view = \createBlogTestView();
 
         $post = createSeoTestPost(slug: 'my-amazing-post');
 
@@ -35,7 +27,7 @@ describe('SEO View Integration', function (): void {
     });
 
     it('includes meta description in post page head', function (): void {
-        $view = createSeoTestView();
+        $view = \createBlogTestView();
 
         $post = createSeoTestPost(summary: 'This is a great post about PHP.');
 
@@ -50,7 +42,7 @@ describe('SEO View Integration', function (): void {
     });
 
     it('includes canonical link in archive pages', function (): void {
-        $view = createSeoTestView();
+        $view = \createBlogTestView();
 
         // Test category archive
         $category = createSeoTestCategory(1, 'Technology', 'technology');
@@ -95,7 +87,7 @@ describe('SEO View Integration', function (): void {
     });
 
     it('includes meta description in archive pages', function (): void {
-        $view = createSeoTestView();
+        $view = \createBlogTestView();
 
         // Test category archive
         $category = createSeoTestCategory(1, 'Technology', 'technology');
@@ -141,7 +133,7 @@ describe('SEO View Integration', function (): void {
     });
 
     it('includes rel prev and next for paginated pages', function (): void {
-        $view = createSeoTestView();
+        $view = \createBlogTestView();
 
         // Test category archive on page 3 of 5 (has both prev and next)
         $category = createSeoTestCategory(1, 'Technology', 'technology');
@@ -169,7 +161,7 @@ describe('SEO View Integration', function (): void {
     });
 
     it('includes proper page title in title tag', function (): void {
-        $view = createSeoTestView();
+        $view = \createBlogTestView();
 
         // Test post page title
         $post = createSeoTestPost(title: 'Introduction to PHP');
@@ -195,7 +187,7 @@ describe('SEO View Integration', function (): void {
     });
 
     it('includes og:title meta tag', function (): void {
-        $view = createSeoTestView();
+        $view = \createBlogTestView();
 
         $post = createSeoTestPost(title: 'Introduction to PHP');
 
@@ -210,7 +202,7 @@ describe('SEO View Integration', function (): void {
     });
 
     it('includes og:description meta tag', function (): void {
-        $view = createSeoTestView();
+        $view = \createBlogTestView();
 
         $post = createSeoTestPost(summary: 'Learn the basics of PHP programming.');
 
@@ -225,7 +217,7 @@ describe('SEO View Integration', function (): void {
     });
 
     it('includes og:url meta tag', function (): void {
-        $view = createSeoTestView();
+        $view = \createBlogTestView();
 
         $post = createSeoTestPost(slug: 'my-amazing-post');
 
@@ -240,7 +232,7 @@ describe('SEO View Integration', function (): void {
     });
 
     it('includes og:type meta tag', function (): void {
-        $view = createSeoTestView();
+        $view = \createBlogTestView();
 
         // Post pages should have og:type="article"
         $post = createSeoTestPost();
@@ -269,38 +261,6 @@ describe('SEO View Integration', function (): void {
             );
     });
 });
-
-function createSeoTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-seo-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}
 
 function createSeoTestPost(
     int $id = 1,

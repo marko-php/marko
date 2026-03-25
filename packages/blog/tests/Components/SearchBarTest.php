@@ -2,17 +2,9 @@
 
 declare(strict_types=1);
 
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Search Bar Component', function (): void {
     it('renders search form with GET method', function (): void {
-        $view = createTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::search/bar', []);
 
@@ -21,7 +13,7 @@ describe('Search Bar Component', function (): void {
     });
 
     it('has search input field with name q', function (): void {
-        $view = createTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::search/bar', []);
 
@@ -30,7 +22,7 @@ describe('Search Bar Component', function (): void {
     });
 
     it('has submit button', function (): void {
-        $view = createTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::search/bar', []);
 
@@ -38,7 +30,7 @@ describe('Search Bar Component', function (): void {
     });
 
     it('preserves current search query in input value', function (): void {
-        $view = createTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::search/bar', [
             'query' => 'test search',
@@ -48,7 +40,7 @@ describe('Search Bar Component', function (): void {
     });
 
     it('has accessible labels and placeholder', function (): void {
-        $view = createTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::search/bar', []);
 
@@ -63,7 +55,7 @@ describe('Search Bar Component', function (): void {
     });
 
     it('uses semantic HTML structure', function (): void {
-        $view = createTestView();
+        $view = createBlogTestView();
 
         $html = $view->renderToString('blog::search/bar', []);
 
@@ -73,35 +65,3 @@ describe('Search Bar Component', function (): void {
             ->and($html)->toMatch('/class\s*=\s*["\']search-bar["\']/i');
     });
 });
-
-function createTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-search-bar-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}

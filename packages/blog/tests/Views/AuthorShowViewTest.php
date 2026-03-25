@@ -6,17 +6,9 @@ use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Author;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Enum\PostStatus;
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Author Show View', function (): void {
     it('renders author name as page title', function (): void {
-        $view = createAuthorShowTestView();
+        $view = createBlogTestView();
 
         $author = createTestAuthor(name: 'Jane Smith');
         $posts = createTestPaginatedResult();
@@ -32,7 +24,7 @@ describe('Author Show View', function (): void {
     });
 
     it('displays author bio', function (): void {
-        $view = createAuthorShowTestView();
+        $view = createBlogTestView();
 
         $author = createTestAuthor(bio: 'A passionate PHP developer who loves clean code.');
         $posts = createTestPaginatedResult();
@@ -48,7 +40,7 @@ describe('Author Show View', function (): void {
     });
 
     it('displays author email', function (): void {
-        $view = createAuthorShowTestView();
+        $view = createBlogTestView();
 
         $author = createTestAuthor(email: 'jane.smith@example.com');
         $posts = createTestPaginatedResult();
@@ -64,7 +56,7 @@ describe('Author Show View', function (): void {
     });
 
     it('renders list of posts by author', function (): void {
-        $view = createAuthorShowTestView();
+        $view = createBlogTestView();
 
         $author = createTestAuthor();
         $postList = [
@@ -87,7 +79,7 @@ describe('Author Show View', function (): void {
     });
 
     it('displays post title summary and date', function (): void {
-        $view = createAuthorShowTestView();
+        $view = createBlogTestView();
 
         $author = createTestAuthor();
         $postList = [
@@ -114,7 +106,7 @@ describe('Author Show View', function (): void {
     });
 
     it('includes pagination component', function (): void {
-        $view = createAuthorShowTestView();
+        $view = createBlogTestView();
 
         $author = createTestAuthor();
         $postList = [
@@ -144,7 +136,7 @@ describe('Author Show View', function (): void {
     });
 
     it('shows message when author has no posts', function (): void {
-        $view = createAuthorShowTestView();
+        $view = createBlogTestView();
 
         $author = createTestAuthor();
         $posts = createTestPaginatedResult(items: [], totalItems: 0);
@@ -160,7 +152,7 @@ describe('Author Show View', function (): void {
     });
 
     it('has semantic HTML structure', function (): void {
-        $view = createAuthorShowTestView();
+        $view = createBlogTestView();
 
         $author = createTestAuthor();
         $postList = [createTestPost(1, 'Post 1')];
@@ -178,7 +170,7 @@ describe('Author Show View', function (): void {
     });
 
     it('includes proper canonical URL', function (): void {
-        $view = createAuthorShowTestView();
+        $view = createBlogTestView();
 
         $author = createTestAuthor(slug: 'jane-smith');
         $posts = createTestPaginatedResult(items: [], totalItems: 0);
@@ -194,38 +186,6 @@ describe('Author Show View', function (): void {
             ->and($html)->toContain('/blog/author/jane-smith');
     });
 });
-
-function createAuthorShowTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-author-show-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}
 
 function createTestAuthor(
     int $id = 1,

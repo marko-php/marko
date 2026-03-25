@@ -8,17 +8,9 @@ use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Author;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
-use Marko\Config\ConfigRepository;
-use Marko\Core\Module\ModuleManifest;
-use Marko\Core\Module\ModuleRepository;
-use Marko\View\Latte\LatteEngineFactory;
-use Marko\View\Latte\LatteView;
-use Marko\View\ModuleTemplateResolver;
-use Marko\View\ViewConfig;
-
 describe('Tag Archive View', function (): void {
     it('renders tag name as page title', function (): void {
-        $view = createTagArchiveTestView();
+        $view = \createBlogTestView();
 
         $tag = createTag(1, 'PHP', 'php');
         $posts = createPaginatedResult([]);
@@ -33,7 +25,7 @@ describe('Tag Archive View', function (): void {
     });
 
     it('renders list of posts with tag', function (): void {
-        $view = createTagArchiveTestView();
+        $view = \createBlogTestView();
 
         $tag = createTag(1, 'PHP', 'php');
         $author = createAuthor(1, 'Jane Doe', 'jane-doe');
@@ -53,7 +45,7 @@ describe('Tag Archive View', function (): void {
     });
 
     it('displays post title summary author and date', function (): void {
-        $view = createTagArchiveTestView();
+        $view = \createBlogTestView();
 
         $tag = createTag(1, 'PHP', 'php');
         $author = createAuthor(1, 'Jane Doe', 'jane-doe');
@@ -74,7 +66,7 @@ describe('Tag Archive View', function (): void {
     });
 
     it('includes pagination component', function (): void {
-        $view = createTagArchiveTestView();
+        $view = \createBlogTestView();
 
         $tag = createTag(1, 'PHP', 'php');
         $author = createAuthor(1, 'Jane Doe', 'jane-doe');
@@ -98,7 +90,7 @@ describe('Tag Archive View', function (): void {
     });
 
     it('shows message when tag has no posts', function (): void {
-        $view = createTagArchiveTestView();
+        $view = \createBlogTestView();
 
         $tag = createTag(1, 'PHP', 'php');
         $posts = createPaginatedResult([]);
@@ -113,7 +105,7 @@ describe('Tag Archive View', function (): void {
     });
 
     it('has semantic HTML structure', function (): void {
-        $view = createTagArchiveTestView();
+        $view = \createBlogTestView();
 
         $tag = createTag(1, 'PHP', 'php');
         $author = createAuthor(1, 'Jane Doe', 'jane-doe');
@@ -133,7 +125,7 @@ describe('Tag Archive View', function (): void {
     });
 
     it('includes proper canonical URL', function (): void {
-        $view = createTagArchiveTestView();
+        $view = \createBlogTestView();
 
         $tag = createTag(1, 'PHP', 'php');
         $posts = createPaginatedResult([]);
@@ -150,38 +142,6 @@ describe('Tag Archive View', function (): void {
             ->and($html)->toMatch('/href\s*=\s*["\']\/blog\/tag\/php["\']/i');
     });
 });
-
-function createTagArchiveTestView(): LatteView
-{
-    $blogPackagePath = dirname(__DIR__, 2);
-    $tempCacheDir = sys_get_temp_dir() . '/marko-tag-archive-test-' . uniqid();
-    mkdir($tempCacheDir, 0755, true);
-
-    $config = new ConfigRepository([
-        'view' => [
-            'cache_directory' => $tempCacheDir,
-            'extension' => '.latte',
-            'auto_refresh' => true,
-            'strict_types' => true,
-        ],
-    ]);
-
-    $moduleRepository = new ModuleRepository([
-        new ModuleManifest(
-            name: 'marko/blog',
-            version: '1.0.0',
-            path: $blogPackagePath,
-            source: 'vendor',
-        ),
-    ]);
-
-    $viewConfig = new ViewConfig($config);
-    $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-    $engineFactory = new LatteEngineFactory($viewConfig);
-    $engine = $engineFactory->create();
-
-    return new LatteView($engine, $templateResolver);
-}
 
 function createTag(
     int $id,
