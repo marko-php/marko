@@ -24,9 +24,9 @@ declare(strict_types=1);
 
 namespace App\Blog\Job;
 
-use Marko\Queue\JobInterface;
+use Marko\Queue\Job;
 
-class SendWelcomeEmail implements JobInterface
+class SendWelcomeEmail extends Job
 {
     public function __construct(
         private readonly string $email,

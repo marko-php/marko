@@ -200,7 +200,7 @@ class ArticleController
         $id = $this->articleRepository->create([
             'title' => $data['title'],
             'body' => $data['body'],
-            'author_email' => $user?->getIdentifier(),
+            'author_email' => $user?->getAuthIdentifier(),
             'created_at' => new DateTimeImmutable(),
             'updated_at' => new DateTimeImmutable(),
         ]);

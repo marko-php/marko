@@ -223,7 +223,7 @@ class TrackPageViewMiddleware implements MiddlewareInterface
 
         $this->analytics->trackPageView(
             path: $request->path(),
-            userId: $user?->getIdentifier(),
+            userId: $user?->getAuthIdentifier(),
         );
 
         return $response;

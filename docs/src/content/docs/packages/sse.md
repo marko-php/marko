@@ -19,7 +19,7 @@ The `dataProvider` approach polls a data source on a configurable interval (defa
 
 ```php
 use Marko\Routing\Http\Request;
-use Marko\Routing\Route\Get;
+use Marko\Routing\Attributes\Get;
 use Marko\Sse\SseEvent;
 use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;

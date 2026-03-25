@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace App\Blog\Service;
 
-use Marko\Mail\MailerInterface;
+use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Message;
 
 class NotificationService
@@ -31,11 +31,10 @@ class NotificationService
 
     public function notifyAuthor(string $email, string $postTitle): void
     {
-        $message = new Message(
-            to: $email,
-            subject: "Your post '{$postTitle}' was published",
-            body: "Congratulations! Your post is now live.",
-        );
+        $message = Message::create()
+            ->to($email)
+            ->subject("Your post '{$postTitle}' was published")
+            ->text('Congratulations! Your post is now live.');
 
         $this->mailer->send($message);
     }
@@ -52,12 +51,12 @@ class NotificationService
 ## Switching Transports
 
 ```php title="module.php"
-use Marko\Mail\TransportInterface;
-use Marko\Mail\Log\LogTransport;
+use Marko\Mail\Contracts\MailerInterface;
+use Marko\Mail\Log\LogMailer;
 
 return [
     'bindings' => [
-        TransportInterface::class => LogTransport::class,
+        MailerInterface::class => LogMailer::class,
     ],
 ];
 ```

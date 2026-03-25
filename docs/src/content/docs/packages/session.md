@@ -22,15 +22,20 @@ Note: You typically install a driver package (like `marko/session-file`) which r
 
 ```php title="config/session.php"
 return [
+    'driver' => 'file',
     'lifetime' => 120, // minutes
     'expire_on_close' => false,
+    'path' => 'storage/sessions',
     'cookie' => [
         'name' => 'marko_session',
         'path' => '/',
+        'domain' => '',
         'secure' => true,
         'httponly' => true,
         'samesite' => 'lax',
     ],
+    'gc_probability' => 2,
+    'gc_divisor' => 100,
 ];
 ```
 

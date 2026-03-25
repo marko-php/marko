@@ -44,23 +44,28 @@ declare(strict_types=1);
 
 namespace App\Blog\Entity;
 
-use Marko\Database\Attribute\Entity;
-use Marko\Database\Attribute\Id;
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
 use DateTimeImmutable;
 
-#[Entity(table: 'posts')]
-class Post
+#[Table('posts')]
+class Post extends Entity
 {
-    #[Id]
-    public int $id;
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
 
+    #[Column]
     public string $title;
 
+    #[Column]
     public string $body;
 
+    #[Column]
     public bool $published = false;
 
-    public DateTimeImmutable $createdAt;
+    #[Column('created_at')]
+    public ?string $createdAt = null;
 }
 ```
 
@@ -155,7 +160,7 @@ declare(strict_types=1);
 namespace App\Blog\Database\Seeder;
 
 use Marko\Database\Query\QueryBuilderInterface;
-use Marko\Database\SeederInterface;
+use Marko\Database\Seed\SeederInterface;
 use DateTimeImmutable;
 
 class PostSeeder implements SeederInterface

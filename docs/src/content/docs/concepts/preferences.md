@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace App\Blog\Controller;
 
-use Marko\Blog\Controller\PostController;
+use Marko\Blog\Controllers\PostController;
 use Marko\Core\Attributes\Preference;
 
 #[Preference(replaces: PostController::class)]
@@ -45,12 +45,12 @@ If you're swapping which implementation an **interface** resolves to, use a bind
 ```php title="app/my-app/module.php"
 <?php
 
-use Marko\Cache\CachePoolInterface;
-use Marko\Cache\Redis\RedisCachePool;
+use Marko\Cache\Contracts\CacheInterface;
+use Marko\Cache\Redis\Driver\RedisCacheDriver;
 
 return [
     'bindings' => [
-        CachePoolInterface::class => RedisCachePool::class,
+        CacheInterface::class => RedisCacheDriver::class,
     ],
 ];
 ```

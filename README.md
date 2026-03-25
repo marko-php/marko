@@ -125,16 +125,20 @@ return [
 class OrderPlugin
 {
     #[Before]
-    public function beforePlace(Order $order): null
+    public function place(Order $order): null
     {
-        // Runs before OrderService::place()
+        // Runs before OrderService::place() — method name matches target
         return null;
     }
+}
 
-    #[After]
-    public function afterPlace(OrderResult $result, Order $order): OrderResult
+#[Plugin(target: OrderService::class)]
+class OrderAuditPlugin
+{
+    #[After(method: 'place')]
+    public function auditPlace(OrderResult $result, Order $order): OrderResult
     {
-        // Runs after OrderService::place()
+        // Custom method name — `method` param maps it to OrderService::place()
         return $result;
     }
 }

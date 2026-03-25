@@ -88,7 +88,7 @@ class SendWelcomeEmail
 Dispatch events from anywhere:
 
 ```php
-$this->eventDispatcher->dispatch('user.created', ['user' => $user]);
+$this->eventDispatcher->dispatch(new UserCreatedEvent(user: $user));
 ```
 
 ### Creating Modules
@@ -138,7 +138,7 @@ return [
         // Default binding — used in all environments
         PaymentGatewayInterface::class => StripePaymentGateway::class,
     ],
-    'boot' => function (ContainerInterface $container): void {
+    'boot' => function (Container $container): void {
         if (($_ENV['APP_ENV'] ?? 'production') === 'development') {
             $container->bind(
                 PaymentGatewayInterface::class,
@@ -192,11 +192,13 @@ throw new MarkoException(
 ### Container
 
 ```php
-interface ContainerInterface
+interface ContainerInterface extends PsrContainerInterface
 {
     public function get(string $id): mixed;
     public function has(string $id): bool;
-    public function bind(string $abstract, string $concrete): void;
+    public function singleton(string $id): void;
+    public function instance(string $id, object $instance): void;
+    public function call(Closure $callable): mixed;
 }
 ```
 
@@ -205,7 +207,7 @@ interface ContainerInterface
 ```php
 interface EventDispatcherInterface
 {
-    public function dispatch(string|Event $event, array $data = []): Event;
+    public function dispatch(Event $event): void;
 }
 ```
 

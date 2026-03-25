@@ -59,7 +59,7 @@ class Post extends Entity
     #[Column(name: 'created_at', default: 'CURRENT_TIMESTAMP')]
     public DateTimeImmutable $createdAt;
 
-    #[Column(name: 'updated_at', nullable: true)]
+    #[Column(name: 'updated_at')]
     public ?DateTimeImmutable $updatedAt = null;
 }
 ```
@@ -69,7 +69,7 @@ class Post extends Entity
 | Attribute | Purpose |
 |-----------|---------|
 | `#[Table]` | Defines table name |
-| `#[Column]` | Column configuration (type, length, nullable, default, unique, references) |
+| `#[Column]` | Column configuration (name, primaryKey, autoIncrement, length, type, unique, default, references, onDelete, onUpdate) |
 | `#[Index]` | Composite indexes |
 
 ### Type Inference Rules
@@ -115,7 +115,7 @@ class PostRepository extends Repository
         return $this->query()
             ->where('status', '=', 'published')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->getEntities();
     }
 }
 ```

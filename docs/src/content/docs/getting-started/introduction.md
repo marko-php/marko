@@ -41,9 +41,9 @@ Higher-priority modules can override lower ones using Preferences, Plugins, and 
 Marko splits features into **interface packages** and **implementation packages**:
 
 ```
-marko/cache          → CacheInterface, CachePoolInterface (contracts)
-marko/cache-file     → FileCachePool (file-based implementation)
-marko/cache-redis    → RedisCachePool (Redis implementation)
+marko/cache          → CacheInterface, CacheItemInterface (contracts)
+marko/cache-file     → FileCacheDriver (file-based implementation)
+marko/cache-redis    → RedisCacheDriver (Redis implementation)
 ```
 
 You code against the interface. Swap implementations by changing a single binding — no other code changes needed.

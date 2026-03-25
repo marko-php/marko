@@ -116,7 +116,7 @@ class CustomNotificationRepository extends DatabaseNotificationRepository
 
 ### DatabaseNotification
 
-Entity mapped to the `notifications` table. Accepts a `ConnectionInterface` connection.
+Entity mapped to the `notifications` table.
 
 | Property | Type | Description |
 |---|---|---|

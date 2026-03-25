@@ -48,7 +48,7 @@ return [
     ],
 
     'remember' => [
-        'expiration' => 43200, // 30 days in minutes
+        'expiration' => 43200, // 30 days
         'cookie' => 'remember_token',
     ],
 ];
@@ -208,7 +208,11 @@ use Marko\Authentication\Contracts\UserProviderInterface;
 
 class JwtGuard implements GuardInterface
 {
-    private ?UserProviderInterface $provider = null;
+    public UserProviderInterface $provider {
+        set {
+            $this->provider = $value;
+        }
+    }
 
     public function check(): bool
     {
@@ -253,12 +257,6 @@ class JwtGuard implements GuardInterface
         // Invalidate token
     }
 
-    public function setProvider(
-        UserProviderInterface $provider,
-    ): void {
-        $this->provider = $provider;
-    }
-
     public function getName(): string
     {
         return 'jwt';
@@ -293,7 +291,7 @@ For web routes, configure a redirect:
 ```php
 // In module.php bindings
 new AuthMiddleware(
-    authManager: $authManager,
+    auth: $authManager,
     redirectTo: '/login',
 );
 ```
@@ -440,7 +438,7 @@ public function attempt(array $credentials): bool;
 public function login(AuthenticatableInterface $user): void;
 public function loginById(int|string $id): ?AuthenticatableInterface;
 public function logout(): void;
-public function setProvider(UserProviderInterface $provider): void;
+public UserProviderInterface $provider { set; }
 public function getName(): string;
 ```
 

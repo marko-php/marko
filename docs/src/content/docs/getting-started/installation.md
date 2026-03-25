@@ -31,7 +31,7 @@ Marko's `marko/framework` metapackage bundles the most common packages. You can 
 composer require marko/framework
 ```
 
-Includes routing, database, caching, sessions, authentication, views, mail, queues, and more.
+Includes core, routing, CLI, error handling, configuration, hashing, and validation. Add database, caching, sessions, and other packages as needed.
 
 ### Minimal API
 
@@ -56,15 +56,15 @@ After installation, your project looks like this:
 ```
 my-app/
 ├── app/                  # Your application modules (highest priority)
-│   └── blog/
-│       └── module.php    # Optional module configuration
 ├── modules/              # Third-party modules (medium priority)
 ├── vendor/               # Composer packages (lowest priority)
 ├── public/
 │   └── index.php         # Web entry point
 ├── config/               # Application configuration
+├── storage/              # Logs, cache, sessions
+├── tests/                # Application tests
 ├── composer.json
-└── .env
+└── .env.example
 ```
 
 ## Install the CLI
@@ -89,7 +89,7 @@ marko list
 
 This shows all available commands. Each package registers its own commands — for example, installing `marko/database` adds `db:migrate`, `db:seed`, and other database commands. The more packages you install, the more commands become available.
 
-> You can also run commands locally with `./vendor/bin/marko` or `php marko` if you prefer not to install globally.
+> You can also run commands locally with `./vendor/bin/marko` if you prefer not to install globally.
 
 ## Next Steps
 

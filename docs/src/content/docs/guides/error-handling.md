@@ -18,18 +18,28 @@ All framework exceptions extend `MarkoException`, which enforces helpful error m
 
 declare(strict_types=1);
 
-namespace Marko\Core\Exception;
+namespace Marko\Core\Exceptions;
 
-class MarkoException extends \RuntimeException
+class MarkoException extends \Exception
 {
     public function __construct(
         string $message,
-        public readonly array $context = [],
-        public readonly string $suggestion = '',
+        private readonly string $context = '',
+        private readonly string $suggestion = '',
         int $code = 0,
         ?\Throwable $previous = null,
     ) {
         parent::__construct($message, $code, $previous);
+    }
+
+    public function getContext(): string
+    {
+        return $this->context;
+    }
+
+    public function getSuggestion(): string
+    {
+        return $this->suggestion;
     }
 }
 ```
@@ -39,15 +49,11 @@ class MarkoException extends \RuntimeException
 When creating exceptions in your modules, always include context and a suggestion:
 
 ```php
-use Marko\Core\Exception\MarkoException;
+use Marko\Core\Exceptions\MarkoException;
 
 throw new MarkoException(
     message: "Module 'acme/payments' could not be loaded",
-    context: [
-        'module' => 'acme/payments',
-        'path' => '/app/modules/acme/payments',
-        'reason' => 'composer.json missing "extra.marko.module" key',
-    ],
+    context: "Module 'acme/payments' at /app/modules/acme/payments — composer.json missing \"extra.marko.module\" key",
     suggestion: 'Add {"extra": {"marko": {"module": true}}} to the module\'s composer.json',
 );
 ```
@@ -64,8 +70,8 @@ Marko provides two error display packages:
 Swap them with a Preference:
 
 ```php title="module.php"
-use Marko\Errors\ErrorHandlerInterface;
-use Marko\Errors\Advanced\AdvancedErrorHandler;
+use Marko\Errors\Contracts\ErrorHandlerInterface;
+use Marko\ErrorsAdvanced\AdvancedErrorHandler;
 
 return [
     'bindings' => [

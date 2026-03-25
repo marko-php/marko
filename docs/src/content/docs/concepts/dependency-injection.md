@@ -16,26 +16,35 @@ declare(strict_types=1);
 
 namespace App\Blog\Service;
 
-use Marko\Cache\CachePoolInterface;
-use Marko\Database\ConnectionInterface;
+use Marko\Cache\Contracts\CacheInterface;
+use Marko\Database\Connection\ConnectionInterface;
 
 class PostService
 {
     public function __construct(
         private readonly ConnectionInterface $connection,
-        private readonly CachePoolInterface $cachePool,
+        private readonly CacheInterface $cache,
     ) {}
 
-    public function getPost(int $id): array
+    public function getPost(int $id): ?array
     {
-        return $this->cachePool->remember("post.{$id}", function () use ($id) {
-            return $this->connection->table('posts')->find($id);
-        });
+        $cached = $this->cache->get("post.{$id}");
+
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $result = $this->connection->query(
+            'SELECT * FROM posts WHERE id = ?',
+            [$id],
+        );
+
+        return $result[0] ?? null;
     }
 }
 ```
 
-The container sees that `PostService` needs a `ConnectionInterface` and a `CachePoolInterface`, resolves them from the registered bindings, and passes them in.
+The container sees that `PostService` needs a `ConnectionInterface` and a `CacheInterface`, resolves them from the registered bindings, and passes them in.
 
 ## Bindings
 
@@ -46,17 +55,17 @@ Bindings tell the container which concrete class to use when an interface is req
 
 declare(strict_types=1);
 
-use Marko\Cache\CachePoolInterface;
-use Marko\Cache\File\FileCachePool;
+use Marko\Cache\Contracts\CacheInterface;
+use Marko\Cache\File\Driver\FileCacheDriver;
 
 return [
     'bindings' => [
-        CachePoolInterface::class => FileCachePool::class,
+        CacheInterface::class => FileCacheDriver::class,
     ],
 ];
 ```
 
-Now whenever any class requests `CachePoolInterface`, the container creates a `FileCachePool`.
+Now whenever any class requests `CacheInterface`, the container creates a `FileCacheDriver`.
 
 ## Singletons
 
@@ -65,7 +74,7 @@ By default, the container creates a **new instance** every time a class is resol
 ```php
 return [
     'singletons' => [
-        FileCachePool::class,
+        FileCacheDriver::class,
     ],
 ];
 ```
@@ -75,10 +84,10 @@ You can also combine singletons with bindings:
 ```php
 return [
     'bindings' => [
-        CachePoolInterface::class => FileCachePool::class,
+        CacheInterface::class => FileCacheDriver::class,
     ],
     'singletons' => [
-        FileCachePool::class,
+        FileCacheDriver::class,
     ],
 ];
 ```

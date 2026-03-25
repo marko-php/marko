@@ -72,7 +72,7 @@ $mailer = new FakeMailer();
 
 // ... code that sends mail
 
-$mailer->assertSent(WelcomeEmail::class);
+$mailer->assertSent();
 $mailer->assertSentCount(1);
 ```
 
@@ -84,14 +84,14 @@ Marko auto-loads custom expectations for cleaner assertions:
 // Instead of: $events->assertDispatched(PostCreatedEvent::class)
 expect($events)->toHaveDispatched(PostCreatedEvent::class);
 
-// Instead of: $mailer->assertSent(WelcomeEmail::class)
-expect($mailer)->toHaveSent(WelcomeEmail::class);
+// Instead of: $mailer->assertSent()
+expect($mailer)->toHaveSent();
 
 // Instead of: $queue->assertPushed(SendEmail::class)
 expect($queue)->toHavePushed(SendEmail::class);
 
-// Instead of: $logger->assertLogged('info', 'message')
-expect($logger)->toHaveLogged('info', 'message');
+// Instead of: $logger->assertLogged(...)
+expect($logger)->toHaveLogged('User logged in');
 ```
 
 ## Testing with FakeConfigRepository

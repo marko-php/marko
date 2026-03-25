@@ -119,5 +119,5 @@ Implements all methods from `CacheInterface`. See [`marko/cache`](/docs/packages
 ### Storage Details
 
 - Values are serialized with PHP's `serialize()` and stored as Redis strings.
-- A TTL greater than `0` uses Redis `SETEX` for native expiration. A TTL of `0` or `null` means the entry never expires.
+- A `null` TTL falls back to `default_ttl` from config. A TTL greater than `0` uses Redis `SETEX` for native expiration. A TTL of `0` or less means the entry never expires.
 - `clear()` removes only keys matching the configured prefix --- other Redis data is not affected.

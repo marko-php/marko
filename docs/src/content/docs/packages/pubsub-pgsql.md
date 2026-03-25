@@ -113,7 +113,7 @@ Combine with `marko/sse` to push database notifications to the browser:
 
 ```php
 use Marko\PubSub\SubscriberInterface;
-use Marko\Routing\Route\Get;
+use Marko\Routing\Attributes\Get;
 use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
 

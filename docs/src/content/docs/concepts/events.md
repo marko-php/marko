@@ -7,17 +7,17 @@ Events let modules communicate without depending on each other directly. A modul
 
 ## Dispatching Events
 
-Events are plain PHP classes. Dispatch them through the `EventDispatcherInterface`:
+Events are PHP classes that extend the `Event` base class. Dispatch them through the `EventDispatcherInterface`:
 
 ```php title="PostService.php"
 <?php
 
 declare(strict_types=1);
 
-namespace Marko\Blog\Service;
+namespace Marko\Blog\Services;
 
 use Marko\Core\Event\EventDispatcherInterface;
-use Marko\Blog\Event\PostCreatedEvent;
+use Marko\Blog\Events\Post\PostCreated;
 
 class PostService
 {
@@ -30,7 +30,7 @@ class PostService
         $post = new Post(title: $title, body: $body);
         // ... save to database
 
-        $this->eventDispatcher->dispatch(new PostCreatedEvent(post: $post));
+        $this->eventDispatcher->dispatch(new PostCreated(post: $post));
 
         return $post;
     }
@@ -39,20 +39,28 @@ class PostService
 
 ## Defining Events
 
-Events are simple value objects — no base class needed:
+Events extend the `Marko\Core\Event\Event` base class, which provides propagation stopping:
 
-```php title="PostCreatedEvent.php"
+```php title="PostCreated.php"
 <?php
 
 declare(strict_types=1);
 
-namespace Marko\Blog\Event;
+namespace Marko\Blog\Events\Post;
 
-class PostCreatedEvent
+use Marko\Blog\Entity\PostInterface;
+use Marko\Core\Event\Event;
+
+class PostCreated extends Event
 {
     public function __construct(
-        public readonly Post $post,
+        private readonly PostInterface $post,
     ) {}
+
+    public function getPost(): PostInterface
+    {
+        return $this->post;
+    }
 }
 ```
 
@@ -67,16 +75,16 @@ declare(strict_types=1);
 
 namespace App\Analytics\Observer;
 
-use Marko\Blog\Event\PostCreatedEvent;
+use Marko\Blog\Events\Post\PostCreated;
 use Marko\Core\Attributes\Observer;
 
-#[Observer(event: PostCreatedEvent::class)]
+#[Observer(event: PostCreated::class)]
 class TrackPostCreation
 {
-    public function handle(PostCreatedEvent $event): void
+    public function handle(PostCreated $event): void
     {
         // Send to analytics, update counters, notify admins, etc.
-        $postTitle = $event->post->title;
+        $postTitle = $event->getPost()->title;
         // ...
     }
 }
@@ -89,16 +97,16 @@ Observers are discovered automatically from module `src/` directories — no man
 When multiple observers listen to the same event, they run by priority (higher values first). Use the `priority` parameter to control order:
 
 ```php
-#[Observer(event: PostCreatedEvent::class, priority: 10)]
+#[Observer(event: PostCreated::class, priority: 10)]
 class HighPriorityObserver
 {
-    public function handle(PostCreatedEvent $event): void { /* ... */ }
+    public function handle(PostCreated $event): void { /* ... */ }
 }
 
-#[Observer(event: PostCreatedEvent::class, priority: 0)]
+#[Observer(event: PostCreated::class, priority: 0)]
 class DefaultPriorityObserver
 {
-    public function handle(PostCreatedEvent $event): void { /* ... */ }
+    public function handle(PostCreated $event): void { /* ... */ }
 }
 ```
 
@@ -119,10 +127,10 @@ Marko packages dispatch events at meaningful points:
 
 | Event | When |
 |---|---|
-| `PostCreatedEvent` | New post is created |
-| `PostUpdatedEvent` | Post is modified |
-| `PostDeletedEvent` | Post is deleted |
-| `CommentCreatedEvent` | New comment is added |
+| `PostCreated` | New post is created |
+| `PostUpdated` | Post is modified |
+| `PostDeleted` | Post is deleted |
+| `CommentCreated` | New comment is added |
 
 ## When to Use Events
 

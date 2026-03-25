@@ -216,7 +216,7 @@ interface PermissionRepositoryInterface extends RepositoryInterface
 {
     public function findByKey(string $key): ?Permission;
     public function findByGroup(string $group): array;
-    public function syncFromRegistry(): void;
+    public function syncFromRegistry(PermissionRegistryInterface $registry): void;
 }
 ```
 

@@ -173,7 +173,7 @@ public function isUnhealthy(): bool;
 ```php
 use Marko\Health\Registry\HealthCheckRegistry;
 
-public function register(HealthCheckInterface $healthCheckInterface): void;
+public function register(HealthCheckInterface $check): void;
 public function all(): array;   // Returns array<HealthCheckInterface>
 public function run(): array;   // Returns array<HealthResult>
 ```

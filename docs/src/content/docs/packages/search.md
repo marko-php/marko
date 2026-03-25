@@ -171,7 +171,7 @@ use Marko\Search\Value\SearchCriteria;
 use Marko\Search\Value\SearchFilter;
 
 public static function create(string $query = ''): static;
-public function withFilter(SearchFilter $searchFilter): static;
+public function withFilter(SearchFilter $filter): static;
 public function withSort(string $field, string $direction = 'asc'): static;
 public function withPage(int $page): static;
 public function withPerPage(int $perPage): static;
@@ -229,7 +229,7 @@ public function isEmpty(): bool;
 ### DatabaseSearchDriver
 
 ```php
-use Marko\Database\Contracts\ConnectionInterface;
+use Marko\Database\Connection\ConnectionInterface;
 use Marko\Search\Contracts\SearchableInterface;
 use Marko\Search\Driver\DatabaseSearchDriver;
 

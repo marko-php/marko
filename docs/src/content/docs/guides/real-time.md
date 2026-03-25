@@ -85,7 +85,7 @@ declare(strict_types=1);
 namespace App\Blog\Controller;
 
 use Marko\PubSub\SubscriberInterface;
-use Marko\Routing\Route\Get;
+use Marko\Routing\Attributes\Get;
 use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
 
@@ -134,7 +134,7 @@ For simpler use cases that don't need instant delivery --- progress bars, period
 
 ```php
 use Marko\Routing\Http\Request;
-use Marko\Routing\Route\Get;
+use Marko\Routing\Attributes\Get;
 use Marko\Sse\SseEvent;
 use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;

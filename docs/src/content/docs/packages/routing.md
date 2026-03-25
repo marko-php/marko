@@ -78,7 +78,7 @@ Middleware classes implement `MiddlewareInterface`:
 ```php title="AuthMiddleware.php"
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
-use Marko\Routing\MiddlewareInterface;
+use Marko\Routing\Middleware\MiddlewareInterface;
 
 class AuthMiddleware implements MiddlewareInterface
 {
@@ -154,7 +154,7 @@ or use #[DisableRoute] to remove one route.
 ### Route Attributes
 
 ```php
-#[Get(path: '/path', name: 'route.name')]
+#[Get(path: '/path', middleware: [])]
 #[Post(path: '/path')]
 #[Put(path: '/path')]
 #[Patch(path: '/path')]
@@ -168,10 +168,14 @@ or use #[DisableRoute] to remove one route.
 ```php
 class Request
 {
-    public function getMethod(): string;
-    public function getPath(): string;
-    public function getQueryParams(): array;
-    public function getBody(): string;
+    public function method(): string;
+    public function path(): string;
+    public function query(?string $key = null, mixed $default = null): mixed;
+    public function post(?string $key = null, mixed $default = null): mixed;
+    public function body(): string;
+    public function header(string $name, ?string $default = null): ?string;
+    public function headers(): array;
+    public static function fromGlobals(): self;
 }
 ```
 
@@ -181,14 +185,18 @@ class Request
 class Response
 {
     public function __construct(
-        string $content = '',
-        int $status = 200,
+        string $body = '',
+        int $statusCode = 200,
         array $headers = [],
     );
 
-    public function getContent(): string;
-    public function getStatus(): int;
-    public function getHeaders(): array;
+    public function body(): string;
+    public function statusCode(): int;
+    public function headers(): array;
+    public function send(): void;
+    public static function json(mixed $data, int $statusCode = 200): self;
+    public static function html(string $html, int $statusCode = 200): self;
+    public static function redirect(string $url, int $statusCode = 302): self;
 }
 ```
 

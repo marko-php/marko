@@ -21,8 +21,8 @@ Set the encryption key and cipher in your config:
 
 ```php title="config/encryption.php"
 return [
-    'key' => $_ENV['ENCRYPTION_KEY'],
-    'cipher' => 'aes-256-gcm',
+    'key' => $_ENV['ENCRYPTION_KEY'] ?? '',
+    'cipher' => $_ENV['ENCRYPTION_CIPHER'] ?? 'aes-256-gcm',
 ];
 ```
 

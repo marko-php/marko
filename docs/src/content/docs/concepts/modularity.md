@@ -78,20 +78,20 @@ return [
 Marko packages follow a deliberate pattern: interfaces and implementations are separate packages.
 
 ```
-marko/cache          → CachePoolInterface (the contract)
-marko/cache-file     → FileCachePool (file-based)
-marko/cache-redis    → RedisCachePool (Redis-based)
+marko/cache          → CacheInterface (the contract)
+marko/cache-file     → FileCacheDriver (file-based)
+marko/cache-redis    → RedisCacheDriver (Redis-based)
 ```
 
 Your application code depends on the **interface package**:
 
 ```php
-use Marko\Cache\CachePoolInterface;
+use Marko\Cache\Contracts\CacheInterface;
 
 class ProductService
 {
     public function __construct(
-        private readonly CachePoolInterface $cachePool,
+        private readonly CacheInterface $cache,
     ) {}
 }
 ```

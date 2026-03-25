@@ -344,7 +344,7 @@ use Marko\Config\ConfigRepository;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Attributes\Preference;
 
-#[Preference(for: ConfigRepositoryInterface::class)]
+#[Preference(replaces: ConfigRepositoryInterface::class)]
 class CachedConfigRepository extends ConfigRepository
 {
     private array $cache = [];

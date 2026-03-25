@@ -220,8 +220,19 @@ public static function sign(string $payload, string $secret): string;
 ```php
 use Marko\Webhook\Jobs\DispatchWebhookJob;
 use Marko\Webhook\Value\WebhookPayload;
+use Marko\Webhook\Contracts\WebhookDispatcherInterface;
+use Marko\Webhook\Sending\WebhookDeliveryService;
+use Marko\Config\ConfigRepositoryInterface;
+use Marko\Queue\QueueInterface;
 
-public function __construct(WebhookPayload $payload);
+public function __construct(
+    WebhookPayload $payload,
+    WebhookDispatcherInterface $dispatcher,
+    WebhookDeliveryService $deliveryService,
+    ConfigRepositoryInterface $config,
+    QueueInterface $queue,
+    int $attemptNumber = 1,
+);
 public function handle(): void;
 ```
 

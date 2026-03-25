@@ -3,7 +3,7 @@ title: marko/errors-simple
 description: The default error handler --- catches exceptions and displays them with full context and fix suggestions.
 ---
 
-The default error handler --- catches exceptions and displays them with full context and fix suggestions. This is the implementation of `ErrorHandlerInterface` from [marko/core](/docs/packages/core/) that actually catches and displays errors. When something breaks, you see the exception message, the code that caused it, and suggestions for fixing it. Zero external dependencies means it works even when other parts of your application fail.
+The default error handler --- catches exceptions and displays them with full context and fix suggestions. This is the implementation of `ErrorHandlerInterface` from [marko/errors](/docs/packages/errors/) that actually catches and displays errors. When something breaks, you see the exception message, the code that caused it, and suggestions for fixing it. Zero external dependencies means it works even when other parts of your application fail.
 
 - **CLI** --- Colored output with code snippets around the error
 - **Web** --- Clean HTML page with stack trace and context
@@ -53,7 +53,7 @@ MARKO_ENV=development
 MARKO_ENV=production
 ```
 
-Also accepts: `dev`, `local`, `prod`. Falls back to `APP_ENV` if `MARKO_ENV` is not set.
+Also accepts: `dev`, `local`. Falls back to `APP_ENV` if `MARKO_ENV` is not set. Any other value (or no value) is treated as production.
 
 **Safe default:** No env var = production mode.
 
@@ -179,13 +179,25 @@ class Environment
 ```php
 class TextFormatter
 {
-    public function format(ErrorReport $report, bool $isDevelopment): string;
+    public function __construct(
+        Environment $environment,
+        CodeSnippetExtractor $codeSnippetExtractor,
+        ?bool $colorsEnabled = null,
+    );
+
+    public function format(ErrorReport $report): string;
 }
 
 class BasicHtmlFormatter
 {
     public const CONTENT_TYPE = 'text/html; charset=UTF-8';
-    public function format(ErrorReport $report, bool $isDevelopment): string;
+
+    public function __construct(
+        Environment $environment,
+        CodeSnippetExtractor $extractor,
+    );
+
+    public function format(ErrorReport $report): string;
 }
 ```
 

@@ -25,7 +25,7 @@ my-app/
 ├── config/               # Root configuration
 ├── storage/              # Logs, cache, sessions
 ├── composer.json
-└── .env
+└── .env.example
 ```
 
 ## Module Locations
@@ -77,7 +77,7 @@ my-module/
 │   └── views/            # View templates
 ├── tests/                # Module tests
 ├── composer.json         # Package definition
-└── module.php            # Optional: bindings, singletons, plugins, observers
+└── module.php            # Optional: bindings, singletons, sequence, boot
 ```
 
 ## The `module.php` File
@@ -89,15 +89,15 @@ This optional file declares a module's bindings, singletons, and wiring:
 
 declare(strict_types=1);
 
-use Marko\Cache\CachePoolInterface;
-use Marko\Cache\File\FileCachePool;
+use Marko\Cache\Contracts\CacheInterface;
+use Marko\Cache\File\Driver\FileCacheDriver;
 
 return [
     'bindings' => [
-        CachePoolInterface::class => FileCachePool::class,
+        CacheInterface::class => FileCacheDriver::class,
     ],
     'singletons' => [
-        FileCachePool::class,
+        FileCacheDriver::class,
     ],
 ];
 ```

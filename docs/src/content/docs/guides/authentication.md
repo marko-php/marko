@@ -56,8 +56,7 @@ use Marko\Authentication\AuthManager;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Authentication\Middleware\AuthMiddleware;
-use Marko\Http\ResponseInterface;
-use Marko\Http\JsonResponse;
+use Marko\Routing\Http\Response;
 
 class DashboardController
 {
@@ -67,11 +66,11 @@ class DashboardController
 
     #[Get('/dashboard')]
     #[Middleware(AuthMiddleware::class)]
-    public function index(): ResponseInterface
+    public function index(): Response
     {
         $user = $this->authManager->user();
 
-        return new JsonResponse(data: [
+        return Response::json(data: [
             'message' => "Welcome, {$user->name}",
         ]);
     }
@@ -120,11 +119,11 @@ use Marko\Authentication\Middleware\GuestMiddleware;   // Must NOT be logged in
 
 #[Get('/dashboard')]
 #[Middleware(AuthMiddleware::class)]
-public function dashboard(): ResponseInterface { /* ... */ }
+public function dashboard(): Response { /* ... */ }
 
 #[Get('/login')]
 #[Middleware(GuestMiddleware::class)]
-public function loginForm(): ResponseInterface { /* ... */ }
+public function loginForm(): Response { /* ... */ }
 ```
 
 ## Custom Guard

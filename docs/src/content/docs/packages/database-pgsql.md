@@ -3,7 +3,7 @@ title: marko/database-pgsql
 description: PostgreSQL driver for the Marko framework database layer — provides connection, query building, introspection, and schema migration support.
 ---
 
-PostgreSQL driver for the Marko framework database layer. Implements `ConnectionInterface`, `QueryBuilderInterface`, `IntrospectorInterface`, and `SqlGeneratorInterface` from [`marko/database`](/docs/packages/database/) using PostgreSQL-native features --- JSONB, UUID, SERIAL types, dollar-sign parameter placeholders, and double-quoted identifiers.
+PostgreSQL driver for the Marko framework database layer. Implements `ConnectionInterface`, `QueryBuilderInterface`, `IntrospectorInterface`, and `SqlGeneratorInterface` from [`marko/database`](/docs/packages/database/) using PostgreSQL-native features --- JSONB, UUID, SERIAL types, PDO-compatible `?` parameter placeholders, and double-quoted identifiers.
 
 ## Installation
 
@@ -68,7 +68,7 @@ class MyService
 
 ### Query Builder
 
-The PostgreSQL query builder uses dollar-sign placeholders (`$1`, `$2`, ...) and double-quoted identifiers. It supports selects, inserts, updates, deletes, joins, ordering, limits, and raw queries:
+The PostgreSQL query builder uses PDO-compatible `?` placeholders and double-quoted identifiers. It supports selects, inserts, updates, deletes, joins, ordering, limits, and raw queries:
 
 ```php
 use Marko\Database\Query\QueryBuilderInterface;
@@ -100,8 +100,8 @@ class PostRepository
 use Marko\Database\Connection\ConnectionInterface;
 
 $connection->transaction(function () use ($connection): void {
-    $connection->execute('INSERT INTO accounts (name) VALUES ($1)', ['Acme']);
-    $connection->execute('INSERT INTO ledger (account, amount) VALUES ($1, $2)', ['Acme', 100]);
+    $connection->execute('INSERT INTO accounts (name) VALUES (?)', ['Acme']);
+    $connection->execute('INSERT INTO ledger (account, amount) VALUES (?, ?)', ['Acme', 100]);
 });
 ```
 

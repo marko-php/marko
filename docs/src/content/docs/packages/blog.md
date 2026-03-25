@@ -31,15 +31,13 @@ All configuration is optional with sensible defaults. Add to your config:
 
 ```php title="config/blog.php"
 return [
-    'blog' => [
-        'posts_per_page' => 10,              // Posts shown per page
-        'comment_max_depth' => 5,            // Maximum reply nesting level
-        'comment_rate_limit_seconds' => 30,  // Seconds between comments from same IP/email
-        'verification_token_expiry_days' => 7,   // Email token validity
-        'verification_cookie_days' => 365,   // Browser token validity after verification
-        'verification_cookie_name' => 'blog_verified',
-        'route_prefix' => '/blog',           // Must start with /, must not end with /
-    ],
+    'posts_per_page' => 10,              // Posts shown per page
+    'comment_max_depth' => 5,            // Maximum reply nesting level
+    'comment_rate_limit_seconds' => 30,  // Seconds between comments from same IP/email
+    'verification_token_expiry_days' => 7,   // Email token validity
+    'verification_cookie_days' => 365,   // Browser token validity after verification
+    'verification_cookie_name' => 'blog_verified',
+    'route_prefix' => '/blog',           // Must start with /, must not end with /
 ];
 ```
 
@@ -155,7 +153,7 @@ use Marko\Routing\Http\Response;
 class PostControllerPlugin
 {
     #[Before]
-    public function beforeShow(
+    public function show(
         string $slug,
     ): ?string {
         // Redirect old slugs
@@ -167,7 +165,7 @@ class PostControllerPlugin
     }
 
     #[After]
-    public function afterIndex(
+    public function index(
         Response $result,
     ): Response {
         // Add cache headers
@@ -209,7 +207,7 @@ class NotifySubscribers
 | `PostCreated` | New post saved | `getPost()`, `getTimestamp()` |
 | `PostUpdated` | Existing post modified | `getPost()`, `getTimestamp()` |
 | `PostPublished` | Post status changed to published | `getPost()`, `getPreviousStatus()`, `getTimestamp()` |
-| `PostScheduled` | Post scheduled for future publication | `getPost()`, `getScheduledAt()`, `getTimestamp()` |
+| `PostScheduled` | Post scheduled for future publication | `getPost()`, `getPreviousStatus()`, `getTimestamp()` |
 | `PostDeleted` | Post removed | `getPost()`, `getTimestamp()` |
 
 #### Comment Events
@@ -271,9 +269,11 @@ marko blog:cleanup --verbose  # Show token counts
 
 ### PostRepositoryInterface
 
+Extends `RepositoryInterface` (which provides `find()`, `save()`, `delete()`, etc.).
+
 ```php
-public function find(int $id): ?PostInterface;
-public function findBySlug(string $slug): ?PostInterface;
+public function findBySlug(string $slug): ?Post;
+public function findPublished(): array;
 public function findPublishedPaginated(int $limit, int $offset): array;
 public function countPublished(): int;
 public function findPublishedByCategory(int $categoryId, int $limit, int $offset): array;
@@ -282,21 +282,19 @@ public function findPublishedByAuthor(int $authorId, int $limit, int $offset): a
 public function findScheduledPostsDue(): array;
 public function getCategoriesForPost(int $postId): array;
 public function getTagsForPost(int $postId): array;
-public function save(PostInterface $post): void;
-public function delete(PostInterface $post): void;
 ```
 
 ### CommentRepositoryInterface
 
+Extends `RepositoryInterface` (which provides `find()`, `save()`, `delete()`, etc.).
+
 ```php
-public function find(int $id): ?CommentInterface;
+public function find(int $id): ?Comment;
 public function findVerifiedForPost(int $postId): array;
 public function findPendingForPost(int $postId): array;
 public function countForPost(int $postId): int;
 public function countVerifiedForPost(int $postId): int;
 public function findByEmail(string $email): array;
-public function save(CommentInterface $comment): void;
-public function delete(CommentInterface $comment): void;
 ```
 
 ### CategoryRepositoryInterface
@@ -340,8 +338,11 @@ public function calculateDepth(int $commentId): int;
 ### SearchServiceInterface
 
 ```php
+public function search(string $query): array;
 public function searchPaginated(string $query, int $limit, int $offset): array;
 ```
+
+`searchPaginated()` returns `array{results: array<SearchResult>, total: int}`.
 
 ### PaginationServiceInterface
 

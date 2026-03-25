@@ -283,11 +283,9 @@ class MissingValue {}
 
 ```php
 use Marko\Api\Exceptions\ApiResourceException;
+use Marko\Core\Exceptions\MarkoException;
 
-class ApiResourceException extends Exception
-{
-    public function __construct(string $message, string $context = '', string $suggestion = '', ...);
-    public function getContext(): string;
-    public function getSuggestion(): string;
-}
+class ApiResourceException extends MarkoException {}
 ```
+
+Inherits `getContext()` and `getSuggestion()` from `MarkoException`.

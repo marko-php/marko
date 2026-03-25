@@ -89,5 +89,5 @@ Implements all methods from `CacheInterface`. See `marko/cache` for the full con
 
 - Each cache key is hashed with `xxh128` and stored as a `.cache` file in the configured path.
 - Writes use a temp file with `LOCK_EX` followed by an atomic `rename()` to prevent corruption.
-- A TTL of `0` or `null` means the entry never expires.
+- A `null` TTL falls back to `default_ttl` from config. A TTL of `0` or less means the entry never expires.
 - Expired entries are deleted lazily --- on the next `get()`, `has()`, or `getItem()` call for that key.

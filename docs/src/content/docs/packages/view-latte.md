@@ -19,12 +19,10 @@ Configure via the `view` config key:
 
 ```php title="config/view.php"
 return [
-    'view' => [
-        'cache_directory' => '/path/to/cache',
-        'extension' => '.latte',
-        'auto_refresh' => true,  // Set false in production
-        'strict_types' => true,
-    ],
+    'cache_directory' => '/path/to/cache',
+    'extension' => '.latte',
+    'auto_refresh' => true,  // Set false in production
+    'strict_types' => true,
 ];
 ```
 

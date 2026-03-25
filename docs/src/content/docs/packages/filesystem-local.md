@@ -97,7 +97,7 @@ use Marko\Core\Attributes\Preference;
 use Marko\Filesystem\Local\Filesystem\LocalFilesystem;
 
 #[Preference(replaces: LocalFilesystem::class)]
-class AuditedLocalFilesystem extends LocalFilesystem
+readonly class AuditedLocalFilesystem extends LocalFilesystem
 {
     public function write(
         string $path,

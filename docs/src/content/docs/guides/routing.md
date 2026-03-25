@@ -17,33 +17,32 @@ namespace App\Blog\Controller;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Attributes\Delete;
-use Marko\Http\ResponseInterface;
-use Marko\Http\JsonResponse;
+use Marko\Routing\Http\Response;
 
 class PostController
 {
     #[Get('/posts')]
-    public function index(): ResponseInterface
+    public function index(): Response
     {
-        return new JsonResponse(data: ['posts' => []]);
+        return Response::json(data: ['posts' => []]);
     }
 
     #[Get('/posts/{id}')]
-    public function show(int $id): ResponseInterface
+    public function show(int $id): Response
     {
-        return new JsonResponse(data: ['id' => $id]);
+        return Response::json(data: ['id' => $id]);
     }
 
     #[Post('/posts')]
-    public function store(): ResponseInterface
+    public function store(): Response
     {
-        return new JsonResponse(data: ['created' => true], status: 201);
+        return Response::json(data: ['created' => true], statusCode: 201);
     }
 
     #[Delete('/posts/{id}')]
-    public function destroy(int $id): ResponseInterface
+    public function destroy(int $id): Response
     {
-        return new JsonResponse(status: 204);
+        return Response::json(data: [], statusCode: 204);
     }
 }
 ```
@@ -64,7 +63,7 @@ Parameters in `{braces}` are automatically injected into the method by name:
 
 ```php
 #[Get('/users/{userId}/posts/{postId}')]
-public function show(int $userId, int $postId): ResponseInterface
+public function show(int $userId, int $postId): Response
 {
     // $userId and $postId are extracted from the URL
 }
@@ -83,7 +82,7 @@ class AdminController
 {
     #[Get('/admin/dashboard')]
     #[Middleware(AuthMiddleware::class)]
-    public function dashboard(): ResponseInterface
+    public function dashboard(): Response
     {
         // Only authenticated users reach this
     }
@@ -96,7 +95,7 @@ class AdminController
 #[Get('/admin/settings')]
 #[Middleware(AuthMiddleware::class)]
 #[Middleware(AdminRoleMiddleware::class)]
-public function settings(): ResponseInterface
+public function settings(): Response
 {
     // Must be authenticated AND have admin role
 }
@@ -137,24 +136,21 @@ declare(strict_types=1);
 
 namespace App\MyApp\Middleware;
 
-use Marko\Http\RequestInterface;
-use Marko\Http\ResponseInterface;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 
 class RateLimitMiddleware implements MiddlewareInterface
 {
     public function handle(
-        RequestInterface $request,
+        Request $request,
         callable $next,
-    ): ResponseInterface {
+    ): Response {
         // Before the controller
         $this->checkRateLimit($request);
 
         // Call the next middleware or controller
-        $response = $next($request);
-
-        // After the controller
-        return $response->withHeader('X-RateLimit-Remaining', '99');
+        return $next($request);
     }
 }
 ```
