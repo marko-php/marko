@@ -42,4 +42,37 @@ class PluginException extends MarkoException
             suggestion: 'Add the #[Plugin(target: TargetClass::class)] attribute to the class, or remove the #[Before]/#[After] attributes from the methods',
         );
     }
+
+    /**
+     * @param array<string> $methodNames
+     */
+    public static function duplicatePluginHook(
+        string $pluginClass,
+        string $timing,
+        string $targetMethod,
+        array $methodNames,
+    ): self {
+        $methods = implode(', ', $methodNames);
+
+        return new self(
+            message: "Plugin class '$pluginClass' has multiple $timing hooks targeting '$targetMethod': $methods",
+            context: "While parsing plugin class '$pluginClass'",
+            suggestion: "Each target method can only have one $timing hook per plugin class. Use separate plugin classes for additional hooks.",
+        );
+    }
+
+    public static function conflictingSortOrder(
+        string $targetClass,
+        string $targetMethod,
+        string $timing,
+        string $pluginClass1,
+        string $pluginClass2,
+        int $sortOrder,
+    ): self {
+        return new self(
+            message: "Two plugins have conflicting sort order ($sortOrder) for $timing hook on '$targetClass::$targetMethod()': $pluginClass1 and $pluginClass2",
+            context: "While registering plugin '$pluginClass2' for '$targetClass'",
+            suggestion: 'Change the sortOrder on one of the plugins to make execution order deterministic.',
+        );
+    }
 }

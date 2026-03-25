@@ -563,7 +563,7 @@ expect($text)->not->toHaveSuspiciousCharacters();
 
 ## Reflection-Invoked Test Fixtures
 
-When test fixtures contain methods that are invoked via reflection (e.g., plugin `beforeXxx`/`afterXxx` methods, observer `handle` methods), PhpStorm cannot trace the usage and flags them as unused.
+When test fixtures contain methods that are invoked via reflection (e.g., plugin methods with `#[Before]`/`#[After]`, observer `handle` methods), PhpStorm cannot trace the usage and flags them as unused.
 
 **Add `@noinspection PhpUnused` to each reflection-invoked method:**
 
@@ -573,11 +573,7 @@ class TargetServicePlugin
 {
     /** @noinspection PhpUnused - Invoked via reflection */
     #[Before(sortOrder: 10)]
-    public function beforeDoSomething(): void {}
-
-    /** @noinspection PhpUnused - Invoked via reflection */
-    #[After(sortOrder: 20)]
-    public function afterDoSomething(): void {}
+    public function doSomething(): void {}
 }
 ```
 

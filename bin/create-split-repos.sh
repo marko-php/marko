@@ -32,6 +32,14 @@ for pkg_dir in "$REPO_ROOT"/packages/*/; do
             --description "$description" \
             --disable-issues \
             --disable-wiki
+
+        # Disable projects and set homepage to point to the monorepo
+        gh api "repos/${repo}" \
+            --method PATCH \
+            --field has_projects=false \
+            --field homepage="https://github.com/marko-php/marko" \
+            --silent
+
         echo "  ✓ Created ${repo}"
     fi
 done

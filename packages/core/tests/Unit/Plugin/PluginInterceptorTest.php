@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Attributes\After;
+use Marko\Core\Attributes\Before;
 use Marko\Core\Container\Container;
 use Marko\Core\Plugin\PluginDefinition;
 use Marko\Core\Plugin\PluginInterceptor;
+use Marko\Core\Plugin\PluginProxy;
 use Marko\Core\Plugin\PluginRegistry;
 
 // Test fixtures for interceptor tests
@@ -22,9 +25,9 @@ class InterceptorTargetService
 
 class FirstBeforePlugin
 {
-    public function beforeDoAction(): ?string
+    public function doAction(): ?string
     {
-        InterceptorTargetService::$callLog[] = 'FirstBeforePlugin::beforeDoAction';
+        InterceptorTargetService::$callLog[] = 'FirstBeforePlugin::doAction';
 
         return null;
     }
@@ -32,9 +35,9 @@ class FirstBeforePlugin
 
 class SecondBeforePlugin
 {
-    public function beforeDoAction(): ?string
+    public function doAction(): ?string
     {
-        InterceptorTargetService::$callLog[] = 'SecondBeforePlugin::beforeDoAction';
+        InterceptorTargetService::$callLog[] = 'SecondBeforePlugin::doAction';
 
         return null;
     }
@@ -44,7 +47,7 @@ beforeEach(function (): void {
     InterceptorTargetService::$callLog = [];
 });
 
-it('executes before plugins in sort order before target method', function (): void {
+it('executes before plugins with method names matching target method', function (): void {
     $container = new Container();
     $registry = new PluginRegistry();
 
@@ -52,13 +55,13 @@ it('executes before plugins in sort order before target method', function (): vo
     $registry->register(new PluginDefinition(
         pluginClass: SecondBeforePlugin::class,
         targetClass: InterceptorTargetService::class,
-        beforeMethods: ['beforeDoAction' => 20],
+        beforeMethods: ['doAction' => ['pluginMethod' => 'doAction', 'sortOrder' => 20]],
     ));
 
     $registry->register(new PluginDefinition(
         pluginClass: FirstBeforePlugin::class,
         targetClass: InterceptorTargetService::class,
-        beforeMethods: ['beforeDoAction' => 10],
+        beforeMethods: ['doAction' => ['pluginMethod' => 'doAction', 'sortOrder' => 10]],
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
@@ -68,8 +71,8 @@ it('executes before plugins in sort order before target method', function (): vo
 
     // Verify execution order: before plugins (in sort order), then target
     expect(InterceptorTargetService::$callLog)->toBe([
-        'FirstBeforePlugin::beforeDoAction',
-        'SecondBeforePlugin::beforeDoAction',
+        'FirstBeforePlugin::doAction',
+        'SecondBeforePlugin::doAction',
         'InterceptorTargetService::doAction',
     ])
         ->and($result)->toBe('original result');
@@ -95,18 +98,18 @@ class ArgLoggingPlugin
     public static array $receivedArgs = [];
 
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function beforeProcess(
+    public function process(
         string $name,
         int $count,
     ): ?string {
         self::$receivedArgs = ['name' => $name, 'count' => $count];
-        ServiceWithArgs::$callLog[] = "ArgLoggingPlugin::beforeProcess($name, $count)";
+        ServiceWithArgs::$callLog[] = "ArgLoggingPlugin::process($name, $count)";
 
         return null;
     }
 }
 
-it('passes method arguments to before plugins', function (): void {
+it('passes method arguments to before plugins with new naming', function (): void {
     ServiceWithArgs::$callLog = [];
     ArgLoggingPlugin::$receivedArgs = [];
 
@@ -116,7 +119,7 @@ it('passes method arguments to before plugins', function (): void {
     $registry->register(new PluginDefinition(
         pluginClass: ArgLoggingPlugin::class,
         targetClass: ServiceWithArgs::class,
-        beforeMethods: ['beforeProcess' => 10],
+        beforeMethods: ['process' => ['pluginMethod' => 'process', 'sortOrder' => 10]],
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
@@ -126,7 +129,7 @@ it('passes method arguments to before plugins', function (): void {
 
     expect(ArgLoggingPlugin::$receivedArgs)->toBe(['name' => 'test', 'count' => 42])
         ->and(ServiceWithArgs::$callLog)->toBe([
-            'ArgLoggingPlugin::beforeProcess(test, 42)',
+            'ArgLoggingPlugin::process(test, 42)',
             'ServiceWithArgs::process(test, 42)',
         ])
         ->and($result)->toBe('processed: test, 42');
@@ -147,9 +150,9 @@ class ShortCircuitService
 
 class ShortCircuitPlugin
 {
-    public function beforeDoAction(): ?string
+    public function doAction(): ?string
     {
-        ShortCircuitService::$callLog[] = 'ShortCircuitPlugin::beforeDoAction';
+        ShortCircuitService::$callLog[] = 'ShortCircuitPlugin::doAction';
 
         return 'short-circuited';
     }
@@ -157,15 +160,15 @@ class ShortCircuitPlugin
 
 class SkippedPlugin
 {
-    public function beforeDoAction(): ?string
+    public function doAction(): ?string
     {
-        ShortCircuitService::$callLog[] = 'SkippedPlugin::beforeDoAction';
+        ShortCircuitService::$callLog[] = 'SkippedPlugin::doAction';
 
         return null;
     }
 }
 
-it('short-circuits when before plugin returns non-null value', function (): void {
+it('short-circuits when before plugin returns non-null with new naming', function (): void {
     ShortCircuitService::$callLog = [];
 
     $container = new Container();
@@ -175,14 +178,14 @@ it('short-circuits when before plugin returns non-null value', function (): void
     $registry->register(new PluginDefinition(
         pluginClass: SkippedPlugin::class,
         targetClass: ShortCircuitService::class,
-        beforeMethods: ['beforeDoAction' => 30],  // Will be skipped due to short-circuit
+        beforeMethods: ['doAction' => ['pluginMethod' => 'doAction', 'sortOrder' => 30]],
     ));
 
     // Second plugin short-circuits
     $registry->register(new PluginDefinition(
         pluginClass: ShortCircuitPlugin::class,
         targetClass: ShortCircuitService::class,
-        beforeMethods: ['beforeDoAction' => 10],  // Runs first, returns non-null
+        beforeMethods: ['doAction' => ['pluginMethod' => 'doAction', 'sortOrder' => 10]],
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
@@ -192,7 +195,7 @@ it('short-circuits when before plugin returns non-null value', function (): void
 
     // Should only run the short-circuiting plugin, skip the rest and target
     expect(ShortCircuitService::$callLog)->toBe([
-        'ShortCircuitPlugin::beforeDoAction',
+        'ShortCircuitPlugin::doAction',
     ])
         ->and($result)->toBe('short-circuited');
 });
@@ -212,9 +215,9 @@ class PassThroughService
 
 class PassThroughPluginA
 {
-    public function beforeDoAction(): ?string
+    public function doAction(): ?string
     {
-        PassThroughService::$callLog[] = 'PassThroughPluginA::beforeDoAction';
+        PassThroughService::$callLog[] = 'PassThroughPluginA::doAction';
 
         return null;
     }
@@ -222,9 +225,9 @@ class PassThroughPluginA
 
 class PassThroughPluginB
 {
-    public function beforeDoAction(): ?string
+    public function doAction(): ?string
     {
-        PassThroughService::$callLog[] = 'PassThroughPluginB::beforeDoAction';
+        PassThroughService::$callLog[] = 'PassThroughPluginB::doAction';
 
         return null;
     }
@@ -239,13 +242,13 @@ it('executes target method when all before plugins return null', function (): vo
     $registry->register(new PluginDefinition(
         pluginClass: PassThroughPluginA::class,
         targetClass: PassThroughService::class,
-        beforeMethods: ['beforeDoAction' => 10],
+        beforeMethods: ['doAction' => ['pluginMethod' => 'doAction', 'sortOrder' => 10]],
     ));
 
     $registry->register(new PluginDefinition(
         pluginClass: PassThroughPluginB::class,
         targetClass: PassThroughService::class,
-        beforeMethods: ['beforeDoAction' => 20],
+        beforeMethods: ['doAction' => ['pluginMethod' => 'doAction', 'sortOrder' => 20]],
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
@@ -255,8 +258,8 @@ it('executes target method when all before plugins return null', function (): vo
 
     // All plugins pass through, target method executes
     expect(PassThroughService::$callLog)->toBe([
-        'PassThroughPluginA::beforeDoAction',
-        'PassThroughPluginB::beforeDoAction',
+        'PassThroughPluginA::doAction',
+        'PassThroughPluginB::doAction',
         'PassThroughService::doAction',
     ])
         ->and($result)->toBe('target result');
@@ -277,10 +280,10 @@ class AfterTargetService
 
 class FirstAfterPlugin
 {
-    public function afterDoAction(
+    public function doAction(
         mixed $result,
     ): mixed {
-        AfterTargetService::$callLog[] = 'FirstAfterPlugin::afterDoAction';
+        AfterTargetService::$callLog[] = 'FirstAfterPlugin::doAction';
 
         return $result;
     }
@@ -288,16 +291,16 @@ class FirstAfterPlugin
 
 class SecondAfterPlugin
 {
-    public function afterDoAction(
+    public function doAction(
         mixed $result,
     ): mixed {
-        AfterTargetService::$callLog[] = 'SecondAfterPlugin::afterDoAction';
+        AfterTargetService::$callLog[] = 'SecondAfterPlugin::doAction';
 
         return $result;
     }
 }
 
-it('executes after plugins in sort order after target method', function (): void {
+it('executes after plugins with method names matching target method', function (): void {
     AfterTargetService::$callLog = [];
 
     $container = new Container();
@@ -307,13 +310,13 @@ it('executes after plugins in sort order after target method', function (): void
     $registry->register(new PluginDefinition(
         pluginClass: SecondAfterPlugin::class,
         targetClass: AfterTargetService::class,
-        afterMethods: ['afterDoAction' => 20],
+        afterMethods: ['doAction' => ['pluginMethod' => 'doAction', 'sortOrder' => 20]],
     ));
 
     $registry->register(new PluginDefinition(
         pluginClass: FirstAfterPlugin::class,
         targetClass: AfterTargetService::class,
-        afterMethods: ['afterDoAction' => 10],
+        afterMethods: ['doAction' => ['pluginMethod' => 'doAction', 'sortOrder' => 10]],
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
@@ -324,8 +327,8 @@ it('executes after plugins in sort order after target method', function (): void
     // Verify execution order: target, then after plugins in sort order
     expect(AfterTargetService::$callLog)->toBe([
         'AfterTargetService::doAction',
-        'FirstAfterPlugin::afterDoAction',
-        'SecondAfterPlugin::afterDoAction',
+        'FirstAfterPlugin::doAction',
+        'SecondAfterPlugin::doAction',
     ])
         ->and($result)->toBe('original');
 });
@@ -350,19 +353,19 @@ class AfterArgInspectorPlugin
     public static array $receivedArgs = [];
 
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function afterCalculate(
+    public function calculate(
         mixed $result,
         int $a,
         int $b,
     ): mixed {
         self::$receivedArgs = ['result' => $result, 'a' => $a, 'b' => $b];
-        AfterServiceWithArgs::$callLog[] = "AfterArgInspectorPlugin::afterCalculate(result=$result, a=$a, b=$b)";
+        AfterServiceWithArgs::$callLog[] = "AfterArgInspectorPlugin::calculate(result=$result, a=$a, b=$b)";
 
         return $result;
     }
 }
 
-it('passes result and original arguments to after plugins', function (): void {
+it('passes result and arguments to after plugins with new naming', function (): void {
     AfterServiceWithArgs::$callLog = [];
     AfterArgInspectorPlugin::$receivedArgs = [];
 
@@ -372,7 +375,7 @@ it('passes result and original arguments to after plugins', function (): void {
     $registry->register(new PluginDefinition(
         pluginClass: AfterArgInspectorPlugin::class,
         targetClass: AfterServiceWithArgs::class,
-        afterMethods: ['afterCalculate' => 10],
+        afterMethods: ['calculate' => ['pluginMethod' => 'calculate', 'sortOrder' => 10]],
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
@@ -387,7 +390,7 @@ it('passes result and original arguments to after plugins', function (): void {
     ])
         ->and(AfterServiceWithArgs::$callLog)->toBe([
             'AfterServiceWithArgs::calculate(5, 3)',
-            'AfterArgInspectorPlugin::afterCalculate(result=8, a=5, b=3)',
+            'AfterArgInspectorPlugin::calculate(result=8, a=5, b=3)',
         ])
         ->and($result)->toBe(8);
 });
@@ -410,11 +413,11 @@ class DoublerPlugin
     public static ?int $receivedResult = null;
 
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function afterGetValue(
+    public function getValue(
         mixed $result,
     ): int {
         self::$receivedResult = $result;
-        ModifyResultService::$callLog[] = "DoublerPlugin::afterGetValue(received=$result)";
+        ModifyResultService::$callLog[] = "DoublerPlugin::getValue(received=$result)";
 
         return $result * 2;
     }
@@ -425,17 +428,17 @@ class AdderPlugin
     public static ?int $receivedResult = null;
 
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function afterGetValue(
+    public function getValue(
         mixed $result,
     ): int {
         self::$receivedResult = $result;
-        ModifyResultService::$callLog[] = "AdderPlugin::afterGetValue(received=$result)";
+        ModifyResultService::$callLog[] = "AdderPlugin::getValue(received=$result)";
 
         return $result + 5;
     }
 }
 
-it('uses modified result from after plugin for next plugin', function (): void {
+it('chains modified results through after plugins with new naming', function (): void {
     ModifyResultService::$callLog = [];
     DoublerPlugin::$receivedResult = null;
     AdderPlugin::$receivedResult = null;
@@ -448,13 +451,13 @@ it('uses modified result from after plugin for next plugin', function (): void {
     $registry->register(new PluginDefinition(
         pluginClass: DoublerPlugin::class,
         targetClass: ModifyResultService::class,
-        afterMethods: ['afterGetValue' => 10],
+        afterMethods: ['getValue' => ['pluginMethod' => 'getValue', 'sortOrder' => 10]],
     ));
 
     $registry->register(new PluginDefinition(
         pluginClass: AdderPlugin::class,
         targetClass: ModifyResultService::class,
-        afterMethods: ['afterGetValue' => 20],
+        afterMethods: ['getValue' => ['pluginMethod' => 'getValue', 'sortOrder' => 20]],
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
@@ -468,8 +471,8 @@ it('uses modified result from after plugin for next plugin', function (): void {
         ->and($result)->toBe(25)                       // Final result
         ->and(ModifyResultService::$callLog)->toBe([
             'ModifyResultService::getValue',
-            'DoublerPlugin::afterGetValue(received=10)',
-            'AdderPlugin::afterGetValue(received=20)',
+            'DoublerPlugin::getValue(received=10)',
+            'AdderPlugin::getValue(received=20)',
         ]);
 });
 
@@ -490,10 +493,10 @@ class CompleteFlowService
 class CompleteFlowBeforePlugin
 {
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function beforeProcess(
+    public function process(
         string $input,
     ): ?string {
-        CompleteFlowService::$callLog[] = "CompleteFlowBeforePlugin::beforeProcess($input)";
+        CompleteFlowService::$callLog[] = "CompleteFlowBeforePlugin::process($input)";
 
         return null;
     }
@@ -502,11 +505,11 @@ class CompleteFlowBeforePlugin
 class CompleteFlowAfterPlugin
 {
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function afterProcess(
+    public function process(
         mixed $result,
         string $input,
     ): string {
-        CompleteFlowService::$callLog[] = "CompleteFlowAfterPlugin::afterProcess($result, $input)";
+        CompleteFlowService::$callLog[] = "CompleteFlowAfterPlugin::process($result, $input)";
 
         return "$result [modified]";
     }
@@ -521,13 +524,13 @@ it('returns final result after all after plugins complete', function (): void {
     $registry->register(new PluginDefinition(
         pluginClass: CompleteFlowBeforePlugin::class,
         targetClass: CompleteFlowService::class,
-        beforeMethods: ['beforeProcess' => 10],
+        beforeMethods: ['process' => ['pluginMethod' => 'process', 'sortOrder' => 10]],
     ));
 
     $registry->register(new PluginDefinition(
         pluginClass: CompleteFlowAfterPlugin::class,
         targetClass: CompleteFlowService::class,
-        afterMethods: ['afterProcess' => 10],
+        afterMethods: ['process' => ['pluginMethod' => 'process', 'sortOrder' => 10]],
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
@@ -537,9 +540,9 @@ it('returns final result after all after plugins complete', function (): void {
 
     expect($result)->toBe('processed: test [modified]')
         ->and(CompleteFlowService::$callLog)->toBe([
-            'CompleteFlowBeforePlugin::beforeProcess(test)',
+            'CompleteFlowBeforePlugin::process(test)',
             'CompleteFlowService::process(test)',
-            'CompleteFlowAfterPlugin::afterProcess(processed: test, test)',
+            'CompleteFlowAfterPlugin::process(processed: test, test)',
         ]);
 });
 
@@ -618,22 +621,24 @@ readonly class PluginWithDependency
     ) {}
 
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function beforeSave(
+    #[Before(method: 'save')]
+    public function logBeforeSave(
         string $data,
     ): ?string {
         $this->logger->log("About to save: $data");
-        DependencyInjectionService::$callLog[] = 'PluginWithDependency::beforeSave';
+        DependencyInjectionService::$callLog[] = 'PluginWithDependency::logBeforeSave';
 
         return null;
     }
 
     /** @noinspection PhpUnused - Invoked via reflection */
-    public function afterSave(
+    #[After(method: 'save')]
+    public function logAfterSave(
         mixed $result,
         string $data,
     ): mixed {
         $this->logger->log("Saved successfully: $data");
-        DependencyInjectionService::$callLog[] = 'PluginWithDependency::afterSave';
+        DependencyInjectionService::$callLog[] = 'PluginWithDependency::logAfterSave';
 
         return $result;
     }
@@ -649,8 +654,8 @@ it('injects plugin dependencies via container', function (): void {
     $registry->register(new PluginDefinition(
         pluginClass: PluginWithDependency::class,
         targetClass: DependencyInjectionService::class,
-        beforeMethods: ['beforeSave' => 10],
-        afterMethods: ['afterSave' => 10],
+        beforeMethods: ['save' => ['pluginMethod' => 'logBeforeSave', 'sortOrder' => 10]],
+        afterMethods: ['save' => ['pluginMethod' => 'logAfterSave', 'sortOrder' => 10]],
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
@@ -664,14 +669,12 @@ it('injects plugin dependencies via container', function (): void {
         'Saved successfully: test data',
     ])
         ->and(DependencyInjectionService::$callLog)->toBe([
-            'PluginWithDependency::beforeSave',
+            'PluginWithDependency::logBeforeSave',
             'DependencyInjectionService::save(test data)',
-            'PluginWithDependency::afterSave',
+            'PluginWithDependency::logAfterSave',
         ])
         ->and($result)->toBe('saved: test data');
 });
-
-use Marko\Core\Plugin\PluginProxy;
 
 // Test fixture for conditional proxy creation
 class ProxyCheckService
@@ -684,7 +687,7 @@ class ProxyCheckService
 
 class ProxyCheckServicePlugin
 {
-    public function beforeDoSomething(): ?string
+    public function doSomething(): ?string
     {
         return null;
     }
@@ -698,7 +701,7 @@ it('creates proxy only for classes with registered plugins', function (): void {
     $registry->register(new PluginDefinition(
         pluginClass: ProxyCheckServicePlugin::class,
         targetClass: ProxyCheckService::class,
-        beforeMethods: ['beforeDoSomething' => 10],
+        beforeMethods: ['doSomething' => ['pluginMethod' => 'doSomething', 'sortOrder' => 10]],
     ));
 
     $interceptor = new PluginInterceptor($container, $registry);
@@ -714,4 +717,102 @@ it('creates proxy only for classes with registered plugins', function (): void {
     $result = $interceptor->createProxy(NoPluginsService::class, $targetWithoutPlugins);
     expect($result)->toBe($targetWithoutPlugins)
         ->and($result)->not->toBeInstanceOf(PluginProxy::class);
+});
+
+// Test fixtures for plugin method name correctness
+class RegistryMethodNameTargetService
+{
+    public static array $callLog = [];
+
+    public function save(string $data): string
+    {
+        self::$callLog[] = "RegistryMethodNameTargetService::save($data)";
+
+        return "saved: $data";
+    }
+}
+
+class RegistryMethodNamePlugin
+{
+    public static array $callLog = [];
+
+    public function save(string $data): ?string
+    {
+        self::$callLog[] = "RegistryMethodNamePlugin::save($data)";
+
+        return null;
+    }
+}
+
+it('calls plugin method by name returned from registry', function (): void {
+    RegistryMethodNameTargetService::$callLog = [];
+    RegistryMethodNamePlugin::$callLog = [];
+
+    $container = new Container();
+    $registry = new PluginRegistry();
+
+    $registry->register(new PluginDefinition(
+        pluginClass: RegistryMethodNamePlugin::class,
+        targetClass: RegistryMethodNameTargetService::class,
+        beforeMethods: ['save' => ['pluginMethod' => 'save', 'sortOrder' => 10]],
+    ));
+
+    $interceptor = new PluginInterceptor($container, $registry);
+    $proxy = $interceptor->createProxy(RegistryMethodNameTargetService::class, new RegistryMethodNameTargetService());
+
+    $result = $proxy->save('hello');
+
+    expect(RegistryMethodNamePlugin::$callLog)->toBe(['RegistryMethodNamePlugin::save(hello)'])
+        ->and(RegistryMethodNameTargetService::$callLog)->toBe(['RegistryMethodNameTargetService::save(hello)'])
+        ->and($result)->toBe('saved: hello');
+});
+
+// Test fixtures for explicit method param (plugin method differs from target method)
+class ExplicitMethodParamTargetService
+{
+    public static array $callLog = [];
+
+    public function save(string $data): string
+    {
+        self::$callLog[] = "ExplicitMethodParamTargetService::save($data)";
+
+        return "saved: $data";
+    }
+}
+
+class ExplicitMethodParamPlugin
+{
+    public static array $callLog = [];
+
+    public function validateInput(string $data): ?string
+    {
+        self::$callLog[] = "ExplicitMethodParamPlugin::validateInput($data)";
+
+        return null;
+    }
+}
+
+it('executes plugins using explicit method param with different method names', function (): void {
+    ExplicitMethodParamTargetService::$callLog = [];
+    ExplicitMethodParamPlugin::$callLog = [];
+
+    $container = new Container();
+    $registry = new PluginRegistry();
+
+    // Plugin method 'validateInput' intercepts target method 'save'
+    $registry->register(new PluginDefinition(
+        pluginClass: ExplicitMethodParamPlugin::class,
+        targetClass: ExplicitMethodParamTargetService::class,
+        beforeMethods: ['save' => ['pluginMethod' => 'validateInput', 'sortOrder' => 10]],
+    ));
+
+    $interceptor = new PluginInterceptor($container, $registry);
+    $proxy = $interceptor->createProxy(ExplicitMethodParamTargetService::class, new ExplicitMethodParamTargetService());
+
+    $result = $proxy->save('test data');
+
+    // validateInput (not save) should be called on the plugin
+    expect(ExplicitMethodParamPlugin::$callLog)->toBe(['ExplicitMethodParamPlugin::validateInput(test data)'])
+        ->and(ExplicitMethodParamTargetService::$callLog)->toBe(['ExplicitMethodParamTargetService::save(test data)'])
+        ->and($result)->toBe('saved: test data');
 });

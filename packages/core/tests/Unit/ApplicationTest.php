@@ -387,6 +387,73 @@ PHP;
     appTestCleanupDirectory($baseDir);
 });
 
+it('discovers and registers plugins in ApplicationTest with new naming', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    $modulePath = $vendorDir . '/acme/core';
+    appTestCreateModule($modulePath, 'acme/core');
+
+    mkdir($modulePath . '/src', 0755, true);
+
+    $targetCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmePluginNew$uniqueId;
+
+class TargetClass$uniqueId
+{
+    public function doSomething(): string
+    {
+        return 'original';
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/src/TargetClass.php', $targetCode);
+
+    $pluginCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmePluginNew$uniqueId;
+
+use Marko\\Core\\Attributes\\Plugin;
+use Marko\\Core\\Attributes\\Before;
+
+#[Plugin(target: TargetClass$uniqueId::class)]
+class TargetPlugin$uniqueId
+{
+    #[Before]
+    public function doSomething(): void
+    {
+        // Plugin logic using new naming convention
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/src/TargetPlugin.php', $pluginCode);
+
+    require_once $modulePath . '/src/TargetClass.php';
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->initialize();
+
+    $pluginRegistry = $app->pluginRegistry;
+    $targetClass = "AcmePluginNew$uniqueId\\TargetClass$uniqueId";
+
+    expect($pluginRegistry->hasPluginsFor($targetClass))->toBeTrue();
+
+    appTestCleanupDirectory($baseDir);
+});
+
 it('discovers and registers observers', function (): void {
     // Use unique class names to avoid conflicts between test runs
     $uniqueId = uniqid();
@@ -1461,7 +1528,7 @@ it('stores router as nullable object property', function (): void {
         ->and($property->getType()->allowsNull())->toBeTrue();
 });
 
-it('exposes router via public property hook that throws RuntimeException("Router not available. Install marko/routing: composer require marko/routing") when null', function (): void {
+it('throws RuntimeException when accessing router property without routing installed', function (): void {
     $app = new Application();
 
     expect(fn () => $app->router)
@@ -1522,7 +1589,7 @@ it('no longer has a public boot() instance method', function (): void {
     expect($hasPublicInstanceBoot)->toBeFalse();
 });
 
-it('updates router property hook error message to "Router not available. Install marko/routing: composer require marko/routing"', function (): void {
+it('includes installation instructions in router error message', function (): void {
     $app = new Application();
 
     expect(fn () => $app->router)->toThrow(

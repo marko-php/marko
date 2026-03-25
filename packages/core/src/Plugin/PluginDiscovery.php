@@ -67,17 +67,46 @@ class PluginDiscovery
 
         $beforeMethods = [];
         $afterMethods = [];
+        /** @var array<string, list<string>> $beforeTargets */
+        $beforeTargets = [];
+        /** @var array<string, list<string>> $afterTargets */
+        $afterTargets = [];
+
         foreach ($reflection->getMethods() as $method) {
+            $pluginMethodName = $method->getName();
+
             $beforeAttributes = $method->getAttributes(Before::class);
             if (!empty($beforeAttributes)) {
                 $beforeAttribute = $beforeAttributes[0]->newInstance();
-                $beforeMethods[$method->getName()] = $beforeAttribute->sortOrder;
+                $targetMethodName = $beforeAttribute->method ?? $pluginMethodName;
+                $beforeTargets[$targetMethodName][] = $pluginMethodName;
+                $beforeMethods[$targetMethodName] = [
+                    'pluginMethod' => $pluginMethodName,
+                    'sortOrder' => $beforeAttribute->sortOrder,
+                ];
             }
 
             $afterAttributes = $method->getAttributes(After::class);
             if (!empty($afterAttributes)) {
                 $afterAttribute = $afterAttributes[0]->newInstance();
-                $afterMethods[$method->getName()] = $afterAttribute->sortOrder;
+                $targetMethodName = $afterAttribute->method ?? $pluginMethodName;
+                $afterTargets[$targetMethodName][] = $pluginMethodName;
+                $afterMethods[$targetMethodName] = [
+                    'pluginMethod' => $pluginMethodName,
+                    'sortOrder' => $afterAttribute->sortOrder,
+                ];
+            }
+        }
+
+        foreach ($beforeTargets as $targetMethodName => $pluginMethods) {
+            if (count($pluginMethods) > 1) {
+                throw PluginException::duplicatePluginHook($pluginClass, 'before', $targetMethodName, $pluginMethods);
+            }
+        }
+
+        foreach ($afterTargets as $targetMethodName => $pluginMethods) {
+            if (count($pluginMethods) > 1) {
+                throw PluginException::duplicatePluginHook($pluginClass, 'after', $targetMethodName, $pluginMethods);
             }
         }
 

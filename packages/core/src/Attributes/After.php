@@ -11,5 +11,6 @@ readonly class After
 {
     public function __construct(
         public int $sortOrder = 0,
+        public ?string $method = null,
     ) {}
 }

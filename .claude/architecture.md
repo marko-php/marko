@@ -660,7 +660,7 @@ Marko intentionally does not support around plugins. If you need to completely r
 
 ### Sort Order
 
-Sort order determines execution sequence when multiple plugins target the same method. Sort order is defined at the method level only, not the class level.
+Sort order determines execution sequence when multiple plugins target the same method. Sort order is defined on the attribute at the method level only, not the class level: `#[Before(sortOrder: 10)]`.
 
 - Lower numbers run first (includes negative numbers)
 - Default is 0
@@ -668,7 +668,7 @@ Sort order determines execution sequence when multiple plugins target the same m
 
 ### Plugin Discovery
 
-Plugins are discovered via the `#[Plugin]` attribute on classes and `#[Before]`/`#[After]` attributes on methods.
+Plugins are discovered via the `#[Plugin]` attribute on classes. Methods with `#[Before]` or `#[After]` attributes are interceptors. The method name determines which target method is intercepted — a method named `save()` with `#[Before]` intercepts `save()` on the target. Use `#[Before(method: 'targetMethod')]` to target a specific method when the plugin method has a different name.
 
 ---
 

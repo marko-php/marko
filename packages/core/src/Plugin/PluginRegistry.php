@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Core\Plugin;
 
+use Marko\Core\Exceptions\PluginException;
+
 class PluginRegistry
 {
     /**
@@ -13,6 +15,8 @@ class PluginRegistry
 
     /**
      * Register a plugin definition.
+     *
+     * @throws PluginException
      */
     public function register(
         PluginDefinition $plugin,
@@ -21,6 +25,38 @@ class PluginRegistry
 
         if (!isset($this->plugins[$targetClass])) {
             $this->plugins[$targetClass] = [];
+        }
+
+        foreach ($this->plugins[$targetClass] as $existing) {
+            foreach ($plugin->beforeMethods as $targetMethod => $entry) {
+                foreach ($existing->beforeMethods as $existingTarget => $existingEntry) {
+                    if ($existingTarget === $targetMethod && $existingEntry['sortOrder'] === $entry['sortOrder']) {
+                        throw PluginException::conflictingSortOrder(
+                            targetClass: $targetClass,
+                            targetMethod: $targetMethod,
+                            timing: 'before',
+                            pluginClass1: $existing->pluginClass,
+                            pluginClass2: $plugin->pluginClass,
+                            sortOrder: $entry['sortOrder'],
+                        );
+                    }
+                }
+            }
+
+            foreach ($plugin->afterMethods as $targetMethod => $entry) {
+                foreach ($existing->afterMethods as $existingTarget => $existingEntry) {
+                    if ($existingTarget === $targetMethod && $existingEntry['sortOrder'] === $entry['sortOrder']) {
+                        throw PluginException::conflictingSortOrder(
+                            targetClass: $targetClass,
+                            targetMethod: $targetMethod,
+                            timing: 'after',
+                            pluginClass1: $existing->pluginClass,
+                            pluginClass2: $plugin->pluginClass,
+                            sortOrder: $entry['sortOrder'],
+                        );
+                    }
+                }
+            }
         }
 
         $this->plugins[$targetClass][] = $plugin;
@@ -94,15 +130,12 @@ class PluginRegistry
         $methodsProperty = $type === 'before' ? 'beforeMethods' : 'afterMethods';
 
         foreach ($plugins as $plugin) {
-            foreach ($plugin->$methodsProperty as $methodName => $sortOrder) {
-                // Check if the plugin method matches the target method pattern
-                // Convention: beforeDoAction targets doAction, afterDoAction targets doAction
-                $expectedMethodName = $type . ucfirst($targetMethod);
-                if ($methodName === $expectedMethodName) {
+            foreach ($plugin->$methodsProperty as $targetMethodName => $entry) {
+                if ($targetMethodName === $targetMethod) {
                     $methods[] = [
                         'pluginClass' => $plugin->pluginClass,
-                        'method' => $methodName,
-                        'sortOrder' => $sortOrder,
+                        'method' => $entry['pluginMethod'],
+                        'sortOrder' => $entry['sortOrder'],
                     ];
                 }
             }
