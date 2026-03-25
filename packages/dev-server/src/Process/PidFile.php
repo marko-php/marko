@@ -88,7 +88,8 @@ class PidFile
         // Use posix_kill with signal 0 to check if process exists
         if (function_exists('posix_kill')) {
             try {
-                return posix_kill($pid, 0);
+                // Check individual process first, then process group
+                return posix_kill($pid, 0) || $this->isProcessGroupRunning($pid);
             } catch (ValueError) {
                 return false;
             }
@@ -96,5 +97,48 @@ class PidFile
 
         // Fallback: check /proc on Linux
         return file_exists('/proc/' . $pid);
+    }
+
+    /**
+     * Check if any process in the process group is still running.
+     *
+     * This catches cases where a wrapper (e.g. npx) exits but its child
+     * process is still alive in the same process group.
+     */
+    public function isProcessGroupRunning(int $pgid): bool
+    {
+        if ($pgid <= 0 || !function_exists('posix_kill')) {
+            return false;
+        }
+
+        try {
+            // Signal 0 to negative PID checks the entire process group
+            return @posix_kill(-$pgid, 0);
+        } catch (ValueError) {
+            return false;
+        }
+    }
+
+    /**
+     * Kill all processes in a process group.
+     */
+    public function killProcessGroup(int $pgid): void
+    {
+        if ($pgid <= 0 || !function_exists('posix_kill')) {
+            return;
+        }
+
+        try {
+            @posix_kill(-$pgid, 15); // SIGTERM to entire group
+        } catch (ValueError) {
+            // Process group doesn't exist — already dead
+        }
+
+        // Also kill the individual process as fallback
+        try {
+            @posix_kill($pgid, 15);
+        } catch (ValueError) {
+            // Process doesn't exist — already dead
+        }
     }
 }

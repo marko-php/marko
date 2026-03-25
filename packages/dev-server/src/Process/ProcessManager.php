@@ -24,7 +24,10 @@ class ProcessManager
      *
      * @throws DevServerException If the process fails to start
      */
-    public function start(string $name, string $command): int
+    public function start(
+        string $name,
+        string $command,
+    ): int
     {
         $descriptors = [
             0 => ['pipe', 'r'],  // stdin
@@ -32,7 +35,8 @@ class ProcessManager
             2 => ['pipe', 'w'],  // stderr
         ];
 
-        $process = proc_open("exec $command", $descriptors, $pipes);
+        $wrappedCommand = $this->wrapWithNewProcessGroup($command);
+        $process = proc_open($wrappedCommand, $descriptors, $pipes);
 
         if (!is_resource($process)) {
             throw DevServerException::processFailedToStart($name, $command);
@@ -49,7 +53,7 @@ class ProcessManager
         $this->pids[$name] = $pid;
 
         // Wait briefly and check if the process exited immediately with an error
-        usleep(50000); // 50ms
+        usleep(150000); // 150ms — allows setsid wrapper to start and fail
         $status = proc_get_status($process);
         if (!$status['running'] && in_array($status['exitcode'], [126, 127], true)) {
             $this->stop($name);
@@ -215,8 +219,34 @@ class ProcessManager
     /**
      * Write a prefixed line to output.
      */
-    public function writePrefix(string $name, string $line): void
+    public function writePrefix(
+        string $name,
+        string $line,
+    ): void
     {
         $this->output->writeLine("[$name] $line");
+    }
+
+    /**
+     * Wrap a command to run in its own process group.
+     *
+     * Uses PHP's posix_setsid() before exec'ing the command, so the process
+     * becomes a session leader. This ensures all child processes (e.g. PHP
+     * server workers, npx children) share the same group and can be killed
+     * or status-checked together.
+     */
+    private function wrapWithNewProcessGroup(string $command): string
+    {
+        if (!function_exists('posix_setsid') || !function_exists('pcntl_exec')) {
+            return "exec $command";
+        }
+
+        $encoded = base64_encode($command);
+        $php = PHP_BINARY;
+
+        return "$php -r " . escapeshellarg(
+            "posix_setsid();"
+            . "pcntl_exec('/bin/sh', ['-c', base64_decode('$encoded')]);",
+        );
     }
 }

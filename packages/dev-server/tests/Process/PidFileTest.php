@@ -130,6 +130,47 @@ it('removes the PID file via clear method', function (): void {
     removeDir($tmpDir);
 });
 
+it('detects a process group as running when parent died but child lives', function (): void {
+    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
+    mkdir($tmpDir, 0755, true);
+    $pidFile = new PidFile($tmpDir);
+
+    // Start a process in its own session/group, which spawns a child and exits
+    $php = PHP_BINARY;
+    $script = <<<'PHP'
+        posix_setsid();
+        $pid = pcntl_fork();
+        if ($pid === 0) {
+            // Child: sleep so it stays alive
+            sleep(60);
+            exit(0);
+        }
+        // Parent: exit immediately, leaving child alive in the same process group
+        exit(0);
+    PHP;
+    $encoded = base64_encode($script);
+    $proc = proc_open(
+        "$php -r 'eval(base64_decode(\"$encoded\"));'",
+        [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+    );
+    $status = proc_get_status($proc);
+    $parentPid = $status['pid'];
+
+    // Wait for parent to exit
+    usleep(200000);
+    proc_close($proc);
+
+    // Parent is dead, but child is still alive in the same process group
+    // isRunning now checks both individual PID and process group
+    expect($pidFile->isProcessGroupRunning($parentPid))->toBeTrue('process group has alive members')
+        ->and($pidFile->isRunning($parentPid))->toBeTrue('isRunning detects group members');
+
+    // Clean up: kill the process group
+    posix_kill(-$parentPid, SIGTERM);
+    removeDir($tmpDir);
+});
+
 it('returns empty array when file does not exist', function (): void {
     $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
     mkdir($tmpDir, 0755, true);

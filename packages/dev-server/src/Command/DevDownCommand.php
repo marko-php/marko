@@ -22,8 +22,10 @@ readonly class DevDownCommand implements CommandInterface
         private PidFile $pidFile,
     ) {}
 
-    public function execute(Input $input, Output $output): int
-    {
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int {
         $entries = $this->pidFile->read();
         $dockerHandled = false;
 
@@ -35,10 +37,12 @@ readonly class DevDownCommand implements CommandInterface
                 $output->writeLine("  Stopping Docker: $downCommand");
                 exec($downCommand);
                 $output->writeLine('Development environment stopped.');
+
                 return 0;
             }
 
             $output->writeLine('No development services running.');
+
             return 0;
         }
 
@@ -57,9 +61,7 @@ readonly class DevDownCommand implements CommandInterface
                 $dockerHandled = true;
             } elseif ($this->pidFile->isRunning($entry->pid)) {
                 $output->writeLine("  Stopping $entry->name (PID $entry->pid)...");
-                if (function_exists('posix_kill')) {
-                    posix_kill($entry->pid, 15);
-                }
+                $this->pidFile->killProcessGroup($entry->pid);
             } else {
                 $output->writeLine("  $entry->name (PID $entry->pid) already stopped.");
             }

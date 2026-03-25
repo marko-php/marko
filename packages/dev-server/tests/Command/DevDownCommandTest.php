@@ -279,6 +279,38 @@ it('stops docker via config even when PID file has no docker entry', function ()
     devDownRemoveDir($tmpDir);
 });
 
+it('kills entire process group when stopping a process', function (): void {
+    ['command' => $command, 'pidFile' => $pidFile, 'tmpDir' => $tmpDir] = createDevDownCommand();
+
+    // Start a parent process that spawns a child, both in their own process group
+    $php = PHP_BINARY;
+    $script = base64_encode('posix_setsid(); $pid = pcntl_fork(); if ($pid === 0) { sleep(60); exit(0); } sleep(60);');
+    $proc = proc_open(
+        "$php -r 'eval(base64_decode(\"$script\"));'",
+        [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+    );
+    $status = proc_get_status($proc);
+    $parentPid = $status['pid'];
+    usleep(200000); // let fork complete
+
+    $pidFile->write([
+        new ProcessEntry('worker', $parentPid, 'sleep 60', 0, date('c')),
+    ]);
+
+    $stream = fopen('php://memory', 'r+');
+    $output = new Output($stream);
+    $command->execute(new Input([]), $output);
+
+    usleep(100000); // let signals propagate
+
+    // Both parent and child should be dead — process group killed
+    expect($pidFile->isProcessGroupRunning($parentPid))->toBeFalse();
+
+    proc_close($proc);
+    devDownRemoveDir($tmpDir);
+});
+
 it('does not stop docker when config is false', function (): void {
     ['command' => $command, 'pidFile' => $pidFile, 'tmpDir' => $tmpDir] = createDevDownCommand(
         config: ['dev.docker' => false],
