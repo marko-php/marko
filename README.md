@@ -40,6 +40,7 @@ Marko is a modular PHP 8.5+ framework where everything is a module: your app cod
 ## Quick Start
 
 ```bash
+composer global require marko/cli
 composer create-project marko/skeleton my-app
 cd my-app
 ```
