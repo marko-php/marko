@@ -40,43 +40,23 @@ Marko is a modular PHP 8.5+ framework where everything is a module: your app cod
 ## Quick Start
 
 ```bash
-# Create a new project
-mkdir my-app && cd my-app
-composer init --type=project --name=my/app
-
-# Require the packages you need
-composer require marko/core marko/routing marko/config marko/env
-
+composer create-project marko/skeleton my-app
+cd my-app
 ```
 
-Create your entry point at `public/index.php`:
+Create your first controller at `app/hello/src/Controller/HelloController.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../vendor/autoload.php';
+namespace App\Hello\Controller;
 
-use Marko\Core\Application;
-
-$app = Application::boot(dirname(__DIR__));
-$app->handleRequest();
-```
-
-Create your first controller at `app/foo/src/Controller/HomeController.php`:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace App\Foo\Controller;
-
-use Marko\Routing\Attribute\Get;
+use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
 
-class HomeController
+class HelloController
 {
     #[Get('/')]
     public function index(): Response
@@ -86,11 +66,23 @@ class HomeController
 }
 ```
 
-Register the namespace in `composer.json`, then run:
+Register the namespace in `app/hello/composer.json`:
+
+```json
+{
+    "name": "app/hello",
+    "autoload": {
+        "psr-4": {
+            "App\\Hello\\": "src/"
+        }
+    }
+}
+```
+
+Start the dev server:
 
 ```bash
-composer dump-autoload
-php -S localhost:8000 -t public
+marko up
 ```
 
 Visit [http://localhost:8000](http://localhost:8000) to see your response.
