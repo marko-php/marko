@@ -140,7 +140,7 @@ readonly class DevUpCommand implements CommandInterface
         }
 
         // PHP server (always) — multiple workers needed for SSE
-        $phpCommand = "PHP_CLI_SERVER_WORKERS=4 php -S localhost:$port -t public/";
+        $phpCommand = "env PHP_CLI_SERVER_WORKERS=4 php -S localhost:$port -t public/";
         $output->writeLine("  Starting PHP server: php -S localhost:$port");
         $pid = $this->processManager->start('php', $phpCommand);
         $entries[] = new ProcessEntry(
