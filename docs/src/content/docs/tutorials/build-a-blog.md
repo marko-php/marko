@@ -167,23 +167,26 @@ Protect the comment form so only logged-in users can comment:
 composer require marko/authentication
 ```
 
-The blog package dispatches events you can observe:
+The blog package dispatches events you can observe. Create an observer class with the `#[Observer]` attribute:
 
-```php title="app/blog/module.php"
+```php title="app/blog/src/Observer/NotifyAuthorOfComment.php"
 <?php
 
 declare(strict_types=1);
 
-use Marko\Blog\Events\Comment\CommentCreated;
-use App\Blog\Observer\NotifyAuthorOfComment;
+namespace App\Blog\Observer;
 
-return [
-    'observers' => [
-        CommentCreated::class => [
-            NotifyAuthorOfComment::class,
-        ],
-    ],
-];
+use Marko\Blog\Events\Comment\CommentCreated;
+use Marko\Core\Attributes\Observer;
+
+#[Observer(event: CommentCreated::class)]
+class NotifyAuthorOfComment
+{
+    public function handle(CommentCreated $event): void
+    {
+        // Send notification to the post author...
+    }
+}
 ```
 
 ## Step 7: Extend with Plugins
@@ -199,10 +202,14 @@ namespace App\Blog\Plugin;
 
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Repositories\PostRepositoryInterface;
+use Marko\Core\Attributes\After;
+use Marko\Core\Attributes\Plugin;
 
+#[Plugin(target: PostRepositoryInterface::class)]
 class AddReadingTimePlugin
 {
-    public function afterFindBySlug(PostRepositoryInterface $subject, ?Post $result): ?Post
+    #[After]
+    public function afterFindBySlug(?Post $result): ?Post
     {
         if ($result === null) {
             return null;
@@ -214,25 +221,6 @@ class AddReadingTimePlugin
         return $result;
     }
 }
-```
-
-Register it:
-
-```php title="app/blog/module.php"
-<?php
-
-declare(strict_types=1);
-
-use Marko\Blog\Repositories\PostRepositoryInterface;
-use App\Blog\Plugin\AddReadingTimePlugin;
-
-return [
-    'plugins' => [
-        PostRepositoryInterface::class => [
-            AddReadingTimePlugin::class,
-        ],
-    ],
-];
 ```
 
 ## What You've Learned

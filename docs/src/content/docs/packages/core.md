@@ -73,13 +73,13 @@ Decouple "something happened" from "react to it":
 use Marko\Core\Attributes\Observer;
 use Marko\Core\Event\Event;
 
-#[Observer(event: 'user.created')]
+#[Observer(event: UserCreatedEvent::class)]
 class SendWelcomeEmail
 {
     public function handle(
-        Event $event,
+        UserCreatedEvent $event,
     ): void {
-        $user = $event->data['user'];
+        $user = $event->user;
         // Send email...
     }
 }
@@ -185,7 +185,7 @@ throw new MarkoException(
 #[Plugin(target: ClassName::class)]            // Mark class as plugin
 #[Before]                                       // Run before target method
 #[After]                                        // Run after target method
-#[Observer(event: 'event.name')]               // React to events
+#[Observer(event: EventClass::class)]           // React to events
 #[Command(name: 'cmd:name', description: '')] // Register CLI command
 ```
 

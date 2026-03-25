@@ -214,17 +214,18 @@ The authentication system dispatches events you can observe:
 | `FailedLoginEvent` | Login attempt fails |
 | `PasswordResetEvent` | Password is reset |
 
-```php title="module.php"
+```php title="app/security/src/Observer/LockoutAfterFailures.php"
 use Marko\Authentication\Event\FailedLoginEvent;
-use App\Security\Observer\LockoutAfterFailures;
+use Marko\Core\Attributes\Observer;
 
-return [
-    'observers' => [
-        FailedLoginEvent::class => [
-            LockoutAfterFailures::class,
-        ],
-    ],
-];
+#[Observer(event: FailedLoginEvent::class)]
+class LockoutAfterFailures
+{
+    public function handle(FailedLoginEvent $event): void
+    {
+        // Lock the account after repeated failures...
+    }
+}
 ```
 
 ## Next Steps

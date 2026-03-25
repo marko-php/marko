@@ -143,7 +143,7 @@ class OrderPlugin
 **Observers** — React to system events:
 
 ```php
-#[Observer('order.placed')]
+#[Observer(event: OrderPlaced::class)]
 class SendOrderNotification
 {
     public function handle(OrderPlaced $event): void

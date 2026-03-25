@@ -58,7 +58,7 @@ class PostCreatedEvent
 
 ## Creating Observers
 
-An observer is a class that handles a specific event:
+An observer is a class with the `#[Observer]` attribute that handles a specific event. The `event` parameter specifies which event class to listen for:
 
 ```php title="TrackPostCreation.php"
 <?php
@@ -68,7 +68,9 @@ declare(strict_types=1);
 namespace App\Analytics\Observer;
 
 use Marko\Blog\Event\PostCreatedEvent;
+use Marko\Core\Attributes\Observer;
 
+#[Observer(event: PostCreatedEvent::class)]
 class TrackPostCreation
 {
     public function handle(PostCreatedEvent $event): void
@@ -80,30 +82,25 @@ class TrackPostCreation
 }
 ```
 
-## Registering Observers
-
-Observers are registered in `module.php`:
-
-```php title="module.php"
-<?php
-
-declare(strict_types=1);
-
-use App\Analytics\Observer\TrackPostCreation;
-use Marko\Blog\Event\PostCreatedEvent;
-
-return [
-    'observers' => [
-        PostCreatedEvent::class => [
-            TrackPostCreation::class,
-        ],
-    ],
-];
-```
+Observers are discovered automatically from module `src/` directories — no manual registration needed.
 
 ## Observer Priority
 
-When multiple observers listen to the same event, they run in module priority order (`app/` → `modules/` → `vendor/`). Within the same module, observers run in the order they're listed.
+When multiple observers listen to the same event, they run by priority (higher values first). Use the `priority` parameter to control order:
+
+```php
+#[Observer(event: PostCreatedEvent::class, priority: 10)]
+class HighPriorityObserver
+{
+    public function handle(PostCreatedEvent $event): void { /* ... */ }
+}
+
+#[Observer(event: PostCreatedEvent::class, priority: 0)]
+class DefaultPriorityObserver
+{
+    public function handle(PostCreatedEvent $event): void { /* ... */ }
+}
+```
 
 ## Built-in Events
 

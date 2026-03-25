@@ -20,7 +20,7 @@ Marko intentionally does **not** support Around plugins. Around plugins (which w
 
 ## Creating a Plugin
 
-A plugin is a plain PHP class with methods that follow a naming convention:
+A plugin is a class with the `#[Plugin]` attribute targeting the class you want to intercept. Methods use `#[Before]` and `#[After]` attributes and follow a naming convention:
 
 ```php title="PostRepositoryPlugin.php"
 <?php
@@ -30,24 +30,30 @@ declare(strict_types=1);
 namespace App\MyApp\Plugin;
 
 use Marko\Blog\Repository\PostRepository;
+use Marko\Core\Attributes\After;
+use Marko\Core\Attributes\Before;
+use Marko\Core\Attributes\Plugin;
 
+#[Plugin(target: PostRepository::class)]
 class PostRepositoryPlugin
 {
     /**
-     * Modify arguments before getPost() is called.
+     * Runs before getPost() — return null to continue, or non-null to short-circuit.
      */
-    public function beforeGetPost(PostRepository $subject, int $id): array
+    #[Before]
+    public function beforeGetPost(int $id): null
     {
-        // Log or transform the input
-        return [$id]; // Return modified arguments as array
+        // Log or validate the input
+        return null;
     }
 
     /**
-     * Modify the return value after getPost() completes.
+     * Runs after getPost() — receives the result, then the original arguments.
      */
-    public function afterGetPost(PostRepository $subject, array $result): array
+    #[After]
+    public function afterGetPost(array $result, int $id): array
     {
-        // Add extra data to the result
+        // Enrich the result
         $result['retrieved_at'] = time();
 
         return $result;
@@ -55,43 +61,33 @@ class PostRepositoryPlugin
 }
 ```
 
+Plugins are discovered automatically from module `src/` directories — no manual registration needed.
+
 ### Method Naming
 
 - `beforeMethodName` — runs before `methodName`
 - `afterMethodName` — runs after `methodName`
 
-The first parameter is always `$subject` (the original object). For `before` plugins, remaining parameters match the original method's signature. Return an array of the (possibly modified) arguments.
+For `before` plugins, parameters match the original method's signature. Return `null` to continue to the original method, or return a non-null value to short-circuit and use that as the result.
 
-For `after` plugins, the second parameter is the result from the original method. Return the (possibly modified) result.
+For `after` plugins, the first parameter is the result from the original method, followed by the original arguments. Return the (possibly modified) result.
 
-## Registering Plugins
+### Sort Order
 
-Plugins are registered in `module.php`:
+Use the `sortOrder` parameter to control the order when multiple plugins target the same method:
 
-```php title="module.php"
-<?php
-
-declare(strict_types=1);
-
-use App\MyApp\Plugin\PostRepositoryPlugin;
-use Marko\Blog\Repository\PostRepository;
-
-return [
-    'plugins' => [
-        PostRepository::class => [
-            PostRepositoryPlugin::class,
-        ],
-    ],
-];
+```php
+#[Before(sortOrder: 10)]
+public function beforeGetPost(int $id): null { /* runs first */ }
 ```
 
 ## Plugin Execution Order
 
 When multiple plugins target the same method:
 
-1. All `before` plugins run (in module priority order)
-2. The original method runs
-3. All `after` plugins run (in module priority order)
+1. All `before` plugins run (in sort order)
+2. The original method runs (unless a before plugin short-circuited)
+3. All `after` plugins run (in sort order)
 
 ## When to Use Plugins
 

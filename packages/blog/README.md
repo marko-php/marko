@@ -104,7 +104,7 @@ Use `#[Observer]` to react to blog lifecycle events without modifying core class
 use Marko\Core\Attributes\Observer;
 use Marko\Blog\Events\Post\PostCreated;
 
-#[Observer]
+#[Observer(event: PostCreated::class)]
 class PostCreatedObserver
 {
     public function handle(PostCreated $event): void
