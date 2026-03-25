@@ -1649,9 +1649,7 @@ it('creates a request from globals and routes it through the router', function (
 
     $app = new Application();
     $reflection = new ReflectionClass($app);
-    $property = $reflection->getProperty('_router');
-    $property->setAccessible(true);
-    $property->setValue($app, $mockRouter);
+    $reflection->getProperty('_router')->setValue($app, $mockRouter);
 
     ob_start();
     $app->handleRequest();
@@ -1673,9 +1671,7 @@ it('sends the response after routing', function (): void {
 
     $app = new Application();
     $reflection = new ReflectionClass($app);
-    $property = $reflection->getProperty('_router');
-    $property->setAccessible(true);
-    $property->setValue($app, $mockRouter);
+    $reflection->getProperty('_router')->setValue($app, $mockRouter);
 
     ob_start();
     $app->handleRequest();
@@ -1697,9 +1693,7 @@ it('returns void', function (): void {
 
     $app = new Application();
     $reflection = new ReflectionClass($app);
-    $property = $reflection->getProperty('_router');
-    $property->setAccessible(true);
-    $property->setValue($app, $mockRouter);
+    $reflection->getProperty('_router')->setValue($app, $mockRouter);
 
     ob_start();
     $result = $app->handleRequest();
