@@ -377,7 +377,8 @@
         "squizlabs/php_codesniffer": "^4.0"
     },
     "scripts": {
-        "test": "pest -c phpunit.xml --parallel",
+        "test": "pest -c phpunit.xml --parallel --exclude-group=integration-destructive",
+        "test:all": "pest -c phpunit.xml --parallel",
         "cs:check": "phpcs --standard=phpcs.xml",
         "cs:fix": [
             "php-cs-fixer fix --config=.php-cs-fixer.php",
