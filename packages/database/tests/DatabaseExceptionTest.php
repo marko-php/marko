@@ -24,4 +24,14 @@ describe('DatabaseException', function (): void {
             ->and($pgsqlException->getSuggestion())->toContain('composer require')
             ->and($pgsqlException->getSuggestion())->toContain('marko/database-pgsql');
     });
+
+    it('uses KNOWN_DRIVERS constant instead of DRIVER_PACKAGES', function (): void {
+        $reflection = new ReflectionClass(DatabaseException::class);
+
+        $constants = $reflection->getConstants();
+
+        expect($reflection->hasMethod('noDriverInstalled'))->toBeTrue()
+            ->and(array_key_exists('KNOWN_DRIVERS', $constants))->toBeTrue()
+            ->and(array_key_exists('DRIVER_PACKAGES', $constants))->toBeFalse();
+    });
 });

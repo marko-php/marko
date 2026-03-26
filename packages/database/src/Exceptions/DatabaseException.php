@@ -11,7 +11,7 @@ use Marko\Core\Exceptions\MarkoException;
  */
 class DatabaseException extends MarkoException
 {
-    private const array DRIVER_PACKAGES = [
+    private const array KNOWN_DRIVERS = [
         'mysql' => 'marko/database-mysql',
         'pgsql' => 'marko/database-pgsql',
     ];
@@ -19,7 +19,7 @@ class DatabaseException extends MarkoException
     public static function noDriverInstalled(
         string $driver,
     ): self {
-        $package = self::DRIVER_PACKAGES[$driver] ?? "marko/database-$driver";
+        $package = self::KNOWN_DRIVERS[$driver] ?? "marko/database-$driver";
 
         return new self(
             message: "The '$driver' database driver is not installed",

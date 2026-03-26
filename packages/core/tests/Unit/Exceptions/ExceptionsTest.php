@@ -90,45 +90,56 @@ it('throws PluginException when plugin configuration is invalid', function (): v
 it('includes helpful message with what went wrong in all exceptions', function (): void {
     $message = 'Something went wrong';
     $baseException = new MarkoException($message);
-    expect($baseException->getMessage())->toBe($message);
-
     $bindingException = BindingException::noImplementation('SomeInterface');
-    expect($bindingException->getMessage())->not->toBeEmpty()
-        ->and($bindingException->getContext())->toContain('SomeInterface');
-
     $conflictException = BindingConflictException::multipleBindings('SomeInterface', ['A', 'B']);
-    expect($conflictException->getMessage())->not->toBeEmpty()->toContain('SomeInterface');
-
     $moduleException = ModuleException::invalidManifest('Module', 'reason');
-    expect($moduleException->getMessage())->not->toBeEmpty()->toContain('Module');
-
     $circularException = CircularDependencyException::detected(['A', 'B', 'A']);
-    expect($circularException->getMessage())->not->toBeEmpty()->toContain('A');
-
     $pluginException = PluginException::invalidConfiguration('Plugin', 'reason');
-    expect($pluginException->getMessage())->not->toBeEmpty()->toContain('Plugin');
+
+    expect($baseException->getMessage())->toBe($message)
+        ->and($bindingException->getMessage())->not->toBeEmpty()
+        ->and($bindingException->getContext())->toContain('SomeInterface')
+        ->and($conflictException->getMessage())->not->toBeEmpty()->toContain('SomeInterface')
+        ->and($moduleException->getMessage())->not->toBeEmpty()->toContain('Module')
+        ->and($circularException->getMessage())->not->toBeEmpty()->toContain('A')
+        ->and($pluginException->getMessage())->not->toBeEmpty()->toContain('Plugin');
 });
 
 it('includes context about where error occurred in all exceptions', function (): void {
     $message = 'Something went wrong';
     $context = 'While resolving dependencies for UserService';
     $baseException = new MarkoException($message, $context);
-    expect($baseException->getContext())->toBe($context);
-
     $bindingException = BindingException::noImplementation('SomeInterface');
-    expect($bindingException->getContext())->not->toBeEmpty()->toContain('SomeInterface');
-
     $conflictException = BindingConflictException::multipleBindings('SomeInterface', ['A', 'B']);
-    expect($conflictException->getContext())->not->toBeEmpty();
-
     $moduleException = ModuleException::invalidManifest('TestModule', 'reason');
-    expect($moduleException->getContext())->not->toBeEmpty()->toContain('TestModule');
-
     $circularException = CircularDependencyException::detected(['A', 'B', 'A']);
-    expect($circularException->getContext())->not->toBeEmpty();
-
     $pluginException = PluginException::invalidConfiguration('TestPlugin', 'reason');
-    expect($pluginException->getContext())->not->toBeEmpty()->toContain('TestPlugin');
+
+    expect($baseException->getContext())->toBe($context)
+        ->and($bindingException->getContext())->not->toBeEmpty()->toContain('SomeInterface')
+        ->and($conflictException->getContext())->not->toBeEmpty()
+        ->and($moduleException->getContext())->not->toBeEmpty()->toContain('TestModule')
+        ->and($circularException->getContext())->not->toBeEmpty()
+        ->and($pluginException->getContext())->not->toBeEmpty()->toContain('TestPlugin');
+});
+
+it('BindingException noImplementation still works as generic fallback', function (): void {
+    $interface = 'App\Contracts\SomeInterface';
+    $exception = BindingException::noImplementation($interface);
+
+    expect($exception)
+        ->toBeInstanceOf(BindingException::class)
+        ->and($exception->getMessage())
+        ->toContain('No implementation bound')
+        ->and($exception->getContext())
+        ->toContain($interface)
+        ->and($exception->getSuggestion())
+        ->toContain('bind');
+});
+
+it('BindingException no longer has discoverDriverPackages or scanForDriverPackages methods', function (): void {
+    expect(method_exists(BindingException::class, 'discoverDriverPackages'))->toBeFalse()
+        ->and(method_exists(BindingException::class, 'scanForDriverPackages'))->toBeFalse();
 });
 
 it('includes suggestion for how to fix in all exceptions', function (): void {
@@ -136,20 +147,16 @@ it('includes suggestion for how to fix in all exceptions', function (): void {
     $context = 'While doing something';
     $suggestion = 'Try doing something else';
     $baseException = new MarkoException($message, $context, $suggestion);
-    expect($baseException->getSuggestion())->toBe($suggestion);
-
     $bindingException = BindingException::noImplementation('SomeInterface');
-    expect($bindingException->getSuggestion())->not->toBeEmpty()->toContain('bind');
-
     $conflictException = BindingConflictException::multipleBindings('SomeInterface', ['A', 'B']);
-    expect($conflictException->getSuggestion())->not->toBeEmpty();
-
     $moduleException = ModuleException::invalidManifest('TestModule', 'Missing name');
-    expect($moduleException->getSuggestion())->not->toBeEmpty()->toContain('module.php');
-
     $circularException = CircularDependencyException::detected(['A', 'B', 'A']);
-    expect($circularException->getSuggestion())->not->toBeEmpty()->toContain('depend');
-
     $pluginException = PluginException::invalidConfiguration('TestPlugin', 'reason');
-    expect($pluginException->getSuggestion())->not->toBeEmpty()->toContain('plugin');
+
+    expect($baseException->getSuggestion())->toBe($suggestion)
+        ->and($bindingException->getSuggestion())->not->toBeEmpty()->toContain('bind')
+        ->and($conflictException->getSuggestion())->not->toBeEmpty()
+        ->and($moduleException->getSuggestion())->not->toBeEmpty()->toContain('module.php')
+        ->and($circularException->getSuggestion())->not->toBeEmpty()->toContain('depend')
+        ->and($pluginException->getSuggestion())->not->toBeEmpty()->toContain('plugin');
 });

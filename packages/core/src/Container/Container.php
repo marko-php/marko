@@ -136,6 +136,20 @@ class Container implements ContainerInterface
         }
 
         if (interface_exists($id) && !class_exists($id)) {
+            if (str_starts_with($id, 'Marko\\')) {
+                $parts = explode('\\', $id);
+                $segment = $parts[1] ?? '';
+                $noDriverClass = "Marko\\{$segment}\\Exceptions\\NoDriverException";
+
+                if (
+                    $segment !== ''
+                    && class_exists($noDriverClass)
+                    && method_exists($noDriverClass, 'noDriverInstalled')
+                ) {
+                    throw $noDriverClass::noDriverInstalled();
+                }
+            }
+
             throw BindingException::noImplementation($id);
         }
 

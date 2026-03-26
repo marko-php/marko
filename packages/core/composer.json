@@ -19,7 +19,12 @@
     "autoload-dev": {
         "psr-4": {
             "Marko\\Core\\Tests\\": "tests/"
-        }
+        },
+        "files": [
+            "tests/Unit/Container/Fixtures/TestFixtureInterface.php",
+            "tests/Unit/Container/Fixtures/TestFixtureNoDriverException.php",
+            "tests/Unit/Container/Fixtures/TestFixtureNoDriverInterface.php"
+        ]
     },
     "config": {
         "allow-plugins": {

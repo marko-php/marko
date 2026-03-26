@@ -6,6 +6,10 @@ use Marko\Core\Container\Container;
 use Marko\Core\Exceptions\BindingException;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
+require_once __DIR__ . '/Fixtures/TestFixtureInterface.php';
+require_once __DIR__ . '/Fixtures/TestFixtureNoDriverException.php';
+require_once __DIR__ . '/Fixtures/TestFixtureNoDriverInterface.php';
+
 // Test fixtures - classes used for testing
 class SimpleClass {}
 
@@ -270,4 +274,32 @@ it('uses default null for nullable Closure parameters', function (): void {
     expect($instance)->toBeInstanceOf(ClassWithClosureParameter::class)
         ->and($instance->simple)->toBeInstanceOf(SimpleClass::class)
         ->and($instance->factory)->toBeNull();
+});
+
+it('throws NoDriverException when interface package has one and no binding exists', function (): void {
+    $container = new Container();
+
+    expect(fn () => $container->get(\Marko\TestFixture\SomeInterface::class))
+        ->toThrow(\Marko\TestFixture\Exceptions\NoDriverException::class);
+});
+
+it('throws generic BindingException when no NoDriverException class exists for the package', function (): void {
+    $container = new Container();
+
+    expect(fn () => $container->get(\Marko\TestFixtureNoDriver\SomeInterface::class))
+        ->toThrow(BindingException::class);
+});
+
+it('falls back to BindingException for non-Marko interfaces', function (): void {
+    $container = new Container();
+
+    expect(fn () => $container->get(UnboundInterface::class))
+        ->toThrow(BindingException::class);
+});
+
+it('does not check for NoDriverException on non-interface classes', function (): void {
+    $container = new Container();
+
+    expect(fn () => $container->get('NonExistentClass'))
+        ->not->toThrow(\Marko\TestFixture\Exceptions\NoDriverException::class);
 });

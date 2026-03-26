@@ -8,14 +8,8 @@ use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
 
 describe('QueueException', function (): void {
-    it('has noDriverInstalled factory method', function (): void {
-        $exception = QueueException::noDriverInstalled();
-
-        expect($exception)->toBeInstanceOf(QueueException::class)
-            ->and($exception)->toBeInstanceOf(MarkoException::class)
-            ->and($exception->getMessage())->toBe('No queue driver installed.')
-            ->and($exception->getContext())->toContain('QueueInterface')
-            ->and($exception->getSuggestion())->toContain('composer require marko/queue-sync');
+    it('QueueException::noDriverInstalled() method is removed', function (): void {
+        expect(method_exists(QueueException::class, 'noDriverInstalled'))->toBeFalse();
     });
 
     it('has configFileNotFound factory method', function (): void {
@@ -68,12 +62,6 @@ describe('SerializationException', function (): void {
 });
 
 it('Exception factories include proper context', function (): void {
-    // Test all exception factories include context, message, and suggestion
-    $queueNoDriver = QueueException::noDriverInstalled();
-    expect($queueNoDriver->getMessage())->not->toBeEmpty()
-        ->and($queueNoDriver->getContext())->not->toBeEmpty()
-        ->and($queueNoDriver->getSuggestion())->not->toBeEmpty();
-
     $queueConfigNotFound = QueueException::configFileNotFound('/config/queue.php');
     expect($queueConfigNotFound->getMessage())->not->toBeEmpty()
         ->and($queueConfigNotFound->getContext())->toContain('/config/queue.php')

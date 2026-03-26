@@ -25,7 +25,9 @@ test('it creates NotificationException with context and suggestion via unknownCh
         ->getSuggestion()->not->toBeEmpty();
 });
 
-test('noQueueAvailable factory creates exception with context and suggestion', function (): void {
+test('NotificationException::noQueueAvailable() is NOT removed', function (): void {
+    expect(method_exists(NotificationException::class, 'noQueueAvailable'))->toBeTrue();
+
     $exception = NotificationException::noQueueAvailable();
 
     expect($exception)

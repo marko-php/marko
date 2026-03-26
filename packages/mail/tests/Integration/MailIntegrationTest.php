@@ -156,14 +156,6 @@ test('missing driver throws MailException', function (): void {
         ->toThrow(MailException::class, 'Mail configuration file not found.');
 });
 
-test('MailException noDriverInstalled provides helpful message', function (): void {
-    $exception = MailException::noDriverInstalled();
-
-    expect($exception->getMessage())->toBe('No mail driver installed.')
-        ->and($exception->getContext())->toBe('Attempted to resolve MailerInterface but no implementation is bound.')
-        ->and($exception->getSuggestion())->toBe('Install a mail driver package: composer require marko/mail-smtp');
-});
-
 test('it uses FakeConfigRepository in MailIntegrationTest', function (): void {
     $repo = new FakeConfigRepository(['mail.driver' => 'smtp']);
     $config = new MailConfig($repo);

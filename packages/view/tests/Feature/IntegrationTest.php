@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Marko\Config\ConfigRepository;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
-use Marko\Core\Exceptions\BindingException;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepository;
 use Marko\Core\Module\ModuleRepositoryInterface;
@@ -224,19 +223,12 @@ describe('View Integration', function (): void {
         // Try to resolve ViewInterface without a driver
         try {
             $container->get(ViewInterface::class);
-            $this->fail('Expected BindingException was not thrown');
-        } catch (BindingException $e) {
-            // Verify helpful error message about missing implementation
-            expect($e->getMessage())->toContain('No implementation bound for interface')
-                ->and($e->getMessage())->toContain(ViewInterface::class)
-                ->and($e->getSuggestion())->toContain('Register a binding');
+            $this->fail('Expected NoDriverException was not thrown');
+        } catch (NoDriverException $e) {
+            // Verify helpful error message about missing driver
+            expect($e->getMessage())->toBe('No view driver installed.')
+                ->and($e->getContext())->toContain('no implementation is bound')
+                ->and($e->getSuggestion())->toContain('composer require marko/view-latte');
         }
-
-        // Verify NoDriverException provides even better guidance
-        $noDriverException = NoDriverException::noDriverInstalled();
-
-        expect($noDriverException->getMessage())->toBe('No view driver installed.')
-            ->and($noDriverException->getContext())->toContain('no implementation is bound')
-            ->and($noDriverException->getSuggestion())->toContain('composer require marko/view-latte');
     });
 });
