@@ -10,7 +10,7 @@
 
 Override anything. Intercept any method. Extend any module — all without touching vendor code.
 
-Documentation, guides, and tutorials at [marko.build](https://marko.build).
+Documentation, guides, and tutorials at [marko.build/docs](https://marko.build/docs/).
 
 [![PHP 8.5+](https://img.shields.io/badge/PHP-8.5%2B-7A86B8?style=flat-square)](https://www.php.net/releases/8.5/en.php)
 [![License: MIT](https://img.shields.io/badge/License-MIT-E8B931?style=flat-square)](LICENSE)
