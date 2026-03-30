@@ -67,6 +67,8 @@ Place the controller at `app/foo/src/Controller/GreetingController.php`.
 marko up
 ```
 
+> If `marko` isn't installed yet, run `composer global require marko/cli` first. See [Installation](/docs/getting-started/installation/#install-the-cli) for details.
+
 Visit `http://localhost:8000/hello/World` and you'll see:
 
 ```
