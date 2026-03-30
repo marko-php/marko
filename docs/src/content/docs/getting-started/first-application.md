@@ -12,7 +12,28 @@ composer create-project marko/skeleton hello-marko
 cd hello-marko
 ```
 
-## 2. Create a Controller
+## 2. Register Your Module
+
+Create an `app/foo` directory for your local module. It needs a `composer.json` to be recognized as a module:
+
+```json title="app/foo/composer.json"
+{
+    "name": "app/foo",
+    "type": "marko-module",
+    "autoload": {
+        "psr-4": {
+            "App\\Foo\\": "src/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
+```
+
+## 3. Create a Controller
 
 Controllers handle HTTP requests. Create one using PHP attributes to define routes:
 
@@ -38,38 +59,16 @@ class GreetingController
 }
 ```
 
-## 3. Register Your Module
-
-Your `app/foo/` directory needs a `composer.json` to be recognized as a module:
-
-```json title="app/foo/composer.json"
-{
-    "name": "app/foo",
-    "type": "marko-module",
-    "autoload": {
-        "psr-4": {
-            "App\\Foo\\": "src/"
-        }
-    },
-    "extra": {
-        "marko": {
-            "module": true
-        }
-    }
-}
-```
-
-Place the controller at `app/foo/src/Controller/GreetingController.php`.
-
 ## 4. Start and Test
 
 ```bash
 marko up
+marko open
 ```
 
 > If `marko` isn't installed yet, run `composer global require marko/cli` first. See [Installation](/docs/getting-started/installation/#install-the-cli) for details.
 
-Visit `http://localhost:8000/hello/World` and you'll see:
+This opens the site up in your browser. Then, just navigate to `http://localhost:8000/hello/World` and you'll see:
 
 ```
 Hello, World! Welcome to Marko.
