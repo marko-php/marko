@@ -1,0 +1,67 @@
+name: Sync Issue Templates
+
+on:
+  push:
+    branches: [develop]
+    paths: [packages/**]
+
+concurrency:
+  group: sync-issue-templates
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate package list and update templates
+        run: |
+          # Build YAML options list from packages/ directory names
+          OPTIONS=$(ls packages/ | sort | while read -r pkg; do
+            echo "        - $pkg"
+          done)
+          OPTIONS=$(printf '%s\n        - other' "$OPTIONS")
+
+          # Update bug_report.yml
+          awk -v opts="$OPTIONS" '
+            /^      options:/ && found { replacing=1; print; next }
+            /^    validations:/ && replacing { replacing=0 }
+            /id: package/ { found=1 }
+            replacing { next }
+            found && /^      options:/ { print; print opts; replacing=1; found=0; next }
+            { print }
+          ' .github/ISSUE_TEMPLATE/bug_report.yml > .github/ISSUE_TEMPLATE/bug_report.yml.tmp
+          mv .github/ISSUE_TEMPLATE/bug_report.yml.tmp .github/ISSUE_TEMPLATE/bug_report.yml
+
+          # Update feature_request.yml
+          awk -v opts="$OPTIONS" '
+            /^      options:/ && found { replacing=1; print; next }
+            /^    validations:/ && replacing { replacing=0 }
+            /id: package/ { found=1 }
+            replacing { next }
+            found && /^      options:/ { print; print opts; replacing=1; found=0; next }
+            { print }
+          ' .github/ISSUE_TEMPLATE/feature_request.yml > .github/ISSUE_TEMPLATE/feature_request.yml.tmp
+          mv .github/ISSUE_TEMPLATE/feature_request.yml.tmp .github/ISSUE_TEMPLATE/feature_request.yml
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add .github/ISSUE_TEMPLATE/
+          git commit -m "chore: sync issue template package dropdowns [skip ci]"
+          git push

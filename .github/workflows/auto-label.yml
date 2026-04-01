@@ -1,0 +1,65 @@
+name: Auto Label PR
+
+on:
+  pull_request_target:
+    types: [opened, edited]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply labels based on conventional commit prefix
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Mutually exclusive type labels — remove all before adding the new one
+          TYPE_LABELS="bug enhancement documentation refactor testing ci maintenance"
+
+          # Extract the type prefix from the PR title (case-insensitive)
+          # Matches: type:, type(scope):, type!:, type(scope)!:
+          TYPE=$(echo "$PR_TITLE" | grep -ioP '^[a-z]+(?=(\([^)]*\))?!?:)' || true)
+
+          if [ -n "$TYPE" ]; then
+            TYPE=$(echo "$TYPE" | tr '[:upper:]' '[:lower:]')
+
+            # Remove all stale type labels first
+            for label in $TYPE_LABELS; do
+              gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label "$label" 2>/dev/null || true
+            done
+
+            # Map type to label
+            case "$TYPE" in
+              fix)       NEW_LABEL="bug" ;;
+              feat)      NEW_LABEL="enhancement" ;;
+              docs)      NEW_LABEL="documentation" ;;
+              refactor)  NEW_LABEL="refactor" ;;
+              test)      NEW_LABEL="testing" ;;
+              ci)        NEW_LABEL="ci" ;;
+              chore)     NEW_LABEL="maintenance" ;;
+              *)         NEW_LABEL="" ;;
+            esac
+
+            if [ -n "$NEW_LABEL" ]; then
+              gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "$NEW_LABEL"
+            fi
+          fi
+
+          # Check for breaking change: type! or BREAKING CHANGE in body
+          IS_BREAKING=false
+          if echo "$PR_TITLE" | grep -qiP '^[a-z]+(\([^)]*\))?!:'; then
+            IS_BREAKING=true
+          fi
+          if echo "$PR_BODY" | grep -qiF 'BREAKING CHANGE'; then
+            IS_BREAKING=true
+          fi
+
+          if [ "$IS_BREAKING" = true ]; then
+            gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "breaking"
+          fi

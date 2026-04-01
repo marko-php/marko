@@ -43,6 +43,14 @@ if [[ "$PHP_VERSION" != "8.5" ]]; then
     exit 1
 fi
 
+# Check for gh CLI availability
+GH_AVAILABLE=false
+if command -v gh >/dev/null 2>&1; then
+    GH_AVAILABLE=true
+else
+    echo "  ⚠ gh CLI not found — GitHub Release will need to be created manually"
+fi
+
 echo "  ✓ PHP ${PHP_VERSION}"
 echo "  ✓ Branch: main (merged from develop)"
 echo "  ✓ Working directory clean"
@@ -66,16 +74,49 @@ echo "Creating tag ${TAG}..."
 git tag -a "$TAG" -m "Release ${VERSION}"
 git push origin "$TAG"
 
+# Create GitHub Release
+if [[ "$GH_AVAILABLE" == "true" ]]; then
+    echo "Creating GitHub Release for ${TAG}..."
+
+    PREV_TAG=""
+    if PREV_TAG_CANDIDATE=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null); then
+        PREV_TAG="$PREV_TAG_CANDIDATE"
+    fi
+
+    if [[ -n "$PREV_TAG" ]]; then
+        if gh release create "$TAG" \
+            --generate-notes \
+            --latest \
+            --notes-start-tag "$PREV_TAG"; then
+            echo "  ✓ GitHub Release created"
+        else
+            echo "  ⚠ GitHub Release creation failed — create it manually at https://github.com/marko-php/marko/releases/new"
+        fi
+    else
+        if gh release create "$TAG" \
+            --generate-notes \
+            --latest; then
+            echo "  ✓ GitHub Release created"
+        else
+            echo "  ⚠ GitHub Release creation failed — create it manually at https://github.com/marko-php/marko/releases/new"
+        fi
+    fi
+else
+    echo "  ⚠ Skipping GitHub Release creation (gh CLI not available)"
+fi
+
 # Return to develop branch
 git checkout develop
 git merge main
+git push origin develop
 
 echo ""
 echo "✓ Released ${TAG}!"
 echo ""
 echo "Next steps (automatic):"
-echo "  1. GitHub Actions split workflow will split all packages"
-echo "  2. Each split repo will be tagged with ${TAG}"
-echo "  3. Packagist will auto-update via webhooks"
+echo "  1. GitHub Release ${TAG} published with auto-generated notes"
+echo "  2. GitHub Actions split workflow will split all packages"
+echo "  3. Each split repo will be tagged with ${TAG}"
+echo "  4. Packagist will auto-update via webhooks"
 echo ""
 echo "Monitor progress: https://github.com/marko-php/marko/actions"
