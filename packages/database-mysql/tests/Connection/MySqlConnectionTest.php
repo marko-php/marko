@@ -590,7 +590,7 @@ describe('MySqlConnection', function (): void {
 
         $connection->connect();
 
-        expect($capturedOptions[PDO::MYSQL_ATTR_SSL_CA])->toBe('/path/to/ca.pem');
+        expect($capturedOptions[Pdo\Mysql::ATTR_SSL_CA])->toBe('/path/to/ca.pem');
     });
 
     it('sets SSL verify server cert when configured', function (): void {
@@ -620,8 +620,8 @@ describe('MySqlConnection', function (): void {
 
         $connection->connect();
 
-        expect($capturedOptions[PDO::MYSQL_ATTR_SSL_CA])->toBe('/path/to/ca.pem')
-            ->and($capturedOptions[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT])->toBeTrue();
+        expect($capturedOptions[Pdo\Mysql::ATTR_SSL_CA])->toBe('/path/to/ca.pem')
+            ->and($capturedOptions[Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT])->toBeTrue();
     });
 
     it('defaults SSL verify server cert to false when ssl_ca is set', function (): void {
@@ -651,7 +651,7 @@ describe('MySqlConnection', function (): void {
 
         $connection->connect();
 
-        expect($capturedOptions[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT])->toBeFalse();
+        expect($capturedOptions[Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT])->toBeFalse();
     });
 
     it('passes SSL client cert in PDO options when configured', function (): void {
@@ -681,7 +681,7 @@ describe('MySqlConnection', function (): void {
 
         $connection->connect();
 
-        expect($capturedOptions[PDO::MYSQL_ATTR_SSL_CERT])->toBe('/path/to/client-cert.pem');
+        expect($capturedOptions[Pdo\Mysql::ATTR_SSL_CERT])->toBe('/path/to/client-cert.pem');
     });
 
     it('passes SSL client key in PDO options when configured', function (): void {
@@ -711,7 +711,7 @@ describe('MySqlConnection', function (): void {
 
         $connection->connect();
 
-        expect($capturedOptions[PDO::MYSQL_ATTR_SSL_KEY])->toBe('/path/to/client-key.pem');
+        expect($capturedOptions[Pdo\Mysql::ATTR_SSL_KEY])->toBe('/path/to/client-key.pem');
     });
 
     it('omits SSL client cert and key from PDO options when not configured', function (): void {
@@ -741,8 +741,8 @@ describe('MySqlConnection', function (): void {
 
         $connection->connect();
 
-        expect($capturedOptions)->not->toHaveKey(PDO::MYSQL_ATTR_SSL_CERT)
-            ->and($capturedOptions)->not->toHaveKey(PDO::MYSQL_ATTR_SSL_KEY);
+        expect($capturedOptions)->not->toHaveKey(Pdo\Mysql::ATTR_SSL_CERT)
+            ->and($capturedOptions)->not->toHaveKey(Pdo\Mysql::ATTR_SSL_KEY);
     });
 
     it('omits SSL CA cert from PDO options when not configured', function (): void {
@@ -772,7 +772,7 @@ describe('MySqlConnection', function (): void {
 
         $connection->connect();
 
-        expect($capturedOptions)->not->toHaveKey(PDO::MYSQL_ATTR_SSL_CA);
+        expect($capturedOptions)->not->toHaveKey(Pdo\Mysql::ATTR_SSL_CA);
     });
 
     it('prevents nested transactions (throws exception)', function (): void {
