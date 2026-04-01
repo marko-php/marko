@@ -64,7 +64,7 @@ readonly class DatabaseConfig
         $this->password = $config['password'];
         $this->sslMode = $config['sslmode'] ?? null;
         $this->sslRootCert = $config['ssl_ca'] ?? null;
-        $this->sslVerifyServerCert = $config['ssl_verify_server_cert'] ?? false;
+        $this->sslVerifyServerCert = $config['ssl_verify_server_cert'] ?? ($this->sslRootCert !== null);
         $this->sslCert = $config['ssl_cert'] ?? null;
         $this->sslKey = $config['ssl_key'] ?? null;
 
