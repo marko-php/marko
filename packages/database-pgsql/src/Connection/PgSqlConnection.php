@@ -87,6 +87,14 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
             $dsn .= ";sslrootcert={$this->config->sslRootCert}";
         }
 
+        if ($this->config->sslCert !== null) {
+            $dsn .= ";sslcert={$this->config->sslCert}";
+        }
+
+        if ($this->config->sslKey !== null) {
+            $dsn .= ";sslkey={$this->config->sslKey}";
+        }
+
         return $dsn;
     }
 

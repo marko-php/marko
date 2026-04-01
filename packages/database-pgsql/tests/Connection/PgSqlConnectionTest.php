@@ -23,6 +23,8 @@ function createTestPgSqlConfig(
     string $password = 'pass',
     ?string $sslmode = null,
     ?string $sslCa = null,
+    ?string $sslCert = null,
+    ?string $sslKey = null,
 ): DatabaseConfig {
     $tempDir = sys_get_temp_dir() . '/marko_pgsql_test_' . uniqid();
     mkdir($tempDir . '/config', recursive: true);
@@ -42,6 +44,14 @@ function createTestPgSqlConfig(
 
     if ($sslCa !== null) {
         $configArray['ssl_ca'] = $sslCa;
+    }
+
+    if ($sslCert !== null) {
+        $configArray['ssl_cert'] = $sslCert;
+    }
+
+    if ($sslKey !== null) {
+        $configArray['ssl_key'] = $sslKey;
     }
 
     file_put_contents(
@@ -626,6 +636,34 @@ describe('PgSqlConnection', function (): void {
         $connection = new PgSqlConnection($config);
 
         expect($connection->getDsn())->not->toContain('sslrootcert');
+    });
+
+    it('includes sslcert in DSN when configured', function (): void {
+        $config = createTestPgSqlConfig(sslCert: '/path/to/client-cert.pem');
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->toContain('sslcert=/path/to/client-cert.pem');
+    });
+
+    it('omits sslcert from DSN when not configured', function (): void {
+        $config = createTestPgSqlConfig();
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->not->toContain('sslcert');
+    });
+
+    it('includes sslkey in DSN when configured', function (): void {
+        $config = createTestPgSqlConfig(sslKey: '/path/to/client-key.pem');
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->toContain('sslkey=/path/to/client-key.pem');
+    });
+
+    it('omits sslkey from DSN when not configured', function (): void {
+        $config = createTestPgSqlConfig();
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->not->toContain('sslkey');
     });
 
     it('prevents nested transactions (throws exception)', function (): void {

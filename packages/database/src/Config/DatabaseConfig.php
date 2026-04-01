@@ -30,6 +30,10 @@ readonly class DatabaseConfig
 
     public bool $sslVerifyServerCert;
 
+    public ?string $sslCert;
+
+    public ?string $sslKey;
+
     /**
      * @throws ConfigurationException
      */
@@ -61,5 +65,7 @@ readonly class DatabaseConfig
         $this->sslMode = $config['sslmode'] ?? null;
         $this->sslRootCert = $config['ssl_ca'] ?? null;
         $this->sslVerifyServerCert = $config['ssl_verify_server_cert'] ?? false;
+        $this->sslCert = $config['ssl_cert'] ?? null;
+        $this->sslKey = $config['ssl_key'] ?? null;
     }
 }

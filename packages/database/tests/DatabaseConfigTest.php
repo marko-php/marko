@@ -210,6 +210,40 @@ PHP;
         }
     });
 
+    it('loads ssl_cert and ssl_key when present', function (): void {
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $configDir = $tempDir . '/config';
+        mkdir($configDir, 0755, true);
+
+        $configContent = <<<'PHP'
+<?php
+
+return [
+    'driver' => 'pgsql',
+    'host' => 'db.example.com',
+    'port' => 5432,
+    'database' => 'test_db',
+    'username' => 'root',
+    'password' => 'secret',
+    'ssl_cert' => '/path/to/client-cert.pem',
+    'ssl_key' => '/path/to/client-key.pem',
+];
+PHP;
+        file_put_contents($configDir . '/database.php', $configContent);
+
+        try {
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
+
+            expect($config->sslCert)->toBe('/path/to/client-cert.pem')
+                ->and($config->sslKey)->toBe('/path/to/client-key.pem');
+        } finally {
+            unlink($configDir . '/database.php');
+            rmdir($configDir);
+            rmdir($tempDir);
+        }
+    });
+
     it('defaults SSL config to null when not present', function (): void {
         $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
         $configDir = $tempDir . '/config';
@@ -235,7 +269,9 @@ PHP;
 
             expect($config->sslMode)->toBeNull()
                 ->and($config->sslRootCert)->toBeNull()
-                ->and($config->sslVerifyServerCert)->toBeFalse();
+                ->and($config->sslVerifyServerCert)->toBeFalse()
+                ->and($config->sslCert)->toBeNull()
+                ->and($config->sslKey)->toBeNull();
         } finally {
             unlink($configDir . '/database.php');
             rmdir($configDir);
