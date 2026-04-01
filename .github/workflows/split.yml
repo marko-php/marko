@@ -63,3 +63,13 @@ jobs:
             BRANCH="${GITHUB_REF#refs/heads/}"
             git push --force "$REPO" "${SHA}:refs/heads/${BRANCH}"
           fi
+
+      - name: Notify Packagist
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+        run: |
+          curl -sf -X POST https://packagist.org/api/update-package \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer markshust:${PACKAGIST_TOKEN}" \
+            -d "{\"repository\":\"https://github.com/${SPLIT_ORG}/marko-${{ matrix.package }}\"}"
