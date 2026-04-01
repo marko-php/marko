@@ -30,4 +30,15 @@ class ConfigurationException extends MarkoException
             suggestion: "Add the '$key' key to your config/database.php file",
         );
     }
+
+    public static function incompleteSslKeyPair(
+        string $present,
+        string $missing,
+    ): self {
+        return new self(
+            message: "SSL configuration key '$present' is set but '$missing' is missing",
+            context: 'While validating database SSL configuration',
+            suggestion: "When using client certificate authentication, both 'ssl_cert' and 'ssl_key' must be provided together",
+        );
+    }
 }

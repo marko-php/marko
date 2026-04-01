@@ -67,5 +67,13 @@ readonly class DatabaseConfig
         $this->sslVerifyServerCert = $config['ssl_verify_server_cert'] ?? false;
         $this->sslCert = $config['ssl_cert'] ?? null;
         $this->sslKey = $config['ssl_key'] ?? null;
+
+        if ($this->sslCert !== null && $this->sslKey === null) {
+            throw ConfigurationException::incompleteSslKeyPair('ssl_cert', 'ssl_key');
+        }
+
+        if ($this->sslKey !== null && $this->sslCert === null) {
+            throw ConfigurationException::incompleteSslKeyPair('ssl_key', 'ssl_cert');
+        }
     }
 }
