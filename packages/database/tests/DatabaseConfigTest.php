@@ -168,7 +168,7 @@ PHP;
 
             expect($config->sslMode)->toBe('require')
                 ->and($config->sslRootCert)->toBe('/path/to/ca.pem')
-                ->and($config->sslVerifyServerCert)->toBeFalse();
+                ->and($config->sslVerifyServerCert)->toBeTrue();
         } finally {
             unlink($configDir . '/database.php');
             rmdir($configDir);

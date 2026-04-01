@@ -624,7 +624,7 @@ describe('MySqlConnection', function (): void {
             ->and($capturedOptions[Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT])->toBeTrue();
     });
 
-    it('defaults SSL verify server cert to false when ssl_ca is set', function (): void {
+    it('defaults SSL verify server cert to true when ssl_ca is set', function (): void {
         $capturedOptions = [];
         $config = createTestDatabaseConfig(sslCa: '/path/to/ca.pem');
 
@@ -651,7 +651,7 @@ describe('MySqlConnection', function (): void {
 
         $connection->connect();
 
-        expect($capturedOptions[Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT])->toBeFalse();
+        expect($capturedOptions[Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT])->toBeTrue();
     });
 
     it('passes SSL client cert in PDO options when configured', function (): void {
