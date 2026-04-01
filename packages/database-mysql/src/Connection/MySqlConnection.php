@@ -49,6 +49,7 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
 
         if ($this->config->sslRootCert !== null) {
             $options[PDO::MYSQL_ATTR_SSL_CA] = $this->config->sslRootCert;
+            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = $this->config->sslVerifyServerCert;
         }
 
         try {

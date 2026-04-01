@@ -167,7 +167,42 @@ PHP;
             $config = new DatabaseConfig($paths);
 
             expect($config->sslMode)->toBe('require')
-                ->and($config->sslRootCert)->toBe('/path/to/ca.pem');
+                ->and($config->sslRootCert)->toBe('/path/to/ca.pem')
+                ->and($config->sslVerifyServerCert)->toBeFalse();
+        } finally {
+            unlink($configDir . '/database.php');
+            rmdir($configDir);
+            rmdir($tempDir);
+        }
+    });
+
+    it('loads ssl_verify_server_cert when present', function (): void {
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $configDir = $tempDir . '/config';
+        mkdir($configDir, 0755, true);
+
+        $configContent = <<<'PHP'
+<?php
+
+return [
+    'driver' => 'mysql',
+    'host' => 'db.example.com',
+    'port' => 3306,
+    'database' => 'test_db',
+    'username' => 'root',
+    'password' => 'secret',
+    'ssl_ca' => '/path/to/ca.pem',
+    'ssl_verify_server_cert' => true,
+];
+PHP;
+        file_put_contents($configDir . '/database.php', $configContent);
+
+        try {
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
+
+            expect($config->sslRootCert)->toBe('/path/to/ca.pem')
+                ->and($config->sslVerifyServerCert)->toBeTrue();
         } finally {
             unlink($configDir . '/database.php');
             rmdir($configDir);
@@ -199,7 +234,8 @@ PHP;
             $config = new DatabaseConfig($paths);
 
             expect($config->sslMode)->toBeNull()
-                ->and($config->sslRootCert)->toBeNull();
+                ->and($config->sslRootCert)->toBeNull()
+                ->and($config->sslVerifyServerCert)->toBeFalse();
         } finally {
             unlink($configDir . '/database.php');
             rmdir($configDir);

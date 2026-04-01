@@ -22,6 +22,7 @@ function createTestDatabaseConfig(
     string $username = 'root',
     string $password = '',
     ?string $sslCa = null,
+    bool $sslVerifyServerCert = false,
 ): DatabaseConfig {
     $tempDir = sys_get_temp_dir() . '/marko_mysql_test_' . uniqid();
     mkdir($tempDir . '/config', recursive: true);
@@ -37,6 +38,10 @@ function createTestDatabaseConfig(
 
     if ($sslCa !== null) {
         $configArray['ssl_ca'] = $sslCa;
+    }
+
+    if ($sslVerifyServerCert) {
+        $configArray['ssl_verify_server_cert'] = true;
     }
 
     file_put_contents(
@@ -576,6 +581,67 @@ describe('MySqlConnection', function (): void {
         $connection->connect();
 
         expect($capturedOptions[PDO::MYSQL_ATTR_SSL_CA])->toBe('/path/to/ca.pem');
+    });
+
+    it('sets SSL verify server cert when configured', function (): void {
+        $capturedOptions = [];
+        $config = createTestDatabaseConfig(sslCa: '/path/to/ca.pem', sslVerifyServerCert: true);
+
+        $connection = new class ($config, $capturedOptions) extends MySqlConnection
+        {
+            public function __construct(
+                DatabaseConfig $config,
+                private array &$capturedOptions,
+            ) {
+                parent::__construct($config);
+            }
+
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $this->capturedOptions = $options;
+
+                return new PDO('sqlite::memory:');
+            }
+        };
+
+        $connection->connect();
+
+        expect($capturedOptions[PDO::MYSQL_ATTR_SSL_CA])->toBe('/path/to/ca.pem')
+            ->and($capturedOptions[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT])->toBeTrue();
+    });
+
+    it('defaults SSL verify server cert to false when ssl_ca is set', function (): void {
+        $capturedOptions = [];
+        $config = createTestDatabaseConfig(sslCa: '/path/to/ca.pem');
+
+        $connection = new class ($config, $capturedOptions) extends MySqlConnection
+        {
+            public function __construct(
+                DatabaseConfig $config,
+                private array &$capturedOptions,
+            ) {
+                parent::__construct($config);
+            }
+
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $this->capturedOptions = $options;
+
+                return new PDO('sqlite::memory:');
+            }
+        };
+
+        $connection->connect();
+
+        expect($capturedOptions[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT])->toBeFalse();
     });
 
     it('omits SSL CA cert from PDO options when not configured', function (): void {
