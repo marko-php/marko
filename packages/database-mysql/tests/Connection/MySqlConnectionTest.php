@@ -656,7 +656,7 @@ describe('MySqlConnection', function (): void {
 
     it('passes SSL client cert in PDO options when configured', function (): void {
         $capturedOptions = [];
-        $config = createTestDatabaseConfig(sslCert: '/path/to/client-cert.pem');
+        $config = createTestDatabaseConfig(sslCert: '/path/to/client-cert.pem', sslKey: '/path/to/client-key.pem');
 
         $connection = new class ($config, $capturedOptions) extends MySqlConnection
         {
@@ -686,7 +686,7 @@ describe('MySqlConnection', function (): void {
 
     it('passes SSL client key in PDO options when configured', function (): void {
         $capturedOptions = [];
-        $config = createTestDatabaseConfig(sslKey: '/path/to/client-key.pem');
+        $config = createTestDatabaseConfig(sslCert: '/path/to/client-cert.pem', sslKey: '/path/to/client-key.pem');
 
         $connection = new class ($config, $capturedOptions) extends MySqlConnection
         {

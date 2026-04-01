@@ -639,7 +639,7 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('includes sslcert in DSN when configured', function (): void {
-        $config = createTestPgSqlConfig(sslCert: '/path/to/client-cert.pem');
+        $config = createTestPgSqlConfig(sslCert: '/path/to/client-cert.pem', sslKey: '/path/to/client-key.pem');
         $connection = new PgSqlConnection($config);
 
         expect($connection->getDsn())->toContain('sslcert=/path/to/client-cert.pem');
@@ -653,7 +653,7 @@ describe('PgSqlConnection', function (): void {
     });
 
     it('includes sslkey in DSN when configured', function (): void {
-        $config = createTestPgSqlConfig(sslKey: '/path/to/client-key.pem');
+        $config = createTestPgSqlConfig(sslCert: '/path/to/client-cert.pem', sslKey: '/path/to/client-key.pem');
         $connection = new PgSqlConnection($config);
 
         expect($connection->getDsn())->toContain('sslkey=/path/to/client-key.pem');
