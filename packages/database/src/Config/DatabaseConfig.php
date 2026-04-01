@@ -24,6 +24,10 @@ readonly class DatabaseConfig
 
     public string $password;
 
+    public ?string $sslMode;
+
+    public ?string $sslRootCert;
+
     /**
      * @throws ConfigurationException
      */
@@ -52,5 +56,7 @@ readonly class DatabaseConfig
         $this->database = $config['database'];
         $this->username = $config['username'];
         $this->password = $config['password'];
+        $this->sslMode = $config['sslmode'] ?? null;
+        $this->sslRootCert = $config['ssl_ca'] ?? null;
     }
 }

@@ -141,6 +141,72 @@ PHP;
         }
     });
 
+    it('loads optional SSL config when present', function (): void {
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $configDir = $tempDir . '/config';
+        mkdir($configDir, 0755, true);
+
+        $configContent = <<<'PHP'
+<?php
+
+return [
+    'driver' => 'pgsql',
+    'host' => 'db.example.com',
+    'port' => 5432,
+    'database' => 'test_db',
+    'username' => 'root',
+    'password' => 'secret',
+    'sslmode' => 'require',
+    'ssl_ca' => '/path/to/ca.pem',
+];
+PHP;
+        file_put_contents($configDir . '/database.php', $configContent);
+
+        try {
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
+
+            expect($config->sslMode)->toBe('require')
+                ->and($config->sslRootCert)->toBe('/path/to/ca.pem');
+        } finally {
+            unlink($configDir . '/database.php');
+            rmdir($configDir);
+            rmdir($tempDir);
+        }
+    });
+
+    it('defaults SSL config to null when not present', function (): void {
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $configDir = $tempDir . '/config';
+        mkdir($configDir, 0755, true);
+
+        $configContent = <<<'PHP'
+<?php
+
+return [
+    'driver' => 'pgsql',
+    'host' => 'localhost',
+    'port' => 5432,
+    'database' => 'test_db',
+    'username' => 'root',
+    'password' => 'secret',
+];
+PHP;
+        file_put_contents($configDir . '/database.php', $configContent);
+
+        try {
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
+
+            expect($config->sslMode)->toBeNull()
+                ->and($config->sslRootCert)->toBeNull();
+        } finally {
+            unlink($configDir . '/database.php');
+            rmdir($configDir);
+            rmdir($tempDir);
+        }
+    });
+
     it('throws ConfigurationException when required keys missing', function (): void {
         $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
         $configDir = $tempDir . '/config';

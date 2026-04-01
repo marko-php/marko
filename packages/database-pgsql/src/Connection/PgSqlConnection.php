@@ -77,7 +77,17 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
 
     private function buildDsn(): string
     {
-        return "pgsql:host={$this->config->host};port={$this->config->port};dbname={$this->config->database}";
+        $dsn = "pgsql:host={$this->config->host};port={$this->config->port};dbname={$this->config->database}";
+
+        if ($this->config->sslMode !== null) {
+            $dsn .= ";sslmode={$this->config->sslMode}";
+        }
+
+        if ($this->config->sslRootCert !== null) {
+            $dsn .= ";sslrootcert={$this->config->sslRootCert}";
+        }
+
+        return $dsn;
     }
 
     /**
