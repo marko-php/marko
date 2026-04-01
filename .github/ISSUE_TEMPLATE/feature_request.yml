@@ -1,0 +1,75 @@
+name: Feature Request
+description: Suggest a new feature or improvement for the Marko framework
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem does this feature solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or features you've considered.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which package does this relate to?
+      options:
+        - Admin
+        - API
+        - Authentication
+        - Authorization
+        - Blog
+        - Cache
+        - CLI
+        - Config
+        - Core
+        - CORS
+        - Database
+        - Encryption
+        - Env
+        - Errors
+        - Filesystem
+        - Framework
+        - Hashing
+        - Health
+        - HTTP
+        - Log
+        - Mail
+        - Media
+        - Notification
+        - Pagination
+        - PubSub
+        - Queue
+        - Rate Limiting
+        - Routing
+        - Scheduler
+        - Search
+        - Security
+        - Session
+        - SSE
+        - Testing
+        - Translation
+        - Validation
+        - View
+        - Webhook
+        - Other
+    validations:
+      required: true
