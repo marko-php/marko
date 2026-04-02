@@ -10,7 +10,9 @@ use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\MySql\Connection\MySqlConnection;
 use Marko\Database\MySql\Introspection\MySqlIntrospector;
 use Marko\Database\MySql\Query\MySqlQueryBuilder;
+use Marko\Database\MySql\Query\MySqlQueryBuilderFactory;
 use Marko\Database\MySql\Sql\MySqlGenerator;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 
 // Marko-specific configuration for this module.
@@ -29,5 +31,6 @@ return [
         },
         SqlGeneratorInterface::class => MySqlGenerator::class,
         QueryBuilderInterface::class => MySqlQueryBuilder::class,
+        QueryBuilderFactoryInterface::class => MySqlQueryBuilderFactory::class,
     ],
 ];
