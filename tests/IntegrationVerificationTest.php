@@ -43,14 +43,45 @@ it('validates the root composer.json passes composer validate', function () use 
 it(
     'removes composer.lock and vendor/ before running composer update to ensure clean resolution',
     function () use ($root): void {
-        $php = '/opt/homebrew/Cellar/php/8.5.1_2/bin/php';
+        $php = PHP_BINARY;
         $resultFile = tempnam(sys_get_temp_dir(), 'marko_result_');
+        $isolatedRoot = sys_get_temp_dir() . '/marko-clean-install-' . uniqid();
     
         $script = <<<'SCRIPT'
 <?php
-[$root, $resultFile] = [$argv[1], $argv[2]];
+[$root, $resultFile, $php, $isolatedRoot] = [$argv[1], $argv[2], $argv[3], $argv[4]];
 
 $results = [];
+
+function copyTree(string $source, string $destination): void
+{
+    if (is_link($source)) {
+        symlink(readlink($source), $destination);
+
+        return;
+    }
+
+    if (is_file($source)) {
+        copy($source, $destination);
+
+        return;
+    }
+
+    if (!is_dir($destination)) {
+        mkdir($destination, 0777, true);
+    }
+
+    foreach (scandir($source) as $entry) {
+        if ($entry === '.' || $entry === '..' || $entry === '.git' || $entry === 'vendor') {
+            continue;
+        }
+
+        copyTree($source . '/' . $entry, $destination . '/' . $entry);
+    }
+}
+
+copyTree($root, $isolatedRoot);
+$root = $isolatedRoot;
 
 // Step 1: Remove lock and vendor
 if (file_exists($root . '/composer.lock')) {
@@ -74,7 +105,6 @@ $results['lock_restored']          = file_exists($root . '/composer.lock');
 $results['composer_update_output'] = implode("\n", array_slice($updateOutput, -5));
 
 // Step 3: Run test suite (exclude destructive group to avoid recursion)
-$php = '/opt/homebrew/Cellar/php/8.5.1_2/bin/php';
 exec(
     'cd ' . escapeshellarg($root) . ' && ' . $php . ' vendor/bin/pest --parallel --exclude-group=integration-destructive 2>&1',
     $testOutput,
@@ -96,6 +126,8 @@ SCRIPT;
             $php . ' ' . escapeshellarg($scriptFile)
             . ' ' . escapeshellarg($root)
             . ' ' . escapeshellarg($resultFile)
+            . ' ' . escapeshellarg($php)
+            . ' ' . escapeshellarg($isolatedRoot)
             . ' 2>/dev/null',
         );
     
@@ -121,7 +153,7 @@ it('runs composer update from root successfully', function () use ($root): void 
 })->group('integration-destructive');
 
 it('runs the full test suite and all tests pass', function () use ($root): void {
-    $php = '/opt/homebrew/Cellar/php/8.5.1_2/bin/php';
+    $php = PHP_BINARY;
     $output = [];
     $exitCode = 0;
     exec(
