@@ -152,13 +152,13 @@ it('reads port from config', function (): void {
 });
 
 it('reads host from config', function (): void {
-    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['host' => '0.0.0.0']);
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.host' => '127.0.0.1']);
     ['output' => $output] = createMemoryOutput();
 
     $input = new Input(['marko', 'dev:up']);
     $command->execute($input, $output);
 
-    expect($pm->started['php'])->toContain('0.0.0.0:8000');
+    expect($pm->started['php'])->toContain('127.0.0.1:8000');
 });
 
 it('reads docker setting from config', function (): void {
@@ -427,6 +427,17 @@ it('overrides config port with -p short flag', function (): void {
 
     expect($pm->started['php'])->toContain('localhost:9000');
 });
+
+it('overrides config port with -h short flag', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.host' => 'localhost']);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '-h=0.0.0.0']);
+    $command->execute($input, $output);
+
+    expect($pm->started['php'])->toContain('0.0.0.0:8000');
+});
+
 
 it('overrides config port with -p space syntax', function (): void {
     ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.port' => 8000]);
