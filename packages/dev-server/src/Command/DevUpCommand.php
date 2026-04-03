@@ -42,6 +42,7 @@ readonly class DevUpCommand implements CommandInterface
     ): int {
         $port = (int) ($input->getOption('port') ?? $input->getOption('p') ?? $this->config->getInt('dev.port'));
         $foreground = $input->hasOption('foreground') || $input->hasOption('f');
+        $host = $input->getOption('host') ?? $input->getOption('h') ?? $this->config->getString('dev.host');
         $detach = !$foreground && ($input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool(
             'dev.detach',
         ));
@@ -156,7 +157,7 @@ readonly class DevUpCommand implements CommandInterface
         }
 
         // PHP server (always) — multiple workers needed for SSE
-        $phpCommand = "env PHP_CLI_SERVER_WORKERS=4 php -S localhost:$port -t public/";
+        $phpCommand = "env PHP_CLI_SERVER_WORKERS=4 php -S $host:$port -t public/";
         $output->writeLine("  Starting PHP server: php -S localhost:$port");
         $pid = $startProcess('php', $phpCommand);
 

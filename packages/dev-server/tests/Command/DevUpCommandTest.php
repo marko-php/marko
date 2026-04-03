@@ -87,6 +87,7 @@ function createDevUpCommand(
 
     $configDefaults = [
         'dev.port' => 8000,
+        'dev.host' => 'localhost',
         'dev.docker' => false,
         'dev.frontend' => false,
         'dev.pubsub' => false,
@@ -148,6 +149,16 @@ it('reads port from config', function (): void {
     $command->execute($input, $output);
 
     expect($pm->started['php'])->toContain('localhost:7500');
+});
+
+it('reads host from config', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['host' => '0.0.0.0']);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->started['php'])->toContain('0.0.0.0:8000');
 });
 
 it('reads docker setting from config', function (): void {
@@ -520,7 +531,7 @@ it('includes custom processes in PID file when detached', function (): void {
     $command->execute($input, $output);
 
     $entries = $pidFile->read();
-    $names = array_map(fn ($e) => $e->name, $entries);
+    $names = array_map(fn($e) => $e->name, $entries);
 
     expect($names)->toContain('tailwind')
         ->and($names)->toContain('php');
@@ -544,7 +555,7 @@ it('never appends -d to docker command even in detach mode', function (): void {
 });
 
 it('starts pubsub:listen as managed process in DevUpCommand when detected', function (): void {
-    $pubsubDetector = new class () extends PubSubDetector
+    $pubsubDetector = new class() extends PubSubDetector
     {
         protected function isPubSubInstalled(): bool
         {
@@ -773,7 +784,7 @@ it('defaults to detached mode when no flags are passed', function (): void {
 });
 
 it('skips pubsub process when pubsub config is false', function (): void {
-    $pubsubDetector = new class () extends PubSubDetector
+    $pubsubDetector = new class() extends PubSubDetector
     {
         protected function isPubSubInstalled(): bool
         {
