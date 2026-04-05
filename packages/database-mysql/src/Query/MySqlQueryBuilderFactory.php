@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Marko\Database\MySql\Query;
 
 use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\MySql\Query\MySqlQueryBuilder;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 
