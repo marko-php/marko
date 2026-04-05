@@ -48,6 +48,9 @@ else
     echo "  ⚠ gh CLI not found — GitHub Release will need to be created manually"
 fi
 
+# Derive repo from git remote so gh doesn't require set-default
+GH_REPO=$(git remote get-url origin | sed -E 's#.*github\.com[:/](.+)\.git$#\1#; s#.*github\.com[:/](.+)$#\1#')
+
 echo "  ✓ PHP ${PHP_VERSION}"
 echo "  ✓ Branch: main (merged from develop)"
 echo "  ✓ Working directory clean"
@@ -82,6 +85,7 @@ if [[ "$GH_AVAILABLE" == "true" ]]; then
 
     if [[ -n "$PREV_TAG" ]]; then
         if gh release create "$TAG" \
+            --repo "$GH_REPO" \
             --generate-notes \
             --latest \
             --notes-start-tag "$PREV_TAG"; then
@@ -91,6 +95,7 @@ if [[ "$GH_AVAILABLE" == "true" ]]; then
         fi
     else
         if gh release create "$TAG" \
+            --repo "$GH_REPO" \
             --generate-notes \
             --latest; then
             echo "  ✓ GitHub Release created"
