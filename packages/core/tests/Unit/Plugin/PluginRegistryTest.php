@@ -69,12 +69,12 @@ it('collects all plugins for a given target class with new definition format', f
 
     $orderPlugins = $registry->getPluginsFor(OrderService::class);
 
+    $pluginClasses = array_map(fn (PluginDefinition $p) => $p->pluginClass, $orderPlugins);
+
     expect($orderPlugins)
         ->toBeArray()
-        ->toHaveCount(2);
-
-    $pluginClasses = array_map(fn (PluginDefinition $p) => $p->pluginClass, $orderPlugins);
-    expect($pluginClasses)
+        ->toHaveCount(2)
+        ->and($pluginClasses)
         ->toContain(OrderValidationPlugin::class)
         ->toContain(OrderLoggingPlugin::class);
 });
@@ -105,12 +105,12 @@ it('collects all plugins for a given target class', function (): void {
     // Get plugins for OrderService
     $orderPlugins = $registry->getPluginsFor(OrderService::class);
 
+    $pluginClasses = array_map(fn (PluginDefinition $p) => $p->pluginClass, $orderPlugins);
+
     expect($orderPlugins)
         ->toBeArray()
-        ->toHaveCount(2);
-
-    $pluginClasses = array_map(fn (PluginDefinition $p) => $p->pluginClass, $orderPlugins);
-    expect($pluginClasses)
+        ->toHaveCount(2)
+        ->and($pluginClasses)
         ->toContain(OrderValidationPlugin::class)
         ->toContain(OrderLoggingPlugin::class)
         ->not->toContain(PaymentAuditPlugin::class);
@@ -163,12 +163,12 @@ it('sorts plugins by sortOrder with new definition format', function (): void {
 
     $beforeMethods = $registry->getBeforeMethodsFor(SortableService::class, 'doAction');
 
+    $sortOrders = array_map(fn (array $method) => $method['sortOrder'], $beforeMethods);
+
     expect($beforeMethods)
         ->toBeArray()
-        ->toHaveCount(2);
-
-    $sortOrders = array_map(fn (array $method) => $method['sortOrder'], $beforeMethods);
-    expect($sortOrders)->toBe([5, 15]);
+        ->toHaveCount(2)
+        ->and($sortOrders)->toBe([5, 15]);
 });
 
 it('sorts plugins by sortOrder (lower runs first)', function (): void {
@@ -196,21 +196,19 @@ it('sorts plugins by sortOrder (lower runs first)', function (): void {
     // Get sorted before methods for doAction
     $beforeMethods = $registry->getBeforeMethodsFor(SortableService::class, 'doAction');
 
-    expect($beforeMethods)
-        ->toBeArray()
-        ->toHaveCount(3);
-
     // Verify sort order - lower sortOrder should come first
     $sortOrders = array_map(fn (array $method) => $method['sortOrder'], $beforeMethods);
-    expect($sortOrders)->toBe([5, 15, 30]);
-
-    // Verify the plugins are in correct order
     $pluginClasses = array_map(fn (array $method) => $method['pluginClass'], $beforeMethods);
-    expect($pluginClasses)->toBe([
-        HighPriorityPlugin::class,
-        MediumPriorityPlugin::class,
-        LowPriorityPlugin::class,
-    ]);
+
+    expect($beforeMethods)
+        ->toBeArray()
+        ->toHaveCount(3)
+        ->and($sortOrders)->toBe([5, 15, 30])
+        ->and($pluginClasses)->toBe([
+            HighPriorityPlugin::class,
+            MediumPriorityPlugin::class,
+            LowPriorityPlugin::class,
+        ]);
 });
 
 // Fixtures for new target-method-keyed registry tests
@@ -437,4 +435,64 @@ it('provides helpful error message with both plugin classes for cross-class conf
             ->and($e->getContext())->toContain('ConflictPluginB')
             ->and($e->getSuggestion())->not->toBeEmpty();
     }
+});
+
+// Fixtures for plugin-targeting-plugin tests
+class TargetBusinessService
+{
+    public function execute(): void {}
+}
+
+#[Plugin(target: TargetBusinessService::class)]
+class PluginThatIsTargeted
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    #[Before(sortOrder: 10)]
+    public function execute(): void {}
+}
+
+#[Plugin(target: PluginThatIsTargeted::class)]
+class PluginTargetingPlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    #[Before(sortOrder: 10)]
+    public function execute(): void {}
+}
+
+it('throws PluginException when registering a plugin that targets another plugin class', function (): void {
+    $registry = new PluginRegistry();
+
+    expect(fn () => $registry->register(new PluginDefinition(
+        pluginClass: PluginTargetingPlugin::class,
+        targetClass: PluginThatIsTargeted::class,
+        beforeMethods: ['execute' => ['pluginMethod' => 'execute', 'sortOrder' => 10]],
+    )))->toThrow(PluginException::class);
+});
+
+it('includes helpful message suggesting Preference as alternative', function (): void {
+    $registry = new PluginRegistry();
+
+    try {
+        $registry->register(new PluginDefinition(
+            pluginClass: PluginTargetingPlugin::class,
+            targetClass: PluginThatIsTargeted::class,
+            beforeMethods: ['execute' => ['pluginMethod' => 'execute', 'sortOrder' => 10]],
+        ));
+        expect(false)->toBeTrue('Expected PluginException to be thrown');
+    } catch (PluginException $e) {
+        expect($e->getMessage())->toContain('PluginThatIsTargeted')
+            ->and($e->getSuggestion())->toContain('Preference');
+    }
+});
+
+it('allows registering plugins that target non-plugin classes', function (): void {
+    $registry = new PluginRegistry();
+
+    $registry->register(new PluginDefinition(
+        pluginClass: PluginThatIsTargeted::class,
+        targetClass: TargetBusinessService::class,
+        beforeMethods: ['execute' => ['pluginMethod' => 'execute', 'sortOrder' => 10]],
+    ));
+
+    expect($registry->getPluginsFor(TargetBusinessService::class))->toHaveCount(1);
 });

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Marko\Core\Plugin;
 
+use Marko\Core\Attributes\Plugin;
 use Marko\Core\Exceptions\PluginException;
+use ReflectionClass;
 
 class PluginRegistry
 {
@@ -22,6 +24,14 @@ class PluginRegistry
         PluginDefinition $plugin,
     ): void {
         $targetClass = $plugin->targetClass;
+
+        $reflection = new ReflectionClass($targetClass);
+        if ($reflection->getAttributes(Plugin::class) !== []) {
+            throw PluginException::cannotTargetPlugin(
+                pluginClass: $plugin->pluginClass,
+                targetClass: $targetClass,
+            );
+        }
 
         if (!isset($this->plugins[$targetClass])) {
             $this->plugins[$targetClass] = [];

@@ -23,6 +23,16 @@ readonly class PluginProxy
     ) {}
 
     /**
+     * Get the underlying target instance.
+     *
+     * Useful for reflection-based code that needs to inspect the real object.
+     */
+    public function getPluginTarget(): object
+    {
+        return $this->target;
+    }
+
+    /**
      * Intercept method calls and apply plugins.
      *
      * @param string $method

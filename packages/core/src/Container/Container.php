@@ -6,6 +6,7 @@ namespace Marko\Core\Container;
 
 use Closure;
 use Marko\Core\Exceptions\BindingException;
+use Marko\Core\Plugin\PluginInterceptor;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
@@ -22,9 +23,16 @@ class Container implements ContainerInterface
     /** @var array<string, string|Closure> */
     private array $bindings = [];
 
+    private ?PluginInterceptor $pluginInterceptor = null;
+
     public function __construct(
         private readonly ?PreferenceRegistry $preferenceRegistry = null,
     ) {}
+
+    public function setPluginInterceptor(PluginInterceptor $interceptor): void
+    {
+        $this->pluginInterceptor = $interceptor;
+    }
 
     public function bind(
         string $interface,
@@ -125,6 +133,10 @@ class Container implements ContainerInterface
             if ($binding instanceof Closure) {
                 $instance = $binding($this);
 
+                if ($this->pluginInterceptor !== null) {
+                    $instance = $this->pluginInterceptor->createProxy($id, $instance);
+                }
+
                 if (isset($this->shared[$originalId])) {
                     $this->instances[$originalId] = $instance;
                 }
@@ -189,6 +201,10 @@ class Container implements ContainerInterface
             }
 
             $instance = $reflectionClass->newInstanceArgs($dependencies);
+        }
+
+        if ($this->pluginInterceptor !== null) {
+            $instance = $this->pluginInterceptor->createProxy($id, $instance);
         }
 
         if (isset($this->shared[$originalId])) {
