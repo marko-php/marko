@@ -61,6 +61,17 @@ class PluginException extends MarkoException
         );
     }
 
+    public static function cannotTargetPlugin(
+        string $pluginClass,
+        string $targetClass,
+    ): self {
+        return new self(
+            message: "Plugin '$pluginClass' cannot target '$targetClass' because '$targetClass' is itself a plugin class",
+            context: "While registering plugin '$pluginClass' targeting '$targetClass'",
+            suggestion: "Plugins cannot modify other plugins. Use a Preference to replace '$targetClass' entirely if you need to change its behavior.",
+        );
+    }
+
     public static function conflictingSortOrder(
         string $targetClass,
         string $targetMethod,

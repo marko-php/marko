@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Routing;
 
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Plugin\PluginProxy;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
@@ -75,7 +76,11 @@ readonly class Router
         array $routeParams,
         Request $request,
     ): array {
-        $reflection = new ReflectionMethod($controller, $action);
+        // Unwrap plugin proxy to reflect on the real controller
+        $reflectionTarget = $controller instanceof PluginProxy
+            ? $controller->getPluginTarget()
+            : $controller;
+        $reflection = new ReflectionMethod($reflectionTarget, $action);
         $parameters = [];
 
         foreach ($reflection->getParameters() as $param) {

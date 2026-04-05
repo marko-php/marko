@@ -35,12 +35,12 @@ use Marko\Core\Module\ModuleRepository;
 use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Core\Plugin\PluginDiscovery;
+use Marko\Core\Plugin\PluginInterceptor;
 use Marko\Core\Plugin\PluginRegistry;
 use Marko\Env\EnvLoader;
 use Marko\Routing\Exceptions\RouteConflictException;
 use Marko\Routing\Exceptions\RouteException;
 use Marko\Routing\Http\Request;
-use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Routing\Router;
 use Marko\Routing\RoutingBootstrapper;
@@ -72,7 +72,9 @@ class Application
 
     /** @var Router */
     public object $router {
-        get => $this->_router ?? throw new RuntimeException('Router not available. Install marko/routing: composer require marko/routing');
+        get => $this->_router ?? throw new RuntimeException(
+            'Router not available. Install marko/routing: composer require marko/routing'
+        );
     }
 
     private ClassFileParser $classFileParser;
@@ -85,11 +87,12 @@ class Application
 
     /**
      * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException
+     * @throws \ReflectionException
      */
     public static function boot(string $basePath): self
     {
         if (!is_dir($basePath)) {
-            throw new RuntimeException("Base path does not exist: {$basePath}");
+            throw new RuntimeException("Base path does not exist: $basePath");
         }
 
         $app = new self(
@@ -104,7 +107,7 @@ class Application
     }
 
     /**
-     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|\ReflectionException
      */
     public function initialize(): void
     {
@@ -133,8 +136,13 @@ class Application
         // Initialize container and registries
         $this->classFileParser = new ClassFileParser();
         $this->preferenceRegistry = new PreferenceRegistry();
+        $this->pluginRegistry = new PluginRegistry();
         $this->container = new Container($this->preferenceRegistry);
         $this->container->instance(ContainerInterface::class, $this->container);
+        $interceptor = new PluginInterceptor($this->container, $this->pluginRegistry);
+        $this->container->setPluginInterceptor($interceptor);
+        $this->container->instance(PluginInterceptor::class, $interceptor);
+        $this->container->instance(PluginRegistry::class, $this->pluginRegistry);
         $bindingRegistry = new BindingRegistry($this->container);
 
         // Register ProjectPaths for dependency injection (base path derived from vendor path)
@@ -225,6 +233,10 @@ class Application
         });
     }
 
+    /**
+     * @throws \ReflectionException
+     * @throws \Marko\Core\Exceptions\PreferenceConflictException
+     */
     private function discoverPreferences(): void
     {
         $preferenceDiscovery = new PreferenceDiscovery();
@@ -256,11 +268,10 @@ class Application
     }
 
     /**
-     * @throws PluginException
+     * @throws PluginException|\ReflectionException
      */
     private function discoverPlugins(): void
     {
-        $this->pluginRegistry = new PluginRegistry();
         $pluginDiscovery = new PluginDiscovery();
 
         foreach ($this->modules as $module) {
@@ -330,7 +341,7 @@ class Application
     ];
 
     /**
-     * @throws RouteException|RouteConflictException
+     * @throws RouteException|RouteConflictException|\ReflectionException
      */
     private function discoverRoutes(): void
     {
