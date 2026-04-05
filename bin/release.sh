@@ -32,10 +32,7 @@ if git rev-parse "$TAG" >/dev/null 2>&1; then
 fi
 
 # Find PHP 8.5+ binary
-PHP_BIN="/opt/homebrew/Cellar/php/8.5.1_2/bin/php"
-if [[ ! -x "$PHP_BIN" ]]; then
-    PHP_BIN="php"
-fi
+PHP_BIN="${PHP_BIN:-php}"
 
 PHP_VERSION=$("$PHP_BIN" -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 if [[ "$PHP_VERSION" != "8.5" ]]; then
