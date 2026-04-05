@@ -74,6 +74,13 @@ it('validates PHP version is 8.5+ (uses PHP_BIN env var or defaults to system ph
         ->and($contents)->toContain('8.5');
 });
 
+it('derives repo from git remote for gh release create', function () use ($script): void {
+    $contents = file_get_contents($script);
+
+    expect($contents)->toContain('GH_REPO=$(git remote get-url origin')
+        ->and($contents)->toContain('--repo "$GH_REPO"');
+});
+
 it('creates bin/release.sh with version argument validation', function () use ($root, $script): void {
     expect(file_exists($script))->toBeTrue('bin/release.sh does not exist')
         ->and(is_executable($script))->toBeTrue('bin/release.sh is not executable');
