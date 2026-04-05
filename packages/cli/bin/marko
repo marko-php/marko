@@ -21,11 +21,15 @@ use Marko\Cli\CliKernel;
 use Marko\Cli\ProjectFinder;
 
 try {
-    $kernel = new CliKernel(
-        projectFinder: new ProjectFinder(),
-    );
-    $exitCode = $kernel->run($argv);
-    exit($exitCode);
+    $projectFinder = new ProjectFinder();
+
+    if (($projectRoot = $projectFinder->find()) !== null) {
+        require_once "{$projectRoot}/vendor/autoload.php";
+    }
+
+    exit((new CliKernel(
+        projectFinder: $projectFinder,
+    ))->run($argv));
 } catch (Throwable $e) {
     fwrite(STDERR, "Error: " . $e->getMessage() . PHP_EOL);
     exit(1);
