@@ -8,6 +8,7 @@ use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Author;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Enum\PostStatus;
+
 describe('Post List View', function (): void {
     it('renders list of posts', function (): void {
         $view = \createBlogTestView();

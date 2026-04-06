@@ -8,6 +8,7 @@ use Marko\Blog\Entity\Comment;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Enum\CommentStatus;
 use Marko\Blog\Enum\PostStatus;
+
 describe('Comment Verification Email Template', function (): void {
     it('renders email subject with post title', function (): void {
         $view = \createBlogTestView();

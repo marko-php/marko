@@ -6,6 +6,7 @@ namespace Marko\Core\Container;
 
 use Closure;
 use Marko\Core\Exceptions\BindingException;
+use Marko\Core\Exceptions\PluginException;
 use Marko\Core\Plugin\PluginInterceptor;
 use ReflectionClass;
 use ReflectionException;
@@ -42,7 +43,7 @@ class Container implements ContainerInterface
     }
 
     /**
-     * @throws BindingException|ReflectionException
+     * @throws BindingException|ReflectionException|PluginException
      */
     public function get(
         string $id,
@@ -73,7 +74,7 @@ class Container implements ContainerInterface
     }
 
     /**
-     * @throws BindingException|ReflectionException
+     * @throws BindingException|ReflectionException|PluginException
      */
     public function call(Closure $callable): mixed
     {
@@ -106,7 +107,7 @@ class Container implements ContainerInterface
     }
 
     /**
-     * @throws BindingException|ReflectionException
+     * @throws BindingException|ReflectionException|PluginException
      */
     private function resolve(
         string $id,
@@ -134,7 +135,7 @@ class Container implements ContainerInterface
                 $instance = $binding($this);
 
                 if ($this->pluginInterceptor !== null) {
-                    $instance = $this->pluginInterceptor->createProxy($id, $instance);
+                    $instance = $this->pluginInterceptor->createProxy($originalId, $id, $instance);
                 }
 
                 if (isset($this->shared[$originalId])) {
@@ -151,7 +152,7 @@ class Container implements ContainerInterface
             if (str_starts_with($id, 'Marko\\')) {
                 $parts = explode('\\', $id);
                 $segment = $parts[1] ?? '';
-                $noDriverClass = "Marko\\{$segment}\\Exceptions\\NoDriverException";
+                $noDriverClass = "Marko\\$segment\\Exceptions\\NoDriverException";
 
                 if (
                     $segment !== ''
@@ -204,7 +205,7 @@ class Container implements ContainerInterface
         }
 
         if ($this->pluginInterceptor !== null) {
-            $instance = $this->pluginInterceptor->createProxy($id, $instance);
+            $instance = $this->pluginInterceptor->createProxy($originalId, $id, $instance);
         }
 
         if (isset($this->shared[$originalId])) {

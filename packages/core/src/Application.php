@@ -34,6 +34,7 @@ use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepository;
 use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\Core\Path\ProjectPaths;
+use Marko\Core\Plugin\InterceptorClassGenerator;
 use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginInterceptor;
 use Marko\Core\Plugin\PluginRegistry;
@@ -46,6 +47,7 @@ use Marko\Routing\Router;
 use Marko\Routing\RoutingBootstrapper;
 use Psr\Container\ContainerExceptionInterface;
 use ReflectionClass;
+use ReflectionException;
 use RuntimeException;
 
 class Application
@@ -73,7 +75,7 @@ class Application
     /** @var Router */
     public object $router {
         get => $this->_router ?? throw new RuntimeException(
-            'Router not available. Install marko/routing: composer require marko/routing'
+            'Router not available. Install marko/routing: composer require marko/routing',
         );
     }
 
@@ -86,8 +88,7 @@ class Application
     ) {}
 
     /**
-     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException
-     * @throws \ReflectionException
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException|RuntimeException
      */
     public static function boot(string $basePath): self
     {
@@ -107,7 +108,7 @@ class Application
     }
 
     /**
-     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|\ReflectionException
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException
      */
     public function initialize(): void
     {
@@ -139,7 +140,7 @@ class Application
         $this->pluginRegistry = new PluginRegistry();
         $this->container = new Container($this->preferenceRegistry);
         $this->container->instance(ContainerInterface::class, $this->container);
-        $interceptor = new PluginInterceptor($this->container, $this->pluginRegistry);
+        $interceptor = new PluginInterceptor($this->container, $this->pluginRegistry, new InterceptorClassGenerator());
         $this->container->setPluginInterceptor($interceptor);
         $this->container->instance(PluginInterceptor::class, $interceptor);
         $this->container->instance(PluginRegistry::class, $this->pluginRegistry);
@@ -234,8 +235,7 @@ class Application
     }
 
     /**
-     * @throws \ReflectionException
-     * @throws \Marko\Core\Exceptions\PreferenceConflictException
+     * @throws ReflectionException|PreferenceConflictException
      */
     private function discoverPreferences(): void
     {
@@ -268,7 +268,7 @@ class Application
     }
 
     /**
-     * @throws PluginException|\ReflectionException
+     * @throws PluginException|ReflectionException
      */
     private function discoverPlugins(): void
     {
@@ -341,7 +341,7 @@ class Application
     ];
 
     /**
-     * @throws RouteException|RouteConflictException|\ReflectionException
+     * @throws RouteException|RouteConflictException|ReflectionException
      */
     private function discoverRoutes(): void
     {
@@ -363,13 +363,13 @@ class Application
     }
 
     /**
-     * @throws RuntimeException
+     * @throws RuntimeException|ContainerExceptionInterface|ReflectionException
      */
     public function handleRequest(): void
     {
         if ($this->_router === null) {
             throw new RuntimeException(
-                'Cannot handle HTTP requests: marko/routing is not installed. Run: composer require marko/routing'
+                'Cannot handle HTTP requests: marko/routing is not installed. Run: composer require marko/routing',
             );
         }
 

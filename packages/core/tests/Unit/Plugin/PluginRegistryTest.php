@@ -215,6 +215,7 @@ it('sorts plugins by sortOrder (lower runs first)', function (): void {
 class InvoiceService
 {
     public function create(): void {}
+
     public function cancel(): void {}
 }
 
@@ -495,4 +496,144 @@ it('allows registering plugins that target non-plugin classes', function (): voi
     ));
 
     expect($registry->getPluginsFor(TargetBusinessService::class))->toHaveCount(1);
+});
+
+// New test fixtures for interface-aware lookup tests
+interface RegistryLookupInterfaceA {}
+interface RegistryLookupInterfaceB {}
+class RegistryLookupClassDirect {}
+class RegistryLookupClassViaInterface implements RegistryLookupInterfaceA {}
+class RegistryLookupClassTwoInterfaces implements RegistryLookupInterfaceA, RegistryLookupInterfaceB {}
+class RegistryLookupClassNoPlugins {}
+
+#[Plugin(target: RegistryLookupClassDirect::class)]
+class RegistryLookupDirectPlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    #[Before(sortOrder: 10)]
+    public function doSomething(): void {}
+}
+
+#[Plugin(target: RegistryLookupInterfaceA::class)]
+class RegistryLookupInterfaceAPlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    #[Before(sortOrder: 10)]
+    public function doSomething(): void {}
+}
+
+#[Plugin(target: RegistryLookupInterfaceB::class)]
+class RegistryLookupInterfaceBPlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    #[Before(sortOrder: 10)]
+    public function doSomething(): void {}
+}
+
+#[Plugin(target: RegistryLookupClassViaInterface::class)]
+class RegistryLookupViaInterfaceClassPlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    #[Before(sortOrder: 10)]
+    public function doSomething(): void {}
+}
+
+it('finds plugins when checking class that directly has plugins registered', function (): void {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: RegistryLookupDirectPlugin::class,
+        targetClass: RegistryLookupClassDirect::class,
+        beforeMethods: ['doSomething' => ['pluginMethod' => 'doSomething', 'sortOrder' => 10]],
+    ));
+
+    expect($registry->hasPluginsForClassOrInterfaces(RegistryLookupClassDirect::class))->toBeTrue();
+});
+
+it('finds plugins when checking class whose interface has plugins registered', function (): void {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: RegistryLookupInterfaceAPlugin::class,
+        targetClass: RegistryLookupInterfaceA::class,
+        beforeMethods: ['doSomething' => ['pluginMethod' => 'doSomething', 'sortOrder' => 10]],
+    ));
+
+    expect($registry->hasPluginsForClassOrInterfaces(RegistryLookupClassViaInterface::class))->toBeTrue();
+});
+
+it('returns false when class and none of its interfaces have plugins', function (): void {
+    $registry = new PluginRegistry();
+
+    expect($registry->hasPluginsForClassOrInterfaces(RegistryLookupClassNoPlugins::class))->toBeFalse();
+});
+
+it('returns the direct class as effective target when class itself has plugins', function (): void {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: RegistryLookupDirectPlugin::class,
+        targetClass: RegistryLookupClassDirect::class,
+        beforeMethods: ['doSomething' => ['pluginMethod' => 'doSomething', 'sortOrder' => 10]],
+    ));
+
+    expect($registry->getEffectiveTargetClass(RegistryLookupClassDirect::class))
+        ->toBe(RegistryLookupClassDirect::class);
+});
+
+it('returns the interface as effective target when only the interface has plugins', function (): void {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: RegistryLookupInterfaceAPlugin::class,
+        targetClass: RegistryLookupInterfaceA::class,
+        beforeMethods: ['doSomething' => ['pluginMethod' => 'doSomething', 'sortOrder' => 10]],
+    ));
+
+    expect($registry->getEffectiveTargetClass(RegistryLookupClassViaInterface::class))
+        ->toBe(RegistryLookupInterfaceA::class);
+});
+
+it('prefers class-level plugins over interface-level plugins when both exist', function (): void {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: RegistryLookupInterfaceAPlugin::class,
+        targetClass: RegistryLookupInterfaceA::class,
+        beforeMethods: ['doSomething' => ['pluginMethod' => 'doSomething', 'sortOrder' => 10]],
+    ));
+    $registry->register(new PluginDefinition(
+        pluginClass: RegistryLookupViaInterfaceClassPlugin::class,
+        targetClass: RegistryLookupClassViaInterface::class,
+        beforeMethods: ['doSomething' => ['pluginMethod' => 'doSomething', 'sortOrder' => 10]],
+    ));
+
+    expect($registry->getEffectiveTargetClass(RegistryLookupClassViaInterface::class))
+        ->toBe(RegistryLookupClassViaInterface::class);
+});
+
+it('checks all implemented interfaces not just the first one', function (): void {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: RegistryLookupInterfaceBPlugin::class,
+        targetClass: RegistryLookupInterfaceB::class,
+        beforeMethods: ['doSomething' => ['pluginMethod' => 'doSomething', 'sortOrder' => 10]],
+    ));
+
+    // RegistryLookupClassTwoInterfaces implements both A and B, but only B has a plugin
+    expect($registry->getEffectiveTargetClass(RegistryLookupClassTwoInterfaces::class))
+        ->toBe(RegistryLookupInterfaceB::class);
+});
+
+it('throws PluginException when multiple interfaces of a class have plugins registered', function (): void {
+    $registry = new PluginRegistry();
+    $registry->register(new PluginDefinition(
+        pluginClass: RegistryLookupInterfaceAPlugin::class,
+        targetClass: RegistryLookupInterfaceA::class,
+        beforeMethods: ['doSomething' => ['pluginMethod' => 'doSomething', 'sortOrder' => 10]],
+    ));
+    $registry->register(new PluginDefinition(
+        pluginClass: RegistryLookupInterfaceBPlugin::class,
+        targetClass: RegistryLookupInterfaceB::class,
+        beforeMethods: ['doSomething' => ['pluginMethod' => 'doSomething', 'sortOrder' => 10]],
+    ));
+
+    // RegistryLookupClassTwoInterfaces implements both A and B, both have plugins
+    expect(fn () => $registry->getEffectiveTargetClass(RegistryLookupClassTwoInterfaces::class))
+        ->toThrow(PluginException::class);
 });

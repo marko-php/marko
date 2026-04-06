@@ -163,7 +163,7 @@ it('rejects SQL injection in sort column names', function (): void {
         ->withSort('id; DROP TABLE users --', 'asc');
 
     expect(fn () => $driver->search('test', $criteria))
-        ->toThrow(SearchException::class, "Invalid sort column identifier");
+        ->toThrow(SearchException::class, 'Invalid sort column identifier');
 });
 
 it('rejects SQL injection in filter field names', function (): void {
@@ -171,10 +171,10 @@ it('rejects SQL injection in filter field names', function (): void {
 
     $driver = new DatabaseSearchDriver($connection, 'posts', new PostSearchable());
     $criteria = SearchCriteria::create('test')
-        ->withFilter(new SearchFilter("1=1; --", FilterOperator::Equals, 'value'));
+        ->withFilter(new SearchFilter('1=1; --', FilterOperator::Equals, 'value'));
 
     expect(fn () => $driver->search('test', $criteria))
-        ->toThrow(SearchException::class, "Invalid filter column identifier");
+        ->toThrow(SearchException::class, 'Invalid filter column identifier');
 });
 
 it('rejects SQL injection in sort direction', function (): void {
@@ -185,7 +185,7 @@ it('rejects SQL injection in sort direction', function (): void {
         ->withSort('created_at', 'asc; DROP TABLE posts');
 
     expect(fn () => $driver->search('test', $criteria))
-        ->toThrow(SearchException::class, "Invalid sort direction");
+        ->toThrow(SearchException::class, 'Invalid sort direction');
 });
 
 it('rejects SQL injection in table names', function (): void {
@@ -195,13 +195,13 @@ it('rejects SQL injection in table names', function (): void {
     $criteria = SearchCriteria::create('test');
 
     expect(fn () => $driver->search('test', $criteria))
-        ->toThrow(SearchException::class, "Invalid table identifier");
+        ->toThrow(SearchException::class, 'Invalid table identifier');
 });
 
 it('rejects SQL injection in searchable field names', function (): void {
     $connection = new FakeSearchConnection();
 
-    $searchable = new readonly class implements SearchableInterface
+    $searchable = new readonly class () implements SearchableInterface
     {
         public function getSearchableFields(): array
         {
@@ -213,7 +213,7 @@ it('rejects SQL injection in searchable field names', function (): void {
     $criteria = SearchCriteria::create('test');
 
     expect(fn () => $driver->search('test', $criteria))
-        ->toThrow(SearchException::class, "Invalid column identifier");
+        ->toThrow(SearchException::class, 'Invalid column identifier');
 });
 
 it('allows valid identifiers with underscores', function (): void {

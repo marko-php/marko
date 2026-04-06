@@ -27,8 +27,7 @@ readonly class DevOpenCommand implements CommandInterface
     public function execute(
         Input $input,
         Output $output,
-    ): int
-    {
+    ): int {
         $entries = $this->pidFile->read();
 
         if ($entries === []) {
@@ -55,7 +54,7 @@ readonly class DevOpenCommand implements CommandInterface
             );
         }
 
-        $url = "http://localhost:{$phpEntry->port}";
+        $url = "http://localhost:$phpEntry->port";
         $output->writeLine("Opening $url");
         ($this->opener)($url);
 

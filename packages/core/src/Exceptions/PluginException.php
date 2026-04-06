@@ -72,6 +72,32 @@ class PluginException extends MarkoException
         );
     }
 
+    /**
+     * @param array<string> $interfaces
+     */
+    public static function ambiguousInterfacePlugins(
+        string $concreteClass,
+        array $interfaces,
+    ): self {
+        $interfaceList = implode(', ', $interfaces);
+
+        return new self(
+            message: "Cannot determine which interface to intercept for '$concreteClass': multiple interfaces have plugins registered ($interfaceList)",
+            context: "While resolving plugin interceptor for '$concreteClass'",
+            suggestion: "Target the concrete class directly with #[Plugin(target: $concreteClass::class)] instead of targeting multiple interfaces",
+        );
+    }
+
+    public static function cannotInterceptReadonly(
+        string $targetClass,
+    ): self {
+        return new self(
+            message: "Cannot create interceptor for '$targetClass': readonly classes cannot be extended",
+            context: "While creating plugin interceptor for '$targetClass'",
+            suggestion: "Target the interface instead of the readonly class. Use #[Plugin(target: InterfaceName::class)] where InterfaceName is an interface that '$targetClass' implements",
+        );
+    }
+
     public static function conflictingSortOrder(
         string $targetClass,
         string $targetMethod,

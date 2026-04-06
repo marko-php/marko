@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\ContainerInterface;
-use Marko\PubSub\PublisherInterface;
-use Marko\PubSub\SubscriberInterface;
 use Marko\PubSub\PgSql\Driver\PgSqlPublisher;
 use Marko\PubSub\PgSql\Driver\PgSqlSubscriber;
 use Marko\PubSub\PgSql\PgSqlPubSubConnection;
+use Marko\PubSub\PublisherInterface;
+use Marko\PubSub\SubscriberInterface;
 
 return [
     'bindings' => [

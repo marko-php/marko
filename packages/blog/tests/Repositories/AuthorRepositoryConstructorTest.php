@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\Blog\Tests\Repositories;
 
-use DateTimeImmutable;
 use Marko\Blog\Entity\Author;
 use Marko\Blog\Events\Author\AuthorCreated;
 use Marko\Blog\Events\Author\AuthorDeleted;

@@ -6,6 +6,7 @@ use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Author;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Enum\PostStatus;
+
 describe('Author Show View', function (): void {
     it('renders author name as page title', function (): void {
         $view = createBlogTestView();

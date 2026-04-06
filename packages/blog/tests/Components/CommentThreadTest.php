@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Blog\Entity\Comment;
+
 describe('Comment Thread Component', function (): void {
     it('renders single comment with author name and content', function (): void {
         $view = createBlogTestView();
