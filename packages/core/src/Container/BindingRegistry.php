@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Core\Container;
 
+use Closure;
 use Marko\Core\Exceptions\BindingConflictException;
 use Marko\Core\Module\ModuleManifest;
 
@@ -52,7 +53,7 @@ class BindingRegistry
      */
     private function registerBinding(
         string $interface,
-        string|\Closure $implementation,
+        string|Closure $implementation,
         ModuleManifest $module,
         int $sourcePriority,
     ): void {

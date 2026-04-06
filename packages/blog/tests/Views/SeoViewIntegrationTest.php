@@ -10,6 +10,7 @@ use Marko\Blog\Entity\Category;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
 use Marko\Blog\Enum\PostStatus;
+
 describe('SEO View Integration', function (): void {
     it('includes canonical link in post page head', function (): void {
         $view = \createBlogTestView();

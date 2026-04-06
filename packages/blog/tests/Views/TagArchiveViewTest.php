@@ -8,6 +8,7 @@ use Marko\Blog\Dto\PaginatedResult;
 use Marko\Blog\Entity\Author;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Entity\Tag;
+
 describe('Tag Archive View', function (): void {
     it('renders tag name as page title', function (): void {
         $view = \createBlogTestView();

@@ -1702,7 +1702,8 @@ it('creates a request from globals and routes it through the router', function (
     $_SERVER['REQUEST_URI'] = '/';
 
     $handledRequest = null;
-    $mockRouter = new class ($handledRequest) {
+    $mockRouter = new class ($handledRequest)
+    {
         public function __construct(
             public mixed &$capturedRequest,
         ) {}
@@ -1730,7 +1731,8 @@ it('sends the response after routing', function (): void {
     $_SERVER['REQUEST_METHOD'] = 'GET';
     $_SERVER['REQUEST_URI'] = '/';
 
-    $mockRouter = new class {
+    $mockRouter = new class ()
+    {
         public function handle(Request $request): Response
         {
             return new Response('response body');
@@ -1752,7 +1754,8 @@ it('returns void', function (): void {
     $_SERVER['REQUEST_METHOD'] = 'GET';
     $_SERVER['REQUEST_URI'] = '/';
 
-    $mockRouter = new class {
+    $mockRouter = new class ()
+    {
         public function handle(Request $request): Response
         {
             return new Response('');

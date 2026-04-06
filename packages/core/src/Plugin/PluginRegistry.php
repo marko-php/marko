@@ -7,6 +7,7 @@ namespace Marko\Core\Plugin;
 use Marko\Core\Attributes\Plugin;
 use Marko\Core\Exceptions\PluginException;
 use ReflectionClass;
+use ReflectionException;
 
 class PluginRegistry
 {
@@ -18,7 +19,7 @@ class PluginRegistry
     /**
      * Register a plugin definition.
      *
-     * @throws PluginException
+     * @throws PluginException|ReflectionException
      */
     public function register(
         PluginDefinition $plugin,
@@ -119,6 +120,53 @@ class PluginRegistry
         string $targetMethod,
     ): array {
         return $this->getSortedMethodsFor($targetClass, $targetMethod, 'after');
+    }
+
+    /**
+     * Check if any plugins are registered for the given class or any of its implemented interfaces.
+     *
+     * @param class-string $class
+     * @throws PluginException
+     */
+    public function hasPluginsForClassOrInterfaces(
+        string $class,
+    ): bool {
+        return $this->getEffectiveTargetClass($class) !== null;
+    }
+
+    /**
+     * Returns the registry key (class or interface) that has plugins for the given class.
+     * Returns null if no plugins are found for the class or any of its interfaces.
+     * Throws PluginException if multiple interfaces of the class have plugins registered.
+     *
+     * @param class-string $class
+     * @throws PluginException
+     */
+    public function getEffectiveTargetClass(
+        string $class,
+    ): ?string {
+        if ($this->hasPluginsFor($class)) {
+            return $class;
+        }
+
+        $interfaces = class_implements($class) ?: [];
+        $matchingInterfaces = [];
+
+        foreach ($interfaces as $interface) {
+            if ($this->hasPluginsFor($interface)) {
+                $matchingInterfaces[] = $interface;
+            }
+        }
+
+        if (count($matchingInterfaces) > 1) {
+            throw PluginException::ambiguousInterfacePlugins($class, $matchingInterfaces);
+        }
+
+        if (count($matchingInterfaces) === 1) {
+            return $matchingInterfaces[0];
+        }
+
+        return null;
     }
 
     /**

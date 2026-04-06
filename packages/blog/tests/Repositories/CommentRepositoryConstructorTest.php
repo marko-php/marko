@@ -6,9 +6,9 @@ namespace Marko\Blog\Tests\Repositories;
 
 use Marko\Blog\Entity\Comment;
 use Marko\Blog\Entity\Post;
+use Marko\Blog\Enum\CommentStatus;
 use Marko\Blog\Events\Comment\CommentCreated;
 use Marko\Blog\Events\Comment\CommentDeleted;
-use Marko\Blog\Enum\CommentStatus;
 use Marko\Blog\Repositories\CommentRepository;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;

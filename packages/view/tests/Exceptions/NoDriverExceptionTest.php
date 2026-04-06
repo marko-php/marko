@@ -16,7 +16,7 @@ it('has DRIVER_PACKAGES constant listing marko/view-latte', function (): void {
 it('provides suggestion with composer require commands for all driver packages', function (): void {
     $exception = NoDriverException::noDriverInstalled();
 
-    expect($exception->getSuggestion())->toContain("composer require marko/view-latte");
+    expect($exception->getSuggestion())->toContain('composer require marko/view-latte');
 });
 
 it('includes context about resolving ViewInterface', function (): void {

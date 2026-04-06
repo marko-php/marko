@@ -14,8 +14,6 @@ require_once __DIR__ . '/dev/php-cs-fixer/RemoveUnnecessaryCurlyBracesFixer.php'
 $finder = Finder::create()
     ->in([
         __DIR__ . '/packages',
-        __DIR__ . '/demo/app',
-        __DIR__ . '/demo/modules',
     ])
     ->exclude('vendor')
     ->exclude('.phpunit.cache')

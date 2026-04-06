@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Marko\PubSub\Redis;
 
 use Amp\Redis\Connection\RedisConnector;
-use Amp\Redis\RedisClient;
 
 use function Amp\Redis\createRedisClient;
+
 use function Amp\Redis\createRedisConnector;
+
+use Amp\Redis\RedisClient;
 
 class RedisPubSubConnection
 {

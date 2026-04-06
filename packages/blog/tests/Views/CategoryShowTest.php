@@ -7,6 +7,7 @@ use Marko\Blog\Entity\Author;
 use Marko\Blog\Entity\Category;
 use Marko\Blog\Entity\Post;
 use Marko\Blog\Enum\PostStatus;
+
 describe('Category Show View', function (): void {
     it('renders category name as page title', function (): void {
         $view = createBlogTestView();

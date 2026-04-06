@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Blog\Dto\PaginatedResult;
+
 describe('Pagination Component', function (): void {
     it('renders previous link when not on first page', function (): void {
         $view = createBlogTestView();
