@@ -1,5 +1,6 @@
 name: Feature Request
 description: Suggest a new feature or improvement for the Marko framework
+type: feature
 labels: [enhancement]
 body:
   - type: textarea
