@@ -36,7 +36,7 @@ Marko is a modular PHP 8.5+ framework where everything is a module: your app cod
 - **Preferences** — Remap any interface to your own implementation, framework-wide. One line of config replaces an entire class.
 - **Plugins** — Intercept any public method with `before` and `after` hooks. Modify inputs, transform outputs, or add behavior — all without inheritance.
 - **PHP-native configuration** — No XML. No YAML. Every route, binding, and plugin is defined in PHP, including full IDE autocompletion and `::class` constants.
-- **Attribute-driven** — Routes, plugins, observers, commands, and more are declared with PHP attributes. Discovery is automatic.
+- **Attribute-driven** — Routes, plugins, observers, layouts, commands, and more are declared with PHP attributes. Discovery is automatic.
 - **Loud errors** — No silent failures. When something goes wrong, Marko tells you exactly what happened, where, and how to fix it.
 
 ## Quick Start
@@ -223,12 +223,13 @@ Marko ships as composable packages — require only what you need. Every package
 | [log](packages/log/README.md) | PSR-3 logging contracts |
 | [log-file](packages/log-file/README.md) | File-based log driver |
 
-### Views & Templates
+### Views, Templates & Layout
 
 | Package | Description |
 |---------|-------------|
 | [view](packages/view/README.md) | View contracts and template resolution |
 | [view-latte](packages/view-latte/README.md) | Latte template engine integration |
+| [layout](packages/layout/README.md) | Attribute-driven layout system with slot-based component composition |
 
 ### Error Handling
 
@@ -290,11 +291,10 @@ Marko ships as composable packages — require only what you need. Every package
 | [cors](packages/cors/README.md) | Cross-Origin Resource Sharing |
 | [rate-limiting](packages/rate-limiting/README.md) | Request rate limiting |
 
-### Content & Admin
+### Admin
 
 | Package | Description |
 |---------|-------------|
-| [blog](packages/blog/README.md) | Blog module with posts, categories, and tags |
 | [admin](packages/admin/README.md) | Admin panel foundation |
 | [admin-auth](packages/admin-auth/README.md) | Admin authentication |
 | [admin-api](packages/admin-api/README.md) | Admin REST API |
