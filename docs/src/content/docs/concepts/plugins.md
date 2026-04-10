@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace App\MyApp\Plugin;
 
-use Marko\Blog\Repositories\PostRepository;
+use App\Blog\Repository\PostRepository;
 use Marko\Core\Attributes\After;
 use Marko\Core\Attributes\Before;
 use Marko\Core\Attributes\Plugin;

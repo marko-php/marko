@@ -11,9 +11,9 @@ $packages = array_values(array_filter(
 ));
 
 it(
-    'validates all 72 package composer.json files are valid JSON with required keys (name, require) via structural check',
+    'validates all 71 package composer.json files are valid JSON with required keys (name, require) via structural check',
     function () use ($packagesRoot, $packages): void {
-        expect($packages)->toHaveCount(72);
+        expect($packages)->toHaveCount(71);
     
         foreach ($packages as $package) {
             $file = $packagesRoot . '/' . $package . '/composer.json';
@@ -223,7 +223,7 @@ it('verifies all marko/* dependencies use self.version constraint', function () 
 });
 
 it('verifies every package directory has a .gitattributes file', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(72);
+    expect($packages)->toHaveCount(71);
 
     foreach ($packages as $package) {
         $path = $packagesRoot . '/' . $package . '/.gitattributes';
@@ -232,7 +232,7 @@ it('verifies every package directory has a .gitattributes file', function () use
 });
 
 it('verifies every package directory has a LICENSE file', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(72);
+    expect($packages)->toHaveCount(71);
 
     foreach ($packages as $package) {
         $path = $packagesRoot . '/' . $package . '/LICENSE';

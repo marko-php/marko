@@ -9,7 +9,7 @@ it('TemplateNotFoundException has searched paths context', function () {
     $searchedPaths = [
         '/app/blog/views/posts/show.latte',
         '/modules/blog/views/posts/show.latte',
-        '/vendor/marko/blog/views/posts/show.latte',
+        '/vendor/acme/blog/views/posts/show.latte',
     ];
 
     $exception = TemplateNotFoundException::forTemplate('posts/show', $searchedPaths);
@@ -18,5 +18,5 @@ it('TemplateNotFoundException has searched paths context', function () {
         ->and($exception->getMessage())->toContain('posts/show')
         ->and($exception->getContext())->toContain('/app/blog/views/posts/show.latte')
         ->and($exception->getContext())->toContain('/modules/blog/views/posts/show.latte')
-        ->and($exception->getContext())->toContain('/vendor/marko/blog/views/posts/show.latte');
+        ->and($exception->getContext())->toContain('/vendor/acme/blog/views/posts/show.latte');
 });
