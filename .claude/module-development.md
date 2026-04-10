@@ -397,8 +397,8 @@ declare(strict_types=1);
 
 namespace App\Blog\Seed;
 
-use Marko\Blog\Entity\Post;
-use Marko\Blog\Repositories\PostRepository;
+use App\Blog\Entity\Post;
+use App\Blog\Repositories\PostRepository;
 use Marko\Database\Seed\Seeder;
 use Marko\Database\Seed\SeederInterface;
 

@@ -151,7 +151,7 @@ it('allows higher-priority module to override lower-priority preference', functi
     $registry->register(
         original: OriginalService::class,
         replacement: PreferredService::class,
-        moduleName: 'marko/blog',
+        moduleName: 'acme/blog',
         moduleSource: 'vendor',
     );
 
@@ -179,7 +179,7 @@ it('ignores lower-priority preference when higher-priority already registered', 
     $registry->register(
         original: OriginalService::class,
         replacement: PreferredService::class,
-        moduleName: 'marko/blog',
+        moduleName: 'acme/blog',
         moduleSource: 'vendor',
     );
 

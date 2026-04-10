@@ -42,10 +42,6 @@
         },
         {
             "type": "path",
-            "url": "packages/blog"
-        },
-        {
-            "type": "path",
             "url": "packages/cache"
         },
         {
@@ -308,7 +304,6 @@
         "marko/authentication": "self.version",
         "marko/authentication-token": "self.version",
         "marko/authorization": "self.version",
-        "marko/blog": "self.version",
         "marko/cache": "self.version",
         "marko/cache-array": "self.version",
         "marko/cache-file": "self.version",
@@ -411,7 +406,6 @@
             "Marko\\AdminApi\\Tests\\": "packages/admin-api/tests/",
             "Marko\\AdminPanel\\Tests\\": "packages/admin-panel/tests/",
             "Marko\\Authorization\\Tests\\": "packages/authorization/tests/",
-            "Marko\\Blog\\Tests\\": "packages/blog/tests/",
             "Marko\\Cache\\Tests\\": "packages/cache/tests/",
             "Marko\\Cache\\File\\Tests\\": "packages/cache-file/tests/",
             "Marko\\Cache\\Memory\\Tests\\": "packages/cache-array/tests/",

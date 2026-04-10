@@ -14,10 +14,10 @@ Events are PHP classes that extend the `Event` base class. Dispatch them through
 
 declare(strict_types=1);
 
-namespace Marko\Blog\Services;
+namespace App\Blog\Services;
 
 use Marko\Core\Event\EventDispatcherInterface;
-use Marko\Blog\Events\Post\PostCreated;
+use App\Blog\Events\Post\PostCreated;
 
 class PostService
 {
@@ -46,9 +46,9 @@ Events extend the `Marko\Core\Event\Event` base class, which provides propagatio
 
 declare(strict_types=1);
 
-namespace Marko\Blog\Events\Post;
+namespace App\Blog\Events\Post;
 
-use Marko\Blog\Entity\PostInterface;
+use App\Blog\Entity\PostInterface;
 use Marko\Core\Event\Event;
 
 class PostCreated extends Event
@@ -75,7 +75,7 @@ declare(strict_types=1);
 
 namespace App\Analytics\Observer;
 
-use Marko\Blog\Events\Post\PostCreated;
+use App\Blog\Events\Post\PostCreated;
 use Marko\Core\Attributes\Observer;
 
 #[Observer(event: PostCreated::class)]

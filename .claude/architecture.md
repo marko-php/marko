@@ -227,7 +227,6 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/authentication` | Feature | Authentication services |
 | `marko/hashing` | Feature | Password hashing |
 | `marko/validation` | Feature | Input validation |
-| `marko/blog` | Module | Blog functionality |
 | `marko/framework` | Metapackage | Bundles common packages |
 
 ---

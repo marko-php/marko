@@ -15,7 +15,6 @@ $allPackages = [
     'marko/authentication',
     'marko/authentication-token',
     'marko/authorization',
-    'marko/blog',
     'marko/cache',
     'marko/cache-array',
     'marko/cache-file',
