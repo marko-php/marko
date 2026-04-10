@@ -1,6 +1,12 @@
 <?php
 
 declare(strict_types=1);
+use Marko\Layout\ComponentCollectorInterface;
+use Marko\Layout\DiscoveringComponentCollector;
+use Marko\Layout\HandleResolver;
+use Marko\Layout\LayoutProcessor;
+use Marko\Layout\LayoutProcessorInterface;
+use Marko\Layout\LayoutResolver;
 
 it('has a valid composer.json with correct name, dependencies, and autoload', function (): void {
     $composerPath = dirname(__DIR__) . '/composer.json';
@@ -22,6 +28,32 @@ it('has a module.php that returns a valid module configuration array', function 
     $module = require $modulePath;
 
     expect($module)->toBeArray();
+});
+
+it('binds HandleResolver as a singleton in module.php', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['singletons'])->toHaveKey(HandleResolver::class);
+});
+
+it('binds LayoutResolver as a singleton in module.php', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['singletons'])->toHaveKey(LayoutResolver::class);
+});
+
+it('binds LayoutProcessorInterface to LayoutProcessor in module.php', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['bindings'])->toHaveKey(LayoutProcessorInterface::class)
+        ->and($module['bindings'][LayoutProcessorInterface::class])->toBe(LayoutProcessor::class);
+});
+
+it('binds ComponentCollectorInterface to DiscoveringComponentCollector in module.php', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['bindings'])->toHaveKey(ComponentCollectorInterface::class)
+        ->and($module['bindings'][ComponentCollectorInterface::class])->toBe(DiscoveringComponentCollector::class);
 });
 
 it('has a config/layout.php that returns a configuration array', function (): void {
