@@ -36,8 +36,9 @@ class SlotNode extends StatementNode
     public function print(PrintContext $context): string
     {
         return $context->format(
-            'echo ($slots[%dump] ?? \'\') %line;',
+            'echo (isset($slots) ? ($slots[%dump] ?? \'\') : %dump) %line;',
             $this->name,
+            '{slot ' . $this->name . '}{/slot}',
             $this->position,
         );
     }
