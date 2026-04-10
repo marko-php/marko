@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Routing;
 
-readonly class RouteMatcher
+readonly class RouteMatcher implements RouteMatcherInterface
 {
     public function __construct(
         private RouteCollection $routes,

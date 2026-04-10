@@ -338,6 +338,7 @@ class Application
 
     private const array GLOBAL_MIDDLEWARE = [
         'Marko\\Session\\Middleware\\SessionMiddleware',
+        'Marko\\Layout\\Middleware\\LayoutMiddleware',
     ];
 
     /**
