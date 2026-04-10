@@ -2007,3 +2007,17 @@ PHP;
 
     appTestCleanupDirectory($baseDir);
 });
+
+it('includes SessionMiddleware in global middleware', function (): void {
+    $reflection = new ReflectionClass(Application::class);
+    $constant = $reflection->getReflectionConstant('GLOBAL_MIDDLEWARE');
+
+    expect($constant->getValue())->toContain('Marko\\Session\\Middleware\\SessionMiddleware');
+});
+
+it('includes LayoutMiddleware in global middleware', function (): void {
+    $reflection = new ReflectionClass(Application::class);
+    $constant = $reflection->getReflectionConstant('GLOBAL_MIDDLEWARE');
+
+    expect($constant->getValue())->toContain('Marko\\Layout\\Middleware\\LayoutMiddleware');
+});

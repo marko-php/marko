@@ -142,6 +142,10 @@
         },
         {
             "type": "path",
+            "url": "packages/layout"
+        },
+        {
+            "type": "path",
             "url": "packages/http"
         },
         {
@@ -330,6 +334,7 @@
         "marko/hashing": "self.version",
         "marko/health": "self.version",
         "marko/http": "self.version",
+        "marko/layout": "self.version",
         "marko/http-guzzle": "self.version",
         "marko/log": "self.version",
         "marko/log-file": "self.version",
@@ -433,6 +438,7 @@
             "Marko\\Health\\Tests\\": "packages/health/tests/",
             "Marko\\Http\\Tests\\": "packages/http/tests/",
             "Marko\\Http\\Guzzle\\Tests\\": "packages/http-guzzle/tests/",
+            "Marko\\Layout\\Tests\\": "packages/layout/tests/",
             "Marko\\Log\\Tests\\": "packages/log/tests/",
             "Marko\\Log\\File\\Tests\\": "packages/log-file/tests/",
             "Marko\\Mail\\Tests\\": "packages/mail/tests/",
