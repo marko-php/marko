@@ -1,4 +1,5 @@
 .DS_Store
+.codex
 .claude/projects/
 .claude/ralph-loop.local.md
 .idea/copilot.data.migration.*
