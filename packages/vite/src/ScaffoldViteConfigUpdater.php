@@ -33,7 +33,9 @@ abstract class ScaffoldViteConfigUpdater
 
         $contents = (string) file_get_contents($absolutePath);
 
-        if ($this->containsAnyNeedle($contents, $pluginNeedles) || $this->normalized($contents) === $this->normalized($configWhenPresent)) {
+        if ($this->containsAnyNeedle($contents, $pluginNeedles) || $this->normalized($contents) === $this->normalized(
+            $configWhenPresent
+        )) {
             return new FilePublishResult($relativePath, 'already_present');
         }
 

@@ -329,5 +329,7 @@ test('reachable configured dev server enables development mode without marker fi
     fclose($server);
 
     expect($html)->toContain("<script type=\"module\" src=\"http://127.0.0.1:$port/@vite/client\"></script>")
-        ->and($html)->toContain("<script type=\"module\" src=\"http://127.0.0.1:$port/resources/js/app.js\"></script>");
+        ->and($html)->toContain(
+            "<script type=\"module\" src=\"http://127.0.0.1:$port/resources/js/app.js\"></script>"
+        );
 })->group('vite');

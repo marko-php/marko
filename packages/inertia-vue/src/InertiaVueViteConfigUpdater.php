@@ -71,7 +71,10 @@ class InertiaVueViteConfigUpdater extends ScaffoldViteConfigUpdater
     /**
      * @param list<string>|null $entrypoints
      */
-    private function tailwindVueStub(?array $entrypoints = null, bool $framework = true): string
+    private function tailwindVueStub(
+        ?array $entrypoints = null,
+        bool $framework = true,
+    ): string
     {
         return $this->renderer->renderViteConfig(
             imports: $framework

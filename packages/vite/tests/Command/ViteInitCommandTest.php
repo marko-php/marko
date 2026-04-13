@@ -26,7 +26,10 @@ class FakeViteInitPrompter extends ViteInitPrompter
         private readonly ViteInitSelections $selections = new ViteInitSelections(null, false),
     ) {}
 
-    public function resolve(Input $input, Output $output): ViteInitSelections
+    public function resolve(
+        Input $input,
+        Output $output,
+    ): ViteInitSelections
     {
         return $this->selections;
     }
@@ -51,7 +54,11 @@ class FakeComposerPackageInstaller extends ComposerPackageInstaller
         return array_values(array_intersect($this->requested, $this->missing));
     }
 
-    public function ensureInstalled(array $packages, bool $dryRun, Output $output): int
+    public function ensureInstalled(
+        array $packages,
+        bool $dryRun,
+        Output $output,
+    ): int
     {
         $missing = $this->missingPackages($packages);
 
@@ -342,7 +349,9 @@ test('vite init dry run reports package installs before addon commands when pack
     expect($status)->toBe(0)
         ->and($output)->toContain('Would install Composer package `marko/inertia-react`')
         ->and($output)->toContain('Would install Composer package `marko/tailwindcss`')
-        ->and($output)->toContain('Would continue `marko vite:init --inertia=react --tailwind --dry-run` after installing `marko/inertia-react`');
+        ->and($output)->toContain(
+            'Would continue `marko vite:init --inertia=react --tailwind --dry-run` after installing `marko/inertia-react`'
+        );
 })->group('vite');
 
 test('vite init force replaces existing bootstrap files and updates package json', function (): void {
@@ -395,57 +404,60 @@ test('vite init rejects invalid inertia presets loudly', function (): void {
     ))->toThrow(InvalidArgumentException::class, 'Unknown Inertia preset `vu`');
 })->group('vite');
 
-test('vite init reports unexpected tailwind preset failures instead of calling the package missing', function (): void {
-    $paths = new ProjectPaths($this->tempDirectory);
-    $viteConfig = new ViteConfig(
-        devServerUrl: 'http://localhost:5173',
-        devProcessFilePath: $this->tempDirectory . '/.marko/dev.json',
-        hotFilePath: $this->tempDirectory . '/public/hot',
-        manifestPath: $this->tempDirectory . '/public/build/manifest.json',
-        buildDirectory: '/build',
-        assetsBaseUrl: '',
-        defaultEntrypoints: [],
-        rootEntrypointPath: 'resources/js/app.ts',
-        rootViteConfigPath: 'vite.config.ts',
-    );
-    $projectPublisher = new ProjectFilePublisher($paths);
-    $renderer = new ScaffoldTemplateRenderer($viteConfig);
-    $container = new Container();
-    $container->instance(ContainerInterface::class, $container);
-    $container->instance(ProjectFilePublisher::class, $projectPublisher);
-    $container->instance(
-        'Marko\\TailwindCss\\Contracts\\TailwindPublisherInterface',
-        new TailwindPublisher(
-            new Marko\TailwindCss\DefaultTailwindEntrypointProvider(
-                new Marko\Config\ConfigRepository([
-                    'tailwindcss' => [
-                        'enabled' => true,
-                        'entrypoints' => [
-                            'css' => 'resources/css/app.css',
+test(
+    'vite init reports unexpected tailwind preset failures instead of calling the package missing',
+    function (): void {
+        $paths = new ProjectPaths($this->tempDirectory);
+        $viteConfig = new ViteConfig(
+            devServerUrl: 'http://localhost:5173',
+            devProcessFilePath: $this->tempDirectory . '/.marko/dev.json',
+            hotFilePath: $this->tempDirectory . '/public/hot',
+            manifestPath: $this->tempDirectory . '/public/build/manifest.json',
+            buildDirectory: '/build',
+            assetsBaseUrl: '',
+            defaultEntrypoints: [],
+            rootEntrypointPath: 'resources/js/app.ts',
+            rootViteConfigPath: 'vite.config.ts',
+        );
+        $projectPublisher = new ProjectFilePublisher($paths);
+        $renderer = new ScaffoldTemplateRenderer($viteConfig);
+        $container = new Container();
+        $container->instance(ContainerInterface::class, $container);
+        $container->instance(ProjectFilePublisher::class, $projectPublisher);
+        $container->instance(
+            'Marko\\TailwindCss\\Contracts\\TailwindPublisherInterface',
+            new TailwindPublisher(
+                new Marko\TailwindCss\DefaultTailwindEntrypointProvider(
+                    new Marko\Config\ConfigRepository([
+                        'tailwindcss' => [
+                            'enabled' => true,
+                            'entrypoints' => [
+                                'css' => 'resources/css/app.css',
+                            ],
                         ],
-                    ],
-                ]),
+                    ]),
+                ),
+                $projectPublisher,
             ),
-            $projectPublisher,
-        ),
-    );
-    $container->instance(TailwindViteConfigUpdater::class, new BrokenTailwindViteConfigUpdater());
-
-    $command = new ViteInitCommand(
-        new PackageJsonUpdater($paths),
-        new VitePublisher($viteConfig, $projectPublisher, $renderer),
-        $container,
-        new FakeViteInitPrompter(new ViteInitSelections(null, true)),
-        new FakeComposerPackageInstaller(),
-        $viteConfig,
-    );
-
-    [$status, $output] = captureViteInitOutput($command, ['marko', 'vite:init', '--tailwind']);
-
-    expect($status)->toBe(1)
-        ->and($output)->toContain('Tailwind preset failed: boom')
-        ->and($output)->not->toContain('is not installed');
-})->group('vite');
+        );
+        $container->instance(TailwindViteConfigUpdater::class, new BrokenTailwindViteConfigUpdater());
+    
+        $command = new ViteInitCommand(
+            new PackageJsonUpdater($paths),
+            new VitePublisher($viteConfig, $projectPublisher, $renderer),
+            $container,
+            new FakeViteInitPrompter(new ViteInitSelections(null, true)),
+            new FakeComposerPackageInstaller(),
+            $viteConfig,
+        );
+    
+        [$status, $output] = captureViteInitOutput($command, ['marko', 'vite:init', '--tailwind']);
+    
+        expect($status)->toBe(1)
+            ->and($output)->toContain('Tailwind preset failed: boom')
+            ->and($output)->not->toContain('is not installed');
+    }
+)->group('vite');
 
 test('vite init returns an error when publishing scaffold files fails', function (): void {
     file_put_contents($this->tempDirectory . '/resources', 'blocking file');

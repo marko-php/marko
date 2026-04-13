@@ -62,12 +62,18 @@ function inertiaSessionStub(bool $started = true): SessionInterface
 
         public function start(): void {}
 
-        public function get(string $key, mixed $default = null): mixed
+        public function get(
+            string $key,
+            mixed $default = null,
+        ): mixed
         {
             return $this->data[$key] ?? $default;
         }
 
-        public function set(string $key, mixed $value): void
+        public function set(
+            string $key,
+            mixed $value,
+        ): void
         {
             $this->data[$key] = $value;
         }
@@ -124,7 +130,12 @@ final class InertiaSupportTestStreamWrapper
 
     public int $position = 0;
 
-    public function stream_open(string $path, string $mode, int $options, ?string &$opened_path): bool
+    public function stream_open(
+        string $path,
+        string $mode,
+        int $options,
+        ?string &$opened_path,
+    ): bool
     {
         $this->position = 0;
 
@@ -220,9 +231,15 @@ test('inertia prop helpers include and resolve values consistently', function ()
         ->and($merge->shouldInclude($mergeExceptedContext))->toBeFalse()
         ->and($merge->shouldInclude($exceptedContext))->toBeTrue()
         ->and($deepMerged->shouldDeepMerge())->toBeTrue()
-        ->and($deepMerged->shouldInclude(inertiaPropertyContext($request, key: 'other', isPartial: true, only: ['stats'])))->toBeTrue()
+        ->and(
+            $deepMerged->shouldInclude(
+                inertiaPropertyContext($request, key: 'other', isPartial: true, only: ['stats'])
+            )
+        )->toBeTrue()
         ->and($prepended->shouldPrepend())->toBeTrue()
-        ->and($prepended->shouldInclude(inertiaPropertyContext($request, key: 'other', isPartial: true, only: ['stats'])))->toBeTrue()
+        ->and(
+            $prepended->shouldInclude(inertiaPropertyContext($request, key: 'other', isPartial: true, only: ['stats']))
+        )->toBeTrue()
         ->and($once->key())->toBeNull()
         ->and($once->shouldRefresh())->toBeFalse()
         ->and($once->shouldInclude($fullContext))->toBeTrue()
@@ -274,7 +291,11 @@ test('scroll prop wraps values and resolves metadata from arrays objects and cal
 
     $wrapped = new ScrollProp(static fn (): array => ['items' => [1, 2]], 'payload');
     $alreadyWrapped = new ScrollProp(['payload' => ['items' => [1, 2]]], 'payload', ['mode' => 'array']);
-    $passthrough = new ScrollProp('plain', '', static fn (RenderContext $ctx): array => ['path' => $ctx->request->path()]);
+    $passthrough = new ScrollProp(
+        'plain',
+        '',
+        static fn (RenderContext $ctx): array => ['path' => $ctx->request->path()]
+    );
     $objectMetadata = new ScrollProp('plain', 'data', $metadataObject);
 
     expect($wrapped->shouldMerge())->toBeTrue()

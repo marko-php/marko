@@ -71,7 +71,10 @@ class InertiaReactViteConfigUpdater extends ScaffoldViteConfigUpdater
     /**
      * @param list<string>|null $entrypoints
      */
-    private function tailwindReactStub(?array $entrypoints = null, bool $framework = true): string
+    private function tailwindReactStub(
+        ?array $entrypoints = null,
+        bool $framework = true,
+    ): string
     {
         return $this->renderer->renderViteConfig(
             imports: $framework

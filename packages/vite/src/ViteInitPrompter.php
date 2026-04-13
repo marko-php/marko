@@ -36,7 +36,9 @@ class ViteInitPrompter
             ));
         }
 
-        if ($flagInertia !== null || $flagTailwind || $input->hasOption('no-interaction') || ! $this->isInteractive()) {
+        if ($flagInertia !== null || $flagTailwind || $input->hasOption(
+            'no-interaction'
+        ) || ! $this->isInteractive()) {
             return new ViteInitSelections($normalizedFlagInertia, $flagTailwind);
         }
 

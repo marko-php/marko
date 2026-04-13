@@ -8,20 +8,23 @@ use Marko\Inertia\Vue\Contracts\InertiaVuePublisherInterface;
 use Marko\Inertia\Vue\InertiaVuePublisher;
 use Marko\Inertia\Vue\InertiaVueViteConfigUpdater;
 
-it('creates valid package scaffolding with composer.json, module.php, src, tests, resources, stubs, and docs metadata', function (): void {
-    $packageRoot = dirname(__DIR__);
-
-    expect(file_exists($packageRoot . '/composer.json'))->toBeTrue()
-        ->and(file_exists($packageRoot . '/README.md'))->toBeTrue()
-        ->and(file_exists($packageRoot . '/module.php'))->toBeTrue()
-        ->and(file_exists($packageRoot . '/.gitattributes'))->toBeTrue()
-        ->and(is_dir($packageRoot . '/src'))->toBeTrue()
-        ->and(is_dir($packageRoot . '/tests'))->toBeTrue()
-        ->and(is_dir($packageRoot . '/resources'))->toBeTrue()
-        ->and(is_dir($packageRoot . '/stubs'))->toBeTrue()
-        ->and(file_exists($packageRoot . '/resources/js/bootstrap.ts'))->toBeTrue()
-        ->and(file_exists($packageRoot . '/stubs/resources/js/app.ts'))->toBeTrue();
-});
+it(
+    'creates valid package scaffolding with composer.json, module.php, src, tests, resources, stubs, and docs metadata',
+    function (): void {
+        $packageRoot = dirname(__DIR__);
+    
+        expect(file_exists($packageRoot . '/composer.json'))->toBeTrue()
+            ->and(file_exists($packageRoot . '/README.md'))->toBeTrue()
+            ->and(file_exists($packageRoot . '/module.php'))->toBeTrue()
+            ->and(file_exists($packageRoot . '/.gitattributes'))->toBeTrue()
+            ->and(is_dir($packageRoot . '/src'))->toBeTrue()
+            ->and(is_dir($packageRoot . '/tests'))->toBeTrue()
+            ->and(is_dir($packageRoot . '/resources'))->toBeTrue()
+            ->and(is_dir($packageRoot . '/stubs'))->toBeTrue()
+            ->and(file_exists($packageRoot . '/resources/js/bootstrap.ts'))->toBeTrue()
+            ->and(file_exists($packageRoot . '/stubs/resources/js/app.ts'))->toBeTrue();
+    }
+);
 
 it('has a valid composer.json for marko/inertia-vue', function (): void {
     $composer = json_decode(file_get_contents(dirname(__DIR__) . '/composer.json'), true, flags: JSON_THROW_ON_ERROR);

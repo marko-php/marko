@@ -143,7 +143,10 @@ test('scaffold vite config updater handles missing replaceable and custom config
     file_put_contents($this->tempDirectory . '/vite.config.ts', "import tailwind from '@tailwindcss/vite';\n");
     $alreadyPresent = $updater->ensure('ignored', 'ignored', ['@tailwindcss/vite']);
 
-    file_put_contents($this->tempDirectory . '/vite.config.ts', "export { default } from './vendor/marko/vite/resources/config/vite.config.ts';\n");
+    file_put_contents(
+        $this->tempDirectory . '/vite.config.ts',
+        "export { default } from './vendor/marko/vite/resources/config/vite.config.ts';\n"
+    );
     $replaced = $updater->ensure('ignored', "export default { plugins: ['tailwind'] };\n");
 
     file_put_contents($this->tempDirectory . '/vite.config.ts', "import foo from 'foo';\n");
@@ -151,12 +154,20 @@ test('scaffold vite config updater handles missing replaceable and custom config
 
     expect($created->status)->toBe('created')
         ->and($updater->tailwind("import tailwind from '@tailwindcss/vite';"))->toBeTrue()
-        ->and($updater->entrypoints("createBaseConfig({\n  entrypoints: ['resources/js/app.ts', 'resources/js/admin.ts', 'resources/js/admin.ts'],\n});"))->toBe([
-            'resources/js/app.ts',
-            'resources/js/admin.ts',
-        ])
+        ->and(
+            $updater->entrypoints(
+                "createBaseConfig({\n  entrypoints: ['resources/js/app.ts', 'resources/js/admin.ts', 'resources/js/admin.ts'],\n});"
+            )
+        )->toBe(
+            [
+                'resources/js/app.ts',
+                'resources/js/admin.ts',
+            ]
+        )
         ->and($alreadyPresent->status)->toBe('already_present')
-        ->and($updater->replaceable("export { default } from './vendor/marko/vite/resources/config/vite.config.ts';\n"))->toBeTrue()
+        ->and(
+            $updater->replaceable("export { default } from './vendor/marko/vite/resources/config/vite.config.ts';\n")
+        )->toBeTrue()
         ->and($replaced->status)->toBe('replaced')
         ->and($skipped->status)->toBe('skipped');
 })->group('vite');

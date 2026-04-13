@@ -86,7 +86,10 @@ it('flushes shared props at the beginning of each request and adds the vary head
 
     $middleware = new class ($inertia, $container) extends HandleInertiaRequests
     {
-        public function __construct(Inertia $inertia, ContainerInterface $container)
+        public function __construct(
+            Inertia $inertia,
+            ContainerInterface $container,
+        )
         {
             parent::__construct($inertia, $container);
         }
@@ -121,7 +124,10 @@ it('shares once props', function (): void {
 
     $middleware = new class ($inertia, $container) extends HandleInertiaRequests
     {
-        public function __construct(Inertia $inertia, ContainerInterface $container)
+        public function __construct(
+            Inertia $inertia,
+            ContainerInterface $container,
+        )
         {
             parent::__construct($inertia, $container);
         }

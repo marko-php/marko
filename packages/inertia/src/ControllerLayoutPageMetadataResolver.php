@@ -117,7 +117,9 @@ readonly class ControllerLayoutPageMetadataResolver
 
         usort(
             $matches,
-            static fn (object $left, object $right): int => strlen((string) $right->path) <=> strlen((string) $left->path),
+            static fn (object $left, object $right): int => strlen((string) $right->path) <=> strlen(
+                (string) $left->path
+            ),
         );
 
         if ($matches !== []) {

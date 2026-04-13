@@ -71,7 +71,10 @@ class InertiaSvelteViteConfigUpdater extends ScaffoldViteConfigUpdater
     /**
      * @param list<string>|null $entrypoints
      */
-    private function tailwindSvelteStub(?array $entrypoints = null, bool $framework = true): string
+    private function tailwindSvelteStub(
+        ?array $entrypoints = null,
+        bool $framework = true,
+    ): string
     {
         return $this->renderer->renderViteConfig(
             imports: $framework

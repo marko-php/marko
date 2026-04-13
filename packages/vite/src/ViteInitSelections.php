@@ -28,7 +28,9 @@ readonly class ViteInitSelections
                 'vue' => 'marko/inertia-vue',
                 'react' => 'marko/inertia-react',
                 'svelte' => 'marko/inertia-svelte',
-                default => throw new \InvalidArgumentException(sprintf('Unknown Inertia preset `%s`', $this->inertiaPreset)),
+                default => throw new \InvalidArgumentException(
+                    sprintf('Unknown Inertia preset `%s`', $this->inertiaPreset)
+                ),
             };
         }
 

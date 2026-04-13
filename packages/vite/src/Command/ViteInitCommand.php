@@ -94,7 +94,11 @@ readonly class ViteInitCommand implements CommandInterface
     ): void
     {
         if ($result->createdFile) {
-            $this->writeStatusLine($output, $dryRun ? 'plan' : 'ok', $dryRun ? 'Would create package.json' : 'Created package.json');
+            $this->writeStatusLine(
+                $output,
+                $dryRun ? 'plan' : 'ok',
+                $dryRun ? 'Would create package.json' : 'Created package.json'
+            );
         }
 
         foreach ($result->added as $change) {
@@ -125,8 +129,16 @@ readonly class ViteInitCommand implements CommandInterface
             'would_create' => $this->writeStatusLine($output, 'plan', sprintf('Would publish %s', $result->path)),
             'would_replace' => $this->writeStatusLine($output, 'plan', sprintf('Would replace %s', $result->path)),
             'already_present' => $this->writeStatusLine($output, 'info', sprintf('%s already present', $result->path)),
-            'skipped' => $this->writeStatusLine($output, 'warn', sprintf('Skipped %s because it already exists', $result->path)),
-            'failed' => $this->writeStatusLine($output, 'error', $result->message ?? sprintf('Failed to publish %s', $result->path)),
+            'skipped' => $this->writeStatusLine(
+                $output,
+                'warn',
+                sprintf('Skipped %s because it already exists', $result->path)
+            ),
+            'failed' => $this->writeStatusLine(
+                $output,
+                'error',
+                $result->message ?? sprintf('Failed to publish %s', $result->path)
+            ),
             default => null,
         };
     }
@@ -156,7 +168,11 @@ readonly class ViteInitCommand implements CommandInterface
             }
 
             if ($selections->tailwind && $selections->inertiaPreset === null) {
-                $this->writeStatusLine($output, 'plan', 'Would continue `marko vite:init --tailwind' . ($force ? ' --force' : '') . ' --dry-run` after installing `marko/tailwindcss`');
+                $this->writeStatusLine(
+                    $output,
+                    'plan',
+                    'Would continue `marko vite:init --tailwind' . ($force ? ' --force' : '') . ' --dry-run` after installing `marko/tailwindcss`'
+                );
             }
 
             return 0;
@@ -197,7 +213,11 @@ readonly class ViteInitCommand implements CommandInterface
         $binary = $this->findMarkoBinary();
 
         if ($binary === null) {
-            $this->writeStatusLine($output, 'error', 'Could not find `vendor/bin/marko` to continue scaffolding after Composer install.');
+            $this->writeStatusLine(
+                $output,
+                'error',
+                'Could not find `vendor/bin/marko` to continue scaffolding after Composer install.'
+            );
 
             return 1;
         }
@@ -248,7 +268,11 @@ readonly class ViteInitCommand implements CommandInterface
             $updater = $this->container->get($updaterClass);
             $publisher = $this->container->get($publisherInterface);
         } catch (BindingException) {
-            $this->writeStatusLine($output, 'error', 'Skipped Tailwind preset because marko/tailwindcss is not installed');
+            $this->writeStatusLine(
+                $output,
+                'error',
+                'Skipped Tailwind preset because marko/tailwindcss is not installed'
+            );
 
             return 1;
         } catch (\Throwable $exception) {
@@ -352,7 +376,11 @@ readonly class ViteInitCommand implements CommandInterface
         ];
 
         if (! isset($presets[$normalizedPreset])) {
-            $this->writeStatusLine($output, 'error', sprintf('Unknown Inertia preset `%s`; expected vue, react, or svelte', $preset));
+            $this->writeStatusLine(
+                $output,
+                'error',
+                sprintf('Unknown Inertia preset `%s`; expected vue, react, or svelte', $preset)
+            );
 
             return 1;
         }
@@ -441,9 +469,21 @@ readonly class ViteInitCommand implements CommandInterface
         match ($result->status) {
             'created' => $this->writeStatusLine($output, 'ok', sprintf('Published %s (%s)', $result->path, $label)),
             'replaced' => $this->writeStatusLine($output, 'ok', sprintf('Updated %s (%s)', $result->path, $label)),
-            'would_create' => $this->writeStatusLine($output, 'plan', sprintf('Would publish %s (%s)', $result->path, $label)),
-            'would_replace' => $this->writeStatusLine($output, 'plan', sprintf('Would update %s (%s)', $result->path, $label)),
-            'already_present' => $this->writeStatusLine($output, 'info', sprintf('%s already includes %s', $result->path, $label)),
+            'would_create' => $this->writeStatusLine(
+                $output,
+                'plan',
+                sprintf('Would publish %s (%s)', $result->path, $label)
+            ),
+            'would_replace' => $this->writeStatusLine(
+                $output,
+                'plan',
+                sprintf('Would update %s (%s)', $result->path, $label)
+            ),
+            'already_present' => $this->writeStatusLine(
+                $output,
+                'info',
+                sprintf('%s already includes %s', $result->path, $label)
+            ),
             'skipped' => $this->writeStatusLine($output,
                 'warn',
                 sprintf(
@@ -451,7 +491,11 @@ readonly class ViteInitCommand implements CommandInterface
                     $result->path,
                 )
             ),
-            'failed' => $this->writeStatusLine($output, 'error', $result->message ?? sprintf('Failed to publish %s (%s)', $result->path, $label)),
+            'failed' => $this->writeStatusLine(
+                $output,
+                'error',
+                $result->message ?? sprintf('Failed to publish %s (%s)', $result->path, $label)
+            ),
             default => null,
         };
     }
@@ -581,7 +625,10 @@ readonly class ViteInitCommand implements CommandInterface
         return null;
     }
 
-    protected function rerunAfterInstall(string $command, Output $output): int
+    protected function rerunAfterInstall(
+        string $command,
+        Output $output,
+    ): int
     {
         $descriptors = [
             0 => ['file', '/dev/null', 'r'],

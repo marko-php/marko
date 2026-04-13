@@ -85,30 +85,33 @@ test('inertia react vite config updater upgrades the default vite stub', functio
         ->toContain('plugins: [react()]');
 })->group('inertia-react');
 
-test('inertia react vite config updater preserves tailwind support when upgrading a tailwind config', function (): void {
-    file_put_contents(
-        $this->tempDirectory . '/vite.config.ts',
-        "import { defineConfig } from 'vite';\n"
-        . "import tailwindcss from '@tailwindcss/vite';\n"
-        . "import { createBaseConfig } from './vendor/marko/vite/resources/config/createViteConfig';\n\n"
-        . "export default defineConfig(\n"
-        . "  createBaseConfig({\n"
-        . "    plugins: [tailwindcss()],\n"
-        . "    entrypoints: ['resources/js/app.ts', 'resources/css/app.css'],\n"
-        . "  }),\n"
-        . ");\n",
-    );
-
-    $updater = makeInertiaReactViteConfigUpdater($this->tempDirectory);
-    $result = $updater->ensureReactConfig();
-
-    expect($result->status)->toBe('replaced');
-    expect((string) file_get_contents($this->tempDirectory . '/vite.config.ts'))
-        ->toContain("import react from '@vitejs/plugin-react';")
-        ->toContain("import tailwindcss from '@tailwindcss/vite';")
-        ->toContain('plugins: [react(), tailwindcss()]')
-        ->toContain("entrypoints: ['resources/js/app.ts', 'resources/css/app.css']");
-})->group('inertia-react');
+test(
+    'inertia react vite config updater preserves tailwind support when upgrading a tailwind config',
+    function (): void {
+        file_put_contents(
+            $this->tempDirectory . '/vite.config.ts',
+            "import { defineConfig } from 'vite';\n"
+            . "import tailwindcss from '@tailwindcss/vite';\n"
+            . "import { createBaseConfig } from './vendor/marko/vite/resources/config/createViteConfig';\n\n"
+            . "export default defineConfig(\n"
+            . "  createBaseConfig({\n"
+            . "    plugins: [tailwindcss()],\n"
+            . "    entrypoints: ['resources/js/app.ts', 'resources/css/app.css'],\n"
+            . "  }),\n"
+            . ");\n",
+        );
+    
+        $updater = makeInertiaReactViteConfigUpdater($this->tempDirectory);
+        $result = $updater->ensureReactConfig();
+    
+        expect($result->status)->toBe('replaced');
+        expect((string) file_get_contents($this->tempDirectory . '/vite.config.ts'))
+            ->toContain("import react from '@vitejs/plugin-react';")
+            ->toContain("import tailwindcss from '@tailwindcss/vite';")
+            ->toContain('plugins: [react(), tailwindcss()]')
+            ->toContain("entrypoints: ['resources/js/app.ts', 'resources/css/app.css']");
+    }
+)->group('inertia-react');
 
 test('inertia react vite config updater preserves custom tailwind entrypoints', function (): void {
     file_put_contents(

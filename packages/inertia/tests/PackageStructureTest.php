@@ -7,20 +7,23 @@ use Marko\Inertia\Interfaces\InertiaInterface;
 use Marko\Inertia\Props\PropsResolver;
 use Marko\Inertia\Response\ResponseFactory;
 
-it('creates valid package scaffolding with composer.json, module.php, src, tests, config, resources, and docs metadata', function (): void {
-    $packageRoot = dirname(__DIR__);
-
-    expect(file_exists($packageRoot . '/composer.json'))->toBeTrue()
-        ->and(file_exists($packageRoot . '/README.md'))->toBeTrue()
-        ->and(file_exists($packageRoot . '/module.php'))->toBeTrue()
-        ->and(file_exists($packageRoot . '/.gitattributes'))->toBeTrue()
-        ->and(is_dir($packageRoot . '/src'))->toBeTrue()
-        ->and(is_dir($packageRoot . '/tests'))->toBeTrue()
-        ->and(is_dir($packageRoot . '/config'))->toBeTrue()
-        ->and(file_exists($packageRoot . '/config/inertia.php'))->toBeTrue()
-        ->and(is_dir($packageRoot . '/resources'))->toBeTrue()
-        ->and(file_exists($packageRoot . '/resources/js/client.ts'))->toBeTrue();
-});
+it(
+    'creates valid package scaffolding with composer.json, module.php, src, tests, config, resources, and docs metadata',
+    function (): void {
+        $packageRoot = dirname(__DIR__);
+    
+        expect(file_exists($packageRoot . '/composer.json'))->toBeTrue()
+            ->and(file_exists($packageRoot . '/README.md'))->toBeTrue()
+            ->and(file_exists($packageRoot . '/module.php'))->toBeTrue()
+            ->and(file_exists($packageRoot . '/.gitattributes'))->toBeTrue()
+            ->and(is_dir($packageRoot . '/src'))->toBeTrue()
+            ->and(is_dir($packageRoot . '/tests'))->toBeTrue()
+            ->and(is_dir($packageRoot . '/config'))->toBeTrue()
+            ->and(file_exists($packageRoot . '/config/inertia.php'))->toBeTrue()
+            ->and(is_dir($packageRoot . '/resources'))->toBeTrue()
+            ->and(file_exists($packageRoot . '/resources/js/client.ts'))->toBeTrue();
+    }
+);
 
 it('has a valid composer.json for marko/inertia', function (): void {
     $composer = json_decode(file_get_contents(dirname(__DIR__) . '/composer.json'), true, flags: JSON_THROW_ON_ERROR);

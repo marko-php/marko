@@ -85,30 +85,33 @@ test('inertia svelte vite config updater upgrades the default vite stub', functi
         ->toContain('plugins: [svelte()]');
 })->group('inertia-svelte');
 
-test('inertia svelte vite config updater preserves tailwind support when upgrading a tailwind config', function (): void {
-    file_put_contents(
-        $this->tempDirectory . '/vite.config.ts',
-        "import { defineConfig } from 'vite';\n"
-        . "import tailwindcss from '@tailwindcss/vite';\n"
-        . "import { createBaseConfig } from './vendor/marko/vite/resources/config/createViteConfig';\n\n"
-        . "export default defineConfig(\n"
-        . "  createBaseConfig({\n"
-        . "    plugins: [tailwindcss()],\n"
-        . "    entrypoints: ['resources/js/app.ts', 'resources/css/app.css'],\n"
-        . "  }),\n"
-        . ");\n",
-    );
-
-    $updater = makeInertiaSvelteViteConfigUpdater($this->tempDirectory);
-    $result = $updater->ensureSvelteConfig();
-
-    expect($result->status)->toBe('replaced');
-    expect((string) file_get_contents($this->tempDirectory . '/vite.config.ts'))
-        ->toContain("import { svelte } from '@sveltejs/vite-plugin-svelte';")
-        ->toContain("import tailwindcss from '@tailwindcss/vite';")
-        ->toContain('plugins: [svelte(), tailwindcss()]')
-        ->toContain("entrypoints: ['resources/js/app.ts', 'resources/css/app.css']");
-})->group('inertia-svelte');
+test(
+    'inertia svelte vite config updater preserves tailwind support when upgrading a tailwind config',
+    function (): void {
+        file_put_contents(
+            $this->tempDirectory . '/vite.config.ts',
+            "import { defineConfig } from 'vite';\n"
+            . "import tailwindcss from '@tailwindcss/vite';\n"
+            . "import { createBaseConfig } from './vendor/marko/vite/resources/config/createViteConfig';\n\n"
+            . "export default defineConfig(\n"
+            . "  createBaseConfig({\n"
+            . "    plugins: [tailwindcss()],\n"
+            . "    entrypoints: ['resources/js/app.ts', 'resources/css/app.css'],\n"
+            . "  }),\n"
+            . ");\n",
+        );
+    
+        $updater = makeInertiaSvelteViteConfigUpdater($this->tempDirectory);
+        $result = $updater->ensureSvelteConfig();
+    
+        expect($result->status)->toBe('replaced');
+        expect((string) file_get_contents($this->tempDirectory . '/vite.config.ts'))
+            ->toContain("import { svelte } from '@sveltejs/vite-plugin-svelte';")
+            ->toContain("import tailwindcss from '@tailwindcss/vite';")
+            ->toContain('plugins: [svelte(), tailwindcss()]')
+            ->toContain("entrypoints: ['resources/js/app.ts', 'resources/css/app.css']");
+    }
+)->group('inertia-svelte');
 
 test('inertia svelte vite config updater preserves custom tailwind entrypoints', function (): void {
     file_put_contents(

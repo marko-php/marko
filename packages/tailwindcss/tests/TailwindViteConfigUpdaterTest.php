@@ -166,47 +166,55 @@ test('tailwind vite config updater upgrades legacy tailwind proxy configs', func
         ->toContain("entrypoints: ['resources/js/app.ts', 'resources/css/app.css']");
 })->group('tailwindcss');
 
-test('tailwind vite config updater upgrades inertia react configs without losing the framework plugin', function (): void {
-    file_put_contents(
-        $this->tempDirectory . '/vite.config.ts',
-        "import { defineConfig } from 'vite';\n"
-        . "import react from '@vitejs/plugin-react';\n"
-        . "import { createBaseConfig } from './vendor/marko/vite/resources/config/createViteConfig';\n\n"
-        . "export default defineConfig(\n"
-        . "  createBaseConfig({\n"
-        . "    plugins: [react()],\n"
-        . "    entrypoints: ['resources/js/app.ts'],\n"
-        . "  }),\n"
-        . ");\n",
-    );
+test(
+    'tailwind vite config updater upgrades inertia react configs without losing the framework plugin',
+    function (): void {
+        file_put_contents(
+            $this->tempDirectory . '/vite.config.ts',
+            "import { defineConfig } from 'vite';\n"
+            . "import react from '@vitejs/plugin-react';\n"
+            . "import { createBaseConfig } from './vendor/marko/vite/resources/config/createViteConfig';\n\n"
+            . "export default defineConfig(\n"
+            . "  createBaseConfig({\n"
+            . "    plugins: [react()],\n"
+            . "    entrypoints: ['resources/js/app.ts'],\n"
+            . "  }),\n"
+            . ");\n",
+        );
+    
+        $result = makeTailwindViteConfigUpdater($this->tempDirectory)->ensureTailwindConfig();
+        $tailwindConfig = (string) file_get_contents($this->tempDirectory . '/vite.config.ts');
+    
+        expect($result->status)->toBe('replaced')
+            ->and($tailwindConfig)->toContain("import react from '@vitejs/plugin-react';")
+            ->and($tailwindConfig)->toContain("import tailwindcss from '@tailwindcss/vite';")
+            ->and($tailwindConfig)->toContain('plugins: [react(), tailwindcss()]')
+            ->and($tailwindConfig)->toContain("entrypoints: ['resources/js/app.ts', 'resources/css/app.css']");
+    }
+)->group('tailwindcss');
 
-    $result = makeTailwindViteConfigUpdater($this->tempDirectory)->ensureTailwindConfig();
-    $tailwindConfig = (string) file_get_contents($this->tempDirectory . '/vite.config.ts');
-
-    expect($result->status)->toBe('replaced')
-        ->and($tailwindConfig)->toContain("import react from '@vitejs/plugin-react';")
-        ->and($tailwindConfig)->toContain("import tailwindcss from '@tailwindcss/vite';")
-        ->and($tailwindConfig)->toContain('plugins: [react(), tailwindcss()]')
-        ->and($tailwindConfig)->toContain("entrypoints: ['resources/js/app.ts', 'resources/css/app.css']");
-})->group('tailwindcss');
-
-test('tailwind vite config updater preserves existing non-tailwind entrypoints when upgrading inertia configs', function (): void {
-    file_put_contents(
-        $this->tempDirectory . '/vite.config.ts',
-        "import { defineConfig } from 'vite';\n"
-        . "import react from '@vitejs/plugin-react';\n"
-        . "import { createBaseConfig } from './vendor/marko/vite/resources/config/createViteConfig';\n\n"
-        . "export default defineConfig(\n"
-        . "  createBaseConfig({\n"
-        . "    plugins: [react()],\n"
-        . "    entrypoints: ['resources/js/app.ts', 'frontend/admin.ts'],\n"
-        . "  }),\n"
-        . ");\n",
-    );
-
-    $result = makeTailwindViteConfigUpdater($this->tempDirectory)->ensureTailwindConfig();
-    $tailwindConfig = (string) file_get_contents($this->tempDirectory . '/vite.config.ts');
-
-    expect($result->status)->toBe('replaced')
-        ->and($tailwindConfig)->toContain("entrypoints: ['resources/js/app.ts', 'frontend/admin.ts', 'resources/css/app.css']");
-})->group('tailwindcss');
+test(
+    'tailwind vite config updater preserves existing non-tailwind entrypoints when upgrading inertia configs',
+    function (): void {
+        file_put_contents(
+            $this->tempDirectory . '/vite.config.ts',
+            "import { defineConfig } from 'vite';\n"
+            . "import react from '@vitejs/plugin-react';\n"
+            . "import { createBaseConfig } from './vendor/marko/vite/resources/config/createViteConfig';\n\n"
+            . "export default defineConfig(\n"
+            . "  createBaseConfig({\n"
+            . "    plugins: [react()],\n"
+            . "    entrypoints: ['resources/js/app.ts', 'frontend/admin.ts'],\n"
+            . "  }),\n"
+            . ");\n",
+        );
+    
+        $result = makeTailwindViteConfigUpdater($this->tempDirectory)->ensureTailwindConfig();
+        $tailwindConfig = (string) file_get_contents($this->tempDirectory . '/vite.config.ts');
+    
+        expect($result->status)->toBe('replaced')
+            ->and($tailwindConfig)->toContain(
+                "entrypoints: ['resources/js/app.ts', 'frontend/admin.ts', 'resources/css/app.css']"
+            );
+    }
+)->group('tailwindcss');
