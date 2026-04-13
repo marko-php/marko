@@ -17,7 +17,7 @@ class BindingRegistry
     ];
 
     /**
-     * @var array<string, array{module: string, source: string}>
+     * @var array<string, array{module: string, source: string, require: array<string, string>}>
      */
     private array $bindings = [];
 
@@ -61,12 +61,15 @@ class BindingRegistry
             $existingBinding = $this->bindings[$interface];
             $existingPriority = self::SOURCE_PRIORITY[$existingBinding['source']] ?? 0;
 
-            // Same priority = conflict
+            // Same-priority bindings normally conflict, but a later module may
+            // intentionally override a dependency it builds on top of.
             if ($sourcePriority === $existingPriority) {
-                throw BindingConflictException::multipleBindings(
-                    $interface,
-                    [$existingBinding['module'], $module->name],
-                );
+                if (! $this->canOverrideSamePriorityBinding($existingBinding['module'], $module)) {
+                    throw BindingConflictException::multipleBindings(
+                        $interface,
+                        [$existingBinding['module'], $module->name],
+                    );
+                }
             }
 
             // Lower priority cannot override higher priority
@@ -78,8 +81,16 @@ class BindingRegistry
         $this->bindings[$interface] = [
             'module' => $module->name,
             'source' => $module->source,
+            'require' => $module->require,
         ];
 
         $this->container->bind($interface, $implementation);
+    }
+
+    private function canOverrideSamePriorityBinding(
+        string $existingModule,
+        ModuleManifest $module,
+    ): bool {
+        return array_key_exists($existingModule, $module->require);
     }
 }

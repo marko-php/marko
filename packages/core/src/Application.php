@@ -389,6 +389,13 @@ class Application
         $middleware = [];
 
         foreach (self::GLOBAL_MIDDLEWARE as $class) {
+            if (
+                $class === 'Marko\\Layout\\Middleware\\LayoutMiddleware'
+                && ! $this->container->has('Marko\\View\\ViewInterface')
+            ) {
+                continue;
+            }
+
             if (class_exists($class)) {
                 $middleware[] = $class;
             }

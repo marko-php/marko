@@ -198,6 +198,15 @@ class Container implements ContainerInterface
                     throw BindingException::unresolvableParameter($parameter->getName(), $id);
                 }
 
+                if ($type->allowsNull() && ! $this->has($typeName)) {
+                    if ($parameter->isDefaultValueAvailable()) {
+                        $dependencies[] = $parameter->getDefaultValue();
+                    } else {
+                        $dependencies[] = null;
+                    }
+                    continue;
+                }
+
                 $dependencies[] = $this->resolve($typeName);
             }
 
