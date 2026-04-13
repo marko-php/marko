@@ -149,6 +149,33 @@ Resolution: Use #[Preference] to extend one controller,
 or use #[DisableRoute] to remove one route.
 ```
 
+## CLI
+
+### Listing Routes
+
+See all registered routes:
+
+```bash
+marko route:list
+```
+
+```
+METHOD  PATH            ACTION                    MIDDLEWARE
+GET     /               HelloController::index
+GET     /blog           PostController::index
+GET     /blog/{id}      PostController::show
+GET     /products       ProductController::index
+GET     /products/{id}  ProductController::show
+```
+
+Filter by HTTP method or path:
+
+```bash
+marko route:list --method=POST
+marko route:list --path=products
+marko route:list --method=GET --path=blog
+```
+
 ## API Reference
 
 ### Route Attributes
