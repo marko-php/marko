@@ -37,6 +37,7 @@ Marko is a modular PHP 8.5+ framework where everything is a module: your app cod
 - **Plugins** — Intercept any public method with `before` and `after` hooks. Modify inputs, transform outputs, or add behavior — all without inheritance.
 - **PHP-native configuration** — No XML. No YAML. Every route, binding, and plugin is defined in PHP, including full IDE autocompletion and `::class` constants.
 - **Attribute-driven** — Routes, plugins, observers, layouts, commands, and more are declared with PHP attributes. Discovery is automatic.
+- **Modern frontend tooling** — First-party Vite, Tailwind CSS, and Inertia packages let you build server-driven SPAs without stitching together third-party glue.
 - **Loud errors** — No silent failures. When something goes wrong, Marko tells you exactly what happened, where, and how to fix it.
 
 ## Quick Start
@@ -230,6 +231,17 @@ Marko ships as composable packages — require only what you need. Every package
 | [view](packages/view/README.md) | View contracts and template resolution |
 | [view-latte](packages/view-latte/README.md) | Latte template engine integration |
 | [layout](packages/layout/README.md) | Attribute-driven layout system with slot-based component composition |
+
+### Frontend, Assets & SPA
+
+| Package | Description |
+|---------|-------------|
+| [vite](packages/vite/README.md) | Vite integration, asset publishing, manifest resolution, and project scaffolding |
+| [tailwindcss](packages/tailwindcss/README.md) | Tailwind CSS integration and Vite companion support |
+| [inertia](packages/inertia/README.md) | Core Inertia server-side integration for Marko |
+| [inertia-vue](packages/inertia-vue/README.md) | Vue adapter scaffolding and Vite integration for Inertia |
+| [inertia-react](packages/inertia-react/README.md) | React adapter scaffolding and Vite integration for Inertia |
+| [inertia-svelte](packages/inertia-svelte/README.md) | Svelte adapter scaffolding and Vite integration for Inertia |
 
 ### Error Handling
 
