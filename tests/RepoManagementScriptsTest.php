@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-$binDir = dirname(__DIR__) . '/bin';
+$binDir = dirname(__DIR__).'/bin';
+$packageCount = markoExpectedPackageDirectoryCount();
 
-it('creates bin/create-split-repos.sh that bulk-creates all 70 split repos on GitHub', function () use ($binDir): void {
-    $path = $binDir . '/create-split-repos.sh';
+it("creates bin/create-split-repos.sh that bulk-creates all {$packageCount} split repos on GitHub", function () use ($binDir): void {
+    $path = $binDir.'/create-split-repos.sh';
 
     expect(file_exists($path))->toBeTrue('bin/create-split-repos.sh does not exist');
 
@@ -18,8 +19,8 @@ it('creates bin/create-split-repos.sh that bulk-creates all 70 split repos on Gi
         ->toContain('packages/');
 });
 
-it('creates bin/register-packagist.sh that registers all 70 packages on Packagist', function () use ($binDir): void {
-    $path = $binDir . '/register-packagist.sh';
+it("creates bin/register-packagist.sh that registers all {$packageCount} packages on Packagist", function () use ($binDir): void {
+    $path = $binDir.'/register-packagist.sh';
 
     expect(file_exists($path))->toBeTrue('bin/register-packagist.sh does not exist');
 
@@ -34,7 +35,7 @@ it('creates bin/register-packagist.sh that registers all 70 packages on Packagis
 });
 
 it('creates bin/add-package.sh that handles the full new-package workflow', function () use ($binDir): void {
-    $path = $binDir . '/add-package.sh';
+    $path = $binDir.'/add-package.sh';
 
     expect(file_exists($path))->toBeTrue('bin/add-package.sh does not exist');
 
@@ -51,8 +52,8 @@ it('creates bin/add-package.sh that handles the full new-package workflow', func
 });
 
 it('dynamically reads package list from packages/ directory', function () use ($binDir): void {
-    $createRepos = file_get_contents($binDir . '/create-split-repos.sh');
-    $registerPackagist = file_get_contents($binDir . '/register-packagist.sh');
+    $createRepos = file_get_contents($binDir.'/create-split-repos.sh');
+    $registerPackagist = file_get_contents($binDir.'/register-packagist.sh');
 
     // Scripts iterate over packages/ directory dynamically, not a hardcoded list
     expect($createRepos)
@@ -64,9 +65,9 @@ it('dynamically reads package list from packages/ directory', function () use ($
 });
 
 it('skips repos that already exist without erroring', function () use ($binDir): void {
-    $createRepos = file_get_contents($binDir . '/create-split-repos.sh');
-    $registerPackagist = file_get_contents($binDir . '/register-packagist.sh');
-    $addPackage = file_get_contents($binDir . '/add-package.sh');
+    $createRepos = file_get_contents($binDir.'/create-split-repos.sh');
+    $registerPackagist = file_get_contents($binDir.'/register-packagist.sh');
+    $addPackage = file_get_contents($binDir.'/add-package.sh');
 
     // create-split-repos.sh checks if repo exists before creating
     expect($createRepos)
@@ -83,9 +84,9 @@ it('skips repos that already exist without erroring', function () use ($binDir):
 });
 
 it('validates required tools and credentials before running (gh, curl, jq, API tokens)', function () use ($binDir): void {
-    $createRepos = file_get_contents($binDir . '/create-split-repos.sh');
-    $registerPackagist = file_get_contents($binDir . '/register-packagist.sh');
-    $addPackage = file_get_contents($binDir . '/add-package.sh');
+    $createRepos = file_get_contents($binDir.'/create-split-repos.sh');
+    $registerPackagist = file_get_contents($binDir.'/register-packagist.sh');
+    $addPackage = file_get_contents($binDir.'/add-package.sh');
 
     // create-split-repos.sh validates gh, jq, and gh auth
     expect($createRepos)
@@ -109,9 +110,9 @@ it('validates required tools and credentials before running (gh, curl, jq, API t
 
 it('makes all scripts executable', function () use ($binDir): void {
     $scripts = [
-        $binDir . '/create-split-repos.sh',
-        $binDir . '/register-packagist.sh',
-        $binDir . '/add-package.sh',
+        $binDir.'/create-split-repos.sh',
+        $binDir.'/register-packagist.sh',
+        $binDir.'/add-package.sh',
     ];
 
     foreach ($scripts as $script) {

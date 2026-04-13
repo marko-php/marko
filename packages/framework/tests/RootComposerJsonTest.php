@@ -5,80 +5,11 @@ declare(strict_types=1);
 $rootComposerPath = dirname(__DIR__, 3) . '/composer.json';
 $rootComposer = json_decode(file_get_contents($rootComposerPath), true);
 
-$allPackages = [
-    'marko/admin',
-    'marko/admin-api',
-    'marko/admin-auth',
-    'marko/admin-panel',
-    'marko/amphp',
-    'marko/api',
-    'marko/authentication',
-    'marko/authentication-token',
-    'marko/authorization',
-    'marko/cache',
-    'marko/cache-array',
-    'marko/cache-file',
-    'marko/cache-redis',
-    'marko/cli',
-    'marko/config',
-    'marko/core',
-    'marko/cors',
-    'marko/database',
-    'marko/database-mysql',
-    'marko/database-pgsql',
-    'marko/dev-server',
-    'marko/encryption',
-    'marko/encryption-openssl',
-    'marko/env',
-    'marko/errors',
-    'marko/errors-advanced',
-    'marko/errors-simple',
-    'marko/filesystem',
-    'marko/filesystem-local',
-    'marko/filesystem-s3',
-    'marko/framework',
-    'marko/hashing',
-    'marko/health',
-    'marko/http',
-    'marko/http-guzzle',
-    'marko/log',
-    'marko/log-file',
-    'marko/mail',
-    'marko/mail-log',
-    'marko/mail-smtp',
-    'marko/media',
-    'marko/media-gd',
-    'marko/media-imagick',
-    'marko/notification',
-    'marko/notification-database',
-    'marko/pagination',
-    'marko/pubsub',
-    'marko/pubsub-pgsql',
-    'marko/pubsub-redis',
-    'marko/queue',
-    'marko/queue-database',
-    'marko/queue-rabbitmq',
-    'marko/queue-sync',
-    'marko/rate-limiting',
-    'marko/routing',
-    'marko/scheduler',
-    'marko/search',
-    'marko/security',
-    'marko/session',
-    'marko/session-database',
-    'marko/session-file',
-    'marko/sse',
-    'marko/testing',
-    'marko/translation',
-    'marko/translation-file',
-    'marko/validation',
-    'marko/view',
-    'marko/view-latte',
-    'marko/webhook',
-];
+$allPackages = markoSplitPackageNames();
 
-it('adds a require section entry for all 70 marko packages set to self.version', function () use ($rootComposer, $allPackages): void {
+it('adds a require section entry for all split packages set to self.version', function () use ($rootComposer, $allPackages): void {
     expect($rootComposer)->toHaveKey('require');
+    expect($allPackages)->toHaveCount(markoExpectedSplitPackageCount());
 
     foreach ($allPackages as $package) {
         expect($rootComposer['require'])->toHaveKey($package)
@@ -90,8 +21,9 @@ it('does not have a replace section (path repos install as symlinks without it)'
     expect($rootComposer)->not->toHaveKey('replace');
 });
 
-it('adds repositories section with path repos for all 70 packages', function () use ($rootComposer, $allPackages): void {
+it('adds repositories section with path repos for all split packages', function () use ($rootComposer, $allPackages): void {
     expect($rootComposer)->toHaveKey('repositories');
+    expect($allPackages)->toHaveCount(markoExpectedSplitPackageCount());
 
     $repoUrls = array_column($rootComposer['repositories'], 'url');
 
