@@ -151,6 +151,8 @@ or use #[DisableRoute] to remove one route.
 
 ## CLI
 
+Requires [`marko/cli`](/docs/packages/cli/) for the `marko` binary.
+
 ### Listing Routes
 
 See all registered routes:
