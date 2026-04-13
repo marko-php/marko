@@ -1,0 +1,38 @@
+{
+    "name": "marko/inertia",
+    "description": "Marko Framework Inertia integration",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/config": "self.version",
+        "marko/core": "self.version",
+        "marko/routing": "self.version",
+        "marko/session": "self.version",
+        "marko/vite": "self.version"
+    },
+    "require-dev": {
+        "marko/testing": "self.version",
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Inertia\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Inertia\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
