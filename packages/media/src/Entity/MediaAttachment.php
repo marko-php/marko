@@ -14,12 +14,12 @@ class MediaAttachment extends Entity
     #[Column(primaryKey: true, autoIncrement: true)]
     public ?int $id = null;
 
-    #[Column('media_id')]
+    #[Column]
     public int $mediaId = 0;
 
-    #[Column('attachable_type', length: 255)]
+    #[Column(length: 255)]
     public string $attachableType = '';
 
-    #[Column('attachable_id', length: 255)]
+    #[Column(length: 255)]
     public int|string $attachableId = 0;
 }

@@ -57,13 +57,13 @@ class Article extends Entity
     #[Column(type: 'TEXT')]
     public string $body;
 
-    #[Column('author_email')]
+    #[Column]
     public string $authorEmail;
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
 
-    #[Column('updated_at')]
+    #[Column]
     public ?string $updatedAt = null;
 }
 ```

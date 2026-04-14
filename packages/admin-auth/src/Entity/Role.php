@@ -25,13 +25,13 @@ class Role extends Entity implements RoleInterface
     #[Column(type: 'TEXT')]
     public ?string $description = null;
 
-    #[Column('is_super_admin', default: '0')]
+    #[Column(default: '0')]
     public string $isSuperAdmin = '0';
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
 
-    #[Column('updated_at')]
+    #[Column]
     public ?string $updatedAt = null;
 
     public function getId(): ?int

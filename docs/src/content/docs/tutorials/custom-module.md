@@ -67,10 +67,10 @@ class PageView extends Entity
     #[Column]
     public string $path;
 
-    #[Column('user_id')]
+    #[Column]
     public ?string $userId = null;
 
-    #[Column('viewed_at')]
+    #[Column]
     public string $viewedAt;
 
     public function __construct(

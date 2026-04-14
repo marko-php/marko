@@ -79,7 +79,7 @@ class Message extends Entity
     #[Column(type: 'TEXT')]
     public string $body;
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
 }
 ```

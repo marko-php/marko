@@ -38,6 +38,8 @@ class EntityMetadataFactory
      * Parse an entity class and return its metadata.
      *
      * @param class-string $entityClass
+     *
+     * @throws EntityException
      */
     public function parse(
         string $entityClass,
@@ -50,7 +52,7 @@ class EntityMetadataFactory
 
         $this->validateEntity($reflection, $entityClass);
 
-        $tableName = $this->extractTableName($reflection, $entityClass);
+        $tableName = $this->extractTableName($reflection);
         $columns = [];
         $indexes = [];
         $properties = [];
@@ -65,7 +67,7 @@ class EntityMetadataFactory
 
             $columnAttr = $columnAttributes[0]->newInstance();
             $propertyName = $property->getName();
-            $columnName = $columnAttr->name ?? $propertyName;
+            $columnName = $columnAttr->name ?? $this->camelToSnakeCase($propertyName);
             $type = $property->getType();
 
             if (!$type instanceof ReflectionNamedType) {
@@ -163,6 +165,8 @@ class EntityMetadataFactory
      *
      * @param ReflectionClass<object> $reflection
      * @param class-string $entityClass
+     *
+     * @throws EntityException
      */
     private function validateEntity(
         ReflectionClass $reflection,
@@ -182,15 +186,25 @@ class EntityMetadataFactory
      * Extract the table name from the #[Table] attribute.
      *
      * @param ReflectionClass<object> $reflection
-     * @param class-string $entityClass
      */
     private function extractTableName(
         ReflectionClass $reflection,
-        string $entityClass,
     ): string {
         $tableAttributes = $reflection->getAttributes(Table::class);
 
         return $tableAttributes[0]->newInstance()->name;
+    }
+
+    /**
+     * Convert a camelCase property name to snake_case for use as a column name.
+     */
+    private function camelToSnakeCase(
+        string $name,
+    ): string {
+        $result = (string) preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
+        $result = (string) preg_replace('/([A-Z]+)([A-Z][a-z])/', '$1_$2', $result);
+
+        return strtolower($result);
     }
 
     /**

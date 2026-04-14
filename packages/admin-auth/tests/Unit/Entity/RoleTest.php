@@ -121,7 +121,7 @@ it('has isSuperAdmin property with Column attribute and default 0', function ():
     expect($attributes)->toHaveCount(1);
 
     $columnAttribute = $attributes[0]->newInstance();
-    expect($columnAttribute->name)->toBe('is_super_admin')
+    expect($columnAttribute->name)->toBeNull()
         ->and($columnAttribute->default)->toBe('0');
 });
 
@@ -148,7 +148,7 @@ it('has created_at timestamp', function (): void {
     expect($attributes)->toHaveCount(1);
 
     $columnAttribute = $attributes[0]->newInstance();
-    expect($columnAttribute->name)->toBe('created_at');
+    expect($columnAttribute->name)->toBeNull();
 });
 
 it('has updated_at timestamp', function (): void {
@@ -162,28 +162,24 @@ it('has updated_at timestamp', function (): void {
     expect($attributes)->toHaveCount(1);
 
     $columnAttribute = $attributes[0]->newInstance();
-    expect($columnAttribute->name)->toBe('updated_at');
+    expect($columnAttribute->name)->toBeNull();
 });
 
 it('uses nullable types for optional fields appropriately', function (): void {
     $reflection = new ReflectionClass(Role::class);
 
     $idProperty = $reflection->getProperty('id');
-    expect($idProperty->getType()->allowsNull())->toBeTrue();
-
     $createdAtProperty = $reflection->getProperty('createdAt');
-    expect($createdAtProperty->getType()->allowsNull())->toBeTrue();
-
     $updatedAtProperty = $reflection->getProperty('updatedAt');
-    expect($updatedAtProperty->getType()->allowsNull())->toBeTrue();
-
     $descriptionProperty = $reflection->getProperty('description');
-    expect($descriptionProperty->getType()->allowsNull())->toBeTrue();
-
     $nameProperty = $reflection->getProperty('name');
     $slugProperty = $reflection->getProperty('slug');
 
-    expect($nameProperty->getType()->allowsNull())->toBeFalse()
+    expect($idProperty->getType()->allowsNull())->toBeTrue()
+        ->and($createdAtProperty->getType()->allowsNull())->toBeTrue()
+        ->and($updatedAtProperty->getType()->allowsNull())->toBeTrue()
+        ->and($descriptionProperty->getType()->allowsNull())->toBeTrue()
+        ->and($nameProperty->getType()->allowsNull())->toBeFalse()
         ->and($slugProperty->getType()->allowsNull())->toBeFalse();
 });
 
