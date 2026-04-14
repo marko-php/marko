@@ -17,6 +17,7 @@ use Marko\Database\Entity\SchemaBuilder;
 use Marko\Database\Migration\MigrationGenerator;
 use Marko\Database\Schema\Column as SchemaColumn;
 use Marko\Database\Schema\ForeignKey;
+use Marko\Database\Schema\Index as SchemaIndex;
 use Marko\Database\Schema\Table as SchemaTable;
 
 // Test entities for the workflow tests
@@ -147,7 +148,7 @@ describe('Entity to Migration Workflow', function (): void {
 
             public function generateAddIndex(
                 string $table,
-                \Marko\Database\Schema\Index $index,
+                SchemaIndex $index,
             ): string {
                 return "CREATE INDEX $index->name ON $table";
             }
@@ -227,14 +228,14 @@ describe('Entity to Migration Workflow', function (): void {
             ->toContain('id')
             ->toContain('name')
             ->toContain('email')
-            ->toContain('isActive')
+            ->toContain('is_active')
             ->and($postTable->name)->toBe('workflow_posts')
             ->and($postTable->columns)->toHaveCount(4)
             ->and(array_map(fn ($col) => $col->name, $postTable->columns))
             ->toContain('id')
             ->toContain('title')
             ->toContain('content')
-            ->toContain('authorId');
+            ->toContain('author_id');
 
         // Verify primary key detection
         $idColumn = array_filter($userTable->columns, fn ($col) => $col->name === 'id');
@@ -264,7 +265,7 @@ describe('Entity to Migration Workflow', function (): void {
                 new SchemaColumn(name: 'id', type: 'INT', primaryKey: true, autoIncrement: true),
                 new SchemaColumn(name: 'name', type: 'VARCHAR', length: 255),
                 new SchemaColumn(name: 'email', type: 'VARCHAR', length: 255),
-                new SchemaColumn(name: 'isActive', type: 'BOOLEAN'),
+                new SchemaColumn(name: 'is_active', type: 'BOOLEAN'),
             ],
             indexes: [],
         );
@@ -286,7 +287,7 @@ describe('Entity to Migration Workflow', function (): void {
         $addedColumnNames = array_map(fn ($col) => $col->name, $tableDiff->columnsToAdd);
         expect($addedColumnNames)
             ->toContain('email')
-            ->toContain('isActive');
+            ->toContain('is_active');
     });
 
     it('detects dropped columns in entity changes', function (): void {

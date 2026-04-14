@@ -53,13 +53,13 @@ class Post extends Entity
     #[Column(default: 'draft')]
     public PostStatus $status = PostStatus::Draft;
 
-    #[Column(name: 'author_id', references: 'users.id', onDelete: 'cascade')]
+    #[Column(references: 'users.id', onDelete: 'cascade')]
     public int $authorId;
 
-    #[Column(name: 'created_at', default: 'CURRENT_TIMESTAMP')]
+    #[Column(default: 'CURRENT_TIMESTAMP')]
     public DateTimeImmutable $createdAt;
 
-    #[Column(name: 'updated_at')]
+    #[Column]
     public ?DateTimeImmutable $updatedAt = null;
 }
 ```
@@ -71,6 +71,8 @@ class Post extends Entity
 | `#[Table]` | Defines table name |
 | `#[Column]` | Column configuration (name, primaryKey, autoIncrement, length, type, unique, default, references, onDelete, onUpdate) |
 | `#[Index]` | Composite indexes |
+
+Property names are automatically converted from camelCase to snake_case for column names. For example, `$createdAt` maps to the `created_at` column. Use the `name` parameter to override this: `#[Column(name: 'custom_column')]`.
 
 ### Type Inference Rules
 

@@ -35,14 +35,14 @@ it('defines PersonalAccessToken entity with table and column attributes', functi
     $tokenableTypeColumns = $tokenableTypeProperty->getAttributes(Column::class);
     $tokenableTypeColumn = $tokenableTypeColumns[0]->newInstance();
     expect($tokenableTypeColumns)->toHaveCount(1)
-        ->and($tokenableTypeColumn->name)->toBe('tokenable_type');
+        ->and($tokenableTypeColumn->name)->toBeNull();
 
     // Has tokenable_id column
     $tokenableIdProperty = $reflection->getProperty('tokenableId');
     $tokenableIdColumns = $tokenableIdProperty->getAttributes(Column::class);
     $tokenableIdColumn = $tokenableIdColumns[0]->newInstance();
     expect($tokenableIdColumns)->toHaveCount(1)
-        ->and($tokenableIdColumn->name)->toBe('tokenable_id');
+        ->and($tokenableIdColumn->name)->toBeNull();
 
     // Has name column
     $nameProperty = $reflection->getProperty('name');
@@ -54,7 +54,7 @@ it('defines PersonalAccessToken entity with table and column attributes', functi
     $tokenHashColumns = $tokenHashProperty->getAttributes(Column::class);
     $tokenHashColumn = $tokenHashColumns[0]->newInstance();
     expect($tokenHashColumns)->toHaveCount(1)
-        ->and($tokenHashColumn->name)->toBe('token_hash')
+        ->and($tokenHashColumn->name)->toBeNull()
         ->and($tokenHashColumn->length)->toBe(64);
 
     // Has abilities column (text, nullable)
@@ -69,19 +69,19 @@ it('defines PersonalAccessToken entity with table and column attributes', functi
     $lastUsedAtColumns = $lastUsedAtProperty->getAttributes(Column::class);
     $lastUsedAtColumn = $lastUsedAtColumns[0]->newInstance();
     expect($lastUsedAtColumns)->toHaveCount(1)
-        ->and($lastUsedAtColumn->name)->toBe('last_used_at');
+        ->and($lastUsedAtColumn->name)->toBeNull();
 
     // Has expires_at column (nullable)
     $expiresAtProperty = $reflection->getProperty('expiresAt');
     $expiresAtColumns = $expiresAtProperty->getAttributes(Column::class);
     $expiresAtColumn = $expiresAtColumns[0]->newInstance();
     expect($expiresAtColumns)->toHaveCount(1)
-        ->and($expiresAtColumn->name)->toBe('expires_at');
+        ->and($expiresAtColumn->name)->toBeNull();
 
     // Has created_at column (nullable)
     $createdAtProperty = $reflection->getProperty('createdAt');
     $createdAtColumns = $createdAtProperty->getAttributes(Column::class);
     $createdAtColumn = $createdAtColumns[0]->newInstance();
     expect($createdAtColumns)->toHaveCount(1)
-        ->and($createdAtColumn->name)->toBe('created_at');
+        ->and($createdAtColumn->name)->toBeNull();
 });

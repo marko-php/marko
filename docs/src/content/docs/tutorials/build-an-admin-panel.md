@@ -132,16 +132,16 @@ class AdminUser extends Entity implements AdminUserInterface
     #[Column]
     public string $name;
 
-    #[Column('remember_token')]
+    #[Column]
     public ?string $rememberToken = null;
 
-    #[Column('is_active', default: '1')]
+    #[Column(default: '1')]
     public string $isActive = '1';
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
 
-    #[Column('updated_at')]
+    #[Column]
     public ?string $updatedAt = null;
 
     // ... authentication and role/permission methods
@@ -176,13 +176,13 @@ class Role extends Entity implements RoleInterface
     #[Column(type: 'TEXT')]
     public ?string $description = null;
 
-    #[Column('is_super_admin', default: '0')]
+    #[Column(default: '0')]
     public string $isSuperAdmin = '0';
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
 
-    #[Column('updated_at')]
+    #[Column]
     public ?string $updatedAt = null;
 
     // ...
@@ -207,10 +207,10 @@ use Marko\Database\Entity\Entity;
 #[Index('idx_role_permissions_unique', ['role_id', 'permission_id'], unique: true)]
 class RolePermission extends Entity implements RolePermissionInterface
 {
-    #[Column('role_id', references: 'roles.id', onDelete: 'CASCADE')]
+    #[Column(references: 'roles.id', onDelete: 'CASCADE')]
     public int $roleId;
 
-    #[Column('permission_id', references: 'permissions.id', onDelete: 'CASCADE')]
+    #[Column(references: 'permissions.id', onDelete: 'CASCADE')]
     public int $permissionId;
 }
 ```

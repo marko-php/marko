@@ -64,7 +64,7 @@ class Post extends Entity
     #[Column]
     public bool $published = false;
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
 }
 ```
