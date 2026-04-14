@@ -8,6 +8,8 @@ use Marko\Layout\Exceptions\AmbiguousSortOrderException;
 use Marko\Layout\Exceptions\CircularSlotException;
 use Marko\Layout\Exceptions\LayoutNotFoundException;
 use Marko\Layout\Exceptions\SlotNotFoundException;
+use Marko\Core\Container\ContainerInterface;
+use Psr\Container\ContainerExceptionInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
@@ -15,6 +17,7 @@ use Marko\View\ViewInterface;
 readonly class LayoutProcessor implements LayoutProcessorInterface
 {
     public function __construct(
+        private ContainerInterface $container,
         private LayoutResolver $layoutResolver,
         private HandleResolver $handleResolver,
         private ComponentCollectorInterface $componentCollector,
@@ -30,7 +33,7 @@ readonly class LayoutProcessor implements LayoutProcessorInterface
      * @throws SlotNotFoundException
      * @throws CircularSlotException
      * @throws LayoutNotFoundException
-     * @throws AmbiguousSortOrderException
+     * @throws AmbiguousSortOrderException|ContainerExceptionInterface
      */
     public function process(
         string $controllerClass,
@@ -87,7 +90,7 @@ readonly class LayoutProcessor implements LayoutProcessorInterface
      * Render all components in a slot and fill any sub-slots they define.
      *
      * @param array<string, mixed> $routeParameters
-     * @throws AmbiguousSortOrderException
+     * @throws AmbiguousSortOrderException|ContainerExceptionInterface
      */
     private function renderSlot(
         string $slotName,
@@ -99,7 +102,7 @@ readonly class LayoutProcessor implements LayoutProcessorInterface
         $html = '';
 
         foreach ($slotComponents as $definition) {
-            $componentInstance = new $definition->className();
+            $componentInstance = $this->container->get($definition->className);
             $data = $this->componentDataResolver->resolve($componentInstance, $routeParameters, $request);
             $componentHtml = $this->view->renderToString($definition->template, $data);
 

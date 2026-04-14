@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Layout\Attributes\Component;
+use Marko\Layout\Tests\Unit\Helpers;
 use Marko\Layout\Attributes\Layout;
 use Marko\Layout\ComponentCollection;
 use Marko\Layout\ComponentCollectorInterface;
@@ -143,6 +144,7 @@ function defaultCollection(): ComponentCollection
 function buildProcessor(ComponentCollection $collection, ViewInterface $view): LayoutProcessor
 {
     return new LayoutProcessor(
+        container: Helpers::stubContainer(),
         layoutResolver: new LayoutResolver(),
         handleResolver: new HandleResolver(),
         componentCollector: stubCollector($collection),
