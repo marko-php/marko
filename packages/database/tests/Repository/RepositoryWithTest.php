@@ -303,7 +303,7 @@ describe('with() Method', function (): void {
     });
 
     it('chains with find to load BelongsTo relationship', function (): void {
-        $userRow = ['id' => 1, 'name' => 'Alice', 'countryId' => 5];
+        $userRow = ['id' => 1, 'name' => 'Alice', 'country_id' => 5];
         $factory = makeWithQbFactory([['id' => 5, 'name' => 'Canada']]);
         $loader = new RelationshipLoader(new EntityMetadataFactory(), new EntityHydrator(), $factory);
 
@@ -324,10 +324,10 @@ describe('with() Method', function (): void {
     });
 
     it('chains with find to load HasMany relationship', function (): void {
-        $userRow = ['id' => 1, 'name' => 'Alice', 'countryId' => null];
+        $userRow = ['id' => 1, 'name' => 'Alice', 'country_id' => null];
         $postRows = [
-            ['id' => 10, 'userId' => 1, 'title' => 'First Post'],
-            ['id' => 11, 'userId' => 1, 'title' => 'Second Post'],
+            ['id' => 10, 'user_id' => 1, 'title' => 'First Post'],
+            ['id' => 11, 'user_id' => 1, 'title' => 'Second Post'],
         ];
         $factory = makeWithQbFactory($postRows);
         $loader = new RelationshipLoader(new EntityMetadataFactory(), new EntityHydrator(), $factory);
@@ -348,8 +348,8 @@ describe('with() Method', function (): void {
     });
 
     it('chains with find to load HasOne relationship', function (): void {
-        $userRow = ['id' => 1, 'name' => 'Alice', 'countryId' => null];
-        $profileRows = [['id' => 20, 'userId' => 1]];
+        $userRow = ['id' => 1, 'name' => 'Alice', 'country_id' => null];
+        $profileRows = [['id' => 20, 'user_id' => 1]];
         $factory = makeWithQbFactory($profileRows);
         $loader = new RelationshipLoader(new EntityMetadataFactory(), new EntityHydrator(), $factory);
 
@@ -370,12 +370,12 @@ describe('with() Method', function (): void {
 
     it('chains with findAll to load relationships on all entities', function (): void {
         $userRows = [
-            ['id' => 1, 'name' => 'Alice', 'countryId' => null],
-            ['id' => 2, 'name' => 'Bob', 'countryId' => null],
+            ['id' => 1, 'name' => 'Alice', 'country_id' => null],
+            ['id' => 2, 'name' => 'Bob', 'country_id' => null],
         ];
         $postRows = [
-            ['id' => 10, 'userId' => 1, 'title' => 'Post A'],
-            ['id' => 11, 'userId' => 2, 'title' => 'Post B'],
+            ['id' => 10, 'user_id' => 1, 'title' => 'Post A'],
+            ['id' => 11, 'user_id' => 2, 'title' => 'Post B'],
         ];
         $factory = makeWithQbFactory($postRows);
         $loader = new RelationshipLoader(new EntityMetadataFactory(), new EntityHydrator(), $factory);
@@ -399,9 +399,9 @@ describe('with() Method', function (): void {
 
     it('chains with findBy to load relationships on matched entities', function (): void {
         $userRows = [
-            ['id' => 1, 'name' => 'Alice', 'countryId' => null],
+            ['id' => 1, 'name' => 'Alice', 'country_id' => null],
         ];
-        $profileRows = [['id' => 20, 'userId' => 1]];
+        $profileRows = [['id' => 20, 'user_id' => 1]];
         $factory = makeWithQbFactory($profileRows);
         $loader = new RelationshipLoader(new EntityMetadataFactory(), new EntityHydrator(), $factory);
 
@@ -422,9 +422,9 @@ describe('with() Method', function (): void {
 
     it('chains with findOneBy to load relationships on single entity', function (): void {
         $userRows = [
-            ['id' => 1, 'name' => 'Alice', 'countryId' => null],
+            ['id' => 1, 'name' => 'Alice', 'country_id' => null],
         ];
-        $profileRows = [['id' => 20, 'userId' => 1]];
+        $profileRows = [['id' => 20, 'user_id' => 1]];
         $factory = makeWithQbFactory($profileRows);
         $loader = new RelationshipLoader(new EntityMetadataFactory(), new EntityHydrator(), $factory);
 
@@ -446,7 +446,7 @@ describe('with() Method', function (): void {
 
 describe('Eager Loading Integration', function (): void {
     it('passes loaded entities to RelationshipLoader', function (): void {
-        $userRows = [['id' => 1, 'name' => 'Alice', 'countryId' => null]];
+        $userRows = [['id' => 1, 'name' => 'Alice', 'country_id' => null]];
         // Track whether the query builder was used (indicating load was called)
         $queryCalled = false;
 
@@ -592,7 +592,7 @@ describe('Eager Loading Integration', function (): void {
     });
 
     it('returns EntityCollection from findAll with relationships loaded', function (): void {
-        $userRows = [['id' => 1, 'name' => 'Alice', 'countryId' => null]];
+        $userRows = [['id' => 1, 'name' => 'Alice', 'country_id' => null]];
         $loader = makeWithLoader();
         $repo = makeWithRepository($userRows, $loader);
 
@@ -744,7 +744,7 @@ describe('Eager Loading Integration', function (): void {
     });
 
     it('loads multiple relationships when multiple names specified', function (): void {
-        $userRows = [['id' => 1, 'name' => 'Alice', 'countryId' => null]];
+        $userRows = [['id' => 1, 'name' => 'Alice', 'country_id' => null]];
 
         $callCount = 0;
 

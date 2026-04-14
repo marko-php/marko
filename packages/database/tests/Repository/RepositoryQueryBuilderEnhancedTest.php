@@ -243,7 +243,7 @@ it('accepts relationship names via with', function (): void {
 
 it('loads relationships on getEntities results', function (): void {
     $rows = [['id' => 1, 'name' => 'Alice']];
-    $profileRows = [['id' => 10, 'userId' => 1]];
+    $profileRows = [['id' => 10, 'user_id' => 1]];
     $stub = makeRqbStubBuilder($rows);
     $loader = makeRqbLoader($profileRows);
     $rqb = makeRqb($stub, $loader);
@@ -257,7 +257,7 @@ it('loads relationships on getEntities results', function (): void {
 
 it('loads relationships on firstEntity result', function (): void {
     $rows = [['id' => 1, 'name' => 'Alice']];
-    $profileRows = [['id' => 10, 'userId' => 1]];
+    $profileRows = [['id' => 10, 'user_id' => 1]];
     $stub = makeRqbStubBuilder($rows);
     $loader = makeRqbLoader($profileRows);
     $rqb = makeRqb($stub, $loader);
@@ -361,7 +361,7 @@ it('chains matching with where and orderBy', function (): void {
 
 it('chains matching with with for relationships and specifications together', function (): void {
     $rows = [['id' => 1, 'name' => 'Alice']];
-    $profileRows = [['id' => 10, 'userId' => 1]];
+    $profileRows = [['id' => 10, 'user_id' => 1]];
     $stub = makeRqbStubBuilder($rows);
     $loader = makeRqbLoader($profileRows);
     $rqb = makeRqb($stub, $loader);
