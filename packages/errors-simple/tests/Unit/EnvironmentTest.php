@@ -32,12 +32,12 @@ it('detects development mode from APP_ENV as fallback', function (): void {
     expect($environment->isDevelopment())->toBeTrue();
 });
 
-it('defaults to production when no environment variable set', function (): void {
-    // Empty envVars means no environment variables
+it('defaults to development when no environment variable set', function (): void {
+    // Empty envVars means no environment variables — default to loud errors
     $environment = new Environment(envVars: []);
 
-    expect($environment->isProduction())->toBeTrue();
-    expect($environment->isDevelopment())->toBeFalse();
+    expect($environment->isDevelopment())->toBeTrue()
+        ->and($environment->isProduction())->toBeFalse();
 });
 
 it('recognizes dev as development', function (): void {
@@ -73,13 +73,11 @@ it('recognizes prod as production', function (): void {
 });
 
 it('is case insensitive for environment values', function (): void {
-    $devUpper = new Environment(envVars: ['MARKO_ENV' => 'DEVELOPMENT']);
-    $devMixed = new Environment(envVars: ['MARKO_ENV' => 'Development']);
-    $localUpper = new Environment(envVars: ['MARKO_ENV' => 'LOCAL']);
+    $prodUpper = new Environment(envVars: ['MARKO_ENV' => 'PRODUCTION']);
+    $prodMixed = new Environment(envVars: ['MARKO_ENV' => 'Production']);
 
-    expect($devUpper->isDevelopment())->toBeTrue();
-    expect($devMixed->isDevelopment())->toBeTrue();
-    expect($localUpper->isDevelopment())->toBeTrue();
+    expect($prodUpper->isProduction())->toBeTrue()
+        ->and($prodMixed->isProduction())->toBeTrue();
 });
 
 it('provides isCli method', function (): void {
