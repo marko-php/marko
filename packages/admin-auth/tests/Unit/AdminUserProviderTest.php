@@ -13,6 +13,7 @@ use Marko\AdminAuth\Repository\RoleRepositoryInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityCollection;
 use ReflectionClass;
 use RuntimeException;
 
@@ -256,15 +257,15 @@ function createMockUserRepo(
             return $this->findReturn ?? throw new RuntimeException('Not found');
         }
 
-        public function findAll(): array
+        public function findAll(): EntityCollection
         {
-            return [];
+            return new EntityCollection();
         }
 
         public function findBy(
             array $criteria,
-        ): array {
-            return [];
+        ): EntityCollection {
+            return new EntityCollection();
         }
 
         public function findOneBy(
@@ -333,15 +334,15 @@ function createMockRoleRepo(
             throw new RuntimeException('Not found');
         }
 
-        public function findAll(): array
+        public function findAll(): EntityCollection
         {
-            return [];
+            return new EntityCollection();
         }
 
         public function findBy(
             array $criteria,
-        ): array {
-            return [];
+        ): EntityCollection {
+            return new EntityCollection();
         }
 
         public function findOneBy(
