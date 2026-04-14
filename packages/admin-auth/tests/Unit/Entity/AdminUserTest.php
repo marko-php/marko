@@ -26,6 +26,7 @@ it('creates AdminUser entity implementing AuthenticatableInterface', function ()
     expect($tableAttributes)->toHaveCount(1);
 
     $tableAttribute = $tableAttributes[0]->newInstance();
+
     expect($tableAttribute->name)->toBe('admin_users');
 });
 
@@ -64,12 +65,12 @@ it('has email, password, name, rememberToken, isActive properties', function ():
 
     $rememberTokenProp = $reflection->getProperty('rememberToken');
     $rememberTokenColumn = $rememberTokenProp->getAttributes(Column::class)[0]->newInstance();
-    expect($rememberTokenColumn->name)->toBe('remember_token')
+    expect($rememberTokenColumn->name)->toBeNull()
         ->and($rememberTokenProp->getType()->allowsNull())->toBeTrue();
 
     $isActiveProp = $reflection->getProperty('isActive');
     $isActiveColumn = $isActiveProp->getAttributes(Column::class)[0]->newInstance();
-    expect($isActiveColumn->name)->toBe('is_active')
+    expect($isActiveColumn->name)->toBeNull()
         ->and($isActiveColumn->default)->toBe('1');
 });
 

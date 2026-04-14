@@ -114,23 +114,21 @@ it('has created_at timestamp', function (): void {
     expect($attributes)->toHaveCount(1);
 
     $columnAttribute = $attributes[0]->newInstance();
-    expect($columnAttribute->name)->toBe('created_at');
+    expect($columnAttribute->name)->toBeNull();
 });
 
 it('uses nullable types for optional fields appropriately', function (): void {
     $reflection = new ReflectionClass(Permission::class);
 
     $idProperty = $reflection->getProperty('id');
-    expect($idProperty->getType()->allowsNull())->toBeTrue();
-
     $createdAtProperty = $reflection->getProperty('createdAt');
-    expect($createdAtProperty->getType()->allowsNull())->toBeTrue();
-
     $keyProperty = $reflection->getProperty('key');
     $labelProperty = $reflection->getProperty('label');
     $groupProperty = $reflection->getProperty('group');
 
-    expect($keyProperty->getType()->allowsNull())->toBeFalse()
+    expect($idProperty->getType()->allowsNull())->toBeTrue()
+        ->and($createdAtProperty->getType()->allowsNull())->toBeTrue()
+        ->and($keyProperty->getType()->allowsNull())->toBeFalse()
         ->and($labelProperty->getType()->allowsNull())->toBeFalse()
         ->and($groupProperty->getType()->allowsNull())->toBeFalse();
 });

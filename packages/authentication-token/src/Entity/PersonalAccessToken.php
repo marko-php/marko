@@ -14,28 +14,28 @@ class PersonalAccessToken extends Entity
     #[Column(primaryKey: true, autoIncrement: true)]
     public ?int $id = null;
 
-    #[Column('tokenable_type')]
+    #[Column]
     public string $tokenableType = '';
 
-    #[Column('tokenable_id')]
+    #[Column]
     public int $tokenableId = 0;
 
     #[Column]
     public string $name = '';
 
-    #[Column('token_hash', length: 64)]
+    #[Column(length: 64)]
     public string $tokenHash = '';
 
     #[Column(type: 'text')]
     public ?string $abilities = null;
 
     /** @noinspection PhpUnused */
-    #[Column('last_used_at')]
+    #[Column]
     public ?string $lastUsedAt = null;
 
-    #[Column('expires_at')]
+    #[Column]
     public ?string $expiresAt = null;
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
 }

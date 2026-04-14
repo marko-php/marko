@@ -104,7 +104,7 @@ describe('Repository CRUD Operations', function (): void {
                         'name' => $bindings[0] ?? '',
                         'price' => $bindings[1] ?? 0.0,
                         'stock' => $bindings[2] ?? 0,
-                        'isAvailable' => $bindings[3] ?? true,
+                        'is_available' => $bindings[3] ?? true,
                     ];
 
                     return 1;
@@ -200,9 +200,9 @@ describe('Repository CRUD Operations', function (): void {
 
     it('finds entities by criteria', function (): void {
         $storage = [
-            1 => ['id' => 1, 'name' => 'Active Product', 'price' => 10.0, 'stock' => 5, 'isAvailable' => true],
-            2 => ['id' => 2, 'name' => 'Inactive Product', 'price' => 20.0, 'stock' => 0, 'isAvailable' => false],
-            3 => ['id' => 3, 'name' => 'Another Active', 'price' => 15.0, 'stock' => 3, 'isAvailable' => true],
+            1 => ['id' => 1, 'name' => 'Active Product', 'price' => 10.0, 'stock' => 5, 'is_available' => true],
+            2 => ['id' => 2, 'name' => 'Inactive Product', 'price' => 20.0, 'stock' => 0, 'is_available' => false],
+            3 => ['id' => 3, 'name' => 'Another Active', 'price' => 15.0, 'stock' => 3, 'is_available' => true],
         ];
 
         $connection = new readonly class ($storage) implements ConnectionInterface
@@ -225,12 +225,12 @@ describe('Repository CRUD Operations', function (): void {
                 array $bindings = [],
             ): array {
                 // Simulate findBy with isAvailable criteria
-                if (str_contains($sql, 'isAvailable = ?')) {
+                if (str_contains($sql, 'is_available = ?')) {
                     $searchValue = $bindings[0];
 
                     return array_values(array_filter(
                         $this->storage,
-                        fn ($row) => $row['isAvailable'] === $searchValue,
+                        fn ($row) => $row['is_available'] === $searchValue,
                     ));
                 }
 
@@ -367,7 +367,7 @@ describe('Repository CRUD Operations', function (): void {
 
     it('checks entity existence', function (): void {
         $storage = [
-            1 => ['id' => 1, 'name' => 'Existing', 'price' => 10.0, 'stock' => 1, 'isAvailable' => true],
+            1 => ['id' => 1, 'name' => 'Existing', 'price' => 10.0, 'stock' => 1, 'is_available' => true],
         ];
 
         $connection = new readonly class ($storage) implements ConnectionInterface

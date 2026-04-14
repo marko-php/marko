@@ -39,7 +39,7 @@ it('enforces foreign key to roles table', function (): void {
     expect($attributes)->toHaveCount(1);
 
     $columnAttribute = $attributes[0]->newInstance();
-    expect($columnAttribute->name)->toBe('role_id')
+    expect($columnAttribute->name)->toBeNull()
         ->and($columnAttribute->references)->toBe('roles.id')
         ->and($columnAttribute->onDelete)->toBe('CASCADE');
 });
@@ -52,7 +52,7 @@ it('enforces foreign key to permissions table', function (): void {
     expect($attributes)->toHaveCount(1);
 
     $columnAttribute = $attributes[0]->newInstance();
-    expect($columnAttribute->name)->toBe('permission_id')
+    expect($columnAttribute->name)->toBeNull()
         ->and($columnAttribute->references)->toBe('permissions.id')
         ->and($columnAttribute->onDelete)->toBe('CASCADE');
 });
@@ -63,19 +63,16 @@ it('prevents duplicate role permission combinations', function (): void {
 
     expect($indexAttributes)->not->toBeEmpty();
 
-    $foundUniqueIndex = false;
+    $foundUniqueIndex = array_any(
+        $indexAttributes,
+        function ($attribute) {
+            $index = $attribute->newInstance();
 
-    foreach ($indexAttributes as $attribute) {
-        $index = $attribute->newInstance();
-        if ($index->unique && in_array('role_id', $index->columns, true) && in_array(
-            'permission_id',
-            $index->columns,
-            true,
-        )) {
-            $foundUniqueIndex = true;
-            break;
-        }
-    }
+            return $index->unique
+                && in_array('role_id', $index->columns, true)
+                && in_array('permission_id', $index->columns, true);
+        },
+    );
 
     expect($foundUniqueIndex)->toBeTrue();
 });

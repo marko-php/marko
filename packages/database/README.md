@@ -31,7 +31,7 @@ class Post extends Entity
     #[Column(length: 255, unique: true)]
     public string $slug;
 
-    #[Column(type: 'text', nullable: true, default: null)]
+    #[Column(type: 'text', nullable: true)]
     public ?string $content = null;
 
     #[Column(nullable: true, default: 'draft')]
@@ -58,7 +58,7 @@ use Marko\Database\Repository\Repository;
 
 class PostRepository extends Repository
 {
-    protected string $entity = Post::class;
+    protected const string ENTITY_CLASS = Post::class;
 }
 ```
 

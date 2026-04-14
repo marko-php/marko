@@ -23,16 +23,16 @@ class AdminUser extends Entity implements AdminUserInterface
     #[Column]
     public string $name;
 
-    #[Column('remember_token')]
+    #[Column]
     public ?string $rememberToken = null;
 
-    #[Column('is_active', default: '1')]
+    #[Column(default: '1')]
     public string $isActive = '1';
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
 
-    #[Column('updated_at')]
+    #[Column]
     public ?string $updatedAt = null;
 
     public function getEmail(): string

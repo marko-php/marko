@@ -150,8 +150,8 @@ it('builds ForeignKey objects from column references', function (): void {
 
     expect($table->foreignKeys)
         ->toHaveCount(1)
-        ->and($table->foreignKeys[0]->name)->toBe('fk_posts_userId')
-        ->and($table->foreignKeys[0]->columns)->toBe(['userId'])
+        ->and($table->foreignKeys[0]->name)->toBe('fk_posts_user_id')
+        ->and($table->foreignKeys[0]->columns)->toBe(['user_id'])
         ->and($table->foreignKeys[0]->referencedTable)->toBe('users')
         ->and($table->foreignKeys[0]->referencedColumns)->toBe(['id'])
         ->and($table->foreignKeys[0]->onDelete)->toBe('CASCADE')
