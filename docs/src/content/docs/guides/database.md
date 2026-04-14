@@ -148,6 +148,61 @@ class PostRepository
 }
 ```
 
+### Repositories
+
+Extend `Repository` for entity-aware queries. `findAll()` and `findBy()` return an `EntityCollection` — an iterable, countable collection with `filter`, `map`, `sortBy`, `groupBy`, `chunk`, and `pluck` methods.
+
+```php title="app/blog/Repository/PostRepository.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Repository;
+
+use App\Blog\Entity\Post;
+use Marko\Database\Entity\EntityCollection;
+use Marko\Database\Repository\Repository;
+
+class PostRepository extends Repository
+{
+    protected const ENTITY_CLASS = Post::class;
+
+    public function findBySlug(string $slug): ?Post
+    {
+        return $this->findOneBy(['slug' => $slug]);
+    }
+
+    public function findPublished(): EntityCollection
+    {
+        return $this->query()
+            ->where('status', '=', 'published')
+            ->orderBy('created_at', 'desc')
+            ->getEntities();
+    }
+}
+```
+
+Use `with()` to eager-load relationships and avoid N+1 queries. Nested relationships use dot notation:
+
+```php
+$posts = $postRepository->with('comments', 'tags')->findAll();
+$posts = $postRepository->with('comments.author')->findAll();
+```
+
+Use `matching()` with `QuerySpecification` objects to compose reusable query logic:
+
+```php
+use App\Blog\Query\PublishedSpec;
+use App\Blog\Query\RecentSpec;
+
+$posts = $postRepository->matching(
+    new PublishedSpec(),
+    new RecentSpec(limit: 5),
+);
+```
+
+See the [Database package reference](/docs/packages/database/) for the full Relationships, EntityCollection, and Query Specifications API.
+
 ## Seeders
 
 Populate your database with test or default data:

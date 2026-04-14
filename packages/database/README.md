@@ -73,6 +73,28 @@ Marko infers SQL column types from PHP type declarations where possible. For exa
 | `#[Table]` | Maps a class to a database table |
 | `#[Column]` | Maps a property to a table column |
 | `#[Index]` | Defines an index on one or more columns |
+| `#[HasOne]` | Defines a one-to-one relationship |
+| `#[HasMany]` | Defines a one-to-many relationship |
+| `#[BelongsTo]` | Defines an inverse one-to-one/many relationship |
+| `#[BelongsToMany]` | Defines a many-to-many relationship via pivot entity |
+
+## Relationships
+
+Define relationships with attributes and load them explicitly via `with()`:
+
+```php
+$posts = $postRepository->with('author', 'comments')->findAll();
+```
+
+No lazy loading, no proxies — relationships are only loaded when you ask for them.
+
+## Query Specifications
+
+Composable, named query objects replace magic scopes:
+
+```php
+$posts = $postRepository->matching(new PublishedPosts(), new RecentPosts(days: 30))->toArray();
+```
 
 ## CLI Commands
 

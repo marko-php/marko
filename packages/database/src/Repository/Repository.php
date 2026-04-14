@@ -9,10 +9,12 @@ use DateTimeImmutable;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\PropertyMetadata;
+use Marko\Database\Entity\RelationshipLoader;
 use Marko\Database\Events\EntityCreated;
 use Marko\Database\Events\EntityCreating;
 use Marko\Database\Events\EntityDeleted;
@@ -22,6 +24,7 @@ use Marko\Database\Events\EntityUpdating;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
+use Marko\Database\Query\QuerySpecification;
 use ReflectionClass;
 
 /**
@@ -44,11 +47,19 @@ abstract class Repository implements RepositoryInterface
     protected readonly EntityMetadata $metadata;
 
     /**
+     * Relationships to eager-load on the next query.
+     *
+     * @var array<string>
+     */
+    private array $pendingRelationships = [];
+
+    /**
      * @param ConnectionInterface $connection Database connection
      * @param EntityMetadataFactory $metadataFactory Factory for entity metadata
      * @param EntityHydrator $hydrator Entity hydrator
      * @param QueryBuilderFactoryInterface|null $queryBuilderFactory Optional factory that creates QueryBuilderInterface instances
      * @param EventDispatcherInterface|null $eventDispatcher Optional event dispatcher for lifecycle events
+     * @param RelationshipLoader|null $relationshipLoader Optional loader for eager-loading relationships
      *
      * @throws RepositoryException
      */
@@ -58,9 +69,37 @@ abstract class Repository implements RepositoryInterface
         protected readonly EntityHydrator $hydrator,
         protected readonly ?QueryBuilderFactoryInterface $queryBuilderFactory = null,
         protected readonly ?EventDispatcherInterface $eventDispatcher = null,
+        protected readonly ?RelationshipLoader $relationshipLoader = null,
     ) {
         $this->validateEntityClass();
         $this->metadata = $this->metadataFactory->parse(static::ENTITY_CLASS);
+    }
+
+    /**
+     * Specify relationships to eager-load on the next query.
+     *
+     * Returns a cloned repository with the pending relationships set.
+     *
+     * @throws RepositoryException When RelationshipLoader is not configured or relationship name is unknown
+     */
+    public function with(string ...$relationships): static
+    {
+        if ($this->relationshipLoader === null) {
+            throw RepositoryException::relationshipLoaderNotConfigured(static::class);
+        }
+
+        foreach ($relationships as $name) {
+            $topLevel = explode('.', $name, 2)[0];
+
+            if ($this->metadata->getRelationship($topLevel) === null) {
+                throw RepositoryException::unknownRelationship(static::class, static::ENTITY_CLASS, $name);
+            }
+        }
+
+        $clone = clone $this;
+        $clone->pendingRelationships = array_values($relationships);
+
+        return $clone;
     }
 
     /**
@@ -86,11 +125,15 @@ abstract class Repository implements RepositoryInterface
             return null;
         }
 
-        return $this->hydrator->hydrate(
+        $entity = $this->hydrator->hydrate(
             static::ENTITY_CLASS,
             $rows[0],
             $this->metadata,
         );
+
+        $this->eagerLoadRelationships([$entity]);
+
+        return $entity;
     }
 
     /**
@@ -114,14 +157,14 @@ abstract class Repository implements RepositoryInterface
     /**
      * Find all entities in the repository.
      *
-     * @return array<TEntity>
+     * @return EntityCollection<TEntity>
      */
-    public function findAll(): array
+    public function findAll(): EntityCollection
     {
         $sql = sprintf('SELECT * FROM %s', $this->metadata->tableName);
         $rows = $this->connection->query($sql);
 
-        return array_map(
+        $entities = array_map(
             fn (array $row): Entity => $this->hydrator->hydrate(
                 static::ENTITY_CLASS,
                 $row,
@@ -129,17 +172,21 @@ abstract class Repository implements RepositoryInterface
             ),
             $rows,
         );
+
+        $this->eagerLoadRelationships($entities);
+
+        return new EntityCollection($entities);
     }
 
     /**
      * Find entities matching the given criteria.
      *
      * @param array<string, mixed> $criteria Column-value pairs to match
-     * @return array<TEntity>
+     * @return EntityCollection<TEntity>
      */
     public function findBy(
         array $criteria,
-    ): array {
+    ): EntityCollection {
         $propertyToColumn = $this->metadata->getPropertyToColumnMap();
         $conditions = [];
         $bindings = [];
@@ -158,7 +205,7 @@ abstract class Repository implements RepositoryInterface
 
         $rows = $this->connection->query($sql, $bindings);
 
-        return array_map(
+        $entities = array_map(
             fn (array $row): Entity => $this->hydrator->hydrate(
                 static::ENTITY_CLASS,
                 $row,
@@ -166,6 +213,10 @@ abstract class Repository implements RepositoryInterface
             ),
             $rows,
         );
+
+        $this->eagerLoadRelationships($entities);
+
+        return new EntityCollection($entities);
     }
 
     /**
@@ -176,9 +227,7 @@ abstract class Repository implements RepositoryInterface
     public function findOneBy(
         array $criteria,
     ): ?Entity {
-        $results = $this->findBy($criteria);
-
-        return $results[0] ?? null;
+        return $this->findBy($criteria)->first();
     }
 
     /**
@@ -254,6 +303,40 @@ abstract class Repository implements RepositoryInterface
             $this->hydrator,
             $this->metadata,
             static::ENTITY_CLASS,
+        );
+    }
+
+    /**
+     * Return an EntityCollection of entities matching all given specifications.
+     *
+     * Specifications are applied in order to a fresh query builder.
+     *
+     * @throws RepositoryException If no query builder factory was provided
+     */
+    public function matching(QuerySpecification ...$specifications): EntityCollection
+    {
+        if ($this->queryBuilderFactory === null) {
+            throw RepositoryException::queryBuilderNotConfigured(static::class);
+        }
+
+        $queryBuilder = $this->queryBuilderFactory->create();
+        $queryBuilder->table($this->metadata->tableName);
+
+        foreach ($specifications as $specification) {
+            $specification->apply($queryBuilder);
+        }
+
+        $rows = $queryBuilder->get();
+
+        return new EntityCollection(
+            array_map(
+                fn (array $row): Entity => $this->hydrator->hydrate(
+                    static::ENTITY_CLASS,
+                    $row,
+                    $this->metadata,
+                ),
+                $rows,
+            ),
         );
     }
 
@@ -431,6 +514,23 @@ abstract class Repository implements RepositoryInterface
         }
 
         return $value;
+    }
+
+    /**
+     * Eager-load any pending relationships on the given entities.
+     *
+     * Supports dot-notation for nested eager loading (e.g. 'comments.author').
+     *
+     * @param Entity[] $entities
+     */
+    private function eagerLoadRelationships(array $entities): void
+    {
+        if ($this->pendingRelationships === [] || $this->relationshipLoader === null || $entities === []) {
+            return;
+        }
+
+        $tree = RelationshipLoader::parseRelationshipTree($this->pendingRelationships);
+        $this->relationshipLoader->loadNested($entities, $tree, $this->metadata);
     }
 
     /**
