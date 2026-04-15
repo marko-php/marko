@@ -9,6 +9,7 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
@@ -77,7 +78,7 @@ it('defines RepositoryInterface with findAll() method', function (): void {
     $returnType = $method->getReturnType();
     expect($method->isPublic())->toBeTrue()
         ->and($method->getParameters())->toHaveCount(0)
-        ->and($returnType->getName())->toBe('array');
+        ->and($returnType->getName())->toBe(EntityCollection::class);
 });
 
 it('defines RepositoryInterface with findBy(criteria) method', function (): void {
@@ -92,7 +93,7 @@ it('defines RepositoryInterface with findBy(criteria) method', function (): void
         ->and($parameters)->toHaveCount(1)
         ->and($parameters[0]->getName())->toBe('criteria')
         ->and($parameters[0]->getType()->getName())->toBe('array')
-        ->and($returnType->getName())->toBe('array');
+        ->and($returnType->getName())->toBe(EntityCollection::class);
 });
 
 it('defines RepositoryInterface with findOneBy(criteria) method', function (): void {
@@ -316,10 +317,11 @@ it('finds all entities with findAll()', function (): void {
     $repository = new UserRepository($connection, $metadataFactory, $hydrator);
     $users = $repository->findAll();
 
-    expect($users)->toHaveCount(2)
-        ->and($users[0])->toBeInstanceOf(RepositoryTestUser::class)
-        ->and($users[0]->name)->toBe('Alice')
-        ->and($users[1]->name)->toBe('Bob');
+    expect($users)->toBeInstanceOf(EntityCollection::class)
+        ->and($users->count())->toBe(2)
+        ->and($users->first())->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($users->first()->name)->toBe('Alice')
+        ->and($users->last()->name)->toBe('Bob');
 });
 
 it('finds entities by criteria array with findBy(array)', function (): void {
@@ -333,9 +335,10 @@ it('finds entities by criteria array with findBy(array)', function (): void {
     $repository = new UserRepository($connection, $metadataFactory, $hydrator);
     $users = $repository->findBy(['isActive' => true]);
 
-    expect($users)->toHaveCount(2)
-        ->and($users[0]->isActive)->toBeTrue()
-        ->and($users[1]->isActive)->toBeTrue();
+    expect($users)->toBeInstanceOf(EntityCollection::class)
+        ->and($users->count())->toBe(2)
+        ->and($users->first()->isActive)->toBeTrue()
+        ->and($users->last()->isActive)->toBeTrue();
 });
 
 it('finds single entity by criteria with findOneBy(array)', function (): void {
@@ -735,9 +738,10 @@ it('hydrates results from query() automatically', function (): void {
         ->where('name', '=', 'QueryUser')
         ->getEntities();
 
+    $array = $users->toArray();
     expect($users)->toHaveCount(1)
-        ->and($users[0])->toBeInstanceOf(RepositoryTestUser::class)
-        ->and($users[0]->name)->toBe('QueryUser');
+        ->and($array[0])->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($array[0]->name)->toBe('QueryUser');
 });
 
 it('supports count() method returning total count', function (): void {

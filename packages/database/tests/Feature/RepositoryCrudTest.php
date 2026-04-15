@@ -260,13 +260,12 @@ describe('Repository CRUD Operations', function (): void {
         $hydrator = new EntityHydrator();
         $repository = new ProductRepository($connection, $metadataFactory, $hydrator);
 
-        /** @var array<CrudProduct> $activeProducts */
         $activeProducts = $repository->findBy(['isAvailable' => true]);
 
         expect($activeProducts)
             ->toHaveCount(2)
-            ->and($activeProducts[0]->isAvailable)->toBeTrue()
-            ->and($activeProducts[1]->isAvailable)->toBeTrue();
+            ->and($activeProducts->first()->isAvailable)->toBeTrue()
+            ->and($activeProducts->last()->isAvailable)->toBeTrue();
     });
 
     it('returns null for non-existent entities', function (): void {

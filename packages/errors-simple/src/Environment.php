@@ -26,15 +26,15 @@ class Environment
 
     public function isDevelopment(): bool
     {
-        $env = $this->getEnvVar('MARKO_ENV') ?? $this->getEnvVar('APP_ENV');
-        $envLower = $env !== null ? strtolower($env) : null;
-
-        return in_array($envLower, ['dev', 'development', 'local'], true);
+        return !$this->isProduction();
     }
 
     public function isProduction(): bool
     {
-        return !$this->isDevelopment();
+        $env = $this->getEnvVar('MARKO_ENV') ?? $this->getEnvVar('APP_ENV');
+        $envLower = $env !== null ? strtolower($env) : null;
+
+        return in_array($envLower, ['production', 'prod'], true);
     }
 
     private function getSapi(): string
