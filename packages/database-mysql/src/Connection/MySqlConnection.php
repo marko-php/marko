@@ -47,6 +47,19 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         ];
 
+        if ($this->config->sslRootCert !== null) {
+            $options[Pdo\Mysql::ATTR_SSL_CA] = $this->config->sslRootCert;
+            $options[Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT] = $this->config->sslVerifyServerCert;
+        }
+
+        if ($this->config->sslCert !== null) {
+            $options[Pdo\Mysql::ATTR_SSL_CERT] = $this->config->sslCert;
+        }
+
+        if ($this->config->sslKey !== null) {
+            $options[Pdo\Mysql::ATTR_SSL_KEY] = $this->config->sslKey;
+        }
+
         try {
             $this->pdo = $this->createPdo(
                 $this->getDsn(),

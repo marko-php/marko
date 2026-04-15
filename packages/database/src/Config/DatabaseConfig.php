@@ -24,6 +24,16 @@ readonly class DatabaseConfig
 
     public string $password;
 
+    public ?string $sslMode;
+
+    public ?string $sslRootCert;
+
+    public bool $sslVerifyServerCert;
+
+    public ?string $sslCert;
+
+    public ?string $sslKey;
+
     /**
      * @throws ConfigurationException
      */
@@ -52,5 +62,18 @@ readonly class DatabaseConfig
         $this->database = $config['database'];
         $this->username = $config['username'];
         $this->password = $config['password'];
+        $this->sslMode = $config['sslmode'] ?? null;
+        $this->sslRootCert = $config['ssl_ca'] ?? null;
+        $this->sslVerifyServerCert = $config['ssl_verify_server_cert'] ?? ($this->sslRootCert !== null);
+        $this->sslCert = $config['ssl_cert'] ?? null;
+        $this->sslKey = $config['ssl_key'] ?? null;
+
+        if ($this->sslCert !== null && $this->sslKey === null) {
+            throw ConfigurationException::incompleteSslKeyPair('ssl_cert', 'ssl_key');
+        }
+
+        if ($this->sslKey !== null && $this->sslCert === null) {
+            throw ConfigurationException::incompleteSslKeyPair('ssl_key', 'ssl_cert');
+        }
     }
 }

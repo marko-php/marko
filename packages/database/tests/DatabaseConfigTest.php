@@ -141,6 +141,210 @@ PHP;
         }
     });
 
+    it('loads optional SSL config when present', function (): void {
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $configDir = $tempDir . '/config';
+        mkdir($configDir, 0755, true);
+
+        $configContent = <<<'PHP'
+<?php
+
+return [
+    'driver' => 'pgsql',
+    'host' => 'db.example.com',
+    'port' => 5432,
+    'database' => 'test_db',
+    'username' => 'root',
+    'password' => 'secret',
+    'sslmode' => 'require',
+    'ssl_ca' => '/path/to/ca.pem',
+];
+PHP;
+        file_put_contents($configDir . '/database.php', $configContent);
+
+        try {
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
+
+            expect($config->sslMode)->toBe('require')
+                ->and($config->sslRootCert)->toBe('/path/to/ca.pem')
+                ->and($config->sslVerifyServerCert)->toBeTrue();
+        } finally {
+            unlink($configDir . '/database.php');
+            rmdir($configDir);
+            rmdir($tempDir);
+        }
+    });
+
+    it('loads ssl_verify_server_cert when present', function (): void {
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $configDir = $tempDir . '/config';
+        mkdir($configDir, 0755, true);
+
+        $configContent = <<<'PHP'
+<?php
+
+return [
+    'driver' => 'mysql',
+    'host' => 'db.example.com',
+    'port' => 3306,
+    'database' => 'test_db',
+    'username' => 'root',
+    'password' => 'secret',
+    'ssl_ca' => '/path/to/ca.pem',
+    'ssl_verify_server_cert' => true,
+];
+PHP;
+        file_put_contents($configDir . '/database.php', $configContent);
+
+        try {
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
+
+            expect($config->sslRootCert)->toBe('/path/to/ca.pem')
+                ->and($config->sslVerifyServerCert)->toBeTrue();
+        } finally {
+            unlink($configDir . '/database.php');
+            rmdir($configDir);
+            rmdir($tempDir);
+        }
+    });
+
+    it('loads ssl_cert and ssl_key when present', function (): void {
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $configDir = $tempDir . '/config';
+        mkdir($configDir, 0755, true);
+
+        $configContent = <<<'PHP'
+<?php
+
+return [
+    'driver' => 'pgsql',
+    'host' => 'db.example.com',
+    'port' => 5432,
+    'database' => 'test_db',
+    'username' => 'root',
+    'password' => 'secret',
+    'ssl_cert' => '/path/to/client-cert.pem',
+    'ssl_key' => '/path/to/client-key.pem',
+];
+PHP;
+        file_put_contents($configDir . '/database.php', $configContent);
+
+        try {
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
+
+            expect($config->sslCert)->toBe('/path/to/client-cert.pem')
+                ->and($config->sslKey)->toBe('/path/to/client-key.pem');
+        } finally {
+            unlink($configDir . '/database.php');
+            rmdir($configDir);
+            rmdir($tempDir);
+        }
+    });
+
+    it('defaults SSL config to null when not present', function (): void {
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $configDir = $tempDir . '/config';
+        mkdir($configDir, 0755, true);
+
+        $configContent = <<<'PHP'
+<?php
+
+return [
+    'driver' => 'pgsql',
+    'host' => 'localhost',
+    'port' => 5432,
+    'database' => 'test_db',
+    'username' => 'root',
+    'password' => 'secret',
+];
+PHP;
+        file_put_contents($configDir . '/database.php', $configContent);
+
+        try {
+            $paths = new ProjectPaths($tempDir);
+            $config = new DatabaseConfig($paths);
+
+            expect($config->sslMode)->toBeNull()
+                ->and($config->sslRootCert)->toBeNull()
+                ->and($config->sslVerifyServerCert)->toBeFalse()
+                ->and($config->sslCert)->toBeNull()
+                ->and($config->sslKey)->toBeNull();
+        } finally {
+            unlink($configDir . '/database.php');
+            rmdir($configDir);
+            rmdir($tempDir);
+        }
+    });
+
+    it('throws ConfigurationException when ssl_cert is set without ssl_key', function (): void {
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $configDir = $tempDir . '/config';
+        mkdir($configDir, 0755, true);
+
+        $configContent = <<<'PHP'
+<?php
+
+return [
+    'driver' => 'pgsql',
+    'host' => 'localhost',
+    'port' => 5432,
+    'database' => 'test_db',
+    'username' => 'root',
+    'password' => 'secret',
+    'ssl_cert' => '/path/to/client-cert.pem',
+];
+PHP;
+        file_put_contents($configDir . '/database.php', $configContent);
+
+        try {
+            $paths = new ProjectPaths($tempDir);
+            expect(fn () => new DatabaseConfig($paths))
+                ->toThrow(ConfigurationException::class)
+                ->and(fn () => new DatabaseConfig($paths))
+                ->toThrow(ConfigurationException::class, 'ssl_key');
+        } finally {
+            unlink($configDir . '/database.php');
+            rmdir($configDir);
+            rmdir($tempDir);
+        }
+    });
+
+    it('throws ConfigurationException when ssl_key is set without ssl_cert', function (): void {
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $configDir = $tempDir . '/config';
+        mkdir($configDir, 0755, true);
+
+        $configContent = <<<'PHP'
+<?php
+
+return [
+    'driver' => 'pgsql',
+    'host' => 'localhost',
+    'port' => 5432,
+    'database' => 'test_db',
+    'username' => 'root',
+    'password' => 'secret',
+    'ssl_key' => '/path/to/client-key.pem',
+];
+PHP;
+        file_put_contents($configDir . '/database.php', $configContent);
+
+        try {
+            $paths = new ProjectPaths($tempDir);
+            expect(fn () => new DatabaseConfig($paths))
+                ->toThrow(ConfigurationException::class)
+                ->and(fn () => new DatabaseConfig($paths))
+                ->toThrow(ConfigurationException::class, 'ssl_cert');
+        } finally {
+            unlink($configDir . '/database.php');
+            rmdir($configDir);
+            rmdir($tempDir);
+        }
+    });
+
     it('throws ConfigurationException when required keys missing', function (): void {
         $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
         $configDir = $tempDir . '/config';

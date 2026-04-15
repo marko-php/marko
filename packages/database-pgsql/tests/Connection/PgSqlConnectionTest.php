@@ -21,19 +21,42 @@ function createTestPgSqlConfig(
     string $database = 'test',
     string $username = 'user',
     string $password = 'pass',
+    ?string $sslmode = null,
+    ?string $sslCa = null,
+    ?string $sslCert = null,
+    ?string $sslKey = null,
 ): DatabaseConfig {
     $tempDir = sys_get_temp_dir() . '/marko_pgsql_test_' . uniqid();
     mkdir($tempDir . '/config', recursive: true);
+
+    $configArray = [
+        'driver' => 'pgsql',
+        'host' => $host,
+        'port' => $port,
+        'database' => $database,
+        'username' => $username,
+        'password' => $password,
+    ];
+
+    if ($sslmode !== null) {
+        $configArray['sslmode'] = $sslmode;
+    }
+
+    if ($sslCa !== null) {
+        $configArray['ssl_ca'] = $sslCa;
+    }
+
+    if ($sslCert !== null) {
+        $configArray['ssl_cert'] = $sslCert;
+    }
+
+    if ($sslKey !== null) {
+        $configArray['ssl_key'] = $sslKey;
+    }
+
     file_put_contents(
         $tempDir . '/config/database.php',
-        '<?php return ' . var_export([
-            'driver' => 'pgsql',
-            'host' => $host,
-            'port' => $port,
-            'database' => $database,
-            'username' => $username,
-            'password' => $password,
-        ], true) . ';',
+        '<?php return ' . var_export($configArray, true) . ';',
     );
 
     $paths = new ProjectPaths($tempDir);
@@ -567,6 +590,80 @@ describe('PgSqlConnection', function (): void {
         });
 
         expect($result)->toBe('success');
+    });
+
+    it('includes sslmode in DSN when configured', function (): void {
+        $config = createTestPgSqlConfig(
+            host: 'db.example.com',
+            port: 5432,
+            database: 'myapp',
+            sslmode: 'require',
+        );
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->toBe('pgsql:host=db.example.com;port=5432;dbname=myapp;sslmode=require');
+    });
+
+    it('omits sslmode from DSN when not configured', function (): void {
+        $config = createTestPgSqlConfig(
+            host: 'db.example.com',
+            port: 5432,
+            database: 'myapp',
+        );
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->not->toContain('sslmode');
+    });
+
+    it('includes sslrootcert in DSN when configured', function (): void {
+        $config = createTestPgSqlConfig(
+            host: 'db.example.com',
+            port: 5432,
+            database: 'myapp',
+            sslCa: '/path/to/ca.pem',
+        );
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->toContain('sslrootcert=/path/to/ca.pem');
+    });
+
+    it('omits sslrootcert from DSN when not configured', function (): void {
+        $config = createTestPgSqlConfig(
+            host: 'db.example.com',
+            port: 5432,
+            database: 'myapp',
+        );
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->not->toContain('sslrootcert');
+    });
+
+    it('includes sslcert in DSN when configured', function (): void {
+        $config = createTestPgSqlConfig(sslCert: '/path/to/client-cert.pem', sslKey: '/path/to/client-key.pem');
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->toContain('sslcert=/path/to/client-cert.pem');
+    });
+
+    it('omits sslcert from DSN when not configured', function (): void {
+        $config = createTestPgSqlConfig();
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->not->toContain('sslcert');
+    });
+
+    it('includes sslkey in DSN when configured', function (): void {
+        $config = createTestPgSqlConfig(sslCert: '/path/to/client-cert.pem', sslKey: '/path/to/client-key.pem');
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->toContain('sslkey=/path/to/client-key.pem');
+    });
+
+    it('omits sslkey from DSN when not configured', function (): void {
+        $config = createTestPgSqlConfig();
+        $connection = new PgSqlConnection($config);
+
+        expect($connection->getDsn())->not->toContain('sslkey');
     });
 
     it('prevents nested transactions (throws exception)', function (): void {

@@ -77,7 +77,25 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
 
     private function buildDsn(): string
     {
-        return "pgsql:host={$this->config->host};port={$this->config->port};dbname={$this->config->database}";
+        $dsn = "pgsql:host={$this->config->host};port={$this->config->port};dbname={$this->config->database}";
+
+        if ($this->config->sslMode !== null) {
+            $dsn .= ";sslmode={$this->config->sslMode}";
+        }
+
+        if ($this->config->sslRootCert !== null) {
+            $dsn .= ";sslrootcert={$this->config->sslRootCert}";
+        }
+
+        if ($this->config->sslCert !== null) {
+            $dsn .= ";sslcert={$this->config->sslCert}";
+        }
+
+        if ($this->config->sslKey !== null) {
+            $dsn .= ";sslkey={$this->config->sslKey}";
+        }
+
+        return $dsn;
     }
 
     /**
@@ -163,8 +181,10 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
     /**
      * @param array<int|string, mixed> $bindings
      */
-    private function bindValues(PDOStatement $statement, array $bindings): void
-    {
+    private function bindValues(
+        PDOStatement $statement,
+        array $bindings,
+    ): void {
         foreach ($bindings as $key => $value) {
             $param = is_int($key) ? $key + 1 : $key;
             $type = match (true) {
