@@ -24,21 +24,30 @@ it('instantiates CliKernel', function () use ($binMarkoPath) {
     $content = file_get_contents($binMarkoPath);
 
     expect($content)->toContain('use Marko\Cli\CliKernel')
-        ->and($content)->toContain('new CliKernel');
+        ->and($content)->toContain('new CliKernel')
+        ->and($content)->toContain('projectFinder: $projectFinder');
 });
 
 it('passes argv to kernel run method', function () use ($binMarkoPath) {
     $content = file_get_contents($binMarkoPath);
 
-    expect($content)->toContain('$kernel->run($argv)');
+    expect($content)->toContain('->run($argv)');
 });
 
 it('exits with code returned from kernel', function () use ($binMarkoPath) {
     $content = file_get_contents($binMarkoPath);
 
-    // Should capture exit code and use it
-    expect($content)->toContain('$exitCode')
-        ->and($content)->toContain('exit($exitCode)');
+    expect($content)->toContain('exit((new CliKernel(')
+        ->and($content)->toContain('))->run($argv));');
+});
+
+it('loads the project autoloader when a project root is found', function () use ($binMarkoPath) {
+    $content = file_get_contents($binMarkoPath);
+
+    expect($content)->toContain('use Marko\Cli\ProjectFinder')
+        ->and($content)->toContain('$projectFinder = new ProjectFinder()')
+        ->and($content)->toContain('$projectFinder->find()')
+        ->and($content)->toContain('require_once "{$projectRoot}/vendor/autoload.php"');
 });
 
 it('handles uncaught exceptions gracefully', function () use ($binMarkoPath) {

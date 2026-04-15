@@ -25,7 +25,7 @@ class Permission extends Entity implements PermissionInterface
     #[Column]
     public string $group;
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
 
     public function getId(): ?int

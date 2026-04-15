@@ -17,10 +17,10 @@ class Media extends Entity
     #[Column(length: 255)]
     public string $filename = '';
 
-    #[Column('original_filename', length: 255)]
+    #[Column(length: 255)]
     public string $originalFilename = '';
 
-    #[Column('mime_type', length: 100)]
+    #[Column(length: 100)]
     public string $mimeType = '';
 
     #[Column]
@@ -35,9 +35,9 @@ class Media extends Entity
     #[Column(type: 'TEXT')]
     public ?string $metadata = null;
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
 
-    #[Column('updated_at')]
+    #[Column]
     public ?string $updatedAt = null;
 }

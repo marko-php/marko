@@ -107,7 +107,7 @@ Marko detects route conflicts at boot time, not at request time. If two controll
 
 ## Route Overrides
 
-Higher-priority modules can override routes from lower-priority modules. If `vendor/marko/blog` defines `GET /posts` and your `app/blog` also defines `GET /posts`, your version wins.
+Higher-priority modules can override routes from lower-priority modules. If a vendor package defines `GET /posts` and your `app/blog` also defines `GET /posts`, your version wins.
 
 ## Disabling Routes
 

@@ -99,8 +99,8 @@ it('discovers all entity classes with #[Table] attribute across modules', functi
 
 it('discovers entities in vendor path', function (): void {
     $expected = createUniqueEntityFile(
-        $this->tempDir . '/vendor/marko/blog/src/Entity/Post.php',
-        'Marko\Blog\Entity',
+        $this->tempDir . '/vendor/acme/blog/src/Entity/Post.php',
+        'Acme\Blog\Entity',
         'Post',
         'posts',
         $this->uniqueId,

@@ -311,6 +311,7 @@ it('resolves target method from plugin method name when no method param', functi
 class ExplicitMethodTargetService
 {
     public function save(): void {}
+
     public function delete(): void {}
 }
 
@@ -377,6 +378,7 @@ it('builds PluginDefinition with correct target-to-plugin method mapping', funct
 class MixedTargetService
 {
     public function run(): void {}
+
     public function stop(): void {}
 }
 

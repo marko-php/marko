@@ -42,7 +42,7 @@ it('defines Media entity with table and column attributes for all media properti
     $originalFilenameAttrs = $originalFilenameProp->getAttributes(Column::class);
     $originalFilenameColumn = $originalFilenameAttrs[0]->newInstance();
     expect($originalFilenameAttrs)->toHaveCount(1)
-        ->and($originalFilenameColumn->name)->toBe('original_filename')
+        ->and($originalFilenameColumn->name)->toBeNull()
         ->and($originalFilenameColumn->length)->toBe(255);
 
     // Verify mime_type property
@@ -50,7 +50,7 @@ it('defines Media entity with table and column attributes for all media properti
     $mimeTypeAttrs = $mimeTypeProp->getAttributes(Column::class);
     $mimeTypeColumn = $mimeTypeAttrs[0]->newInstance();
     expect($mimeTypeAttrs)->toHaveCount(1)
-        ->and($mimeTypeColumn->name)->toBe('mime_type')
+        ->and($mimeTypeColumn->name)->toBeNull()
         ->and($mimeTypeColumn->length)->toBe(100);
 
     // Verify size property
@@ -85,7 +85,7 @@ it('defines Media entity with table and column attributes for all media properti
     $createdAtAttrs = $createdAtProp->getAttributes(Column::class);
     $createdAtColumn = $createdAtAttrs[0]->newInstance();
     expect($createdAtAttrs)->toHaveCount(1)
-        ->and($createdAtColumn->name)->toBe('created_at')
+        ->and($createdAtColumn->name)->toBeNull()
         ->and($createdAtProp->getType()->allowsNull())->toBeTrue();
 
     // Verify updated_at property
@@ -93,6 +93,6 @@ it('defines Media entity with table and column attributes for all media properti
     $updatedAtAttrs = $updatedAtProp->getAttributes(Column::class);
     $updatedAtColumn = $updatedAtAttrs[0]->newInstance();
     expect($updatedAtAttrs)->toHaveCount(1)
-        ->and($updatedAtColumn->name)->toBe('updated_at')
+        ->and($updatedAtColumn->name)->toBeNull()
         ->and($updatedAtProp->getType()->allowsNull())->toBeTrue();
 });

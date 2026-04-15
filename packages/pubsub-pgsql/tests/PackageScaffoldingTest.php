@@ -16,23 +16,23 @@ it(
     'has valid module.php for marko/pubsub-pgsql binding PublisherInterface and SubscriberInterface',
     function (): void {
         $modulePath = dirname(__DIR__) . '/module.php';
-    
+
         expect(file_exists($modulePath))->toBeTrue();
-    
+
         $module = require $modulePath;
-    
+
         expect($module)->toBeArray()
             ->and($module)->toHaveKey('bindings')
             ->and($module['bindings'])->toBeArray()
             ->and($module['bindings'])->toHaveKey('Marko\\PubSub\\PublisherInterface')
             ->and($module['bindings']['Marko\\PubSub\\PublisherInterface'])->toBe(
-                'Marko\\PubSub\\PgSql\\Driver\\PgSqlPublisher'
+                'Marko\\PubSub\\PgSql\\Driver\\PgSqlPublisher',
             )
             ->and($module['bindings'])->toHaveKey('Marko\\PubSub\\SubscriberInterface')
             ->and($module['bindings']['Marko\\PubSub\\SubscriberInterface'])->toBe(
-                'Marko\\PubSub\\PgSql\\Driver\\PgSqlSubscriber'
+                'Marko\\PubSub\\PgSql\\Driver\\PgSqlSubscriber',
             );
-    }
+    },
 );
 
 it('provides default config file with pgsql connection settings', function (): void {

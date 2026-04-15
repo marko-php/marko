@@ -1,8 +1,0 @@
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-    <a href="/blog">Blog</a>
-    {foreach $items as $item}
-        &gt;
-        <a n:if="$item['url'] ?? null" href="{$item['url']}">{$item['label']}</a>
-        <span n:if="!($item['url'] ?? null)" aria-current="page">{$item['label']}</span>
-    {/foreach}
-</nav>

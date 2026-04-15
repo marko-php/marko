@@ -9,7 +9,7 @@ use Marko\Sse\StreamingResponse;
 describe('StreamingResponse', function (): void {
     it('extends Response', function (): void {
         $response = new StreamingResponse(
-            stream: new SseStream(dataProvider: fn(): array => []),
+            stream: new SseStream(dataProvider: fn (): array => []),
         );
 
         expect($response)->toBeInstanceOf(Response::class);
@@ -17,7 +17,7 @@ describe('StreamingResponse', function (): void {
 
     it('sets Content-Type header to text/event-stream', function (): void {
         $response = new StreamingResponse(
-            stream: new SseStream(dataProvider: fn(): array => []),
+            stream: new SseStream(dataProvider: fn (): array => []),
         );
 
         expect($response->headers())->toHaveKey('Content-Type')
@@ -26,7 +26,7 @@ describe('StreamingResponse', function (): void {
 
     it('sets Cache-Control header to no-cache', function (): void {
         $response = new StreamingResponse(
-            stream: new SseStream(dataProvider: fn(): array => []),
+            stream: new SseStream(dataProvider: fn (): array => []),
         );
 
         expect($response->headers())->toHaveKey('Cache-Control')
@@ -35,7 +35,7 @@ describe('StreamingResponse', function (): void {
 
     it('sets Connection header to keep-alive', function (): void {
         $response = new StreamingResponse(
-            stream: new SseStream(dataProvider: fn(): array => []),
+            stream: new SseStream(dataProvider: fn (): array => []),
         );
 
         expect($response->headers())->toHaveKey('Connection')
@@ -44,7 +44,7 @@ describe('StreamingResponse', function (): void {
 
     it('sets X-Accel-Buffering header to no', function (): void {
         $response = new StreamingResponse(
-            stream: new SseStream(dataProvider: fn(): array => []),
+            stream: new SseStream(dataProvider: fn (): array => []),
         );
 
         expect($response->headers())->toHaveKey('X-Accel-Buffering')
@@ -53,7 +53,7 @@ describe('StreamingResponse', function (): void {
 
     it('has 200 status code by default', function (): void {
         $response = new StreamingResponse(
-            stream: new SseStream(dataProvider: fn(): array => []),
+            stream: new SseStream(dataProvider: fn (): array => []),
         );
 
         expect($response->statusCode())->toBe(200);
@@ -61,7 +61,7 @@ describe('StreamingResponse', function (): void {
 
     it('accepts custom status code', function (): void {
         $response = new StreamingResponse(
-            stream: new SseStream(dataProvider: fn(): array => []),
+            stream: new SseStream(dataProvider: fn (): array => []),
             statusCode: 201,
         );
 
@@ -70,7 +70,7 @@ describe('StreamingResponse', function (): void {
 
     it('has empty body', function (): void {
         $response = new StreamingResponse(
-            stream: new SseStream(dataProvider: fn(): array => []),
+            stream: new SseStream(dataProvider: fn (): array => []),
         );
 
         expect($response->body())->toBe('');

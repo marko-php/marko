@@ -1,5 +1,6 @@
 name: Feature Request
 description: Suggest a new feature or improvement for the Marko framework
+type: feature
 labels: [enhancement]
 body:
   - type: textarea
@@ -41,7 +42,6 @@ body:
         - authentication
         - authentication-token
         - authorization
-        - blog
         - cache
         - cache-array
         - cache-file
@@ -68,6 +68,7 @@ body:
         - health
         - http
         - http-guzzle
+        - layout
         - log
         - log-file
         - mail

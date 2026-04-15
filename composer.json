@@ -42,10 +42,6 @@
         },
         {
             "type": "path",
-            "url": "packages/blog"
-        },
-        {
-            "type": "path",
             "url": "packages/cache"
         },
         {
@@ -139,6 +135,10 @@
         {
             "type": "path",
             "url": "packages/health"
+        },
+        {
+            "type": "path",
+            "url": "packages/layout"
         },
         {
             "type": "path",
@@ -304,7 +304,6 @@
         "marko/authentication": "self.version",
         "marko/authentication-token": "self.version",
         "marko/authorization": "self.version",
-        "marko/blog": "self.version",
         "marko/cache": "self.version",
         "marko/cache-array": "self.version",
         "marko/cache-file": "self.version",
@@ -330,6 +329,7 @@
         "marko/hashing": "self.version",
         "marko/health": "self.version",
         "marko/http": "self.version",
+        "marko/layout": "self.version",
         "marko/http-guzzle": "self.version",
         "marko/log": "self.version",
         "marko/log-file": "self.version",
@@ -406,7 +406,6 @@
             "Marko\\AdminApi\\Tests\\": "packages/admin-api/tests/",
             "Marko\\AdminPanel\\Tests\\": "packages/admin-panel/tests/",
             "Marko\\Authorization\\Tests\\": "packages/authorization/tests/",
-            "Marko\\Blog\\Tests\\": "packages/blog/tests/",
             "Marko\\Cache\\Tests\\": "packages/cache/tests/",
             "Marko\\Cache\\File\\Tests\\": "packages/cache-file/tests/",
             "Marko\\Cache\\Memory\\Tests\\": "packages/cache-array/tests/",
@@ -433,6 +432,7 @@
             "Marko\\Health\\Tests\\": "packages/health/tests/",
             "Marko\\Http\\Tests\\": "packages/http/tests/",
             "Marko\\Http\\Guzzle\\Tests\\": "packages/http-guzzle/tests/",
+            "Marko\\Layout\\Tests\\": "packages/layout/tests/",
             "Marko\\Log\\Tests\\": "packages/log/tests/",
             "Marko\\Log\\File\\Tests\\": "packages/log-file/tests/",
             "Marko\\Mail\\Tests\\": "packages/mail/tests/",

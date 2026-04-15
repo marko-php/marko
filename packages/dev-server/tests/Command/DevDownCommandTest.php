@@ -304,10 +304,22 @@ it('kills entire process group when stopping a process', function (): void {
 
     usleep(100000); // let signals propagate
 
-    // Both parent and child should be dead — process group killed
-    expect($pidFile->isProcessGroupRunning($parentPid))->toBeFalse();
-
     proc_close($proc);
+
+    $groupRunning = true;
+    for ($i = 0; $i < 10; $i++) {
+        $groupRunning = $pidFile->isProcessGroupRunning($parentPid);
+        if ($groupRunning === false) {
+            break;
+        }
+
+        usleep(50000);
+    }
+
+    // Reap the parent process before asserting so zombie cleanup does not
+    // make the process group appear alive briefly on Linux.
+    expect($groupRunning)->toBeFalse();
+
     devDownRemoveDir($tmpDir);
 });
 

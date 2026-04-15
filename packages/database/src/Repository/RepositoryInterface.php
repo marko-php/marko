@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Database\Repository;
 
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Exceptions\RepositoryException;
 
 /**
@@ -32,17 +33,17 @@ interface RepositoryInterface
     /**
      * Find all entities in the repository.
      *
-     * @return array<TEntity> All entities
+     * @return EntityCollection<TEntity> All entities
      */
-    public function findAll(): array;
+    public function findAll(): EntityCollection;
 
     /**
      * Find entities matching the given criteria.
      *
      * @param array<string, mixed> $criteria Column-value pairs to match
-     * @return array<TEntity> Matching entities
+     * @return EntityCollection<TEntity> Matching entities
      */
-    public function findBy(array $criteria): array;
+    public function findBy(array $criteria): EntityCollection;
 
     /**
      * Find a single entity matching the given criteria.
@@ -63,6 +64,7 @@ interface RepositoryInterface
      * Save an entity (insert or update).
      *
      * @param Entity $entity The entity to save
+     * @throws RepositoryException
      */
     public function save(Entity $entity): void;
 
@@ -70,6 +72,7 @@ interface RepositoryInterface
      * Delete an entity.
      *
      * @param Entity $entity The entity to delete
+     * @throws RepositoryException
      */
     public function delete(Entity $entity): void;
 }

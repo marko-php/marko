@@ -3,7 +3,15 @@
 declare(strict_types=1);
 
 use Marko\Core\Container\Container;
+use Marko\Core\Container\PreferenceRegistry;
 use Marko\Core\Exceptions\BindingException;
+use Marko\Core\Plugin\InterceptorClassGenerator;
+use Marko\Core\Plugin\PluginDefinition;
+use Marko\Core\Plugin\PluginInterceptedInterface;
+use Marko\Core\Plugin\PluginInterceptor;
+use Marko\Core\Plugin\PluginRegistry;
+use Marko\TestFixture\Exceptions\NoDriverException;
+use Marko\TestFixture\SomeInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 require_once __DIR__ . '/Fixtures/TestFixtureInterface.php';
@@ -279,14 +287,14 @@ it('uses default null for nullable Closure parameters', function (): void {
 it('throws NoDriverException when interface package has one and no binding exists', function (): void {
     $container = new Container();
 
-    expect(fn () => $container->get(\Marko\TestFixture\SomeInterface::class))
-        ->toThrow(\Marko\TestFixture\Exceptions\NoDriverException::class);
+    expect(fn () => $container->get(SomeInterface::class))
+        ->toThrow(NoDriverException::class);
 });
 
 it('throws generic BindingException when no NoDriverException class exists for the package', function (): void {
     $container = new Container();
 
-    expect(fn () => $container->get(\Marko\TestFixtureNoDriver\SomeInterface::class))
+    expect(fn () => $container->get(Marko\TestFixtureNoDriver\SomeInterface::class))
         ->toThrow(BindingException::class);
 });
 
@@ -301,5 +309,354 @@ it('does not check for NoDriverException on non-interface classes', function ():
     $container = new Container();
 
     expect(fn () => $container->get('NonExistentClass'))
-        ->not->toThrow(\Marko\TestFixture\Exceptions\NoDriverException::class);
+        ->not->toThrow(NoDriverException::class);
+});
+
+it('accepts PluginInterceptor via setter method', function (): void {
+    $container = new Container();
+    $registry = new PluginRegistry();
+    $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+
+    $container->setPluginInterceptor($interceptor);
+
+    expect($container)->toBeInstanceOf(Container::class);
+});
+
+it('resolves classes without PluginInterceptor when none is set', function (): void {
+    $container = new Container();
+
+    $instance = $container->get(SimpleClass::class);
+
+    expect($instance)->toBeInstanceOf(SimpleClass::class);
+});
+
+it('continues to work with PreferenceRegistry when PluginInterceptor is also set', function (): void {
+    $preferenceRegistry = new PreferenceRegistry();
+    $container = new Container($preferenceRegistry);
+    $pluginRegistry = new PluginRegistry();
+    $interceptor = new PluginInterceptor($container, $pluginRegistry, new InterceptorClassGenerator());
+
+    $container->setPluginInterceptor($interceptor);
+
+    $instance = $container->get(SimpleClass::class);
+
+    expect($instance)->toBeInstanceOf(SimpleClass::class);
+});
+
+// Plugin interception test fixtures
+class PluggableService
+{
+    public function getValue(): string
+    {
+        return 'original';
+    }
+}
+
+class PluggableServicePlugin
+{
+    public function beforeGetValue(): ?array
+    {
+        return null;
+    }
+}
+
+class PluginPreferredService extends PluggableService {}
+
+describe('plugin interception', function (): void {
+    it('wraps resolved instance with plugin proxy when plugins are registered', function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+
+        $registry->register(new PluginDefinition(
+            pluginClass: PluggableServicePlugin::class,
+            targetClass: PluggableService::class,
+            beforeMethods: ['getValue' => ['pluginMethod' => 'beforeGetValue', 'sortOrder' => 10]],
+        ));
+
+        $instance = $container->get(PluggableService::class);
+
+        expect($instance)->toBeInstanceOf(PluginInterceptedInterface::class);
+    });
+
+    it('returns raw instance when no plugins are registered for the class', function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+
+        $instance = $container->get(PluggableService::class);
+
+        expect($instance)->toBeInstanceOf(PluggableService::class)
+            ->and($instance)->not->toBeInstanceOf(PluginInterceptedInterface::class);
+    });
+
+    it('caches the proxy as the singleton instance on subsequent resolves', function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+        $container->singleton(PluggableService::class);
+
+        $registry->register(new PluginDefinition(
+            pluginClass: PluggableServicePlugin::class,
+            targetClass: PluggableService::class,
+            beforeMethods: ['getValue' => ['pluginMethod' => 'beforeGetValue', 'sortOrder' => 10]],
+        ));
+
+        $instance1 = $container->get(PluggableService::class);
+        $instance2 = $container->get(PluggableService::class);
+
+        expect($instance1)->toBeInstanceOf(PluginInterceptedInterface::class)
+            ->and($instance1)->toBe($instance2);
+    });
+
+    it('wraps closure binding results with plugin proxy', function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+
+        $container->bind(PluggableService::class, fn () => new PluggableService());
+
+        $registry->register(new PluginDefinition(
+            pluginClass: PluggableServicePlugin::class,
+            targetClass: PluggableService::class,
+            beforeMethods: ['getValue' => ['pluginMethod' => 'beforeGetValue', 'sortOrder' => 10]],
+        ));
+
+        $instance = $container->get(PluggableService::class);
+
+        expect($instance)->toBeInstanceOf(PluginInterceptedInterface::class);
+    });
+
+    it('does not wrap pre-registered instances from instance() method', function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+
+        $registry->register(new PluginDefinition(
+            pluginClass: PluggableServicePlugin::class,
+            targetClass: PluggableService::class,
+            beforeMethods: ['getValue' => ['pluginMethod' => 'beforeGetValue', 'sortOrder' => 10]],
+        ));
+
+        $rawInstance = new PluggableService();
+        $container->instance(PluggableService::class, $rawInstance);
+
+        $resolved = $container->get(PluggableService::class);
+
+        expect($resolved)->toBe($rawInstance)
+            ->and($resolved)->not->toBeInstanceOf(PluginInterceptedInterface::class);
+    });
+
+    it('applies plugin proxy after preference resolution', function (): void {
+        $preferenceRegistry = new PreferenceRegistry();
+        $preferenceRegistry->register(
+            original: PluggableService::class,
+            replacement: PluginPreferredService::class,
+        );
+
+        $container = new Container($preferenceRegistry);
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+
+        $registry->register(new PluginDefinition(
+            pluginClass: PluggableServicePlugin::class,
+            targetClass: PluginPreferredService::class,
+            beforeMethods: ['getValue' => ['pluginMethod' => 'beforeGetValue', 'sortOrder' => 10]],
+        ));
+
+        $instance = $container->get(PluggableService::class);
+
+        expect($instance)->toBeInstanceOf(PluginInterceptedInterface::class);
+    });
+});
+
+// Fixtures for end-to-end plugin interception tests
+class E2eService
+{
+    public function greet(string $name): string
+    {
+        return "Hello, $name";
+    }
+
+    public function getValue(): string
+    {
+        return 'original';
+    }
+}
+
+class E2eBeforePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function beforeGreet(string $name): ?array
+    {
+        return ['MODIFIED'];
+    }
+}
+
+class E2eTrackingPlugin
+{
+    public bool $called = false;
+
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function beforeGetValue(): ?array
+    {
+        $this->called = true;
+
+        return null;
+    }
+}
+
+class E2eAfterPlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function afterGetValue(string $result): string
+    {
+        return strtoupper($result);
+    }
+}
+
+interface E2eServiceInterface {}
+
+class E2eConcreteService implements E2eServiceInterface
+{
+    public function compute(): string
+    {
+        return 'computed';
+    }
+}
+
+class E2eConcretePlugin
+{
+    /** @noinspection PhpUnused - Invoked via reflection */
+    public function afterCompute(string $result): string
+    {
+        return $result . '-plugged';
+    }
+}
+
+describe('plugin interception - end to end', function (): void {
+    it('fires before plugin when calling method on container-resolved object', function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+
+        $tracking = new E2eTrackingPlugin();
+        $container->instance(E2eTrackingPlugin::class, $tracking);
+
+        $registry->register(new PluginDefinition(
+            pluginClass: E2eTrackingPlugin::class,
+            targetClass: E2eService::class,
+            beforeMethods: ['getValue' => ['pluginMethod' => 'beforeGetValue', 'sortOrder' => 10]],
+        ));
+
+        $instance = $container->get(E2eService::class);
+        $instance->getValue();
+
+        expect($tracking->called)->toBeTrue();
+    });
+
+    it('fires after plugin when calling method on container-resolved object', function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+
+        $registry->register(new PluginDefinition(
+            pluginClass: E2eAfterPlugin::class,
+            targetClass: E2eService::class,
+            afterMethods: ['getValue' => ['pluginMethod' => 'afterGetValue', 'sortOrder' => 10]],
+        ));
+
+        $instance = $container->get(E2eService::class);
+        $result = $instance->getValue();
+
+        expect($result)->toBe('ORIGINAL');
+    });
+
+    it('passes modified arguments from before plugin to target method', function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+
+        $registry->register(new PluginDefinition(
+            pluginClass: E2eBeforePlugin::class,
+            targetClass: E2eService::class,
+            beforeMethods: ['greet' => ['pluginMethod' => 'beforeGreet', 'sortOrder' => 10]],
+        ));
+
+        $instance = $container->get(E2eService::class);
+        $result = $instance->greet('World');
+
+        expect($result)->toBe('Hello, MODIFIED');
+    });
+
+    it('passes modified result from after plugin back to caller', function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+
+        $registry->register(new PluginDefinition(
+            pluginClass: E2eAfterPlugin::class,
+            targetClass: E2eService::class,
+            afterMethods: ['getValue' => ['pluginMethod' => 'afterGetValue', 'sortOrder' => 10]],
+        ));
+
+        $instance = $container->get(E2eService::class);
+        $result = $instance->getValue();
+
+        expect($result)->toBe('ORIGINAL');
+    });
+
+    it('fires plugins on preference-resolved objects', function (): void {
+        $preferenceRegistry = new PreferenceRegistry();
+        $preferenceRegistry->register(
+            original: E2eServiceInterface::class,
+            replacement: E2eConcreteService::class,
+        );
+
+        $container = new Container($preferenceRegistry);
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+
+        $registry->register(new PluginDefinition(
+            pluginClass: E2eConcretePlugin::class,
+            targetClass: E2eConcreteService::class,
+            afterMethods: ['compute' => ['pluginMethod' => 'afterCompute', 'sortOrder' => 10]],
+        ));
+
+        $instance = $container->get(E2eServiceInterface::class);
+        $result = $instance->compute();
+
+        expect($result)->toBe('computed-plugged');
+    });
+
+    it('returns same proxied singleton on repeated resolves', function (): void {
+        $container = new Container();
+        $registry = new PluginRegistry();
+        $interceptor = new PluginInterceptor($container, $registry, new InterceptorClassGenerator());
+        $container->setPluginInterceptor($interceptor);
+        $container->singleton(E2eService::class);
+
+        $registry->register(new PluginDefinition(
+            pluginClass: E2eAfterPlugin::class,
+            targetClass: E2eService::class,
+            afterMethods: ['getValue' => ['pluginMethod' => 'afterGetValue', 'sortOrder' => 10]],
+        ));
+
+        $proxy1 = $container->get(E2eService::class);
+        $proxy2 = $container->get(E2eService::class);
+
+        expect($proxy1)->toBeInstanceOf(PluginInterceptedInterface::class)
+            ->and($proxy1)->toBe($proxy2);
+    });
 });

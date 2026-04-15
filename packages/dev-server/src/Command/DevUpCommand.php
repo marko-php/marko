@@ -63,7 +63,7 @@ readonly class DevUpCommand implements CommandInterface
             if ($this->pidFile->isRunning($entry->pid)) {
                 throw new DevServerException(
                     message: 'Development environment is already running.',
-                    context: "Process '{$entry->name}' (PID {$entry->pid}) is still active",
+                    context: "Process '$entry->name' (PID $entry->pid) is still active",
                     suggestion: "Stop the existing environment first with 'marko down', then run 'marko up' again.",
                 );
             }

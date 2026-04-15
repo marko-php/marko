@@ -12,7 +12,9 @@ use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Exceptions\ConfigurationException;
 use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\MySql\Connection\MySqlConnection;
+use Marko\Database\MySql\Query\MySqlQueryBuilderFactory;
 use Marko\Database\MySql\Sql\MySqlGenerator;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
 
 describe('MySQL module.php bindings', function (): void {
     it('binds ConnectionInterface to MySqlConnection class', function (): void {
@@ -40,6 +42,14 @@ describe('MySQL module.php bindings', function (): void {
         // IntrospectorInterface still uses a closure because it needs the database name
         expect($moduleConfig['bindings'])->toHaveKey(IntrospectorInterface::class)
             ->and($moduleConfig['bindings'][IntrospectorInterface::class])->toBeInstanceOf(Closure::class);
+    });
+
+    it('binds QueryBuilderFactoryInterface to MySqlQueryBuilderFactory class', function (): void {
+        $modulePath = dirname(__DIR__, 2);
+        $moduleConfig = require $modulePath . '/module.php';
+
+        expect($moduleConfig['bindings'])->toHaveKey(QueryBuilderFactoryInterface::class)
+            ->and($moduleConfig['bindings'][QueryBuilderFactoryInterface::class])->toBe(MySqlQueryBuilderFactory::class);
     });
 
     it('throws ConfigurationException when config file missing', function (): void {

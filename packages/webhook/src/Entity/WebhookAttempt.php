@@ -14,24 +14,24 @@ class WebhookAttempt extends Entity
     #[Column(primaryKey: true, autoIncrement: true)]
     public ?int $id = null;
 
-    #[Column(name: 'status_code')]
+    #[Column]
     public ?int $statusCode = null;
 
-    #[Column(name: 'response_body', type: 'TEXT')]
+    #[Column(type: 'TEXT')]
     public ?string $responseBody = null;
 
-    #[Column(name: 'error_message', type: 'TEXT')]
+    #[Column(type: 'TEXT')]
     public ?string $errorMessage = null;
 
-    #[Column(name: 'attempted_at')]
+    #[Column]
     public ?string $attemptedAt = null;
 
     public function __construct(
-        #[Column(name: 'webhook_url')]
+        #[Column]
         public string $webhookUrl = '',
         #[Column]
         public string $event = '',
-        #[Column(name: 'attempt_number')]
+        #[Column]
         public int $attemptNumber = 1,
     ) {}
 }

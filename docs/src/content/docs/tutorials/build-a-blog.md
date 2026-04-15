@@ -3,14 +3,15 @@ title: Build a Blog
 description: Step-by-step tutorial --- build a blog with Marko from scratch.
 ---
 
-This tutorial walks you through building a fully functional blog with posts, comments, and authentication using Marko.
+This tutorial walks you through building a blog from scratch using Marko's core packages. You'll define entities, routes, templates, and extend behavior with plugins.
 
 ## What You'll Build
 
-- A blog with posts and comments
-- User authentication (login/register)
-- An admin area for managing posts
-- Database-backed persistence
+- A Post entity with database persistence
+- A repository with query builder
+- Controllers with attribute-based routing
+- Latte templates for rendering
+- A plugin to add reading time to posts
 
 ## Prerequisites
 
@@ -23,10 +24,7 @@ This tutorial walks you through building a fully functional blog with posts, com
 ```bash
 composer create-project marko/skeleton my-blog
 cd my-blog
-composer require marko/blog
 ```
-
-The `marko/blog` package provides post and comment functionality out of the box.
 
 ## Step 2: Configure the Database
 
@@ -41,20 +39,16 @@ DB_USERNAME=marko
 DB_PASSWORD=secret
 ```
 
-Run the migrations:
+## Step 3: Define the Post Entity
 
-```bash
-marko db:migrate
-```
+Create an entity with database attributes. Marko reads `#[Table]`, `#[Column]`, and `#[Index]` to auto-generate migrations --- no SQL by hand.
 
-The blog package defines its schema using entity attributes --- `#[Table]`, `#[Column]`, and `#[Index]` --- on entity classes like `Post` and `Comment`. When you run `marko db:migrate`, it reads these attributes and auto-generates the migrations. Here is a simplified view of the `Post` entity:
-
-```php title="packages/blog/src/Entity/Post.php"
+```php title="app/blog/src/Entity/Post.php"
 <?php
 
 declare(strict_types=1);
 
-namespace Marko\Blog\Entity;
+namespace App\Blog\Entity;
 
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Index;
@@ -62,10 +56,9 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 
 #[Table('posts')]
-#[Index('idx_posts_author_id', ['author_id'])]
-#[Index('idx_posts_status', ['status'])]
+#[Index('idx_posts_slug', ['slug'])]
 #[Index('idx_posts_published_at', ['published_at'])]
-class Post extends Entity implements PostInterface
+class Post extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]
     public ?int $id = null;
@@ -79,119 +72,146 @@ class Post extends Entity implements PostInterface
     #[Column(type: 'TEXT')]
     public string $content = '';
 
-    #[Column('author_id', references: 'authors.id')]
-    public int $authorId = 0;
+    #[Column]
+    public bool $published = false;
 
-    #[Column(type: 'TEXT')]
-    public ?string $summary = null;
-
-    #[Column('published_at')]
+    #[Column]
     public ?string $publishedAt = null;
 
-    #[Column('created_at')]
+    #[Column]
     public ?string $createdAt = null;
-
-    #[Column('updated_at')]
-    public ?string $updatedAt = null;
-
-    // ...
 }
 ```
 
-You never write SQL or migration files by hand --- the entity attributes are the single source of truth.
+Run the migration:
 
-## Step 3: Start the Server
+```bash
+marko db:migrate
+```
+
+## Step 4: Create a Repository
+
+Extend the base `Repository` class and use the query builder for custom queries:
+
+```php title="app/blog/src/Repository/PostRepository.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Repository;
+
+use App\Blog\Entity\Post;
+use Marko\Database\Repository\Repository;
+
+class PostRepository extends Repository
+{
+    protected const string ENTITY_CLASS = Post::class;
+
+    public function findBySlug(string $slug): ?Post
+    {
+        /** @var Post|null */
+        return $this->findOneBy(['slug' => $slug]);
+    }
+
+    /**
+     * @return array<Post>
+     */
+    public function findPublished(): array
+    {
+        return $this->query()
+            ->whereNotNull('published_at')
+            ->where('published', '=', true)
+            ->orderBy('published_at', 'DESC')
+            ->getEntities();
+    }
+}
+```
+
+The base `Repository` gives you `find()`, `findAll()`, `findBy()`, `findOneBy()`, `save()`, and `delete()` out of the box. The `query()` method returns a fluent query builder with automatic entity hydration via `getEntities()`.
+
+## Step 5: Add Routes and Controllers
+
+```php title="app/blog/src/Controller/PostController.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Controller;
+
+use App\Blog\Repository\PostRepository;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Http\Response;
+use Marko\View\ViewInterface;
+
+class PostController
+{
+    public function __construct(
+        private PostRepository $postRepository,
+        private ViewInterface $view,
+    ) {}
+
+    #[Get('/blog')]
+    public function index(): Response
+    {
+        return $this->view->render('blog::post/index', [
+            'posts' => $this->postRepository->findPublished(),
+        ]);
+    }
+
+    #[Get('/blog/{slug}')]
+    public function show(string $slug): Response
+    {
+        $post = $this->postRepository->findBySlug($slug);
+
+        if ($post === null) {
+            return new Response('Post not found', 404);
+        }
+
+        return $this->view->render('blog::post/show', [
+            'post' => $post,
+        ]);
+    }
+}
+```
+
+## Step 6: Create Templates
+
+```latte title="app/blog/resources/views/post/index.latte"
+<main>
+    <h1>Blog</h1>
+    <ul n:if="$posts">
+        {foreach $posts as $post}
+            <li>
+                <article>
+                    <h2><a href="/blog/{$post->slug}">{$post->title}</a></h2>
+                    <time datetime="{$post->publishedAt}">{$post->publishedAt}</time>
+                </article>
+            </li>
+        {/foreach}
+    </ul>
+    <p n:if="!$posts">No posts yet.</p>
+</main>
+```
+
+```latte title="app/blog/resources/views/post/show.latte"
+<article>
+    <h1>{$post->title}</h1>
+    <time datetime="{$post->publishedAt}">{$post->publishedAt}</time>
+    <div class="content">{$post->content|noescape}</div>
+</article>
+```
+
+## Step 7: Start the Server
 
 ```bash
 marko up
 ```
 
-Visit `http://localhost:8000/blog` --- you should see the blog index.
+Visit `http://localhost:8000/blog` to see your blog.
 
-## Step 4: Explore the Routes
+## Step 8: Extend with a Plugin
 
-The `marko/blog` package registers these routes automatically:
-
-| Route | Description |
-|---|---|
-| `GET /blog` | Post listing |
-| `GET /blog/{slug}` | Single post |
-| `POST /blog/{slug}/comment` | Add comment |
-| `GET /blog/category/{slug}` | Posts by category |
-| `GET /blog/tag/{slug}` | Posts by tag |
-| `GET /blog/author/{slug}` | Posts by author |
-| `GET /blog/search` | Search posts |
-
-## Step 5: Customize Templates
-
-Blog templates use [Latte](https://latte.nette.org/) and can be overridden by placing files in your app module:
-
-```
-app/blog/resources/views/
-├── post/
-│   ├── index.latte    # Post listing
-│   └── show.latte     # Single post
-└── comment/
-    └── form.latte     # Comment form
-```
-
-For example, override the post listing:
-
-```latte title="app/blog/resources/views/post/index.latte"
-<main>
-    <h1>My Blog</h1>
-    <p n:if="$posts->isEmpty()" class="no-posts">There are no posts yet.</p>
-    <ul n:if="!$posts->isEmpty()" class="post-list">
-        {foreach $posts->items as $post}
-            <li>
-                <article>
-                    <h2><a href="/blog/{$post->slug}">{$post->title}</a></h2>
-                    <p n:if="$post->summary">{$post->summary}</p>
-                    <time datetime="{$post->publishedAt}">
-                        {$post->getPublishedAt()->format('F j, Y')}
-                    </time>
-                </article>
-            </li>
-        {/foreach}
-    </ul>
-</main>
-```
-
-Templates access entity properties directly --- `$post->title`, `$post->slug`, `$post->summary` --- and use getter methods like `$post->getPublishedAt()` for computed values.
-
-## Step 6: Add Authentication
-
-Protect the comment form so only logged-in users can comment:
-
-```bash
-composer require marko/authentication
-```
-
-The blog package dispatches events you can observe. Create an observer class with the `#[Observer]` attribute:
-
-```php title="app/blog/src/Observer/NotifyAuthorOfComment.php"
-<?php
-
-declare(strict_types=1);
-
-namespace App\Blog\Observer;
-
-use Marko\Blog\Events\Comment\CommentCreated;
-use Marko\Core\Attributes\Observer;
-
-#[Observer(event: CommentCreated::class)]
-class NotifyAuthorOfComment
-{
-    public function handle(CommentCreated $event): void
-    {
-        // Send notification to the post author...
-    }
-}
-```
-
-## Step 7: Extend with Plugins
-
-Want to add reading time to every post? Use a plugin:
+Add reading time to every post without modifying the repository:
 
 ```php title="app/blog/src/Plugin/AddReadingTimePlugin.php"
 <?php
@@ -200,12 +220,12 @@ declare(strict_types=1);
 
 namespace App\Blog\Plugin;
 
-use Marko\Blog\Entity\Post;
-use Marko\Blog\Repositories\PostRepositoryInterface;
+use App\Blog\Entity\Post;
+use App\Blog\Repository\PostRepository;
 use Marko\Core\Attributes\After;
 use Marko\Core\Attributes\Plugin;
 
-#[Plugin(target: PostRepositoryInterface::class)]
+#[Plugin(target: PostRepository::class)]
 class AddReadingTimePlugin
 {
     #[After]
@@ -223,15 +243,18 @@ class AddReadingTimePlugin
 }
 ```
 
+Now `$post->readingTimeMinutes` is available in your templates.
+
 ## What You've Learned
 
-- How to scaffold a Marko project and install packages
 - Entity-driven database schema with `#[Table]`, `#[Column]`, and `#[Index]` attributes
-- Template overriding with Latte for customization
-- [Events and observers](/docs/concepts/events/) for reactive behavior
-- [Plugins](/docs/concepts/plugins/) for modifying existing functionality
+- Repositories with built-in CRUD and fluent query builder
+- Attribute-based routing with `#[Get]` on controller methods
+- Latte templates for rendering views
+- [Plugins](/docs/concepts/plugins/) for modifying existing functionality without editing source
 
 ## Next Steps
 
+- [Database guide](/docs/guides/database/) --- deep dive into entities, migrations, and querying
 - [Build a REST API](/docs/tutorials/build-a-rest-api/) --- create a JSON API
 - [Create a Custom Module](/docs/tutorials/custom-module/) --- build a reusable Composer package

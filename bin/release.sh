@@ -32,10 +32,7 @@ if git rev-parse "$TAG" >/dev/null 2>&1; then
 fi
 
 # Find PHP 8.5+ binary
-PHP_BIN="/opt/homebrew/Cellar/php/8.5.1_2/bin/php"
-if [[ ! -x "$PHP_BIN" ]]; then
-    PHP_BIN="php"
-fi
+PHP_BIN="${PHP_BIN:-php}"
 
 PHP_VERSION=$("$PHP_BIN" -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 if [[ "$PHP_VERSION" != "8.5" ]]; then
@@ -50,6 +47,9 @@ if command -v gh >/dev/null 2>&1; then
 else
     echo "  ⚠ gh CLI not found — GitHub Release will need to be created manually"
 fi
+
+# Derive repo from git remote so gh doesn't require set-default
+GH_REPO=$(git remote get-url origin | sed -E 's#.*github\.com[:/](.+)\.git$#\1#; s#.*github\.com[:/](.+)$#\1#')
 
 echo "  ✓ PHP ${PHP_VERSION}"
 echo "  ✓ Branch: main (merged from develop)"
@@ -85,6 +85,7 @@ if [[ "$GH_AVAILABLE" == "true" ]]; then
 
     if [[ -n "$PREV_TAG" ]]; then
         if gh release create "$TAG" \
+            --repo "$GH_REPO" \
             --generate-notes \
             --latest \
             --notes-start-tag "$PREV_TAG"; then
@@ -94,6 +95,7 @@ if [[ "$GH_AVAILABLE" == "true" ]]; then
         fi
     else
         if gh release create "$TAG" \
+            --repo "$GH_REPO" \
             --generate-notes \
             --latest; then
             echo "  ✓ GitHub Release created"

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Marko\PubSub\PgSql;
 
-use Amp\Postgres\PostgresConfig;
-use Amp\Postgres\PostgresConnection;
-
 use function Amp\Postgres\connect;
+
+use Amp\Postgres\PostgresConfig;
+
+use Amp\Postgres\PostgresConnection;
 
 class PgSqlPubSubConnection
 {

@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace App\MyApp\Plugin;
 
-use Marko\Blog\Repositories\PostRepository;
+use App\Blog\Repository\PostRepository;
 use Marko\Core\Attributes\After;
 use Marko\Core\Attributes\Before;
 use Marko\Core\Attributes\Plugin;
@@ -115,7 +115,7 @@ For `after` plugins, the first parameter is the result from the original method,
 
 ### Sort Order
 
-Use the `sortOrder` parameter to control the order when multiple plugins target the same method:
+Use the `sortOrder` parameter to control the order when multiple plugins target the same method. The default is `0`, and negative values are supported:
 
 ```php
 #[Before(sortOrder: 10)]
@@ -195,6 +195,84 @@ public function addBonus(int $result): int
 
 // Final result: 25
 ```
+
+## Targeting Interfaces
+
+Plugins can target interfaces, not just concrete classes. This is the **recommended approach** — it keeps your plugin decoupled from specific implementations and survives Preference swaps.
+
+```php title="HasherPlugin.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\MyApp\Plugin;
+
+use Marko\Core\Attributes\Before;
+use Marko\Core\Attributes\Plugin;
+use Marko\Hashing\Contracts\HasherInterface;
+
+#[Plugin(target: HasherInterface::class)]
+class HasherPlugin
+{
+    #[Before]
+    public function hash(string $value): null
+    {
+        // Runs before hash() on ANY HasherInterface implementation —
+        // BcryptHasher, Argon2Hasher, or a custom one added via Preference.
+        return null;
+    }
+}
+```
+
+When a plugin targets an interface, it fires regardless of which concrete implementation is resolved — whether via a binding, a Preference, or autowiring. This means a Preference swap from `BcryptHasher` to `Argon2Hasher` won't silently break your plugin.
+
+:::tip[Interface vs concrete targeting]
+- **Target the interface** when your plugin applies to the behavior contract (e.g., logging all hash operations)
+- **Target the concrete class** when your plugin is specific to one implementation (e.g., tuning bcrypt cost)
+:::
+
+### Constraints
+
+- **Readonly classes cannot be targeted directly.** If a concrete class is `readonly`, target its interface instead. Marko will throw a helpful error explaining this.
+- **One interface at a time.** If a class implements multiple interfaces and plugins are registered on more than one, Marko throws an error rather than silently picking a winner. Target the concrete class directly in this case.
+
+## How Plugins Work
+
+When the container resolves a class or interface that has plugins registered, it generates an **interceptor class** at runtime. The interceptor wraps the real instance and routes method calls through the plugin chain.
+
+### The interception flow
+
+```
+Container resolves HasherInterface
+    → Finds BcryptHasher (via binding or Preference)
+    → Checks: any plugins registered for HasherInterface?
+    → Yes → Generates an interceptor class that implements HasherInterface
+    → Returns the interceptor (which wraps BcryptHasher internally)
+
+Your code calls $hasher->hash('password')
+    → Interceptor runs before plugins (in sort order)
+    → Interceptor calls BcryptHasher::hash('password')
+    → Interceptor runs after plugins (in sort order)
+    → Returns the final result
+```
+
+### What gets generated
+
+Interceptor classes are generated in memory (via `eval`) — no files are written to disk. Each generated class is cached for the duration of the request so generation only happens once per target.
+
+The strategy depends on the target:
+
+| Target | Strategy |
+|---|---|
+| Interface (e.g., `HasherInterface`) | Generated class `implements` the interface |
+| Non-readonly concrete class | Generated class `extends` the concrete class |
+| Readonly concrete class | Error — target the interface instead |
+
+In all cases, the generated class implements `PluginInterceptedInterface`, which provides `getPluginTarget()` for code that needs access to the underlying real instance.
+
+### Zero overhead for non-plugged classes
+
+If no plugins are registered for a class, the container returns the real instance directly — no interceptor, no wrapping, no overhead.
 
 ## When to Use Plugins
 

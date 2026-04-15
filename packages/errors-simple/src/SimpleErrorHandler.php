@@ -95,7 +95,7 @@ class SimpleErrorHandler implements ErrorHandlerInterface
         $reset = "\033[0m";
         $label = $report->severity->label();
 
-        fwrite(STDERR, "{$color}[{$label}]{$reset} $report->message in $report->file:$report->line\n");
+        fwrite(STDERR, "$color[$label]$reset $report->message in $report->file:$report->line\n");
     }
 
     public function handleError(

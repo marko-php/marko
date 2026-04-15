@@ -20,33 +20,38 @@ jobs:
 
       - name: Generate package list and update templates
         run: |
-          # Build YAML options list from packages/ directory names
-          OPTIONS=$(ls packages/ | sort | while read -r pkg; do
+          # Build options file from packages/ directory names
+          ls packages/ | sort | while read -r pkg; do
             echo "        - $pkg"
-          done)
-          OPTIONS=$(printf '%s\n        - other' "$OPTIONS")
+          done > /tmp/opts.txt
+          echo "        - other" >> /tmp/opts.txt
 
-          # Update bug_report.yml
-          awk -v opts="$OPTIONS" '
-            /^      options:/ && found { replacing=1; print; next }
-            /^    validations:/ && replacing { replacing=0 }
-            /id: package/ { found=1 }
-            replacing { next }
-            found && /^      options:/ { print; print opts; replacing=1; found=0; next }
-            { print }
-          ' .github/ISSUE_TEMPLATE/bug_report.yml > .github/ISSUE_TEMPLATE/bug_report.yml.tmp
-          mv .github/ISSUE_TEMPLATE/bug_report.yml.tmp .github/ISSUE_TEMPLATE/bug_report.yml
-
-          # Update feature_request.yml
-          awk -v opts="$OPTIONS" '
-            /^      options:/ && found { replacing=1; print; next }
-            /^    validations:/ && replacing { replacing=0 }
-            /id: package/ { found=1 }
-            replacing { next }
-            found && /^      options:/ { print; print opts; replacing=1; found=0; next }
-            { print }
-          ' .github/ISSUE_TEMPLATE/feature_request.yml > .github/ISSUE_TEMPLATE/feature_request.yml.tmp
-          mv .github/ISSUE_TEMPLATE/feature_request.yml.tmp .github/ISSUE_TEMPLATE/feature_request.yml
+          # Replace options in each template (portable — no awk multiline vars)
+          for TEMPLATE in bug_report.yml feature_request.yml; do
+            FILE=".github/ISSUE_TEMPLATE/$TEMPLATE"
+            in_package=0
+            replacing=0
+            while IFS= read -r line; do
+              if echo "$line" | grep -q 'id: package'; then
+                in_package=1
+              fi
+              if [ $in_package -eq 1 ] && echo "$line" | grep -q '^      options:'; then
+                echo "$line"
+                cat /tmp/opts.txt
+                replacing=1
+                in_package=0
+                continue
+              fi
+              if [ $replacing -eq 1 ] && echo "$line" | grep -q '^    [a-z]'; then
+                replacing=0
+              fi
+              if [ $replacing -eq 1 ] && echo "$line" | grep -q '^        - '; then
+                continue
+              fi
+              echo "$line"
+            done < "$FILE" > "$FILE.tmp"
+            mv "$FILE.tmp" "$FILE"
+          done
 
       - name: Check for changes
         id: changes

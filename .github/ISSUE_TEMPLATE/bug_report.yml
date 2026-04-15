@@ -1,5 +1,6 @@
 name: Bug Report
 description: Report a bug in the Marko framework
+type: bug
 labels: [bug]
 body:
   - type: textarea
@@ -53,7 +54,6 @@ body:
         - authentication
         - authentication-token
         - authorization
-        - blog
         - cache
         - cache-array
         - cache-file
@@ -80,6 +80,7 @@ body:
         - health
         - http
         - http-guzzle
+        - layout
         - log
         - log-file
         - mail
