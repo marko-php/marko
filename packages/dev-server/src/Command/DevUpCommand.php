@@ -42,7 +42,14 @@ readonly class DevUpCommand implements CommandInterface
     ): int {
         $port = (int) ($input->getOption('port') ?? $input->getOption('p') ?? $this->config->getInt('dev.port'));
         $foreground = $input->hasOption('foreground') || $input->hasOption('f');
-        $host = $input->getOption('host') ?? $input->getOption('h') ?? $this->config->getString('dev.host');
+        $host = $input->getOption('host') ?? $this->config->getString('dev.host');
+
+        if (!preg_match('/\A[a-zA-Z0-9.\-:]+\z/', $host)) {
+            throw new DevServerException(
+                message: "Invalid host value: '$host'",
+                suggestion: "Use a valid hostname or IP address, e.g. --host=0.0.0.0 or --host=localhost",
+            );
+        }
         $detach = !$foreground && ($input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool(
             'dev.detach',
         ));

@@ -429,16 +429,24 @@ it('overrides config port with -p short flag', function (): void {
     expect($pm->started['php'])->toContain('localhost:9000');
 });
 
-it('overrides config port with -h short flag', function (): void {
+it('overrides config host with --host flag', function (): void {
     ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.host' => 'localhost']);
     ['output' => $output] = createMemoryOutput();
 
-    $input = new Input(['marko', 'dev:up', '-h=0.0.0.0']);
+    $input = new Input(['marko', 'dev:up', '--host=0.0.0.0']);
     $command->execute($input, $output);
 
-    expect($pm->started['php'])->toContain('0.0.0.0:8000');
+    expect($pm->started['php'])->toContain('0.0.0.0:8000')
+        ->and($pm->started['php'])->not->toContain('localhost');
 });
 
+it('rejects invalid host values', function (): void {
+    ['command' => $command] = createDevUpCommand(['dev.host' => 'localhost']);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '--host=0.0.0.0; evil']);
+    $command->execute($input, $output);
+})->throws(DevServerException::class, 'Invalid host value');
 
 it('overrides config port with -p space syntax', function (): void {
     ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.port' => 8000]);
@@ -543,7 +551,7 @@ it('includes custom processes in PID file when detached', function (): void {
     $command->execute($input, $output);
 
     $entries = $pidFile->read();
-    $names = array_map(fn($e) => $e->name, $entries);
+    $names = array_map(fn ($e) => $e->name, $entries);
 
     expect($names)->toContain('tailwind')
         ->and($names)->toContain('php');
@@ -567,7 +575,7 @@ it('never appends -d to docker command even in detach mode', function (): void {
 });
 
 it('starts pubsub:listen as managed process in DevUpCommand when detected', function (): void {
-    $pubsubDetector = new class() extends PubSubDetector
+    $pubsubDetector = new class () extends PubSubDetector
     {
         protected function isPubSubInstalled(): bool
         {
@@ -772,7 +780,7 @@ it('defaults to detached mode when no flags are passed', function (): void {
 });
 
 it('skips pubsub process when pubsub config is false', function (): void {
-    $pubsubDetector = new class() extends PubSubDetector
+    $pubsubDetector = new class () extends PubSubDetector
     {
         protected function isPubSubInstalled(): bool
         {
