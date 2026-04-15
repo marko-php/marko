@@ -182,7 +182,7 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
      * @param array<int|string, mixed> $bindings
      */
     private function bindValues(
-        PDOStatement $statement, 
+        PDOStatement $statement,
         array $bindings,
     ): void {
         foreach ($bindings as $key => $value) {
