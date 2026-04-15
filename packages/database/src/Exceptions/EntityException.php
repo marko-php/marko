@@ -130,9 +130,9 @@ class EntityException extends MarkoException
         string $property,
     ): self {
         return new self(
-            message: "Collection relationship property '$property' in entity '$entityClass' must be typed as array",
+            message: "Collection relationship property '$property' in entity '$entityClass' must be typed as array or EntityCollection",
             context: "Parsing relationship '$property' in entity '$entityClass'",
-            suggestion: "Change the type of '$property' to array, e.g., public array \$$property = []",
+            suggestion: "Change the type of '$property' to array or EntityCollection, e.g., public array \$$property = [] or public EntityCollection \$$property",
         );
     }
 

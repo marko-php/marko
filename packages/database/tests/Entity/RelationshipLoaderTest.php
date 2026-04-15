@@ -7,6 +7,7 @@ namespace Marko\Database\Tests\Entity;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
@@ -85,6 +86,21 @@ class LoaderCountry extends Entity
     /** @noinspection PhpUnused */
     #[Column]
     public string $name = '';
+}
+
+#[Table('authors')]
+class LoaderAuthorWithCollection extends Entity
+{
+    /** @noinspection PhpUnused */
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    /** @noinspection PhpUnused */
+    #[Column]
+    public string $name = '';
+
+    /** @var EntityCollection<LoaderPost> */
+    public EntityCollection $posts;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -171,6 +187,30 @@ function makePostMetadataForLoader(): EntityMetadata
             'title' => new PropertyMetadata(
                 name: 'title',
                 columnName: 'title',
+                type: 'string',
+            ),
+        ],
+    );
+}
+
+function makeAuthorWithCollectionMetadata(): EntityMetadata
+{
+    return new EntityMetadata(
+        entityClass: LoaderAuthorWithCollection::class,
+        tableName: 'authors',
+        primaryKey: 'id',
+        properties: [
+            'id' => new PropertyMetadata(
+                name: 'id',
+                columnName: 'id',
+                type: 'int',
+                nullable: true,
+                isPrimaryKey: true,
+                isAutoIncrement: true,
+            ),
+            'name' => new PropertyMetadata(
+                name: 'name',
+                columnName: 'name',
                 type: 'string',
             ),
         ],
@@ -1045,4 +1085,71 @@ it('sets related entity properties via reflection', function (): void {
     expect($value)->toHaveCount(1)
         ->and($value[0])->toBeInstanceOf(LoaderPost::class)
         ->and($value[0]->title)->toBe('Test Post');
+});
+
+// ── EntityCollection-typed Properties ──────────────────────────────────────────
+
+it('wraps HasMany results in EntityCollection when property is typed as EntityCollection', function (): void {
+    $author = new LoaderAuthorWithCollection();
+    $author->id = 1;
+    $author->name = 'Alice';
+
+    $relationship = new RelationshipMetadata(
+        propertyName: 'posts',
+        type: RelationshipType::HasMany,
+        relatedClass: LoaderPost::class,
+        foreignKey: 'userId',
+    );
+
+    $authorMeta = makeAuthorWithCollectionMetadata();
+    $postMeta = makePostMetadataForLoader();
+
+    $factory = makeParentMetadataFactory([
+        LoaderAuthorWithCollection::class => $authorMeta,
+        LoaderPost::class => $postMeta,
+    ]);
+
+    $qbFactory = makeFakeQueryBuilderFactory([
+        ['id' => 10, 'user_id' => 1, 'title' => 'Post A'],
+        ['id' => 11, 'user_id' => 1, 'title' => 'Post B'],
+    ]);
+
+    $loader = makeLoader($qbFactory, $factory);
+    $loader->load([$author], $relationship, $authorMeta);
+
+    expect($author->posts)->toBeInstanceOf(EntityCollection::class)
+        ->and($author->posts)->toHaveCount(2)
+        ->and($author->posts->toArray()[0])->toBeInstanceOf(LoaderPost::class)
+        ->and($author->posts->toArray()[0]->title)->toBe('Post A')
+        ->and($author->posts->toArray()[1]->title)->toBe('Post B');
+});
+
+it('assigns empty EntityCollection when no related entities found for EntityCollection-typed property', function (): void {
+    $author = new LoaderAuthorWithCollection();
+    $author->id = 1;
+    $author->name = 'Alice';
+
+    $relationship = new RelationshipMetadata(
+        propertyName: 'posts',
+        type: RelationshipType::HasMany,
+        relatedClass: LoaderPost::class,
+        foreignKey: 'userId',
+    );
+
+    $authorMeta = makeAuthorWithCollectionMetadata();
+    $postMeta = makePostMetadataForLoader();
+
+    $factory = makeParentMetadataFactory([
+        LoaderAuthorWithCollection::class => $authorMeta,
+        LoaderPost::class => $postMeta,
+    ]);
+
+    $qbFactory = makeFakeQueryBuilderFactory([]);
+
+    $loader = makeLoader($qbFactory, $factory);
+    $loader->load([$author], $relationship, $authorMeta);
+
+    expect($author->posts)->toBeInstanceOf(EntityCollection::class)
+        ->and($author->posts)->toHaveCount(0)
+        ->and($author->posts->isEmpty())->toBeTrue();
 });

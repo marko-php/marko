@@ -7,6 +7,7 @@ namespace Marko\Database\Entity;
 use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use ReflectionClass;
+use ReflectionNamedType;
 
 /**
  * Batch eager-loads entity relationships using WHERE IN queries to prevent N+1 problems.
@@ -108,7 +109,7 @@ readonly class RelationshipLoader
                     continue;
                 }
 
-                if (is_array($value)) {
+                if (is_array($value) || $value instanceof EntityCollection) {
                     foreach ($value as $related) {
                         $relatedEntities[] = $related;
                     }
@@ -436,6 +437,15 @@ readonly class RelationshipLoader
     {
         $reflection = new ReflectionClass($entity);
         $property = $reflection->getProperty($propertyName);
+
+        if (is_array($value)) {
+            $type = $property->getType();
+
+            if ($type instanceof ReflectionNamedType && is_a($type->getName(), EntityCollection::class, true)) {
+                $value = new EntityCollection($value);
+            }
+        }
+
         $property->setValue($entity, $value);
     }
 

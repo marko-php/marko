@@ -11,6 +11,7 @@ use Marko\Database\Attributes\HasMany;
 use Marko\Database\Attributes\HasOne;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\RelationshipMetadata;
 use Marko\Database\Entity\RelationshipType;
@@ -425,6 +426,38 @@ it('parses entities with both columns and relationships', function (): void {
 
     expect($metadata->columns)->toHaveCount(3)
         ->and($metadata->relationships)->toHaveCount(2);
+});
+
+it('accepts EntityCollection type for HasMany property', function (): void {
+    $entity = new #[Table('users')] class () extends Entity
+    {
+        #[Column(primaryKey: true, autoIncrement: true)]
+        public int $id;
+
+        #[HasMany(entityClass: Entity::class, foreignKey: 'user_id')]
+        public EntityCollection $posts;
+    };
+
+    $metadata = $this->factory->parse($entity::class);
+
+    expect($metadata->relationships)->toHaveKey('posts')
+        ->and($metadata->relationships['posts']->type)->toBe(RelationshipType::HasMany);
+});
+
+it('accepts EntityCollection type for BelongsToMany property', function (): void {
+    $entity = new #[Table('users')] class () extends Entity
+    {
+        #[Column(primaryKey: true, autoIncrement: true)]
+        public int $id;
+
+        #[BelongsToMany(entityClass: Entity::class, pivotClass: Entity::class, foreignKey: 'user_id', relatedKey: 'role_id')]
+        public EntityCollection $roles;
+    };
+
+    $metadata = $this->factory->parse($entity::class);
+
+    expect($metadata->relationships)->toHaveKey('roles')
+        ->and($metadata->relationships['roles']->type)->toBe(RelationshipType::BelongsToMany);
 });
 
 it('caches relationship metadata with entity metadata', function (): void {

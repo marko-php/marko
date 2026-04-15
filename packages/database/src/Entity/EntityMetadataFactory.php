@@ -357,7 +357,9 @@ class EntityMetadataFactory
     ): void {
         $type = $property->getType();
 
-        if (!$type instanceof ReflectionNamedType || $type->getName() !== 'array') {
+        if (!$type instanceof ReflectionNamedType
+            || ($type->getName() !== 'array' && !is_a($type->getName(), EntityCollection::class, true))
+        ) {
             throw EntityException::collectionRelationshipTypeMismatch($entityClass, $propertyName);
         }
     }
