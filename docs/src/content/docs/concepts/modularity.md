@@ -100,11 +100,11 @@ The **implementation** is wired in `module.php`. To switch from file cache to Re
 
 ## Module Composition
 
-Modules can build on each other. The `marko/blog` module depends on `marko/routing`, `marko/database`, and `marko/view` — but you never wire that manually. Composer handles the dependency graph, and Marko handles the module discovery.
+Modules can build on each other. An `acme/blog` module might depend on `marko/routing`, `marko/database`, and `marko/view` — but you never wire that manually. Composer handles the dependency graph, and Marko handles the module discovery.
 
 ```json title="composer.json"
 {
-    "name": "marko/blog",
+    "name": "acme/blog",
     "require": {
         "marko/core": "^1.0",
         "marko/routing": "^1.0",

@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Marko\Routing;
 
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Plugin\PluginInterceptedInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Routing\Middleware\MiddlewarePipeline;
+use Psr\Container\ContainerExceptionInterface;
+use ReflectionException;
 use ReflectionMethod;
 use ReflectionNamedType;
+use ReflectionType;
 
 readonly class Router
 {
@@ -30,6 +34,9 @@ readonly class Router
         $this->pipeline = new MiddlewarePipeline($container);
     }
 
+    /**
+     * @throws ContainerExceptionInterface|ReflectionException
+     */
     public function handle(
         Request $request,
     ): Response {
@@ -68,6 +75,7 @@ readonly class Router
      *
      * @param array<string, mixed> $routeParams
      * @return array<mixed>
+     * @throws ReflectionException
      */
     private function resolveParameters(
         object $controller,
@@ -75,7 +83,11 @@ readonly class Router
         array $routeParams,
         Request $request,
     ): array {
-        $reflection = new ReflectionMethod($controller, $action);
+        // Unwrap interceptor to reflect on the real controller
+        $reflectionTarget = $controller instanceof PluginInterceptedInterface
+            ? $controller->getPluginTarget()
+            : $controller;
+        $reflection = new ReflectionMethod($reflectionTarget, $action);
         $parameters = [];
 
         foreach ($reflection->getParameters() as $param) {
@@ -107,7 +119,7 @@ readonly class Router
 
     private function castToType(
         mixed $value,
-        ?\ReflectionType $type,
+        ?ReflectionType $type,
     ): mixed {
         if (!$type instanceof ReflectionNamedType) {
             return $value;

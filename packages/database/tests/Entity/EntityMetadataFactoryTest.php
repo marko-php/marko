@@ -172,7 +172,7 @@ it('infers default from property initializer', function (): void {
 it('uses Column attribute name when specified', function (): void {
     $entity = new #[Table('test')] class () extends Entity
     {
-        #[Column(name: 'user_id')]
+        #[Column(name: 'author')]
         public int $userId;
 
         #[Column]
@@ -182,7 +182,7 @@ it('uses Column attribute name when specified', function (): void {
     $metadata = $this->factory->parse($entity::class);
 
     expect($metadata->columns[0]->name)
-        ->toBe('user_id')
+        ->toBe('author')
         ->and($metadata->columns[1]->name)->toBe('title');
 });
 
@@ -295,6 +295,98 @@ it('throws EntityException for property without type declaration', function (): 
 
     $this->factory->parse($className);
 })->throws(EntityException::class, 'must have a type declaration');
+
+it('handles leading uppercase sequences correctly (HTMLParser becomes html_parser)', function (): void {
+    $entity = new #[Table('records')] class () extends Entity
+    {
+        #[Column(primaryKey: true)]
+        public int $id;
+
+        /** @noinspection PhpUnused - Accessed via reflection metadata */
+        #[Column]
+        public string $HTMLParser;
+    };
+
+    $metadata = $this->factory->parse($entity::class);
+
+    expect($metadata->columns[1]->name)->toBe('html_parser');
+});
+
+it('handles consecutive uppercase letters correctly (userID becomes user_id)', function (): void {
+    $entity = new #[Table('records')] class () extends Entity
+    {
+        #[Column(primaryKey: true)]
+        public int $id;
+
+        /** @noinspection PhpUnused - Accessed via reflection metadata */
+        #[Column]
+        public int $userID;
+    };
+
+    $metadata = $this->factory->parse($entity::class);
+
+    expect($metadata->columns[1]->name)->toBe('user_id');
+});
+
+it('handles single-word property names without change', function (): void {
+    $entity = new #[Table('users')] class () extends Entity
+    {
+        #[Column(primaryKey: true)]
+        public int $id;
+
+        #[Column]
+        public string $name;
+
+        #[Column]
+        public string $email;
+    };
+
+    $metadata = $this->factory->parse($entity::class);
+
+    expect($metadata->columns[0]->name)
+        ->toBe('id')
+        ->and($metadata->columns[1]->name)->toBe('name')
+        ->and($metadata->columns[2]->name)->toBe('email');
+});
+
+it('preserves explicit Column name override when specified', function (): void {
+    $entity = new #[Table('posts')] class () extends Entity
+    {
+        #[Column(primaryKey: true)]
+        public int $id;
+
+        #[Column(name: 'author')]
+        public int $userId;
+    };
+
+    $metadata = $this->factory->parse($entity::class);
+
+    expect($metadata->columns[1]->name)->toBe('author');
+});
+
+it('converts camelCase property names to snake_case column names automatically', function (): void {
+    $entity = new #[Table('posts')] class () extends Entity
+    {
+        #[Column(primaryKey: true, autoIncrement: true)]
+        public int $id;
+
+        #[Column]
+        public int $postId;
+
+        #[Column]
+        public string $createdAt;
+
+        #[Column]
+        public bool $isActive;
+    };
+
+    $metadata = $this->factory->parse($entity::class);
+
+    expect($metadata->columns[1]->name)
+        ->toBe('post_id')
+        ->and($metadata->columns[2]->name)->toBe('created_at')
+        ->and($metadata->columns[3]->name)->toBe('is_active');
+});
 
 it('clears cached metadata', function (): void {
     $entity = new #[Table('test')] class () extends Entity

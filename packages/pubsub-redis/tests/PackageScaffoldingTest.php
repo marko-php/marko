@@ -16,23 +16,23 @@ it(
     'has valid module.php for marko/pubsub-redis binding PublisherInterface and SubscriberInterface',
     function (): void {
         $modulePath = dirname(__DIR__) . '/module.php';
-    
+
         expect(file_exists($modulePath))->toBeTrue();
-    
+
         $module = require $modulePath;
-    
+
         expect($module)->toBeArray()
             ->and($module)->toHaveKey('bindings')
             ->and($module['bindings'])->toBeArray()
             ->and($module['bindings'])->toHaveKey('Marko\\PubSub\\PublisherInterface')
             ->and($module['bindings']['Marko\\PubSub\\PublisherInterface'])->toBe(
-                'Marko\\PubSub\\Redis\\Driver\\RedisPublisher'
+                'Marko\\PubSub\\Redis\\Driver\\RedisPublisher',
             )
             ->and($module['bindings'])->toHaveKey('Marko\\PubSub\\SubscriberInterface')
             ->and($module['bindings']['Marko\\PubSub\\SubscriberInterface'])->toBe(
-                'Marko\\PubSub\\Redis\\Driver\\RedisSubscriber'
+                'Marko\\PubSub\\Redis\\Driver\\RedisSubscriber',
             );
-    }
+    },
 );
 
 it('has valid composer.json with name marko/pubsub-redis and required dependencies', function (): void {

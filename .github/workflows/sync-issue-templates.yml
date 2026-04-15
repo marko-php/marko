@@ -1,0 +1,72 @@
+name: Sync Issue Templates
+
+on:
+  push:
+    branches: [develop]
+    paths: [packages/**]
+
+concurrency:
+  group: sync-issue-templates
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate package list and update templates
+        run: |
+          # Build options file from packages/ directory names
+          ls packages/ | sort | while read -r pkg; do
+            echo "        - $pkg"
+          done > /tmp/opts.txt
+          echo "        - other" >> /tmp/opts.txt
+
+          # Replace options in each template (portable — no awk multiline vars)
+          for TEMPLATE in bug_report.yml feature_request.yml; do
+            FILE=".github/ISSUE_TEMPLATE/$TEMPLATE"
+            in_package=0
+            replacing=0
+            while IFS= read -r line; do
+              if echo "$line" | grep -q 'id: package'; then
+                in_package=1
+              fi
+              if [ $in_package -eq 1 ] && echo "$line" | grep -q '^      options:'; then
+                echo "$line"
+                cat /tmp/opts.txt
+                replacing=1
+                in_package=0
+                continue
+              fi
+              if [ $replacing -eq 1 ] && echo "$line" | grep -q '^    [a-z]'; then
+                replacing=0
+              fi
+              if [ $replacing -eq 1 ] && echo "$line" | grep -q '^        - '; then
+                continue
+              fi
+              echo "$line"
+            done < "$FILE" > "$FILE.tmp"
+            mv "$FILE.tmp" "$FILE"
+          done
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add .github/ISSUE_TEMPLATE/
+          git commit -m "chore: sync issue template package dropdowns [skip ci]"
+          git push

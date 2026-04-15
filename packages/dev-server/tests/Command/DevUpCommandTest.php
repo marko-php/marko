@@ -59,6 +59,16 @@ class FakeProcessManager extends ProcessManager
     }
 }
 
+const CONFIG_DEFAULTS = [
+    'dev.port' => 8000,
+    'dev.host' => 'localhost',
+    'dev.docker' => false,
+    'dev.frontend' => false,
+    'dev.pubsub' => false,
+    'dev.detach' => true,
+    'dev.processes' => [],
+];
+
 /**
  * Helper to create a DevUpCommand with standard test dependencies.
  *
@@ -85,15 +95,7 @@ function createDevUpCommand(
         file_put_contents($dir . '/public/index.php', '<?php');
     }
 
-    $configDefaults = [
-        'dev.port' => 8000,
-        'dev.docker' => false,
-        'dev.frontend' => false,
-        'dev.pubsub' => false,
-        'dev.detach' => true,
-        'dev.processes' => [],
-    ];
-    $fakeConfig = new FakeConfigRepository(array_merge($configDefaults, $config));
+    $fakeConfig = new FakeConfigRepository(array_merge(CONFIG_DEFAULTS, $config));
 
     $dockerDetector = new DockerDetector($dir);
     $frontendDetector = new FrontendDetector($dir);
@@ -148,6 +150,16 @@ it('reads port from config', function (): void {
     $command->execute($input, $output);
 
     expect($pm->started['php'])->toContain('localhost:7500');
+});
+
+it('reads host from config', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.host' => '127.0.0.1']);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up']);
+    $command->execute($input, $output);
+
+    expect($pm->started['php'])->toContain('127.0.0.1:8000');
 });
 
 it('reads docker setting from config', function (): void {
@@ -417,6 +429,25 @@ it('overrides config port with -p short flag', function (): void {
     expect($pm->started['php'])->toContain('localhost:9000');
 });
 
+it('overrides config host with --host flag', function (): void {
+    ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.host' => 'localhost']);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '--host=0.0.0.0']);
+    $command->execute($input, $output);
+
+    expect($pm->started['php'])->toContain('0.0.0.0:8000')
+        ->and($pm->started['php'])->not->toContain('localhost');
+});
+
+it('rejects invalid host values', function (): void {
+    ['command' => $command] = createDevUpCommand(['dev.host' => 'localhost']);
+    ['output' => $output] = createMemoryOutput();
+
+    $input = new Input(['marko', 'dev:up', '--host=0.0.0.0; evil']);
+    $command->execute($input, $output);
+})->throws(DevServerException::class, 'Invalid host value');
+
 it('overrides config port with -p space syntax', function (): void {
     ['command' => $command, 'processManager' => $pm] = createDevUpCommand(['dev.port' => 8000]);
     ['output' => $output] = createMemoryOutput();
@@ -570,14 +601,7 @@ it('throws DevServerException when public/index.php does not exist', function ()
     mkdir($dir, 0755, true);
     // Deliberately no public/index.php created
 
-    $fakeConfig = new FakeConfigRepository([
-        'dev.port' => 8000,
-        'dev.docker' => false,
-        'dev.frontend' => false,
-        'dev.pubsub' => false,
-        'dev.detach' => false,
-        'dev.processes' => [],
-    ]);
+    $fakeConfig = new FakeConfigRepository(CONFIG_DEFAULTS);
     $command = new DevUpCommand(
         config: $fakeConfig,
         dockerDetector: new DockerDetector($dir),
@@ -597,14 +621,7 @@ it('includes helpful message with bootstrap code in the exception', function ():
     $dir = sys_get_temp_dir() . '/marko-no-index-msg-' . uniqid();
     mkdir($dir, 0755, true);
 
-    $fakeConfig = new FakeConfigRepository([
-        'dev.port' => 8000,
-        'dev.docker' => false,
-        'dev.frontend' => false,
-        'dev.pubsub' => false,
-        'dev.detach' => false,
-        'dev.processes' => [],
-    ]);
+    $fakeConfig = new FakeConfigRepository(CONFIG_DEFAULTS);
     $command = new DevUpCommand(
         config: $fakeConfig,
         dockerDetector: new DockerDetector($dir),
@@ -632,14 +649,11 @@ it('throws before any processes start when public/index.php is missing', functio
     $dir = sys_get_temp_dir() . '/marko-no-index-proc-' . uniqid();
     mkdir($dir, 0755, true);
 
-    $fakeConfig = new FakeConfigRepository([
-        'dev.port' => 8000,
+    $fakeConfig = new FakeConfigRepository(array_merge(CONFIG_DEFAULTS, [
         'dev.docker' => 'docker compose up',
         'dev.frontend' => 'yarn dev',
-        'dev.pubsub' => false,
         'dev.detach' => false,
-        'dev.processes' => [],
-    ]);
+    ]));
     $pm = new FakeProcessManager();
     $command = new DevUpCommand(
         config: $fakeConfig,
@@ -668,14 +682,7 @@ it('starts PHP server normally when public/index.php exists', function (): void 
     mkdir($dir . '/public', 0755, true);
     file_put_contents($dir . '/public/index.php', '<?php');
 
-    $fakeConfig = new FakeConfigRepository([
-        'dev.port' => 8000,
-        'dev.docker' => false,
-        'dev.frontend' => false,
-        'dev.pubsub' => false,
-        'dev.detach' => false,
-        'dev.processes' => [],
-    ]);
+    $fakeConfig = new FakeConfigRepository(CONFIG_DEFAULTS);
     $pm = new FakeProcessManager();
     $command = new DevUpCommand(
         config: $fakeConfig,

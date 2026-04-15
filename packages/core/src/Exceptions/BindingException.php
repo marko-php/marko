@@ -35,7 +35,7 @@ class BindingException extends MarkoException implements ContainerExceptionInter
         return new self(
             message: "Cannot resolve parameter '\$$parameter' in callable",
             context: 'Parameter has no type declaration or is a built-in type that cannot be autowired',
-            suggestion: "Add a class or interface type hint to the parameter",
+            suggestion: 'Add a class or interface type hint to the parameter',
         );
     }
 }

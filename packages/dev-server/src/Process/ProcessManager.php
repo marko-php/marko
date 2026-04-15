@@ -6,6 +6,7 @@ namespace Marko\DevServer\Process;
 
 use Marko\Core\Command\Output;
 use Marko\DevServer\Exceptions\DevServerException;
+use ValueError;
 
 class ProcessManager
 {
@@ -27,8 +28,7 @@ class ProcessManager
     public function start(
         string $name,
         string $command,
-    ): int
-    {
+    ): int {
         $descriptors = [
             0 => ['pipe', 'r'],  // stdin
             1 => ['pipe', 'w'],  // stdout
@@ -109,7 +109,7 @@ class ProcessManager
 
         try {
             return @posix_kill(-$pid, 0) || posix_kill($pid, 0);
-        } catch (\ValueError) {
+        } catch (ValueError) {
             return false;
         }
     }
@@ -273,8 +273,7 @@ class ProcessManager
     public function writePrefix(
         string $name,
         string $line,
-    ): void
-    {
+    ): void {
         $this->output->writeLine("[$name] $line");
     }
 

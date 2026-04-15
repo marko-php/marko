@@ -222,7 +222,7 @@ Runtime env vars for bin scripts (not stored as secrets — passed at the comman
 
 **Tests fail before release**
 - Fix the failing tests. They must pass before tagging.
-- Run locally: `/opt/homebrew/Cellar/php/8.5.1_2/bin/php vendor/bin/pest --parallel`
+- Run locally: `php vendor/bin/pest --parallel` (ensure PHP 8.5+ is on your PATH, or set `PHP_BIN` env var)
 
 **`composer update` fails locally**
 - Always run from the repo root (not inside a package directory)

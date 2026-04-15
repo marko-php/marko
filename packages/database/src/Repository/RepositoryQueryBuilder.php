@@ -5,23 +5,35 @@ declare(strict_types=1);
 namespace Marko\Database\Repository;
 
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
+use Marko\Database\Entity\RelationshipLoader;
 use Marko\Database\Query\QueryBuilderInterface;
+use Marko\Database\Query\QuerySpecification;
 
 /**
  * A query builder wrapper that provides entity hydration for repository queries.
  *
  * This class wraps a QueryBuilderInterface and adds the ability to return
- * hydrated entities instead of raw arrays.
+ * hydrated entities instead of raw arrays, with optional eager loading and
+ * query specification support.
  */
-readonly class RepositoryQueryBuilder implements QueryBuilderInterface
+class RepositoryQueryBuilder implements QueryBuilderInterface
 {
+    /**
+     * Relationship names to eager-load on query execution.
+     *
+     * @var array<string>
+     */
+    private array $relationships = [];
+
     public function __construct(
-        private QueryBuilderInterface $queryBuilder,
-        private EntityHydrator $hydrator,
-        private EntityMetadata $metadata,
-        private string $entityClass,
+        private readonly QueryBuilderInterface $queryBuilder,
+        private readonly EntityHydrator $hydrator,
+        private readonly EntityMetadata $metadata,
+        private readonly string $entityClass,
+        private readonly ?RelationshipLoader $relationshipLoader = null,
     ) {}
 
     public function table(
@@ -183,15 +195,39 @@ readonly class RepositoryQueryBuilder implements QueryBuilderInterface
     }
 
     /**
-     * Execute the query and return hydrated entities.
-     *
-     * @return array<Entity>
+     * Specify relationships to eager-load when fetching entities.
      */
-    public function getEntities(): array
+    public function with(string ...$relationships): static
+    {
+        $this->relationships = array_values($relationships);
+
+        return $this;
+    }
+
+    /**
+     * Apply query specifications to the underlying query builder and return an EntityCollection.
+     *
+     * @return EntityCollection<Entity>
+     */
+    public function matching(QuerySpecification ...$specifications): EntityCollection
+    {
+        foreach ($specifications as $specification) {
+            $specification->apply($this->queryBuilder);
+        }
+
+        return $this->getEntities();
+    }
+
+    /**
+     * Execute the query and return hydrated entities as an EntityCollection.
+     *
+     * @return EntityCollection<Entity>
+     */
+    public function getEntities(): EntityCollection
     {
         $rows = $this->queryBuilder->get();
 
-        return array_map(
+        $entities = array_map(
             fn (array $row): Entity => $this->hydrator->hydrate(
                 $this->entityClass,
                 $row,
@@ -199,6 +235,10 @@ readonly class RepositoryQueryBuilder implements QueryBuilderInterface
             ),
             $rows,
         );
+
+        $this->eagerLoadRelationships($entities);
+
+        return new EntityCollection($entities);
     }
 
     /**
@@ -212,10 +252,36 @@ readonly class RepositoryQueryBuilder implements QueryBuilderInterface
             return null;
         }
 
-        return $this->hydrator->hydrate(
+        $entity = $this->hydrator->hydrate(
             $this->entityClass,
             $row,
             $this->metadata,
         );
+
+        $this->eagerLoadRelationships([$entity]);
+
+        return $entity;
+    }
+
+    /**
+     * Eager-load any pending relationships on the given entities.
+     *
+     * @param Entity[] $entities
+     */
+    private function eagerLoadRelationships(array $entities): void
+    {
+        if ($this->relationships === [] || $this->relationshipLoader === null || $entities === []) {
+            return;
+        }
+
+        foreach ($this->relationships as $name) {
+            $relationship = $this->metadata->getRelationship($name);
+
+            if ($relationship === null) {
+                continue;
+            }
+
+            $this->relationshipLoader->load($entities, $relationship, $this->metadata);
+        }
     }
 }

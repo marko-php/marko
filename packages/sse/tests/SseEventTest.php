@@ -13,7 +13,7 @@ it('formats event with all fields (event, id, retry, data)', function (): void {
     );
 
     expect($event->format())->toBe(
-        "event: message\nid: 42\nretry: 3000\ndata: {\"user\":\"mark\",\"text\":\"Hello\"}\n\n"
+        "event: message\nid: 42\nretry: 3000\ndata: {\"user\":\"mark\",\"text\":\"Hello\"}\n\n",
     );
 });
 

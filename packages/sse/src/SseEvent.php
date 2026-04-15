@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Sse;
 
 use JsonException;
+use NoDiscard;
 
 readonly class SseEvent
 {
@@ -18,21 +19,21 @@ readonly class SseEvent
     /**
      * @throws JsonException
      */
-    #[\NoDiscard]
+    #[NoDiscard]
     public function format(): string
     {
         $output = '';
 
         if ($this->event !== null) {
-            $output .= "event: {$this->event}\n";
+            $output .= "event: $this->event\n";
         }
 
         if ($this->id !== null) {
-            $output .= "id: {$this->id}\n";
+            $output .= "id: $this->id\n";
         }
 
         if ($this->retry !== null) {
-            $output .= "retry: {$this->retry}\n";
+            $output .= "retry: $this->retry\n";
         }
 
         $data = is_array($this->data)
@@ -40,7 +41,7 @@ readonly class SseEvent
             : $this->data;
 
         foreach (explode("\n", $data) as $line) {
-            $output .= "data: {$line}\n";
+            $output .= "data: $line\n";
         }
 
         return $output . "\n";

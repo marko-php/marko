@@ -6,6 +6,7 @@ namespace Marko\Sse;
 
 use JsonException;
 use Marko\Routing\Http\Response;
+use Override;
 
 readonly class StreamingResponse extends Response
 {
@@ -28,14 +29,14 @@ readonly class StreamingResponse extends Response
     /**
      * @throws JsonException
      */
-    #[\Override]
+    #[Override]
     public function send(): void
     {
         if (!headers_sent()) {
             http_response_code($this->statusCode());
 
             foreach ($this->headers() as $name => $value) {
-                header("{$name}: {$value}");
+                header("$name: $value");
             }
         }
 

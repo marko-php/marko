@@ -42,6 +42,14 @@ readonly class DevUpCommand implements CommandInterface
     ): int {
         $port = (int) ($input->getOption('port') ?? $input->getOption('p') ?? $this->config->getInt('dev.port'));
         $foreground = $input->hasOption('foreground') || $input->hasOption('f');
+        $host = $input->getOption('host') ?? $this->config->getString('dev.host');
+
+        if (!preg_match('/\A[a-zA-Z0-9.\-:]+\z/', $host)) {
+            throw new DevServerException(
+                message: "Invalid host value: '$host'",
+                suggestion: "Use a valid hostname or IP address, e.g. --host=0.0.0.0 or --host=localhost",
+            );
+        }
         $detach = !$foreground && ($input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool(
             'dev.detach',
         ));
@@ -55,7 +63,7 @@ readonly class DevUpCommand implements CommandInterface
             if ($this->pidFile->isRunning($entry->pid)) {
                 throw new DevServerException(
                     message: 'Development environment is already running.',
-                    context: "Process '{$entry->name}' (PID {$entry->pid}) is still active",
+                    context: "Process '$entry->name' (PID $entry->pid) is still active",
                     suggestion: "Stop the existing environment first with 'marko down', then run 'marko up' again.",
                 );
             }
@@ -156,8 +164,8 @@ readonly class DevUpCommand implements CommandInterface
         }
 
         // PHP server (always) — multiple workers needed for SSE
-        $phpCommand = "env PHP_CLI_SERVER_WORKERS=4 php -S localhost:$port -t public/";
-        $output->writeLine("  Starting PHP server: php -S localhost:$port");
+        $phpCommand = "env PHP_CLI_SERVER_WORKERS=4 php -S {$host}:{$port} -t public/";
+        $output->writeLine("  Starting PHP server: php -S {$host}:{$port}");
         $pid = $startProcess('php', $phpCommand);
 
         // In foreground mode, verify PHP server is alive — if it died, port is likely in use.

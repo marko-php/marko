@@ -67,13 +67,18 @@ it('validates semver format (rejects invalid versions like 1.0 or v1.0.0)', func
         ->and($contents)->toContain('Expected X.Y.Z');
 });
 
-it('validates PHP version is 8.5+ (checks /opt/homebrew/Cellar/php/8.5.1_2/bin/php or system php)', function () use ($script): void {
-    // Script should check the Homebrew PHP path first, then fall back to system php
+it('validates PHP version is 8.5+ (uses PHP_BIN env var or defaults to system php)', function () use ($script): void {
     $contents = file_get_contents($script);
 
-    expect($contents)->toContain('/opt/homebrew/Cellar/php/8.5.1_2/bin/php')
-        ->and($contents)->toContain('PHP_BIN="php"')
+    expect($contents)->toContain('PHP_BIN="${PHP_BIN:-php}"')
         ->and($contents)->toContain('8.5');
+});
+
+it('derives repo from git remote for gh release create', function () use ($script): void {
+    $contents = file_get_contents($script);
+
+    expect($contents)->toContain('GH_REPO=$(git remote get-url origin')
+        ->and($contents)->toContain('--repo "$GH_REPO"');
 });
 
 it('creates bin/release.sh with version argument validation', function () use ($root, $script): void {

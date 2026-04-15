@@ -16,6 +16,7 @@ readonly class EntityMetadata
      * @param array<string, PropertyMetadata> $properties Property name => metadata
      * @param array<ColumnMetadata> $columns
      * @param array<IndexMetadata> $indexes
+     * @param array<string, RelationshipMetadata> $relationships Property name => metadata
      */
     public function __construct(
         public string $entityClass,
@@ -24,6 +25,7 @@ readonly class EntityMetadata
         public array $properties = [],
         public array $columns = [],
         public array $indexes = [],
+        public array $relationships = [],
     ) {}
 
     /**
@@ -65,6 +67,24 @@ readonly class EntityMetadata
      */
     public function getPropertyToColumnMap(): array
     {
-        return array_map(fn ($meta) => $meta->columnName, $this->properties);
+        return array_map(fn (PropertyMetadata $meta) => $meta->columnName, $this->properties);
+    }
+
+    /**
+     * Get relationship metadata by property name.
+     */
+    public function getRelationship(string $name): ?RelationshipMetadata
+    {
+        return $this->relationships[$name] ?? null;
+    }
+
+    /**
+     * Get all relationship metadata.
+     *
+     * @return array<string, RelationshipMetadata>
+     */
+    public function getRelationships(): array
+    {
+        return $this->relationships;
     }
 }

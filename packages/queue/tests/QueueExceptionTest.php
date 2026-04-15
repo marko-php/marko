@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Marko\Core\Exceptions\MarkoException;
 use Marko\Queue\Exceptions\JobFailedException;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;

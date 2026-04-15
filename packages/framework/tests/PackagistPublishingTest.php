@@ -7,7 +7,7 @@ function getPackageComposerFiles(): array
     $packagesDir = dirname(__DIR__, 3);
     $files = glob($packagesDir . '/packages/*/composer.json');
 
-    return array_filter($files, fn(string $f) => !str_contains($f, '/vendor/'));
+    return array_filter($files, fn (string $f) => !str_contains($f, '/vendor/'));
 }
 
 it('removes repositories key from all 38 package composer.json files that have path repos', function (): void {

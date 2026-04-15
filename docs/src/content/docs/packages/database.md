@@ -53,13 +53,13 @@ class Post extends Entity
     #[Column(default: 'draft')]
     public PostStatus $status = PostStatus::Draft;
 
-    #[Column(name: 'author_id', references: 'users.id', onDelete: 'cascade')]
+    #[Column(references: 'users.id', onDelete: 'cascade')]
     public int $authorId;
 
-    #[Column(name: 'created_at', default: 'CURRENT_TIMESTAMP')]
+    #[Column(default: 'CURRENT_TIMESTAMP')]
     public DateTimeImmutable $createdAt;
 
-    #[Column(name: 'updated_at')]
+    #[Column]
     public ?DateTimeImmutable $updatedAt = null;
 }
 ```
@@ -71,6 +71,12 @@ class Post extends Entity
 | `#[Table]` | Defines table name |
 | `#[Column]` | Column configuration (name, primaryKey, autoIncrement, length, type, unique, default, references, onDelete, onUpdate) |
 | `#[Index]` | Composite indexes |
+| `#[HasOne]` | Declares a has-one relationship to another entity |
+| `#[HasMany]` | Declares a has-many relationship to another entity |
+| `#[BelongsTo]` | Declares a belongs-to relationship to another entity |
+| `#[BelongsToMany]` | Declares a many-to-many relationship through a pivot entity |
+
+Property names are automatically converted from camelCase to snake_case for column names. For example, `$createdAt` maps to the `created_at` column. Use the `name` parameter to override this: `#[Column(name: 'custom_column')]`.
 
 ### Type Inference Rules
 
@@ -99,6 +105,7 @@ declare(strict_types=1);
 namespace App\Blog\Repository;
 
 use App\Blog\Entity\Post;
+use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Repository\Repository;
 
 class PostRepository extends Repository
@@ -110,7 +117,7 @@ class PostRepository extends Repository
         return $this->findOneBy(['slug' => $slug]);
     }
 
-    public function findPublished(): array
+    public function findPublished(): EntityCollection
     {
         return $this->query()
             ->where('status', '=', 'published')
@@ -126,6 +133,231 @@ class PostRepository extends Repository
 - **Separation**: Business logic stays in entities, persistence in repositories
 - **Flexibility**: Switch databases without changing entity code
 - **Clarity**: No hidden magic, explicit saves via repository
+
+## Relationships
+
+Define relationships between entities using property attributes. Marko loads related entities explicitly — there is no lazy loading.
+
+### HasOne
+
+A user has one profile. The `foreignKey` is the property name on the **related** entity pointing back to this entity.
+
+```php title="app/blog/Entity/User.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\HasOne;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('users')]
+class User extends Entity
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public int $id;
+
+    #[Column(length: 255)]
+    public string $name;
+
+    #[HasOne(entityClass: Profile::class, foreignKey: 'userId')]
+    public ?Profile $profile = null;
+}
+```
+
+### HasMany
+
+A post has many comments. The `foreignKey` is the property name on the **related** entity pointing back to this entity.
+
+```php title="app/blog/Entity/Post.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\HasMany;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityCollection;
+
+#[Table('posts')]
+class Post extends Entity
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public int $id;
+
+    #[Column(length: 255)]
+    public string $title;
+
+    #[HasMany(entityClass: Comment::class, foreignKey: 'postId')]
+    public EntityCollection $comments;
+}
+```
+
+### BelongsTo
+
+A comment belongs to a post. The `foreignKey` is the property name on **this** entity pointing to the related entity.
+
+```php title="app/blog/Entity/Comment.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Entity;
+
+use Marko\Database\Attributes\BelongsTo;
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('comments')]
+class Comment extends Entity
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public int $id;
+
+    #[Column(name: 'post_id')]
+    public int $postId;
+
+    #[Column(type: 'text')]
+    public string $body;
+
+    #[BelongsTo(entityClass: Post::class, foreignKey: 'postId')]
+    public ?Post $post = null;
+}
+```
+
+### BelongsToMany
+
+A post belongs to many tags through a pivot entity. The `foreignKey` is the pivot property pointing to **this** entity; `relatedKey` is the pivot property pointing to the related entity.
+
+```php title="app/blog/Entity/Post.php"
+#[BelongsToMany(
+    entityClass: Tag::class,
+    pivotClass: PostTag::class,
+    foreignKey: 'postId',
+    relatedKey: 'tagId',
+)]
+public EntityCollection $tags;
+```
+
+### Eager Loading
+
+Use `with()` on the repository to load relationships without N+1 queries. Pass dot-notation strings for nested relationships.
+
+```php
+// Load posts with their comments
+$posts = $postRepository->with('comments')->findAll();
+
+// Load posts with comments and each comment's author
+$posts = $postRepository->with('comments.author')->findAll();
+
+// Multiple relationships
+$posts = $postRepository->with('comments', 'tags')->findAll();
+```
+
+`with()` returns a cloned repository instance — the original is unchanged. Relationships are loaded in a single batch query per relationship level.
+
+## EntityCollection
+
+`findAll()` and `findBy()` return an `EntityCollection` instead of a plain array. `EntityCollection` is iterable, countable, and provides collection methods.
+
+```php
+use Marko\Database\Entity\EntityCollection;
+
+$posts = $postRepository->findAll();
+
+// Iterate
+foreach ($posts as $post) { ... }
+
+// Count
+$posts->count();
+$posts->isEmpty();
+
+// Access
+$posts->first();
+$posts->last();
+
+// Transform
+$posts->filter(fn (Post $p): bool => $p->published);
+$posts->map(fn (Post $p): string => $p->title);
+$posts->each(fn (Post $p): void => ...);
+$posts->pluck('title');          // array of property values
+
+// Sort and group
+$posts->sortBy('createdAt', descending: true);
+$posts->groupBy('status');       // array<string, EntityCollection>
+$posts->chunk(10);               // array<int, EntityCollection>
+
+// Search
+$posts->contains(fn (Post $p): bool => $p->id === 5);
+
+// Convert
+$posts->toArray();
+```
+
+## Query Specifications
+
+`QuerySpecification` is an interface for encapsulating reusable query logic. Use `matching()` on the repository to apply one or more specifications.
+
+```php title="app/blog/Query/PublishedSpec.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Query;
+
+use Marko\Database\Query\QueryBuilderInterface;
+use Marko\Database\Query\QuerySpecification;
+
+class PublishedSpec implements QuerySpecification
+{
+    public function apply(QueryBuilderInterface $queryBuilder): void
+    {
+        $queryBuilder->where('status', '=', 'published');
+    }
+}
+```
+
+```php title="app/blog/Query/RecentSpec.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Query;
+
+use Marko\Database\Query\QueryBuilderInterface;
+use Marko\Database\Query\QuerySpecification;
+
+class RecentSpec implements QuerySpecification
+{
+    public function __construct(
+        private readonly int $limit = 10,
+    ) {}
+
+    public function apply(QueryBuilderInterface $queryBuilder): void
+    {
+        $queryBuilder->orderBy('created_at', 'desc')->limit($this->limit);
+    }
+}
+```
+
+Compose multiple specifications in a single `matching()` call:
+
+```php
+use App\Blog\Query\PublishedSpec;
+use App\Blog\Query\RecentSpec;
+
+$posts = $postRepository->matching(
+    new PublishedSpec(),
+    new RecentSpec(limit: 5),
+);
+```
 
 ## Seeders
 

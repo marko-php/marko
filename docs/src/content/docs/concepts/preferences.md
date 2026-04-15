@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace App\Blog\Controller;
 
-use Marko\Blog\Controllers\PostController;
+use Acme\Blog\Controller\PostController;
 use Marko\Core\Attributes\Preference;
 
 #[Preference(replaces: PostController::class)]

@@ -10,6 +10,7 @@ use Marko\Core\Command\Output;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Exceptions\CircularDependencyException;
+use Marko\Core\Plugin\PluginInterceptor;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
@@ -1701,7 +1702,8 @@ it('creates a request from globals and routes it through the router', function (
     $_SERVER['REQUEST_URI'] = '/';
 
     $handledRequest = null;
-    $mockRouter = new class ($handledRequest) {
+    $mockRouter = new class ($handledRequest)
+    {
         public function __construct(
             public mixed &$capturedRequest,
         ) {}
@@ -1729,7 +1731,8 @@ it('sends the response after routing', function (): void {
     $_SERVER['REQUEST_METHOD'] = 'GET';
     $_SERVER['REQUEST_URI'] = '/';
 
-    $mockRouter = new class {
+    $mockRouter = new class ()
+    {
         public function handle(Request $request): Response
         {
             return new Response('response body');
@@ -1751,7 +1754,8 @@ it('returns void', function (): void {
     $_SERVER['REQUEST_METHOD'] = 'GET';
     $_SERVER['REQUEST_URI'] = '/';
 
-    $mockRouter = new class {
+    $mockRouter = new class ()
+    {
         public function handle(Request $request): Response
         {
             return new Response('');
@@ -1770,4 +1774,250 @@ it('returns void', function (): void {
 
     expect($result)->toBeNull()
         ->and($reflectionMethod->getReturnType()->getName())->toBe('void');
+});
+
+it('creates PluginInterceptor and injects it into Container via setter during initialization', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $vendorDir = $baseDir . '/vendor';
+
+    appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->initialize();
+
+    // Use reflection to verify the container has a PluginInterceptor set
+    $reflection = new ReflectionClass($app->container);
+    $property = $reflection->getProperty('pluginInterceptor');
+    $property->setAccessible(true);
+    $interceptor = $property->getValue($app->container);
+
+    expect($interceptor)->toBeInstanceOf(PluginInterceptor::class);
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('uses the same PluginRegistry instance for both discovery and interception', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    $modulePath = $vendorDir . '/acme/core';
+    appTestCreateModule($modulePath, 'acme/core');
+    mkdir($modulePath . '/src', 0755, true);
+
+    $targetCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmeSameRegistry$uniqueId;
+
+class TargetClass$uniqueId
+{
+    public function doSomething(): string
+    {
+        return 'original';
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/src/TargetClass.php', $targetCode);
+
+    $pluginCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmeSameRegistry$uniqueId;
+
+use Marko\\Core\\Attributes\\Plugin;
+use Marko\\Core\\Attributes\\Before;
+
+#[Plugin(target: TargetClass$uniqueId::class)]
+class TargetPlugin$uniqueId
+{
+    #[Before]
+    public function beforeDoSomething(): void {}
+}
+PHP;
+    file_put_contents($modulePath . '/src/TargetPlugin.php', $pluginCode);
+
+    require_once $modulePath . '/src/TargetClass.php';
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->initialize();
+
+    // The registry on the app and the one inside the interceptor must be the same instance
+    $containerReflection = new ReflectionClass($app->container);
+    $interceptorProp = $containerReflection->getProperty('pluginInterceptor');
+    $interceptorProp->setAccessible(true);
+    $interceptor = $interceptorProp->getValue($app->container);
+
+    $interceptorReflection = new ReflectionClass($interceptor);
+    $registryProp = $interceptorReflection->getProperty('registry');
+    $registryProp->setAccessible(true);
+    $interceptorRegistry = $registryProp->getValue($interceptor);
+
+    expect($interceptorRegistry)->toBe($app->pluginRegistry);
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('resolves objects with plugin interception after full initialization', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    $modulePath = $vendorDir . '/acme/core';
+    appTestCreateModule($modulePath, 'acme/core');
+    mkdir($modulePath . '/src', 0755, true);
+
+    $targetCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmeIntercept$uniqueId;
+
+class GreetingService$uniqueId
+{
+    public function greet(): string
+    {
+        return 'hello';
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/src/GreetingService.php', $targetCode);
+
+    $pluginCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmeIntercept$uniqueId;
+
+use Marko\\Core\\Attributes\\Plugin;
+use Marko\\Core\\Attributes\\After;
+
+#[Plugin(target: GreetingService$uniqueId::class)]
+class GreetingPlugin$uniqueId
+{
+    #[After]
+    public function greet(string \$result): string
+    {
+        return \$result . ' world';
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/src/GreetingPlugin.php', $pluginCode);
+
+    require_once $modulePath . '/src/GreetingService.php';
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->initialize();
+
+    $targetClass = "AcmeIntercept$uniqueId\\GreetingService$uniqueId";
+    $service = $app->container->get($targetClass);
+
+    expect($service->greet())->toBe('hello world');
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('creates PluginRegistry before plugin discovery and reuses it for PluginInterceptor', function (): void {
+    $uniqueId = uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    $modulePath = $vendorDir . '/acme/core';
+    appTestCreateModule($modulePath, 'acme/core');
+    mkdir($modulePath . '/src', 0755, true);
+
+    $targetCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmePreCreate$uniqueId;
+
+class ServiceClass$uniqueId
+{
+    public function run(): string
+    {
+        return 'original';
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/src/ServiceClass.php', $targetCode);
+
+    $pluginCode = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace AcmePreCreate$uniqueId;
+
+use Marko\\Core\\Attributes\\Plugin;
+use Marko\\Core\\Attributes\\After;
+
+#[Plugin(target: ServiceClass$uniqueId::class)]
+class ServicePlugin$uniqueId
+{
+    #[After]
+    public function run(string \$result): string
+    {
+        return \$result . '-modified';
+    }
+}
+PHP;
+    file_put_contents($modulePath . '/src/ServicePlugin.php', $pluginCode);
+
+    require_once $modulePath . '/src/ServiceClass.php';
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->initialize();
+
+    $targetClass = "AcmePreCreate$uniqueId\\ServiceClass$uniqueId";
+
+    // The registry used at discovery time must have the plugin,
+    // and the same instance must power interception at resolve time
+    expect($app->pluginRegistry->hasPluginsFor($targetClass))->toBeTrue();
+
+    $service = $app->container->get($targetClass);
+    expect($service->run())->toBe('original-modified');
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('includes SessionMiddleware in global middleware', function (): void {
+    $reflection = new ReflectionClass(Application::class);
+    $constant = $reflection->getReflectionConstant('GLOBAL_MIDDLEWARE');
+
+    expect($constant->getValue())->toContain('Marko\\Session\\Middleware\\SessionMiddleware');
+});
+
+it('includes LayoutMiddleware in global middleware', function (): void {
+    $reflection = new ReflectionClass(Application::class);
+    $constant = $reflection->getReflectionConstant('GLOBAL_MIDDLEWARE');
+
+    expect($constant->getValue())->toContain('Marko\\Layout\\Middleware\\LayoutMiddleware');
 });

@@ -67,4 +67,33 @@ class RepositoryException extends MarkoException
             suggestion: 'Pass a QueryBuilderFactoryInterface instance as the fourth constructor argument, or ensure the DI container has a QueryBuilderFactoryInterface binding',
         );
     }
+
+    /**
+     * @param class-string $repositoryClass
+     */
+    public static function relationshipLoaderNotConfigured(
+        string $repositoryClass,
+    ): self {
+        return new self(
+            message: "Repository '$repositoryClass' does not have a RelationshipLoader configured",
+            context: 'Calling with() to eager-load relationships',
+            suggestion: 'Pass a RelationshipLoader instance as the sixth constructor argument, or ensure the DI container has a RelationshipLoader binding',
+        );
+    }
+
+    /**
+     * @param class-string $repositoryClass
+     * @param class-string $entityClass
+     */
+    public static function unknownRelationship(
+        string $repositoryClass,
+        string $entityClass,
+        string $relationshipName,
+    ): self {
+        return new self(
+            message: "Entity '$entityClass' does not have a relationship named '$relationshipName'",
+            context: "Calling with('$relationshipName') on repository '$repositoryClass'",
+            suggestion: 'Check the entity class for #[HasOne], #[HasMany], or #[BelongsTo] attributes and use the correct property name',
+        );
+    }
 }

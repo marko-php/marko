@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace Marko\Database\Entity;
 
 use BackedEnum;
+use Marko\Database\Attributes\BelongsTo;
+use Marko\Database\Attributes\BelongsToMany;
 use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\HasMany;
+use Marko\Database\Attributes\HasOne;
 use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Exceptions\EntityException;
@@ -38,6 +42,8 @@ class EntityMetadataFactory
      * Parse an entity class and return its metadata.
      *
      * @param class-string $entityClass
+     *
+     * @throws EntityException
      */
     public function parse(
         string $entityClass,
@@ -50,13 +56,20 @@ class EntityMetadataFactory
 
         $this->validateEntity($reflection, $entityClass);
 
-        $tableName = $this->extractTableName($reflection, $entityClass);
+        $tableName = $this->extractTableName($reflection);
         $columns = [];
         $indexes = [];
         $properties = [];
+        $relationships = [];
         $primaryKey = 'id';
 
         foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+            $relationship = $this->extractRelationship($property, $entityClass);
+            if ($relationship !== null) {
+                $relationships[$property->getName()] = $relationship;
+                continue;
+            }
+
             $columnAttributes = $property->getAttributes(Column::class);
 
             if (count($columnAttributes) === 0) {
@@ -65,7 +78,7 @@ class EntityMetadataFactory
 
             $columnAttr = $columnAttributes[0]->newInstance();
             $propertyName = $property->getName();
-            $columnName = $columnAttr->name ?? $propertyName;
+            $columnName = $columnAttr->name ?? $this->camelToSnakeCase($propertyName);
             $type = $property->getType();
 
             if (!$type instanceof ReflectionNamedType) {
@@ -143,6 +156,7 @@ class EntityMetadataFactory
             properties: $properties,
             columns: $columns,
             indexes: $indexes,
+            relationships: $relationships,
         );
 
         $this->cache[$entityClass] = $metadata;
@@ -163,6 +177,8 @@ class EntityMetadataFactory
      *
      * @param ReflectionClass<object> $reflection
      * @param class-string $entityClass
+     *
+     * @throws EntityException
      */
     private function validateEntity(
         ReflectionClass $reflection,
@@ -182,15 +198,170 @@ class EntityMetadataFactory
      * Extract the table name from the #[Table] attribute.
      *
      * @param ReflectionClass<object> $reflection
-     * @param class-string $entityClass
      */
     private function extractTableName(
         ReflectionClass $reflection,
-        string $entityClass,
     ): string {
         $tableAttributes = $reflection->getAttributes(Table::class);
 
         return $tableAttributes[0]->newInstance()->name;
+    }
+
+    /**
+     * Convert a camelCase property name to snake_case for use as a column name.
+     */
+    private function camelToSnakeCase(
+        string $name,
+    ): string {
+        $result = (string) preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
+        $result = (string) preg_replace('/([A-Z]+)([A-Z][a-z])/', '$1_$2', $result);
+
+        return strtolower($result);
+    }
+
+    /**
+     * Extract relationship metadata from a property, or return null if none.
+     *
+     * @param class-string $entityClass
+     * @throws EntityException
+     */
+    private function extractRelationship(ReflectionProperty $property, string $entityClass): ?RelationshipMetadata
+    {
+        $propertyName = $property->getName();
+
+        $hasOneAttrs = $property->getAttributes(HasOne::class);
+        $hasManyAttrs = $property->getAttributes(HasMany::class);
+        $belongsToAttrs = $property->getAttributes(BelongsTo::class);
+        $belongsToManyAttrs = $property->getAttributes(BelongsToMany::class);
+
+        $hasRelationship = count($hasOneAttrs) > 0
+            || count($hasManyAttrs) > 0
+            || count($belongsToAttrs) > 0
+            || count($belongsToManyAttrs) > 0;
+
+        if (!$hasRelationship) {
+            return null;
+        }
+
+        if (count($property->getAttributes(Column::class)) > 0) {
+            throw EntityException::columnAndRelationshipConflict($entityClass, $propertyName);
+        }
+
+        if (count($hasOneAttrs) > 0) {
+            $attr = $hasOneAttrs[0]->newInstance();
+            $this->validateRelationshipEntityClass($attr->entityClass, $entityClass, $propertyName);
+            $this->validateSingularPropertyType($property, $entityClass, $propertyName);
+
+            return new RelationshipMetadata(
+                propertyName: $propertyName,
+                type: RelationshipType::HasOne,
+                relatedClass: $attr->entityClass,
+                foreignKey: $attr->foreignKey,
+            );
+        }
+
+        if (count($hasManyAttrs) > 0) {
+            $attr = $hasManyAttrs[0]->newInstance();
+            $this->validateRelationshipEntityClass($attr->entityClass, $entityClass, $propertyName);
+            $this->validateCollectionPropertyType($property, $entityClass, $propertyName);
+
+            return new RelationshipMetadata(
+                propertyName: $propertyName,
+                type: RelationshipType::HasMany,
+                relatedClass: $attr->entityClass,
+                foreignKey: $attr->foreignKey,
+            );
+        }
+
+        if (count($belongsToAttrs) > 0) {
+            $attr = $belongsToAttrs[0]->newInstance();
+            $this->validateRelationshipEntityClass($attr->entityClass, $entityClass, $propertyName);
+            $this->validateSingularPropertyType($property, $entityClass, $propertyName);
+
+            return new RelationshipMetadata(
+                propertyName: $propertyName,
+                type: RelationshipType::BelongsTo,
+                relatedClass: $attr->entityClass,
+                foreignKey: $attr->foreignKey,
+            );
+        }
+
+        if (count($belongsToManyAttrs) > 0) {
+            $attr = $belongsToManyAttrs[0]->newInstance();
+            $this->validateRelationshipEntityClass($attr->entityClass, $entityClass, $propertyName);
+            $this->validateCollectionPropertyType($property, $entityClass, $propertyName);
+
+            return new RelationshipMetadata(
+                propertyName: $propertyName,
+                type: RelationshipType::BelongsToMany,
+                relatedClass: $attr->entityClass,
+                foreignKey: $attr->foreignKey,
+                relatedKey: $attr->relatedKey,
+                pivotClass: $attr->pivotClass,
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate that the related entity class extends Entity.
+     *
+     * @param class-string $relatedClass
+     * @param class-string $entityClass
+     * @throws EntityException
+     */
+    private function validateRelationshipEntityClass(
+        string $relatedClass,
+        string $entityClass,
+        string $propertyName,
+    ): void {
+        if (!is_a($relatedClass, Entity::class, true)) {
+            throw EntityException::relationshipEntityNotEntity($entityClass, $propertyName, $relatedClass);
+        }
+    }
+
+    /**
+     * Validate that a singular (HasOne/BelongsTo) property is a nullable Entity type.
+     *
+     * @param class-string $entityClass
+     * @throws EntityException
+     */
+    private function validateSingularPropertyType(
+        ReflectionProperty $property,
+        string $entityClass,
+        string $propertyName,
+    ): void {
+        $type = $property->getType();
+
+        if (!$type instanceof ReflectionNamedType) {
+            throw EntityException::singularRelationshipTypeMismatch($entityClass, $propertyName);
+        }
+
+        $typeName = $type->getName();
+        if (!$type->allowsNull() || !is_a($typeName, Entity::class, true)) {
+            throw EntityException::singularRelationshipTypeMismatch($entityClass, $propertyName);
+        }
+    }
+
+    /**
+     * Validate that a collection (HasMany/BelongsToMany) property is an array type.
+     *
+     * @param class-string $entityClass
+     * @throws EntityException
+     */
+    private function validateCollectionPropertyType(
+        ReflectionProperty $property,
+        string $entityClass,
+        string $propertyName,
+    ): void {
+        $type = $property->getType();
+
+        if (!$type instanceof ReflectionNamedType
+            || ($type->getName() !== 'array' && !is_a($type->getName(), EntityCollection::class, true))
+        ) {
+            throw EntityException::collectionRelationshipTypeMismatch($entityClass, $propertyName);
+        }
     }
 
     /**

@@ -44,7 +44,7 @@ it('loads environment variables during initialize() using class_exists(EnvLoader
     file_put_contents($baseDir . '/.env', $envKey . '=initialize_loaded');
 
     // Call initialize() directly — env loading must happen inside initialize()
-    $app = new \Marko\Core\Application(
+    $app = new Application(
         vendorPath: $vendorDir,
         modulesPath: '',
         appPath: '',
@@ -73,7 +73,7 @@ it('derives basePath for env loading via dirname($this->vendorPath) inside initi
     $envKey = 'MARKO_TEST_DERIVE_BASE_' . strtoupper(uniqid());
     file_put_contents($baseDir . '/.env', $envKey . '=derived_base');
 
-    $app = new \Marko\Core\Application(
+    $app = new Application(
         vendorPath: $vendorDir,
         modulesPath: '',
         appPath: '',

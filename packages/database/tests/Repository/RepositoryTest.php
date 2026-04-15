@@ -9,6 +9,7 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
@@ -77,7 +78,7 @@ it('defines RepositoryInterface with findAll() method', function (): void {
     $returnType = $method->getReturnType();
     expect($method->isPublic())->toBeTrue()
         ->and($method->getParameters())->toHaveCount(0)
-        ->and($returnType->getName())->toBe('array');
+        ->and($returnType->getName())->toBe(EntityCollection::class);
 });
 
 it('defines RepositoryInterface with findBy(criteria) method', function (): void {
@@ -92,7 +93,7 @@ it('defines RepositoryInterface with findBy(criteria) method', function (): void
         ->and($parameters)->toHaveCount(1)
         ->and($parameters[0]->getName())->toBe('criteria')
         ->and($parameters[0]->getType()->getName())->toBe('array')
-        ->and($returnType->getName())->toBe('array');
+        ->and($returnType->getName())->toBe(EntityCollection::class);
 });
 
 it('defines RepositoryInterface with findOneBy(criteria) method', function (): void {
@@ -185,13 +186,13 @@ it('uses EntityHydrator to convert rows to entities', function (): void {
     // - 'id' maps to 'id' column
     // - 'name' maps to 'name' column
     // - 'email' maps to 'email_address' column (explicit in #[Column('email_address')])
-    // - 'isActive' maps to 'isActive' column (no explicit name, uses property name)
+    // - 'isActive' maps to 'is_active' column (no explicit name, uses snake_case of property name)
     $connection = createMockConnection([
         [
             'id' => 1,
             'name' => 'John Doe',
             'email_address' => 'john@example.com',
-            'isActive' => 1,
+            'is_active' => 1,
         ],
     ]);
     $metadataFactory = new EntityMetadataFactory();
@@ -230,7 +231,7 @@ it('finds entity by primary key with find(id)', function (): void {
             'id' => 42,
             'name' => 'Jane Doe',
             'email_address' => 'jane@example.com',
-            'isActive' => 1,
+            'is_active' => 1,
         ],
     ]);
     $metadataFactory = new EntityMetadataFactory();
@@ -279,7 +280,7 @@ it('finds entity by primary key with findOrFail(id)', function (): void {
             'id' => 42,
             'name' => 'Jane Doe',
             'email_address' => 'jane@example.com',
-            'isActive' => 1,
+            'is_active' => 1,
         ],
     ]);
     $metadataFactory = new EntityMetadataFactory();
@@ -307,8 +308,8 @@ it('throws RepositoryException when findOrFail() entity not found', function ():
 
 it('finds all entities with findAll()', function (): void {
     $connection = createMockConnection([
-        ['id' => 1, 'name' => 'Alice', 'email_address' => 'alice@example.com', 'isActive' => 1],
-        ['id' => 2, 'name' => 'Bob', 'email_address' => 'bob@example.com', 'isActive' => 0],
+        ['id' => 1, 'name' => 'Alice', 'email_address' => 'alice@example.com', 'is_active' => 1],
+        ['id' => 2, 'name' => 'Bob', 'email_address' => 'bob@example.com', 'is_active' => 0],
     ]);
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
@@ -316,16 +317,17 @@ it('finds all entities with findAll()', function (): void {
     $repository = new UserRepository($connection, $metadataFactory, $hydrator);
     $users = $repository->findAll();
 
-    expect($users)->toHaveCount(2)
-        ->and($users[0])->toBeInstanceOf(RepositoryTestUser::class)
-        ->and($users[0]->name)->toBe('Alice')
-        ->and($users[1]->name)->toBe('Bob');
+    expect($users)->toBeInstanceOf(EntityCollection::class)
+        ->and($users->count())->toBe(2)
+        ->and($users->first())->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($users->first()->name)->toBe('Alice')
+        ->and($users->last()->name)->toBe('Bob');
 });
 
 it('finds entities by criteria array with findBy(array)', function (): void {
     $connection = createMockConnection([
-        ['id' => 1, 'name' => 'Alice', 'email_address' => 'alice@example.com', 'isActive' => 1],
-        ['id' => 3, 'name' => 'Charlie', 'email_address' => 'charlie@example.com', 'isActive' => 1],
+        ['id' => 1, 'name' => 'Alice', 'email_address' => 'alice@example.com', 'is_active' => 1],
+        ['id' => 3, 'name' => 'Charlie', 'email_address' => 'charlie@example.com', 'is_active' => 1],
     ]);
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
@@ -333,14 +335,15 @@ it('finds entities by criteria array with findBy(array)', function (): void {
     $repository = new UserRepository($connection, $metadataFactory, $hydrator);
     $users = $repository->findBy(['isActive' => true]);
 
-    expect($users)->toHaveCount(2)
-        ->and($users[0]->isActive)->toBeTrue()
-        ->and($users[1]->isActive)->toBeTrue();
+    expect($users)->toBeInstanceOf(EntityCollection::class)
+        ->and($users->count())->toBe(2)
+        ->and($users->first()->isActive)->toBeTrue()
+        ->and($users->last()->isActive)->toBeTrue();
 });
 
 it('finds single entity by criteria with findOneBy(array)', function (): void {
     $connection = createMockConnection([
-        ['id' => 2, 'name' => 'Bob', 'email_address' => 'bob@example.com', 'isActive' => 1],
+        ['id' => 2, 'name' => 'Bob', 'email_address' => 'bob@example.com', 'is_active' => 1],
     ]);
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
@@ -449,7 +452,7 @@ it('updates existing entity with save() when has ID', function (): void {
                 $this->firstQuery = false;
 
                 return [
-                    ['id' => 1, 'name' => 'Original', 'email_address' => 'orig@example.com', 'isActive' => 1],
+                    ['id' => 1, 'name' => 'Original', 'email_address' => 'orig@example.com', 'is_active' => 1],
                 ];
             }
 
@@ -524,7 +527,7 @@ it('only updates dirty fields on existing entity', function (): void {
                 $this->firstQuery = false;
 
                 return [
-                    ['id' => 1, 'name' => 'Original', 'email_address' => 'orig@example.com', 'isActive' => 1],
+                    ['id' => 1, 'name' => 'Original', 'email_address' => 'orig@example.com', 'is_active' => 1],
                 ];
             }
 
@@ -574,7 +577,7 @@ it('only updates dirty fields on existing entity', function (): void {
     $setClause = substr($sql, strpos($sql, 'SET'), strpos($sql, 'WHERE') - strpos($sql, 'SET'));
     expect($sql)->toContain('name')
         ->and($setClause)->not->toContain('email_address')
-        ->and($setClause)->not->toContain('isActive');
+        ->and($setClause)->not->toContain('is_active');
 });
 
 it('sets auto-generated ID on entity after insert', function (): void {
@@ -662,7 +665,7 @@ it('deletes entity with delete()', function (): void {
                 $this->firstQuery = false;
 
                 return [
-                    ['id' => 5, 'name' => 'ToDelete', 'email_address' => 'del@example.com', 'isActive' => 1],
+                    ['id' => 5, 'name' => 'ToDelete', 'email_address' => 'del@example.com', 'is_active' => 1],
                 ];
             }
 
@@ -721,7 +724,7 @@ it('provides query() method returning QueryBuilder for custom queries', function
 
 it('hydrates results from query() automatically', function (): void {
     $connection = createMockConnection([
-        ['id' => 1, 'name' => 'QueryUser', 'email_address' => 'query@example.com', 'isActive' => 1],
+        ['id' => 1, 'name' => 'QueryUser', 'email_address' => 'query@example.com', 'is_active' => 1],
     ]);
     $metadataFactory = new EntityMetadataFactory();
     $hydrator = new EntityHydrator();
@@ -735,9 +738,10 @@ it('hydrates results from query() automatically', function (): void {
         ->where('name', '=', 'QueryUser')
         ->getEntities();
 
+    $array = $users->toArray();
     expect($users)->toHaveCount(1)
-        ->and($users[0])->toBeInstanceOf(RepositoryTestUser::class)
-        ->and($users[0]->name)->toBe('QueryUser');
+        ->and($array[0])->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($array[0]->name)->toBe('QueryUser');
 });
 
 it('supports count() method returning total count', function (): void {
@@ -816,7 +820,7 @@ it('supports exists(id) method returning boolean', function (): void {
 
             // First call (id=1) returns exists, second call (id=999) returns not exists
             if ($this->queryCount === 1 && $bindings[0] === 1) {
-                return [['id' => 1, 'name' => 'Exists', 'email_address' => 'exists@example.com', 'isActive' => 1]];
+                return [['id' => 1, 'name' => 'Exists', 'email_address' => 'exists@example.com', 'is_active' => 1]];
             }
 
             return [];

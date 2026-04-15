@@ -78,6 +78,28 @@ it('creates LICENSE (MIT) in all 71 package directories with copyright Devtomic 
     }
 });
 
+it('has package options in bug report issue template', function () use ($packagesRoot, $packages): void {
+    $templatePath = $packagesRoot . '/../.github/ISSUE_TEMPLATE/bug_report.yml';
+    $content = file_get_contents($templatePath);
+    preg_match_all('/^        - (.+)$/m', $content, $matches);
+    $options = $matches[1];
+
+    foreach ($packages as $package) {
+        expect($options)->toContain($package);
+    }
+});
+
+it('has package options in feature request issue template', function () use ($packagesRoot, $packages): void {
+    $templatePath = $packagesRoot . '/../.github/ISSUE_TEMPLATE/feature_request.yml';
+    $content = file_get_contents($templatePath);
+    preg_match_all('/^        - (.+)$/m', $content, $matches);
+    $options = $matches[1];
+
+    foreach ($packages as $package) {
+        expect($options)->toContain($package);
+    }
+});
+
 it('updates the root LICENSE file with copyright Devtomic LLC', function (): void {
     $rootPath = dirname(__DIR__) . '/LICENSE';
     expect(file_exists($rootPath))->toBeTrue('Root LICENSE should exist');
