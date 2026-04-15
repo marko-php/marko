@@ -116,6 +116,7 @@ body:
         - view
         - view-latte
         - webhook
+        - other
     validations:
       required: true
 
