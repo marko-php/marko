@@ -15,17 +15,12 @@ Configuration lives in PHP files that return arrays:
 declare(strict_types=1);
 
 return [
-    'default' => env('DB_CONNECTION', 'pgsql'),
-    'connections' => [
-        'pgsql' => [
-            'driver' => 'pgsql',
-            'host' => env('DB_HOST', 'localhost'),
-            'port' => (int) env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'marko'),
-            'username' => env('DB_USERNAME', 'marko'),
-            'password' => env('DB_PASSWORD', ''),
-        ],
-    ],
+    'driver' => 'pgsql',
+    'host' => env('DB_HOST', 'localhost'),
+    'port' => (int) env('DB_PORT', '5432'),
+    'database' => env('DB_DATABASE', 'marko'),
+    'username' => env('DB_USERNAME', 'marko'),
+    'password' => env('DB_PASSWORD', ''),
 ];
 ```
 
@@ -48,7 +43,7 @@ class DatabaseService
 
     public function getHost(): string
     {
-        return $this->configRepository->getString('database.connections.pgsql.host');
+        return $this->configRepository->getString('database.host');
     }
 }
 ```
