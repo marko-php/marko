@@ -79,10 +79,10 @@ You can programmatically check which tasks are due at a given time using `dueTas
 use Marko\Scheduler\Schedule;
 use DateTimeImmutable;
 
-class MaintenanceService
+readonly class MaintenanceService
 {
     public function __construct(
-        private readonly Schedule $schedule,
+        private Schedule $schedule,
     ) {}
 
     public function pendingTasks(): array

@@ -58,10 +58,10 @@ namespace App\Blog\Service;
 
 use Marko\Filesystem\Contracts\FilesystemInterface;
 
-class DocumentService
+readonly class DocumentService
 {
     public function __construct(
-        private readonly FilesystemInterface $filesystem,
+        private FilesystemInterface $filesystem,
     ) {}
 
     public function save(string $name, string $contents): void
@@ -226,10 +226,10 @@ namespace App\Blog\Service;
 
 use Marko\Filesystem\Manager\FilesystemManager;
 
-class MediaService
+readonly class MediaService
 {
     public function __construct(
-        private readonly FilesystemManager $filesystemManager,
+        private FilesystemManager $filesystemManager,
     ) {}
 
     public function upload(string $path, string $contents): void

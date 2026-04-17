@@ -10,7 +10,7 @@ Build a RESTful API for managing articles, complete with authentication, validat
 - A full CRUD JSON API for articles
 - Token-based authentication for protected endpoints
 - Request validation with meaningful error responses
-- Proper HTTP status codes (200, 201, 204, 404)
+- Proper HTTP status codes (200, 201, 204, 400, 403, 404, 422)
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ composer require marko/core marko/routing marko/config marko/env \
 
 ## Step 2: Define the Entity
 
-Marko uses attribute-driven entities --- define your schema with `#[Table]` and `#[Column]` attributes, then `marko db:migrate` auto-generates migrations.
+Marko reads `#[Table]`, `#[Column]`, and `#[Index]` to auto-generate migrations. `DateTimeImmutable` properties are hydrated from and persisted to the database automatically.
 
 ```php title="app/api/src/Entity/Article.php"
 <?php
@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace App\Api\Entity;
 
+use DateTimeImmutable;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
@@ -52,19 +53,19 @@ class Article extends Entity
     public ?int $id = null;
 
     #[Column(length: 200)]
-    public string $title;
+    public string $title = '';
 
     #[Column(type: 'TEXT')]
-    public string $body;
+    public string $body = '';
 
     #[Column]
-    public string $authorEmail;
+    public string $authorEmail = '';
 
     #[Column]
-    public ?string $createdAt = null;
+    public ?DateTimeImmutable $createdAt = null;
 
     #[Column]
-    public ?string $updatedAt = null;
+    public ?DateTimeImmutable $updatedAt = null;
 }
 ```
 
@@ -76,6 +77,8 @@ marko db:migrate
 
 ## Step 3: Create the Repository
 
+Extend the base `Repository` class. It provides `find()`, `findAll()`, `findBy()`, `findOneBy()`, `save()`, and `delete()` with automatic entity hydration, dirty-field tracking on updates, and lifecycle events.
+
 ```php title="app/api/src/Repository/ArticleRepository.php"
 <?php
 
@@ -83,50 +86,43 @@ declare(strict_types=1);
 
 namespace App\Api\Repository;
 
-use Marko\Database\Query\QueryBuilderInterface;
+use App\Api\Entity\Article;
+use Marko\Database\Repository\Repository;
 
-class ArticleRepository
+class ArticleRepository extends Repository
 {
-    public function __construct(
-        private readonly QueryBuilderInterface $queryBuilder,
-    ) {}
+    protected const string ENTITY_CLASS = Article::class;
 
-    public function all(): array
+    /**
+     * @return array<Article>
+     */
+    public function findLatest(): array
     {
-        return $this->queryBuilder->table('articles')
+        return $this->query()
             ->orderBy('created_at', 'DESC')
-            ->get();
-    }
-
-    public function find(int $id): ?array
-    {
-        return $this->queryBuilder->table('articles')
-            ->where('id', '=', $id)
-            ->first();
-    }
-
-    public function create(array $data): int
-    {
-        return $this->queryBuilder->table('articles')->insert($data);
-    }
-
-    public function update(int $id, array $data): void
-    {
-        $this->queryBuilder->table('articles')
-            ->where('id', '=', $id)
-            ->update($data);
-    }
-
-    public function delete(int $id): void
-    {
-        $this->queryBuilder->table('articles')
-            ->where('id', '=', $id)
-            ->delete();
+            ->getEntities();
     }
 }
 ```
 
-## Step 4: Build the Controller
+## Step 4: Register the Module
+
+```php title="app/api/composer.json"
+{
+    "name": "app/api",
+    "autoload": {
+        "psr-4": {
+            "App\\Api\\": "src/"
+        }
+    }
+}
+```
+
+No `module.php` is needed --- the controller and repository are autowired from their constructor signatures.
+
+## Step 5: Build the Controller
+
+The controller is a stateless service, so it's a `readonly class`. Every mutation validates input, enforces ownership, and returns proper HTTP status codes.
 
 ```php title="app/api/src/Controller/ArticleController.php"
 <?php
@@ -135,7 +131,10 @@ declare(strict_types=1);
 
 namespace App\Api\Controller;
 
+use App\Api\Entity\Article;
 use App\Api\Repository\ArticleRepository;
+use DateTimeImmutable;
+use JsonException;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Routing\Attributes\Delete;
@@ -146,22 +145,27 @@ use Marko\Routing\Attributes\Put;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Validation\Contracts\ValidatorInterface;
-use DateTimeImmutable;
 
-class ArticleController
+readonly class ArticleController
 {
     public function __construct(
-        private readonly ArticleRepository $articleRepository,
-        private readonly ValidatorInterface $validator,
-        private readonly AuthManager $authManager,
+        private ArticleRepository $articleRepository,
+        private ValidatorInterface $validator,
+        private AuthManager $authManager,
     ) {}
 
+    /**
+     * @throws JsonException
+     */
     #[Get('/api/articles')]
     public function index(): Response
     {
-        return Response::json(data: $this->articleRepository->all());
+        return Response::json(data: $this->articleRepository->findLatest());
     }
 
+    /**
+     * @throws JsonException
+     */
     #[Get('/api/articles/{id}')]
     public function show(int $id): Response
     {
@@ -177,11 +181,21 @@ class ArticleController
         return Response::json(data: $article);
     }
 
+    /**
+     * @throws JsonException
+     */
     #[Post('/api/articles')]
     #[Middleware(AuthMiddleware::class)]
     public function store(Request $request): Response
     {
-        $data = json_decode($request->body(), true, flags: JSON_THROW_ON_ERROR);
+        $data = $this->decodeBody($request);
+
+        if ($data === null) {
+            return Response::json(
+                data: ['error' => 'Invalid JSON body'],
+                statusCode: 400,
+            );
+        }
 
         $errors = $this->validator->validate($data, [
             'title' => ['required', 'string', 'min:3', 'max:200'],
@@ -195,27 +209,50 @@ class ArticleController
             );
         }
 
-        $user = $this->authManager->user();
+        $now = new DateTimeImmutable();
+        $article = new Article();
+        $article->title = $data['title'];
+        $article->body = $data['body'];
+        $article->authorEmail = (string) $this->authManager->user()?->getAuthIdentifier();
+        $article->createdAt = $now;
+        $article->updatedAt = $now;
 
-        $id = $this->articleRepository->create([
-            'title' => $data['title'],
-            'body' => $data['body'],
-            'author_email' => $user?->getAuthIdentifier(),
-            'created_at' => new DateTimeImmutable(),
-            'updated_at' => new DateTimeImmutable(),
-        ]);
+        $this->articleRepository->save($article);
 
-        return Response::json(
-            data: $this->articleRepository->find($id),
-            statusCode: 201,
-        );
+        return Response::json(data: $article, statusCode: 201);
     }
 
+    /**
+     * @throws JsonException
+     */
     #[Put('/api/articles/{id}')]
     #[Middleware(AuthMiddleware::class)]
     public function update(int $id, Request $request): Response
     {
-        $data = json_decode($request->body(), true, flags: JSON_THROW_ON_ERROR);
+        $article = $this->articleRepository->find($id);
+
+        if ($article === null) {
+            return Response::json(
+                data: ['error' => 'Article not found'],
+                statusCode: 404,
+            );
+        }
+
+        if ($article->authorEmail !== $this->authManager->user()?->getAuthIdentifier()) {
+            return Response::json(
+                data: ['error' => 'Forbidden'],
+                statusCode: 403,
+            );
+        }
+
+        $data = $this->decodeBody($request);
+
+        if ($data === null) {
+            return Response::json(
+                data: ['error' => 'Invalid JSON body'],
+                statusCode: 400,
+            );
+        }
 
         $errors = $this->validator->validate($data, [
             'title' => ['string', 'min:3', 'max:200'],
@@ -229,32 +266,72 @@ class ArticleController
             );
         }
 
-        $this->articleRepository->update($id, [
-            ...$data,
-            'updated_at' => new DateTimeImmutable(),
-        ]);
+        if (isset($data['title'])) {
+            $article->title = $data['title'];
+        }
 
-        return Response::json(data: $this->articleRepository->find($id));
+        if (isset($data['body'])) {
+            $article->body = $data['body'];
+        }
+
+        $article->updatedAt = new DateTimeImmutable();
+
+        $this->articleRepository->save($article);
+
+        return Response::json(data: $article);
     }
 
+    /**
+     * @throws JsonException
+     */
     #[Delete('/api/articles/{id}')]
     #[Middleware(AuthMiddleware::class)]
     public function destroy(int $id): Response
     {
-        $this->articleRepository->delete($id);
+        $article = $this->articleRepository->find($id);
+
+        if ($article === null) {
+            return Response::json(
+                data: ['error' => 'Article not found'],
+                statusCode: 404,
+            );
+        }
+
+        if ($article->authorEmail !== $this->authManager->user()?->getAuthIdentifier()) {
+            return Response::json(
+                data: ['error' => 'Forbidden'],
+                statusCode: 403,
+            );
+        }
+
+        $this->articleRepository->delete($article);
 
         return Response::json(data: null, statusCode: 204);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function decodeBody(Request $request): ?array
+    {
+        try {
+            $decoded = json_decode($request->body(), true, flags: JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return null;
+        }
+
+        return is_array($decoded) ? $decoded : null;
     }
 }
 ```
 
-## Step 5: Start the Server
+## Step 6: Start the Server
 
 ```bash
 marko up
 ```
 
-## Step 6: Test with cURL
+## Step 7: Test with cURL
 
 ```bash
 # List articles
@@ -269,7 +346,13 @@ curl -X POST http://localhost:8000/api/articles \
     -H "Content-Type: application/json" \
     -d '{"title": "My First Article", "body": "Hello from Marko!"}'
 
-# Delete
+# Update (owner only)
+curl -X PUT http://localhost:8000/api/articles/1 \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"title": "Updated"}'
+
+# Delete (owner only)
 curl -X DELETE http://localhost:8000/api/articles/1 \
     -H "Authorization: Bearer YOUR_TOKEN"
 ```
@@ -278,10 +361,13 @@ curl -X DELETE http://localhost:8000/api/articles/1 \
 
 - Minimal Marko installation for APIs (no views, no sessions)
 - Entity-driven database schemas with `#[Table]` and `#[Column]` attributes
-- RESTful controller with full CRUD
+- Base `Repository` class with automatic entity hydration and lifecycle events
+- RESTful controller as a `readonly class` (stateless service)
 - Request validation with [`ValidatorInterface`](/docs/packages/validation/)
 - Token-based authentication with [`AuthMiddleware`](/docs/packages/authentication/)
+- Ownership enforcement on mutations
 - Proper HTTP status codes using [`Response::json()`](/docs/packages/routing/)
+- Declared `@throws` on every method that propagates a checked exception
 
 ## Next Steps
 

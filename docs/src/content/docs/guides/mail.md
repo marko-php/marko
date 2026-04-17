@@ -23,10 +23,10 @@ namespace App\Blog\Service;
 use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Message;
 
-class NotificationService
+readonly class NotificationService
 {
     public function __construct(
-        private readonly MailerInterface $mailer,
+        private MailerInterface $mailer,
     ) {}
 
     public function notifyAuthor(string $email, string $postTitle): void

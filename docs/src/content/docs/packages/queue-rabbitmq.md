@@ -93,10 +93,10 @@ Use `QueueInterface` as usual --- the RabbitMQ driver handles persistent message
 ```php
 use Marko\Queue\QueueInterface;
 
-class OrderProcessor
+readonly class OrderProcessor
 {
     public function __construct(
-        private readonly QueueInterface $queue,
+        private QueueInterface $queue,
     ) {}
 
     public function dispatch(): void

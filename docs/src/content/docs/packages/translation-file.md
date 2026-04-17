@@ -73,10 +73,10 @@ You do not need to interact with the loader directly. Place your translation fil
 ```php
 use Marko\Translation\Contracts\TranslatorInterface;
 
-class PostController
+readonly class PostController
 {
     public function __construct(
-        private readonly TranslatorInterface $translator,
+        private TranslatorInterface $translator,
     ) {}
 
     public function index(): string
@@ -96,10 +96,10 @@ class PostController
 use Marko\Translation\File\Loader\FileTranslationLoader;
 use Marko\Translation\Contracts\TranslationLoaderInterface;
 
-class FileTranslationLoader implements TranslationLoaderInterface
+readonly class FileTranslationLoader implements TranslationLoaderInterface
 {
     public function __construct(
-        private readonly string $basePath,
+        private string $basePath,
     ) {}
 
     public function load(string $locale, string $group, ?string $namespace = null): array;

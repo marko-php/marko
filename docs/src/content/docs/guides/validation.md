@@ -21,10 +21,10 @@ declare(strict_types=1);
 use Marko\Validation\Contracts\ValidatorInterface;
 use Marko\Validation\Validation\ValidationErrors;
 
-class PostController
+readonly class PostController
 {
     public function __construct(
-        private readonly ValidatorInterface $validator,
+        private ValidatorInterface $validator,
     ) {}
 
     public function store(array $data): void

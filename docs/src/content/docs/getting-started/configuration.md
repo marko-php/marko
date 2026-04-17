@@ -35,10 +35,10 @@ declare(strict_types=1);
 
 use Marko\Config\ConfigRepositoryInterface;
 
-class DatabaseService
+readonly class DatabaseService
 {
     public function __construct(
-        private readonly ConfigRepositoryInterface $configRepository,
+        private ConfigRepositoryInterface $configRepository,
     ) {}
 
     public function getHost(): string

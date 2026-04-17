@@ -26,10 +26,10 @@ namespace App\Blog\Service;
 
 use Marko\Cache\Contracts\CacheInterface;
 
-class PostService
+readonly class PostService
 {
     public function __construct(
-        private readonly CacheInterface $cache,
+        private CacheInterface $cache,
     ) {}
 
     public function getPopularPosts(): array

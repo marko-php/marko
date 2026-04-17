@@ -121,10 +121,10 @@ namespace Marko\Analytics;
 
 use Marko\Database\Query\QueryBuilderInterface;
 
-class DatabaseAnalytics implements AnalyticsInterface
+readonly class DatabaseAnalytics implements AnalyticsInterface
 {
     public function __construct(
-        private readonly QueryBuilderInterface $queryBuilder,
+        private QueryBuilderInterface $queryBuilder,
     ) {}
 
     public function trackPageView(string $path, ?string $userId = null): void
@@ -205,11 +205,11 @@ use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 
-class TrackPageViewMiddleware implements MiddlewareInterface
+readonly class TrackPageViewMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly AnalyticsInterface $analytics,
-        private readonly AuthManager $authManager,
+        private AnalyticsInterface $analytics,
+        private AuthManager $authManager,
     ) {}
 
     public function handle(

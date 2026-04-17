@@ -73,10 +73,10 @@ use Marko\Health\Contracts\HealthCheckInterface;
 use Marko\Health\Value\HealthResult;
 use Marko\Health\Value\HealthStatus;
 
-class RedisHealthCheck implements HealthCheckInterface
+readonly class RedisHealthCheck implements HealthCheckInterface
 {
     public function __construct(
-        private readonly RedisClient $redisClient,
+        private RedisClient $redisClient,
     ) {}
 
     public function getName(): string

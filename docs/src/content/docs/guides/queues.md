@@ -26,11 +26,11 @@ namespace App\Blog\Job;
 
 use Marko\Queue\Job;
 
-class SendWelcomeEmail extends Job
+readonly class SendWelcomeEmail extends Job
 {
     public function __construct(
-        private readonly string $email,
-        private readonly string $name,
+        private string $email,
+        private string $name,
     ) {}
 
     public function handle(): void
@@ -50,10 +50,10 @@ declare(strict_types=1);
 use Marko\Queue\QueueInterface;
 use App\Blog\Job\SendWelcomeEmail;
 
-class RegistrationService
+readonly class RegistrationService
 {
     public function __construct(
-        private readonly QueueInterface $queue,
+        private QueueInterface $queue,
     ) {}
 
     public function register(string $email, string $name): void

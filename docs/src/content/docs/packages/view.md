@@ -24,10 +24,10 @@ use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
 
-class PostController
+readonly class PostController
 {
     public function __construct(
-        private readonly ViewInterface $view,
+        private ViewInterface $view,
     ) {}
 
     #[Get('/posts/{id}')]
@@ -79,10 +79,10 @@ mymodule/
 ```php
 use Marko\View\TemplateResolverInterface;
 
-class TemplateFinder
+readonly class TemplateFinder
 {
     public function __construct(
-        private readonly TemplateResolverInterface $templateResolver,
+        private TemplateResolverInterface $templateResolver,
     ) {}
 
     public function locate(

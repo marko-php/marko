@@ -21,10 +21,10 @@ Register abilities as closures on the Gate:
 use Marko\Authorization\AuthorizableInterface;
 use Marko\Authorization\Contracts\GateInterface;
 
-class AuthorizationBootstrap
+readonly class AuthorizationBootstrap
 {
     public function __construct(
-        private readonly GateInterface $gate,
+        private GateInterface $gate,
     ) {}
 
     public function boot(): void
@@ -42,10 +42,10 @@ class AuthorizationBootstrap
 ```php
 use Marko\Authorization\Contracts\GateInterface;
 
-class SettingsController
+readonly class SettingsController
 {
     public function __construct(
-        private readonly GateInterface $gate,
+        private GateInterface $gate,
     ) {}
 
     public function update(): void

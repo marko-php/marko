@@ -24,10 +24,10 @@ Inject `TranslatorInterface` and call `get()` with a dot-notation key:
 ```php
 use Marko\Translation\Contracts\TranslatorInterface;
 
-class WelcomeController
+readonly class WelcomeController
 {
     public function __construct(
-        private readonly TranslatorInterface $translator,
+        private TranslatorInterface $translator,
     ) {}
 
     public function greet(): string

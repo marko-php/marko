@@ -88,10 +88,10 @@ Your application code depends on the **interface package**:
 ```php
 use Marko\Cache\Contracts\CacheInterface;
 
-class ProductService
+readonly class ProductService
 {
     public function __construct(
-        private readonly CacheInterface $cache,
+        private CacheInterface $cache,
     ) {}
 }
 ```

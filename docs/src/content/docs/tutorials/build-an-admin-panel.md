@@ -255,10 +255,10 @@ namespace App\Admin\Setup;
 
 use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
 
-class RegisterPermissions
+readonly class RegisterPermissions
 {
     public function __construct(
-        private readonly PermissionRegistryInterface $permissionRegistry,
+        private PermissionRegistryInterface $permissionRegistry,
     ) {}
 
     public function register(): void
@@ -403,10 +403,10 @@ use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
 
 #[Middleware(AdminAuthMiddleware::class)]
-class PostController
+readonly class PostController
 {
     public function __construct(
-        private readonly ViewInterface $view,
+        private ViewInterface $view,
     ) {}
 
     #[Get(path: '/admin/posts')]
@@ -610,6 +610,7 @@ declare(strict_types=1);
 
 namespace App\Admin\Controller;
 
+use JsonException;
 use Marko\AdminApi\ApiResponse;
 use Marko\AdminAuth\Attributes\RequiresPermission;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
@@ -632,6 +633,9 @@ class PostApiController
         return ApiResponse::success(data: $posts);
     }
 
+    /**
+     * @throws JsonException
+     */
     #[Post(path: '/admin/api/v1/posts')]
     #[RequiresPermission(permission: 'posts.create')]
     public function store(Request $request): Response
@@ -743,10 +747,10 @@ namespace App\Admin\Widget;
 use Marko\Admin\Contracts\DashboardWidgetInterface;
 use Marko\View\ViewInterface;
 
-class RecentPostsWidget implements DashboardWidgetInterface
+readonly class RecentPostsWidget implements DashboardWidgetInterface
 {
     public function __construct(
-        private readonly ViewInterface $view,
+        private ViewInterface $view,
     ) {}
 
     public function getId(): string

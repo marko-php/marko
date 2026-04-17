@@ -104,10 +104,10 @@ Inject `AdminSectionRegistryInterface` to access all registered sections:
 use Marko\Admin\Contracts\AdminSectionInterface;
 use Marko\Admin\Contracts\AdminSectionRegistryInterface;
 
-class NavigationBuilder
+readonly class NavigationBuilder
 {
     public function __construct(
-        private readonly AdminSectionRegistryInterface $adminSectionRegistry,
+        private AdminSectionRegistryInterface $adminSectionRegistry,
     ) {}
 
     public function buildMenu(): array
@@ -170,10 +170,10 @@ return [
 ```php
 use Marko\Admin\Config\AdminConfigInterface;
 
-class AdminRouter
+readonly class AdminRouter
 {
     public function __construct(
-        private readonly AdminConfigInterface $adminConfig,
+        private AdminConfigInterface $adminConfig,
     ) {}
 
     public function getBaseUrl(): string

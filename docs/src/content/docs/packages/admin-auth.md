@@ -64,10 +64,10 @@ Modules register their permissions via `PermissionRegistryInterface`:
 ```php title="CatalogPermissions.php"
 use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
 
-class CatalogPermissions
+readonly class CatalogPermissions
 {
     public function __construct(
-        private readonly PermissionRegistryInterface $permissionRegistry,
+        private PermissionRegistryInterface $permissionRegistry,
     ) {}
 
     public function register(): void
@@ -131,10 +131,10 @@ class OrderService
 use Marko\AdminAuth\Entity\AdminUserInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 
-class DashboardController
+readonly class DashboardController
 {
     public function __construct(
-        private readonly GuardInterface $guard,
+        private GuardInterface $guard,
     ) {}
 
     public function index(): Response
