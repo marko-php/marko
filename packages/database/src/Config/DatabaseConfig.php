@@ -48,32 +48,25 @@ readonly class DatabaseConfig
 
         $config = require $configPath;
 
-        $defaultConnection = $config['default'] ?? null;
-        if ($defaultConnection === null || !isset($config['connections'][$defaultConnection])) {
-            throw ConfigurationException::missingRequiredKey('default');
-        }
-
-        $connectionConfig = $config['connections'][$defaultConnection];
-
         $requiredKeys = ['driver', 'host', 'port', 'database', 'username', 'password'];
 
         foreach ($requiredKeys as $key) {
-            if (!array_key_exists($key, $connectionConfig)) {
+            if (!array_key_exists($key, $config)) {
                 throw ConfigurationException::missingRequiredKey($key);
             }
         }
 
-        $this->driver = $connectionConfig['driver'];
-        $this->host = $connectionConfig['host'];
-        $this->port = $connectionConfig['port'];
-        $this->database = $connectionConfig['database'];
-        $this->username = $connectionConfig['username'];
-        $this->password = $connectionConfig['password'];
-        $this->sslMode = $connectionConfig['sslmode'] ?? null;
-        $this->sslRootCert = $connectionConfig['ssl_ca'] ?? null;
-        $this->sslVerifyServerCert = $connectionConfig['ssl_verify_server_cert'] ?? ($this->sslRootCert !== null);
-        $this->sslCert = $connectionConfig['ssl_cert'] ?? null;
-        $this->sslKey = $connectionConfig['ssl_key'] ?? null;
+        $this->driver = $config['driver'];
+        $this->host = $config['host'];
+        $this->port = $config['port'];
+        $this->database = $config['database'];
+        $this->username = $config['username'];
+        $this->password = $config['password'];
+        $this->sslMode = $config['sslmode'] ?? null;
+        $this->sslRootCert = $config['ssl_ca'] ?? null;
+        $this->sslVerifyServerCert = $config['ssl_verify_server_cert'] ?? ($this->sslRootCert !== null);
+        $this->sslCert = $config['ssl_cert'] ?? null;
+        $this->sslKey = $config['ssl_key'] ?? null;
 
         if ($this->sslCert !== null && $this->sslKey === null) {
             throw ConfigurationException::incompleteSslKeyPair('ssl_cert', 'ssl_key');
