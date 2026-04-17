@@ -39,6 +39,14 @@ Marko is a modular PHP 8.5+ framework where everything is a module: your app cod
 - **Attribute-driven** — Routes, plugins, observers, layouts, commands, and more are declared with PHP attributes. Discovery is automatic.
 - **Loud errors** — No silent failures. When something goes wrong, Marko tells you exactly what happened, where, and how to fix it.
 
+## Watch the Introduction
+
+Learn what Marko is, why it exists, and how it works in this short video overview.
+
+[![Introducing Marko: The Truly Modular PHP Framework](https://img.youtube.com/vi/P_1TtSBQ2vo/maxresdefault.jpg)](https://shu.st/IdMa1L)
+
+[Introducing Marko: The Truly Modular PHP Framework](https://shu.st/IdMa1L)
+
 ## Quick Start
 
 ```bash
