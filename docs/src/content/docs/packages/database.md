@@ -134,6 +134,63 @@ class PostRepository extends Repository
 - **Flexibility**: Switch databases without changing entity code
 - **Clarity**: No hidden magic, explicit saves via repository
 
+### Custom Queries with `query()`
+
+The base `Repository` provides three ways to query, each suited to a different use case:
+
+| Method                              | When to use                                                                 |
+|-------------------------------------|-----------------------------------------------------------------------------|
+| `findBy(array $criteria)`           | Simple equality matches on columns                                          |
+| `matching(QuerySpecification ...)`  | Reusable, composable query fragments shared across repositories             |
+| `query()`                           | One-off custom queries --- joins, raw conditions, ordering, limits, offsets |
+
+`query()` returns a `RepositoryQueryBuilder` pre-configured with the repository's table name. It implements the full `QueryBuilderInterface` and adds entity hydration.
+
+```php
+public function findPublished(int $limit = 10): EntityCollection
+{
+    return $this->query()
+        ->where('status', '=', 'published')
+        ->whereNotNull('published_at')
+        ->orderBy('published_at', 'desc')
+        ->limit($limit)
+        ->getEntities();
+}
+```
+
+#### Returning entities vs arrays
+
+| Method            | Returns                                 |
+|-------------------|-----------------------------------------|
+| `getEntities()`   | `EntityCollection<TEntity>` --- hydrated, supports eager loading |
+| `firstEntity()`   | `?TEntity` --- hydrated, or `null` if no match |
+| `get()`           | `array<array<string, mixed>>` --- raw rows |
+| `first()`         | `?array<string, mixed>` --- raw row, or `null` |
+| `count()`         | `int`                                   |
+
+Use `getEntities()` / `firstEntity()` for typed domain objects. Drop to `get()` / `first()` only for reports or aggregates where building entities adds no value.
+
+#### Available filters
+
+`where`, `whereIn`, `whereNull`, `whereNotNull`, `orWhere`, `join`, `leftJoin`, `rightJoin`, `orderBy`, `limit`, `offset`, `select`. All return `static` for chaining. The escape hatch is `raw(string $sql, array $bindings = [])` for queries the builder can't express.
+
+#### Eager loading
+
+Chain `->with('comments', 'author')` before `getEntities()` to load relationships in a single round trip:
+
+```php
+return $this->query()
+    ->where('status', '=', 'published')
+    ->with('author', 'comments.author')
+    ->getEntities();
+```
+
+Dot-notation loads nested relationships.
+
+#### Query builder requirement
+
+`query()` depends on `QueryBuilderFactoryInterface` being injected into the repository. When a driver package (`marko/database-mysql`, `marko/database-pgsql`) is installed, the container wires this automatically. If you construct a repository manually without providing a factory, `query()` throws `RepositoryException::queryBuilderNotConfigured`.
+
 ## Relationships
 
 Define relationships between entities using property attributes. Marko loads related entities explicitly — there is no lazy loading.

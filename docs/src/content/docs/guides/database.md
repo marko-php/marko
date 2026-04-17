@@ -177,6 +177,8 @@ class PostRepository extends Repository
 }
 ```
 
+`query()` returns a `RepositoryQueryBuilder` pre-scoped to the repository's table. It exposes the full query builder (`where`, `whereIn`, `whereNotNull`, joins, `orderBy`, `limit`, etc.) and terminates with `getEntities()` for an `EntityCollection` or `firstEntity()` for a single hydrated entity. Fall back to `get()` / `first()` only when you want raw arrays (reports, aggregates).
+
 Use `with()` to eager-load relationships and avoid N+1 queries. Nested relationships use dot notation:
 
 ```php
