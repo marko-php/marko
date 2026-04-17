@@ -24,14 +24,18 @@ Note: You typically install a driver package (like `marko/encryption-openssl`) w
 Inject `EncryptorInterface` wherever you need encryption:
 
 ```php
+use JsonException;
 use Marko\Encryption\Contracts\EncryptorInterface;
 
-class TokenService
+readonly class TokenService
 {
     public function __construct(
         private EncryptorInterface $encryptor,
     ) {}
 
+    /**
+     * @throws JsonException
+     */
     public function issueToken(
         array $payload,
     ): string {
@@ -40,6 +44,9 @@ class TokenService
         return $this->encryptor->encrypt($json);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function verifyToken(
         string $token,
     ): array {

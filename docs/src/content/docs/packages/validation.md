@@ -20,10 +20,10 @@ Inject `ValidatorInterface` and pass data with rules:
 ```php
 use Marko\Validation\Contracts\ValidatorInterface;
 
-class UserController
+readonly class UserController
 {
     public function __construct(
-        private readonly ValidatorInterface $validator,
+        private ValidatorInterface $validator,
     ) {}
 
     public function store(

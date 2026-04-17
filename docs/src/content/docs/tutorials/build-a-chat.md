@@ -101,39 +101,47 @@ declare(strict_types=1);
 
 namespace App\Chat\Repository;
 
-use Marko\Database\Query\QueryBuilderInterface;
+use App\Chat\Entity\Message;
+use Marko\Database\Repository\Repository;
 
-class MessageRepository
+class MessageRepository extends Repository
 {
-    public function __construct(
-        private readonly QueryBuilderInterface $queryBuilder,
-    ) {}
+    protected const string ENTITY_CLASS = Message::class;
 
-    public function create(string $room, string $username, string $body): int
+    public function create(string $room, string $username, string $body): Message
     {
-        return $this->queryBuilder->table('messages')->insert([
-            'room' => $room,
-            'username' => $username,
-            'body' => $body,
-        ]);
+        $message = new Message();
+        $message->room = $room;
+        $message->username = $username;
+        $message->body = $body;
+
+        $this->save($message);
+
+        return $message;
     }
 
+    /**
+     * @return array<Message>
+     */
     public function forRoom(string $room, int $limit = 50): array
     {
-        return $this->queryBuilder->table('messages')
+        return $this->query()
             ->where('room', '=', $room)
             ->orderBy('id', 'DESC')
             ->limit($limit)
-            ->get();
+            ->getEntities();
     }
 
+    /**
+     * @return array<Message>
+     */
     public function sinceId(string $room, int $lastId): array
     {
-        return $this->queryBuilder->table('messages')
+        return $this->query()
             ->where('room', '=', $room)
             ->where('id', '>', $lastId)
             ->orderBy('id', 'ASC')
-            ->get();
+            ->getEntities();
     }
 }
 ```
@@ -165,13 +173,13 @@ use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
 
 #[Middleware(AuthMiddleware::class)]
-class ChatController
+readonly class ChatController
 {
     public function __construct(
-        private readonly MessageRepository $messageRepository,
-        private readonly PublisherInterface $publisher,
-        private readonly AuthManager $authManager,
-        private readonly ViewInterface $view,
+        private MessageRepository $messageRepository,
+        private PublisherInterface $publisher,
+        private AuthManager $authManager,
+        private ViewInterface $view,
     ) {}
 
     #[Get('/chat/{room}')]
@@ -194,13 +202,13 @@ class ChatController
         $data = json_decode($request->body(), true, flags: JSON_THROW_ON_ERROR);
         $username = (string) $this->authManager->id();
 
-        $id = $this->messageRepository->create($room, $username, $data['body']);
+        $message = $this->messageRepository->create($room, $username, $data['body']);
 
         $payload = json_encode([
-            'id' => $id,
+            'id' => $message->id,
             'room' => $room,
             'username' => $username,
-            'body' => $data['body'],
+            'body' => $message->body,
         ], JSON_THROW_ON_ERROR);
 
         $this->publisher->publish(
@@ -208,7 +216,7 @@ class ChatController
             message: new Message(channel: "room.$room", payload: $payload),
         );
 
-        return Response::json(data: ['id' => $id], statusCode: 201);
+        return Response::json(data: ['id' => $message->id], statusCode: 201);
     }
 }
 ```
@@ -237,11 +245,11 @@ use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
 
 #[Middleware(AuthMiddleware::class)]
-class StreamController
+readonly class StreamController
 {
     public function __construct(
-        private readonly SubscriberInterface $subscriber,
-        private readonly MessageRepository $messageRepository,
+        private SubscriberInterface $subscriber,
+        private MessageRepository $messageRepository,
     ) {}
 
     #[Get('/chat/{room}/stream')]
@@ -271,7 +279,7 @@ class StreamController
             $event = new SseEvent(
                 data: $message,
                 event: "room.$room",
-                id: $message['id'],
+                id: (string) $message->id,
             );
             echo $event->format();
             flush();
@@ -309,7 +317,7 @@ Marko uses Latte templates stored in `resources/views/` within each module. The 
     <div id="messages">
         {foreach $messages as $message}
             <div class="message">
-                <span class="username">{$message['username']}:</span> {$message['body']}
+                <span class="username">{$message->username}:</span> {$message->body}
             </div>
         {/foreach}
     </div>
@@ -397,11 +405,11 @@ use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
 
 #[Middleware(AuthMiddleware::class)]
-class StreamController
+readonly class StreamController
 {
     public function __construct(
-        private readonly SubscriberInterface $subscriber,
-        private readonly MessageRepository $messageRepository,
+        private SubscriberInterface $subscriber,
+        private MessageRepository $messageRepository,
     ) {}
 
     #[Get('/chat/{room}/stream')]
@@ -423,6 +431,9 @@ class StreamController
         return new StreamingResponse(stream: $stream);
     }
 
+    /**
+     * @throws JsonException
+     */
     private function replayMissed(string $room, int $lastId): void
     {
         $missed = $this->messageRepository->sinceId($room, $lastId);
@@ -431,7 +442,7 @@ class StreamController
             $event = new SseEvent(
                 data: json_encode($message, JSON_THROW_ON_ERROR),
                 event: "room.$room",
-                id: $message['id'],
+                id: (string) $message->id,
             );
             echo $event->format();
             flush();

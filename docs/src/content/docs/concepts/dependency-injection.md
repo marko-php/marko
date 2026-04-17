@@ -19,11 +19,11 @@ namespace App\Blog\Service;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Database\Connection\ConnectionInterface;
 
-class PostService
+readonly class PostService
 {
     public function __construct(
-        private readonly ConnectionInterface $connection,
-        private readonly CacheInterface $cache,
+        private ConnectionInterface $connection,
+        private CacheInterface $cache,
     ) {}
 
     public function getPost(int $id): ?array
@@ -106,10 +106,10 @@ If you request a concrete class with no special bindings, the container just bui
 
 ```php
 // No binding needed — container sees the constructor and resolves dependencies
-class PostController
+readonly class PostController
 {
     public function __construct(
-        private readonly PostService $postService,
+        private PostService $postService,
     ) {}
 }
 ```

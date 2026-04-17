@@ -69,10 +69,10 @@ Include the token in forms:
 ```php
 use Marko\Security\Contracts\CsrfTokenManagerInterface;
 
-class ContactController
+readonly class ContactController
 {
     public function __construct(
-        private readonly CsrfTokenManagerInterface $csrfTokenManager,
+        private CsrfTokenManagerInterface $csrfTokenManager,
     ) {}
 
     public function form(): Response

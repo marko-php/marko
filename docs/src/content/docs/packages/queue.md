@@ -28,10 +28,10 @@ Extend the `Job` base class and implement `handle()`:
 ```php
 use Marko\Queue\Job;
 
-class SendWelcomeEmail extends Job
+readonly class SendWelcomeEmail extends Job
 {
     public function __construct(
-        private readonly string $email,
+        private string $email,
     ) {}
 
     public function handle(): void
@@ -66,10 +66,10 @@ Inject `QueueInterface` and push jobs:
 ```php
 use Marko\Queue\QueueInterface;
 
-class RegistrationService
+readonly class RegistrationService
 {
     public function __construct(
-        private readonly QueueInterface $queue,
+        private QueueInterface $queue,
     ) {}
 
     public function register(): void

@@ -19,10 +19,10 @@ namespace App\Blog\Services;
 use Marko\Core\Event\EventDispatcherInterface;
 use App\Blog\Events\Post\PostCreated;
 
-class PostService
+readonly class PostService
 {
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private EventDispatcherInterface $eventDispatcher,
     ) {}
 
     public function createPost(string $title, string $body): Post
@@ -51,10 +51,10 @@ namespace App\Blog\Events\Post;
 use App\Blog\Entity\PostInterface;
 use Marko\Core\Event\Event;
 
-class PostCreated extends Event
+readonly class PostCreated extends Event
 {
     public function __construct(
-        private readonly PostInterface $post,
+        private PostInterface $post,
     ) {}
 
     public function getPost(): PostInterface

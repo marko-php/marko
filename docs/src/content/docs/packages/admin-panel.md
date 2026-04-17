@@ -34,10 +34,10 @@ The panel registers these routes automatically:
 use Marko\AdminPanel\Menu\AdminMenuBuilderInterface;
 use Marko\AdminAuth\Entity\AdminUserInterface;
 
-class LayoutHelper
+readonly class LayoutHelper
 {
     public function __construct(
-        private readonly AdminMenuBuilderInterface $adminMenuBuilder,
+        private AdminMenuBuilderInterface $adminMenuBuilder,
     ) {}
 
     public function getSidebar(

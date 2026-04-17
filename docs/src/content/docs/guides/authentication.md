@@ -58,10 +58,10 @@ use Marko\Routing\Attributes\Middleware;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Routing\Http\Response;
 
-class DashboardController
+readonly class DashboardController
 {
     public function __construct(
-        private readonly AuthManager $authManager,
+        private AuthManager $authManager,
     ) {}
 
     #[Get('/dashboard')]

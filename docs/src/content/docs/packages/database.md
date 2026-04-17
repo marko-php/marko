@@ -334,10 +334,10 @@ namespace App\Blog\Query;
 use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Query\QuerySpecification;
 
-class RecentSpec implements QuerySpecification
+readonly class RecentSpec implements QuerySpecification
 {
     public function __construct(
-        private readonly int $limit = 10,
+        private int $limit = 10,
     ) {}
 
     public function apply(QueryBuilderInterface $queryBuilder): void

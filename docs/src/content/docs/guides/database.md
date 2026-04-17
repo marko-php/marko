@@ -110,10 +110,10 @@ namespace App\Blog\Repository;
 use Marko\Database\Query\QueryBuilderInterface;
 use DateTimeImmutable;
 
-class PostRepository
+readonly class PostRepository
 {
     public function __construct(
-        private readonly QueryBuilderInterface $queryBuilder,
+        private QueryBuilderInterface $queryBuilder,
     ) {}
 
     public function findById(int $id): ?array
@@ -213,10 +213,10 @@ use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Seed\SeederInterface;
 use DateTimeImmutable;
 
-class PostSeeder implements SeederInterface
+readonly class PostSeeder implements SeederInterface
 {
     public function __construct(
-        private readonly QueryBuilderInterface $queryBuilder,
+        private QueryBuilderInterface $queryBuilder,
     ) {}
 
     public function run(): void
