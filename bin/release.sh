@@ -56,9 +56,9 @@ echo "  ✓ Branch: main (merged from develop)"
 echo "  ✓ Working directory clean"
 echo "  ✓ Tag ${TAG} available"
 echo ""
-echo "Running test suite..."
+echo "Running test suite (including integration-destructive group to verify clean install)..."
 
-"$PHP_BIN" vendor/bin/pest --parallel --exclude-group=integration-destructive || {
+"$PHP_BIN" vendor/bin/pest --parallel || {
     echo ""
     echo "Error: Tests failed. Fix failing tests before releasing."
     exit 1
