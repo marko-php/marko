@@ -343,6 +343,123 @@ it('detects changed properties via isDirty()', function (): void {
     expect($dirtyProperties)->toBe(['name']);
 });
 
+it('registers original values for an entity with initialized properties', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadata();
+
+    $entity = new HydratorTestUser();
+    $entity->id = 1;
+    $entity->name = 'Alice';
+    $entity->email = 'alice@example.com';
+    $entity->isActive = true;
+    $entity->bio = 'Engineer';
+
+    $hydrator->registerOriginalValues($entity, $metadata);
+
+    $originalValues = $hydrator->getOriginalValues($entity);
+
+    expect($originalValues)->toBe([
+        'id' => 1,
+        'name' => 'Alice',
+        'email' => 'alice@example.com',
+        'isActive' => true,
+        'bio' => 'Engineer',
+    ]);
+});
+
+it('makes getDirtyProperties return empty array immediately after registration', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadata();
+
+    $entity = new HydratorTestUser();
+    $entity->id = 2;
+    $entity->name = 'Bob';
+    $entity->email = 'bob@example.com';
+    $entity->isActive = false;
+    $entity->bio = null;
+
+    $hydrator->registerOriginalValues($entity, $metadata);
+
+    expect($hydrator->getDirtyProperties($entity, $metadata))->toBeEmpty();
+});
+
+it('detects a property as dirty after mutation post-registration', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadata();
+
+    $entity = new HydratorTestUser();
+    $entity->id = 3;
+    $entity->name = 'Carol';
+    $entity->email = 'carol@example.com';
+    $entity->isActive = true;
+    $entity->bio = null;
+
+    $hydrator->registerOriginalValues($entity, $metadata);
+
+    $entity->name = 'Caroline';
+
+    expect($hydrator->getDirtyProperties($entity, $metadata))->toBe(['name']);
+});
+
+it('skips uninitialized properties when registering', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadata();
+
+    $entity = new HydratorTestUser();
+    $entity->name = 'Dave';
+    // email and isActive are not set (uninitialized, no default)
+    // id has default null, bio has default null
+
+    $hydrator->registerOriginalValues($entity, $metadata);
+
+    $originalValues = $hydrator->getOriginalValues($entity);
+
+    expect($originalValues)
+        ->toHaveKey('name')
+        ->not->toHaveKey('email')
+        ->not->toHaveKey('isActive');
+});
+
+it('replaces prior original values when called a second time', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadata();
+
+    $entity = new HydratorTestUser();
+    $entity->id = 4;
+    $entity->name = 'Eve';
+    $entity->email = 'eve@example.com';
+    $entity->isActive = true;
+    $entity->bio = null;
+
+    $hydrator->registerOriginalValues($entity, $metadata);
+
+    $entity->name = 'Evelyn';
+
+    $hydrator->registerOriginalValues($entity, $metadata);
+
+    expect($hydrator->getDirtyProperties($entity, $metadata))->toBeEmpty()
+        ->and($hydrator->getOriginalValues($entity)['name'])->toBe('Evelyn');
+});
+
+it('snapshots values by value, not by reference', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadata();
+
+    $entity = new HydratorTestUser();
+    $entity->id = 5;
+    $entity->name = 'Frank';
+    $entity->email = 'frank@example.com';
+    $entity->isActive = true;
+    $entity->bio = null;
+
+    $hydrator->registerOriginalValues($entity, $metadata);
+
+    $entity->name = 'Franklin';
+
+    $originalValues = $hydrator->getOriginalValues($entity);
+    expect($originalValues['name'])->toBe('Frank');
+});
+
 // Helper functions to create metadata
 
 function createUserMetadata(): EntityMetadata

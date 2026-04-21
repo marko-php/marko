@@ -435,6 +435,8 @@ abstract class Repository implements RepositoryInterface
             $property = $reflection->getProperty($this->metadata->primaryKey);
             $property->setValue($entity, $this->connection->lastInsertId());
         }
+
+        $this->hydrator->registerOriginalValues($entity, $this->metadata);
     }
 
     /**
@@ -492,6 +494,8 @@ abstract class Repository implements RepositoryInterface
         $bindings[] = $id;
 
         $this->connection->execute($sql, $bindings);
+
+        $this->hydrator->registerOriginalValues($entity, $this->metadata);
     }
 
     /**
