@@ -28,6 +28,7 @@ Marko is a modular PHP 8.5+ framework combining Magento's extensibility with Lar
 
 ## Key Conventions
 
+- **Branch naming** - all branches use `feature/{name}` format, regardless of change type (fix, feature, refactor, docs, etc.). Never use `fix/`, `chore/`, or other prefixes
 - **No hardcoded versions in composer.json** - never add `"version"` to package composer.json files; let Composer infer from the branch
 - **Constructor property promotion** - always use it
 - **Strict types** - every file needs `declare(strict_types=1)`

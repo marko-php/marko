@@ -854,6 +854,133 @@ it('supports exists(id) method returning boolean', function (): void {
         ->and($repository->exists(999))->toBeFalse();
 });
 
+// --- Regression tests: registerOriginalValues after insert/update ---
+
+describe('register original values after insert and update', function (): void {
+    it('persists update when entity is mutated and saved after initial insert in same request', function (): void {
+        $connection = createStorageConnection();
+
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator();
+        $repository = new UserRepository($connection, $metadataFactory, $hydrator);
+
+        $user = new RepositoryTestUser();
+        $user->name = 'Alice';
+        $user->email = 'alice@example.com';
+        $user->isActive = true;
+
+        $repository->save($user);
+
+        expect($user->id)->not->toBeNull();
+
+        $user->name = 'Alice Updated';
+        $repository->save($user);
+
+        $found = $repository->find($user->id);
+
+        expect($found)->not->toBeNull()
+            ->and($found->name)->toBe('Alice Updated');
+    });
+
+    it('persists multiple sequential updates on an entity inserted in the same request', function (): void {
+        $connection = createStorageConnection();
+
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator();
+        $repository = new UserRepository($connection, $metadataFactory, $hydrator);
+
+        $user = new RepositoryTestUser();
+        $user->name = 'Bob';
+        $user->email = 'bob@example.com';
+        $user->isActive = true;
+
+        $repository->save($user);
+
+        $user->name = 'Bob v2';
+        $repository->save($user);
+
+        $user->name = 'Bob v3';
+        $repository->save($user);
+
+        $found = $repository->find($user->id);
+
+        expect($found)->not->toBeNull()
+            ->and($found->name)->toBe('Bob v3');
+    });
+
+    it('does not execute SQL on save when no properties have changed since last insert', function (): void {
+        $sqlLog = [];
+        $connection = createStorageConnection($sqlLog);
+
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator();
+        $repository = new UserRepository($connection, $metadataFactory, $hydrator);
+
+        $user = new RepositoryTestUser();
+        $user->name = 'Carol';
+        $user->email = 'carol@example.com';
+        $user->isActive = false;
+
+        $repository->save($user);
+
+        $insertCount = count($sqlLog);
+
+        // save again with no changes
+        $repository->save($user);
+
+        expect(count($sqlLog))->toBe($insertCount);
+    });
+
+    it('does not execute SQL on save when no properties have changed since last update', function (): void {
+        $sqlLog = [];
+        $connection = createStorageConnection($sqlLog);
+
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator();
+        $repository = new UserRepository($connection, $metadataFactory, $hydrator);
+
+        $user = new RepositoryTestUser();
+        $user->name = 'Dave';
+        $user->email = 'dave@example.com';
+        $user->isActive = true;
+
+        $repository->save($user);
+
+        $user->name = 'Dave Updated';
+        $repository->save($user);
+
+        $afterUpdateCount = count($sqlLog);
+
+        // save again with no changes
+        $repository->save($user);
+
+        expect(count($sqlLog))->toBe($afterUpdateCount);
+    });
+
+    it('registers original values after insert for entities with non-auto-increment primary keys', function (): void {
+        $connection = createStorageConnection();
+
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator();
+        $repository = new UserRepository($connection, $metadataFactory, $hydrator);
+
+        $user = new RepositoryTestUser();
+        $user->name = 'Eve';
+        $user->email = 'eve@example.com';
+        $user->isActive = true;
+
+        $repository->save($user);
+
+        $user->name = 'Eve Updated';
+        $repository->save($user);
+
+        $found = $repository->find($user->id);
+
+        expect($found)->not->toBeNull()
+            ->and($found->name)->toBe('Eve Updated');
+    });
+});
+
 // Helper function to create mock connection
 
 function createMockConnection(
@@ -1072,6 +1199,114 @@ function createMockQueryBuilderFactory(
         public function create(): QueryBuilderInterface
         {
             return createMockQueryBuilder($this->connection);
+        }
+    };
+}
+
+/**
+ * Create a stateful in-memory storage connection for regression tests.
+ * Supports INSERT (auto-increment id), UPDATE (dirty fields), and SELECT by id.
+ *
+ * @param array<array{sql: string, bindings: array<mixed>}> $sqlLog Optional reference to log all executed SQL
+ */
+function createStorageConnection(
+    array &$sqlLog = [],
+): ConnectionInterface {
+    $storage = [];
+    $nextId = 1;
+
+    return new class ($storage, $nextId, $sqlLog) implements ConnectionInterface
+    {
+        public function __construct(
+            private array &$storage,
+            private int &$nextId,
+            private array &$sqlLog,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            if (str_contains($sql, 'WHERE id = ?') && count($bindings) > 0) {
+                $id = $bindings[0];
+
+                return isset($this->storage[$id]) ? [$this->storage[$id]] : [];
+            }
+
+            return array_values($this->storage);
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            $this->sqlLog[] = ['sql' => $sql, 'bindings' => $bindings];
+
+            if (str_starts_with($sql, 'INSERT INTO users')) {
+                $id = $this->nextId++;
+                $this->storage[$id] = [
+                    'id' => $id,
+                    'name' => '',
+                    'email_address' => '',
+                    'is_active' => false,
+                ];
+
+                // Map positional bindings to columns parsed from SQL
+                preg_match('/\(([^)]+)\)\s+VALUES/', $sql, $matches);
+                $columns = array_map('trim', explode(',', $matches[1] ?? ''));
+                foreach ($columns as $i => $col) {
+                    $this->storage[$id][$col] = $bindings[$i] ?? null;
+                }
+
+                return 1;
+            }
+
+            if (str_starts_with($sql, 'UPDATE users')) {
+                preg_match('/WHERE id = \?$/', $sql, $m);
+                $id = end($bindings);
+
+                if (!isset($this->storage[$id])) {
+                    return 0;
+                }
+
+                // Parse SET clause: "col1 = ?, col2 = ?"
+                preg_match('/SET (.+) WHERE/', $sql, $setMatch);
+                $setPairs = array_map('trim', explode(',', $setMatch[1] ?? ''));
+                $updateBindings = array_slice($bindings, 0, count($setPairs));
+
+                foreach ($setPairs as $i => $pair) {
+                    preg_match('/^(\S+)\s*=\s*\?$/', $pair, $colMatch);
+                    $col = $colMatch[1] ?? null;
+
+                    if ($col !== null) {
+                        $this->storage[$id][$col] = $updateBindings[$i];
+                    }
+                }
+
+                return 1;
+            }
+
+            return 0;
+        }
+
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return $this->nextId - 1;
         }
     };
 }

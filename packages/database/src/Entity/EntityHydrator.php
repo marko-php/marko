@@ -114,6 +114,32 @@ class EntityHydrator
     }
 
     /**
+     * Snapshot an entity's current property values into the originalValues WeakMap.
+     *
+     * Enables dirty-checking for entities that never passed through hydrate(),
+     * such as freshly inserted entities. Idempotent — overwrites any prior snapshot.
+     */
+    public function registerOriginalValues(
+        Entity $entity,
+        EntityMetadata $metadata,
+    ): void {
+        $reflection = new ReflectionClass($entity);
+        $values = [];
+
+        foreach ($metadata->properties as $propName => $propMeta) {
+            $property = $reflection->getProperty($propName);
+
+            if (!$property->isInitialized($entity)) {
+                continue;
+            }
+
+            $values[$propName] = $property->getValue($entity);
+        }
+
+        $this->originalValues[$entity] = $values;
+    }
+
+    /**
      * Get the original values for an entity (values when it was hydrated).
      *
      * @return array<string, mixed> Property name => original value
