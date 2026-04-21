@@ -15,8 +15,11 @@ composer require pestphp/pest --dev
 ## Commands
 
 ```bash
-# Run all tests
-./vendor/bin/pest
+# Run tests (fast — excludes slow destructive integration tests). Prefer this during development.
+composer test
+
+# Run all tests including destructive integration tests
+composer test:all
 
 # Run specific test file
 ./vendor/bin/pest tests/Unit/Container/ContainerTest.php
@@ -28,12 +31,12 @@ composer require pestphp/pest --dev
 ./vendor/bin/pest --filter="resolves dependencies"
 
 # Run with coverage
-./vendor/bin/pest --coverage
+./vendor/bin/pest -c phpunit.xml --parallel --exclude-group=integration-destructive --coverage
 
 # Run with coverage and minimum threshold
-./vendor/bin/pest --coverage --min=80
+./vendor/bin/pest -c phpunit.xml --parallel --exclude-group=integration-destructive --coverage --min=80
 
-# Run in parallel (faster)
+# Run in parallel (faster) — equivalent to composer test:all
 ./vendor/bin/pest --parallel
 
 # Run with test sharding (for CI)

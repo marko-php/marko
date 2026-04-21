@@ -13,11 +13,14 @@ Marko is a modular PHP 8.5+ framework combining Magento's extensibility with Lar
 ## Commands
 
 ```bash
-# Run tests
-./vendor/bin/pest --parallel
+# Run tests (fast — excludes slow destructive integration tests)
+composer test
+
+# Run all tests including destructive integration tests
+composer test:all
 
 # Run with coverage
-./vendor/bin/pest --parallel --coverage --min=80
+./vendor/bin/pest -c phpunit.xml --parallel --exclude-group=integration-destructive --coverage --min=80
 
 # Lint (check)
 ./vendor/bin/phpcs
