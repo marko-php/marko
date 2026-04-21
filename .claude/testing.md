@@ -50,6 +50,31 @@ composer test:all
 ./vendor/bin/pest --profanity
 ```
 
+## The `integration-destructive` Test Group
+
+Tests tagged `->group('integration-destructive')` live in `tests/IntegrationVerificationTest.php`. They verify the clean-install workflow end-to-end by:
+
+1. Deleting `vendor/` and `composer.lock`
+2. Running `composer update` to re-resolve dependencies from scratch
+3. Running the full test suite in a subprocess against the freshly-resolved state
+
+Because they mutate the working directory, they're excluded from `composer test` by default. Use `composer test:all` to include them.
+
+### When to run them
+
+- **Before tagging a release** — verifies a fresh install still resolves and passes (`bin/release.sh` runs the full group automatically).
+- **After changing the root `composer.json`** — bumping PHP version, adding/removing dependencies, or changing version constraints.
+- **After changing any package `composer.json` that affects resolution** — new cross-package `require`, constraint bumps, replace/conflict declarations.
+- **When investigating dependency-resolution oddities** — to confirm the committed lock file actually installs cleanly from scratch.
+
+### When NOT to run them
+
+- Normal feature or bug-fix work on application logic — they don't exercise application code, they exercise the install pipeline, and they will leave your local `composer.lock` potentially updated to newer transitive versions.
+
+### Side effect to be aware of
+
+Running the destructive group updates your working directory's `composer.lock` (whatever `composer update` currently resolves). Commit any intended lock changes, or `git checkout composer.lock vendor/` to restore if you didn't mean to bump.
+
 ## TDD Workflow Commands
 
 Optimized commands for fast feedback during TDD cycles:
