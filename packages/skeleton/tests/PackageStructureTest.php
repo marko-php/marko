@@ -25,10 +25,10 @@ it('requires marko/env', function (): void {
     expect($composer['require'])->toHaveKey('marko/env');
 });
 
-it('requires marko/dev-server as a dev dependency', function (): void {
+it('requires marko/devserver as a dev dependency', function (): void {
     $composer = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
 
-    expect($composer['require-dev'])->toHaveKey('marko/dev-server');
+    expect($composer['require-dev'])->toHaveKey('marko/devserver');
 });
 
 it('has public/index.php using Application::boot() API', function (): void {

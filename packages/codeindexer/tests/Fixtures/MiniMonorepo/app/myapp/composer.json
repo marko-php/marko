@@ -1,0 +1,9 @@
+{
+    "name": "app/myapp",
+    "description": "App-level myapp module",
+    "autoload": {
+        "psr-4": {
+            "App\\Myapp\\": "src/"
+        }
+    }
+}

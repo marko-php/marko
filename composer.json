@@ -62,6 +62,10 @@
         },
         {
             "type": "path",
+            "url": "packages/codeindexer"
+        },
+        {
+            "type": "path",
             "url": "packages/config"
         },
         {
@@ -86,7 +90,27 @@
         },
         {
             "type": "path",
-            "url": "packages/dev-server"
+            "url": "packages/devai"
+        },
+        {
+            "type": "path",
+            "url": "packages/devserver"
+        },
+        {
+            "type": "path",
+            "url": "packages/docs"
+        },
+        {
+            "type": "path",
+            "url": "packages/docs-markdown"
+        },
+        {
+            "type": "path",
+            "url": "packages/docs-fts"
+        },
+        {
+            "type": "path",
+            "url": "packages/docs-vec"
         },
         {
             "type": "path",
@@ -158,6 +182,14 @@
         },
         {
             "type": "path",
+            "url": "packages/lsp"
+        },
+        {
+            "type": "path",
+            "url": "packages/mcp"
+        },
+        {
+            "type": "path",
             "url": "packages/mail"
         },
         {
@@ -222,7 +254,7 @@
         },
         {
             "type": "path",
-            "url": "packages/rate-limiting"
+            "url": "packages/ratelimiter"
         },
         {
             "type": "path",
@@ -309,13 +341,19 @@
         "marko/cache-file": "self.version",
         "marko/cache-redis": "self.version",
         "marko/cli": "self.version",
+        "marko/codeindexer": "self.version",
         "marko/config": "self.version",
         "marko/core": "self.version",
         "marko/cors": "self.version",
         "marko/database": "self.version",
         "marko/database-mysql": "self.version",
         "marko/database-pgsql": "self.version",
-        "marko/dev-server": "self.version",
+        "marko/devai": "self.version",
+        "marko/devserver": "self.version",
+        "marko/docs": "self.version",
+        "marko/docs-fts": "self.version",
+        "marko/docs-markdown": "self.version",
+        "marko/docs-vec": "self.version",
         "marko/encryption": "self.version",
         "marko/encryption-openssl": "self.version",
         "marko/env": "self.version",
@@ -329,13 +367,15 @@
         "marko/hashing": "self.version",
         "marko/health": "self.version",
         "marko/http": "self.version",
-        "marko/layout": "self.version",
         "marko/http-guzzle": "self.version",
+        "marko/layout": "self.version",
         "marko/log": "self.version",
         "marko/log-file": "self.version",
+        "marko/lsp": "self.version",
         "marko/mail": "self.version",
         "marko/mail-log": "self.version",
         "marko/mail-smtp": "self.version",
+        "marko/mcp": "self.version",
         "marko/media": "self.version",
         "marko/media-gd": "self.version",
         "marko/media-imagick": "self.version",
@@ -349,7 +389,7 @@
         "marko/queue-database": "self.version",
         "marko/queue-rabbitmq": "self.version",
         "marko/queue-sync": "self.version",
-        "marko/rate-limiting": "self.version",
+        "marko/ratelimiter": "self.version",
         "marko/routing": "self.version",
         "marko/scheduler": "self.version",
         "marko/search": "self.version",
@@ -411,11 +451,15 @@
             "Marko\\Cache\\Memory\\Tests\\": "packages/cache-array/tests/",
             "Marko\\Cache\\Redis\\Tests\\": "packages/cache-redis/tests/",
             "Marko\\Cli\\Tests\\": "packages/cli/tests/",
+            "Marko\\CodeIndexer\\Tests\\": "packages/codeindexer/tests/",
             "Marko\\Config\\Tests\\": "packages/config/tests/",
             "Marko\\Core\\Tests\\": "packages/core/tests/",
             "Marko\\Cors\\Tests\\": "packages/cors/tests/",
             "Marko\\Database\\Tests\\": "packages/database/tests/",
-            "Marko\\DevServer\\Tests\\": "packages/dev-server/tests/",
+            "Marko\\DevAi\\Tests\\": "packages/devai/tests/",
+            "Marko\\DevServer\\Tests\\": "packages/devserver/tests/",
+            "Marko\\Docs\\Tests\\": "packages/docs/tests/",
+            "Marko\\DocsMarkdown\\Tests\\": "packages/docs-markdown/tests/",
             "Marko\\Database\\MySql\\Tests\\": "packages/database-mysql/tests/",
             "Marko\\Database\\PgSql\\Tests\\": "packages/database-pgsql/tests/",
             "Marko\\Encryption\\Tests\\": "packages/encryption/tests/",
@@ -435,6 +479,8 @@
             "Marko\\Layout\\Tests\\": "packages/layout/tests/",
             "Marko\\Log\\Tests\\": "packages/log/tests/",
             "Marko\\Log\\File\\Tests\\": "packages/log-file/tests/",
+            "Marko\\Lsp\\Tests\\": "packages/lsp/tests/",
+            "Marko\\Mcp\\Tests\\": "packages/mcp/tests/",
             "Marko\\Mail\\Tests\\": "packages/mail/tests/",
             "Marko\\Mail\\Log\\Tests\\": "packages/mail-log/tests/",
             "Marko\\Mail\\Smtp\\Tests\\": "packages/mail-smtp/tests/",
@@ -448,7 +494,6 @@
             "Marko\\Queue\\Sync\\Tests\\": "packages/queue-sync/tests/",
             "Marko\\Queue\\Database\\Tests\\": "packages/queue-database/tests/",
             "Marko\\Queue\\Rabbitmq\\Tests\\": "packages/queue-rabbitmq/tests/",
-            "Marko\\RateLimiting\\Tests\\": "packages/rate-limiting/tests/",
             "Marko\\Scheduler\\Tests\\": "packages/scheduler/tests/",
             "Marko\\View\\Tests\\": "packages/view/tests/",
             "Marko\\Translation\\Tests\\": "packages/translation/tests/",
@@ -470,7 +515,12 @@
             "Marko\\PubSub\\Tests\\": "packages/pubsub/tests/",
             "Marko\\PubSub\\PgSql\\Tests\\": "packages/pubsub-pgsql/tests/",
             "Marko\\PubSub\\Redis\\Tests\\": "packages/pubsub-redis/tests/",
-            "Marko\\Amphp\\Tests\\": "packages/amphp/tests/"
+            "Marko\\Amphp\\Tests\\": "packages/amphp/tests/",
+            "Marko\\RateLimiter\\Tests\\": "packages/ratelimiter/tests/",
+            "Marko\\DocsFts\\Tests\\": "packages/docs-fts/tests/",
+            "Marko\\DocsVec\\Tests\\": "packages/docs-vec/tests/",
+            "Marko\\Skeleton\\": "packages/skeleton/src/",
+            "Marko\\Skeleton\\Tests\\": "packages/skeleton/tests/"
         }
     }
 }

@@ -11,6 +11,11 @@ const arcadeDark = JSON.parse(
 export default defineConfig({
 	site: 'https://marko.build',
 	base: '/docs',
+	vite: {
+		resolve: {
+			preserveSymlinks: true,
+		},
+	},
 	integrations: [
 		starlight({
 			title: 'MARKO DOCS',
@@ -119,6 +124,29 @@ export default defineConfig({
 						{ label: 'Build a REST API', slug: 'tutorials/build-a-rest-api' },
 						{ label: 'Build a Real-time Chat', slug: 'tutorials/build-a-chat' },
 						{ label: 'Build an Admin Panel', slug: 'tutorials/build-an-admin-panel' },
+					],
+				},
+				{
+					label: 'AI-assisted Development',
+					items: [
+						{ label: 'Overview', slug: 'ai-assisted-development' },
+						{ label: 'Installation', slug: 'ai-assisted-development/installation' },
+						{
+							label: 'Per-agent Setup',
+							items: [
+								{ label: 'Claude Code', slug: 'ai-assisted-development/agents/claude-code' },
+								{ label: 'Codex', slug: 'ai-assisted-development/agents/codex' },
+								{ label: 'Cursor', slug: 'ai-assisted-development/agents/cursor' },
+								{ label: 'GitHub Copilot', slug: 'ai-assisted-development/agents/copilot' },
+								{ label: 'Gemini CLI', slug: 'ai-assisted-development/agents/gemini-cli' },
+								{ label: 'Junie', slug: 'ai-assisted-development/agents/junie' },
+							],
+						},
+						{ label: 'Docs Driver Comparison', slug: 'ai-assisted-development/docs-drivers' },
+						{ label: 'Verification Checklist', slug: 'ai-assisted-development/verification-checklist' },
+						{ label: 'Contributing', slug: 'ai-assisted-development/contributing' },
+						{ label: 'Troubleshooting', slug: 'ai-assisted-development/troubleshooting' },
+						{ label: 'Architecture', slug: 'ai-assisted-development/architecture' },
 					],
 				},
 			],

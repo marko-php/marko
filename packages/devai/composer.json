@@ -1,0 +1,36 @@
+{
+    "name": "marko/devai",
+    "description": "AI development tooling installer/orchestrator for Marko Framework — wires MCP, LSP, and per-agent configs",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "self.version",
+        "marko/cli": "self.version",
+        "marko/mcp": "self.version",
+        "marko/lsp": "self.version"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\DevAi\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\DevAi\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

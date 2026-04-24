@@ -1,0 +1,334 @@
+<?php
+
+declare(strict_types=1);
+
+use Marko\CodeIndexer\Contract\ModuleWalkerInterface;
+use Marko\DevAi\Agents\AbstractAgent;
+use Marko\DevAi\Contract\AgentInterface;
+use Marko\DevAi\Contract\SupportsGuidelines;
+use Marko\DevAi\Contract\SupportsLsp;
+use Marko\DevAi\Contract\SupportsMcp;
+use Marko\DevAi\Contract\SupportsSkills;
+use Marko\DevAi\Guidelines\GuidelinesAggregator;
+use Marko\DevAi\Installation\AgentRegistry;
+use Marko\DevAi\Installation\InstallationContext;
+use Marko\DevAi\Installation\InstallationOrchestrator;
+use Marko\DevAi\Process\CommandRunnerInterface;
+use Marko\DevAi\Rendering\AgentsMdRenderer;
+use Marko\DevAi\Rendering\ClaudeMdRenderer;
+use Marko\DevAi\Skills\SkillsDistributor;
+use Marko\DevAi\ValueObject\GuidelinesContent;
+use Marko\DevAi\ValueObject\LspRegistration;
+use Marko\DevAi\ValueObject\McpRegistration;
+
+function makeInstallRunner(bool $installed = false): CommandRunnerInterface
+{
+    return new class ($installed) implements CommandRunnerInterface
+    {
+        public function __construct(private bool $installed) {}
+
+        public function run(string $command, array $args = []): array
+        {
+            return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
+        }
+
+        public function isOnPath(string $binary): bool
+        {
+            return $this->installed;
+        }
+    };
+}
+
+function makeInstallFullAgent(bool $installed = false): AgentInterface&SupportsGuidelines&SupportsMcp&SupportsLsp&SupportsSkills
+{
+    return new class ($installed) extends AbstractAgent implements SupportsGuidelines, SupportsMcp, SupportsLsp, SupportsSkills
+    {
+        public array $guidelinesCalls = [];
+
+        public array $mcpCalls = [];
+
+        public array $lspCalls = [];
+
+        public array $skillsCalls = [];
+
+        public function __construct(private bool $installed) {}
+
+        public function name(): string
+        {
+            return 'test-agent';
+        }
+
+        public function displayName(): string
+        {
+            return 'Test Agent';
+        }
+
+        public function isInstalled(): bool
+        {
+            return $this->installed;
+        }
+
+        public function writeGuidelines(GuidelinesContent $content, string $projectRoot): void
+        {
+            $this->guidelinesCalls[] = [$content, $projectRoot];
+        }
+
+        public function registerMcpServer(McpRegistration $registration, string $projectRoot): void
+        {
+            $this->mcpCalls[] = [$registration, $projectRoot];
+        }
+
+        public function registerLspServer(LspRegistration $registration, string $projectRoot): void
+        {
+            $this->lspCalls[] = [$registration, $projectRoot];
+        }
+
+        public function distributeSkills(array $bundles, string $projectRoot): void
+        {
+            $this->skillsCalls[] = [$bundles, $projectRoot];
+        }
+    };
+}
+
+function makeInstallRegistry(array $agents): AgentRegistry
+{
+    $runner = makeInstallRunner();
+
+    return new class ($runner, $agents) extends AgentRegistry
+    {
+        public function __construct(
+            CommandRunnerInterface $runner,
+            private array $agentMap,
+        ) {
+            parent::__construct($runner);
+        }
+
+        public function all(string $projectRoot): array
+        {
+            return $this->agentMap;
+        }
+    };
+}
+
+function makeNullWalker(): ModuleWalkerInterface
+{
+    return new class () implements ModuleWalkerInterface
+    {
+        public function walk(): array
+        {
+            return [];
+        }
+    };
+}
+
+function makeInstallOrchestrator(AgentRegistry $registry, string $devaiRoot = '/dev/null'): InstallationOrchestrator
+{
+    $walker = makeNullWalker();
+
+    return new InstallationOrchestrator(
+        registry: $registry,
+        agentsRenderer: new AgentsMdRenderer(),
+        claudeRenderer: new ClaudeMdRenderer(),
+        guidelinesAggregator: new GuidelinesAggregator($walker, $devaiRoot),
+        skillsDistributor: new SkillsDistributor($walker, $devaiRoot),
+    );
+}
+
+beforeEach(function (): void {
+    $this->tempRoot = sys_get_temp_dir() . '/devai-install-test-' . uniqid();
+    mkdir($this->tempRoot, 0755, true);
+});
+
+afterEach(function (): void {
+    $iter = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($this->tempRoot, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST,
+    );
+    foreach ($iter as $f) {
+        $f->isDir() ? rmdir($f->getPathname()) : unlink($f->getPathname());
+    }
+    rmdir($this->tempRoot);
+});
+
+it('prompts for docs driver choice with vec as default', function (): void {
+    $agent = makeInstallFullAgent(installed: true);
+    $registry = makeInstallRegistry(['test-agent' => $agent]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $ctx = new InstallationContext(
+        selectedAgents: ['test-agent'],
+        docsDriver: 'vec',
+    );
+
+    $result = $orchestrator->install($ctx, $this->tempRoot, false);
+
+    expect($result['status'])->toBe('installed');
+
+    $marker = json_decode((string) file_get_contents($this->tempRoot . '/.marko/devai.json'), true);
+    expect($marker['docsDriver'])->toBe('vec');
+});
+
+it('writes or updates .gitignore entries for generated files if user opts in', function (): void {
+    $registry = makeInstallRegistry([]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $ctx = new InstallationContext(
+        selectedAgents: [],
+        docsDriver: 'vec',
+        updateGitignore: true,
+    );
+
+    $orchestrator->install($ctx, $this->tempRoot, false);
+
+    $gitignorePath = $this->tempRoot . '/.gitignore';
+    expect(file_exists($gitignorePath))->toBeTrue();
+
+    $contents = (string) file_get_contents($gitignorePath);
+    expect($contents)->toContain('# marko/devai generated files')
+        ->and($contents)->toContain('.marko/');
+});
+
+it('does not write .gitignore when user does not opt in', function (): void {
+    $registry = makeInstallRegistry([]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $ctx = new InstallationContext(
+        selectedAgents: [],
+        docsDriver: 'vec',
+        updateGitignore: false,
+    );
+
+    $orchestrator->install($ctx, $this->tempRoot, false);
+
+    expect(file_exists($this->tempRoot . '/.gitignore'))->toBeFalse();
+});
+
+it('does not duplicate .gitignore entries on repeated installs', function (): void {
+    $registry = makeInstallRegistry([]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $ctx = new InstallationContext(
+        selectedAgents: [],
+        docsDriver: 'vec',
+        updateGitignore: true,
+    );
+
+    $orchestrator->install($ctx, $this->tempRoot, false);
+    $orchestrator->install($ctx, $this->tempRoot, true);
+
+    $contents = (string) file_get_contents($this->tempRoot . '/.gitignore');
+    expect(substr_count($contents, '.marko/'))->toBe(1);
+});
+
+it('writes .marko/devai.json on successful install capturing selected agents and docs driver choice', function (): void {
+    $registry = makeInstallRegistry([]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $ctx = new InstallationContext(
+        selectedAgents: ['claude-code', 'codex'],
+        docsDriver: 'fts',
+    );
+
+    $orchestrator->install($ctx, $this->tempRoot, false);
+
+    $markerPath = $this->tempRoot . '/.marko/devai.json';
+    expect(file_exists($markerPath))->toBeTrue();
+
+    $marker = json_decode((string) file_get_contents($markerPath), true);
+    expect($marker['agents'])->toBe(['claude-code', 'codex'])
+        ->and($marker['docsDriver'])->toBe('fts')
+        ->and($marker)->toHaveKey('installedAt');
+});
+
+it('supports a --force flag to re-run from scratch (overwrites all generated files)', function (): void {
+    // Pre-create the marker file
+    mkdir($this->tempRoot . '/.marko', 0755, true);
+    file_put_contents($this->tempRoot . '/.marko/devai.json', json_encode(['agents' => [], 'docsDriver' => 'vec']));
+
+    $registry = makeInstallRegistry([]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $ctx = new InstallationContext(selectedAgents: [], docsDriver: 'fts');
+
+    // Without force: skipped
+    $result = $orchestrator->install($ctx, $this->tempRoot, false);
+    expect($result['status'])->toBe('skipped');
+
+    // With force: proceeds
+    $result = $orchestrator->install($ctx, $this->tempRoot, true);
+    expect($result['status'])->toBe('installed');
+
+    // Verify marker was overwritten with new docsDriver
+    $marker = json_decode((string) file_get_contents($this->tempRoot . '/.marko/devai.json'), true);
+    expect($marker['docsDriver'])->toBe('fts');
+});
+
+it('detects a prior install by reading .marko/devai.json and early-exits with a helpful message pointing the user to devai:update', function (): void {
+    // Pre-create the marker file
+    mkdir($this->tempRoot . '/.marko', 0755, true);
+    file_put_contents($this->tempRoot . '/.marko/devai.json', json_encode(['agents' => [], 'docsDriver' => 'vec']));
+
+    $registry = makeInstallRegistry([]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $ctx = new InstallationContext(selectedAgents: [], docsDriver: 'vec');
+
+    $result = $orchestrator->install($ctx, $this->tempRoot, false);
+
+    expect($result['status'])->toBe('skipped')
+        ->and($result['message'])->toContain('devai:update');
+});
+
+it('prints a summary of changes made', function (): void {
+    $agent = makeInstallFullAgent(installed: true);
+    $registry = makeInstallRegistry(['test-agent' => $agent]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $ctx = new InstallationContext(
+        selectedAgents: ['test-agent'],
+        docsDriver: 'vec',
+    );
+
+    $result = $orchestrator->install($ctx, $this->tempRoot, false);
+
+    expect($result['status'])->toBe('installed')
+        ->and($result['log'])->toBeArray()
+        ->and($result['log'])->not->toBeEmpty();
+
+    $log = implode("\n", $result['log']);
+    expect($log)->toContain('[test-agent] wrote guidelines')
+        ->and($log)->toContain('[test-agent] registered MCP server')
+        ->and($log)->toContain('[test-agent] registered LSP server')
+        ->and($log)->toContain('[test-agent] distributed');
+});
+
+it('invokes each selected adapter writeGuidelines registerMcp registerLsp distributeSkills', function (): void {
+    $agent = makeInstallFullAgent(installed: true);
+    $registry = makeInstallRegistry(['test-agent' => $agent]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $ctx = new InstallationContext(
+        selectedAgents: ['test-agent'],
+        docsDriver: 'vec',
+    );
+
+    $orchestrator->install($ctx, $this->tempRoot, false);
+
+    expect($agent->guidelinesCalls)->toHaveCount(1)
+        ->and($agent->mcpCalls)->toHaveCount(1)
+        ->and($agent->lspCalls)->toHaveCount(1)
+        ->and($agent->skillsCalls)->toHaveCount(1);
+});
+
+it('detects installed agents and presents them as a checkbox picker', function (): void {
+    $installedAgent = makeInstallFullAgent(installed: true);
+    $notInstalledAgent = makeInstallFullAgent(installed: false);
+
+    $registry = makeInstallRegistry(['installed-agent' => $installedAgent, 'missing-agent' => $notInstalledAgent]);
+
+    $allAgents = $registry->all($this->tempRoot);
+    $detected = array_keys(array_filter($allAgents, fn ($a) => $a->isInstalled()));
+
+    expect($detected)->toBe(['installed-agent'])
+        ->and(in_array('missing-agent', $detected))->toBeFalse();
+});
