@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
+use Marko\Database\Query\EntityQueryBuilderInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Query\QuerySpecification;
 
 describe('QuerySpecification', function (): void {
-    it('defines apply method accepting QueryBuilderInterface', function (): void {
+    it('defines apply method accepting EntityQueryBuilderInterface', function (): void {
         $reflection = new ReflectionClass(QuerySpecification::class);
 
         expect($reflection->isInterface())->toBeTrue()
@@ -17,7 +18,7 @@ describe('QuerySpecification', function (): void {
 
         expect($params)->toHaveCount(1)
             ->and($params[0]->getName())->toBe('builder')
-            ->and($params[0]->getType()?->getName())->toBe(QueryBuilderInterface::class);
+            ->and($params[0]->getType()?->getName())->toBe(EntityQueryBuilderInterface::class);
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('void');
@@ -37,8 +38,11 @@ describe('QuerySpecification', function (): void {
         {
             public function __construct(private mixed &$calledWith) {}
 
-            public function where(string $column, string $operator, mixed $value): static
-            {
+            public function where(
+                string $column,
+                string $operator,
+                mixed $value,
+            ): static {
                 $this->calledWith = [$column, $operator, $value];
 
                 return $this;
@@ -54,8 +58,10 @@ describe('QuerySpecification', function (): void {
                 return $this;
             }
 
-            public function whereIn(string $column, array $values): static
-            {
+            public function whereIn(
+                string $column,
+                array $values,
+            ): static {
                 return $this;
             }
 
@@ -69,28 +75,60 @@ describe('QuerySpecification', function (): void {
                 return $this;
             }
 
-            public function orWhere(string $column, string $operator, mixed $value): static
+            public function whereJsonContains(string $path, mixed $value): static
             {
                 return $this;
             }
 
-            public function join(string $table, string $first, string $operator, string $second): static
+            public function whereJsonExists(string $path): static
             {
                 return $this;
             }
 
-            public function leftJoin(string $table, string $first, string $operator, string $second): static
+            public function whereJsonMissing(string $path): static
             {
                 return $this;
             }
 
-            public function rightJoin(string $table, string $first, string $operator, string $second): static
-            {
+            public function orWhere(
+                string $column,
+                string $operator,
+                mixed $value,
+            ): static {
                 return $this;
             }
 
-            public function orderBy(string $column, string $direction = 'ASC'): static
-            {
+            public function join(
+                string $table,
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function leftJoin(
+                string $table,
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function rightJoin(
+                string $table,
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function orderBy(
+                string $column,
+                string $direction = 'ASC',
+            ): static {
                 return $this;
             }
 
@@ -102,6 +140,31 @@ describe('QuerySpecification', function (): void {
             public function offset(int $offset): static
             {
                 return $this;
+            }
+
+            public function distinct(): static
+            {
+                return $this;
+            }
+
+            public function union(QueryBuilderInterface $other): static
+            {
+                return $this;
+            }
+
+            public function unionAll(QueryBuilderInterface $other): static
+            {
+                return $this;
+            }
+
+            public function getColumnCount(): int
+            {
+                return 1;
+            }
+
+            public function compileSubquery(array &$bindings): string
+            {
+                return '';
             }
 
             public function get(): array
@@ -129,14 +192,46 @@ describe('QuerySpecification', function (): void {
                 return 0;
             }
 
-            public function count(): int
+            public function count(?string $column = null): int
             {
                 return 0;
             }
 
-            public function raw(string $sql, array $bindings = []): array
-            {
+            public function raw(
+                string $sql,
+                array $bindings = [],
+            ): array {
                 return [];
+            }
+
+            public function groupBy(string ...$columns): static
+            {
+                return $this;
+            }
+
+            public function having(string $expression, array $bindings = []): static
+            {
+                return $this;
+            }
+
+            public function min(string $column): int|float|null
+            {
+                return null;
+            }
+
+            public function max(string $column): int|float|null
+            {
+                return null;
+            }
+
+            public function sum(string $column): int|float|null
+            {
+                return null;
+            }
+
+            public function avg(string $column): int|float|null
+            {
+                return null;
             }
         };
 
@@ -161,8 +256,11 @@ describe('QuerySpecification', function (): void {
         {
             public function __construct(private mixed &$calledWith) {}
 
-            public function where(string $column, string $operator, mixed $value): static
-            {
+            public function where(
+                string $column,
+                string $operator,
+                mixed $value,
+            ): static {
                 $this->calledWith = [$column, $operator, $value];
 
                 return $this;
@@ -178,8 +276,10 @@ describe('QuerySpecification', function (): void {
                 return $this;
             }
 
-            public function whereIn(string $column, array $values): static
-            {
+            public function whereIn(
+                string $column,
+                array $values,
+            ): static {
                 return $this;
             }
 
@@ -193,28 +293,60 @@ describe('QuerySpecification', function (): void {
                 return $this;
             }
 
-            public function orWhere(string $column, string $operator, mixed $value): static
+            public function whereJsonContains(string $path, mixed $value): static
             {
                 return $this;
             }
 
-            public function join(string $table, string $first, string $operator, string $second): static
+            public function whereJsonExists(string $path): static
             {
                 return $this;
             }
 
-            public function leftJoin(string $table, string $first, string $operator, string $second): static
+            public function whereJsonMissing(string $path): static
             {
                 return $this;
             }
 
-            public function rightJoin(string $table, string $first, string $operator, string $second): static
-            {
+            public function orWhere(
+                string $column,
+                string $operator,
+                mixed $value,
+            ): static {
                 return $this;
             }
 
-            public function orderBy(string $column, string $direction = 'ASC'): static
-            {
+            public function join(
+                string $table,
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function leftJoin(
+                string $table,
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function rightJoin(
+                string $table,
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function orderBy(
+                string $column,
+                string $direction = 'ASC',
+            ): static {
                 return $this;
             }
 
@@ -226,6 +358,31 @@ describe('QuerySpecification', function (): void {
             public function offset(int $offset): static
             {
                 return $this;
+            }
+
+            public function distinct(): static
+            {
+                return $this;
+            }
+
+            public function union(QueryBuilderInterface $other): static
+            {
+                return $this;
+            }
+
+            public function unionAll(QueryBuilderInterface $other): static
+            {
+                return $this;
+            }
+
+            public function getColumnCount(): int
+            {
+                return 1;
+            }
+
+            public function compileSubquery(array &$bindings): string
+            {
+                return '';
             }
 
             public function get(): array
@@ -253,14 +410,46 @@ describe('QuerySpecification', function (): void {
                 return 0;
             }
 
-            public function count(): int
+            public function count(?string $column = null): int
             {
                 return 0;
             }
 
-            public function raw(string $sql, array $bindings = []): array
-            {
+            public function raw(
+                string $sql,
+                array $bindings = [],
+            ): array {
                 return [];
+            }
+
+            public function groupBy(string ...$columns): static
+            {
+                return $this;
+            }
+
+            public function having(string $expression, array $bindings = []): static
+            {
+                return $this;
+            }
+
+            public function min(string $column): int|float|null
+            {
+                return null;
+            }
+
+            public function max(string $column): int|float|null
+            {
+                return null;
+            }
+
+            public function sum(string $column): int|float|null
+            {
+                return null;
+            }
+
+            public function avg(string $column): int|float|null
+            {
+                return null;
             }
         };
 

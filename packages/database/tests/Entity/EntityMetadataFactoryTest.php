@@ -11,6 +11,7 @@ use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Exceptions\EntityException;
+use Marko\Database\Exceptions\MissingPrimaryKeyException;
 
 beforeEach(function (): void {
     $this->factory = new EntityMetadataFactory();
@@ -95,6 +96,9 @@ it('extracts #[Index] attributes from class', function (): void {
 it('infers column type from PHP property type (int to integer, string to varchar, etc)', function (): void {
     $entity = new #[Table('test')] class () extends Entity
     {
+        #[Column(primaryKey: true)]
+        public int $id;
+
         /** @noinspection PhpUnused - Accessed via reflection metadata */
         #[Column]
         public int $intColumn;
@@ -114,17 +118,17 @@ it('infers column type from PHP property type (int to integer, string to varchar
 
     $metadata = $this->factory->parse($entity::class);
 
-    expect($metadata->columns[0]->type)
+    expect($metadata->columns[1]->type)
         ->toBe('integer')
-        ->and($metadata->columns[1]->type)->toBe('varchar')
-        ->and($metadata->columns[2]->type)->toBe('decimal')
-        ->and($metadata->columns[3]->type)->toBe('boolean');
+        ->and($metadata->columns[2]->type)->toBe('varchar')
+        ->and($metadata->columns[3]->type)->toBe('decimal')
+        ->and($metadata->columns[4]->type)->toBe('boolean');
 });
 
 it('infers nullable from nullable PHP type (?string)', function (): void {
     $entity = new #[Table('test')] class () extends Entity
     {
-        #[Column]
+        #[Column(primaryKey: true)]
         public int $required;
 
         #[Column]
@@ -146,7 +150,7 @@ it('infers nullable from nullable PHP type (?string)', function (): void {
 it('infers default from property initializer', function (): void {
     $entity = new #[Table('test')] class () extends Entity
     {
-        #[Column]
+        #[Column(primaryKey: true)]
         public int $count = 0;
 
         #[Column]
@@ -172,7 +176,7 @@ it('infers default from property initializer', function (): void {
 it('uses Column attribute name when specified', function (): void {
     $entity = new #[Table('test')] class () extends Entity
     {
-        #[Column(name: 'author')]
+        #[Column(primaryKey: true, name: 'author')]
         public int $userId;
 
         #[Column]
@@ -189,7 +193,7 @@ it('uses Column attribute name when specified', function (): void {
 it('uses Column attribute type when specified over inferred type', function (): void {
     $entity = new #[Table('test')] class () extends Entity
     {
-        #[Column(type: 'BIGINT')]
+        #[Column(primaryKey: true, type: 'BIGINT')]
         public int $id;
 
         #[Column(type: 'TEXT')]
@@ -386,6 +390,51 @@ it('converts camelCase property names to snake_case column names automatically',
         ->toBe('post_id')
         ->and($metadata->columns[2]->name)->toBe('created_at')
         ->and($metadata->columns[3]->name)->toBe('is_active');
+});
+
+it('throws MissingPrimaryKeyException at metadata parse time when entity has no primary key attribute', function (): void {
+    $entity = new #[Table('no_pk')] class () extends Entity
+    {
+        #[Column]
+        public int $userId;
+
+        #[Column]
+        public string $name;
+    };
+
+    $this->factory->parse($entity::class);
+})->throws(MissingPrimaryKeyException::class);
+
+it('includes the entity class name in the exception message', function (): void {
+    $entity = new #[Table('no_pk')] class () extends Entity
+    {
+        #[Column]
+        public int $userId;
+    };
+
+    $entityClass = $entity::class;
+
+    expect(fn () => $this->factory->parse($entityClass))
+        ->toThrow(MissingPrimaryKeyException::class, $entityClass);
+});
+
+it('includes a suggestion to add #[Column(primaryKey: true)] in the exception message', function (): void {
+    $entity = new #[Table('no_pk')] class () extends Entity
+    {
+        #[Column]
+        public int $userId;
+    };
+
+    $exception = null;
+
+    try {
+        $this->factory->parse($entity::class);
+    } catch (MissingPrimaryKeyException $e) {
+        $exception = $e;
+    }
+
+    expect($exception)->not->toBeNull()
+        ->and($exception->getSuggestion())->toContain('#[Column(primaryKey: true)]');
 });
 
 it('clears cached metadata', function (): void {

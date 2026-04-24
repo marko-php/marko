@@ -18,5 +18,6 @@ readonly class PropertyMetadata
         public bool $isAutoIncrement = false,
         public ?string $enumClass = null,
         public mixed $default = null,
+        public ?string $columnType = null,
     ) {}
 }

@@ -13,6 +13,9 @@ use Marko\Database\Entity\Entity;
 #[Index('idx_role_permissions_unique', ['role_id', 'permission_id'], unique: true)]
 class RolePermission extends Entity implements RolePermissionInterface
 {
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
     #[Column(references: 'roles.id', onDelete: 'CASCADE')]
     public int $roleId;
 

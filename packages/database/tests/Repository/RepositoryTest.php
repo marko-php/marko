@@ -62,9 +62,11 @@ it('defines RepositoryInterface with find(id) method', function (): void {
 
     $parameters = $method->getParameters();
     $returnType = $method->getReturnType();
+    $idType = (string) $parameters[0]->getType();
     expect($parameters)->toHaveCount(1)
         ->and($parameters[0]->getName())->toBe('id')
-        ->and($parameters[0]->getType()->getName())->toBe('int')
+        ->and(str_contains($idType, 'int'))->toBeTrue()
+        ->and(str_contains($idType, 'string'))->toBeTrue()
         ->and($returnType->allowsNull())->toBeTrue()
         ->and($returnType->getName())->toBe(Entity::class);
 });
@@ -267,9 +269,11 @@ it('defines RepositoryInterface with findOrFail(id) method', function (): void {
 
     $parameters = $method->getParameters();
     $returnType = $method->getReturnType();
+    $idType = (string) $parameters[0]->getType();
     expect($parameters)->toHaveCount(1)
         ->and($parameters[0]->getName())->toBe('id')
-        ->and($parameters[0]->getType()->getName())->toBe('int')
+        ->and(str_contains($idType, 'int'))->toBeTrue()
+        ->and(str_contains($idType, 'string'))->toBeTrue()
         ->and($returnType->allowsNull())->toBeFalse()
         ->and($returnType->getName())->toBe(Entity::class);
 });
@@ -1032,8 +1036,9 @@ function createMockConnection(
 
 function createMockQueryBuilder(
     ConnectionInterface $connection,
+    bool &$countCalled = false,
 ): QueryBuilderInterface {
-    return new class ($connection) implements QueryBuilderInterface
+    return new class ($connection, $countCalled) implements QueryBuilderInterface
     {
         private string $table = '';
 
@@ -1042,6 +1047,7 @@ function createMockQueryBuilder(
 
         public function __construct(
             private readonly ConnectionInterface $connection,
+            private bool &$countCalled,
         ) {}
 
         public function table(
@@ -1084,6 +1090,21 @@ function createMockQueryBuilder(
         public function whereNotNull(
             string $column,
         ): static {
+            return $this;
+        }
+
+        public function whereJsonContains(string $path, mixed $value): static
+        {
+            return $this;
+        }
+
+        public function whereJsonExists(string $path): static
+        {
+            return $this;
+        }
+
+        public function whereJsonMissing(string $path): static
+        {
             return $this;
         }
 
@@ -1141,6 +1162,31 @@ function createMockQueryBuilder(
             return $this;
         }
 
+        public function distinct(): static
+        {
+            return $this;
+        }
+
+        public function union(QueryBuilderInterface $other): static
+        {
+            return $this;
+        }
+
+        public function unionAll(QueryBuilderInterface $other): static
+        {
+            return $this;
+        }
+
+        public function getColumnCount(): int
+        {
+            return 1;
+        }
+
+        public function compileSubquery(array &$bindings): string
+        {
+            return '';
+        }
+
         public function get(): array
         {
             // Use the connection to execute the query
@@ -1173,9 +1219,11 @@ function createMockQueryBuilder(
             return 1;
         }
 
-        public function count(): int
+        public function count(?string $column = null): int
         {
-            return 0;
+            $this->countCalled = true;
+
+            return 7;
         }
 
         public function raw(
@@ -1183,6 +1231,36 @@ function createMockQueryBuilder(
             array $bindings = [],
         ): array {
             return $this->connection->query($sql, $bindings);
+        }
+
+        public function groupBy(string ...$columns): static
+        {
+            return $this;
+        }
+
+        public function having(string $expression, array $bindings = []): static
+        {
+            return $this;
+        }
+
+        public function min(string $column): int|float|null
+        {
+            return null;
+        }
+
+        public function max(string $column): int|float|null
+        {
+            return null;
+        }
+
+        public function sum(string $column): int|float|null
+        {
+            return null;
+        }
+
+        public function avg(string $column): int|float|null
+        {
+            return null;
         }
     };
 }
@@ -1310,3 +1388,218 @@ function createStorageConnection(
         }
     };
 }
+
+// Helper: create a spy connection that records all SQL and bindings
+function createSpyConnection(array &$sqlLog, array $queryResults = []): ConnectionInterface
+{
+    return new class ($sqlLog, $queryResults) implements ConnectionInterface
+    {
+        private int $queryIndex = 0;
+
+        public function __construct(
+            private array &$sqlLog,
+            private array $queryResults,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(string $sql, array $bindings = []): array
+        {
+            $this->sqlLog[] = ['sql' => $sql, 'bindings' => $bindings];
+            $result = $this->queryResults[$this->queryIndex] ?? [];
+            $this->queryIndex++;
+
+            return $result;
+        }
+
+        public function execute(string $sql, array $bindings = []): int
+        {
+            $this->sqlLog[] = ['sql' => $sql, 'bindings' => $bindings];
+
+            return 1;
+        }
+
+        public function prepare(string $sql): StatementInterface
+        {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 0;
+        }
+    };
+}
+
+// Entity with a non-default PK column name for fallback-removal tests
+#[Table('orders')]
+class OrderWithCustomPk extends Entity
+{
+    #[Column(primaryKey: true, autoIncrement: true, name: 'order_uuid')]
+    public ?int $orderUuid = null;
+
+    #[Column]
+    public string $status = 'pending';
+}
+
+class OrderRepository extends Repository
+{
+    protected const string ENTITY_CLASS = OrderWithCustomPk::class;
+
+    public function exposeIsColumnUnique(string $column, mixed $value, ?int $excludeId = null): bool
+    {
+        return $this->isColumnUnique($column, $value, $excludeId);
+    }
+}
+
+it('it no longer falls back to the literal \'id\' column name in Repository::find', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog, [[
+        ['order_uuid' => 5, 'status' => 'shipped'],
+    ]]);
+    $repository = new OrderRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+    $repository->find(5);
+
+    expect($sqlLog[0]['sql'])->toContain('order_uuid = ?')
+        ->and($sqlLog[0]['sql'])->not->toContain('WHERE id = ?');
+});
+
+it('it no longer falls back to the literal \'id\' column name in Repository::save update path', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog, [
+        [['order_uuid' => 3, 'status' => 'pending']],
+    ]);
+    $repository = new OrderRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+    $entity = $repository->find(3);
+    $entity->status = 'shipped';
+    $repository->save($entity);
+
+    $updateSql = array_values(array_filter($sqlLog, fn ($entry) => str_starts_with($entry['sql'], 'UPDATE')));
+    expect($updateSql[0]['sql'])->toContain('WHERE order_uuid = ?')
+        ->and($updateSql[0]['sql'])->not->toContain('WHERE id = ?');
+});
+
+it('it no longer falls back to the literal \'id\' column name in Repository::delete', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog, [
+        [['order_uuid' => 7, 'status' => 'pending']],
+    ]);
+    $repository = new OrderRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+    $entity = $repository->find(7);
+    $repository->delete($entity);
+
+    $deleteSql = array_values(array_filter($sqlLog, fn ($entry) => str_starts_with($entry['sql'], 'DELETE')));
+    expect($deleteSql[0]['sql'])->toContain('WHERE order_uuid = ?')
+        ->and($deleteSql[0]['sql'])->not->toContain('WHERE order_id = ?');
+});
+
+it('it no longer hardcodes \'id\' in Repository::isColumnUnique exclude clause — uses the real PK column', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog, [[]], [[]]);
+    $repository = new OrderRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+    $repository->exposeIsColumnUnique('status', 'shipped', 42);
+
+    expect($sqlLog[0]['sql'])->toContain('AND order_uuid != ?')
+        ->and($sqlLog[0]['sql'])->not->toContain('AND status != ?');
+});
+
+it('continues to work for entities that DO declare a primary key explicitly', function (): void {
+    $connection = createMockConnection([
+        [
+            'id' => 1,
+            'name' => 'Alice',
+            'email_address' => 'alice@example.com',
+            'is_active' => 1,
+        ],
+    ]);
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $repository = new UserRepository($connection, $metadataFactory, $hydrator);
+
+    $user = $repository->find(1);
+
+    expect($user)->toBeInstanceOf(RepositoryTestUser::class)
+        ->and($user->id)->toBe(1)
+        ->and($user->name)->toBe('Alice');
+});
+
+it('Repository::count() delegates to the builder without duplicating logic', function (): void {
+    $builderCountCalled = false;
+    $rawQueryCalled = false;
+
+    $connection = new class ($rawQueryCalled) implements ConnectionInterface
+    {
+        public function __construct(private bool &$rawQueryCalled) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            $this->rawQueryCalled = true;
+
+            return [['aggregate' => 99]];
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            return 0;
+        }
+
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 0;
+        }
+    };
+
+    $queryBuilderFactory = new class ($builderCountCalled, $connection) implements QueryBuilderFactoryInterface
+    {
+        public function __construct(
+            private bool &$builderCountCalled,
+            private readonly ConnectionInterface $connection,
+        ) {}
+
+        public function create(): QueryBuilderInterface
+        {
+            return createMockQueryBuilder($this->connection, $this->builderCountCalled);
+        }
+    };
+
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $repository = new UserRepository($connection, $metadataFactory, $hydrator, $queryBuilderFactory);
+
+    $result = $repository->count();
+
+    // count() routed through the builder, not raw SQL
+    expect($builderCountCalled)->toBeTrue()
+        ->and($rawQueryCalled)->toBeFalse()
+        ->and($result)->toBe(7);
+});

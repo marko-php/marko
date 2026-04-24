@@ -29,7 +29,7 @@ class RepositoryException extends MarkoException
      */
     public static function entityNotFound(
         string $entityClass,
-        int $id,
+        int|string $id,
     ): self {
         return new self(
             message: "Entity '$entityClass' with ID $id not found",

@@ -150,6 +150,61 @@ class EntityException extends MarkoException
         );
     }
 
+    public static function invalidJsonFromDatabase(
+        mixed $value,
+        string $error,
+    ): self {
+        return new self(
+            message: "Failed to decode JSON value from database: $error",
+            context: 'Hydrating a JSON column value from the database',
+            suggestion: 'Ensure the database column contains valid JSON. The raw value was: ' . json_encode($value),
+        );
+    }
+
+    public static function invalidJsonEncode(
+        string $error,
+    ): self {
+        return new self(
+            message: "Failed to encode PHP value to JSON for database storage: $error",
+            context: 'Dehydrating a JSON column value for persistence',
+            suggestion: 'Ensure the array value is JSON-serializable (no resources, closures, or non-UTF-8 strings)',
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
+    public static function jsonColumnTypeMismatch(
+        string $entityClass,
+        string $property,
+        string $actualType,
+    ): self {
+        return new self(
+            message: "Property '$property' in entity '$entityClass' has #[Column(type: 'json')] but its PHP type is '$actualType' (must be 'array' or '?array')",
+            context: "Parsing column '$property' in entity '$entityClass'",
+            suggestion: "Change the property type to 'array' or '?array', e.g.: public array \$$property or public ?array \$$property",
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
+    public static function jsonColumnNullableMismatch(
+        string $entityClass,
+        string $property,
+        bool $nullableFlag,
+        bool $nullableType,
+    ): self {
+        $flagStr = $nullableFlag ? 'true' : 'false';
+        $typeStr = $nullableType ? '?array (nullable)' : 'array (not nullable)';
+
+        return new self(
+            message: "Property '$property' in entity '$entityClass' has nullable:$flagStr on #[Column] but is typed as $typeStr — they must agree",
+            context: "Parsing column '$property' in entity '$entityClass'",
+            suggestion: "Either use #[Column(type: 'json', nullable: true)] with '?array' or #[Column(type: 'json')] with 'array'",
+        );
+    }
+
     /**
      * @param class-string $entityClass
      */

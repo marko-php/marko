@@ -100,7 +100,7 @@ describe('Package Scaffolding', function (): void {
     });
 
     it(
-        'creates README.md for marko/database explaining entity-driven schema and Data Mapper pattern',
+        'creates slim README.md for marko/database per docs standards',
         function (): void {
             $readmePath = dirname(__DIR__) . '/README.md';
 
@@ -108,34 +108,10 @@ describe('Package Scaffolding', function (): void {
 
             $content = file_get_contents($readmePath);
 
-            // Core concepts covered
-            expect($content)->toContain('Entity-Driven Schema')
-                ->and($content)->toContain('Data Mapper')
-                ->and($content)->toContain('Type Inference')
-                // Attributes overview
-                ->and($content)->toContain('#[Table]')
-                ->and($content)->toContain('#[Column]')
-                ->and($content)->toContain('#[Index]')
-                // Post entity example with various attribute types
-                ->and($content)->toContain('class Post')
-                ->and($content)->toContain('primaryKey')
-                ->and($content)->toContain('autoIncrement')
-                ->and($content)->toContain('unique')
-                ->and($content)->toContain('nullable')
-                ->and($content)->toContain('default')
-                // Repository pattern
-                ->and($content)->toContain('Repository')
-                // CLI commands overview
-                ->and($content)->toContain('db:diff')
-                ->and($content)->toContain('db:migrate')
-                ->and($content)->toContain('db:rollback')
-                ->and($content)->toContain('db:status')
-                // Framework comparison
-                ->and($content)->toContain('Laravel')
-                ->and($content)->toContain('Doctrine')
-                ->and($content)->toContain('Marko')
-                // Single source of truth benefits
-                ->and($content)->toContain('single source of truth');
+            expect($content)->toContain('marko/database')
+                ->and($content)->toContain('composer require marko/database')
+                ->and($content)->toContain('#[Column')
+                ->and($content)->toContain('Repository');
         },
     );
 

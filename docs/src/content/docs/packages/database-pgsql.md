@@ -133,20 +133,35 @@ PostgreSQL has excellent support for advanced data types. Marko leverages these 
 
 ### JSONB Columns
 
-PostgreSQL's JSONB type is fully supported and recommended over JSON for better indexing and query performance:
+PostgreSQL stores `#[Column(type: 'json')]` properties as `JSONB` natively --- the binary format with better indexing and query performance than plain `JSON`. Use `array` or `?array` as the property type:
 
 ```php
-#[Column(type: 'jsonb')]
+use Marko\Database\Attributes\Column;
+
+#[Column(type: 'json')]
 public array $metadata = [];
+
+#[Column(type: 'json')]
+public ?array $settings = null;
 ```
+
+Values are serialized and deserialized automatically. The root value must be an array --- top-level JSON scalars are not supported. See [marko/database](/docs/packages/database/) for JSON query operators (`whereJsonContains`, arrow-path syntax, `@>` containment, GIN index setup).
 
 ### UUID Primary Keys
 
-PostgreSQL has native UUID support. Use the `type` parameter:
+PostgreSQL has native UUID support. Use the `type` and `default` parameters on the primary key column:
 
 ```php
+use Marko\Database\Attributes\Column;
+
 #[Column(primaryKey: true, type: 'uuid', default: 'gen_random_uuid()')]
 public string $id;
+```
+
+`Repository::find()` and `findOrFail()` accept `int|string`, so UUID-keyed repositories work without any additional configuration:
+
+```php
+$article = $articleRepository->find('018e2b3c-d1a2-7000-a1b2-c3d4e5f60708');
 ```
 
 ## API Reference
@@ -205,7 +220,19 @@ Implements `QueryBuilderInterface`. Fluent builder for PostgreSQL queries.
 | `insert(array $data): int` | Insert a row and return the `id` via RETURNING |
 | `update(array $data): int` | Update matching rows and return affected count |
 | `delete(): int` | Delete matching rows and return affected count |
-| `count(): int` | Return the count of matching rows |
+| `count(?string $column = null): int` | Return the count of matching rows (`COUNT(*)` or `COUNT(column)`) |
+| `sum(string $column): int\|float` | Return the sum of a column |
+| `avg(string $column): int\|float` | Return the average of a column |
+| `min(string $column): int\|float` | Return the minimum value of a column |
+| `max(string $column): int\|float` | Return the maximum value of a column |
+| `distinct(): static` | Add DISTINCT to the SELECT clause |
+| `groupBy(string ...$columns): static` | Add GROUP BY columns |
+| `having(string $expression, array $bindings = []): static` | Add a HAVING condition |
+| `union(QueryBuilderInterface $query): static` | Append a UNION (deduplicates rows) |
+| `unionAll(QueryBuilderInterface $query): static` | Append a UNION ALL (keeps duplicates) |
+| `whereJsonContains(string $column, mixed $value): static` | WHERE JSONB column @> value (containment) |
+| `whereJsonExists(string $path): static` | WHERE JSON key/path exists |
+| `whereJsonMissing(string $path): static` | WHERE JSON key/path does not exist |
 | `raw(string $sql, array $bindings = []): array` | Execute a raw SQL query |
 
 ### PgSqlIntrospector

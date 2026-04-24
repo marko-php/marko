@@ -404,4 +404,18 @@ describe('PgSqlGenerator', function (): void {
         // SERIAL implies NOT NULL in PostgreSQL
         expect($sql)->toContain('"id" SERIAL PRIMARY KEY');
     });
+
+    it('emits PostgreSQL jsonb DDL type for #[Column(type: \'json\')]', function (): void {
+        $table = new Table(
+            name: 'products',
+            columns: [
+                new Column(name: 'id', type: 'integer', primaryKey: true, autoIncrement: true),
+                new Column(name: 'metadata', type: 'json'),
+            ],
+        );
+
+        $sql = $this->generator->generateCreateTable($table);
+
+        expect($sql)->toContain('"metadata" JSONB NOT NULL');
+    });
 });

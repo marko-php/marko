@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Marko\Layout;
 
+use Marko\Core\Container\ContainerInterface;
 use Marko\Layout\Exceptions\AmbiguousSortOrderException;
 use Marko\Layout\Exceptions\CircularSlotException;
 use Marko\Layout\Exceptions\LayoutNotFoundException;
 use Marko\Layout\Exceptions\SlotNotFoundException;
-use Marko\Core\Container\ContainerInterface;
-use Psr\Container\ContainerExceptionInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;
+use Psr\Container\ContainerExceptionInterface;
 
 readonly class LayoutProcessor implements LayoutProcessorInterface
 {
@@ -30,10 +30,7 @@ readonly class LayoutProcessor implements LayoutProcessorInterface
      *
      * @param class-string $controllerClass
      * @param array<string, mixed> $routeParameters
-     * @throws SlotNotFoundException
-     * @throws CircularSlotException
-     * @throws LayoutNotFoundException
-     * @throws AmbiguousSortOrderException|ContainerExceptionInterface
+     * @throws SlotNotFoundException|CircularSlotException|LayoutNotFoundException|AmbiguousSortOrderException|ContainerExceptionInterface
      */
     public function process(
         string $controllerClass,

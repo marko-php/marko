@@ -6,6 +6,8 @@ namespace Marko\Database\Entity;
 
 use BackedEnum;
 use DateTimeImmutable;
+use JsonException;
+use Marko\Database\Exceptions\EntityException;
 use ReflectionClass;
 use WeakMap;
 
@@ -110,7 +112,17 @@ class EntityHydrator
 
         $value = $property->getValue($entity);
 
-        return $value === null;
+        // For auto-increment PKs, a null value means the entity has never been
+        // persisted (the DB assigns the ID on INSERT).
+        if ($pkProperty->isAutoIncrement) {
+            return $value === null;
+        }
+
+        // For non-auto-increment PKs (e.g. client-supplied UUIDs), a set PK value
+        // does NOT imply the entity was ever persisted. Use originalValues tracking:
+        // if no snapshot exists, the entity has never passed through hydrate() or
+        // registerOriginalValues(), so treat it as new.
+        return !isset($this->originalValues[$entity]);
     }
 
     /**
@@ -197,6 +209,8 @@ class EntityHydrator
 
     /**
      * Convert a database value to the appropriate PHP type.
+     *
+     * @throws EntityException
      */
     private function convertToPhpType(
         mixed $value,
@@ -204,6 +218,11 @@ class EntityHydrator
     ): mixed {
         if ($value === null) {
             return null;
+        }
+
+        // Handle JSON columns
+        if ($propMeta->columnType === 'json') {
+            return $this->decodeJson($value);
         }
 
         // Handle enums
@@ -227,7 +246,25 @@ class EntityHydrator
     }
 
     /**
+     * Decode a JSON string into a PHP array.
+     *
+     * @throws EntityException
+     */
+    private function decodeJson(mixed $value): array
+    {
+        try {
+            $decoded = json_decode((string) $value, associative: true, flags: JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw EntityException::invalidJsonFromDatabase($value, $e->getMessage());
+        }
+
+        return $decoded;
+    }
+
+    /**
      * Convert a PHP value to a database-compatible value.
+     *
+     * @throws EntityException
      */
     private function convertToDbValue(
         mixed $value,
@@ -235,6 +272,11 @@ class EntityHydrator
     ): mixed {
         if ($value === null) {
             return null;
+        }
+
+        // Handle JSON columns
+        if ($propMeta->columnType === 'json') {
+            return $this->encodeJson($value);
         }
 
         if (is_bool($value)) {
@@ -250,6 +292,20 @@ class EntityHydrator
         }
 
         return $value;
+    }
+
+    /**
+     * Encode a PHP array to a JSON string.
+     *
+     * @throws EntityException
+     */
+    private function encodeJson(mixed $value): string
+    {
+        try {
+            return json_encode($value, flags: JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+        } catch (JsonException $e) {
+            throw EntityException::invalidJsonEncode($e->getMessage());
+        }
     }
 
     /**

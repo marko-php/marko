@@ -9,6 +9,8 @@ use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\RelationshipLoader;
+use Marko\Database\Exceptions\RepositoryException;
+use Marko\Database\Query\EntityQueryBuilderInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Query\QuerySpecification;
 
@@ -19,7 +21,7 @@ use Marko\Database\Query\QuerySpecification;
  * hydrated entities instead of raw arrays, with optional eager loading and
  * query specification support.
  */
-class RepositoryQueryBuilder implements QueryBuilderInterface
+class RepositoryQueryBuilder implements EntityQueryBuilderInterface
 {
     /**
      * Relationship names to eager-load on query execution.
@@ -87,6 +89,27 @@ class RepositoryQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    public function whereJsonContains(string $path, mixed $value): static
+    {
+        $this->queryBuilder->whereJsonContains($path, $value);
+
+        return $this;
+    }
+
+    public function whereJsonExists(string $path): static
+    {
+        $this->queryBuilder->whereJsonExists($path);
+
+        return $this;
+    }
+
+    public function whereJsonMissing(string $path): static
+    {
+        $this->queryBuilder->whereJsonMissing($path);
+
+        return $this;
+    }
+
     public function orWhere(
         string $column,
         string $operator,
@@ -126,6 +149,43 @@ class RepositoryQueryBuilder implements QueryBuilderInterface
         string $second,
     ): static {
         $this->queryBuilder->rightJoin($table, $first, $operator, $second);
+
+        return $this;
+    }
+
+    public function distinct(): static
+    {
+        $this->queryBuilder->distinct();
+
+        return $this;
+    }
+
+    public function groupBy(string ...$columns): static
+    {
+        $this->queryBuilder->groupBy(...$columns);
+
+        return $this;
+    }
+
+    public function having(string $expression, array $bindings = []): static
+    {
+        $this->queryBuilder->having($expression, $bindings);
+
+        return $this;
+    }
+
+    public function union(
+        QueryBuilderInterface $other,
+    ): static {
+        $this->queryBuilder->union($other);
+
+        return $this;
+    }
+
+    public function unionAll(
+        QueryBuilderInterface $other,
+    ): static {
+        $this->queryBuilder->unionAll($other);
 
         return $this;
     }
@@ -182,9 +242,39 @@ class RepositoryQueryBuilder implements QueryBuilderInterface
         return $this->queryBuilder->delete();
     }
 
-    public function count(): int
+    public function count(?string $column = null): int
     {
-        return $this->queryBuilder->count();
+        return $this->queryBuilder->count($column);
+    }
+
+    public function min(string $column): int|float|null
+    {
+        return $this->queryBuilder->min($column);
+    }
+
+    public function max(string $column): int|float|null
+    {
+        return $this->queryBuilder->max($column);
+    }
+
+    public function sum(string $column): int|float|null
+    {
+        return $this->queryBuilder->sum($column);
+    }
+
+    public function avg(string $column): int|float|null
+    {
+        return $this->queryBuilder->avg($column);
+    }
+
+    public function getColumnCount(): int
+    {
+        return $this->queryBuilder->getColumnCount();
+    }
+
+    public function compileSubquery(array &$bindings): string
+    {
+        return $this->queryBuilder->compileSubquery($bindings);
     }
 
     public function raw(
@@ -196,23 +286,45 @@ class RepositoryQueryBuilder implements QueryBuilderInterface
 
     /**
      * Specify relationships to eager-load when fetching entities.
+     *
+     * Validates each relationship name against entity metadata, then merges
+     * with any previously declared relationships, deduplicating names.
+     *
+     * @throws RepositoryException When the relationship name is unknown
      */
     public function with(string ...$relationships): static
     {
-        $this->relationships = array_values($relationships);
+        foreach ($relationships as $name) {
+            $topLevel = explode('.', $name, 2)[0];
+
+            if ($this->metadata->getRelationship($topLevel) === null) {
+                throw RepositoryException::unknownRelationship(
+                    $this->entityClass,
+                    $this->entityClass,
+                    $name,
+                );
+            }
+        }
+
+        $this->relationships = array_values(
+            array_unique(array_merge($this->relationships, $relationships)),
+        );
 
         return $this;
     }
 
     /**
-     * Apply query specifications to the underlying query builder and return an EntityCollection.
+     * Apply query specifications to the entity query builder and return an EntityCollection.
+     *
+     * Specs receive $this (the RepositoryQueryBuilder) so they can call with()
+     * to declare eager loading alongside other query modifiers.
      *
      * @return EntityCollection<Entity>
      */
     public function matching(QuerySpecification ...$specifications): EntityCollection
     {
         foreach ($specifications as $specification) {
-            $specification->apply($this->queryBuilder);
+            $specification->apply($this);
         }
 
         return $this->getEntities();
@@ -266,6 +378,8 @@ class RepositoryQueryBuilder implements QueryBuilderInterface
     /**
      * Eager-load any pending relationships on the given entities.
      *
+     * Supports dot-notation for nested eager loading (e.g. 'comments.author').
+     *
      * @param Entity[] $entities
      */
     private function eagerLoadRelationships(array $entities): void
@@ -274,14 +388,7 @@ class RepositoryQueryBuilder implements QueryBuilderInterface
             return;
         }
 
-        foreach ($this->relationships as $name) {
-            $relationship = $this->metadata->getRelationship($name);
-
-            if ($relationship === null) {
-                continue;
-            }
-
-            $this->relationshipLoader->load($entities, $relationship, $this->metadata);
-        }
+        $tree = RelationshipLoader::parseRelationshipTree($this->relationships);
+        $this->relationshipLoader->loadNested($entities, $tree, $this->metadata);
     }
 }

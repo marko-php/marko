@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Marko\Layout;
 
+use Error;
 use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Module\ModuleRepositoryInterface;
-use Error;
 use Marko\Layout\Attributes\Component;
 use Marko\Layout\Exceptions\DuplicateComponentException;
 use ReflectionClass;

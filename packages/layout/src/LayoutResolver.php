@@ -21,8 +21,7 @@ readonly class LayoutResolver
      *
      * @param class-string $controllerClass
      * @return array{componentClass: class-string, attribute: Component}
-     * @throws LayoutNotFoundException
-     * @throws ReflectionException
+     * @throws LayoutNotFoundException|ReflectionException
      */
     public function resolve(string $controllerClass, string $method): array
     {

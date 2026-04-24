@@ -48,16 +48,16 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         ];
 
         if ($this->config->sslRootCert !== null) {
-            $options[Pdo\Mysql::ATTR_SSL_CA] = $this->config->sslRootCert;
-            $options[Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT] = $this->config->sslVerifyServerCert;
+            $options[PDO\Mysql::ATTR_SSL_CA] = $this->config->sslRootCert;
+            $options[PDO\Mysql::ATTR_SSL_VERIFY_SERVER_CERT] = $this->config->sslVerifyServerCert;
         }
 
         if ($this->config->sslCert !== null) {
-            $options[Pdo\Mysql::ATTR_SSL_CERT] = $this->config->sslCert;
+            $options[PDO\Mysql::ATTR_SSL_CERT] = $this->config->sslCert;
         }
 
         if ($this->config->sslKey !== null) {
-            $options[Pdo\Mysql::ATTR_SSL_KEY] = $this->config->sslKey;
+            $options[PDO\Mysql::ATTR_SSL_KEY] = $this->config->sslKey;
         }
 
         try {

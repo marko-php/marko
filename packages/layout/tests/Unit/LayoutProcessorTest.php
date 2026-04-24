@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Marko\Layout\Attributes\Component;
-use Marko\Layout\Tests\Unit\Helpers;
 use Marko\Layout\Attributes\Layout;
 use Marko\Layout\ComponentCollection;
 use Marko\Layout\ComponentCollectorInterface;
@@ -13,6 +12,7 @@ use Marko\Layout\Exceptions\SlotNotFoundException;
 use Marko\Layout\HandleResolver;
 use Marko\Layout\LayoutProcessor;
 use Marko\Layout\LayoutResolver;
+use Marko\Layout\Tests\Unit\Helpers;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\View\ViewInterface;

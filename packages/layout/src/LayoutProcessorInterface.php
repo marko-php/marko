@@ -18,10 +18,7 @@ interface LayoutProcessorInterface
      *
      * @param class-string $controllerClass
      * @param array<string, mixed> $routeParameters
-     * @throws SlotNotFoundException
-     * @throws CircularSlotException
-     * @throws LayoutNotFoundException
-     * @throws AmbiguousSortOrderException
+     * @throws SlotNotFoundException|CircularSlotException|LayoutNotFoundException|AmbiguousSortOrderException
      */
     public function process(
         string $controllerClass,

@@ -64,14 +64,19 @@ Marko enables MySQL strict mode by default. This ensures data integrity by rejec
 
 ### JSON Columns
 
-MySQL's native JSON type is fully supported. Use the `type: 'json'` parameter in your `#[Column]` attribute:
+MySQL's native `JSON` type is fully supported. Use `type: 'json'` on any `array` or `?array` property:
 
 ```php
 use Marko\Database\Attributes\Column;
 
 #[Column(type: 'json')]
 public array $metadata = [];
+
+#[Column(type: 'json')]
+public ?array $settings = null;
 ```
+
+Values are serialized and deserialized automatically. The root value must be an array --- top-level JSON scalars are not supported. See [marko/database](/docs/packages/database/) for JSON query operators (`whereJsonContains`, arrow-path syntax, etc.) and indexing guidance.
 
 ## Usage
 
@@ -146,7 +151,19 @@ class MyService
 | `insert(array $data): int` | Insert a row and return the last insert ID |
 | `update(array $data): int` | Update matching rows and return the affected count |
 | `delete(): int` | Delete matching rows and return the affected count |
-| `count(): int` | Return the count of matching rows |
+| `count(?string $column = null): int` | Return the count of matching rows (`COUNT(*)` or `COUNT(column)`) |
+| `sum(string $column): int\|float` | Return the sum of a column |
+| `avg(string $column): int\|float` | Return the average of a column |
+| `min(string $column): int\|float` | Return the minimum value of a column |
+| `max(string $column): int\|float` | Return the maximum value of a column |
+| `distinct(): static` | Add DISTINCT to the SELECT clause |
+| `groupBy(string ...$columns): static` | Add GROUP BY columns |
+| `having(string $expression, array $bindings = []): static` | Add a HAVING condition |
+| `union(QueryBuilderInterface $query): static` | Append a UNION (deduplicates rows) |
+| `unionAll(QueryBuilderInterface $query): static` | Append a UNION ALL (keeps duplicates) |
+| `whereJsonContains(string $column, mixed $value): static` | WHERE JSON array contains value |
+| `whereJsonExists(string $path): static` | WHERE JSON key/path exists |
+| `whereJsonMissing(string $path): static` | WHERE JSON key/path does not exist |
 | `raw(string $sql, array $bindings = []): array` | Execute raw SQL |
 
 ### SQL Generator

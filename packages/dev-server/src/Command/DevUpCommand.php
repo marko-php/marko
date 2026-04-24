@@ -47,7 +47,7 @@ readonly class DevUpCommand implements CommandInterface
         if (!preg_match('/\A[a-zA-Z0-9.\-:]+\z/', $host)) {
             throw new DevServerException(
                 message: "Invalid host value: '$host'",
-                suggestion: "Use a valid hostname or IP address, e.g. --host=0.0.0.0 or --host=localhost",
+                suggestion: 'Use a valid hostname or IP address, e.g. --host=0.0.0.0 or --host=localhost',
             );
         }
         $detach = !$foreground && ($input->hasOption('detach') || $input->hasOption('d') || $this->config->getBool(
@@ -164,8 +164,8 @@ readonly class DevUpCommand implements CommandInterface
         }
 
         // PHP server (always) — multiple workers needed for SSE
-        $phpCommand = "env PHP_CLI_SERVER_WORKERS=4 php -S {$host}:{$port} -t public/";
-        $output->writeLine("  Starting PHP server: php -S {$host}:{$port}");
+        $phpCommand = "env PHP_CLI_SERVER_WORKERS=4 php -S $host:$port -t public/";
+        $output->writeLine("  Starting PHP server: php -S $host:$port");
         $pid = $startProcess('php', $phpCommand);
 
         // In foreground mode, verify PHP server is alive — if it died, port is likely in use.
