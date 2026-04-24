@@ -20,5 +20,6 @@ readonly class Column
         public ?string $references = null,
         public ?string $onDelete = null,
         public ?string $onUpdate = null,
+        public ?bool $nullable = null,
     ) {}
 }

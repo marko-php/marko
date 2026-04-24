@@ -4,87 +4,10 @@ declare(strict_types=1);
 
 namespace Marko\Database\PgSql\Tests\Query;
 
-use Closure;
-use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Exceptions\UnionShapeMismatchException;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilder;
 use Marko\Database\Query\QueryBuilderInterface;
 use ReflectionClass;
-use RuntimeException;
-
-/**
- * Mock connection that records queries and returns expected results.
- */
-class MockConnection implements ConnectionInterface
-{
-    public string $lastQuerySql = '';
-
-    /** @var array */
-    public array $lastQueryBindings = [];
-
-    public string $lastExecuteSql = '';
-
-    /** @var array */
-    public array $lastExecuteBindings = [];
-
-    /**
-     * @param array<array<string, mixed>> $queryReturn
-     */
-    public function __construct(
-        private readonly array $queryReturn = [],
-        private readonly int $executeReturn = 0,
-        private readonly ?Closure $queryCallback = null,
-        private readonly ?Closure $executeCallback = null,
-    ) {}
-
-    public function connect(): void {}
-
-    public function disconnect(): void {}
-
-    public function isConnected(): bool
-    {
-        return true;
-    }
-
-    public function query(
-        string $sql,
-        array $bindings = [],
-    ): array {
-        $this->lastQuerySql = $sql;
-        $this->lastQueryBindings = $bindings;
-
-        if ($this->queryCallback !== null) {
-            ($this->queryCallback)($sql, $bindings);
-        }
-
-        return $this->queryReturn;
-    }
-
-    public function execute(
-        string $sql,
-        array $bindings = [],
-    ): int {
-        $this->lastExecuteSql = $sql;
-        $this->lastExecuteBindings = $bindings;
-
-        if ($this->executeCallback !== null) {
-            ($this->executeCallback)($sql, $bindings);
-        }
-
-        return $this->executeReturn;
-    }
-
-    public function prepare(
-        string $sql,
-    ): StatementInterface {
-        throw new RuntimeException('Not implemented');
-    }
-
-    public function lastInsertId(): int
-    {
-        return 0;
-    }
-}
 
 describe('PgSqlQueryBuilder', function (): void {
     it('implements QueryBuilderInterface', function (): void {
@@ -298,5 +221,136 @@ describe('PgSqlQueryBuilder', function (): void {
             ->and($result)->toBe([
                 ['id' => 1, 'name' => 'John', 'age' => 25],
             ]);
+    });
+
+    it('emits SELECT DISTINCT when distinct() is called', function (): void {
+        $connection = new MockConnection();
+
+        $builder = new PgSqlQueryBuilder($connection);
+        $builder
+            ->table('users')
+            ->select('status')
+            ->distinct()
+            ->get();
+
+        expect($connection->lastQuerySql)->toBe('SELECT DISTINCT "status" FROM "users"');
+    });
+
+    it('combines two queries with UNION producing deduplicated rows', function (): void {
+        $connection = new MockConnection(
+            queryReturn: [['name' => 'Alice'], ['name' => 'Bob']],
+        );
+
+        $left = new PgSqlQueryBuilder($connection);
+        $left->table('users')->select('name');
+
+        $right = new PgSqlQueryBuilder(new MockConnection());
+        $right->table('admins')->select('name');
+
+        $left->union($right)->get();
+
+        expect($connection->lastQuerySql)->toBe(
+            '(SELECT "name" FROM "users") UNION (SELECT "name" FROM "admins")',
+        );
+    });
+
+    it('throws UnionShapeMismatchException when the two queries select different numbers of columns', function (): void {
+        $connection = new MockConnection();
+
+        $left = new PgSqlQueryBuilder($connection);
+        $left->table('users')->select('name', 'email');
+
+        $right = new PgSqlQueryBuilder(new MockConnection());
+        $right->table('admins')->select('name');
+
+        expect(fn () => $left->union($right))
+            ->toThrow(UnionShapeMismatchException::class);
+    });
+
+    it('combines two queries with UNION ALL preserving duplicates', function (): void {
+        $connection = new MockConnection(
+            queryReturn: [['name' => 'Alice'], ['name' => 'Alice']],
+        );
+
+        $left = new PgSqlQueryBuilder($connection);
+        $left->table('users')->select('name');
+
+        $right = new PgSqlQueryBuilder(new MockConnection());
+        $right->table('admins')->select('name');
+
+        $left->unionAll($right)->get();
+
+        expect($connection->lastQuerySql)->toBe(
+            '(SELECT "name" FROM "users") UNION ALL (SELECT "name" FROM "admins")',
+        );
+    });
+
+    it('composes UNION with ORDER BY applied to the combined result', function (): void {
+        $connection = new MockConnection(
+            queryReturn: [['name' => 'Alice'], ['name' => 'Bob']],
+        );
+
+        $left = new PgSqlQueryBuilder($connection);
+        $left->table('users')->select('name');
+
+        $right = new PgSqlQueryBuilder(new MockConnection());
+        $right->table('admins')->select('name');
+
+        $left->union($right)->orderBy('name', 'ASC')->get();
+
+        expect($connection->lastQuerySql)->toBe(
+            '(SELECT "name" FROM "users") UNION (SELECT "name" FROM "admins") ORDER BY "name" ASC',
+        );
+    });
+
+    it('composes UNION with LIMIT applied to the combined result', function (): void {
+        $connection = new MockConnection(
+            queryReturn: [['name' => 'Alice']],
+        );
+
+        $left = new PgSqlQueryBuilder($connection);
+        $left->table('users')->select('name');
+
+        $right = new PgSqlQueryBuilder(new MockConnection());
+        $right->table('admins')->select('name');
+
+        $left->union($right)->limit(1)->get();
+
+        expect($connection->lastQuerySql)->toBe(
+            '(SELECT "name" FROM "users") UNION (SELECT "name" FROM "admins") LIMIT 1',
+        );
+    });
+
+    it('parameterizes bindings from both sides of the UNION safely', function (): void {
+        $connection = new MockConnection(
+            queryReturn: [['name' => 'Alice'], ['name' => 'Bob']],
+        );
+
+        $left = new PgSqlQueryBuilder($connection);
+        $left->table('users')->select('name')->where('status', '=', 'active');
+
+        $right = new PgSqlQueryBuilder(new MockConnection());
+        $right->table('admins')->select('name')->where('role', '=', 'superadmin');
+
+        $left->union($right)->get();
+
+        expect($connection->lastQuerySql)->toBe(
+            '(SELECT "name" FROM "users" WHERE "status" = ?) UNION (SELECT "name" FROM "admins" WHERE "role" = ?)',
+        )
+            ->and($connection->lastQueryBindings)->toBe(['active', 'superadmin']);
+    });
+
+    it('quotes both the column and the alias using driver-specific identifier quoting', function (): void {
+        $connection = new MockConnection();
+        $builder = new PgSqlQueryBuilder($connection);
+
+        $builder
+            ->table('users')
+            ->select('users.name as author_name')
+            ->get();
+
+        expect($connection->lastQuerySql)->toBe(
+            'SELECT "users"."name" AS "author_name" FROM "users"',
+        );
     });
 });

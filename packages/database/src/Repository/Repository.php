@@ -8,12 +8,12 @@ use BackedEnum;
 use DateTimeImmutable;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
-use Marko\Database\Entity\PropertyMetadata;
 use Marko\Database\Entity\RelationshipLoader;
 use Marko\Database\Events\EntityCreated;
 use Marko\Database\Events\EntityCreating;
@@ -21,11 +21,13 @@ use Marko\Database\Events\EntityDeleted;
 use Marko\Database\Events\EntityDeleting;
 use Marko\Database\Events\EntityUpdated;
 use Marko\Database\Events\EntityUpdating;
+use Marko\Database\Exceptions\BatchInsertException;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Query\QuerySpecification;
 use ReflectionClass;
+use Throwable;
 
 /**
  * Abstract base class for entity repositories.
@@ -108,10 +110,9 @@ abstract class Repository implements RepositoryInterface
      * @return TEntity|null
      */
     public function find(
-        int $id,
+        int|string $id,
     ): ?Entity {
-        $primaryKey = $this->metadata->getPrimaryKeyProperty();
-        $columnName = $primaryKey?->columnName ?? 'id';
+        $columnName = $this->metadata->getPrimaryKeyProperty()->columnName;
 
         $sql = sprintf(
             'SELECT * FROM %s WHERE %s = ?',
@@ -143,7 +144,7 @@ abstract class Repository implements RepositoryInterface
      * @throws RepositoryException When entity is not found
      */
     public function findOrFail(
-        int $id,
+        int|string $id,
     ): Entity {
         $entity = $this->find($id);
 
@@ -252,6 +253,138 @@ abstract class Repository implements RepositoryInterface
     }
 
     /**
+     * Insert multiple entities in a single multi-row INSERT statement.
+     *
+     * @param array<Entity> $entities
+     * @throws BatchInsertException|RepositoryException
+     */
+    public function insertBatch(array $entities): void
+    {
+        if (count($entities) === 0) {
+            throw BatchInsertException::emptyBatch();
+        }
+
+        $firstClass = $entities[0]::class;
+
+        foreach ($entities as $index => $entity) {
+            if ($entity::class !== $firstClass) {
+                throw BatchInsertException::heterogeneousBatch($firstClass, $entity::class, $index);
+            }
+        }
+
+        $this->validateEntityType($entities[0]);
+
+        // Fire Creating events for each entity before insert
+        foreach ($entities as $entity) {
+            $this->eventDispatcher?->dispatch(new EntityCreating($entity, static::ENTITY_CLASS));
+        }
+
+        // Build column set from first entity
+        $firstData = $this->extractBatchRow($entities[0]);
+        $columns = array_keys($firstData);
+        $expectedColumns = $columns;
+
+        // Verify column consistency across the batch
+        foreach ($entities as $index => $entity) {
+            if ($index === 0) {
+                continue;
+            }
+
+            $rowData = $this->extractBatchRow($entity);
+            $rowColumns = array_keys($rowData);
+
+            if ($rowColumns !== $expectedColumns) {
+                throw BatchInsertException::columnSetMismatch($firstClass, $index);
+            }
+        }
+
+        // Compile all row data
+        $allRows = array_map(fn (Entity $e) => $this->extractBatchRow($e), $entities);
+
+        // Build multi-row INSERT SQL
+        $placeholderRow = '(' . implode(', ', array_fill(0, count($columns), '?')) . ')';
+        $placeholders = implode(', ', array_fill(0, count($allRows), $placeholderRow));
+
+        $sql = sprintf(
+            'INSERT INTO %s (%s) VALUES %s',
+            $this->metadata->tableName,
+            implode(', ', $columns),
+            $placeholders,
+        );
+
+        // Flatten all row values into a single bindings array
+        $bindings = [];
+        foreach ($allRows as $row) {
+            foreach ($row as $value) {
+                $bindings[] = $value;
+            }
+        }
+
+        // Wrap in transaction if none is active
+        $ownsTransaction = false;
+        if ($this->connection instanceof TransactionInterface && !$this->connection->inTransaction()) {
+            $this->connection->beginTransaction();
+            $ownsTransaction = true;
+        }
+
+        try {
+            $this->connection->execute($sql, $bindings);
+
+            // Populate auto-increment IDs (MySQL strategy: LAST_INSERT_ID + row offset)
+            $pkProperty = $this->metadata->getPrimaryKeyProperty();
+            if ($pkProperty?->isAutoIncrement === true) {
+                $firstId = $this->connection->lastInsertId();
+                $reflection = new ReflectionClass($entities[0]);
+
+                foreach ($entities as $offset => $entity) {
+                    $property = $reflection->getProperty($this->metadata->primaryKey);
+                    $property->setValue($entity, $firstId + $offset);
+                }
+            }
+
+            // Register original values for dirty tracking
+            foreach ($entities as $entity) {
+                $this->hydrator->registerOriginalValues($entity, $this->metadata);
+            }
+
+            if ($ownsTransaction) {
+                $this->connection->commit();
+            }
+        } catch (Throwable $e) {
+            if ($ownsTransaction) {
+                $this->connection->rollback();
+            }
+
+            throw $e;
+        }
+
+        // Fire Created events for each entity after insert
+        foreach ($entities as $entity) {
+            $this->eventDispatcher?->dispatch(new EntityCreated($entity, static::ENTITY_CLASS));
+        }
+    }
+
+    /**
+     * Extract row data for a single entity, excluding auto-increment PK if null.
+     *
+     * @return array<string, mixed>
+     */
+    private function extractBatchRow(Entity $entity): array
+    {
+        $data = $this->hydrator->extract($entity, $this->metadata);
+
+        $pkProperty = $this->metadata->getPrimaryKeyProperty();
+        if ($pkProperty?->isAutoIncrement === true) {
+            $pkColumn = $pkProperty->columnName;
+            if ($data[$pkColumn] === null) {
+                unset($data[$pkColumn]);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * Delete an entity.
      *
      * @throws RepositoryException
@@ -261,8 +394,7 @@ abstract class Repository implements RepositoryInterface
     ): void {
         $this->validateEntityType($entity);
 
-        $primaryKey = $this->metadata->getPrimaryKeyProperty();
-        $columnName = $primaryKey?->columnName ?? 'id';
+        $columnName = $this->metadata->getPrimaryKeyProperty()->columnName;
 
         $reflection = new ReflectionClass($entity);
         $property = $reflection->getProperty($this->metadata->primaryKey);
@@ -309,7 +441,10 @@ abstract class Repository implements RepositoryInterface
     /**
      * Return an EntityCollection of entities matching all given specifications.
      *
-     * Specifications are applied in order to a fresh query builder.
+     * Specifications are applied in order to the RepositoryQueryBuilder wrapper
+     * so that specs can call $builder->with() to declare eager loading.
+     * Call-site relationships from with()->matching() are pre-seeded and merged
+     * with any spec-declared relationships without duplicates.
      *
      * @throws RepositoryException If no query builder factory was provided
      */
@@ -322,29 +457,40 @@ abstract class Repository implements RepositoryInterface
         $queryBuilder = $this->queryBuilderFactory->create();
         $queryBuilder->table($this->metadata->tableName);
 
-        foreach ($specifications as $specification) {
-            $specification->apply($queryBuilder);
+        $repositoryQueryBuilder = new RepositoryQueryBuilder(
+            $queryBuilder,
+            $this->hydrator,
+            $this->metadata,
+            static::ENTITY_CLASS,
+            $this->relationshipLoader,
+        );
+
+        // Pre-seed call-site relationships (from $repo->with(...)->matching(...))
+        if ($this->pendingRelationships !== []) {
+            $repositoryQueryBuilder->with(...$this->pendingRelationships);
         }
 
-        $rows = $queryBuilder->get();
+        foreach ($specifications as $specification) {
+            $specification->apply($repositoryQueryBuilder);
+        }
 
-        return new EntityCollection(
-            array_map(
-                fn (array $row): Entity => $this->hydrator->hydrate(
-                    static::ENTITY_CLASS,
-                    $row,
-                    $this->metadata,
-                ),
-                $rows,
-            ),
-        );
+        return $repositoryQueryBuilder->getEntities();
     }
 
     /**
      * Count all entities in the repository.
+     *
+     * Delegates to the query builder when a factory is configured, otherwise
+     * falls back to a raw SQL query. The raw-SQL path exists because Repository
+     * can be constructed without a QueryBuilderFactory (e.g. in lightweight
+     * contexts that only need find/save), and we must not break that contract.
      */
     public function count(): int
     {
+        if ($this->queryBuilderFactory !== null) {
+            return $this->query()->count();
+        }
+
         $sql = sprintf(
             'SELECT COUNT(*) as aggregate FROM %s',
             $this->metadata->tableName,
@@ -359,7 +505,7 @@ abstract class Repository implements RepositoryInterface
      * Check if an entity with the given ID exists.
      */
     public function exists(
-        int $id,
+        int|string $id,
     ): bool {
         return $this->find(id: $id) !== null;
     }
@@ -381,7 +527,7 @@ abstract class Repository implements RepositoryInterface
     protected function isColumnUnique(
         string $column,
         mixed $value,
-        ?int $excludeId = null,
+        int|string|null $excludeId = null,
     ): bool {
         $sql = sprintf(
             'SELECT * FROM %s WHERE %s = ?',
@@ -391,7 +537,8 @@ abstract class Repository implements RepositoryInterface
         $bindings = [$value];
 
         if ($excludeId !== null) {
-            $sql .= ' AND id != ?';
+            $pkColumn = $this->metadata->getPrimaryKeyProperty()->columnName;
+            $sql .= " AND $pkColumn != ?";
             $bindings[] = $excludeId;
         }
 
@@ -447,8 +594,7 @@ abstract class Repository implements RepositoryInterface
     protected function update(
         Entity $entity,
     ): void {
-        $primaryKey = $this->metadata->getPrimaryKeyProperty();
-        $pkColumn = $primaryKey?->columnName ?? 'id';
+        $pkColumn = $this->metadata->getPrimaryKeyProperty()->columnName;
         $propertyToColumn = $this->metadata->getPropertyToColumnMap();
 
         // Get the dirty properties
@@ -467,10 +613,9 @@ abstract class Repository implements RepositoryInterface
             $property = $reflection->getProperty($propertyName);
             $value = $property->getValue($entity);
             $columnName = $propertyToColumn[$propertyName];
-            $propMeta = $this->metadata->getProperty($propertyName);
 
             // Convert value to DB format
-            $data[$columnName] = $this->convertToDbValue($value, $propMeta);
+            $data[$columnName] = $this->convertToDbValue($value);
         }
 
         // Get the primary key value for the WHERE clause
@@ -503,7 +648,6 @@ abstract class Repository implements RepositoryInterface
      */
     private function convertToDbValue(
         mixed $value,
-        ?PropertyMetadata $propMeta,
     ): mixed {
         if ($value === null) {
             return null;

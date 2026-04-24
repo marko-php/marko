@@ -54,8 +54,11 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
 
         public function __construct(private readonly array $rows) {}
 
-        public function where(string $column, string $operator, mixed $value): static
-        {
+        public function where(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static {
             $this->wheresCalled[] = "$column $operator $value";
 
             return $this;
@@ -71,8 +74,10 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereIn(string $column, array $values): static
-        {
+        public function whereIn(
+            string $column,
+            array $values,
+        ): static {
             return $this;
         }
 
@@ -86,28 +91,60 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function orWhere(string $column, string $operator, mixed $value): static
+        public function whereJsonContains(string $path, mixed $value): static
         {
             return $this;
         }
 
-        public function join(string $table, string $first, string $operator, string $second): static
+        public function whereJsonExists(string $path): static
         {
             return $this;
         }
 
-        public function leftJoin(string $table, string $first, string $operator, string $second): static
+        public function whereJsonMissing(string $path): static
         {
             return $this;
         }
 
-        public function rightJoin(string $table, string $first, string $operator, string $second): static
-        {
+        public function orWhere(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static {
             return $this;
         }
 
-        public function orderBy(string $column, string $direction = 'ASC'): static
-        {
+        public function join(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function leftJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function rightJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function orderBy(
+            string $column,
+            string $direction = 'ASC',
+        ): static {
             return $this;
         }
 
@@ -119,6 +156,31 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
         public function offset(int $offset): static
         {
             return $this;
+        }
+
+        public function distinct(): static
+        {
+            return $this;
+        }
+
+        public function union(QueryBuilderInterface $other): static
+        {
+            return $this;
+        }
+
+        public function unionAll(QueryBuilderInterface $other): static
+        {
+            return $this;
+        }
+
+        public function getColumnCount(): int
+        {
+            return 1;
+        }
+
+        public function compileSubquery(array &$bindings): string
+        {
+            return '';
         }
 
         public function get(): array
@@ -146,14 +208,46 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return 0;
         }
 
-        public function count(): int
+        public function count(?string $column = null): int
         {
             return count($this->rows);
         }
 
-        public function raw(string $sql, array $bindings = []): array
-        {
+        public function raw(
+            string $sql,
+            array $bindings = [],
+        ): array {
             return [];
+        }
+
+        public function groupBy(string ...$columns): static
+        {
+            return $this;
+        }
+
+        public function having(string $expression, array $bindings = []): static
+        {
+            return $this;
+        }
+
+        public function min(string $column): int|float|null
+        {
+            return null;
+        }
+
+        public function max(string $column): int|float|null
+        {
+            return null;
+        }
+
+        public function sum(string $column): int|float|null
+        {
+            return null;
+        }
+
+        public function avg(string $column): int|float|null
+        {
+            return null;
         }
     };
 }
@@ -174,13 +268,17 @@ function makeRepository(QueryBuilderInterface $stubBuilder): ProductRepository
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
-        {
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
             return [];
         }
 
-        public function execute(string $sql, array $bindings = []): int
-        {
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
             return 0;
         }
 
@@ -321,13 +419,17 @@ describe('Repository matching()', function (): void {
                 return true;
             }
 
-            public function query(string $sql, array $bindings = []): array
-            {
+            public function query(
+                string $sql,
+                array $bindings = [],
+            ): array {
                 return [];
             }
 
-            public function execute(string $sql, array $bindings = []): int
-            {
+            public function execute(
+                string $sql,
+                array $bindings = [],
+            ): int {
                 return 0;
             }
 

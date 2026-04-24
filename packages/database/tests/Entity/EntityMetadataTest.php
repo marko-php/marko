@@ -150,6 +150,7 @@ it('gets property metadata by name', function (): void {
     $metadata = new EntityMetadata(
         entityClass: 'App\Blog\Entity\Post',
         tableName: 'posts',
+        primaryKey: 'id',
         properties: $properties,
     );
 
@@ -194,6 +195,7 @@ it('gets column to property map', function (): void {
     $metadata = new EntityMetadata(
         entityClass: 'App\Entity\User',
         tableName: 'users',
+        primaryKey: 'userId',
         properties: $properties,
     );
 
@@ -220,6 +222,7 @@ it('gets property to column map', function (): void {
     $metadata = new EntityMetadata(
         entityClass: 'App\Entity\User',
         tableName: 'users',
+        primaryKey: 'userId',
         properties: $properties,
     );
 

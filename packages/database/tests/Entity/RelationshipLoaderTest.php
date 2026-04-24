@@ -263,13 +263,18 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function where(string $column, string $operator, mixed $value): static
-        {
+        public function where(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static {
             return $this;
         }
 
-        public function whereIn(string $column, array $values): static
-        {
+        public function whereIn(
+            string $column,
+            array $values,
+        ): static {
             $this->capturedColumns[] = $column;
             $this->capturedValues[] = $values;
 
@@ -286,28 +291,60 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
-        public function orWhere(string $column, string $operator, mixed $value): static
+        public function whereJsonContains(string $path, mixed $value): static
         {
             return $this;
         }
 
-        public function join(string $table, string $first, string $operator, string $second): static
+        public function whereJsonExists(string $path): static
         {
             return $this;
         }
 
-        public function leftJoin(string $table, string $first, string $operator, string $second): static
+        public function whereJsonMissing(string $path): static
         {
             return $this;
         }
 
-        public function rightJoin(string $table, string $first, string $operator, string $second): static
-        {
+        public function orWhere(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static {
             return $this;
         }
 
-        public function orderBy(string $column, string $direction = 'ASC'): static
-        {
+        public function join(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function leftJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function rightJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function orderBy(
+            string $column,
+            string $direction = 'ASC',
+        ): static {
             return $this;
         }
 
@@ -319,6 +356,31 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
         public function offset(int $offset): static
         {
             return $this;
+        }
+
+        public function distinct(): static
+        {
+            return $this;
+        }
+
+        public function union(QueryBuilderInterface $other): static
+        {
+            return $this;
+        }
+
+        public function unionAll(QueryBuilderInterface $other): static
+        {
+            return $this;
+        }
+
+        public function getColumnCount(): int
+        {
+            return 1;
+        }
+
+        public function compileSubquery(array &$bindings): string
+        {
+            return '';
         }
 
         public function get(): array
@@ -346,14 +408,46 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return 0;
         }
 
-        public function count(): int
+        public function count(?string $column = null): int
         {
             return count($this->rows);
         }
 
-        public function raw(string $sql, array $bindings = []): array
-        {
+        public function raw(
+            string $sql,
+            array $bindings = [],
+        ): array {
             return [];
+        }
+
+        public function groupBy(string ...$columns): static
+        {
+            return $this;
+        }
+
+        public function having(string $expression, array $bindings = []): static
+        {
+            return $this;
+        }
+
+        public function min(string $column): int|float|null
+        {
+            return null;
+        }
+
+        public function max(string $column): int|float|null
+        {
+            return null;
+        }
+
+        public function sum(string $column): int|float|null
+        {
+            return null;
+        }
+
+        public function avg(string $column): int|float|null
+        {
+            return null;
         }
     };
 }
@@ -403,13 +497,18 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return $this;
                 }
 
-                public function where(string $column, string $operator, mixed $value): static
-                {
+                public function where(
+                    string $column,
+                    string $operator,
+                    mixed $value,
+                ): static {
                     return $this;
                 }
 
-                public function whereIn(string $column, array $values): static
-                {
+                public function whereIn(
+                    string $column,
+                    array $values,
+                ): static {
                     $this->queries[] = ['column' => $column, 'values' => $values];
 
                     return $this;
@@ -425,28 +524,60 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return $this;
                 }
 
-                public function orWhere(string $column, string $operator, mixed $value): static
+                public function whereJsonContains(string $path, mixed $value): static
                 {
                     return $this;
                 }
 
-                public function join(string $table, string $first, string $operator, string $second): static
+                public function whereJsonExists(string $path): static
                 {
                     return $this;
                 }
 
-                public function leftJoin(string $table, string $first, string $operator, string $second): static
+                public function whereJsonMissing(string $path): static
                 {
                     return $this;
                 }
 
-                public function rightJoin(string $table, string $first, string $operator, string $second): static
-                {
+                public function orWhere(
+                    string $column,
+                    string $operator,
+                    mixed $value,
+                ): static {
                     return $this;
                 }
 
-                public function orderBy(string $column, string $direction = 'ASC'): static
-                {
+                public function join(
+                    string $table,
+                    string $first,
+                    string $operator,
+                    string $second,
+                ): static {
+                    return $this;
+                }
+
+                public function leftJoin(
+                    string $table,
+                    string $first,
+                    string $operator,
+                    string $second,
+                ): static {
+                    return $this;
+                }
+
+                public function rightJoin(
+                    string $table,
+                    string $first,
+                    string $operator,
+                    string $second,
+                ): static {
+                    return $this;
+                }
+
+                public function orderBy(
+                    string $column,
+                    string $direction = 'ASC',
+                ): static {
                     return $this;
                 }
 
@@ -458,6 +589,31 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                 public function offset(int $offset): static
                 {
                     return $this;
+                }
+
+                public function distinct(): static
+                {
+                    return $this;
+                }
+
+                public function union(QueryBuilderInterface $other): static
+                {
+                    return $this;
+                }
+
+                public function unionAll(QueryBuilderInterface $other): static
+                {
+                    return $this;
+                }
+
+                public function getColumnCount(): int
+                {
+                    return 1;
+                }
+
+                public function compileSubquery(array &$bindings): string
+                {
+                    return '';
                 }
 
                 public function get(): array
@@ -485,14 +641,46 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                     return 0;
                 }
 
-                public function count(): int
+                public function count(?string $column = null): int
                 {
                     return count($this->rows);
                 }
 
-                public function raw(string $sql, array $bindings = []): array
-                {
+                public function raw(
+                    string $sql,
+                    array $bindings = [],
+                ): array {
                     return [];
+                }
+
+                public function groupBy(string ...$columns): static
+                {
+                    return $this;
+                }
+
+                public function having(string $expression, array $bindings = []): static
+                {
+                    return $this;
+                }
+
+                public function min(string $column): int|float|null
+                {
+                    return null;
+                }
+
+                public function max(string $column): int|float|null
+                {
+                    return null;
+                }
+
+                public function sum(string $column): int|float|null
+                {
+                    return null;
+                }
+
+                public function avg(string $column): int|float|null
+                {
+                    return null;
                 }
             };
         }
@@ -1124,32 +1312,35 @@ it('wraps HasMany results in EntityCollection when property is typed as EntityCo
         ->and($author->posts->toArray()[1]->title)->toBe('Post B');
 });
 
-it('assigns empty EntityCollection when no related entities found for EntityCollection-typed property', function (): void {
-    $author = new LoaderAuthorWithCollection();
-    $author->id = 1;
-    $author->name = 'Alice';
+it(
+    'assigns empty EntityCollection when no related entities found for EntityCollection-typed property',
+    function (): void {
+        $author = new LoaderAuthorWithCollection();
+        $author->id = 1;
+        $author->name = 'Alice';
 
-    $relationship = new RelationshipMetadata(
-        propertyName: 'posts',
-        type: RelationshipType::HasMany,
-        relatedClass: LoaderPost::class,
-        foreignKey: 'userId',
-    );
+        $relationship = new RelationshipMetadata(
+            propertyName: 'posts',
+            type: RelationshipType::HasMany,
+            relatedClass: LoaderPost::class,
+            foreignKey: 'userId',
+        );
 
-    $authorMeta = makeAuthorWithCollectionMetadata();
-    $postMeta = makePostMetadataForLoader();
+        $authorMeta = makeAuthorWithCollectionMetadata();
+        $postMeta = makePostMetadataForLoader();
 
-    $factory = makeParentMetadataFactory([
-        LoaderAuthorWithCollection::class => $authorMeta,
-        LoaderPost::class => $postMeta,
-    ]);
+        $factory = makeParentMetadataFactory([
+            LoaderAuthorWithCollection::class => $authorMeta,
+            LoaderPost::class => $postMeta,
+        ]);
 
-    $qbFactory = makeFakeQueryBuilderFactory([]);
+        $qbFactory = makeFakeQueryBuilderFactory([]);
 
-    $loader = makeLoader($qbFactory, $factory);
-    $loader->load([$author], $relationship, $authorMeta);
+        $loader = makeLoader($qbFactory, $factory);
+        $loader->load([$author], $relationship, $authorMeta);
 
-    expect($author->posts)->toBeInstanceOf(EntityCollection::class)
-        ->and($author->posts)->toHaveCount(0)
-        ->and($author->posts->isEmpty())->toBeTrue();
-});
+        expect($author->posts)->toBeInstanceOf(EntityCollection::class)
+            ->and($author->posts)->toHaveCount(0)
+            ->and($author->posts->isEmpty())->toBeTrue();
+    },
+);

@@ -13,6 +13,7 @@ use Marko\Database\Attributes\HasOne;
 use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Exceptions\EntityException;
+use Marko\Database\Exceptions\MissingPrimaryKeyException;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionProperty;
@@ -61,7 +62,7 @@ class EntityMetadataFactory
         $indexes = [];
         $properties = [];
         $relationships = [];
-        $primaryKey = 'id';
+        $primaryKey = null;
 
         foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
             $relationship = $this->extractRelationship($property, $entityClass);
@@ -93,6 +94,19 @@ class EntityMetadataFactory
             // Convert BackedEnum default values to their backing value for database storage
             if ($default instanceof BackedEnum) {
                 $default = $default->value;
+            }
+
+            if ($columnAttr->type === 'json' && $phpType !== 'array') {
+                throw EntityException::jsonColumnTypeMismatch($entityClass, $propertyName, $phpType);
+            }
+
+            if ($columnAttr->type === 'json' && $columnAttr->nullable !== null && $columnAttr->nullable !== $nullable) {
+                throw EntityException::jsonColumnNullableMismatch(
+                    $entityClass,
+                    $propertyName,
+                    $columnAttr->nullable,
+                    $nullable,
+                );
             }
 
             if ($columnAttr->autoIncrement && !$columnAttr->primaryKey) {
@@ -132,11 +146,16 @@ class EntityMetadataFactory
                 isAutoIncrement: $columnAttr->autoIncrement,
                 enumClass: $enumClass,
                 default: $columnAttr->default ?? $default,
+                columnType: $columnAttr->type,
             );
         }
 
         if (count($columns) === 0) {
             throw EntityException::noColumns($entityClass);
+        }
+
+        if ($primaryKey === null) {
+            throw MissingPrimaryKeyException::noPrimaryKey($entityClass);
         }
 
         $indexAttributes = $reflection->getAttributes(Index::class);
@@ -225,8 +244,10 @@ class EntityMetadataFactory
      * @param class-string $entityClass
      * @throws EntityException
      */
-    private function extractRelationship(ReflectionProperty $property, string $entityClass): ?RelationshipMetadata
-    {
+    private function extractRelationship(
+        ReflectionProperty $property,
+        string $entityClass,
+    ): ?RelationshipMetadata {
         $propertyName = $property->getName();
 
         $hasOneAttrs = $property->getAttributes(HasOne::class);

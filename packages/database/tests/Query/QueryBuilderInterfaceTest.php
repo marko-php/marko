@@ -252,10 +252,18 @@ describe('QueryBuilderInterface', function (): void {
         expect($reflection->hasMethod('count'))->toBeTrue();
 
         $method = $reflection->getMethod('count');
-        expect($method->getParameters())->toBeEmpty();
+        $params = $method->getParameters();
+
+        // count() takes an optional nullable column argument
+        expect($params)->toHaveCount(1)
+            ->and($params[0]->getName())->toBe('column')
+            ->and($params[0]->isOptional())->toBeTrue()
+            ->and($params[0]->allowsNull())->toBeTrue()
+            ->and($params[0]->getDefaultValue())->toBeNull();
 
         $returnType = $method->getReturnType();
-        expect($returnType?->getName())->toBe('int');
+        expect($returnType?->getName())->toBe('int')
+            ->and($returnType?->allowsNull())->toBeFalse();
     });
 
     it('defines raw() method for raw SQL with bindings', function (): void {
@@ -268,5 +276,31 @@ describe('QueryBuilderInterface', function (): void {
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('array');
+    });
+
+    it('defines min(), max(), sum(), avg() aggregate methods returning int|float|null', function (): void {
+        $reflection = new ReflectionClass(QueryBuilderInterface::class);
+
+        foreach (['min', 'max', 'sum', 'avg'] as $method) {
+            expect($reflection->hasMethod($method))->toBeTrue();
+
+            $m = $reflection->getMethod($method);
+            $params = $m->getParameters();
+
+            expect($params)->toHaveCount(1)
+                ->and($params[0]->getName())->toBe('column')
+                ->and($params[0]->getType()?->getName())->toBe('string');
+
+            $returnType = $m->getReturnType();
+            expect($returnType)->toBeInstanceOf(ReflectionUnionType::class);
+
+            $typeNames = array_map(
+                fn (ReflectionNamedType $t) => $t->getName(),
+                $returnType->getTypes(),
+            );
+            expect($typeNames)->toContain('int')
+                ->and($typeNames)->toContain('float')
+                ->and($returnType->allowsNull())->toBeTrue();
+        }
     });
 });

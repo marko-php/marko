@@ -6,6 +6,8 @@ namespace Marko\Database\MySql\Tests\Query;
 
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Exceptions\UnionShapeMismatchException;
 use Marko\Database\MySql\Connection\MySqlConnection;
 use Marko\Database\MySql\Query\MySqlQueryBuilder;
 use Marko\Database\Query\QueryBuilderInterface;
@@ -322,5 +324,277 @@ describe('MySqlQueryBuilder', function (): void {
             ->toHaveCount(2)
             ->and($names)->toContain('Alice')
             ->and($names)->toContain('Charlie');
+    });
+
+    it('combines two queries with UNION producing deduplicated rows', function (): void {
+        // Verify SQL output: backtick quoting and parenthesized UNION form
+        $recordedSql = '';
+        $recordedBindings = [];
+
+        $recordingConnection = new class ($this->connection, $recordedSql, $recordedBindings) extends MySqlConnection
+        {
+            public function __construct(
+                private readonly ConnectionInterface $inner,
+                public string &$lastSql,
+                public array &$lastBindings,
+            ) {}
+
+            public function connect(): void {}
+
+            public function query(string $sql, array $bindings = []): array
+            {
+                $this->lastSql = $sql;
+                $this->lastBindings = $bindings;
+
+                return [];
+            }
+
+            public function execute(string $sql, array $bindings = []): int
+            {
+                return 0;
+            }
+        };
+
+        $left = (new MySqlQueryBuilder($recordingConnection))
+            ->table('users')
+            ->select('name')
+            ->where('status', '=', 'active');
+
+        $right = (new MySqlQueryBuilder($recordingConnection))
+            ->table('users')
+            ->select('name')
+            ->where('status', '=', 'inactive');
+
+        $left->union($right)->get();
+
+        expect($recordedSql)->toBe(
+            '(SELECT `name` FROM `users` WHERE `status` = ?) UNION (SELECT `name` FROM `users` WHERE `status` = ?)',
+        )
+            ->and($recordedBindings)->toBe(['active', 'inactive']);
+    });
+
+    it('throws UnionShapeMismatchException when the two queries select different numbers of columns', function (): void {
+        $left = (new MySqlQueryBuilder($this->connection))
+            ->table('users')
+            ->select('name', 'email');
+
+        $right = (new MySqlQueryBuilder($this->connection))
+            ->table('users')
+            ->select('name');
+
+        expect(fn () => $left->union($right))
+            ->toThrow(UnionShapeMismatchException::class);
+    });
+
+    it('combines two queries with UNION ALL preserving duplicates', function (): void {
+        $recordedSql = '';
+        $recordedBindings = [];
+
+        $recordingConnection = new class ($recordedSql, $recordedBindings) extends MySqlConnection
+        {
+            public function __construct(
+                public string &$lastSql,
+                public array &$lastBindings,
+            ) {}
+
+            public function connect(): void {}
+
+            public function query(string $sql, array $bindings = []): array
+            {
+                $this->lastSql = $sql;
+                $this->lastBindings = $bindings;
+
+                return [];
+            }
+
+            public function execute(string $sql, array $bindings = []): int
+            {
+                return 0;
+            }
+        };
+
+        $left = (new MySqlQueryBuilder($recordingConnection))
+            ->table('users')
+            ->select('name')
+            ->where('status', '=', 'active');
+
+        $right = (new MySqlQueryBuilder($recordingConnection))
+            ->table('users')
+            ->select('name')
+            ->where('status', '=', 'inactive');
+
+        $left->unionAll($right)->get();
+
+        expect($recordedSql)->toBe(
+            '(SELECT `name` FROM `users` WHERE `status` = ?) UNION ALL (SELECT `name` FROM `users` WHERE `status` = ?)',
+        )
+            ->and($recordedBindings)->toBe(['active', 'inactive']);
+    });
+
+    it('composes UNION with ORDER BY applied to the combined result', function (): void {
+        $recordedSql = '';
+        $recordingConnection = new class ($recordedSql) extends MySqlConnection
+        {
+            public function __construct(public string &$lastSql) {}
+
+            public function connect(): void {}
+
+            public function query(string $sql, array $bindings = []): array
+            {
+                $this->lastSql = $sql;
+
+                return [];
+            }
+
+            public function execute(string $sql, array $bindings = []): int
+            {
+                return 0;
+            }
+        };
+
+        $left = (new MySqlQueryBuilder($recordingConnection))
+            ->table('users')
+            ->select('name');
+
+        $right = (new MySqlQueryBuilder($recordingConnection))
+            ->table('admins')
+            ->select('name');
+
+        $left->union($right)->orderBy('name', 'ASC')->get();
+
+        expect($recordedSql)->toBe(
+            '(SELECT `name` FROM `users`) UNION (SELECT `name` FROM `admins`) ORDER BY `name` ASC',
+        );
+    });
+
+    it('composes UNION with LIMIT applied to the combined result', function (): void {
+        $recordedSql = '';
+        $recordingConnection = new class ($recordedSql) extends MySqlConnection
+        {
+            public function __construct(public string &$lastSql) {}
+
+            public function connect(): void {}
+
+            public function query(string $sql, array $bindings = []): array
+            {
+                $this->lastSql = $sql;
+
+                return [];
+            }
+
+            public function execute(string $sql, array $bindings = []): int
+            {
+                return 0;
+            }
+        };
+
+        $left = (new MySqlQueryBuilder($recordingConnection))
+            ->table('users')
+            ->select('name');
+
+        $right = (new MySqlQueryBuilder($recordingConnection))
+            ->table('admins')
+            ->select('name');
+
+        $left->union($right)->limit(5)->get();
+
+        expect($recordedSql)->toBe(
+            '(SELECT `name` FROM `users`) UNION (SELECT `name` FROM `admins`) LIMIT 5',
+        );
+    });
+
+    it('parameterizes bindings from both sides of the UNION safely', function (): void {
+        $recordedSql = '';
+        $recordedBindings = [];
+
+        $recordingConnection = new class ($recordedSql, $recordedBindings) extends MySqlConnection
+        {
+            public function __construct(
+                public string &$lastSql,
+                public array &$lastBindings,
+            ) {}
+
+            public function connect(): void {}
+
+            public function query(string $sql, array $bindings = []): array
+            {
+                $this->lastSql = $sql;
+                $this->lastBindings = $bindings;
+
+                return [];
+            }
+
+            public function execute(string $sql, array $bindings = []): int
+            {
+                return 0;
+            }
+        };
+
+        $left = (new MySqlQueryBuilder($recordingConnection))
+            ->table('users')
+            ->select('name')
+            ->where('status', '=', 'active');
+
+        $right = (new MySqlQueryBuilder($recordingConnection))
+            ->table('admins')
+            ->select('name')
+            ->where('role', '=', 'superadmin');
+
+        $left->union($right)->get();
+
+        expect($recordedSql)->toBe(
+            '(SELECT `name` FROM `users` WHERE `status` = ?) UNION (SELECT `name` FROM `admins` WHERE `role` = ?)',
+        )
+            ->and($recordedBindings)->toBe(['active', 'superadmin']);
+    });
+
+    it('returns distinct rows for a query that would otherwise duplicate due to joins', function (): void {
+        // Alice has 2 posts; joining users to posts without DISTINCT yields duplicate user rows
+        $withoutDistinct = (new MySqlQueryBuilder($this->connection))
+            ->table('users')
+            ->select('users.name')
+            ->join('posts', 'users.id', '=', 'posts.user_id')
+            ->where('users.name', '=', 'Alice')
+            ->get();
+
+        expect($withoutDistinct)->toHaveCount(2); // duplicated
+
+        $withDistinct = (new MySqlQueryBuilder($this->connection))
+            ->table('users')
+            ->select('users.name')
+            ->join('posts', 'users.id', '=', 'posts.user_id')
+            ->where('users.name', '=', 'Alice')
+            ->distinct()
+            ->get();
+
+        expect($withDistinct)
+            ->toHaveCount(1)
+            ->and($withDistinct[0]['name'])->toBe('Alice');
+    });
+
+    it('quotes both the column and the alias using driver-specific identifier quoting', function (): void {
+        $results = $this->builder
+            ->table('users')
+            ->select('users.name as author_name')
+            ->get();
+
+        expect($results)->toHaveCount(3)
+            ->and($results[0])->toHaveKey('author_name')
+            ->and($results[0]['author_name'])->toBe('Alice');
+    });
+
+    it('returns rows keyed by alias when a select uses an alias', function (): void {
+        $results = $this->builder
+            ->table('users')
+            ->select('name as author_name', 'email as contact')
+            ->where('status', '=', 'active')
+            ->get();
+
+        expect($results)->toHaveCount(2)
+            ->and($results[0])->toHaveKeys(['author_name', 'contact'])
+            ->and(array_key_exists('name', $results[0]))->toBeFalse()
+            ->and(array_key_exists('email', $results[0]))->toBeFalse()
+            ->and($results[0]['author_name'])->toBe('Alice')
+            ->and($results[0]['contact'])->toBe('alice@example.com');
     });
 });

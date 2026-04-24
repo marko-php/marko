@@ -22,9 +22,7 @@ readonly class ComponentCollector implements ComponentCollectorInterface
      * Collect all components from the given class names that match the given handle.
      *
      * @param array<int, class-string> $classNames
-     * @throws Error
-     * @throws ReflectionException
-     * @throws Exceptions\DuplicateComponentException
+     * @throws Error|ReflectionException|Exceptions\DuplicateComponentException
      */
     public function collect(array $classNames, string $handle): ComponentCollection
     {
@@ -54,8 +52,7 @@ readonly class ComponentCollector implements ComponentCollectorInterface
      * Discover a ComponentDefinition from a single class.
      *
      * @param class-string|string $className
-     * @throws Error
-     * @throws ReflectionException
+     * @throws Error|ReflectionException
      */
     public function discoverFromClass(string $className): ?ComponentDefinition
     {

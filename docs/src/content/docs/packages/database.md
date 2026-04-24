@@ -91,7 +91,122 @@ Marko infers database types from PHP types:
 | `?type` | Column is NULLABLE |
 | `DateTimeImmutable` | TIMESTAMP |
 | `BackedEnum` | ENUM with cases as values |
+| `array` or `?array` with `type: 'json'` | JSON (MySQL) / JSONB (PostgreSQL) |
 | Default values | From property initializers |
+
+### String and UUID Primary Keys
+
+Primary keys are not limited to integers. Any property marked `#[Column(primaryKey: true)]` serves as the primary key. `find()` and `findOrFail()` accept `int|string`.
+
+> **Every entity must declare exactly one `#[Column(primaryKey: true)]` property.** Marko validates this at metadata-parse time and throws `MissingPrimaryKeyException` if none is found. There is no silent `id` fallback.
+
+UUID primary keys work on both drivers:
+
+```php title="app/blog/Entity/Article.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('articles')]
+class Article extends Entity
+{
+    // PostgreSQL: uses gen_random_uuid() natively
+    #[Column(primaryKey: true, type: 'uuid', default: 'gen_random_uuid()')]
+    public string $id;
+
+    #[Column(length: 255)]
+    public string $title;
+}
+```
+
+For MySQL, generate UUIDs in PHP before persisting:
+
+```php
+use Ramsey\Uuid\Uuid;
+
+$article = new Article();
+$article->id = Uuid::uuid4()->toString();
+$article->title = 'Hello';
+$articleRepository->save($article);
+```
+
+### JSON Columns
+
+Store structured data directly in a column using `#[Column(type: 'json')]`. The property type must be `array` or `?array`. MySQL uses the native `JSON` type; PostgreSQL uses `JSONB`.
+
+```php title="app/blog/Entity/Post.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Entity;
+
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
+
+#[Table('posts')]
+class Post extends Entity
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public int $id;
+
+    #[Column(length: 255)]
+    public string $title;
+
+    #[Column(type: 'json')]
+    public array $metadata = [];
+
+    #[Column(type: 'json')]
+    public ?array $settings = null;
+}
+```
+
+JSON columns serialize on write and deserialize on read automatically using `JSON_THROW_ON_ERROR`. The value must be an array or null --- top-level JSON scalars are out of scope.
+
+JSON is the pragmatic alternative to EAV tables and to running a separate document store. For structured-but-variable attributes (e.g., product options, user preferences, webhook payloads), a JSON column keeps everything in one place without the overhead of a second data layer.
+
+### JSON query operators
+
+Query inside JSON columns using arrow-path syntax in `where()` and `select()`, or the dedicated JSON methods:
+
+```php
+// Arrow path in where() — driver translates to JSON_EXTRACT (MySQL) or -> / ->> (PostgreSQL)
+$this->query()->where('data->user->name', '=', 'Alice')->getEntities();
+
+// Select a nested value
+$this->query()->select('id', 'data->>name as display_name')->get();
+
+// whereJsonContains — value is present in a JSON array
+$this->query()->whereJsonContains('tags', 'php')->getEntities();
+
+// whereJsonExists / whereJsonMissing — check for key presence
+$this->query()->whereJsonExists('settings->notifications')->getEntities();
+$this->query()->whereJsonMissing('profile->avatar')->getEntities();
+```
+
+**Path syntax:**
+- `data->user->name` --- extract a nested value (returns JSON on MySQL, typed value on PostgreSQL)
+- `data->>name` --- extract as text (unquoted string)
+
+**JSON indexing** is done via raw DDL in your migration or schema setup --- the query builder does not generate index DDL for you:
+
+```sql
+-- PostgreSQL: GIN index for containment queries
+CREATE INDEX idx_posts_metadata ON posts USING gin(metadata jsonb_path_ops);
+
+-- MySQL: generated column + B-tree index
+ALTER TABLE posts
+    ADD COLUMN metadata_status VARCHAR(50)
+        GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.status'))) STORED,
+    ADD INDEX idx_posts_metadata_status (metadata_status);
+```
 
 ## Data Mapper Pattern
 
@@ -173,6 +288,57 @@ Use `getEntities()` / `firstEntity()` for typed domain objects. Drop to `get()` 
 #### Available filters
 
 `where`, `whereIn`, `whereNull`, `whereNotNull`, `orWhere`, `join`, `leftJoin`, `rightJoin`, `orderBy`, `limit`, `offset`, `select`. All return `static` for chaining. The escape hatch is `raw(string $sql, array $bindings = [])` for queries the builder can't express.
+
+#### Aggregate functions
+
+```php
+$count  = $this->query()->where('status', '=', 'published')->count();
+$count  = $this->query()->count('id');         // COUNT(id)
+$total  = $this->query()->sum('amount');
+$avg    = $this->query()->avg('score');
+$min    = $this->query()->min('price');
+$max    = $this->query()->max('price');
+```
+
+All aggregates return `int|float`. `count()` accepts an optional column name; omitting it produces `COUNT(*)`.
+
+#### GROUP BY and HAVING
+
+```php
+$this->query()
+    ->select('status', 'COUNT(*) as total')
+    ->groupBy('status')
+    ->having('COUNT(*) > ?', [5])
+    ->get();
+```
+
+#### DISTINCT and UNION
+
+```php
+// DISTINCT rows
+$rows = $this->query()->select('country')->distinct()->get();
+
+// UNION (deduplicates) and UNION ALL (keeps duplicates)
+$active   = $this->query()->where('status', '=', 'active');
+$featured = $this->query()->where('featured', '=', 1);
+
+$results = $active->union($featured)->get();
+$results = $active->unionAll($featured)->get();
+```
+
+`union()` and `unionAll()` throw `UnionShapeMismatchException` if the two builders have different column counts.
+
+#### Column aliasing
+
+Use standard SQL `AS` syntax inside `select()`:
+
+```php
+$this->query()
+    ->select('users.name as author_name', 'COUNT(*) as post_count')
+    ->join('posts', 'posts.user_id', '=', 'users.id')
+    ->groupBy('users.id')
+    ->get();
+```
 
 #### Eager loading
 
@@ -369,12 +535,12 @@ declare(strict_types=1);
 
 namespace App\Blog\Query;
 
-use Marko\Database\Query\QueryBuilderInterface;
+use Marko\Database\Query\EntityQueryBuilderInterface;
 use Marko\Database\Query\QuerySpecification;
 
 class PublishedSpec implements QuerySpecification
 {
-    public function apply(QueryBuilderInterface $queryBuilder): void
+    public function apply(EntityQueryBuilderInterface $queryBuilder): void
     {
         $queryBuilder->where('status', '=', 'published');
     }
@@ -388,7 +554,7 @@ declare(strict_types=1);
 
 namespace App\Blog\Query;
 
-use Marko\Database\Query\QueryBuilderInterface;
+use Marko\Database\Query\EntityQueryBuilderInterface;
 use Marko\Database\Query\QuerySpecification;
 
 readonly class RecentSpec implements QuerySpecification
@@ -397,7 +563,7 @@ readonly class RecentSpec implements QuerySpecification
         private int $limit = 10,
     ) {}
 
-    public function apply(QueryBuilderInterface $queryBuilder): void
+    public function apply(EntityQueryBuilderInterface $queryBuilder): void
     {
         $queryBuilder->orderBy('created_at', 'desc')->limit($this->limit);
     }
@@ -415,6 +581,62 @@ $posts = $postRepository->matching(
     new RecentSpec(limit: 5),
 );
 ```
+
+### Specs with eager loading
+
+`QuerySpecification::apply()` receives an `EntityQueryBuilderInterface`, which extends `QueryBuilderInterface` with `with()`. Specs can declare their own eager-loading needs:
+
+```php title="app/blog/Query/PublishedWithAuthorSpec.php"
+<?php
+
+declare(strict_types=1);
+
+namespace App\Blog\Query;
+
+use Marko\Database\Query\EntityQueryBuilderInterface;
+use Marko\Database\Query\QuerySpecification;
+
+class PublishedWithAuthorSpec implements QuerySpecification
+{
+    public function apply(EntityQueryBuilderInterface $queryBuilder): void
+    {
+        $queryBuilder
+            ->where('status', '=', 'published')
+            ->with('author', 'tags');
+    }
+}
+```
+
+The caller does not need to know which relationships the spec requires --- they are encapsulated inside it.
+
+## Bulk Insert
+
+`Repository::insertBatch(array $entities): void` inserts multiple entities in a single multi-row `INSERT` statement, wrapped in a transaction. It fires `EntityCreating` and `EntityCreated` events for each entity.
+
+```php
+use App\Blog\Entity\Post;
+
+$posts = [];
+for ($i = 1; $i <= 1000; $i++) {
+    $post = new Post();
+    $post->title = "Post {$i}";
+    $post->slug  = "post-{$i}";
+    $posts[] = $post;
+}
+
+$postRepository->insertBatch($posts);
+```
+
+**Caveats:**
+
+- Relationships are **not** auto-persisted. Persist related entities separately before calling `insertBatch()`.
+- `EntityCreating` / `EntityCreated` events fire synchronously for every entity in the batch. For high-throughput imports, mark observers async via `marko/queue` or drop to the raw query builder to avoid the per-row overhead.
+- All entities must be of the same type and have identical column sets. `BatchInsertException` is thrown for empty input, mixed types, or mismatched columns.
+
+**ID assignment after batch insert:**
+
+- **MySQL** --- IDs are recovered from `lastInsertId()` plus sequential offset.
+- **PostgreSQL** --- uses `INSERT ... RETURNING id` to retrieve each generated ID.
 
 ## Seeders
 

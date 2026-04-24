@@ -246,13 +246,13 @@ function createMockUserRepo(
         ) {}
 
         public function find(
-            int $id,
+            int|string $id,
         ): ?AdminUser {
             return $this->findReturn;
         }
 
         public function findOrFail(
-            int $id,
+            int|string $id,
         ): AdminUser {
             return $this->findReturn ?? throw new RuntimeException('Not found');
         }
@@ -307,6 +307,8 @@ function createMockUserRepo(
         }
 
         public function delete(Entity $entity): void {}
+
+        public function insertBatch(array $entities): void {}
     };
 }
 
@@ -323,13 +325,13 @@ function createMockRoleRepo(
         ) {}
 
         public function find(
-            int $id,
+            int|string $id,
         ): ?Role {
             return null;
         }
 
         public function findOrFail(
-            int $id,
+            int|string $id,
         ): Role {
             throw new RuntimeException('Not found');
         }
@@ -384,6 +386,8 @@ function createMockRoleRepo(
         public function save(Entity $entity): void {}
 
         public function delete(Entity $entity): void {}
+
+        public function insertBatch(array $entities): void {}
     };
 }
 

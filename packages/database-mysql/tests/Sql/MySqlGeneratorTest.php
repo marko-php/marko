@@ -540,4 +540,20 @@ describe('MySqlGenerator', function (): void {
 
         expect($sql)->toContain('`id` INT NOT NULL AUTO_INCREMENT');
     });
+
+    it('emits MySQL JSON DDL type for #[Column(type: \'json\')]', function (): void {
+        $generator = new MySqlGenerator();
+
+        $table = new Table(
+            name: 'products',
+            columns: [
+                new Column(name: 'id', type: 'integer', primaryKey: true, autoIncrement: true),
+                new Column(name: 'metadata', type: 'json'),
+            ],
+        );
+
+        $sql = $generator->generateCreateTable($table);
+
+        expect($sql)->toContain('`metadata` JSON NOT NULL');
+    });
 });

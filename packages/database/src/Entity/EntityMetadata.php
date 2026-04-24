@@ -21,7 +21,7 @@ readonly class EntityMetadata
     public function __construct(
         public string $entityClass,
         public string $tableName,
-        public string $primaryKey = 'id',
+        public string $primaryKey,
         public array $properties = [],
         public array $columns = [],
         public array $indexes = [],
