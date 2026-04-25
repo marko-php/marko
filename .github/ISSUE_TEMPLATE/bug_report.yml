@@ -82,6 +82,7 @@ body:
         - http
         - http-guzzle
         - inertia
+        - inertia-react
         - layout
         - log
         - log-file
