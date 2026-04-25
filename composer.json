@@ -286,6 +286,10 @@
         },
         {
             "type": "path",
+            "url": "packages/vite"
+        },
+        {
+            "type": "path",
             "url": "packages/webhook"
         }
     ],
@@ -364,6 +368,7 @@
         "marko/validation": "self.version",
         "marko/view": "self.version",
         "marko/view-latte": "self.version",
+        "marko/vite": "self.version",
         "marko/webhook": "self.version"
     },
     "require-dev": {
@@ -454,6 +459,7 @@
             "Marko\\Translation\\Tests\\": "packages/translation/tests/",
             "Marko\\Translation\\File\\Tests\\": "packages/translation-file/tests/",
             "Marko\\View\\Latte\\Tests\\": "packages/view-latte/tests/",
+            "Marko\\Vite\\Tests\\": "packages/vite/tests/",
             "Marko\\Notification\\Tests\\": "packages/notification/tests/",
             "Marko\\Notification\\Database\\Tests\\": "packages/notification-database/tests/",
             "Marko\\Pagination\\Tests\\": "packages/pagination/tests/",

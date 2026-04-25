@@ -115,6 +115,7 @@ body:
         - validation
         - view
         - view-latte
+        - vite
         - webhook
         - other
     validations:
