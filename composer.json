@@ -142,6 +142,10 @@
         },
         {
             "type": "path",
+            "url": "packages/inertia"
+        },
+        {
+            "type": "path",
             "url": "packages/layout"
         },
         {
@@ -336,6 +340,7 @@
         "marko/framework": "self.version",
         "marko/hashing": "self.version",
         "marko/health": "self.version",
+        "marko/inertia": "self.version",
         "marko/http": "self.version",
         "marko/layout": "self.version",
         "marko/http-guzzle": "self.version",
@@ -441,6 +446,7 @@
             "Marko\\Framework\\Tests\\": "packages/framework/tests/",
             "Marko\\Hashing\\Tests\\": "packages/hashing/tests/",
             "Marko\\Health\\Tests\\": "packages/health/tests/",
+            "Marko\\Inertia\\Tests\\": "packages/inertia/tests/",
             "Marko\\Http\\Tests\\": "packages/http/tests/",
             "Marko\\Http\\Guzzle\\Tests\\": "packages/http-guzzle/tests/",
             "Marko\\Layout\\Tests\\": "packages/layout/tests/",
