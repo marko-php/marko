@@ -9,8 +9,8 @@ $packages = array_values(array_filter(
     fn(string $entry): bool => $entry !== '.' && $entry !== '..' && is_dir($packagesRoot . '/' . $entry),
 ));
 
-it('creates .gitattributes in all 71 package directories', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(71);
+it('creates .gitattributes in all 72 package directories', function () use ($packagesRoot, $packages): void {
+    expect($packages)->toHaveCount(72);
 
     foreach ($packages as $package) {
         $path = $packagesRoot . '/' . $package . '/.gitattributes';
@@ -64,8 +64,8 @@ it('creates or updates root .gitattributes for the monorepo', function (): void 
         ->toContain('eol=lf');
 });
 
-it('creates LICENSE (MIT) in all 71 package directories with copyright Devtomic LLC', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(71);
+it('creates LICENSE (MIT) in all 72 package directories with copyright Devtomic LLC', function () use ($packagesRoot, $packages): void {
+    expect($packages)->toHaveCount(72);
 
     foreach ($packages as $package) {
         $path = $packagesRoot . '/' . $package . '/LICENSE';
