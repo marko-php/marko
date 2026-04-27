@@ -1,0 +1,45 @@
+{
+  "name": "marko/debugbar",
+  "type": "marko-module",
+  "description": "Development debugbar and request profiler for the Marko Framework with request, response, timing, memory, messages, database, logs, views, Inertia, and config collectors",
+  "license": "MIT",
+  "keywords": [
+    "marko",
+    "debugbar",
+    "profiler",
+    "debug",
+    "webprofiler",
+    "dev"
+  ],
+  "require": {
+    "php": "^8.5",
+    "marko/config": "self.version",
+    "marko/core": "self.version",
+    "marko/database": "self.version",
+    "marko/env": "self.version",
+    "marko/log": "self.version",
+    "marko/routing": "self.version",
+    "marko/view": "self.version"
+  },
+  "require-dev": {
+    "marko/testing": "self.version"
+  },
+  "autoload": {
+    "psr-4": {
+      "Marko\\Debugbar\\": "src/"
+    },
+    "files": [
+      "src/helpers.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Marko\\Debugbar\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "marko": {
+      "module": true
+    }
+  }
+}
