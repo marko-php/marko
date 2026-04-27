@@ -53,6 +53,7 @@ body:
         - database
         - database-mysql
         - database-pgsql
+        - debugbar
         - dev-server
         - encryption
         - encryption-openssl
