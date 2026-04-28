@@ -116,6 +116,24 @@ class IndexCache implements IndexCacheInterface
         return true;
     }
 
+    /**
+     * Lazy-load the cache from disk on first read so consumers (MCP server,
+     * LSP server, etc.) don't have to remember to call load() at startup.
+     * Falls back to a full build() when the cache is missing or stale.
+     */
+    private function ensureLoaded(): void
+    {
+        if ($this->data !== null) {
+            return;
+        }
+
+        if ($this->load()) {
+            return;
+        }
+
+        $this->build();
+    }
+
     public function isStale(): bool
     {
         $cachePath = $this->rootPath . '/' . self::CACHE_FILE;
@@ -159,54 +177,72 @@ class IndexCache implements IndexCacheInterface
     /** @return list<ModuleInfo> */
     public function getModules(): array
     {
+        $this->ensureLoaded();
+
         return $this->data['modules'] ?? [];
     }
 
     /** @return list<ObserverEntry> */
     public function getObservers(): array
     {
+        $this->ensureLoaded();
+
         return $this->data['observers'] ?? [];
     }
 
     /** @return list<PluginEntry> */
     public function getPlugins(): array
     {
+        $this->ensureLoaded();
+
         return $this->data['plugins'] ?? [];
     }
 
     /** @return list<PreferenceEntry> */
     public function getPreferences(): array
     {
+        $this->ensureLoaded();
+
         return $this->data['preferences'] ?? [];
     }
 
     /** @return list<CommandEntry> */
     public function getCommands(): array
     {
+        $this->ensureLoaded();
+
         return $this->data['commands'] ?? [];
     }
 
     /** @return list<RouteEntry> */
     public function getRoutes(): array
     {
+        $this->ensureLoaded();
+
         return $this->data['routes'] ?? [];
     }
 
     /** @return list<ConfigKeyEntry> */
     public function getConfigKeys(): array
     {
+        $this->ensureLoaded();
+
         return $this->data['configKeys'] ?? [];
     }
 
     /** @return list<TemplateEntry> */
     public function getTemplates(): array
     {
+        $this->ensureLoaded();
+
         return $this->data['templates'] ?? [];
     }
 
     /** @return list<TranslationEntry> */
     public function getTranslationKeys(): array
     {
+        $this->ensureLoaded();
+
         return $this->data['translationKeys'] ?? [];
     }
 

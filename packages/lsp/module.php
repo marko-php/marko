@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use Marko\Lsp\Server\LspServer;
+
 return [
     'bindings' => [],
-    'singletons' => [],
+    'singletons' => [
+        LspServer::class,
+    ],
 ];
