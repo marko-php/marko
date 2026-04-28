@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 use Marko\CodeIndexer\Module\ModuleWalker;
 use Marko\CodeIndexer\ValueObject\ModuleInfo;
+use Marko\Core\Path\ProjectPaths;
 
 $fixtures = __DIR__ . '/../../Fixtures/MiniMonorepo';
 
 it('discovers vendor modules two levels deep', function () use ($fixtures): void {
-    $walker = new ModuleWalker($fixtures);
+    $walker = new ModuleWalker(new ProjectPaths($fixtures));
 
     $results = $walker->walk();
     $names = array_map(fn (ModuleInfo $m): string => $m->name, $results);
@@ -18,7 +19,7 @@ it('discovers vendor modules two levels deep', function () use ($fixtures): void
 });
 
 it('discovers app modules one level deep', function () use ($fixtures): void {
-    $walker = new ModuleWalker($fixtures);
+    $walker = new ModuleWalker(new ProjectPaths($fixtures));
 
     $results = $walker->walk();
     $names = array_map(fn (ModuleInfo $m): string => $m->name, $results);
@@ -27,7 +28,7 @@ it('discovers app modules one level deep', function () use ($fixtures): void {
 });
 
 it('discovers modules directory recursively', function () use ($fixtures): void {
-    $walker = new ModuleWalker($fixtures);
+    $walker = new ModuleWalker(new ProjectPaths($fixtures));
 
     $results = $walker->walk();
     $names = array_map(fn (ModuleInfo $m): string => $m->name, $results);
@@ -40,7 +41,7 @@ it('returns empty array when no modules exist', function (): void {
     $emptyRoot = sys_get_temp_dir() . '/marko-walker-empty-' . uniqid();
     mkdir($emptyRoot, 0777, true);
 
-    $walker = new ModuleWalker($emptyRoot);
+    $walker = new ModuleWalker(new ProjectPaths($emptyRoot));
 
     expect($walker->walk())->toBe([]);
 
@@ -48,7 +49,7 @@ it('returns empty array when no modules exist', function (): void {
 });
 
 it('returns ModuleInfo with correctly parsed composer.json name', function () use ($fixtures): void {
-    $walker = new ModuleWalker($fixtures);
+    $walker = new ModuleWalker(new ProjectPaths($fixtures));
 
     $results = $walker->walk();
     $barInfo = null;
@@ -66,7 +67,7 @@ it('returns ModuleInfo with correctly parsed composer.json name', function () us
 });
 
 it('returns ModuleInfo with module.php manifest when file exists', function () use ($fixtures): void {
-    $walker = new ModuleWalker($fixtures);
+    $walker = new ModuleWalker(new ProjectPaths($fixtures));
 
     $results = $walker->walk();
     $barInfo = null;
@@ -85,7 +86,7 @@ it('returns ModuleInfo with module.php manifest when file exists', function () u
 });
 
 it('returns ModuleInfo with empty manifest when module.php is absent', function () use ($fixtures): void {
-    $walker = new ModuleWalker($fixtures);
+    $walker = new ModuleWalker(new ProjectPaths($fixtures));
 
     $results = $walker->walk();
     $bazInfo = null;
@@ -101,7 +102,7 @@ it('returns ModuleInfo with empty manifest when module.php is absent', function 
 });
 
 it('respects override priority app over modules over vendor when duplicates exist', function () use ($fixtures): void {
-    $walker = new ModuleWalker($fixtures);
+    $walker = new ModuleWalker(new ProjectPaths($fixtures));
 
     $results = $walker->walk();
 

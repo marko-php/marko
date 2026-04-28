@@ -7,14 +7,19 @@ namespace Marko\CodeIndexer\Module;
 use FilesystemIterator;
 use Marko\CodeIndexer\Contract\ModuleWalkerInterface;
 use Marko\CodeIndexer\ValueObject\ModuleInfo;
+use Marko\Core\Path\ProjectPaths;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
 class ModuleWalker implements ModuleWalkerInterface
 {
+    private readonly string $rootPath;
+
     public function __construct(
-        private readonly string $rootPath,
-    ) {}
+        ProjectPaths $paths,
+    ) {
+        $this->rootPath = $paths->base;
+    }
 
     /** @return list<ModuleInfo> */
     public function walk(): array
@@ -147,6 +152,25 @@ class ModuleWalker implements ModuleWalkerInterface
 
         $manifest = require $manifestFile;
 
-        return is_array($manifest) ? $manifest : [];
+        return is_array($manifest) ? self::stripClosures($manifest) : [];
+    }
+
+    /**
+     * Replace closures with a sentinel so the manifest is serializable for caching.
+     *
+     * @param array<int|string, mixed> $value
+     * @return array<int|string, mixed>
+     */
+    private static function stripClosures(array $value): array
+    {
+        foreach ($value as $k => $v) {
+            if ($v instanceof \Closure) {
+                $value[$k] = '<closure>';
+            } elseif (is_array($v)) {
+                $value[$k] = self::stripClosures($v);
+            }
+        }
+
+        return $value;
     }
 }

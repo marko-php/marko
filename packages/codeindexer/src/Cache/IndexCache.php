@@ -11,6 +11,7 @@ use Marko\CodeIndexer\Contract\ModuleWalkerInterface;
 use Marko\CodeIndexer\Contract\TemplateScannerInterface;
 use Marko\CodeIndexer\Contract\TranslationScannerInterface;
 use Marko\CodeIndexer\Exceptions\IndexCacheException;
+use Marko\Core\Path\ProjectPaths;
 use Marko\CodeIndexer\ValueObject\CommandEntry;
 use Marko\CodeIndexer\ValueObject\ConfigKeyEntry;
 use Marko\CodeIndexer\ValueObject\ModuleInfo;
@@ -30,14 +31,18 @@ class IndexCache implements IndexCacheInterface
     /** @var array<string, mixed>|null */
     private ?array $data = null;
 
+    private readonly string $rootPath;
+
     public function __construct(
-        private readonly string $rootPath,
+        ProjectPaths $paths,
         private readonly ModuleWalkerInterface $moduleWalker,
         private readonly AttributeParserInterface $attributeParser,
         private readonly ConfigScannerInterface $configScanner,
         private readonly TemplateScannerInterface $templateScanner,
         private readonly TranslationScannerInterface $translationScanner,
-    ) {}
+    ) {
+        $this->rootPath = $paths->base;
+    }
 
     /** @throws IndexCacheException */
     public function build(): void
@@ -232,7 +237,10 @@ class IndexCache implements IndexCacheInterface
         return $this->data[$key] ?? null;
     }
 
-    public function set(string $key, mixed $value): void
+    public function set(
+        string $key,
+        mixed $value,
+    ): void
     {
         $this->data[$key] = $value;
     }

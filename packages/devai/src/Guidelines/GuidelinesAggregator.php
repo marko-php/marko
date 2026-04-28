@@ -10,10 +10,14 @@ readonly class GuidelinesAggregator
 {
     private const string GUIDELINES_REL_PATH = '/resources/ai/guidelines.md';
 
+    private string $devaiPackageRoot;
+
     public function __construct(
         private ModuleWalkerInterface $walker,
-        private string $devaiPackageRoot,
-    ) {}
+        ?string $devaiPackageRoot = null,
+    ) {
+        $this->devaiPackageRoot = $devaiPackageRoot ?? dirname(__DIR__, 2);
+    }
 
     /**
      * @return array<string, string> packageName => guidelines markdown
@@ -22,7 +26,6 @@ readonly class GuidelinesAggregator
     {
         $guidelines = [];
 
-        // Always include core guidelines from devai's own resources
         $coreGuidelinesPath = $this->devaiPackageRoot . '/resources/ai/guidelines/core.md';
         if (is_file($coreGuidelinesPath)) {
             $guidelines['marko/core'] = (string) file_get_contents($coreGuidelinesPath);

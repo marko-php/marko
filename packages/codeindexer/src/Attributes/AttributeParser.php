@@ -312,9 +312,11 @@ class AttributeParser implements AttributeParserInterface
 
             $traverser = new NodeTraverser();
             $traverser->addVisitor(new NameResolver());
+
             return $traverser->traverse($ast);
         } catch (Error $e) {
             $this->diagnostics[] = ['file' => $file, 'error' => $e->getMessage()];
+
             return null;
         }
     }
@@ -338,9 +340,15 @@ class AttributeParser implements AttributeParserInterface
     /**
      * @param list<Node> $nodes
      */
-    private function walkNodes(array $nodes, callable $callback): void
+    private function walkNodes(
+        array $nodes,
+        callable $callback,
+    ): void
     {
         foreach ($nodes as $node) {
+            if (!$node instanceof Node) {
+                continue;
+            }
             $callback($node);
             foreach ($node->getSubNodeNames() as $subName) {
                 $sub = $node->$subName;
@@ -362,7 +370,10 @@ class AttributeParser implements AttributeParserInterface
         return $class->name?->toString() ?? '';
     }
 
-    private function classIsInNamespace(Class_ $class, ModuleInfo $module): bool
+    private function classIsInNamespace(
+        Class_ $class,
+        ModuleInfo $module,
+    ): bool
     {
         $className = $this->resolveClassName($class);
         $ns = rtrim($module->namespace, '\\') . '\\';
@@ -396,7 +407,10 @@ class AttributeParser implements AttributeParserInterface
         return $attrs;
     }
 
-    private function attrNameMatches(Attribute $attr, string $fqn): bool
+    private function attrNameMatches(
+        Attribute $attr,
+        string $fqn,
+    ): bool
     {
         $name = $attr->name;
         if ($name instanceof Node\Name\FullyQualified || $name instanceof Node\Name) {
@@ -409,7 +423,11 @@ class AttributeParser implements AttributeParserInterface
     /**
      * @param Arg[] $args
      */
-    private function getArgValueAsString(array $args, string $namedKey, int $positionalIndex): ?string
+    private function getArgValueAsString(
+        array $args,
+        string $namedKey,
+        int $positionalIndex,
+    ): ?string
     {
         $value = $this->getArgValue($args, $namedKey, $positionalIndex);
         if ($value === null) {
@@ -433,7 +451,11 @@ class AttributeParser implements AttributeParserInterface
     /**
      * @param Arg[] $args
      */
-    private function getArgValueAsInt(array $args, string $namedKey, int $positionalIndex): ?int
+    private function getArgValueAsInt(
+        array $args,
+        string $namedKey,
+        int $positionalIndex,
+    ): ?int
     {
         $value = $this->getArgValue($args, $namedKey, $positionalIndex);
         if ($value === null) {
@@ -450,7 +472,11 @@ class AttributeParser implements AttributeParserInterface
     /**
      * @param Arg[] $args
      */
-    private function getArgValue(array $args, string $namedKey, int $positionalIndex): ?Node\Expr
+    private function getArgValue(
+        array $args,
+        string $namedKey,
+        int $positionalIndex,
+    ): ?Node\Expr
     {
         // Try named arg first
         foreach ($args as $arg) {

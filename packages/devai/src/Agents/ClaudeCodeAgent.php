@@ -35,23 +35,35 @@ class ClaudeCodeAgent extends AbstractAgent implements SupportsGuidelines, Suppo
         return $this->runner->isOnPath('claude');
     }
 
-    public function writeGuidelines(GuidelinesContent $content, string $projectRoot): void
+    public function writeGuidelines(
+        GuidelinesContent $content,
+        string $projectRoot,
+    ): void
     {
         file_put_contents($projectRoot . '/AGENTS.md', $content->body);
         $claudeMd = "# Project Instructions\n\n@AGENTS.md\n\n## Claude-Specific\n\nSee `.claude/skills/` for available Marko skills.\n";
         file_put_contents($projectRoot . '/CLAUDE.md', $claudeMd);
     }
 
-    public function registerMcpServer(McpRegistration $reg, string $projectRoot): void
+    public function registerMcpServer(
+        McpRegistration $reg,
+        string $projectRoot,
+    ): void
     {
         $listResult = $this->runner->run('claude', ['mcp', 'list']);
         if (str_contains($listResult['stdout'], $reg->serverName)) {
             return;
         }
-        $this->runner->run('claude', ['mcp', 'add', '-s', 'local', '-t', $reg->transport, $reg->serverName, $reg->command, ...$reg->args]);
+        $this->runner->run(
+            'claude',
+            ['mcp', 'add', '-s', 'local', '-t', $reg->transport, $reg->serverName, $reg->command, ...$reg->args]
+        );
     }
 
-    public function registerLspServer(LspRegistration $reg, string $projectRoot): void
+    public function registerLspServer(
+        LspRegistration $reg,
+        string $projectRoot,
+    ): void
     {
         $lspDir = $projectRoot . '/.claude/plugins/marko';
         if (!is_dir($lspDir)) {
@@ -67,7 +79,10 @@ class ClaudeCodeAgent extends AbstractAgent implements SupportsGuidelines, Suppo
     }
 
     /** @param list<SkillBundle> $bundles */
-    public function distributeSkills(array $bundles, string $projectRoot): void
+    public function distributeSkills(
+        array $bundles,
+        string $projectRoot,
+    ): void
     {
         $skillsDir = $projectRoot . '/.claude/skills';
         if (!is_dir($skillsDir)) {
@@ -75,7 +90,12 @@ class ClaudeCodeAgent extends AbstractAgent implements SupportsGuidelines, Suppo
         }
         foreach ($bundles as $bundle) {
             foreach ($bundle->skills as $filename => $content) {
-                file_put_contents($skillsDir . '/' . $filename, $content);
+                $target = $skillsDir . '/' . $filename;
+                $dir = dirname($target);
+                if (!is_dir($dir)) {
+                    mkdir($dir, 0755, true);
+                }
+                file_put_contents($target, $content);
             }
         }
     }

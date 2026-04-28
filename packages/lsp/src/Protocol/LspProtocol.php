@@ -16,11 +16,17 @@ class LspProtocol
     private bool $shutdown = false;
 
     public function __construct(
-        private mixed $input,
-        private mixed $output,
-    ) {}
+        private mixed $input = null,
+        private mixed $output = null,
+    ) {
+        $this->input ??= STDIN;
+        $this->output ??= STDOUT;
+    }
 
-    public function registerMethod(string $method, callable $handler): void
+    public function registerMethod(
+        string $method,
+        callable $handler,
+    ): void
     {
         $this->handlers[$method] = $handler;
     }
@@ -79,12 +85,18 @@ class LspProtocol
         try {
             $request = json_decode($jsonBody, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            $this->writeResponse(['jsonrpc' => '2.0', 'error' => ['code' => -32700, 'message' => 'Parse error'], 'id' => null]);
+            $this->writeResponse(
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32700, 'message' => 'Parse error'], 'id' => null]
+            );
+
             return;
         }
 
         if (!is_array($request) || !isset($request['method'])) {
-            $this->writeResponse(['jsonrpc' => '2.0', 'error' => ['code' => -32600, 'message' => 'Invalid Request'], 'id' => $request['id'] ?? null]);
+            $this->writeResponse(
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32600, 'message' => 'Invalid Request'], 'id' => $request['id'] ?? null]
+            );
+
             return;
         }
 
@@ -95,6 +107,7 @@ class LspProtocol
 
         if ($method === 'exit') {
             $this->shutdown = true;
+
             return;
         }
 
@@ -102,7 +115,10 @@ class LspProtocol
             if ($isNotification) {
                 return;
             }
-            $this->writeResponse(['jsonrpc' => '2.0', 'error' => ['code' => -32601, 'message' => "Method not found: $method"], 'id' => $id]);
+            $this->writeResponse(
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32601, 'message' => "Method not found: $method"], 'id' => $id]
+            );
+
             return;
         }
 
@@ -116,12 +132,16 @@ class LspProtocol
             if ($isNotification) {
                 return;
             }
-            $this->writeResponse(['jsonrpc' => '2.0', 'error' => ['code' => $e->getJsonRpcCode(), 'message' => $e->getMessage()], 'id' => $id]);
+            $this->writeResponse(
+                ['jsonrpc' => '2.0', 'error' => ['code' => $e->getJsonRpcCode(), 'message' => $e->getMessage()], 'id' => $id]
+            );
         } catch (Throwable $e) {
             if ($isNotification) {
                 return;
             }
-            $this->writeResponse(['jsonrpc' => '2.0', 'error' => ['code' => -32603, 'message' => 'Internal error'], 'id' => $id]);
+            $this->writeResponse(
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32603, 'message' => 'Internal error'], 'id' => $id]
+            );
         }
     }
 

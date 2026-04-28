@@ -16,10 +16,14 @@ class SkillsDistributor
     /** @var list<string> */
     private array $warnings = [];
 
+    private readonly string $devaiPackageRoot;
+
     public function __construct(
         private ModuleWalkerInterface $walker,
-        private string $devaiPackageRoot,
-    ) {}
+        ?string $devaiPackageRoot = null,
+    ) {
+        $this->devaiPackageRoot = $devaiPackageRoot ?? dirname(__DIR__, 2);
+    }
 
     /** @return list<SkillBundle> */
     public function collect(): array
@@ -58,7 +62,10 @@ class SkillsDistributor
      *
      * @param list<SkillBundle> $bundles
      */
-    public function distribute(array $bundles, string $targetDir): void
+    public function distribute(
+        array $bundles,
+        string $targetDir,
+    ): void
     {
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0755, true);
@@ -89,7 +96,11 @@ class SkillsDistributor
      * @param array<string, string> $seenSkillNames passed by reference
      * @return list<SkillBundle>
      */
-    private function collectFromDir(string $skillsDir, string $packageName, array &$seenSkillNames): array
+    private function collectFromDir(
+        string $skillsDir,
+        string $packageName,
+        array &$seenSkillNames,
+    ): array
     {
         $skills = [];
         foreach (glob($skillsDir . '/*', GLOB_ONLYDIR) ?: [] as $skillDir) {
@@ -112,7 +123,10 @@ class SkillsDistributor
     /**
      * @return array<string, string> relativePath => content
      */
-    private function collectFiles(string $skillDir, string $skillName): array
+    private function collectFiles(
+        string $skillDir,
+        string $skillName,
+    ): array
     {
         $files = [];
         $iter = new RecursiveIteratorIterator(

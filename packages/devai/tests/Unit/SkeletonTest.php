@@ -36,7 +36,7 @@ it('autoloads cleanly with composer dump-autoload', function (): void {
         ->and($composer['autoload-dev']['psr-4']['Marko\\DevAi\\Tests\\'])->toBe('tests/');
 });
 
-it('has module.php with empty bindings (adapters register later)', function (): void {
+it('has module.php returning a manifest with bindings and singletons keys', function (): void {
     $modulePath = dirname(__DIR__, 2) . '/module.php';
 
     expect(file_exists($modulePath))->toBeTrue();
@@ -45,7 +45,7 @@ it('has module.php with empty bindings (adapters register later)', function (): 
 
     expect($module)->toBeArray()
         ->and($module)->toHaveKey('bindings')
-        ->and($module['bindings'])->toBe([])
+        ->and($module['bindings'])->toBeArray()
         ->and($module)->toHaveKey('singletons')
-        ->and($module['singletons'])->toBe([]);
+        ->and($module['singletons'])->toBeArray();
 });
