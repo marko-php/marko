@@ -47,13 +47,19 @@ body:
         - cache-file
         - cache-redis
         - cli
+        - codeindexer
         - config
         - core
         - cors
         - database
         - database-mysql
         - database-pgsql
-        - dev-server
+        - devai
+        - devserver
+        - docs
+        - docs-fts
+        - docs-markdown
+        - docs-vec
         - encryption
         - encryption-openssl
         - env
@@ -71,7 +77,9 @@ body:
         - layout
         - log
         - log-file
+        - lsp
         - mail
+        - mcp
         - mail-log
         - mail-smtp
         - media
@@ -87,7 +95,7 @@ body:
         - queue-database
         - queue-rabbitmq
         - queue-sync
-        - rate-limiting
+        - ratelimiter
         - routing
         - scheduler
         - search

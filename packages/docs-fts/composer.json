@@ -1,0 +1,37 @@
+{
+    "name": "marko/docs-fts",
+    "description": "FTS5 lexical search driver for Marko documentation",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "ext-pdo_sqlite": "*",
+        "marko/cli": "self.version",
+        "marko/core": "self.version",
+        "marko/docs": "self.version",
+        "marko/docs-markdown": "self.version"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\DocsFts\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\DocsFts\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

@@ -72,8 +72,8 @@ it('changes all internal marko/* require-dev constraints from @dev to self.versi
     expect($violations)->toBeEmpty('These require-dev constraints are not self.version: ' . implode(', ', $violations));
 });
 
-it('changes marko/dev-server wildcard constraints to self.version', function (): void {
-    $devServerComposer = dirname(__DIR__, 3) . '/packages/dev-server/composer.json';
+it('changes marko/devserver wildcard constraints to self.version', function (): void {
+    $devServerComposer = dirname(__DIR__, 3) . '/packages/devserver/composer.json';
     $data = json_decode(file_get_contents($devServerComposer), true);
 
     $violations = [];
@@ -83,7 +83,7 @@ it('changes marko/dev-server wildcard constraints to self.version', function ():
         }
     }
 
-    expect($violations)->toBeEmpty('dev-server has non-self.version marko/* constraints: ' . implode(', ', $violations));
+    expect($violations)->toBeEmpty('devserver has non-self.version marko/* constraints: ' . implode(', ', $violations));
 });
 
 it('changes any remaining wildcard marko/* constraints to self.version', function (): void {

@@ -1,0 +1,9 @@
+{
+    "name": "local/level1",
+    "description": "Level-1 modules directory package",
+    "autoload": {
+        "psr-4": {
+            "Local\\Level1\\": "src/"
+        }
+    }
+}

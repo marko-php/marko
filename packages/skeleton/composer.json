@@ -9,7 +9,7 @@
         "marko/framework": "*"
     },
     "require-dev": {
-        "marko/dev-server": "*",
+        "marko/devserver": "*",
         "pestphp/pest": "^4.0"
     },
     "config": {
