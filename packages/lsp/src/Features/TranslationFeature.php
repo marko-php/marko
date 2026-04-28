@@ -10,13 +10,19 @@ readonly class TranslationFeature
 {
     private const array TRANSLATOR_METHODS = ['get', 'choice', 'has'];
 
-    public function __construct(private IndexCache $index, private string $defaultLocale = 'en') {}
+    public function __construct(
+        private IndexCache $index,
+        private string $defaultLocale = 'en',
+    ) {}
 
     /**
      * Detects whether the cursor is inside a translator method string literal.
      * Returns the partial key typed so far, or null if not in such context.
      */
-    public function detectContext(string $lineText, int $col): ?string
+    public function detectContext(
+        string $lineText,
+        int $col,
+    ): ?string
     {
         $prefix = substr($lineText, 0, $col);
         $pattern = '/->\s*(' . implode('|', self::TRANSLATOR_METHODS) . ')\s*\(\s*[\'"]([^\'"]*)$/';
@@ -87,6 +93,37 @@ readonly class TranslationFeature
     }
 
     /**
+     * Markdown hover content for a translation key, or null if unknown.
+     * Lists every locale that defines the key.
+     */
+    public function hover(string $key): ?string
+    {
+        $matches = [];
+
+        foreach ($this->index->getTranslationKeys() as $entry) {
+            $fullKey = $entry->namespace !== null
+                ? $entry->namespace . '::' . $entry->group . '.' . $entry->key
+                : $entry->group . '.' . $entry->key;
+
+            if ($fullKey === $key) {
+                $matches[$entry->locale] = "$entry->file:$entry->line";
+            }
+        }
+
+        if ($matches === []) {
+            return null;
+        }
+
+        $lines = ["**$key**", '', 'Defined in:'];
+
+        foreach ($matches as $locale => $location) {
+            $lines[] = "- _{$locale}_: `$location`";
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
      * Returns diagnostics for translation keys missing from the default locale.
      *
      * @return list<array{range: array, severity: int, message: string, code: string}>
@@ -138,7 +175,10 @@ readonly class TranslationFeature
     /**
      * @return list<string>
      */
-    public function suggestSimilar(string $key, int $max = 3): array
+    public function suggestSimilar(
+        string $key,
+        int $max = 3,
+    ): array
     {
         $candidates = [];
 

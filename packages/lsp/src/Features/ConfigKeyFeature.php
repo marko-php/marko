@@ -17,7 +17,10 @@ readonly class ConfigKeyFeature
      * Detects whether the cursor is inside a config getter string literal.
      * Returns the partial key typed so far, or null if not in such context.
      */
-    public function detectContext(string $lineText, int $col): ?string
+    public function detectContext(
+        string $lineText,
+        int $col,
+    ): ?string
     {
         $prefix = substr($lineText, 0, $col);
         $pattern = '/->\s*(' . implode('|', self::CONFIG_GETTER_METHODS) . ')\s*\(\s*[\'"]([^\'"]*)$/';
@@ -76,6 +79,24 @@ readonly class ConfigKeyFeature
     }
 
     /**
+     * Markdown hover content for a config key, or null if the key is unknown.
+     */
+    public function hover(string $key): ?string
+    {
+        foreach ($this->index->getConfigKeys() as $entry) {
+            if ($entry->key !== $key) {
+                continue;
+            }
+
+            $default = var_export($entry->defaultValue, true);
+
+            return "**$entry->key** _{$entry->type}_\n\nDefault: `$default`\n\nSource: `$entry->module` (`$entry->file:$entry->line`)";
+        }
+
+        return null;
+    }
+
+    /**
      * Returns diagnostics for unknown config keys in the document.
      *
      * @return list<array{range: array, severity: int, message: string, code: string}>
@@ -122,7 +143,10 @@ readonly class ConfigKeyFeature
     /**
      * @return list<string>
      */
-    public function suggestSimilar(string $key, int $max = 3): array
+    public function suggestSimilar(
+        string $key,
+        int $max = 3,
+    ): array
     {
         $candidates = array_map(fn (ConfigKeyEntry $e) => $e->key, $this->index->getConfigKeys());
         $scored = array_map(fn (string $c) => ['key' => $c, 'distance' => levenshtein($key, $c)], $candidates);

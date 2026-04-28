@@ -18,7 +18,10 @@ readonly class TemplateFeature
         foreach ($this->index->getTemplates() as $t) {
             $fullName = "$t->moduleName::$t->templateName";
 
-            if ($partial !== '' && !str_starts_with($fullName, $partial) && !str_starts_with($t->templateName, $partial)) {
+            if ($partial !== '' && !str_starts_with($fullName, $partial) && !str_starts_with(
+                $t->templateName,
+                $partial
+            )) {
                 continue;
             }
 
@@ -70,6 +73,26 @@ readonly class TemplateFeature
         return null;
     }
 
+    /**
+     * Markdown hover content for a template, or null if unknown.
+     */
+    public function hover(string $template): ?string
+    {
+        $parts = explode('::', $template, 2);
+
+        foreach ($this->index->getTemplates() as $t) {
+            $matches = count($parts) === 2
+                ? ($t->moduleName === $parts[0] && $t->templateName === $parts[1])
+                : ($t->templateName === $template);
+
+            if ($matches) {
+                return "**$t->moduleName::$t->templateName** _{$t->extension}_\n\nFile: `$t->absolutePath`";
+            }
+        }
+
+        return null;
+    }
+
     /** @return list<array{range: array, severity: int, message: string, code: string}> */
     public function diagnostics(string $documentText): array
     {
@@ -109,7 +132,10 @@ readonly class TemplateFeature
     }
 
     /** @return list<string> */
-    public function suggestSimilar(string $template, int $max = 3): array
+    public function suggestSimilar(
+        string $template,
+        int $max = 3,
+    ): array
     {
         $candidates = [];
 

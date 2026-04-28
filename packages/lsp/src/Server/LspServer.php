@@ -48,6 +48,7 @@ class LspServer
         $this->protocol->registerMethod('textDocument/didClose', fn (array $params) => $this->didClose($params));
         $this->protocol->registerMethod('textDocument/completion', fn (array $params) => $this->completion($params));
         $this->protocol->registerMethod('textDocument/definition', fn (array $params) => $this->definition($params));
+        $this->protocol->registerMethod('textDocument/hover', fn (array $params) => $this->hover($params));
         $this->protocol->registerMethod('textDocument/diagnostic', fn (array $params) => $this->diagnostic($params));
         $this->protocol->registerMethod(
             'textDocument/codeLens',
@@ -68,7 +69,7 @@ class LspServer
                     'resolveProvider' => false,
                 ],
                 'definitionProvider' => true,
-                'hoverProvider' => false,
+                'hoverProvider' => true,
                 'codeLensProvider' => [
                     'resolveProvider' => false,
                 ],
@@ -191,6 +192,37 @@ class LspServer
         return $this->configKeys->gotoDefinition($symbol)
             ?? $this->templates->gotoDefinition($symbol)
             ?? $this->translations->gotoDefinition($symbol);
+    }
+
+    /**
+     * Resolve "hover" content by extracting the quoted string under the cursor and
+     * asking each feature in turn. Returns the first non-null markdown blob wrapped
+     * as an LSP Hover, or null.
+     *
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>|null
+     */
+    private function hover(array $params): ?array
+    {
+        $uri = (string) ($params['textDocument']['uri'] ?? '');
+        $line = (int) ($params['position']['line'] ?? 0);
+        $character = (int) ($params['position']['character'] ?? 0);
+
+        $symbol = $this->documents->quotedStringAt($uri, $line, $character);
+
+        if ($symbol === null || $symbol === '') {
+            return null;
+        }
+
+        $markdown = $this->configKeys->hover($symbol)
+            ?? $this->templates->hover($symbol)
+            ?? $this->translations->hover($symbol);
+
+        if ($markdown === null) {
+            return null;
+        }
+
+        return ['contents' => ['kind' => 'markdown', 'value' => $markdown]];
     }
 
     /**

@@ -56,6 +56,7 @@ it('resolves McpServer with all autowireable tools registered', function (): voi
             'resolve_template',
             'validate_module',
             'app_info',
+            'last_error',
             'read_log_entries',
             'run_console_command',
         );

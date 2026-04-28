@@ -15,22 +15,30 @@ use Marko\Mcp\Tools\ListCommandsTool;
 use Marko\Mcp\Tools\ListModulesTool;
 use Marko\Mcp\Tools\ListRoutesTool;
 use Marko\Mcp\Tools\ResolvePreferenceTool;
+use Marko\Docs\Contract\DocsSearchInterface;
 use Marko\Mcp\Tools\ResolveTemplateTool;
+use Marko\Mcp\Tools\Runtime\Adapters\FileErrorTracker;
 use Marko\Mcp\Tools\Runtime\Adapters\FileLogReader;
 use Marko\Mcp\Tools\Runtime\Adapters\MarkoConsoleDispatcher;
 use Marko\Mcp\Tools\Runtime\Adapters\MarkoQueryConnection;
 use Marko\Mcp\Tools\Runtime\AppInfoTool;
 use Marko\Mcp\Tools\Runtime\Contracts\ConsoleDispatcherInterface;
+use Marko\Mcp\Tools\Runtime\Contracts\ErrorTrackerInterface;
 use Marko\Mcp\Tools\Runtime\Contracts\LogReaderInterface;
 use Marko\Mcp\Tools\Runtime\Contracts\QueryConnectionInterface;
+use Marko\Mcp\Tools\Runtime\LastErrorTool;
 use Marko\Mcp\Tools\Runtime\QueryDatabaseTool;
 use Marko\Mcp\Tools\Runtime\ReadLogEntriesTool;
 use Marko\Mcp\Tools\Runtime\RunConsoleCommandTool;
+use Marko\Mcp\Tools\SearchDocsTool;
 use Marko\Mcp\Tools\ValidateModuleTool;
 
 return [
     'bindings' => [
         ConsoleDispatcherInterface::class => MarkoConsoleDispatcher::class,
+        ErrorTrackerInterface::class => fn (ContainerInterface $c): ErrorTrackerInterface => new FileErrorTracker(
+            errorFilePath: $c->get(ProjectPaths::class)->base . '/storage/last_error.json',
+        ),
         LogReaderInterface::class => fn (ContainerInterface $c): LogReaderInterface => new FileLogReader(
             logsDir: $c->get(ProjectPaths::class)->base . '/storage/logs',
         ),
@@ -60,6 +68,10 @@ return [
                 installedJsonPath: $paths->vendor . '/composer/installed.json',
             ));
 
+            $server->registerTool(LastErrorTool::definition(
+                $c->get(ErrorTrackerInterface::class),
+            ));
+
             $server->registerTool(ReadLogEntriesTool::definition(
                 $c->get(LogReaderInterface::class),
             ));
@@ -74,6 +86,14 @@ return [
                 ));
             } catch (\Throwable) {
                 // marko/database driver not installed — query_database tool unavailable
+            }
+
+            try {
+                $server->registerTool(SearchDocsTool::definition(
+                    $c->get(DocsSearchInterface::class),
+                ));
+            } catch (\Throwable) {
+                // No docs driver (docs-fts/docs-vec/etc.) installed — search_docs unavailable
             }
 
             return $server;
