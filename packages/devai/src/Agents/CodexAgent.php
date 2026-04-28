@@ -8,6 +8,7 @@ use Marko\DevAi\Contract\SupportsGuidelines;
 use Marko\DevAi\Contract\SupportsMcp;
 use Marko\DevAi\Contract\SupportsSkills;
 use Marko\DevAi\Process\CommandRunnerInterface;
+use Marko\DevAi\Skills\SkillsDistributor;
 use Marko\DevAi\ValueObject\GuidelinesContent;
 use Marko\DevAi\ValueObject\McpRegistration;
 use Marko\DevAi\ValueObject\SkillBundle;
@@ -33,30 +34,29 @@ class CodexAgent extends AbstractAgent implements SupportsGuidelines, SupportsMc
         return $this->runner->isOnPath('codex');
     }
 
-    public function writeGuidelines(GuidelinesContent $content, string $projectRoot): void
+    public function writeGuidelines(
+        GuidelinesContent $content,
+        string $projectRoot,
+    ): void
     {
         file_put_contents($projectRoot . '/AGENTS.md', $content->body);
     }
 
-    public function registerMcpServer(McpRegistration $reg, string $projectRoot): void
+    public function registerMcpServer(
+        McpRegistration $reg,
+        string $projectRoot,
+    ): void
     {
         $args = ['mcp', 'add', $reg->serverName, '--', $reg->command, ...$reg->args];
         $this->runner->run('codex', $args);
     }
 
     /** @param list<SkillBundle> $bundles */
-    public function distributeSkills(array $bundles, string $projectRoot): void
+    public function distributeSkills(
+        array $bundles,
+        string $projectRoot,
+    ): void
     {
-        $skillsDir = $projectRoot . '/.agents/skills';
-
-        if (!is_dir($skillsDir)) {
-            mkdir($skillsDir, 0755, true);
-        }
-
-        foreach ($bundles as $bundle) {
-            foreach ($bundle->skills as $filename => $content) {
-                file_put_contents($skillsDir . '/' . $filename, $content);
-            }
-        }
+        SkillsDistributor::writeBundles($bundles, $projectRoot . '/.agents/skills');
     }
 }

@@ -9,6 +9,7 @@ use Marko\DevAi\Contract\SupportsLsp;
 use Marko\DevAi\Contract\SupportsMcp;
 use Marko\DevAi\Contract\SupportsSkills;
 use Marko\DevAi\Process\CommandRunnerInterface;
+use Marko\DevAi\Skills\SkillsDistributor;
 use Marko\DevAi\ValueObject\GuidelinesContent;
 use Marko\DevAi\ValueObject\LspRegistration;
 use Marko\DevAi\ValueObject\McpRegistration;
@@ -82,21 +83,7 @@ class ClaudeCodeAgent extends AbstractAgent implements SupportsGuidelines, Suppo
     public function distributeSkills(
         array $bundles,
         string $projectRoot,
-    ): void
-    {
-        $skillsDir = $projectRoot . '/.claude/skills';
-        if (!is_dir($skillsDir)) {
-            mkdir($skillsDir, 0755, true);
-        }
-        foreach ($bundles as $bundle) {
-            foreach ($bundle->skills as $filename => $content) {
-                $target = $skillsDir . '/' . $filename;
-                $dir = dirname($target);
-                if (!is_dir($dir)) {
-                    mkdir($dir, 0755, true);
-                }
-                file_put_contents($target, $content);
-            }
-        }
+    ): void {
+        SkillsDistributor::writeBundles($bundles, $projectRoot . '/.claude/skills');
     }
 }

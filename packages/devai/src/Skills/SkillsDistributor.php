@@ -67,11 +67,35 @@ class SkillsDistributor
         string $targetDir,
     ): void
     {
+        $expectedSkills = self::writeBundles($bundles, $targetDir);
+
+        foreach (glob($targetDir . '/*', GLOB_ONLYDIR) ?: [] as $existingSkillDir) {
+            $name = basename($existingSkillDir);
+            if (!isset($expectedSkills[$name])) {
+                $this->removeDir($existingSkillDir);
+            }
+        }
+    }
+
+    /**
+     * Write bundles into a target dir, creating nested subdirectories as needed.
+     * Does NOT remove orphans — safe for agent-managed dirs that may also contain
+     * user-installed skills.
+     *
+     * @param list<SkillBundle> $bundles
+     * @return array<string, true> top-level skill names that were written
+     */
+    public static function writeBundles(
+        array $bundles,
+        string $targetDir,
+    ): array
+    {
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0755, true);
         }
 
-        $expectedSkills = [];
+        $written = [];
+
         foreach ($bundles as $bundle) {
             foreach ($bundle->skills as $relativePath => $content) {
                 $target = $targetDir . '/' . $relativePath;
@@ -80,16 +104,11 @@ class SkillsDistributor
                     mkdir($dir, 0755, true);
                 }
                 file_put_contents($target, $content);
-                $expectedSkills[explode('/', $relativePath, 2)[0]] = true;
+                $written[explode('/', $relativePath, 2)[0]] = true;
             }
         }
 
-        foreach (glob($targetDir . '/*', GLOB_ONLYDIR) ?: [] as $existingSkillDir) {
-            $name = basename($existingSkillDir);
-            if (!isset($expectedSkills[$name])) {
-                $this->removeDir($existingSkillDir);
-            }
-        }
+        return $written;
     }
 
     /**
