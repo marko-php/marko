@@ -47,6 +47,7 @@ class LspServer
         $this->protocol->registerMethod('textDocument/didChange', fn (array $params) => $this->didChange($params));
         $this->protocol->registerMethod('textDocument/didClose', fn (array $params) => $this->didClose($params));
         $this->protocol->registerMethod('textDocument/completion', fn (array $params) => $this->completion($params));
+        $this->protocol->registerMethod('textDocument/definition', fn (array $params) => $this->definition($params));
         $this->protocol->registerMethod('textDocument/diagnostic', fn (array $params) => $this->diagnostic($params));
         $this->protocol->registerMethod(
             'textDocument/codeLens',
@@ -66,7 +67,7 @@ class LspServer
                     'triggerCharacters' => ['"', "'", ':', '.'],
                     'resolveProvider' => false,
                 ],
-                'definitionProvider' => false,
+                'definitionProvider' => true,
                 'hoverProvider' => false,
                 'codeLensProvider' => [
                     'resolveProvider' => false,
@@ -166,6 +167,30 @@ class LspServer
         $items = array_merge($items, $this->attributes->complete($lineText, $character));
 
         return ['isIncomplete' => false, 'items' => $items];
+    }
+
+    /**
+     * Resolve "go to definition" by extracting the quoted string under the cursor
+     * and asking each feature in turn. Returns the first non-null Location, or null.
+     *
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>|null
+     */
+    private function definition(array $params): ?array
+    {
+        $uri = (string) ($params['textDocument']['uri'] ?? '');
+        $line = (int) ($params['position']['line'] ?? 0);
+        $character = (int) ($params['position']['character'] ?? 0);
+
+        $symbol = $this->documents->quotedStringAt($uri, $line, $character);
+
+        if ($symbol === null || $symbol === '') {
+            return null;
+        }
+
+        return $this->configKeys->gotoDefinition($symbol)
+            ?? $this->templates->gotoDefinition($symbol)
+            ?? $this->translations->gotoDefinition($symbol);
     }
 
     /**

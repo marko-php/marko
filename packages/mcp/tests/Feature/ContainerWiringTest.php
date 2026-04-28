@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
+use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Module\ManifestParser;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Mcp\Commands\ServeCommand;
@@ -12,6 +13,7 @@ use Marko\Mcp\Server\McpServer;
 function bootMcpContainer(): Container
 {
     $container = new Container();
+    $container->instance(ContainerInterface::class, $container);
     $container->instance(ProjectPaths::class, new ProjectPaths(sys_get_temp_dir()));
 
     $parser = new ManifestParser();
@@ -54,5 +56,7 @@ it('resolves McpServer with all autowireable tools registered', function (): voi
             'resolve_template',
             'validate_module',
             'app_info',
+            'read_log_entries',
+            'run_console_command',
         );
 });

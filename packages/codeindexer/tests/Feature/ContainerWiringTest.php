@@ -8,12 +8,14 @@ use Marko\CodeIndexer\Contract\IndexCacheInterface;
 use Marko\CodeIndexer\Contract\ModuleWalkerInterface;
 use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
+use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Module\ManifestParser;
 use Marko\Core\Path\ProjectPaths;
 
 function bootIndexerContainer(): Container
 {
     $container = new Container();
+    $container->instance(ContainerInterface::class, $container);
     $container->instance(ProjectPaths::class, new ProjectPaths(sys_get_temp_dir()));
 
     $manifest = (new ManifestParser())->parse(dirname(__DIR__, 2));

@@ -10,6 +10,7 @@ use Marko\CodeIndexer\Contract\TemplateScannerInterface;
 use Marko\CodeIndexer\Contract\TranslationScannerInterface;
 use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
+use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Module\ManifestParser;
 use Marko\Core\Path\ProjectPaths;
 use Marko\DevAi\Commands\InstallCommand;
@@ -20,6 +21,7 @@ use Marko\DevAi\Process\CommandRunnerInterface;
 function bootDevAiContainer(): Container
 {
     $container = new Container();
+    $container->instance(ContainerInterface::class, $container);
     $container->instance(ProjectPaths::class, new ProjectPaths(sys_get_temp_dir()));
 
     $parser = new ManifestParser();

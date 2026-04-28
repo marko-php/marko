@@ -41,8 +41,7 @@ class DocumentStore
     public function lineAt(
         string $uri,
         int $line,
-    ): string
-    {
+    ): string {
         $text = $this->get($uri);
 
         if ($text === null) {
@@ -52,5 +51,34 @@ class DocumentStore
         $lines = explode("\n", $text);
 
         return $lines[$line] ?? '';
+    }
+
+    /**
+     * Extract the quoted string the cursor is inside on the given line. Returns null
+     * if the cursor is not within a single- or double-quoted string literal.
+     */
+    public function quotedStringAt(
+        string $uri,
+        int $line,
+        int $col,
+    ): ?string {
+        $lineText = $this->lineAt($uri, $line);
+
+        if ($lineText === '' || $col < 0 || $col > strlen($lineText)) {
+            return null;
+        }
+
+        $prefix = substr($lineText, 0, $col);
+        $suffix = substr($lineText, $col);
+
+        if (preg_match('/[\'"]([^\'"]*)$/', $prefix, $pre) !== 1) {
+            return null;
+        }
+
+        if (preg_match('/^([^\'"]*)[\'"]/', $suffix, $post) !== 1) {
+            return null;
+        }
+
+        return $pre[1] . $post[1];
     }
 }

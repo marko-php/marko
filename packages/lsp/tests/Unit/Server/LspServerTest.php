@@ -125,10 +125,10 @@ it('declares completionProvider with trigger characters', function () {
         ->toContain('.');
 });
 
-it('does not yet advertise definitionProvider — handler is not wired', function () {
+it('declares definitionProvider — handler routes via quotedStringAt to feature gotoDefinition()', function () {
     $this->protocol->handleMessage(json_encode(['jsonrpc' => '2.0', 'method' => 'initialize', 'id' => 3]));
     $response = readResponse($this->out);
-    expect($response['result']['capabilities']['definitionProvider'])->toBeFalse();
+    expect($response['result']['capabilities']['definitionProvider'])->toBeTrue();
 });
 
 it('does not yet advertise hoverProvider — handler is not wired', function () {

@@ -16,11 +16,25 @@ use Marko\Mcp\Tools\ListModulesTool;
 use Marko\Mcp\Tools\ListRoutesTool;
 use Marko\Mcp\Tools\ResolvePreferenceTool;
 use Marko\Mcp\Tools\ResolveTemplateTool;
+use Marko\Mcp\Tools\Runtime\Adapters\FileLogReader;
+use Marko\Mcp\Tools\Runtime\Adapters\MarkoConsoleDispatcher;
+use Marko\Mcp\Tools\Runtime\Adapters\MarkoQueryConnection;
 use Marko\Mcp\Tools\Runtime\AppInfoTool;
+use Marko\Mcp\Tools\Runtime\Contracts\ConsoleDispatcherInterface;
+use Marko\Mcp\Tools\Runtime\Contracts\LogReaderInterface;
+use Marko\Mcp\Tools\Runtime\Contracts\QueryConnectionInterface;
+use Marko\Mcp\Tools\Runtime\QueryDatabaseTool;
+use Marko\Mcp\Tools\Runtime\ReadLogEntriesTool;
+use Marko\Mcp\Tools\Runtime\RunConsoleCommandTool;
 use Marko\Mcp\Tools\ValidateModuleTool;
 
 return [
     'bindings' => [
+        ConsoleDispatcherInterface::class => MarkoConsoleDispatcher::class,
+        LogReaderInterface::class => fn (ContainerInterface $c): LogReaderInterface => new FileLogReader(
+            logsDir: $c->get(ProjectPaths::class)->base . '/storage/logs',
+        ),
+        QueryConnectionInterface::class => MarkoQueryConnection::class,
         McpServer::class => function (ContainerInterface $c): McpServer {
             $server = new McpServer($c->get(JsonRpcProtocol::class));
             $index = $c->get(IndexCache::class);
@@ -45,6 +59,22 @@ return [
                 composerJsonPath: $paths->base . '/composer.json',
                 installedJsonPath: $paths->vendor . '/composer/installed.json',
             ));
+
+            $server->registerTool(ReadLogEntriesTool::definition(
+                $c->get(LogReaderInterface::class),
+            ));
+
+            $server->registerTool(RunConsoleCommandTool::definition(
+                $c->get(ConsoleDispatcherInterface::class),
+            ));
+
+            try {
+                $server->registerTool(QueryDatabaseTool::definition(
+                    $c->get(QueryConnectionInterface::class),
+                ));
+            } catch (\Throwable) {
+                // marko/database driver not installed — query_database tool unavailable
+            }
 
             return $server;
         },
