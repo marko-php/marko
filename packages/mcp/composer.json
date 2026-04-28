@@ -8,7 +8,8 @@
         "marko/core": "self.version",
         "marko/codeindexer": "self.version",
         "marko/docs": "self.version",
-        "marko/cli": "self.version"
+        "marko/cli": "self.version",
+        "marko/errors": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"
