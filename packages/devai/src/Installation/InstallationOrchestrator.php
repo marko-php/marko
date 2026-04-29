@@ -51,6 +51,8 @@ class InstallationOrchestrator
         ]);
 
         $skills = $this->skillsDistributor->collect();
+        $previouslyShipped = $this->readPreviouslyShipped($marker);
+        $currentlyShipped = $this->extractSkillNames($skills);
 
         $agents = $this->registry->all($projectRoot);
         $markoBin = $this->resolveMarkoBin($projectRoot);
@@ -76,7 +78,7 @@ class InstallationOrchestrator
                 $this->log[] = "[$agentName] registered LSP server";
             }
             if ($agent instanceof SupportsSkills) {
-                $agent->distributeSkills($skills, $projectRoot);
+                $agent->distributeSkills($skills, $projectRoot, $previouslyShipped);
                 $this->log[] = "[$agentName] distributed " . count($skills) . ' skills';
             }
         }
@@ -88,6 +90,7 @@ class InstallationOrchestrator
         file_put_contents($marker, json_encode([
             'agents' => $ctx->selectedAgents,
             'docsDriver' => $ctx->docsDriver,
+            'shippedSkills' => $currentlyShipped,
             'installedAt' => date(DateTimeInterface::ATOM),
         ], JSON_PRETTY_PRINT));
 
@@ -96,6 +99,46 @@ class InstallationOrchestrator
         }
 
         return ['status' => 'installed', 'log' => $this->log];
+    }
+
+    /**
+     * Read the previously-shipped skill names from the install marker.
+     * Returns empty list on first install or if the marker is malformed.
+     *
+     * @return list<string>
+     */
+    private function readPreviouslyShipped(string $markerPath): array
+    {
+        if (!is_file($markerPath)) {
+            return [];
+        }
+        $decoded = json_decode((string) file_get_contents($markerPath), true);
+        if (!is_array($decoded) || !isset($decoded['shippedSkills']) || !is_array($decoded['shippedSkills'])) {
+            return [];
+        }
+
+        return array_values(array_filter($decoded['shippedSkills'], 'is_string'));
+    }
+
+    /**
+     * Extract top-level skill names (matching skill directory names) from the
+     * collected bundles. The bundle's `skills` map uses keys like
+     * "skill-name/SKILL.md" or "skill-name/examples/foo.php" — we want the
+     * unique first segment.
+     *
+     * @param list<\Marko\DevAi\ValueObject\SkillBundle> $bundles
+     * @return list<string>
+     */
+    private function extractSkillNames(array $bundles): array
+    {
+        $names = [];
+        foreach ($bundles as $bundle) {
+            foreach (array_keys($bundle->skills) as $relativePath) {
+                $names[explode('/', $relativePath, 2)[0]] = true;
+            }
+        }
+
+        return array_keys($names);
     }
 
     /**

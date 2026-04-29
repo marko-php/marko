@@ -51,12 +51,16 @@ class CodexAgent extends AbstractAgent implements SupportsGuidelines, SupportsMc
         $this->runner->run('codex', $args);
     }
 
-    /** @param list<SkillBundle> $bundles */
+    /**
+     * @param list<SkillBundle> $bundles
+     * @param list<string> $previouslyShipped
+     */
     public function distributeSkills(
         array $bundles,
         string $projectRoot,
+        array $previouslyShipped = [],
     ): void
     {
-        SkillsDistributor::writeBundles($bundles, $projectRoot . '/.agents/skills');
+        SkillsDistributor::syncBundles($bundles, $projectRoot . '/.agents/skills', $previouslyShipped);
     }
 }

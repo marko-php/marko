@@ -97,11 +97,15 @@ class ClaudeCodeAgent extends AbstractAgent implements SupportsGuidelines, Suppo
         file_put_contents($lspDir . '/.lsp.json', json_encode($config, JSON_PRETTY_PRINT));
     }
 
-    /** @param list<SkillBundle> $bundles */
+    /**
+     * @param list<SkillBundle> $bundles
+     * @param list<string> $previouslyShipped
+     */
     public function distributeSkills(
         array $bundles,
         string $projectRoot,
+        array $previouslyShipped = [],
     ): void {
-        SkillsDistributor::writeBundles($bundles, $projectRoot . '/.claude/skills');
+        SkillsDistributor::syncBundles($bundles, $projectRoot . '/.claude/skills', $previouslyShipped);
     }
 }

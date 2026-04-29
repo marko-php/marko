@@ -51,12 +51,16 @@ class JunieAgent extends AbstractAgent implements SupportsGuidelines, SupportsSk
         }
     }
 
-    /** @param list<SkillBundle> $bundles */
+    /**
+     * @param list<SkillBundle> $bundles
+     * @param list<string> $previouslyShipped
+     */
     public function distributeSkills(
         array $bundles,
         string $projectRoot,
+        array $previouslyShipped = [],
     ): void
     {
-        SkillsDistributor::writeBundles($bundles, $projectRoot . '/junie/skills');
+        SkillsDistributor::syncBundles($bundles, $projectRoot . '/junie/skills', $previouslyShipped);
     }
 }

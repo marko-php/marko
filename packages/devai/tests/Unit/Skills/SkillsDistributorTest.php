@@ -84,7 +84,7 @@ it('preserves skill directory structure (name/SKILL.md plus supporting files)', 
     $bundles = $distributor->collect();
 
     $targetDir = $this->tempRoot . '/target-struct/skills';
-    $distributor->distribute($bundles, $targetDir);
+    SkillsDistributor::syncBundles($bundles, $targetDir, []);
 
     expect(file_exists($targetDir . '/complex-skill/SKILL.md'))->toBeTrue()
         ->and(file_get_contents($targetDir . '/complex-skill/SKILL.md'))->toContain('name: complex-skill')
@@ -110,7 +110,7 @@ it('copies skills to each enabled agent\'s destination path', function () {
     $bundles = $distributor->collect();
 
     $targetDir = $this->tempRoot . '/target-agent/skills';
-    $distributor->distribute($bundles, $targetDir);
+    SkillsDistributor::syncBundles($bundles, $targetDir, []);
 
     expect(file_exists($targetDir . '/my-skill/SKILL.md'))->toBeTrue()
         ->and(file_get_contents($targetDir . '/my-skill/SKILL.md'))->toContain('name: my-skill');
@@ -186,7 +186,7 @@ it('handles skill name conflicts with first-wins plus warning', function () {
         ->and($warnings[0])->toContain('vendor/module-conflict-a');
 });
 
-it('removes orphaned skills on update if source package is removed', function () {
+it('syncBundles removes only previously-shipped skills that are no longer in the bundle', function () {
     $modulePath = $this->tempRoot . '/module-orphan';
     mkdir($modulePath, 0755, true);
     makeSkillDir($modulePath, 'active-skill', ['SKILL.md' => skillFrontmatter('active-skill')]);
@@ -199,13 +199,38 @@ it('removes orphaned skills on update if source package is removed', function ()
     $bundles = $distributor->collect();
 
     $targetDir = $this->tempRoot . '/target-orphan/skills';
-    mkdir($targetDir . '/orphaned-skill', 0755, true);
-    file_put_contents($targetDir . '/orphaned-skill/SKILL.md', '# Old orphan skill');
+    // Simulate a previous install that shipped 'active-skill' AND 'old-skill'
+    mkdir($targetDir . '/old-skill', 0755, true);
+    file_put_contents($targetDir . '/old-skill/SKILL.md', '# Previously shipped, now removed');
 
-    $distributor->distribute($bundles, $targetDir);
+    SkillsDistributor::syncBundles($bundles, $targetDir, ['active-skill', 'old-skill']);
 
     expect(file_exists($targetDir . '/active-skill/SKILL.md'))->toBeTrue()
-        ->and(is_dir($targetDir . '/orphaned-skill'))->toBeFalse();
+        ->and(is_dir($targetDir . '/old-skill'))->toBeFalse();
+});
+
+it('syncBundles preserves user-authored skills that devai never shipped', function () {
+    $modulePath = $this->tempRoot . '/module-user';
+    mkdir($modulePath, 0755, true);
+    makeSkillDir($modulePath, 'devai-skill', ['SKILL.md' => skillFrontmatter('devai-skill')]);
+
+    $walker = makeWalker([
+        new ModuleInfo('vendor/module-user', $modulePath, 'Vendor\\ModuleUser'),
+    ]);
+
+    $distributor = new SkillsDistributor($walker, $this->tempRoot . '/devai-no-core');
+    $bundles = $distributor->collect();
+
+    $targetDir = $this->tempRoot . '/target-user/skills';
+    // User-authored skill that devai never shipped
+    mkdir($targetDir . '/user-skill', 0755, true);
+    file_put_contents($targetDir . '/user-skill/SKILL.md', "---\nname: user-skill\ndescription: hand-rolled\n---\n");
+
+    // previouslyShipped does NOT include user-skill, so it must survive
+    SkillsDistributor::syncBundles($bundles, $targetDir, ['devai-skill']);
+
+    expect(file_exists($targetDir . '/devai-skill/SKILL.md'))->toBeTrue()
+        ->and(file_exists($targetDir . '/user-skill/SKILL.md'))->toBeTrue();
 });
 
 it('ships a core skill set from devai own resources', function () {

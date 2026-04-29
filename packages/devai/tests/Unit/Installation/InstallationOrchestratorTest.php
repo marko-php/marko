@@ -98,9 +98,10 @@ function makeInstallFullAgent(bool $installed = false): AgentInterface&SupportsG
         public function distributeSkills(
             array $bundles,
             string $projectRoot,
+            array $previouslyShipped = [],
         ): void
         {
-            $this->skillsCalls[] = [$bundles, $projectRoot];
+            $this->skillsCalls[] = [$bundles, $projectRoot, $previouslyShipped];
         }
     };
 }
@@ -254,9 +255,60 @@ it(
         $marker = json_decode((string) file_get_contents($markerPath), true);
         expect($marker['agents'])->toBe(['claude-code', 'codex'])
             ->and($marker['docsDriver'])->toBe('fts')
-            ->and($marker)->toHaveKey('installedAt');
+            ->and($marker)->toHaveKey('installedAt')
+            ->and($marker)->toHaveKey('shippedSkills')
+            ->and($marker['shippedSkills'])->toBeArray();
     }
 );
+
+it('passes previously-shipped skills from the prior marker to each agent on update', function (): void {
+    // Simulate a prior install where devai shipped 'old-skill' and 'still-here'
+    mkdir($this->tempRoot . '/.marko', 0755, true);
+    file_put_contents(
+        $this->tempRoot . '/.marko/devai.json',
+        json_encode([
+            'agents' => ['test-agent'],
+            'docsDriver' => 'vec',
+            'shippedSkills' => ['old-skill', 'still-here'],
+            'installedAt' => '2026-01-01T00:00:00+00:00',
+        ]),
+    );
+
+    $agent = makeInstallFullAgent(installed: true);
+    $registry = makeInstallRegistry(['test-agent' => $agent]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $orchestrator->install(
+        new InstallationContext(selectedAgents: ['test-agent'], docsDriver: 'vec'),
+        $this->tempRoot,
+        true, // force, since marker exists
+    );
+
+    [$bundles, , $previouslyShipped] = $agent->skillsCalls[0];
+
+    expect($previouslyShipped)->toBe(['old-skill', 'still-here']);
+
+    // The new marker reflects what devai actually shipped this run, not the prior list
+    $newMarker = json_decode((string) file_get_contents($this->tempRoot . '/.marko/devai.json'), true);
+    expect($newMarker)->toHaveKey('shippedSkills')
+        ->and($newMarker['shippedSkills'])->toBeArray();
+});
+
+it('treats first install as having no previously-shipped skills', function (): void {
+    $agent = makeInstallFullAgent(installed: true);
+    $registry = makeInstallRegistry(['test-agent' => $agent]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $orchestrator->install(
+        new InstallationContext(selectedAgents: ['test-agent'], docsDriver: 'vec'),
+        $this->tempRoot,
+        false,
+    );
+
+    [, , $previouslyShipped] = $agent->skillsCalls[0];
+
+    expect($previouslyShipped)->toBe([]);
+});
 
 it('supports a --force flag to re-run from scratch (overwrites all generated files)', function (): void {
     // Pre-create the marker file

@@ -57,27 +57,6 @@ class SkillsDistributor
     }
 
     /**
-     * Distribute collected skills into a target dir, preserving subdirectory structure.
-     * Removes any skill dirs in target that no longer exist in source (orphan removal).
-     *
-     * @param list<SkillBundle> $bundles
-     */
-    public function distribute(
-        array $bundles,
-        string $targetDir,
-    ): void
-    {
-        $expectedSkills = self::writeBundles($bundles, $targetDir);
-
-        foreach (glob($targetDir . '/*', GLOB_ONLYDIR) ?: [] as $existingSkillDir) {
-            $name = basename($existingSkillDir);
-            if (!isset($expectedSkills[$name])) {
-                $this->removeDir($existingSkillDir);
-            }
-        }
-    }
-
-    /**
      * Write bundles into a target dir, creating nested subdirectories as needed.
      * Does NOT remove orphans — safe for agent-managed dirs that may also contain
      * user-installed skills.
@@ -109,6 +88,36 @@ class SkillsDistributor
         }
 
         return $written;
+    }
+
+    /**
+     * Write current bundles AND remove orphans from prior installs.
+     *
+     * "Orphan" = a skill directory at the target whose name appears in
+     * $previouslyShipped (i.e. devai shipped it before) but is NOT in the
+     * current $bundles. User-authored skills in the same directory are left
+     * untouched because they were never in $previouslyShipped.
+     *
+     * @param list<SkillBundle> $bundles
+     * @param list<string> $previouslyShipped top-level skill names devai shipped on the prior install
+     */
+    public static function syncBundles(
+        array $bundles,
+        string $targetDir,
+        array $previouslyShipped,
+    ): void
+    {
+        $written = self::writeBundles($bundles, $targetDir);
+
+        foreach ($previouslyShipped as $priorName) {
+            if (isset($written[$priorName])) {
+                continue;
+            }
+            $orphanDir = $targetDir . '/' . $priorName;
+            if (is_dir($orphanDir)) {
+                self::removeDir($orphanDir);
+            }
+        }
     }
 
     /**
@@ -211,7 +220,7 @@ class SkillsDistributor
         return $files;
     }
 
-    private function removeDir(string $dir): void
+    private static function removeDir(string $dir): void
     {
         if (!is_dir($dir)) {
             return;

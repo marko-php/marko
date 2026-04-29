@@ -55,12 +55,16 @@ class GeminiCliAgent extends AbstractAgent implements SupportsGuidelines, Suppor
         $this->runner->run('gemini', $args);
     }
 
-    /** @param list<SkillBundle> $bundles */
+    /**
+     * @param list<SkillBundle> $bundles
+     * @param list<string> $previouslyShipped
+     */
     public function distributeSkills(
         array $bundles,
         string $projectRoot,
+        array $previouslyShipped = [],
     ): void
     {
-        SkillsDistributor::writeBundles($bundles, $projectRoot . '/.gemini/skills');
+        SkillsDistributor::syncBundles($bundles, $projectRoot . '/.gemini/skills', $previouslyShipped);
     }
 }
