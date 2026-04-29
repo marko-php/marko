@@ -19,4 +19,21 @@ class DevAiInstallException extends MarkoException
             suggestion: 'Pass --force to overwrite the existing registration. This will preserve unrelated user keys but replace marko-prefixed ones.',
         );
     }
+
+    public static function npmRequiredForLspDeps(): static
+    {
+        return new static(
+            message: 'intelephense is required for full LSP support but npm is not on PATH',
+            suggestion: 'Install Node.js (https://nodejs.org), or pass --skip-lsp-deps to install devai without LSP dependencies.',
+        );
+    }
+
+    public static function intelephenseInstallFailed(string $stderr): static
+    {
+        return new static(
+            message: 'Failed to auto-install intelephense via npm install -g',
+            context: $stderr,
+            suggestion: 'Run `npm install -g intelephense` manually, or pass --skip-lsp-deps.',
+        );
+    }
 }

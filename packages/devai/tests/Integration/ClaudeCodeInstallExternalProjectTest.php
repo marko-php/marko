@@ -14,6 +14,56 @@ use Marko\DevAi\Rendering\ClaudeMdRenderer;
 use Marko\DevAi\Skills\SkillsDistributor;
 
 // ---------------------------------------------------------------------------
+// Helpers extended for skip-lsp-deps integration tests
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a fake CommandRunnerInterface that can optionally report intelephense
+ * as absent and npm as present/absent.
+ */
+function integExternalRunnerWithLsp(
+    string $listOutput = '',
+    bool $intelephenseOnPath = false,
+    bool $npmOnPath = true,
+    int $npmExitCode = 0,
+): CommandRunnerInterface {
+    return new class ($listOutput, $intelephenseOnPath, $npmOnPath, $npmExitCode) implements CommandRunnerInterface
+    {
+        public array $calls = [];
+
+        public function __construct(
+            public string $listOutput,
+            private bool $intelephenseOnPath,
+            private bool $npmOnPath,
+            private int $npmExitCode,
+        ) {}
+
+        public function run(string $cmd, array $args = []): array
+        {
+            $this->calls[] = [$cmd, $args];
+            if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
+                return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
+            }
+            if ($cmd === 'npm') {
+                return ['exitCode' => $this->npmExitCode, 'stdout' => '', 'stderr' => ''];
+            }
+
+            return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
+        }
+
+        public function isOnPath(string $binary): bool
+        {
+            return match ($binary) {
+                'claude' => true,
+                'intelephense' => $this->intelephenseOnPath,
+                'npm' => $this->npmOnPath,
+                default => false,
+            };
+        }
+    };
+}
+
+// ---------------------------------------------------------------------------
 // Helpers shared within this file
 // ---------------------------------------------------------------------------
 
@@ -64,7 +114,9 @@ function integExternalRunner(string $listOutput = ''): CommandRunnerInterface
 
         public function isOnPath(string $binary): bool
         {
-            return $binary === 'claude';
+            // Report claude and intelephense as present so existing tests don't
+            // trigger the npm-required exception path (they don't test LSP deps).
+            return in_array($binary, ['claude', 'intelephense'], true);
         }
     };
 }
@@ -346,5 +398,67 @@ describe('re-running devai:install on an external project', function (): void {
             ->and($after['myCustomKey'])->toBe('preserved-value')
             ->and($after['enabledPlugins']['unrelated-plugin@other'])->toBeTrue()
             ->and($after['enabledPlugins']['marko-skills@marko'])->toBeTrue();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// --skip-lsp-deps integration tests (external-project fixture)
+// ---------------------------------------------------------------------------
+
+describe('--skip-lsp-deps integration (external project)', function (): void {
+    beforeEach(function (): void {
+        $this->root = integExternalTempDir();
+    });
+
+    afterEach(function (): void {
+        integRemoveTempDir($this->root);
+    });
+
+    it('attempts npm install -g intelephense when not skipping LSP deps and intelephense is missing', function (): void {
+        $runner = integExternalRunnerWithLsp(intelephenseOnPath: false, npmOnPath: true);
+        $orchestrator = integExternalOrchestrator($runner);
+        $ctx = new InstallationContext(selectedAgents: ['claude-code'], skipLspDeps: false);
+
+        $orchestrator->install($ctx, $this->root, false);
+
+        $npmInstallCalls = array_filter(
+            $runner->calls,
+            fn ($call) => $call[0] === 'npm'
+                && ($call[1][0] ?? '') === 'install'
+                && in_array('intelephense', $call[1], true),
+        );
+        expect(array_values($npmInstallCalls))->not->toBeEmpty();
+    });
+
+    it('skips intelephense installation when --skip-lsp-deps is passed', function (): void {
+        $runner = integExternalRunnerWithLsp(intelephenseOnPath: false, npmOnPath: true);
+        $orchestrator = integExternalOrchestrator($runner);
+        $ctx = new InstallationContext(selectedAgents: ['claude-code'], skipLspDeps: true);
+
+        $orchestrator->install($ctx, $this->root, false);
+
+        $npmInstallCalls = array_filter(
+            $runner->calls,
+            fn ($call) => $call[0] === 'npm'
+                && in_array('intelephense', $call[1], true),
+        );
+        expect(array_values($npmInstallCalls))->toBeEmpty();
+    });
+
+    it('still writes settings.json correctly when --skip-lsp-deps is passed (only the LSP deps step is skipped)', function (): void {
+        $runner = integExternalRunnerWithLsp(intelephenseOnPath: false, npmOnPath: true);
+        $orchestrator = integExternalOrchestrator($runner);
+        $ctx = new InstallationContext(selectedAgents: ['claude-code'], skipLspDeps: true);
+
+        $orchestrator->install($ctx, $this->root, false);
+
+        $settingsPath = $this->root . '/.claude/settings.json';
+        expect(file_exists($settingsPath))->toBeTrue();
+
+        $data = json_decode((string) file_get_contents($settingsPath), true);
+        expect($data['extraKnownMarketplaces'])->toHaveKey('marko')
+            ->and($data['enabledPlugins']['marko-skills@marko'])->toBeTrue()
+            ->and($data['enabledPlugins']['marko-lsp@marko'])->toBeTrue()
+            ->and($data['enabledPlugins']['marko-mcp@marko'])->toBeTrue();
     });
 });

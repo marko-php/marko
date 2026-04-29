@@ -10,5 +10,6 @@ readonly class InstallationContext
     public function __construct(
         public array $selectedAgents,
         public bool $updateGitignore = false,
+        public bool $skipLspDeps = false,
     ) {}
 }

@@ -26,8 +26,7 @@ class LspProtocol
     public function registerMethod(
         string $method,
         callable $handler,
-    ): void
-    {
+    ): void {
         $this->handlers[$method] = $handler;
     }
 
@@ -86,7 +85,7 @@ class LspProtocol
             $request = json_decode($jsonBody, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             $this->writeResponse(
-                ['jsonrpc' => '2.0', 'error' => ['code' => -32700, 'message' => 'Parse error'], 'id' => null]
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32700, 'message' => 'Parse error'], 'id' => null],
             );
 
             return;
@@ -94,7 +93,7 @@ class LspProtocol
 
         if (!is_array($request) || !isset($request['method'])) {
             $this->writeResponse(
-                ['jsonrpc' => '2.0', 'error' => ['code' => -32600, 'message' => 'Invalid Request'], 'id' => $request['id'] ?? null]
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32600, 'message' => 'Invalid Request'], 'id' => $request['id'] ?? null],
             );
 
             return;
@@ -116,7 +115,7 @@ class LspProtocol
                 return;
             }
             $this->writeResponse(
-                ['jsonrpc' => '2.0', 'error' => ['code' => -32601, 'message' => "Method not found: $method"], 'id' => $id]
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32601, 'message' => "Method not found: $method"], 'id' => $id],
             );
 
             return;
@@ -133,14 +132,14 @@ class LspProtocol
                 return;
             }
             $this->writeResponse(
-                ['jsonrpc' => '2.0', 'error' => ['code' => $e->getJsonRpcCode(), 'message' => $e->getMessage()], 'id' => $id]
+                ['jsonrpc' => '2.0', 'error' => ['code' => $e->getJsonRpcCode(), 'message' => $e->getMessage()], 'id' => $id],
             );
         } catch (Throwable $e) {
             if ($isNotification) {
                 return;
             }
             $this->writeResponse(
-                ['jsonrpc' => '2.0', 'error' => ['code' => -32603, 'message' => 'Internal error'], 'id' => $id]
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32603, 'message' => 'Internal error'], 'id' => $id],
             );
         }
     }
@@ -155,6 +154,18 @@ class LspProtocol
         $json = json_encode($response, JSON_THROW_ON_ERROR);
         $contentLength = strlen($json);
         fwrite($this->output, "Content-Length: $contentLength\r\n\r\n$json");
+    }
+
+    /**
+     * Send an LSP notification (a message with no id, no response expected).
+     *
+     * @param array<string, mixed> $params
+     *
+     * @throws JsonException
+     */
+    public function notify(string $method, array $params): void
+    {
+        $this->writeResponse(['jsonrpc' => '2.0', 'method' => $method, 'params' => $params]);
     }
 
     public function isShutdown(): bool

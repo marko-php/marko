@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\DevAi\Installation;
 
 use DateTimeInterface;
+use Marko\DevAi\Agents\ClaudeCodeAgent;
 use Marko\DevAi\Contract\SupportsGuidelines;
 use Marko\DevAi\Contract\SupportsMcp;
 use Marko\DevAi\Contract\SupportsSettings;
@@ -76,6 +77,12 @@ class InstallationOrchestrator
             if ($agent instanceof SupportsSettings) {
                 $agent->writeSettings($projectRoot, $force);
                 $this->log[] = "[$agentName] wrote settings";
+            }
+            if ($agent instanceof ClaudeCodeAgent) {
+                $summary = $agent->ensureLspDeps($ctx->skipLspDeps);
+                if ($summary !== '') {
+                    $this->log[] = $summary;
+                }
             }
             if ($agent instanceof SupportsMcp) {
                 $agent->registerMcpServer($mcp, $projectRoot);

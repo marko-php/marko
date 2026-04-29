@@ -7,7 +7,9 @@ use Marko\DevAi\Contract\SupportsGuidelines;
 use Marko\DevAi\Contract\SupportsLsp;
 use Marko\DevAi\Contract\SupportsSkills;
 use Marko\DevAi\Exceptions\DevAiInstallException;
+use Marko\DevAi\Installation\EnsureResult;
 use Marko\DevAi\Installation\InstallationOrchestrator;
+use Marko\DevAi\Installation\IntelephenseEnsurerInterface;
 use Marko\DevAi\Process\CommandRunnerInterface;
 use Marko\DevAi\ValueObject\GuidelinesContent;
 
@@ -426,4 +428,115 @@ it('still implements SupportsGuidelines', function (): void {
 it('no longer implements SupportsLsp (interface deleted or not applied to ClaudeCodeAgent)', function (): void {
     $agent = new ClaudeCodeAgent(makeClaudeRunner());
     expect(interface_exists(SupportsLsp::class))->toBeFalse();
+});
+
+// ---------------------------------------------------------------------------
+// IntelephenseEnsurer wiring — --skip-lsp-deps
+// ---------------------------------------------------------------------------
+
+describe('ensureLspDeps', function (): void {
+    beforeEach(function (): void {
+        $this->root = makeDevaiTempDir();
+    });
+
+    afterEach(function (): void {
+        removeDevaiTempDir($this->root);
+    });
+
+    it('invokes IntelephenseEnsurer after writeSettings when --skip-lsp-deps is false', function (): void {
+        $ensureCallLog = [];
+        $fakeEnsurer = new class ($ensureCallLog) implements IntelephenseEnsurerInterface
+        {
+            public function __construct(private array &$log) {}
+
+            public function ensure(bool $skip = false): EnsureResult
+            {
+                $this->log[] = ['skip' => $skip];
+
+                return EnsureResult::alreadyInstalled();
+            }
+        };
+
+        $agent = new ClaudeCodeAgent(makeClaudeRunner(), $fakeEnsurer);
+        $agent->writeSettings($this->root, force: false);
+        $agent->ensureLspDeps(skipLspDeps: false);
+
+        expect($ensureCallLog)->toHaveCount(1)
+            ->and($ensureCallLog[0]['skip'])->toBeFalse();
+    });
+
+    it('passes --skip-lsp-deps through to IntelephenseEnsurer when set', function (): void {
+        $ensureCallLog = [];
+        $fakeEnsurer = new class ($ensureCallLog) implements IntelephenseEnsurerInterface
+        {
+            public function __construct(private array &$log) {}
+
+            public function ensure(bool $skip = false): EnsureResult
+            {
+                $this->log[] = ['skip' => $skip];
+
+                return EnsureResult::skipped();
+            }
+        };
+
+        $agent = new ClaudeCodeAgent(makeClaudeRunner(), $fakeEnsurer);
+        $agent->writeSettings($this->root, force: false);
+        $agent->ensureLspDeps(skipLspDeps: true);
+
+        expect($ensureCallLog)->toHaveCount(1)
+            ->and($ensureCallLog[0]['skip'])->toBeTrue();
+    });
+
+    it('reports "installed intelephense" in summary on successful auto-install', function (): void {
+        $fakeEnsurer = new class () implements IntelephenseEnsurerInterface
+        {
+            public function ensure(bool $skip = false): EnsureResult
+            {
+                return EnsureResult::installed();
+            }
+        };
+
+        $agent = new ClaudeCodeAgent(makeClaudeRunner(), $fakeEnsurer);
+        $agent->writeSettings($this->root, force: false);
+        $summary = $agent->ensureLspDeps(skipLspDeps: false);
+
+        expect($summary)->toContain('installed intelephense');
+    });
+
+    it('reports a skipped status (no silent success) when --skip-lsp-deps is set', function (): void {
+        $fakeEnsurer = new class () implements IntelephenseEnsurerInterface
+        {
+            public function ensure(bool $skip = false): EnsureResult
+            {
+                return EnsureResult::skipped();
+            }
+        };
+
+        $agent = new ClaudeCodeAgent(makeClaudeRunner(), $fakeEnsurer);
+        $agent->writeSettings($this->root, force: false);
+        $summary = $agent->ensureLspDeps(skipLspDeps: true);
+
+        expect($summary)->toContain('[claude-code]')
+            ->and($summary)->toContain('skipped')
+            ->and($summary)->toContain('--skip-lsp-deps')
+            ->and($summary)->toContain('intelephense');
+    });
+
+    it('reports "verified intelephense" (no silent success) when intelephense is already on PATH', function (): void {
+        $fakeEnsurer = new class () implements IntelephenseEnsurerInterface
+        {
+            public function ensure(bool $skip = false): EnsureResult
+            {
+                return EnsureResult::alreadyInstalled();
+            }
+        };
+
+        $agent = new ClaudeCodeAgent(makeClaudeRunner(), $fakeEnsurer);
+        $agent->writeSettings($this->root, force: false);
+        $summary = $agent->ensureLspDeps(skipLspDeps: false);
+
+        expect($summary)->toContain('[claude-code]')
+            ->and($summary)->toContain('verified intelephense')
+            ->and($summary)->toContain('already on PATH');
+    });
 });

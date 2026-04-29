@@ -7,6 +7,7 @@ namespace Marko\DevAi\Agents;
 use Marko\DevAi\Contract\SupportsGuidelines;
 use Marko\DevAi\Contract\SupportsSettings;
 use Marko\DevAi\Exceptions\DevAiInstallException;
+use Marko\DevAi\Installation\IntelephenseEnsurerInterface;
 use Marko\DevAi\Process\CommandRunnerInterface;
 use Marko\DevAi\ValueObject\GuidelinesContent;
 
@@ -14,6 +15,7 @@ class ClaudeCodeAgent extends AbstractAgent implements SupportsGuidelines, Suppo
 {
     public function __construct(
         private CommandRunnerInterface $runner,
+        private ?IntelephenseEnsurerInterface $intelephenseEnsurer = null,
     ) {}
 
     public function name(): string
@@ -63,6 +65,31 @@ class ClaudeCodeAgent extends AbstractAgent implements SupportsGuidelines, Suppo
         }
 
         file_put_contents($settingsPath, json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
+    /**
+     * Ensure intelephense is installed globally via npm, or skip if requested.
+     * Returns a log/warning line to be surfaced in the install summary.
+     *
+     * @throws DevAiInstallException
+     */
+    public function ensureLspDeps(bool $skipLspDeps = false): string
+    {
+        if ($this->intelephenseEnsurer === null) {
+            return '';
+        }
+
+        $result = $this->intelephenseEnsurer->ensure($skipLspDeps);
+
+        if ($result->isSkipped()) {
+            return '[claude-code] skipped intelephense install (--skip-lsp-deps; general PHP diagnostics will be unavailable)';
+        }
+
+        if ($result->isInstalled()) {
+            return '[claude-code] installed intelephense';
+        }
+
+        return '[claude-code] verified intelephense (already on PATH)';
     }
 
     // -----------------------------------------------------------------------

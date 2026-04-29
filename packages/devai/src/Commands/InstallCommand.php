@@ -23,11 +23,11 @@ readonly class InstallCommand implements CommandInterface
     public function execute(
         Input $input,
         Output $output,
-    ): int
-    {
+    ): int {
         $force = $input->hasOption('force');
         $agentsArg = $input->getOption('agents');
         $gitignoreArg = $input->hasOption('update-gitignore');
+        $skipLspDeps = $input->hasOption('skip-lsp-deps');
 
         $projectRoot = (string) getcwd();
 
@@ -35,6 +35,7 @@ readonly class InstallCommand implements CommandInterface
             $context = new InstallationContext(
                 selectedAgents: explode(',', $agentsArg),
                 updateGitignore: $gitignoreArg,
+                skipLspDeps: $skipLspDeps,
             );
         } else {
             $detected = [];
@@ -78,13 +79,14 @@ readonly class InstallCommand implements CommandInterface
         $output->writeLine(
             $detectedAgents === []
                 ? 'No agent CLIs detected on PATH.'
-                : 'Detected agents: ' . implode(', ', $detectedAgents)
+                : 'Detected agents: ' . implode(', ', $detectedAgents),
         );
         $output->writeLine('Pass --agents=<name,name> to override.');
 
         return new InstallationContext(
             selectedAgents: $detectedAgents,
             updateGitignore: $updateGitignore,
+            skipLspDeps: false,
         );
     }
 }

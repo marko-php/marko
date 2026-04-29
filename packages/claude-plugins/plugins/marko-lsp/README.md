@@ -4,9 +4,11 @@ Marko-aware PHP language server for Claude Code. Wraps [intelephense](https://in
 
 ## What marko-lsp adds beyond plain intelephense
 
-- Marko-specific diagnostics: flags patterns that violate framework conventions (e.g. commands or hooks placed outside `.claude-plugin/`)
+- **Live diagnostics via `textDocument/publishDiagnostics`**: as you open or edit a PHP file, marko-lsp pushes diagnostics to the client immediately — no poll or manual request needed. Unknown config keys (`config('not.real.key')`) and unknown translation keys are flagged in real time with `source: marko-lsp`.
 - Framework-aware completions: suggests correct namespaces and class names based on module structure
 - Navigation tied to Marko semantics: go-to-definition follows Preferences (interface → concrete) rather than raw PHP class hierarchy
+
+`marko devai:install` automatically installs the `intelephense` npm package (required by `php-lsp@claude-plugins-official`) if it is not already on `PATH`. Pass `--skip-lsp-deps` to opt out.
 
 ## Coexistence with php-lsp@claude-plugins-official
 

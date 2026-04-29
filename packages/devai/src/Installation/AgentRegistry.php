@@ -23,7 +23,7 @@ class AgentRegistry
     public function all(string $projectRoot): array
     {
         return [
-            'claude-code' => new ClaudeCodeAgent($this->runner),
+            'claude-code' => new ClaudeCodeAgent($this->runner, new IntelephenseEnsurer($this->runner)),
             'codex' => new CodexAgent($this->runner),
             'cursor' => new CursorAgent($this->runner),
             'copilot' => new CopilotAgent($projectRoot),

@@ -29,6 +29,7 @@ class LspServer
         private ConfigKeyFeature $configKeys,
         private TemplateFeature $templates,
         private TranslationFeature $translations,
+        private ?DiagnosticsNotifier $notifier = null,
     ) {
         $this->registerHandlers();
     }
@@ -52,7 +53,7 @@ class LspServer
         $this->protocol->registerMethod('textDocument/diagnostic', fn (array $params) => $this->diagnostic($params));
         $this->protocol->registerMethod(
             'textDocument/codeLens',
-            fn (array $params) => $this->codeLensRequest($params)
+            fn (array $params) => $this->codeLensRequest($params),
         );
     }
 
@@ -108,6 +109,7 @@ class LspServer
         $uri = (string) ($params['textDocument']['uri'] ?? '');
         $text = (string) ($params['textDocument']['text'] ?? '');
         $this->documents->open($uri, $text);
+        $this->publishDiagnosticsFor($uri, $text);
 
         return null;
     }
@@ -127,6 +129,9 @@ class LspServer
                 $this->documents->update($uri, (string) ($change['text'] ?? ''));
             }
         }
+
+        $text = $this->documents->get($uri) ?? '';
+        $this->publishDiagnosticsFor($uri, $text);
 
         return null;
     }
@@ -255,5 +260,25 @@ class LspServer
         $text = $this->documents->get($uri) ?? '';
 
         return $this->codeLens->lenses($text);
+    }
+
+    /**
+     * Aggregate diagnostics from all features and publish a single
+     * textDocument/publishDiagnostics notification for the given URI.
+     */
+    private function publishDiagnosticsFor(string $uri, string $text): void
+    {
+        if ($this->notifier === null) {
+            return;
+        }
+
+        $diagnostics = array_merge(
+            $this->configKeys->diagnostics($text),
+            $this->templates->diagnostics($text),
+            $this->translations->diagnostics($text),
+            $this->attributes->diagnostics($text),
+        );
+
+        $this->notifier->publish($uri, $diagnostics);
     }
 }
