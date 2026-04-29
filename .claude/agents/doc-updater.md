@@ -92,10 +92,22 @@ or writing any of the following, **grep the codebase to confirm it exists**:
 - **Behavior claims** ("the installer skips X when Y") — grep for the
   decision branch in source. Don't paraphrase from prior docs.
 
-When grep returns nothing, **delete the claim entirely** — never paper over
-with a plausible-sounding alternative. A thinner doc is better than a
-confidently wrong one. If you're tempted to write "for example, run …" or
-"this typically …" without a source citation, stop and verify first.
+When grep returns nothing, you have three legal moves, in this order:
+
+1. **Delete the claim entirely.** A thinner doc is better than a
+   confidently wrong one.
+2. **Replace with a higher-level description** that doesn't name the
+   specific token (e.g., "delete the model directory manually" instead
+   of `marko devai:onnx-clear`).
+3. **Write the verified alternative** — but only if you can grep for
+   the replacement in the same source you'd verify the original from.
+
+Never paper over with a plausible-sounding alternative you can't cite.
+
+**Verification budget.** Spend at most 1–2 grep calls per claim plus one
+Read of the relevant generator/handler. If that doesn't settle it, fall
+back to move 1 or 2 above. Don't recurse into a claim's dependencies'
+dependencies.
 
 ## Rules
 
