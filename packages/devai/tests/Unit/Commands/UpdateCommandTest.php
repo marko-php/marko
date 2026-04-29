@@ -25,7 +25,11 @@ class UpdateCommandTestStubOrchestrator extends InstallationOrchestrator
     /** @var array{status: string, log?: list<string>} */
     public array $installReturn = ['status' => 'installed', 'log' => []];
 
-    public function install(InstallationContext $ctx, string $projectRoot, bool $force): array
+    public function install(
+        InstallationContext $ctx,
+        string $projectRoot,
+        bool $force,
+    ): array
     {
         $this->capturedContext = $ctx;
         $this->installCalled = true;
@@ -44,7 +48,10 @@ class UpdateCommandTestNullWalker implements ModuleWalkerInterface
 
 class UpdateCommandTestNullRunner implements CommandRunnerInterface
 {
-    public function run(string $command, array $args = []): array
+    public function run(
+        string $command,
+        array $args = [],
+    ): array
     {
         return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
     }
@@ -66,6 +73,7 @@ function makeUpdateTestOrchestrator(): UpdateCommandTestStubOrchestrator
         claudeRenderer: new ClaudeMdRenderer(),
         guidelinesAggregator: new GuidelinesAggregator($walker, '/dev/null'),
         skillsDistributor: new SkillsDistributor($walker, '/dev/null'),
+        runner: $runner,
     );
 }
 
@@ -184,7 +192,11 @@ it('detects and reports newly contributed guidelines from new packages', functio
 
         public function walk(): array
         {
-            return [new \Marko\CodeIndexer\ValueObject\ModuleInfo(name: 'marko/authentication', path: $this->authPath, namespace: '')];
+            return [new \Marko\CodeIndexer\ValueObject\ModuleInfo(
+                name: 'marko/authentication',
+                path: $this->authPath,
+                namespace: ''
+            )];
         }
     };
     $aggregator = new GuidelinesAggregator($walker, $tempBase);

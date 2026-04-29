@@ -137,8 +137,35 @@ function makeNullWalker(): ModuleWalkerInterface
     };
 }
 
-function makeInstallOrchestrator(AgentRegistry $registry, string $devaiRoot = '/dev/null'): InstallationOrchestrator
+function makeRecordingRunner(): CommandRunnerInterface
 {
+    return new class () implements CommandRunnerInterface
+    {
+        /** @var list<array{string, list<string>}> */
+        public array $calls = [];
+
+        public function run(
+            string $command,
+            array $args = [],
+        ): array
+        {
+            $this->calls[] = [$command, $args];
+
+            return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
+        }
+
+        public function isOnPath(string $binary): bool
+        {
+            return false;
+        }
+    };
+}
+
+function makeInstallOrchestrator(
+    AgentRegistry $registry,
+    string $devaiRoot = '/dev/null',
+    ?CommandRunnerInterface $runner = null,
+): InstallationOrchestrator {
     $walker = makeNullWalker();
 
     return new InstallationOrchestrator(
@@ -147,6 +174,7 @@ function makeInstallOrchestrator(AgentRegistry $registry, string $devaiRoot = '/
         claudeRenderer: new ClaudeMdRenderer(),
         guidelinesAggregator: new GuidelinesAggregator($walker, $devaiRoot),
         skillsDistributor: new SkillsDistributor($walker, $devaiRoot),
+        runner: $runner ?? makeRecordingRunner(),
     );
 }
 
@@ -404,6 +432,105 @@ it('registers MCP and LSP servers using the absolute path to vendor/bin/marko', 
         ->and($mcpReg->args)->toBe(['mcp:serve'])
         ->and($lspReg->command)->toBe($expectedBin)
         ->and($lspReg->args)->toBe(['lsp:serve']);
+});
+
+it('runs docs-fts:build during install when marko/docs-fts is in vendor', function (): void {
+    // marko/devai now hard-requires marko/docs-fts, so it lives in vendor/
+    // by the time devai:install runs. The orchestrator must build the index
+    // so search_docs is queryable as soon as the install command returns.
+    mkdir($this->tempRoot . '/vendor/marko/docs-fts', 0755, true);
+
+    $runner = makeRecordingRunner();
+    $registry = makeInstallRegistry([]);
+    $orchestrator = makeInstallOrchestrator($registry, runner: $runner);
+
+    $orchestrator->install(
+        new InstallationContext(selectedAgents: []),
+        $this->tempRoot,
+        false,
+    );
+
+    $buildCall = null;
+    foreach ($runner->calls as $call) {
+        if (in_array('docs-fts:build', $call[1], true)) {
+            $buildCall = $call;
+            break;
+        }
+    }
+
+    expect($buildCall)->not->toBeNull()
+        ->and($buildCall[0])->toBe($this->tempRoot . '/vendor/bin/marko');
+});
+
+it('runs docs-vec:build instead when marko/docs-vec replaced docs-fts', function (): void {
+    // When the user upgrades to marko/docs-vec, Composer's `replace` removes
+    // docs-fts. The orchestrator must build the vec index, not fts.
+    mkdir($this->tempRoot . '/vendor/marko/docs-vec', 0755, true);
+
+    $runner = makeRecordingRunner();
+    $registry = makeInstallRegistry([]);
+    $orchestrator = makeInstallOrchestrator($registry, runner: $runner);
+
+    $orchestrator->install(
+        new InstallationContext(selectedAgents: []),
+        $this->tempRoot,
+        false,
+    );
+
+    $buildCommands = array_map(fn ($c) => $c[1][0] ?? null, $runner->calls);
+
+    expect($buildCommands)->toContain('docs-vec:build')
+        ->and($buildCommands)->not->toContain('docs-fts:build');
+});
+
+it('skips the docs index build when no driver is installed', function (): void {
+    $runner = makeRecordingRunner();
+    $registry = makeInstallRegistry([]);
+    $orchestrator = makeInstallOrchestrator($registry, runner: $runner);
+
+    $orchestrator->install(
+        new InstallationContext(selectedAgents: []),
+        $this->tempRoot,
+        false,
+    );
+
+    $buildCommands = array_map(fn ($c) => $c[1][0] ?? null, $runner->calls);
+
+    expect($buildCommands)->not->toContain('docs-fts:build')
+        ->and($buildCommands)->not->toContain('docs-vec:build');
+});
+
+it('records a helpful log line when the docs index build fails', function (): void {
+    mkdir($this->tempRoot . '/vendor/marko/docs-fts', 0755, true);
+
+    $runner = new class () implements CommandRunnerInterface
+    {
+        public function run(
+            string $command,
+            array $args = [],
+        ): array {
+            return ['exitCode' => 1, 'stdout' => '', 'stderr' => 'permission denied writing index'];
+        }
+
+        public function isOnPath(string $binary): bool
+        {
+            return false;
+        }
+    };
+
+    $registry = makeInstallRegistry([]);
+    $orchestrator = makeInstallOrchestrator($registry, runner: $runner);
+
+    $result = $orchestrator->install(
+        new InstallationContext(selectedAgents: []),
+        $this->tempRoot,
+        false,
+    );
+
+    $log = implode("\n", $result['log'] ?? []);
+    expect($log)->toContain('docs-fts')
+        ->and($log)->toContain('build failed')
+        ->and($log)->toContain('permission denied');
 });
 
 it('detects installed agents and presents them as a checkbox picker', function (): void {

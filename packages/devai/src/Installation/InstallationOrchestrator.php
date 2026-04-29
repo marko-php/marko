@@ -10,6 +10,7 @@ use Marko\DevAi\Contract\SupportsLsp;
 use Marko\DevAi\Contract\SupportsMcp;
 use Marko\DevAi\Contract\SupportsSkills;
 use Marko\DevAi\Guidelines\GuidelinesAggregator;
+use Marko\DevAi\Process\CommandRunnerInterface;
 use Marko\DevAi\Rendering\AgentsMdRenderer;
 use Marko\DevAi\Rendering\ClaudeMdRenderer;
 use Marko\DevAi\Skills\SkillsDistributor;
@@ -27,6 +28,7 @@ class InstallationOrchestrator
         private ClaudeMdRenderer $claudeRenderer,
         private GuidelinesAggregator $guidelinesAggregator,
         private SkillsDistributor $skillsDistributor,
+        private CommandRunnerInterface $runner,
     ) {}
 
     /** @return array{status: string, message?: string, log?: list<string>} */
@@ -97,7 +99,46 @@ class InstallationOrchestrator
             $this->updateGitignore($projectRoot);
         }
 
+        $this->buildDocsIndex($projectRoot, $markoBin);
+
         return ['status' => 'installed', 'log' => $this->log];
+    }
+
+    /**
+     * Build the docs search index so search_docs is wired and queryable
+     * by the time devai:install returns.
+     *
+     * marko/devai hard-requires marko/docs-fts, so a fresh install always has
+     * fts present. Users who upgrade to marko/docs-vec swap fts out via
+     * Composer's replace mechanism, so the build target shifts to vec.
+     * Only one driver is ever installed at a time — no precedence games.
+     */
+    private function buildDocsIndex(
+        string $projectRoot,
+        string $markoBin,
+    ): void
+    {
+        if (is_dir($projectRoot . '/vendor/marko/docs-vec')) {
+            $command = 'docs-vec:build';
+            $driver = 'docs-vec';
+        } elseif (is_dir($projectRoot . '/vendor/marko/docs-fts')) {
+            $command = 'docs-fts:build';
+            $driver = 'docs-fts';
+        } else {
+            return;
+        }
+
+        $result = $this->runner->run($markoBin, [$command]);
+
+        if (($result['exitCode'] ?? 1) === 0) {
+            $this->log[] = "[$driver] built docs search index";
+
+            return;
+        }
+
+        $stderr = trim((string) ($result['stderr'] ?? ''));
+        $hint = $stderr === '' ? '' : " ($stderr)";
+        $this->log[] = "[$driver] index build failed$hint — re-run `marko $command` manually";
     }
 
     /**

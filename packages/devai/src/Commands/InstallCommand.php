@@ -59,8 +59,6 @@ readonly class InstallCommand implements CommandInterface
             $output->writeLine("  - $line");
         }
 
-        $this->printDocsDriverHintIfMissing($projectRoot, $output);
-
         return 0;
     }
 
@@ -87,31 +85,6 @@ readonly class InstallCommand implements CommandInterface
         return new InstallationContext(
             selectedAgents: $detectedAgents,
             updateGitignore: $updateGitignore,
-        );
-    }
-
-    /**
-     * If the project has no docs driver installed, print a clear hint pointing
-     * at the two options and recommending one. This is the deliberate
-     * replacement for the old `--docs-driver` picker — picking a driver is the
-     * user's call (explicit composer require), not the installer's.
-     */
-    private function printDocsDriverHintIfMissing(
-        string $projectRoot,
-        Output $output,
-    ): void {
-        $hasFts = is_dir($projectRoot . '/vendor/marko/docs-fts');
-        $hasVec = is_dir($projectRoot . '/vendor/marko/docs-vec');
-
-        if ($hasFts || $hasVec) {
-            return;
-        }
-
-        $output->writeLine('');
-        $output->writeLine('Tip: install a docs driver to enable the search_docs MCP tool.');
-        $output->writeLine('  composer require --dev marko/docs-fts   [recommended] lexical search, no extra setup');
-        $output->writeLine(
-            '  composer require --dev marko/docs-vec   semantic search (needs sqlite-vec extension + ONNX model)'
         );
     }
 }

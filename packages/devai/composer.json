@@ -8,7 +8,8 @@
         "marko/core": "self.version",
         "marko/cli": "self.version",
         "marko/mcp": "self.version",
-        "marko/lsp": "self.version"
+        "marko/lsp": "self.version",
+        "marko/docs-fts": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

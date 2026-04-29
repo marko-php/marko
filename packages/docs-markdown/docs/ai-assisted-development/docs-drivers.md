@@ -1,25 +1,54 @@
 ---
 title: Docs Driver Comparison
-description: Choose between full-text search (docs-fts) and semantic vector search (docs-vec) for the search_docs MCP tool.
+description: How marko/devai bundles docs-fts by default and how to upgrade to docs-vec for semantic search.
 ---
 
-The `search_docs` MCP tool is conditional — it only appears when a `DocsSearchInterface` is bound in the container. Two first-party drivers provide that binding:
+The `search_docs` MCP tool is backed by a `DocsSearchInterface` binding. Two first-party drivers implement it:
 
 - **`marko/docs-fts`** — Full-text search using SQLite FTS5. Fast, zero-setup, no extra dependencies.
 - **`marko/docs-vec`** — Semantic vector search using a small ONNX embedding model. Finds conceptually related content even when exact terms differ.
 
-Neither is bundled with `marko/devai`. You install whichever you want explicitly. After `marko devai:install`, the installer prints a hint reminding you of the two choices if no driver is detected.
+`marko/devai` hard-requires `marko/docs-fts`, so search_docs works out of the box on every fresh install — no extra steps. The orchestrator runs `marko docs-fts:build` automatically as part of `devai:install`, so the index is ready by the time the install command returns.
 
-## TL;DR — which one?
+## Default — fts, no choice required
 
-Pick **`marko/docs-fts`** unless you specifically know you want semantic search. It works on every PHP install with SQLite (i.e. all of them), needs no model download, and answers most "find me the page about X" questions correctly. Ship `docs-vec` only if your agents ask vague conceptual questions where keywords don't overlap with documentation wording.
+When you run `composer require --dev marko/devai`, Composer pulls in `marko/docs-fts` as a transitive dep. When you then run `marko devai:install`, the installer:
+
+1. Writes per-agent configs (CLAUDE.md, AGENTS.md, etc.)
+2. Registers the MCP and LSP servers
+3. Distributes skills
+4. **Builds the docs search index** — `marko docs-fts:build`
+
+After that, `search_docs` shows up in the marko-mcp tool list and returns real results immediately.
+
+## Upgrade to vec (semantic)
+
+If you want semantic search instead of lexical, install `marko/docs-vec`. It declares Composer `replace` for `marko/docs-fts`, so a single `composer require` swaps the driver:
+
+```bash
+composer require --dev marko/docs-vec
+marko docs-vec:download-model
+marko docs-vec:build
+```
+
+Composer removes `marko/docs-fts` and installs `marko/docs-vec` in one operation. No silent precedence — you have exactly one driver installed at any time. Re-running `marko devai:install` will then build the vec index instead of fts (the orchestrator detects which driver is in vendor/).
+
+## Switching back to fts
+
+```bash
+composer remove --dev marko/docs-vec
+composer require --dev marko/docs-fts
+marko docs-fts:build
+```
+
+Or just re-run `marko devai:install --force` after the composer commands and the build runs automatically.
 
 ## Quick comparison
 
 | Feature | docs-fts | docs-vec |
 |---|---|---|
 | Search type | Lexical (exact terms) | Semantic (meaning-based) |
-| Setup | None — works immediately | Requires ONNX model download (~40 MB) |
+| Setup | None — bundled with devai | Requires ONNX model download (~40 MB) |
 | Offline | Yes | Yes (after model download) |
 | Exact-query accuracy | Excellent | Good |
 | Conceptual-query accuracy | Limited | Excellent |
@@ -27,44 +56,14 @@ Pick **`marko/docs-fts`** unless you specifically know you want semantic search.
 | Index size | Small | Larger (embeddings per chunk) |
 | Required PHP extensions | `pdo_sqlite` (standard) | `pdo_sqlite` + `sqlite-vec` |
 
-## Install fts (recommended)
-
-```bash
-composer require --dev marko/docs-fts
-marko docs-fts:build
-```
-
-The build step indexes Marko's docs and any `resources/ai/guidelines.md` files from installed packages. Re-run `marko docs-fts:build` after adding new packages.
-
-## Install vec (semantic)
-
-```bash
-composer require --dev marko/docs-vec
-marko docs-vec:download-model
-marko docs-vec:build
-```
-
-`docs-vec` requires the [`sqlite-vec`](https://github.com/asg017/sqlite-vec) extension. If the ONNX download fails or `sqlite-vec` isn't loaded, see [Troubleshooting](./troubleshooting/).
-
-## Switching drivers
-
-Marko intentionally avoids silent precedence — having both drivers installed and "letting one win" is exactly the kind of magic the framework forbids. To swap:
-
-```bash
-composer remove --dev marko/docs-fts
-composer require --dev marko/docs-vec
-marko docs-vec:download-model
-marko docs-vec:build
-```
-
-Or in reverse. Your `composer.json` should list exactly the driver you want.
-
 ## Choosing fts
 
-Use **`docs-fts`** when:
+Use **`docs-fts`** (the default) when:
 - You want zero setup, no model downloads, no extra extensions
 - Your agents ask specific, keyword-based questions about the docs
 - You're in a restricted network environment where model downloads are awkward
+
+Most projects should stay on fts.
 
 ## Choosing vec
 
@@ -76,6 +75,6 @@ Use **`docs-vec`** when:
 ## Package READMEs
 
 - [`marko/docs`](https://github.com/markshust/marko/tree/develop/packages/docs) — the contract package both drivers implement
-- [`marko/docs-fts`](https://github.com/markshust/marko/tree/develop/packages/docs-fts)
-- [`marko/docs-vec`](https://github.com/markshust/marko/tree/develop/packages/docs-vec)
+- [`marko/docs-fts`](https://github.com/markshust/marko/tree/develop/packages/docs-fts) — bundled default
+- [`marko/docs-vec`](https://github.com/markshust/marko/tree/develop/packages/docs-vec) — semantic upgrade (replaces fts)
 - [`marko/mcp`](https://github.com/markshust/marko/tree/develop/packages/mcp) — registers `search_docs` against whichever driver is bound

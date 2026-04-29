@@ -11,6 +11,9 @@
         "marko/docs": "self.version",
         "marko/docs-markdown": "self.version"
     },
+    "replace": {
+        "marko/docs-fts": "self.version"
+    },
     "require-dev": {
         "pestphp/pest": "^4.0"
     },
