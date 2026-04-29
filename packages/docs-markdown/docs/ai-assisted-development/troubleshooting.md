@@ -9,27 +9,23 @@ This page covers the most common issues encountered when setting up `marko/devai
 
 ### "marko command not found" after composer require
 
-The `marko` binary is published to `vendor/bin/`. Make sure your `PATH` includes `vendor/bin/`:
+The `marko` binary is published to `vendor/bin/`. If you don't already have it on your `PATH` from a global install, add the project's `vendor/bin/` to your shell:
 
 ```bash
 export PATH="vendor/bin:$PATH"
 ```
 
-Or call the binary with its full path:
-
-```bash
-./vendor/bin/marko devai:install
-```
+Or invoke the binary by its project-local path: `./vendor/bin/marko ...`.
 
 ### devai:install exits with "No agents detected"
 
 The installer detects agents by looking for known configuration files and binaries. If no agents are found:
 
-1. Confirm the agent is installed and accessible on your `PATH` (e.g., run `claude --version`)
-2. If the agent uses a non-standard config location, use the `--agent` flag to force detection:
+1. Confirm the agent's CLI is on your `PATH` (e.g., `claude`, `codex`, `gemini` for the agents that gate detection on a binary).
+2. Bypass detection and force a specific agent set with the `--agents` flag (comma-separated, no space):
 
 ```bash
-marko devai:install --agent=claude-code
+marko devai:install --agents=claude-code,codex --docs-driver=vec
 ```
 
 Supported agent identifiers: `claude-code`, `codex`, `cursor`, `copilot`, `gemini-cli`, `junie`.
@@ -48,31 +44,17 @@ If running inside a container or mounted volume, ensure the working directory is
 
 ### Download hangs or times out
 
-The ONNX embedding model is approximately 80 MB and is downloaded on first use when the `docs-vec` driver is active. If the download hangs:
+The ONNX embedding model is downloaded by `marko docs-vec:download-model` and lives inside the `marko/docs-vec` package directory. If the download hangs:
 
-1. Check your network connection and proxy settings
-2. Set a longer timeout in `config/devai.php`:
-
-```php
-'onnx_download_timeout' => 120, // seconds
-```
-
-3. Download the model manually and place it in the expected path:
-
-```bash
-# Find the expected path
-marko devai:onnx-path
-
-# Download manually (example — use the URL from the output above)
-curl -L https://example.com/model.onnx -o /path/shown/by/command
-```
+1. Check your network connection and proxy settings.
+2. Re-run the command — it skips files that already exist with a matching checksum, so a partial download can be resumed by deleting just the partial file.
 
 ### "FFI not enabled" error with docs-vec
 
 The `docs-vec` driver requires PHP's FFI extension. Check if it is enabled:
 
 ```bash
-php -m | grep ffi
+php -m | grep -i ffi
 ```
 
 If FFI is missing, either enable it in `php.ini`:
@@ -82,22 +64,15 @@ extension=ffi
 ffi.enable=true
 ```
 
-Or switch to the `docs-fts` driver, which has no FFI requirement:
-
-```bash
-MARKO_DOCS_DRIVER=docs-fts
-```
-
-See [Docs driver comparison](./docs-drivers/) for a full feature comparison.
+Or switch to the `docs-fts` driver, which has no FFI requirement. The driver is selected by which package your app installs (`marko/docs-fts` vs `marko/docs-vec`); see [Docs driver comparison](./docs-drivers/).
 
 ### "ONNX model checksum mismatch"
 
-If the downloaded model file is corrupted:
+If the downloaded model file is corrupted, delete it from the `marko/docs-vec` package's model directory and re-run:
 
 ```bash
-# Delete the cached model and re-download
-marko devai:onnx-clear
-marko codeindexer:index --driver=docs-vec
+marko docs-vec:download-model
+marko docs-vec:build
 ```
 
 ## MCP server problems
@@ -120,11 +95,11 @@ marko mcp:serve
 }
 ```
 
-3. Ensure the `marko` binary is on the `PATH` the agent uses. Some agents (e.g., Claude Code) use a restricted environment. Use the full binary path if needed:
+3. Ensure the `marko` binary is on the `PATH` the agent uses. Some agents (e.g., Claude Code) launch their MCP servers in a restricted environment. If `marko` is not on the agent's `PATH`, point the registration at the absolute path of the binary:
 
 ```json
 {
-  "command": "/path/to/your/project/vendor/bin/marko",
+  "command": "/absolute/path/to/marko",
   "args": ["mcp:serve"]
 }
 ```
@@ -164,17 +139,17 @@ marko lsp:serve
 
 ### Completions appear but are stale or incorrect
 
-Completions are sourced from the codeindex. Rebuild it after making structural changes to your project:
+The MCP and LSP servers lazy-load `.marko/index.cache` and rebuild it whenever a watched source file is newer than the cache, so completions usually self-heal. If they don't, force a clean rebuild:
 
 ```bash
-marko codeindexer:index
+marko indexer:rebuild
 ```
 
 ## Agent registration problems
 
 ### CLAUDE.md / AGENTS.md not updated after re-running devai:install
 
-By default, the installer skips files that already exist and contain a `## Marko` section to avoid duplicating content. To force a refresh:
+A second `marko devai:install` run is a no-op once `.marko/devai.json` exists — the orchestrator prints "Prior install detected at .marko/devai.json. Use `marko devai:update` to update, or pass --force to re-run." To force a refresh:
 
 ```bash
 marko devai:install --force

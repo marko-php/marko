@@ -62,23 +62,19 @@ return [
 ];
 ```
 
-Switch to semantic search:
+Switch to semantic search by installing the `marko/docs-vec` package (replace `marko/docs-fts` if you had it). The MCP `search_docs` tool registers automatically against whichever `DocsSearchInterface` driver is bound:
 
 ```bash
-# In your .env
-MARKO_DOCS_DRIVER=docs-vec
+composer require marko/docs-vec
+marko docs-vec:download-model
+marko docs-vec:build
 ```
 
-Then rebuild the index:
+Lexical search is the equivalent flow with the FTS driver:
 
 ```bash
-marko codeindexer:index --driver=docs-vec
-```
-
-You can also pass the driver flag directly when starting the MCP server:
-
-```bash
-marko mcp:serve --docs-driver=docs-vec
+composer require marko/docs-fts
+marko docs-fts:build
 ```
 
 ## Choosing a driver

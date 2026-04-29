@@ -8,8 +8,7 @@ Work through this checklist after running `marko devai:install` to confirm the f
 ## 1. Package installation
 
 - [ ] `composer show marko/devai` returns a version without error
-- [ ] `./vendor/bin/marko --version` prints a version string
-- [ ] `marko list` includes `devai:install`, `mcp:serve`, and `lsp:serve` in the output
+- [ ] `marko list` includes `devai:install`, `mcp:serve`, `lsp:serve`, and `indexer:rebuild` in the output
 
 ## 2. devai:install output
 
@@ -25,9 +24,9 @@ Run `marko devai:install` and verify:
 Choose one agent and verify its guidelines file:
 
 **Claude Code:**
-- [ ] `CLAUDE.md` exists in the project root
-- [ ] `CLAUDE.md` contains a `## Marko` section
-- [ ] The section lists at least one MCP tool (e.g., `search_docs`)
+- [ ] `CLAUDE.md` exists in the project root and references `@AGENTS.md`
+- [ ] `AGENTS.md` exists in the project root and includes a `## Package Guidelines` section
+- [ ] `claude mcp list` includes the `marko-mcp` server
 
 **Codex:**
 - [ ] `AGENTS.md` exists in the project root
@@ -61,19 +60,23 @@ Invoke the MCP server from your chosen agent:
 - [ ] `query_database` appears in the list only if `marko/database` is installed
 - [ ] Ask the agent: "Search Marko docs for routing" — `search_docs` should return at least one result (requires a docs driver)
 
-## 5. Codeindex
+## 5. Code index
 
-- [ ] `marko codeindexer:index` completes without error
-- [ ] After indexing, `marko mcp:serve` with `search_docs` returns results for "routing"
-- [ ] `find_event_observers` returns results when given a known event name (try `marko.request.received`)
+The MCP/LSP servers lazy-load and auto-rebuild `.marko/index.cache` on first read,
+so explicit indexing is optional. To pre-warm or to force a rebuild after large
+codebase changes:
+
+- [ ] `marko indexer:rebuild` completes without error and prints module/route/config-key counts
+- [ ] After indexing, asking the agent "List all Marko modules" (which calls the `list_modules` MCP tool) returns the expected modules
+- [ ] `find_event_observers` returns results when given a known event class FQN that has at least one `#[Observer]` in your codebase
 
 ## 6. LSP server
 
 - [ ] `marko lsp:serve` starts without error (blocks waiting for stdin — Ctrl+C to exit)
 - [ ] The editor's LSP configuration references `marko lsp:serve`
-- [ ] Open a PHP file and type `config('` — Marko config key completions appear (`textDocument/completion`)
-- [ ] Hover over a quoted config key string — hover documentation appears (`textDocument/hover`)
-- [ ] Go-to-definition on a quoted config key navigates to the definition (`textDocument/definition`)
+- [ ] In a PHP file, type a config getter and place the cursor inside the quotes (e.g., `$config->get("|")`) — Marko config key completions appear (`textDocument/completion`)
+- [ ] Hover over a quoted config key string — markdown hover with type, default, and source location appears (`textDocument/hover`)
+- [ ] Go-to-definition on a quoted config key navigates to its definition (`textDocument/definition`)
 
 ## 7. End-to-end agent task
 
@@ -84,14 +87,15 @@ Perform one real agentic task to confirm the full integration:
 3. Verify the agent:
    - [ ] Creates `app/Greet/` with the correct module structure
    - [ ] Uses PHP attribute routing (`#[Get('/greet')]`)
-   - [ ] Does not use any patterns that violate Marko conventions (the `validate_module` tool may run automatically)
-4. Run `marko validate_module Greet` manually — it should pass with no errors
+   - [ ] Does not use any patterns that violate Marko conventions
+4. Ask the agent to call the `validate_module` MCP tool against `app/Greet` — it should pass with no errors
 
 ## 8. Skills (if applicable)
 
-If any installed packages ship skills under `resources/ai/skills/`:
+The skill files devai distributes live under each agent's skills directory
+(e.g., `.claude/skills/`, `.agents/skills/`, `.gemini/skills/`, `junie/skills/`):
 
-- [ ] `marko devai:skills:list` lists at least one skill
+- [ ] At least one `SKILL.md` file exists in the chosen agent's skills directory
 - [ ] Asking the agent to perform a skill-specific task triggers the correct skill workflow
 
 ## All checks pass?

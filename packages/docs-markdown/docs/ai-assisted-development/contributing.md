@@ -85,7 +85,7 @@ Use this skill when a developer asks to integrate a new payment provider.
 5. Dispatch `PaymentSucceeded` or `PaymentFailed` from `charge()`
 
 ## Verification
-Run `marko validate_module {Module}` — it should pass with no errors.
+Ask your AI agent to call the `validate_module` MCP tool against `app/{Module}` — it should pass with no errors.
 
 ## See also
 - [marko/payment README](https://github.com/markshust/marko/tree/develop/packages/payment)
@@ -108,8 +108,8 @@ To verify your `resources/ai/` files are picked up correctly:
 
 1. Install your package in a test Marko project
 2. Run `marko devai:install`
-3. Inspect the generated agent guidelines file (e.g., `CLAUDE.md`) for your package's section
-4. Run `marko devai:skills:list` to confirm your skills appear
+3. Inspect the generated agent guidelines file (e.g., `AGENTS.md`) — your package should have its own subsection under `## Package Guidelines`
+4. Confirm your skills appear under the chosen agent's skills directory (e.g., `.claude/skills/`, `.agents/skills/`, `.gemini/skills/`, `junie/skills/`)
 
 ## Best practices
 
