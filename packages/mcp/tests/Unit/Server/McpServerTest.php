@@ -15,12 +15,28 @@ beforeEach(function (): void {
 });
 
 it('responds to initialize with protocol version and capabilities', function (): void {
-    $this->protocol->handleMessage(json_encode(['jsonrpc' => '2.0', 'method' => 'initialize', 'params' => [], 'id' => 1]));
+    $this->protocol->handleMessage(
+        json_encode(['jsonrpc' => '2.0', 'method' => 'initialize', 'params' => [], 'id' => 1])
+    );
     rewind($this->out);
     $response = json_decode((string) stream_get_contents($this->out), true);
 
     expect($response['result']['protocolVersion'])->toBe('2024-11-05')
-        ->and($response['result']['serverInfo']['name'])->toBe('marko/mcp');
+        ->and($response['result']['serverInfo']['name'])->toBe('marko-mcp');
+});
+
+it('reports a serverInfo.name with no slash so MCP tool prefixes stay valid', function (): void {
+    // Regression: when the server reported `marko/mcp`, Claude Code (and other
+    // MCP clients) failed to surface its tools because the resulting tool
+    // namespace `mcp__marko/mcp__<tool>` is invalid. Tool identifiers must
+    // not contain slashes — keep the self-reported name dash-separated.
+    $this->protocol->handleMessage(
+        json_encode(['jsonrpc' => '2.0', 'method' => 'initialize', 'params' => [], 'id' => 1])
+    );
+    rewind($this->out);
+    $response = json_decode((string) stream_get_contents($this->out), true);
+
+    expect($response['result']['serverInfo']['name'])->not->toContain('/');
 });
 
 it('advertises tools capability when tools are registered', function (): void {
@@ -38,7 +54,9 @@ it('advertises tools capability when tools are registered', function (): void {
         handler: $handler,
     ));
 
-    $this->protocol->handleMessage(json_encode(['jsonrpc' => '2.0', 'method' => 'initialize', 'params' => [], 'id' => 1]));
+    $this->protocol->handleMessage(
+        json_encode(['jsonrpc' => '2.0', 'method' => 'initialize', 'params' => [], 'id' => 1])
+    );
     rewind($this->out);
     $response = json_decode((string) stream_get_contents($this->out), true);
 
@@ -83,7 +101,11 @@ it('dispatches tools/call to the correct handler by name', function (): void {
         handler: $handler,
     ));
 
-    $this->protocol->handleMessage(json_encode(['jsonrpc' => '2.0', 'method' => 'tools/call', 'params' => ['name' => 'greet', 'arguments' => ['name' => 'world']], 'id' => 3]));
+    $this->protocol->handleMessage(
+        json_encode(
+            ['jsonrpc' => '2.0', 'method' => 'tools/call', 'params' => ['name' => 'greet', 'arguments' => ['name' => 'world']], 'id' => 3]
+        )
+    );
     rewind($this->out);
     $response = json_decode((string) stream_get_contents($this->out), true);
 
@@ -91,7 +113,11 @@ it('dispatches tools/call to the correct handler by name', function (): void {
 });
 
 it('returns JSON-RPC error for unknown tool names', function (): void {
-    $this->protocol->handleMessage(json_encode(['jsonrpc' => '2.0', 'method' => 'tools/call', 'params' => ['name' => 'missing', 'arguments' => []], 'id' => 4]));
+    $this->protocol->handleMessage(
+        json_encode(
+            ['jsonrpc' => '2.0', 'method' => 'tools/call', 'params' => ['name' => 'missing', 'arguments' => []], 'id' => 4]
+        )
+    );
     rewind($this->out);
     $response = json_decode((string) stream_get_contents($this->out), true);
 
@@ -114,7 +140,11 @@ it('validates tool call arguments against declared schema', function (): void {
     ));
 
     // Missing required field 'q'
-    $this->protocol->handleMessage(json_encode(['jsonrpc' => '2.0', 'method' => 'tools/call', 'params' => ['name' => 'search', 'arguments' => []], 'id' => 5]));
+    $this->protocol->handleMessage(
+        json_encode(
+            ['jsonrpc' => '2.0', 'method' => 'tools/call', 'params' => ['name' => 'search', 'arguments' => []], 'id' => 5]
+        )
+    );
     rewind($this->out);
     $response = json_decode((string) stream_get_contents($this->out), true);
 
@@ -137,7 +167,11 @@ it('returns tool result as MCP-formatted content', function (): void {
         handler: $handler,
     ));
 
-    $this->protocol->handleMessage(json_encode(['jsonrpc' => '2.0', 'method' => 'tools/call', 'params' => ['name' => 'fetch', 'arguments' => []], 'id' => 6]));
+    $this->protocol->handleMessage(
+        json_encode(
+            ['jsonrpc' => '2.0', 'method' => 'tools/call', 'params' => ['name' => 'fetch', 'arguments' => []], 'id' => 6]
+        )
+    );
     rewind($this->out);
     $response = json_decode((string) stream_get_contents($this->out), true);
 

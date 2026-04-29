@@ -13,7 +13,15 @@ class McpServer
 {
     private const string PROTOCOL_VERSION = '2024-11-05';
 
-    private const string SERVER_NAME = 'marko/mcp';
+    /**
+     * Self-reported name in the MCP `initialize` handshake. Must match the
+     * name agents use to register the server (e.g. `claude mcp add marko-mcp …`)
+     * and must contain no slashes — Claude Code (and other MCP clients) derive
+     * the tool-prefix namespace `mcp__<name>__<tool>` from this string, and a
+     * slash in <name> renders the resulting tool identifiers invalid, causing
+     * the tools to silently disappear from the agent's tool surface.
+     */
+    private const string SERVER_NAME = 'marko-mcp';
 
     private const string SERVER_VERSION = '1.0.0';
 
@@ -102,7 +110,10 @@ class McpServer
      * @param array<string, mixed> $schema
      * @throws McpException
      */
-    private function validateArgs(array $args, array $schema): void
+    private function validateArgs(
+        array $args,
+        array $schema,
+    ): void
     {
         $required = $schema['required'] ?? [];
         foreach ($required as $field) {
