@@ -56,7 +56,7 @@ Provides callable tools over the Model Context Protocol so agents can query your
 | `query_database` | Conditional — requires `marko/database` |
 | `search_docs` | Conditional — requires a `DocsSearchInterface` binding |
 
-See the [MCP tools reference](./mcp-tools/) for the full list with return types and parameters.
+See the [MCP reference](./mcp/) for the full list with return types and parameters, and the [LSP reference](./lsp/) for editor-side code intel.
 
 ### marko/lsp
 
