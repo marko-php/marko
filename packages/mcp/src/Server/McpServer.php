@@ -11,7 +11,17 @@ use Marko\Mcp\Tools\ToolDefinition;
 
 class McpServer
 {
-    private const string PROTOCOL_VERSION = '2024-11-05';
+    /**
+     * Advertised MCP protocol revision. MCP clients (Claude Code in particular)
+     * negotiate strictly: if the client requests `2025-11-25` and we respond
+     * with the original `2024-11-05`, Claude Code accepts the connection at
+     * the transport level but silently drops every tool from the server's
+     * tool surface. Our minimal implementation (initialize, tools/list,
+     * tools/call) is forward-compatible across spec revisions — bumping to
+     * the latest is the difference between "connected but invisible" and
+     * "tools work."
+     */
+    private const string PROTOCOL_VERSION = '2025-11-25';
 
     /**
      * Self-reported name in the MCP `initialize` handshake. Must match the
@@ -78,11 +88,35 @@ class McpServer
                 fn (ToolDefinition $t) => [
                     'name' => $t->name,
                     'description' => $t->description,
-                    'inputSchema' => $t->inputSchema,
+                    'inputSchema' => $this->normalizeInputSchema($t->inputSchema),
                 ],
                 $this->tools,
             )),
         ];
+    }
+
+    /**
+     * Force `properties` (and any other JSON-Schema "object" slot) to serialize
+     * as a JSON object rather than a JSON array.
+     *
+     * Background: PHP's json_encode emits `[]` for an empty PHP array, which is
+     * a JSON array. JSON Schema requires `properties` to be a JSON object even
+     * when empty. MCP clients (Claude Code in particular) validate the
+     * tools/list response strictly with Zod and reject the entire payload when
+     * any tool's schema has `"properties": []` instead of `"properties": {}`.
+     * The whole tool surface goes invisible — connection still succeeds, but
+     * "Failed to fetch tools" silently strips every tool from the agent.
+     *
+     * @param array<string, mixed> $schema
+     * @return array<string, mixed>
+     */
+    private function normalizeInputSchema(array $schema): array
+    {
+        if (isset($schema['properties']) && $schema['properties'] === []) {
+            $schema['properties'] = (object) [];
+        }
+
+        return $schema;
     }
 
     /**

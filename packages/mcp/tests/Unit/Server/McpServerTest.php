@@ -21,7 +21,7 @@ it('responds to initialize with protocol version and capabilities', function ():
     rewind($this->out);
     $response = json_decode((string) stream_get_contents($this->out), true);
 
-    expect($response['result']['protocolVersion'])->toBe('2024-11-05')
+    expect($response['result']['protocolVersion'])->toBe('2025-11-25')
         ->and($response['result']['serverInfo']['name'])->toBe('marko-mcp');
 });
 
@@ -61,6 +61,33 @@ it('advertises tools capability when tools are registered', function (): void {
     $response = json_decode((string) stream_get_contents($this->out), true);
 
     expect($response['result']['capabilities']['tools'])->not->toBeNull();
+});
+
+it('serializes tools with empty properties as a JSON object, not a JSON array', function (): void {
+    // Regression: PHP arrays with no string keys serialize to `[]`, but MCP
+    // clients (Claude Code) strictly validate `inputSchema.properties` as an
+    // object. Empty `[]` causes "Failed to fetch tools" and the whole tool
+    // list disappears. The server must coerce empty properties to `{}`.
+    $handler = new class () implements ToolHandlerInterface
+    {
+        public function handle(array $arguments): array
+        {
+            return ['content' => [['type' => 'text', 'text' => 'ok']]];
+        }
+    };
+    $this->server->registerTool(new ToolDefinition(
+        name: 'no_args_tool',
+        description: 'A tool that takes no arguments',
+        inputSchema: ['type' => 'object', 'properties' => []],
+        handler: $handler,
+    ));
+
+    $this->protocol->handleMessage(json_encode(['jsonrpc' => '2.0', 'method' => 'tools/list', 'id' => 1]));
+    rewind($this->out);
+    $rawJson = (string) stream_get_contents($this->out);
+
+    expect($rawJson)->toContain('"properties":{}')
+        ->and($rawJson)->not->toContain('"properties":[]');
 });
 
 it('returns all registered tools via tools/list', function (): void {
