@@ -9,7 +9,8 @@
         "marko/cli": "self.version",
         "marko/mcp": "self.version",
         "marko/lsp": "self.version",
-        "marko/docs-fts": "self.version"
+        "marko/docs-fts": "self.version",
+        "marko/claude-plugins": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"

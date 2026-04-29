@@ -6,13 +6,10 @@
     "name": "Mark Shust",
     "email": "mark@shust.com"
   },
-  "metadata": {
-    "pluginRoot": "./plugins"
-  },
   "plugins": [
     {
       "name": "marko-mcp",
-      "source": "./marko-mcp",
+      "source": "./packages/claude-plugins/plugins/marko-mcp",
       "description": "Marko MCP server (codeindexer, docs-fts) for Claude Code.",
       "version": "0.1.0",
       "author": {
@@ -24,7 +21,7 @@
     },
     {
       "name": "marko-lsp",
-      "source": "./marko-lsp",
+      "source": "./packages/claude-plugins/plugins/marko-lsp",
       "description": "Marko LSP bundle (PHP intelephense + Latte) for Claude Code.",
       "version": "0.1.0",
       "category": "development",
@@ -32,7 +29,7 @@
     },
     {
       "name": "marko-skills",
-      "source": "./marko-skills",
+      "source": "./packages/claude-plugins/plugins/marko-skills",
       "description": "Marko-specific skills (create-module, create-plugin) for Claude Code.",
       "version": "0.1.0",
       "category": "development",
