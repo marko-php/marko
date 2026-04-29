@@ -66,13 +66,16 @@ PHP;
         path: $tempDir,
     );
 
-    $discovery = new PreferenceDiscovery();
-    $preferenceFiles = $discovery->discoverInModule($manifest);
+    $discovery = new PreferenceDiscovery(new \Marko\Core\Discovery\ClassFileParser());
+    $records = $discovery->discoverInModule($manifest);
 
-    expect($preferenceFiles)
+    expect($records)
         ->toBeArray()
-        ->toHaveCount(1)
-        ->and($preferenceFiles[0])->toEndWith('CustomStdClass.php');
+        ->toHaveCount(1);
+
+    expect($records[0]->replacement)->toEndWith('CustomStdClass');
+    expect($records[0]->replaces)->toBe(\stdClass::class);
+    expect($records[0]->filePath)->toEndWith('CustomStdClass.php');
 
     cleanupPreferenceTestDirectory($tempDir);
 });
@@ -186,3 +189,20 @@ it('ignores lower-priority preference when higher-priority already registered', 
     expect($registry->getPreference(OriginalService::class))
         ->toBe(FinalPreferredService::class);
 });
+
+it('throws PreferenceConflictException for circular preference chains', function (): void {
+    $registry = new PreferenceRegistry();
+
+    // PreferredService replaces OriginalService
+    $registry->register(
+        original: OriginalService::class,
+        replacement: PreferredService::class,
+    );
+    // OriginalService replaces PreferredService — creates a cycle
+    $registry->register(
+        original: PreferredService::class,
+        replacement: OriginalService::class,
+    );
+
+    $registry->getPreference(OriginalService::class);
+})->throws(PreferenceConflictException::class, 'Circular preference detected');
