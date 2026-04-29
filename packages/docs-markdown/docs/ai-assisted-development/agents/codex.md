@@ -1,9 +1,9 @@
 ---
 title: Codex
-description: Set up Marko's AI tooling with OpenAI Codex CLI — AGENTS.md guidelines and MCP tool registration.
+description: Set up Marko's AI tooling with OpenAI Codex CLI — AGENTS.md guidelines, MCP tool registration, and skill distribution.
 ---
 
-[OpenAI Codex CLI](https://github.com/openai/codex) is OpenAI's agentic coding tool. `devai:install` configures it with an `AGENTS.md` project guidelines file and MCP server registration.
+[OpenAI Codex CLI](https://github.com/openai/codex) is OpenAI's agentic coding tool. `devai:install` configures it with an `AGENTS.md` project guidelines file, MCP server registration via the `codex mcp add` CLI, and Marko skills distributed to `.agents/skills/`.
 
 ## Prerequisites
 
@@ -13,34 +13,37 @@ description: Set up Marko's AI tooling with OpenAI Codex CLI — AGENTS.md guide
 
 ## What devai:install writes
 
-Running `marko devai:install` with Codex detected produces the following files:
+Running `marko devai:install` with Codex detected produces the following:
 
 ```
 AGENTS.md                          # Project guidelines for Codex
-.codex/mcp.json                    # MCP server registration (marko mcp:serve)
+.agents/skills/                    # Marko skill files distributed for Codex
 ```
+
+MCP registration is performed via the Codex CLI (`codex mcp add`) rather than by writing a config file.
 
 ### AGENTS.md
 
-The root `AGENTS.md` receives a merged section containing:
+The root `AGENTS.md` receives Marko project guidelines:
 
 - Marko module conventions and project structure overview
 - Available MCP tools and their descriptions
 - Project-specific guidelines from every installed package's `resources/ai/guidelines.md`
-- Skill instructions from `resources/ai/skills/`
-
-If an `AGENTS.md` already exists, `devai:install` appends a clearly marked `## Marko` section.
 
 ### MCP registration
 
-The `.codex/mcp.json` file registers `marko mcp:serve` as an MCP server. Codex calls this server to invoke tools like `search_docs` and `find_event_observers` during agentic tasks.
+The installer calls `codex mcp add <serverName> -- <command> [args]` to register `marko mcp:serve` as an MCP server. Codex stores this registration in its own configuration; no `.codex/mcp.json` file is written by `devai:install`.
+
+### Skills
+
+Marko skill bundles are written to `.agents/skills/` so Codex can reference them during agentic tasks.
 
 ## Manual verification
 
 1. Open a terminal in your project root.
 2. Run `codex "What Marko MCP tools are available?"` — Codex should list the registered tools from `marko/mcp`.
 3. Run `codex "Search docs for routing"` — the `search_docs` tool should return Marko documentation results.
-4. Check that `.codex/mcp.json` references `marko mcp:serve`.
+4. Verify `AGENTS.md` exists in the project root and `.agents/skills/` contains skill files.
 
 ## Agent-specific tips
 

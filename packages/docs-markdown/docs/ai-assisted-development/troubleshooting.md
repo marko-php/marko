@@ -131,13 +131,19 @@ marko mcp:serve
 
 ### "Tool not found" when calling search_docs
 
-The `search_docs` tool requires a built index. If the index is missing or stale:
+The `search_docs` tool is only registered when a `DocsSearchInterface` binding is present. This requires installing a docs driver package such as `marko/docs-fts` or `marko/docs-vec`. If neither is installed, the tool will not appear in the MCP tool list regardless of the index state.
+
+If the tool is listed but returns no results, the index may be stale. Trigger a rebuild:
 
 ```bash
-marko codeindexer:index
+marko indexer:rebuild
 ```
 
-Then restart the MCP server (the agent handles this automatically on reconnect for most agents).
+The `IndexCache` also rebuilds automatically on next read if any tracked source file is newer than the cache.
+
+### "Tool not found" when calling query_database
+
+The `query_database` tool is only registered when `marko/database` is bound in the container. Install the database package and ensure it is configured before expecting this tool to appear.
 
 ## LSP problems
 

@@ -31,23 +31,23 @@ Choose one agent and verify its guidelines file:
 
 **Codex:**
 - [ ] `AGENTS.md` exists in the project root
-- [ ] `AGENTS.md` contains a `## Marko` section
+- [ ] `.agents/skills/` contains skill files
 
 **Cursor:**
-- [ ] `.cursorrules` exists in the project root
-- [ ] `.cursorrules` contains a `# Marko` section
+- [ ] `.cursor/rules/marko.mdc` exists and contains `alwaysApply: true`
+- [ ] `.cursor/mcp.json` exists and uses the `mcpServers` key
 
 **Copilot:**
 - [ ] `.github/copilot-instructions.md` exists
-- [ ] It contains a `## Marko` section
+- [ ] `.vscode/mcp.json` exists and uses the `servers` key
 
 **Gemini CLI:**
 - [ ] `GEMINI.md` exists in the project root
-- [ ] `GEMINI.md` contains a `## Marko` section
+- [ ] `.gemini/skills/` contains skill files
 
 **Junie:**
-- [ ] `.junie/guidelines.md` exists
-- [ ] It contains a `## Marko` section
+- [ ] `junie/guidelines.md` exists (under `junie/`, not `.junie/`)
+- [ ] `junie/skills/` contains skill files
 
 ## 4. MCP server
 
@@ -56,8 +56,10 @@ Choose one agent and verify its guidelines file:
 
 Invoke the MCP server from your chosen agent:
 
-- [ ] Ask the agent: "What MCP tools are available?" — it should list `search_docs`, `find_event_observers`, `validate_module`, `query_database`
-- [ ] Ask the agent: "Search Marko docs for routing" — `search_docs` should return at least one result
+- [ ] Ask the agent: "What MCP tools are available?" — it should list at least `find_event_observers`, `validate_module`, `list_modules`, `list_routes`, `app_info`, `last_error`, `read_log_entries`, and `run_console_command`
+- [ ] `search_docs` appears in the list only if a docs driver (`marko/docs-fts` or `marko/docs-vec`) is installed
+- [ ] `query_database` appears in the list only if `marko/database` is installed
+- [ ] Ask the agent: "Search Marko docs for routing" — `search_docs` should return at least one result (requires a docs driver)
 
 ## 5. Codeindex
 
@@ -69,8 +71,9 @@ Invoke the MCP server from your chosen agent:
 
 - [ ] `marko lsp:serve` starts without error (blocks waiting for stdin — Ctrl+C to exit)
 - [ ] The editor's LSP configuration references `marko lsp:serve`
-- [ ] Open a PHP file and type `config('` — Marko config key completions appear
-- [ ] Open a PHP file with a route attribute — hovering shows parameter completion hints
+- [ ] Open a PHP file and type `config('` — Marko config key completions appear (`textDocument/completion`)
+- [ ] Hover over a quoted config key string — hover documentation appears (`textDocument/hover`)
+- [ ] Go-to-definition on a quoted config key navigates to the definition (`textDocument/definition`)
 
 ## 7. End-to-end agent task
 

@@ -3,7 +3,9 @@ title: Docs Driver Comparison
 description: Choose between full-text search (docs-fts) and semantic vector search (docs-vec) for the search_docs MCP tool.
 ---
 
-The `search_docs` MCP tool in `marko/mcp` supports two interchangeable backends, called **docs drivers**:
+The `search_docs` MCP tool in `marko/mcp` is conditional: it is only registered when a `DocsSearchInterface` binding is present in the container. Docs driver packages (`marko/docs-fts`, `marko/docs-vec`, or a custom driver) provide this binding. Without a driver installed, `search_docs` does not appear in the MCP tool list.
+
+Two first-party drivers are available:
 
 - **`docs-fts`** — Full-text search using SQLite FTS5. Fast, zero-dependency, works offline.
 - **`docs-vec`** — Semantic vector search using ONNX embeddings. Finds conceptually related results even when exact terms differ.

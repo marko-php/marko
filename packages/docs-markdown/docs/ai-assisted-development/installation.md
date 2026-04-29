@@ -31,9 +31,15 @@ marko devai:install
 The installer does the following in order:
 
 1. **Detects agents** — Scans your environment and project directory for known agent configuration files and binaries.
-2. **Indexes the codebase** — Runs `marko codeindexer:index` to build the search index used by `marko/mcp` and `marko/lsp`.
-3. **Writes agent files** — For each detected agent, writes the appropriate configuration files (guidelines, MCP registration, LSP registration).
-4. **Merges package skills** — Reads every installed package's `resources/ai/guidelines.md` and `resources/ai/skills/` directory and merges the content into the agent guidelines.
+2. **Writes agent files** — For each detected agent, writes the appropriate configuration files (guidelines, MCP registration, skill files).
+3. **Merges package guidelines** — Reads every installed package's `resources/ai/guidelines.md` and merges the content into the agent guidelines files.
+4. **Distributes skills** — Writes skill bundles from `resources/ai/skills/` to the agent-specific skills directory for agents that support it.
+
+The `IndexCache` used by `marko/mcp` and `marko/lsp` builds automatically on first read if no cache file exists, so an explicit `indexer:rebuild` step is not required. You can run it manually if you want to pre-warm the cache:
+
+```bash
+marko indexer:rebuild
+```
 
 ### Non-destructive by default
 

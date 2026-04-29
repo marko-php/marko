@@ -13,34 +13,29 @@ description: Set up Marko's AI tooling with Anthropic Claude Code — CLAUDE.md 
 
 ## What devai:install writes
 
-Running `marko devai:install` with Claude Code detected produces the following files:
+Running `marko devai:install` with Claude Code detected produces the following files and registrations:
 
 ```
-CLAUDE.md                          # Project guidelines injected from resources/ai/guidelines.md
-.claude/commands/                  # Slash commands for common Marko workflows
+AGENTS.md                          # Merged Marko guidelines (shared across agents)
+CLAUDE.md                          # Includes @AGENTS.md and Claude-specific notes
 .claude/plugins/marko/
-  lsp.json                         # LSP server registration (marko lsp:serve)
-  mcp.json                         # MCP server registration (marko mcp:serve)
+  .lsp.json                        # LSP server registration (marko lsp:serve)
+.claude/skills/                    # Skill bundles from resources/ai/skills/
 ```
 
-### CLAUDE.md
+The MCP server is registered via the `claude mcp add` CLI call rather than a written config file. Claude Code manages its own MCP registry.
 
-The root `CLAUDE.md` receives a merged section containing:
+### AGENTS.md and CLAUDE.md
 
-- Marko module conventions (attribute routing, service container, events)
-- Available MCP tools and what each one does
-- Project-specific guidelines from every installed package's `resources/ai/guidelines.md`
-- Any skills found under `resources/ai/skills/`
-
-If a `CLAUDE.md` already exists, `devai:install` appends a clearly marked `## Marko` section rather than overwriting the file.
+The installer writes the merged Marko guidelines to `AGENTS.md`. The `CLAUDE.md` file references it via `@AGENTS.md` and adds a Claude-specific note pointing to `.claude/skills/` for available skills. If `CLAUDE.md` already exists it is overwritten; the `AGENTS.md` body contains all the substantive content.
 
 ### MCP registration
 
-The `mcp.json` plugin file registers `marko mcp:serve` as an MCP server using stdio transport. Claude Code calls this server whenever it invokes a tool like `search_docs` or `find_event_observers`.
+The installer runs `claude mcp add -s local -t stdio marko-mcp php marko mcp:serve` to register the MCP server with Claude Code's local project scope. Claude Code calls this server whenever it invokes a tool like `search_docs` or `find_event_observers`.
 
 ### LSP registration
 
-The `lsp.json` plugin file registers `marko lsp:serve` as a language server. This enables config key completions, template name completions, and translation key completions inside files Claude Code edits.
+The `.claude/plugins/marko/.lsp.json` file registers `marko lsp:serve` as a language server. This enables config key completions, template name completions, and translation key completions inside files Claude Code edits.
 
 ## Manual verification
 

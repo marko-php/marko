@@ -10,8 +10,8 @@ Marko ships first-class AI agent support out of the box. The `marko/devai` insta
 Three packages work together to give every supported agent a complete picture of your Marko project:
 
 - **`marko/devai`** — Installer and orchestrator. Run `marko devai:install` once to detect every agent you have configured and write the correct integration files automatically.
-- **`marko/mcp`** — An MCP (Model Context Protocol) server providing structured tools the agent can call: `search_docs`, `find_event_observers`, `validate_module`, `query_database`, and more. Started via `marko mcp:serve`.
-- **`marko/lsp`** — A Language Server Protocol implementation for Marko-specific completions: config keys, template names, translation keys, attribute parameters, and event names. Started via `marko lsp:serve`.
+- **`marko/mcp`** — An MCP (Model Context Protocol) server providing 14 always-registered tools plus conditional `query_database` and `search_docs` tools. Started via `marko mcp:serve`.
+- **`marko/lsp`** — A Language Server Protocol implementation providing completions, hover, go-to-definition, diagnostics, and code lens for Marko-specific symbols. Started via `marko lsp:serve`.
 
 Together, these three packages give agents accurate, project-specific context without requiring any manual prompt engineering.
 
@@ -29,32 +29,44 @@ marko devai:install
 ### marko/devai
 
 - Single `devai:install` command that auto-detects Claude Code, Codex, Cursor, Copilot, Gemini CLI, and Junie
-- Writes agent-specific configuration files (`CLAUDE.md`, `.cursorrules`, `.copilot/`, etc.)
-- Registers the MCP server and LSP server with each agent that supports them
-- Embeds per-package guidelines and skills from `resources/ai/` directories across your installed packages
+- Writes agent-specific configuration files (`CLAUDE.md`, `.cursor/rules/marko.mdc`, `.github/copilot-instructions.md`, `GEMINI.md`, `junie/guidelines.md`, etc.)
+- Registers the MCP server with each agent that supports it (via config file or CLI command depending on the agent)
+- Distributes per-package guidelines and skills from `resources/ai/` directories across your installed packages
 
 ### marko/mcp
 
-Provides callable tools over the Model Context Protocol so agents can query your project at runtime:
+Provides callable tools over the Model Context Protocol so agents can query your project at runtime. Fourteen tools are always available, with two registered conditionally:
 
-| Tool | Description |
+| Tool | Notes |
 |---|---|
-| `search_docs` | Full-text or semantic search across Marko documentation |
+| `check_config_key` | Verify a config key exists in the index |
 | `find_event_observers` | List observers registered for a given event |
-| `validate_module` | Check a module for structural or dependency errors |
-| `query_database` | Run a read-only query and return results as structured data |
+| `find_plugins_targeting` | List plugins targeting a given class |
+| `get_config_schema` | Return the schema for a config namespace |
+| `list_commands` | List all registered console commands |
+| `list_modules` | List all installed Marko modules |
+| `list_routes` | List all registered routes |
+| `resolve_preference` | Resolve the concrete class bound to an interface |
+| `resolve_template` | Resolve the file path for a template name |
+| `validate_module` | Check a module for structural errors |
+| `app_info` | Return application name and installed package versions |
+| `last_error` | Return the most recent error captured by the error handler |
+| `read_log_entries` | Read recent entries from the application log |
+| `run_console_command` | Run a console command and return its output |
+| `query_database` | Conditional — requires `marko/database` |
+| `search_docs` | Conditional — requires a `DocsSearchInterface` binding |
 
-See the [`marko/mcp` README](https://github.com/markshust/marko/tree/develop/packages/mcp) for the full tool list.
+See the [MCP tools reference](./mcp-tools/) for the full list with return types and parameters.
 
 ### marko/lsp
 
-Provides IDE-style completions and diagnostics inside any editor with LSP support:
+Provides IDE-style completions, hover, go-to-definition, diagnostics, and code lens inside any editor with LSP support:
 
-- Config key completions (dot-notation, with type hints)
-- Template name completions for `marko/view` directives
-- Translation key completions from your `resources/lang/` files
-- Attribute parameter completions for Marko PHP attributes
-- Event name completions when registering observers
+- Config key completions, hover documentation, and go-to-definition
+- Template name completions and go-to-definition
+- Translation key completions and go-to-definition
+- Attribute parameter completions
+- Inline diagnostics for invalid config keys, templates, and translation keys
 
 See the [`marko/lsp` README](https://github.com/markshust/marko/tree/develop/packages/lsp) for the full feature list.
 

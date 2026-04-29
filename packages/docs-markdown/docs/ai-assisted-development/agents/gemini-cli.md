@@ -1,9 +1,9 @@
 ---
 title: Gemini CLI
-description: Set up Marko's AI tooling with Google Gemini CLI — GEMINI.md guidelines and MCP tool registration.
+description: Set up Marko's AI tooling with Google Gemini CLI — GEMINI.md guidelines, MCP tool registration, and skill distribution.
 ---
 
-[Gemini CLI](https://github.com/google-gemini/gemini-cli) is Google's open-source agentic terminal tool powered by Gemini models. `devai:install` configures it with a `GEMINI.md` project guidelines file and MCP server registration.
+[Gemini CLI](https://github.com/google-gemini/gemini-cli) is Google's open-source agentic terminal tool powered by Gemini models. `devai:install` configures it with a `GEMINI.md` project guidelines file, MCP server registration via the `gemini mcp add` CLI, and Marko skills distributed to `.gemini/skills/`.
 
 ## Prerequisites
 
@@ -13,49 +13,43 @@ description: Set up Marko's AI tooling with Google Gemini CLI — GEMINI.md guid
 
 ## What devai:install writes
 
-Running `marko devai:install` with Gemini CLI detected produces the following files:
+Running `marko devai:install` with Gemini CLI detected produces the following:
 
 ```
 GEMINI.md                          # Project guidelines for Gemini CLI
-.gemini/settings.json              # MCP server registration (marko mcp:serve)
+.gemini/skills/                    # Marko skill files distributed for Gemini CLI
+AGENTS.md                          # Shared guidelines file (written if not already present)
 ```
+
+MCP registration is performed via the Gemini CLI (`gemini mcp add`) rather than by writing a config file. Gemini CLI does not implement LSP registration.
 
 ### GEMINI.md
 
-The root `GEMINI.md` file receives merged Marko guidelines:
+The root `GEMINI.md` file receives Marko project guidelines:
 
 - Module structure and naming conventions
 - Available MCP tools and their usage patterns
 - Project-specific guidelines from every installed package's `resources/ai/guidelines.md`
-- Skill instructions from `resources/ai/skills/`
-
-If `GEMINI.md` already exists, `devai:install` appends a `## Marko` section without overwriting existing content.
 
 ### MCP registration
 
-The `.gemini/settings.json` file adds `marko mcp:serve` to the `mcpServers` array using stdio transport. Gemini CLI will call this server for tools like `search_docs`, `find_event_observers`, `validate_module`, and `query_database`.
+The installer calls `gemini mcp add -s project -t <transport> <serverName> <command> [args]` to register `marko mcp:serve` as a project-scoped MCP server. Gemini CLI stores this registration in its own configuration; no `.gemini/settings.json` file is written by `devai:install`.
 
-Example configuration written by the installer:
+### Skills
 
-```json
-{
-  "mcpServers": {
-    "marko": {
-      "command": "marko",
-      "args": ["mcp:serve"],
-      "transport": "stdio"
-    }
-  }
-}
-```
+Marko skill bundles are written to `.gemini/skills/` so Gemini CLI can reference them during agentic tasks.
+
+### AGENTS.md
+
+If no `AGENTS.md` exists in the project root, `devai:install` creates one with the same guidelines content. If `AGENTS.md` already exists, it is left untouched.
 
 ## Manual verification
 
 1. Open a terminal in your project root.
 2. Run `gemini` to start an interactive session.
 3. Ask: `What MCP tools are registered?` — Marko tools should be listed.
-4. Ask: `Search Marko docs for "observers"` — `search_docs` should return results.
-5. Verify `.gemini/settings.json` contains the `marko` entry under `mcpServers`.
+4. Ask: `Search Marko docs for "observers"` — `search_docs` should return results if a docs driver is installed.
+5. Verify `GEMINI.md` exists in the project root and `.gemini/skills/` contains skill files.
 
 ## Agent-specific tips
 

@@ -38,10 +38,11 @@ it('renders the same pages count as before the migration', function (): void {
         }
     }
 
-    // The repository lists .md files; baseline was 102 total (.md + .mdx)
-    // Updated to 115 after adding ai-assisted-development section (13 new pages)
+    // The repository lists .md files; baseline was 102 total (.md + .mdx).
+    // Updated to 115 after adding ai-assisted-development section (13 new pages),
+    // then 116 after adding mcp-tools.md to document the full MCP tool roster.
     // We expect the symlink to expose the same files as packages/docs-markdown/docs
-    expect($count)->toBe(115);
+    expect($count)->toBe(116);
 });
 
 it('preserves image and asset paths through the rename', function (): void {

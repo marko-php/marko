@@ -38,47 +38,44 @@ This page describes how `marko/codeindexer`, `marko/mcp`, and `marko/lsp` fit to
 
 ## marko/codeindexer
 
-The codeindexer is the shared data layer. It reads:
+The codeindexer is the shared data layer. It walks every installed module and scans:
 
-- Your project's PHP source files (`app/`, `src/`)
-- Every installed package's `resources/ai/guidelines.md`
-- Marko's own documentation (pulled from `marko/docs-markdown`)
+- PHP source files for attributes (observers, plugins, preferences, commands, routes)
+- `config/` directories for config key definitions
+- `resources/views/` for template entries
+- `resources/translations/` for translation keys
 - Module metadata (`module.php`, `composer.json` files)
 
-It writes a SQLite database (default: `storage/framework/codeindex.sqlite`) containing:
+It serializes the result to a file cache at `.marko/index.cache` in the project root.
 
-- A full-text search index (FTS5) used by the `docs-fts` driver
-- Optionally, vector embeddings used by the `docs-vec` driver
-- Structured tables for observers, routes, config keys, and template names
+**Lazy-load with auto-rebuild:** The `IndexCache` loads the cache from disk the first time any consumer (the MCP server, LSP server, etc.) reads from it. If the cache file is missing or stale (any tracked source file is newer than the cache), `IndexCache` automatically runs a full build before returning data. No explicit rebuild step is required in normal development.
 
-Run the indexer explicitly:
+To pre-warm or force a rebuild explicitly:
 
 ```bash
-marko codeindexer:index
-```
-
-Or configure it to re-index on file changes during development:
-
-```bash
-marko codeindexer:watch
+marko indexer:rebuild
 ```
 
 See the [`marko/codeindexer` README](https://github.com/markshust/marko/tree/develop/packages/codeindexer) for full configuration.
 
 ## marko/mcp
 
-The MCP server exposes codeindex data to AI agents through the [Model Context Protocol](https://modelcontextprotocol.io/). It runs as a long-lived process communicating over stdio (or SSE for remote agents).
+The MCP server exposes codeindex data to AI agents through the [Model Context Protocol](https://modelcontextprotocol.io/). It runs as a long-lived process communicating over stdio.
 
-**How it reads the index:** Every MCP tool call opens a read-only connection to the SQLite database and queries the relevant tables. No writes happen through MCP.
+**How it reads the index:** Every MCP tool call reads from the `IndexCache`. The cache is loaded lazily on first access and rebuilt automatically if stale. No writes happen through MCP.
 
-**Available tools:**
+**Always-registered tools (14):**
 
-| Tool | Index table | Description |
-|---|---|---|
-| `search_docs` | `docs_fts` or `docs_vec` | Search Marko docs and package guidelines |
-| `find_event_observers` | `observers` | List observers registered for an event |
-| `validate_module` | `modules`, `bindings` | Check a module for structural errors |
-| `query_database` | n/a (live DB) | Run a read-only query against the app database |
+Ten tools are backed by `IndexCache`: `check_config_key`, `find_event_observers`, `find_plugins_targeting`, `get_config_schema`, `list_commands`, `list_modules`, `list_routes`, `resolve_preference`, `resolve_template`, and `validate_module`.
+
+Four runtime tools are always registered: `app_info`, `last_error`, `read_log_entries`, and `run_console_command`.
+
+**Conditional tools:**
+
+- `query_database` — registered when `marko/database` is bound in the container
+- `search_docs` — registered when a `DocsSearchInterface` binding is present (provided by `marko/docs-fts`, `marko/docs-vec`, or another docs driver package)
+
+**Error capture:** The `PersistLastErrorPlugin` is auto-discovered via the `#[Plugin]` attribute and intercepts `ErrorHandlerInterface::handle()` calls. It writes the most recent throwable to `storage/last_error.json` so the `last_error` tool can return it to agents without any manual wiring.
 
 Start the MCP server:
 
@@ -86,23 +83,25 @@ Start the MCP server:
 marko mcp:serve
 ```
 
-See the [`marko/mcp` README](https://github.com/markshust/marko/tree/develop/packages/mcp) for transport options and tool reference.
+See the [`marko/mcp` README](https://github.com/markshust/marko/tree/develop/packages/mcp) for the full tool reference.
 
 ## marko/lsp
 
 The LSP server exposes codeindex data to editors through the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/). It runs as a long-lived process communicating over stdio.
 
-**How it reads the index:** Like MCP, the LSP server queries the SQLite database read-only. It also watches for database changes via SQLite's `wal` journal mode and sends `textDocument/publishDiagnostics` notifications when the index updates.
+**How it reads the index:** Like MCP, the LSP server reads from the `IndexCache`, which lazy-loads and auto-rebuilds as needed.
 
-**Features powered by the index:**
+**Wired LSP methods:**
 
-| LSP feature | Index source |
-|---|---|
-| Config key completions | `config_keys` table |
-| Template name completions | `templates` table |
-| Translation key completions | `translation_keys` table |
-| Event name completions | `events` table |
-| Observer diagnostics | `observers` + `events` tables |
+`textDocument/didOpen`, `textDocument/didChange`, `textDocument/didClose`, `textDocument/completion`, `textDocument/definition`, `textDocument/hover`, `textDocument/diagnostic`, `textDocument/codeLens`
+
+**Advertised capabilities:**
+
+- `completionProvider` — trigger characters `"`, `'`, `:`, `.`
+- `definitionProvider: true`
+- `hoverProvider: true`
+- `codeLensProvider`
+- `diagnosticProvider`
 
 Start the LSP server:
 
@@ -129,16 +128,18 @@ See the [`marko/devai` README](https://github.com/markshust/marko/tree/develop/p
 
 1. Developer asks agent: "How does Marko handle events?"
 2. Agent calls `search_docs` tool via MCP
-3. MCP server queries `docs_fts` (or `docs_vec`) in the SQLite index
-4. Index returns ranked chunks from Marko docs and package guidelines
+3. MCP server delegates to the bound `DocsSearchInterface` driver (e.g., `docs-fts` or `docs-vec`)
+4. Driver returns ranked chunks from Marko docs and package guidelines
 5. MCP returns chunks to agent
 6. Agent synthesizes an answer using the retrieved content
+
+The `search_docs` tool is only registered when a `DocsSearchInterface` binding exists. If no docs driver is installed, the tool is unavailable.
 
 ## Data flow for a config key completion
 
 1. Developer types `config('` in a PHP file
 2. Editor sends `textDocument/completion` to the LSP server
-3. LSP server queries `config_keys` in the SQLite index
+3. LSP server reads config key entries from `IndexCache`
 4. Returns a list of completion items with types and descriptions
 5. Editor renders the completion dropdown
 
