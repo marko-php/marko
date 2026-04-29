@@ -203,7 +203,7 @@ it('external-project fixture (no sibling packages/claude-plugins) produces setti
         $data = json_decode((string) file_get_contents($externalRoot . '/.claude/settings.json'), true);
         $source = $data['extraKnownMarketplaces']['marko']['source'];
         expect($source['source'])->toBe('github')
-            ->and($source['repo'])->toBe('markoshust/marko');
+            ->and($source['repo'])->toBe('marko-php/marko');
     } finally {
         integMonorepoRemoveTempDir($externalRoot);
     }

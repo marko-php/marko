@@ -89,6 +89,21 @@ Marko ships task-oriented capabilities through three Claude Code plugins (instal
 When a Marko skill loads, **the skill is the canonical specification.** Do not infer module/plugin structure from sibling code in this project — siblings may have drifted from spec. Use the skill's bundled templates verbatim, substituting only the placeholders the skill calls out (e.g. `{{vendor}}`, `{{name}}`).
 
 After writing or editing files, expect LSP diagnostics from `marko-lsp` to surface in the same turn. Resolve all reported diagnostics before declaring the task complete — diagnostics are the verification gate, not optional warnings.
+
+## Working with Marko docs and MCP tools
+
+When the user asks about Marko framework concepts, package APIs, configuration options, or "how does X work" — call `search_docs` from `marko-mcp` first. The MCP returns authoritative content from the Marko docs index. Do NOT infer answers from `vendor/marko/*` source files when `search_docs` can answer.
+
+Other `marko-mcp` tools to use proactively:
+
+- `list_modules` — when you need to know what packages/modules are installed in this project
+- `validate_module` — after creating or editing a module, before declaring it done
+- `find_event_observers` — when tracing event flow for a given event class
+- `find_plugins_targeting` — when tracing plugin (intercept) chains for a target class
+- `resolve_preference` — when checking what concrete class a Preference resolves to
+- `check_config_key` — when verifying a config key exists before referencing it in code
+
+These tools answer faster and more accurately than `grep` over `vendor/`, and they reflect runtime resolution (preferences, plugin order) that grep cannot see.
 CLAUDE;
     }
 
@@ -186,7 +201,7 @@ CLAUDE;
             return ['source' => ['source' => 'local', 'path' => '.']];
         }
 
-        return ['source' => ['source' => 'github', 'repo' => 'markoshust/marko']];
+        return ['source' => ['source' => 'github', 'repo' => 'marko-php/marko']];
     }
 
     private function isMonorepo(string $projectRoot): bool

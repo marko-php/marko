@@ -7,7 +7,7 @@
     "email": "mark@shust.com"
   },
   "homepage": "https://marko.dev",
-  "repository": "https://github.com/markoshust/marko",
+  "repository": "https://github.com/marko-php/marko",
   "license": "MIT",
   "keywords": ["marko", "lsp", "php", "intelephense"]
 }

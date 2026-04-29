@@ -31,7 +31,7 @@ Install via the Marko marketplace:
 If the Marko marketplace is not yet registered, add it first:
 
 ```
-/plugin marketplace add markoshust/marko
+/plugin marketplace add marko-php/marko
 ```
 
 ## Verify installation

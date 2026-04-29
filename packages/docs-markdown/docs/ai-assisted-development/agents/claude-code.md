@@ -32,13 +32,13 @@ The installer writes merged Marko guidelines to `AGENTS.md`. The `CLAUDE.md` fil
 - `extraKnownMarketplaces.marko` — registers the Marko plugin marketplace so Claude Code can fetch plugin metadata
 - `enabledPlugins` — activates `marko-skills@marko`, `marko-lsp@marko`, and `marko-mcp@marko`
 
-When run inside the Marko monorepo the marketplace source points to the local `packages/claude-plugins/plugins` path; for external projects it points to the `markoshust/marko` GitHub repo.
+When run inside the Marko monorepo the marketplace source points to the local `packages/claude-plugins/plugins` path; for external projects it points to the `marko-php/marko` GitHub repo.
 
 On first trust of the project folder, Claude Code fetches and installs the three plugins automatically.
 
 ### Plugins
 
-The three Claude Code plugins ship from `packages/claude-plugins/plugins/` (or `vendor/markoshust/marko/packages/claude-plugins/plugins/` in external projects):
+The three Claude Code plugins ship from `packages/claude-plugins/plugins/` (or `vendor/marko-php/marko/packages/claude-plugins/plugins/` in external projects):
 
 | Plugin | What it provides |
 |---|---|

@@ -30,29 +30,30 @@ describe('marko-mcp plugin', function (): void {
         expect(array_key_exists('version', $manifest))->toBeFalse();
     });
 
-    it('.mcp.json top-level structure is { "mcpServers": { "marko-mcp": {...} } } per Task 001 finding F2', function (): void {
+    it('.mcp.json top-level structure is { "mcpServers": { "marko": {...} } } — server key is "marko" not "marko-mcp" to avoid the `plugin:marko-mcp:marko-mcp` doubled-name display in Claude Code', function (): void {
         $mcpPath = $this->pluginRoot . '/.mcp.json';
         $mcp = json_decode(file_get_contents($mcpPath), true);
 
         expect(file_exists($mcpPath))->toBeTrue()
             ->and($mcp)->toHaveKey('mcpServers')
             ->and($mcp['mcpServers'])->toBeArray()
-            ->and($mcp['mcpServers'])->toHaveKey('marko-mcp')
-            ->and($mcp['mcpServers']['marko-mcp'])->toBeArray();
+            ->and($mcp['mcpServers'])->toHaveKey('marko')
+            ->and($mcp['mcpServers'])->not->toHaveKey('marko-mcp')
+            ->and($mcp['mcpServers']['marko'])->toBeArray();
     });
 
-    it('.mcp.json marko-mcp.command is "${CLAUDE_PLUGIN_ROOT}/bin/marko-mcp"', function (): void {
+    it('.mcp.json marko.command is "${CLAUDE_PLUGIN_ROOT}/bin/marko-mcp"', function (): void {
         $mcp = json_decode(file_get_contents($this->pluginRoot . '/.mcp.json'), true);
 
-        expect($mcp['mcpServers']['marko-mcp']['command'])->toBe('${CLAUDE_PLUGIN_ROOT}/bin/marko-mcp');
+        expect($mcp['mcpServers']['marko']['command'])->toBe('${CLAUDE_PLUGIN_ROOT}/bin/marko-mcp');
     });
 
-    it('.mcp.json marko-mcp.args is an empty array (subcommand is hardcoded inside the shim)', function (): void {
+    it('.mcp.json marko.args is an empty array (subcommand is hardcoded inside the shim)', function (): void {
         $mcp = json_decode(file_get_contents($this->pluginRoot . '/.mcp.json'), true);
 
-        expect($mcp['mcpServers']['marko-mcp'])->toHaveKey('args')
-            ->and($mcp['mcpServers']['marko-mcp']['args'])->toBeArray()
-            ->and($mcp['mcpServers']['marko-mcp']['args'])->toHaveCount(0);
+        expect($mcp['mcpServers']['marko'])->toHaveKey('args')
+            ->and($mcp['mcpServers']['marko']['args'])->toBeArray()
+            ->and($mcp['mcpServers']['marko']['args'])->toHaveCount(0);
     });
 
     it('bin/marko-mcp shim script exists, has POSIX shebang (#!/bin/sh), is committed with executable bit set', function (): void {

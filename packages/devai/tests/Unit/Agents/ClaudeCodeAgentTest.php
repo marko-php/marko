@@ -136,6 +136,20 @@ describe('writeGuidelines', function (): void {
             ->and($claudeMd)->toContain('marko-lsp@marko')
             ->and($claudeMd)->toContain('marko-mcp@marko');
     });
+
+    it('writes CLAUDE.md instructing the agent to call search_docs first for documentation lookups', function (): void {
+        $this->agent->writeGuidelines(new GuidelinesContent('body'), $this->root);
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        expect($claudeMd)->toContain('search_docs')
+            ->and($claudeMd)->toContain('Do NOT infer answers from `vendor/marko/*`')
+            ->and($claudeMd)->toContain('list_modules')
+            ->and($claudeMd)->toContain('validate_module')
+            ->and($claudeMd)->toContain('find_event_observers')
+            ->and($claudeMd)->toContain('find_plugins_targeting')
+            ->and($claudeMd)->toContain('resolve_preference')
+            ->and($claudeMd)->toContain('check_config_key');
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -191,7 +205,7 @@ describe('installation', function (): void {
         mkdir($this->root . '/.claude', 0755, true);
         file_put_contents(
             $this->root . '/.claude/settings.json',
-            json_encode(['extraKnownMarketplaces' => ['marko' => ['source' => ['source' => 'github', 'repo' => 'markoshust/marko']]]]),
+            json_encode(['extraKnownMarketplaces' => ['marko' => ['source' => ['source' => 'github', 'repo' => 'marko-php/marko']]]]),
         );
 
         expect(fn () => $this->agent->writeSettings($this->root, force: false))
@@ -264,7 +278,7 @@ describe('monorepo detection', function (): void {
             $data = json_decode((string) file_get_contents($root . '/.claude/settings.json'), true);
             $source = $data['extraKnownMarketplaces']['marko']['source'];
             expect($source['source'])->toBe('github')
-                ->and($source['repo'])->toBe('markoshust/marko');
+                ->and($source['repo'])->toBe('marko-php/marko');
         } finally {
             removeDevaiTempDir($root);
         }

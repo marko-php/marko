@@ -95,9 +95,9 @@ For local paths, discover-plugins says verbatim:
 > /plugin marketplace add ./my-marketplace
 > ```
 
-**Monorepo subdirectory case**: A monorepo subdirectory containing `.claude-plugin/marketplace.json` is a valid local path target. It is also a valid `git-subdir` plugin source (see plugin-marketplaces, "Plugin sources"). For Marko's `packages/claude-plugins/` housed at the repo root, the marketplace registration is `{"source": "github", "repo": "markoshust/marko"}` — but only if `.claude-plugin/marketplace.json` lives at the **repo root**, not in a subdirectory. Marketplaces themselves do not have a `git-subdir` form for the catalog file (only for individual plugin sources). Therefore the monorepo's `.claude-plugin/marketplace.json` MUST sit at the repo root, while individual plugin entries inside it can use `metadata.pluginRoot: "./packages/claude-plugins/plugins"` to point at the actual plugin subdirectories.
+**Monorepo subdirectory case**: A monorepo subdirectory containing `.claude-plugin/marketplace.json` is a valid local path target. It is also a valid `git-subdir` plugin source (see plugin-marketplaces, "Plugin sources"). For Marko's `packages/claude-plugins/` housed at the repo root, the marketplace registration is `{"source": "github", "repo": "marko-php/marko"}` — but only if `.claude-plugin/marketplace.json` lives at the **repo root**, not in a subdirectory. Marketplaces themselves do not have a `git-subdir` form for the catalog file (only for individual plugin sources). Therefore the monorepo's `.claude-plugin/marketplace.json` MUST sit at the repo root, while individual plugin entries inside it can use `metadata.pluginRoot: "./packages/claude-plugins/plugins"` to point at the actual plugin subdirectories.
 
-**Decision**: register the marko marketplace as `{"source": "github", "repo": "markoshust/marko"}`. Place `.claude-plugin/marketplace.json` at the repo root. Use `metadata.pluginRoot` to keep plugin sources clean. See `schemas/settings.json.example.json` and `schemas/marketplace.json.example.json`.
+**Decision**: register the marko marketplace as `{"source": "github", "repo": "marko-php/marko"}`. Place `.claude-plugin/marketplace.json` at the repo root. Use `metadata.pluginRoot` to keep plugin sources clean. See `schemas/settings.json.example.json` and `schemas/marketplace.json.example.json`.
 
 ### F4 — Project-local settings → automatic install behavior
 
@@ -229,7 +229,7 @@ Downstream tasks 002–005 should copy these verbatim and substitute concrete va
 | :- | :------- | :-------------- |
 | D1 | marko-lsp uses `"command": "intelephense"` (bare name, PATH lookup) — not a relative or bundled path | F1 |
 | D2 | marko-mcp's config file uses `{"mcpServers": {...}}` nested shape, lives at `<plugin-root>/.mcp.json` | F2 |
-| D3 | marko marketplace registers via `extraKnownMarketplaces` with `{"source": "github", "repo": "markoshust/marko"}` | F3 |
+| D3 | marko marketplace registers via `extraKnownMarketplaces` with `{"source": "github", "repo": "marko-php/marko"}` | F3 |
 | D4 | `.claude-plugin/marketplace.json` lives at the repo root, with `metadata.pluginRoot: "./packages/claude-plugins/plugins"` so plugin sources can be bare names | F3, F7 |
 | D5 | devai installer writes `extraKnownMarketplaces` + `enabledPlugins` to `.claude/settings.json` (project scope), relying on the trust-prompt flow for end-user install | F4 |
 | D6 | marko-lsp may safely register `.php` even if Anthropic's php-lsp is installed; README recommends but does not require uninstalling php-lsp | F5 |

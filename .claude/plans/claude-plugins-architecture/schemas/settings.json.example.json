@@ -3,7 +3,7 @@
     "marko": {
       "source": {
         "source": "github",
-        "repo": "markoshust/marko"
+        "repo": "marko-php/marko"
       }
     }
   },

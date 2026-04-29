@@ -9,7 +9,7 @@ Users typically do not install this package directly. Running `marko devai:insta
 For manual installation inside Claude Code:
 
 ```shell
-/plugin marketplace add markoshust/marko
+/plugin marketplace add marko-php/marko
 /plugin install marko-skills@marko marko-lsp@marko marko-mcp@marko
 ```
 

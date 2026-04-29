@@ -13,7 +13,7 @@ If no `marko` binary is found, the shim exits with a helpful error directing you
 Add the Marko marketplace once, then install the plugin:
 
 ```
-/plugin marketplace add markoshust/marko
+/plugin marketplace add marko-php/marko
 /plugin install marko-mcp@marko
 ```
 

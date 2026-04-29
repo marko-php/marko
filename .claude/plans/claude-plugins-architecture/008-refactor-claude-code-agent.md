@@ -86,7 +86,7 @@ Refactor `packages/devai/src/Agents/ClaudeCodeAgent.php` to use the official Cla
 
 ### Key design decisions
 
-1. **Monorepo detection** — `isMonorepo(string $projectRoot): bool` checks for presence of `packages/claude-plugins/` directory. Simple filesystem check, no config needed. Monorepo gets `{"source": "local", "path": "."}`, external projects get `{"source": "github", "repo": "markoshust/marko"}`.
+1. **Monorepo detection** — `isMonorepo(string $projectRoot): bool` checks for presence of `packages/claude-plugins/` directory. Simple filesystem check, no config needed. Monorepo gets `{"source": "local", "path": "."}`, external projects get `{"source": "github", "repo": "marko-php/marko"}`.
 
 2. **Idempotency** — throws `DevAiInstallException` if `extraKnownMarketplaces.marko` OR any `*@marko` plugin key exists and `--force` is false. With `--force`, only marko-prefixed keys are replaced; all other user keys in `settings.json` are preserved.
 

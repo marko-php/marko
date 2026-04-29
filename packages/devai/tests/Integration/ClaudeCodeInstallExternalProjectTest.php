@@ -221,7 +221,7 @@ describe('external-project fixture (no sibling packages/claude-plugins)', functi
         $data = json_decode((string) file_get_contents($this->root . '/.claude/settings.json'), true);
         $source = $data['extraKnownMarketplaces']['marko']['source'];
         expect($source['source'])->toBe('github')
-            ->and($source['repo'])->toBe('markoshust/marko');
+            ->and($source['repo'])->toBe('marko-php/marko');
     });
 });
 
@@ -289,7 +289,7 @@ describe('re-running devai:install on an external project', function (): void {
         mkdir($claudeDir, 0755, true);
         $settings = [
             'extraKnownMarketplaces' => [
-                'marko' => ['source' => ['source' => 'github', 'repo' => 'markoshust/marko']],
+                'marko' => ['source' => ['source' => 'github', 'repo' => 'marko-php/marko']],
             ],
             'enabledPlugins' => [
                 'marko-skills@marko' => true,
