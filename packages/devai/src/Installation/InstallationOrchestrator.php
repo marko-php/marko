@@ -30,7 +30,11 @@ class InstallationOrchestrator
     ) {}
 
     /** @return array{status: string, message?: string, log?: list<string>} */
-    public function install(InstallationContext $ctx, string $projectRoot, bool $force): array
+    public function install(
+        InstallationContext $ctx,
+        string $projectRoot,
+        bool $force,
+    ): array
     {
         $marker = $projectRoot . '/.marko/devai.json';
         if (is_file($marker) && !$force) {
@@ -49,8 +53,9 @@ class InstallationOrchestrator
         $skills = $this->skillsDistributor->collect();
 
         $agents = $this->registry->all($projectRoot);
-        $mcp = new McpRegistration(serverName: 'marko-mcp', command: 'php', args: ['marko', 'mcp:serve']);
-        $lsp = new LspRegistration(serverName: 'marko-lsp', command: 'php', args: ['marko', 'lsp:serve']);
+        $markoBin = $this->resolveMarkoBin($projectRoot);
+        $mcp = new McpRegistration(serverName: 'marko-mcp', command: $markoBin, args: ['mcp:serve']);
+        $lsp = new LspRegistration(serverName: 'marko-lsp', command: $markoBin, args: ['lsp:serve']);
 
         foreach ($ctx->selectedAgents as $agentName) {
             if (!isset($agents[$agentName])) {
@@ -91,6 +96,20 @@ class InstallationOrchestrator
         }
 
         return ['status' => 'installed', 'log' => $this->log];
+    }
+
+    /**
+     * Resolve the absolute path to the marko CLI binary for this project.
+     *
+     * MCP servers and LSP servers are spawned by the agent (Claude Code, Cursor,
+     * etc.) whose working directory is not guaranteed to be the project root —
+     * and the project root has no `marko` file (the binary lives in
+     * `vendor/bin/marko`). Registering an absolute path makes the spawn
+     * reliable regardless of cwd or PATH.
+     */
+    private function resolveMarkoBin(string $projectRoot): string
+    {
+        return $projectRoot . '/vendor/bin/marko';
     }
 
     private function updateGitignore(string $projectRoot): void

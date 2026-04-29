@@ -27,7 +27,10 @@ function makeInstallRunner(bool $installed = false): CommandRunnerInterface
     {
         public function __construct(private bool $installed) {}
 
-        public function run(string $command, array $args = []): array
+        public function run(
+            string $command,
+            array $args = [],
+        ): array
         {
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
@@ -68,22 +71,34 @@ function makeInstallFullAgent(bool $installed = false): AgentInterface&SupportsG
             return $this->installed;
         }
 
-        public function writeGuidelines(GuidelinesContent $content, string $projectRoot): void
+        public function writeGuidelines(
+            GuidelinesContent $content,
+            string $projectRoot,
+        ): void
         {
             $this->guidelinesCalls[] = [$content, $projectRoot];
         }
 
-        public function registerMcpServer(McpRegistration $registration, string $projectRoot): void
+        public function registerMcpServer(
+            McpRegistration $registration,
+            string $projectRoot,
+        ): void
         {
             $this->mcpCalls[] = [$registration, $projectRoot];
         }
 
-        public function registerLspServer(LspRegistration $registration, string $projectRoot): void
+        public function registerLspServer(
+            LspRegistration $registration,
+            string $projectRoot,
+        ): void
         {
             $this->lspCalls[] = [$registration, $projectRoot];
         }
 
-        public function distributeSkills(array $bundles, string $projectRoot): void
+        public function distributeSkills(
+            array $bundles,
+            string $projectRoot,
+        ): void
         {
             $this->skillsCalls[] = [$bundles, $projectRoot];
         }
@@ -220,25 +235,28 @@ it('does not duplicate .gitignore entries on repeated installs', function (): vo
     expect(substr_count($contents, '.marko/'))->toBe(1);
 });
 
-it('writes .marko/devai.json on successful install capturing selected agents and docs driver choice', function (): void {
-    $registry = makeInstallRegistry([]);
-    $orchestrator = makeInstallOrchestrator($registry);
-
-    $ctx = new InstallationContext(
-        selectedAgents: ['claude-code', 'codex'],
-        docsDriver: 'fts',
-    );
-
-    $orchestrator->install($ctx, $this->tempRoot, false);
-
-    $markerPath = $this->tempRoot . '/.marko/devai.json';
-    expect(file_exists($markerPath))->toBeTrue();
-
-    $marker = json_decode((string) file_get_contents($markerPath), true);
-    expect($marker['agents'])->toBe(['claude-code', 'codex'])
-        ->and($marker['docsDriver'])->toBe('fts')
-        ->and($marker)->toHaveKey('installedAt');
-});
+it(
+    'writes .marko/devai.json on successful install capturing selected agents and docs driver choice',
+    function (): void {
+        $registry = makeInstallRegistry([]);
+        $orchestrator = makeInstallOrchestrator($registry);
+    
+        $ctx = new InstallationContext(
+            selectedAgents: ['claude-code', 'codex'],
+            docsDriver: 'fts',
+        );
+    
+        $orchestrator->install($ctx, $this->tempRoot, false);
+    
+        $markerPath = $this->tempRoot . '/.marko/devai.json';
+        expect(file_exists($markerPath))->toBeTrue();
+    
+        $marker = json_decode((string) file_get_contents($markerPath), true);
+        expect($marker['agents'])->toBe(['claude-code', 'codex'])
+            ->and($marker['docsDriver'])->toBe('fts')
+            ->and($marker)->toHaveKey('installedAt');
+    }
+);
 
 it('supports a --force flag to re-run from scratch (overwrites all generated files)', function (): void {
     // Pre-create the marker file
@@ -263,21 +281,27 @@ it('supports a --force flag to re-run from scratch (overwrites all generated fil
     expect($marker['docsDriver'])->toBe('fts');
 });
 
-it('detects a prior install by reading .marko/devai.json and early-exits with a helpful message pointing the user to devai:update', function (): void {
-    // Pre-create the marker file
+it(
+    'detects a prior install by reading .marko/devai.json and early-exits with a helpful message pointing the user to devai:update',
+    function (): void {
+        // Pre-create the marker file
     mkdir($this->tempRoot . '/.marko', 0755, true);
-    file_put_contents($this->tempRoot . '/.marko/devai.json', json_encode(['agents' => [], 'docsDriver' => 'vec']));
-
-    $registry = makeInstallRegistry([]);
-    $orchestrator = makeInstallOrchestrator($registry);
-
-    $ctx = new InstallationContext(selectedAgents: [], docsDriver: 'vec');
-
-    $result = $orchestrator->install($ctx, $this->tempRoot, false);
-
-    expect($result['status'])->toBe('skipped')
-        ->and($result['message'])->toContain('devai:update');
-});
+        file_put_contents(
+            $this->tempRoot . '/.marko/devai.json',
+            json_encode(['agents' => [], 'docsDriver' => 'vec'])
+        );
+    
+        $registry = makeInstallRegistry([]);
+        $orchestrator = makeInstallOrchestrator($registry);
+    
+        $ctx = new InstallationContext(selectedAgents: [], docsDriver: 'vec');
+    
+        $result = $orchestrator->install($ctx, $this->tempRoot, false);
+    
+        expect($result['status'])->toBe('skipped')
+            ->and($result['message'])->toContain('devai:update');
+    }
+);
 
 it('prints a summary of changes made', function (): void {
     $agent = makeInstallFullAgent(installed: true);
@@ -318,6 +342,34 @@ it('invokes each selected adapter writeGuidelines registerMcp registerLsp distri
         ->and($agent->mcpCalls)->toHaveCount(1)
         ->and($agent->lspCalls)->toHaveCount(1)
         ->and($agent->skillsCalls)->toHaveCount(1);
+});
+
+it('registers MCP and LSP servers using the absolute path to vendor/bin/marko', function (): void {
+    // Regression: registering `php marko mcp:serve` blew up at spawn time because
+    // there is no `marko` file at the project root — the binary lives in
+    // vendor/bin/marko. Agents (Claude Code, Cursor, etc.) spawn the MCP/LSP
+    // server with no PATH guarantee and no guarantee about cwd, so the
+    // registration must use an absolute path.
+    $agent = makeInstallFullAgent(installed: true);
+    $registry = makeInstallRegistry(['test-agent' => $agent]);
+    $orchestrator = makeInstallOrchestrator($registry);
+
+    $ctx = new InstallationContext(
+        selectedAgents: ['test-agent'],
+        docsDriver: 'vec',
+    );
+
+    $orchestrator->install($ctx, $this->tempRoot, false);
+
+    [$mcpReg] = $agent->mcpCalls[0];
+    [$lspReg] = $agent->lspCalls[0];
+
+    $expectedBin = $this->tempRoot . '/vendor/bin/marko';
+
+    expect($mcpReg->command)->toBe($expectedBin)
+        ->and($mcpReg->args)->toBe(['mcp:serve'])
+        ->and($lspReg->command)->toBe($expectedBin)
+        ->and($lspReg->args)->toBe(['lsp:serve']);
 });
 
 it('detects installed agents and presents them as a checkbox picker', function (): void {
