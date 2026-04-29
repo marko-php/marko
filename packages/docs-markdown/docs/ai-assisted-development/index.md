@@ -78,7 +78,7 @@ The three primitives sit at different layers of "what does the agent need from y
 |---|---|---|---|
 | **LSP** | What's in the code right now | Editor request (cursor position, completion trigger) | `config('cache.` → completions for valid cache config keys |
 | **MCP** | A capability or non-trivial lookup the agent should be able to invoke | The agent decides it needs the result | Agent calls `find_plugins_targeting` to see what intercepts a class |
-| **Skill** | The Marko-specific workflow for a multi-step task | The agent matches the user's request against the skill's `description` frontmatter | User says "create a Marko module" → agent loads `marko-create-module` and follows it |
+| **Skill** | The Marko-specific workflow for a multi-step task | The agent matches the user's request against the skill's `description` frontmatter | User says "create a Marko module" → agent loads `/marko-skills:create-module` (Claude Code plugin invocation) and follows it |
 
 In flat terms:
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Marko\DevAi\Agents\CodexAgent;
 use Marko\DevAi\Contract\SupportsGuidelines;
-use Marko\DevAi\Contract\SupportsLsp;
 use Marko\DevAi\Contract\SupportsMcp;
 use Marko\DevAi\Contract\SupportsSkills;
 use Marko\DevAi\Process\CommandRunnerInterface;
@@ -35,12 +34,12 @@ function makeRunner(): CommandRunnerInterface
     };
 }
 
-it('reports name as codex', function () {
+it('reports name as codex', function (): void {
     $agent = new CodexAgent(makeRunner());
     expect($agent->name())->toBe('codex');
 });
 
-it('detects installation when codex binary is on PATH', function () {
+it('detects installation when codex binary is on PATH', function (): void {
     $runner = makeRunner();
     $runner->onPath = true;
     $agent = new CodexAgent($runner);
@@ -52,7 +51,7 @@ it('detects installation when codex binary is on PATH', function () {
     expect($agent2->isInstalled())->toBeFalse();
 });
 
-it('writes canonical AGENTS.md with Marko guidelines', function () {
+it('writes canonical AGENTS.md with Marko guidelines', function (): void {
     $agent = new CodexAgent(makeRunner());
     $root = sys_get_temp_dir() . '/codex-test-' . uniqid();
     mkdir($root, 0755, true);
@@ -67,7 +66,7 @@ it('writes canonical AGENTS.md with Marko guidelines', function () {
     rmdir($root);
 });
 
-it('registers marko-mcp via codex mcp add command with correct argument separator', function () {
+it('registers marko-mcp via codex mcp add command with correct argument separator', function (): void {
     $runner = makeRunner();
     $agent = new CodexAgent($runner);
 
@@ -88,7 +87,7 @@ it('registers marko-mcp via codex mcp add command with correct argument separato
         ->and($args[6])->toBe('mcp:serve');
 });
 
-it('distributes skills to .agents/skills directory', function () {
+it('distributes skills to .agents/skills directory', function (): void {
     $agent = new CodexAgent(makeRunner());
     $root = sys_get_temp_dir() . '/codex-skills-' . uniqid();
     mkdir($root, 0755, true);
@@ -109,10 +108,9 @@ it('distributes skills to .agents/skills directory', function () {
     rmdir($root);
 });
 
-it('supports Guidelines Mcp Skills capabilities but not Lsp', function () {
+it('supports Guidelines Mcp Skills capabilities', function (): void {
     $agent = new CodexAgent(makeRunner());
     expect($agent)->toBeInstanceOf(SupportsGuidelines::class)
         ->and($agent)->toBeInstanceOf(SupportsMcp::class)
-        ->and($agent)->toBeInstanceOf(SupportsSkills::class)
-        ->and($agent)->not->toBeInstanceOf(SupportsLsp::class);
+        ->and($agent)->toBeInstanceOf(SupportsSkills::class);
 });

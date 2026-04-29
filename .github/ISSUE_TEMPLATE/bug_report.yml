@@ -58,6 +58,7 @@ body:
         - cache-array
         - cache-file
         - cache-redis
+        - claude-plugins
         - cli
         - codeindexer
         - config

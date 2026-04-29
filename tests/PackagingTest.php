@@ -9,8 +9,8 @@ $packages = array_values(array_filter(
     fn(string $entry): bool => $entry !== '.' && $entry !== '..' && is_dir($packagesRoot . '/' . $entry),
 ));
 
-it('creates .gitattributes in all 79 package directories', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(79);
+it('creates .gitattributes in all 80 package directories', function () use ($packagesRoot, $packages): void {
+    expect($packages)->toHaveCount(80);
 
     foreach ($packages as $package) {
         $path = $packagesRoot . '/' . $package . '/.gitattributes';
@@ -23,7 +23,7 @@ it('excludes tests/ directory from exports', function () use ($packagesRoot, $pa
         $path = $packagesRoot . '/' . $package . '/.gitattributes';
         $content = file_get_contents($path);
         expect($content)->toContain('/tests')
-            ->toContain('export-ignore');
+            ->and($content)->toContain('export-ignore');
     }
 });
 
@@ -32,7 +32,7 @@ it('excludes .gitattributes itself from exports', function () use ($packagesRoot
         $path = $packagesRoot . '/' . $package . '/.gitattributes';
         $content = file_get_contents($path);
         expect($content)->toContain('/.gitattributes')
-            ->toContain('export-ignore');
+            ->and($content)->toContain('export-ignore');
     }
 });
 
@@ -41,7 +41,7 @@ it('excludes .gitignore from exports if present', function () use ($packagesRoot
         $path = $packagesRoot . '/' . $package . '/.gitattributes';
         $content = file_get_contents($path);
         expect($content)->toContain('/.gitignore')
-            ->toContain('export-ignore');
+            ->and($content)->toContain('export-ignore');
     }
 });
 
@@ -56,25 +56,25 @@ it('excludes phpunit.xml or phpunit.xml.dist from exports if present', function 
 
 it('creates or updates root .gitattributes for the monorepo', function (): void {
     $rootPath = dirname(__DIR__) . '/.gitattributes';
-    expect(file_exists($rootPath))->toBeTrue('Root .gitattributes should exist');
+    $content = file_exists($rootPath) ? file_get_contents($rootPath) : '';
 
-    $content = file_get_contents($rootPath);
-    expect($content)->toContain('text=auto')
-        ->toContain('*.php')
-        ->toContain('eol=lf');
+    expect(file_exists($rootPath))->toBeTrue('Root .gitattributes should exist')
+        ->and($content)->toContain('text=auto')
+        ->and($content)->toContain('*.php')
+        ->and($content)->toContain('eol=lf');
 });
 
-it('creates LICENSE (MIT) in all 79 package directories with copyright Devtomic LLC', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(79);
+it('creates LICENSE (MIT) in all 80 package directories with copyright Devtomic LLC', function () use ($packagesRoot, $packages): void {
+    expect($packages)->toHaveCount(80);
 
     foreach ($packages as $package) {
         $path = $packagesRoot . '/' . $package . '/LICENSE';
-        expect(file_exists($path))->toBeTrue("Missing LICENSE in packages/{$package}");
+        $content = file_exists($path) ? file_get_contents($path) : '';
 
-        $content = file_get_contents($path);
-        expect($content)->toContain('MIT License')
-            ->toContain('Copyright (c) Devtomic LLC')
-            ->toContain('Permission is hereby granted');
+        expect(file_exists($path))->toBeTrue("Missing LICENSE in packages/{$package}")
+            ->and($content)->toContain('MIT License')
+            ->and($content)->toContain('Copyright (c) Devtomic LLC')
+            ->and($content)->toContain('Permission is hereby granted');
     }
 });
 
@@ -102,10 +102,10 @@ it('has package options in feature request issue template', function () use ($pa
 
 it('updates the root LICENSE file with copyright Devtomic LLC', function (): void {
     $rootPath = dirname(__DIR__) . '/LICENSE';
-    expect(file_exists($rootPath))->toBeTrue('Root LICENSE should exist');
+    $content = file_exists($rootPath) ? file_get_contents($rootPath) : '';
 
-    $content = file_get_contents($rootPath);
-    expect($content)->toContain('MIT License')
-        ->toContain('Copyright (c) Devtomic LLC')
-        ->toContain('Permission is hereby granted');
+    expect(file_exists($rootPath))->toBeTrue('Root LICENSE should exist')
+        ->and($content)->toContain('MIT License')
+        ->and($content)->toContain('Copyright (c) Devtomic LLC')
+        ->and($content)->toContain('Permission is hereby granted');
 });

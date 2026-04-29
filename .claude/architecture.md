@@ -240,6 +240,7 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/mcp` | Tool | MCP server exposing Marko codebase introspection to AI agents (Claude Code, Cursor, Codex, etc.) |
 | `marko/lsp` | Tool | Language Server Protocol implementation — Marko-aware completions, diagnostics, and navigation |
 | `marko/devai` | Tool | One-stop installer for AI-assisted development (MCP, LSP, per-agent config files) |
+| `marko/claude-plugins` | Tool | Claude Code marketplace and plugins (marko-skills, marko-lsp, marko-mcp) for AI-assisted development |
 
 ### Documentation Search
 

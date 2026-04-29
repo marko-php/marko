@@ -6,7 +6,6 @@ use Marko\CodeIndexer\Contract\ModuleWalkerInterface;
 use Marko\DevAi\Agents\AbstractAgent;
 use Marko\DevAi\Contract\AgentInterface;
 use Marko\DevAi\Contract\SupportsGuidelines;
-use Marko\DevAi\Contract\SupportsLsp;
 use Marko\DevAi\Contract\SupportsMcp;
 use Marko\DevAi\Contract\SupportsSkills;
 use Marko\DevAi\Guidelines\GuidelinesAggregator;
@@ -18,8 +17,8 @@ use Marko\DevAi\Rendering\AgentsMdRenderer;
 use Marko\DevAi\Rendering\ClaudeMdRenderer;
 use Marko\DevAi\Skills\SkillsDistributor;
 use Marko\DevAi\ValueObject\GuidelinesContent;
-use Marko\DevAi\ValueObject\LspRegistration;
 use Marko\DevAi\ValueObject\McpRegistration;
+use Marko\DevAi\ValueObject\SkillBundle;
 
 function makeInstallRunner(bool $installed = false): CommandRunnerInterface
 {
@@ -30,8 +29,7 @@ function makeInstallRunner(bool $installed = false): CommandRunnerInterface
         public function run(
             string $command,
             array $args = [],
-        ): array
-        {
+        ): array {
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
 
@@ -42,15 +40,13 @@ function makeInstallRunner(bool $installed = false): CommandRunnerInterface
     };
 }
 
-function makeInstallFullAgent(bool $installed = false): AgentInterface&SupportsGuidelines&SupportsMcp&SupportsLsp&SupportsSkills
+function makeInstallFullAgent(bool $installed = false): AgentInterface&SupportsGuidelines&SupportsMcp&SupportsSkills
 {
-    return new class ($installed) extends AbstractAgent implements SupportsGuidelines, SupportsMcp, SupportsLsp, SupportsSkills
+    return new class ($installed) extends AbstractAgent implements SupportsGuidelines, SupportsMcp, SupportsSkills
     {
         public array $guidelinesCalls = [];
 
         public array $mcpCalls = [];
-
-        public array $lspCalls = [];
 
         public array $skillsCalls = [];
 
@@ -74,33 +70,26 @@ function makeInstallFullAgent(bool $installed = false): AgentInterface&SupportsG
         public function writeGuidelines(
             GuidelinesContent $content,
             string $projectRoot,
-        ): void
-        {
+        ): void {
             $this->guidelinesCalls[] = [$content, $projectRoot];
         }
 
         public function registerMcpServer(
             McpRegistration $registration,
             string $projectRoot,
-        ): void
-        {
+        ): void {
             $this->mcpCalls[] = [$registration, $projectRoot];
         }
 
-        public function registerLspServer(
-            LspRegistration $registration,
-            string $projectRoot,
-        ): void
-        {
-            $this->lspCalls[] = [$registration, $projectRoot];
-        }
-
+        /**
+         * @param list<SkillBundle> $bundles
+         * @param list<string> $previouslyShipped
+         */
         public function distributeSkills(
             array $bundles,
             string $projectRoot,
             array $previouslyShipped = [],
-        ): void
-        {
+        ): void {
             $this->skillsCalls[] = [$bundles, $projectRoot, $previouslyShipped];
         }
     };
@@ -147,8 +136,7 @@ function makeRecordingRunner(): CommandRunnerInterface
         public function run(
             string $command,
             array $args = [],
-        ): array
-        {
+        ): array {
             $this->calls[] = [$command, $args];
 
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
@@ -279,7 +267,7 @@ it(
             ->and($marker)->toHaveKey('shippedSkills')
             ->and($marker['shippedSkills'])->toBeArray()
             ->and($marker)->not->toHaveKey('docsDriver');
-    }
+    },
 );
 
 it('passes previously-shipped skills from the prior marker to each agent on update', function (): void {
@@ -371,7 +359,7 @@ it(
 
         expect($result['status'])->toBe('skipped')
             ->and($result['message'])->toContain('devai:update');
-    }
+    },
 );
 
 it('prints a summary of changes made', function (): void {
@@ -390,11 +378,10 @@ it('prints a summary of changes made', function (): void {
     $log = implode("\n", $result['log']);
     expect($log)->toContain('[test-agent] wrote guidelines')
         ->and($log)->toContain('[test-agent] registered MCP server')
-        ->and($log)->toContain('[test-agent] registered LSP server')
         ->and($log)->toContain('[test-agent] distributed');
 });
 
-it('invokes each selected adapter writeGuidelines registerMcp registerLsp distributeSkills', function (): void {
+it('invokes each selected adapter writeGuidelines registerMcp distributeSkills', function (): void {
     $agent = makeInstallFullAgent(installed: true);
     $registry = makeInstallRegistry(['test-agent' => $agent]);
     $orchestrator = makeInstallOrchestrator($registry);
@@ -405,14 +392,13 @@ it('invokes each selected adapter writeGuidelines registerMcp registerLsp distri
 
     expect($agent->guidelinesCalls)->toHaveCount(1)
         ->and($agent->mcpCalls)->toHaveCount(1)
-        ->and($agent->lspCalls)->toHaveCount(1)
         ->and($agent->skillsCalls)->toHaveCount(1);
 });
 
-it('registers MCP and LSP servers using the absolute path to vendor/bin/marko', function (): void {
+it('registers MCP server using the absolute path to vendor/bin/marko', function (): void {
     // Regression: registering `php marko mcp:serve` blew up at spawn time because
     // there is no `marko` file at the project root — the binary lives in
-    // vendor/bin/marko. Agents (Claude Code, Cursor, etc.) spawn the MCP/LSP
+    // vendor/bin/marko. Agents (Codex, Cursor, etc.) spawn the MCP
     // server with no PATH guarantee and no guarantee about cwd, so the
     // registration must use an absolute path.
     $agent = makeInstallFullAgent(installed: true);
@@ -424,14 +410,11 @@ it('registers MCP and LSP servers using the absolute path to vendor/bin/marko', 
     $orchestrator->install($ctx, $this->tempRoot, false);
 
     [$mcpReg] = $agent->mcpCalls[0];
-    [$lspReg] = $agent->lspCalls[0];
 
     $expectedBin = $this->tempRoot . '/vendor/bin/marko';
 
     expect($mcpReg->command)->toBe($expectedBin)
-        ->and($mcpReg->args)->toBe(['mcp:serve'])
-        ->and($lspReg->command)->toBe($expectedBin)
-        ->and($lspReg->args)->toBe(['lsp:serve']);
+        ->and($mcpReg->args)->toBe(['mcp:serve']);
 });
 
 it('runs docs-fts:build during install when marko/docs-fts is in vendor', function (): void {

@@ -1,0 +1,22 @@
+<?php
+
+// module.php — optional manifest. Only create this file if the module needs
+// explicit DI bindings, singleton declarations, or boot callbacks.
+// If the module is just classes that auto-resolve, omit this file entirely.
+
+declare(strict_types=1);
+
+use {{Vendor}}\{{Name}}\Contracts\ExampleInterface;
+use {{Vendor}}\{{Name}}\ExampleImplementation;
+use Marko\Core\Container\ContainerInterface;
+
+return [
+    'bindings' => [
+        ExampleInterface::class => function (ContainerInterface $container): ExampleInterface {
+            return new ExampleImplementation();
+        },
+    ],
+    'singletons' => [
+        // Class names registered as shared instances
+    ],
+];

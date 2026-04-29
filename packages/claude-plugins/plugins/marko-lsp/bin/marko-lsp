@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+if [ -x "./vendor/bin/marko" ]; then
+    exec ./vendor/bin/marko lsp:serve "$@"
+elif command -v marko >/dev/null 2>&1; then
+    exec marko lsp:serve "$@"
+else
+    echo "marko-lsp: No marko binary found in vendor/bin/marko or on PATH." >&2
+    echo "marko-lsp: Run \`composer require marko/devai\` in this project." >&2
+    exit 1
+fi

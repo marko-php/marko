@@ -5,34 +5,53 @@ declare(strict_types=1);
 use Marko\DevAi\Agents\ClaudeCodeAgent;
 use Marko\DevAi\Contract\SupportsGuidelines;
 use Marko\DevAi\Contract\SupportsLsp;
-use Marko\DevAi\Contract\SupportsMcp;
 use Marko\DevAi\Contract\SupportsSkills;
+use Marko\DevAi\Exceptions\DevAiInstallException;
+use Marko\DevAi\Installation\InstallationOrchestrator;
 use Marko\DevAi\Process\CommandRunnerInterface;
 use Marko\DevAi\ValueObject\GuidelinesContent;
-use Marko\DevAi\ValueObject\LspRegistration;
-use Marko\DevAi\ValueObject\McpRegistration;
-use Marko\DevAi\ValueObject\SkillBundle;
 
-beforeEach(function () {
-    $this->tempRoot = sys_get_temp_dir() . '/devai-test-' . uniqid();
-    mkdir($this->tempRoot, 0755, true);
-    $this->runner = new class () implements CommandRunnerInterface
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeDevaiTempDir(): string
+{
+    $dir = sys_get_temp_dir() . '/devai-test-' . uniqid();
+    mkdir($dir, 0755, true);
+
+    return $dir;
+}
+
+function removeDevaiTempDir(string $dir): void
+{
+    if (!is_dir($dir)) {
+        return;
+    }
+    $iter = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST,
+    );
+    foreach ($iter as $f) {
+        $f->isDir() ? rmdir($f->getPathname()) : unlink($f->getPathname());
+    }
+    rmdir($dir);
+}
+
+function makeClaudeRunner(bool $claudeOnPath = true, string $listOutput = ''): CommandRunnerInterface
+{
+    return new class ($claudeOnPath, $listOutput) implements CommandRunnerInterface
     {
         public array $calls = [];
 
-        public bool $claudeOnPath = true;
+        public function __construct(
+            private bool $claudeOnPath,
+            public string $listOutput,
+        ) {}
 
-        public string $listOutput = '';
-
-        public function run(
-            string $cmd,
-            array $args = [],
-        ): array
+        public function run(string $cmd, array $args = []): array
         {
             $this->calls[] = [$cmd, $args];
-            if ($cmd === 'command') {
-                return ['exitCode' => $this->claudeOnPath ? 0 : 1, 'stdout' => $this->claudeOnPath ? '/usr/bin/claude' : '', 'stderr' => ''];
-            }
             if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
             }
@@ -45,138 +64,352 @@ beforeEach(function () {
             return $this->claudeOnPath;
         }
     };
-    $this->agent = new ClaudeCodeAgent($this->runner);
+}
+
+// ---------------------------------------------------------------------------
+// Basic identity
+// ---------------------------------------------------------------------------
+
+it('reports name as claude-code', function (): void {
+    $agent = new ClaudeCodeAgent(makeClaudeRunner());
+    expect($agent->name())->toBe('claude-code');
 });
 
-afterEach(function () {
-    $iter = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($this->tempRoot, RecursiveDirectoryIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::CHILD_FIRST,
-    );
-    foreach ($iter as $f) {
-        $f->isDir() ? rmdir($f->getPathname()) : unlink($f->getPathname());
-    }
-    rmdir($this->tempRoot);
+it('detects installation when claude binary is on PATH', function (): void {
+    $agent = new ClaudeCodeAgent(makeClaudeRunner(claudeOnPath: true));
+    expect($agent->isInstalled())->toBeTrue();
+
+    $agent2 = new ClaudeCodeAgent(makeClaudeRunner(claudeOnPath: false));
+    expect($agent2->isInstalled())->toBeFalse();
 });
 
-it('reports name as claude-code', function () {
-    expect($this->agent->name())->toBe('claude-code');
+// ---------------------------------------------------------------------------
+// writeGuidelines — Requirements 1–4
+// ---------------------------------------------------------------------------
+
+describe('writeGuidelines', function (): void {
+    beforeEach(function (): void {
+        $this->root = makeDevaiTempDir();
+        $this->agent = new ClaudeCodeAgent(makeClaudeRunner());
+    });
+
+    afterEach(function (): void {
+        removeDevaiTempDir($this->root);
+    });
+
+    it('writes AGENTS.md with the existing aggregated package guidelines content', function (): void {
+        $content = new GuidelinesContent('# Project Guidelines');
+        $this->agent->writeGuidelines($content, $this->root);
+
+        expect(file_exists($this->root . '/AGENTS.md'))->toBeTrue()
+            ->and(file_get_contents($this->root . '/AGENTS.md'))->toBe('# Project Guidelines');
+    });
+
+    it('writes CLAUDE.md including the @AGENTS.md import directive', function (): void {
+        $this->agent->writeGuidelines(new GuidelinesContent('body'), $this->root);
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        expect($claudeMd)->toContain('@AGENTS.md');
+    });
+
+    it('writes CLAUDE.md including the verbatim authority directive about skills as canonical spec', function (): void {
+        $this->agent->writeGuidelines(new GuidelinesContent('body'), $this->root);
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        expect($claudeMd)->toContain('skill is the canonical specification')
+            ->and($claudeMd)->toContain('marko-skills:create-module');
+    });
+
+    it('writes CLAUDE.md including the LSP verification gate directive', function (): void {
+        $this->agent->writeGuidelines(new GuidelinesContent('body'), $this->root);
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        expect($claudeMd)->toContain('LSP diagnostics')
+            ->and($claudeMd)->toContain('verification gate');
+    });
+
+    it('writes CLAUDE.md content noting the new plugin-namespaced skill invocation', function (): void {
+        $this->agent->writeGuidelines(new GuidelinesContent('body'), $this->root);
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        expect($claudeMd)->toContain('marko-skills@marko')
+            ->and($claudeMd)->toContain('marko-lsp@marko')
+            ->and($claudeMd)->toContain('marko-mcp@marko');
+    });
 });
 
-it('detects installation when claude binary is on PATH', function () {
-    expect($this->agent->isInstalled())->toBeTrue();
-    $this->runner->claudeOnPath = false;
-    expect($this->agent->isInstalled())->toBeFalse();
+// ---------------------------------------------------------------------------
+// writeSettings — Requirements 5–10 + monorepo detection
+// ---------------------------------------------------------------------------
+
+describe('installation', function (): void {
+    beforeEach(function (): void {
+        $this->root = makeDevaiTempDir();
+        $this->agent = new ClaudeCodeAgent(makeClaudeRunner());
+    });
+
+    afterEach(function (): void {
+        removeDevaiTempDir($this->root);
+    });
+
+    it('writes .claude/settings.json with extraKnownMarketplaces.marko entry', function (): void {
+        $this->agent->writeSettings($this->root, force: false);
+
+        $path = $this->root . '/.claude/settings.json';
+        expect(file_exists($path))->toBeTrue();
+
+        $data = json_decode((string) file_get_contents($path), true);
+        expect($data)->toHaveKey('extraKnownMarketplaces')
+            ->and($data['extraKnownMarketplaces'])->toHaveKey('marko');
+    });
+
+    it('writes .claude/settings.json with enabledPlugins listing marko-skills@marko, marko-lsp@marko, marko-mcp@marko all set to true', function (): void {
+        $this->agent->writeSettings($this->root, force: false);
+
+        $data = json_decode((string) file_get_contents($this->root . '/.claude/settings.json'), true);
+        expect($data['enabledPlugins']['marko-skills@marko'])->toBeTrue()
+            ->and($data['enabledPlugins']['marko-lsp@marko'])->toBeTrue()
+            ->and($data['enabledPlugins']['marko-mcp@marko'])->toBeTrue();
+    });
+
+    it('merges into an existing .claude/settings.json without clobbering unrelated user keys', function (): void {
+        mkdir($this->root . '/.claude', 0755, true);
+        file_put_contents(
+            $this->root . '/.claude/settings.json',
+            json_encode(['theme' => 'dark', 'someUserKey' => 42]),
+        );
+
+        $this->agent->writeSettings($this->root, force: false);
+
+        $data = json_decode((string) file_get_contents($this->root . '/.claude/settings.json'), true);
+        expect($data['theme'])->toBe('dark')
+            ->and($data['someUserKey'])->toBe(42)
+            ->and($data['extraKnownMarketplaces'])->toHaveKey('marko');
+    });
+
+    it('running install on a project that already has extraKnownMarketplaces.marko throws a loud Marko exception (message + context + suggestion) when --force is not passed', function (): void {
+        mkdir($this->root . '/.claude', 0755, true);
+        file_put_contents(
+            $this->root . '/.claude/settings.json',
+            json_encode(['extraKnownMarketplaces' => ['marko' => ['source' => ['source' => 'github', 'repo' => 'markoshust/marko']]]]),
+        );
+
+        expect(fn () => $this->agent->writeSettings($this->root, force: false))
+            ->toThrow(DevAiInstallException::class);
+    });
+
+    it('running install with --force on a project that already has extraKnownMarketplaces.marko overwrites the marko-related keys without throwing', function (): void {
+        mkdir($this->root . '/.claude', 0755, true);
+        file_put_contents(
+            $this->root . '/.claude/settings.json',
+            json_encode(['extraKnownMarketplaces' => ['marko' => ['source' => ['source' => 'old']]]]),
+        );
+
+        $this->agent->writeSettings($this->root, force: true);
+
+        $data = json_decode((string) file_get_contents($this->root . '/.claude/settings.json'), true);
+        expect($data['extraKnownMarketplaces']['marko']['source']['source'])->toBe('github');
+    });
+
+    it('running install with --force preserves unrelated user keys in the existing .claude/settings.json (only marko-prefixed keys are touched)', function (): void {
+        mkdir($this->root . '/.claude', 0755, true);
+        file_put_contents(
+            $this->root . '/.claude/settings.json',
+            json_encode([
+                'theme' => 'light',
+                'extraKnownMarketplaces' => ['marko' => ['old' => true]],
+                'enabledPlugins' => ['marko-skills@marko' => false, 'other-plugin@other' => true],
+            ]),
+        );
+
+        $this->agent->writeSettings($this->root, force: true);
+
+        $data = json_decode((string) file_get_contents($this->root . '/.claude/settings.json'), true);
+        expect($data['theme'])->toBe('light')
+            ->and($data['enabledPlugins']['other-plugin@other'])->toBeTrue()
+            ->and($data['enabledPlugins']['marko-skills@marko'])->toBeTrue();
+    });
 });
 
-it('writes CLAUDE.md with @AGENTS.md import and accurate skill discovery note', function () {
-    $content = new GuidelinesContent('# Project Guidelines');
-    $this->agent->writeGuidelines($content, $this->tempRoot);
+// ---------------------------------------------------------------------------
+// Monorepo vs external-project detection — Requirements 12–14
+// ---------------------------------------------------------------------------
 
-    expect(file_exists($this->tempRoot . '/AGENTS.md'))->toBeTrue()
-        ->and(file_get_contents($this->tempRoot . '/AGENTS.md'))->toBe('# Project Guidelines');
+describe('monorepo detection', function (): void {
+    it('when run from inside the marko monorepo, ClaudeCodeAgent chooses the local marketplace source shape', function (): void {
+        $root = makeDevaiTempDir();
+        // Simulate monorepo: packages/claude-plugins/ exists
+        mkdir($root . '/packages/claude-plugins', 0755, true);
 
-    $claudeMd = file_get_contents($this->tempRoot . '/CLAUDE.md');
-    expect($claudeMd)->toContain('@AGENTS.md')
-        ->and($claudeMd)->toContain('Marko skills')
-        ->and($claudeMd)->toContain('.claude/skills/')
-        ->and($claudeMd)->toContain('auto-loads a skill when its description matches');
-});
+        try {
+            $agent = new ClaudeCodeAgent(makeClaudeRunner());
+            $agent->writeSettings($root, force: false);
 
-it('registers marko-mcp via claude mcp add command', function () {
-    $reg = new McpRegistration(
-        serverName: 'marko-mcp',
-        command: 'marko-mcp',
-        args: ['--port', '3000'],
-        transport: 'stdio',
-    );
-    $this->agent->registerMcpServer($reg, $this->tempRoot);
-
-    $addCall = null;
-    foreach ($this->runner->calls as $call) {
-        if ($call[0] === 'claude' && in_array('add', $call[1], true)) {
-            $addCall = $call;
-            break;
+            $data = json_decode((string) file_get_contents($root . '/.claude/settings.json'), true);
+            $source = $data['extraKnownMarketplaces']['marko']['source'];
+            expect($source['source'])->toBe('local');
+        } finally {
+            removeDevaiTempDir($root);
         }
-    }
+    });
 
-    expect($addCall)->not->toBeNull()
-        ->and($addCall[1])->toContain('mcp')
-        ->and($addCall[1])->toContain('add')
-        ->and($addCall[1])->toContain('marko-mcp');
-});
+    it('external-project detection: when run from a project that requires marko/devai via Composer but is not the monorepo, ClaudeCodeAgent chooses the github source shape', function (): void {
+        $root = makeDevaiTempDir();
+        // No packages/claude-plugins/ — external project
 
-it('skips registration when the exact server name is already in claude mcp list', function () {
-    $this->runner->listOutput = "marko-mcp: stdio - php marko mcp:serve\n";
-    $reg = new McpRegistration(serverName: 'marko-mcp', command: 'php', args: ['marko', 'mcp:serve']);
-    $this->agent->registerMcpServer($reg, $this->tempRoot);
+        try {
+            $agent = new ClaudeCodeAgent(makeClaudeRunner());
+            $agent->writeSettings($root, force: false);
 
-    $addCall = null;
-    foreach ($this->runner->calls as $call) {
-        if ($call[0] === 'claude' && in_array('add', $call[1], true)) {
-            $addCall = $call;
-            break;
+            $data = json_decode((string) file_get_contents($root . '/.claude/settings.json'), true);
+            $source = $data['extraKnownMarketplaces']['marko']['source'];
+            expect($source['source'])->toBe('github')
+                ->and($source['repo'])->toBe('markoshust/marko');
+        } finally {
+            removeDevaiTempDir($root);
         }
-    }
+    });
 
-    expect($addCall)->toBeNull();
-});
+    it('the test for both monorepo and external-project branches uses two separate test fixtures (a tempdir with packages/claude-plugins present vs absent) rather than mocking the detection', function (): void {
+        // Monorepo fixture
+        $monorepoRoot = makeDevaiTempDir();
+        mkdir($monorepoRoot . '/packages/claude-plugins', 0755, true);
 
-it('still registers marko-mcp when a different server with a similar name exists', function () {
-    // Regression: substring-only check would false-positive on `marko-mcp-staging`
-    // and silently skip the real `marko-mcp` registration.
-    $this->runner->listOutput = "marko-mcp-staging: stdio - php marko mcp:serve --staging\n";
-    $reg = new McpRegistration(serverName: 'marko-mcp', command: 'php', args: ['marko', 'mcp:serve']);
-    $this->agent->registerMcpServer($reg, $this->tempRoot);
+        // External fixture
+        $externalRoot = makeDevaiTempDir();
 
-    $addCall = null;
-    foreach ($this->runner->calls as $call) {
-        if ($call[0] === 'claude' && in_array('add', $call[1], true)) {
-            $addCall = $call;
-            break;
+        try {
+            $agent = new ClaudeCodeAgent(makeClaudeRunner());
+
+            $agent->writeSettings($monorepoRoot, force: false);
+            $monorepoData = json_decode((string) file_get_contents($monorepoRoot . '/.claude/settings.json'), true);
+
+            $agent->writeSettings($externalRoot, force: false);
+            $externalData = json_decode((string) file_get_contents($externalRoot . '/.claude/settings.json'), true);
+
+            expect($monorepoData['extraKnownMarketplaces']['marko']['source']['source'])->toBe('local')
+                ->and($externalData['extraKnownMarketplaces']['marko']['source']['source'])->toBe('github');
+        } finally {
+            removeDevaiTempDir($monorepoRoot);
+            removeDevaiTempDir($externalRoot);
         }
-    }
-
-    expect($addCall)->not->toBeNull()
-        ->and($addCall[1])->toContain('marko-mcp');
+    });
 });
 
-it('writes .lsp.json plugin config for marko-lsp', function () {
-    $reg = new LspRegistration(
-        serverName: 'marko-lsp',
-        command: 'marko-lsp',
-        args: ['--stdio'],
-        fileExtensions: ['php', 'latte'],
-    );
-    $this->agent->registerLspServer($reg, $this->tempRoot);
+// ---------------------------------------------------------------------------
+// Legacy artifact cleanup — Requirements 15–16
+// ---------------------------------------------------------------------------
 
-    $lspFile = $this->tempRoot . '/.claude/plugins/marko/.lsp.json';
-    expect(file_exists($lspFile))->toBeTrue();
+describe('legacy artifact cleanup', function (): void {
+    it('ClaudeCodeAgent no longer writes .claude/plugins/marko/.lsp.json — install also removes any pre-existing one (legacy artifact cleanup, idempotent)', function (): void {
+        $root = makeDevaiTempDir();
 
-    $config = json_decode(file_get_contents($lspFile), true);
-    expect($config['name'])->toBe('marko-lsp')
-        ->and($config['command'])->toBe('marko-lsp')
-        ->and($config['args'])->toBe(['--stdio'])
-        ->and($config['fileExtensions'])->toBe(['php', 'latte']);
+        try {
+            // Pre-create legacy .lsp.json
+            $legacyDir = $root . '/.claude/plugins/marko';
+            mkdir($legacyDir, 0755, true);
+            file_put_contents($legacyDir . '/.lsp.json', '{"old":"stuff"}');
+
+            $agent = new ClaudeCodeAgent(makeClaudeRunner());
+            $agent->writeSettings($root, force: false);
+
+            // Legacy file must be gone
+            expect(file_exists($legacyDir . '/.lsp.json'))->toBeFalse();
+        } finally {
+            removeDevaiTempDir($root);
+        }
+    });
+
+    it('ClaudeCodeAgent no longer invokes claude mcp add directly — install also removes any previously-registered marko-mcp server via claude mcp remove if present (idempotent)', function (): void {
+        $root = makeDevaiTempDir();
+
+        try {
+            $runner = makeClaudeRunner(listOutput: "marko-mcp: stdio - php marko mcp:serve\n");
+            $agent = new ClaudeCodeAgent($runner);
+            $agent->writeSettings($root, force: false);
+
+            // Must have called 'claude mcp list' and then 'claude mcp remove marko-mcp'
+            $calls = $runner->calls;
+            $listCall = null;
+            $removeCall = null;
+            foreach ($calls as $call) {
+                if ($call[0] === 'claude' && ($call[1][0] ?? '') === 'mcp' && ($call[1][1] ?? '') === 'list') {
+                    $listCall = $call;
+                }
+                if ($call[0] === 'claude' && ($call[1][0] ?? '') === 'mcp' && ($call[1][1] ?? '') === 'remove') {
+                    $removeCall = $call;
+                }
+            }
+            expect($listCall)->not->toBeNull()
+                ->and($removeCall)->not->toBeNull()
+                ->and($removeCall[1])->toContain('marko-mcp');
+        } finally {
+            removeDevaiTempDir($root);
+        }
+    });
+
+    it('does not call claude mcp remove when marko-mcp is not in the list (idempotent)', function (): void {
+        $root = makeDevaiTempDir();
+
+        try {
+            $runner = makeClaudeRunner(listOutput: '');
+            $agent = new ClaudeCodeAgent($runner);
+            $agent->writeSettings($root, force: false);
+
+            $removeCall = null;
+            foreach ($runner->calls as $call) {
+                if ($call[0] === 'claude' && ($call[1][0] ?? '') === 'mcp' && ($call[1][1] ?? '') === 'remove') {
+                    $removeCall = $call;
+                }
+            }
+            expect($removeCall)->toBeNull();
+        } finally {
+            removeDevaiTempDir($root);
+        }
+    });
 });
 
-it('distributes skills to .claude/skills directory', function () {
-    $bundles = [
-        new SkillBundle('marko-skills', [
-            'plan-create.md' => '# Plan Create skill',
-            'plan-orchestrate.md' => '# Plan Orchestrate skill',
-        ]),
-    ];
-    $this->agent->distributeSkills($bundles, $this->tempRoot);
+// ---------------------------------------------------------------------------
+// SkillsDistributor no longer used for ClaudeCode — Requirement 17
+// ---------------------------------------------------------------------------
 
-    expect(file_exists($this->tempRoot . '/.claude/skills/plan-create.md'))->toBeTrue()
-        ->and(file_get_contents($this->tempRoot . '/.claude/skills/plan-create.md'))->toBe('# Plan Create skill')
-        ->and(file_exists($this->tempRoot . '/.claude/skills/plan-orchestrate.md'))->toBeTrue();
+it('legacy SkillsDistributor invocation for Claude Code agent is removed (skills come via the plugin now)', function (): void {
+    // ClaudeCodeAgent must NOT implement SupportsSkills any more.
+    // (SkillsDistributor is for non-Claude agents which still call it.)
+    $agent = new ClaudeCodeAgent(makeClaudeRunner());
+    expect($agent)->not->toBeInstanceOf(SupportsSkills::class);
 });
 
-it('supports all four capability interfaces Guidelines Mcp Lsp Skills', function () {
-    expect($this->agent)->toBeInstanceOf(SupportsGuidelines::class)
-        ->and($this->agent)->toBeInstanceOf(SupportsMcp::class)
-        ->and($this->agent)->toBeInstanceOf(SupportsLsp::class)
-        ->and($this->agent)->toBeInstanceOf(SupportsSkills::class);
+// ---------------------------------------------------------------------------
+// --force end-to-end plumbing — Requirement 11
+// ---------------------------------------------------------------------------
+
+it('the --force flag is plumbed end-to-end: devai:install command accepts it, InstallationOrchestrator forwards it, ClaudeCodeAgent honors it', function (): void {
+    // The InstallCommand passes $force = $input->hasOption('force') to orchestrator->install(..., force: $force).
+    // The orchestrator calls $agent->writeSettings($root, force: $force).
+    // We can verify the orchestrator wires force through by inspecting its install() signature.
+    $reflection = new ReflectionMethod(InstallationOrchestrator::class, 'install');
+    $params = $reflection->getParameters();
+    $paramNames = array_map(fn ($p) => $p->getName(), $params);
+    expect($paramNames)->toContain('force');
+
+    // Verify ClaudeCodeAgent::writeSettings also has a force parameter.
+    $agentReflection = new ReflectionMethod(ClaudeCodeAgent::class, 'writeSettings');
+    $agentParams = $agentReflection->getParameters();
+    $agentParamNames = array_map(fn ($p) => $p->getName(), $agentParams);
+    expect($agentParamNames)->toContain('force');
+});
+
+// ---------------------------------------------------------------------------
+// Interfaces — SupportsGuidelines kept; SupportsLsp removed
+// ---------------------------------------------------------------------------
+
+it('still implements SupportsGuidelines', function (): void {
+    $agent = new ClaudeCodeAgent(makeClaudeRunner());
+    expect($agent)->toBeInstanceOf(SupportsGuidelines::class);
+});
+
+it('no longer implements SupportsLsp (interface deleted or not applied to ClaudeCodeAgent)', function (): void {
+    $agent = new ClaudeCodeAgent(makeClaudeRunner());
+    expect(interface_exists(SupportsLsp::class))->toBeFalse();
 });

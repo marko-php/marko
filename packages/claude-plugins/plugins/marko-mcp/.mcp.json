@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "marko-mcp": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/marko-mcp",
+      "args": []
+    }
+  }
+}

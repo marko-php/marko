@@ -53,7 +53,7 @@ A skill is a **step-by-step workflow** the agent can follow for a specific, boun
 
 Every `SKILL.md` **must start with YAML frontmatter** containing at least `name` and `description`. The `description` is what the agent matches against to decide whether to load the skill, so it must name the trigger conditions concretely. Skills that ship without frontmatter are skipped by `marko/devai` with a warning — they cannot be auto-discovered.
 
-**Naming convention.** The skill directory name, the `name` field, and any references in docs must match. Prefix the name with your package's namespace to avoid clobbering same-named skills from other sources (e.g. `marko-create-module`, not `create-module`).
+**Naming convention.** The skill directory name and the `name` field must match. For Claude Code distribution via the `marko-skills` plugin, skills use simple names (e.g. `create-module`) and Claude Code namespaces them automatically by plugin (`/marko-skills:create-module`). For non-Claude agents (Codex, Cursor, etc.) the skill content is copied from the same canonical home — no per-agent renaming required.
 
 ```markdown
 ---

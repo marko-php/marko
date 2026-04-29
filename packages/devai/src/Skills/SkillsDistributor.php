@@ -11,18 +11,24 @@ use RecursiveIteratorIterator;
 
 class SkillsDistributor
 {
-    private const string SKILLS_REL_PATH = '/resources/ai/skills';
+    private const string MODULE_SKILLS_REL_PATH = '/resources/ai/skills';
+
+    private const string CANONICAL_SKILLS_REL_PATH = '/packages/claude-plugins/plugins/marko-skills/skills';
+
+    private const string VENDOR_SKILLS_REL_PATH = '/vendor/marko/claude-plugins/plugins/marko-skills/skills';
 
     /** @var list<string> */
     private array $warnings = [];
 
-    private readonly string $devaiPackageRoot;
+    private readonly string $projectRoot;
 
     public function __construct(
         private ModuleWalkerInterface $walker,
-        ?string $devaiPackageRoot = null,
+        ?string $projectRoot = null,
     ) {
-        $this->devaiPackageRoot = $devaiPackageRoot ?? dirname(__DIR__, 2);
+        // Default: devai lives at <projectRoot>/packages/devai/ (monorepo)
+        // or <projectRoot>/vendor/marko/devai/ (external) — walk up to find project root
+        $this->projectRoot = $projectRoot ?? dirname(__DIR__, 4);
     }
 
     /** @return list<SkillBundle> */
@@ -31,15 +37,15 @@ class SkillsDistributor
         $bundles = [];
         $seenSkillNames = [];
 
-        $coreSkillsDir = $this->devaiPackageRoot . self::SKILLS_REL_PATH;
-        if (is_dir($coreSkillsDir)) {
-            foreach ($this->collectFromDir($coreSkillsDir, 'marko/devai', $seenSkillNames) as $b) {
+        $coreSkillsDir = $this->resolveCoreSkillsDir();
+        if ($coreSkillsDir !== null && is_dir($coreSkillsDir)) {
+            foreach ($this->collectFromDir($coreSkillsDir, 'marko/claude-plugins', $seenSkillNames) as $b) {
                 $bundles[] = $b;
             }
         }
 
         foreach ($this->walker->walk() as $module) {
-            $skillsDir = $module->path . self::SKILLS_REL_PATH;
+            $skillsDir = $module->path . self::MODULE_SKILLS_REL_PATH;
             if (is_dir($skillsDir)) {
                 foreach ($this->collectFromDir($skillsDir, $module->name, $seenSkillNames) as $b) {
                     $bundles[] = $b;
@@ -48,6 +54,23 @@ class SkillsDistributor
         }
 
         return $bundles;
+    }
+
+    private function resolveCoreSkillsDir(): ?string
+    {
+        // Monorepo: packages/claude-plugins/ exists at project root
+        $monorepoPath = $this->projectRoot . self::CANONICAL_SKILLS_REL_PATH;
+        if (is_dir($monorepoPath)) {
+            return $monorepoPath;
+        }
+
+        // External project: installed via Composer
+        $vendorPath = $this->projectRoot . self::VENDOR_SKILLS_REL_PATH;
+        if (is_dir($vendorPath)) {
+            return $vendorPath;
+        }
+
+        return null;
     }
 
     /** @return list<string> */
@@ -67,8 +90,7 @@ class SkillsDistributor
     public static function writeBundles(
         array $bundles,
         string $targetDir,
-    ): array
-    {
+    ): array {
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0755, true);
         }
@@ -105,8 +127,7 @@ class SkillsDistributor
         array $bundles,
         string $targetDir,
         array $previouslyShipped,
-    ): void
-    {
+    ): void {
         $written = self::writeBundles($bundles, $targetDir);
 
         foreach ($previouslyShipped as $priorName) {
@@ -128,8 +149,7 @@ class SkillsDistributor
         string $skillsDir,
         string $packageName,
         array &$seenSkillNames,
-    ): array
-    {
+    ): array {
         $skills = [];
         foreach (glob($skillsDir . '/*', GLOB_ONLYDIR) ?: [] as $skillDir) {
             $skillName = basename($skillDir);
@@ -149,8 +169,8 @@ class SkillsDistributor
                 $missing = array_values(array_diff(['name', 'description'], array_keys($frontmatter)));
                 $this->warnings[] = "Skill '$skillName' from $packageName has SKILL.md missing required frontmatter (" . implode(
                     ', ',
-                    $missing
-                ) . "). Skipped — agents cannot auto-discover skills without name and description.";
+                    $missing,
+                ) . '). Skipped — agents cannot auto-discover skills without name and description.';
                 continue;
             }
             if ($frontmatter['name'] !== $skillName) {
@@ -203,8 +223,7 @@ class SkillsDistributor
     private function collectFiles(
         string $skillDir,
         string $skillName,
-    ): array
-    {
+    ): array {
         $files = [];
         $iter = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($skillDir, RecursiveDirectoryIterator::SKIP_DOTS),

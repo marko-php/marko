@@ -11,7 +11,7 @@ Start it with:
 marko lsp:serve
 ```
 
-The server speaks JSON-RPC over stdio. `marko/devai` registers it automatically with agents that consume LSP servers (Claude Code via `.claude/plugins/marko/.lsp.json`).
+The server speaks JSON-RPC over stdio. For Claude Code, the `marko-lsp` plugin (shipped via the `marko` marketplace at `packages/claude-plugins/plugins/marko-lsp/`) registers the server through its `.lsp.json` and a POSIX shim at `bin/marko-lsp` that locates `vendor/bin/marko` and execs `marko lsp:serve`. `marko/devai` writes the marketplace registration into `.claude/settings.json` (`extraKnownMarketplaces.marko` + `enabledPlugins`), and Claude Code installs the plugin on first folder-trust prompt.
 
 ## Wired LSP methods
 

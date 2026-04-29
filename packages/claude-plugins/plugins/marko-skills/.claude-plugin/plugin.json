@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "marko-skills",
+  "description": "Marko-specific skills (create-module, create-plugin) for Claude Code.",
+  "author": {
+    "name": "Marko Framework",
+    "email": "mark@shust.com"
+  },
+  "homepage": "https://marko.dev",
+  "repository": "https://github.com/markoshust/marko",
+  "license": "MIT",
+  "keywords": ["marko", "skills", "php"]
+}

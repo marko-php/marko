@@ -6,16 +6,17 @@ namespace Marko\DevAi\Installation;
 
 use DateTimeInterface;
 use Marko\DevAi\Contract\SupportsGuidelines;
-use Marko\DevAi\Contract\SupportsLsp;
 use Marko\DevAi\Contract\SupportsMcp;
+use Marko\DevAi\Contract\SupportsSettings;
 use Marko\DevAi\Contract\SupportsSkills;
+use Marko\DevAi\Exceptions\DevAiInstallException;
 use Marko\DevAi\Guidelines\GuidelinesAggregator;
 use Marko\DevAi\Process\CommandRunnerInterface;
 use Marko\DevAi\Rendering\AgentsMdRenderer;
 use Marko\DevAi\Rendering\ClaudeMdRenderer;
 use Marko\DevAi\Skills\SkillsDistributor;
-use Marko\DevAi\ValueObject\LspRegistration;
 use Marko\DevAi\ValueObject\McpRegistration;
+use Marko\DevAi\ValueObject\SkillBundle;
 
 class InstallationOrchestrator
 {
@@ -31,13 +32,15 @@ class InstallationOrchestrator
         private CommandRunnerInterface $runner,
     ) {}
 
-    /** @return array{status: string, message?: string, log?: list<string>} */
+    /**
+     * @return array{status: string, message?: string, log?: list<string>}
+     * @throws DevAiInstallException when an agent rejects the install (e.g. already-registered settings without --force)
+     */
     public function install(
         InstallationContext $ctx,
         string $projectRoot,
         bool $force,
-    ): array
-    {
+    ): array {
         $marker = $projectRoot . '/.marko/devai.json';
         if (is_file($marker) && !$force) {
             return [
@@ -59,7 +62,6 @@ class InstallationOrchestrator
         $agents = $this->registry->all($projectRoot);
         $markoBin = $this->resolveMarkoBin($projectRoot);
         $mcp = new McpRegistration(serverName: 'marko-mcp', command: $markoBin, args: ['mcp:serve']);
-        $lsp = new LspRegistration(serverName: 'marko-lsp', command: $markoBin, args: ['lsp:serve']);
 
         foreach ($ctx->selectedAgents as $agentName) {
             if (!isset($agents[$agentName])) {
@@ -71,13 +73,13 @@ class InstallationOrchestrator
                 $agent->writeGuidelines($agentsMd, $projectRoot);
                 $this->log[] = "[$agentName] wrote guidelines";
             }
+            if ($agent instanceof SupportsSettings) {
+                $agent->writeSettings($projectRoot, $force);
+                $this->log[] = "[$agentName] wrote settings";
+            }
             if ($agent instanceof SupportsMcp) {
                 $agent->registerMcpServer($mcp, $projectRoot);
                 $this->log[] = "[$agentName] registered MCP server";
-            }
-            if ($agent instanceof SupportsLsp) {
-                $agent->registerLspServer($lsp, $projectRoot);
-                $this->log[] = "[$agentName] registered LSP server";
             }
             if ($agent instanceof SupportsSkills) {
                 $agent->distributeSkills($skills, $projectRoot, $previouslyShipped);
@@ -116,8 +118,7 @@ class InstallationOrchestrator
     private function buildDocsIndex(
         string $projectRoot,
         string $markoBin,
-    ): void
-    {
+    ): void {
         if (is_dir($projectRoot . '/vendor/marko/docs-vec')) {
             $command = 'docs-vec:build';
             $driver = 'docs-vec';
@@ -166,7 +167,7 @@ class InstallationOrchestrator
      * "skill-name/SKILL.md" or "skill-name/examples/foo.php" — we want the
      * unique first segment.
      *
-     * @param list<\Marko\DevAi\ValueObject\SkillBundle> $bundles
+     * @param list<SkillBundle> $bundles
      * @return list<string>
      */
     private function extractSkillNames(array $bundles): array
@@ -184,11 +185,10 @@ class InstallationOrchestrator
     /**
      * Resolve the absolute path to the marko CLI binary for this project.
      *
-     * MCP servers and LSP servers are spawned by the agent (Claude Code, Cursor,
-     * etc.) whose working directory is not guaranteed to be the project root —
-     * and the project root has no `marko` file (the binary lives in
-     * `vendor/bin/marko`). Registering an absolute path makes the spawn
-     * reliable regardless of cwd or PATH.
+     * MCP servers are spawned by the agent (Codex, Cursor, etc.) whose working
+     * directory is not guaranteed to be the project root — and the project root
+     * has no `marko` file (the binary lives in `vendor/bin/marko`). Registering
+     * an absolute path makes the spawn reliable regardless of cwd or PATH.
      */
     private function resolveMarkoBin(string $projectRoot): string
     {

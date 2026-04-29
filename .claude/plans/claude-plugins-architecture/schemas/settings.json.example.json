@@ -1,0 +1,15 @@
+{
+  "extraKnownMarketplaces": {
+    "marko": {
+      "source": {
+        "source": "github",
+        "repo": "markoshust/marko"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "marko-mcp@marko": true,
+    "marko-lsp@marko": true,
+    "marko-skills@marko": true
+  }
+}
