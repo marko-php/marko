@@ -69,7 +69,7 @@ it('detects installation when claude binary is on PATH', function () {
     expect($this->agent->isInstalled())->toBeFalse();
 });
 
-it('writes CLAUDE.md with @AGENTS.md import and Claude-specific additions', function () {
+it('writes CLAUDE.md with @AGENTS.md import and accurate skill discovery note', function () {
     $content = new GuidelinesContent('# Project Guidelines');
     $this->agent->writeGuidelines($content, $this->tempRoot);
 
@@ -78,7 +78,9 @@ it('writes CLAUDE.md with @AGENTS.md import and Claude-specific additions', func
 
     $claudeMd = file_get_contents($this->tempRoot . '/CLAUDE.md');
     expect($claudeMd)->toContain('@AGENTS.md')
-        ->and($claudeMd)->toContain('Claude-Specific');
+        ->and($claudeMd)->toContain('Marko skills')
+        ->and($claudeMd)->toContain('.claude/skills/')
+        ->and($claudeMd)->toContain('auto-loads a skill when its description matches');
 });
 
 it('registers marko-mcp via claude mcp add command', function () {

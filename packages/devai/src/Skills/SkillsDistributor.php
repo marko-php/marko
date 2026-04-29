@@ -128,6 +128,27 @@ class SkillsDistributor
                 $this->warnings[] = "Skill conflict: '$skillName' from $packageName already provided by " . $seenSkillNames[$skillName] . ' (using first)';
                 continue;
             }
+
+            $skillMdPath = $skillDir . '/SKILL.md';
+            if (!is_file($skillMdPath)) {
+                $this->warnings[] = "Skill '$skillName' from $packageName has no SKILL.md (skipped). Every skill directory must contain a SKILL.md.";
+                continue;
+            }
+
+            $frontmatter = $this->parseFrontmatter((string) file_get_contents($skillMdPath));
+            if (!isset($frontmatter['name'], $frontmatter['description'])) {
+                $missing = array_values(array_diff(['name', 'description'], array_keys($frontmatter)));
+                $this->warnings[] = "Skill '$skillName' from $packageName has SKILL.md missing required frontmatter (" . implode(
+                    ', ',
+                    $missing
+                ) . "). Skipped — agents cannot auto-discover skills without name and description.";
+                continue;
+            }
+            if ($frontmatter['name'] !== $skillName) {
+                $this->warnings[] = "Skill '$skillName' from $packageName has frontmatter name '" . $frontmatter['name'] . "' which does not match its directory name. Skipped — directory and frontmatter name must match.";
+                continue;
+            }
+
             $seenSkillNames[$skillName] = $packageName;
 
             $files = $this->collectFiles($skillDir, $skillName);
@@ -137,6 +158,34 @@ class SkillsDistributor
         }
 
         return $skills;
+    }
+
+    /**
+     * Extract a flat key/value YAML frontmatter block from the head of a SKILL.md.
+     * Only handles the simple `key: value` shape we require — `name` and `description`.
+     *
+     * @return array<string, string>
+     */
+    private function parseFrontmatter(string $content): array
+    {
+        if (!preg_match('/\A---\R(.*?)\R---\R/s', $content, $matches)) {
+            return [];
+        }
+
+        $result = [];
+        foreach (preg_split('/\R/', $matches[1]) ?: [] as $line) {
+            if (!preg_match('/^([A-Za-z0-9_-]+):\s*(.+?)\s*$/', $line, $kv)) {
+                continue;
+            }
+            $value = $kv[2];
+            if ((str_starts_with($value, '"') && str_ends_with($value, '"'))
+                || (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
+                $value = substr($value, 1, -1);
+            }
+            $result[$kv[1]] = $value;
+        }
+
+        return $result;
     }
 
     /**

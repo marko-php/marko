@@ -70,6 +70,35 @@ Provides IDE-style completions, hover, go-to-definition, diagnostics, and code l
 
 See the [`marko/lsp` README](https://github.com/markshust/marko/tree/develop/packages/lsp) for the full feature list.
 
+## Skills, MCP, LSP — when does each kick in?
+
+The three primitives sit at different layers of "what does the agent need from your project". Use this decision tree when you wonder where a new piece of help belongs:
+
+| Layer | Purpose | Triggered by | Example |
+|---|---|---|---|
+| **LSP** | What's in the code right now | Editor request (cursor position, completion trigger) | `config('cache.` → completions for valid cache config keys |
+| **MCP** | A capability or non-trivial lookup the agent should be able to invoke | The agent decides it needs the result | Agent calls `find_plugins_targeting` to see what intercepts a class |
+| **Skill** | The Marko-specific workflow for a multi-step task | The agent matches the user's request against the skill's `description` frontmatter | User says "create a Marko module" → agent loads `marko-create-module` and follows it |
+
+In flat terms:
+
+- **LSP** = "what's in the code"
+- **MCP** = "do this thing or look this up"
+- **Skill** = "how do I do X the Marko way"
+
+A fourth, lighter, layer exists alongside these:
+
+- **Per-package guidelines** (`resources/ai/guidelines.md`) — short prescriptive rules merged into `AGENTS.md`. Always in context, no on-demand loading. Use sparingly: every line competes with the user's own code for the agent's attention.
+
+### Choosing the right layer for new help
+
+1. Is it factual code intel an editor would normally show (completions, definitions, hover)? → **LSP feature**.
+2. Is it an action or non-trivial computation the agent needs to invoke at runtime (search, validate, query)? → **MCP tool**.
+3. Is it a multi-step convention with judgment calls the agent would otherwise get wrong? → **Skill**.
+4. Is it a one-line always-on rule? → **Per-package `guidelines.md`**.
+
+Skill descriptions matter: Claude (and other agents that auto-load skills) decide whether to pull a skill in based on the `description` field in the SKILL.md frontmatter. Vague descriptions = skills that never load. Name the trigger conditions concretely: *"Use whenever the user asks to create a plugin, intercept a method, modify input arguments, or short-circuit a method call."*
+
 ## Where to next
 
 - [Installation guide](./installation/) — detailed setup steps

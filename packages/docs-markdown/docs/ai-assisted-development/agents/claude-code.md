@@ -27,7 +27,11 @@ The MCP server is registered via the `claude mcp add` CLI call rather than a wri
 
 ### AGENTS.md and CLAUDE.md
 
-The installer writes the merged Marko guidelines to `AGENTS.md`. The `CLAUDE.md` file references it via `@AGENTS.md` and adds a Claude-specific note pointing to `.claude/skills/` for available skills. If `CLAUDE.md` already exists it is overwritten; the `AGENTS.md` body contains all the substantive content.
+The installer writes the merged Marko guidelines to `AGENTS.md`. The `CLAUDE.md` file references it via `@AGENTS.md` and adds a short note explaining that Marko skills under `.claude/skills/` are auto-loaded by Claude Code when their description matches the conversation. If `CLAUDE.md` already exists it is overwritten; the `AGENTS.md` body contains all the substantive content.
+
+### Skills
+
+Marko ships task-oriented skills (e.g. `marko-create-module`, `marko-create-plugin`) into `.claude/skills/{skill-name}/SKILL.md`. Claude Code discovers them automatically by reading each skill's frontmatter `description` field; **skills are not manually slash-invocable**. When the user's request matches a skill's description, Claude loads it and follows the contained workflow.
 
 ### MCP registration
 
@@ -40,15 +44,16 @@ The `.claude/plugins/marko/.lsp.json` file registers `marko lsp:serve` as a lang
 ## Manual verification
 
 1. Open Claude Code in your project root.
-2. Run `/marko` — you should see Marko slash commands listed.
-3. Ask: `What MCP tools are available?` — Claude should list `search_docs`, `find_event_observers`, `validate_module`, `query_database`.
-4. Ask: `Search docs for "routing"` — the `search_docs` tool should return results from Marko documentation.
-5. Open a PHP file and type `config('` — you should see Marko config key completions.
+2. Confirm the MCP server is registered: run `/mcp` in Claude Code — `marko-mcp` should appear in the list.
+3. Ask Claude: `What MCP tools are available from marko-mcp?` — it should enumerate tools like `search_docs`, `find_event_observers`, `validate_module`, `last_error`.
+4. Ask: `Search the Marko docs for routing.` — Claude should call `search_docs` and return results.
+5. Trigger a skill by intent (not by slash): ask `Create a new Marko module called acme/payment.` — Claude should load the `marko-create-module` skill and follow it.
+6. Open a PHP file and type `config('` — your editor (with `marko lsp:serve` connected) should show Marko config key completions.
 
 ## Agent-specific tips
 
-- **Context windows**: Claude Code reads `CLAUDE.md` on every session start. Keep the Marko section concise; detailed skill instructions belong in `resources/ai/skills/`.
-- **Slash commands**: The installed commands follow the pattern `/marko:{skill-name}`. Run `/marko:list` to see all registered skills.
+- **Context windows**: Claude Code reads `CLAUDE.md` on every session start. Keep it lean — substantive guidance belongs in `AGENTS.md` (project-wide) or `resources/ai/skills/{name}/SKILL.md` (task-specific, lazily loaded).
+- **Skills are auto-discovered**: There are no `/marko:*` slash commands. Skills load when Claude judges the user's request matches a skill's `description` frontmatter, so write descriptions that name the trigger conditions explicitly.
 - **Re-running install**: Safe to re-run after adding new packages. The installer merges new guidelines without duplicating existing content.
 
 ## Package READMEs

@@ -42,7 +42,10 @@ class ClaudeCodeAgent extends AbstractAgent implements SupportsGuidelines, Suppo
     ): void
     {
         file_put_contents($projectRoot . '/AGENTS.md', $content->body);
-        $claudeMd = "# Project Instructions\n\n@AGENTS.md\n\n## Claude-Specific\n\nSee `.claude/skills/` for available Marko skills.\n";
+        $claudeMd = "# Project Instructions\n\n@AGENTS.md\n\n## Marko skills\n\n"
+            . "Marko ships task-oriented skills under `.claude/skills/` (e.g. `marko-create-module`, `marko-create-plugin`).\n"
+            . "Claude Code auto-loads a skill when its description matches the user's request — you don't need to invoke them manually.\n"
+            . "If you want to inspect what's available, list `.claude/skills/`.\n";
         file_put_contents($projectRoot . '/CLAUDE.md', $claudeMd);
     }
 
