@@ -52,13 +52,28 @@ class ClaudeCodeAgent extends AbstractAgent implements SupportsGuidelines, Suppo
     ): void
     {
         $listResult = $this->runner->run('claude', ['mcp', 'list']);
-        if (str_contains($listResult['stdout'], $reg->serverName)) {
+        if ($this->mcpListContainsServer($listResult['stdout'], $reg->serverName)) {
             return;
         }
         $this->runner->run(
             'claude',
             ['mcp', 'add', '-s', 'local', '-t', $reg->transport, $reg->serverName, $reg->command, ...$reg->args]
         );
+    }
+
+    /**
+     * Match the server name as a leading line token in `claude mcp list` output,
+     * not a naive substring — otherwise registering "marko-mcp" would silently
+     * skip when an unrelated "marko-mcp-staging" already exists.
+     */
+    private function mcpListContainsServer(
+        string $listStdout,
+        string $serverName,
+    ): bool
+    {
+        $pattern = '/^' . preg_quote($serverName, '/') . '(?:\s|:|$)/m';
+
+        return preg_match($pattern, $listStdout) === 1;
     }
 
     public function registerLspServer(

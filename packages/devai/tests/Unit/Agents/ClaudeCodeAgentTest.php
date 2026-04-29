@@ -24,7 +24,10 @@ beforeEach(function () {
 
         public string $listOutput = '';
 
-        public function run(string $cmd, array $args = []): array
+        public function run(
+            string $cmd,
+            array $args = [],
+        ): array
         {
             $this->calls[] = [$cmd, $args];
             if ($cmd === 'command') {
@@ -98,6 +101,41 @@ it('registers marko-mcp via claude mcp add command', function () {
     expect($addCall)->not->toBeNull()
         ->and($addCall[1])->toContain('mcp')
         ->and($addCall[1])->toContain('add')
+        ->and($addCall[1])->toContain('marko-mcp');
+});
+
+it('skips registration when the exact server name is already in claude mcp list', function () {
+    $this->runner->listOutput = "marko-mcp: stdio - php marko mcp:serve\n";
+    $reg = new McpRegistration(serverName: 'marko-mcp', command: 'php', args: ['marko', 'mcp:serve']);
+    $this->agent->registerMcpServer($reg, $this->tempRoot);
+
+    $addCall = null;
+    foreach ($this->runner->calls as $call) {
+        if ($call[0] === 'claude' && in_array('add', $call[1], true)) {
+            $addCall = $call;
+            break;
+        }
+    }
+
+    expect($addCall)->toBeNull();
+});
+
+it('still registers marko-mcp when a different server with a similar name exists', function () {
+    // Regression: substring-only check would false-positive on `marko-mcp-staging`
+    // and silently skip the real `marko-mcp` registration.
+    $this->runner->listOutput = "marko-mcp-staging: stdio - php marko mcp:serve --staging\n";
+    $reg = new McpRegistration(serverName: 'marko-mcp', command: 'php', args: ['marko', 'mcp:serve']);
+    $this->agent->registerMcpServer($reg, $this->tempRoot);
+
+    $addCall = null;
+    foreach ($this->runner->calls as $call) {
+        if ($call[0] === 'claude' && in_array('add', $call[1], true)) {
+            $addCall = $call;
+            break;
+        }
+    }
+
+    expect($addCall)->not->toBeNull()
         ->and($addCall[1])->toContain('marko-mcp');
 });
 

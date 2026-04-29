@@ -20,7 +20,10 @@ readonly class InstallCommand implements CommandInterface
         private AgentRegistry $registry,
     ) {}
 
-    public function execute(Input $input, Output $output): int
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int
     {
         $force = $input->hasOption('force');
         $agentsArg = $input->getOption('agents');
@@ -42,7 +45,7 @@ readonly class InstallCommand implements CommandInterface
                     $detected[] = $name;
                 }
             }
-            $context = $this->promptUser($detected, $driverArg ?? 'vec', $gitignoreArg, $output);
+            $context = $this->buildContextFromDetection($detected, $driverArg ?? 'vec', $gitignoreArg, $output);
         }
 
         $result = $this->orchestrator->install($context, $projectRoot, $force);
@@ -61,15 +64,27 @@ readonly class InstallCommand implements CommandInterface
         return 0;
     }
 
-    /** @param list<string> $detectedAgents */
-    private function promptUser(
+    /**
+     * Auto-build an installation context from detected agent CLIs on PATH.
+     *
+     * This is a non-interactive fallback used when --agents / --docs-driver
+     * weren't supplied. It announces what it picked and how to override.
+     *
+     * @param list<string> $detectedAgents
+     */
+    private function buildContextFromDetection(
         array $detectedAgents,
         string $docsDriver,
         bool $updateGitignore,
         Output $output,
     ): InstallationContext {
-        $output->writeLine('Detected agents: ' . implode(', ', $detectedAgents));
+        $output->writeLine(
+            $detectedAgents === []
+                ? 'No agent CLIs detected on PATH.'
+                : 'Detected agents: ' . implode(', ', $detectedAgents)
+        );
         $output->writeLine("Using docs driver: $docsDriver (default)");
+        $output->writeLine('Pass --agents=<name,name> and --docs-driver=<fts|vec> to override.');
 
         return new InstallationContext(
             selectedAgents: $detectedAgents,
