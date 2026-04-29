@@ -7,44 +7,64 @@ namespace Marko\Core\Plugin;
 use Marko\Core\Attributes\After;
 use Marko\Core\Attributes\Before;
 use Marko\Core\Attributes\Plugin;
+use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Exceptions\PluginException;
 use Marko\Core\Module\ModuleManifest;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use ReflectionClass;
 use ReflectionException;
-use RegexIterator;
 
 class PluginDiscovery
 {
+    public function __construct(
+        private readonly ClassFileParser $classFileParser,
+    ) {}
+
     /**
-     * Discover plugin files in a module's src directory.
+     * Discover plugin definitions in a module's src directory.
      *
-     * @return array<string> List of absolute paths to PHP files containing plugins
+     * Scans PHP files for classes with the #[Plugin] attribute and returns
+     * fully parsed PluginDefinition instances ready for registration.
+     *
+     * @return array<PluginDefinition>
+     * @throws PluginException|ReflectionException
      */
-    public function discoverInModule(
-        ModuleManifest $manifest,
-    ): array {
+    public function discoverInModule(ModuleManifest $manifest): array
+    {
         $srcDir = $manifest->path . '/src';
 
         if (!is_dir($srcDir)) {
             return [];
         }
 
-        $pluginFiles = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($srcDir),
-        );
-        $phpFiles = new RegexIterator($iterator, '/\.php$/');
+        $definitions = [];
 
-        foreach ($phpFiles as $file) {
-            $content = file_get_contents($file->getPathname());
-            if ($content !== false && str_contains($content, '#[Plugin')) {
-                $pluginFiles[] = $file->getPathname();
+        foreach ($this->classFileParser->findPhpFiles($srcDir) as $file) {
+            $filepath = $file->getPathname();
+
+            $className = $this->classFileParser->extractClassName($filepath);
+            if ($className === null) {
+                continue;
             }
+
+            if (!$this->classFileParser->loadClass($filepath, $className)) {
+                continue;
+            }
+
+            if (!class_exists($className)) {
+                continue;
+            }
+
+            $reflector = new ReflectionClass($className);
+            $pluginAttributes = $reflector->getAttributes(Plugin::class);
+
+            if (empty($pluginAttributes)) {
+                continue;
+            }
+
+            $definitions[] = $this->parsePluginClass($className);
         }
 
-        return $pluginFiles;
+        return $definitions;
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Core\Attributes\After;
 use Marko\Core\Attributes\Before;
 use Marko\Core\Attributes\Plugin;
+use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Exceptions\PluginException;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Plugin\PluginDefinition;
@@ -113,13 +114,16 @@ it('discovers plugin classes in module src directories', function (): void {
         path: $tempDir,
     );
 
-    $discovery = new PluginDiscovery();
-    $pluginFiles = $discovery->discoverInModule($manifest);
+    $discovery = new PluginDiscovery(new ClassFileParser());
+    $definitions = $discovery->discoverInModule($manifest);
 
-    expect($pluginFiles)
+    expect($definitions)
         ->toBeArray()
-        ->toHaveCount(1)
-        ->and($pluginFiles[0])->toEndWith('UserServicePlugin.php');
+        ->toHaveCount(1);
+
+    expect($definitions[0])
+        ->toBeInstanceOf(PluginDefinition::class)
+        ->and($definitions[0]->pluginClass)->toEndWith('UserServicePlugin');
 
     cleanupPluginTestDirectory($tempDir);
 });
@@ -153,13 +157,16 @@ it('discovers plugin classes in module src directories with new naming', functio
         path: $tempDir,
     );
 
-    $discovery = new PluginDiscovery();
-    $pluginFiles = $discovery->discoverInModule($manifest);
+    $discovery = new PluginDiscovery(new ClassFileParser());
+    $definitions = $discovery->discoverInModule($manifest);
 
-    expect($pluginFiles)
+    expect($definitions)
         ->toBeArray()
-        ->toHaveCount(1)
-        ->and($pluginFiles[0])->toEndWith('ProductServicePlugin.php');
+        ->toHaveCount(1);
+
+    expect($definitions[0])
+        ->toBeInstanceOf(PluginDefinition::class)
+        ->and($definitions[0]->pluginClass)->toEndWith('ProductServicePlugin');
 
     cleanupPluginTestDirectory($tempDir);
 });
@@ -186,7 +193,7 @@ class TargetServicePlugin
 }
 
 it('extracts target class from Plugin attribute', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(TargetServicePlugin::class);
 
     expect($definition)
@@ -195,7 +202,7 @@ it('extracts target class from Plugin attribute', function (): void {
 });
 
 it('extracts target-method-keyed before methods from plugin class', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(TargetServicePlugin::class);
 
     expect($definition->beforeMethods)
@@ -208,7 +215,7 @@ it('extracts target-method-keyed before methods from plugin class', function ():
 });
 
 it('extracts before methods with their sort orders', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(TargetServicePlugin::class);
 
     expect($definition->beforeMethods)
@@ -218,7 +225,7 @@ it('extracts before methods with their sort orders', function (): void {
 });
 
 it('extracts target-method-keyed after methods from plugin class', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(TargetServicePlugin::class);
 
     expect($definition->afterMethods)
@@ -231,7 +238,7 @@ it('extracts target-method-keyed after methods from plugin class', function (): 
 });
 
 it('extracts after methods with their sort orders', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(TargetServicePlugin::class);
 
     expect($definition->afterMethods)
@@ -247,7 +254,7 @@ class NotAPlugin
 }
 
 it('throws PluginException when Plugin attribute missing target', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
 
     expect(fn () => $discovery->parsePluginClass(NotAPlugin::class))
         ->toThrow(PluginException::class);
@@ -266,14 +273,14 @@ class InvalidPluginWithBeforeAfter
 }
 
 it('throws PluginException when before/after method on non-plugin class', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
 
     expect(fn () => $discovery->validatePluginMethods(InvalidPluginWithBeforeAfter::class))
         ->toThrow(PluginException::class);
 });
 
 it('validates orphaned plugin methods still throws exception', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
 
     expect(fn () => $discovery->validatePluginMethods(InvalidPluginWithBeforeAfter::class))
         ->toThrow(PluginException::class);
@@ -299,7 +306,7 @@ class SimpleTargetPlugin
 }
 
 it('resolves target method from plugin method name when no method param', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(SimpleTargetPlugin::class);
 
     expect($definition->beforeMethods)
@@ -332,7 +339,7 @@ class ExplicitAfterPlugin
 }
 
 it('resolves target method from Before attribute method param', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(ExplicitBeforePlugin::class);
 
     expect($definition->beforeMethods)
@@ -342,7 +349,7 @@ it('resolves target method from Before attribute method param', function (): voi
 });
 
 it('resolves target method from After attribute method param', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(ExplicitAfterPlugin::class);
 
     expect($definition->afterMethods)
@@ -365,7 +372,7 @@ class MappingPlugin
 }
 
 it('builds PluginDefinition with correct target-to-plugin method mapping', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(MappingPlugin::class);
 
     expect($definition->pluginClass)->toBe(MappingPlugin::class)
@@ -395,7 +402,7 @@ class MixedPlugin
 }
 
 it('handles mixed standard and explicit method params in same plugin', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(MixedPlugin::class);
 
     expect($definition->beforeMethods)
@@ -427,7 +434,7 @@ class DuplicateBeforePlugin
 }
 
 it('throws PluginException when two before methods in same class target the same method', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
 
     expect(fn () => $discovery->parsePluginClass(DuplicateBeforePlugin::class))
         ->toThrow(PluginException::class);
@@ -451,7 +458,7 @@ class DuplicateAfterPlugin
 }
 
 it('throws PluginException when two after methods in same class target the same method', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
 
     expect(fn () => $discovery->parsePluginClass(DuplicateAfterPlugin::class))
         ->toThrow(PluginException::class);
@@ -475,7 +482,7 @@ class SameMethodBeforeAfterPlugin
 }
 
 it('allows before and after targeting the same method via method param in same class', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
     $definition = $discovery->parsePluginClass(SameMethodBeforeAfterPlugin::class);
 
     expect($definition->beforeMethods)->toHaveKey('save')
@@ -483,7 +490,7 @@ it('allows before and after targeting the same method via method param in same c
 });
 
 it('provides helpful error message with class and method names for intra-class conflict', function (): void {
-    $discovery = new PluginDiscovery();
+    $discovery = new PluginDiscovery(new \Marko\Core\Discovery\ClassFileParser());
 
     try {
         $discovery->parsePluginClass(DuplicateBeforePlugin::class);

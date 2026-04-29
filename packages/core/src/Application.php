@@ -239,7 +239,7 @@ class Application
      */
     private function discoverPreferences(): void
     {
-        $preferenceDiscovery = new PreferenceDiscovery();
+        $preferenceDiscovery = new PreferenceDiscovery($this->classFileParser);
 
         foreach ($this->modules as $module) {
             $files = $preferenceDiscovery->discoverInModule($module);
@@ -272,30 +272,12 @@ class Application
      */
     private function discoverPlugins(): void
     {
-        $pluginDiscovery = new PluginDiscovery();
+        $pluginDiscovery = new PluginDiscovery($this->classFileParser);
 
         foreach ($this->modules as $module) {
-            $files = $pluginDiscovery->discoverInModule($module);
+            $definitions = $pluginDiscovery->discoverInModule($module);
 
-            foreach ($files as $file) {
-                $className = $this->classFileParser->extractClassName($file);
-                if ($className === null) {
-                    continue;
-                }
-
-                if (!$this->classFileParser->loadClass($file, $className)) {
-                    continue;
-                }
-
-                // Verify the class actually has the #[Plugin] attribute
-                $reflection = new ReflectionClass($className);
-                $pluginAttributes = $reflection->getAttributes(Plugin::class);
-
-                if (empty($pluginAttributes)) {
-                    continue;
-                }
-
-                $definition = $pluginDiscovery->parsePluginClass($className);
+            foreach ($definitions as $definition) {
                 $this->pluginRegistry->register($definition);
             }
         }
