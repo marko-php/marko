@@ -27,15 +27,13 @@ readonly class InstallCommand implements CommandInterface
     {
         $force = $input->hasOption('force');
         $agentsArg = $input->getOption('agents');
-        $driverArg = $input->getOption('docs-driver');
         $gitignoreArg = $input->hasOption('update-gitignore');
 
         $projectRoot = (string) getcwd();
 
-        if ($agentsArg !== null && $driverArg !== null) {
+        if ($agentsArg !== null) {
             $context = new InstallationContext(
                 selectedAgents: explode(',', $agentsArg),
-                docsDriver: $driverArg,
                 updateGitignore: $gitignoreArg,
             );
         } else {
@@ -45,7 +43,7 @@ readonly class InstallCommand implements CommandInterface
                     $detected[] = $name;
                 }
             }
-            $context = $this->buildContextFromDetection($detected, $driverArg ?? 'vec', $gitignoreArg, $output);
+            $context = $this->buildContextFromDetection($detected, $gitignoreArg, $output);
         }
 
         $result = $this->orchestrator->install($context, $projectRoot, $force);
@@ -61,20 +59,21 @@ readonly class InstallCommand implements CommandInterface
             $output->writeLine("  - $line");
         }
 
+        $this->printDocsDriverHintIfMissing($projectRoot, $output);
+
         return 0;
     }
 
     /**
      * Auto-build an installation context from detected agent CLIs on PATH.
      *
-     * This is a non-interactive fallback used when --agents / --docs-driver
-     * weren't supplied. It announces what it picked and how to override.
+     * This is a non-interactive fallback used when --agents wasn't supplied.
+     * It announces what it picked and how to override.
      *
      * @param list<string> $detectedAgents
      */
     private function buildContextFromDetection(
         array $detectedAgents,
-        string $docsDriver,
         bool $updateGitignore,
         Output $output,
     ): InstallationContext {
@@ -83,13 +82,36 @@ readonly class InstallCommand implements CommandInterface
                 ? 'No agent CLIs detected on PATH.'
                 : 'Detected agents: ' . implode(', ', $detectedAgents)
         );
-        $output->writeLine("Using docs driver: $docsDriver (default)");
-        $output->writeLine('Pass --agents=<name,name> and --docs-driver=<fts|vec> to override.');
+        $output->writeLine('Pass --agents=<name,name> to override.');
 
         return new InstallationContext(
             selectedAgents: $detectedAgents,
-            docsDriver: $docsDriver,
             updateGitignore: $updateGitignore,
+        );
+    }
+
+    /**
+     * If the project has no docs driver installed, print a clear hint pointing
+     * at the two options and recommending one. This is the deliberate
+     * replacement for the old `--docs-driver` picker — picking a driver is the
+     * user's call (explicit composer require), not the installer's.
+     */
+    private function printDocsDriverHintIfMissing(
+        string $projectRoot,
+        Output $output,
+    ): void {
+        $hasFts = is_dir($projectRoot . '/vendor/marko/docs-fts');
+        $hasVec = is_dir($projectRoot . '/vendor/marko/docs-vec');
+
+        if ($hasFts || $hasVec) {
+            return;
+        }
+
+        $output->writeLine('');
+        $output->writeLine('Tip: install a docs driver to enable the search_docs MCP tool.');
+        $output->writeLine('  composer require --dev marko/docs-fts   [recommended] lexical search, no extra setup');
+        $output->writeLine(
+            '  composer require --dev marko/docs-vec   semantic search (needs sqlite-vec extension + ONNX model)'
         );
     }
 }

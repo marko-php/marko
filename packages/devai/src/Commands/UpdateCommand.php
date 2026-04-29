@@ -21,7 +21,10 @@ class UpdateCommand implements CommandInterface
         private readonly GuidelinesAggregator $aggregator,
     ) {}
 
-    public function execute(Input $input, Output $output): int
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int
     {
         $projectRoot = (string) getcwd();
         $marker = $projectRoot . '/.marko/devai.json';
@@ -35,8 +38,8 @@ class UpdateCommand implements CommandInterface
 
         $config = json_decode((string) file_get_contents($marker), true);
 
-        if (!is_array($config) || !isset($config['agents']) || !isset($config['docsDriver'])) {
-            $output->writeLine('Invalid .marko/devai.json — missing agents or docsDriver');
+        if (!is_array($config) || !isset($config['agents'])) {
+            $output->writeLine('Invalid .marko/devai.json — missing agents');
             $output->writeLine('Suggestion: Re-run `marko devai:install --force` to recreate');
 
             return 1;
@@ -48,7 +51,6 @@ class UpdateCommand implements CommandInterface
 
         $context = new InstallationContext(
             selectedAgents: $config['agents'],
-            docsDriver: $config['docsDriver'],
             updateGitignore: false,
         );
 

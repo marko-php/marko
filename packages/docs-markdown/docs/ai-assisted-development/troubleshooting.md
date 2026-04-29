@@ -25,7 +25,7 @@ The installer detects agents by looking for known configuration files and binari
 2. Bypass detection and force a specific agent set with the `--agents` flag (comma-separated, no space):
 
 ```bash
-marko devai:install --agents=claude-code,codex --docs-driver=vec
+marko devai:install --agents=claude-code,codex
 ```
 
 Supported agent identifiers: `claude-code`, `codex`, `cursor`, `copilot`, `gemini-cli`, `junie`.

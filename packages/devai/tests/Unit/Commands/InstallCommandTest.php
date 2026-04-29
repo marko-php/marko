@@ -7,11 +7,9 @@ use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\DevAi\Commands\InstallCommand;
 
-it('supports non-interactive mode via flags', function (): void {
-    // When --agents and --docs-driver are both provided, no interactive prompt occurs
-    $input = new Input(['marko', 'devai:install', '--agents=claude-code', '--docs-driver=fts']);
-    expect($input->getOption('agents'))->toBe('claude-code')
-        ->and($input->getOption('docs-driver'))->toBe('fts');
+it('supports non-interactive mode via the --agents flag', function (): void {
+    $input = new Input(['marko', 'devai:install', '--agents=claude-code']);
+    expect($input->getOption('agents'))->toBe('claude-code');
 });
 
 it('is registered via Command attribute with name devai:install', function (): void {

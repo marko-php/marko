@@ -128,7 +128,7 @@ it('reads prior agent selection from .marko/devai.json', function (): void {
     mkdir($this->tempRoot . '/.marko', 0755, true);
     file_put_contents(
         $this->tempRoot . '/.marko/devai.json',
-        json_encode(['agents' => ['claude-code'], 'docsDriver' => 'vec']),
+        json_encode(['agents' => ['claude-code']]),
     );
 
     $orchestrator = makeUpdateTestOrchestrator();
@@ -137,15 +137,14 @@ it('reads prior agent selection from .marko/devai.json', function (): void {
     $command->execute($input, $output);
 
     expect($orchestrator->capturedContext)->not->toBeNull()
-        ->and($orchestrator->capturedContext->selectedAgents)->toBe(['claude-code'])
-        ->and($orchestrator->capturedContext->docsDriver)->toBe('vec');
+        ->and($orchestrator->capturedContext->selectedAgents)->toBe(['claude-code']);
 });
 
 it('re-runs each previously selected adapter', function (): void {
     mkdir($this->tempRoot . '/.marko', 0755, true);
     file_put_contents(
         $this->tempRoot . '/.marko/devai.json',
-        json_encode(['agents' => ['claude-code', 'codex'], 'docsDriver' => 'fts']),
+        json_encode(['agents' => ['claude-code', 'codex']]),
     );
 
     $orchestrator = makeUpdateTestOrchestrator();
@@ -165,7 +164,6 @@ it('detects and reports newly contributed guidelines from new packages', functio
         $this->tempRoot . '/.marko/devai.json',
         json_encode([
             'agents' => [],
-            'docsDriver' => 'vec',
             'guidelines' => ['marko/core'],
         ]),
     );
@@ -213,7 +211,7 @@ it('prints a summary of files changed', function (): void {
     mkdir($this->tempRoot . '/.marko', 0755, true);
     file_put_contents(
         $this->tempRoot . '/.marko/devai.json',
-        json_encode(['agents' => ['claude-code'], 'docsDriver' => 'vec']),
+        json_encode(['agents' => ['claude-code']]),
     );
 
     $orchestrator = makeUpdateTestOrchestrator();

@@ -89,7 +89,6 @@ class InstallationOrchestrator
         }
         file_put_contents($marker, json_encode([
             'agents' => $ctx->selectedAgents,
-            'docsDriver' => $ctx->docsDriver,
             'shippedSkills' => $currentlyShipped,
             'installedAt' => date(DateTimeInterface::ATOM),
         ], JSON_PRETTY_PRINT));

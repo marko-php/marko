@@ -166,22 +166,21 @@ afterEach(function (): void {
     rmdir($this->tempRoot);
 });
 
-it('prompts for docs driver choice with vec as default', function (): void {
+it('writes a marker on successful install', function (): void {
     $agent = makeInstallFullAgent(installed: true);
     $registry = makeInstallRegistry(['test-agent' => $agent]);
     $orchestrator = makeInstallOrchestrator($registry);
 
-    $ctx = new InstallationContext(
-        selectedAgents: ['test-agent'],
-        docsDriver: 'vec',
-    );
+    $ctx = new InstallationContext(selectedAgents: ['test-agent']);
 
     $result = $orchestrator->install($ctx, $this->tempRoot, false);
 
     expect($result['status'])->toBe('installed');
 
     $marker = json_decode((string) file_get_contents($this->tempRoot . '/.marko/devai.json'), true);
-    expect($marker['docsDriver'])->toBe('vec');
+    expect($marker['agents'])->toBe(['test-agent'])
+        ->and($marker)->toHaveKey('installedAt')
+        ->and($marker)->not->toHaveKey('docsDriver');
 });
 
 it('writes or updates .gitignore entries for generated files if user opts in', function (): void {
@@ -190,7 +189,6 @@ it('writes or updates .gitignore entries for generated files if user opts in', f
 
     $ctx = new InstallationContext(
         selectedAgents: [],
-        docsDriver: 'vec',
         updateGitignore: true,
     );
 
@@ -210,7 +208,6 @@ it('does not write .gitignore when user does not opt in', function (): void {
 
     $ctx = new InstallationContext(
         selectedAgents: [],
-        docsDriver: 'vec',
         updateGitignore: false,
     );
 
@@ -225,7 +222,6 @@ it('does not duplicate .gitignore entries on repeated installs', function (): vo
 
     $ctx = new InstallationContext(
         selectedAgents: [],
-        docsDriver: 'vec',
         updateGitignore: true,
     );
 
@@ -237,27 +233,24 @@ it('does not duplicate .gitignore entries on repeated installs', function (): vo
 });
 
 it(
-    'writes .marko/devai.json on successful install capturing selected agents and docs driver choice',
+    'writes .marko/devai.json on successful install capturing selected agents',
     function (): void {
         $registry = makeInstallRegistry([]);
         $orchestrator = makeInstallOrchestrator($registry);
-    
-        $ctx = new InstallationContext(
-            selectedAgents: ['claude-code', 'codex'],
-            docsDriver: 'fts',
-        );
-    
+
+        $ctx = new InstallationContext(selectedAgents: ['claude-code', 'codex']);
+
         $orchestrator->install($ctx, $this->tempRoot, false);
-    
+
         $markerPath = $this->tempRoot . '/.marko/devai.json';
         expect(file_exists($markerPath))->toBeTrue();
-    
+
         $marker = json_decode((string) file_get_contents($markerPath), true);
         expect($marker['agents'])->toBe(['claude-code', 'codex'])
-            ->and($marker['docsDriver'])->toBe('fts')
             ->and($marker)->toHaveKey('installedAt')
             ->and($marker)->toHaveKey('shippedSkills')
-            ->and($marker['shippedSkills'])->toBeArray();
+            ->and($marker['shippedSkills'])->toBeArray()
+            ->and($marker)->not->toHaveKey('docsDriver');
     }
 );
 
@@ -268,7 +261,6 @@ it('passes previously-shipped skills from the prior marker to each agent on upda
         $this->tempRoot . '/.marko/devai.json',
         json_encode([
             'agents' => ['test-agent'],
-            'docsDriver' => 'vec',
             'shippedSkills' => ['old-skill', 'still-here'],
             'installedAt' => '2026-01-01T00:00:00+00:00',
         ]),
@@ -279,7 +271,7 @@ it('passes previously-shipped skills from the prior marker to each agent on upda
     $orchestrator = makeInstallOrchestrator($registry);
 
     $orchestrator->install(
-        new InstallationContext(selectedAgents: ['test-agent'], docsDriver: 'vec'),
+        new InstallationContext(selectedAgents: ['test-agent']),
         $this->tempRoot,
         true, // force, since marker exists
     );
@@ -300,7 +292,7 @@ it('treats first install as having no previously-shipped skills', function (): v
     $orchestrator = makeInstallOrchestrator($registry);
 
     $orchestrator->install(
-        new InstallationContext(selectedAgents: ['test-agent'], docsDriver: 'vec'),
+        new InstallationContext(selectedAgents: ['test-agent']),
         $this->tempRoot,
         false,
     );
@@ -313,12 +305,12 @@ it('treats first install as having no previously-shipped skills', function (): v
 it('supports a --force flag to re-run from scratch (overwrites all generated files)', function (): void {
     // Pre-create the marker file
     mkdir($this->tempRoot . '/.marko', 0755, true);
-    file_put_contents($this->tempRoot . '/.marko/devai.json', json_encode(['agents' => [], 'docsDriver' => 'vec']));
+    file_put_contents($this->tempRoot . '/.marko/devai.json', json_encode(['agents' => []]));
 
     $registry = makeInstallRegistry([]);
     $orchestrator = makeInstallOrchestrator($registry);
 
-    $ctx = new InstallationContext(selectedAgents: [], docsDriver: 'fts');
+    $ctx = new InstallationContext(selectedAgents: ['claude-code']);
 
     // Without force: skipped
     $result = $orchestrator->install($ctx, $this->tempRoot, false);
@@ -328,28 +320,27 @@ it('supports a --force flag to re-run from scratch (overwrites all generated fil
     $result = $orchestrator->install($ctx, $this->tempRoot, true);
     expect($result['status'])->toBe('installed');
 
-    // Verify marker was overwritten with new docsDriver
+    // Verify marker was overwritten with the new selected agents
     $marker = json_decode((string) file_get_contents($this->tempRoot . '/.marko/devai.json'), true);
-    expect($marker['docsDriver'])->toBe('fts');
+    expect($marker['agents'])->toBe(['claude-code']);
 });
 
 it(
     'detects a prior install by reading .marko/devai.json and early-exits with a helpful message pointing the user to devai:update',
     function (): void {
-        // Pre-create the marker file
-    mkdir($this->tempRoot . '/.marko', 0755, true);
+        mkdir($this->tempRoot . '/.marko', 0755, true);
         file_put_contents(
             $this->tempRoot . '/.marko/devai.json',
-            json_encode(['agents' => [], 'docsDriver' => 'vec'])
+            json_encode(['agents' => []]),
         );
-    
+
         $registry = makeInstallRegistry([]);
         $orchestrator = makeInstallOrchestrator($registry);
-    
-        $ctx = new InstallationContext(selectedAgents: [], docsDriver: 'vec');
-    
+
+        $ctx = new InstallationContext(selectedAgents: []);
+
         $result = $orchestrator->install($ctx, $this->tempRoot, false);
-    
+
         expect($result['status'])->toBe('skipped')
             ->and($result['message'])->toContain('devai:update');
     }
@@ -360,10 +351,7 @@ it('prints a summary of changes made', function (): void {
     $registry = makeInstallRegistry(['test-agent' => $agent]);
     $orchestrator = makeInstallOrchestrator($registry);
 
-    $ctx = new InstallationContext(
-        selectedAgents: ['test-agent'],
-        docsDriver: 'vec',
-    );
+    $ctx = new InstallationContext(selectedAgents: ['test-agent']);
 
     $result = $orchestrator->install($ctx, $this->tempRoot, false);
 
@@ -383,10 +371,7 @@ it('invokes each selected adapter writeGuidelines registerMcp registerLsp distri
     $registry = makeInstallRegistry(['test-agent' => $agent]);
     $orchestrator = makeInstallOrchestrator($registry);
 
-    $ctx = new InstallationContext(
-        selectedAgents: ['test-agent'],
-        docsDriver: 'vec',
-    );
+    $ctx = new InstallationContext(selectedAgents: ['test-agent']);
 
     $orchestrator->install($ctx, $this->tempRoot, false);
 
@@ -406,10 +391,7 @@ it('registers MCP and LSP servers using the absolute path to vendor/bin/marko', 
     $registry = makeInstallRegistry(['test-agent' => $agent]);
     $orchestrator = makeInstallOrchestrator($registry);
 
-    $ctx = new InstallationContext(
-        selectedAgents: ['test-agent'],
-        docsDriver: 'vec',
-    );
+    $ctx = new InstallationContext(selectedAgents: ['test-agent']);
 
     $orchestrator->install($ctx, $this->tempRoot, false);
 

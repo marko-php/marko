@@ -103,7 +103,7 @@ Skill descriptions matter: Claude (and other agents that auto-load skills) decid
 
 - [Installation guide](./installation/) — detailed setup steps
 - [Per-agent setup](./agents/claude-code/) — Claude Code, Codex, Cursor, Copilot, Gemini CLI, Junie
-- [Docs driver comparison](./docs-drivers/) — pick lexical (fts) or semantic (vec) search
+- [Docs driver comparison](./docs-drivers/) — install `marko/docs-fts` (recommended) or `marko/docs-vec` to enable `search_docs`
 - [Verification checklist](./verification-checklist/) — confirm everything works end-to-end
 - [Contributing](./contributing/) — package authors: add your own skills and guidelines
 - [Troubleshooting](./troubleshooting/) — common issues and fixes

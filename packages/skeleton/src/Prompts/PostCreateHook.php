@@ -16,7 +16,10 @@ class PostCreateHook
      * @param bool $interactive whether to prompt (false = use defaults)
      * @return int exit code
      */
-    public function run(string $projectRoot, bool $interactive = true): int
+    public function run(
+        string $projectRoot,
+        bool $interactive = true,
+    ): int
     {
         if ($this->prompt->alreadyAnswered($projectRoot)) {
             return 0;
@@ -56,11 +59,14 @@ class PostCreateHook
      * Run `marko devai:install` as a subprocess.
      * Extracted for testability.
      */
-    protected function runDevaiInstall(string $projectRoot, bool $interactive): int
+    protected function runDevaiInstall(
+        string $projectRoot,
+        bool $interactive,
+    ): int
     {
         $cmd = $interactive
             ? sprintf('cd %s && php marko devai:install 2>&1', escapeshellarg($projectRoot))
-            : sprintf('cd %s && php marko devai:install --agents=claude-code --docs-driver=vec 2>&1', escapeshellarg($projectRoot));
+            : sprintf('cd %s && php marko devai:install --agents=claude-code 2>&1', escapeshellarg($projectRoot));
         passthru($cmd, $devaiInstallCode);
 
         return $devaiInstallCode;
