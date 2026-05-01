@@ -8,6 +8,12 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.4.1] - 2026-05-01
+
+### Bug Fixes
+* fix: push main before generating release notes by @markshust in https://github.com/marko-php/marko/pull/49
+
+
 ## [0.4.0] - 2026-05-01
 
 ### New Features
