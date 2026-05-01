@@ -92,7 +92,6 @@ class HtmlDebugbarRenderer
 .marko-debugbar[data-theme=light] .marko-debugbar-open{border-color:#cbd5e1}
 .marko-debugbar-toggle{min-width:68px;margin-left:2px;border:1px solid #3b4b60!important;background:#162131!important}
 .marko-debugbar[data-theme=light] .marko-debugbar-toggle{border-color:#cbd5e1!important;background:#fff!important}
-.marko-debugbar-close{width:28px;height:28px;padding:0!important;color:#93a8bf!important}
 .marko-debugbar-panel{display:none;flex:0 0 auto;height:320px;overflow:auto;background:#0b1018;padding:12px}
 .marko-debugbar[data-marko-debugbar-state=expanded] .marko-debugbar-panel{display:block}
 .marko-debugbar[data-theme=light] .marko-debugbar-panel{background:#fff}
@@ -122,7 +121,6 @@ class HtmlDebugbarRenderer
   <div class="marko-debugbar-tabs" role="tablist">$tabs</div>
   <a class="marko-debugbar-open" href="/_debugbar" target="_blank" rel="noreferrer">All requests</a>
   <button type="button" class="marko-debugbar-toggle" data-marko-debugbar-toggle aria-expanded="false">Expand</button>
-  <button type="button" class="marko-debugbar-close" data-marko-debugbar-close aria-label="Close debugbar">x</button>
 </div>
 <script>
 (() => {
@@ -172,7 +170,6 @@ class HtmlDebugbarRenderer
     });
   });
   toggle?.addEventListener('click', () => setExpanded(root.getAttribute('data-marko-debugbar-state') !== 'expanded'));
-  root.querySelector('[data-marko-debugbar-close]')?.addEventListener('click', () => root.remove());
   if (handle) {
     handle.addEventListener('pointerdown', (event) => {
       event.preventDefault();
