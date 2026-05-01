@@ -53,6 +53,7 @@ body:
         - database
         - database-mysql
         - database-pgsql
+        - debugbar
         - dev-server
         - encryption
         - encryption-openssl
@@ -103,6 +104,7 @@ body:
         - validation
         - view
         - view-latte
+        - vite
         - webhook
         - other
     validations:

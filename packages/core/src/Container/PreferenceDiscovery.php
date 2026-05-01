@@ -4,40 +4,69 @@ declare(strict_types=1);
 
 namespace Marko\Core\Container;
 
+use Marko\Core\Attributes\Preference;
+use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Module\ModuleManifest;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use RegexIterator;
+use ReflectionClass;
 
 class PreferenceDiscovery
 {
+    public function __construct(
+        private readonly ClassFileParser $classFileParser,
+    ) {}
+
     /**
-     * Discover preference files in a module's src directory.
+     * Discover preferences in a module's src directory.
      *
-     * @return array<string> List of absolute paths to PHP files containing preferences
+     * Scans PHP files for classes with the #[Preference] attribute and returns
+     * structured records ready for registration in PreferenceRegistry.
+     *
+     * @return array<PreferenceRecord>
      */
-    public function discoverInModule(
-        ModuleManifest $manifest,
-    ): array {
+    public function discoverInModule(ModuleManifest $manifest): array
+    {
         $srcDir = $manifest->path . '/src';
 
         if (!is_dir($srcDir)) {
             return [];
         }
 
-        $preferenceFiles = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($srcDir),
-        );
-        $phpFiles = new RegexIterator($iterator, '/\.php$/');
+        $records = [];
 
-        foreach ($phpFiles as $file) {
-            $content = file_get_contents($file->getPathname());
-            if ($content !== false && str_contains($content, '#[Preference')) {
-                $preferenceFiles[] = $file->getPathname();
+        foreach ($this->classFileParser->findPhpFiles($srcDir) as $file) {
+            $filepath = $file->getPathname();
+
+            // Cheap pre-filter: skip files that obviously don't declare a preference
+            // before paying for class extraction, autoload, and reflection.
+            $contents = file_get_contents($filepath);
+            if ($contents === false || !str_contains($contents, '#[Preference')) {
+                continue;
             }
+
+            $className = $this->classFileParser->extractClassName($filepath);
+            if ($className === null) {
+                continue;
+            }
+
+            if (!$this->classFileParser->loadClass($filepath, $className)) {
+                continue;
+            }
+
+            $reflector = new ReflectionClass($className);
+            $attributes = $reflector->getAttributes(Preference::class);
+
+            if (empty($attributes)) {
+                continue;
+            }
+
+            $preference = $attributes[0]->newInstance();
+
+            $records[] = new PreferenceRecord(
+                replacement: $className,
+                replaces: $preference->replaces,
+            );
         }
 
-        return $preferenceFiles;
+        return $records;
     }
 }

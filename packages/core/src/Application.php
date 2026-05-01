@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Marko\Core;
 
 use Marko\Core\Attributes\Plugin;
-use Marko\Core\Attributes\Preference;
 use Marko\Core\Command\CommandDiscovery;
 use Marko\Core\Command\CommandRegistry;
 use Marko\Core\Command\CommandRunner;
@@ -235,34 +234,22 @@ class Application
     }
 
     /**
-     * @throws ReflectionException|PreferenceConflictException
+     * @throws PreferenceConflictException
      */
     private function discoverPreferences(): void
     {
         $preferenceDiscovery = new PreferenceDiscovery($this->classFileParser);
 
         foreach ($this->modules as $module) {
-            $files = $preferenceDiscovery->discoverInModule($module);
+            $records = $preferenceDiscovery->discoverInModule($module);
 
-            foreach ($files as $file) {
-                $className = $this->classFileParser->extractClassName($file);
-                if ($className === null) {
-                    continue;
-                }
-
-                if (!$this->classFileParser->loadClass($file, $className)) {
-                    continue;
-                }
-
-                $reflection = new ReflectionClass($className);
-                $attributes = $reflection->getAttributes(Preference::class);
-
-                if (empty($attributes)) {
-                    continue;
-                }
-
-                $preference = $attributes[0]->newInstance();
-                $this->preferenceRegistry->register($preference->replaces, $className, $module->name, $module->source);
+            foreach ($records as $record) {
+                $this->preferenceRegistry->register(
+                    $record->replaces,
+                    $record->replacement,
+                    $module->name,
+                    $module->source,
+                );
             }
         }
     }
