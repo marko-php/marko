@@ -1,6 +1,6 @@
 # marko/inertia-react
 
-React companion for `marko/inertia` - configuration for React client and SSR entries.
+React companion for `marko/inertia` - configuration defaults and a frontend marker binding for React.
 
 ## Installation
 
@@ -26,7 +26,6 @@ class DashboardController
         return $this->inertia->render(
             request: $request,
             component: 'Dashboard',
-            assetEntry: 'app/react-web/resources/js/app.jsx',
         );
     }
 }

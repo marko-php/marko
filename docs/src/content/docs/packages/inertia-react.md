@@ -1,9 +1,9 @@
 ---
 title: marko/inertia-react
-description: React companion for marko/inertia - configuration defaults for React client and SSR entries.
+description: React companion for marko/inertia - configuration defaults and a frontend marker binding for React.
 ---
 
-React companion for [`marko/inertia`](/docs/packages/inertia/) and [`marko/vite`](/docs/packages/vite/). It ships Marko configuration defaults for React client and SSR entrypoints while leaving the JavaScript application code in your project.
+React companion for [`marko/inertia`](/docs/packages/inertia/) and [`marko/vite`](/docs/packages/vite/). It overlays the parent Inertia configuration with React defaults and registers a frontend marker binding so installing multiple Inertia frontend companions fails loudly.
 
 ## Installation
 
@@ -14,30 +14,32 @@ composer require marko/inertia-react
 Install the matching frontend dependencies in your app:
 
 ```bash
-npm install @inertiajs/react@^3.0 react@^19.0 react-dom@^19.0 @vitejs/plugin-react@^6.0 vite@^8.0
+npm install @inertiajs/react react react-dom @vitejs/plugin-react vite
 ```
+
+Refer to the Inertia.js docs for currently supported versions of each frontend adapter.
 
 ## Configuration
 
-Configure via `config/inertia-react.php`:
+This package contributes defaults to the parent `config/inertia.php` namespace:
 
-```php title="config/inertia-react.php"
+```php title="packages/inertia-react/config/inertia.php"
 return [
-    'clientEntry' => env('INERTIA_REACT_CLIENT_ENTRY', 'app/react-web/resources/js/app.jsx'),
-    'ssrEntry' => env('INERTIA_REACT_SSR_ENTRY', 'app/react-web/resources/js/ssr.jsx'),
-    'ssrBundle' => env('INERTIA_REACT_SSR_BUNDLE', 'bootstrap/ssr/react/ssr.js'),
+    'assetEntry' => env('INERTIA_REACT_CLIENT_ENTRY', 'app/react-web/resources/js/app.jsx'),
+    'ssr' => [
+        'bundle' => env('INERTIA_REACT_SSR_BUNDLE', 'bootstrap/ssr/react/ssr.js'),
+    ],
 ];
 ```
 
 | Key | Purpose |
 | --- | --- |
-| `clientEntry` | Vite entry used by browser-rendered Inertia responses. |
-| `ssrEntry` | Vite entry used to build the React SSR server bundle. |
-| `ssrBundle` | Relative path to the built SSR bundle loaded by your SSR runner. |
+| `assetEntry` | Vite entry used by browser-rendered Inertia responses. |
+| `ssr.bundle` | Relative path to the built SSR bundle loaded by your SSR runner. |
 
 ## Usage
 
-Use the configured client entry when rendering React-backed Inertia pages:
+Render React-backed Inertia pages without passing an asset entry; `marko/inertia` reads it from configuration:
 
 ```php
 use Marko\Inertia\Inertia;
@@ -55,7 +57,6 @@ class DashboardController
         return $this->inertia->render(
             request: $request,
             component: 'Dashboard',
-            assetEntry: 'app/react-web/resources/js/app.jsx',
         );
     }
 }
@@ -100,10 +101,10 @@ createServer((page) =>
 
 ## API Reference
 
-This package is configuration-only. It does not add PHP services or bindings; `module.php` is intentionally omitted because Marko can discover the package through Composer metadata and load its `config/` directory without explicit module options.
+This package registers `Marko\Inertia\Frontend\InertiaFrontendInterface` to a React marker implementation. Installing more than one Inertia frontend companion produces the same binding conflict protection used by Marko driver siblings.
 
 ## Related Packages
 
 - [`marko/inertia`](/docs/packages/inertia/) - renders Inertia responses and handles SSR fallback
 - [`marko/vite`](/docs/packages/vite/) - resolves the configured React Vite entry
-- [`marko/env`](/docs/packages/env/) - provides the `env()` helper used in `config/inertia-react.php`
+- [`marko/env`](/docs/packages/env/) - provides the `env()` helper used in `config/inertia.php`
