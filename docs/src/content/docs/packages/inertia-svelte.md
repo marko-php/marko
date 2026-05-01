@@ -1,9 +1,9 @@
 ---
 title: marko/inertia-svelte
-description: Svelte companion for marko/inertia - configuration defaults for Svelte client and SSR entries.
+description: Svelte companion for marko/inertia - configuration defaults and a frontend marker binding for Svelte.
 ---
 
-Svelte companion for [`marko/inertia`](/docs/packages/inertia/) and [`marko/vite`](/docs/packages/vite/). It ships Marko configuration defaults for Svelte client and SSR entrypoints while leaving the JavaScript application code in your project.
+Svelte companion for [`marko/inertia`](/docs/packages/inertia/) and [`marko/vite`](/docs/packages/vite/). It overlays the parent Inertia configuration with Svelte defaults and registers a frontend marker binding so installing multiple Inertia frontend companions fails loudly.
 
 ## Installation
 
@@ -14,30 +14,32 @@ composer require marko/inertia-svelte
 Install the matching frontend dependencies in your app:
 
 ```bash
-npm install @inertiajs/svelte@^3.0 svelte@^5.46 @sveltejs/vite-plugin-svelte@^7.0 vite@^8.0
+npm install @inertiajs/svelte svelte @sveltejs/vite-plugin-svelte vite
 ```
+
+Refer to the Inertia.js docs for currently supported versions of each frontend adapter.
 
 ## Configuration
 
-Configure via `config/inertia-svelte.php`:
+This package contributes defaults to the parent `config/inertia.php` namespace:
 
-```php title="config/inertia-svelte.php"
+```php title="packages/inertia-svelte/config/inertia.php"
 return [
-    'clientEntry' => env('INERTIA_SVELTE_CLIENT_ENTRY', 'app/svelte-web/resources/js/app.js'),
-    'ssrEntry' => env('INERTIA_SVELTE_SSR_ENTRY', 'app/svelte-web/resources/js/ssr.js'),
-    'ssrBundle' => env('INERTIA_SVELTE_SSR_BUNDLE', 'bootstrap/ssr/svelte/ssr.js'),
+    'assetEntry' => env('INERTIA_SVELTE_CLIENT_ENTRY', 'app/svelte-web/resources/js/app.js'),
+    'ssr' => [
+        'bundle' => env('INERTIA_SVELTE_SSR_BUNDLE', 'bootstrap/ssr/svelte/ssr.js'),
+    ],
 ];
 ```
 
 | Key | Purpose |
 | --- | --- |
-| `clientEntry` | Vite entry used by browser-rendered Inertia responses. |
-| `ssrEntry` | Vite entry used to build the Svelte SSR server bundle. |
-| `ssrBundle` | Relative path to the built SSR bundle loaded by your SSR runner. |
+| `assetEntry` | Vite entry used by browser-rendered Inertia responses. |
+| `ssr.bundle` | Relative path to the built SSR bundle loaded by your SSR runner. |
 
 ## Usage
 
-Use the configured client entry when rendering Svelte-backed Inertia pages:
+Render Svelte-backed Inertia pages without passing an asset entry; `marko/inertia` reads it from configuration:
 
 ```php
 use Marko\Inertia\Inertia;
@@ -55,7 +57,6 @@ class DashboardController
         return $this->inertia->render(
             request: $request,
             component: 'Dashboard',
-            assetEntry: 'app/svelte-web/resources/js/app.js',
         );
     }
 }
@@ -101,10 +102,10 @@ createServer((page) =>
 
 ## API Reference
 
-This package is configuration-only. It does not add PHP services or bindings; `module.php` is intentionally omitted because Marko can discover the package through Composer metadata and load its `config/` directory without explicit module options.
+This package registers `Marko\Inertia\Frontend\InertiaFrontendInterface` to a Svelte marker implementation. Installing more than one Inertia frontend companion produces the same binding conflict protection used by Marko driver siblings.
 
 ## Related Packages
 
 - [`marko/inertia`](/docs/packages/inertia/) - renders Inertia responses and handles SSR fallback
 - [`marko/vite`](/docs/packages/vite/) - resolves the configured Svelte Vite entry
-- [`marko/env`](/docs/packages/env/) - provides the `env()` helper used in `config/inertia-svelte.php`
+- [`marko/env`](/docs/packages/env/) - provides the `env()` helper used in `config/inertia.php`

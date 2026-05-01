@@ -1,6 +1,6 @@
 # marko/inertia-svelte
 
-Svelte companion for `marko/inertia` - configuration for Svelte client and SSR entries.
+Svelte companion for `marko/inertia` - configuration defaults and a frontend marker binding for Svelte.
 
 ## Installation
 
@@ -26,7 +26,6 @@ class DashboardController
         return $this->inertia->render(
             request: $request,
             component: 'Dashboard',
-            assetEntry: 'app/svelte-web/resources/js/app.js',
         );
     }
 }

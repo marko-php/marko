@@ -1,6 +1,6 @@
 {
     "name": "marko/inertia-svelte",
-    "description": "Svelte companion for marko/inertia - configuration for Svelte client and SSR entries",
+    "description": "Svelte companion for marko/inertia - configuration and frontend marker binding",
     "license": "MIT",
     "type": "marko-module",
     "require": {
@@ -9,6 +9,11 @@
         "marko/env": "self.version",
         "marko/inertia": "self.version",
         "marko/vite": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Inertia\\Svelte\\": "src/"
+        }
     },
     "autoload-dev": {
         "psr-4": {
