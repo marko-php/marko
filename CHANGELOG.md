@@ -8,6 +8,10 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.4.0] - 2026-05-01
+
+
+
 ## [0.3.1] - 2026-04-21
 
 ### Bug Fixes
