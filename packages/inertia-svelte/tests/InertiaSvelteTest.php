@@ -7,13 +7,16 @@ test('inertia-svelte config loads client and ssr entries', function () {
 
     expect($config['clientEntry'])->toBe('app/svelte-web/resources/js/app.js');
     expect($config['ssrEntry'])->toBe('app/svelte-web/resources/js/ssr.js');
-    expect($config['ssrBundle'])->toEndWith('/bootstrap/ssr/svelte/ssr.js');
+    expect($config['ssrBundle'])->toBe('bootstrap/ssr/svelte/ssr.js');
 });
 
-test('inertia-svelte module depends on inertia and vite', function () {
-    $module = require dirname(__DIR__).'/module.php';
+test('inertia-svelte is a config-only marko module', function () {
+    $composer = json_decode(
+        file_get_contents(dirname(__DIR__).'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
 
-    expect($module['enabled'])->toBeTrue();
-    expect($module['sequence']['after'])->toContain('marko/inertia');
-    expect($module['sequence']['after'])->toContain('marko/vite');
+    expect(file_exists(dirname(__DIR__).'/module.php'))->toBeFalse()
+        ->and($composer['extra']['marko']['module'])->toBeTrue();
 });

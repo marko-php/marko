@@ -1,28 +1,23 @@
 {
-  "name": "marko/inertia-svelte",
-  "type": "marko-module",
-  "description": "Svelte companion for marko/inertia — configuration for Svelte client and SSR entries",
-  "license": "MIT",
-  "require": {
-    "php": "^8.5",
-    "marko/core": "self.version",
-    "marko/env": "self.version",
-    "marko/inertia": "self.version",
-    "marko/vite": "self.version"
-  },
-  "autoload": {
-    "psr-4": {
-      "Marko\\InertiaSvelte\\": "src/"
+    "name": "marko/inertia-svelte",
+    "description": "Svelte companion for marko/inertia - configuration for Svelte client and SSR entries",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "self.version",
+        "marko/env": "self.version",
+        "marko/inertia": "self.version",
+        "marko/vite": "self.version"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\InertiaSvelte\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
     }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Marko\\InertiaSvelte\\Tests\\": "tests/"
-    }
-  },
-  "extra": {
-    "marko": {
-      "module": true
-    }
-  }
 }
