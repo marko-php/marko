@@ -11,7 +11,6 @@ use Marko\Routing\Attributes\Delete;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
-use Throwable;
 
 class ProfilerController
 {
@@ -108,11 +107,11 @@ class ProfilerController
         string $key,
         bool $default,
     ): bool {
-        try {
-            $value = $this->config->get($key);
-        } catch (Throwable) {
+        if (! $this->config->has($key)) {
             return $default;
         }
+
+        $value = $this->config->get($key);
 
         if (is_bool($value)) {
             return $value;
@@ -135,11 +134,11 @@ class ProfilerController
         string $key,
         array $default,
     ): array {
-        try {
-            $value = $this->config->get($key);
-        } catch (Throwable) {
+        if (! $this->config->has($key)) {
             return $default;
         }
+
+        $value = $this->config->get($key);
 
         if (! is_array($value)) {
             return $default;

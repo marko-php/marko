@@ -7,7 +7,6 @@ namespace Marko\Debugbar\Storage;
 use JsonException;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Path\ProjectPaths;
-use Throwable;
 
 class DebugbarStorage
 {
@@ -175,11 +174,11 @@ class DebugbarStorage
         string $key,
         string $default,
     ): string {
-        try {
-            $value = $this->config->get($key);
-        } catch (Throwable) {
+        if (! $this->config->has($key)) {
             return $default;
         }
+
+        $value = $this->config->get($key);
 
         return is_scalar($value) ? (string) $value : $default;
     }
@@ -188,11 +187,11 @@ class DebugbarStorage
         string $key,
         int $default,
     ): int {
-        try {
-            $value = $this->config->get($key);
-        } catch (Throwable) {
+        if (! $this->config->has($key)) {
             return $default;
         }
+
+        $value = $this->config->get($key);
 
         if (is_int($value)) {
             return $value;

@@ -442,11 +442,11 @@ class Debugbar
         string $key,
         bool $default,
     ): bool {
-        try {
-            $value = $this->config->get($key);
-        } catch (Throwable) {
+        if (! $this->config->has($key)) {
             return $default;
         }
+
+        $value = $this->config->get($key);
 
         if (is_bool($value)) {
             return $value;
@@ -465,11 +465,11 @@ class Debugbar
         string $key,
         string $default,
     ): string {
-        try {
-            $value = $this->config->get($key);
-        } catch (Throwable) {
+        if (! $this->config->has($key)) {
             return $default;
         }
+
+        $value = $this->config->get($key);
 
         if (is_scalar($value)) {
             return (string) $value;
@@ -482,11 +482,11 @@ class Debugbar
         string $key,
         float $default,
     ): float {
-        try {
-            $value = $this->config->get($key);
-        } catch (Throwable) {
+        if (! $this->config->has($key)) {
             return $default;
         }
+
+        $value = $this->config->get($key);
 
         if (is_int($value) || is_float($value)) {
             return (float) $value;
@@ -507,11 +507,11 @@ class Debugbar
         string $key,
         array $default,
     ): array {
-        try {
-            $value = $this->config->get($key);
-        } catch (Throwable) {
+        if (! $this->config->has($key)) {
             return $default;
         }
+
+        $value = $this->config->get($key);
 
         return is_array($value) ? $value : $default;
     }
