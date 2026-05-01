@@ -1,6 +1,6 @@
 # marko/inertia-vue
 
-Vue 3 companion for `marko/inertia` - configuration for Vue client and SSR entries.
+Vue 3 companion for `marko/inertia` - configuration defaults and a frontend marker binding for Vue.
 
 ## Installation
 
@@ -26,7 +26,6 @@ class DashboardController
         return $this->inertia->render(
             request: $request,
             component: 'Dashboard',
-            assetEntry: 'app/vue-web/resources/js/app.js',
         );
     }
 }
