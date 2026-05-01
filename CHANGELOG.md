@@ -96,7 +96,9 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 ## [0.1.1] - 2026-04-05
 
-Maintenance release. No user-facing changes.
+### Maintenance
+* fix(split): notify Packagist after tag push to prevent missed updates by @markshust in https://github.com/marko-php/marko/pull/2
+* feat(release-workflow): add automated release workflow and contribution conventions by @markshust in https://github.com/marko-php/marko/pull/5
 
 ## [0.1.0] - 2026-03-30
 

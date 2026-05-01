@@ -69,16 +69,10 @@ echo ""
 echo "  ✓ All tests passing"
 echo ""
 
-# Push main to remote BEFORE generating release notes — the GitHub
-# `releases/generate-notes` API enumerates PRs by walking commits visible
-# on the remote, so any merges that haven't been pushed yet are silently
-# omitted. Push first, then generate notes, then commit the changelog and
-# push again with the tag.
-echo "Pushing main branch (so generate-notes sees all merge commits)..."
-git push origin main
-echo ""
-
-# Update CHANGELOG.md (requires gh + jq)
+# Update CHANGELOG.md (requires gh + jq).
+# With the deterministic generator below we no longer need to pre-push
+# main — git log reads from the local repo and PR data is fetched by
+# number, so nothing depends on remote main being current.
 CHANGELOG_FILE="CHANGELOG.md"
 CHANGELOG_MARKER="<!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->"
 NOTES_FILE=""
@@ -104,50 +98,161 @@ if ! grep -qF "$CHANGELOG_MARKER" "$CHANGELOG_FILE"; then
     exit 1
 fi
 
+# Generate release notes deterministically from git history.
+#
+# Why we don't use `gh api releases/generate-notes`: that API matches PRs to
+# the tag range by their stored `merge_commit_sha`, which can go stale when
+# multiple PRs merge in close succession (GitHub leaves the field pointing
+# at an old test-merge commit instead of the actual one). When that happens
+# the API silently drops the PR with no warning. We hit this on 0.4.0 when
+# PR #42 was omitted.
+#
+# Walking git log ourselves and looking each PR up by number sidesteps the
+# entire SHA-matching dance. Categories below are kept in lockstep with
+# `.github/release.yml` — add a category there, add it here too.
 PREV_TAG=""
 if PREV_TAG_CANDIDATE=$(git describe --tags --abbrev=0 2>/dev/null); then
     PREV_TAG="$PREV_TAG_CANDIDATE"
 fi
 
-echo "Generating release notes via gh API (previous tag: ${PREV_TAG:-none})..."
-NOTES_FILE=$(mktemp)
-trap 'rm -f "$NOTES_FILE"' EXIT
-
-if [[ -n "$PREV_TAG" ]]; then
-    gh api -X POST "repos/$GH_REPO/releases/generate-notes" \
-        -f tag_name="$TAG" \
-        -f previous_tag_name="$PREV_TAG" \
-        -f target_commitish=main \
-        --jq .body > "$NOTES_FILE"
-else
-    gh api -X POST "repos/$GH_REPO/releases/generate-notes" \
-        -f tag_name="$TAG" \
-        -f target_commitish=main \
-        --jq .body > "$NOTES_FILE"
-fi
-
-if [[ ! -s "$NOTES_FILE" ]]; then
-    echo "Error: gh API returned empty release notes."
+if [[ -z "$PREV_TAG" ]]; then
+    echo "Error: no previous tag found. Cannot determine release range."
     exit 1
 fi
 
-# Build CHANGELOG section: strip GitHub-Release-specific framing (HTML comment, "What's Changed"
-# heading, and "Full Changelog" footer link). Keep category subheadings (### Bug Fixes, etc.)
-# and PR/contributor lines.
-TODAY=$(date +%Y-%m-%d)
-CHANGELOG_SECTION_FILE=$(mktemp)
-trap 'rm -f "$NOTES_FILE" "$CHANGELOG_SECTION_FILE"' EXIT
+echo "Generating release notes from git history (range: ${PREV_TAG}..HEAD)..."
 
+PR_NUMBERS=$(git log --oneline "${PREV_TAG}..HEAD" | grep -oE '#[0-9]+' | tr -d '#' | sort -n -u)
+
+if [[ -z "$PR_NUMBERS" ]]; then
+    echo "Error: no merged PRs found between ${PREV_TAG} and HEAD."
+    echo "Every release-worthy commit must reference its PR with #NN in the message."
+    exit 1
+fi
+
+PR_COUNT=$(echo "$PR_NUMBERS" | wc -l | tr -d ' ')
+echo "  Found ${PR_COUNT} PR(s): $(echo "$PR_NUMBERS" | tr '\n' ' ')"
+
+# Category order = output order. Format: label_name|section_title
+# Mirror of `.github/release.yml` — keep in sync.
+CATEGORIES=(
+    "breaking|Breaking Changes"
+    "enhancement|New Features"
+    "bug|Bug Fixes"
+    "documentation|Documentation"
+    "refactor|Refactoring"
+    "testing|Testing"
+    "ci|CI"
+    "maintenance|Maintenance"
+)
+
+PR_DATA_DIR=$(mktemp -d)
+NOTES_FILE=$(mktemp)
+CHANGELOG_SECTION_FILE=$(mktemp)
+trap 'rm -rf "$PR_DATA_DIR"; rm -f "$NOTES_FILE" "$CHANGELOG_SECTION_FILE"' EXIT
+
+OTHER_FILE="${PR_DATA_DIR}/other"
+AUTHORS_FILE="${PR_DATA_DIR}/authors"
+: > "$AUTHORS_FILE"
+
+for num in $PR_NUMBERS; do
+    pr_json=$(gh api "repos/${GH_REPO}/pulls/${num}" 2>/dev/null) || {
+        echo "  ⚠ Could not fetch PR #${num}, skipping"
+        continue
+    }
+
+    title=$(printf '%s' "$pr_json" | jq -r '.title')
+    author=$(printf '%s' "$pr_json" | jq -r '.user.login // "unknown"')
+    labels=$(printf '%s' "$pr_json" | jq -r '.labels[].name')
+
+    matched=""
+    for entry in "${CATEGORIES[@]}"; do
+        label="${entry%%|*}"
+        if printf '%s\n' "$labels" | grep -qx "$label"; then
+            matched="$label"
+            break
+        fi
+    done
+
+    line="* ${title} by @${author} in https://github.com/${GH_REPO}/pull/${num}"
+    if [[ -n "$matched" ]]; then
+        printf '%s\n' "$line" >> "${PR_DATA_DIR}/${matched}"
+    else
+        printf '%s\n' "$line" >> "$OTHER_FILE"
+        echo "  ⚠ PR #${num} has no recognized category label — bucketed under 'Other Changes'"
+    fi
+
+    printf '%s\t%s\n' "$author" "$num" >> "$AUTHORS_FILE"
+done
+
+# Detect new contributors: authors with zero merged PRs in this repo before PREV_TAG.
+PREV_TAG_DATE=$(git log -1 --format=%cI "$PREV_TAG")
+NEW_CONTRIBUTORS_FILE="${PR_DATA_DIR}/new-contributors"
+: > "$NEW_CONTRIBUTORS_FILE"
+
+UNIQUE_AUTHORS=$(awk -F'\t' '{print $1}' "$AUTHORS_FILE" | sort -u)
+for author in $UNIQUE_AUTHORS; do
+    [[ "$author" == "unknown" ]] && continue
+    prior_count=$(gh api -X GET search/issues \
+        -f q="repo:${GH_REPO} is:pr is:merged author:${author} merged:<${PREV_TAG_DATE}" \
+        --jq '.total_count' 2>/dev/null) || prior_count="?"
+
+    if [[ "$prior_count" == "0" ]]; then
+        first_pr=$(awk -F'\t' -v a="$author" '$1==a {print $2; exit}' "$AUTHORS_FILE")
+        printf '* @%s made their first contribution in https://github.com/%s/pull/%s\n' \
+            "$author" "$GH_REPO" "$first_pr" >> "$NEW_CONTRIBUTORS_FILE"
+    fi
+done
+
+# Emit GitHub Release body (with "What's Changed" framing + Full Changelog footer).
+{
+    echo "## What's Changed"
+    for entry in "${CATEGORIES[@]}"; do
+        label="${entry%%|*}"
+        section_title="${entry#*|}"
+        cat_file="${PR_DATA_DIR}/${label}"
+        if [[ -s "$cat_file" ]]; then
+            echo "### ${section_title}"
+            cat "$cat_file"
+        fi
+    done
+    if [[ -s "$OTHER_FILE" ]]; then
+        echo "### Other Changes"
+        cat "$OTHER_FILE"
+    fi
+    if [[ -s "$NEW_CONTRIBUTORS_FILE" ]]; then
+        echo ""
+        echo "## New Contributors"
+        cat "$NEW_CONTRIBUTORS_FILE"
+    fi
+    echo ""
+    echo "**Full Changelog**: https://github.com/${GH_REPO}/compare/${PREV_TAG}...${TAG}"
+} > "$NOTES_FILE"
+
+# Emit CHANGELOG.md section (no "What's Changed" header, no Full Changelog footer
+# — the version heading and the project's link to GitHub Releases serve those roles).
+TODAY=$(date +%Y-%m-%d)
 {
     echo "## [${VERSION}] - ${TODAY}"
     echo ""
-    sed -E \
-        -e '/^<!-- Release notes generated/d' \
-        -e "/^## What'?s Changed$/d" \
-        -e '/^\*\*Full Changelog\*\*:/d' \
-        "$NOTES_FILE" \
-    | awk 'NF {p=1} p {print}' \
-    | awk '{lines[NR]=$0} END {n=NR; while (n>0 && lines[n]=="") n--; for (i=1;i<=n;i++) print lines[i]}'
+    for entry in "${CATEGORIES[@]}"; do
+        label="${entry%%|*}"
+        section_title="${entry#*|}"
+        cat_file="${PR_DATA_DIR}/${label}"
+        if [[ -s "$cat_file" ]]; then
+            echo "### ${section_title}"
+            cat "$cat_file"
+        fi
+    done
+    if [[ -s "$OTHER_FILE" ]]; then
+        echo "### Other Changes"
+        cat "$OTHER_FILE"
+    fi
+    if [[ -s "$NEW_CONTRIBUTORS_FILE" ]]; then
+        echo ""
+        echo "## New Contributors"
+        cat "$NEW_CONTRIBUTORS_FILE"
+    fi
     echo ""
 } > "$CHANGELOG_SECTION_FILE"
 
@@ -175,7 +280,7 @@ echo "Committing changelog..."
 git add "$CHANGELOG_FILE"
 git commit -m "chore: changelog for ${VERSION}"
 
-echo "Pushing main branch with changelog commit..."
+echo "Pushing main branch..."
 git push origin main
 
 echo "Creating tag ${TAG}..."

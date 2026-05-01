@@ -121,7 +121,7 @@ The script does everything else, in order:
 4. Confirms the tag does not already exist
 5. Verifies PHP 8.5 is the active interpreter (override with `PHP_BIN`)
 6. Runs the full test suite **including** the `integration-destructive` group (`vendor/bin/pest --parallel`). Must pass.
-7. Generates release notes via the GitHub API (`POST /repos/.../releases/generate-notes`) — the same content GitHub would auto-produce server-side
+7. Generates release notes deterministically from git history: walks `git log PREV_TAG..HEAD`, extracts every `#NN` reference, fetches each PR by number via `gh api repos/.../pulls/N`, buckets by label per `.github/release.yml`, and computes new contributors via the GitHub search API. We do **not** use `gh api releases/generate-notes` — that endpoint matches PRs to the tag range by their stored `merge_commit_sha`, which can go stale during rapid concurrent merges and silently drop PRs. Walking git ourselves removes that dependency entirely.
 8. Prepends a new `## [VERSION] - YYYY-MM-DD` section to `CHANGELOG.md` directly under the insertion marker, then commits `chore: changelog for VERSION` on `main`
 9. Pushes `main` (changelog commit included)
 10. Creates annotated tag `VERSION` and pushes it
@@ -131,20 +131,21 @@ The script does everything else, in order:
 After the tag is pushed, everything else is automatic:
 - GitHub Actions split workflow runs: https://github.com/marko-php/marko/actions
 - All packages are tagged in their split repos
-- Packagist updates within seconds via webhooks
+- Packagist updates within seconds via webhooks (`split.yml` self-registers any package not already on Packagist, then notifies)
 - Verify: https://packagist.org/packages/marko/
 
 **Requirements for the release script:**
-- `gh` CLI authenticated against the `marko-php` org (used for `releases/generate-notes` and `release create`)
+- `gh` CLI authenticated against the `marko-php` org (used to fetch PR data and create the GitHub Release)
 - `jq` installed
 - `CHANGELOG.md` at repo root containing the literal insertion marker line:
   ```
   <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
   ```
+- Every release-worthy commit on `develop` has a `#NN` reference in its message (the default for both merge commits and squash merges via the GitHub UI)
 
 **If tests fail:** Fix the failing tests and re-run `./bin/release.sh`. Do not skip tests. The script aborts before touching `CHANGELOG.md` or creating any tag, so a failed run leaves no garbage commits.
 
-**If `gh api` fails (rate limit, network):** The script aborts before tagging. Re-run once the API is reachable.
+**If a PR is missing from the generated notes:** the only realistic cause is a commit on `develop` that doesn't reference its PR with `#NN`. Add a `(#NN)` to the commit message (or amend before tagging) and re-run. The script lists every PR it found at the start of generation so missing ones are visible immediately.
 
 ---
 
@@ -170,10 +171,11 @@ When a new package is added under `packages/`:
    }
    ```
 
-2. Run the add-package script (creates split repo + registers on Packagist + updates root `composer.json`):
+2. Update root `composer.json` to register the path repository and `replace`/`require` entries. Either run the helper:
    ```bash
    GITHUB_ORG=marko-php PACKAGIST_USERNAME=xxx PACKAGIST_TOKEN=xxx ./bin/add-package.sh new-feature
    ```
+   …or edit `composer.json` by hand if you don't have Packagist credentials. The Packagist registration the script performs is no longer required up front — `split.yml` now self-heals (see step 5).
 
 3. Commit and push to `develop`:
    ```bash
@@ -182,11 +184,11 @@ When a new package is added under `packages/`:
    git push origin develop
    ```
 
-4. The split workflow automatically pushes the package code to `marko-php/marko-new-feature`
+4. The split workflow automatically creates the split repo on GitHub and pushes the package code to `marko-php/marko-new-feature`. Code is available as `dev-develop` immediately for anyone who already had the package registered on Packagist.
 
-5. Packagist auto-updates via webhook — the package becomes available as `dev-develop`
+5. On the next release tag, `split.yml`'s "Notify Packagist" step detects that `marko/new-feature` is unregistered (HTTP 404 from `update-package`), calls `create-package` to register it, then retries the update so the new tag is indexed. No manual Packagist step required. This is what makes contributor-submitted package PRs work end-to-end without the contributor needing your Packagist credentials.
 
-6. On next release (`./bin/release.sh X.Y.Z`), the package gets a proper version tag
+6. The package gets its first version tag at the same time as the rest of the framework via `./bin/release.sh X.Y.Z`.
 
 ---
 
