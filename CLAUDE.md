@@ -60,6 +60,10 @@ Use this workflow for new features, multi-file changes, or anything requiring mu
 @.claude/architecture.md
 </architecture>
 
+## Reviewing PRs
+
+When reviewing or merging a pull request, read `.claude/pr-review-process.md` first. It has the full review workflow, code-quality checklist, package-PR-specific checks (module.php minimalism, required docs page, composer.json conventions, cross-cutting updates), and the merge policy. Not auto-loaded — pull it into context only when actively reviewing.
+
 ## Detailed Configuration
 
 Project configuration files are in `.claude/`:
@@ -67,3 +71,8 @@ Project configuration files are in `.claude/`:
 - `architecture.md` — Technical patterns and directory structure
 - `testing.md` — Test configuration, TDD workflow, and patterns
 - `code-standards.md` — Coding conventions and style rules
+- `pr-review-process.md` — PR review workflow, checklist, and merge policy
+- `module-development.md` — Building new packages/modules
+- `sibling-modules.md` — Naming and conventions for driver packages
+- `pipeline.md` — Post-plan and post-implementation agent pipeline
+- `release-process.md` — Release workflow
