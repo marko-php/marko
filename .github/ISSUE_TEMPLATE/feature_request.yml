@@ -67,9 +67,9 @@ body:
         - framework
         - hashing
         - health
-        - inertia
         - http
         - http-guzzle
+        - inertia
         - layout
         - log
         - log-file
