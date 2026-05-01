@@ -11,8 +11,10 @@ readonly class CurlSsrTransport implements SsrTransportInterface
         private int $connectTimeoutSeconds = 1,
     ) {}
 
-    public function post(string $url, string $body): ?string
-    {
+    public function post(
+        string $url,
+        string $body,
+    ): ?string {
         if (! function_exists('curl_init')) {
             return null;
         }

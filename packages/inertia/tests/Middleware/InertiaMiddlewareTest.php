@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Inertia\Exceptions\InertiaConfigurationException;
 use Marko\Inertia\Middleware\InertiaMiddleware;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
@@ -86,4 +87,18 @@ test('middleware does not return 409 for non-get version mismatches', function (
 
     expect($response->statusCode())->toBe(200);
     expect($response->headers()['X-Inertia'])->toBe('true');
+});
+
+test('middleware throws a loud exception for invalid version config', function () {
+    $middleware = new InertiaMiddleware(new FakeConfigRepository([
+        'inertia.version' => ['invalid'],
+    ]));
+
+    $request = new Request(server: ['HTTP_X_INERTIA' => 'true']);
+
+    expect(fn () => $middleware->handle($request, fn () => new Response(body: '{}')))
+        ->toThrow(
+            InertiaConfigurationException::class,
+            'Inertia configuration key "inertia.version" must be a string, number, or null.',
+        );
 });

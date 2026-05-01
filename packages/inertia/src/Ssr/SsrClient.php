@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Marko\Inertia\Ssr;
 
 use JsonException;
+use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigException;
+use Marko\Inertia\Exceptions\InertiaConfigurationException;
 
 readonly class SsrClient
 {
     public function __construct(
-        private string $url,
+        private ConfigRepositoryInterface $config,
         private SsrTransportInterface $transport,
     ) {}
 
@@ -27,7 +30,7 @@ readonly class SsrClient
             return null;
         }
 
-        $response = $this->transport->post($this->url, $json);
+        $response = $this->transport->post($this->ssrUrl(), $json);
 
         if ($response === null) {
             return null;
@@ -54,5 +57,23 @@ readonly class SsrClient
             'head' => is_string($head) ? $head : '',
             'body' => $body,
         ];
+    }
+
+    private function ssrUrl(): string
+    {
+        try {
+            $url = trim($this->config->getString('inertia.ssr.url'));
+        } catch (ConfigException $exception) {
+            throw InertiaConfigurationException::missingOrInvalid('inertia.ssr.url', $exception);
+        }
+
+        if ($url === '') {
+            throw InertiaConfigurationException::empty(
+                'inertia.ssr.url',
+                'Set inertia.ssr.url in config/inertia.php when inertia.ssr.enabled is true.',
+            );
+        }
+
+        return $url;
     }
 }

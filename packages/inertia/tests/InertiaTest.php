@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Core\Path\ProjectPaths;
+use Marko\Inertia\Exceptions\InertiaConfigurationException;
 use Marko\Inertia\Inertia;
 use Marko\Inertia\Ssr\SsrClient;
 use Marko\Inertia\Ssr\SsrTransportInterface;
@@ -19,7 +20,6 @@ beforeEach(function () {
 function createInertia(array $config = [], array $viteConfig = []): Inertia
 {
     $mergedConfig = new FakeConfigRepository(array_merge([
-        'inertia.rootView' => 'app',
         'inertia.version' => '1.0',
         'inertia.ssr.enabled' => false,
         'inertia.ssr.url' => 'http://localhost:13714',
@@ -28,15 +28,15 @@ function createInertia(array $config = [], array $viteConfig = []): Inertia
         'vite.manifestFilename' => '.vite/manifest.json',
         'vite.devServerUrl' => 'http://localhost:5173',
         'vite.devServerStylesheets' => [],
-        'vite.useDevServer' => false,
+        'vite.useDevServer' => true,
     ], $config, array_combine(
-        array_map(static fn (string $key): string => "vite.{$key}", array_keys($viteConfig)),
+        array_map(static fn (string $key): string => "vite.$key", array_keys($viteConfig)),
         array_values($viteConfig),
     ) ?: []));
 
     $paths = new ProjectPaths(dirname(__DIR__));
     $vite = new Vite($mergedConfig, $paths);
-    $ssrClient = new SsrClient('http://localhost:13714', new NullSsrTransport());
+    $ssrClient = new SsrClient($mergedConfig, new NullSsrTransport());
 
     return new Inertia($mergedConfig, $vite, $ssrClient, new FakeSession());
 }
@@ -265,10 +265,22 @@ test('inertia html response escapes embedded page json safely', function () {
     expect($response->body())->toContain('\\u003C\\/script\\u003E');
 });
 
-final class NullSsrTransport implements SsrTransportInterface
+test('inertia throws a loud exception for invalid version config', function () {
+    $inertia = createInertia(['inertia.version' => ['invalid']]);
+
+    expect(fn () => $inertia->version())
+        ->toThrow(
+            InertiaConfigurationException::class,
+            'Inertia configuration key "inertia.version" must be a string, number, or null.',
+        );
+});
+
+class NullSsrTransport implements SsrTransportInterface
 {
-    public function post(string $url, string $body): ?string
-    {
+    public function post(
+        string $url,
+        string $body,
+    ): ?string {
         return null;
     }
 }

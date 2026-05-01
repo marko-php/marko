@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Marko\Inertia\Middleware;
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigException;
+use Marko\Inertia\Exceptions\InertiaConfigurationException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
-use Throwable;
 
 readonly class InertiaMiddleware implements MiddlewareInterface
 {
@@ -16,8 +17,10 @@ readonly class InertiaMiddleware implements MiddlewareInterface
         private ConfigRepositoryInterface $config,
     ) {}
 
-    public function handle(Request $request, callable $next): Response
-    {
+    public function handle(
+        Request $request,
+        callable $next,
+    ): Response {
         $response = $next($request);
 
         if (! $this->isInertiaRequest($request)) {
@@ -43,17 +46,9 @@ readonly class InertiaMiddleware implements MiddlewareInterface
 
         $headers['X-Inertia'] = 'true';
 
-        // Check asset version mismatch (only when client sends a version)
-        try {
-            $version = $this->config->get('inertia.version');
-        } catch (Throwable) {
-            $version = null;
-        }
-
-        $configuredVersion = is_string($version) || is_int($version) || is_float($version)
-            ? (string) $version
-            : null;
+        $configuredVersion = $this->nullableScalarConfig('inertia.version');
         $requestVersion = $request->header('X-Inertia-Version');
+
         if (
             $request->method() === 'GET'
             && $configuredVersion !== null
@@ -96,5 +91,24 @@ readonly class InertiaMiddleware implements MiddlewareInterface
         }
 
         return implode(', ', $values);
+    }
+
+    private function nullableScalarConfig(string $key): ?string
+    {
+        try {
+            $value = $this->config->get($key);
+        } catch (ConfigException $exception) {
+            throw InertiaConfigurationException::missingOrInvalid($key, $exception);
+        }
+
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value) || is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        throw InertiaConfigurationException::invalidVersion($key, $value);
     }
 }

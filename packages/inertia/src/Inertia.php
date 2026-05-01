@@ -7,13 +7,14 @@ namespace Marko\Inertia;
 use Closure;
 use JsonException;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigException;
+use Marko\Inertia\Exceptions\InertiaConfigurationException;
 use Marko\Inertia\Ssr\SsrClient;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Vite\Vite;
 use stdClass;
-use Throwable;
 
 class Inertia
 {
@@ -32,8 +33,10 @@ class Inertia
      *
      * @param array<string, mixed>|string $key
      */
-    public function share(array|string $key, mixed $value = null): void
-    {
+    public function share(
+        array|string $key,
+        mixed $value = null,
+    ): void {
         if (is_array($key)) {
             foreach ($key as $k => $v) {
                 $this->shared[$k] = $v;
@@ -50,8 +53,10 @@ class Inertia
      *
      * @param string|list<string> $value
      */
-    public function flash(string $key, string|array $value): void
-    {
+    public function flash(
+        string $key,
+        string|array $value,
+    ): void {
         if (is_array($value)) {
             $this->session->flash()->set($key, $value);
 
@@ -129,15 +134,7 @@ class Inertia
      */
     public function version(): ?string
     {
-        try {
-            $version = $this->config->get('inertia.version');
-        } catch (Throwable) {
-            return null;
-        }
-
-        return is_string($version) || is_int($version) || is_float($version)
-            ? (string) $version
-            : null;
+        return $this->nullableScalarConfig('inertia.version');
     }
 
     /**
@@ -146,8 +143,11 @@ class Inertia
      * @param array<string, mixed> $props
      * @return array<string, mixed>
      */
-    private function resolveProps(array $props, Request $request, string $component): array
-    {
+    private function resolveProps(
+        array $props,
+        Request $request,
+        string $component,
+    ): array {
         // Merge shared data (flash messages first, then shared data)
         $allProps = array_merge(
             [
@@ -209,9 +209,14 @@ class Inertia
      *
      * @throws JsonException
      */
-    private function renderRootView(array $page, ?string $assetEntry): Response
-    {
-        $pageJson = json_encode($page, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+    private function renderRootView(
+        array $page,
+        ?string $assetEntry,
+    ): Response {
+        $pageJson = json_encode(
+            $page,
+            JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT,
+        );
         $pageJsonAttribute = htmlspecialchars($pageJson, ENT_QUOTES, 'UTF-8');
 
         $headTags = $this->vite->headTags($assetEntry);
@@ -234,11 +239,11 @@ class Inertia
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marko + Inertia</title>
-    {$headTags}
-    {$ssrHead}
+    $headTags
+    $ssrHead
 </head>
 <body>
-    {$bodyHtml}
+    $bodyHtml
 </body>
 </html>
 HTML;
@@ -261,16 +266,38 @@ HTML;
      */
     private function trySsr(array $page): ?array
     {
-        try {
-            $enabled = $this->config->getBool('inertia.ssr.enabled');
-        } catch (Throwable) {
-            return null;
-        }
-
-        if (! $enabled) {
+        if (! $this->configBool('inertia.ssr.enabled')) {
             return null;
         }
 
         return $this->ssrClient->render($page);
+    }
+
+    private function configBool(string $key): bool
+    {
+        try {
+            return $this->config->getBool($key);
+        } catch (ConfigException $exception) {
+            throw InertiaConfigurationException::missingOrInvalid($key, $exception);
+        }
+    }
+
+    private function nullableScalarConfig(string $key): ?string
+    {
+        try {
+            $value = $this->config->get($key);
+        } catch (ConfigException $exception) {
+            throw InertiaConfigurationException::missingOrInvalid($key, $exception);
+        }
+
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value) || is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        throw InertiaConfigurationException::invalidVersion($key, $value);
     }
 }

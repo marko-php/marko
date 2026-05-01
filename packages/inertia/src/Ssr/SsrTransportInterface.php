@@ -6,5 +6,8 @@ namespace Marko\Inertia\Ssr;
 
 interface SsrTransportInterface
 {
-    public function post(string $url, string $body): ?string;
+    public function post(
+        string $url,
+        string $body,
+    ): ?string;
 }

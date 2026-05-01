@@ -2,9 +2,18 @@
 
 declare(strict_types=1);
 
+use Marko\Inertia\Exceptions\InertiaConfigurationException;
 use Marko\Inertia\Ssr\CurlSsrTransport;
 use Marko\Inertia\Ssr\SsrClient;
 use Marko\Inertia\Ssr\SsrTransportInterface;
+use Marko\Testing\Fake\FakeConfigRepository;
+
+function createSsrClient(SsrTransportInterface $transport, array $config = []): SsrClient
+{
+    return new SsrClient(new FakeConfigRepository(array_merge([
+        'inertia.ssr.url' => 'http://localhost:13714/render',
+    ], $config)), $transport);
+}
 
 test('ssr client posts page json and returns head and body', function () {
     $transport = new FakeSsrTransport(json_encode([
@@ -12,7 +21,7 @@ test('ssr client posts page json and returns head and body', function () {
         'body' => '<div>Rendered</div>',
     ], JSON_THROW_ON_ERROR));
 
-    $client = new SsrClient('http://localhost:13714/render', $transport);
+    $client = createSsrClient($transport);
     $result = $client->render(['component' => 'Dashboard', 'props' => ['user' => 'Marko']]);
 
     expect($transport->url)->toBe('http://localhost:13714/render');
@@ -27,7 +36,7 @@ test('ssr client posts page json and returns head and body', function () {
 });
 
 test('ssr client returns null for transport failures and invalid payloads', function (?string $payload) {
-    $client = new SsrClient('http://localhost:13714/render', new FakeSsrTransport($payload));
+    $client = createSsrClient(new FakeSsrTransport($payload));
 
     expect($client->render(['component' => 'Dashboard']))->toBeNull();
 })->with([
@@ -38,6 +47,16 @@ test('ssr client returns null for transport failures and invalid payloads', func
     'empty body' => ['{"head":"<title>Dashboard</title>","body":""}'],
 ]);
 
+test('ssr client throws a loud exception when ssr url config is missing', function () {
+    $client = createSsrClient(new FakeSsrTransport(null), ['inertia.ssr.url' => '']);
+
+    expect(fn () => $client->render(['component' => 'Dashboard']))
+        ->toThrow(
+            InertiaConfigurationException::class,
+            'Inertia configuration key "inertia.ssr.url" must not be empty.',
+        );
+});
+
 test('curl ssr transport returns null when curl extension is unavailable', function () {
     expect((new CurlSsrTransport())->post('http://localhost:13714/render', '{}'))->toBeNull();
 })->skip(
@@ -45,7 +64,7 @@ test('curl ssr transport returns null when curl extension is unavailable', funct
     'The curl extension is available in this environment.',
 );
 
-final class FakeSsrTransport implements SsrTransportInterface
+class FakeSsrTransport implements SsrTransportInterface
 {
     public ?string $url = null;
 
@@ -55,8 +74,10 @@ final class FakeSsrTransport implements SsrTransportInterface
         private readonly ?string $response,
     ) {}
 
-    public function post(string $url, string $body): ?string
-    {
+    public function post(
+        string $url,
+        string $body,
+    ): ?string {
         $this->url = $url;
         $this->body = $body;
 
