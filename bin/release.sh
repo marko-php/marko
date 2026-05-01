@@ -40,12 +40,13 @@ if [[ "$PHP_VERSION" != "8.5" ]]; then
     exit 1
 fi
 
-# Check for gh CLI availability
+# gh CLI is required to generate release notes for CHANGELOG.md and create the GitHub Release.
 GH_AVAILABLE=false
 if command -v gh >/dev/null 2>&1; then
     GH_AVAILABLE=true
 else
-    echo "  ⚠ gh CLI not found — GitHub Release will need to be created manually"
+    echo "Error: gh CLI not found — required to generate release notes. Install with: brew install gh"
+    exit 1
 fi
 
 # Derive repo from git remote so gh doesn't require set-default
@@ -67,6 +68,104 @@ echo "Running test suite (including integration-destructive group to verify clea
 echo ""
 echo "  ✓ All tests passing"
 echo ""
+
+# Update CHANGELOG.md (requires gh + jq)
+CHANGELOG_FILE="CHANGELOG.md"
+CHANGELOG_MARKER="<!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->"
+NOTES_FILE=""
+
+if [[ "$GH_AVAILABLE" != "true" ]]; then
+    echo "Error: gh CLI is required to generate release notes for CHANGELOG.md."
+    exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq is required to generate release notes. Install with: brew install jq"
+    exit 1
+fi
+
+if [[ ! -f "$CHANGELOG_FILE" ]]; then
+    echo "Error: $CHANGELOG_FILE not found at repo root."
+    exit 1
+fi
+
+if ! grep -qF "$CHANGELOG_MARKER" "$CHANGELOG_FILE"; then
+    echo "Error: $CHANGELOG_FILE is missing the insertion marker."
+    echo "Expected line: $CHANGELOG_MARKER"
+    exit 1
+fi
+
+PREV_TAG=""
+if PREV_TAG_CANDIDATE=$(git describe --tags --abbrev=0 2>/dev/null); then
+    PREV_TAG="$PREV_TAG_CANDIDATE"
+fi
+
+echo "Generating release notes via gh API (previous tag: ${PREV_TAG:-none})..."
+NOTES_FILE=$(mktemp)
+trap 'rm -f "$NOTES_FILE"' EXIT
+
+if [[ -n "$PREV_TAG" ]]; then
+    gh api -X POST "repos/$GH_REPO/releases/generate-notes" \
+        -f tag_name="$TAG" \
+        -f previous_tag_name="$PREV_TAG" \
+        -f target_commitish=main \
+        --jq .body > "$NOTES_FILE"
+else
+    gh api -X POST "repos/$GH_REPO/releases/generate-notes" \
+        -f tag_name="$TAG" \
+        -f target_commitish=main \
+        --jq .body > "$NOTES_FILE"
+fi
+
+if [[ ! -s "$NOTES_FILE" ]]; then
+    echo "Error: gh API returned empty release notes."
+    exit 1
+fi
+
+# Build CHANGELOG section: strip GitHub-Release-specific framing (HTML comment, "What's Changed"
+# heading, and "Full Changelog" footer link). Keep category subheadings (### Bug Fixes, etc.)
+# and PR/contributor lines.
+TODAY=$(date +%Y-%m-%d)
+CHANGELOG_SECTION_FILE=$(mktemp)
+trap 'rm -f "$NOTES_FILE" "$CHANGELOG_SECTION_FILE"' EXIT
+
+{
+    echo "## [${VERSION}] - ${TODAY}"
+    echo ""
+    sed -E \
+        -e '/^<!-- Release notes generated/d' \
+        -e "/^## What'?s Changed$/d" \
+        -e '/^\*\*Full Changelog\*\*:/d' \
+        "$NOTES_FILE" \
+    | awk 'NF {p=1} p {print}' \
+    | awk '{lines[NR]=$0} END {n=NR; while (n>0 && lines[n]=="") n--; for (i=1;i<=n;i++) print lines[i]}'
+    echo ""
+} > "$CHANGELOG_SECTION_FILE"
+
+echo "Prepending entry to ${CHANGELOG_FILE}..."
+CHANGELOG_TMP=$(mktemp)
+trap 'rm -f "$NOTES_FILE" "$CHANGELOG_SECTION_FILE" "$CHANGELOG_TMP"' EXIT
+
+awk -v marker="$CHANGELOG_MARKER" -v section_file="$CHANGELOG_SECTION_FILE" '
+    {
+        print
+        if (!inserted && index($0, marker) > 0) {
+            print ""
+            while ((getline line < section_file) > 0) print line
+            close(section_file)
+            inserted = 1
+        }
+    }
+' "$CHANGELOG_FILE" > "$CHANGELOG_TMP"
+
+mv "$CHANGELOG_TMP" "$CHANGELOG_FILE"
+
+echo "  ✓ ${CHANGELOG_FILE} updated"
+echo ""
+echo "Committing changelog..."
+git add "$CHANGELOG_FILE"
+git commit -m "chore: changelog for ${VERSION}"
+
 echo "Pushing main branch..."
 git push origin main
 
@@ -74,37 +173,15 @@ echo "Creating tag ${TAG}..."
 git tag -a "$TAG" -m "Release ${VERSION}"
 git push origin "$TAG"
 
-# Create GitHub Release
-if [[ "$GH_AVAILABLE" == "true" ]]; then
-    echo "Creating GitHub Release for ${TAG}..."
-
-    PREV_TAG=""
-    if PREV_TAG_CANDIDATE=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null); then
-        PREV_TAG="$PREV_TAG_CANDIDATE"
-    fi
-
-    if [[ -n "$PREV_TAG" ]]; then
-        if gh release create "$TAG" \
-            --repo "$GH_REPO" \
-            --generate-notes \
-            --latest \
-            --notes-start-tag "$PREV_TAG"; then
-            echo "  ✓ GitHub Release created"
-        else
-            echo "  ⚠ GitHub Release creation failed — create it manually at https://github.com/marko-php/marko/releases/new"
-        fi
-    else
-        if gh release create "$TAG" \
-            --repo "$GH_REPO" \
-            --generate-notes \
-            --latest; then
-            echo "  ✓ GitHub Release created"
-        else
-            echo "  ⚠ GitHub Release creation failed — create it manually at https://github.com/marko-php/marko/releases/new"
-        fi
-    fi
+# Create GitHub Release using the same notes we wrote to CHANGELOG.md (single source of truth).
+echo "Creating GitHub Release for ${TAG}..."
+if gh release create "$TAG" \
+    --repo "$GH_REPO" \
+    --notes-file "$NOTES_FILE" \
+    --latest; then
+    echo "  ✓ GitHub Release created"
 else
-    echo "  ⚠ Skipping GitHub Release creation (gh CLI not available)"
+    echo "  ⚠ GitHub Release creation failed — create it manually at https://github.com/marko-php/marko/releases/new"
 fi
 
 # Return to develop branch
