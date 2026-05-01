@@ -36,16 +36,19 @@ class PreferenceDiscovery
         foreach ($this->classFileParser->findPhpFiles($srcDir) as $file) {
             $filepath = $file->getPathname();
 
+            // Cheap pre-filter: skip files that obviously don't declare a preference
+            // before paying for class extraction, autoload, and reflection.
+            $contents = file_get_contents($filepath);
+            if ($contents === false || !str_contains($contents, '#[Preference')) {
+                continue;
+            }
+
             $className = $this->classFileParser->extractClassName($filepath);
             if ($className === null) {
                 continue;
             }
 
             if (!$this->classFileParser->loadClass($filepath, $className)) {
-                continue;
-            }
-
-            if (!class_exists($className)) {
                 continue;
             }
 
@@ -61,7 +64,6 @@ class PreferenceDiscovery
             $records[] = new PreferenceRecord(
                 replacement: $className,
                 replaces: $preference->replaces,
-                filePath: $filepath,
             );
         }
 

@@ -13,11 +13,9 @@ readonly class PreferenceRecord
     /**
      * @param class-string $replacement The class carrying the #[Preference] attribute
      * @param class-string $replaces The class being replaced
-     * @param string $filePath Absolute path to the source file
      */
     public function __construct(
         public string $replacement,
         public string $replaces,
-        public string $filePath,
     ) {}
 }
