@@ -100,7 +100,8 @@ test('debugbar injects itself before the closing body tag', function (): void {
         ->toContain('data-marko-debugbar-state="collapsed"')
         ->toContain('data-marko-debugbar-toggle')
         ->toContain('target="_blank"')
-        ->toContain('/_debugbar/'.$debugbar->id())
+        ->toContain('href="/_debugbar"')
+        ->toContain('All requests')
         ->toContain('Loaded dashboard')
         ->and(strpos($injected, 'marko-debugbar'))->toBeLessThan(strpos($injected, '</body>'));
 });

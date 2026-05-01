@@ -53,20 +53,28 @@ class HtmlDebugbarRenderer
         $logs = $this->escape($this->stringValue($summary['logs'] ?? null, '0'));
         $method = $this->escape($this->stringValue($summary['method'] ?? null, 'CLI'));
         $uri = $this->escape($this->stringValue($summary['uri'] ?? null, '/'));
-        $profilerUrl = $this->escape($this->stringValue($dataset['profiler_url'] ?? null, '/_debugbar/'.$id));
         $themeAttribute = $this->escape($theme);
 
         return <<<HTML
 
 <div id="marko-debugbar-$id" class="marko-debugbar" data-marko-debugbar data-marko-debugbar-state="collapsed" data-theme="$themeAttribute">
 <style>
-.marko-debugbar{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;font:12px/1.45 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#dbe4ef;letter-spacing:0}
+.marko-debugbar{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;font:12px/1.45 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#dbe4ef;letter-spacing:0;display:flex;flex-direction:column}
 .marko-debugbar *{box-sizing:border-box}
 .marko-debugbar[data-theme=light]{color:#17202e}
-.marko-debugbar-bar{display:flex;align-items:center;gap:8px;min-height:40px;padding:5px 10px;background:#101722;border-top:1px solid #2f3d4f;box-shadow:0 -8px 24px rgba(0,0,0,.28)}
+.marko-debugbar-handle{display:none;height:6px;cursor:ns-resize;background:#1a2434;border-top:1px solid #2f3d4f;border-bottom:1px solid #0a0f17;flex:0 0 auto;touch-action:none}
+.marko-debugbar-handle:hover{background:#243246}
+.marko-debugbar[data-theme=light] .marko-debugbar-handle{background:#e2e8f0;border-top-color:#cbd5e1;border-bottom-color:#94a3b8}
+.marko-debugbar[data-theme=light] .marko-debugbar-handle:hover{background:#cbd5e1}
+.marko-debugbar[data-marko-debugbar-state=expanded] .marko-debugbar-handle{display:block}
+.marko-debugbar-bar{display:flex;align-items:center;gap:8px;min-height:40px;padding:5px 10px;background:#101722;border-top:1px solid #2f3d4f;box-shadow:0 -8px 24px rgba(0,0,0,.28);flex:0 0 auto}
+.marko-debugbar[data-marko-debugbar-state=expanded] .marko-debugbar-bar{box-shadow:none;border-top-color:#2f3d4f}
 .marko-debugbar[data-theme=light] .marko-debugbar-bar{background:#f8fafc;border-top-color:#cbd5e1;box-shadow:0 -4px 14px rgba(15,23,42,.12)}
-.marko-debugbar-brand{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:26px;border:1px solid #265b73;border-radius:4px;background:#0b2230;color:#7dd3fc;font-weight:800}
-.marko-debugbar[data-theme=light] .marko-debugbar-brand{border-color:#bae6fd;background:#e0f2fe;color:#0369a1}
+.marko-debugbar-brand{display:inline-flex;align-items:center;justify-content:center;width:30px;height:26px;border:1px solid #265b73;border-radius:4px;background:#0b2230;flex:0 0 auto;line-height:0}
+.marko-debugbar-brand:hover{background:#0f2f44}
+.marko-debugbar[data-theme=light] .marko-debugbar-brand{border-color:#bae6fd;background:#e0f2fe}
+.marko-debugbar[data-theme=light] .marko-debugbar-brand:hover{background:#bae6fd}
+.marko-debugbar-brand svg{width:18px;height:18px;display:block}
 .marko-debugbar-summary{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden}
 .marko-debugbar-uri{min-width:80px;overflow:hidden;text-overflow:ellipsis;color:#c8d6e6}
 .marko-debugbar[data-theme=light] .marko-debugbar-uri{color:#334155}
@@ -85,10 +93,10 @@ class HtmlDebugbarRenderer
 .marko-debugbar-toggle{min-width:68px;margin-left:2px;border:1px solid #3b4b60!important;background:#162131!important}
 .marko-debugbar[data-theme=light] .marko-debugbar-toggle{border-color:#cbd5e1!important;background:#fff!important}
 .marko-debugbar-close{width:28px;height:28px;padding:0!important;color:#93a8bf!important}
-.marko-debugbar-panel{max-height:46vh;overflow:auto;background:#0b1018;border-top:1px solid #2f3d4f;padding:12px}
-.marko-debugbar[data-theme=light] .marko-debugbar-panel{background:#fff;border-top-color:#cbd5e1}
-.marko-debugbar[data-marko-debugbar-state=collapsed] .marko-debugbar-panel{display:none}
-.marko-debugbar-panel[hidden]{display:none}
+.marko-debugbar-panel{display:none;flex:0 0 auto;height:320px;overflow:auto;background:#0b1018;padding:12px}
+.marko-debugbar[data-marko-debugbar-state=expanded] .marko-debugbar-panel{display:block}
+.marko-debugbar[data-theme=light] .marko-debugbar-panel{background:#fff}
+.marko-debugbar-panel>section[hidden]{display:none}
 .marko-debugbar table{width:100%;border-collapse:collapse}
 .marko-debugbar th,.marko-debugbar td{text-align:left;vertical-align:top;border-bottom:1px solid #223044;padding:6px 8px}
 .marko-debugbar[data-theme=light] th,.marko-debugbar[data-theme=light] td{border-bottom-color:#e2e8f0}
@@ -96,10 +104,12 @@ class HtmlDebugbarRenderer
 .marko-debugbar pre{margin:0;white-space:pre-wrap;word-break:break-word;color:inherit;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
 .marko-debugbar-level{font-weight:700;text-transform:uppercase}
 @media (max-width:760px){.marko-debugbar-bar{align-items:flex-start;flex-wrap:wrap}.marko-debugbar-summary{order:2;flex:1 0 100%}.marko-debugbar-tabs{order:3;flex:1 0 100%;margin-left:0}.marko-debugbar-uri{display:none}}
-@media (prefers-color-scheme:light){.marko-debugbar[data-theme=auto]{color:#17202e}.marko-debugbar[data-theme=auto] .marko-debugbar-bar{background:#f8fafc;border-top-color:#cbd5e1;box-shadow:0 -4px 14px rgba(15,23,42,.12)}.marko-debugbar[data-theme=auto] .marko-debugbar-brand{border-color:#bae6fd;background:#e0f2fe;color:#0369a1}.marko-debugbar[data-theme=auto] .marko-debugbar-uri{color:#334155}.marko-debugbar[data-theme=auto] .marko-debugbar-pill{border-color:#cbd5e1;background:#fff}.marko-debugbar[data-theme=auto] button:hover,.marko-debugbar[data-theme=auto] a:hover{background:#e2e8f0}.marko-debugbar[data-theme=auto] button[data-active=true]{background:#e2e8f0;color:#17202e}.marko-debugbar[data-theme=auto] .marko-debugbar-toggle{border-color:#cbd5e1!important;background:#fff!important}.marko-debugbar[data-theme=auto] .marko-debugbar-panel{background:#fff;border-top-color:#cbd5e1}.marko-debugbar[data-theme=auto] th,.marko-debugbar[data-theme=auto] td{border-bottom-color:#e2e8f0}}
+@media (prefers-color-scheme:light){.marko-debugbar[data-theme=auto]{color:#17202e}.marko-debugbar[data-theme=auto] .marko-debugbar-handle{background:#e2e8f0;border-top-color:#cbd5e1;border-bottom-color:#94a3b8}.marko-debugbar[data-theme=auto] .marko-debugbar-handle:hover{background:#cbd5e1}.marko-debugbar[data-theme=auto] .marko-debugbar-bar{background:#f8fafc;border-top-color:#cbd5e1;box-shadow:0 -4px 14px rgba(15,23,42,.12)}.marko-debugbar[data-theme=auto] .marko-debugbar-brand{border-color:#bae6fd;background:#e0f2fe}.marko-debugbar[data-theme=auto] .marko-debugbar-brand:hover{background:#bae6fd}.marko-debugbar[data-theme=auto] .marko-debugbar-uri{color:#334155}.marko-debugbar[data-theme=auto] .marko-debugbar-pill{border-color:#cbd5e1;background:#fff}.marko-debugbar[data-theme=auto] button:hover,.marko-debugbar[data-theme=auto] a:hover{background:#e2e8f0}.marko-debugbar[data-theme=auto] button[data-active=true]{background:#e2e8f0;color:#17202e}.marko-debugbar[data-theme=auto] .marko-debugbar-toggle{border-color:#cbd5e1!important;background:#fff!important}.marko-debugbar[data-theme=auto] .marko-debugbar-panel{background:#fff}.marko-debugbar[data-theme=auto] th,.marko-debugbar[data-theme=auto] td{border-bottom-color:#e2e8f0}}
 </style>
+<div class="marko-debugbar-handle" data-marko-debugbar-handle role="separator" aria-orientation="horizontal" aria-label="Resize debugbar" title="Drag to resize"></div>
+<div class="marko-debugbar-panel" data-marko-debugbar-panel-wrap>$panels</div>
 <div class="marko-debugbar-bar">
-  <div class="marko-debugbar-brand" title="Marko Debugbar">M</div>
+  <a class="marko-debugbar-brand" href="https://marko.build" target="_blank" rel="noopener noreferrer" title="Marko Framework"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><g fill="#3498db"><rect x="1" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="5" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g><g fill="#7ec8e3"><rect x="2" y="2" width="1" height="1"/><rect x="5" y="2" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/></g></svg></a>
   <div class="marko-debugbar-summary">
     <span class="marko-debugbar-pill">$method</span>
     <span class="marko-debugbar-pill">$duration</span>
@@ -110,42 +120,89 @@ class HtmlDebugbarRenderer
     <span class="marko-debugbar-uri">$uri</span>
   </div>
   <div class="marko-debugbar-tabs" role="tablist">$tabs</div>
-  <a class="marko-debugbar-open" href="$profilerUrl" target="_blank" rel="noreferrer">Open</a>
+  <a class="marko-debugbar-open" href="/_debugbar" target="_blank" rel="noreferrer">All requests</a>
   <button type="button" class="marko-debugbar-toggle" data-marko-debugbar-toggle aria-expanded="false">Expand</button>
   <button type="button" class="marko-debugbar-close" data-marko-debugbar-close aria-label="Close debugbar">x</button>
 </div>
-<div class="marko-debugbar-panel" data-marko-debugbar-panel-wrap hidden>$panels</div>
 <script>
 (() => {
   const root = document.getElementById('marko-debugbar-$id');
   if (!root) return;
   const panelWrap = root.querySelector('[data-marko-debugbar-panel-wrap]');
+  const handle = root.querySelector('[data-marko-debugbar-handle]');
   const toggle = root.querySelector('[data-marko-debugbar-toggle]');
+  const KEY_HEIGHT = 'marko-debugbar-height';
+  const KEY_EXPANDED = 'marko-debugbar-expanded';
+  const KEY_TAB = 'marko-debugbar-tab';
+  const MIN = 120;
+  const maxHeight = () => Math.max(MIN, window.innerHeight - 100);
+  const clamp = (v) => Math.max(MIN, Math.min(v, maxHeight()));
+  const readNum = (key, fallback) => {
+    try { const v = parseInt(localStorage.getItem(key) || '', 10); return Number.isFinite(v) ? v : fallback; } catch (_) { return fallback; }
+  };
+  const writeStr = (key, val) => { try { localStorage.setItem(key, val); } catch (_) {} };
+  let panelHeight = clamp(readNum(KEY_HEIGHT, 320));
+  if (panelWrap) panelWrap.style.height = panelHeight + 'px';
   const setExpanded = (expanded) => {
     root.setAttribute('data-marko-debugbar-state', expanded ? 'expanded' : 'collapsed');
-    if (panelWrap) panelWrap.hidden = !expanded;
     if (toggle) {
       toggle.textContent = expanded ? 'Collapse' : 'Expand';
       toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     }
+    writeStr(KEY_EXPANDED, expanded ? '1' : '0');
+  };
+  const activateTab = (name, persist) => {
+    if (!name) return;
+    let matched = false;
+    root.querySelectorAll('[data-marko-debugbar-tab]').forEach((item) => {
+      const isMatch = item.getAttribute('data-marko-debugbar-tab') === name;
+      if (isMatch) matched = true;
+      if (isMatch) item.setAttribute('data-active', 'true'); else item.removeAttribute('data-active');
+      item.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+    });
+    root.querySelectorAll('[data-marko-debugbar-panel]').forEach((panel) => {
+      panel.hidden = panel.getAttribute('data-marko-debugbar-panel') !== name;
+    });
+    if (matched && persist) writeStr(KEY_TAB, name);
   };
   root.querySelectorAll('[data-marko-debugbar-tab]').forEach((tab) => {
     tab.addEventListener('click', () => {
-      const name = tab.getAttribute('data-marko-debugbar-tab');
-      root.querySelectorAll('[data-marko-debugbar-tab]').forEach((item) => {
-        item.removeAttribute('data-active');
-        item.setAttribute('aria-selected', 'false');
-      });
-      root.querySelectorAll('[data-marko-debugbar-panel]').forEach((panel) => {
-        panel.hidden = panel.getAttribute('data-marko-debugbar-panel') !== name;
-      });
-      tab.setAttribute('data-active', 'true');
-      tab.setAttribute('aria-selected', 'true');
+      activateTab(tab.getAttribute('data-marko-debugbar-tab'), true);
       setExpanded(true);
     });
   });
   toggle?.addEventListener('click', () => setExpanded(root.getAttribute('data-marko-debugbar-state') !== 'expanded'));
   root.querySelector('[data-marko-debugbar-close]')?.addEventListener('click', () => root.remove());
+  if (handle) {
+    handle.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      handle.setPointerCapture(event.pointerId);
+      const startY = event.clientY;
+      const startH = panelHeight;
+      const onMove = (ev) => {
+        panelHeight = clamp(startH + (startY - ev.clientY));
+        if (panelWrap) panelWrap.style.height = panelHeight + 'px';
+      };
+      const onUp = () => {
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onUp);
+        writeStr(KEY_HEIGHT, String(Math.round(panelHeight)));
+      };
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
+    });
+  }
+  window.addEventListener('resize', () => {
+    panelHeight = clamp(panelHeight);
+    if (panelWrap) panelWrap.style.height = panelHeight + 'px';
+  });
+  try {
+    const storedTab = localStorage.getItem(KEY_TAB);
+    if (storedTab) activateTab(storedTab, false);
+    if (localStorage.getItem(KEY_EXPANDED) === '1') setExpanded(true);
+  } catch (_) {}
 })();
 </script>
 </div>
