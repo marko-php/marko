@@ -86,6 +86,10 @@
         },
         {
             "type": "path",
+            "url": "packages/debugbar"
+        },
+        {
+            "type": "path",
             "url": "packages/dev-server"
         },
         {
@@ -378,6 +382,7 @@
         "friendsofphp/php-cs-fixer": "^3.92",
         "guzzlehttp/guzzle": "^7.0",
         "latte/latte": "^3.0",
+        "marko/debugbar": "self.version",
         "pestphp/pest": "^4.3",
         "php-amqplib/php-amqplib": "^3.0",
         "predis/predis": "^2.0",
@@ -420,6 +425,7 @@
             "Marko\\Core\\Tests\\": "packages/core/tests/",
             "Marko\\Cors\\Tests\\": "packages/cors/tests/",
             "Marko\\Database\\Tests\\": "packages/database/tests/",
+            "Marko\\Debugbar\\Tests\\": "packages/debugbar/tests/",
             "Marko\\DevServer\\Tests\\": "packages/dev-server/tests/",
             "Marko\\Database\\MySql\\Tests\\": "packages/database-mysql/tests/",
             "Marko\\Database\\PgSql\\Tests\\": "packages/database-pgsql/tests/",
