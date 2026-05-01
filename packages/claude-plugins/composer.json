@@ -1,0 +1,22 @@
+{
+    "name": "marko/claude-plugins",
+    "description": "Claude Code marketplace manifest and plugin assets (marko-skills, marko-lsp, marko-mcp) for AI-assisted Marko development",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "self.version"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\ClaudePlugins\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

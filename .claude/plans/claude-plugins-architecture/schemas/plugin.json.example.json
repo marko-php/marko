@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "marko-mcp",
+  "version": "0.1.0",
+  "description": "Marko framework MCP server bundle.",
+  "author": {
+    "name": "Mark Shust",
+    "email": "mark@shust.com"
+  },
+  "homepage": "https://marko.dev",
+  "repository": "https://github.com/marko-php/marko",
+  "license": "MIT",
+  "keywords": ["marko", "mcp", "php"]
+}

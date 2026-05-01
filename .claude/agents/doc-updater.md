@@ -67,9 +67,52 @@ If a package's public API changed or a new package was created:
 - If docs were updated or created, list each file and what was changed, then output: `DOCS_UPDATED`
 - If no docs changes were needed (internal-only changes), output: `DOCS_CURRENT`
 
+## Reality-Check Before Writing
+
+Existing prose is not ground truth. Earlier PRs have shipped doc pages
+containing fabricated CLI commands, flags, config files, env vars, and
+behavior descriptions — all written confidently and survived multiple
+review passes because nobody verified them against source. Before keeping
+or writing any of the following, **grep the codebase to confirm it exists**:
+
+- **CLI commands** (`marko foo:bar`) — must match a `#[Command(name: '...')]`
+  attribute in some `packages/*/src/Commands/*.php`. If grep finds nothing,
+  the command is fabricated.
+- **CLI flags** (`--foo`, `--foo=bar`) — must match `$input->getOption('foo')`
+  or `$input->hasOption('foo')` in the relevant Command class. Watch for
+  flag-name typos: `--agent` vs `--agents`, singular vs plural.
+- **Config files** (`config/foo.php`) — Read or Glob it. If it doesn't exist
+  in the package's `config/` dir or in `packages/skeleton/config/`, it's
+  fabricated.
+- **Config keys** (`'foo.bar' => ...`) — grep for the key in `*/config/*.php`.
+- **Env vars** (`MARKO_FOO`) — grep for the literal string. If absent, fake.
+- **Generated file content** (e.g. "`CLAUDE.md` contains a `## Marko` section")
+  — read the actual generator in `packages/devai/src/Agents/*.php` (or the
+  equivalent generator class) to confirm what it writes.
+- **Behavior claims** ("the installer skips X when Y") — grep for the
+  decision branch in source. Don't paraphrase from prior docs.
+
+When grep returns nothing, you have three legal moves, in this order:
+
+1. **Delete the claim entirely.** A thinner doc is better than a
+   confidently wrong one.
+2. **Replace with a higher-level description** that doesn't name the
+   specific token (e.g., "delete the model directory manually" instead
+   of `marko devai:onnx-clear`).
+3. **Write the verified alternative** — but only if you can grep for
+   the replacement in the same source you'd verify the original from.
+
+Never paper over with a plausible-sounding alternative you can't cite.
+
+**Verification budget.** Spend at most 1–2 grep calls per claim plus one
+Read of the relevant generator/handler. If that doesn't settle it, fall
+back to move 1 or 2 above. Don't recurse into a claim's dependencies'
+dependencies.
+
 ## Rules
 
 - ONLY update docs to reflect code changes -- do not reorganize or improve prose unrelated to the changes
+- Do NOT preserve unrelated prose blindly -- if you keep a paragraph or code example, you are vouching for its accuracy. Apply the Reality-Check above to every CLI command, flag, config option, and behavioral claim that survives your edit, even if you didn't add it
 - Follow the docs standards above for all formatting decisions
 - Use Edit tool for targeted fixes on existing pages, never rewrite whole files
 - Use Write tool only for creating new docs pages or new READMEs

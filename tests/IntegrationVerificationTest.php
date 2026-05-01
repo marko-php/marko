@@ -11,21 +11,23 @@ $packages = array_values(array_filter(
 ));
 
 it(
-    'validates all 71 package composer.json files are valid JSON with required keys (name, require) via structural check',
+    'validates all 80 package composer.json files are valid JSON with required keys (name, require) via structural check',
     function () use ($packagesRoot, $packages): void {
-        expect($packages)->toHaveCount(71);
-    
+        expect($packages)->toHaveCount(80);
+
         foreach ($packages as $package) {
             $file = $packagesRoot . '/' . $package . '/composer.json';
-            expect(file_exists($file))->toBeTrue("Missing composer.json in packages/{$package}");
-    
-            $data = json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
-            expect(array_key_exists('name', $data))->toBeTrue("packages/{$package}/composer.json missing 'name' key")
+            $data = file_exists($file)
+                ? json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR)
+                : [];
+
+            expect(file_exists($file))->toBeTrue("Missing composer.json in packages/{$package}")
+                ->and(array_key_exists('name', $data))->toBeTrue("packages/{$package}/composer.json missing 'name' key")
                 ->and(array_key_exists('require', $data))->toBeTrue(
-                    "packages/{$package}/composer.json missing 'require' key"
+                    "packages/{$package}/composer.json missing 'require' key",
                 );
         }
-    }
+    },
 );
 
 it('validates the root composer.json passes composer validate', function () use ($root): void {
@@ -132,14 +134,17 @@ SCRIPT;
         );
     
         unlink($scriptFile);
-    
-        expect(file_exists($resultFile))->toBeTrue('Subprocess script did not produce a result file');
-        $results = json_decode(file_get_contents($resultFile), true);
-        unlink($resultFile);
-    
-        expect($results['lock_removed'])->toBeTrue('composer.lock was not removed')
+
+        $resultFileExists = file_exists($resultFile);
+        $results = $resultFileExists ? json_decode(file_get_contents($resultFile), true) : ['lock_removed' => false, 'vendor_removed' => false];
+        if ($resultFileExists) {
+            unlink($resultFile);
+        }
+
+        expect($resultFileExists)->toBeTrue('Subprocess script did not produce a result file')
+            ->and($results['lock_removed'])->toBeTrue('composer.lock was not removed')
             ->and($results['vendor_removed'])->toBeTrue('vendor/ was not removed');
-    }
+    },
 )->group('integration-destructive');
 
 it('runs composer update from root successfully', function () use ($root): void {
@@ -223,7 +228,7 @@ it('verifies all marko/* dependencies use self.version constraint', function () 
 });
 
 it('verifies every package directory has a .gitattributes file', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(71);
+    expect($packages)->toHaveCount(80);
 
     foreach ($packages as $package) {
         $path = $packagesRoot . '/' . $package . '/.gitattributes';
@@ -232,7 +237,7 @@ it('verifies every package directory has a .gitattributes file', function () use
 });
 
 it('verifies every package directory has a LICENSE file', function () use ($packagesRoot, $packages): void {
-    expect($packages)->toHaveCount(71);
+    expect($packages)->toHaveCount(80);
 
     foreach ($packages as $package) {
         $path = $packagesRoot . '/' . $package . '/LICENSE';

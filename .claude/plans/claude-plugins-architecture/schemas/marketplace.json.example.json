@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-marketplace.json",
+  "name": "marko",
+  "description": "Official Marko framework Claude Code plugins.",
+  "owner": {
+    "name": "Mark Shust",
+    "email": "mark@shust.com"
+  },
+  "plugins": [
+    {
+      "name": "marko-mcp",
+      "source": "./packages/claude-plugins/plugins/marko-mcp",
+      "description": "Marko MCP server (codeindexer, docs-fts) for Claude Code.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Mark Shust",
+        "email": "mark@shust.com"
+      },
+      "category": "development",
+      "tags": ["marko", "mcp", "php"]
+    },
+    {
+      "name": "marko-lsp",
+      "source": "./packages/claude-plugins/plugins/marko-lsp",
+      "description": "Marko LSP bundle (PHP intelephense + Latte) for Claude Code.",
+      "version": "0.1.0",
+      "category": "development",
+      "tags": ["marko", "lsp", "php"]
+    },
+    {
+      "name": "marko-skills",
+      "source": "./packages/claude-plugins/plugins/marko-skills",
+      "description": "Marko-specific skills (create-module, create-plugin) for Claude Code.",
+      "version": "0.1.0",
+      "category": "development",
+      "tags": ["marko", "skills"]
+    }
+  ]
+}

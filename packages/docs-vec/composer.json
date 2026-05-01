@@ -1,0 +1,43 @@
+{
+    "name": "marko/docs-vec",
+    "description": "Hybrid FTS5 + sqlite-vec semantic search driver for Marko documentation",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "ext-pdo_sqlite": "*",
+        "marko/cli": "self.version",
+        "marko/core": "self.version",
+        "marko/docs": "self.version",
+        "marko/docs-markdown": "self.version"
+    },
+    "replace": {
+        "marko/docs-fts": "self.version"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "suggest": {
+        "codewithkyrian/transformers-php": "Required for query-time embeddings (^0.5)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\DocsVec\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\DocsVec\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

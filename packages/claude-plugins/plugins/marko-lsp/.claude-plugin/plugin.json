@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "marko-lsp",
+  "description": "Marko LSP bundle (PHP intelephense) for Claude Code.",
+  "author": {
+    "name": "Marko Framework",
+    "email": "mark@shust.com"
+  },
+  "homepage": "https://marko.dev",
+  "repository": "https://github.com/marko-php/marko",
+  "license": "MIT",
+  "keywords": ["marko", "lsp", "php", "intelephense"]
+}

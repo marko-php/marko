@@ -220,6 +220,37 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/errors-simple` | Driver | Basic error logging |
 | `marko/errors-advanced` | Driver | Pretty stack traces, suggestions |
 
+### Rate Limiting
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/ratelimiter` | Feature | Cache-backed request throttling with configurable windows |
+
+### Development Server
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/devserver` | Tool | Single-command orchestrator for PHP server, Docker, and frontend build tools |
+
+### AI Development Tooling
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/codeindexer` | Tool | Static analysis indexer — attributes, configs, templates, translations into a cached symbol table |
+| `marko/mcp` | Tool | MCP server exposing Marko codebase introspection to AI agents (Claude Code, Cursor, Codex, etc.) |
+| `marko/lsp` | Tool | Language Server Protocol implementation — Marko-aware completions, diagnostics, and navigation |
+| `marko/devai` | Tool | One-stop installer for AI-assisted development (MCP, LSP, per-agent config files) |
+| `marko/claude-plugins` | Tool | Claude Code marketplace and plugins (marko-skills, marko-lsp, marko-mcp) for AI-assisted development |
+
+### Documentation Search
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/docs` | Interface | `DocsSearchInterface` — contract for querying Marko documentation |
+| `marko/docs-markdown` | Data | Canonical Marko documentation as Markdown, accessed via `MarkdownRepository` |
+| `marko/docs-fts` | Driver | FTS5 lexical documentation search (SQLite, no external dependencies) |
+| `marko/docs-vec` | Driver | Hybrid FTS5 + vector semantic search (sqlite-vec + ONNX, falls back to FTS5) |
+
 ### Other Packages
 
 | Package | Type | Description |

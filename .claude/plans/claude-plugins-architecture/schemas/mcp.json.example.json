@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "marko-codeindexer": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/marko-codeindexer",
+      "args": [],
+      "env": {
+        "MARKO_INDEX_DIR": "${CLAUDE_PLUGIN_DATA}/codeindexer"
+      }
+    },
+    "marko-docs-fts": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/marko-docs-fts",
+      "args": ["serve"],
+      "env": {
+        "MARKO_DOCS_INDEX": "${CLAUDE_PLUGIN_DATA}/docs-fts"
+      }
+    }
+  }
+}

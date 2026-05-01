@@ -48,22 +48,9 @@ For any feature or request beyond simple ones, use the `hcf:plan-create` skill t
 
 Use this workflow for new features, multi-file changes, or anything requiring multiple steps or tests.
 
-## Project Overview 
-
-<project-overview>
-@.claude/project-overview.md
-</project-overview>
-
-## Architecture
-
-<architecture>
-@.claude/architecture.md
-</architecture>
-
 ## Detailed Configuration
 
 Project configuration files are in `.claude/`:
-- `project-overview.md` — Project identity and tech stack
 - `architecture.md` — Technical patterns and directory structure
 - `testing.md` — Test configuration, TDD workflow, and patterns
 - `code-standards.md` — Coding conventions and style rules
