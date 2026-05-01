@@ -69,7 +69,33 @@ jobs:
         env:
           PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
         run: |
-          curl -sf -X POST https://packagist.org/api/update-package \
+          PKG_URL="https://github.com/${SPLIT_ORG}/marko-${{ matrix.package }}"
+
+          # Try to update first. If Packagist returns 404 the package isn't
+          # registered yet — self-heal by calling create-package, then retry
+          # the update so the new tag actually gets indexed. This removes
+          # the manual `register-packagist.sh` step from the new-package
+          # workflow: contributors can add `packages/foo/` via PR and the
+          # first release tag will register + publish it automatically.
+          HTTP=$(curl -s -o /tmp/packagist_resp -w "%{http_code}" \
+            -X POST https://packagist.org/api/update-package \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer markshust:${PACKAGIST_TOKEN}" \
-            -d "{\"repository\":\"https://github.com/${SPLIT_ORG}/marko-${{ matrix.package }}\"}"
+            -d "{\"repository\":\"${PKG_URL}\"}")
+
+          if [[ "$HTTP" == "404" ]]; then
+            echo "marko/${{ matrix.package }} not registered on Packagist — registering now..."
+            curl -sf -X POST \
+              "https://packagist.org/api/create-package?username=markshust&apiToken=${PACKAGIST_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"repository\":{\"url\":\"${PKG_URL}\"}}"
+            echo "Registered. Re-running update so the tag gets indexed..."
+            curl -sf -X POST https://packagist.org/api/update-package \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer markshust:${PACKAGIST_TOKEN}" \
+              -d "{\"repository\":\"${PKG_URL}\"}"
+          elif [[ "$HTTP" -ge 400 ]]; then
+            echo "Packagist update failed with HTTP ${HTTP}:"
+            cat /tmp/packagist_resp
+            exit 1
+          fi
