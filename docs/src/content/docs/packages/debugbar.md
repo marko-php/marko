@@ -26,7 +26,6 @@ return [
     'capture_cli' => env('DEBUGBAR_CAPTURE_CLI', false),
     'theme' => env('DEBUGBAR_THEME', 'auto'),
     'route' => [
-        'prefix' => env('DEBUGBAR_ROUTE_PREFIX', '_debugbar'),
         'open' => env('DEBUGBAR_ROUTE_OPEN', false),
         'allowed_ips' => ['127.0.0.1', '::1'],
     ],
@@ -65,7 +64,6 @@ return [
 | `inject` | When true, the toolbar is injected into HTML responses before `</body>`. |
 | `capture_cli` | When true, captures CLI invocations as well as HTTP requests. |
 | `theme` | Toolbar theme: `auto`, `light`, or `dark`. |
-| `route.prefix` | Path prefix for the profiler UI. Default `_debugbar`. |
 | `route.open` | When false, profiler routes are restricted to `route.allowed_ips`. Set to `true` only on trusted networks. |
 | `storage.path` | Directory (relative to project root) where request snapshots are written. |
 | `storage.max_files` | Snapshot retention cap. Older files are pruned. |

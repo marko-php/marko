@@ -8,7 +8,6 @@ return [
     'capture_cli' => env('DEBUGBAR_CAPTURE_CLI', false),
     'theme' => env('DEBUGBAR_THEME', 'auto'),
     'route' => [
-        'prefix' => env('DEBUGBAR_ROUTE_PREFIX', '_debugbar'),
         'open' => env('DEBUGBAR_ROUTE_OPEN', false),
         'allowed_ips' => ['127.0.0.1', '::1'],
     ],

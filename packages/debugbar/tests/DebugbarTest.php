@@ -39,7 +39,6 @@ function makeDebugbar(array $overrides = [], ?DebugbarStorage &$storage = null):
             'capture_cli' => true,
             'theme' => 'auto',
             'route' => [
-                'prefix' => '_debugbar',
                 'open' => false,
                 'allowed_ips' => ['127.0.0.1', '::1'],
             ],

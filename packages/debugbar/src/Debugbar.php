@@ -130,13 +130,7 @@ class Debugbar
 
     public function profilerUrl(): string
     {
-        $prefix = trim($this->configString('debugbar.route.prefix', '_debugbar'), '/');
-
-        if ($prefix === '') {
-            $prefix = '_debugbar';
-        }
-
-        return '/'.$prefix.'/'.$this->id;
+        return '/_debugbar/'.$this->id;
     }
 
     /**
