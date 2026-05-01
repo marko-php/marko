@@ -10,7 +10,24 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 ## [0.4.0] - 2026-05-01
 
+### New Features
+* feat: close database layer gaps for 1.0 by @markshust in https://github.com/marko-php/marko/pull/40
+* feat: Add marko/vite package by @ps-carvalho in https://github.com/marko-php/marko/pull/42
+* feat: add marko/debugbar package by @ps-carvalho in https://github.com/marko-php/marko/pull/43
+* feat: Add marko/inertia package by @ps-carvalho in https://github.com/marko-php/marko/pull/47
+### Documentation
+* docs: use composer test for faster local test runs by @markshust in https://github.com/marko-php/marko/pull/38
+* docs: document integration-destructive group and run it in release script by @markshust in https://github.com/marko-php/marko/pull/39
+* docs: expand PR review process with package-PR checklist by @markshust in https://github.com/marko-php/marko/pull/46
+### Refactoring
+* refactor: preference discovery and class extraction logic by @iamlasse in https://github.com/marko-php/marko/pull/44
+* refactor: offload plugin discovery to PluginDiscovery class by @iamlasse in https://github.com/marko-php/marko/pull/45
+### Maintenance
+* feat: add CHANGELOG.md with release-script automation by @markshust in https://github.com/marko-php/marko/pull/48
 
+## New Contributors
+* @ps-carvalho made their first contribution in https://github.com/marko-php/marko/pull/42
+* @iamlasse made their first contribution in https://github.com/marko-php/marko/pull/44
 
 ## [0.3.1] - 2026-04-21
 
