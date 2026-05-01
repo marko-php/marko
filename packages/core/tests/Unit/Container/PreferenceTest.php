@@ -6,7 +6,6 @@ use Marko\Core\Attributes\Preference;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\PreferenceDiscovery;
 use Marko\Core\Container\PreferenceRegistry;
-use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Exceptions\PreferenceConflictException;
 use Marko\Core\Module\ModuleManifest;
 
@@ -67,7 +66,7 @@ PHP;
         path: $tempDir,
     );
 
-    $discovery = new PreferenceDiscovery(new ClassFileParser());
+    $discovery = new PreferenceDiscovery();
     $records = $discovery->discoverInModule($manifest);
 
     expect($records)

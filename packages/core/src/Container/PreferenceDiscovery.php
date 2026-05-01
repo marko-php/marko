@@ -11,10 +11,6 @@ use ReflectionClass;
 
 class PreferenceDiscovery
 {
-    public function __construct(
-        private readonly ClassFileParser $classFileParser,
-    ) {}
-
     /**
      * Discover preferences in a module's src directory.
      *
@@ -32,8 +28,9 @@ class PreferenceDiscovery
         }
 
         $records = [];
+        $parser = new ClassFileParser();
 
-        foreach ($this->classFileParser->findPhpFiles($srcDir) as $file) {
+        foreach ($parser->findPhpFiles($srcDir) as $file) {
             $filepath = $file->getPathname();
 
             // Cheap pre-filter: skip files that obviously don't declare a preference
@@ -43,12 +40,12 @@ class PreferenceDiscovery
                 continue;
             }
 
-            $className = $this->classFileParser->extractClassName($filepath);
+            $className = $parser->extractClassName($filepath);
             if ($className === null) {
                 continue;
             }
 
-            if (!$this->classFileParser->loadClass($filepath, $className)) {
+            if (!$parser->loadClass($filepath, $className)) {
                 continue;
             }
 

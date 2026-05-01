@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\Core;
 
-use Marko\Core\Attributes\Plugin;
 use Marko\Core\Command\CommandDiscovery;
 use Marko\Core\Command\CommandRegistry;
 use Marko\Core\Command\CommandRunner;
@@ -45,7 +44,6 @@ use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Routing\Router;
 use Marko\Routing\RoutingBootstrapper;
 use Psr\Container\ContainerExceptionInterface;
-use ReflectionClass;
 use ReflectionException;
 use RuntimeException;
 
@@ -238,7 +236,7 @@ class Application
      */
     private function discoverPreferences(): void
     {
-        $preferenceDiscovery = new PreferenceDiscovery($this->classFileParser);
+        $preferenceDiscovery = new PreferenceDiscovery();
 
         foreach ($this->modules as $module) {
             $records = $preferenceDiscovery->discoverInModule($module);
@@ -262,27 +260,9 @@ class Application
         $pluginDiscovery = new PluginDiscovery();
 
         foreach ($this->modules as $module) {
-            $files = $pluginDiscovery->discoverInModule($module);
+            $definitions = $pluginDiscovery->discoverInModule($module);
 
-            foreach ($files as $file) {
-                $className = $this->classFileParser->extractClassName($file);
-                if ($className === null) {
-                    continue;
-                }
-
-                if (!$this->classFileParser->loadClass($file, $className)) {
-                    continue;
-                }
-
-                // Verify the class actually has the #[Plugin] attribute
-                $reflection = new ReflectionClass($className);
-                $pluginAttributes = $reflection->getAttributes(Plugin::class);
-
-                if (empty($pluginAttributes)) {
-                    continue;
-                }
-
-                $definition = $pluginDiscovery->parsePluginClass($className);
+            foreach ($definitions as $definition) {
                 $this->pluginRegistry->register($definition);
             }
         }

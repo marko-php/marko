@@ -114,12 +114,15 @@ it('discovers plugin classes in module src directories', function (): void {
     );
 
     $discovery = new PluginDiscovery();
-    $pluginFiles = $discovery->discoverInModule($manifest);
+    $definitions = $discovery->discoverInModule($manifest);
 
-    expect($pluginFiles)
+    expect($definitions)
         ->toBeArray()
-        ->toHaveCount(1)
-        ->and($pluginFiles[0])->toEndWith('UserServicePlugin.php');
+        ->toHaveCount(1);
+
+    expect($definitions[0])
+        ->toBeInstanceOf(PluginDefinition::class)
+        ->and($definitions[0]->pluginClass)->toEndWith('UserServicePlugin');
 
     cleanupPluginTestDirectory($tempDir);
 });
@@ -154,12 +157,15 @@ it('discovers plugin classes in module src directories with new naming', functio
     );
 
     $discovery = new PluginDiscovery();
-    $pluginFiles = $discovery->discoverInModule($manifest);
+    $definitions = $discovery->discoverInModule($manifest);
 
-    expect($pluginFiles)
+    expect($definitions)
         ->toBeArray()
-        ->toHaveCount(1)
-        ->and($pluginFiles[0])->toEndWith('ProductServicePlugin.php');
+        ->toHaveCount(1);
+
+    expect($definitions[0])
+        ->toBeInstanceOf(PluginDefinition::class)
+        ->and($definitions[0]->pluginClass)->toEndWith('ProductServicePlugin');
 
     cleanupPluginTestDirectory($tempDir);
 });
