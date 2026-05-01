@@ -21,8 +21,10 @@ function createInertia(array $config = [], array $viteConfig = []): Inertia
 {
     $mergedConfig = new FakeConfigRepository(array_merge([
         'inertia.version' => '1.0',
+        'inertia.assetEntry' => null,
         'inertia.ssr.enabled' => false,
         'inertia.ssr.url' => 'http://localhost:13714',
+        'inertia.ssr.bundle' => null,
         'vite.entry' => 'app/web/resources/js/app.js',
         'vite.buildDirectory' => 'build',
         'vite.manifestFilename' => '.vite/manifest.json',
@@ -101,6 +103,23 @@ test('inertia html defaults to the configured vite entry', function () {
     $response = $inertia->render($request, 'AdminHome');
 
     expect($response->body())->toContain('http://localhost:5173/app/admin/resources/js/admin.js');
+    expect($response->body())->not->toContain('app/web/resources/js/app.js');
+});
+
+test('inertia html defaults to the configured inertia asset entry when present', function () {
+    $inertia = createInertia([
+        'inertia.assetEntry' => 'app/react-web/resources/js/app.jsx',
+    ], [
+        'entry' => 'app/web/resources/js/app.js',
+        'devServerUrl' => 'http://localhost:5173',
+        'devServerStylesheets' => [],
+        'useDevServer' => true,
+    ]);
+    $request = new Request();
+
+    $response = $inertia->render($request, 'ReactHome');
+
+    expect($response->body())->toContain('http://localhost:5173/app/react-web/resources/js/app.jsx');
     expect($response->body())->not->toContain('app/web/resources/js/app.js');
 });
 
