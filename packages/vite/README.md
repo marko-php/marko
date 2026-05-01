@@ -1,11 +1,33 @@
-# Marko Vite
+# marko/vite
 
-Standalone `marko/vite` package for the Marko Framework.
+Vite integration for the Marko Framework — asset manifest resolution and dev-server detection for production builds and HMR.
 
-## Package
+## Installation
 
-- `marko/vite`
+```bash
+composer require marko/vite
+```
 
-## Configuration
+## Quick Example
 
-Publish or merge `config/vite.php` into your application config and set the Vite entry points for your frontend.
+```php
+use Marko\Vite\Vite;
+
+class LayoutController
+{
+    public function __construct(
+        private readonly Vite $vite,
+    ) {}
+
+    public function head(): string
+    {
+        return $this->vite->headTags('app/web/resources/js/app.js');
+    }
+}
+```
+
+In dev (`vite.useDevServer = true`), this emits `<script type="module">` tags pointing at the Vite dev server. In production, it reads `public/build/.vite/manifest.json` and emits hashed `<script>`, `<link rel="stylesheet">`, and `<link rel="modulepreload">` tags.
+
+## Documentation
+
+Full usage, API reference, and examples: [marko/vite](https://marko.build/docs/packages/vite/)

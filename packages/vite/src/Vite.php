@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Marko\Vite;
 
-use Marko\Config\Exceptions\ConfigException;
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigException;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Vite\Exceptions\ViteConfigurationException;
+use Marko\Vite\Exceptions\ViteManifestException;
 
 readonly class Vite
 {
@@ -49,7 +50,7 @@ readonly class Vite
 
         foreach ($this->devServerStylesheets() as $stylesheet) {
             $stylesheet = ltrim($stylesheet, '/');
-            $tags .= "<link rel=\"stylesheet\" href=\"{$url}/{$stylesheet}\">\n";
+            $tags .= "<link rel=\"stylesheet\" href=\"$url/$stylesheet\">\n";
         }
 
         if ($this->isReactEntry($entry)) {
@@ -57,8 +58,8 @@ readonly class Vite
         }
 
         $tags .= <<<HTML
-<script type="module" src="{$url}/@vite/client"></script>
-<script type="module" src="{$url}/{$entry}"></script>
+<script type="module" src="$url/@vite/client"></script>
+<script type="module" src="$url/$entry"></script>
 HTML;
 
         return $tags;
@@ -72,7 +73,7 @@ HTML;
     {
         return <<<HTML
 <script type="module">
-import { injectIntoGlobalHook } from "{$url}/@react-refresh";
+import { injectIntoGlobalHook } from "$url/@react-refresh";
 injectIntoGlobalHook(window);
 window.\$RefreshReg\$ = () => {};
 window.\$RefreshSig\$ = () => (type) => type;
@@ -108,17 +109,17 @@ HTML;
         $manifestPath = $this->manifestPath();
 
         if (! is_file($manifestPath)) {
-            return '<!-- Vite manifest not found. Run: npm run build -->';
+            throw ViteManifestException::notFound($manifestPath);
         }
 
         $manifestContents = file_get_contents($manifestPath);
         if ($manifestContents === false) {
-            return '<!-- Vite manifest is invalid -->';
+            throw ViteManifestException::unreadable($manifestPath);
         }
 
         $manifest = $this->decodeManifest($manifestContents);
         if ($manifest === null) {
-            return '<!-- Vite manifest is invalid -->';
+            throw ViteManifestException::invalid($manifestPath);
         }
 
         $buildDir = $this->configString('vite.buildDirectory');
@@ -126,12 +127,12 @@ HTML;
 
         $entryData = $manifest[$entry] ?? null;
         if (! is_array($entryData)) {
-            return "<!-- Vite entry '{$entry}' not found in manifest -->";
+            throw ViteManifestException::entryNotFound($entry, $manifestPath);
         }
 
         $entryFile = $entryData['file'] ?? null;
         if (! is_string($entryFile) || $entryFile === '') {
-            return "<!-- Vite entry '{$entry}' is invalid -->";
+            throw ViteManifestException::entryFileInvalid($entry, $manifestPath);
         }
 
         $importedChunks = $this->importedChunks($manifest, $entryData);
@@ -147,7 +148,7 @@ HTML;
                     continue;
                 }
 
-                $stylesheets[$css] = "<link rel=\"stylesheet\" href=\"{$basePath}{$css}\">";
+                $stylesheets[$css] = "<link rel=\"stylesheet\" href=\"$basePath$css\">";
             }
         }
 
@@ -161,7 +162,7 @@ HTML;
                 continue;
             }
 
-            $tags[] = "<link rel=\"modulepreload\" href=\"{$basePath}{$chunkFile}\">";
+            $tags[] = "<link rel=\"modulepreload\" href=\"$basePath$chunkFile\">";
         }
 
         return implode("\n", $tags);
@@ -276,8 +277,10 @@ HTML;
      * @param array<string, mixed> $entryData
      * @return list<array<string, mixed>>
      */
-    private function importedChunks(array $manifest, array $entryData): array
-    {
+    private function importedChunks(
+        array $manifest,
+        array $entryData,
+    ): array {
         $seen = [];
 
         return array_values($this->collectImportedChunks($manifest, $entryData, $seen));
@@ -289,8 +292,11 @@ HTML;
      * @param array<string, true> $seen
      * @return array<string, array<string, mixed>>
      */
-    private function collectImportedChunks(array $manifest, array $chunk, array &$seen): array
-    {
+    private function collectImportedChunks(
+        array $manifest,
+        array $chunk,
+        array &$seen,
+    ): array {
         $imports = $chunk['imports'] ?? null;
         $chunks = [];
 
@@ -342,12 +348,14 @@ HTML;
         return $normalizedChunk;
     }
 
-    private function entryTag(string $basePath, string $entryFile): string
-    {
+    private function entryTag(
+        string $basePath,
+        string $entryFile,
+    ): string {
         if (str_ends_with($entryFile, '.css')) {
-            return "<link rel=\"stylesheet\" href=\"{$basePath}{$entryFile}\">";
+            return "<link rel=\"stylesheet\" href=\"$basePath$entryFile\">";
         }
 
-        return "<script type=\"module\" src=\"{$basePath}{$entryFile}\"></script>";
+        return "<script type=\"module\" src=\"$basePath$entryFile\"></script>";
     }
 }

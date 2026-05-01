@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Config\ConfigRepository;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Vite\Exceptions\ViteConfigurationException;
+use Marko\Vite\Exceptions\ViteManifestException;
 use Marko\Vite\Vite;
 
 beforeEach(function () {
@@ -26,7 +27,7 @@ function makeProjectPathsWithManifest(array|string $manifest): ProjectPaths
     return new ProjectPaths($basePath);
 }
 
-test('vite returns manifest not found when manifest is missing', function () {
+test('vite throws when the production manifest is missing', function () {
     $config = new ConfigRepository([
         'vite' => [
             'entry' => 'app/web/resources/js/app.js',
@@ -37,9 +38,9 @@ test('vite returns manifest not found when manifest is missing', function () {
     ]);
 
     $vite = new Vite($config, $this->paths);
-    $tags = $vite->headTags();
 
-    expect($tags)->toContain('Vite manifest not found');
+    expect(fn () => $vite->headTags())
+        ->toThrow(ViteManifestException::class, 'Vite manifest not found');
 });
 
 test('vite detects dev server from config', function () {
@@ -65,9 +66,9 @@ test('vite uses the configured default entry when no entry is provided', functio
     ]);
 
     $vite = new Vite($config, $this->paths);
-    $tags = $vite->headTags();
 
-    expect($tags)->toContain('Vite manifest not found');
+    expect(fn () => $vite->headTags())
+        ->toThrow(ViteManifestException::class, 'Vite manifest not found');
 });
 
 test('vite throws when no default entry is configured', function () {
@@ -228,7 +229,7 @@ test('vite includes imported chunk css and modulepreload tags from a production 
     expect(substr_count($tags, 'assets/nested.999.css'))->toBe(1);
 });
 
-test('vite reports invalid manifests and missing entries', function () {
+test('vite throws when the production manifest is invalid json', function () {
     $config = new ConfigRepository([
         'vite' => [
             'entry' => 'app/web/resources/js/app.js',
@@ -238,12 +239,24 @@ test('vite reports invalid manifests and missing entries', function () {
         ],
     ]);
 
-    $invalidManifestTags = (new Vite($config, makeProjectPathsWithManifest('not-json')))
-        ->headTags();
+    $vite = new Vite($config, makeProjectPathsWithManifest('not-json'));
 
-    $missingEntryTags = (new Vite($config, makeProjectPathsWithManifest([])))
-        ->headTags();
+    expect(fn () => $vite->headTags())
+        ->toThrow(ViteManifestException::class, 'is not valid JSON');
+});
 
-    expect($invalidManifestTags)->toContain('Vite manifest is invalid');
-    expect($missingEntryTags)->toContain("Vite entry 'app/web/resources/js/app.js' not found");
+test('vite throws when the configured entry is not in the manifest', function () {
+    $config = new ConfigRepository([
+        'vite' => [
+            'entry' => 'app/web/resources/js/app.js',
+            'buildDirectory' => 'build',
+            'manifestFilename' => '.vite/manifest.json',
+            'useDevServer' => false,
+        ],
+    ]);
+
+    $vite = new Vite($config, makeProjectPathsWithManifest([]));
+
+    expect(fn () => $vite->headTags())
+        ->toThrow(ViteManifestException::class, 'app/web/resources/js/app.js');
 });

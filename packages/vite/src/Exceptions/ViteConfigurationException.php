@@ -7,10 +7,12 @@ namespace Marko\Vite\Exceptions;
 use Marko\Core\Exceptions\MarkoException;
 use Throwable;
 
-final class ViteConfigurationException extends MarkoException
+class ViteConfigurationException extends MarkoException
 {
-    public static function missingOrInvalid(string $key, Throwable $previous): self
-    {
+    public static function missingOrInvalid(
+        string $key,
+        Throwable $previous,
+    ): self {
         return new self(
             sprintf('Vite configuration key "%s" is missing or invalid.', $key),
             $previous->getMessage(),
@@ -19,8 +21,10 @@ final class ViteConfigurationException extends MarkoException
         );
     }
 
-    public static function empty(string $key, string $suggestion): self
-    {
+    public static function empty(
+        string $key,
+        string $suggestion,
+    ): self {
         return new self(
             sprintf('Vite configuration key "%s" must not be empty.', $key),
             sprintf('The "%s" value resolved to an empty string.', $key),
