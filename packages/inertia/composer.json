@@ -1,0 +1,33 @@
+{
+    "name": "marko/inertia",
+    "description": "Inertia.js protocol integration for the Marko Framework - middleware, response factory, shared data, and SSR support",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/config": "self.version",
+        "marko/core": "self.version",
+        "marko/env": "self.version",
+        "marko/routing": "self.version",
+        "marko/session": "self.version",
+        "marko/vite": "self.version"
+    },
+    "require-dev": {
+        "marko/testing": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Inertia\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Inertia\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
