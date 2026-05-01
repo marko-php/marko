@@ -1,62 +1,37 @@
-# Marko Inertia Vue
+# marko/inertia-vue
 
-Configuration defaults for Vue 3 apps built with `marko/inertia` and `marko/vite`.
+Vue 3 companion for `marko/inertia` - configuration for Vue client and SSR entries.
 
-## Install
+## Installation
 
 ```bash
-composer require marko/inertia marko/inertia-vue marko/vite
-npm install @inertiajs/vue3@^3.0 vue@^3.5 @vue/server-renderer@^3.5 @vitejs/plugin-vue@^6.0 vite@^8.0
+composer require marko/inertia-vue
 ```
 
-## Files
+## Quick Example
 
-Create the client entry at `app/vue-web/resources/js/app.js`:
+```php
+use Marko\Inertia\Inertia;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
 
-```js
-import { createInertiaApp } from '@inertiajs/vue3';
-import { createApp, h } from 'vue';
+class DashboardController
+{
+    public function __construct(
+        private readonly Inertia $inertia,
+    ) {}
 
-createInertiaApp({
-  resolve: (name) => {
-    const pages = import.meta.glob('./Pages/**/*.vue', { eager: true });
-    return pages[`./Pages/${name}.vue`];
-  },
-  setup({ el, App, props, plugin }) {
-    createApp({ render: () => h(App, props) }).use(plugin).mount(el);
-  },
-});
+    public function index(Request $request): Response
+    {
+        return $this->inertia->render(
+            request: $request,
+            component: 'Dashboard',
+            assetEntry: 'app/vue-web/resources/js/app.js',
+        );
+    }
+}
 ```
 
-Create the SSR entry at `app/vue-web/resources/js/ssr.js`:
+## Documentation
 
-```js
-import { createInertiaApp } from '@inertiajs/vue3';
-import createServer from '@inertiajs/vue3/server';
-import { renderToString } from '@vue/server-renderer';
-import { createSSRApp, h } from 'vue';
-
-createServer((page) =>
-  createInertiaApp({
-    page,
-    render: renderToString,
-    resolve: (name) => {
-      const pages = import.meta.glob('./Pages/**/*.vue', { eager: true });
-      return pages[`./Pages/${name}.vue`];
-    },
-    setup({ App, props, plugin }) {
-      return createSSRApp({ render: () => h(App, props) }).use(plugin);
-    },
-  }),
-);
-```
-
-## Configuration
-
-The package exposes:
-
-- `clientEntry`: `app/vue-web/resources/js/app.js`
-- `ssrEntry`: `app/vue-web/resources/js/ssr.js`
-- `ssrBundle`: `bootstrap/ssr/vue/ssr.js`
-
-Override them with `INERTIA_VUE_CLIENT_ENTRY`, `INERTIA_VUE_SSR_ENTRY`, and `INERTIA_VUE_SSR_BUNDLE`.
+Full usage, API reference, and examples: [marko/inertia-vue](https://marko.build/docs/packages/inertia-vue/)

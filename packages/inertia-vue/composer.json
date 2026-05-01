@@ -1,28 +1,23 @@
 {
-  "name": "marko/inertia-vue",
-  "type": "marko-module",
-  "description": "Vue 3 companion for marko/inertia — scaffolding and SSR server entry point",
-  "license": "MIT",
-  "require": {
-    "php": "^8.5",
-    "marko/core": "self.version",
-    "marko/env": "self.version",
-    "marko/inertia": "self.version",
-    "marko/vite": "self.version"
-  },
-  "autoload": {
-    "psr-4": {
-      "Marko\\InertiaVue\\": "src/"
+    "name": "marko/inertia-vue",
+    "description": "Vue 3 companion for marko/inertia - configuration for Vue client and SSR entries",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "self.version",
+        "marko/env": "self.version",
+        "marko/inertia": "self.version",
+        "marko/vite": "self.version"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\InertiaVue\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
     }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Marko\\InertiaVue\\Tests\\": "tests/"
-    }
-  },
-  "extra": {
-    "marko": {
-      "module": true
-    }
-  }
 }
