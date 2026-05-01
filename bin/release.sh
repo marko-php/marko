@@ -69,6 +69,15 @@ echo ""
 echo "  ✓ All tests passing"
 echo ""
 
+# Push main to remote BEFORE generating release notes — the GitHub
+# `releases/generate-notes` API enumerates PRs by walking commits visible
+# on the remote, so any merges that haven't been pushed yet are silently
+# omitted. Push first, then generate notes, then commit the changelog and
+# push again with the tag.
+echo "Pushing main branch (so generate-notes sees all merge commits)..."
+git push origin main
+echo ""
+
 # Update CHANGELOG.md (requires gh + jq)
 CHANGELOG_FILE="CHANGELOG.md"
 CHANGELOG_MARKER="<!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->"
@@ -166,7 +175,7 @@ echo "Committing changelog..."
 git add "$CHANGELOG_FILE"
 git commit -m "chore: changelog for ${VERSION}"
 
-echo "Pushing main branch..."
+echo "Pushing main branch with changelog commit..."
 git push origin main
 
 echo "Creating tag ${TAG}..."
