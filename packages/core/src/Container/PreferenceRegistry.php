@@ -73,6 +73,7 @@ class PreferenceRegistry
      *
      * @param class-string $original
      * @return class-string|null
+     * @throws PreferenceConflictException When a circular preference chain is detected
      */
     public function getPreference(
         string $original,
@@ -82,8 +83,14 @@ class PreferenceRegistry
         }
 
         // Follow the preference chain to find the final replacement
+        $visited = [$original => true];
         $current = $this->preferences[$original];
+
         while (isset($this->preferences[$current])) {
+            if (isset($visited[$current])) {
+                throw PreferenceConflictException::circularPreference($original, $current);
+            }
+            $visited[$current] = true;
             $current = $this->preferences[$current];
         }
 
