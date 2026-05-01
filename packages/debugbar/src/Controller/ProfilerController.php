@@ -35,8 +35,7 @@ class ProfilerController
     public function show(
         Request $request,
         string $id,
-    ): Response
-    {
+    ): Response {
         if (! $this->allowed()) {
             return $this->notFound();
         }
@@ -54,8 +53,7 @@ class ProfilerController
     public function json(
         Request $request,
         string $id,
-    ): Response
-    {
+    ): Response {
         if (! $this->allowed()) {
             return $this->notFound();
         }
@@ -109,8 +107,7 @@ class ProfilerController
     private function configBool(
         string $key,
         bool $default,
-    ): bool
-    {
+    ): bool {
         try {
             $value = $this->config->get($key);
         } catch (Throwable) {
@@ -137,8 +134,7 @@ class ProfilerController
     private function configArray(
         string $key,
         array $default,
-    ): array
-    {
+    ): array {
         try {
             $value = $this->config->get($key);
         } catch (Throwable) {

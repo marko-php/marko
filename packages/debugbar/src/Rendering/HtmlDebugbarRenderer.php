@@ -14,8 +14,7 @@ class HtmlDebugbarRenderer
     public function render(
         array $dataset,
         string $theme,
-    ): string
-    {
+    ): string {
         $id = $this->escape($this->stringValue($dataset['id'] ?? null, 'marko'));
         $summary = $this->stringKeyArray($dataset['summary'] ?? null);
         $collectors = $this->stringKeyArray($dataset['collectors'] ?? null);
@@ -35,14 +34,14 @@ class HtmlDebugbarRenderer
             $hidden = $first ? '' : ' hidden';
             $label = $this->escape($this->stringValue($collector['label'] ?? null, $name));
             $badge = isset($collector['badge']) ? '<span>'.$this->escape(
-                $this->stringValue($collector['badge'], '')
+                $this->stringValue($collector['badge'], ''),
             ).'</span>' : '';
             $safeName = $this->escape((string) $name);
 
             $tabs .= "<button type=\"button\" role=\"tab\" data-marko-debugbar-tab=\"$safeName\"$active>$label$badge</button>";
             $panels .= "<section data-marko-debugbar-panel=\"$safeName\"$hidden>".$this->renderCollector(
                 $name,
-                $collector
+                $collector,
             ).'</section>';
             $first = false;
         }
@@ -159,8 +158,7 @@ HTML;
     private function renderCollector(
         string $name,
         array $collector,
-    ): string
-    {
+    ): string {
         return match ($name) {
             'messages' => $this->renderMessages($collector),
             'time' => $this->renderTime($collector),
@@ -195,11 +193,11 @@ HTML;
 
             $rows .= '<tr>'
                 .'<td class="marko-debugbar-level">'.$this->escape(
-                    $this->stringValue($message['level'] ?? null, 'info')
+                    $this->stringValue($message['level'] ?? null, 'info'),
                 ).'</td>'
                 .'<td>'.$this->escape($this->stringValue($message['time_ms'] ?? null, '0')).' ms</td>'
                 .'<td>'.$this->escape($this->stringValue($message['message'] ?? null, '')).$this->renderContext(
-                    $message
+                    $message,
                 ).'</td>'
                 .'</tr>';
         }
@@ -222,7 +220,7 @@ HTML;
 
         if (is_array($trace)) {
             $output .= '<pre>'.$this->escape($this->stringValue($trace['file'] ?? null, '')).':'.$this->escape(
-                $this->stringValue($trace['line'] ?? null, '')
+                $this->stringValue($trace['line'] ?? null, ''),
             ).'</pre>';
         }
 
@@ -238,7 +236,7 @@ HTML;
 
         $html = '<table><tbody>'
             .'<tr><th>Total</th><td>'.$this->escape(
-                $this->stringValue($collector['duration_ms'] ?? null, '0')
+                $this->stringValue($collector['duration_ms'] ?? null, '0'),
             ).' ms</td></tr>'
             .'</tbody></table>';
 
@@ -274,10 +272,10 @@ HTML;
 
         $html = '<table><tbody>'
             .'<tr><th>Queries</th><td>'.$this->escape(
-                $this->stringValue($collector['count'] ?? null, '0')
+                $this->stringValue($collector['count'] ?? null, '0'),
             ).'</td></tr>'
             .'<tr><th>Total</th><td>'.$this->escape(
-                $this->stringValue($collector['duration_ms'] ?? null, '0')
+                $this->stringValue($collector['duration_ms'] ?? null, '0'),
             ).' ms</td></tr>'
             .'</tbody></table>';
 
@@ -338,7 +336,7 @@ HTML;
 
             $rows .= '<tr>'
                 .'<td class="marko-debugbar-level">'.$this->escape(
-                    $this->stringValue($log['level'] ?? null, 'info')
+                    $this->stringValue($log['level'] ?? null, 'info'),
                 ).'</td>'
                 .'<td>'.$this->escape($this->stringValue($log['time_ms'] ?? null, '0')).' ms</td>'
                 .'<td>'.$this->escape($this->stringValue($log['message'] ?? null, '')).$context.'</td>'
@@ -355,8 +353,7 @@ HTML;
     private function renderKeyValue(
         array $values,
         array $skip = [],
-    ): string
-    {
+    ): string {
         $rows = '';
 
         foreach ($values as $key => $value) {
@@ -365,7 +362,7 @@ HTML;
             }
 
             $rows .= '<tr><th>'.$this->escape($key).'</th><td><pre>'.$this->escape(
-                $this->value($value)
+                $this->value($value),
             ).'</pre></td></tr>';
         }
 
@@ -414,8 +411,7 @@ HTML;
     private function stringValue(
         mixed $value,
         string $default,
-    ): string
-    {
+    ): string {
         if (is_string($value)) {
             return $value;
         }
@@ -430,8 +426,7 @@ HTML;
     private function floatValue(
         mixed $value,
         float $default,
-    ): float
-    {
+    ): float {
         if (is_int($value) || is_float($value)) {
             return (float) $value;
         }

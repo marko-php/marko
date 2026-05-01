@@ -39,7 +39,7 @@ class ResponseCollector
 
         if (stripos($body, '<html') !== false || stripos($body, '<body') !== false || stripos(
             $body,
-            '<!doctype html'
+            '<!doctype html',
         ) !== false) {
             return 'html';
         }

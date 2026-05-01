@@ -132,8 +132,7 @@ class InertiaCollector
     private function stringValue(
         mixed $value,
         string $default,
-    ): string
-    {
+    ): string {
         if (is_string($value)) {
             return $value;
         }

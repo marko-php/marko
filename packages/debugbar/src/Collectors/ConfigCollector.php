@@ -36,8 +36,7 @@ class ConfigCollector implements CollectorInterface
         array $values,
         array $patterns,
         string $prefix = '',
-    ): array
-    {
+    ): array {
         foreach ($values as $key => $value) {
             $path = $prefix === '' ? (string) $key : $prefix.'.'.(string) $key;
 
@@ -60,8 +59,7 @@ class ConfigCollector implements CollectorInterface
     private function matches(
         string $path,
         array $patterns,
-    ): bool
-    {
+    ): bool {
         foreach ($patterns as $pattern) {
             if (! is_string($pattern) || $pattern === '') {
                 continue;

@@ -26,8 +26,7 @@ class LoggerPlugin
         LogLevel $level,
         string $message,
         array $context = [],
-    ): mixed
-    {
+    ): mixed {
         $this->debugbar->recordLog($level->value, $message, $context);
 
         return $result;
@@ -41,8 +40,7 @@ class LoggerPlugin
         mixed $result,
         string $message,
         array $context = [],
-    ): mixed
-    {
+    ): mixed {
         return $this->record($result, 'emergency', $message, $context);
     }
 
@@ -54,8 +52,7 @@ class LoggerPlugin
         mixed $result,
         string $message,
         array $context = [],
-    ): mixed
-    {
+    ): mixed {
         return $this->record($result, 'alert', $message, $context);
     }
 
@@ -67,8 +64,7 @@ class LoggerPlugin
         mixed $result,
         string $message,
         array $context = [],
-    ): mixed
-    {
+    ): mixed {
         return $this->record($result, 'critical', $message, $context);
     }
 
@@ -80,8 +76,7 @@ class LoggerPlugin
         mixed $result,
         string $message,
         array $context = [],
-    ): mixed
-    {
+    ): mixed {
         return $this->record($result, 'error', $message, $context);
     }
 
@@ -93,8 +88,7 @@ class LoggerPlugin
         mixed $result,
         string $message,
         array $context = [],
-    ): mixed
-    {
+    ): mixed {
         return $this->record($result, 'warning', $message, $context);
     }
 
@@ -106,8 +100,7 @@ class LoggerPlugin
         mixed $result,
         string $message,
         array $context = [],
-    ): mixed
-    {
+    ): mixed {
         return $this->record($result, 'notice', $message, $context);
     }
 
@@ -119,8 +112,7 @@ class LoggerPlugin
         mixed $result,
         string $message,
         array $context = [],
-    ): mixed
-    {
+    ): mixed {
         return $this->record($result, 'info', $message, $context);
     }
 
@@ -132,8 +124,7 @@ class LoggerPlugin
         mixed $result,
         string $message,
         array $context = [],
-    ): mixed
-    {
+    ): mixed {
         return $this->record($result, 'debug', $message, $context);
     }
 
@@ -145,8 +136,7 @@ class LoggerPlugin
         string $level,
         string $message,
         array $context,
-    ): mixed
-    {
+    ): mixed {
         $this->debugbar->recordLog($level, $message, $context);
 
         return $result;

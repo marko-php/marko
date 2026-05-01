@@ -24,8 +24,7 @@ readonly class QueryRecord
     public function toArray(
         float $requestStart,
         bool $withBindings,
-    ): array
-    {
+    ): array {
         return [
             'type' => $this->type,
             'sql' => $this->sql,

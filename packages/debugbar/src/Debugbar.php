@@ -146,8 +146,7 @@ class Debugbar
         string $message,
         string $level = 'info',
         array $context = [],
-    ): void
-    {
+    ): void {
         if (! $this->isEnabled()) {
             return;
         }
@@ -167,8 +166,7 @@ class Debugbar
     public function debug(
         string $message,
         array $context = [],
-    ): void
-    {
+    ): void {
         $this->addMessage($message, 'debug', $context);
     }
 
@@ -178,8 +176,7 @@ class Debugbar
     public function info(
         string $message,
         array $context = [],
-    ): void
-    {
+    ): void {
         $this->addMessage($message, 'info', $context);
     }
 
@@ -189,8 +186,7 @@ class Debugbar
     public function warning(
         string $message,
         array $context = [],
-    ): void
-    {
+    ): void {
         $this->addMessage($message, 'warning', $context);
     }
 
@@ -200,8 +196,7 @@ class Debugbar
     public function error(
         string $message,
         array $context = [],
-    ): void
-    {
+    ): void {
         $this->addMessage($message, 'error', $context);
     }
 
@@ -232,8 +227,7 @@ class Debugbar
     public function measure(
         string $name,
         Closure $callback,
-    ): mixed
-    {
+    ): mixed {
         $this->startMeasure($name);
 
         try {
@@ -268,8 +262,7 @@ class Debugbar
         string $level,
         string $message,
         array $context = [],
-    ): void
-    {
+    ): void {
         if (! $this->isEnabled()) {
             return;
         }
@@ -448,8 +441,7 @@ class Debugbar
     public function configBool(
         string $key,
         bool $default,
-    ): bool
-    {
+    ): bool {
         try {
             $value = $this->config->get($key);
         } catch (Throwable) {
@@ -472,8 +464,7 @@ class Debugbar
     public function configString(
         string $key,
         string $default,
-    ): string
-    {
+    ): string {
         try {
             $value = $this->config->get($key);
         } catch (Throwable) {
@@ -490,8 +481,7 @@ class Debugbar
     public function configFloat(
         string $key,
         float $default,
-    ): float
-    {
+    ): float {
         try {
             $value = $this->config->get($key);
         } catch (Throwable) {
@@ -516,8 +506,7 @@ class Debugbar
     public function configArray(
         string $key,
         array $default,
-    ): array
-    {
+    ): array {
         try {
             $value = $this->config->get($key);
         } catch (Throwable) {
@@ -530,8 +519,7 @@ class Debugbar
     private function serverString(
         string $key,
         string $default,
-    ): string
-    {
+    ): string {
         $value = $_SERVER[$key] ?? null;
 
         if (is_string($value)) {

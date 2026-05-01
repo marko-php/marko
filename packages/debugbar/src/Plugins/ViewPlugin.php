@@ -30,8 +30,7 @@ class ViewPlugin
     public function beforeRender(
         string $template,
         array $data = [],
-    ): void
-    {
+    ): void {
         $this->start('render', $template);
     }
 
@@ -43,8 +42,7 @@ class ViewPlugin
         Response $result,
         string $template,
         array $data = [],
-    ): Response
-    {
+    ): Response {
         $this->finish('render', $template, $data, strlen($result->body()));
 
         return $result;
@@ -57,8 +55,7 @@ class ViewPlugin
     public function beforeRenderToString(
         string $template,
         array $data = [],
-    ): void
-    {
+    ): void {
         $this->start('renderToString', $template);
     }
 
@@ -70,8 +67,7 @@ class ViewPlugin
         string $result,
         string $template,
         array $data = [],
-    ): string
-    {
+    ): string {
         $this->finish('renderToString', $template, $data, strlen($result));
 
         return $result;
@@ -80,8 +76,7 @@ class ViewPlugin
     private function start(
         string $method,
         string $template,
-    ): void
-    {
+    ): void {
         if (! $this->debugbar->isEnabled()) {
             return;
         }
@@ -97,8 +92,7 @@ class ViewPlugin
         string $template,
         array $data,
         int $outputSize,
-    ): void
-    {
+    ): void {
         if (! $this->debugbar->isEnabled()) {
             return;
         }
@@ -123,8 +117,7 @@ class ViewPlugin
     private function key(
         string $method,
         string $template,
-    ): string
-    {
+    ): string {
         return $method.':'.md5($template);
     }
 }

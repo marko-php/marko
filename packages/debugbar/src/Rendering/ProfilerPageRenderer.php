@@ -46,16 +46,16 @@ class ProfilerPageRenderer
             $rows .= '<tr>'
                 .'<td><a class="request-id" href="'.$this->escape($url).'">'.$this->escape($id).'</a></td>'
                 .'<td><span class="method method-'.$this->escape(strtolower($method)).'">'.$this->escape(
-                    $method
+                    $method,
                 ).'</span></td>'
                 .'<td><a class="uri" href="'.$this->escape($url).'">'.$this->escape($uri).'</a></td>'
                 .'<td><span class="metric">'.$this->escape($duration).' ms</span></td>'
                 .'<td><span class="subtle">'.$this->escape(
-                    $messages
+                    $messages,
                 ).' msg</span> <span class="subtle">'.$this->escape(
-                    $queries
+                    $queries,
                 ).' sql</span> <span class="subtle">'.$this->escape(
-                    $logs
+                    $logs,
                 ).' log</span></td>'
                 .'<td>'.$this->escape($storedAt).'</td>'
                 .'</tr>';
@@ -176,8 +176,7 @@ HTML);
     private function layout(
         string $title,
         string $body,
-    ): string
-    {
+    ): string {
         $title = $this->escape($title);
 
         return <<<HTML
@@ -243,8 +242,7 @@ HTML;
     private function renderValue(
         mixed $value,
         array $skip = [],
-    ): string
-    {
+    ): string {
         if (is_array($value)) {
             $rows = '';
 
@@ -310,8 +308,7 @@ HTML;
     private function stringValue(
         mixed $value,
         string $default,
-    ): string
-    {
+    ): string {
         if (is_string($value)) {
             return $value;
         }
@@ -326,8 +323,7 @@ HTML;
     private function floatValue(
         mixed $value,
         float $default,
-    ): float
-    {
+    ): float {
         if (is_int($value) || is_float($value)) {
             return (float) $value;
         }

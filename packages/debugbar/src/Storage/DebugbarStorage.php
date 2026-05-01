@@ -94,7 +94,7 @@ class DebugbarStorage
                 'id' => $id,
                 'stored_at' => $this->stringValue(
                     $dataset['stored_at'] ?? null,
-                    date(DATE_ATOM, (int) filemtime($file))
+                    date(DATE_ATOM, (int) filemtime($file)),
                 ),
                 'profiler_url' => $this->stringValue($dataset['profiler_url'] ?? null, '/_debugbar/'.$id),
                 'summary' => $summary,
@@ -174,8 +174,7 @@ class DebugbarStorage
     private function configString(
         string $key,
         string $default,
-    ): string
-    {
+    ): string {
         try {
             $value = $this->config->get($key);
         } catch (Throwable) {
@@ -188,8 +187,7 @@ class DebugbarStorage
     private function configInt(
         string $key,
         int $default,
-    ): int
-    {
+    ): int {
         try {
             $value = $this->config->get($key);
         } catch (Throwable) {
@@ -210,8 +208,7 @@ class DebugbarStorage
     private function stringValue(
         mixed $value,
         string $default,
-    ): string
-    {
+    ): string {
         if (is_string($value)) {
             return $value;
         }

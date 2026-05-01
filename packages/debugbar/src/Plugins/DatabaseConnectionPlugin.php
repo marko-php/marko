@@ -29,8 +29,7 @@ class DatabaseConnectionPlugin
     public function beforeQuery(
         string $sql,
         array $bindings = [],
-    ): void
-    {
+    ): void {
         $this->start('query', $sql);
     }
 
@@ -44,8 +43,7 @@ class DatabaseConnectionPlugin
         array $result,
         string $sql,
         array $bindings = [],
-    ): array
-    {
+    ): array {
         $this->finish('query', $sql, $bindings, count($result));
 
         return $result;
@@ -58,8 +56,7 @@ class DatabaseConnectionPlugin
     public function beforeExecute(
         string $sql,
         array $bindings = [],
-    ): void
-    {
+    ): void {
         $this->start('execute', $sql);
     }
 
@@ -71,8 +68,7 @@ class DatabaseConnectionPlugin
         int $result,
         string $sql,
         array $bindings = [],
-    ): int
-    {
+    ): int {
         $this->finish('execute', $sql, $bindings, $result);
 
         return $result;
@@ -81,8 +77,7 @@ class DatabaseConnectionPlugin
     private function start(
         string $type,
         string $sql,
-    ): void
-    {
+    ): void {
         if (! $this->debugbar->isEnabled()) {
             return;
         }
@@ -98,8 +93,7 @@ class DatabaseConnectionPlugin
         string $sql,
         array $bindings,
         int $rows,
-    ): void
-    {
+    ): void {
         if (! $this->debugbar->isEnabled()) {
             return;
         }
@@ -124,8 +118,7 @@ class DatabaseConnectionPlugin
     private function key(
         string $type,
         string $sql,
-    ): string
-    {
+    ): string {
         return $type.':'.md5($sql);
     }
 }
