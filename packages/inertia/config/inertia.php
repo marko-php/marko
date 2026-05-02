@@ -8,6 +8,5 @@ return [
     'ssr' => [
         'enabled' => env('INERTIA_SSR_ENABLED', false),
         'url' => env('INERTIA_SSR_URL', 'http://localhost:13714'),
-        'bundle' => null,
     ],
 ];

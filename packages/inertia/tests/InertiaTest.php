@@ -24,7 +24,6 @@ function createInertia(array $config = [], array $viteConfig = []): Inertia
         'inertia.assetEntry' => null,
         'inertia.ssr.enabled' => false,
         'inertia.ssr.url' => 'http://localhost:13714',
-        'inertia.ssr.bundle' => null,
         'vite.entry' => 'app/web/resources/js/app.js',
         'vite.buildDirectory' => 'build',
         'vite.manifestFilename' => '.vite/manifest.json',

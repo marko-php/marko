@@ -20,6 +20,7 @@ Configure via `config/inertia.php`:
 ```php title="config/inertia.php"
 return [
     'version' => null,
+    'assetEntry' => null,
     'ssr' => [
         'enabled' => env('INERTIA_SSR_ENABLED', false),
         'url' => env('INERTIA_SSR_URL', 'http://localhost:13714'),
@@ -30,6 +31,7 @@ return [
 | Key | Purpose |
 | --- | --- |
 | `version` | Asset version included in every Inertia page object. Set to `null` to disable version mismatch handling. |
+| `assetEntry` | Default Vite entry used by `render()` when no `$assetEntry` argument is passed. Frontend companion packages (`marko/inertia-react`, `marko/inertia-vue`, `marko/inertia-svelte`) overlay this slot via `config/inertia.php` so installing one swaps the entry without code changes. |
 | `ssr.enabled` | When true, the initial browser response attempts to render through the configured Inertia SSR server. |
 | `ssr.url` | URL used by the SSR client when SSR is enabled. |
 
@@ -77,7 +79,13 @@ For a normal browser visit, `render()` returns the initial HTML shell with the p
 
 ### Asset Entries
 
-By default, the HTML shell uses the configured `vite.entry`. Pass an asset entry to target a frontend-specific bundle:
+The Vite entry resolves in this order:
+
+1. The `$assetEntry` argument passed to `render()` (highest priority).
+2. The `inertia.assetEntry` config slot, typically populated by a frontend companion package (`marko/inertia-react`, `marko/inertia-vue`, `marko/inertia-svelte`).
+3. The `vite.entry` fallback from `marko/vite`.
+
+Pass an asset entry per call to override the configured default:
 
 ```php
 return $this->inertia->render(

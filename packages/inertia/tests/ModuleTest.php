@@ -31,6 +31,5 @@ test('inertia config declares frontend overlay slots', function () {
     expect($config['version'])->toBeNull()
         ->and($config['assetEntry'])->toBeNull()
         ->and($config['ssr']['enabled'])->toBeFalse()
-        ->and($config['ssr']['url'])->toBe('http://localhost:13714')
-        ->and($config['ssr']['bundle'])->toBeNull();
+        ->and($config['ssr']['url'])->toBe('http://localhost:13714');
 });

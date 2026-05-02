@@ -452,7 +452,7 @@
             "Marko\\Hashing\\Tests\\": "packages/hashing/tests/",
             "Marko\\Health\\Tests\\": "packages/health/tests/",
             "Marko\\Inertia\\Tests\\": "packages/inertia/tests/",
-            "Marko\\InertiaReact\\Tests\\": "packages/inertia-react/tests/",
+            "Marko\\Inertia\\React\\Tests\\": "packages/inertia-react/tests/",
             "Marko\\Http\\Tests\\": "packages/http/tests/",
             "Marko\\Http\\Guzzle\\Tests\\": "packages/http-guzzle/tests/",
             "Marko\\Layout\\Tests\\": "packages/layout/tests/",

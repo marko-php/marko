@@ -17,7 +17,7 @@ Install the matching frontend dependencies in your app:
 npm install @inertiajs/react react react-dom @vitejs/plugin-react vite
 ```
 
-Refer to the Inertia.js docs for currently supported versions of each frontend adapter.
+Refer to the [Inertia.js docs](https://inertiajs.com/) for currently supported versions of each frontend adapter.
 
 ## Configuration
 
@@ -26,16 +26,12 @@ This package contributes defaults to the parent `config/inertia.php` namespace:
 ```php title="packages/inertia-react/config/inertia.php"
 return [
     'assetEntry' => env('INERTIA_REACT_CLIENT_ENTRY', 'app/react-web/resources/js/app.jsx'),
-    'ssr' => [
-        'bundle' => env('INERTIA_REACT_SSR_BUNDLE', 'bootstrap/ssr/react/ssr.js'),
-    ],
 ];
 ```
 
 | Key | Purpose |
 | --- | --- |
 | `assetEntry` | Vite entry used by browser-rendered Inertia responses. |
-| `ssr.bundle` | Relative path to the built SSR bundle loaded by your SSR runner. |
 
 ## Usage
 
