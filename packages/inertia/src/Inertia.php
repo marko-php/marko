@@ -83,6 +83,7 @@ class Inertia
         array $props = [],
         ?string $assetEntry = null,
     ): Response {
+        $assetEntry ??= $this->nullableScalarConfig('inertia.assetEntry');
         $props = $this->resolveProps($props, $request, $component);
 
         $page = [
