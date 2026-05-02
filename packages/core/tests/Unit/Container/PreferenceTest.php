@@ -39,7 +39,7 @@ it('creates Preference attribute with replaces parameter', function (): void {
 });
 
 it('discovers classes with Preference attribute in module src directories', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-preference-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-preference-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src/Preference', 0755, true);
 
     // Create a preference class file

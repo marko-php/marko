@@ -21,7 +21,7 @@ describe('LatteEngineFactory', function (): void {
     });
 
     test('configures cache directory', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $viewConfig = $this->createMock(ViewConfig::class);
@@ -48,7 +48,7 @@ describe('LatteEngineFactory', function (): void {
     });
 
     test('configures auto refresh', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-refresh-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-refresh-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         // Test with auto refresh enabled
@@ -84,7 +84,7 @@ describe('LatteEngineFactory', function (): void {
     });
 
     test('configures strict types', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-strict-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-strict-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         // Test with strict types enabled

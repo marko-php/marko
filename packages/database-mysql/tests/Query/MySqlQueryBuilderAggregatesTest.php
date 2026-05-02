@@ -14,7 +14,7 @@ use ReflectionClass;
 
 function createAggregatesTestConfig(): DatabaseConfig
 {
-    $tempDir = sys_get_temp_dir() . '/marko_mysql_agg_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_mysql_agg_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/config', recursive: true);
     file_put_contents(
         $tempDir . '/config/database.php',

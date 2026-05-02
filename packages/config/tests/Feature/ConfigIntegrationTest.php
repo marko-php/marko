@@ -88,7 +88,7 @@ describe('Config Integration', function (): void {
 
     it('config file uses environment variable when set', function () {
         // Create temporary directory structure
-        $tempDir = sys_get_temp_dir() . '/marko-config-env-test-' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko-config-env-test-' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/app-config', 0755, true);
 
         try {
@@ -126,7 +126,7 @@ PHP);
 
     it('config file uses default when environment variable is not set', function () {
         // Create temporary directory structure
-        $tempDir = sys_get_temp_dir() . '/marko-config-env-default-test-' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko-config-env-default-test-' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/app-config', 0755, true);
 
         try {
@@ -181,7 +181,7 @@ PHP);
 
     it('throws ConfigLoadException when config file has PHP syntax error', function () {
         // Create temporary directory structure
-        $tempDir = sys_get_temp_dir() . '/marko-config-syntax-error-' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko-config-syntax-error-' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/app-config', 0755, true);
 
         try {
@@ -217,7 +217,7 @@ PHP);
 
     it('throws ConfigLoadException when config file returns non-array', function () {
         // Create temporary directory structure
-        $tempDir = sys_get_temp_dir() . '/marko-config-non-array-' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko-config-non-array-' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/app-config', 0755, true);
 
         try {
@@ -249,7 +249,7 @@ PHP);
 
     it('full config lifecycle with temporary module structure', function () {
         // Create temporary directory structure
-        $tempDir = sys_get_temp_dir() . '/marko-config-test-' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko-config-test-' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/module-x/config', 0755, true);
         mkdir($tempDir . '/module-y/config', 0755, true);
         mkdir($tempDir . '/app-config', 0755, true);
@@ -325,7 +325,7 @@ PHP);
 
     it('multi-tenant scenario with default and scoped values', function () {
         // Create temporary directory structure
-        $tempDir = sys_get_temp_dir() . '/marko-config-multitenant-' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko-config-multitenant-' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/app-config', 0755, true);
 
         try {
@@ -397,7 +397,7 @@ PHP);
 
     it('withScope creates properly scoped instance for multi-tenant access', function () {
         // Create temporary directory structure
-        $tempDir = sys_get_temp_dir() . '/marko-config-withscope-' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko-config-withscope-' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/app-config', 0755, true);
 
         try {

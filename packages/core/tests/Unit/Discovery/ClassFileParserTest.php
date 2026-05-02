@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Marko\Core\Discovery\ClassFileParser;
 
 it('extracts class name from file with namespace', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
 
     $code = <<<'PHP'
@@ -32,7 +32,7 @@ PHP;
 });
 
 it('extracts class name from file without namespace', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
 
     $code = <<<'PHP'
@@ -55,7 +55,7 @@ PHP;
 });
 
 it('returns null for file without class', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
 
     $code = <<<'PHP'
@@ -84,7 +84,7 @@ it('returns null for non-existent file', function (): void {
 });
 
 it('finds php files recursively', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/subdir/nested', 0755, true);
 
     file_put_contents($tempDir . '/Root.php', '<?php class Root {}');
@@ -121,7 +121,7 @@ it('returns empty iterator for non-existent directory', function (): void {
 });
 
 it('handles deeply nested namespaces', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
 
     $code = <<<'PHP'

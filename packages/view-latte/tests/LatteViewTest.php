@@ -21,7 +21,7 @@ describe('LatteView', function (): void {
     });
 
     test('render returns Response with HTML', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $templatePath = $cacheDir . '/test.latte';
@@ -49,7 +49,7 @@ describe('LatteView', function (): void {
     });
 
     test('renderToString returns HTML string', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $templatePath = $cacheDir . '/test.latte';
@@ -75,7 +75,7 @@ describe('LatteView', function (): void {
     });
 
     test('passes data to template', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $templatePath = $cacheDir . '/test.latte';
@@ -103,7 +103,7 @@ describe('LatteView', function (): void {
     });
 
     test('uses resolver for template paths', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $templatePath = $cacheDir . '/resolved.latte';
@@ -128,7 +128,7 @@ describe('LatteView', function (): void {
     });
 
     test('handles template syntax errors', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $templatePath = $cacheDir . '/invalid.latte';
@@ -154,7 +154,7 @@ describe('LatteView', function (): void {
     });
 
     test('uses configured extension via resolver', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         // Use a custom extension to prove LatteView accepts any path from resolver
@@ -180,7 +180,7 @@ describe('LatteView', function (): void {
     });
 
     test('includes use namespaced template resolution', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         // Create the item template that will be included
@@ -218,7 +218,7 @@ describe('LatteView', function (): void {
     });
 
     test('includes reject relative paths', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-view-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         // Create a template with a relative include (not allowed)

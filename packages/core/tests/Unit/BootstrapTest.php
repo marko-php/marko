@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Marko\Core\Application;
 
 it('still returns an Application instance from the bootstrap closure', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-bootstrap-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-bootstrap-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
     $modulesDir = $baseDir . '/modules';
     $appDir = $baseDir . '/app';
@@ -34,13 +34,13 @@ it('still returns an Application instance from the bootstrap closure', function 
 });
 
 it('loads environment variables during initialize() using class_exists(EnvLoader::class) guard', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-bootstrap-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-bootstrap-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     mkdir($vendorDir, 0755, true);
 
     // Write a .env file in the base path (dirname of vendorPath)
-    $envKey = 'MARKO_TEST_INIT_ENV_' . strtoupper(uniqid());
+    $envKey = 'MARKO_TEST_INIT_ENV_' . strtoupper(bin2hex(random_bytes(8)));
     file_put_contents($baseDir . '/.env', $envKey . '=initialize_loaded');
 
     // Call initialize() directly — env loading must happen inside initialize()
@@ -63,14 +63,14 @@ it('loads environment variables during initialize() using class_exists(EnvLoader
 });
 
 it('derives basePath for env loading via dirname($this->vendorPath) inside initialize()', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-bootstrap-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-bootstrap-test-' . bin2hex(random_bytes(8));
     // Use a non-standard vendor path name to confirm dirname() is used
     $vendorDir = $baseDir . '/my-vendor';
 
     mkdir($vendorDir, 0755, true);
 
     // Write .env in the derived base path (dirname of vendorDir = baseDir)
-    $envKey = 'MARKO_TEST_DERIVE_BASE_' . strtoupper(uniqid());
+    $envKey = 'MARKO_TEST_DERIVE_BASE_' . strtoupper(bin2hex(random_bytes(8)));
     file_put_contents($baseDir . '/.env', $envKey . '=derived_base');
 
     $app = new Application(
@@ -92,7 +92,7 @@ it('derives basePath for env loading via dirname($this->vendorPath) inside initi
 });
 
 it('still accepts explicit vendorPath, modulesPath, and appPath parameters', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-bootstrap-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-bootstrap-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
     $modulesDir = $baseDir . '/modules';
     $appDir = $baseDir . '/app';

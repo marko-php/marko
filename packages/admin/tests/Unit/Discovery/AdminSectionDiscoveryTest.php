@@ -36,7 +36,7 @@ function cleanupAdminTestDirectory(
 }
 
 it('discovers classes with AdminSection attribute in a module', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-admin-discovery-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-admin-discovery-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     $classCode = <<<'PHP'
@@ -81,7 +81,7 @@ PHP;
 });
 
 it('skips classes without AdminSection attribute', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-admin-discovery-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-admin-discovery-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     $classCode = <<<'PHP'
@@ -150,7 +150,7 @@ it('discovers AdminPermission attributes on AdminSection classes', function (): 
 });
 
 it('returns empty array when module has no admin sections', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-admin-discovery-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-admin-discovery-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     // Create a PHP file without AdminSection attribute
@@ -184,8 +184,8 @@ PHP;
 });
 
 it('discovers sections across multiple modules', function (): void {
-    $tempDir1 = sys_get_temp_dir() . '/marko-admin-discovery-test-' . uniqid();
-    $tempDir2 = sys_get_temp_dir() . '/marko-admin-discovery-test-' . uniqid();
+    $tempDir1 = sys_get_temp_dir() . '/marko-admin-discovery-test-' . bin2hex(random_bytes(8));
+    $tempDir2 = sys_get_temp_dir() . '/marko-admin-discovery-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir1 . '/src', 0755, true);
     mkdir($tempDir2 . '/src', 0755, true);
 

@@ -10,7 +10,7 @@ use Marko\Core\Module\ModuleManifest;
 
 it('discovers command classes in module src directories', function (): void {
     // Create a temp directory structure with command files
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     // Create a command class file with Command attribute
@@ -60,7 +60,7 @@ PHP;
 
 it('ignores classes without Command attribute', function (): void {
     // Create a temp directory structure
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     // Create a class without Command attribute
@@ -97,7 +97,7 @@ PHP;
 
 it('ignores directories without src folder', function (): void {
     // Create a temp directory without src folder
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
 
     $manifest = new ModuleManifest(
@@ -117,7 +117,7 @@ it('ignores directories without src folder', function (): void {
 
 it('returns array of CommandDefinition objects', function (): void {
     // Create a temp directory structure with command files
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     $commandCode = <<<'PHP'
@@ -164,7 +164,7 @@ PHP;
 });
 
 it('extracts command name from attribute', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     $commandCode = <<<'PHP'
@@ -211,7 +211,7 @@ PHP;
 });
 
 it('extracts description from attribute', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     $commandCode = <<<'PHP'
@@ -258,7 +258,7 @@ PHP;
 });
 
 it('throws CommandException when command class missing execute method', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     // Create a command class without execute method (and without interface so it can load)
@@ -297,7 +297,7 @@ PHP;
 });
 
 it('throws CommandException when command class does not implement CommandInterface', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     // Create a command class with execute method but not implementing interface
@@ -339,7 +339,7 @@ PHP;
 });
 
 it('discovers aliases from Command attribute', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     $commandCode = <<<'PHP'
@@ -386,7 +386,7 @@ PHP;
 });
 
 it('creates CommandDefinition with empty aliases when none specified', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     $commandCode = <<<'PHP'
@@ -433,7 +433,7 @@ PHP;
 });
 
 it('creates CommandDefinition with aliases when specified in attribute', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     $commandCode = <<<'PHP'
@@ -481,7 +481,7 @@ PHP;
 
 it('discovers commands from multiple modules', function (): void {
     // Create first module
-    $tempDir1 = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir1 = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir1 . '/src', 0755, true);
 
     $commandCode1 = <<<'PHP'
@@ -510,7 +510,7 @@ PHP;
     file_put_contents($tempDir1 . '/src/ModuleACommand.php', $commandCode1);
 
     // Create second module
-    $tempDir2 = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir2 = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir2 . '/src', 0755, true);
 
     $commandCode2 = <<<'PHP'

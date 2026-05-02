@@ -84,7 +84,7 @@ function cleanupDir(
 
 beforeEach(function (): void {
     $this->discovery = new EntityDiscovery(new ClassFileParser());
-    $this->uniqueId = uniqid();
+    $this->uniqueId = bin2hex(random_bytes(8));
     $this->tempDir = sys_get_temp_dir() . '/entity-discovery-' . $this->uniqueId;
     mkdir($this->tempDir, 0777, true);
 });

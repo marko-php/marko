@@ -16,7 +16,7 @@ describe('ModuleLoader', function (): void {
     });
 
     test('getContent resolves template and returns file contents', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/module-loader-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/module-loader-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $templatePath = $cacheDir . '/test.latte';
@@ -75,7 +75,7 @@ describe('ModuleLoader', function (): void {
     });
 
     test('getUniqueId returns resolved absolute path', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/module-loader-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/module-loader-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $templatePath = $cacheDir . '/test.latte';

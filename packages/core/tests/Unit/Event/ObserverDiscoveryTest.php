@@ -13,7 +13,7 @@ class DiscoveryTestEvent extends Event {}
 
 it('discovers observer classes in module src directories', function (): void {
     // Create a temp directory structure with observer files
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     // Create an observer class file with Observer attribute
@@ -56,7 +56,7 @@ PHP;
 
 it('extracts event class/name from Observer attribute', function (): void {
     // Create a temp directory structure with observer files
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     // Create an observer class file
@@ -99,7 +99,7 @@ PHP;
 
 it('throws exception when observer missing handle method', function (): void {
     // Create a temp directory structure with observer files
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     // Create an observer class file without handle method
@@ -139,7 +139,7 @@ PHP;
 });
 
 it('skips files that reference missing Marko package classes', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     // Create an observer file that implements a non-existent Marko interface
@@ -180,7 +180,7 @@ PHP;
 });
 
 it('throws Error when file references missing non-Marko class', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src', 0755, true);
 
     // Create an observer file that references a non-Marko missing class

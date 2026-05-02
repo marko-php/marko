@@ -17,7 +17,7 @@ function createTestImage(
     int $width = 100,
     int $height = 100,
 ): string {
-    $path = sys_get_temp_dir() . '/marko-test-' . uniqid() . '.png';
+    $path = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8)) . '.png';
     $image = imagecreatetruecolor($width, $height);
     $color = imagecolorallocate($image, 255, 0, 0);
     imagefill($image, 0, 0, $color);

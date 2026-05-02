@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Marko\DevServer\Detection\DockerDetector;
 
 it('detects compose.yaml in project root', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/compose.yaml', 'version: "3"');
 
@@ -19,7 +19,7 @@ it('detects compose.yaml in project root', function (): void {
 });
 
 it('detects docker-compose.yml in project root', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/docker-compose.yml', 'version: "3"');
 
@@ -33,7 +33,7 @@ it('detects docker-compose.yml in project root', function (): void {
 });
 
 it('returns null when no compose file exists', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
 
     $detector = new DockerDetector($tmpDir);
@@ -45,7 +45,7 @@ it('returns null when no compose file exists', function (): void {
 });
 
 it('returns up command without detached flag', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/compose.yaml', 'version: "3"');
 
@@ -60,7 +60,7 @@ it('returns up command without detached flag', function (): void {
 });
 
 it('returns down command for stopping containers', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/compose.yaml', 'version: "3"');
 
@@ -75,7 +75,7 @@ it('returns down command for stopping containers', function (): void {
 });
 
 it('checks compose files in priority order', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
 
     // Create all compose files - compose.yaml should take priority
@@ -98,7 +98,7 @@ it('checks compose files in priority order', function (): void {
 });
 
 it('uses compose file path in command with -f flag', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/docker-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/docker-compose.yml', 'version: "3"');
 

@@ -12,7 +12,7 @@ use Marko\Database\Tests\Migration\Helpers;
 describe('Migrator', function (): void {
     beforeEach(function (): void {
         // Create a temp directory structure with database/migrations for ProjectPaths
-        $this->basePath = sys_get_temp_dir() . '/marko_test_base_' . uniqid();
+        $this->basePath = sys_get_temp_dir() . '/marko_test_base_' . bin2hex(random_bytes(8));
         $this->migrationsPath = $this->basePath . '/database/migrations';
         mkdir($this->migrationsPath, 0777, true);
         $this->paths = new ProjectPaths($this->basePath);

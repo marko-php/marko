@@ -82,7 +82,7 @@ function createDevUpCommand(
     ?string $tempDir = null,
     ?PubSubDetector $pubsubDetector = null,
 ): array {
-    $dir = $tempDir ?? sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $dir = $tempDir ?? sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     if (!is_dir($dir)) {
         mkdir($dir, 0755, true);
     }
@@ -265,7 +265,7 @@ it('overrides port with --port flag', function (): void {
 });
 
 it('starts Docker when docker config is true and compose file exists', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-docker-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-docker-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
     file_put_contents($tempDir . '/compose.yaml', "version: '3'\nservices:\n  app:\n    image: nginx\n");
 
@@ -307,7 +307,7 @@ it('uses custom Docker command when docker config is a string', function (): voi
 });
 
 it('starts frontend when frontend config is true and package.json has dev script', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-frontend-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-frontend-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
     file_put_contents($tempDir . '/package.json', json_encode(['scripts' => ['dev' => 'vite']]));
 
@@ -459,7 +459,7 @@ it('overrides config port with -p space syntax', function (): void {
 });
 
 it('runs docker without -d flag as a managed process', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-docker-fg-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-docker-fg-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
     file_put_contents($tempDir . '/compose.yaml', "version: '3'\nservices:\n  app:\n    image: nginx\n");
 
@@ -558,7 +558,7 @@ it('includes custom processes in PID file when detached', function (): void {
 });
 
 it('never appends -d to docker command even in detach mode', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-docker-det-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-docker-det-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
     file_put_contents($tempDir . '/compose.yaml', "version: '3'\nservices:\n  app:\n    image: nginx\n");
 
@@ -597,7 +597,7 @@ it('starts pubsub:listen as managed process in DevUpCommand when detected', func
 });
 
 it('throws DevServerException when public/index.php does not exist', function (): void {
-    $dir = sys_get_temp_dir() . '/marko-no-index-' . uniqid();
+    $dir = sys_get_temp_dir() . '/marko-no-index-' . bin2hex(random_bytes(8));
     mkdir($dir, 0755, true);
     // Deliberately no public/index.php created
 
@@ -618,7 +618,7 @@ it('throws DevServerException when public/index.php does not exist', function ()
 })->throws(DevServerException::class);
 
 it('includes helpful message with bootstrap code in the exception', function (): void {
-    $dir = sys_get_temp_dir() . '/marko-no-index-msg-' . uniqid();
+    $dir = sys_get_temp_dir() . '/marko-no-index-msg-' . bin2hex(random_bytes(8));
     mkdir($dir, 0755, true);
 
     $fakeConfig = new FakeConfigRepository(CONFIG_DEFAULTS);
@@ -646,7 +646,7 @@ it('includes helpful message with bootstrap code in the exception', function ():
 });
 
 it('throws before any processes start when public/index.php is missing', function (): void {
-    $dir = sys_get_temp_dir() . '/marko-no-index-proc-' . uniqid();
+    $dir = sys_get_temp_dir() . '/marko-no-index-proc-' . bin2hex(random_bytes(8));
     mkdir($dir, 0755, true);
 
     $fakeConfig = new FakeConfigRepository(array_merge(CONFIG_DEFAULTS, [
@@ -678,7 +678,7 @@ it('throws before any processes start when public/index.php is missing', functio
 });
 
 it('starts PHP server normally when public/index.php exists', function (): void {
-    $dir = sys_get_temp_dir() . '/marko-with-index-' . uniqid();
+    $dir = sys_get_temp_dir() . '/marko-with-index-' . bin2hex(random_bytes(8));
     mkdir($dir . '/public', 0755, true);
     file_put_contents($dir . '/public/index.php', '<?php');
 
@@ -801,7 +801,7 @@ it('skips pubsub process when pubsub config is false', function (): void {
 });
 
 it('throws DevServerException when services are already running', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/marko-already-running-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/marko-already-running-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
 
     $pidFile = new PidFile($tmpDir);
@@ -818,7 +818,7 @@ it('throws DevServerException when services are already running', function (): v
 })->throws(DevServerException::class, 'Development environment is already running');
 
 it('allows dev:up when PID file has only stopped processes', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/marko-stopped-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/marko-stopped-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
 
     $pidFile = new PidFile($tmpDir);
@@ -837,7 +837,7 @@ it('allows dev:up when PID file has only stopped processes', function (): void {
 });
 
 it('suggests marko down in exception when services are already running', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/marko-suggest-down-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/marko-suggest-down-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
 
     $pidFile = new PidFile($tmpDir);

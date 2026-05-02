@@ -21,7 +21,7 @@ function removeDir(string $dir): void
 }
 
 it('writes process entries to JSON file', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir . '/.marko', 0755, true);
     $pidFile = new PidFile($tmpDir);
 
@@ -50,7 +50,7 @@ it('writes process entries to JSON file', function (): void {
 });
 
 it('creates .marko directory if it does not exist', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     // Do NOT create .marko directory - test that PidFile creates it
     $pidFile = new PidFile($tmpDir);
@@ -72,7 +72,7 @@ it('creates .marko directory if it does not exist', function (): void {
 });
 
 it('stores process name, pid, command, port, and start time', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     $pidFile = new PidFile($tmpDir);
 
@@ -97,7 +97,7 @@ it('stores process name, pid, command, port, and start time', function (): void 
 });
 
 it('checks if a process is still running', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     $pidFile = new PidFile($tmpDir);
 
@@ -109,7 +109,7 @@ it('checks if a process is still running', function (): void {
 });
 
 it('removes the PID file via clear method', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     $pidFile = new PidFile($tmpDir);
 
@@ -131,7 +131,7 @@ it('removes the PID file via clear method', function (): void {
 });
 
 it('detects a process group as running when parent died but child lives', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     $pidFile = new PidFile($tmpDir);
 
@@ -172,7 +172,7 @@ it('detects a process group as running when parent died but child lives', functi
 });
 
 it('returns empty array when file does not exist', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     $pidFile = new PidFile($tmpDir);
 
@@ -184,7 +184,7 @@ it('returns empty array when file does not exist', function (): void {
 });
 
 it('reads process entries from JSON file', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir . '/.marko', 0755, true);
     $pidFile = new PidFile($tmpDir);
 

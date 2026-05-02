@@ -21,7 +21,7 @@ use Marko\View\ViewInterface;
 describe('View Integration', function (): void {
     test('renders template end to end', function (): void {
         // Setup temp directory for templates and cache
-        $tempDir = sys_get_temp_dir() . '/marko-integration-' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko-integration-' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/resources/views/post', 0755, true);
         mkdir($tempDir . '/cache', 0755, true);
 
@@ -82,7 +82,7 @@ describe('View Integration', function (): void {
 
     test('module bindings resolve correctly', function (): void {
         // Setup temp directory for templates and cache
-        $tempDir = sys_get_temp_dir() . '/marko-integration-' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko-integration-' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/resources/views', 0755, true);
         mkdir($tempDir . '/cache', 0755, true);
 
@@ -160,7 +160,7 @@ describe('View Integration', function (): void {
 
     test('template not found produces helpful error', function (): void {
         // Setup temp directory (without the template)
-        $tempDir = sys_get_temp_dir() . '/marko-integration-' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko-integration-' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/resources/views', 0755, true);
         mkdir($tempDir . '/cache', 0755, true);
 

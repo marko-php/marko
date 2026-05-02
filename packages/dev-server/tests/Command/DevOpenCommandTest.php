@@ -15,7 +15,7 @@ use Marko\DevServer\Process\ProcessEntry;
  */
 function devOpenTmpDir(): string
 {
-    $tmpDir = sys_get_temp_dir() . '/dev-open-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/dev-open-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
 
     return $tmpDir;

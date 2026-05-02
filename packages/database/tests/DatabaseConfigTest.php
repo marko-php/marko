@@ -10,7 +10,7 @@ describe('DatabaseConfig', function (): void {
     it('uses getcwd as default base path when no path provided', function (): void {
         // Save current directory and change to temp directory with config
         $originalCwd = getcwd();
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         $configDir = $tempDir . '/config';
         mkdir($configDir, 0755, true);
 
@@ -51,7 +51,7 @@ PHP;
 
     it('accepts explicit base path to override default', function (): void {
         // Create a temporary config directory and file for testing
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         $configDir = $tempDir . '/config';
         mkdir($configDir, 0755, true);
 
@@ -90,7 +90,7 @@ PHP;
 
     it('loads config from basePath/config/database.php', function (): void {
         // Create a temporary config directory and file for testing
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         $configDir = $tempDir . '/config';
         mkdir($configDir, 0755, true);
 
@@ -127,7 +127,7 @@ PHP;
     });
 
     it('throws ConfigurationException when config file not found', function (): void {
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         mkdir($tempDir, 0755, true);
 
         try {
@@ -142,7 +142,7 @@ PHP;
     });
 
     it('loads optional SSL config when present', function (): void {
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         $configDir = $tempDir . '/config';
         mkdir($configDir, 0755, true);
 
@@ -177,7 +177,7 @@ PHP;
     });
 
     it('loads ssl_verify_server_cert when present', function (): void {
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         $configDir = $tempDir . '/config';
         mkdir($configDir, 0755, true);
 
@@ -211,7 +211,7 @@ PHP;
     });
 
     it('loads ssl_cert and ssl_key when present', function (): void {
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         $configDir = $tempDir . '/config';
         mkdir($configDir, 0755, true);
 
@@ -245,7 +245,7 @@ PHP;
     });
 
     it('defaults SSL config to null when not present', function (): void {
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         $configDir = $tempDir . '/config';
         mkdir($configDir, 0755, true);
 
@@ -280,7 +280,7 @@ PHP;
     });
 
     it('throws ConfigurationException when ssl_cert is set without ssl_key', function (): void {
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         $configDir = $tempDir . '/config';
         mkdir($configDir, 0755, true);
 
@@ -313,7 +313,7 @@ PHP;
     });
 
     it('throws ConfigurationException when ssl_key is set without ssl_cert', function (): void {
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         $configDir = $tempDir . '/config';
         mkdir($configDir, 0755, true);
 
@@ -346,7 +346,7 @@ PHP;
     });
 
     it('throws ConfigurationException when required keys missing', function (): void {
-        $tempDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_test_' . bin2hex(random_bytes(8));
         $configDir = $tempDir . '/config';
         mkdir($configDir, 0755, true);
 

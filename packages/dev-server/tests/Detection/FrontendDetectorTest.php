@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Marko\DevServer\Detection\FrontendDetector;
 
 it('detects dev script in package.json', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/package.json', json_encode(['scripts' => ['dev' => 'node build.js']]));
 
@@ -19,7 +19,7 @@ it('detects dev script in package.json', function (): void {
 });
 
 it('returns null when package.json does not exist', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
 
     $detector = new FrontendDetector($tmpDir);
@@ -31,7 +31,7 @@ it('returns null when package.json does not exist', function (): void {
 });
 
 it('returns null when package.json has no dev script', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/package.json', json_encode(['scripts' => ['build' => 'node build.js']]));
 
@@ -45,7 +45,7 @@ it('returns null when package.json has no dev script', function (): void {
 });
 
 it('uses bun when bun.lockb exists', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/package.json', json_encode(['scripts' => ['dev' => 'node build.js']]));
     file_put_contents($tmpDir . '/bun.lockb', '');
@@ -61,7 +61,7 @@ it('uses bun when bun.lockb exists', function (): void {
 });
 
 it('uses pnpm when pnpm-lock.yaml exists', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/package.json', json_encode(['scripts' => ['dev' => 'node build.js']]));
     file_put_contents($tmpDir . '/pnpm-lock.yaml', '');
@@ -77,7 +77,7 @@ it('uses pnpm when pnpm-lock.yaml exists', function (): void {
 });
 
 it('uses yarn when yarn.lock exists', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/package.json', json_encode(['scripts' => ['dev' => 'node build.js']]));
     file_put_contents($tmpDir . '/yarn.lock', '');
@@ -93,7 +93,7 @@ it('uses yarn when yarn.lock exists', function (): void {
 });
 
 it('defaults to npm when no lockfile found', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/package.json', json_encode(['scripts' => ['dev' => 'node build.js']]));
 
@@ -107,7 +107,7 @@ it('defaults to npm when no lockfile found', function (): void {
 });
 
 it('defaults to npm when only package-lock.json exists', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/frontend-detector-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     file_put_contents($tmpDir . '/package.json', json_encode(['scripts' => ['dev' => 'node build.js']]));
     file_put_contents($tmpDir . '/package-lock.json', '{}');

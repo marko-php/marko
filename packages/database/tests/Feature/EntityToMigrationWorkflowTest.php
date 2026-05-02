@@ -184,7 +184,7 @@ describe('Entity to Migration Workflow', function (): void {
             ->toContain('workflow_users');
 
         // Step 5: Generate migration file
-        $tempDir = sys_get_temp_dir() . '/marko_workflow_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_workflow_test_' . bin2hex(random_bytes(8));
         mkdir($tempDir);
 
         $projectPaths = new ProjectPaths($tempDir);

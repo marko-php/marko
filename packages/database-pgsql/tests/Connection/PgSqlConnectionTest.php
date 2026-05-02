@@ -26,7 +26,7 @@ function createTestPgSqlConfig(
     ?string $sslCert = null,
     ?string $sslKey = null,
 ): DatabaseConfig {
-    $tempDir = sys_get_temp_dir() . '/marko_pgsql_test_' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko_pgsql_test_' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/config', recursive: true);
 
     $configArray = [
