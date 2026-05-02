@@ -71,6 +71,7 @@ body:
         - http-guzzle
         - inertia
         - inertia-react
+        - inertia-vue
         - layout
         - log
         - log-file
