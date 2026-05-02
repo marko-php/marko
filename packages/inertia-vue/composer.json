@@ -17,7 +17,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Marko\\InertiaVue\\Tests\\": "tests/"
+            "Marko\\Inertia\\Vue\\Tests\\": "tests/"
         }
     },
     "extra": {

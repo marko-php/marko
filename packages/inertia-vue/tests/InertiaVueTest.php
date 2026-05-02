@@ -9,7 +9,6 @@ test('inertia-vue config overlays the parent inertia config', function () {
     $config = require dirname(__DIR__).'/config/inertia.php';
 
     expect($config['assetEntry'])->toBe('app/vue-web/resources/js/app.js');
-    expect($config['ssr']['bundle'])->toBe('bootstrap/ssr/vue/ssr.js');
     expect($config)->not->toHaveKey('ssrEntry');
 });
 

@@ -458,7 +458,7 @@
             "Marko\\Health\\Tests\\": "packages/health/tests/",
             "Marko\\Inertia\\Tests\\": "packages/inertia/tests/",
             "Marko\\Inertia\\React\\Tests\\": "packages/inertia-react/tests/",
-            "Marko\\InertiaVue\\Tests\\": "packages/inertia-vue/tests/",
+            "Marko\\Inertia\\Vue\\Tests\\": "packages/inertia-vue/tests/",
             "Marko\\Http\\Tests\\": "packages/http/tests/",
             "Marko\\Http\\Guzzle\\Tests\\": "packages/http-guzzle/tests/",
             "Marko\\Layout\\Tests\\": "packages/layout/tests/",
