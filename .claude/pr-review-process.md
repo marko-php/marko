@@ -149,7 +149,7 @@ Required files:
 
 Cross-cutting updates a new package PR must include:
 
-- Root `composer.json`: add to `repositories` (path), `replace`, `autoload-dev` for `Marko\Name\Tests\`
+- Root `composer.json`: add to `repositories` (path), `replace`, `autoload-dev` for `Marko\Name\Tests\`. **Keep `repositories`, `replace`, and `autoload-dev.psr-4` alphabetically sorted** (Composer auto-sorts `require`/`require-dev`, but not these). For nested namespaces (`Marko\Cache\File\Tests\`), place the parent's own `Tests\` entry first, then siblings alphabetically.
 - `.github/ISSUE_TEMPLATE/bug_report.yml` — add `{name}` to the package dropdown
 - `.github/ISSUE_TEMPLATE/feature_request.yml` — add `{name}` to the package dropdown
 - `tests/IntegrationVerificationTest.php` and `tests/PackagingTest.php` — bump `toHaveCount(N)` and the test descriptions
