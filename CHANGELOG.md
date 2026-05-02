@@ -8,6 +8,18 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.5.0] - 2026-05-01
+
+### New Features
+* feat: Add marko/inertia-react package by @ps-carvalho in https://github.com/marko-php/marko/pull/51
+* feat: Add marko/inertia-vue package by @ps-carvalho in https://github.com/marko-php/marko/pull/52
+* feat: Add marko/inertia-svelte package by @ps-carvalho in https://github.com/marko-php/marko/pull/53
+### Bug Fixes
+* fix(tests): eliminate uniqid() parallel-flake and PHP 8.5 setAccessible() deprecation by @markshust in https://github.com/marko-php/marko/pull/55
+### Maintenance
+* chore: sort root composer.json replace and autoload-dev alphabetically by @markshust in https://github.com/marko-php/marko/pull/54
+
+
 ## [0.4.2] - 2026-05-01
 
 ### Bug Fixes
