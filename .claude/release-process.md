@@ -123,10 +123,11 @@ The script does everything else, in order:
 6. Runs the full test suite **including** the `integration-destructive` group (`vendor/bin/pest --parallel`). Must pass.
 7. Generates release notes deterministically from git history: walks `git log PREV_TAG..HEAD`, extracts every `#NN` reference, fetches each PR by number via `gh api repos/.../pulls/N`, buckets by label per `.github/release.yml`, and computes new contributors via the GitHub search API. We do **not** use `gh api releases/generate-notes` — that endpoint matches PRs to the tag range by their stored `merge_commit_sha`, which can go stale during rapid concurrent merges and silently drop PRs. Walking git ourselves removes that dependency entirely.
 8. Prepends a new `## [VERSION] - YYYY-MM-DD` section to `CHANGELOG.md` directly under the insertion marker, then commits `chore: changelog for VERSION` on `main`
-9. Pushes `main` (changelog commit included)
-10. Creates annotated tag `VERSION` and pushes it
-11. Creates the GitHub Release using the same notes file (single source of truth — `CHANGELOG.md` and the GitHub Release body match exactly)
-12. Switches back to `develop`, merges `main`, and pushes `develop`
+9. Invokes `bin/create-split-repos.sh` to create any missing split repos for newly-added packages (idempotent; uses a single batched API call so a no-op run completes in ~1s). This is what prevents the "split workflow fails because the split repo doesn't exist yet" failure mode that previously required a manual fix-up after the fact.
+10. Pushes `main` (changelog commit included)
+11. Creates annotated tag `VERSION` and pushes it
+12. Creates the GitHub Release using the same notes file (single source of truth — `CHANGELOG.md` and the GitHub Release body match exactly)
+13. Switches back to `develop`, merges `main`, and pushes `develop`
 
 After the tag is pushed, everything else is automatic:
 - GitHub Actions split workflow runs: https://github.com/marko-php/marko/actions
@@ -216,8 +217,9 @@ Runtime env vars for bin scripts (not stored as secrets — passed at the comman
 - Regenerate PAT at: https://github.com/settings/tokens if needed
 
 **Split repo does not exist for a package**
-- Run: `GITHUB_ORG=marko-php ./bin/create-split-repos.sh`
-- Script is idempotent — safe to re-run, skips repos that already exist
+- `bin/release.sh` invokes `create-split-repos.sh` automatically before pushing, so this should rarely happen for new releases. If it still does (e.g. a package added directly to `develop` after the release script ran), run: `GITHUB_ORG=marko-php ./bin/create-split-repos.sh` (no args = check all packages) or scope it to specific packages: `./bin/create-split-repos.sh inertia-react inertia-vue`.
+- Use `--dry-run` to preview without making API calls.
+- Script is idempotent — safe to re-run, skips repos that already exist via a single batched API call.
 
 **Packagist not updating after a release**
 - Verify the webhook is configured on the split repo: `https://github.com/marko-php/marko-{name}/settings/hooks`
