@@ -17,7 +17,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Marko\\InertiaSvelte\\Tests\\": "tests/"
+            "Marko\\Inertia\\Svelte\\Tests\\": "tests/"
         }
     },
     "extra": {

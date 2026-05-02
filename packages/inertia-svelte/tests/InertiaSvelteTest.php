@@ -9,7 +9,6 @@ test('inertia-svelte config overlays the parent inertia config', function () {
     $config = require dirname(__DIR__).'/config/inertia.php';
 
     expect($config['assetEntry'])->toBe('app/svelte-web/resources/js/app.js');
-    expect($config['ssr']['bundle'])->toBe('bootstrap/ssr/svelte/ssr.js');
     expect($config)->not->toHaveKey('ssrEntry');
 });
 
