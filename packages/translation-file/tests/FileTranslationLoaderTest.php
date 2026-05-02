@@ -7,7 +7,7 @@ use Marko\Translation\File\Loader\FileTranslationLoader;
 
 function translationCreateTempLangDir(): string
 {
-    $tmpDir = sys_get_temp_dir() . '/marko_translation_test_' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/marko_translation_test_' . bin2hex(random_bytes(8));
     mkdir($tmpDir . '/lang/en', 0777, true);
 
     return $tmpDir;

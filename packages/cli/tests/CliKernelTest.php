@@ -8,7 +8,7 @@ use Marko\Core\Command\Output;
 
 function createTempProjectDir(): string
 {
-    $tempDir = sys_get_temp_dir() . '/marko-cli-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-cli-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/vendor/marko/core', 0755, true);
 
     return $tempDir;

@@ -9,7 +9,7 @@ use Marko\Testing\Fake\FakeConfigRepository;
 
 function getSessionTestPath(): string
 {
-    return sys_get_temp_dir() . '/marko-session-test-' . uniqid();
+    return sys_get_temp_dir() . '/marko-session-test-' . bin2hex(random_bytes(8));
 }
 
 function cleanupSessionTestPath(

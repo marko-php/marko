@@ -7,7 +7,7 @@ use Marko\Log\File\Rotation\SizeRotation;
 
 function createTempRotationDir(): string
 {
-    $dir = sys_get_temp_dir() . '/marko-rotation-test-' . uniqid();
+    $dir = sys_get_temp_dir() . '/marko-rotation-test-' . bin2hex(random_bytes(8));
     mkdir($dir, 0755, true);
 
     return $dir;

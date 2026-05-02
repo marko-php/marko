@@ -11,7 +11,7 @@ use Marko\Database\Tests\Migration\Helpers;
 
 describe('DataMigrator Integration', function (): void {
     beforeEach(function (): void {
-        $this->tempDir = sys_get_temp_dir() . '/marko_data_migrator_test_' . uniqid();
+        $this->tempDir = sys_get_temp_dir() . '/marko_data_migrator_test_' . bin2hex(random_bytes(8));
         mkdir($this->tempDir, 0777, true);
 
         // Create directory structure

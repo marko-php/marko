@@ -68,7 +68,7 @@ function routingTestCreateModule(
 }
 
 it('registers Router in container during boot', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-routing-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -91,7 +91,7 @@ it('registers Router in container during boot', function (): void {
 });
 
 it('discovers routes from all loaded modules', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-routing-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -146,7 +146,7 @@ PHP;
 });
 
 it('resolves RouteCollection through container', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-routing-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -169,7 +169,7 @@ it('resolves RouteCollection through container', function (): void {
 });
 
 it('applies Preference inheritance during discovery', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-routing-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
     $appDir = $baseDir . '/app';
@@ -265,7 +265,7 @@ PHP;
 });
 
 it('provides getRouter method on Application', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-routing-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -287,7 +287,7 @@ it('provides getRouter method on Application', function (): void {
 });
 
 it('returns Router as singleton in container', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-routing-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -312,7 +312,7 @@ it('returns Router as singleton in container', function (): void {
 
 it('runs route discovery after module loading', function (): void {
     // This test ensures routes are discovered from modules loaded in order
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-routing-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -398,7 +398,7 @@ PHP;
 });
 
 it('detects route conflicts during boot and fails fast', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-routing-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -478,7 +478,7 @@ PHP;
 });
 
 it('discovers routes from vendor, modules, and app directories', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-routing-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
     $modulesDir = $baseDir . '/modules';

@@ -9,7 +9,7 @@ beforeEach(function () {
     $this->originalEnv = $_ENV;
 
     // Create temp directory for test fixtures
-    $this->tempDir = sys_get_temp_dir() . '/marko-env-test-' . uniqid();
+    $this->tempDir = sys_get_temp_dir() . '/marko-env-test-' . bin2hex(random_bytes(8));
     mkdir($this->tempDir, 0777, true);
 });
 

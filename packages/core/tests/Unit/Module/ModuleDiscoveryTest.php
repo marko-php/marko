@@ -67,7 +67,7 @@ function createTestModule(
 }
 
 it('parses a module with composer.json into ModuleManifest object', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     createTestModule($tempDir, 'acme/blog');
 
     $parser = new ManifestParser();
@@ -79,7 +79,7 @@ it('parses a module with composer.json into ModuleManifest object', function ():
 });
 
 it('extracts module name from composer.json', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     createTestModule($tempDir, 'acme/blog');
 
     $parser = new ManifestParser();
@@ -91,7 +91,7 @@ it('extracts module name from composer.json', function (): void {
 });
 
 it('extracts module version from composer.json', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     createTestModule($tempDir, 'acme/blog', '2.5.3');
 
     $parser = new ManifestParser();
@@ -103,7 +103,7 @@ it('extracts module version from composer.json', function (): void {
 });
 
 it('works without module.php file using sensible defaults', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
 
     // Create module with ONLY composer.json, no module.php
     createTestModule($tempDir, 'acme/minimal');
@@ -123,7 +123,7 @@ it('works without module.php file using sensible defaults', function (): void {
 });
 
 it('extracts enabled state from module.php defaulting to true', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
 
     // Test default (no module.php = enabled true)
     createTestModule($tempDir, 'acme/blog');
@@ -136,7 +136,7 @@ it('extracts enabled state from module.php defaulting to true', function (): voi
     cleanupDirectory($tempDir);
 
     // Test explicit false
-    $tempDir2 = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir2 = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     createTestModule($tempDir2, 'acme/disabled', '1.0.0', [], ['enabled' => false]);
 
     $manifest = $parser->parse($tempDir2);
@@ -147,7 +147,7 @@ it('extracts enabled state from module.php defaulting to true', function (): voi
 });
 
 it('extracts require dependencies from composer.json', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     createTestModule($tempDir, 'acme/blog', '1.0.0', [
         'php' => '^8.5',
         'marko/core' => '^1.0',
@@ -168,7 +168,7 @@ it('extracts require dependencies from composer.json', function (): void {
 });
 
 it('extracts sequence hints (after/before) from module.php', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     createTestModule($tempDir, 'acme/blog', '1.0.0', [], [
         'sequence' => [
             'after' => ['marko/core', 'marko/database'],
@@ -191,7 +191,7 @@ it('extracts sequence hints (after/before) from module.php', function (): void {
 });
 
 it('extracts bindings from module.php', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     createTestModule($tempDir, 'acme/blog', '1.0.0', [], [
         'bindings' => [
             'Acme\Blog\Contracts\PostRepositoryInterface' => 'Acme\Blog\Repositories\PostRepository',
@@ -211,7 +211,7 @@ it('extracts bindings from module.php', function (): void {
 });
 
 it('throws ModuleException when composer.json is missing', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
     // No composer.json created
 
@@ -223,7 +223,7 @@ it('throws ModuleException when composer.json is missing', function (): void {
 });
 
 it('throws ModuleException when composer.json is invalid JSON', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
     file_put_contents($tempDir . '/composer.json', '{ invalid json }');
 
@@ -235,7 +235,7 @@ it('throws ModuleException when composer.json is invalid JSON', function (): voi
 });
 
 it('throws ModuleException when composer.json missing required name field', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
     file_put_contents($tempDir . '/composer.json', json_encode(['version' => '1.0.0']));
 
@@ -257,7 +257,7 @@ it('throws ModuleException when composer.json missing required name field', func
 });
 
 it('throws ModuleException when module.php has syntax errors', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
     file_put_contents($tempDir . '/composer.json', json_encode(['name' => 'acme/blog']));
     file_put_contents(
@@ -273,7 +273,7 @@ it('throws ModuleException when module.php has syntax errors', function (): void
 });
 
 it('discovers modules in vendor directory two levels deep', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     // Create vendor/marko/core
@@ -299,7 +299,7 @@ it('discovers modules in vendor directory two levels deep', function (): void {
 });
 
 it('discovers modules in modules directory recursively', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $modulesDir = $baseDir . '/modules';
 
     // Create modules/custom-module
@@ -325,7 +325,7 @@ it('discovers modules in modules directory recursively', function (): void {
 });
 
 it('discovers modules in app directory one level deep', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $appDir = $baseDir . '/app';
 
     // Create app/blog
@@ -351,7 +351,7 @@ it('discovers modules in app directory one level deep', function (): void {
 });
 
 it('skips directories without composer.json file', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
     $appDir = $baseDir . '/app';
 
@@ -383,7 +383,7 @@ it('skips directories without composer.json file', function (): void {
 });
 
 it('skips packages without extra.marko.module marker', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     // Create a Marko module WITH extra.marko.module: true
@@ -405,7 +405,7 @@ it('skips packages without extra.marko.module marker', function (): void {
 });
 
 it('skips packages with extra.marko.module set to false', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     // Create a package with extra.marko.module: false (explicitly not a Marko module)
@@ -432,7 +432,7 @@ it('skips packages with extra.marko.module set to false', function (): void {
 });
 
 it('uses same detection rule for vendor, modules, and app directories', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
     $modulesDir = $baseDir . '/modules';
     $appDir = $baseDir . '/app';
@@ -465,7 +465,7 @@ it('uses same detection rule for vendor, modules, and app directories', function
 });
 
 it('returns discovered modules with their source directory (vendor/modules/app)', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
     $modulesDir = $baseDir . '/modules';
     $appDir = $baseDir . '/app';
@@ -497,7 +497,7 @@ it('returns discovered modules with their source directory (vendor/modules/app)'
 });
 
 it('filters out php and extension requirements from dependencies', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     createTestModule($tempDir, 'acme/blog', '1.0.0', [
         'php' => '^8.5',
         'ext-json' => '*',
@@ -522,7 +522,7 @@ it('filters out php and extension requirements from dependencies', function (): 
 });
 
 it('extracts psr-4 autoload configuration from composer.json into ModuleManifest', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
 
     // Create composer.json with autoload.psr-4 configuration
@@ -549,7 +549,7 @@ it('extracts psr-4 autoload configuration from composer.json into ModuleManifest
 });
 
 it('stores autoload as empty array when composer.json has no autoload section', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
 
     // Create composer.json WITHOUT autoload section
@@ -570,7 +570,7 @@ it('stores autoload as empty array when composer.json has no autoload section', 
 });
 
 it('extracts boot callback from module.php', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);
 
     // Create composer.json
@@ -601,7 +601,7 @@ PHP;
 });
 
 it('defaults boot to null when not specified in module.php', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     createTestModule($tempDir, 'acme/no-boot');
 
     $parser = new ManifestParser();

@@ -24,7 +24,7 @@ it('ModuleTemplateResolver implements TemplateResolverInterface', function (): v
 });
 
 it('ModuleTemplateResolver resolves templates with module prefix', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/resources/views/post', 0755, true);
     file_put_contents($tempDir . '/resources/views/post/show.latte', 'test');
 
@@ -55,7 +55,7 @@ it('ModuleTemplateResolver resolves templates with module prefix', function (): 
 });
 
 it('ModuleTemplateResolver resolves templates without module prefix', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/resources/views/shared', 0755, true);
     file_put_contents($tempDir . '/resources/views/shared/header.latte', 'header content');
 
@@ -88,9 +88,9 @@ it('ModuleTemplateResolver resolves templates without module prefix', function (
 
 it('ModuleTemplateResolver searches in module priority order', function (): void {
     // app > modules > vendor (app overrides modules, modules override vendor)
-    $vendorDir = sys_get_temp_dir() . '/marko-test-vendor-' . uniqid();
-    $modulesDir = sys_get_temp_dir() . '/marko-test-modules-' . uniqid();
-    $appDir = sys_get_temp_dir() . '/marko-test-app-' . uniqid();
+    $vendorDir = sys_get_temp_dir() . '/marko-test-vendor-' . bin2hex(random_bytes(8));
+    $modulesDir = sys_get_temp_dir() . '/marko-test-modules-' . bin2hex(random_bytes(8));
+    $appDir = sys_get_temp_dir() . '/marko-test-app-' . bin2hex(random_bytes(8));
 
     // Create all directories with templates
     mkdir($vendorDir . '/resources/views/post', 0755, true);
@@ -156,8 +156,8 @@ it('ModuleTemplateResolver searches in module priority order', function (): void
 
 it('ModuleTemplateResolver respects app override priority', function (): void {
     // App modules override vendor modules - app template is found first
-    $vendorDir = sys_get_temp_dir() . '/marko-test-vendor-' . uniqid();
-    $appDir = sys_get_temp_dir() . '/marko-test-app-' . uniqid();
+    $vendorDir = sys_get_temp_dir() . '/marko-test-vendor-' . bin2hex(random_bytes(8));
+    $appDir = sys_get_temp_dir() . '/marko-test-app-' . bin2hex(random_bytes(8));
 
     // Create both directories with templates
     mkdir($vendorDir . '/resources/views/post', 0755, true);
@@ -206,7 +206,7 @@ it('ModuleTemplateResolver respects app override priority', function (): void {
 });
 
 it('ModuleTemplateResolver throws TemplateNotFoundException when not found', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/resources/views', 0755, true);
 
     $modules = [
@@ -233,8 +233,8 @@ it('ModuleTemplateResolver throws TemplateNotFoundException when not found', fun
 });
 
 it('ModuleTemplateResolver includes all paths in not found error', function (): void {
-    $tempDir1 = sys_get_temp_dir() . '/marko-test-app-' . uniqid();
-    $tempDir2 = sys_get_temp_dir() . '/marko-test-vendor-' . uniqid();
+    $tempDir1 = sys_get_temp_dir() . '/marko-test-app-' . bin2hex(random_bytes(8));
+    $tempDir2 = sys_get_temp_dir() . '/marko-test-vendor-' . bin2hex(random_bytes(8));
     mkdir($tempDir1, 0755, true);
     mkdir($tempDir2, 0755, true);
 
@@ -279,8 +279,8 @@ it('ModuleTemplateResolver includes all paths in not found error', function (): 
 });
 
 it('ModuleTemplateResolver getSearchedPaths returns all paths checked', function (): void {
-    $tempDir1 = sys_get_temp_dir() . '/marko-test-1-' . uniqid();
-    $tempDir2 = sys_get_temp_dir() . '/marko-test-2-' . uniqid();
+    $tempDir1 = sys_get_temp_dir() . '/marko-test-1-' . bin2hex(random_bytes(8));
+    $tempDir2 = sys_get_temp_dir() . '/marko-test-2-' . bin2hex(random_bytes(8));
     mkdir($tempDir1, 0755, true);
     mkdir($tempDir2, 0755, true);
 

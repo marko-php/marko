@@ -43,7 +43,7 @@ describe('PostgreSQL module.php bindings', function (): void {
 
     it('throws ConfigurationException when config file missing', function (): void {
         // Create temp directory WITHOUT config
-        $tempDir = sys_get_temp_dir() . '/marko_pgsql_noconfig_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_pgsql_noconfig_' . bin2hex(random_bytes(8));
         mkdir($tempDir, recursive: true);
 
         try {

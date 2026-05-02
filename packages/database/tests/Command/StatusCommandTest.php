@@ -121,7 +121,7 @@ function setupStatusTest(
     array $dataPending = [],
     array $dataApplied = [],
 ): StatusTestContext {
-    $migrationsPath = sys_get_temp_dir() . '/marko_status_test_' . uniqid();
+    $migrationsPath = sys_get_temp_dir() . '/marko_status_test_' . bin2hex(random_bytes(8));
     mkdir($migrationsPath, 0777, true);
 
     $content = getStatusMigrationContent();

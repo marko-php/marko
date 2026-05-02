@@ -9,7 +9,7 @@ use Marko\Log\LogLevel;
 
 function createTempLogDir(): string
 {
-    $dir = sys_get_temp_dir() . '/marko-log-test-' . uniqid();
+    $dir = sys_get_temp_dir() . '/marko-log-test-' . bin2hex(random_bytes(8));
     mkdir($dir, 0755, true);
 
     return $dir;
@@ -210,7 +210,7 @@ it('interpolates placeholders in message', function () {
 });
 
 it('creates log directory if it does not exist', function () {
-    $dir = sys_get_temp_dir() . '/marko-log-test-create-' . uniqid();
+    $dir = sys_get_temp_dir() . '/marko-log-test-create-' . bin2hex(random_bytes(8));
 
     expect(is_dir($dir))->toBeFalse();
 

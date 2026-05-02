@@ -89,7 +89,7 @@ function appTestCreateModule(
 }
 
 it('scans all three directories for modules during boot', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
     $modulesDir = $baseDir . '/modules';
     $appDir = $baseDir . '/app';
@@ -119,7 +119,7 @@ it('scans all three directories for modules during boot', function (): void {
 });
 
 it('ignores dependencies that are not discovered Marko modules', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     // Create a module that requires a package not in our modules list
@@ -147,7 +147,7 @@ it('ignores dependencies that are not discovered Marko modules', function (): vo
 });
 
 it('detects and reports circular dependencies', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     // Create modules with circular dependency: A depends on B, B depends on A
@@ -176,7 +176,7 @@ it('detects and reports circular dependencies', function (): void {
 });
 
 it('sorts modules in correct load order', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     // Create modules where C depends on B depends on A
@@ -207,7 +207,7 @@ it('sorts modules in correct load order', function (): void {
 });
 
 it('registers bindings from all modules', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     // Create a module with bindings
@@ -241,7 +241,7 @@ it('registers bindings from all modules', function (): void {
 
 it('discovers and registers preferences', function (): void {
     // Use unique class names to avoid conflicts between test runs
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -316,7 +316,7 @@ PHP;
 
 it('discovers and registers plugins', function (): void {
     // Use unique class names to avoid conflicts between test runs
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -389,7 +389,7 @@ PHP;
 });
 
 it('discovers and registers plugins in ApplicationTest with new naming', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -457,7 +457,7 @@ PHP;
 
 it('discovers and registers observers', function (): void {
     // Use unique class names to avoid conflicts between test runs
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -528,7 +528,7 @@ PHP;
 });
 
 it('provides access to configured container', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
@@ -549,7 +549,7 @@ it('provides access to configured container', function (): void {
 });
 
 it('provides access to event dispatcher', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
@@ -570,7 +570,7 @@ it('provides access to event dispatcher', function (): void {
 });
 
 it('bootstrap.php creates and boots Application instance', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
     $modulesDir = $baseDir . '/modules';
     $appDir = $baseDir . '/app';
@@ -603,7 +603,7 @@ it('bootstrap.php creates and boots Application instance', function (): void {
 });
 
 it('parses all discovered module manifests', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     appTestCreateModule(
@@ -636,7 +636,7 @@ it('parses all discovered module manifests', function (): void {
 
 it('registers PSR-4 autoloaders for modules source during boot', function (): void {
     // Use unique namespace to avoid conflicts between test runs
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $modulesDir = $baseDir . '/modules';
 
@@ -706,7 +706,7 @@ PHP;
 
 it('skips autoloader registration for vendor modules', function (): void {
     // Count autoloaders before and after boot to verify vendor modules don't add autoloaders
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -775,7 +775,7 @@ PHP;
 
 it('resolves class from app module without explicit require in root composer.json', function (): void {
     // This simulates app/blog working without being in demo/composer.json require
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $appDir = $baseDir . '/app';
 
@@ -868,7 +868,7 @@ PHP;
 
 it('resolves class from modules directory without explicit require in root composer.json', function (): void {
     // This simulates modules/custom-checkout working without being in root composer.json
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $modulesDir = $baseDir . '/modules';
 
@@ -935,7 +935,7 @@ PHP;
 });
 
 it('discovers commands during application boot', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -987,7 +987,7 @@ PHP;
 });
 
 it('exposes commandRegistry property on Application', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
@@ -1006,7 +1006,7 @@ it('exposes commandRegistry property on Application', function (): void {
 });
 
 it('exposes commandRunner property on Application', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
@@ -1025,7 +1025,7 @@ it('exposes commandRunner property on Application', function (): void {
 });
 
 it('registers commands from all enabled modules', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
     $modulesDir = $baseDir . '/modules';
@@ -1139,7 +1139,7 @@ PHP;
 });
 
 it('skips modules without src directory during command discovery', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     // Create a module without src directory
@@ -1160,7 +1160,7 @@ it('skips modules without src directory during command discovery', function (): 
 });
 
 it('skips modules without command classes', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -1198,7 +1198,7 @@ PHP;
 });
 
 it('makes commandRunner available after boot', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -1253,7 +1253,7 @@ PHP;
 });
 
 it('calls module boot callbacks after bindings are registered', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -1307,7 +1307,7 @@ PHP;
 });
 
 it('passes container to boot callbacks', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -1353,7 +1353,7 @@ PHP;
 });
 
 it('auto-injects dependencies into module boot callbacks', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -1402,7 +1402,7 @@ PHP;
 });
 
 it('continues to work with boot callbacks that receive ContainerInterface', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -1445,7 +1445,7 @@ PHP;
 });
 
 it('runs boot callbacks after all framework services are registered', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -1491,7 +1491,7 @@ PHP;
 });
 
 it('registers the container as an instance of ContainerInterface', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
@@ -1542,7 +1542,7 @@ it('throws RuntimeException when accessing router property without routing insta
 it('still assigns Router instance correctly when routing is available', function (): void {
     // When routing IS available (it is in the test environment), booting the
     // app should populate $_router so $app->router returns an object.
-    $baseDir = sys_get_temp_dir() . '/marko_router_test_' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko_router_test_' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
     mkdir($vendorDir, 0o777, true);
 
@@ -1561,7 +1561,7 @@ it('still assigns Router instance correctly when routing is available', function
 });
 
 it('has an initialize() method that performs all discovery and wiring', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
@@ -1616,7 +1616,7 @@ it('CliKernel.php calls initialize() instead of boot()', function (): void {
 });
 
 it('creates an application with inferred paths from base path using Application::boot()', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . bin2hex(random_bytes(8));
     mkdir($baseDir, 0755, true);
 
     $app = Application::boot($baseDir);
@@ -1627,7 +1627,7 @@ it('creates an application with inferred paths from base path using Application:
 });
 
 it('sets vendorPath to basePath/vendor', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . bin2hex(random_bytes(8));
     mkdir($baseDir, 0755, true);
 
     $app = Application::boot($baseDir);
@@ -1638,7 +1638,7 @@ it('sets vendorPath to basePath/vendor', function (): void {
 });
 
 it('sets modulesPath to basePath/modules', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . bin2hex(random_bytes(8));
     mkdir($baseDir, 0755, true);
 
     $app = Application::boot($baseDir);
@@ -1649,7 +1649,7 @@ it('sets modulesPath to basePath/modules', function (): void {
 });
 
 it('sets appPath to basePath/app', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . bin2hex(random_bytes(8));
     mkdir($baseDir, 0755, true);
 
     $app = Application::boot($baseDir);
@@ -1660,7 +1660,7 @@ it('sets appPath to basePath/app', function (): void {
 });
 
 it('calls initialize() during boot() so the application is fully initialized', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . bin2hex(random_bytes(8));
     mkdir($baseDir, 0755, true);
 
     $app = Application::boot($baseDir);
@@ -1675,7 +1675,7 @@ it('calls initialize() during boot() so the application is fully initialized', f
 });
 
 it('returns the Application instance (return type self)', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-boot-test-' . bin2hex(random_bytes(8));
     mkdir($baseDir, 0755, true);
 
     $result = Application::boot($baseDir);
@@ -1777,7 +1777,7 @@ it('returns void', function (): void {
 });
 
 it('creates PluginInterceptor and injects it into Container via setter during initialization', function (): void {
-    $baseDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     $vendorDir = $baseDir . '/vendor';
 
     appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
@@ -1793,7 +1793,6 @@ it('creates PluginInterceptor and injects it into Container via setter during in
     // Use reflection to verify the container has a PluginInterceptor set
     $reflection = new ReflectionClass($app->container);
     $property = $reflection->getProperty('pluginInterceptor');
-    $property->setAccessible(true);
     $interceptor = $property->getValue($app->container);
 
     expect($interceptor)->toBeInstanceOf(PluginInterceptor::class);
@@ -1802,7 +1801,7 @@ it('creates PluginInterceptor and injects it into Container via setter during in
 });
 
 it('uses the same PluginRegistry instance for both discovery and interception', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -1859,12 +1858,10 @@ PHP;
     // The registry on the app and the one inside the interceptor must be the same instance
     $containerReflection = new ReflectionClass($app->container);
     $interceptorProp = $containerReflection->getProperty('pluginInterceptor');
-    $interceptorProp->setAccessible(true);
     $interceptor = $interceptorProp->getValue($app->container);
 
     $interceptorReflection = new ReflectionClass($interceptor);
     $registryProp = $interceptorReflection->getProperty('registry');
-    $registryProp->setAccessible(true);
     $interceptorRegistry = $registryProp->getValue($interceptor);
 
     expect($interceptorRegistry)->toBe($app->pluginRegistry);
@@ -1873,7 +1870,7 @@ PHP;
 });
 
 it('resolves objects with plugin interception after full initialization', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 
@@ -1939,7 +1936,7 @@ PHP;
 });
 
 it('creates PluginRegistry before plugin discovery and reuses it for PluginInterceptor', function (): void {
-    $uniqueId = uniqid();
+    $uniqueId = bin2hex(random_bytes(8));
     $baseDir = sys_get_temp_dir() . '/marko-test-' . $uniqueId;
     $vendorDir = $baseDir . '/vendor';
 

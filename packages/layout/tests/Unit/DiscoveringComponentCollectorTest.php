@@ -51,7 +51,7 @@ function makeInnerCollector(): ComponentCollector
 
 it('discovers classes with Component attribute from module src directories', function (): void {
     // Create a temp module with a src/ dir containing a PHP file
-    $tmpDir = sys_get_temp_dir() . '/marko-layout-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/marko-layout-test-' . bin2hex(random_bytes(8));
     $srcDir = $tmpDir . '/src';
     mkdir($srcDir, 0755, true);
 
@@ -86,7 +86,7 @@ it('discovers classes with Component attribute from module src directories', fun
 });
 
 it('skips classes without Component attribute', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/marko-layout-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/marko-layout-test-' . bin2hex(random_bytes(8));
     $srcDir = $tmpDir . '/src';
     mkdir($srcDir, 0755, true);
 
@@ -117,7 +117,7 @@ it('skips classes without Component attribute', function (): void {
 });
 
 it('skips files that fail to load gracefully', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/marko-layout-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/marko-layout-test-' . bin2hex(random_bytes(8));
     $srcDir = $tmpDir . '/src';
     mkdir($srcDir, 0755, true);
 
@@ -153,7 +153,7 @@ it('skips files that fail to load gracefully', function (): void {
 });
 
 it('merges explicitly passed class names with discovered classes', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/marko-layout-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/marko-layout-test-' . bin2hex(random_bytes(8));
     $srcDir = $tmpDir . '/src';
     mkdir($srcDir, 0755, true);
 
@@ -239,7 +239,7 @@ it('delegates discoverFromClass to inner collector', function (): void {
 });
 
 it('handles modules without src directories gracefully', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/marko-layout-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/marko-layout-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
     // No src/ directory created
 
@@ -262,8 +262,8 @@ it('handles modules without src directories gracefully', function (): void {
 });
 
 it('scans all modules from ModuleRepositoryInterface', function (): void {
-    $tmpDir1 = sys_get_temp_dir() . '/marko-layout-test-' . uniqid();
-    $tmpDir2 = sys_get_temp_dir() . '/marko-layout-test-' . uniqid();
+    $tmpDir1 = sys_get_temp_dir() . '/marko-layout-test-' . bin2hex(random_bytes(8));
+    $tmpDir2 = sys_get_temp_dir() . '/marko-layout-test-' . bin2hex(random_bytes(8));
     $srcDir1 = $tmpDir1 . '/src';
     $srcDir2 = $tmpDir2 . '/src';
     mkdir($srcDir1, 0755, true);

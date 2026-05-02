@@ -14,7 +14,7 @@ use Marko\Database\Tests\Migration\Helpers;
 
 describe('MigrationGenerator', function (): void {
     beforeEach(function (): void {
-        $this->tempDir = sys_get_temp_dir() . '/marko-test-' . uniqid();
+        $this->tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
         mkdir($this->tempDir, 0755, true);
     });
 

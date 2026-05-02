@@ -7,7 +7,7 @@ use Marko\Translation\File\Loader\FileTranslationLoader;
 
 function translationNsCreateTempDir(): string
 {
-    $tmpDir = sys_get_temp_dir() . '/marko_ns_translation_test_' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/marko_ns_translation_test_' . bin2hex(random_bytes(8));
     mkdir($tmpDir . '/lang/en', 0777, true);
 
     return $tmpDir;
@@ -53,7 +53,7 @@ function translationNsCleanupTempDir(
 
 it('registers a namespace with addNamespace and loads from that path', function () {
     $appDir = translationNsCreateTempDir();
-    $blogDir = sys_get_temp_dir() . '/marko_blog_lang_' . uniqid();
+    $blogDir = sys_get_temp_dir() . '/marko_blog_lang_' . bin2hex(random_bytes(8));
     mkdir($blogDir . '/en', 0777, true);
     translationNsWriteLangFile($blogDir, 'en', 'messages', '<?php return ["welcome" => "Welcome to Blog!"];');
 
@@ -72,7 +72,7 @@ it('registers a namespace with addNamespace and loads from that path', function 
 
 it('loads namespaced translations from {namespacePath}/{locale}/{group}.php', function () {
     $appDir = translationNsCreateTempDir();
-    $blogDir = sys_get_temp_dir() . '/marko_blog_lang2_' . uniqid();
+    $blogDir = sys_get_temp_dir() . '/marko_blog_lang2_' . bin2hex(random_bytes(8));
     mkdir($blogDir . '/fr', 0777, true);
     translationNsWriteLangFile($blogDir, 'fr', 'validation', '<?php return ["required" => "Ce champ est requis."];');
 
@@ -91,7 +91,7 @@ it('loads namespaced translations from {namespacePath}/{locale}/{group}.php', fu
 
 it('returns empty array when namespaced translation file does not exist', function () {
     $appDir = translationNsCreateTempDir();
-    $blogDir = sys_get_temp_dir() . '/marko_blog_lang3_' . uniqid();
+    $blogDir = sys_get_temp_dir() . '/marko_blog_lang3_' . bin2hex(random_bytes(8));
     mkdir($blogDir, 0777, true);
 
     try {
@@ -110,7 +110,7 @@ it('returns empty array when namespaced translation file does not exist', functi
 it('caches namespaced translations independently from default translations', function () {
     $appDir = translationNsCreateTempDir();
     file_put_contents($appDir . '/lang/en/messages.php', '<?php return ["welcome" => "App Welcome!"];');
-    $blogDir = sys_get_temp_dir() . '/marko_blog_lang4_' . uniqid();
+    $blogDir = sys_get_temp_dir() . '/marko_blog_lang4_' . bin2hex(random_bytes(8));
     mkdir($blogDir . '/en', 0777, true);
     translationNsWriteLangFile($blogDir, 'en', 'messages', '<?php return ["welcome" => "Blog Welcome!"];');
 
@@ -131,8 +131,8 @@ it('caches namespaced translations independently from default translations', fun
 
 it('supports multiple namespaces simultaneously', function () {
     $appDir = translationNsCreateTempDir();
-    $blogDir = sys_get_temp_dir() . '/marko_blog_lang5_' . uniqid();
-    $shopDir = sys_get_temp_dir() . '/marko_shop_lang5_' . uniqid();
+    $blogDir = sys_get_temp_dir() . '/marko_blog_lang5_' . bin2hex(random_bytes(8));
+    $shopDir = sys_get_temp_dir() . '/marko_shop_lang5_' . bin2hex(random_bytes(8));
     mkdir($blogDir . '/en', 0777, true);
     mkdir($shopDir . '/en', 0777, true);
     translationNsWriteLangFile($blogDir, 'en', 'messages', '<?php return ["title" => "Blog Title"];');

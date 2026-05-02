@@ -31,7 +31,7 @@ function removeDirectory(
 
 function createTempDir(): string
 {
-    return sys_get_temp_dir() . '/marko-test-' . uniqid();
+    return sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
 }
 
 it('finds project root when in project directory', function () {

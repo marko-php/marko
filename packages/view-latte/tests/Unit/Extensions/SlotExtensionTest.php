@@ -16,7 +16,7 @@ describe('SlotExtension', function (): void {
     });
 
     test('it outputs empty string when slot has no content', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-slot-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-slot-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $engine = new Engine();
@@ -37,7 +37,7 @@ describe('SlotExtension', function (): void {
     });
 
     test('it outputs pre-rendered HTML for a named slot', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-slot-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-slot-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $engine = new Engine();
@@ -58,7 +58,7 @@ describe('SlotExtension', function (): void {
     });
 
     test('it handles nested slot names with dot-notation', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-slot-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-slot-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $engine = new Engine();
@@ -79,7 +79,7 @@ describe('SlotExtension', function (): void {
     });
 
     test('it works with multiple slots in the same template', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-slot-test-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-slot-test-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $engine = new Engine();
@@ -104,7 +104,7 @@ describe('SlotExtension', function (): void {
     });
 
     test('it integrates with LatteEngineFactory for automatic registration', function (): void {
-        $cacheDir = sys_get_temp_dir() . '/latte-slot-factory-' . uniqid();
+        $cacheDir = sys_get_temp_dir() . '/latte-slot-factory-' . bin2hex(random_bytes(8));
         mkdir($cacheDir, 0755, true);
 
         $viewConfig = $this->createMock(ViewConfig::class);

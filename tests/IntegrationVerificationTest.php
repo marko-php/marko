@@ -45,7 +45,7 @@ it(
     function () use ($root): void {
         $php = PHP_BINARY;
         $resultFile = tempnam(sys_get_temp_dir(), 'marko_result_');
-        $isolatedRoot = sys_get_temp_dir() . '/marko-clean-install-' . uniqid();
+        $isolatedRoot = sys_get_temp_dir() . '/marko-clean-install-' . bin2hex(random_bytes(8));
     
         $script = <<<'SCRIPT'
 <?php

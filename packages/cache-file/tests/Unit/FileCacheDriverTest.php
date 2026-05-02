@@ -11,7 +11,7 @@ use Marko\Testing\Fake\FakeConfigRepository;
 
 function getCacheTestPath(): string
 {
-    return sys_get_temp_dir() . '/marko-cache-test-' . uniqid();
+    return sys_get_temp_dir() . '/marko-cache-test-' . bin2hex(random_bytes(8));
 }
 
 function cleanupCacheTestPath(
@@ -282,7 +282,7 @@ it('throws exception for key with invalid characters', function (): void {
 })->throws(InvalidKeyException::class, 'Invalid cache key');
 
 it('creates cache directory if not exists', function (): void {
-    $newPath = sys_get_temp_dir() . '/marko-cache-new-' . uniqid();
+    $newPath = sys_get_temp_dir() . '/marko-cache-new-' . bin2hex(random_bytes(8));
     $config = createTestCacheConfig($newPath);
     $driver = new FileCacheDriver($config);
 

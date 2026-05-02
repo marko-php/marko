@@ -14,7 +14,7 @@ use Marko\DevServer\Process\ProcessEntry;
  */
 function devStatusTmpDir(): string
 {
-    $tmpDir = sys_get_temp_dir() . '/dev-status-test-' . uniqid();
+    $tmpDir = sys_get_temp_dir() . '/dev-status-test-' . bin2hex(random_bytes(8));
     mkdir($tmpDir, 0755, true);
 
     return $tmpDir;

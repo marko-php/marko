@@ -84,7 +84,7 @@ PHP;
 }
 
 it('discovers plugin classes in module src directories', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-plugin-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-plugin-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src/Plugin', 0755, true);
 
     // Create a plugin class file
@@ -128,7 +128,7 @@ it('discovers plugin classes in module src directories', function (): void {
 });
 
 it('discovers plugin classes in module src directories with new naming', function (): void {
-    $tempDir = sys_get_temp_dir() . '/marko-plugin-test-' . uniqid();
+    $tempDir = sys_get_temp_dir() . '/marko-plugin-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir . '/src/Plugin', 0755, true);
 
     // Create a plugin class file using new unprefixed method naming with #[Before] attribute

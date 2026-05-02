@@ -44,7 +44,7 @@ describe('Driver Error Handling', function (): void {
 
     it('validates database configuration from file', function (): void {
         // Create a temporary config file
-        $tempDir = sys_get_temp_dir() . '/marko_config_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_config_test_' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/config', 0777, true);
 
         file_put_contents($tempDir . '/config/database.php', <<<'PHP'
@@ -75,7 +75,7 @@ PHP);
     });
 
     it('throws when config file not found', function (): void {
-        $tempDir = sys_get_temp_dir() . '/marko_nonexistent_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_nonexistent_' . bin2hex(random_bytes(8));
         mkdir($tempDir);
 
         $paths = new ProjectPaths($tempDir);
@@ -86,7 +86,7 @@ PHP);
     });
 
     it('throws when required config key missing', function (): void {
-        $tempDir = sys_get_temp_dir() . '/marko_config_test_' . uniqid();
+        $tempDir = sys_get_temp_dir() . '/marko_config_test_' . bin2hex(random_bytes(8));
         mkdir($tempDir . '/config', 0777, true);
 
         // Missing 'password' key

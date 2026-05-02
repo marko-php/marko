@@ -11,7 +11,7 @@ use Marko\Filesystem\Values\FileInfo;
 
 function getTestBasePath(): string
 {
-    return sys_get_temp_dir() . '/marko-filesystem-test-' . uniqid();
+    return sys_get_temp_dir() . '/marko-filesystem-test-' . bin2hex(random_bytes(8));
 }
 
 function cleanupTestPath(
