@@ -3,6 +3,7 @@ set -euo pipefail
 
 VERSION="${1:?Usage: ./bin/release.sh <version> (e.g., 0.1.0)}"
 TAG="${VERSION}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Preparing release ${TAG}..."
 
@@ -279,6 +280,14 @@ echo ""
 echo "Committing changelog..."
 git add "$CHANGELOG_FILE"
 git commit -m "chore: changelog for ${VERSION}"
+
+# Ensure split repos exist for any newly-added packages BEFORE pushing main or
+# the tag. The split workflow fires on both pushes and will fail loudly if a
+# package's split repo doesn't exist yet (this is what bit us during 0.5.0).
+# The script is idempotent and uses a single batched API call, so a no-op run
+# completes in ~1s.
+echo "Verifying split repos exist for all packages..."
+"${SCRIPT_DIR}/create-split-repos.sh"
 
 echo "Pushing main branch..."
 git push origin main
