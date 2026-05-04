@@ -294,6 +294,7 @@ Marko ships as composable packages — require only what you need. Every package
 | [authentication](packages/authentication/README.md) | Guard-based authentication |
 | [authentication-token](packages/authentication-token/README.md) | Token/API authentication |
 | [authorization](packages/authorization/README.md) | Policy-based authorization |
+| [oauth](packages/oauth/README.md) | OAuth2 authorization server |
 | [hashing](packages/hashing/README.md) | Password hashing |
 | [security](packages/security/README.md) | Security utilities and middleware |
 | [cors](packages/cors/README.md) | Cross-Origin Resource Sharing |
