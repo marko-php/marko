@@ -1,0 +1,34 @@
+{
+    "name": "marko/oauth",
+    "description": "OAuth2 authorization server integration for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "ext-openssl": "*",
+        "league/oauth2-server": "^9.2",
+        "marko/authentication": "self.version",
+        "marko/config": "self.version",
+        "marko/core": "self.version",
+        "marko/database": "self.version",
+        "marko/routing": "self.version",
+        "marko/view": "self.version",
+        "nyholm/psr7": "^1.8",
+        "nyholm/psr7-server": "^1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\OAuth\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\OAuth\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
