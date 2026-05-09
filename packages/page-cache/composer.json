@@ -1,0 +1,36 @@
+{
+    "name": "marko/page-cache",
+    "description": "Full-page HTTP cache interfaces and middleware for Marko Framework",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/config": "self.version",
+        "marko/core": "self.version",
+        "marko/routing": "self.version"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\PageCache\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\PageCache\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

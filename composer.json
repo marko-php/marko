@@ -210,6 +210,14 @@
         },
         {
             "type": "path",
+            "url": "packages/page-cache"
+        },
+        {
+            "type": "path",
+            "url": "packages/page-cache-file"
+        },
+        {
+            "type": "path",
             "url": "packages/pagination"
         },
         {
@@ -369,6 +377,8 @@
         "marko/media-imagick": "self.version",
         "marko/notification": "self.version",
         "marko/notification-database": "self.version",
+        "marko/page-cache": "self.version",
+        "marko/page-cache-file": "self.version",
         "marko/pagination": "self.version",
         "marko/pubsub": "self.version",
         "marko/pubsub-pgsql": "self.version",
@@ -482,6 +492,8 @@
             "Marko\\MediaImagick\\Tests\\": "packages/media-imagick/tests/",
             "Marko\\Notification\\Tests\\": "packages/notification/tests/",
             "Marko\\Notification\\Database\\Tests\\": "packages/notification-database/tests/",
+            "Marko\\PageCache\\Tests\\": "packages/page-cache/tests/",
+            "Marko\\PageCache\\File\\Tests\\": "packages/page-cache-file/tests/",
             "Marko\\Pagination\\Tests\\": "packages/pagination/tests/",
             "Marko\\PubSub\\Tests\\": "packages/pubsub/tests/",
             "Marko\\PubSub\\PgSql\\Tests\\": "packages/pubsub-pgsql/tests/",

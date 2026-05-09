@@ -1,0 +1,37 @@
+{
+    "name": "marko/page-cache-file",
+    "description": "File-based page cache driver for Marko Framework",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "self.version",
+        "marko/config": "self.version",
+        "marko/routing": "self.version",
+        "marko/page-cache": "self.version"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\PageCache\\File\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\PageCache\\File\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
