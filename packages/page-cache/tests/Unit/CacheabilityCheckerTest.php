@@ -102,12 +102,12 @@ function makeNullMatcher(): RouteMatcherInterface
     };
 }
 
-function makeRequest(string $method = 'GET', string $uri = '/'): Request
+function makeCacheCheckerRequest(string $method = 'GET', string $uri = '/'): Request
 {
     return new Request(server: ['REQUEST_METHOD' => $method, 'REQUEST_URI' => $uri]);
 }
 
-function makeResponse(int $statusCode = 200, array $headers = []): Response
+function makeCacheCheckerResponse(int $statusCode = 200, array $headers = []): Response
 {
     return new Response(statusCode: $statusCode, headers: $headers);
 }
@@ -116,28 +116,28 @@ function makeResponse(int $statusCode = 200, array $headers = []): Response
 
 it('accepts GET requests as cacheable', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $request = makeRequest('GET');
+    $request = makeCacheCheckerRequest('GET');
 
     expect($checker->isRequestCacheable($request))->toBeTrue();
 });
 
 it('accepts HEAD requests as cacheable', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $request = makeRequest('HEAD');
+    $request = makeCacheCheckerRequest('HEAD');
 
     expect($checker->isRequestCacheable($request))->toBeTrue();
 });
 
 it('rejects POST requests as not cacheable', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $request = makeRequest('POST');
+    $request = makeCacheCheckerRequest('POST');
 
     expect($checker->isRequestCacheable($request))->toBeFalse();
 });
 
 it('rejects requests with methods not in the configured cacheable methods list', function (): void {
     $checker = makeChecker(makeNullMatcher(), methods: ['GET']);
-    $request = makeRequest('HEAD');
+    $request = makeCacheCheckerRequest('HEAD');
 
     expect($checker->isRequestCacheable($request))->toBeFalse();
 });
@@ -146,56 +146,56 @@ it('rejects requests with methods not in the configured cacheable methods list',
 
 it('accepts responses with status code 200 as cacheable', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $response = makeResponse(200);
+    $response = makeCacheCheckerResponse(200);
 
     expect($checker->isResponseCacheable($response))->toBeTrue();
 });
 
 it('rejects responses with status code 500 as not cacheable', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $response = makeResponse(500);
+    $response = makeCacheCheckerResponse(500);
 
     expect($checker->isResponseCacheable($response))->toBeFalse();
 });
 
 it('rejects responses with status codes not in the configured cacheable status codes list', function (): void {
     $checker = makeChecker(makeNullMatcher(), statusCodes: [200]);
-    $response = makeResponse(301);
+    $response = makeCacheCheckerResponse(301);
 
     expect($checker->isResponseCacheable($response))->toBeFalse();
 });
 
 it('rejects responses with a Set-Cookie header as not cacheable', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $response = makeResponse(200, ['Set-Cookie' => 'session=abc123']);
+    $response = makeCacheCheckerResponse(200, ['Set-Cookie' => 'session=abc123']);
 
     expect($checker->isResponseCacheable($response))->toBeFalse();
 });
 
 it('rejects responses whose Cache-Control header contains the no-store directive among others (e.g. "private, no-store, max-age=0")', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $response = makeResponse(200, ['Cache-Control' => 'private, no-store, max-age=0']);
+    $response = makeCacheCheckerResponse(200, ['Cache-Control' => 'private, no-store, max-age=0']);
 
     expect($checker->isResponseCacheable($response))->toBeFalse();
 });
 
 it('rejects responses whose Cache-Control header contains the private directive among others (e.g. "private, max-age=0")', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $response = makeResponse(200, ['Cache-Control' => 'private, max-age=0']);
+    $response = makeCacheCheckerResponse(200, ['Cache-Control' => 'private, max-age=0']);
 
     expect($checker->isResponseCacheable($response))->toBeFalse();
 });
 
 it('parses Cache-Control directives case-insensitively (e.g. "NO-STORE" rejected the same as "no-store")', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $response = makeResponse(200, ['Cache-Control' => 'NO-STORE']);
+    $response = makeCacheCheckerResponse(200, ['Cache-Control' => 'NO-STORE']);
 
     expect($checker->isResponseCacheable($response))->toBeFalse();
 });
 
 it('accepts responses with a Cache-Control header that contains only public directives (e.g. "public, max-age=600")', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $response = makeResponse(200, ['Cache-Control' => 'public, max-age=600']);
+    $response = makeCacheCheckerResponse(200, ['Cache-Control' => 'public, max-age=600']);
 
     expect($checker->isResponseCacheable($response))->toBeTrue();
 });
@@ -218,7 +218,7 @@ it('returns the Cacheable attribute when the matched route declares it', functio
     };
 
     $checker = makeChecker($matcher);
-    $request = makeRequest('GET', '/products');
+    $request = makeCacheCheckerRequest('GET', '/products');
 
     $attribute = $checker->getRouteAttribute($request);
 
@@ -243,14 +243,14 @@ it('returns null when the matched route has no Cacheable attribute', function ()
     };
 
     $checker = makeChecker($matcher);
-    $request = makeRequest('GET', '/products/1');
+    $request = makeCacheCheckerRequest('GET', '/products/1');
 
     expect($checker->getRouteAttribute($request))->toBeNull();
 });
 
 it('returns null when no route matches the request', function (): void {
     $checker = makeChecker(makeNullMatcher());
-    $request = makeRequest('GET', '/unknown');
+    $request = makeCacheCheckerRequest('GET', '/unknown');
 
     expect($checker->getRouteAttribute($request))->toBeNull();
 });
@@ -271,7 +271,7 @@ it('returns null when the matched route\'s controller class does not exist (defe
     };
 
     $checker = makeChecker($matcher);
-    $request = makeRequest('GET', '/test');
+    $request = makeCacheCheckerRequest('GET', '/test');
 
     expect($checker->getRouteAttribute($request))->toBeNull();
 });
@@ -292,7 +292,7 @@ it('returns null when the matched route\'s action method does not exist on the c
     };
 
     $checker = makeChecker($matcher);
-    $request = makeRequest('GET', '/test');
+    $request = makeCacheCheckerRequest('GET', '/test');
 
     expect($checker->getRouteAttribute($request))->toBeNull();
 });

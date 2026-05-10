@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../helpers.php';
+
 use Marko\PageCache\CacheKey;
 use Marko\PageCache\CachePolicy;
 use Marko\Routing\Http\Response;
@@ -11,12 +13,12 @@ $tmpDir = null;
 beforeEach(function () use (&$tmpDir): void {
     $tmpDir = sys_get_temp_dir() . '/page-cache-tags-test-' . bin2hex(random_bytes(8));
     $this->tmpDir = $tmpDir;
-    $this->driver = createDriver($tmpDir);
+    $this->driver = createPageCacheFileDriver($tmpDir);
 });
 
 afterEach(function () use (&$tmpDir): void {
     if ($tmpDir !== null && is_dir($tmpDir)) {
-        cleanupDir($tmpDir);
+        cleanupPageCacheDir($tmpDir);
     }
     $tmpDir = null;
 });

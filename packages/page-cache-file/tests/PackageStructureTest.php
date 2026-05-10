@@ -48,7 +48,7 @@ it('binds PageCacheInterface to FilePageCacheDriver in module.php', function ():
 });
 
 it('registers the package as a path repository in the root composer.json', function (): void {
-    $rootComposerPath = dirname(__DIR__, 2) . '/composer.json';
+    $rootComposerPath = dirname(__DIR__, 3) . '/composer.json';
     $composer = json_decode(file_get_contents($rootComposerPath), true);
 
     $repositories = $composer['repositories'] ?? [];
@@ -58,7 +58,7 @@ it('registers the package as a path repository in the root composer.json', funct
 });
 
 it('declares marko/page-cache-file as a self.version requirement in the root composer.json', function (): void {
-    $rootComposerPath = dirname(__DIR__, 2) . '/composer.json';
+    $rootComposerPath = dirname(__DIR__, 3) . '/composer.json';
     $composer = json_decode(file_get_contents($rootComposerPath), true);
 
     expect($composer['require'])->toHaveKey('marko/page-cache-file')
@@ -66,7 +66,7 @@ it('declares marko/page-cache-file as a self.version requirement in the root com
 });
 
 it('registers the package test autoload as Marko\PageCache\File\Tests\\ in the root composer.json autoload-dev', function (): void {
-    $rootComposerPath = dirname(__DIR__, 2) . '/composer.json';
+    $rootComposerPath = dirname(__DIR__, 3) . '/composer.json';
     $composer = json_decode(file_get_contents($rootComposerPath), true);
 
     expect($composer['autoload-dev']['psr-4'])->toHaveKey('Marko\\PageCache\\File\\Tests\\')
