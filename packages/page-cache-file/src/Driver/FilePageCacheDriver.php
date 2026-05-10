@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\PageCache\File\Driver;
 
 use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Core\Path\ProjectPaths;
 use Marko\PageCache\CacheKey;
 use Marko\PageCache\CachePolicy;
 use Marko\PageCache\Config\PageCacheConfig;
@@ -17,6 +18,7 @@ readonly class FilePageCacheDriver implements PageCacheInterface
 {
     public function __construct(
         private PageCacheConfig $pageCache,
+        private ProjectPaths $paths,
     ) {}
 
     /**
@@ -173,9 +175,28 @@ readonly class FilePageCacheDriver implements PageCacheInterface
     /**
      * @throws ConfigNotFoundException
      */
+    private function resolvedPath(): string
+    {
+        $path = $this->pageCache->path();
+
+        if ($this->isAbsolutePath($path)) {
+            return rtrim($path, '/');
+        }
+
+        return rtrim($this->paths->base, '/') . '/' . trim($path, '/');
+    }
+
+    private function isAbsolutePath(string $path): bool
+    {
+        return str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1;
+    }
+
+    /**
+     * @throws ConfigNotFoundException
+     */
     private function pagesDir(): string
     {
-        return $this->pageCache->path() . '/pages';
+        return $this->resolvedPath() . '/pages';
     }
 
     /**
@@ -198,7 +219,7 @@ readonly class FilePageCacheDriver implements PageCacheInterface
      */
     private function tagsDir(): string
     {
-        return $this->pageCache->path() . '/tags';
+        return $this->resolvedPath() . '/tags';
     }
 
     /**

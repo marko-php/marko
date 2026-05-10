@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Path\ProjectPaths;
 use Marko\PageCache\Config\PageCacheConfig;
 use Marko\PageCache\File\Driver\FilePageCacheDriver;
 use Marko\Routing\Http\Request;
@@ -28,7 +29,12 @@ function createTestRequest(string $method = 'GET', string $path = '/test', array
 
 function createPageCacheFileDriver(string $tmpDir, int $defaultTtl = 3600): FilePageCacheDriver
 {
-    return new FilePageCacheDriver(createPageCacheConfig($tmpDir, $defaultTtl));
+    return new FilePageCacheDriver(createPageCacheConfig($tmpDir, $defaultTtl), new ProjectPaths($tmpDir));
+}
+
+function createPageCacheFileDriverWithPaths(string $path, int $defaultTtl, ProjectPaths $paths): FilePageCacheDriver
+{
+    return new FilePageCacheDriver(createPageCacheConfig($path, $defaultTtl), $paths);
 }
 
 function cleanupPageCacheDir(string $dir): void

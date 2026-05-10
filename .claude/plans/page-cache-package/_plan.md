@@ -101,6 +101,7 @@ none
 | 013 | README for `marko/page-cache` | 002, 003, 004, 005, 006, 007, 008, 009 | completed |
 | 014 | README for `marko/page-cache-file` | 010, 011, 012 | completed |
 | 015 | Register `PageCacheMiddleware` in `Application::GLOBAL_MIDDLEWARE` | 008 | completed |
+| 016 | Secure storage path resolution in `FilePageCacheDriver` (resolve relative paths against project base) | 011, 012 | completed |
 
 ## Architecture Notes
 
