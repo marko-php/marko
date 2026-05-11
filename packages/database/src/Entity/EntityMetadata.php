@@ -17,6 +17,7 @@ readonly class EntityMetadata
      * @param array<ColumnMetadata> $columns
      * @param array<IndexMetadata> $indexes
      * @param array<string, RelationshipMetadata> $relationships Property name => metadata
+     * @param array<class-string<EntityExtension>, ExtensionMetadata> $extensions Extension class => metadata
      */
     public function __construct(
         public string $entityClass,
@@ -26,6 +27,7 @@ readonly class EntityMetadata
         public array $columns = [],
         public array $indexes = [],
         public array $relationships = [],
+        public array $extensions = [],
     ) {}
 
     /**

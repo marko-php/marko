@@ -22,6 +22,8 @@ use Marko\Database\Events\EntityDeleting;
 use Marko\Database\Events\EntityUpdated;
 use Marko\Database\Events\EntityUpdating;
 use Marko\Database\Exceptions\BatchInsertException;
+use Marko\Database\Exceptions\EntityException;
+use Marko\Database\Exceptions\MissingPrimaryKeyException;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
@@ -63,7 +65,7 @@ abstract class Repository implements RepositoryInterface
      * @param EventDispatcherInterface|null $eventDispatcher Optional event dispatcher for lifecycle events
      * @param RelationshipLoader|null $relationshipLoader Optional loader for eager-loading relationships
      *
-     * @throws RepositoryException
+     * @throws EntityException|MissingPrimaryKeyException|RepositoryException
      */
     public function __construct(
         protected readonly ConnectionInterface $connection,
@@ -108,6 +110,8 @@ abstract class Repository implements RepositoryInterface
      * Find an entity by its primary key.
      *
      * @return TEntity|null
+     *
+     * @throws EntityException
      */
     public function find(
         int|string $id,
@@ -141,7 +145,8 @@ abstract class Repository implements RepositoryInterface
      * Find an entity by its primary key or throw an exception.
      *
      * @return TEntity
-     * @throws RepositoryException When entity is not found
+     *
+     * @throws EntityException|RepositoryException When entity is not found
      */
     public function findOrFail(
         int|string $id,
@@ -159,6 +164,8 @@ abstract class Repository implements RepositoryInterface
      * Find all entities in the repository.
      *
      * @return EntityCollection<TEntity>
+     *
+     * @throws EntityException
      */
     public function findAll(): EntityCollection
     {
@@ -184,6 +191,8 @@ abstract class Repository implements RepositoryInterface
      *
      * @param array<string, mixed> $criteria Column-value pairs to match
      * @return EntityCollection<TEntity>
+     *
+     * @throws EntityException
      */
     public function findBy(
         array $criteria,
@@ -224,6 +233,8 @@ abstract class Repository implements RepositoryInterface
      * Find a single entity matching the given criteria.
      *
      * @return TEntity|null
+     *
+     * @throws EntityException
      */
     public function findOneBy(
         array $criteria,
@@ -234,7 +245,7 @@ abstract class Repository implements RepositoryInterface
     /**
      * Save an entity (insert or update).
      *
-     * @throws RepositoryException
+     * @throws EntityException|RepositoryException
      */
     public function save(
         Entity $entity,
@@ -256,7 +267,8 @@ abstract class Repository implements RepositoryInterface
      * Insert multiple entities in a single multi-row INSERT statement.
      *
      * @param array<Entity> $entities
-     * @throws BatchInsertException|RepositoryException
+     *
+     * @throws BatchInsertException|EntityException|RepositoryException
      */
     public function insertBatch(array $entities): void
     {
@@ -366,12 +378,17 @@ abstract class Repository implements RepositoryInterface
 
     /**
      * Extract row data for a single entity, excluding auto-increment PK if null.
+     * Includes all extension columns.
      *
      * @return array<string, mixed>
+     *
+     * @throws EntityException|RepositoryException
      */
     private function extractBatchRow(Entity $entity): array
     {
         $data = $this->hydrator->extract($entity, $this->metadata);
+        $extensionData = $this->hydrator->extractExtensions($entity, $this->metadata);
+        $data = array_merge($data, $extensionData);
 
         $pkProperty = $this->metadata->getPrimaryKeyProperty();
         if ($pkProperty?->isAutoIncrement === true) {
@@ -484,6 +501,8 @@ abstract class Repository implements RepositoryInterface
      * falls back to a raw SQL query. The raw-SQL path exists because Repository
      * can be constructed without a QueryBuilderFactory (e.g. in lightweight
      * contexts that only need find/save), and we must not break that contract.
+     *
+     * @throws RepositoryException
      */
     public function count(): int
     {
@@ -503,6 +522,8 @@ abstract class Repository implements RepositoryInterface
 
     /**
      * Check if an entity with the given ID exists.
+     *
+     * @throws EntityException
      */
     public function exists(
         int|string $id,
@@ -514,6 +535,8 @@ abstract class Repository implements RepositoryInterface
      * Check if any entity matches the given criteria.
      *
      * @param array<string, mixed> $criteria Column-value pairs to match
+     *
+     * @throws EntityException
      */
     public function existsBy(
         array $criteria,
@@ -549,11 +572,15 @@ abstract class Repository implements RepositoryInterface
 
     /**
      * Insert a new entity.
+     *
+     * @throws EntityException|RepositoryException
      */
     protected function insert(
         Entity $entity,
     ): void {
         $data = $this->hydrator->extract($entity, $this->metadata);
+        $extensionData = $this->hydrator->extractExtensions($entity, $this->metadata);
+        $data = array_merge($data, $extensionData);
 
         // Remove primary key if it's auto-increment and null
         $pkProperty = $this->metadata->getPrimaryKeyProperty();
@@ -589,7 +616,11 @@ abstract class Repository implements RepositoryInterface
     /**
      * Update an existing entity.
      *
-     * Only dirty (changed) fields are updated to minimize database operations.
+     * Only dirty (changed) base fields are included, but ALL extension columns are
+     * always written. Skips the UPDATE entirely only when both conditions hold:
+     * the base entity has no dirty properties AND no extensions are registered.
+     *
+     * @throws EntityException|RepositoryException
      */
     protected function update(
         Entity $entity,
@@ -600,8 +631,10 @@ abstract class Repository implements RepositoryInterface
         // Get the dirty properties
         $dirtyProperties = $this->hydrator->getDirtyProperties($entity, $this->metadata);
 
-        // If no fields are dirty, skip the update
-        if (count($dirtyProperties) === 0) {
+        $hasExtensions = count($this->metadata->extensions) > 0;
+
+        // Skip the UPDATE only when there are no dirty base properties AND no extensions
+        if (count($dirtyProperties) === 0 && !$hasExtensions) {
             return;
         }
 
@@ -616,6 +649,15 @@ abstract class Repository implements RepositoryInterface
 
             // Convert value to DB format
             $data[$columnName] = $this->convertToDbValue($value);
+        }
+
+        // Always include all extension columns in the UPDATE
+        $extensionData = $this->hydrator->extractExtensions($entity, $this->metadata);
+        $data = array_merge($data, $extensionData);
+
+        // If still nothing to update (dirty=0 and extensions produced no columns), skip
+        if (count($data) === 0) {
+            return;
         }
 
         // Get the primary key value for the WHERE clause
@@ -670,6 +712,8 @@ abstract class Repository implements RepositoryInterface
      * Supports dot-notation for nested eager loading (e.g. 'comments.author').
      *
      * @param Entity[] $entities
+     *
+     * @throws EntityException
      */
     private function eagerLoadRelationships(array $entities): void
     {
@@ -683,6 +727,8 @@ abstract class Repository implements RepositoryInterface
 
     /**
      * Validate that ENTITY_CLASS constant is defined.
+     *
+     * @throws RepositoryException
      */
     private function validateEntityClass(): void
     {
@@ -693,6 +739,8 @@ abstract class Repository implements RepositoryInterface
 
     /**
      * Validate that the entity is of the correct type.
+     *
+     * @throws RepositoryException
      */
     private function validateEntityType(
         Entity $entity,

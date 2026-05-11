@@ -206,6 +206,133 @@ class EntityException extends MarkoException
     }
 
     /**
+     * @param class-string $extensionClass
+     */
+    public static function extensionHasNoColumns(string $extensionClass): self
+    {
+        return new self(
+            message: "Extension class '$extensionClass' must have at least one #[Column] property",
+            context: "Attempting to parse extension class '$extensionClass' for database schema",
+            suggestion: 'Add at least one public property with #[Column] attribute',
+        );
+    }
+
+    /**
+     * @param class-string $extensionClass
+     */
+    public static function extensionDeclaresPrimaryKey(
+        string $extensionClass,
+        string $propertyName,
+    ): self {
+        return new self(
+            message: "Extension class '$extensionClass' must not declare a primary key column (property '$propertyName')",
+            context: "Parsing extension class '$extensionClass'",
+            suggestion: 'Remove primaryKey: true from the #[Column] attribute — extensions add columns to an existing table without redefining the primary key',
+        );
+    }
+
+    /**
+     * @param class-string $extensionClass
+     */
+    public static function extensionDeclaresRelationship(
+        string $extensionClass,
+        string $propertyName,
+    ): self {
+        return new self(
+            message: "Extension class '$extensionClass' must not declare relationship attributes (property '$propertyName')",
+            context: "Parsing extension class '$extensionClass'",
+            suggestion: 'Remove relationship attributes (#[HasOne], #[HasMany], #[BelongsTo], #[BelongsToMany]) from extension classes — define relationships on the base entity instead',
+        );
+    }
+
+    /**
+     * @param class-string $extensionClass
+     */
+    public static function extensionDeclaresTableAttribute(string $extensionClass): self
+    {
+        return new self(
+            message: "Extension class '$extensionClass' must not declare #[Table] or #[Index] attributes",
+            context: "Parsing extension class '$extensionClass'",
+            suggestion: 'Remove #[Table] and #[Index] attributes from extension classes — they share the table defined on the base entity',
+        );
+    }
+
+    /**
+     * @param class-string $extensionClass
+     */
+    public static function extensionMissingExtensionOf(string $extensionClass): self
+    {
+        return new self(
+            message: "Extension class '$extensionClass' is missing #[ExtensionOf] attribute",
+            context: "Attempting to parse extension class '$extensionClass' for database schema",
+            suggestion: 'Add #[ExtensionOf(entityClass: YourEntity::class)] attribute to the extension class',
+        );
+    }
+
+    /**
+     * @param class-string $extensionClass
+     */
+    public static function notExtendsEntityExtension(string $extensionClass): self
+    {
+        return new self(
+            message: "Class '$extensionClass' must extend EntityExtension base class",
+            context: "Attempting to parse class '$extensionClass' as an entity extension",
+            suggestion: 'Extend Marko\\Database\\Entity\\EntityExtension in your extension class',
+        );
+    }
+
+    /**
+     * @param class-string $extensionClass
+     * @param class-string $targetClass
+     */
+    public static function extensionOfTargetNotEntity(
+        string $extensionClass,
+        string $targetClass,
+    ): self {
+        return new self(
+            message: "Extension class '$extensionClass' declares #[ExtensionOf('$targetClass')] but '$targetClass' does not extend Entity",
+            context: "Discovering extension class '$extensionClass'",
+            suggestion: "Ensure '$targetClass' extends Marko\\Database\\Entity\\Entity",
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     * @param class-string $sourceA
+     * @param class-string $sourceB
+     */
+    public static function extensionColumnConflict(
+        string $entityClass,
+        string $columnName,
+        string $sourceA,
+        string $sourceB,
+    ): self {
+        return new self(
+            message: "Column name '$columnName' is declared by both '$sourceA' and '$sourceB' for entity '$entityClass'",
+            context: "Merging extension metadata for entity '$entityClass'",
+            suggestion: 'Rename the column in one of the sources to avoid the conflict',
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     * @param class-string $sourceA
+     * @param class-string $sourceB
+     */
+    public static function extensionPropertyConflict(
+        string $entityClass,
+        string $propertyName,
+        string $sourceA,
+        string $sourceB,
+    ): self {
+        return new self(
+            message: "Property name '$propertyName' is declared by both '$sourceA' and '$sourceB' for entity '$entityClass'",
+            context: "Merging extension metadata for entity '$entityClass'",
+            suggestion: 'Rename the property in one of the sources to avoid the conflict',
+        );
+    }
+
+    /**
      * @param class-string $entityClass
      */
     public static function undefinedRelationship(

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Marko\Database\Entity\EntityExtensionRegistry;
+
 describe('Package Scaffolding', function (): void {
     it('creates marko/database package with valid composer.json', function (): void {
         $composerPath = dirname(__DIR__) . '/composer.json';
@@ -152,5 +154,29 @@ describe('Package Scaffolding', function (): void {
             ->and($content)->toContain('DB_PASSWORD')
             // Driver-specific notes
             ->and($content)->toContain('PostgreSQL');
+    });
+
+    it('has a README that documents entity extensions', function (): void {
+        $readmePath = dirname(__DIR__) . '/README.md';
+
+        expect(file_exists($readmePath))->toBeTrue()
+            ->and(file_get_contents($readmePath))->toContain('EntityExtension');
+    });
+
+    it('registers EntityExtensionRegistry as a singleton in the container', function (): void {
+        $module = require dirname(__DIR__) . '/module.php';
+
+        expect($module)->toBeArray()
+            ->and($module)->toHaveKey('singletons')
+            ->and($module['singletons'])->toHaveKey(EntityExtensionRegistry::class)
+            ->and($module['singletons'][EntityExtensionRegistry::class])->toBe(EntityExtensionRegistry::class);
+    });
+
+    it('declares a boot callback in module.php that populates the registry from discovery', function (): void {
+        $module = require dirname(__DIR__) . '/module.php';
+
+        expect($module)->toBeArray()
+            ->and($module)->toHaveKey('boot')
+            ->and($module['boot'])->toBeCallable();
     });
 });

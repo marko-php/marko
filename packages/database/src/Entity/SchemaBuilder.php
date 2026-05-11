@@ -21,9 +21,18 @@ class SchemaBuilder
     public function build(
         EntityMetadata $metadata,
     ): Table {
+        $extensionColumns = array_merge(
+            ...array_map(
+                fn (ExtensionMetadata $ext) => $ext->columns,
+                array_values($metadata->extensions),
+            ),
+        );
+
+        $allColumns = array_merge($metadata->columns, $extensionColumns);
+
         $columns = array_map(
             fn (ColumnMetadata $col) => $this->buildColumn($col),
-            $metadata->columns,
+            $allColumns,
         );
 
         $indexes = array_map(
@@ -31,7 +40,7 @@ class SchemaBuilder
             $metadata->indexes,
         );
 
-        $foreignKeys = $this->buildForeignKeys($metadata->tableName, $metadata->columns);
+        $foreignKeys = $this->buildForeignKeys($metadata->tableName, $allColumns);
 
         return new Table(
             name: $metadata->tableName,

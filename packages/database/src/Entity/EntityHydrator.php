@@ -8,6 +8,7 @@ use BackedEnum;
 use DateTimeImmutable;
 use JsonException;
 use Marko\Database\Exceptions\EntityException;
+use Marko\Database\Exceptions\RepositoryException;
 use ReflectionClass;
 use WeakMap;
 
@@ -35,6 +36,8 @@ class EntityHydrator
      * @param class-string<T> $entityClass
      * @param array<string, mixed> $row Database row with column names as keys
      * @return T
+     *
+     * @throws EntityException
      */
     public function hydrate(
         string $entityClass,
@@ -44,7 +47,6 @@ class EntityHydrator
         $reflection = new ReflectionClass($entityClass);
         $entity = $reflection->newInstanceWithoutConstructor();
 
-        $columnToProperty = $metadata->getColumnToPropertyMap();
         $originalValues = [];
 
         foreach ($metadata->properties as $propName => $propMeta) {
@@ -65,6 +67,41 @@ class EntityHydrator
 
         $this->originalValues[$entity] = $originalValues;
 
+        foreach ($metadata->extensions as $extensionMeta) {
+            $columnNames = array_map(
+                fn (PropertyMetadata $p) => $p->columnName,
+                $extensionMeta->properties,
+            );
+
+            $presentColumns = array_filter(
+                $columnNames,
+                fn (string $col) => array_key_exists($col, $row),
+            );
+
+            if (count($presentColumns) === 0) {
+                continue;
+            }
+
+            $extReflection = new ReflectionClass($extensionMeta->extensionClass);
+            $extensionInstance = $extReflection->newInstanceWithoutConstructor();
+
+            foreach ($extensionMeta->properties as $propName => $propMeta) {
+                $columnName = $propMeta->columnName;
+
+                if (!array_key_exists($columnName, $row)) {
+                    continue;
+                }
+
+                $dbValue = $row[$columnName];
+                $phpValue = $this->convertToPhpType($dbValue, $propMeta);
+
+                $property = $extReflection->getProperty($propName);
+                $property->setValue($extensionInstance, $phpValue);
+            }
+
+            $entity->setExtension($extensionInstance);
+        }
+
         return $entity;
     }
 
@@ -72,6 +109,8 @@ class EntityHydrator
      * Extract entity data to a row array for persistence.
      *
      * @return array<string, mixed> Column name => value
+     *
+     * @throws EntityException
      */
     public function extract(
         Entity $entity,
@@ -85,6 +124,55 @@ class EntityHydrator
             $value = $property->getValue($entity);
 
             $row[$propMeta->columnName] = $this->convertToDbValue($value, $propMeta);
+        }
+
+        return $row;
+    }
+
+    /**
+     * Extract extension column data from an entity for persistence.
+     *
+     * Applies the null/default/error policy when an extension is not attached:
+     * - Column nullable → use null
+     * - Column non-nullable AND PropertyMetadata::$default is not null → use that default
+     * - Column non-nullable AND no default → throw RepositoryException
+     *
+     * @return array<string, mixed> Column name => DB value for all extension columns
+     *
+     * @throws RepositoryException|EntityException
+     */
+    public function extractExtensions(
+        Entity $entity,
+        EntityMetadata $metadata,
+    ): array {
+        $row = [];
+
+        foreach ($metadata->extensions as $extensionClass => $extensionMeta) {
+            $extension = $entity->extension($extensionClass);
+
+            if ($extension !== null) {
+                $extReflection = new ReflectionClass($extension);
+
+                foreach ($extensionMeta->properties as $propName => $propMeta) {
+                    $property = $extReflection->getProperty($propName);
+                    $value = $property->isInitialized($extension) ? $property->getValue($extension) : null;
+                    $row[$propMeta->columnName] = $this->convertToDbValue($value, $propMeta);
+                }
+            } else {
+                foreach ($extensionMeta->properties as $propMeta) {
+                    if ($propMeta->nullable) {
+                        $row[$propMeta->columnName] = null;
+                    } elseif ($propMeta->default !== null) {
+                        $row[$propMeta->columnName] = $propMeta->default;
+                    } else {
+                        throw RepositoryException::extensionRequired(
+                            $metadata->entityClass,
+                            $extensionClass,
+                            $propMeta->columnName,
+                        );
+                    }
+                }
+            }
         }
 
         return $row;

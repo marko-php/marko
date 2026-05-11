@@ -9,8 +9,10 @@ use DateTimeImmutable;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityExtension;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
+use Marko\Database\Entity\ExtensionMetadata;
 use Marko\Database\Entity\PropertyMetadata;
 
 #[Table('users')]
@@ -35,9 +37,11 @@ class HydratorTestUser extends Entity
 #[Table('posts')]
 class HydratorTestPost extends Entity
 {
+    /** @noinspection PhpUnused - Entity property for structural definition */
     #[Column(primaryKey: true, autoIncrement: true)]
     public ?int $id = null;
 
+    /** @noinspection PhpUnused - Entity property for structural definition */
     #[Column]
     public string $title;
 
@@ -58,9 +62,11 @@ enum PostStatus: string
 #[Table('articles')]
 class HydratorTestArticle extends Entity
 {
+    /** @noinspection PhpUnused - Entity property for structural definition */
     #[Column(primaryKey: true, autoIncrement: true)]
     public ?int $id = null;
 
+    /** @noinspection PhpUnused - Entity property for structural definition */
     #[Column]
     public string $title;
 
@@ -74,6 +80,7 @@ class HydratorTestArticle extends Entity
 #[Table('items')]
 class HydratorSnakeCaseEntity extends Entity
 {
+    /** @noinspection PhpUnused - Entity property for structural definition */
     #[Column(primaryKey: true)]
     public int $id;
 
@@ -86,6 +93,46 @@ class HydratorSnakeCaseEntity extends Entity
     #[Column]
     public int $totalCount;
 }
+
+// ── Extension fixtures ─────────────────────────────────────────────────────────
+
+class HydratorExtProfile extends EntityExtension
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public string $phone;
+
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public ?string $website = null;
+}
+
+class HydratorExtMetrics extends EntityExtension
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public int $viewCount;
+
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public float $rating;
+}
+
+enum HydratorExtStatus: string
+{
+    case Active = 'active';
+    case Inactive = 'inactive';
+}
+
+class HydratorExtTyped extends EntityExtension
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public ?string $nullableField = null;
+
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public array $jsonField;
+
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public HydratorExtStatus $statusField;
+}
+
+// ── Tests ──────────────────────────────────────────────────────────────────────
 
 it('creates EntityHydrator class', function (): void {
     $hydrator = new EntityHydrator();
@@ -616,3 +663,366 @@ function createSnakeCaseMetadata(): EntityMetadata
         ],
     );
 }
+
+function createProfileExtensionMetadata(): ExtensionMetadata
+{
+    return new ExtensionMetadata(
+        extensionClass: HydratorExtProfile::class,
+        entityClass: HydratorTestUser::class,
+        properties: [
+            'phone' => new PropertyMetadata(
+                name: 'phone',
+                columnName: 'phone',
+                type: 'string',
+                nullable: false,
+            ),
+            'website' => new PropertyMetadata(
+                name: 'website',
+                columnName: 'website',
+                type: 'string',
+                nullable: true,
+            ),
+        ],
+    );
+}
+
+function createMetricsExtensionMetadata(): ExtensionMetadata
+{
+    return new ExtensionMetadata(
+        extensionClass: HydratorExtMetrics::class,
+        entityClass: HydratorTestUser::class,
+        properties: [
+            'viewCount' => new PropertyMetadata(
+                name: 'viewCount',
+                columnName: 'view_count',
+                type: 'int',
+                nullable: false,
+            ),
+            'rating' => new PropertyMetadata(
+                name: 'rating',
+                columnName: 'rating',
+                type: 'float',
+                nullable: false,
+            ),
+        ],
+    );
+}
+
+function createTypedExtensionMetadata(): ExtensionMetadata
+{
+    return new ExtensionMetadata(
+        extensionClass: HydratorExtTyped::class,
+        entityClass: HydratorTestUser::class,
+        properties: [
+            'nullableField' => new PropertyMetadata(
+                name: 'nullableField',
+                columnName: 'nullable_field',
+                type: 'string',
+                nullable: true,
+            ),
+            'jsonField' => new PropertyMetadata(
+                name: 'jsonField',
+                columnName: 'json_field',
+                type: 'array',
+                nullable: false,
+                columnType: 'json',
+            ),
+            'statusField' => new PropertyMetadata(
+                name: 'statusField',
+                columnName: 'status_field',
+                type: HydratorExtStatus::class,
+                nullable: false,
+                enumClass: HydratorExtStatus::class,
+            ),
+        ],
+    );
+}
+
+function createUserMetadataWithProfileExtension(): EntityMetadata
+{
+    $base = createUserMetadata();
+
+    return new EntityMetadata(
+        entityClass: $base->entityClass,
+        tableName: $base->tableName,
+        primaryKey: $base->primaryKey,
+        properties: $base->properties,
+        extensions: [
+            HydratorExtProfile::class => createProfileExtensionMetadata(),
+        ],
+    );
+}
+
+function createUserMetadataWithBothExtensions(): EntityMetadata
+{
+    $base = createUserMetadata();
+
+    return new EntityMetadata(
+        entityClass: $base->entityClass,
+        tableName: $base->tableName,
+        primaryKey: $base->primaryKey,
+        properties: $base->properties,
+        extensions: [
+            HydratorExtProfile::class => createProfileExtensionMetadata(),
+            HydratorExtMetrics::class => createMetricsExtensionMetadata(),
+        ],
+    );
+}
+
+function createUserMetadataWithTypedExtension(): EntityMetadata
+{
+    $base = createUserMetadata();
+
+    return new EntityMetadata(
+        entityClass: $base->entityClass,
+        tableName: $base->tableName,
+        primaryKey: $base->primaryKey,
+        properties: $base->properties,
+        extensions: [
+            HydratorExtTyped::class => createTypedExtensionMetadata(),
+        ],
+    );
+}
+
+// ── Extension hydration tests ──────────────────────────────────────────────────
+
+it('attaches a hydrated extension instance to the entity when its columns are in the row', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadataWithProfileExtension();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => null,
+        'phone' => '555-1234',
+        'website' => 'https://example.com',
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+
+    expect($entity->extension(HydratorExtProfile::class))->toBeInstanceOf(HydratorExtProfile::class);
+});
+
+it('hydrates extension property values from the DB row', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadataWithProfileExtension();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => null,
+        'phone' => '555-1234',
+        'website' => 'https://example.com',
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+    $profile = $entity->extension(HydratorExtProfile::class);
+
+    expect($profile->phone)->toBe('555-1234')
+        ->and($profile->website)->toBe('https://example.com');
+});
+
+it('skips attaching an extension when none of its columns are present in the row', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadataWithProfileExtension();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => null,
+        // no phone or website columns
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+
+    expect($entity->extension(HydratorExtProfile::class))->toBeNull();
+});
+
+it('partially hydrates an extension when only some of its columns are present in the row', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadataWithProfileExtension();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => null,
+        'phone' => '555-1234',
+        // website column is absent
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+    $profile = $entity->extension(HydratorExtProfile::class);
+
+    expect($profile)->toBeInstanceOf(HydratorExtProfile::class)
+        ->and($profile->phone)->toBe('555-1234');
+});
+
+it('hydrates multiple extensions from the same row independently', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadataWithBothExtensions();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => null,
+        'phone' => '555-1234',
+        'website' => 'https://example.com',
+        'view_count' => 42,
+        'rating' => 4.5,
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+    $profile = $entity->extension(HydratorExtProfile::class);
+    $metrics = $entity->extension(HydratorExtMetrics::class);
+
+    expect($profile)->toBeInstanceOf(HydratorExtProfile::class)
+        ->and($metrics)->toBeInstanceOf(HydratorExtMetrics::class)
+        ->and($profile->phone)->toBe('555-1234')
+        ->and($metrics->viewCount)->toBe(42);
+});
+
+it('converts extension column values to the correct PHP types', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadataWithBothExtensions();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => null,
+        'phone' => 555,
+        'website' => null,
+        'view_count' => '99',
+        'rating' => '3.7',
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+    $profile = $entity->extension(HydratorExtProfile::class);
+    $metrics = $entity->extension(HydratorExtMetrics::class);
+
+    expect($profile->phone)->toBe('555')
+        ->toBeString()
+        ->and($metrics->viewCount)->toBe(99)
+        ->toBeInt()
+        ->and($metrics->rating)->toBe(3.7)
+        ->toBeFloat();
+});
+
+it('converts nullable extension column values to null', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadataWithProfileExtension();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => null,
+        'phone' => '555-1234',
+        'website' => null,
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+    $profile = $entity->extension(HydratorExtProfile::class);
+
+    expect($profile->website)->toBeNull();
+});
+
+it('converts JSON extension column values to arrays', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadataWithTypedExtension();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => null,
+        'nullable_field' => 'hello',
+        'json_field' => '{"key":"value","count":3}',
+        'status_field' => 'active',
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+    $typed = $entity->extension(HydratorExtTyped::class);
+
+    expect($typed->jsonField)->toBe(['key' => 'value', 'count' => 3])
+        ->toBeArray();
+});
+
+it('converts BackedEnum extension column values via the enum class', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadataWithTypedExtension();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => null,
+        'nullable_field' => null,
+        'json_field' => '[]',
+        'status_field' => 'inactive',
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+    $typed = $entity->extension(HydratorExtTyped::class);
+
+    expect($typed->statusField)->toBe(HydratorExtStatus::Inactive)
+        ->toBeInstanceOf(BackedEnum::class);
+});
+
+it('does not affect base entity hydration when no extensions are registered', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadata();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => 'Developer',
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+
+    expect($entity->id)->toBe(1)
+        ->and($entity->name)->toBe('John Doe')
+        ->and($entity->email)->toBe('john@example.com')
+        ->and($entity->isActive)->toBeTrue()
+        ->and($entity->bio)->toBe('Developer')
+        ->and($entity->extension(HydratorExtProfile::class))->toBeNull();
+});
+
+it('does not include extension property values in the originalValues dirty-tracking map', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createUserMetadataWithProfileExtension();
+
+    $row = [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email_address' => 'john@example.com',
+        'is_active' => 1,
+        'bio' => null,
+        'phone' => '555-1234',
+        'website' => 'https://example.com',
+    ];
+
+    $entity = $hydrator->hydrate(HydratorTestUser::class, $row, $metadata);
+    $originalValues = $hydrator->getOriginalValues($entity);
+
+    expect($originalValues)->toHaveKeys(['id', 'name', 'email', 'isActive', 'bio'])
+        ->not->toHaveKey('phone')
+        ->not->toHaveKey('website');
+});

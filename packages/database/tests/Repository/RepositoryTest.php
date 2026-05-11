@@ -1442,6 +1442,7 @@ function createSpyConnection(array &$sqlLog, array $queryResults = []): Connecti
 #[Table('orders')]
 class OrderWithCustomPk extends Entity
 {
+    /** @noinspection PhpUnused - Entity property for structural definition */
     #[Column(primaryKey: true, autoIncrement: true, name: 'order_uuid')]
     public ?int $orderUuid = null;
 
@@ -1602,4 +1603,349 @@ it('Repository::count() delegates to the builder without duplicating logic', fun
     expect($builderCountCalled)->toBeTrue()
         ->and($rawQueryCalled)->toBeFalse()
         ->and($result)->toBe(7);
+});
+
+// ── Extension INSERT/UPDATE tests ───────────────────────────────────────────────
+
+use DateTimeImmutable;
+use Marko\Database\Attributes\ExtensionOf;
+use Marko\Database\Entity\EntityExtension;
+use Marko\Database\Entity\EntityExtensionMetadataFactory;
+use Marko\Database\Entity\EntityExtensionRegistry;
+
+#[Table('ext_users')]
+class ExtUser extends Entity
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    #[Column]
+    public string $name = '';
+}
+
+#[ExtensionOf(entityClass: ExtUser::class)]
+class ExtUserProfile extends EntityExtension
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public string $phone = '';
+
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public ?string $website = null;
+}
+
+#[ExtensionOf(entityClass: ExtUser::class)]
+class ExtUserMetrics extends EntityExtension
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public int $viewCount = 0;
+}
+
+enum ExtUserStatus: string
+{
+    case Active = 'active';
+    case Inactive = 'inactive';
+}
+
+#[ExtensionOf(entityClass: ExtUser::class)]
+class ExtUserRequired extends EntityExtension
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public string $requiredField;
+}
+
+#[ExtensionOf(entityClass: ExtUser::class)]
+class ExtUserTyped extends EntityExtension
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public ExtUserStatus $status = ExtUserStatus::Active;
+
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public ?DateTimeImmutable $activatedAt = null;
+}
+
+class ExtUserRepository extends Repository
+{
+    protected const string ENTITY_CLASS = ExtUser::class;
+}
+
+/**
+ * Build an EntityMetadataFactory with the given extension classes registered for ExtUser.
+ *
+ * @param class-string<EntityExtension> ...$extensionClasses
+ */
+function makeExtMetadataFactory(string ...$extensionClasses): EntityMetadataFactory
+{
+    $registry = new EntityExtensionRegistry();
+    foreach ($extensionClasses as $extensionClass) {
+        $registry->register(ExtUser::class, $extensionClass);
+    }
+
+    return new EntityMetadataFactory($registry, new EntityExtensionMetadataFactory());
+}
+
+it('includes extension columns in the INSERT statement when extension is attached', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog);
+
+    $metadataFactory = makeExtMetadataFactory(ExtUserProfile::class);
+    $hydrator = new EntityHydrator();
+    $repository = new ExtUserRepository($connection, $metadataFactory, $hydrator);
+
+    $user = new ExtUser();
+    $user->name = 'Alice';
+
+    $profile = new ExtUserProfile();
+    $profile->phone = '555-0001';
+    $profile->website = 'https://alice.example.com';
+    $user->setExtension($profile);
+
+    $repository->save($user);
+
+    $insertEntry = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'INSERT')))[0];
+    expect($insertEntry['sql'])->toContain('phone')
+        ->and($insertEntry['sql'])->toContain('website')
+        ->and($insertEntry['bindings'])->toContain('555-0001')
+        ->and($insertEntry['bindings'])->toContain('https://alice.example.com');
+});
+
+it('uses null for nullable extension columns when extension is not attached', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog);
+
+    $metadataFactory = makeExtMetadataFactory(ExtUserProfile::class);
+    $hydrator = new EntityHydrator();
+    $repository = new ExtUserRepository($connection, $metadataFactory, $hydrator);
+
+    $user = new ExtUser();
+    $user->name = 'Bob';
+    // No extension attached — website is nullable, phone is non-nullable but has a default ''
+
+    $repository->save($user);
+
+    $insertEntry = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'INSERT')))[0];
+    expect($insertEntry['sql'])->toContain('website')
+        ->and($insertEntry['bindings'])->toContain(null);
+});
+
+it('uses declared default for non-nullable extension columns when extension is not attached', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog);
+
+    $metadataFactory = makeExtMetadataFactory(ExtUserMetrics::class);
+    $hydrator = new EntityHydrator();
+    $repository = new ExtUserRepository($connection, $metadataFactory, $hydrator);
+
+    $user = new ExtUser();
+    $user->name = 'Carol';
+    // No extension attached — viewCount is non-nullable but has default 0
+
+    $repository->save($user);
+
+    $insertEntry = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'INSERT')))[0];
+    expect($insertEntry['sql'])->toContain('view_count')
+        ->and($insertEntry['bindings'])->toContain(0);
+});
+
+it('throws when a non-nullable extension column has no default and no extension is attached', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog);
+
+    $metadataFactory = makeExtMetadataFactory(ExtUserRequired::class);
+    $hydrator = new EntityHydrator();
+    $repository = new ExtUserRepository($connection, $metadataFactory, $hydrator);
+
+    $user = new ExtUser();
+    $user->name = 'Dave';
+    // No extension attached — requiredField is non-nullable with no default
+
+    $repository->save($user);
+})->throws(RepositoryException::class, 'extension');
+
+it('includes extension columns in the UPDATE statement', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog, [
+        [['id' => 1, 'name' => 'Alice']],
+    ]);
+
+    $metadataFactory = makeExtMetadataFactory(ExtUserProfile::class);
+    $hydrator = new EntityHydrator();
+    $repository = new ExtUserRepository($connection, $metadataFactory, $hydrator);
+
+    // Hydrate entity to make it non-new
+    $user = $repository->find(1);
+    $user->name = 'Alice Updated';
+
+    $profile = new ExtUserProfile();
+    $profile->phone = '555-9999';
+    $profile->website = null;
+    $user->setExtension($profile);
+
+    $repository->save($user);
+
+    $updateEntry = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'UPDATE')))[0];
+    expect($updateEntry['sql'])->toContain('phone')
+        ->and($updateEntry['sql'])->toContain('website')
+        ->and($updateEntry['bindings'])->toContain('555-9999');
+});
+
+it('still issues an UPDATE for extension columns when no base entity properties are dirty', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog, [
+        [['id' => 1, 'name' => 'Alice']],
+    ]);
+
+    $metadataFactory = makeExtMetadataFactory(ExtUserProfile::class);
+    $hydrator = new EntityHydrator();
+    $repository = new ExtUserRepository($connection, $metadataFactory, $hydrator);
+
+    // Hydrate entity — no changes to base properties (no dirty)
+    $user = $repository->find(1);
+
+    // Attach extension
+    $profile = new ExtUserProfile();
+    $profile->phone = '555-8888';
+    $profile->website = 'https://example.com';
+    $user->setExtension($profile);
+
+    $repository->save($user);
+
+    $updateEntries = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'UPDATE')));
+    expect($updateEntries)->toHaveCount(1)
+        ->and($updateEntries[0]['sql'])->toContain('phone')
+        ->and($updateEntries[0]['bindings'])->toContain('555-8888');
+});
+
+it('does not issue an UPDATE when there are no dirty base properties and no extensions registered', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog, [
+        [['id' => 1, 'name' => 'Alice', 'email_address' => 'alice@example.com', 'is_active' => 1]],
+    ]);
+
+    // UserRepository has NO extensions registered
+    $metadataFactory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator();
+    $repository = new UserRepository($connection, $metadataFactory, $hydrator);
+
+    // Hydrate entity — no changes made (no dirty)
+    $user = $repository->find(1);
+
+    $repository->save($user);
+
+    $updateEntries = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'UPDATE')));
+    expect($updateEntries)->toHaveCount(0);
+});
+
+it('includes extension columns in batch insert', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog);
+
+    $metadataFactory = makeExtMetadataFactory(ExtUserProfile::class);
+    $hydrator = new EntityHydrator();
+    $repository = new ExtUserRepository($connection, $metadataFactory, $hydrator);
+
+    $user1 = new ExtUser();
+    $user1->name = 'Alice';
+    $profile1 = new ExtUserProfile();
+    $profile1->phone = '555-0001';
+    $profile1->website = 'https://alice.example.com';
+    $user1->setExtension($profile1);
+
+    $user2 = new ExtUser();
+    $user2->name = 'Bob';
+    $profile2 = new ExtUserProfile();
+    $profile2->phone = '555-0002';
+    $profile2->website = null;
+    $user2->setExtension($profile2);
+
+    $repository->insertBatch([$user1, $user2]);
+
+    $insertEntry = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'INSERT')))[0];
+    expect($insertEntry['sql'])->toContain('phone')
+        ->and($insertEntry['sql'])->toContain('website')
+        ->and($insertEntry['bindings'])->toContain('555-0001')
+        ->and($insertEntry['bindings'])->toContain('555-0002');
+});
+
+it('writes correct extension values for multiple extensions on the same entity', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog);
+
+    $metadataFactory = makeExtMetadataFactory(ExtUserProfile::class, ExtUserMetrics::class);
+    $hydrator = new EntityHydrator();
+    $repository = new ExtUserRepository($connection, $metadataFactory, $hydrator);
+
+    $user = new ExtUser();
+    $user->name = 'Alice';
+
+    $profile = new ExtUserProfile();
+    $profile->phone = '555-1111';
+    $profile->website = 'https://alice.example.com';
+    $user->setExtension($profile);
+
+    $metrics = new ExtUserMetrics();
+    $metrics->viewCount = 42;
+    $user->setExtension($metrics);
+
+    $repository->save($user);
+
+    $insertEntry = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'INSERT')))[0];
+    expect($insertEntry['sql'])->toContain('phone')
+        ->and($insertEntry['sql'])->toContain('view_count')
+        ->and($insertEntry['bindings'])->toContain('555-1111')
+        ->and($insertEntry['bindings'])->toContain(42);
+});
+
+it('converts BackedEnum extension property values to backing values before persisting', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog);
+
+    $metadataFactory = makeExtMetadataFactory(ExtUserTyped::class);
+    $hydrator = new EntityHydrator();
+    $repository = new ExtUserRepository($connection, $metadataFactory, $hydrator);
+
+    $user = new ExtUser();
+    $user->name = 'Alice';
+
+    $typed = new ExtUserTyped();
+    $typed->status = ExtUserStatus::Inactive;
+    $typed->activatedAt = null;
+    $user->setExtension($typed);
+
+    $repository->save($user);
+
+    $insertEntry = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'INSERT')))[0];
+    expect($insertEntry['sql'])->toContain('status')
+        ->and($insertEntry['bindings'])->toContain('inactive')
+        ->and($insertEntry['bindings'])->not->toContain(ExtUserStatus::Inactive);
+});
+
+it('converts DateTimeImmutable extension property values to formatted strings before persisting', function (): void {
+    $sqlLog = [];
+    $connection = createSpyConnection($sqlLog);
+
+    $metadataFactory = makeExtMetadataFactory(ExtUserTyped::class);
+    $hydrator = new EntityHydrator();
+    $repository = new ExtUserRepository($connection, $metadataFactory, $hydrator);
+
+    $user = new ExtUser();
+    $user->name = 'Alice';
+
+    $typed = new ExtUserTyped();
+    $typed->status = ExtUserStatus::Active;
+    $typed->activatedAt = new DateTimeImmutable('2025-01-15 12:30:00');
+    $user->setExtension($typed);
+
+    $repository->save($user);
+
+    $insertEntry = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'INSERT')))[0];
+    expect($insertEntry['sql'])->toContain('activated_at')
+        ->and($insertEntry['bindings'])->toContain('2025-01-15 12:30:00')
+        ->and($insertEntry['bindings'])->not->toContain($typed->activatedAt);
 });

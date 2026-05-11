@@ -20,6 +20,11 @@ use ReflectionProperty;
 
 /**
  * Parses entity classes and extracts metadata from attributes.
+ *
+ * The $registry and $extensionMetadataFactory constructor parameters are nullable so that
+ * existing call-sites using `new EntityMetadataFactory()` without arguments continue to
+ * compile and pass. When null, no extension metadata is merged. The DI container injects
+ * real instances in production via autowiring.
  */
 class EntityMetadataFactory
 {
@@ -35,16 +40,25 @@ class EntityMetadataFactory
     ];
 
     /**
+     * Parsed metadata cache, keyed by entity class name.
+     * NOTE: This cache is not invalidated when extensions are added after first parse.
+     * Boot ordering ensures the registry is fully populated before any parse call.
+     *
      * @var array<class-string, EntityMetadata>
      */
     private array $cache = [];
+
+    public function __construct(
+        private readonly ?EntityExtensionRegistry $registry = null,
+        private readonly ?EntityExtensionMetadataFactory $extensionMetadataFactory = null,
+    ) {}
 
     /**
      * Parse an entity class and return its metadata.
      *
      * @param class-string $entityClass
      *
-     * @throws EntityException
+     * @throws EntityException|MissingPrimaryKeyException
      */
     public function parse(
         string $entityClass,
@@ -168,6 +182,8 @@ class EntityMetadataFactory
             );
         }
 
+        $extensions = $this->buildExtensions($entityClass, $properties, $columns);
+
         $metadata = new EntityMetadata(
             entityClass: $entityClass,
             tableName: $tableName,
@@ -176,6 +192,7 @@ class EntityMetadataFactory
             columns: $columns,
             indexes: $indexes,
             relationships: $relationships,
+            extensions: $extensions,
         );
 
         $this->cache[$entityClass] = $metadata;
@@ -189,6 +206,82 @@ class EntityMetadataFactory
     public function clearCache(): void
     {
         $this->cache = [];
+    }
+
+    /**
+     * Build the extension map for an entity, detecting column and property conflicts.
+     *
+     * @param class-string $entityClass
+     * @param array<string, PropertyMetadata> $baseProperties
+     * @param array<ColumnMetadata> $baseColumns
+     * @return array<class-string<EntityExtension>, ExtensionMetadata>
+     *
+     * @throws EntityException
+     */
+    private function buildExtensions(
+        string $entityClass,
+        array $baseProperties,
+        array $baseColumns,
+    ): array {
+        if ($this->registry === null || $this->extensionMetadataFactory === null) {
+            return [];
+        }
+
+        $extensionClasses = $this->registry->getExtensions($entityClass);
+
+        if (count($extensionClasses) === 0) {
+            return [];
+        }
+
+        // Build column name => source class map from base entity
+        $seenColumnNames = [];
+        foreach ($baseColumns as $col) {
+            $seenColumnNames[$col->name] = $entityClass;
+        }
+
+        // Build property name => source class map from base entity
+        $seenPropertyNames = [];
+        foreach (array_keys($baseProperties) as $propName) {
+            $seenPropertyNames[$propName] = $entityClass;
+        }
+
+        $extensions = [];
+
+        foreach ($extensionClasses as $extensionClass) {
+            $extMetadata = $this->extensionMetadataFactory->parse($extensionClass);
+
+            // Check property name conflicts
+            foreach (array_keys($extMetadata->properties) as $propName) {
+                if (isset($seenPropertyNames[$propName])) {
+                    throw EntityException::extensionPropertyConflict(
+                        $entityClass,
+                        $propName,
+                        $seenPropertyNames[$propName],
+                        $extensionClass,
+                    );
+                }
+
+                $seenPropertyNames[$propName] = $extensionClass;
+            }
+
+            // Check column name conflicts
+            foreach ($extMetadata->columns as $col) {
+                if (isset($seenColumnNames[$col->name])) {
+                    throw EntityException::extensionColumnConflict(
+                        $entityClass,
+                        $col->name,
+                        $seenColumnNames[$col->name],
+                        $extensionClass,
+                    );
+                }
+
+                $seenColumnNames[$col->name] = $extensionClass;
+            }
+
+            $extensions[$extensionClass] = $extMetadata;
+        }
+
+        return $extensions;
     }
 
     /**

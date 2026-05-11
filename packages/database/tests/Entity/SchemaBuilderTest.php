@@ -5,15 +5,59 @@ declare(strict_types=1);
 namespace Marko\Database\Tests\Entity;
 
 use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\ExtensionOf;
 use Marko\Database\Attributes\Index;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
+use Marko\Database\Entity\EntityExtension;
+use Marko\Database\Entity\EntityExtensionMetadataFactory;
+use Marko\Database\Entity\EntityExtensionRegistry;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\SchemaBuilder;
 use Marko\Database\Schema\Column as SchemaColumn;
 use Marko\Database\Schema\Index as SchemaIndex;
 use Marko\Database\Schema\IndexType;
 use Marko\Database\Schema\Table as SchemaTable;
+
+// ── Fixture classes ────────────────────────────────────────────────────────────
+
+#[Table('sb_products')]
+class SbProduct extends Entity
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public int $id;
+
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column(length: 255)]
+    public string $name;
+}
+
+#[ExtensionOf(entityClass: SbProduct::class)]
+class SbProductExtensionA extends EntityExtension
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column(length: 100)]
+    public string $color;
+}
+
+#[ExtensionOf(entityClass: SbProduct::class)]
+class SbProductExtensionB extends EntityExtension
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public ?string $sku;
+}
+
+#[ExtensionOf(entityClass: SbProduct::class)]
+class SbProductExtensionWithFk extends EntityExtension
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column(references: 'categories.id', onDelete: 'CASCADE')]
+    public int $categoryId;
+}
+
+// ── Setup ──────────────────────────────────────────────────────────────────────
 
 beforeEach(function (): void {
     $this->metadataFactory = new EntityMetadataFactory();
@@ -156,4 +200,78 @@ it('builds ForeignKey objects from column references', function (): void {
         ->and($table->foreignKeys[0]->referencedColumns)->toBe(['id'])
         ->and($table->foreignKeys[0]->onDelete)->toBe('CASCADE')
         ->and($table->foreignKeys[0]->onUpdate)->toBe('SET NULL');
+});
+
+it('includes columns from multiple extensions', function (): void {
+    $registry = new EntityExtensionRegistry();
+    $registry->register(SbProduct::class, SbProductExtensionA::class);
+    $registry->register(SbProduct::class, SbProductExtensionB::class);
+
+    $factory = new EntityMetadataFactory($registry, new EntityExtensionMetadataFactory());
+    $metadata = $factory->parse(SbProduct::class);
+    $table = $this->schemaBuilder->build($metadata);
+
+    expect($table->columns)->toHaveCount(4)
+        ->and($table->columns[0]->name)->toBe('id')
+        ->and($table->columns[1]->name)->toBe('name')
+        ->and($table->columns[2]->name)->toBe('color')
+        ->and($table->columns[3]->name)->toBe('sku')
+        ->and($table->columns[3]->nullable)->toBeTrue();
+});
+
+it('produces the same Table as before when no extensions are registered', function (): void {
+    $registry = new EntityExtensionRegistry();
+    $factory = new EntityMetadataFactory($registry, new EntityExtensionMetadataFactory());
+    $metadata = $factory->parse(SbProduct::class);
+    $table = $this->schemaBuilder->build($metadata);
+
+    expect($table->columns)->toHaveCount(2)
+        ->and($table->columns[0]->name)->toBe('id')
+        ->and($table->columns[1]->name)->toBe('name')
+        ->and($table->foreignKeys)->toHaveCount(0);
+});
+
+it('includes foreign key constraints from extension columns that reference other tables', function (): void {
+    $registry = new EntityExtensionRegistry();
+    $registry->register(SbProduct::class, SbProductExtensionWithFk::class);
+
+    $factory = new EntityMetadataFactory($registry, new EntityExtensionMetadataFactory());
+    $metadata = $factory->parse(SbProduct::class);
+    $table = $this->schemaBuilder->build($metadata);
+
+    expect($table->foreignKeys)->toHaveCount(1)
+        ->and($table->foreignKeys[0]->name)->toBe('fk_sb_products_category_id')
+        ->and($table->foreignKeys[0]->columns)->toBe(['category_id'])
+        ->and($table->foreignKeys[0]->referencedTable)->toBe('categories')
+        ->and($table->foreignKeys[0]->referencedColumns)->toBe(['id'])
+        ->and($table->foreignKeys[0]->onDelete)->toBe('CASCADE');
+});
+
+it('builds correct column types for extension columns', function (): void {
+    $registry = new EntityExtensionRegistry();
+    $registry->register(SbProduct::class, SbProductExtensionA::class);
+
+    $factory = new EntityMetadataFactory($registry, new EntityExtensionMetadataFactory());
+    $metadata = $factory->parse(SbProduct::class);
+    $table = $this->schemaBuilder->build($metadata);
+
+    expect($table->columns[2])->toBeInstanceOf(SchemaColumn::class)
+        ->and($table->columns[2]->name)->toBe('color')
+        ->and($table->columns[2]->type)->toBe('varchar')
+        ->and($table->columns[2]->length)->toBe(100)
+        ->and($table->columns[2]->nullable)->toBeFalse();
+});
+
+it('includes extension columns in the built Table schema', function (): void {
+    $registry = new EntityExtensionRegistry();
+    $registry->register(SbProduct::class, SbProductExtensionA::class);
+
+    $factory = new EntityMetadataFactory($registry, new EntityExtensionMetadataFactory());
+    $metadata = $factory->parse(SbProduct::class);
+    $table = $this->schemaBuilder->build($metadata);
+
+    expect($table->columns)->toHaveCount(3)
+        ->and($table->columns[0]->name)->toBe('id')
+        ->and($table->columns[1]->name)->toBe('name')
+        ->and($table->columns[2]->name)->toBe('color');
 });

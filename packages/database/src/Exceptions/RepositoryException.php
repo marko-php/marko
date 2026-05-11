@@ -96,4 +96,20 @@ class RepositoryException extends MarkoException
             suggestion: 'Check the entity class for #[HasOne], #[HasMany], or #[BelongsTo] attributes and use the correct property name',
         );
     }
+
+    /**
+     * @param class-string $entityClass
+     * @param class-string $extensionClass
+     */
+    public static function extensionRequired(
+        string $entityClass,
+        string $extensionClass,
+        string $columnName,
+    ): self {
+        return new self(
+            message: "Cannot persist '$entityClass': extension '$extensionClass' is required for column '$columnName' but is not attached",
+            context: "Persisting entity of class '$entityClass'",
+            suggestion: "Attach the '$extensionClass' extension to the entity before saving, or make column '$columnName' nullable or provide a default value",
+        );
+    }
 }
