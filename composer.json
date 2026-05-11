@@ -214,6 +214,10 @@
         },
         {
             "type": "path",
+            "url": "packages/page-cache-entity"
+        },
+        {
+            "type": "path",
             "url": "packages/page-cache-file"
         },
         {
@@ -378,6 +382,7 @@
         "marko/notification": "self.version",
         "marko/notification-database": "self.version",
         "marko/page-cache": "self.version",
+        "marko/page-cache-entity": "self.version",
         "marko/page-cache-file": "self.version",
         "marko/pagination": "self.version",
         "marko/pubsub": "self.version",
@@ -493,6 +498,7 @@
             "Marko\\Notification\\Tests\\": "packages/notification/tests/",
             "Marko\\Notification\\Database\\Tests\\": "packages/notification-database/tests/",
             "Marko\\PageCache\\Tests\\": "packages/page-cache/tests/",
+            "Marko\\PageCache\\Entity\\Tests\\": "packages/page-cache-entity/tests/",
             "Marko\\PageCache\\File\\Tests\\": "packages/page-cache-file/tests/",
             "Marko\\Pagination\\Tests\\": "packages/pagination/tests/",
             "Marko\\PubSub\\Tests\\": "packages/pubsub/tests/",

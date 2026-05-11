@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Marko\PageCache\Middleware;
 
 use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Core\Container\ContainerInterface;
 use Marko\PageCache\CacheabilityChecker;
 use Marko\PageCache\CachePolicy;
+use Marko\PageCache\Contracts\CacheTagProviderInterface;
 use Marko\PageCache\Contracts\PageCacheInterface;
+use Marko\PageCache\Exceptions\PageCacheException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
@@ -17,6 +20,7 @@ readonly class PageCacheMiddleware implements MiddlewareInterface
     public function __construct(
         private PageCacheInterface $pageCache,
         private CacheabilityChecker $cacheabilityChecker,
+        private ContainerInterface $container,
     ) {}
 
     /**
@@ -26,7 +30,7 @@ readonly class PageCacheMiddleware implements MiddlewareInterface
      * @param callable(Request): Response $next The next middleware or handler in the pipeline
      * @return Response The HTTP response
      *
-     * @throws ConfigNotFoundException
+     * @throws ConfigNotFoundException|PageCacheException
      */
     public function handle(Request $request, callable $next): Response
     {
@@ -52,10 +56,25 @@ readonly class PageCacheMiddleware implements MiddlewareInterface
             return $response;
         }
 
+        $staticTags = $cacheable->tags;
+        $dynamicTags = [];
+
+        if ($cacheable->provider !== null) {
+            $provider = $this->container->get($cacheable->provider);
+
+            if (!$provider instanceof CacheTagProviderInterface) {
+                throw PageCacheException::invalidTagProvider($cacheable->provider);
+            }
+
+            $dynamicTags = $provider->tags($request, $cacheable);
+        }
+
+        $finalTags = array_values(array_unique([...$staticTags, ...$dynamicTags]));
+
         return $this->pageCache->store(
             $request,
             $response,
-            new CachePolicy(ttl: $cacheable->ttl, tags: $cacheable->tags),
+            new CachePolicy(ttl: $cacheable->ttl, tags: $finalTags),
         );
     }
 }

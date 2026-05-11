@@ -9,6 +9,8 @@ Contracts, middleware, and CLI for full-page HTTP response caching --- cache ent
 
 - `marko/page-cache-file` --- File-based (default)
 
+For automatic cache invalidation when entities change, install [marko/page-cache-entity](/docs/packages/page-cache-entity/).
+
 ## Installation
 
 ```bash
@@ -69,6 +71,58 @@ class AuthAwareCacheabilityChecker extends CacheabilityChecker
     }
 }
 ```
+
+### Dynamic Tags from the Request
+
+Use the `provider` parameter on `#[Cacheable]` to append tags at runtime based on the current request:
+
+```php
+use Marko\PageCache\Attributes\Cacheable;
+use Marko\PageCache\Contracts\CacheTagProviderInterface;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
+
+class ProductController
+{
+    #[Get('/products/{id}')]
+    #[Cacheable(ttl: 3600, tags: ['products'], provider: ProductTagProvider::class)]
+    public function show(int $id): Response
+    {
+        return Response::ok($this->productRepository->find($id));
+    }
+}
+
+final class ProductTagProvider implements CacheTagProviderInterface
+{
+    public function tags(Request $request, Cacheable $attribute): array
+    {
+        $id = $request->routeParam('id');
+
+        return ["product-{$id}"];
+    }
+}
+```
+
+Provider tags are appended to the static `tags` array and deduplicated. The provider class is resolved via the DI container.
+
+### Entity-Driven Invalidation
+
+Entities can declare which cache tags they own by implementing `IdentityInterface`:
+
+```php
+use Marko\PageCache\Contracts\IdentityInterface;
+
+class Product implements IdentityInterface
+{
+    public function getIdentities(): array
+    {
+        return ['products', "product-{$this->id}"];
+    }
+}
+```
+
+`IdentityInterface` lives in `marko/page-cache` so that domain entities depend only on the cache contract. The actual auto-purge behaviour --- observing save/delete events and calling `purgeTag()` --- requires installing [marko/page-cache-entity](/docs/packages/page-cache-entity/).
 
 ## Configuration
 
@@ -137,8 +191,36 @@ use Marko\PageCache\Attributes\Cacheable;
 #[Attribute(Attribute::TARGET_METHOD)]
 readonly class Cacheable
 {
-    public function __construct(public int $ttl, public array $tags = []) {}
+    public function __construct(
+        public int $ttl,
+        public array $tags = [],
+        public ?string $provider = null,
+    ) {}
 }
+```
+
+The optional `provider` parameter accepts a class name implementing `CacheTagProviderInterface`. When set, the provider is resolved via the DI container at request time and its returned tags are appended to the static `tags` array (deduplicated).
+
+### CacheTagProviderInterface
+
+Implement this interface to compute cache tags dynamically from the current request. Resolved via the DI container.
+
+```php
+use Marko\PageCache\Contracts\CacheTagProviderInterface;
+use Marko\PageCache\Attributes\Cacheable;
+use Marko\Routing\Http\Request;
+
+public function tags(Request $request, Cacheable $attribute): array;
+```
+
+### IdentityInterface
+
+Implement this interface on domain entities to declare which cache tags they own. Tags returned here are purged when the entity is created, updated, or deleted (requires [marko/page-cache-entity](/docs/packages/page-cache-entity/)).
+
+```php
+use Marko\PageCache\Contracts\IdentityInterface;
+
+public function getIdentities(): array;
 ```
 
 ### CacheKey
@@ -172,11 +254,14 @@ public function ttl(): int;
 
 ### Exceptions
 
-| Exception | Description |
+| Exception / Factory | Description |
 |---|---|
 | `PageCacheException` | Base exception for all page-cache errors |
 | `NoDriverException` | Thrown when no driver is bound to `PageCacheInterface` |
+| `PageCacheException::invalidTagProvider()` | Thrown when the class named in `provider` does not implement `CacheTagProviderInterface` |
+| `PageCacheException::missingEntityBridge()` | Thrown at boot when a class implements `IdentityInterface` but `marko/page-cache-entity` is not installed |
 
 ## Related Packages
 
 - [marko/page-cache-file](/docs/packages/page-cache-file/) --- File-based driver implementation
+- [marko/page-cache-entity](/docs/packages/page-cache-entity/) --- Auto-purge page-cache tags when entities change

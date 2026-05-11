@@ -53,6 +53,58 @@ php marko page-cache:purge https://example.com/products/42
 php marko page-cache:purge products --tag
 ```
 
+### Dynamic tags from the request
+
+Use the `provider` parameter on `#[Cacheable]` to append tags at runtime based on the current request:
+
+```php
+use Marko\PageCache\Attributes\Cacheable;
+use Marko\PageCache\Contracts\CacheTagProviderInterface;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
+
+class ProductController
+{
+    #[Get('/products/{id}')]
+    #[Cacheable(ttl: 3600, tags: ['products'], provider: ProductTagProvider::class)]
+    public function show(int $id): Response
+    {
+        return Response::ok($this->productRepository->find($id));
+    }
+}
+
+final class ProductTagProvider implements CacheTagProviderInterface
+{
+    public function tags(Request $request, Cacheable $attribute): array
+    {
+        $id = $request->routeParam('id');
+
+        return ["product-{$id}"];
+    }
+}
+```
+
+Provider tags are appended to the static `tags` array and deduplicated. The provider class is resolved via the DI container.
+
+### Entity-driven invalidation
+
+Entities can declare which cache tags they own by implementing `IdentityInterface`:
+
+```php
+use Marko\PageCache\Contracts\IdentityInterface;
+
+class Product implements IdentityInterface
+{
+    public function getIdentities(): array
+    {
+        return ['products', "product-{$this->id}"];
+    }
+}
+```
+
+`IdentityInterface` lives in `marko/page-cache` so that domain entities depend only on the cache contract, not on any bridge package. The actual auto-purge behaviour — observing save/delete events and calling `purgeTag()` — requires installing [`marko/page-cache-entity`](../page-cache-entity/README.md).
+
 ### Known limitation
 
 Responses with a `Set-Cookie` header are never cached in v1. This includes responses that set analytics or session cookies — if your response sets any cookie, it bypasses the cache.
@@ -79,8 +131,20 @@ public function clear(): bool;
 #[Attribute(Attribute::TARGET_METHOD)]
 readonly class Cacheable
 {
-    public function __construct(public int $ttl, public array $tags = []) {}
+    public function __construct(public int $ttl, public array $tags = [], public ?string $provider = null) {}
 }
+```
+
+### `CacheTagProviderInterface`
+
+```php
+public function tags(Request $request, Cacheable $attribute): array<string>;
+```
+
+### `IdentityInterface`
+
+```php
+public function getIdentities(): array<string>;
 ```
 
 ### `CacheKey`
