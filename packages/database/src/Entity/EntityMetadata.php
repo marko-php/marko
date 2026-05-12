@@ -8,6 +8,9 @@ namespace Marko\Database\Entity;
  * Holds parsed metadata from entity class attributes.
  *
  * @template T of Entity
+ *
+ * @property ?class-string $extends The parent entity class this entity extends (set on an extender).
+ * @property array<class-string> $extenders The list of extender classes registered on this entity (set on a parent).
  */
 readonly class EntityMetadata
 {
@@ -17,6 +20,8 @@ readonly class EntityMetadata
      * @param array<ColumnMetadata> $columns
      * @param array<IndexMetadata> $indexes
      * @param array<string, RelationshipMetadata> $relationships Property name => metadata
+     * @param ?class-string $extends Parent entity class this entity extends (set on an extender)
+     * @param array<class-string> $extenders List of extender classes registered on this entity (set on a parent)
      */
     public function __construct(
         public string $entityClass,
@@ -26,7 +31,45 @@ readonly class EntityMetadata
         public array $columns = [],
         public array $indexes = [],
         public array $relationships = [],
+        public ?string $extends = null,
+        public array $extenders = [],
     ) {}
+
+    /**
+     * Returns true when this entity extends another entity.
+     */
+    public function isExtender(): bool
+    {
+        return $this->extends !== null;
+    }
+
+    /**
+     * Returns true when this entity has been extended by other entities.
+     */
+    public function isExtended(): bool
+    {
+        return $this->extenders !== [];
+    }
+
+    /**
+     * Returns a new instance with the given extenders list, leaving the original unchanged.
+     *
+     * @param array<class-string> $extenders
+     */
+    public function withExtenders(array $extenders): self
+    {
+        return new self(
+            entityClass: $this->entityClass,
+            tableName: $this->tableName,
+            primaryKey: $this->primaryKey,
+            properties: $this->properties,
+            columns: $this->columns,
+            indexes: $this->indexes,
+            relationships: $this->relationships,
+            extends: $this->extends,
+            extenders: $extenders,
+        );
+    }
 
     /**
      * Get property metadata by property name.

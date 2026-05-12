@@ -20,3 +20,49 @@ it('creates #[Table] attribute with table name parameter', function (): void {
         ->and($tableAttribute)->toBeInstanceOf(Table::class)
         ->and($tableAttribute->name)->toBe('users');
 });
+
+describe('Table', function (): void {
+    it('constructs with name only (no extends)', function (): void {
+        $table = new Table(name: 'users');
+
+        expect($table->name)->toBe('users')
+            ->and($table->extends)->toBeNull();
+    });
+
+    it('constructs with extends only (no name)', function (): void {
+        $table = new Table(extends: 'App\Entity\BaseUser');
+
+        expect($table->name)->toBeNull()
+            ->and($table->extends)->toBe('App\Entity\BaseUser');
+    });
+
+    it('constructs with both name and extends set', function (): void {
+        $table = new Table(name: 'users', extends: 'App\Entity\BaseUser');
+
+        expect($table->name)->toBe('users')
+            ->and($table->extends)->toBe('App\Entity\BaseUser');
+    });
+
+    it('constructs with neither name nor extends (validation deferred to factory)', function (): void {
+        $table = new Table();
+
+        expect($table->name)->toBeNull()
+            ->and($table->extends)->toBeNull();
+    });
+
+    it('exposes extends as nullable class-string property', function (): void {
+        $withExtends = new Table(extends: 'App\Entity\BaseUser');
+        $withoutExtends = new Table(name: 'users');
+
+        expect($withExtends->extends)->toBe('App\Entity\BaseUser')
+            ->and($withoutExtends->extends)->toBeNull();
+    });
+
+    it('exposes name as nullable string property', function (): void {
+        $withName = new Table(name: 'orders');
+        $withoutName = new Table(extends: 'App\Entity\BaseOrder');
+
+        expect($withName->name)->toBe('orders')
+            ->and($withoutName->name)->toBeNull();
+    });
+});

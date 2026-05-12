@@ -76,6 +76,20 @@ class SchemaBuilder
     }
 
     /**
+     * Build ForeignKey schemas from columns with references, using an explicit table name.
+     * Used when merging extender columns under the parent's table name.
+     *
+     * @param array<ColumnMetadata> $columns
+     * @return array<ForeignKey>
+     */
+    public function buildForeignKeysForTable(
+        string $tableName,
+        array $columns,
+    ): array {
+        return $this->buildForeignKeys($tableName, $columns);
+    }
+
+    /**
      * Build ForeignKey schemas from columns with references.
      *
      * @param string $tableName The table name (for generating FK names)

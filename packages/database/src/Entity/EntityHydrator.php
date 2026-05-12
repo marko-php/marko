@@ -23,8 +23,9 @@ class EntityHydrator
      */
     private WeakMap $originalValues;
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly ?EntityMetadataFactory $metadataFactory = null,
+    ) {
         $this->originalValues = new WeakMap();
     }
 
@@ -35,6 +36,8 @@ class EntityHydrator
      * @param class-string<T> $entityClass
      * @param array<string, mixed> $row Database row with column names as keys
      * @return T
+     *
+     * @throws EntityException
      */
     public function hydrate(
         string $entityClass,
@@ -44,7 +47,6 @@ class EntityHydrator
         $reflection = new ReflectionClass($entityClass);
         $entity = $reflection->newInstanceWithoutConstructor();
 
-        $columnToProperty = $metadata->getColumnToPropertyMap();
         $originalValues = [];
 
         foreach ($metadata->properties as $propName => $propMeta) {
@@ -64,6 +66,53 @@ class EntityHydrator
         }
 
         $this->originalValues[$entity] = $originalValues;
+
+        if ($metadata->extenders !== []) {
+            if ($this->metadataFactory === null) {
+                throw EntityException::hydratorRequiresMetadataFactory($entityClass);
+            }
+
+            foreach ($metadata->extenders as $extenderClass) {
+                $extenderMetadata = $this->metadataFactory->parse($extenderClass);
+
+                // Silently skip extenders whose columns are entirely absent from the row
+                $allPresent = array_all(
+                    $extenderMetadata->properties,
+                    fn (PropertyMetadata $propMeta) => array_key_exists($propMeta->columnName, $row),
+                );
+
+                if (!$allPresent) {
+                    continue;
+                }
+
+                $extenderReflection = new ReflectionClass($extenderClass);
+                $companion = $extenderReflection->newInstanceWithoutConstructor();
+                $companionOriginalValues = [];
+
+                foreach ($extenderMetadata->properties as $propName => $propMeta) {
+                    $columnName = $propMeta->columnName;
+
+                    if (!array_key_exists($columnName, $row)) {
+                        continue;
+                    }
+
+                    $dbValue = $row[$columnName];
+                    $phpValue = $this->convertToPhpType($dbValue, $propMeta);
+
+                    if ($phpValue === null && !$propMeta->nullable) {
+                        continue;
+                    }
+
+                    $property = $extenderReflection->getProperty($propName);
+                    $property->setValue($companion, $phpValue);
+
+                    $companionOriginalValues[$propName] = $phpValue;
+                }
+
+                $this->originalValues[$companion] = $companionOriginalValues;
+                $this->attachCompanion($entity, $companion);
+            }
+        }
 
         return $entity;
     }
@@ -85,6 +134,35 @@ class EntityHydrator
             $value = $property->getValue($entity);
 
             $row[$propMeta->columnName] = $this->convertToDbValue($value, $propMeta);
+        }
+
+        return $row;
+    }
+
+    /**
+     * Extract parent entity columns plus all attached companion columns into a single row array.
+     *
+     * Calls extract() for the parent, then extract() for each attached companion using
+     * the companion's own metadata (fetched on-demand via the factory). The existing
+     * extract() signature is unchanged — new behavior lives here.
+     *
+     * @return array<string, mixed> Merged column name => value for parent + all companions
+     *
+     * @throws EntityException
+     */
+    public function extractAll(
+        Entity $parent,
+        EntityMetadata $parentMetadata,
+    ): array {
+        $row = $this->extract($parent, $parentMetadata);
+
+        foreach ($parent->companions() as $companion) {
+            if ($this->metadataFactory === null) {
+                throw EntityException::hydratorRequiresMetadataFactory($parentMetadata->entityClass);
+            }
+
+            $companionMetadata = $this->metadataFactory->parse($companion::class);
+            $row = array_merge($row, $this->extract($companion, $companionMetadata));
         }
 
         return $row;
@@ -149,6 +227,17 @@ class EntityHydrator
         }
 
         $this->originalValues[$entity] = $values;
+    }
+
+    /**
+     * Attach a companion to a parent entity (package-internal, used during hydration).
+     *
+     * Delegates into the shared EntityCompanionStorage so companions set here
+     * are visible through Entity::companions() / Entity::companion().
+     */
+    public function attachCompanion(Entity $entity, Entity $companion): void
+    {
+        EntityCompanionStorage::instance()->attach($entity, $companion);
     }
 
     /**

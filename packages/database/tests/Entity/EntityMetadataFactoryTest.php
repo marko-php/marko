@@ -12,6 +12,17 @@ use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Exceptions\MissingPrimaryKeyException;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\BasicExtenderEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ChainedExtenderEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ExtenderParentEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ExtenderWithAutoIncrementEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ExtenderWithIndexEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ExtenderWithMissingParentEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ExtenderWithNonEntityParentEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ExtenderWithOwnNameEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ExtenderWithPrimaryKeyEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ExtenderWithRelationshipEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\TableWithNeitherNameNorExtendsEntity;
 
 beforeEach(function (): void {
     $this->factory = new EntityMetadataFactory();
@@ -435,6 +446,89 @@ it('includes a suggestion to add #[Column(primaryKey: true)] in the exception me
 
     expect($exception)->not->toBeNull()
         ->and($exception->getSuggestion())->toContain('#[Column(primaryKey: true)]');
+});
+
+it('parses an extender entity and resolves table name from the parent', function (): void {
+    $metadata = $this->factory->parse(BasicExtenderEntity::class);
+
+    expect($metadata->tableName)->toBe('users');
+});
+
+it('populates extends field on extender metadata with the parent class-string', function (): void {
+    $metadata = $this->factory->parse(BasicExtenderEntity::class);
+
+    expect($metadata->extends)->toBe(ExtenderParentEntity::class);
+});
+
+it('throws EntityException when extender declares its own name on Table attribute', function (): void {
+    $this->factory->parse(ExtenderWithOwnNameEntity::class);
+})->throws(EntityException::class, 'declares its own name');
+
+it('throws EntityException when entity declares neither name nor extends on Table attribute', function (): void {
+    $this->factory->parse(TableWithNeitherNameNorExtendsEntity::class);
+})->throws(EntityException::class, 'requires either name: or extends:');
+
+it('throws EntityException when extender declares a primaryKey column', function (): void {
+    $this->factory->parse(ExtenderWithPrimaryKeyEntity::class);
+})->throws(EntityException::class, 'declares a primaryKey column');
+
+it('throws EntityException when extender declares an autoIncrement column', function (): void {
+    $this->factory->parse(ExtenderWithAutoIncrementEntity::class);
+})->throws(EntityException::class, 'declares an autoIncrement column');
+
+it("throws EntityException when extender's parent class does not exist", function (): void {
+    $this->factory->parse(ExtenderWithMissingParentEntity::class);
+})->throws(EntityException::class, 'does not exist');
+
+it("throws EntityException when extender's parent class does not extend Entity", function (): void {
+    $this->factory->parse(ExtenderWithNonEntityParentEntity::class);
+})->throws(EntityException::class, 'does not extend Entity');
+
+it("throws EntityException when extender's parent is itself an extender (no chained extension)", function (): void {
+    $this->factory->parse(ChainedExtenderEntity::class);
+})->throws(EntityException::class, 'Chained extension is not supported');
+
+it('allows extender to declare its own indexes', function (): void {
+    $metadata = $this->factory->parse(ExtenderWithIndexEntity::class);
+
+    expect($metadata->indexes)->toHaveCount(1)
+        ->and($metadata->indexes[0]->name)->toBe('idx_extra');
+});
+
+it('allows extender to declare relationships', function (): void {
+    $metadata = $this->factory->parse(ExtenderWithRelationshipEntity::class);
+
+    expect($metadata->relationships)->toHaveKey('related');
+});
+
+it('caches extender metadata like normal entities', function (): void {
+    $metadata1 = $this->factory->parse(BasicExtenderEntity::class);
+    $metadata2 = $this->factory->parse(BasicExtenderEntity::class);
+
+    expect($metadata1)->toBe($metadata2);
+});
+
+it('linkExtenders replaces the cached parent metadata with one that has extenders populated', function (): void {
+    $this->factory->parse(ExtenderParentEntity::class);
+    $this->factory->linkExtenders(ExtenderParentEntity::class, [BasicExtenderEntity::class]);
+    $updated = $this->factory->parse(ExtenderParentEntity::class);
+
+    expect($updated->extenders)->toBe([BasicExtenderEntity::class]);
+});
+
+it('linkExtenders returns metadata where isExtended is true', function (): void {
+    $this->factory->parse(ExtenderParentEntity::class);
+    $result = $this->factory->linkExtenders(ExtenderParentEntity::class, [BasicExtenderEntity::class]);
+
+    expect($result->isExtended())->toBeTrue();
+});
+
+it('produces a chained-extension error message that names both the extender and its extender-parent and tells the user to extend the root', function (): void {
+    $extender = ChainedExtenderEntity::class;
+    $parent = BasicExtenderEntity::class;
+
+    expect(fn () => $this->factory->parse($extender))
+        ->toThrow(EntityException::class, "Chained extension is not supported. $extender's parent $parent is itself an extender. Extend the root entity directly.");
 });
 
 it('clears cached metadata', function (): void {

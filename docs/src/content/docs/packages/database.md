@@ -68,7 +68,7 @@ class Post extends Entity
 
 | Attribute | Purpose |
 |-----------|---------|
-| `#[Table]` | Defines table name |
+| `#[Table]` | Defines table name (`name:`) or marks an extender (`extends:`) |
 | `#[Column]` | Column configuration (name, primaryKey, autoIncrement, length, type, unique, default, references, onDelete, onUpdate) |
 | `#[Index]` | Composite indexes |
 | `#[HasOne]` | Declares a has-one relationship to another entity |
@@ -207,6 +207,74 @@ ALTER TABLE posts
         GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.status'))) STORED,
     ADD INDEX idx_posts_metadata_status (metadata_status);
 ```
+
+## Table Extension
+
+Any module can add columns to another module's entity table without touching the original entity class. Declare a plain `Entity` subclass with `#[Table(extends: ParentEntity::class)]` — the framework merges its columns/indexes/foreign-keys into the parent's table schema and hydrates the extender from the same row as a *companion* on the parent entity.
+
+```php title="vendor/marko/auth/src/Entity/User.php"
+#[Table(name: 'users')]
+class User extends Entity
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    #[Column]
+    public string $email = '';
+}
+```
+
+```php title="app/billing/Entity/UserBilling.php"
+#[Table(extends: User::class)]
+class UserBilling extends Entity
+{
+    #[Column]
+    public ?string $stripeCustomerId = null;
+
+    #[Column]
+    public ?string $plan = null;
+}
+```
+
+### Reading and writing companions
+
+```php
+// Attach a companion before saving
+$user = new User();
+$user->email = 'a@b.com';
+$user->attachCompanion(new UserBilling(
+    stripeCustomerId: 'cus_abc',
+    plan: 'pro',
+));
+$userRepo->save($user); // single INSERT with parent + extender columns
+
+// Read back — companions hydrate from the same SELECT
+$loaded = $userRepo->find(1);
+$billing = $loaded->companion(UserBilling::class); // typed via @template
+echo $billing?->plan;
+
+// Update — both parent and companion fields in a single UPDATE
+$loaded->email = 'new@b.com';
+$loaded->companion(UserBilling::class)->plan = 'enterprise';
+$userRepo->save($loaded);
+```
+
+### Rules
+
+- Specify exactly one of `name:` or `extends:` on `#[Table]`.
+- An extender may not redeclare the parent's primary key, may not set `autoIncrement` on any column, and may not declare its own `name:`.
+- The parent itself may not be an extender — chained extension is not supported in v1.
+- Two extenders may not add the same column name or index name to a table. This fails loudly at registration with both class-strings in the error.
+- Extenders have no primary key of their own and cannot have a standalone `Repository`. Use the parent's `Repository`.
+- `insertBatch()` does not support entities with companions attached in v1.
+
+### Schema merging
+
+`SchemaRegistry::registerEntities()` is two-pass: it parses all entity classes, separates parents from extenders, then for each parent merges every linked extender's columns, indexes, and foreign keys into the parent's `Table` value object. `migrate:diff` sees the merged table — no extra code or configuration to make schema migrations aware of extender columns.
+
+### Rolling-deploy safety
+
+If an extender's columns are not yet present in the database (the deploy that adds the module has shipped but its migration hasn't run yet), hydration silently skips that extender. No exception, no companion attached. Once the migration runs, hydration begins populating the companion automatically.
 
 ## Data Mapper Pattern
 

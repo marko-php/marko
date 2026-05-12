@@ -10,6 +10,7 @@ use Attribute;
 readonly class Table
 {
     public function __construct(
-        public string $name,
+        public ?string $name = null,
+        public ?string $extends = null,
     ) {}
 }
