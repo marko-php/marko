@@ -82,6 +82,19 @@ class RepositoryException extends MarkoException
     }
 
     /**
+     * @param class-string $entityClass
+     */
+    public static function extenderCannotHaveRepository(
+        string $entityClass,
+    ): self {
+        return new self(
+            message: "Extender '$entityClass' has no primary key of its own and cannot have a standalone Repository. Use the parent entity's Repository.",
+            context: "Constructing a Repository whose ENTITY_CLASS is '$entityClass'",
+            suggestion: "Remove the Repository subclass for '$entityClass' and use the parent entity's Repository instead",
+        );
+    }
+
+    /**
      * @param class-string $repositoryClass
      * @param class-string $entityClass
      */

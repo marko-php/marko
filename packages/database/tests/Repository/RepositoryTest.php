@@ -13,6 +13,7 @@ use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Database\Exceptions\BatchInsertException;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
@@ -49,6 +50,55 @@ class UserRepository extends Repository
  * A repository without ENTITY_CLASS constant for testing error handling.
  */
 class InvalidRepository extends Repository {}
+
+// --- Companion / extender fixtures ---
+
+/** Parent entity that can be extended by RepositoryTestUserProfile. */
+#[Table('accounts')]
+class RepositoryTestAccount extends Entity
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public string $username;
+}
+
+/** Extender entity — extends RepositoryTestAccount. */
+#[Table(extends: RepositoryTestAccount::class)]
+class RepositoryTestAccountProfile extends Entity
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public string $bio;
+
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public string $website;
+}
+
+/** Second extender entity — extends RepositoryTestAccount. */
+#[Table(extends: RepositoryTestAccount::class)]
+class RepositoryTestAccountSettings extends Entity
+{
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    #[Column]
+    public bool $notifications;
+}
+
+/** Repository for RepositoryTestAccount. */
+class AccountRepository extends Repository
+{
+    protected const string ENTITY_CLASS = RepositoryTestAccount::class;
+}
+
+/** Repository whose ENTITY_CLASS is an extender — should throw on construction. */
+class ExtenderRepository extends Repository
+{
+    protected const string ENTITY_CLASS = RepositoryTestAccountProfile::class;
+}
 
 // Test RepositoryInterface method definitions
 
@@ -1602,4 +1652,403 @@ it('Repository::count() delegates to the builder without duplicating logic', fun
     expect($builderCountCalled)->toBeTrue()
         ->and($rawQueryCalled)->toBeFalse()
         ->and($result)->toBe(7);
+});
+
+// --- Companion / extender INSERT+UPDATE tests ---
+
+describe('companion insert and update', function (): void {
+    /**
+     * Helper: create a spy connection that records execute() SQL.
+     */
+    function createAccountSpyConnection(array &$sqlLog, int $lastInsertId = 1): ConnectionInterface
+    {
+        return new class ($sqlLog, $lastInsertId) implements ConnectionInterface
+        {
+            public function __construct(
+                private array &$sqlLog,
+                private readonly int $lastInsertId,
+            ) {}
+
+            public function connect(): void {}
+
+            public function disconnect(): void {}
+
+            public function isConnected(): bool
+            {
+                return true;
+            }
+
+            public function query(string $sql, array $bindings = []): array
+            {
+                return [];
+            }
+
+            public function execute(string $sql, array $bindings = []): int
+            {
+                $this->sqlLog[] = ['sql' => $sql, 'bindings' => $bindings];
+
+                return 1;
+            }
+
+            public function prepare(string $sql): StatementInterface
+            {
+                throw new RuntimeException('Not implemented');
+            }
+
+            public function lastInsertId(): int
+            {
+                return $this->lastInsertId;
+            }
+        };
+    }
+
+    it('inserts a parent entity without companions using only parent columns', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'alice';
+
+        $repository->save($account);
+
+        expect($sqlLog)->toHaveCount(1)
+            ->and($sqlLog[0]['sql'])->toContain('INSERT INTO accounts')
+            ->and($sqlLog[0]['sql'])->toContain('username')
+            ->and($sqlLog[0]['sql'])->not->toContain('bio')
+            ->and($sqlLog[0]['sql'])->not->toContain('website');
+    });
+
+    it('inserts a parent entity with one attached companion using merged columns in a single INSERT', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'bob';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Hello';
+        $profile->website = 'https://example.com';
+        $account->attachCompanion($profile);
+
+        $repository->save($account);
+
+        expect($sqlLog)->toHaveCount(1)
+            ->and($sqlLog[0]['sql'])->toContain('INSERT INTO accounts')
+            ->and($sqlLog[0]['sql'])->toContain('username')
+            ->and($sqlLog[0]['sql'])->toContain('bio')
+            ->and($sqlLog[0]['sql'])->toContain('website');
+    });
+
+    it('inserts a parent entity with multiple attached companions using all merged columns', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'carol';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Bio';
+        $profile->website = 'https://carol.dev';
+        $account->attachCompanion($profile);
+
+        $settings = new RepositoryTestAccountSettings();
+        $settings->notifications = true;
+        $account->attachCompanion($settings);
+
+        $repository->save($account);
+
+        expect($sqlLog)->toHaveCount(1)
+            ->and($sqlLog[0]['sql'])->toContain('INSERT INTO accounts')
+            ->and($sqlLog[0]['sql'])->toContain('username')
+            ->and($sqlLog[0]['sql'])->toContain('bio')
+            ->and($sqlLog[0]['sql'])->toContain('website')
+            ->and($sqlLog[0]['sql'])->toContain('notifications');
+    });
+
+    it('sets the auto-increment id on the parent after insert when companions are attached', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog, lastInsertId: 99);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'dave';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Dev';
+        $profile->website = 'https://dave.io';
+        $account->attachCompanion($profile);
+
+        expect($account->id)->toBeNull();
+
+        $repository->save($account);
+
+        expect($account->id)->toBe(99);
+    });
+
+    it('registers originalValues on each attached companion after insert', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'eve';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Original bio';
+        $profile->website = 'https://eve.dev';
+        $account->attachCompanion($profile);
+
+        $repository->save($account);
+
+        // After INSERT, profile should have originalValues registered so it is
+        // not dirty on its own (no net change since insert).
+        $originalValues = $hydrator->getOriginalValues($profile);
+
+        expect($originalValues)->not->toBeEmpty()
+            ->and($originalValues['bio'])->toBe('Original bio');
+    });
+
+    it('updates a parent entity with no companion changes using only parent dirty columns', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'frank';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Bio';
+        $profile->website = 'https://frank.io';
+        $account->attachCompanion($profile);
+
+        // INSERT
+        $repository->save($account);
+        $sqlLog = [];
+
+        // Only change the parent's field
+        $account->username = 'frank-updated';
+        $repository->save($account);
+
+        expect($sqlLog)->toHaveCount(1)
+            ->and($sqlLog[0]['sql'])->toContain('UPDATE accounts')
+            ->and($sqlLog[0]['sql'])->toContain('username')
+            ->and($sqlLog[0]['sql'])->not->toContain('bio')
+            ->and($sqlLog[0]['sql'])->not->toContain('website');
+    });
+
+    it('updates a parent entity and a dirty companion field in a single UPDATE', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'grace';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Old bio';
+        $profile->website = 'https://grace.io';
+        $account->attachCompanion($profile);
+
+        $repository->save($account);
+        $sqlLog = [];
+
+        $account->username = 'grace-updated';
+        $profile->bio = 'New bio';
+        $repository->save($account);
+
+        expect($sqlLog)->toHaveCount(1)
+            ->and($sqlLog[0]['sql'])->toContain('UPDATE accounts')
+            ->and($sqlLog[0]['sql'])->toContain('username')
+            ->and($sqlLog[0]['sql'])->toContain('bio');
+    });
+
+    it('skips a companion update when that companion has no dirty properties', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'hank';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Bio';
+        $profile->website = 'https://hank.io';
+        $account->attachCompanion($profile);
+
+        $repository->save($account);
+        $sqlLog = [];
+
+        // Only change parent, companion is unchanged
+        $account->username = 'hank-updated';
+        $repository->save($account);
+
+        expect($sqlLog)->toHaveCount(1)
+            ->and($sqlLog[0]['sql'])->toContain('UPDATE accounts')
+            ->and($sqlLog[0]['sql'])->not->toContain('bio')
+            ->and($sqlLog[0]['sql'])->not->toContain('website');
+    });
+
+    it('skips a companion update entirely when the companion was never hydrated (rolling deploy)', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        // Simulate a hydrated account with no companion (rolling deploy: extension
+        // columns not yet in the row)
+        $account = new RepositoryTestAccount();
+        $account->username = 'ivan';
+        $hydrator->registerOriginalValues($account, $metadataFactory->parse(RepositoryTestAccount::class));
+        // Manually set id so it's treated as existing (non-new)
+        $reflection = new ReflectionClass($account);
+        $reflection->getProperty('id')->setValue($account, 5);
+
+        $sqlLog = [];
+
+        // Attach a never-hydrated companion (no originalValues)
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Bio';
+        $profile->website = 'https://ivan.io';
+        $account->attachCompanion($profile);
+
+        // Change only parent
+        $account->username = 'ivan-updated';
+        $repository->save($account);
+
+        // Should only update the parent field; companion has no originalValues → skipped
+        expect($sqlLog)->toHaveCount(1)
+            ->and($sqlLog[0]['sql'])->toContain('UPDATE accounts')
+            ->and($sqlLog[0]['sql'])->toContain('username')
+            ->and($sqlLog[0]['sql'])->not->toContain('bio');
+    });
+
+    it('preserves WHERE clause using parent primary key when companions are present', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog, lastInsertId: 42);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'judy';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Bio';
+        $profile->website = 'https://judy.io';
+        $account->attachCompanion($profile);
+
+        $repository->save($account);
+        $sqlLog = [];
+
+        $account->username = 'judy-updated';
+        $profile->bio = 'New bio';
+        $repository->save($account);
+
+        expect($sqlLog)->toHaveCount(1)
+            ->and($sqlLog[0]['sql'])->toContain('WHERE id = ?')
+            ->and($sqlLog[0]['bindings'])->toContain(42);
+    });
+
+    it('updates originalValues snapshot on each companion after update', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'kate';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'First bio';
+        $profile->website = 'https://kate.io';
+        $account->attachCompanion($profile);
+
+        $repository->save($account);
+
+        $profile->bio = 'Second bio';
+        $repository->save($account);
+
+        // After the UPDATE the companion's snapshot should be refreshed; a second
+        // save with no further change should produce no SQL.
+        $sqlLog = [];
+        $repository->save($account);
+
+        expect($sqlLog)->toBeEmpty();
+    });
+
+    it('inserts a parent with a freshly-attached (never-hydrated) companion and registers original values on the companion after INSERT', function (): void {
+        $sqlLog = [];
+        $connection = createAccountSpyConnection($sqlLog, lastInsertId: 7);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'leo';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Fresh bio';
+        $profile->website = 'https://leo.dev';
+        $account->attachCompanion($profile);
+
+        $repository->save($account);
+
+        // The companion was freshly constructed — after INSERT it must have
+        // originalValues so subsequent updates diff correctly.
+        $originalValues = $hydrator->getOriginalValues($profile);
+
+        expect($originalValues)->not->toBeEmpty()
+            ->and($originalValues['bio'])->toBe('Fresh bio')
+            ->and($originalValues['website'])->toBe('https://leo.dev');
+    });
+
+    it('throws RepositoryException when constructing a Repository whose ENTITY_CLASS is an extender', function (): void {
+        $ignored = [];
+        $connection = createAccountSpyConnection($ignored);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+
+        expect(fn () => new ExtenderRepository($connection, $metadataFactory, $hydrator))
+            ->toThrow(RepositoryException::class, 'has no primary key of its own');
+    });
+
+    it('throws BatchInsertException when insertBatch is called with entities that have companions attached', function (): void {
+        $ignored = [];
+        $connection = createAccountSpyConnection($ignored);
+        $metadataFactory = new EntityMetadataFactory();
+        $hydrator = new EntityHydrator($metadataFactory);
+        $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
+
+        $account = new RepositoryTestAccount();
+        $account->username = 'mike';
+
+        $profile = new RepositoryTestAccountProfile();
+        $profile->bio = 'Bio';
+        $profile->website = 'https://mike.io';
+        $account->attachCompanion($profile);
+
+        expect(fn () => $repository->insertBatch([$account]))
+            ->toThrow(BatchInsertException::class, 'companions');
+    });
 });

@@ -11,6 +11,7 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
+use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\PropertyMetadata;
 
 #[Table('users')]
@@ -460,7 +461,409 @@ it('snapshots values by value, not by reference', function (): void {
     expect($originalValues['name'])->toBe('Frank');
 });
 
+// -------------------------------------------------------------------------
+// Fixtures for companion-hydration tests (Task 006)
+// -------------------------------------------------------------------------
+
+#[Table('products')]
+class HydratorTestProduct extends Entity
+{
+    #[Column(primaryKey: true, autoIncrement: true)]
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public ?int $id = null;
+
+    #[Column]
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public string $name;
+}
+
+#[Table(extends: HydratorTestProduct::class)]
+class HydratorTestProductExt extends Entity
+{
+    #[Column]
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public string $sku;
+
+    #[Column]
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public int $stock;
+}
+
+#[Table(extends: HydratorTestProduct::class)]
+class HydratorTestProductPricing extends Entity
+{
+    #[Column]
+    /** @noinspection PhpUnused - Entity property for structural definition */
+    public float $price;
+}
+
+// -------------------------------------------------------------------------
+// Helper functions to create metadata for companion-hydration tests
+// -------------------------------------------------------------------------
+
+function createProductMetadata(): EntityMetadata
+{
+    return new EntityMetadata(
+        entityClass: HydratorTestProduct::class,
+        tableName: 'products',
+        primaryKey: 'id',
+        properties: [
+            'id' => new PropertyMetadata(
+                name: 'id',
+                columnName: 'id',
+                type: 'int',
+                nullable: true,
+                isPrimaryKey: true,
+                isAutoIncrement: true,
+            ),
+            'name' => new PropertyMetadata(
+                name: 'name',
+                columnName: 'name',
+                type: 'string',
+                nullable: false,
+            ),
+        ],
+    );
+}
+
+function createProductMetadataWithExtenders(string ...$extenders): EntityMetadata
+{
+    return new EntityMetadata(
+        entityClass: HydratorTestProduct::class,
+        tableName: 'products',
+        primaryKey: 'id',
+        properties: [
+            'id' => new PropertyMetadata(
+                name: 'id',
+                columnName: 'id',
+                type: 'int',
+                nullable: true,
+                isPrimaryKey: true,
+                isAutoIncrement: true,
+            ),
+            'name' => new PropertyMetadata(
+                name: 'name',
+                columnName: 'name',
+                type: 'string',
+                nullable: false,
+            ),
+        ],
+        extenders: $extenders,
+    );
+}
+
+function createProductExtMetadata(): EntityMetadata
+{
+    return new EntityMetadata(
+        entityClass: HydratorTestProductExt::class,
+        tableName: 'products',
+        primaryKey: '',
+        properties: [
+            'sku' => new PropertyMetadata(
+                name: 'sku',
+                columnName: 'sku',
+                type: 'string',
+                nullable: false,
+            ),
+            'stock' => new PropertyMetadata(
+                name: 'stock',
+                columnName: 'stock',
+                type: 'int',
+                nullable: false,
+            ),
+        ],
+    );
+}
+
+function createProductPricingMetadata(): EntityMetadata
+{
+    return new EntityMetadata(
+        entityClass: HydratorTestProductPricing::class,
+        tableName: 'products',
+        primaryKey: '',
+        properties: [
+            'price' => new PropertyMetadata(
+                name: 'price',
+                columnName: 'price',
+                type: 'float',
+                nullable: false,
+            ),
+        ],
+    );
+}
+
+/**
+ * Build a stub EntityMetadataFactory that returns pre-built metadata for given class-strings.
+ *
+ * @param array<class-string, EntityMetadata> $map
+ */
+function createStubMetadataFactory(array $map): EntityMetadataFactory
+{
+    /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
+    return new class ($map) extends EntityMetadataFactory
+    {
+        /**
+         * @param array<class-string, EntityMetadata> $map
+         */
+        /** @noinspection PhpMissingParentConstructorInspection */
+        public function __construct(private readonly array $map) {}
+
+        public function parse(string $entityClass): EntityMetadata
+        {
+            return $this->map[$entityClass];
+        }
+    };
+}
+
+// -------------------------------------------------------------------------
+// Companion-hydration tests (Task 006)
+// -------------------------------------------------------------------------
+
+it('hydrates only the parent when metadata has no extenders', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createProductMetadata(); // extenders: []
+
+    $row = ['id' => 1, 'name' => 'Widget'];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    expect($entity)->toBeInstanceOf(HydratorTestProduct::class)
+        ->and($entity->companions())->toBeEmpty();
+});
+
+it('hydrates the parent and one companion when metadata has one extender', function (): void {
+    $factory = createStubMetadataFactory([
+        HydratorTestProductExt::class => createProductExtMetadata(),
+    ]);
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadataWithExtenders(HydratorTestProductExt::class);
+
+    $row = ['id' => 1, 'name' => 'Widget', 'sku' => 'WGT-01', 'stock' => 50];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    expect($entity->companions())->toHaveCount(1)
+        ->and($entity->companion(HydratorTestProductExt::class))->toBeInstanceOf(HydratorTestProductExt::class);
+});
+
+it('hydrates the parent and multiple companions when metadata has multiple extenders', function (): void {
+    $factory = createStubMetadataFactory([
+        HydratorTestProductExt::class => createProductExtMetadata(),
+        HydratorTestProductPricing::class => createProductPricingMetadata(),
+    ]);
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadataWithExtenders(
+        HydratorTestProductExt::class,
+        HydratorTestProductPricing::class,
+    );
+
+    $row = ['id' => 1, 'name' => 'Widget', 'sku' => 'WGT-01', 'stock' => 50, 'price' => 9.99];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    expect($entity->companions())->toHaveCount(2)
+        ->and($entity->companion(HydratorTestProductExt::class))->toBeInstanceOf(HydratorTestProductExt::class)
+        ->and($entity->companion(HydratorTestProductPricing::class))->toBeInstanceOf(HydratorTestProductPricing::class);
+});
+
+it('attaches each companion under its own class-string in the companions bag', function (): void {
+    $factory = createStubMetadataFactory([
+        HydratorTestProductExt::class => createProductExtMetadata(),
+        HydratorTestProductPricing::class => createProductPricingMetadata(),
+    ]);
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadataWithExtenders(
+        HydratorTestProductExt::class,
+        HydratorTestProductPricing::class,
+    );
+
+    $row = ['id' => 1, 'name' => 'Widget', 'sku' => 'WGT-01', 'stock' => 10, 'price' => 4.99];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+    $companions = $entity->companions();
+
+    expect($companions)->toHaveKey(HydratorTestProductExt::class)
+        ->and($companions)->toHaveKey(HydratorTestProductPricing::class);
+});
+
+it('sets companion property values from the same row data', function (): void {
+    $factory = createStubMetadataFactory([
+        HydratorTestProductExt::class => createProductExtMetadata(),
+    ]);
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadataWithExtenders(HydratorTestProductExt::class);
+
+    $row = ['id' => 7, 'name' => 'Gadget', 'sku' => 'GDG-07', 'stock' => 99];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    /** @var HydratorTestProductExt $ext */
+    $ext = $entity->companion(HydratorTestProductExt::class);
+
+    expect($ext->sku)->toBe('GDG-07')
+        ->and($ext->stock)->toBe(99);
+});
+
+it('silently skips an extender whose columns are entirely missing from the row', function (): void {
+    $factory = createStubMetadataFactory([
+        HydratorTestProductExt::class => createProductExtMetadata(),
+    ]);
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadataWithExtenders(HydratorTestProductExt::class);
+
+    // Row has NO sku or stock columns — extender should be silently skipped
+    $row = ['id' => 1, 'name' => 'Widget'];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    expect($entity->companions())->toBeEmpty()
+        ->and($entity->companion(HydratorTestProductExt::class))->toBeNull();
+});
+
+it('partially hydrates an extender when some columns are present and some are missing', function (): void {
+    $factory = createStubMetadataFactory([
+        HydratorTestProductExt::class => createProductExtMetadata(),
+    ]);
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadataWithExtenders(HydratorTestProductExt::class);
+
+    // Row has ALL extender columns present (sku and stock), but sku is null
+    $row = ['id' => 1, 'name' => 'Widget', 'sku' => null, 'stock' => 5];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    /** @var HydratorTestProductExt $ext */
+    $ext = $entity->companion(HydratorTestProductExt::class);
+
+    // Companion IS attached because all columns were present in the row schema
+    expect($ext)->toBeInstanceOf(HydratorTestProductExt::class)
+        ->and($ext->stock)->toBe(5);
+});
+
+it('does not set originalValues for an extender that was skipped', function (): void {
+    $factory = createStubMetadataFactory([
+        HydratorTestProductExt::class => createProductExtMetadata(),
+    ]);
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadataWithExtenders(HydratorTestProductExt::class);
+
+    // Row has no extender columns → extender is skipped
+    $row = ['id' => 1, 'name' => 'Widget'];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    // No companion attached, so there is nothing to get originalValues for
+    expect($entity->companions())->toBeEmpty();
+});
+
+it('extractAll returns only parent columns when no companions are attached', function (): void {
+    $hydrator = new EntityHydrator();
+    $metadata = createProductMetadata();
+
+    $entity = new HydratorTestProduct();
+    $entity->id = 3;
+    $entity->name = 'Solo';
+
+    $row = $hydrator->extractAll($entity, $metadata);
+
+    expect($row)->toBe(['id' => 3, 'name' => 'Solo']);
+});
+
+it('extractAll includes companion columns when companions are attached', function (): void {
+    $factory = createStubMetadataFactory([
+        HydratorTestProductExt::class => createProductExtMetadata(),
+    ]);
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadataWithExtenders(HydratorTestProductExt::class);
+
+    $row = ['id' => 2, 'name' => 'Duo', 'sku' => 'DUO-02', 'stock' => 20];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    $extracted = $hydrator->extractAll($entity, $metadata);
+
+    expect($extracted)->toBe([
+        'id' => 2,
+        'name' => 'Duo',
+        'sku' => 'DUO-02',
+        'stock' => 20,
+    ]);
+});
+
+it('extractAll uses each companion\'s own metadata for column resolution', function (): void {
+    $factory = createStubMetadataFactory([
+        HydratorTestProductExt::class => createProductExtMetadata(),
+        HydratorTestProductPricing::class => createProductPricingMetadata(),
+    ]);
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadataWithExtenders(
+        HydratorTestProductExt::class,
+        HydratorTestProductPricing::class,
+    );
+
+    $row = ['id' => 5, 'name' => 'Multi', 'sku' => 'MLT-05', 'stock' => 3, 'price' => 19.99];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    $extracted = $hydrator->extractAll($entity, $metadata);
+
+    expect($extracted)->toHaveKey('sku')
+        ->and($extracted)->toHaveKey('stock')
+        ->and($extracted)->toHaveKey('price')
+        ->and($extracted['sku'])->toBe('MLT-05')
+        ->and($extracted['stock'])->toBe(3)
+        ->and($extracted['price'])->toBe(19.99);
+});
+
+it('does not require the EntityMetadataFactory call for entities without extenders (no extra parse)', function (): void {
+    // Factory with no entries — if parse() is called it will throw a key error
+    $factory = createStubMetadataFactory([]);
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadata(); // extenders: []
+
+    $row = ['id' => 1, 'name' => 'Safe'];
+
+    // Should not throw even though factory has no entries
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    expect($entity)->toBeInstanceOf(HydratorTestProduct::class);
+});
+
+it('constructs without the EntityMetadataFactory and hydrates non-extended entities correctly (backward compat)', function (): void {
+    $hydrator = new EntityHydrator(); // no factory
+    $metadata = createProductMetadata(); // extenders: []
+
+    $row = ['id' => 10, 'name' => 'Compat'];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    expect($entity)->toBeInstanceOf(HydratorTestProduct::class)
+        ->and($entity->id)->toBe(10)
+        ->and($entity->name)->toBe('Compat');
+});
+
+it('correctly hydrates companions when the factory has not seen the extender classes before (on-demand parse)', function (): void {
+    // Use a real EntityMetadataFactory — it has never parsed HydratorTestProductExt before
+    $factory = new EntityMetadataFactory();
+    $hydrator = new EntityHydrator($factory);
+    $metadata = createProductMetadataWithExtenders(HydratorTestProductExt::class);
+
+    $row = ['id' => 4, 'name' => 'Fresh', 'sku' => 'FRS-04', 'stock' => 7];
+    /** @var HydratorTestProduct $entity */
+    $entity = $hydrator->hydrate(HydratorTestProduct::class, $row, $metadata);
+
+    /** @var HydratorTestProductExt $ext */
+    $ext = $entity->companion(HydratorTestProductExt::class);
+
+    expect($ext)->toBeInstanceOf(HydratorTestProductExt::class)
+        ->and($ext->sku)->toBe('FRS-04')
+        ->and($ext->stock)->toBe(7);
+});
+
+// -------------------------------------------------------------------------
 // Helper functions to create metadata
+// -------------------------------------------------------------------------
 
 function createUserMetadata(): EntityMetadata
 {

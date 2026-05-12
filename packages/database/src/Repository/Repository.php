@@ -75,6 +75,10 @@ abstract class Repository implements RepositoryInterface
     ) {
         $this->validateEntityClass();
         $this->metadata = $this->metadataFactory->parse(static::ENTITY_CLASS);
+
+        if ($this->metadata->isExtender()) {
+            throw RepositoryException::extenderCannotHaveRepository(static::ENTITY_CLASS);
+        }
     }
 
     /**
@@ -262,6 +266,12 @@ abstract class Repository implements RepositoryInterface
     {
         if (count($entities) === 0) {
             throw BatchInsertException::emptyBatch();
+        }
+
+        foreach ($entities as $entity) {
+            if ($entity->companions() !== []) {
+                throw BatchInsertException::companionsNotSupported($entity::class);
+            }
         }
 
         $firstClass = $entities[0]::class;
@@ -553,13 +563,13 @@ abstract class Repository implements RepositoryInterface
     protected function insert(
         Entity $entity,
     ): void {
-        $data = $this->hydrator->extract($entity, $this->metadata);
+        $data = $this->hydrator->extractAll($entity, $this->metadata);
 
         // Remove primary key if it's auto-increment and null
         $pkProperty = $this->metadata->getPrimaryKeyProperty();
         if ($pkProperty?->isAutoIncrement === true) {
             $pkColumn = $pkProperty->columnName;
-            if ($data[$pkColumn] === null) {
+            if (array_key_exists($pkColumn, $data) && $data[$pkColumn] === null) {
                 unset($data[$pkColumn]);
             }
         }
@@ -584,12 +594,20 @@ abstract class Repository implements RepositoryInterface
         }
 
         $this->hydrator->registerOriginalValues($entity, $this->metadata);
+
+        // Register original values for each freshly-attached companion so that
+        // subsequent update() calls can dirty-track them correctly.
+        foreach ($entity->companions() as $companion) {
+            $companionMetadata = $this->metadataFactory->parse($companion::class);
+            $this->hydrator->registerOriginalValues($companion, $companionMetadata);
+        }
     }
 
     /**
      * Update an existing entity.
      *
      * Only dirty (changed) fields are updated to minimize database operations.
+     * Dirty fields from attached companions are merged into the same UPDATE statement.
      */
     protected function update(
         Entity $entity,
@@ -597,15 +615,10 @@ abstract class Repository implements RepositoryInterface
         $pkColumn = $this->metadata->getPrimaryKeyProperty()->columnName;
         $propertyToColumn = $this->metadata->getPropertyToColumnMap();
 
-        // Get the dirty properties
+        // Get the dirty properties for the parent
         $dirtyProperties = $this->hydrator->getDirtyProperties($entity, $this->metadata);
 
-        // If no fields are dirty, skip the update
-        if (count($dirtyProperties) === 0) {
-            return;
-        }
-
-        // Extract only the dirty field values
+        // Extract only the dirty field values for the parent
         $reflection = new ReflectionClass($entity);
         $data = [];
 
@@ -614,8 +627,46 @@ abstract class Repository implements RepositoryInterface
             $value = $property->getValue($entity);
             $columnName = $propertyToColumn[$propertyName];
 
-            // Convert value to DB format
             $data[$columnName] = $this->convertToDbValue($value);
+        }
+
+        // Collect dirty companion data. Companions with no originalValues
+        // (never hydrated, rolling deploy) are skipped entirely.
+        $participatingCompanions = [];
+
+        foreach ($entity->companions() as $companion) {
+            $companionMetadata = $this->metadataFactory->parse($companion::class);
+            $companionOriginalValues = $this->hydrator->getOriginalValues($companion);
+
+            // Never hydrated and no original values — skip (rolling deploy)
+            if ($companionOriginalValues === []) {
+                continue;
+            }
+
+            $companionDirtyProperties = $this->hydrator->getDirtyProperties($companion, $companionMetadata);
+
+            if ($companionDirtyProperties === []) {
+                $participatingCompanions[] = [$companion, $companionMetadata];
+                continue;
+            }
+
+            $companionPropertyToColumn = $companionMetadata->getPropertyToColumnMap();
+            $companionReflection = new ReflectionClass($companion);
+
+            foreach ($companionDirtyProperties as $propertyName) {
+                $property = $companionReflection->getProperty($propertyName);
+                $value = $property->getValue($companion);
+                $columnName = $companionPropertyToColumn[$propertyName];
+
+                $data[$columnName] = $this->convertToDbValue($value);
+            }
+
+            $participatingCompanions[] = [$companion, $companionMetadata];
+        }
+
+        // If no fields are dirty (parent + companions), skip the update
+        if ($data === []) {
+            return;
         }
 
         // Get the primary key value for the WHERE clause
@@ -641,6 +692,11 @@ abstract class Repository implements RepositoryInterface
         $this->connection->execute($sql, $bindings);
 
         $this->hydrator->registerOriginalValues($entity, $this->metadata);
+
+        // Refresh original values snapshots for participating companions
+        foreach ($participatingCompanions as [$companion, $companionMetadata]) {
+            $this->hydrator->registerOriginalValues($companion, $companionMetadata);
+        }
     }
 
     /**

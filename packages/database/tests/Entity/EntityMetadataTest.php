@@ -205,6 +205,98 @@ it('gets column to property map', function (): void {
     ]);
 });
 
+it('returns a new instance from withExtenders without mutating the original', function (): void {
+    $original = new EntityMetadata(
+        entityClass: 'App\Entity\Post',
+        tableName: 'posts',
+        primaryKey: 'id',
+    );
+
+    $updated = $original->withExtenders(['App\Entity\ExtPost1', 'App\Entity\ExtPost2']);
+
+    expect($updated)->not->toBe($original)
+        ->and($updated->extenders)->toBe(['App\Entity\ExtPost1', 'App\Entity\ExtPost2'])
+        ->and($original->extenders)->toBeEmpty();
+});
+
+it('reports isExtended false when extenders is empty', function (): void {
+    $metadata = new EntityMetadata(
+        entityClass: 'App\Entity\Post',
+        tableName: 'posts',
+        primaryKey: 'id',
+    );
+
+    expect($metadata->isExtended())->toBeFalse();
+});
+
+it('reports isExtended true when extenders is non-empty', function (): void {
+    $metadata = new EntityMetadata(
+        entityClass: 'App\Entity\Post',
+        tableName: 'posts',
+        primaryKey: 'id',
+        extenders: ['App\Entity\ExtPost1'],
+    );
+
+    expect($metadata->isExtended())->toBeTrue();
+});
+
+it('reports isExtender false when extends is null', function (): void {
+    $metadata = new EntityMetadata(
+        entityClass: 'App\Entity\Post',
+        tableName: 'posts',
+        primaryKey: 'id',
+    );
+
+    expect($metadata->isExtender())->toBeFalse();
+});
+
+it('reports isExtender true when extends is set', function (): void {
+    $metadata = new EntityMetadata(
+        entityClass: 'App\Entity\ExtendedPost',
+        tableName: 'posts',
+        primaryKey: 'id',
+        extends: 'App\Entity\Post',
+    );
+
+    expect($metadata->isExtender())->toBeTrue();
+});
+
+it('accepts an extenders array', function (): void {
+    $extenders = ['App\Entity\ExtPost1', 'App\Entity\ExtPost2'];
+
+    $metadata = new EntityMetadata(
+        entityClass: 'App\Entity\Post',
+        tableName: 'posts',
+        primaryKey: 'id',
+        extenders: $extenders,
+    );
+
+    expect($metadata->extenders)->toBe($extenders);
+});
+
+it('accepts an extends class-string', function (): void {
+    $metadata = new EntityMetadata(
+        entityClass: 'App\Entity\ExtendedPost',
+        tableName: 'posts',
+        primaryKey: 'id',
+        extends: 'App\Entity\Post',
+    );
+
+    expect($metadata->extends)->toBe('App\Entity\Post');
+});
+
+it('constructs with no extends and empty extenders by default', function (): void {
+    $metadata = new EntityMetadata(
+        entityClass: 'App\Entity\Post',
+        tableName: 'posts',
+        primaryKey: 'id',
+    );
+
+    expect($metadata->extends)
+        ->toBeNull()
+        ->and($metadata->extenders)->toBeEmpty();
+});
+
 it('gets property to column map', function (): void {
     $properties = [
         'userId' => new PropertyMetadata(

@@ -44,7 +44,7 @@ class EntityMetadataFactory
      *
      * @param class-string $entityClass
      *
-     * @throws EntityException
+     * @throws EntityException|MissingPrimaryKeyException
      */
     public function parse(
         string $entityClass,
@@ -57,7 +57,10 @@ class EntityMetadataFactory
 
         $this->validateEntity($reflection, $entityClass);
 
-        $tableName = $this->extractTableName($reflection);
+        $tableAttr = $reflection->getAttributes(Table::class)[0]->newInstance();
+        $isExtender = $tableAttr->extends !== null;
+
+        $tableName = $this->extractTableName($reflection, $entityClass);
         $columns = [];
         $indexes = [];
         $properties = [];
@@ -79,6 +82,15 @@ class EntityMetadataFactory
 
             $columnAttr = $columnAttributes[0]->newInstance();
             $propertyName = $property->getName();
+
+            if ($isExtender && $columnAttr->autoIncrement) {
+                throw EntityException::extenderDeclaresAutoIncrement($entityClass, $propertyName);
+            }
+
+            if ($isExtender && $columnAttr->primaryKey) {
+                throw EntityException::extenderDeclaresPrimaryKey($entityClass, $propertyName);
+            }
+
             $columnName = $columnAttr->name ?? $this->camelToSnakeCase($propertyName);
             $type = $property->getType();
 
@@ -154,7 +166,7 @@ class EntityMetadataFactory
             throw EntityException::noColumns($entityClass);
         }
 
-        if ($primaryKey === null) {
+        if ($primaryKey === null && !$isExtender) {
             throw MissingPrimaryKeyException::noPrimaryKey($entityClass);
         }
 
@@ -171,16 +183,36 @@ class EntityMetadataFactory
         $metadata = new EntityMetadata(
             entityClass: $entityClass,
             tableName: $tableName,
-            primaryKey: $primaryKey,
+            primaryKey: $primaryKey ?? '',
             properties: $properties,
             columns: $columns,
             indexes: $indexes,
             relationships: $relationships,
+            extends: $tableAttr->extends,
         );
 
         $this->cache[$entityClass] = $metadata;
 
         return $metadata;
+    }
+
+    /**
+     * Link extenders to the cached parent metadata, replacing the cached instance.
+     *
+     * @param class-string $parentClass
+     * @param array<class-string> $extenders
+     *
+     * @throws EntityException|MissingPrimaryKeyException
+     */
+    public function linkExtenders(
+        string $parentClass,
+        array $extenders,
+    ): EntityMetadata {
+        $parentMetadata = $this->parse($parentClass);
+        $linked = $parentMetadata->withExtenders($extenders);
+        $this->cache[$parentClass] = $linked;
+
+        return $linked;
     }
 
     /**
@@ -211,19 +243,58 @@ class EntityMetadataFactory
         if (count($tableAttributes) === 0) {
             throw EntityException::missingTableAttribute($entityClass);
         }
+
+        $tableAttr = $tableAttributes[0]->newInstance();
+
+        if ($tableAttr->name === null && $tableAttr->extends === null) {
+            throw EntityException::missingNameAndExtends($entityClass);
+        }
+
+        if ($tableAttr->extends !== null) {
+            if ($tableAttr->name !== null) {
+                throw EntityException::extenderDeclaresOwnName($entityClass);
+            }
+
+            $parentClass = $tableAttr->extends;
+
+            if (!class_exists($parentClass)) {
+                throw EntityException::extenderParentClassNotFound($entityClass, $parentClass);
+            }
+
+            if (!is_a($parentClass, Entity::class, true)) {
+                throw EntityException::extenderParentNotEntity($entityClass, $parentClass);
+            }
+
+            $parentReflection = new ReflectionClass($parentClass);
+            $parentTableAttrs = $parentReflection->getAttributes(Table::class);
+            if (count($parentTableAttrs) > 0) {
+                $parentTableAttr = $parentTableAttrs[0]->newInstance();
+                if ($parentTableAttr->extends !== null) {
+                    throw EntityException::chainedExtensionNotSupported($entityClass, $parentClass);
+                }
+            }
+        }
     }
 
     /**
      * Extract the table name from the #[Table] attribute.
      *
      * @param ReflectionClass<object> $reflection
+     * @param class-string $entityClass
+     *
+     * @throws EntityException|MissingPrimaryKeyException
      */
     private function extractTableName(
         ReflectionClass $reflection,
+        string $entityClass,
     ): string {
-        $tableAttributes = $reflection->getAttributes(Table::class);
+        $tableAttr = $reflection->getAttributes(Table::class)[0]->newInstance();
 
-        return $tableAttributes[0]->newInstance()->name;
+        if ($tableAttr->extends !== null) {
+            return $this->parse($tableAttr->extends)->tableName;
+        }
+
+        return $tableAttr->name;
     }
 
     /**

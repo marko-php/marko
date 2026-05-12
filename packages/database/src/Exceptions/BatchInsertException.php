@@ -39,6 +39,19 @@ class BatchInsertException extends MarkoException
     /**
      * @param class-string $entityClass
      */
+    public static function companionsNotSupported(
+        string $entityClass,
+    ): self {
+        return new self(
+            message: "insertBatch() does not support entities with companions attached (found on '$entityClass'). Batch insert with mixed companion attachment is out of scope for v1.",
+            context: "Calling insertBatch() with entities of class '$entityClass' that have companions",
+            suggestion: 'Use individual insert() calls (via save()) for entities with attached companions',
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
     public static function columnSetMismatch(
         string $entityClass,
         int $index,
