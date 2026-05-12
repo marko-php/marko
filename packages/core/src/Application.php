@@ -304,6 +304,7 @@ class Application
     }
 
     private const array GLOBAL_MIDDLEWARE = [
+        'Marko\\PageCache\\Middleware\\PageCacheMiddleware',
         'Marko\\Session\\Middleware\\SessionMiddleware',
         'Marko\\Layout\\Middleware\\LayoutMiddleware',
     ];

@@ -1,0 +1,36 @@
+{
+    "name": "marko/page-cache-entity",
+    "description": "Marko bridge package that auto-purges page-cache tags when entities implementing IdentityInterface are saved or deleted.",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "self.version",
+        "marko/database": "self.version",
+        "marko/page-cache": "self.version"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\PageCache\\Entity\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\PageCache\\Entity\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

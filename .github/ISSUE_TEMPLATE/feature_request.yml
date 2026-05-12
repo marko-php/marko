@@ -84,6 +84,9 @@ body:
         - media-imagick
         - notification
         - notification-database
+        - page-cache
+        - page-cache-entity
+        - page-cache-file
         - pagination
         - pubsub
         - pubsub-pgsql

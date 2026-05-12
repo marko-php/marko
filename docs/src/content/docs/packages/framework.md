@@ -98,6 +98,17 @@ composer require marko/filesystem marko/filesystem-local
 | [`marko/filesystem`](/docs/packages/filesystem/) | Filesystem abstraction layer |
 | [`marko/filesystem-local`](/docs/packages/filesystem-local/) | Local filesystem driver |
 
+### Page Cache
+
+```bash
+composer require marko/page-cache marko/page-cache-file
+```
+
+| Package | Description |
+|---|---|
+| [`marko/page-cache`](/docs/packages/page-cache/) | Full-page HTTP response caching contracts and middleware |
+| [`marko/page-cache-file`](/docs/packages/page-cache-file/) | File-based full-page cache driver |
+
 ### Advanced Error Handling
 
 ```bash
