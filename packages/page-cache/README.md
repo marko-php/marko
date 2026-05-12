@@ -1,10 +1,6 @@
 # marko/page-cache
 
-Cache full HTTP responses to make pages render in microseconds.
-
-## Overview
-
-`marko/page-cache` is an interface package that defines the contracts, attributes, and middleware for full-page HTTP response caching. It ships no storage backend — you must pair it with a driver package such as `marko/page-cache-file`. Caching is opt-in: only controller actions annotated with `#[Cacheable]` are eligible to be cached. The `PageCacheMiddleware` is automatically registered as global middleware, so no manual wiring is needed.
+Contracts, middleware, and CLI for full-page HTTP response caching --- cache entire responses to serve pages in microseconds.
 
 ## Installation
 
@@ -12,11 +8,9 @@ Cache full HTTP responses to make pages render in microseconds.
 composer require marko/page-cache marko/page-cache-file
 ```
 
-## Usage
+Note: This package defines contracts only --- install a driver such as `marko/page-cache-file` for storage.
 
-### Caching a controller action
-
-Annotate any controller action method with `#[Cacheable]` to make its response eligible for caching:
+## Quick Example
 
 ```php
 use Marko\PageCache\Attributes\Cacheable;
@@ -29,145 +23,10 @@ class ProductController
     #[Cacheable(ttl: 3600, tags: ['products', 'product-{id}'])]
     public function show(int $id): Response
     {
-        // This response will be cached for 1 hour
         return Response::ok($this->productRepository->find($id));
     }
 }
 ```
-
-The `PageCacheMiddleware` is automatically registered as global middleware. No wiring needed.
-
-### CLI commands
-
-```bash
-# Show current driver and storage path
-php marko page-cache:status
-
-# Clear all cached pages
-php marko page-cache:clear
-
-# Purge a single URL
-php marko page-cache:purge https://example.com/products/42
-
-# Purge all entries tagged with a given tag
-php marko page-cache:purge products --tag
-```
-
-### Dynamic tags from the request
-
-Use the `provider` parameter on `#[Cacheable]` to append tags at runtime based on the current request:
-
-```php
-use Marko\PageCache\Attributes\Cacheable;
-use Marko\PageCache\Contracts\CacheTagProviderInterface;
-use Marko\Routing\Attributes\Get;
-use Marko\Routing\Http\Request;
-use Marko\Routing\Http\Response;
-
-class ProductController
-{
-    #[Get('/products/{id}')]
-    #[Cacheable(ttl: 3600, tags: ['products'], provider: ProductTagProvider::class)]
-    public function show(int $id): Response
-    {
-        return Response::ok($this->productRepository->find($id));
-    }
-}
-
-final class ProductTagProvider implements CacheTagProviderInterface
-{
-    public function tags(Request $request, Cacheable $attribute): array
-    {
-        $id = $request->routeParam('id');
-
-        return ["product-{$id}"];
-    }
-}
-```
-
-Provider tags are appended to the static `tags` array and deduplicated. The provider class is resolved via the DI container.
-
-### Entity-driven invalidation
-
-Entities can declare which cache tags they own by implementing `IdentityInterface`:
-
-```php
-use Marko\PageCache\Contracts\IdentityInterface;
-
-class Product implements IdentityInterface
-{
-    public function getIdentities(): array
-    {
-        return ['products', "product-{$this->id}"];
-    }
-}
-```
-
-`IdentityInterface` lives in `marko/page-cache` so that domain entities depend only on the cache contract, not on any bridge package. The actual auto-purge behaviour — observing save/delete events and calling `purgeTag()` — requires installing [`marko/page-cache-entity`](../page-cache-entity/README.md).
-
-### Known limitation
-
-Responses with a `Set-Cookie` header are never cached in v1. This includes responses that set analytics or session cookies — if your response sets any cookie, it bypasses the cache.
-
-## Customization
-
-`CacheabilityChecker` can be extended via [Preferences](https://marko.build/docs/packages/page-cache/#preferences) to add custom cacheability rules — for example, to skip caching for logged-in users or based on request headers.
-
-## API Reference
-
-### `PageCacheInterface`
-
-```php
-public function lookup(Request $request): ?Response;
-public function store(Request $request, Response $response, CachePolicy $policy): Response;
-public function purgeUrl(string $url): bool;
-public function purgeTag(string $tag): bool;
-public function clear(): bool;
-```
-
-### `#[Cacheable]` attribute
-
-```php
-#[Attribute(Attribute::TARGET_METHOD)]
-readonly class Cacheable
-{
-    public function __construct(public int $ttl, public array $tags = [], public ?string $provider = null) {}
-}
-```
-
-### `CacheTagProviderInterface`
-
-```php
-public function tags(Request $request, Cacheable $attribute): array<string>;
-```
-
-### `IdentityInterface`
-
-```php
-public function getIdentities(): array<string>;
-```
-
-### `CacheKey`
-
-```php
-public static function fromRequest(Request $request): self;
-public static function normalizeQuery(string $rawQuery): string;
-public function hash(): string;
-```
-
-### `CachePolicy`
-
-```php
-public function __construct(public int $ttl, public array $tags) {}
-```
-
-### CLI commands
-
-| Command | Description |
-|---|---|
-| `page-cache:clear` | Clear all cached pages |
-| `page-cache:purge <target> [--tag]` | Purge a URL or all entries for a tag |
-| `page-cache:status` | Show active driver and storage path |
 
 ## Documentation
 

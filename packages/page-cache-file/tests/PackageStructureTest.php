@@ -65,10 +65,15 @@ it('declares marko/page-cache-file as a self.version requirement in the root com
         ->and($composer['require']['marko/page-cache-file'])->toBe('self.version');
 });
 
-it('registers the package test autoload as Marko\PageCache\File\Tests\\ in the root composer.json autoload-dev', function (): void {
-    $rootComposerPath = dirname(__DIR__, 3) . '/composer.json';
-    $composer = json_decode(file_get_contents($rootComposerPath), true);
+it(
+    'registers the package test autoload as Marko\PageCache\File\Tests\\ in the root composer.json autoload-dev',
+    function (): void {
+        $rootComposerPath = dirname(__DIR__, 3) . '/composer.json';
+        $composer = json_decode(file_get_contents($rootComposerPath), true);
 
-    expect($composer['autoload-dev']['psr-4'])->toHaveKey('Marko\\PageCache\\File\\Tests\\')
-        ->and($composer['autoload-dev']['psr-4']['Marko\\PageCache\\File\\Tests\\'])->toBe('packages/page-cache-file/tests/');
-});
+        expect($composer['autoload-dev']['psr-4'])->toHaveKey('Marko\\PageCache\\File\\Tests\\')
+            ->and($composer['autoload-dev']['psr-4']['Marko\\PageCache\\File\\Tests\\'])->toBe(
+                'packages/page-cache-file/tests/',
+            );
+    },
+);

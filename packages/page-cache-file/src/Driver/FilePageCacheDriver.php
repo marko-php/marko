@@ -61,8 +61,11 @@ readonly class FilePageCacheDriver implements PageCacheInterface
     /**
      * @throws ConfigNotFoundException|RandomException
      */
-    public function store(Request $request, Response $response, CachePolicy $policy): Response
-    {
+    public function store(
+        Request $request,
+        Response $response,
+        CachePolicy $policy,
+    ): Response {
         $key = CacheKey::fromRequest($request);
         $ttl = $policy->ttl > 0 ? $policy->ttl : $this->pageCache->defaultTtl();
         $expiresAt = $ttl > 0 ? time() + $ttl : null;
@@ -142,6 +145,7 @@ readonly class FilePageCacheDriver implements PageCacheInterface
         }
 
         @unlink($tagIndexPath);
+
         return true;
     }
 
@@ -230,8 +234,10 @@ readonly class FilePageCacheDriver implements PageCacheInterface
         return $this->tagsDir() . '/' . hash('xxh128', $tag) . '.tag';
     }
 
-    private function appendToTagIndex(string $tagIndexPath, string $pageHash): void
-    {
+    private function appendToTagIndex(
+        string $tagIndexPath,
+        string $pageHash,
+    ): void {
         $fp = fopen($tagIndexPath, 'cb+');
         if ($fp === false) {
             return;
@@ -256,8 +262,10 @@ readonly class FilePageCacheDriver implements PageCacheInterface
     /**
      * @throws RandomException
      */
-    private function atomicWrite(string $path, string $content): void
-    {
+    private function atomicWrite(
+        string $path,
+        string $content,
+    ): void {
         $tmp = $path . '.tmp.' . bin2hex(random_bytes(8));
         file_put_contents($tmp, $content);
         rename($tmp, $path);

@@ -23,8 +23,11 @@ it('invokes IdentityPurger from PurgeOnEntityDeleted when EntityDeleted is dispa
             return null;
         }
 
-        public function store(Request $request, Response $response, CachePolicy $policy): Response
-        {
+        public function store(
+            Request $request,
+            Response $response,
+            CachePolicy $policy,
+        ): Response {
             return $response;
         }
 

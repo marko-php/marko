@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\PageCache\CachePolicy;
 use Marko\PageCache\Command\ClearCommand;
 use Marko\PageCache\Contracts\PageCacheInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
-use Marko\PageCache\CachePolicy;
 
 $fakePageCache = function (bool $clearResult): PageCacheInterface {
-    return new readonly class ($clearResult) implements PageCacheInterface {
+    return new readonly class ($clearResult) implements PageCacheInterface
+    {
         public function __construct(private bool $clearResult) {}
 
         public function lookup(Request $request): ?Response
@@ -19,8 +20,11 @@ $fakePageCache = function (bool $clearResult): PageCacheInterface {
             return null;
         }
 
-        public function store(Request $request, Response $response, CachePolicy $policy): Response
-        {
+        public function store(
+            Request $request,
+            Response $response,
+            CachePolicy $policy,
+        ): Response {
             return $response;
         }
 

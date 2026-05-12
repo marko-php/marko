@@ -54,7 +54,7 @@ Responses with a `Set-Cookie` header are never cached in v1. This includes respo
 
 ```php
 use Marko\Core\Attributes\Preference;
-use Marko\PageCache\Service\CacheabilityChecker;
+use Marko\PageCache\CacheabilityChecker;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
@@ -172,7 +172,7 @@ marko page-cache:purge products --tag
 
 ```php
 use Marko\PageCache\Contracts\PageCacheInterface;
-use Marko\PageCache\ValueObjects\CachePolicy;
+use Marko\PageCache\CachePolicy;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
@@ -226,7 +226,7 @@ public function getIdentities(): array;
 ### CacheKey
 
 ```php
-use Marko\PageCache\ValueObjects\CacheKey;
+use Marko\PageCache\CacheKey;
 use Marko\Routing\Http\Request;
 
 public static function fromRequest(Request $request): self;
@@ -237,7 +237,7 @@ public function hash(): string;
 ### CachePolicy
 
 ```php
-use Marko\PageCache\ValueObjects\CachePolicy;
+use Marko\PageCache\CachePolicy;
 
 public function __construct(public int $ttl, public array $tags) {}
 ```

@@ -72,7 +72,7 @@ See [marko/page-cache](/docs/packages/page-cache/) for full usage examples, CLI 
 
 ```php
 use Marko\PageCache\Contracts\PageCacheInterface;
-use Marko\PageCache\ValueObjects\CachePolicy;
+use Marko\PageCache\CachePolicy;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 

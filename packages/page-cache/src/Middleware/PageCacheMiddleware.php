@@ -32,8 +32,10 @@ readonly class PageCacheMiddleware implements MiddlewareInterface
      *
      * @throws ConfigNotFoundException|PageCacheException
      */
-    public function handle(Request $request, callable $next): Response
-    {
+    public function handle(
+        Request $request,
+        callable $next,
+    ): Response {
         if (!$this->cacheabilityChecker->isRequestCacheable($request)) {
             return $next($request);
         }

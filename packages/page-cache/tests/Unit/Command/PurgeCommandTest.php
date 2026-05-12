@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\PageCache\CachePolicy;
 use Marko\PageCache\Command\PurgeCommand;
 use Marko\PageCache\Contracts\PageCacheInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
-use Marko\PageCache\CachePolicy;
 
 $fakePageCache = function (bool $purgeUrlResult = true, bool $purgeTagResult = true): PageCacheInterface {
-    return new readonly class ($purgeUrlResult, $purgeTagResult) implements PageCacheInterface {
+    return new readonly class ($purgeUrlResult, $purgeTagResult) implements PageCacheInterface
+    {
         public function __construct(
             private bool $purgeUrlResult,
             private bool $purgeTagResult,
@@ -22,8 +23,11 @@ $fakePageCache = function (bool $purgeUrlResult = true, bool $purgeTagResult = t
             return null;
         }
 
-        public function store(Request $request, Response $response, CachePolicy $policy): Response
-        {
+        public function store(
+            Request $request,
+            Response $response,
+            CachePolicy $policy,
+        ): Response {
             return $response;
         }
 

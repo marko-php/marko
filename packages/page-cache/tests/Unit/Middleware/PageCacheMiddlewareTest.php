@@ -34,8 +34,11 @@ class FakePageCache implements PageCacheInterface
         return $this->lookupResult;
     }
 
-    public function store(Request $request, Response $response, CachePolicy $policy): Response
-    {
+    public function store(
+        Request $request,
+        Response $response,
+        CachePolicy $policy,
+    ): Response {
         $this->storedPolicy = $policy;
 
         return $this->storeResult ?? $response;
@@ -84,8 +87,10 @@ class FakeCacheTagProvider implements CacheTagProviderInterface
     public array $tagsToReturn = ['dynamic-1', 'dynamic-2'];
 
     /** @return array<string> */
-    public function tags(Request $request, Cacheable $attribute): array
-    {
+    public function tags(
+        Request $request,
+        Cacheable $attribute,
+    ): array {
         return $this->tagsToReturn;
     }
 }
@@ -121,8 +126,10 @@ class FakeContainer implements ContainerInterface
 
     public function singleton(string $id): void {}
 
-    public function instance(string $id, object $instance): void
-    {
+    public function instance(
+        string $id,
+        object $instance,
+    ): void {
         $this->instances[$id] = $instance;
     }
 
@@ -146,8 +153,10 @@ function makeMiddlewareChecker(
             private array $statusCodes,
         ) {}
 
-        public function get(string $key, ?string $scope = null): mixed
-        {
+        public function get(
+            string $key,
+            ?string $scope = null,
+        ): mixed {
             return match ($key) {
                 'page-cache.cacheable_methods' => $this->methods,
                 'page-cache.cacheable_status_codes' => $this->statusCodes,
@@ -155,33 +164,45 @@ function makeMiddlewareChecker(
             };
         }
 
-        public function has(string $key, ?string $scope = null): bool
-        {
+        public function has(
+            string $key,
+            ?string $scope = null,
+        ): bool {
             return false;
         }
 
-        public function getString(string $key, ?string $scope = null): string
-        {
+        public function getString(
+            string $key,
+            ?string $scope = null,
+        ): string {
             throw new ConfigNotFoundException($key);
         }
 
-        public function getInt(string $key, ?string $scope = null): int
-        {
+        public function getInt(
+            string $key,
+            ?string $scope = null,
+        ): int {
             throw new ConfigNotFoundException($key);
         }
 
-        public function getBool(string $key, ?string $scope = null): bool
-        {
+        public function getBool(
+            string $key,
+            ?string $scope = null,
+        ): bool {
             throw new ConfigNotFoundException($key);
         }
 
-        public function getFloat(string $key, ?string $scope = null): float
-        {
+        public function getFloat(
+            string $key,
+            ?string $scope = null,
+        ): float {
             throw new ConfigNotFoundException($key);
         }
 
-        public function getArray(string $key, ?string $scope = null): array
-        {
+        public function getArray(
+            string $key,
+            ?string $scope = null,
+        ): array {
             return match ($key) {
                 'page-cache.cacheable_methods' => $this->methods,
                 'page-cache.cacheable_status_codes' => $this->statusCodes,
@@ -209,8 +230,10 @@ function makeNullRouteMatcher(): RouteMatcherInterface
 {
     return new class () implements RouteMatcherInterface
     {
-        public function match(string $method, string $path): ?MatchedRoute
-        {
+        public function match(
+            string $method,
+            string $path,
+        ): ?MatchedRoute {
             return null;
         }
     };
@@ -222,8 +245,10 @@ function makeMatcherForController(string $action): RouteMatcherInterface
     {
         public function __construct(private string $action) {}
 
-        public function match(string $method, string $path): ?MatchedRoute
-        {
+        public function match(
+            string $method,
+            string $path,
+        ): ?MatchedRoute {
             $route = new RouteDefinition(
                 method: $method,
                 path: $path,
@@ -380,23 +405,26 @@ it('builds a CachePolicy from the Cacheable attribute ttl and tags before storin
         ->and($cache->storedPolicy->tags)->toBe(['products']);
 });
 
-it('returns the Response value returned by store (not the original) so proxy drivers can decorate headers', function (): void {
-    $checker = makeMiddlewareChecker(makeMatcherForController('index'));
-    $cache = new FakePageCache();
-    $cache->lookupResult = null;
-    $decoratedResponse = makeMiddlewareResponse(body: 'decorated');
-    $cache->storeResult = $decoratedResponse;
-    $container = makeMiddlewareContainer();
-    $middleware = new PageCacheMiddleware($cache, $checker, $container);
+it(
+    'returns the Response value returned by store (not the original) so proxy drivers can decorate headers',
+    function (): void {
+        $checker = makeMiddlewareChecker(makeMatcherForController('index'));
+        $cache = new FakePageCache();
+        $cache->lookupResult = null;
+        $decoratedResponse = makeMiddlewareResponse(body: 'decorated');
+        $cache->storeResult = $decoratedResponse;
+        $container = makeMiddlewareContainer();
+        $middleware = new PageCacheMiddleware($cache, $checker, $container);
 
-    $request = makeMiddlewareRequest('GET', '/products');
-    $freshResponse = makeMiddlewareResponse(statusCode: 200, body: 'fresh');
-    $next = fn (Request $r): Response => $freshResponse;
+        $request = makeMiddlewareRequest('GET', '/products');
+        $freshResponse = makeMiddlewareResponse(statusCode: 200, body: 'fresh');
+        $next = fn (Request $r): Response => $freshResponse;
 
-    $result = $middleware->handle($request, $next);
+        $result = $middleware->handle($request, $next);
 
-    expect($result)->toBe($decoratedResponse);
-});
+        expect($result)->toBe($decoratedResponse);
+    },
+);
 
 it('stores cached response with only static tags when no provider is configured', function (): void {
     $checker = makeMiddlewareChecker(makeMatcherForController('index'));
@@ -495,20 +523,23 @@ it('preserves the order of static tags before provider tags after deduplication'
         ->and($cache->storedPolicy->tags)->toBe(['static-a', 'static-b', 'dynamic-1']);
 });
 
-it('throws PageCacheException when the resolved provider does not implement CacheTagProviderInterface', function (): void {
-    $checker = makeMiddlewareChecker(makeMatcherForController('indexWithInvalidProvider'));
-    $cache = new FakePageCache();
-    $cache->lookupResult = null;
-    $container = makeMiddlewareContainer();
-    $container->instance(NotACacheTagProvider::class, new NotACacheTagProvider());
-    $middleware = new PageCacheMiddleware($cache, $checker, $container);
+it(
+    'throws PageCacheException when the resolved provider does not implement CacheTagProviderInterface',
+    function (): void {
+        $checker = makeMiddlewareChecker(makeMatcherForController('indexWithInvalidProvider'));
+        $cache = new FakePageCache();
+        $cache->lookupResult = null;
+        $container = makeMiddlewareContainer();
+        $container->instance(NotACacheTagProvider::class, new NotACacheTagProvider());
+        $middleware = new PageCacheMiddleware($cache, $checker, $container);
 
-    $request = makeMiddlewareRequest('GET', '/products');
-    $freshResponse = makeMiddlewareResponse(statusCode: 200);
-    $next = fn (Request $r): Response => $freshResponse;
+        $request = makeMiddlewareRequest('GET', '/products');
+        $freshResponse = makeMiddlewareResponse(statusCode: 200);
+        $next = fn (Request $r): Response => $freshResponse;
 
-    expect(fn () => $middleware->handle($request, $next))->toThrow(PageCacheException::class);
-});
+        expect(fn () => $middleware->handle($request, $next))->toThrow(PageCacheException::class);
+    },
+);
 
 it('does not invoke the provider on cache hits', function (): void {
     $checker = makeMiddlewareChecker(makeMatcherForController('indexWithProvider'));

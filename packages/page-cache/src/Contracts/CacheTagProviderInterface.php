@@ -10,5 +10,8 @@ use Marko\Routing\Http\Request;
 interface CacheTagProviderInterface
 {
     /** @return array<string> */
-    public function tags(Request $request, Cacheable $attribute): array;
+    public function tags(
+        Request $request,
+        Cacheable $attribute,
+    ): array;
 }

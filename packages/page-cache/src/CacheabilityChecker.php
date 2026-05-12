@@ -82,13 +82,15 @@ readonly class CacheabilityChecker
     private function parseDirectives(string $header): array
     {
         return array_map(
-            fn(string $token): string => strtolower(trim(explode('=', $token)[0])),
+            fn (string $token): string => strtolower(trim(explode('=', $token)[0])),
             explode(',', $header),
         );
     }
 
-    private function getHeader(Response $response, string $name): ?string
-    {
+    private function getHeader(
+        Response $response,
+        string $name,
+    ): ?string {
         $name = strtolower($name);
 
         foreach ($response->headers() as $key => $value) {

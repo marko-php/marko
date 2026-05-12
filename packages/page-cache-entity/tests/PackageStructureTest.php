@@ -89,13 +89,18 @@ it('declares marko/page-cache-entity as a self.version requirement in the root c
         ->and($composer['require']['marko/page-cache-entity'])->toBe('self.version');
 });
 
-it('registers the package test autoload as Marko\\PageCache\\Entity\\Tests\\ in the root composer.json autoload-dev', function (): void {
-    $rootComposerPath = dirname(__DIR__, 3) . '/composer.json';
-    $composer = json_decode(file_get_contents($rootComposerPath), true);
+it(
+    'registers the package test autoload as Marko\\PageCache\\Entity\\Tests\\ in the root composer.json autoload-dev',
+    function (): void {
+        $rootComposerPath = dirname(__DIR__, 3) . '/composer.json';
+        $composer = json_decode(file_get_contents($rootComposerPath), true);
 
-    expect($composer['autoload-dev']['psr-4'])->toHaveKey('Marko\\PageCache\\Entity\\Tests\\')
-        ->and($composer['autoload-dev']['psr-4']['Marko\\PageCache\\Entity\\Tests\\'])->toBe('packages/page-cache-entity/tests/');
-});
+        expect($composer['autoload-dev']['psr-4'])->toHaveKey('Marko\\PageCache\\Entity\\Tests\\')
+            ->and($composer['autoload-dev']['psr-4']['Marko\\PageCache\\Entity\\Tests\\'])->toBe(
+                'packages/page-cache-entity/tests/',
+            );
+    },
+);
 
 it('lists page-cache-entity in the package dropdown of bug_report.yml and feature_request.yml', function (): void {
     $bugReportPath = dirname(__DIR__, 3) . '/.github/ISSUE_TEMPLATE/bug_report.yml';
@@ -129,20 +134,9 @@ it('documents implementing IdentityInterface on an entity', function (): void {
         ->and(str_contains($content, 'getIdentities'))->toBeTrue();
 });
 
-it('explains the three observer classes and the IdentityPurger service', function (): void {
+it('links to the docs page for full documentation', function (): void {
     $readmePath = dirname(__DIR__) . '/README.md';
     $content = file_get_contents($readmePath);
 
-    expect(str_contains($content, 'PurgeOnEntityCreated'))->toBeTrue()
-        ->and(str_contains($content, 'PurgeOnEntityUpdated'))->toBeTrue()
-        ->and(str_contains($content, 'PurgeOnEntityDeleted'))->toBeTrue()
-        ->and(str_contains($content, 'IdentityPurger'))->toBeTrue();
-});
-
-it('lists the IdentityPurger signatures in the API Reference', function (): void {
-    $readmePath = dirname(__DIR__) . '/README.md';
-    $content = file_get_contents($readmePath);
-
-    expect(str_contains($content, 'IdentityPurger::__construct(PageCacheInterface $pageCache)'))->toBeTrue()
-        ->and(str_contains($content, 'IdentityPurger::purge(Entity $entity): void'))->toBeTrue();
+    expect($content)->toContain('https://marko.build/docs/packages/page-cache-entity/');
 });

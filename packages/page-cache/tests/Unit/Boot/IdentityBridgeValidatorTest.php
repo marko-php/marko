@@ -41,12 +41,14 @@ class PlainClass {}
     expect(true)->toBeTrue(); // no exception thrown
 });
 
-it('passes validation when an app class implements IdentityInterface and the bridge package is installed', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
-    mkdir($tmpDir . '/src', 0755, true);
+it(
+    'passes validation when an app class implements IdentityInterface and the bridge package is installed',
+    function (): void {
+        $tmpDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        mkdir($tmpDir . '/src', 0755, true);
 
-    $uniqueClass = 'IdentityImpl' . uniqid();
-    file_put_contents($tmpDir . '/src/' . $uniqueClass . '.php', '<?php
+        $uniqueClass = 'IdentityImpl' . uniqid();
+        file_put_contents($tmpDir . '/src/' . $uniqueClass . '.php', '<?php
 declare(strict_types=1);
 namespace TestApp;
 use Marko\PageCache\Contracts\IdentityInterface;
@@ -55,69 +57,73 @@ class ' . $uniqueClass . ' implements IdentityInterface {
 }
 ');
 
-    $manifest = new ModuleManifest(
-        name: 'app/my-module',
-        version: '1.0.0',
-        path: $tmpDir,
-        source: 'app',
-    );
+        $manifest = new ModuleManifest(
+            name: 'app/my-module',
+            version: '1.0.0',
+            path: $tmpDir,
+            source: 'app',
+        );
 
-    // Use a class that actually exists as the bridge class
-    $validator = new IdentityBridgeValidator(
-        classFileParser: new ClassFileParser(),
-        bridgeClass: ClassFileParser::class,
-    );
+        // Use a class that actually exists as the bridge class
+        $validator = new IdentityBridgeValidator(
+            classFileParser: new ClassFileParser(),
+            bridgeClass: ClassFileParser::class,
+        );
 
-    $validator->validate([$manifest]);
-
-    // Clean up
-    unlink($tmpDir . '/src/' . $uniqueClass . '.php');
-    rmdir($tmpDir . '/src');
-    rmdir($tmpDir);
-
-    expect(true)->toBeTrue(); // no exception thrown
-});
-
-it('throws PageCacheException when an app class implements IdentityInterface and the bridge package is not installed', function (): void {
-    $tmpDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
-    mkdir($tmpDir . '/src', 0755, true);
-
-    $uniqueClass = 'IdentityImpl' . uniqid();
-    file_put_contents($tmpDir . '/src/' . $uniqueClass . '.php', '<?php
-declare(strict_types=1);
-namespace TestApp;
-use Marko\PageCache\Contracts\IdentityInterface;
-class ' . $uniqueClass . ' implements IdentityInterface {
-    public function getIdentities(): array { return []; }
-}
-');
-
-    $manifest = new ModuleManifest(
-        name: 'app/my-module',
-        version: '1.0.0',
-        path: $tmpDir,
-        source: 'app',
-    );
-
-    $validator = new IdentityBridgeValidator(
-        classFileParser: new ClassFileParser(),
-        bridgeClass: 'NonExistentBridgeClass',
-    );
-
-    $threwException = false;
-
-    try {
         $validator->validate([$manifest]);
-    } catch (PageCacheException) {
-        $threwException = true;
-    } finally {
+
+        // Clean up
         unlink($tmpDir . '/src/' . $uniqueClass . '.php');
         rmdir($tmpDir . '/src');
         rmdir($tmpDir);
-    }
 
-    expect($threwException)->toBeTrue();
-});
+        expect(true)->toBeTrue(); // no exception thrown
+    },
+);
+
+it(
+    'throws PageCacheException when an app class implements IdentityInterface and the bridge package is not installed',
+    function (): void {
+        $tmpDir = sys_get_temp_dir() . '/marko_test_' . uniqid();
+        mkdir($tmpDir . '/src', 0755, true);
+
+        $uniqueClass = 'IdentityImpl' . uniqid();
+        file_put_contents($tmpDir . '/src/' . $uniqueClass . '.php', '<?php
+declare(strict_types=1);
+namespace TestApp;
+use Marko\PageCache\Contracts\IdentityInterface;
+class ' . $uniqueClass . ' implements IdentityInterface {
+    public function getIdentities(): array { return []; }
+}
+');
+
+        $manifest = new ModuleManifest(
+            name: 'app/my-module',
+            version: '1.0.0',
+            path: $tmpDir,
+            source: 'app',
+        );
+
+        $validator = new IdentityBridgeValidator(
+            classFileParser: new ClassFileParser(),
+            bridgeClass: 'NonExistentBridgeClass',
+        );
+
+        $threwException = false;
+
+        try {
+            $validator->validate([$manifest]);
+        } catch (PageCacheException) {
+            $threwException = true;
+        } finally {
+            unlink($tmpDir . '/src/' . $uniqueClass . '.php');
+            rmdir($tmpDir . '/src');
+            rmdir($tmpDir);
+        }
+
+        expect($threwException)->toBeTrue();
+    },
+);
 
 it('names the offending class in the exception message', function (): void {
     $tmpDir = sys_get_temp_dir() . '/marko_test_' . uniqid();

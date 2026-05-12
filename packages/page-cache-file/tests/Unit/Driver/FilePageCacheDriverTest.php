@@ -144,41 +144,47 @@ it('returns true from purgeUrl when no entry exists', function (): void {
     expect($result)->toBeTrue();
 });
 
-it('parses URL paths and query strings consistently between purgeUrl and store (round-trip a stored URL through purgeUrl)', function (): void {
-    $request = createTestRequest('GET', '/search', ['q' => 'hello', 'page' => '2']);
-    $response = new Response(body: 'search results', statusCode: 200);
-    $policy = new CachePolicy(ttl: 3600, tags: []);
+it(
+    'parses URL paths and query strings consistently between purgeUrl and store (round-trip a stored URL through purgeUrl)',
+    function (): void {
+        $request = createTestRequest('GET', '/search', ['q' => 'hello', 'page' => '2']);
+        $response = new Response(body: 'search results', statusCode: 200);
+        $policy = new CachePolicy(ttl: 3600, tags: []);
 
-    $this->driver->store($request, $response, $policy);
+        $this->driver->store($request, $response, $policy);
 
-    $key = CacheKey::fromRequest($request);
-    $filePath = $this->tmpDir . '/pages/' . $key->hash() . '.cache';
+        $key = CacheKey::fromRequest($request);
+        $filePath = $this->tmpDir . '/pages/' . $key->hash() . '.cache';
 
-    expect(file_exists($filePath))->toBeTrue();
+        expect(file_exists($filePath))->toBeTrue();
 
-    $result = $this->driver->purgeUrl('http://example.com/search?q=hello&page=2');
+        $result = $this->driver->purgeUrl('http://example.com/search?q=hello&page=2');
 
-    expect($result)->toBeTrue()
-        ->and(file_exists($filePath))->toBeFalse();
-});
+        expect($result)->toBeTrue()
+            ->and(file_exists($filePath))->toBeFalse();
+    },
+);
 
-it('normalizes query string ordering when purging by URL (purgeUrl with "?b=2&a=1" purges an entry stored with "?a=1&b=2")', function (): void {
-    $request = createTestRequest('GET', '/items', ['a' => '1', 'b' => '2']);
-    $response = new Response(body: 'items page', statusCode: 200);
-    $policy = new CachePolicy(ttl: 3600, tags: []);
+it(
+    'normalizes query string ordering when purging by URL (purgeUrl with "?b=2&a=1" purges an entry stored with "?a=1&b=2")',
+    function (): void {
+        $request = createTestRequest('GET', '/items', ['a' => '1', 'b' => '2']);
+        $response = new Response(body: 'items page', statusCode: 200);
+        $policy = new CachePolicy(ttl: 3600, tags: []);
 
-    $this->driver->store($request, $response, $policy);
+        $this->driver->store($request, $response, $policy);
 
-    $key = CacheKey::fromRequest($request);
-    $filePath = $this->tmpDir . '/pages/' . $key->hash() . '.cache';
+        $key = CacheKey::fromRequest($request);
+        $filePath = $this->tmpDir . '/pages/' . $key->hash() . '.cache';
 
-    expect(file_exists($filePath))->toBeTrue();
+        expect(file_exists($filePath))->toBeTrue();
 
-    $result = $this->driver->purgeUrl('http://example.com/items?b=2&a=1');
+        $result = $this->driver->purgeUrl('http://example.com/items?b=2&a=1');
 
-    expect($result)->toBeTrue()
-        ->and(file_exists($filePath))->toBeFalse();
-});
+        expect($result)->toBeTrue()
+            ->and(file_exists($filePath))->toBeFalse();
+    },
+);
 
 it('deletes all page cache files when clear is called', function (): void {
     $request1 = createTestRequest('GET', '/page1');
