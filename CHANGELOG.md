@@ -8,6 +8,22 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.6.0] - 2026-05-12
+
+### New Features
+* feat(page-cache): full-page HTTP cache with file driver, tag invalidation, and entity bridge by @michalbiarda in https://github.com/marko-php/marko/pull/58
+* feat(routing): memoize RouteMatcher and share one instance with Router by @markshust in https://github.com/marko-php/marko/pull/62
+* feat: extend existing entity tables via #[Table(extends:)] by @markshust in https://github.com/marko-php/marko/pull/64
+### Bug Fixes
+* fix(tests): align RepoManagementScriptsTest with batched gh repo list by @markshust in https://github.com/marko-php/marko/pull/60
+* fix: auto-create missing split repos and cancel superseded runs by @markshust in https://github.com/marko-php/marko/pull/65
+### Maintenance
+* chore(release): batch split-repo lookup and auto-create from release.sh by @markshust in https://github.com/marko-php/marko/pull/56
+
+## New Contributors
+* @michalbiarda made their first contribution in https://github.com/marko-php/marko/pull/58
+
+
 ## [Unreleased]
 
 ### New Features
