@@ -8,14 +8,15 @@ use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Routing\RouteCollection;
 use Marko\Routing\RouteDefinition;
+use Marko\Routing\RouteMatcher;
 use Marko\Routing\Router;
 
-it('accepts RouteCollection in constructor', function (): void {
+it('accepts a RouteMatcher in constructor', function (): void {
     $routes = new RouteCollection();
     $container = $this->createMock(ContainerInterface::class);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -44,7 +45,7 @@ it('matches request to route', function (): void {
         ->willReturn($controller);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -65,7 +66,7 @@ it('returns 404 response when no route matches', function (): void {
     $container = $this->createMock(ContainerInterface::class);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -104,7 +105,7 @@ it('resolves controller through container', function (): void {
         ->willReturn($controller);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -148,7 +149,7 @@ it('invokes controller method', function (): void {
         ->willReturn($controller);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -192,7 +193,7 @@ it('passes route parameters to controller method', function (): void {
         ->willReturn($controller);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -251,7 +252,7 @@ it('executes middleware pipeline', function (): void {
         });
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -292,7 +293,7 @@ it('returns response from controller', function (): void {
         ->willReturn($controller);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -354,7 +355,7 @@ it('returns response from middleware short-circuit', function (): void {
         });
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -392,7 +393,7 @@ it('handles controller returning Response object', function (): void {
         ->willReturn($controller);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -430,7 +431,7 @@ it('wraps string return in Response object', function (): void {
         ->willReturn($controller);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -471,7 +472,7 @@ it('wraps array return in JSON Response', function (): void {
         ->willReturn($controller);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -518,7 +519,7 @@ it('injects Request into controller method parameter', function (): void {
         ->willReturn($controller);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -576,7 +577,7 @@ it('executes global middleware on every request', function (): void {
         });
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
         globalMiddleware: ['App\\Middleware\\GlobalMiddleware'],
     );
@@ -653,7 +654,7 @@ it('runs global middleware before route middleware', function (): void {
         });
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
         globalMiddleware: ['App\\Middleware\\GlobalMiddleware'],
     );

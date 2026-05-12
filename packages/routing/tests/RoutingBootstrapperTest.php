@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Core\Application;
 use Marko\Routing\Exceptions\RouteConflictException;
 use Marko\Routing\RouteCollection;
+use Marko\Routing\RouteMatcherInterface;
 use Marko\Routing\Router;
 
 // Helper function for recursive directory cleanup
@@ -306,6 +307,36 @@ it('returns Router as singleton in container', function (): void {
     $router2 = $container->get(Router::class);
 
     expect($router1)->toBe($router2);
+
+    routingTestCleanupDirectory($baseDir);
+});
+
+it('shares one RouteMatcher between the container and the Router', function (): void {
+    $uniqueId = bin2hex(random_bytes(8));
+    $baseDir = sys_get_temp_dir() . '/marko-routing-test-' . $uniqueId;
+    $vendorDir = $baseDir . '/vendor';
+
+    routingTestCreateModule($vendorDir . '/acme/core', 'acme/core');
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->initialize();
+
+    $container = $app->container;
+    $containerMatcher = $container->get(RouteMatcherInterface::class);
+
+    // Reflect Router's private $matcher to confirm it is the same instance the
+    // container hands out — required so middleware that calls match() shares
+    // the Router's memoization cache.
+    $router = $container->get(Router::class);
+    $reflection = new ReflectionProperty($router, 'matcher');
+    $routerMatcher = $reflection->getValue($router);
+
+    expect($routerMatcher)->toBe($containerMatcher);
 
     routingTestCleanupDirectory($baseDir);
 });
