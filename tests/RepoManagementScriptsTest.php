@@ -4,19 +4,22 @@ declare(strict_types=1);
 
 $binDir = dirname(__DIR__) . '/bin';
 
-it('creates bin/create-split-repos.sh that bulk-creates all 70 split repos on GitHub', function () use ($binDir): void {
-    $path = $binDir . '/create-split-repos.sh';
+it(
+    'creates bin/create-split-repos.sh that bulk-creates all 70 split repos on GitHub',
+    function () use ($binDir): void {
+        $path = $binDir . '/create-split-repos.sh';
 
-    expect(file_exists($path))->toBeTrue('bin/create-split-repos.sh does not exist');
+        expect(file_exists($path))->toBeTrue('bin/create-split-repos.sh does not exist');
 
-    $content = file_get_contents($path);
+        $content = file_get_contents($path);
 
-    expect($content)
-        ->toContain('#!/usr/bin/env bash')
-        ->toContain('GITHUB_ORG=')
-        ->toContain('gh repo create')
-        ->toContain('packages/');
-});
+        expect($content)
+            ->toContain('#!/usr/bin/env bash')
+            ->toContain('GITHUB_ORG=')
+            ->toContain('gh repo create')
+            ->toContain('packages/');
+    },
+);
 
 it('creates bin/register-packagist.sh that registers all 70 packages on Packagist', function () use ($binDir): void {
     $path = $binDir . '/register-packagist.sh';
@@ -68,10 +71,10 @@ it('skips repos that already exist without erroring', function () use ($binDir):
     $registerPackagist = file_get_contents($binDir . '/register-packagist.sh');
     $addPackage = file_get_contents($binDir . '/add-package.sh');
 
-    // create-split-repos.sh checks if repo exists before creating
+    // create-split-repos.sh batch-fetches existing repos and skips ones already present
     expect($createRepos)
-        ->toContain('gh repo view')
-        ->toContain('already exists, skipping')
+        ->toContain('gh repo list')
+        ->toContain('Already exists')
         // register-packagist.sh handles HTTP 400 (already registered) gracefully
         ->and($registerPackagist)
         ->toContain('"400"')
@@ -82,30 +85,33 @@ it('skips repos that already exist without erroring', function () use ($binDir):
         ->toContain('already exists');
 });
 
-it('validates required tools and credentials before running (gh, curl, jq, API tokens)', function () use ($binDir): void {
-    $createRepos = file_get_contents($binDir . '/create-split-repos.sh');
-    $registerPackagist = file_get_contents($binDir . '/register-packagist.sh');
-    $addPackage = file_get_contents($binDir . '/add-package.sh');
+it(
+    'validates required tools and credentials before running (gh, curl, jq, API tokens)',
+    function () use ($binDir): void {
+        $createRepos = file_get_contents($binDir . '/create-split-repos.sh');
+        $registerPackagist = file_get_contents($binDir . '/register-packagist.sh');
+        $addPackage = file_get_contents($binDir . '/add-package.sh');
 
-    // create-split-repos.sh validates gh, jq, and gh auth
-    expect($createRepos)
-        ->toContain('command -v gh')
-        ->toContain('command -v jq')
-        ->toContain('gh auth status')
-        // register-packagist.sh validates curl, jq, and requires API tokens
-        ->and($registerPackagist)
-        ->toContain('command -v curl')
-        ->toContain('command -v jq')
-        ->toContain('PACKAGIST_USERNAME:?')
-        ->toContain('PACKAGIST_TOKEN:?')
-        // add-package.sh validates gh, jq, curl, and requires API tokens
-        ->and($addPackage)
-        ->toContain('command -v gh')
-        ->toContain('command -v jq')
-        ->toContain('command -v curl')
-        ->toContain('PACKAGIST_USERNAME:?')
-        ->toContain('PACKAGIST_TOKEN:?');
-});
+        // create-split-repos.sh validates gh, jq, and gh auth
+        expect($createRepos)
+            ->toContain('command -v gh')
+            ->toContain('command -v jq')
+            ->toContain('gh auth status')
+            // register-packagist.sh validates curl, jq, and requires API tokens
+            ->and($registerPackagist)
+            ->toContain('command -v curl')
+            ->toContain('command -v jq')
+            ->toContain('PACKAGIST_USERNAME:?')
+            ->toContain('PACKAGIST_TOKEN:?')
+            // add-package.sh validates gh, jq, curl, and requires API tokens
+            ->and($addPackage)
+            ->toContain('command -v gh')
+            ->toContain('command -v jq')
+            ->toContain('command -v curl')
+            ->toContain('PACKAGIST_USERNAME:?')
+            ->toContain('PACKAGIST_TOKEN:?');
+    },
+);
 
 it('makes all scripts executable', function () use ($binDir): void {
     $scripts = [
