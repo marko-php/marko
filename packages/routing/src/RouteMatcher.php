@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Marko\Routing;
 
-readonly class RouteMatcher implements RouteMatcherInterface
+class RouteMatcher implements RouteMatcherInterface
 {
+    /** @var array<string, ?MatchedRoute> */
+    private array $cache = [];
+
     public function __construct(
-        private RouteCollection $routes,
+        private readonly RouteCollection $routes,
     ) {}
 
     public function match(
@@ -15,19 +18,24 @@ readonly class RouteMatcher implements RouteMatcherInterface
         string $path,
     ): ?MatchedRoute {
         $normalizedPath = $this->normalizePath($path);
+        $cacheKey = $method . ':' . $normalizedPath;
+
+        if (array_key_exists($cacheKey, $this->cache)) {
+            return $this->cache[$cacheKey];
+        }
 
         foreach ($this->routes->byMethod($method) as $route) {
             if (preg_match($route->regex, $normalizedPath, $matches)) {
                 $parameters = $this->extractParameters($route, $matches);
 
-                return new MatchedRoute(
+                return $this->cache[$cacheKey] = new MatchedRoute(
                     route: $route,
                     parameters: $parameters,
                 );
             }
         }
 
-        return null;
+        return $this->cache[$cacheKey] = null;
     }
 
     private function normalizePath(

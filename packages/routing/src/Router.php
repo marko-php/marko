@@ -18,19 +18,16 @@ use ReflectionType;
 
 readonly class Router
 {
-    private RouteMatcher $matcher;
-
     private MiddlewarePipeline $pipeline;
 
     /**
      * @param array<class-string<MiddlewareInterface>> $globalMiddleware
      */
     public function __construct(
-        private RouteCollection $routes,
+        private RouteMatcherInterface $matcher,
         private ContainerInterface $container,
         private array $globalMiddleware = [],
     ) {
-        $this->matcher = new RouteMatcher($routes);
         $this->pipeline = new MiddlewarePipeline($container);
     }
 

@@ -57,11 +57,13 @@ class RoutingBootstrapper
         // Register RouteCollection as singleton instance
         $this->container->instance(RouteCollection::class, $this->routes);
 
-        // Register RouteMatcher with the same RouteCollection
-        $this->container->instance(RouteMatcherInterface::class, new RouteMatcher($this->routes));
+        // Register a single RouteMatcher so the Router and any middleware that
+        // inspects routes (e.g. PageCacheMiddleware) share one memoized instance.
+        $matcher = new RouteMatcher($this->routes);
+        $this->container->instance(RouteMatcherInterface::class, $matcher);
 
         // Create and register Router
-        $router = new Router($this->routes, $this->container, $globalMiddleware);
+        $router = new Router($matcher, $this->container, $globalMiddleware);
         $this->container->instance(Router::class, $router);
 
         return $router;

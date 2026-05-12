@@ -8,6 +8,7 @@ use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\RouteCollection;
 use Marko\Routing\RouteDefinition;
+use Marko\Routing\RouteMatcher;
 use Marko\Routing\Router;
 
 /**
@@ -51,7 +52,7 @@ it('demo index.php routes request through Router', function (): void {
     $container->instance($controller::class, $controller);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
@@ -96,7 +97,7 @@ it('demo index.php returns 404 for unmatched routes', function (): void {
     $container = new Container($preferenceRegistry);
 
     $router = new Router(
-        routes: $routes,
+        matcher: new RouteMatcher($routes),
         container: $container,
     );
 
