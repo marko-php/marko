@@ -98,6 +98,9 @@ body:
         - rate-limiting
         - routing
         - scheduler
+        - scope
+        - scope-mysql
+        - scope-pgsql
         - search
         - security
         - session

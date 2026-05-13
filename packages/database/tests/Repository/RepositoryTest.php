@@ -1200,6 +1200,13 @@ function createMockQueryBuilder(
             return $this;
         }
 
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static {
+            return $this;
+        }
+
         public function limit(
             int $limit,
         ): static {

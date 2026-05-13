@@ -83,6 +83,9 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
         /** @var array<string> */
         public array $orderByCalled = [];
 
+        /** @var array<string> */
+        public array $orderByRawCalled = [];
+
         public function __construct(private readonly array $rows) {}
 
         public function table(string $table): static
@@ -177,6 +180,15 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
             string $direction = 'ASC',
         ): static {
             $this->orderByCalled[] = "$column $direction";
+
+            return $this;
+        }
+
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static {
+            $this->orderByRawCalled[] = "$expression $direction";
 
             return $this;
         }
@@ -499,4 +511,32 @@ it('returns empty EntityCollection when no results', function (): void {
 
     expect($result)->toBeInstanceOf(EntityCollection::class)
         ->and($result->isEmpty())->toBeTrue();
+});
+
+it('adds orderByRaw to RepositoryQueryBuilder delegating to the wrapped builder', function (): void {
+    $stub = makeRqbStubBuilder([]);
+    $rqb = makeRqb($stub);
+
+    $rqb->orderByRaw('COALESCE(priority, 999)', 'ASC');
+
+    expect($stub->orderByRawCalled)->toBe(['COALESCE(priority, 999) ASC']);
+});
+
+it('returns static for chaining', function (): void {
+    $stub = makeRqbStubBuilder([]);
+    $rqb = makeRqb($stub);
+
+    $result = $rqb->orderByRaw('COALESCE(priority, 999)');
+
+    expect($result)->toBeInstanceOf(RepositoryQueryBuilder::class)
+        ->and($result)->toBe($rqb);
+});
+
+it('preserves expression text passing through to driver implementations', function (): void {
+    $stub = makeRqbStubBuilder([]);
+    $rqb = makeRqb($stub);
+
+    $rqb->orderByRaw('COALESCE(priority, 999)', 'DESC');
+
+    expect($stub->orderByRawCalled)->toBe(['COALESCE(priority, 999) DESC']);
 });

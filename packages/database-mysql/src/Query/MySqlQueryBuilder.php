@@ -66,7 +66,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     private ?array $havingClause = null;
 
     /**
-     * @var array<array{column: string, direction: string}>
+     * @var array<array{column: string, direction: string, raw: bool}>
      */
     private array $orders = [];
 
@@ -113,6 +113,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws UnionShapeMismatchException When column counts differ
+     */
     public function union(
         QueryBuilderInterface $other,
     ): static {
@@ -128,6 +131,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws UnionShapeMismatchException When column counts differ
+     */
     public function unionAll(
         QueryBuilderInterface $other,
     ): static {
@@ -252,11 +258,17 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException When a column name is invalid
+     */
     public function groupBy(
         string ...$columns,
     ): static {
         foreach ($columns as $column) {
-            if (!IdentifierValidator::isValidIdentifier($column) && !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/', $column)) {
+            if (!IdentifierValidator::isValidIdentifier($column) && !preg_match(
+                '/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/',
+                $column
+            )) {
                 throw InvalidColumnException::invalidColumn($column);
             }
         }
@@ -266,6 +278,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException When the expression contains dangerous patterns
+     */
     public function having(
         string $expression,
         array $bindings = [],
@@ -350,6 +365,38 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         $this->orders[] = [
             'column' => $column,
             'direction' => $direction,
+            'raw' => false,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException When the expression contains dangerous patterns
+     */
+    public function orderByRaw(
+        string $expression,
+        string $direction = 'ASC',
+    ): static {
+        if (
+            str_contains($expression, ';')
+            || str_contains($expression, '--')
+            || str_contains($expression, '/*')
+            || str_contains($expression, '*/')
+            || str_contains($expression, '`')
+        ) {
+            throw InvalidColumnException::invalidColumn($expression);
+        }
+
+        $direction = strtoupper($direction);
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'ASC';
+        }
+
+        $this->orders[] = [
+            'column' => $expression,
+            'direction' => $direction,
+            'raw' => true,
         ];
 
         return $this;
@@ -458,6 +505,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return (int) $this->runAggregate($expr);
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function min(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -467,6 +517,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('MIN(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function max(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -476,6 +529,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('MAX(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function sum(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -485,6 +541,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('SUM(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function avg(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -852,16 +911,14 @@ class MySqlQueryBuilder implements QueryBuilderInterface
             return '';
         }
 
-        $orders = array_map(
-            fn ($order) => sprintf(
-                '%s %s',
-                $this->quoteIdentifier($order['column']),
-                $order['direction'],
-            ),
+        $parts = array_map(
+            fn ($order) => $order['raw']
+                ? sprintf('%s %s', $order['column'], $order['direction'])
+                : sprintf('%s %s', $this->quoteIdentifier($order['column']), $order['direction']),
             $this->orders,
         );
 
-        return ' ORDER BY ' . implode(', ', $orders);
+        return ' ORDER BY ' . implode(', ', $parts);
     }
 
     private function buildLimitOffsetClause(): string

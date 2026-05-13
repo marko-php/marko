@@ -132,6 +132,13 @@ describe('QuerySpecification', function (): void {
                 return $this;
             }
 
+            public function orderByRaw(
+                string $expression,
+                string $direction = 'ASC',
+            ): static {
+                return $this;
+            }
+
             public function limit(int $limit): static
             {
                 return $this;
@@ -345,6 +352,13 @@ describe('QuerySpecification', function (): void {
 
             public function orderBy(
                 string $column,
+                string $direction = 'ASC',
+            ): static {
+                return $this;
+            }
+
+            public function orderByRaw(
+                string $expression,
                 string $direction = 'ASC',
             ): static {
                 return $this;

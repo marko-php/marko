@@ -9,7 +9,10 @@ use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\RelationshipLoader;
+use Marko\Database\Exceptions\InvalidColumnException;
+use Marko\Database\Exceptions\InvalidJsonPathException;
 use Marko\Database\Exceptions\RepositoryException;
+use Marko\Database\Exceptions\UnionShapeMismatchException;
 use Marko\Database\Query\EntityQueryBuilderInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Query\QuerySpecification;
@@ -89,13 +92,22 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this;
     }
 
-    public function whereJsonContains(string $path, mixed $value): static
+    /**
+     * @throws InvalidJsonPathException When the path expression is invalid
+     */
+    public function whereJsonContains(
+        string $path,
+        mixed $value,
+    ): static
     {
         $this->queryBuilder->whereJsonContains($path, $value);
 
         return $this;
     }
 
+    /**
+     * @throws InvalidJsonPathException When the path expression is invalid
+     */
     public function whereJsonExists(string $path): static
     {
         $this->queryBuilder->whereJsonExists($path);
@@ -103,6 +115,9 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidJsonPathException When the path expression is invalid
+     */
     public function whereJsonMissing(string $path): static
     {
         $this->queryBuilder->whereJsonMissing($path);
@@ -160,6 +175,9 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException When a column name is invalid
+     */
     public function groupBy(string ...$columns): static
     {
         $this->queryBuilder->groupBy(...$columns);
@@ -167,13 +185,22 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this;
     }
 
-    public function having(string $expression, array $bindings = []): static
+    /**
+     * @throws InvalidColumnException When the expression contains dangerous patterns
+     */
+    public function having(
+        string $expression,
+        array $bindings = [],
+    ): static
     {
         $this->queryBuilder->having($expression, $bindings);
 
         return $this;
     }
 
+    /**
+     * @throws UnionShapeMismatchException When column counts differ
+     */
     public function union(
         QueryBuilderInterface $other,
     ): static {
@@ -182,6 +209,9 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws UnionShapeMismatchException When column counts differ
+     */
     public function unionAll(
         QueryBuilderInterface $other,
     ): static {
@@ -195,6 +225,18 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         string $direction = 'ASC',
     ): static {
         $this->queryBuilder->orderBy($column, $direction);
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException When the expression contains dangerous patterns
+     */
+    public function orderByRaw(
+        string $expression,
+        string $direction = 'ASC',
+    ): static {
+        $this->queryBuilder->orderByRaw($expression, $direction);
 
         return $this;
     }
@@ -247,21 +289,33 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this->queryBuilder->count($column);
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function min(string $column): int|float|null
     {
         return $this->queryBuilder->min($column);
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function max(string $column): int|float|null
     {
         return $this->queryBuilder->max($column);
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function sum(string $column): int|float|null
     {
         return $this->queryBuilder->sum($column);
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function avg(string $column): int|float|null
     {
         return $this->queryBuilder->avg($column);

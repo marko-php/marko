@@ -188,6 +188,11 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
+        public function orderByRaw(string $expression, string $direction = 'ASC'): static
+        {
+            return $this;
+        }
+
         public function limit(int $limit): static
         {
             return $this;
@@ -369,6 +374,11 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
         }
 
         public function orderBy(string $column, string $direction = 'ASC'): static
+        {
+            return $this;
+        }
+
+        public function orderByRaw(string $expression, string $direction = 'ASC'): static
         {
             return $this;
         }
@@ -644,6 +654,11 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
         }
 
         public function orderBy(string $column, string $direction = 'ASC'): static
+        {
+            return $this;
+        }
+
+        public function orderByRaw(string $expression, string $direction = 'ASC'): static
         {
             return $this;
         }

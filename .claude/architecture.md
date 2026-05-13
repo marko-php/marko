@@ -220,6 +220,14 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/errors-simple` | Driver | Basic error logging |
 | `marko/errors-advanced` | Driver | Pretty stack traces, suggestions |
 
+### Scope
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/scope` | Interface | Scoped entity attributes with multi-axis hierarchical fallback |
+| `marko/scope-mysql` | Driver | MySQL/MariaDB driver for scope-aware `ORDER BY` queries |
+| `marko/scope-pgsql` | Driver | PostgreSQL driver for scope-aware `ORDER BY` queries |
+
 ### Other Packages
 
 | Package | Type | Description |

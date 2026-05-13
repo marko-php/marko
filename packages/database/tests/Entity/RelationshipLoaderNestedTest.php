@@ -440,6 +440,13 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static {
+            return $this;
+        }
+
         public function limit(int $limit): static
         {
             return $this;
@@ -924,5 +931,5 @@ it('handles empty intermediate results without error', function (): void {
     $tree = ['comments' => ['author' => []]];
     $loader->loadNested([$post], $tree, $postMeta);
 
-    expect($post->comments)->toBe([]);
+    expect($post->comments)->toBeEmpty();
 });

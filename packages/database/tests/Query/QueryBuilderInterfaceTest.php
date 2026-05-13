@@ -278,6 +278,26 @@ describe('QueryBuilderInterface', function (): void {
         expect($returnType?->getName())->toBe('array');
     });
 
+    it('adds orderByRaw to QueryBuilderInterface with expression and direction parameters', function (): void {
+        $reflection = new ReflectionClass(QueryBuilderInterface::class);
+
+        expect($reflection->hasMethod('orderByRaw'))->toBeTrue();
+
+        $method = $reflection->getMethod('orderByRaw');
+        $params = $method->getParameters();
+
+        expect($params)->toHaveCount(2)
+            ->and($params[0]->getName())->toBe('expression')
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('direction')
+            ->and($params[1]->getType()?->getName())->toBe('string')
+            ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
+            ->and($params[1]->getDefaultValue())->toBe('ASC');
+
+        $returnType = $method->getReturnType();
+        expect($returnType?->getName())->toBe('static');
+    });
+
     it('defines min(), max(), sum(), avg() aggregate methods returning int|float|null', function (): void {
         $reflection = new ReflectionClass(QueryBuilderInterface::class);
 

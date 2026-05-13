@@ -204,7 +204,10 @@ interface QueryBuilderInterface
      * @return static For fluent chaining
      * @throws InvalidColumnException When the expression contains dangerous patterns
      */
-    public function having(string $expression, array $bindings = []): static;
+    public function having(
+        string $expression,
+        array $bindings = [],
+    ): static;
 
     /**
      * Add an ORDER BY clause.
@@ -215,6 +218,25 @@ interface QueryBuilderInterface
      */
     public function orderBy(
         string $column,
+        string $direction = 'ASC',
+    ): static;
+
+    /**
+     * Add an ORDER BY clause with a raw SQL expression.
+     *
+     * Security: $expression must not contain semicolons, SQL comment markers, or backticks.
+     * Never interpolate user-supplied values directly into the expression — use ? placeholders
+     * and pass values via bindings at the query level instead.
+     *
+     * The caller is responsible for ensuring the expression is safe.
+     *
+     * @param string $expression Raw SQL expression (e.g. "COALESCE(priority, 999)")
+     * @param string $direction The sort direction (ASC or DESC)
+     * @return static For fluent chaining
+     * @throws InvalidColumnException When the expression contains dangerous patterns
+     */
+    public function orderByRaw(
+        string $expression,
         string $direction = 'ASC',
     ): static;
 

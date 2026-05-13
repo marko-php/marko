@@ -229,6 +229,11 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
+        public function orderByRaw(string $expression, string $direction = 'ASC'): static
+        {
+            return $this;
+        }
+
         public function limit(int $limit): static
         {
             return $this;

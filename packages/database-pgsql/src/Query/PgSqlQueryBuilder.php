@@ -70,6 +70,11 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
      */
     private array $orders = [];
 
+    /**
+     * @var array<array{expression: string, direction: string}>
+     */
+    private array $rawOrders = [];
+
     private bool $distinct = false;
 
     /**
@@ -113,6 +118,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws UnionShapeMismatchException When column counts differ
+     */
     public function union(
         QueryBuilderInterface $other,
     ): static {
@@ -128,6 +136,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws UnionShapeMismatchException When column counts differ
+     */
     public function unionAll(
         QueryBuilderInterface $other,
     ): static {
@@ -251,11 +262,17 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException When a column name is invalid
+     */
     public function groupBy(
         string ...$columns,
     ): static {
         foreach ($columns as $column) {
-            if (!IdentifierValidator::isValidIdentifier($column) && !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/', $column)) {
+            if (!IdentifierValidator::isValidIdentifier($column) && !preg_match(
+                '/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/',
+                $column
+            )) {
                 throw InvalidColumnException::invalidColumn($column);
             }
         }
@@ -265,6 +282,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException When the expression contains dangerous patterns
+     */
     public function having(
         string $expression,
         array $bindings = [],
@@ -348,6 +368,36 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
 
         $this->orders[] = [
             'column' => $column,
+            'direction' => $direction,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException When the expression contains dangerous patterns
+     */
+    public function orderByRaw(
+        string $expression,
+        string $direction = 'ASC',
+    ): static {
+        if (
+            str_contains($expression, ';')
+            || str_contains($expression, '--')
+            || str_contains($expression, '/*')
+            || str_contains($expression, '*/')
+            || str_contains($expression, '`')
+        ) {
+            throw InvalidColumnException::invalidColumn($expression);
+        }
+
+        $direction = strtoupper($direction);
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'ASC';
+        }
+
+        $this->rawOrders[] = [
+            'expression' => $expression,
             'direction' => $direction,
         ];
 
@@ -468,6 +518,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return (int) $this->runAggregate($expr);
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function min(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -477,6 +530,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('MIN(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function max(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -486,6 +542,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('MAX(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function sum(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -495,6 +554,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('SUM(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException When the column name is invalid
+     */
     public function avg(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -607,7 +669,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         $lastIndex = count($path->segments) - 1;
 
         foreach ($path->segments as $i => $segment) {
-            $op = ($i === $lastIndex) ? $path->operator : '->';
+            $op = $i === $lastIndex ? $path->operator : '->';
             $sql .= $op . "'" . $segment . "'";
         }
 
@@ -853,7 +915,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
 
     private function buildOrderByClause(): string
     {
-        if (empty($this->orders)) {
+        if (empty($this->orders) && empty($this->rawOrders)) {
             return '';
         }
 
@@ -866,7 +928,12 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
             $this->orders,
         );
 
-        return ' ORDER BY ' . implode(', ', $clauses);
+        $rawClauses = array_map(
+            fn (array $order): string => sprintf('%s %s', $order['expression'], $order['direction']),
+            $this->rawOrders,
+        );
+
+        return ' ORDER BY ' . implode(', ', array_merge($clauses, $rawClauses));
     }
 
     private function buildLimitOffsetClause(): string

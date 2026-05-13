@@ -266,6 +266,18 @@
         },
         {
             "type": "path",
+            "url": "packages/scope"
+        },
+        {
+            "type": "path",
+            "url": "packages/scope-mysql"
+        },
+        {
+            "type": "path",
+            "url": "packages/scope-pgsql"
+        },
+        {
+            "type": "path",
             "url": "packages/search"
         },
         {
@@ -395,6 +407,9 @@
         "marko/rate-limiting": "self.version",
         "marko/routing": "self.version",
         "marko/scheduler": "self.version",
+        "marko/scope": "self.version",
+        "marko/scope-mysql": "self.version",
+        "marko/scope-pgsql": "self.version",
         "marko/search": "self.version",
         "marko/security": "self.version",
         "marko/session": "self.version",
@@ -511,6 +526,9 @@
             "Marko\\RateLimiting\\Tests\\": "packages/rate-limiting/tests/",
             "Marko\\Routing\\Tests\\": "packages/routing/tests/",
             "Marko\\Scheduler\\Tests\\": "packages/scheduler/tests/",
+            "Marko\\Scope\\Tests\\": "packages/scope/tests/",
+            "Marko\\Scope\\MySql\\Tests\\": "packages/scope-mysql/tests/",
+            "Marko\\Scope\\PgSql\\Tests\\": "packages/scope-pgsql/tests/",
             "Marko\\Search\\Tests\\": "packages/search/tests/",
             "Marko\\Security\\Tests\\": "packages/security/tests/",
             "Marko\\Session\\Tests\\": "packages/session/tests/",
