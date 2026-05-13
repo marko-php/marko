@@ -11,11 +11,11 @@ use Marko\Scope\Exceptions\ScopeConfigurationException;
 use Marko\Scope\Exceptions\UnknownAxisException;
 use Marko\Scope\Metadata\ScopeMetadataFactory;
 use Marko\Scope\Storage\HasScopesInterface;
-use Marko\Scope\Storage\ScopedOverridesEntity;
 
 /**
  * Boot-time validator that ensures every entity with scoped properties
- * has a registered ScopedOverridesEntity extender.
+ * has scope storage configured — either via the HasScopes trait on the entity itself,
+ * or via a registered companion class that implements HasScopesInterface.
  */
 readonly class ScopedEntityValidator
 {
@@ -25,7 +25,7 @@ readonly class ScopedEntityValidator
     ) {}
 
     /**
-     * Validate that the given entity class has a proper overrides extender if it declares scoped properties.
+     * Validate that the given entity class has proper scope storage if it declares scoped properties.
      *
      * @param class-string $entityClass
      *
@@ -40,39 +40,20 @@ readonly class ScopedEntityValidator
         }
 
         if (is_a($entityClass, HasScopesInterface::class, true)) {
-            $entityMetadata = $this->entityMetadataFactory->parse($entityClass);
-
-            $conflictingExtender = array_find(
-                $entityMetadata->extenders,
-                fn (string $extender) => is_subclass_of($extender, ScopedOverridesEntity::class),
-            );
-
-            if ($conflictingExtender !== null) {
-                throw ScopeConfigurationException::traitAndCompanionConflict($entityClass, $conflictingExtender);
-            }
-
             return;
         }
 
         $entityMetadata = $this->entityMetadataFactory->parse($entityClass);
-        $extenders = $entityMetadata->extenders;
 
-        $scopedProperties = [];
-        foreach ($scopeMetadata->scopedProperties() as $property) {
-            $scopedProperties[$property] = $scopeMetadata->axesForProperty($property);
-        }
-
-        $hasValidExtender = array_any(
-            $extenders,
-            fn (string $extender) => is_subclass_of($extender, ScopedOverridesEntity::class),
+        $hasCompatibleCompanion = array_any(
+            $entityMetadata->extenders,
+            fn (string $extender) => is_a($extender, HasScopesInterface::class, true),
         );
 
-        if (count($extenders) === 0 || !$hasValidExtender) {
-            if (count($extenders) > 0) {
-                throw ScopeConfigurationException::wrongOverridesExtenderBase($entityClass, $extenders[0]);
-            }
-
-            throw ScopeConfigurationException::missingOverridesExtender($entityClass, $scopedProperties);
+        if ($hasCompatibleCompanion) {
+            return;
         }
+
+        throw ScopeConfigurationException::missingScopesStorage($entityClass);
     }
 }

@@ -14,17 +14,20 @@ use Marko\Scope\Resolution\ScopeWalker;
 use Marko\Scope\Scope;
 use Marko\Scope\Storage\HasScopes;
 use Marko\Scope\Storage\HasScopesInterface;
-use Marko\Scope\Storage\ScopedOverridesEntity;
 
-// Concrete anonymous-style subclass for tests
-class WalkerTestOverrides extends ScopedOverridesEntity {}
+// Standalone HasScopesInterface implementor for walker tests (no parent entity needed)
+class WalkerTestOverrides implements HasScopesInterface
+{
+    use HasScopes;
+}
 
-// Trait-based fixture — does NOT extend ScopedOverridesEntity
+// Trait-based entity fixture
 #[Table(name: 'walker_trait_products')]
 class WalkerTraitProduct extends Entity implements HasScopesInterface
 {
     use HasScopes;
 
+    /** @noinspection PhpUnused - Entity property for structural definition */
     #[Column(primaryKey: true, autoIncrement: true)]
     public ?int $id = null;
 }
@@ -36,7 +39,7 @@ function makeWalkerRegistry(array $axes = []): ScopeRegistryInterface
         /** @var array<string, ScopeAxis> */
         private array $builtAxes;
 
-        public function __construct(private readonly array $axes)
+        public function __construct(array $axes)
         {
             $this->builtAxes = [];
             foreach ($axes as $name => $paths) {

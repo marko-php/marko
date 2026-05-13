@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Marko\Scope\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
-use ReflectionClass;
 
 /**
  * Exception thrown when scope configuration is malformed or invalid.
@@ -42,48 +41,14 @@ class ScopeConfigurationException extends MarkoException
     }
 
     /**
-     * @param array<string, list<string>> $scopedProperties Map of property name => list of axes
+     * @param class-string $entityClass
      */
-    public static function missingOverridesExtender(
-        string $parentClass,
-        array $scopedProperties,
-    ): self {
-        $propertyLines = [];
-        foreach ($scopedProperties as $property => $axes) {
-            $axesStr = count($axes) > 0 ? implode(', ', $axes) : 'none';
-            $propertyLines[] = "  - $property (axes: $axesStr)";
-        }
-        $propertiesContext = implode("\n", $propertyLines);
-
-        $shortName = class_exists($parentClass) ? (new ReflectionClass($parentClass))->getShortName() : $parentClass;
-        $suggestion = "#[Table(extends: $parentClass::class)]\nclass {$shortName}Overrides extends ScopedOverridesEntity {}";
-
+    public static function missingScopesStorage(string $entityClass): self
+    {
         return new self(
-            message: "Entity '$parentClass' declares Scoped properties but has no ScopedOverridesEntity extender registered.",
-            context: "Validating scoped entity '$parentClass'.\nScoped properties:\n$propertiesContext",
-            suggestion: $suggestion,
-        );
-    }
-
-    public static function wrongOverridesExtenderBase(
-        string $parentClass,
-        string $extenderClass,
-    ): self {
-        return new self(
-            message: "Extender '$extenderClass' for '$parentClass' does not extend ScopedOverridesEntity.",
-            context: "Validating scoped entity '$parentClass': found extender '$extenderClass' but it does not extend ScopedOverridesEntity.",
-            suggestion: "Make '$extenderClass' extend ScopedOverridesEntity instead of Entity directly.",
-        );
-    }
-
-    public static function traitAndCompanionConflict(
-        string $parentClass,
-        string $extenderClass,
-    ): self {
-        return new self(
-            message: "Entity '$parentClass' uses both the HasScopes trait and has a ScopedOverridesEntity extender '$extenderClass' — they both contribute a `scopes` column.",
-            context: "Validating scoped entity '$parentClass': found ScopedOverridesEntity extender '$extenderClass' but the entity already uses the HasScopes trait.",
-            suggestion: 'Remove either the `use HasScopes;` trait or the extender class — they both contribute a `scopes` column',
+            message: "Entity '$entityClass' has #[Scoped] properties but provides no scope storage. Add 'use HasScopes; implements HasScopesInterface;' to the entity, or register a companion class that implements HasScopesInterface.",
+            context: "Validating scoped entity '$entityClass'",
+            suggestion: "Either add 'use HasScopes; implements HasScopesInterface;' to '$entityClass', or create and register a companion class extending Entity that implements HasScopesInterface using the HasScopes trait.",
         );
     }
 }

@@ -3,7 +3,7 @@ title: marko/scope-mysql
 description: MySQL and MariaDB driver for marko/scope — scoped ORDER BY and automatic scopes column migration.
 ---
 
-MySQL and MariaDB driver for `marko/scope` --- enables scoped `ORDER BY` queries and automatic `scopes` column migration. The package provides `MySqlScopeSortRenderer`, which emits `COALESCE(JSON_UNQUOTE(JSON_EXTRACT(...)), column)` expressions for scope-aware sorting. The `scopes` JSON column is added automatically --- either via the `HasScopes` trait on the entity itself, or via a `ScopedOverridesEntity` companion class when the entity cannot be modified. No separate migration helper is needed in either case. Requires MariaDB 10.3+ or MySQL 8.0+.
+MySQL and MariaDB driver for `marko/scope` --- enables scoped `ORDER BY` queries and automatic `scopes` column migration. The package provides `MySqlScopeSortRenderer`, which emits `COALESCE(JSON_UNQUOTE(JSON_EXTRACT(...)), column)` expressions for scope-aware sorting. The `scopes` JSON column is declared by the `HasScopes` trait on the entity; no separate migration helper is needed. Requires MariaDB 10.3+ or MySQL 8.0+.
 
 ## Installation
 
@@ -17,9 +17,7 @@ This automatically installs `marko/scope` as a transitive dependency.
 
 ### Adding the `scopes` column
 
-There are two ways to get the `scopes` JSON column into your entity's table.
-
-**Option 1 --- `HasScopes` trait (recommended).** Implement `HasScopesInterface` and use the `HasScopes` trait on the entity. The trait declares the column directly; no companion class is needed:
+Implement `HasScopesInterface` and use the `HasScopes` trait on the entity. The trait declares the `scopes` JSON column directly; no companion class is needed:
 
 ```php title="app/catalog/Entity/Product.php"
 <?php
@@ -50,26 +48,6 @@ class Product extends Entity implements HasScopesInterface
 ```
 
 Register `Product` with the `SchemaRegistry`. The `scopes` column will appear in the `products` table after the next migration run.
-
-**Option 2 --- companion class.** When the entity class cannot be modified, declare a `ScopedOverridesEntity` subclass with `#[Table(extends:)]` pointing at your entity. When `db:migrate` runs, the `scopes` JSON column is merged into the parent table automatically:
-
-```php title="app/catalog/Entity/ProductScopedOverrides.php"
-<?php
-
-declare(strict_types=1);
-
-namespace App\Catalog\Entity;
-
-use Marko\Database\Attributes\Table;
-use Marko\Scope\Storage\ScopedOverridesEntity;
-
-#[Table(extends: Product::class)]
-class ProductScopedOverrides extends ScopedOverridesEntity
-{
-}
-```
-
-Register both `Product` and `ProductScopedOverrides` with the `SchemaRegistry`. The `scopes` column will appear in the `products` table after the next migration run.
 
 ### Scoped ORDER BY
 

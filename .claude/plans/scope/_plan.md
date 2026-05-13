@@ -108,6 +108,7 @@ none
 | 035 | Update `ScopeResolver` for trait-based entities | 033, 034 | completed |
 | 036 | Update `ScopedEntityValidator` for trait-based entities | 033 | completed |
 | 037 | Update `marko/scope` README for `HasScopes` trait | 033, 034, 035, 036 | completed |
+| 038 | Remove `ScopedOverridesEntity` — single-approach cleanup | 033, 034, 035, 036, 037 | completed |
 
 ## Architecture Notes
 

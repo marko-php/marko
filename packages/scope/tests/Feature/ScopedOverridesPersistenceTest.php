@@ -10,7 +10,8 @@ use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
-use Marko\Scope\Storage\ScopedOverridesEntity;
+use Marko\Scope\Storage\HasScopes;
+use Marko\Scope\Storage\HasScopesInterface;
 
 // Product entity fixture
 #[Table('products')]
@@ -27,7 +28,10 @@ class Product extends Entity
 
 // Companion for scoped overrides
 #[Table(extends: Product::class)]
-class ProductScopedOverrides extends ScopedOverridesEntity {}
+class ProductScopedOverrides extends Entity implements HasScopesInterface
+{
+    use HasScopes;
+}
 
 // Repository for Product
 class ProductOverridesRepository extends Repository
@@ -63,16 +67,14 @@ function makeLoggingConnection(array &$sqlLog): ConnectionInterface
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return [];
         }
 
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             $this->sqlLog[] = ['sql' => $sql, 'bindings' => $bindings];
             $this->lastId++;
 
@@ -159,8 +161,7 @@ it('round-trips overrides via save then re-hydrate via find', function (): void 
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             // Simulate SELECT * FROM products WHERE id = ?
             if (str_contains($sql, 'WHERE id = ?')) {
                 return [[
@@ -176,8 +177,7 @@ it('round-trips overrides via save then re-hydrate via find', function (): void 
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             if (str_starts_with($sql, 'INSERT')) {
                 $this->lastId++;
                 $this->insertedScopes = end($bindings);
@@ -216,12 +216,11 @@ it('round-trips overrides via save then re-hydrate via find', function (): void 
     /** @var Product $found */
     $found = $repository->find($product->id);
 
-    expect($found)->not->toBeNull();
-
     /** @var ProductScopedOverrides $foundOverrides */
     $foundOverrides = $found->companion(ProductScopedOverrides::class);
 
-    expect($foundOverrides)->not->toBeNull()
+    expect($found)->not->toBeNull()
+        ->and($foundOverrides)->not->toBeNull()
         ->and($foundOverrides->getOverride('geo:eu.de', 'name'))->toBe('Hemd')
         ->and($foundOverrides->allOverrides())->toBe(['geo:eu.de' => ['name' => 'Hemd']]);
 });

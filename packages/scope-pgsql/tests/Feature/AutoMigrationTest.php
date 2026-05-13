@@ -14,7 +14,8 @@ use Marko\Database\PgSql\Sql\PgSqlGenerator;
 use Marko\Database\Schema\Column as SchemaColumn;
 use Marko\Database\Schema\SchemaRegistry;
 use Marko\Database\Schema\Table as SchemaTable;
-use Marko\Scope\Storage\ScopedOverridesEntity;
+use Marko\Scope\Storage\HasScopes;
+use Marko\Scope\Storage\HasScopesInterface;
 
 // Test fixtures
 
@@ -31,7 +32,10 @@ class Product extends Entity
 }
 
 #[Table(extends: Product::class)]
-class ProductScopedOverrides extends ScopedOverridesEntity {}
+class ProductScopedOverrides extends Entity implements HasScopesInterface
+{
+    use HasScopes;
+}
 
 // Tests
 

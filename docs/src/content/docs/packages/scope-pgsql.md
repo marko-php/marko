@@ -3,7 +3,7 @@ title: marko/scope-pgsql
 description: PostgreSQL driver for marko/scope — jsonb column support and scoped ORDER BY.
 ---
 
-PostgreSQL driver for `marko/scope` --- adds `jsonb` column support and scoped `ORDER BY` for PostgreSQL-backed applications. The `scopes` column is added automatically --- either via the `HasScopes` trait on the entity itself, or via a `ScopedOverridesEntity` companion class when the entity cannot be modified. The `json` column type materialises as `JSONB` in PostgreSQL via the driver's type map, giving full indexed JSON support without any extra configuration.
+PostgreSQL driver for `marko/scope` --- adds `jsonb` column support and scoped `ORDER BY` for PostgreSQL-backed applications. The `scopes` column is declared by the `HasScopes` trait on the entity. The `json` column type materialises as `JSONB` in PostgreSQL via the driver's type map, giving full indexed JSON support without any extra configuration.
 
 ## Installation
 
@@ -17,9 +17,7 @@ This automatically installs `marko/scope` as a transitive dependency.
 
 ### Adding the `scopes` column
 
-There are two ways to get the `scopes` JSONB column into your entity's table.
-
-**Option 1 --- `HasScopes` trait (recommended).** Implement `HasScopesInterface` and use the `HasScopes` trait on the entity. The trait declares the column directly; no companion class is needed:
+Implement `HasScopesInterface` and use the `HasScopes` trait on the entity. The trait declares the `scopes` JSONB column directly; no companion class is needed:
 
 ```php title="app/catalog/Entity/Product.php"
 <?php
@@ -50,26 +48,6 @@ class Product extends Entity implements HasScopesInterface
 ```
 
 Register `Product` with the `SchemaRegistry`. The `scopes` column will appear in the `products` table after the next migration run.
-
-**Option 2 --- companion class.** When the entity class cannot be modified, declare a `ScopedOverridesEntity` subclass with `#[Table(extends:)]` pointing at your entity. When `db:migrate` runs, the `scopes` JSONB column is merged into the parent table automatically:
-
-```php title="app/catalog/Entity/ProductScopedOverrides.php"
-<?php
-
-declare(strict_types=1);
-
-namespace App\Catalog\Entity;
-
-use Marko\Database\Attributes\Table;
-use Marko\Scope\Storage\ScopedOverridesEntity;
-
-#[Table(extends: Product::class)]
-class ProductScopedOverrides extends ScopedOverridesEntity
-{
-}
-```
-
-Register both `Product` and `ProductScopedOverrides` with the `SchemaRegistry`. The `scopes` column will appear in the `products` table after the next migration run.
 
 ### Scoped ORDER BY
 

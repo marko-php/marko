@@ -10,7 +10,8 @@ use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Repository\Repository;
-use Marko\Scope\Storage\ScopedOverridesEntity;
+use Marko\Scope\Storage\HasScopes;
+use Marko\Scope\Storage\HasScopesInterface;
 
 // Parent entity for dirty tracking feature test
 #[Table('products')]
@@ -25,9 +26,12 @@ class DirtyTrackingProduct extends Entity
     public string $name;
 }
 
-// ScopedOverridesEntity companion for DirtyTrackingProduct
+// HasScopesInterface companion for DirtyTrackingProduct
 #[Table(extends: DirtyTrackingProduct::class)]
-class DirtyTrackingProductOverrides extends ScopedOverridesEntity {}
+class DirtyTrackingProductOverrides extends Entity implements HasScopesInterface
+{
+    use HasScopes;
+}
 
 // Repository for DirtyTrackingProduct
 class DirtyTrackingProductRepository extends Repository
@@ -57,16 +61,14 @@ it('participates in Repository::save dirty tracking via the existing companion p
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return [];
         }
 
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             $this->sqlLog[] = ['sql' => $sql, 'bindings' => $bindings];
 
             return 1;

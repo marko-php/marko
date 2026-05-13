@@ -12,7 +12,8 @@ use Marko\Database\MySql\Sql\MySqlGenerator;
 use Marko\Database\Schema\Column as SchemaColumn;
 use Marko\Database\Schema\SchemaRegistry;
 use Marko\Database\Schema\Table as SchemaTable;
-use Marko\Scope\Storage\ScopedOverridesEntity;
+use Marko\Scope\Storage\HasScopes;
+use Marko\Scope\Storage\HasScopesInterface;
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -29,7 +30,10 @@ class AutoMigrationProduct extends Entity
 }
 
 #[Table(extends: AutoMigrationProduct::class)]
-class AutoMigrationProductScopedOverrides extends ScopedOverridesEntity {}
+class AutoMigrationProductScopedOverrides extends Entity implements HasScopesInterface
+{
+    use HasScopes;
+}
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 

@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace Marko\Scope\Resolver;
 
 use Marko\Database\Entity\Entity;
-use Marko\Database\Entity\EntityMetadataFactory;
-use Marko\Database\Exceptions\EntityException;
-use Marko\Database\Exceptions\MissingPrimaryKeyException;
 use Marko\Scope\Context\ScopeContext;
 use Marko\Scope\Exceptions\ScopeContextException;
 use Marko\Scope\Exceptions\UnknownAxisException;
@@ -17,7 +14,6 @@ use Marko\Scope\Registry\ScopeRegistryInterface;
 use Marko\Scope\Resolution\ScopeWalker;
 use Marko\Scope\Scope;
 use Marko\Scope\Storage\HasScopesInterface;
-use Marko\Scope\Storage\ScopedOverridesEntity;
 
 readonly class ScopeResolver
 {
@@ -25,7 +21,6 @@ readonly class ScopeResolver
         private ScopeMetadataFactory $scopeMetadataFactory,
         private ScopeWalker $scopeWalker,
         private ScopeContext $scopeContext,
-        private EntityMetadataFactory $entityMetadataFactory,
     ) {}
 
     /**
@@ -85,7 +80,7 @@ readonly class ScopeResolver
     }
 
     /**
-     * @throws ScopeContextException|UnknownAxisException|EntityException|MissingPrimaryKeyException
+     * @throws ScopeContextException|UnknownAxisException
      */
     public function setOverride(
         Entity $entity,
@@ -103,9 +98,11 @@ readonly class ScopeResolver
         $storage = $this->findStorage($entity);
 
         if ($storage === null) {
-            $companion = $this->createCompanion($entityClass);
-            $entity->attachCompanion($companion);
-            $storage = $companion;
+            throw new ScopeContextException(
+                message: "Entity '$entityClass' has no scope storage: it must implement HasScopesInterface or have a companion that does.",
+                context: "Setting scope override for property '$property' on '$entityClass'",
+                suggestion: "Add 'use HasScopes; implements HasScopesInterface;' to '$entityClass', or register and attach a companion class that implements HasScopesInterface.",
+            );
         }
 
         $scopeKey = $scope->axisName . ':' . $scope->path;
@@ -135,30 +132,6 @@ readonly class ScopeResolver
 
         $scopeKey = $scope->axisName . ':' . $scope->path;
         $storage->clearOverride($scopeKey, $property);
-    }
-
-    /**
-     * @param class-string $entityClass
-     * @throws ScopeContextException|EntityException|MissingPrimaryKeyException
-     */
-    private function createCompanion(string $entityClass): ScopedOverridesEntity
-    {
-        $entityMetadata = $this->entityMetadataFactory->parse($entityClass);
-
-        $extender = array_find(
-            $entityMetadata->extenders,
-            fn (string $candidate) => is_subclass_of($candidate, ScopedOverridesEntity::class),
-        );
-
-        if ($extender !== null) {
-            return new $extender();
-        }
-
-        throw new ScopeContextException(
-            message: "No ScopedOverridesEntity subclass found for '$entityClass'",
-            context: "Creating override companion for '$entityClass'",
-            suggestion: "Register a class extending ScopedOverridesEntity with #[Table(extends: $entityClass::class)]",
-        );
     }
 
     private function findStorage(Entity $entity): ?HasScopesInterface
