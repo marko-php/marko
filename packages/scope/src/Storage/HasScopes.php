@@ -7,7 +7,17 @@ namespace Marko\Scope\Storage;
 use Marko\Database\Attributes\Column;
 use Marko\Database\Entity\Entity;
 
-abstract class ScopedOverridesEntity extends Entity implements HasScopesInterface
+/**
+ * Provides scope override storage for entities.
+ *
+ * Usage constraints:
+ * - Consumers MUST declare `implements HasScopesInterface` on their class because PHP does not
+ *   allow a trait to enforce interface implementation (`trait T implements I` is not valid PHP).
+ * - This trait is intended for use on {@see Entity} subclasses so that
+ *   the {@see Column} attribute on `$scopes` is picked up by `EntityMetadataFactory` for schema
+ *   generation and hydration.
+ */
+trait HasScopes
 {
     #[Column(name: 'scopes', type: 'json', nullable: true)]
     public ?array $scopes = null;

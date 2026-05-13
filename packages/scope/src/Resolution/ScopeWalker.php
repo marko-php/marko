@@ -9,7 +9,7 @@ use Marko\Scope\Exceptions\UnknownAxisException;
 use Marko\Scope\Exceptions\UnknownScopeException;
 use Marko\Scope\Registry\ScopeRegistryInterface;
 use Marko\Scope\Scope;
-use Marko\Scope\Storage\ScopedOverridesEntity;
+use Marko\Scope\Storage\HasScopesInterface;
 
 class ScopeWalker
 {
@@ -18,7 +18,7 @@ class ScopeWalker
      * @throws UnknownAxisException|UnknownScopeException
      */
     public function walk(
-        ScopedOverridesEntity $overrides,
+        HasScopesInterface $overrides,
         string $property,
         array $axes,
         ScopeContext $context,
@@ -34,12 +34,13 @@ class ScopeWalker
             $hierarchy = $registry->getHierarchy($axis);
             $walked = $hierarchy->walkUp($path);
 
-            foreach ($walked as $scope) {
-                $scopeKey = $axis . ':' . $scope;
+            $matchedScope = array_find(
+                $walked,
+                fn (string $scope) => $overrides->hasOverride($axis . ':' . $scope, $property),
+            );
 
-                if ($overrides->hasOverride($scopeKey, $property)) {
-                    return ScopeWalkResult::found($overrides->getOverride($scopeKey, $property));
-                }
+            if ($matchedScope !== null) {
+                return ScopeWalkResult::found($overrides->getOverride($axis . ':' . $matchedScope, $property));
             }
         }
 
@@ -53,7 +54,7 @@ class ScopeWalker
      * @throws UnknownAxisException|UnknownScopeException
      */
     public function walkAt(
-        ScopedOverridesEntity $overrides,
+        HasScopesInterface $overrides,
         string $property,
         array $axes,
         Scope $scope,
@@ -68,12 +69,13 @@ class ScopeWalker
         $hierarchy = $registry->getHierarchy($axis);
         $walked = $hierarchy->walkUp($scope->path);
 
-        foreach ($walked as $scopePath) {
-            $scopeKey = $axis . ':' . $scopePath;
+        $matchedScope = array_find(
+            $walked,
+            fn (string $scopePath) => $overrides->hasOverride($axis . ':' . $scopePath, $property),
+        );
 
-            if ($overrides->hasOverride($scopeKey, $property)) {
-                return ScopeWalkResult::found($overrides->getOverride($scopeKey, $property));
-            }
+        if ($matchedScope !== null) {
+            return ScopeWalkResult::found($overrides->getOverride($axis . ':' . $matchedScope, $property));
         }
 
         return ScopeWalkResult::notFound();

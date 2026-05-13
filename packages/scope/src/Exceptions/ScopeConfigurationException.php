@@ -24,8 +24,7 @@ class ScopeConfigurationException extends MarkoException
     public static function malformedConfig(
         string $axis,
         string $reason,
-    ): self
-    {
+    ): self {
         return new self(
             message: "Scope configuration for axis '$axis' is malformed: $reason",
             context: "Parsing scope configuration for axis '$axis'",
@@ -48,8 +47,7 @@ class ScopeConfigurationException extends MarkoException
     public static function missingOverridesExtender(
         string $parentClass,
         array $scopedProperties,
-    ): self
-    {
+    ): self {
         $propertyLines = [];
         foreach ($scopedProperties as $property => $axes) {
             $axesStr = count($axes) > 0 ? implode(', ', $axes) : 'none';
@@ -70,12 +68,22 @@ class ScopeConfigurationException extends MarkoException
     public static function wrongOverridesExtenderBase(
         string $parentClass,
         string $extenderClass,
-    ): self
-    {
+    ): self {
         return new self(
             message: "Extender '$extenderClass' for '$parentClass' does not extend ScopedOverridesEntity.",
             context: "Validating scoped entity '$parentClass': found extender '$extenderClass' but it does not extend ScopedOverridesEntity.",
             suggestion: "Make '$extenderClass' extend ScopedOverridesEntity instead of Entity directly.",
+        );
+    }
+
+    public static function traitAndCompanionConflict(
+        string $parentClass,
+        string $extenderClass,
+    ): self {
+        return new self(
+            message: "Entity '$parentClass' uses both the HasScopes trait and has a ScopedOverridesEntity extender '$extenderClass' — they both contribute a `scopes` column.",
+            context: "Validating scoped entity '$parentClass': found ScopedOverridesEntity extender '$extenderClass' but the entity already uses the HasScopes trait.",
+            suggestion: 'Remove either the `use HasScopes;` trait or the extender class — they both contribute a `scopes` column',
         );
     }
 }

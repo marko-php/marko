@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Database\Attributes\Column;
 use Marko\Database\Entity\Entity;
+use Marko\Scope\Storage\HasScopesInterface;
 use Marko\Scope\Storage\ScopedOverridesEntity;
 
 // Concrete subclass used for all unit tests
@@ -81,15 +82,15 @@ it(
         $parent = new ConcreteParentEntity();
         $overrides = new ConcreteOverrides();
         $overrides->setOverride('geo:eu.de', 'name', 'Hemd');
-    
+
         $parent->attachCompanion($overrides);
-    
+
         $retrieved = $parent->companion(ConcreteOverrides::class);
-    
+
         expect($retrieved)->toBeInstanceOf(ConcreteOverrides::class)
             ->and($retrieved)->toBe($overrides)
             ->and($retrieved->getOverride('geo:eu.de', 'name'))->toBe('Hemd');
-    }
+    },
 );
 
 it('lists all overrides via allOverrides as the flat scope-key-first map', function (): void {
@@ -103,6 +104,22 @@ it('lists all overrides via allOverrides as the flat scope-key-first map', funct
         'locale:de'  => ['name' => 'Hallo'],
     ]);
 });
+
+it(
+    'ScopedOverridesEntity implements HasScopesInterface and its public method signatures match the interface',
+    function (): void {
+        $entity = new ConcreteOverrides();
+
+        expect($entity)->toBeInstanceOf(HasScopesInterface::class);
+
+        $reflection = new ReflectionClass(ScopedOverridesEntity::class);
+        $interface = new ReflectionClass(HasScopesInterface::class);
+
+        foreach ($interface->getMethods() as $interfaceMethod) {
+            expect($reflection->hasMethod($interfaceMethod->getName()))->toBeTrue();
+        }
+    },
+);
 
 it('distinguishes an explicit null override from no override via hasOverride', function (): void {
     $entity = new ConcreteOverrides();

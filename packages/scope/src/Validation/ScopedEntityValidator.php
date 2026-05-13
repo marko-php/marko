@@ -10,6 +10,7 @@ use Marko\Database\Exceptions\MissingPrimaryKeyException;
 use Marko\Scope\Exceptions\ScopeConfigurationException;
 use Marko\Scope\Exceptions\UnknownAxisException;
 use Marko\Scope\Metadata\ScopeMetadataFactory;
+use Marko\Scope\Storage\HasScopesInterface;
 use Marko\Scope\Storage\ScopedOverridesEntity;
 
 /**
@@ -38,6 +39,21 @@ readonly class ScopedEntityValidator
             return;
         }
 
+        if (is_a($entityClass, HasScopesInterface::class, true)) {
+            $entityMetadata = $this->entityMetadataFactory->parse($entityClass);
+
+            $conflictingExtender = array_find(
+                $entityMetadata->extenders,
+                fn (string $extender) => is_subclass_of($extender, ScopedOverridesEntity::class),
+            );
+
+            if ($conflictingExtender !== null) {
+                throw ScopeConfigurationException::traitAndCompanionConflict($entityClass, $conflictingExtender);
+            }
+
+            return;
+        }
+
         $entityMetadata = $this->entityMetadataFactory->parse($entityClass);
         $extenders = $entityMetadata->extenders;
 
@@ -46,13 +62,10 @@ readonly class ScopedEntityValidator
             $scopedProperties[$property] = $scopeMetadata->axesForProperty($property);
         }
 
-        $hasValidExtender = false;
-        foreach ($extenders as $extender) {
-            if (is_subclass_of($extender, ScopedOverridesEntity::class)) {
-                $hasValidExtender = true;
-                break;
-            }
-        }
+        $hasValidExtender = array_any(
+            $extenders,
+            fn (string $extender) => is_subclass_of($extender, ScopedOverridesEntity::class),
+        );
 
         if (count($extenders) === 0 || !$hasValidExtender) {
             if (count($extenders) > 0) {

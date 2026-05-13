@@ -11,10 +11,12 @@ use Marko\Database\Exceptions\MissingPrimaryKeyException;
 use Marko\Scope\Context\ScopeContext;
 use Marko\Scope\Exceptions\ScopeContextException;
 use Marko\Scope\Exceptions\UnknownAxisException;
+use Marko\Scope\Exceptions\UnknownScopeException;
 use Marko\Scope\Metadata\ScopeMetadataFactory;
 use Marko\Scope\Registry\ScopeRegistryInterface;
 use Marko\Scope\Resolution\ScopeWalker;
 use Marko\Scope\Scope;
+use Marko\Scope\Storage\HasScopesInterface;
 use Marko\Scope\Storage\ScopedOverridesEntity;
 
 readonly class ScopeResolver
@@ -27,14 +29,12 @@ readonly class ScopeResolver
     ) {}
 
     /**
-     * @throws ScopeContextException
-     * @throws UnknownAxisException
+     * @throws ScopeContextException|UnknownAxisException|UnknownScopeException
      */
     public function resolved(
         Entity $entity,
         string $property,
-    ): mixed
-    {
+    ): mixed {
         $entityClass = get_class($entity);
 
         if (!property_exists($entity, $property)) {
@@ -45,10 +45,10 @@ readonly class ScopeResolver
         $axes = $scopeMetadata->axesForProperty($property);
         $registry = $this->getRegistry();
 
-        $companion = $this->findCompanion($entity);
+        $storage = $this->findStorage($entity);
 
-        if ($companion !== null) {
-            $result = $this->scopeWalker->walk($companion, $property, $axes, $this->scopeContext, $registry);
+        if ($storage !== null) {
+            $result = $this->scopeWalker->walk($storage, $property, $axes, $this->scopeContext, $registry);
 
             if ($result->isFound()) {
                 return $result->value();
@@ -59,23 +59,22 @@ readonly class ScopeResolver
     }
 
     /**
-     * @throws UnknownAxisException
+     * @throws UnknownAxisException|UnknownScopeException
      */
     public function resolvedAt(
         Entity $entity,
         string $property,
         Scope $scope,
-    ): mixed
-    {
+    ): mixed {
         $entityClass = get_class($entity);
         $scopeMetadata = $this->scopeMetadataFactory->for($entityClass);
         $axes = $scopeMetadata->axesForProperty($property);
         $registry = $this->getRegistry();
 
-        $companion = $this->findCompanion($entity);
+        $storage = $this->findStorage($entity);
 
-        if ($companion !== null) {
-            $result = $this->scopeWalker->walkAt($companion, $property, $axes, $scope, $registry);
+        if ($storage !== null) {
+            $result = $this->scopeWalker->walkAt($storage, $property, $axes, $scope, $registry);
 
             if ($result->isFound()) {
                 return $result->value();
@@ -86,18 +85,14 @@ readonly class ScopeResolver
     }
 
     /**
-     * @throws ScopeContextException
-     * @throws UnknownAxisException
-     * @throws EntityException
-     * @throws MissingPrimaryKeyException
+     * @throws ScopeContextException|UnknownAxisException|EntityException|MissingPrimaryKeyException
      */
     public function setOverride(
         Entity $entity,
         string $property,
         mixed $value,
         Scope $scope,
-    ): void
-    {
+    ): void {
         $entityClass = get_class($entity);
         $scopeMetadata = $this->scopeMetadataFactory->for($entityClass);
 
@@ -105,27 +100,26 @@ readonly class ScopeResolver
             throw ScopeContextException::propertyNotScoped($property, $entityClass);
         }
 
-        $companion = $this->findCompanion($entity);
+        $storage = $this->findStorage($entity);
 
-        if ($companion === null) {
+        if ($storage === null) {
             $companion = $this->createCompanion($entityClass);
             $entity->attachCompanion($companion);
+            $storage = $companion;
         }
 
         $scopeKey = $scope->axisName . ':' . $scope->path;
-        $companion->setOverride($scopeKey, $property, $value);
+        $storage->setOverride($scopeKey, $property, $value);
     }
 
     /**
-     * @throws ScopeContextException
-     * @throws UnknownAxisException
+     * @throws ScopeContextException|UnknownAxisException
      */
     public function clearOverride(
         Entity $entity,
         string $property,
         Scope $scope,
-    ): void
-    {
+    ): void {
         $entityClass = get_class($entity);
         $scopeMetadata = $this->scopeMetadataFactory->for($entityClass);
 
@@ -133,30 +127,31 @@ readonly class ScopeResolver
             throw ScopeContextException::propertyNotScoped($property, $entityClass);
         }
 
-        $companion = $this->findCompanion($entity);
+        $storage = $this->findStorage($entity);
 
-        if ($companion === null) {
+        if ($storage === null) {
             return;
         }
 
         $scopeKey = $scope->axisName . ':' . $scope->path;
-        $companion->clearOverride($scopeKey, $property);
+        $storage->clearOverride($scopeKey, $property);
     }
 
     /**
      * @param class-string $entityClass
-     * @throws ScopeContextException
-     * @throws EntityException
-     * @throws MissingPrimaryKeyException
+     * @throws ScopeContextException|EntityException|MissingPrimaryKeyException
      */
     private function createCompanion(string $entityClass): ScopedOverridesEntity
     {
         $entityMetadata = $this->entityMetadataFactory->parse($entityClass);
 
-        foreach ($entityMetadata->extenders as $extender) {
-            if (is_subclass_of($extender, ScopedOverridesEntity::class)) {
-                return new $extender();
-            }
+        $extender = array_find(
+            $entityMetadata->extenders,
+            fn (string $candidate) => is_subclass_of($candidate, ScopedOverridesEntity::class),
+        );
+
+        if ($extender !== null) {
+            return new $extender();
         }
 
         throw new ScopeContextException(
@@ -166,15 +161,16 @@ readonly class ScopeResolver
         );
     }
 
-    private function findCompanion(Entity $entity): ?ScopedOverridesEntity
+    private function findStorage(Entity $entity): ?HasScopesInterface
     {
-        foreach ($entity->companions() as $companion) {
-            if ($companion instanceof ScopedOverridesEntity) {
-                return $companion;
-            }
+        if ($entity instanceof HasScopesInterface) {
+            return $entity;
         }
 
-        return null;
+        return array_find(
+            $entity->companions(),
+            fn ($companion) => $companion instanceof HasScopesInterface,
+        );
     }
 
     private function getRegistry(): ScopeRegistryInterface

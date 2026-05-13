@@ -12,6 +12,8 @@ use Marko\Scope\Exceptions\ScopeConfigurationException;
 use Marko\Scope\Hierarchy\ScopeHierarchy;
 use Marko\Scope\Metadata\ScopeMetadataFactory;
 use Marko\Scope\Registry\ScopeRegistryInterface;
+use Marko\Scope\Storage\HasScopes;
+use Marko\Scope\Storage\HasScopesInterface;
 use Marko\Scope\Storage\ScopedOverridesEntity;
 use Marko\Scope\Validation\ScopedEntityValidator;
 
@@ -63,6 +65,22 @@ class ValidatorOtherProductOverridesWrongBase extends Entity
     public string $extra = '';
 }
 
+#[Table(name: 'trait_scoped_products')]
+class ValidatorTraitScopedProduct extends Entity implements HasScopesInterface
+{
+    use HasScopes;
+
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+
+    #[Scoped(axes: ['store'])]
+    #[Column]
+    public string $name = '';
+}
+
+#[Table(extends: ValidatorTraitScopedProduct::class)]
+class ValidatorTraitScopedProductOverrides extends ScopedOverridesEntity {}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeValidatorRegistry(): ScopeRegistryInterface
@@ -108,9 +126,9 @@ it(
         $entityFactory = new EntityMetadataFactory();
         $entityFactory->linkExtenders(ValidatorScopedProduct::class, [ValidatorScopedProductOverrides::class]);
         $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
-    
+
         expect(fn () => $validator->validate(ValidatorScopedProduct::class))->not->toThrow(Throwable::class);
-    }
+    },
 );
 
 it(
@@ -119,10 +137,10 @@ it(
         $scopeFactory = new ScopeMetadataFactory(makeValidatorRegistry());
         $entityFactory = new EntityMetadataFactory();
         $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
-    
+
         expect(fn () => $validator->validate(ValidatorScopedProduct::class))
             ->toThrow(ScopeConfigurationException::class);
-    }
+    },
 );
 
 it(
@@ -132,10 +150,10 @@ it(
         $entityFactory = new EntityMetadataFactory();
         $entityFactory->linkExtenders(ValidatorOtherProduct::class, [ValidatorOtherProductOverridesWrongBase::class]);
         $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
-    
+
         expect(fn () => $validator->validate(ValidatorOtherProduct::class))
             ->toThrow(ScopeConfigurationException::class);
-    }
+    },
 );
 
 it('includes the parent entity FQCN in the exception message', function (): void {
@@ -173,7 +191,7 @@ it(
         $scopeFactory = new ScopeMetadataFactory(makeValidatorRegistry());
         $entityFactory = new EntityMetadataFactory();
         $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
-    
+
         try {
             $validator->validate(ValidatorScopedProduct::class);
             expect(false)->toBeTrue('Expected exception was not thrown');
@@ -182,5 +200,116 @@ it(
                 ->and($e->getSuggestion())->toContain(ValidatorScopedProduct::class . '::class')
                 ->and($e->getSuggestion())->toContain('ScopedOverridesEntity');
         }
+    },
+);
+
+it(
+    'the traitAndCompanionConflict exception message names both the parent class and the conflicting extender class',
+    function (): void {
+        $scopeFactory = new ScopeMetadataFactory(makeValidatorRegistry());
+        $entityFactory = new EntityMetadataFactory();
+        $entityFactory->linkExtenders(
+            ValidatorTraitScopedProduct::class,
+            [ValidatorTraitScopedProductOverrides::class],
+        );
+        $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
+
+        try {
+            $validator->validate(ValidatorTraitScopedProduct::class);
+            expect(false)->toBeTrue('Expected exception was not thrown');
+        } catch (ScopeConfigurationException $e) {
+            expect($e->getMessage())->toContain(ValidatorTraitScopedProduct::class)
+                ->and($e->getMessage())->toContain(ValidatorTraitScopedProductOverrides::class);
+        }
+    },
+);
+
+it(
+    'throws ScopeConfigurationException via traitAndCompanionConflict when entity uses HasScopes trait AND has a ScopedOverridesEntity extender registered',
+    function (): void {
+        $scopeFactory = new ScopeMetadataFactory(makeValidatorRegistry());
+        $entityFactory = new EntityMetadataFactory();
+        $entityFactory->linkExtenders(
+            ValidatorTraitScopedProduct::class,
+            [ValidatorTraitScopedProductOverrides::class],
+        );
+        $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
+
+        expect(fn () => $validator->validate(ValidatorTraitScopedProduct::class))
+            ->toThrow(ScopeConfigurationException::class);
+    },
+);
+
+it(
+    'throws ScopeConfigurationException with wrongOverridesExtenderBase when extender exists but is not ScopedOverridesEntity',
+    function (): void {
+        $scopeFactory = new ScopeMetadataFactory(makeValidatorRegistry());
+        $entityFactory = new EntityMetadataFactory();
+        $entityFactory->linkExtenders(ValidatorOtherProduct::class, [ValidatorOtherProductOverridesWrongBase::class]);
+        $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
+
+        expect(fn () => $validator->validate(ValidatorOtherProduct::class))
+            ->toThrow(ScopeConfigurationException::class);
+    },
+);
+
+it(
+    'throws ScopeConfigurationException when entity has scoped properties but neither trait nor companion',
+    function (): void {
+        $scopeFactory = new ScopeMetadataFactory(makeValidatorRegistry());
+        $entityFactory = new EntityMetadataFactory();
+        $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
+
+        expect(fn () => $validator->validate(ValidatorScopedProduct::class))
+            ->toThrow(ScopeConfigurationException::class);
+    },
+);
+
+it('passes validation when the entity has no scoped properties at all', function (): void {
+    $scopeFactory = new ScopeMetadataFactory(makeValidatorRegistry());
+    $entityFactory = new EntityMetadataFactory();
+    $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
+
+    $threw = false;
+    try {
+        $validator->validate(ValidatorPlainProduct::class);
+    } catch (Throwable) {
+        $threw = true;
     }
+
+    expect($threw)->toBeFalse();
+});
+
+it('passes validation when the entity has a ScopedOverridesEntity companion (backward compat)', function (): void {
+    $scopeFactory = new ScopeMetadataFactory(makeValidatorRegistry());
+    $entityFactory = new EntityMetadataFactory();
+    $entityFactory->linkExtenders(ValidatorScopedProduct::class, [ValidatorScopedProductOverrides::class]);
+    $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
+
+    $threw = false;
+    try {
+        $validator->validate(ValidatorScopedProduct::class);
+    } catch (Throwable) {
+        $threw = true;
+    }
+
+    expect($threw)->toBeFalse();
+});
+
+it(
+    'passes validation when the entity class implements HasScopesInterface and has scoped properties',
+    function (): void {
+        $scopeFactory = new ScopeMetadataFactory(makeValidatorRegistry());
+        $entityFactory = new EntityMetadataFactory();
+        $validator = new ScopedEntityValidator($scopeFactory, $entityFactory);
+
+        $threw = false;
+        try {
+            $validator->validate(ValidatorTraitScopedProduct::class);
+        } catch (Throwable) {
+            $threw = true;
+        }
+
+        expect($threw)->toBeFalse();
+    },
 );

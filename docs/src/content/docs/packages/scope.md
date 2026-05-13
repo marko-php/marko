@@ -3,7 +3,7 @@ title: marko/scope
 description: Scoped entity attributes with multi-axis hierarchical fallback.
 ---
 
-Scoped attributes for entities with multi-axis hierarchical fallback. `marko/scope` defines the contracts and core logic for attaching per-scope override values to entity properties. Each property marked `#[Scoped]` can carry different values across multiple independent axes (e.g. `locale`, `market`, `channel`), with automatic walk-up through the declared hierarchy when no exact match exists. The package ships the `#[Scoped]` attribute, `ScopeContext`, `ScopeResolver`, and the `ScopedOrderBy` query specification --- but no database driver. Applications must install `marko/scope-mysql` or `marko/scope-pgsql` to persist and query overrides.
+Scoped attributes for entities with multi-axis hierarchical fallback. `marko/scope` defines the contracts and core logic for attaching per-scope override values to entity properties. Each property marked `#[Scoped]` can carry different values across multiple independent axes (e.g. `locale`, `market`, `channel`), with automatic walk-up through the declared hierarchy when no exact match exists. The package ships the `#[Scoped]` attribute, `ScopeContext`, `ScopeResolver`, `HasScopesInterface`, the `HasScopes` trait, and the `ScopedOrderBy` query specification --- but no database driver. Applications must install `marko/scope-mysql` or `marko/scope-pgsql` to persist and query overrides.
 
 ## Installation
 
@@ -62,7 +62,11 @@ Paths use dot notation. `walkUp('eu.de')` yields `['eu.de', 'eu']`, so a value s
 
 ### Marking a property as scoped
 
-Add `#[Scoped(axes: [...])]` to any entity property that should carry per-scope override values:
+Add `#[Scoped(axes: [...])]` to any entity property that should carry per-scope override values. There are two ways to store the overrides: the `HasScopes` trait (recommended for entities you own) and a companion `ScopedOverridesEntity` class (for entities you cannot modify).
+
+### Storage approach 1: `HasScopes` trait (recommended)
+
+Implement `HasScopesInterface` and use the `HasScopes` trait on your entity. The trait declares a `$scopes` JSON column automatically --- no separate migration helper or companion class is required:
 
 ```php title="app/catalog/Entity/Product.php"
 <?php
@@ -75,10 +79,14 @@ use Marko\Database\Attributes\Column;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Entity\Entity;
 use Marko\Scope\Attributes\Scoped;
+use Marko\Scope\Storage\HasScopes;
+use Marko\Scope\Storage\HasScopesInterface;
 
 #[Table('products')]
-class Product extends Entity
+class Product extends Entity implements HasScopesInterface
 {
+    use HasScopes;
+
     #[Column(primaryKey: true, autoIncrement: true)]
     public int $id;
 
@@ -92,9 +100,11 @@ class Product extends Entity
 }
 ```
 
-### Declaring the companion class
+Register `Product` with the `SchemaRegistry`. The `scopes` column will appear in the `products` table after the next migration run.
 
-Each entity with scoped properties needs a companion `ScopedOverridesEntity` subclass. Declare it with `#[Table(extends: Product::class)]` so the database layer merges the `scopes` JSON column into the entity's table:
+### Storage approach 2: companion class
+
+Use a `ScopedOverridesEntity` subclass when scoped overrides are contributed by a separate package, or when the entity class cannot be modified. Declare it with `#[Table(extends: Product::class)]` so the database layer merges the `scopes` JSON column into the entity's table:
 
 ```php title="app/catalog/Entity/ProductScopedOverrides.php"
 <?php
@@ -113,6 +123,8 @@ class ProductScopedOverrides extends ScopedOverridesEntity
 ```
 
 One companion class handles all scoped properties on the entity --- both `$name` and `$price` above share the same `ProductScopedOverrides`.
+
+Register both `Product` and `ProductScopedOverrides` with the `SchemaRegistry`.
 
 ### Setting the active context
 
@@ -242,6 +254,10 @@ $scopeResolver->clearOverride($product, 'price', new Scope('market', 'eu.de'));
 $productRepository->save($product);
 ```
 
+### Mixing storage approaches
+
+Do **not** use both `use HasScopes` and a `ScopedOverridesEntity` extender on the same entity. The boot-time validator raises `ScopeConfigurationException::traitAndCompanionConflict()` if both are detected. If validation is bypassed, the schema build will fail with a duplicate-column error.
+
 ## Customization
 
 ### DB-driven scope registry
@@ -291,7 +307,9 @@ return [
 | `Marko\Scope\Attributes\Scoped` | Property attribute declaring which axes scope a value |
 | `Marko\Scope\Context\ScopeContext` | Mutable singleton holding the active path per axis for the current request |
 | `Marko\Scope\Resolver\ScopeResolver` | Resolves scoped values by walking the active context hierarchy; also writes and clears overrides |
-| `Marko\Scope\Storage\ScopedOverridesEntity` | Abstract companion entity holding the JSON `scopes` column |
+| `Marko\Scope\Storage\HasScopesInterface` | Interface for entities that store scoped overrides directly via the `HasScopes` trait |
+| `Marko\Scope\Storage\HasScopes` | Trait that adds a `$scopes` JSON column to the entity and implements `HasScopesInterface` |
+| `Marko\Scope\Storage\ScopedOverridesEntity` | Abstract companion entity holding the JSON `scopes` column (alternative to `HasScopes`) |
 | `Marko\Scope\Query\ScopedOrderBy` | `QuerySpecification` that orders by resolved scope value |
 | `Marko\Scope\Query\ScopedOrderByFactory` | Factory for building `ScopedOrderBy` specifications |
 | `Marko\Scope\Query\ScopeSortRendererInterface` | Interface implemented by driver packages to emit DB-specific `COALESCE` expressions |
@@ -315,8 +333,8 @@ return [
 |--------|-------------|
 | `resolved(Entity $entity, string $property): mixed` | Walk the active context hierarchy and return the most specific override, falling back to the column value. |
 | `resolvedAt(Entity $entity, string $property, Scope $scope): mixed` | Resolve at a specific scope regardless of the active context. |
-| `setOverride(Entity $entity, string $property, mixed $value, Scope $scope): void` | Attach a scoped value to the entity's companion. Creates the companion if one doesn't exist yet. |
-| `clearOverride(Entity $entity, string $property, Scope $scope): void` | Remove a scoped override from the entity's companion. |
+| `setOverride(Entity $entity, string $property, mixed $value, Scope $scope): void` | Attach a scoped value to the entity. For `HasScopesInterface` entities writes directly to `$scopes`; for companion-based entities creates the companion if one does not exist yet. |
+| `clearOverride(Entity $entity, string $property, Scope $scope): void` | Remove a scoped override from the entity. |
 
 ### `ScopedOrderByFactory`
 
@@ -338,7 +356,7 @@ return [
 
 **`ScopeContext` is a mutable singleton.** It holds active paths for the entire PHP process lifetime. In long-running processes (FPM workers, queue daemons, ReactPHP servers), the bootstrap layer must call `$scopeContext->clearAll()` between requests or jobs to prevent cross-request scope leakage.
 
-**`Repository::insertBatch` does not support scoped entities.** Batch inserts bypass the companion lifecycle and cannot attach per-row overrides. Use individual `save()` calls for entities with `#[Scoped]` properties.
+**`Repository::insertBatch` support depends on the storage approach.** Trait-based entities (`use HasScopes`) store overrides directly on the entity and are fully compatible with `insertBatch()`. Companion-based entities (`ScopedOverridesEntity` extender) are **not** compatible --- batch inserts bypass the companion lifecycle and will throw `BatchInsertException::companionsNotSupported()`. Use individual `save()` calls for companion-based scoped entities.
 
 **Terminology overlap with `marko/config`.** The `marko/config` package uses the term "tenant scope" as a configuration parameter name. This is unrelated to `marko/scope`'s axis/path concept --- the two systems are independent.
 

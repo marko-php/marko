@@ -50,3 +50,39 @@ it('has a Documentation link', function (): void {
 
     expect($content)->toContain('## Documentation');
 });
+
+it('documents HasScopes trait as the primary storage option', function (): void {
+    $readmePath = dirname(__DIR__, 2) . '/README.md';
+    $content = file_get_contents($readmePath);
+
+    expect($content)->toContain('HasScopes')
+        ->and($content)->toContain('HasScopesInterface')
+        ->and($content)->toContain('use HasScopes');
+});
+
+it('documents the companion-class approach as an alternative', function (): void {
+    $readmePath = dirname(__DIR__, 2) . '/README.md';
+    $content = file_get_contents($readmePath);
+
+    expect($content)->toContain('Alternative')
+        ->and($content)->toContain('ScopedOverridesEntity');
+});
+
+it('warns against using HasScopes trait and ScopedOverridesEntity extender on the same entity', function (): void {
+    $readmePath = dirname(__DIR__, 2) . '/README.md';
+    $content = file_get_contents($readmePath);
+
+    expect($content)->toContain('ScopeConfigurationException')
+        ->and($content)->toContain('traitAndCompanionConflict');
+});
+
+it(
+    'documents that trait-based entities are compatible with Repository::insertBatch while companion-based entities are not',
+    function (): void {
+        $readmePath = dirname(__DIR__, 2) . '/README.md';
+        $content = file_get_contents($readmePath);
+
+        expect($content)->toContain('insertBatch')
+            ->and($content)->toContain('BatchInsertException');
+    },
+);

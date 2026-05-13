@@ -2,16 +2,32 @@
 
 declare(strict_types=1);
 
+use Marko\Database\Attributes\Column;
+use Marko\Database\Attributes\Table;
+use Marko\Database\Entity\Entity;
 use Marko\Scope\Axis\ScopeAxis;
 use Marko\Scope\Context\ScopeContext;
 use Marko\Scope\Exceptions\UnknownAxisException;
 use Marko\Scope\Hierarchy\ScopeHierarchy;
 use Marko\Scope\Registry\ScopeRegistryInterface;
 use Marko\Scope\Resolution\ScopeWalker;
+use Marko\Scope\Scope;
+use Marko\Scope\Storage\HasScopes;
+use Marko\Scope\Storage\HasScopesInterface;
 use Marko\Scope\Storage\ScopedOverridesEntity;
 
 // Concrete anonymous-style subclass for tests
 class WalkerTestOverrides extends ScopedOverridesEntity {}
+
+// Trait-based fixture — does NOT extend ScopedOverridesEntity
+#[Table(name: 'walker_trait_products')]
+class WalkerTraitProduct extends Entity implements HasScopesInterface
+{
+    use HasScopes;
+
+    #[Column(primaryKey: true, autoIncrement: true)]
+    public ?int $id = null;
+}
 
 function makeWalkerRegistry(array $axes = []): ScopeRegistryInterface
 {
@@ -171,18 +187,18 @@ it(
         ]);
         $context = new ScopeContext($registry);
         $context->in('geo', 'eu.de')->in('locale', 'de.formal');
-    
+
         $overrides = new WalkerTestOverrides();
         // No override for 'name' under geo; only under locale ancestor
-    $overrides->setOverride('locale:de', 'name', 'Hallo');
-    
+        $overrides->setOverride('locale:de', 'name', 'Hallo');
+
         $walker = new ScopeWalker();
         // geo first — no match for 'name' anywhere in geo; should fall through to locale
-    $result = $walker->walk($overrides, 'name', ['geo', 'locale'], $context, $registry);
-    
+        $result = $walker->walk($overrides, 'name', ['geo', 'locale'], $context, $registry);
+
         expect($result->isFound())->toBeTrue()
             ->and($result->value())->toBe('Hallo');
-    }
+    },
 );
 
 it(
@@ -194,19 +210,19 @@ it(
         ]);
         $context = new ScopeContext($registry);
         $context->in('geo', 'eu.de')->in('locale', 'de.formal');
-    
+
         $overrides = new WalkerTestOverrides();
         // geo has an explicit null — should count as "found" and stop cross-axis fallthrough
-    $overrides->setOverride('geo:eu.de', 'name', null);
+        $overrides->setOverride('geo:eu.de', 'name', null);
         // locale has a real value — but should NOT be reached
-    $overrides->setOverride('locale:de', 'name', 'Hallo');
-    
+        $overrides->setOverride('locale:de', 'name', 'Hallo');
+
         $walker = new ScopeWalker();
         $result = $walker->walk($overrides, 'name', ['geo', 'locale'], $context, $registry);
-    
+
         expect($result->isFound())->toBeTrue()
             ->and($result->value())->toBeNull();
-    }
+    },
 );
 
 it('returns notFound when no axes are declared and no overrides exist', function (): void {
@@ -220,3 +236,76 @@ it('returns notFound when no axes are declared and no overrides exist', function
 
     expect($result->isFound())->toBeFalse();
 });
+
+it('resolves an override via walkAt when passed a HasScopesInterface implementor', function (): void {
+    $registry = makeWalkerRegistry(['geo' => ['eu', 'eu.de']]);
+    $scope = new Scope(axisName: 'geo', path: 'eu.de');
+
+    $overrides = new WalkerTraitProduct();
+    $overrides->setOverride('geo:eu.de', 'name', 'Hemd');
+
+    $walker = new ScopeWalker();
+    $result = $walker->walkAt($overrides, 'name', ['geo'], $scope, $registry);
+
+    expect($result->isFound())->toBeTrue()
+        ->and($result->value())->toBe('Hemd');
+});
+
+it('walks hierarchy ancestors when the exact scope path has no override', function (): void {
+    $registry = makeWalkerRegistry(['geo' => ['eu', 'eu.de']]);
+    $scope = new Scope(axisName: 'geo', path: 'eu.de');
+
+    $overrides = new WalkerTraitProduct();
+    // Only set override on ancestor 'eu', not on 'eu.de'
+    $overrides->setOverride('geo:eu', 'name', 'Shirt-EU');
+
+    $walker = new ScopeWalker();
+    $result = $walker->walkAt($overrides, 'name', ['geo'], $scope, $registry);
+
+    expect($result->isFound())->toBeTrue()
+        ->and($result->value())->toBe('Shirt-EU');
+});
+
+it('returns notFound via walkAt when the axis does not match', function (): void {
+    $registry = makeWalkerRegistry(['geo' => ['eu', 'eu.de']]);
+    $scope = new Scope(axisName: 'locale', path: 'de');
+
+    $overrides = new WalkerTraitProduct();
+    $overrides->setOverride('geo:eu.de', 'name', 'Hemd');
+
+    $walker = new ScopeWalker();
+    $result = $walker->walkAt($overrides, 'name', ['geo'], $scope, $registry);
+
+    expect($result->isFound())->toBeFalse();
+});
+
+it('returns notFound via walk when the HasScopesInterface implementor has no matching override', function (): void {
+    $registry = makeWalkerRegistry(['geo' => ['eu', 'eu.de']]);
+    $context = new ScopeContext($registry);
+    $context->in('geo', 'eu.de');
+
+    $overrides = new WalkerTraitProduct();
+
+    $walker = new ScopeWalker();
+    $result = $walker->walk($overrides, 'name', ['geo'], $context, $registry);
+
+    expect($result->isFound())->toBeFalse();
+});
+
+it(
+    'resolves an override via walk when passed a HasScopesInterface implementor that is not ScopedOverridesEntity',
+    function (): void {
+        $registry = makeWalkerRegistry(['geo' => ['eu', 'eu.de']]);
+        $context = new ScopeContext($registry);
+        $context->in('geo', 'eu.de');
+
+        $overrides = new WalkerTraitProduct();
+        $overrides->setOverride('geo:eu.de', 'name', 'Hemd');
+
+        $walker = new ScopeWalker();
+        $result = $walker->walk($overrides, 'name', ['geo'], $context, $registry);
+
+        expect($result->isFound())->toBeTrue()
+            ->and($result->value())->toBe('Hemd');
+    },
+);

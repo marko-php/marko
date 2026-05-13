@@ -103,6 +103,11 @@ none
 | 030 | Implement `orderByRaw` on `MySqlQueryBuilder` (marko/database-mysql) | 029 | completed |
 | 031 | Implement `orderByRaw` on `PgSqlQueryBuilder` (marko/database-pgsql) | 029 | completed |
 | 032 | `ScopedOrderByFactory` service | 016 | completed |
+| 033 | `HasScopesInterface` + `HasScopes` trait (storage primitives) | - | completed |
+| 034 | Update `ScopeWalker` to accept `HasScopesInterface` | 033 | completed |
+| 035 | Update `ScopeResolver` for trait-based entities | 033, 034 | completed |
+| 036 | Update `ScopedEntityValidator` for trait-based entities | 033 | completed |
+| 037 | Update `marko/scope` README for `HasScopes` trait | 033, 034, 035, 036 | completed |
 
 ## Architecture Notes
 
