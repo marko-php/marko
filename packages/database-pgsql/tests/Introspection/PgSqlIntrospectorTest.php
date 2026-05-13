@@ -6,6 +6,7 @@ namespace Marko\Database\PgSql\Tests\Introspection;
 
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
+use Marko\Database\Diff\DiffCalculator;
 use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\PgSql\Introspection\PgSqlIntrospector;
 use Marko\Database\Schema\Column;
@@ -152,11 +153,55 @@ describe('PgSqlIntrospector', function (): void {
             ->and($columns[11]->type)->toBe('date')
             ->and($columns[12]->type)->toBe('time')
             ->and($columns[13]->type)->toBe('json')
-            ->and($columns[14]->type)->toBe('jsonb')
+            ->and($columns[14]->type)->toBe('json')
             ->and($columns[15]->type)->toBe('uuid')
             ->and($columns[16]->type)->toBe('char')
             ->and($columns[16]->length)->toBe(10)
             ->and($columns[17]->type)->toBe('blob');
+    });
+
+    it('normalises jsonb to json so introspected columns match entity-declared type', function (): void {
+        $connection = createTestConnection(function (string $sql): array {
+            if (str_contains($sql, 'information_schema.columns')) {
+                return [
+                    ['column_name' => 'data', 'data_type' => 'jsonb', 'character_maximum_length' => null, 'is_nullable' => 'NO', 'column_default' => null, 'is_identity' => 'NO', 'identity_generation' => null],
+                ];
+            }
+
+            return [];
+        });
+
+        $introspector = new PgSqlIntrospector($connection);
+        $columns = $introspector->getColumns('products');
+
+        expect($columns[0]->type)->toBe('json');
+    });
+
+    it('produces no diff when entity declares json and database stores jsonb', function (): void {
+        $entitySchema = [
+            'products' => new Table(
+                name: 'products',
+                columns: [new Column(name: 'data', type: 'json')],
+                indexes: [],
+            ),
+        ];
+
+        $connection = createTestConnection(function (string $sql): array {
+            if (str_contains($sql, 'information_schema.columns')) {
+                return [
+                    ['column_name' => 'data', 'data_type' => 'jsonb', 'character_maximum_length' => null, 'is_nullable' => 'NO', 'column_default' => null, 'is_identity' => 'NO', 'identity_generation' => null],
+                ];
+            }
+
+            return [];
+        });
+
+        $introspector = new PgSqlIntrospector($connection);
+        $databaseSchema = ['products' => $introspector->getTable('products')];
+
+        $diff = (new DiffCalculator())->calculate($entitySchema, $databaseSchema);
+
+        expect($diff->isEmpty())->toBeTrue();
     });
 
     it('detects nullable columns', function (): void {
