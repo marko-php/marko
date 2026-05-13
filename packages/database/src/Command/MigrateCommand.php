@@ -13,14 +13,13 @@ use Marko\Database\Diff\DiffCalculator;
 use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Entity\EntityDiscovery;
-use Marko\Database\Entity\EntityMetadataFactory;
-use Marko\Database\Entity\SchemaBuilder;
 use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\Migration\DataMigrator;
 use Marko\Database\Migration\MigrationGenerator;
 use Marko\Database\Migration\Migrator;
+use Marko\Database\Schema\SchemaRegistry;
 use Marko\Database\Schema\Table;
 
 /** @noinspection PhpUnused */
@@ -33,8 +32,7 @@ readonly class MigrateCommand implements CommandInterface
         private MigrationGenerator $migrationGenerator,
         private EntityDiscovery $entityDiscovery,
         private IntrospectorInterface $introspector,
-        private EntityMetadataFactory $metadataFactory,
-        private SchemaBuilder $schemaBuilder,
+        private SchemaRegistry $schemaRegistry,
         private DiffCalculator $diffCalculator,
         private SqlGeneratorInterface $sqlGenerator,
         private ProjectPaths $paths,
@@ -251,15 +249,10 @@ readonly class MigrateCommand implements CommandInterface
     private function buildEntitySchema(
         array $entityClasses,
     ): array {
-        $schema = [];
+        $this->schemaRegistry->clear();
+        $this->schemaRegistry->registerEntities($entityClasses);
 
-        foreach ($entityClasses as $entityClass) {
-            $metadata = $this->metadataFactory->parse($entityClass);
-            $table = $this->schemaBuilder->build($metadata);
-            $schema[$table->name] = $table;
-        }
-
-        return $schema;
+        return $this->schemaRegistry->getTables();
     }
 
     /**

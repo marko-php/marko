@@ -12,6 +12,7 @@ use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\SchemaBuilder;
+use Marko\Database\Schema\SchemaRegistry;
 use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Migration\DataMigrator;
 use Marko\Database\Migration\MigrationGenerator;
@@ -304,8 +305,7 @@ function createMigrateCommand(
         migrationGenerator: $generator ?? createMigrationGeneratorStub(),
         entityDiscovery: Helpers::createStubEntityDiscovery(),
         introspector: Helpers::createStubIntrospector(),
-        metadataFactory: new EntityMetadataFactory(),
-        schemaBuilder: new SchemaBuilder(),
+        schemaRegistry: new SchemaRegistry(new EntityMetadataFactory(), new SchemaBuilder()),
         diffCalculator: createMigrateDiffCalculator($diff ?? new SchemaDiff()),
         sqlGenerator: $sqlGenerator ?? createMigrateSqlGenerator(),
         paths: new ProjectPaths('/test'),
@@ -684,8 +684,7 @@ it('excludes migrations table from diff calculation', function (): void {
         migrationGenerator: $generator,
         entityDiscovery: Helpers::createStubEntityDiscovery(),
         introspector: $introspector,
-        metadataFactory: new EntityMetadataFactory(),
-        schemaBuilder: new SchemaBuilder(),
+        schemaRegistry: new SchemaRegistry(new EntityMetadataFactory(), new SchemaBuilder()),
         diffCalculator: new DiffCalculator(),
         sqlGenerator: createMigrateSqlGenerator(),
         paths: new ProjectPaths('/test'),

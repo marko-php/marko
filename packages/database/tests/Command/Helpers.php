@@ -14,6 +14,7 @@ use Marko\Database\Diff\DiffCalculator;
 use Marko\Database\Entity\EntityDiscovery;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\SchemaBuilder;
+use Marko\Database\Schema\SchemaRegistry;
 use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\Schema\Table;
 
@@ -229,8 +230,7 @@ final class Helpers
         return new DiffCommand(
             discovery: self::createStubEntityDiscovery(),
             introspector: self::createStubIntrospector($tables),
-            metadataFactory: new EntityMetadataFactory(),
-            schemaBuilder: new SchemaBuilder(),
+            schemaRegistry: new SchemaRegistry(new EntityMetadataFactory(), new SchemaBuilder()),
             diffCalculator: $diffCalculator ?? new DiffCalculator(),
             paths: new ProjectPaths('/test'),
         );
