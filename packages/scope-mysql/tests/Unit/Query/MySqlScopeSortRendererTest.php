@@ -24,7 +24,7 @@ it('renders a single-axis sort as COALESCE over JSON paths and the fallback colu
     $sql = $renderer->render($expression);
 
     expect($sql)->toBe(
-        'COALESCE(JSON_UNQUOTE(JSON_EXTRACT(`scopes`, \'$."store:en".price\')), JSON_UNQUOTE(JSON_EXTRACT(`scopes`, \'$."store:".price\')), `price`) ASC',
+        'COALESCE(JSON_UNQUOTE(JSON_EXTRACT(`scopes`, \'$."store:en".price\')), JSON_UNQUOTE(JSON_EXTRACT(`scopes`, \'$."store:".price\')), `price`)',
     );
 });
 
@@ -43,11 +43,11 @@ it('embeds path segments containing dots correctly into MySQL JSON paths (e.g. e
     $sql = $renderer->render($expression);
 
     expect($sql)->toBe(
-        'COALESCE(JSON_UNQUOTE(JSON_EXTRACT(`scopes`, \'$."geo:eu.de".name\')), `name`) ASC',
+        'COALESCE(JSON_UNQUOTE(JSON_EXTRACT(`scopes`, \'$."geo:eu.de".name\')), `name`)',
     );
 });
 
-it('falls back to plain ORDER BY column when the expression has no axis paths', function (): void {
+it('falls back to plain column expression when the expression has no axis paths', function (): void {
     $renderer = new MySqlScopeSortRenderer();
 
     $expression = new ScopeSortExpression(
@@ -59,10 +59,10 @@ it('falls back to plain ORDER BY column when the expression has no axis paths', 
 
     $sql = $renderer->render($expression);
 
-    expect($sql)->toBe('`price` ASC');
+    expect($sql)->toBe('`price`');
 });
 
-it('preserves direction asc or desc in the output', function (): void {
+it('returns just the expression without direction so the query builder can append it', function (): void {
     $renderer = new MySqlScopeSortRenderer();
 
     $asc = new ScopeSortExpression(
@@ -79,8 +79,8 @@ it('preserves direction asc or desc in the output', function (): void {
         direction: 'desc',
     );
 
-    expect($renderer->render($asc))->toEndWith(' ASC')
-        ->and($renderer->render($desc))->toEndWith(' DESC');
+    expect($renderer->render($asc))->not->toEndWith(' ASC')
+        ->and($renderer->render($desc))->not->toEndWith(' DESC');
 });
 
 it('validates fallback column, property, and json column identifiers against the safe pattern', function (): void {
@@ -147,6 +147,6 @@ it('renders a multi-axis sort with axes in declared priority order', function ()
         . 'JSON_UNQUOTE(JSON_EXTRACT(`scopes`, \'$."store:".price\')), '
         . 'JSON_UNQUOTE(JSON_EXTRACT(`scopes`, \'$."geo:de".price\')), '
         . 'JSON_UNQUOTE(JSON_EXTRACT(`scopes`, \'$."geo:".price\')), '
-        . '`price`) ASC',
+        . '`price`)',
     );
 });

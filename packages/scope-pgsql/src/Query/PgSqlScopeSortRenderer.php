@@ -18,10 +18,8 @@ class PgSqlScopeSortRenderer implements ScopeSortRendererInterface
     {
         $this->validate($expression);
 
-        $direction = strtoupper($expression->direction);
-
         if ($expression->paths === []) {
-            return "\"$expression->column\" $direction";
+            return "\"$expression->column\"";
         }
 
         $parts = [];
@@ -32,9 +30,8 @@ class PgSqlScopeSortRenderer implements ScopeSortRendererInterface
         }
 
         $parts[] = "\"$expression->column\"";
-        $coalesce = 'COALESCE(' . implode(', ', $parts) . ')';
 
-        return "$coalesce $direction";
+        return 'COALESCE(' . implode(', ', $parts) . ')';
     }
 
     /**

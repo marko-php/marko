@@ -20,7 +20,7 @@ it('renders a single-axis sort as COALESCE over jsonb path lookups and the fallb
 
     $sql = $renderer->render($expression);
 
-    expect($sql)->toBe('COALESCE("scopes"->\'store:store\'->>\'price\', "price") ASC');
+    expect($sql)->toBe('COALESCE("scopes"->\'store:store\'->>\'price\', "price")');
 });
 
 it('renders a multi-axis sort with axes in declared priority order', function (): void {
@@ -41,7 +41,7 @@ it('renders a multi-axis sort with axes in declared priority order', function ()
     $sql = $renderer->render($expression);
 
     expect($sql)->toBe(
-        'COALESCE("scopes"->\'store:store.en\'->>\'price\', "scopes"->\'store:store\'->>\'price\', "scopes"->\'geo:geo.de\'->>\'price\', "scopes"->\'geo:geo\'->>\'price\', "price") ASC',
+        'COALESCE("scopes"->\'store:store.en\'->>\'price\', "scopes"->\'store:store\'->>\'price\', "scopes"->\'geo:geo.de\'->>\'price\', "scopes"->\'geo:geo\'->>\'price\', "price")',
     );
 });
 
@@ -86,7 +86,7 @@ it('validates fallback column, property, and json column identifiers against the
         )))->toThrow(InvalidColumnException::class);
 });
 
-it('preserves direction asc or desc in the output', function (): void {
+it('returns just the expression without direction so the query builder can append it', function (): void {
     $renderer = new PgSqlScopeSortRenderer();
 
     $ascending = new ScopeSortExpression(
@@ -103,11 +103,11 @@ it('preserves direction asc or desc in the output', function (): void {
         direction: 'desc',
     );
 
-    expect($renderer->render($ascending))->toEndWith(' ASC')
-        ->and($renderer->render($descending))->toEndWith(' DESC');
+    expect($renderer->render($ascending))->not->toEndWith(' ASC')
+        ->and($renderer->render($descending))->not->toEndWith(' DESC');
 });
 
-it('falls back to plain ORDER BY column when the expression has no axis paths', function (): void {
+it('falls back to plain column expression when the expression has no axis paths', function (): void {
     $renderer = new PgSqlScopeSortRenderer();
 
     $expression = new ScopeSortExpression(
@@ -119,7 +119,7 @@ it('falls back to plain ORDER BY column when the expression has no axis paths', 
 
     $sql = $renderer->render($expression);
 
-    expect($sql)->toBe('"price" ASC');
+    expect($sql)->toBe('"price"');
 });
 
 it('embeds path segments containing dots correctly into PG jsonb paths (e.g. eu.de)', function (): void {
@@ -136,5 +136,5 @@ it('embeds path segments containing dots correctly into PG jsonb paths (e.g. eu.
 
     $sql = $renderer->render($expression);
 
-    expect($sql)->toBe('COALESCE("scopes"->\'geo:eu.de\'->>\'price\', "price") ASC');
+    expect($sql)->toBe('COALESCE("scopes"->\'geo:eu.de\'->>\'price\', "price")');
 });

@@ -19,11 +19,7 @@ class MySqlScopeSortRenderer implements ScopeSortRendererInterface
         $this->validate($expression);
 
         if ($expression->paths === []) {
-            return sprintf(
-                '`%s` %s',
-                $expression->column,
-                strtoupper($expression->direction),
-            );
+            return sprintf('`%s`', $expression->column);
         }
 
         $jsonParts = [];
@@ -39,11 +35,7 @@ class MySqlScopeSortRenderer implements ScopeSortRendererInterface
 
         $jsonParts[] = sprintf('`%s`', $expression->column);
 
-        return sprintf(
-            'COALESCE(%s) %s',
-            implode(', ', $jsonParts),
-            strtoupper($expression->direction),
-        );
+        return sprintf('COALESCE(%s)', implode(', ', $jsonParts));
     }
 
     /**
