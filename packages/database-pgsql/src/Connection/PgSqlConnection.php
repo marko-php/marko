@@ -187,6 +187,12 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
     ): void {
         foreach ($bindings as $key => $value) {
             $param = is_int($key) ? $key + 1 : $key;
+
+            if (is_array($value)) {
+                $statement->bindValue($param, json_encode($value), PDO::PARAM_STR);
+                continue;
+            }
+
             $type = match (true) {
                 is_bool($value) => PDO::PARAM_BOOL,
                 is_null($value) => PDO::PARAM_NULL,
