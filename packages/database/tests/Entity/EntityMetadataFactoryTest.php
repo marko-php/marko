@@ -531,6 +531,30 @@ it('produces a chained-extension error message that names both the extender and 
         ->toThrow(EntityException::class, "Chained extension is not supported. $extender's parent $parent is itself an extender. Extend the root entity directly.");
 });
 
+it('linkExtendersFrom scans entity classes and links extenders to their parents', function (): void {
+    $this->factory->linkExtendersFrom([
+        ExtenderParentEntity::class,
+        BasicExtenderEntity::class,
+    ]);
+
+    $parentMetadata = $this->factory->parse(ExtenderParentEntity::class);
+
+    expect($parentMetadata->extenders)->toBe([BasicExtenderEntity::class]);
+});
+
+it('linkExtendersFrom ignores entities without extends', function (): void {
+    $this->factory->linkExtendersFrom([ExtenderParentEntity::class]);
+
+    $parentMetadata = $this->factory->parse(ExtenderParentEntity::class);
+
+    expect($parentMetadata->extenders)->toBe([]);
+});
+
+it('linkExtendersFrom throws when an extender references a parent class that cannot be autoloaded', function (): void {
+    expect(fn () => $this->factory->linkExtendersFrom([ExtenderWithMissingParentEntity::class]))
+        ->toThrow(EntityException::class, 'does not exist');
+});
+
 it('clears cached metadata', function (): void {
     $entity = new #[Table('test')] class () extends Entity
     {

@@ -5,11 +5,28 @@ declare(strict_types=1);
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Connection\TransactionInterface;
+use Marko\Database\Entity\EntityDiscovery;
+use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Seed\SeederDiscovery;
 use Marko\Database\Seed\SeederDiscoveryInterface;
 use Marko\Database\Seed\SeederRunner;
 
 return [
+    'singletons' => [
+        EntityMetadataFactory::class,
+    ],
+    'boot' => function (
+        EntityDiscovery $discovery,
+        EntityMetadataFactory $metadataFactory,
+        ProjectPaths $paths,
+    ): void {
+        $entityClasses = array_merge(
+            $discovery->discoverInVendor($paths->vendor),
+            $discovery->discoverInModules($paths->modules),
+            $discovery->discoverInApp($paths->app),
+        );
+        $metadataFactory->linkExtendersFrom($entityClasses);
+    },
     'bindings' => [
         SeederDiscoveryInterface::class => SeederDiscovery::class,
         SeederRunner::class => function (ContainerInterface $container): SeederRunner {
