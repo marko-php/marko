@@ -34,7 +34,7 @@ trait HasScopes
         $this->scopes = $scopes;
     }
 
-    public function getOverride(
+    public function override(
         string $scopeKey,
         string $property,
     ): mixed {
@@ -44,7 +44,7 @@ trait HasScopes
     /**
      * @return array<string, array<string, mixed>>
      */
-    public function allOverrides(): array
+    public function overrides(): array
     {
         return $this->scopes ?? [];
     }

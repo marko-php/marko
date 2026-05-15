@@ -25,10 +25,10 @@ it('exposes the HasScopesInterface override methods via the trait', function ():
     $entity = new TraitProduct();
 
     expect(method_exists($entity, 'setOverride'))->toBeTrue()
-        ->and(method_exists($entity, 'getOverride'))->toBeTrue()
+        ->and(method_exists($entity, 'override'))->toBeTrue()
         ->and(method_exists($entity, 'hasOverride'))->toBeTrue()
         ->and(method_exists($entity, 'clearOverride'))->toBeTrue()
-        ->and(method_exists($entity, 'allOverrides'))->toBeTrue();
+        ->and(method_exists($entity, 'overrides'))->toBeTrue();
 });
 
 it('stores multiple overrides keyed by scopeKey and property', function (): void {
@@ -37,17 +37,17 @@ it('stores multiple overrides keyed by scopeKey and property', function (): void
     $entity->setOverride('locale:de', 'name', 'Hallo');
     $entity->setOverride('geo:eu.de', 'price', 19.99);
 
-    expect($entity->allOverrides())->toBe([
+    expect($entity->overrides())->toBe([
         'geo:eu.de' => ['name' => 'Hemd', 'price' => 19.99],
         'locale:de' => ['name' => 'Hallo'],
     ]);
 });
 
-it('returns null for unknown scopeKey or property via getOverride', function (): void {
+it('returns null for unknown scopeKey or property via override', function (): void {
     $entity = new TraitProduct();
 
-    expect($entity->getOverride('geo:eu.de', 'name'))->toBeNull()
-        ->and($entity->getOverride('unknown', 'price'))->toBeNull();
+    expect($entity->override('geo:eu.de', 'name'))->toBeNull()
+        ->and($entity->override('unknown', 'price'))->toBeNull();
 });
 
 it('returns false for hasOverride when no override exists', function (): void {
@@ -64,7 +64,7 @@ it('distinguishes an explicit null override from no override via hasOverride', f
     $entity->setOverride('geo:eu.de', 'name', null);
 
     expect($entity->hasOverride('geo:eu.de', 'name'))->toBeTrue()
-        ->and($entity->getOverride('geo:eu.de', 'name'))->toBeNull();
+        ->and($entity->override('geo:eu.de', 'name'))->toBeNull();
 });
 
 it('clears a single property override leaving others intact', function (): void {
@@ -73,8 +73,8 @@ it('clears a single property override leaving others intact', function (): void 
     $entity->setOverride('geo:eu.de', 'price', 19.99);
     $entity->clearOverride('geo:eu.de', 'name');
 
-    expect($entity->getOverride('geo:eu.de', 'name'))->toBeNull()
-        ->and($entity->getOverride('geo:eu.de', 'price'))->toBe(19.99);
+    expect($entity->override('geo:eu.de', 'name'))->toBeNull()
+        ->and($entity->override('geo:eu.de', 'price'))->toBe(19.99);
 });
 
 it('sets scopes to null when the last override is cleared', function (): void {
@@ -116,8 +116,8 @@ it('HasScopesInterface declares the override methods', function (): void {
 
     expect($reflection->isInterface())->toBeTrue()
         ->and($reflection->hasMethod('setOverride'))->toBeTrue()
-        ->and($reflection->hasMethod('getOverride'))->toBeTrue()
+        ->and($reflection->hasMethod('override'))->toBeTrue()
         ->and($reflection->hasMethod('hasOverride'))->toBeTrue()
         ->and($reflection->hasMethod('clearOverride'))->toBeTrue()
-        ->and($reflection->hasMethod('allOverrides'))->toBeTrue();
+        ->and($reflection->hasMethod('overrides'))->toBeTrue();
 });

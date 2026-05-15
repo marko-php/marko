@@ -164,7 +164,7 @@ it('clears an override via clearOverride leaving the companion otherwise intact'
     $resolver->clearOverride($product, 'name', $scope);
 
     expect($companion->hasOverride('store:global.us', 'name'))->toBeFalse()
-        ->and($companion->getOverride('store:global.us', 'sku'))->toBe('SKU-US');
+        ->and($companion->override('store:global.us', 'sku'))->toBe('SKU-US');
 });
 
 it('throws ScopeContextException when setOverride targets a property without Scoped', function (): void {
@@ -237,7 +237,7 @@ it(
         $scope = new Scope('store', 'global.us');
         $resolver->setOverride($product, 'name', 'Direct Override', $scope);
 
-        expect($product->getOverride('store:global.us', 'name'))->toBe('Direct Override')
+        expect($product->override('store:global.us', 'name'))->toBe('Direct Override')
             ->and($product->companions())->toBeEmpty();
     },
 );
@@ -373,7 +373,7 @@ it('ScopeResolver setOverride works on a trait-based entity', function (): void 
     $scope = new Scope('store', 'global.us');
     $resolver->setOverride($product, 'name', 'Trait Override', $scope);
 
-    expect($product->getOverride('store:global.us', 'name'))->toBe('Trait Override')
+    expect($product->override('store:global.us', 'name'))->toBe('Trait Override')
         ->and($product->companions())->toBeEmpty();
 });
 
@@ -390,7 +390,7 @@ it('ScopeResolver setOverride works when a manual HasScopesInterface companion i
     $scope = new Scope('store', 'global.us');
     $resolver->setOverride($product, 'name', 'Companion Override', $scope);
 
-    expect($companion->getOverride('store:global.us', 'name'))->toBe('Companion Override');
+    expect($companion->override('store:global.us', 'name'))->toBe('Companion Override');
 });
 
 it('ScopeResolver resolved works with a manual HasScopesInterface companion (not ScopedOverridesEntity)', function (): void {

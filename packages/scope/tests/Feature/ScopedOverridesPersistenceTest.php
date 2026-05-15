@@ -221,8 +221,8 @@ it('round-trips overrides via save then re-hydrate via find', function (): void 
 
     expect($found)->not->toBeNull()
         ->and($foundOverrides)->not->toBeNull()
-        ->and($foundOverrides->getOverride('geo:eu.de', 'name'))->toBe('Hemd')
-        ->and($foundOverrides->allOverrides())->toBe(['geo:eu.de' => ['name' => 'Hemd']]);
+        ->and($foundOverrides->override('geo:eu.de', 'name'))->toBe('Hemd')
+        ->and($foundOverrides->overrides())->toBe(['geo:eu.de' => ['name' => 'Hemd']]);
 });
 
 it('writes null into the scopes column when all overrides are cleared', function (): void {

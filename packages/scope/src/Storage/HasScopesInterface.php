@@ -12,7 +12,7 @@ interface HasScopesInterface
         mixed $value,
     ): void;
 
-    public function getOverride(
+    public function override(
         string $scopeKey,
         string $property,
     ): mixed;
@@ -30,5 +30,5 @@ interface HasScopesInterface
     /**
      * @return array<string, array<string, mixed>>
      */
-    public function allOverrides(): array;
+    public function overrides(): array;
 }

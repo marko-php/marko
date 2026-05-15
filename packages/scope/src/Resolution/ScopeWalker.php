@@ -40,7 +40,7 @@ class ScopeWalker
             );
 
             if ($matchedScope !== null) {
-                return ScopeWalkResult::found($overrides->getOverride($axis . ':' . $matchedScope, $property));
+                return ScopeWalkResult::found($overrides->override($axis . ':' . $matchedScope, $property));
             }
         }
 
@@ -75,7 +75,7 @@ class ScopeWalker
         );
 
         if ($matchedScope !== null) {
-            return ScopeWalkResult::found($overrides->getOverride($axis . ':' . $matchedScope, $property));
+            return ScopeWalkResult::found($overrides->override($axis . ':' . $matchedScope, $property));
         }
 
         return ScopeWalkResult::notFound();
