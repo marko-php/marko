@@ -31,16 +31,10 @@ class ScopeWalker
                 continue;
             }
 
-            $hierarchy = $registry->getHierarchy($axis);
-            $walked = $hierarchy->walkUp($path);
+            $result = $this->findFirstMatch($overrides, $property, $axis, $path, $registry);
 
-            $matchedScope = array_find(
-                $walked,
-                fn (string $scope) => $overrides->hasOverride($axis . ':' . $scope, $property),
-            );
-
-            if ($matchedScope !== null) {
-                return ScopeWalkResult::found($overrides->override($axis . ':' . $matchedScope, $property));
+            if ($result->isFound()) {
+                return $result;
             }
         }
 
@@ -60,24 +54,32 @@ class ScopeWalker
         Scope $scope,
         ScopeRegistryInterface $registry,
     ): ScopeWalkResult {
-        $axis = $scope->axisName;
-
-        if (!in_array($axis, $axes, true)) {
+        if (!in_array($scope->axisName, $axes, true)) {
             return ScopeWalkResult::notFound();
         }
 
-        $hierarchy = $registry->getHierarchy($axis);
-        $walked = $hierarchy->walkUp($scope->path);
+        return $this->findFirstMatch($overrides, $property, $scope->axisName, $scope->path, $registry);
+    }
+
+    /**
+     * @throws UnknownAxisException|UnknownScopeException
+     */
+    private function findFirstMatch(
+        HasScopesInterface $overrides,
+        string $property,
+        string $axis,
+        string $path,
+        ScopeRegistryInterface $registry,
+    ): ScopeWalkResult {
+        $walked = $registry->getHierarchy($axis)->walkUp($path);
 
         $matchedScope = array_find(
             $walked,
             fn (string $scopePath) => $overrides->hasOverride($axis . ':' . $scopePath, $property),
         );
 
-        if ($matchedScope !== null) {
-            return ScopeWalkResult::found($overrides->override($axis . ':' . $matchedScope, $property));
-        }
-
-        return ScopeWalkResult::notFound();
+        return $matchedScope !== null
+            ? ScopeWalkResult::found($overrides->override($axis . ':' . $matchedScope, $property))
+            : ScopeWalkResult::notFound();
     }
 }
