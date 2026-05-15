@@ -216,6 +216,33 @@ class EntityMetadataFactory
     }
 
     /**
+     * Scan a list of entity classes and link any extenders to their parent metadata.
+     *
+     * @param array<class-string> $entityClasses
+     */
+    public function linkExtendersFrom(array $entityClasses): void
+    {
+        $extenders = [];
+        foreach ($entityClasses as $entityClass) {
+            $reflection = new ReflectionClass($entityClass);
+            $tableAttrs = $reflection->getAttributes(Table::class);
+            if (count($tableAttrs) === 0) {
+                continue;
+            }
+            $tableAttr = $tableAttrs[0]->newInstance();
+            if ($tableAttr->extends !== null) {
+                $extenders[$tableAttr->extends][] = $entityClass;
+            }
+        }
+        foreach ($extenders as $parentClass => $extenderClasses) {
+            if (!class_exists($parentClass, true)) {
+                throw EntityException::extenderParentClassNotFound($extenderClasses[0], $parentClass);
+            }
+            $this->linkExtenders($parentClass, $extenderClasses);
+        }
+    }
+
+    /**
      * Clear the metadata cache.
      */
     public function clearCache(): void
