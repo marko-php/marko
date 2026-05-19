@@ -278,6 +278,74 @@ describe('QueryBuilderInterface', function (): void {
         expect($returnType?->getName())->toBe('array');
     });
 
+    it('QueryBuilderInterface declares a selectRaw method', function (): void {
+        $reflection = new ReflectionClass(QueryBuilderInterface::class);
+
+        expect($reflection->hasMethod('selectRaw'))->toBeTrue();
+    });
+
+    it('QueryBuilderInterface::selectRaw takes a string expression as the first parameter named "expression"', function (): void {
+        $reflection = new ReflectionClass(QueryBuilderInterface::class);
+        $method = $reflection->getMethod('selectRaw');
+        $params = $method->getParameters();
+
+        expect($params[0]->getName())->toBe('expression')
+            ->and($params[0]->getType()?->getName())->toBe('string');
+    });
+
+    it('QueryBuilderInterface::selectRaw takes an array bindings as the second parameter named "bindings" with default []', function (): void {
+        $reflection = new ReflectionClass(QueryBuilderInterface::class);
+        $method = $reflection->getMethod('selectRaw');
+        $params = $method->getParameters();
+
+        expect($params[1]->getName())->toBe('bindings')
+            ->and($params[1]->getType()?->getName())->toBe('array')
+            ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
+            ->and($params[1]->getDefaultValue())->toBeEmpty();
+    });
+
+    it('QueryBuilderInterface::selectRaw returns static', function (): void {
+        $reflection = new ReflectionClass(QueryBuilderInterface::class);
+        $method = $reflection->getMethod('selectRaw');
+        $returnType = $method->getReturnType();
+
+        expect($returnType?->getName())->toBe('static');
+    });
+
+    it('QueryBuilderInterface declares a whereRaw method', function (): void {
+        $reflection = new ReflectionClass(QueryBuilderInterface::class);
+
+        expect($reflection->hasMethod('whereRaw'))->toBeTrue();
+    });
+
+    it('QueryBuilderInterface::whereRaw takes a string expression as the first parameter named "expression"', function (): void {
+        $reflection = new ReflectionClass(QueryBuilderInterface::class);
+        $method = $reflection->getMethod('whereRaw');
+        $params = $method->getParameters();
+
+        expect($params[0]->getName())->toBe('expression')
+            ->and($params[0]->getType()?->getName())->toBe('string');
+    });
+
+    it('QueryBuilderInterface::whereRaw takes an array bindings as the second parameter named "bindings" with default []', function (): void {
+        $reflection = new ReflectionClass(QueryBuilderInterface::class);
+        $method = $reflection->getMethod('whereRaw');
+        $params = $method->getParameters();
+
+        expect($params[1]->getName())->toBe('bindings')
+            ->and($params[1]->getType()?->getName())->toBe('array')
+            ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
+            ->and($params[1]->getDefaultValue())->toBeEmpty();
+    });
+
+    it('QueryBuilderInterface::whereRaw returns static', function (): void {
+        $reflection = new ReflectionClass(QueryBuilderInterface::class);
+        $method = $reflection->getMethod('whereRaw');
+        $returnType = $method->getReturnType();
+
+        expect($returnType?->getName())->toBe('static');
+    });
+
     it('defines min(), max(), sum(), avg() aggregate methods returning int|float|null', function (): void {
         $reflection = new ReflectionClass(QueryBuilderInterface::class);
 

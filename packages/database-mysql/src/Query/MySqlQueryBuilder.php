@@ -82,6 +82,21 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     private ?int $offsetValue = null;
 
     /**
+     * @var list<string>
+     */
+    private array $rawSelects = [];
+
+    /**
+     * @var list<mixed>
+     */
+    private array $rawSelectBindings = [];
+
+    /**
+     * @var list<array{expression: string, bindings: array<int, mixed>}>
+     */
+    private array $rawWheres = [];
+
+    /**
      * @var array<int, mixed>
      */
     private array $bindings = [];
@@ -102,6 +117,20 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         string ...$columns,
     ): static {
         $this->columns = $columns;
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException
+     */
+    public function selectRaw(
+        string $expression,
+        array $bindings = [],
+    ): static {
+        $this->assertNoDangerousPatterns($expression);
+        $this->rawSelects[] = $expression;
+        array_push($this->rawSelectBindings, ...$bindings);
 
         return $this;
     }
@@ -252,11 +281,27 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
+    public function whereRaw(
+        string $expression,
+        array $bindings = [],
+    ): static {
+        $this->assertNoDangerousPatterns($expression);
+        $this->rawWheres[] = ['expression' => $expression, 'bindings' => $bindings];
+
+        return $this;
+    }
+
     public function groupBy(
         string ...$columns,
     ): static {
         foreach ($columns as $column) {
-            if (!IdentifierValidator::isValidIdentifier($column) && !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/', $column)) {
+            if (!IdentifierValidator::isValidIdentifier($column) && !preg_match(
+                '/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/',
+                $column
+            )) {
                 throw InvalidColumnException::invalidColumn($column);
             }
         }
@@ -350,6 +395,25 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         $this->orders[] = [
             'column' => $column,
             'direction' => $direction,
+            'raw' => false,
+        ];
+
+        return $this;
+    }
+
+    public function orderByRaw(
+        string $expression,
+        string $direction = 'ASC',
+    ): static {
+        $direction = strtoupper($direction);
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'ASC';
+        }
+
+        $this->orders[] = [
+            'column' => $expression,
+            'direction' => $direction,
+            'raw' => true,
         ];
 
         return $this;
@@ -672,12 +736,18 @@ class MySqlQueryBuilder implements QueryBuilderInterface
             return $this->compileColumnExpression($col);
         }, $this->columns);
 
+        $selectParts = array_merge($quotedColumns, $this->rawSelects);
+
+        foreach ($this->rawSelectBindings as $binding) {
+            $this->bindings[] = $binding;
+        }
+
         $keyword = $this->distinct ? 'SELECT DISTINCT' : 'SELECT';
 
         $sql = sprintf(
             '%s %s FROM %s',
             $keyword,
-            implode(', ', $quotedColumns),
+            implode(', ', $selectParts),
             $this->quoteIdentifier($this->table),
         );
 
@@ -839,6 +909,17 @@ class MySqlQueryBuilder implements QueryBuilderInterface
             $conditions[] = $expr;
         }
 
+        foreach ($this->rawWheres as $item) {
+            $expr = $item['expression'];
+            $this->bindings = array_merge($this->bindings, $item['bindings']);
+
+            if (!empty($conditions)) {
+                $expr = 'AND ' . $expr;
+            }
+
+            $conditions[] = $expr;
+        }
+
         if (empty($conditions)) {
             return '';
         }
@@ -855,7 +936,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         $orders = array_map(
             fn ($order) => sprintf(
                 '%s %s',
-                $this->quoteIdentifier($order['column']),
+                $order['raw'] ? $order['column'] : $this->quoteIdentifier($order['column']),
                 $order['direction'],
             ),
             $this->orders,
@@ -877,5 +958,21 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         }
 
         return $sql;
+    }
+
+    /**
+     * @throws InvalidColumnException
+     */
+    private function assertNoDangerousPatterns(string $expression): void
+    {
+        if (
+            str_contains($expression, ';')
+            || str_contains($expression, '--')
+            || str_contains($expression, '/*')
+            || str_contains($expression, '*/')
+            || str_contains($expression, '`')
+        ) {
+            throw InvalidColumnException::invalidColumn($expression);
+        }
     }
 }

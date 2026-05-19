@@ -9,6 +9,7 @@ use Marko\Database\Entity\EntityCollection;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\RelationshipLoader;
+use Marko\Database\Exceptions\InvalidColumnException;
 use Marko\Database\Exceptions\RepositoryException;
 use Marko\Database\Query\EntityQueryBuilderInterface;
 use Marko\Database\Query\QueryBuilderInterface;
@@ -50,6 +51,18 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         string ...$columns,
     ): static {
         $this->queryBuilder->select(...$columns);
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException
+     */
+    public function selectRaw(
+        string $expression,
+        array $bindings = [],
+    ): static {
+        $this->queryBuilder->selectRaw($expression, $bindings);
 
         return $this;
     }
@@ -116,6 +129,18 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         mixed $value,
     ): static {
         $this->queryBuilder->orWhere($column, $operator, $value);
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException
+     */
+    public function whereRaw(
+        string $expression,
+        array $bindings = [],
+    ): static {
+        $this->queryBuilder->whereRaw($expression, $bindings);
 
         return $this;
     }
@@ -195,6 +220,15 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         string $direction = 'ASC',
     ): static {
         $this->queryBuilder->orderBy($column, $direction);
+
+        return $this;
+    }
+
+    public function orderByRaw(
+        string $expression,
+        string $direction = 'ASC',
+    ): static {
+        $this->queryBuilder->orderByRaw($expression, $direction);
 
         return $this;
     }

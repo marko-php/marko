@@ -355,7 +355,35 @@ Use `getEntities()` / `firstEntity()` for typed domain objects. Drop to `get()` 
 
 #### Available filters
 
-`where`, `whereIn`, `whereNull`, `whereNotNull`, `orWhere`, `join`, `leftJoin`, `rightJoin`, `orderBy`, `limit`, `offset`, `select`. All return `static` for chaining. The escape hatch is `raw(string $sql, array $bindings = [])` for queries the builder can't express.
+`where`, `whereIn`, `whereNull`, `whereNotNull`, `orWhere`, `whereRaw`, `join`, `leftJoin`, `rightJoin`, `orderBy`, `limit`, `offset`, `select`, `selectRaw`. All return `static` for chaining. The escape hatch is `raw(string $sql, array $bindings = [])` for queries the builder can't express.
+
+#### Raw expressions
+
+Use `selectRaw` and `whereRaw` when the structured builder methods cannot express the SQL you need. Both accept a raw expression string and an optional array of positional `?` bindings. A denylist rejects expressions containing `;`, `--`, `/*`, `*/`, or backticks --- use `?` placeholders for user-supplied values instead of interpolating them directly.
+
+```php
+// Compute a derived column inline
+$rows = $this->query()
+    ->select('id', 'title')
+    ->selectRaw('COALESCE(published_at, created_at) AS display_date')
+    ->get();
+
+// Filter on an expression that where() cannot express
+$rows = $this->query()
+    ->whereRaw('COALESCE(price, base_price) > ?', [100])
+    ->orderBy('title')
+    ->get();
+
+// Both can be combined freely with structured methods
+$rows = $this->query()
+    ->select('status')
+    ->selectRaw('COUNT(*) AS total')
+    ->whereRaw('EXTRACT(YEAR FROM created_at) = ?', [2024])
+    ->groupBy('status')
+    ->get();
+```
+
+`whereRaw` conditions are AND-combined with all other `where*` conditions and are also honoured by aggregate methods (`count`, `min`, `max`, `sum`, `avg`).
 
 #### Aggregate functions
 

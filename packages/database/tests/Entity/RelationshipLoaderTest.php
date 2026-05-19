@@ -348,6 +348,27 @@ function makeFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static {
+            return $this;
+        }
+
+        public function selectRaw(
+            string $expression,
+            array $bindings = [],
+        ): static {
+            return $this;
+        }
+
+        public function whereRaw(
+            string $expression,
+            array $bindings = [],
+        ): static {
+            return $this;
+        }
+
         public function limit(int $limit): static
         {
             return $this;
@@ -577,6 +598,27 @@ function makeTrackingQueryBuilderFactory(array &$queries): QueryBuilderFactoryIn
                 public function orderBy(
                     string $column,
                     string $direction = 'ASC',
+                ): static {
+                    return $this;
+                }
+
+                public function orderByRaw(
+                    string $expression,
+                    string $direction = 'ASC',
+                ): static {
+                    return $this;
+                }
+
+                public function selectRaw(
+                    string $expression,
+                    array $bindings = [],
+                ): static {
+                    return $this;
+                }
+
+                public function whereRaw(
+                    string $expression,
+                    array $bindings = [],
                 ): static {
                     return $this;
                 }
@@ -1059,7 +1101,7 @@ it('sets HasMany property to empty array when no related entities found', functi
     $loader = makeLoader($qbFactory, $factory);
     $loader->load([$user], $relationship, $userMeta);
 
-    expect($user->posts)->toBe([]);
+    expect($user->posts)->toBeEmpty();
 });
 
 it('groups HasMany results by foreign key value', function (): void {
@@ -1099,7 +1141,7 @@ it('groups HasMany results by foreign key value', function (): void {
 
     expect($user1->posts)->toHaveCount(3)
         ->and($user2->posts)->toHaveCount(1)
-        ->and($user3->posts)->toBe([]);
+        ->and($user3->posts)->toBeEmpty();
 });
 
 // ── Batch Query Optimization ───────────────────────────────────────────────────
@@ -1161,7 +1203,7 @@ it('skips loading when all foreign key values are null', function (): void {
     $loader = makeLoader($qbFactory, $factory);
     $loader->load([$user], $relationship, $userMeta);
 
-    expect($queries)->toHaveCount(0)
+    expect($queries)->toBeEmpty()
         ->and($user->country)->toBeNull();
 });
 
@@ -1340,7 +1382,7 @@ it(
         $loader->load([$author], $relationship, $authorMeta);
 
         expect($author->posts)->toBeInstanceOf(EntityCollection::class)
-            ->and($author->posts)->toHaveCount(0)
+            ->and($author->posts)->toBeEmpty()
             ->and($author->posts->isEmpty())->toBeTrue();
     },
 );

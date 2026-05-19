@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\Tests\Repository;
 
-use Marko\Database\Attributes\BelongsTo;
 use Marko\Database\Attributes\Column;
-use Marko\Database\Attributes\HasMany;
 use Marko\Database\Attributes\Table;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
@@ -225,6 +223,21 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
         }
 
         public function orderBy(string $column, string $direction = 'ASC'): static
+        {
+            return $this;
+        }
+
+        public function orderByRaw(string $expression, string $direction = 'ASC'): static
+        {
+            return $this;
+        }
+
+        public function selectRaw(string $expression, array $bindings = []): static
+        {
+            return $this;
+        }
+
+        public function whereRaw(string $expression, array $bindings = []): static
         {
             return $this;
         }

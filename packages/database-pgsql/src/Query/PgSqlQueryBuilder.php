@@ -86,6 +86,21 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
      */
     private array $bindings = [];
 
+    /**
+     * @var list<string>
+     */
+    private array $rawSelects = [];
+
+    /**
+     * @var list<mixed>
+     */
+    private array $rawSelectBindings = [];
+
+    /**
+     * @var list<array{expression: string, bindings: array<int, mixed>}>
+     */
+    private array $rawWheres = [];
+
     public function __construct(
         private readonly ConnectionInterface $connection,
     ) {}
@@ -102,6 +117,20 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         string ...$columns,
     ): static {
         $this->columns = $columns;
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException
+     */
+    public function selectRaw(
+        string $expression,
+        array $bindings = [],
+    ): static {
+        $this->assertNoDangerousPatterns($expression);
+        $this->rawSelects[] = $expression;
+        array_push($this->rawSelectBindings, ...$bindings);
 
         return $this;
     }
@@ -251,11 +280,27 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
+    public function whereRaw(
+        string $expression,
+        array $bindings = [],
+    ): static {
+        $this->assertNoDangerousPatterns($expression);
+        $this->rawWheres[] = ['expression' => $expression, 'bindings' => $bindings];
+
+        return $this;
+    }
+
     public function groupBy(
         string ...$columns,
     ): static {
         foreach ($columns as $column) {
-            if (!IdentifierValidator::isValidIdentifier($column) && !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/', $column)) {
+            if (!IdentifierValidator::isValidIdentifier($column) && !preg_match(
+                '/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/',
+                $column
+            )) {
                 throw InvalidColumnException::invalidColumn($column);
             }
         }
@@ -349,6 +394,25 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         $this->orders[] = [
             'column' => $column,
             'direction' => $direction,
+            'raw' => false,
+        ];
+
+        return $this;
+    }
+
+    public function orderByRaw(
+        string $expression,
+        string $direction = 'ASC',
+    ): static {
+        $direction = strtoupper($direction);
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'ASC';
+        }
+
+        $this->orders[] = [
+            'column' => $expression,
+            'direction' => $direction,
+            'raw' => true,
         ];
 
         return $this;
@@ -607,7 +671,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         $lastIndex = count($path->segments) - 1;
 
         foreach ($path->segments as $i => $segment) {
-            $op = ($i === $lastIndex) ? $path->operator : '->';
+            $op = $i === $lastIndex ? $path->operator : '->';
             $sql .= $op . "'" . $segment . "'";
         }
 
@@ -657,19 +721,39 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $compiledColumn;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
+    private function assertNoDangerousPatterns(string $expression): void
+    {
+        if (
+            str_contains($expression, ';')
+            || str_contains($expression, '--')
+            || str_contains($expression, '/*')
+            || str_contains($expression, '*/')
+            || str_contains($expression, '`')
+        ) {
+            throw InvalidColumnException::invalidColumn($expression);
+        }
+    }
+
     private function buildSelectSql(): string
     {
         $this->bindings = [];
 
-        $columns = $this->columns[0] === '*'
-            ? '*'
-            : implode(
-                ', ',
-                array_map(
-                    fn (string $col): string => $this->compileColumnExpression($col),
-                    $this->columns,
-                ),
+        foreach ($this->rawSelectBindings as $binding) {
+            $this->bindings[] = $binding;
+        }
+
+        $regularColumns = $this->columns[0] === '*'
+            ? ['*']
+            : array_map(
+                fn (string $col): string => $this->compileColumnExpression($col),
+                $this->columns,
             );
+
+        $selectParts = array_merge($regularColumns, $this->rawSelects);
+        $columns = implode(', ', $selectParts);
 
         $keyword = $this->distinct ? 'SELECT DISTINCT' : 'SELECT';
 
@@ -844,6 +928,19 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
             }
         }
 
+        // Raw WHERE conditions
+        foreach ($this->rawWheres as $rawWhere) {
+            if (empty($conditions)) {
+                $conditions[] = $rawWhere['expression'];
+            } else {
+                $conditions[] = 'AND ' . $rawWhere['expression'];
+            }
+
+            foreach ($rawWhere['bindings'] as $binding) {
+                $this->bindings[] = $binding;
+            }
+        }
+
         if (empty($conditions)) {
             return '';
         }
@@ -860,7 +957,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         $clauses = array_map(
             fn (array $order): string => sprintf(
                 '%s %s',
-                $this->quoteIdentifier($order['column']),
+                $order['raw'] ?? false ? $order['column'] : $this->quoteIdentifier($order['column']),
                 $order['direction'],
             ),
             $this->orders,
