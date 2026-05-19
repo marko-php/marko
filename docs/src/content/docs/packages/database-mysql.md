@@ -146,6 +146,7 @@ class MyService
 | `leftJoin(string $table, string $first, string $operator, string $second): static` | Left join |
 | `rightJoin(string $table, string $first, string $operator, string $second): static` | Right join |
 | `orderBy(string $column, string $direction = 'ASC'): static` | Order results |
+| `orderByRaw(string $expression, string $direction = 'ASC'): static` | Order by a raw SQL expression |
 | `limit(int $limit): static` | Limit result count |
 | `offset(int $offset): static` | Skip rows |
 | `get(): array` | Execute and return all matching rows |

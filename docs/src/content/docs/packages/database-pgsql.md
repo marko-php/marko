@@ -215,6 +215,7 @@ Implements `QueryBuilderInterface`. Fluent builder for PostgreSQL queries.
 | `leftJoin(string $table, string $first, string $operator, string $second): static` | LEFT JOIN |
 | `rightJoin(string $table, string $first, string $operator, string $second): static` | RIGHT JOIN |
 | `orderBy(string $column, string $direction = 'ASC'): static` | Add ORDER BY clause |
+| `orderByRaw(string $expression, string $direction = 'ASC'): static` | Order by a raw SQL expression |
 | `limit(int $limit): static` | Set LIMIT |
 | `offset(int $offset): static` | Set OFFSET |
 | `get(): array` | Execute SELECT and return all rows |

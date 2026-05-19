@@ -355,7 +355,7 @@ Use `getEntities()` / `firstEntity()` for typed domain objects. Drop to `get()` 
 
 #### Available filters
 
-`where`, `whereIn`, `whereNull`, `whereNotNull`, `orWhere`, `whereRaw`, `join`, `leftJoin`, `rightJoin`, `orderBy`, `limit`, `offset`, `select`, `selectRaw`. All return `static` for chaining. The escape hatch is `raw(string $sql, array $bindings = [])` for queries the builder can't express.
+`where`, `whereIn`, `whereNull`, `whereNotNull`, `orWhere`, `whereRaw`, `join`, `leftJoin`, `rightJoin`, `orderBy`, `orderByRaw`, `limit`, `offset`, `select`, `selectRaw`. All return `static` for chaining. The escape hatch is `raw(string $sql, array $bindings = [])` for queries the builder can't express.
 
 #### Raw expressions
 
