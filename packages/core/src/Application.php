@@ -26,6 +26,7 @@ use Marko\Core\Exceptions\ModuleException;
 use Marko\Core\Exceptions\PluginException;
 use Marko\Core\Exceptions\PreferenceConflictException;
 use Marko\Core\Module\DependencyResolver;
+use Marko\Core\Module\GlobalMiddlewareResolver;
 use Marko\Core\Module\ManifestParser;
 use Marko\Core\Module\ModuleDiscovery;
 use Marko\Core\Module\ModuleManifest;
@@ -303,11 +304,6 @@ class Application
         $this->commandRunner = new CommandRunner($this->container, $this->commandRegistry);
     }
 
-    private const array GLOBAL_MIDDLEWARE = [
-        'Marko\\PageCache\\Middleware\\PageCacheMiddleware',
-        'Marko\\Session\\Middleware\\SessionMiddleware',
-        'Marko\\Layout\\Middleware\\LayoutMiddleware',
-    ];
 
     /**
      * @throws RouteException|RouteConflictException|ReflectionException
@@ -348,20 +344,19 @@ class Application
     }
 
     /**
-     * Discover available global middleware classes.
+     * Discover available global middleware classes by merging module-declared
+     * entries with the built-in hardcoded list, sorted by priority.
      *
      * @return array<class-string<MiddlewareInterface>>
+     * @throws ModuleException When a module-declared middleware class is invalid
      */
     private function discoverGlobalMiddleware(): array
     {
-        $middleware = [];
+        $resolver = new GlobalMiddlewareResolver();
 
-        foreach (self::GLOBAL_MIDDLEWARE as $class) {
-            if (class_exists($class)) {
-                $middleware[] = $class;
-            }
-        }
-
-        return $middleware;
+        return $resolver->resolve(
+            modules: $this->modules,
+            builtIns: GlobalMiddlewareResolver::DEFAULT_BUILT_INS,
+        );
     }
 }
