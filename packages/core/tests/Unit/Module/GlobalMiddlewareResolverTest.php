@@ -60,7 +60,7 @@ it('accepts globalMiddleware as a flat list of class strings in module.php', fun
     );
 
     $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module], builtIns: []);
+    $result = $resolver->resolve([$module]);
 
     expect($result)
         ->toContain('Acme\Mw\AlphaMiddleware')
@@ -83,7 +83,7 @@ it('accepts globalMiddleware entries as array with class key and priority', func
     );
 
     $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module], builtIns: []);
+    $result = $resolver->resolve([$module]);
 
     expect($result)->toContain('Acme\Mw\GammaMiddleware');
 });
@@ -108,7 +108,7 @@ it('defaults missing priority to 100', function (): void {
     );
 
     $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module], builtIns: []);
+    $result = $resolver->resolve([$module]);
 
     $deltaIndex = array_search('Acme\Mw\DeltaMiddleware', $result);
     $epsilonIndex = array_search('Acme\Mw\EpsilonMiddleware', $result);
@@ -118,34 +118,31 @@ it('defaults missing priority to 100', function (): void {
 });
 
 // ---------------------------------------------------------------------------
-// Requirement 4: merges with built-in hardcoded list
+// Requirement 4: merges globalMiddleware from multiple modules
 // ---------------------------------------------------------------------------
 
-it('merges module-declared globalMiddleware with built-in hardcoded list', function (): void {
+it('merges globalMiddleware declarations from multiple modules', function (): void {
     makeMiddlewareClass('Acme\Mw\ZetaMiddleware');
+    makeMiddlewareClass('Acme\Mw\OmegaMiddleware');
 
-    $module = makeModuleManifest(
-        name: 'acme/test',
+    $moduleA = makeModuleManifest(
+        name: 'acme/mod-a',
         source: 'vendor',
         globalMiddleware: ['Acme\Mw\ZetaMiddleware'],
     );
 
-    $builtIns = [
-        ['class' => 'Acme\Mw\ZetaMiddleware', 'priority' => 10, 'source' => 'vendor'], // same class won't duplicate
-    ];
-
-    // Use different built-in so we can verify both appear
-    makeMiddlewareClass('Acme\BuiltIn\BuiltInMiddleware');
-    $builtInsClean = [
-        ['class' => 'Acme\BuiltIn\BuiltInMiddleware', 'priority' => 10, 'source' => 'vendor'],
-    ];
+    $moduleB = makeModuleManifest(
+        name: 'acme/mod-b',
+        source: 'vendor',
+        globalMiddleware: ['Acme\Mw\OmegaMiddleware'],
+    );
 
     $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module], builtIns: $builtInsClean);
+    $result = $resolver->resolve([$moduleA, $moduleB]);
 
     expect($result)
         ->toContain('Acme\Mw\ZetaMiddleware')
-        ->toContain('Acme\BuiltIn\BuiltInMiddleware');
+        ->toContain('Acme\Mw\OmegaMiddleware');
 });
 
 // ---------------------------------------------------------------------------
@@ -154,11 +151,11 @@ it('merges module-declared globalMiddleware with built-in hardcoded list', funct
 
 it('sorts merged globalMiddleware by priority ascending', function (): void {
     makeMiddlewareClass('Acme\Mw\EtaMiddleware');    // priority 30
-    makeMiddlewareClass('Acme\Mw\ThetaMiddleware');  // priority 10 (built-in)
+    makeMiddlewareClass('Acme\Mw\ThetaMiddleware');  // priority 10
     makeMiddlewareClass('Acme\Mw\IotaMiddleware');   // priority 20
 
-    $module = makeModuleManifest(
-        name: 'acme/test',
+    $moduleA = makeModuleManifest(
+        name: 'acme/mod-a',
         source: 'vendor',
         globalMiddleware: [
             ['class' => 'Acme\Mw\EtaMiddleware', 'priority' => 30],
@@ -166,12 +163,16 @@ it('sorts merged globalMiddleware by priority ascending', function (): void {
         ],
     );
 
-    $builtIns = [
-        ['class' => 'Acme\Mw\ThetaMiddleware', 'priority' => 10, 'source' => 'vendor'],
-    ];
+    $moduleB = makeModuleManifest(
+        name: 'acme/mod-b',
+        source: 'vendor',
+        globalMiddleware: [
+            ['class' => 'Acme\Mw\ThetaMiddleware', 'priority' => 10],
+        ],
+    );
 
     $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module], builtIns: $builtIns);
+    $result = $resolver->resolve([$moduleA, $moduleB]);
 
     $thetaIndex = array_search('Acme\Mw\ThetaMiddleware', $result);
     $iotaIndex = array_search('Acme\Mw\IotaMiddleware', $result);
@@ -205,7 +206,7 @@ it('deduplicates globalMiddleware entries preferring app over modules over vendo
     );
 
     $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$vendorModule, $appModule], builtIns: []);
+    $result = $resolver->resolve([$vendorModule, $appModule]);
 
     // Should appear only once — app source wins
     $count = count(array_filter($result, fn ($c) => $c === 'Acme\Mw\KappaMiddleware'));
@@ -240,7 +241,7 @@ it('deduplicates globalMiddleware within the same source by keeping the lowest p
     );
 
     $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module1, $module2], builtIns: []);
+    $result = $resolver->resolve([$module1, $module2]);
 
     // LambdaMiddleware should appear once, with priority 40 (comes before MuMiddleware priority 5? no)
     $count = count(array_filter($result, fn ($c) => $c === 'Acme\Mw\LambdaMiddleware'));
@@ -257,14 +258,31 @@ it('deduplicates globalMiddleware within the same source by keeping the lowest p
 // Requirement 8: built-in priorities
 // ---------------------------------------------------------------------------
 
-it('assigns priority 10 to PageCacheMiddleware 20 to SessionMiddleware 30 to LayoutMiddleware as built-in defaults', function (): void {
-    // Make built-in classes exist for this test
+it('assigns priority 10 to PageCacheMiddleware 20 to SessionMiddleware 30 to LayoutMiddleware as module declarations', function (): void {
     makeMiddlewareClass('Marko\PageCache\Middleware\PageCacheMiddleware');
     makeMiddlewareClass('Marko\Session\Middleware\SessionMiddleware');
     makeMiddlewareClass('Marko\Layout\Middleware\LayoutMiddleware');
 
+    $pageCacheModule = makeModuleManifest(
+        name: 'marko/page-cache',
+        source: 'vendor',
+        globalMiddleware: [['class' => 'Marko\PageCache\Middleware\PageCacheMiddleware', 'priority' => 10]],
+    );
+
+    $sessionModule = makeModuleManifest(
+        name: 'marko/session',
+        source: 'vendor',
+        globalMiddleware: [['class' => 'Marko\Session\Middleware\SessionMiddleware', 'priority' => 20]],
+    );
+
+    $layoutModule = makeModuleManifest(
+        name: 'marko/layout',
+        source: 'vendor',
+        globalMiddleware: [['class' => 'Marko\Layout\Middleware\LayoutMiddleware', 'priority' => 30]],
+    );
+
     $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([], builtIns: GlobalMiddlewareResolver::DEFAULT_BUILT_INS);
+    $result = $resolver->resolve([$pageCacheModule, $sessionModule, $layoutModule]);
 
     $pageCacheIndex = array_search('Marko\PageCache\Middleware\PageCacheMiddleware', $result);
     $sessionIndex = array_search('Marko\Session\Middleware\SessionMiddleware', $result);
@@ -296,7 +314,7 @@ it('returns class-string array from discoverGlobalMiddleware in priority order',
     );
 
     $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module], builtIns: []);
+    $result = $resolver->resolve([$module]);
 
     expect($result)->toBeArray();
     foreach ($result as $entry) {
@@ -323,7 +341,7 @@ it('throws a clear exception with suggestion when a module-declared class does n
 
     $resolver = new GlobalMiddlewareResolver();
 
-    expect(fn () => $resolver->resolve([$module], builtIns: []))
+    expect(fn () => $resolver->resolve([$module]))
         ->toThrow(ModuleException::class);
 });
 
@@ -340,7 +358,7 @@ it('throws a clear exception with suggestion when an array-form entry is missing
 
     $resolver = new GlobalMiddlewareResolver();
 
-    expect(fn () => $resolver->resolve([$module], builtIns: []))
+    expect(fn () => $resolver->resolve([$module]))
         ->toThrow(ModuleException::class);
 });
 
@@ -362,47 +380,30 @@ it('throws a clear exception with suggestion when a declared class does not impl
 
     $resolver = new GlobalMiddlewareResolver();
 
-    expect(fn () => $resolver->resolve([$module], builtIns: []))
+    expect(fn () => $resolver->resolve([$module]))
         ->toThrow(ModuleException::class);
 });
 
 // ---------------------------------------------------------------------------
-// Requirement 13: built-in entries silently skip when class doesn't exist
+// Requirement 13: returns empty array when modules have no globalMiddleware
 // ---------------------------------------------------------------------------
 
-it('silently skips built-in GLOBAL_MIDDLEWARE entries when the class does not exist (backwards compat)', function (): void {
-    $builtIns = [
-        ['class' => 'Marko\NonExistent\Middleware\FakeMiddleware', 'priority' => 10, 'source' => 'vendor', 'skipIfMissing' => true],
-    ];
+it('returns empty array when modules exist but none declare globalMiddleware', function (): void {
+    $module = makeModuleManifest(name: 'acme/no-mw', source: 'vendor');
 
     $resolver = new GlobalMiddlewareResolver();
+    $result = $resolver->resolve([$module]);
 
-    // Should not throw — just skip the non-existent built-in class
-    $result = $resolver->resolve([], builtIns: $builtIns);
-
-    expect($result)
-        ->toBeArray()
-        ->not->toContain('Marko\NonExistent\Middleware\FakeMiddleware');
+    expect($result)->toBe([]);
 });
 
 // ---------------------------------------------------------------------------
-// Requirement 14: preserves existing GLOBAL_MIDDLEWARE behavior with no module declarations
+// Requirement 14: returns empty array when no modules are loaded
 // ---------------------------------------------------------------------------
 
-it('preserves existing GLOBAL_MIDDLEWARE behavior when no modules declare globalMiddleware', function (): void {
-    // With no modules and default built-ins where classes don't exist → empty result
+it('returns empty array when no modules are loaded', function (): void {
     $resolver = new GlobalMiddlewareResolver();
+    $result = $resolver->resolve([]);
 
-    // The DEFAULT_BUILT_INS reference real classes that may not exist in tests.
-    // This test verifies zero behavior change: passing built-ins with skipIfMissing => true
-    // when no modules declare anything returns whatever classes actually exist.
-    $builtIns = GlobalMiddlewareResolver::DEFAULT_BUILT_INS;
-    $result = $resolver->resolve([], builtIns: $builtIns);
-
-    expect($result)->toBeArray();
-
-    // Verify the result only contains classes that actually exist
-    foreach ($result as $class) {
-        expect(class_exists($class))->toBeTrue("Class $class should exist in result");
-    }
+    expect($result)->toBe([]);
 });

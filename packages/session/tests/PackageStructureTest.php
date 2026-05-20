@@ -97,3 +97,15 @@ it('has default session.php config file', function () {
         ->and($config)->toHaveKey('lifetime')
         ->and($config)->toHaveKey('cookie');
 });
+
+it('module.php declares SessionMiddleware as globalMiddleware at priority 20', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    $entry = array_find(
+        $module['globalMiddleware'] ?? [],
+        fn (array $e) => ($e['class'] ?? '') === 'Marko\\Session\\Middleware\\SessionMiddleware',
+    );
+
+    expect($entry)->not->toBeNull()
+        ->and($entry['priority'])->toBe(20);
+});

@@ -345,18 +345,11 @@ class Application
 
     /**
      * Discover available global middleware classes by merging module-declared
-     * entries with the built-in hardcoded list, sorted by priority.
-     *
      * @return array<class-string<MiddlewareInterface>>
      * @throws ModuleException When a module-declared middleware class is invalid
      */
     private function discoverGlobalMiddleware(): array
     {
-        $resolver = new GlobalMiddlewareResolver();
-
-        return $resolver->resolve(
-            modules: $this->modules,
-            builtIns: GlobalMiddlewareResolver::DEFAULT_BUILT_INS,
-        );
+        return (new GlobalMiddlewareResolver())->resolve($this->modules);
     }
 }

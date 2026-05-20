@@ -8,6 +8,7 @@ use Marko\Layout\HandleResolver;
 use Marko\Layout\LayoutProcessor;
 use Marko\Layout\LayoutProcessorInterface;
 use Marko\Layout\LayoutResolver;
+use Marko\Layout\Middleware\LayoutMiddleware;
 
 return [
     'bindings' => [
@@ -17,5 +18,8 @@ return [
     'singletons' => [
         HandleResolver::class => HandleResolver::class,
         LayoutResolver::class => LayoutResolver::class,
+    ],
+    'globalMiddleware' => [
+        ['class' => LayoutMiddleware::class, 'priority' => 30],
     ],
 ];

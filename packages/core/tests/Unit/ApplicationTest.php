@@ -2005,30 +2005,3 @@ PHP;
     appTestCleanupDirectory($baseDir);
 });
 
-it('includes SessionMiddleware in global middleware built-ins', function (): void {
-    $classes = array_column(Marko\Core\Module\GlobalMiddlewareResolver::DEFAULT_BUILT_INS, 'class');
-
-    expect($classes)->toContain('Marko\\Session\\Middleware\\SessionMiddleware');
-});
-
-it('includes LayoutMiddleware in global middleware built-ins', function (): void {
-    $classes = array_column(Marko\Core\Module\GlobalMiddlewareResolver::DEFAULT_BUILT_INS, 'class');
-
-    expect($classes)->toContain('Marko\\Layout\\Middleware\\LayoutMiddleware');
-});
-
-it('includes PageCacheMiddleware in global middleware built-ins', function (): void {
-    $classes = array_column(Marko\Core\Module\GlobalMiddlewareResolver::DEFAULT_BUILT_INS, 'class');
-
-    expect($classes)->toContain('Marko\\PageCache\\Middleware\\PageCacheMiddleware');
-});
-
-it('lists PageCacheMiddleware before SessionMiddleware in global middleware order', function (): void {
-    $builtIns = Marko\Core\Module\GlobalMiddlewareResolver::DEFAULT_BUILT_INS;
-    $classes = array_column($builtIns, 'class');
-
-    $pageCache = array_search('Marko\\PageCache\\Middleware\\PageCacheMiddleware', $classes);
-    $session = array_search('Marko\\Session\\Middleware\\SessionMiddleware', $classes);
-
-    expect($pageCache)->toBeLessThan($session);
-});

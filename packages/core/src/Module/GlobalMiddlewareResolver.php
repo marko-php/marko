@@ -8,43 +8,14 @@ use Marko\Core\Exceptions\ModuleException;
 use Marko\Routing\Middleware\MiddlewareInterface;
 
 /**
- * Resolves global HTTP middleware from module declarations and built-in defaults.
+ * Resolves global HTTP middleware from module declarations.
  *
- * Merges module-declared globalMiddleware entries with built-in hardcoded
- * entries, sorts by priority (ascending = runs earlier), and deduplicates
- * using source priority (app > modules > vendor).
+ * Collects globalMiddleware entries from all loaded modules, sorts by priority
+ * (ascending = runs earlier), and deduplicates using source priority
+ * (app > modules > vendor).
  */
 class GlobalMiddlewareResolver
 {
-    /**
-     * Default built-in global middleware with their priorities.
-     *
-     * These entries use skipIfMissing = true so apps without the optional
-     * packages (page-cache, session, layout) continue to boot unchanged.
-     *
-     * @var array<int, array{class: string, priority: int, source: string, skipIfMissing: bool}>
-     */
-    public const array DEFAULT_BUILT_INS = [
-        [
-            'class' => 'Marko\\PageCache\\Middleware\\PageCacheMiddleware',
-            'priority' => 10,
-            'source' => 'vendor',
-            'skipIfMissing' => true,
-        ],
-        [
-            'class' => 'Marko\\Session\\Middleware\\SessionMiddleware',
-            'priority' => 20,
-            'source' => 'vendor',
-            'skipIfMissing' => true,
-        ],
-        [
-            'class' => 'Marko\\Layout\\Middleware\\LayoutMiddleware',
-            'priority' => 30,
-            'source' => 'vendor',
-            'skipIfMissing' => true,
-        ],
-    ];
-
     private const array SOURCE_PRIORITY = [
         'vendor' => 0,
         'modules' => 1,
@@ -54,38 +25,19 @@ class GlobalMiddlewareResolver
     private const int DEFAULT_PRIORITY = 100;
 
     /**
-     * Resolve global middleware from module declarations and built-in entries.
+     * Resolve global middleware from module declarations.
      *
      * @param array<ModuleManifest> $modules
-     * @param array<int, array{class: string, priority: int, source: string, skipIfMissing?: bool}> $builtIns
      * @return array<class-string<MiddlewareInterface>>
      * @throws ModuleException When a module-declared class does not exist, is missing the class key, or does not implement MiddlewareInterface
      */
-    public function resolve(
-        array $modules,
-        array $builtIns,
-    ): array {
+    public function resolve(array $modules): array
+    {
         // Candidate map: class => [priority, sourcePriority]
         // We keep the highest-source-priority entry; within same source, the lowest priority value.
         /** @var array<string, array{priority: int, sourcePriority: int}> $candidates */
         $candidates = [];
 
-        // Process built-in entries first (lowest source priority = vendor)
-        foreach ($builtIns as $builtIn) {
-            $class = $builtIn['class'];
-            $skipIfMissing = $builtIn['skipIfMissing'] ?? false;
-
-            if (!class_exists($class)) {
-                if ($skipIfMissing) {
-                    continue;
-                }
-            }
-
-            $sourcePriority = self::SOURCE_PRIORITY[$builtIn['source']] ?? 0;
-            $this->addCandidate($candidates, $class, $builtIn['priority'], $sourcePriority);
-        }
-
-        // Process module-declared entries
         foreach ($modules as $module) {
             $sourcePriority = self::SOURCE_PRIORITY[$module->source] ?? 0;
 
