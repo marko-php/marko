@@ -51,7 +51,7 @@ readonly class PgSqlIntrospector implements IntrospectorInterface
         'double precision' => 'double',
         'float8' => 'double',
         'json' => 'json',
-        'jsonb' => 'jsonb',
+        'jsonb' => 'json',
         'uuid' => 'uuid',
         'bytea' => 'blob',
     ];
