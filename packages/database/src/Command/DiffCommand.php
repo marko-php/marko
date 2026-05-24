@@ -13,10 +13,9 @@ use Marko\Database\Diff\DiffCalculator;
 use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\TableDiff;
 use Marko\Database\Entity\EntityDiscovery;
-use Marko\Database\Entity\EntityMetadataFactory;
-use Marko\Database\Entity\SchemaBuilder;
 use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Introspection\IntrospectorInterface;
+use Marko\Database\Schema\SchemaRegistry;
 use Marko\Database\Schema\Table;
 
 /** @noinspection PhpUnused */
@@ -26,8 +25,7 @@ readonly class DiffCommand implements CommandInterface
     public function __construct(
         private EntityDiscovery $discovery,
         private IntrospectorInterface $introspector,
-        private EntityMetadataFactory $metadataFactory,
-        private SchemaBuilder $schemaBuilder,
+        private SchemaRegistry $schemaRegistry,
         private DiffCalculator $diffCalculator,
         private ProjectPaths $paths,
     ) {}
@@ -77,15 +75,10 @@ readonly class DiffCommand implements CommandInterface
     private function buildEntitySchema(
         array $entityClasses,
     ): array {
-        $schema = [];
+        $this->schemaRegistry->clear();
+        $this->schemaRegistry->registerEntities($entityClasses);
 
-        foreach ($entityClasses as $entityClass) {
-            $metadata = $this->metadataFactory->parse($entityClass);
-            $table = $this->schemaBuilder->build($metadata);
-            $schema[$table->name] = $table;
-        }
-
-        return $schema;
+        return $this->schemaRegistry->getTables();
     }
 
     /**

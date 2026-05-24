@@ -15,6 +15,7 @@ use Marko\Database\Entity\EntityDiscovery;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\SchemaBuilder;
 use Marko\Database\Introspection\IntrospectorInterface;
+use Marko\Database\Schema\SchemaRegistry;
 use Marko\Database\Schema\Table;
 
 /**
@@ -221,16 +222,17 @@ final class Helpers
      * Helper to create a DiffCommand with standard dependencies.
      *
      * @param array<string, Table> $tables Tables for introspector
+     * @param array<class-string>  $entities Entity classes for discovery
      */
     public static function createDiffCommand(
         ?DiffCalculator $diffCalculator = null,
         array $tables = [],
+        array $entities = [],
     ): DiffCommand {
         return new DiffCommand(
-            discovery: self::createStubEntityDiscovery(),
+            discovery: self::createStubEntityDiscovery($entities),
             introspector: self::createStubIntrospector($tables),
-            metadataFactory: new EntityMetadataFactory(),
-            schemaBuilder: new SchemaBuilder(),
+            schemaRegistry: new SchemaRegistry(new EntityMetadataFactory(), new SchemaBuilder()),
             diffCalculator: $diffCalculator ?? new DiffCalculator(),
             paths: new ProjectPaths('/test'),
         );
