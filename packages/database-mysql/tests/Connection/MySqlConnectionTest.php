@@ -667,4 +667,56 @@ describe('MySqlConnection', function (): void {
         expect(fn () => $connection->beginTransaction())
             ->toThrow(TransactionException::class, 'Nested transactions are not supported');
     });
+
+    it('JSON-encodes array bindings instead of casting them to the string "Array"', function (): void {
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE items (id INTEGER PRIMARY KEY, metadata TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        $connection->execute(
+            'INSERT INTO items (metadata) VALUES (?)',
+            [['key' => 'value', 'nested' => [1, 2, 3]]],
+        );
+
+        $rows = $connection->query('SELECT metadata FROM items');
+
+        expect($rows[0]['metadata'])
+            ->toBe('{"key":"value","nested":[1,2,3]}')
+            ->not->toBe('Array');
+    });
+
+    it('throws ConnectionException when an array binding is not JSON-encodable', function (): void {
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE items (id INTEGER PRIMARY KEY, metadata TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        expect(fn () => $connection->execute(
+            'INSERT INTO items (metadata) VALUES (?)',
+            [[NAN]],
+        ))->toThrow(ConnectionException::class, "Failed to JSON-encode array bound to parameter '0'");
+    });
 });

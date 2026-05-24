@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\MySql\Connection;
 
+use JsonException;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
@@ -125,7 +126,7 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         $this->ensureConnected();
 
         $statement = $this->pdo->prepare($sql);
-        $statement->execute($bindings);
+        $statement->execute($this->prepareBindings($bindings));
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -140,9 +141,36 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         $this->ensureConnected();
 
         $statement = $this->pdo->prepare($sql);
-        $statement->execute($bindings);
+        $statement->execute($this->prepareBindings($bindings));
 
         return $statement->rowCount();
+    }
+
+    /**
+     * JSON-encode any array values so PDO does not silently cast them to the literal string "Array".
+     *
+     * @param array<int|string, mixed> $bindings
+     *
+     * @return array<int|string, mixed>
+     *
+     * @throws ConnectionException
+     */
+    private function prepareBindings(
+        array $bindings,
+    ): array {
+        foreach ($bindings as $key => $value) {
+            if (!is_array($value)) {
+                continue;
+            }
+
+            try {
+                $bindings[$key] = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+            } catch (JsonException $e) {
+                throw ConnectionException::invalidArrayBinding($key, $e);
+            }
+        }
+
+        return $bindings;
     }
 
     /**
