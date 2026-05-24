@@ -403,18 +403,21 @@ it('converts camelCase property names to snake_case column names automatically',
         ->and($metadata->columns[3]->name)->toBe('is_active');
 });
 
-it('throws MissingPrimaryKeyException at metadata parse time when entity has no primary key attribute', function (): void {
-    $entity = new #[Table('no_pk')] class () extends Entity
-    {
-        #[Column]
-        public int $userId;
+it(
+    'throws MissingPrimaryKeyException at metadata parse time when entity has no primary key attribute',
+    function (): void {
+        $entity = new #[Table('no_pk')] class () extends Entity
+        {
+            #[Column]
+            public int $userId;
 
-        #[Column]
-        public string $name;
-    };
+            #[Column]
+            public string $name;
+        };
 
-    $this->factory->parse($entity::class);
-})->throws(MissingPrimaryKeyException::class);
+        $this->factory->parse($entity::class);
+    },
+)->throws(MissingPrimaryKeyException::class);
 
 it('includes the entity class name in the exception message', function (): void {
     $entity = new #[Table('no_pk')] class () extends Entity
@@ -523,12 +526,42 @@ it('linkExtenders returns metadata where isExtended is true', function (): void 
     expect($result->isExtended())->toBeTrue();
 });
 
-it('produces a chained-extension error message that names both the extender and its extender-parent and tells the user to extend the root', function (): void {
-    $extender = ChainedExtenderEntity::class;
-    $parent = BasicExtenderEntity::class;
+it(
+    'produces a chained-extension error message that names both the extender and its extender-parent and tells the user to extend the root',
+    function (): void {
+        $extender = ChainedExtenderEntity::class;
+        $parent = BasicExtenderEntity::class;
 
-    expect(fn () => $this->factory->parse($extender))
-        ->toThrow(EntityException::class, "Chained extension is not supported. $extender's parent $parent is itself an extender. Extend the root entity directly.");
+        expect(fn () => $this->factory->parse($extender))
+            ->toThrow(
+                EntityException::class,
+                "Chained extension is not supported. $extender's parent $parent is itself an extender. Extend the root entity directly.",
+            );
+    },
+);
+
+it('linkExtendersFrom scans entity classes and links extenders to their parents', function (): void {
+    $this->factory->linkExtendersFrom([
+        ExtenderParentEntity::class,
+        BasicExtenderEntity::class,
+    ]);
+
+    $parentMetadata = $this->factory->parse(ExtenderParentEntity::class);
+
+    expect($parentMetadata->extenders)->toBe([BasicExtenderEntity::class]);
+});
+
+it('linkExtendersFrom ignores entities without extends', function (): void {
+    $this->factory->linkExtendersFrom([ExtenderParentEntity::class]);
+
+    $parentMetadata = $this->factory->parse(ExtenderParentEntity::class);
+
+    expect($parentMetadata->extenders)->toBe([]);
+});
+
+it('linkExtendersFrom throws when an extender references a parent class that cannot be autoloaded', function (): void {
+    expect(fn () => $this->factory->linkExtendersFrom([ExtenderWithMissingParentEntity::class]))
+        ->toThrow(EntityException::class, 'does not exist');
 });
 
 it('clears cached metadata', function (): void {
