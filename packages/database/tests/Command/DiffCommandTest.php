@@ -8,11 +8,16 @@ use Marko\Database\Command\DiffCommand;
 use Marko\Database\Diff\DiffCalculator;
 use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\TableDiff;
+use Marko\Database\Entity\EntityMetadataFactory;
+use Marko\Database\Entity\SchemaBuilder;
 use Marko\Database\Schema\Column;
 use Marko\Database\Schema\Index;
 use Marko\Database\Schema\IndexType;
+use Marko\Database\Schema\SchemaRegistry;
 use Marko\Database\Schema\Table;
 use Marko\Database\Tests\Command\Helpers;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\BasicExtenderEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ExtenderParentEntity;
 
 it('registers as db:diff command via #[Command] attribute', function (): void {
     $reflection = new ReflectionClass(DiffCommand::class);
@@ -348,4 +353,30 @@ it('returns 0 when no changes, 1 when changes exist', function (): void {
     ['exitCode' => $exitCode2] = Helpers::executeDiffCommand($commandWithChanges);
 
     expect($exitCode2)->toBe(1);
+});
+
+it('merges extender columns into parent table schema (regression for #66)', function (): void {
+    // Build the expected merged schema via the real SchemaRegistry so the
+    // introspector stub mirrors exactly what DiffCommand will compute. If
+    // DiffCommand bypasses the extender merge, the entity-side schema will
+    // be missing the extender's `extra` column and DiffCalculator will
+    // report it as a destructive drop.
+    $registry = new SchemaRegistry(
+        new EntityMetadataFactory(),
+        new SchemaBuilder(),
+    );
+    $registry->registerEntities([ExtenderParentEntity::class, BasicExtenderEntity::class]);
+    $mergedTables = $registry->getTables();
+
+    expect($mergedTables['users']->columns)->toHaveCount(2);
+
+    $command = Helpers::createDiffCommand(
+        tables: $mergedTables,
+        entities: [ExtenderParentEntity::class, BasicExtenderEntity::class],
+    );
+
+    ['output' => $output, 'exitCode' => $exitCode] = Helpers::executeDiffCommand($command);
+
+    expect($output)->toContain('No changes detected')
+        ->and($exitCode)->toBe(0);
 });

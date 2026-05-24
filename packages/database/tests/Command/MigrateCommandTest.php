@@ -12,7 +12,6 @@ use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\SchemaBuilder;
-use Marko\Database\Schema\SchemaRegistry;
 use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Migration\DataMigrator;
 use Marko\Database\Migration\MigrationGenerator;
@@ -20,8 +19,11 @@ use Marko\Database\Migration\Migrator;
 use Marko\Database\Schema\Column;
 use Marko\Database\Schema\ForeignKey;
 use Marko\Database\Schema\Index;
+use Marko\Database\Schema\SchemaRegistry;
 use Marko\Database\Schema\Table;
 use Marko\Database\Tests\Command\Helpers;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\BasicExtenderEntity;
+use Marko\Database\Tests\Entity\Fixtures\ExtenderFactory\ExtenderParentEntity;
 
 /**
  * Create a stub Migrator for testing.
@@ -696,4 +698,54 @@ it('excludes migrations table from diff calculation', function (): void {
     // Should NOT generate a migration to drop migrations table
     expect($output)->toContain('Nothing to migrate')
         ->and($generator->generateCalled)->toBeFalse();
+});
+
+it('merges extender columns into parent table schema before computing diff (regression for #66)', function (): void {
+    // Capture the entitySchema passed to DiffCalculator so we can prove the
+    // extender's `extra` column was merged into the parent `users` table
+    // before the diff was computed. Pre-fix the command bypassed
+    // SchemaRegistry's extender merge and the extender column would be
+    // absent from $entitySchema['users'].
+    /** @var array<string, Table>|null $captured */
+    $captured = null;
+
+    $capturingCalculator = new class ($captured) extends DiffCalculator
+    {
+        public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property captures schema for assertion */
+            private ?array &$captured,
+        ) {}
+
+        public function calculate(
+            array $entitySchema,
+            array $databaseSchema,
+        ): SchemaDiff {
+            $this->captured = $entitySchema;
+
+            return new SchemaDiff();
+        }
+    };
+
+    $command = new MigrateCommand(
+        migrator: createMigratorStub(),
+        dataMigrator: createDataMigratorStub(),
+        migrationGenerator: createMigrationGeneratorStub(),
+        entityDiscovery: Helpers::createStubEntityDiscovery([ExtenderParentEntity::class, BasicExtenderEntity::class]),
+        introspector: Helpers::createStubIntrospector(),
+        schemaRegistry: new SchemaRegistry(new EntityMetadataFactory(), new SchemaBuilder()),
+        diffCalculator: $capturingCalculator,
+        sqlGenerator: createMigrateSqlGenerator(),
+        paths: new ProjectPaths('/test'),
+        isProduction: false,
+    );
+
+    executeMigrateCommand($command);
+
+    expect($captured)->toHaveKey('users')
+        ->and($captured['users']->columns)->toHaveCount(2);
+
+    $columnNames = array_map(fn (Column $c): string => $c->name, $captured['users']->columns);
+
+    expect($columnNames)->toContain('id')
+        ->and($columnNames)->toContain('extra');
 });
