@@ -714,4 +714,27 @@ describe('PgSqlConnection', function (): void {
             ->toBe('{"key":"value","nested":[1,2,3]}')
             ->not->toBe('Array');
     });
+
+    it('throws ConnectionException when an array binding is not JSON-encodable', function (): void {
+        $config = createTestPgSqlConfig();
+        $connection = new class ($config) extends PgSqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = createSqliteMockPdo($options);
+                $pdo->exec('CREATE TABLE items (id INTEGER PRIMARY KEY, metadata TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        expect(fn () => $connection->execute(
+            'INSERT INTO items (metadata) VALUES (?)',
+            [[NAN]],
+        ))->toThrow(ConnectionException::class, "Failed to JSON-encode array bound to parameter '1'");
+    });
 });
