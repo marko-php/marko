@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Database\PgSql\Connection;
 
+use JsonException;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
@@ -180,6 +181,8 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
 
     /**
      * @param array<int|string, mixed> $bindings
+     *
+     * @throws ConnectionException
      */
     private function bindValues(
         PDOStatement $statement,
@@ -187,6 +190,19 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
     ): void {
         foreach ($bindings as $key => $value) {
             $param = is_int($key) ? $key + 1 : $key;
+
+            if (is_array($value)) {
+                try {
+                    $encoded = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                } catch (JsonException $e) {
+                    throw ConnectionException::invalidArrayBinding($param, $e);
+                }
+
+                $statement->bindValue($param, $encoded, PDO::PARAM_STR);
+
+                continue;
+            }
+
             $type = match (true) {
                 is_bool($value) => PDO::PARAM_BOOL,
                 is_null($value) => PDO::PARAM_NULL,
