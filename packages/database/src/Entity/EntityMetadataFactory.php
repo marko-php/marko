@@ -15,6 +15,7 @@ use Marko\Database\Attributes\Table;
 use Marko\Database\Exceptions\EntityException;
 use Marko\Database\Exceptions\MissingPrimaryKeyException;
 use ReflectionClass;
+use ReflectionException;
 use ReflectionNamedType;
 use ReflectionProperty;
 
@@ -219,25 +220,34 @@ class EntityMetadataFactory
      * Scan a list of entity classes and link any extenders to their parent metadata.
      *
      * @param array<class-string> $entityClasses
+     *
+     * @throws EntityException|MissingPrimaryKeyException|ReflectionException
      */
-    public function linkExtendersFrom(array $entityClasses): void
-    {
+    public function linkExtendersFrom(
+        array $entityClasses,
+    ): void {
         $extenders = [];
+
         foreach ($entityClasses as $entityClass) {
             $reflection = new ReflectionClass($entityClass);
             $tableAttrs = $reflection->getAttributes(Table::class);
-            if (count($tableAttrs) === 0) {
+
+            if ($tableAttrs === []) {
                 continue;
             }
+
             $tableAttr = $tableAttrs[0]->newInstance();
+
             if ($tableAttr->extends !== null) {
                 $extenders[$tableAttr->extends][] = $entityClass;
             }
         }
+
         foreach ($extenders as $parentClass => $extenderClasses) {
             if (!class_exists($parentClass, true)) {
                 throw EntityException::extenderParentClassNotFound($extenderClasses[0], $parentClass);
             }
+
             $this->linkExtenders($parentClass, $extenderClasses);
         }
     }
