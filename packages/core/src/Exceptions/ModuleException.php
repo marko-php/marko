@@ -27,4 +27,27 @@ class ModuleException extends MarkoException
             suggestion: "Install the missing package with: composer require $dependencyName",
         );
     }
+
+    public static function invalidMiddlewareClass(
+        string $moduleName,
+        string $className,
+        string $reason,
+    ): self {
+        return new self(
+            message: "Invalid globalMiddleware entry in module '$moduleName': $reason",
+            context: "While resolving global middleware for '$moduleName'",
+            suggestion: "Ensure '$className' exists and implements " . \Marko\Routing\Middleware\MiddlewareInterface::class,
+        );
+    }
+
+    public static function invalidMiddlewareEntry(
+        string $moduleName,
+        string $reason,
+    ): self {
+        return new self(
+            message: "Invalid globalMiddleware entry in module '$moduleName': $reason",
+            context: "While resolving global middleware for '$moduleName'",
+            suggestion: "Each entry must be a class-string or ['class' => SomeMiddleware::class, 'priority' => 10]",
+        );
+    }
 }

@@ -2005,34 +2005,3 @@ PHP;
     appTestCleanupDirectory($baseDir);
 });
 
-it('includes SessionMiddleware in global middleware', function (): void {
-    $reflection = new ReflectionClass(Application::class);
-    $constant = $reflection->getReflectionConstant('GLOBAL_MIDDLEWARE');
-
-    expect($constant->getValue())->toContain('Marko\\Session\\Middleware\\SessionMiddleware');
-});
-
-it('includes LayoutMiddleware in global middleware', function (): void {
-    $reflection = new ReflectionClass(Application::class);
-    $constant = $reflection->getReflectionConstant('GLOBAL_MIDDLEWARE');
-
-    expect($constant->getValue())->toContain('Marko\\Layout\\Middleware\\LayoutMiddleware');
-});
-
-it('includes PageCacheMiddleware in global middleware', function (): void {
-    $reflection = new ReflectionClass(Application::class);
-    $constant = $reflection->getReflectionConstant('GLOBAL_MIDDLEWARE');
-
-    expect($constant->getValue())->toContain('Marko\\PageCache\\Middleware\\PageCacheMiddleware');
-});
-
-it('lists PageCacheMiddleware before SessionMiddleware in global middleware order', function (): void {
-    $reflection = new ReflectionClass(Application::class);
-    $constant = $reflection->getReflectionConstant('GLOBAL_MIDDLEWARE');
-    $middleware = $constant->getValue();
-
-    $pageCache = array_search('Marko\\PageCache\\Middleware\\PageCacheMiddleware', $middleware);
-    $session = array_search('Marko\\Session\\Middleware\\SessionMiddleware', $middleware);
-
-    expect($pageCache)->toBeLessThan($session);
-});

@@ -65,3 +65,16 @@ it('has a config/layout.php that returns a configuration array', function (): vo
 
     expect($config)->toBeArray();
 });
+
+it('module.php declares LayoutMiddleware as globalMiddleware', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['globalMiddleware'] ?? [])
+        ->toContain('Marko\\Layout\\Middleware\\LayoutMiddleware');
+});
+
+it('module.php declares marko/session as a soft after dependency', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['sequence']['after'] ?? [])->toContain('marko/session');
+});

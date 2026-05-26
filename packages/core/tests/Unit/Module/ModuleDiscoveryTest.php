@@ -611,3 +611,45 @@ it('defaults boot to null when not specified in module.php', function (): void {
 
     cleanupDirectory($tempDir);
 });
+
+it('ModuleManifest exposes a globalMiddleware property defaulting to empty array', function (): void {
+    $manifest = new ModuleManifest(
+        name: 'acme/test',
+        version: '1.0.0',
+    );
+
+    expect($manifest->globalMiddleware)
+        ->toBeArray()
+        ->toBeEmpty();
+});
+
+it('ManifestParser reads globalMiddleware from module.php and passes it to ModuleManifest', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
+    mkdir($tempDir, 0755, true);
+    file_put_contents($tempDir . '/composer.json', json_encode(['name' => 'acme/test']));
+
+    $modulePhpContent = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+return [
+    'globalMiddleware' => [
+        'Acme\Middleware\FirstMiddleware',
+        ['class' => 'Acme\Middleware\SecondMiddleware', 'priority' => 25],
+    ],
+];
+PHP;
+    file_put_contents($tempDir . '/module.php', $modulePhpContent);
+
+    $parser = new ManifestParser();
+    $manifest = $parser->parse($tempDir);
+
+    expect($manifest->globalMiddleware)
+        ->toBeArray()
+        ->toHaveCount(2)
+        ->and($manifest->globalMiddleware[0])->toBe('Acme\Middleware\FirstMiddleware')
+        ->and($manifest->globalMiddleware[1])->toBe(['class' => 'Acme\Middleware\SecondMiddleware', 'priority' => 25]);
+
+    cleanupDirectory($tempDir);
+});

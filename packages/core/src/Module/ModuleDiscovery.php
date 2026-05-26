@@ -168,6 +168,7 @@ readonly class ModuleDiscovery
             source: $source,
             autoload: $manifest->autoload,
             boot: $manifest->boot,
+            globalMiddleware: $manifest->globalMiddleware,
         );
     }
 
