@@ -126,6 +126,55 @@ The container cannot auto-resolve:
 
 In all cases, Marko throws a loud, helpful error explaining exactly what's missing and how to fix it.
 
+## Overriding another module's bindings
+
+Sometimes a module needs to replace a binding that a different module — often a vendor package — has already registered. The static `bindings` key cannot do this: the `BindingRegistry` throws a `BindingConflictException` when two same-priority modules attempt to bind the same interface, protecting against accidental conflicts.
+
+The supported escape hatch is a `boot` callback. Boot callbacks run after **all** static bindings are registered and call `$container->bind()` directly, which intentionally allows rebinding. The example below is from a third-party `acme/database-cockroachdb` package overriding a binding owned by `marko/database-pgsql` — variant packages live under their own vendor namespace (the `marko/` namespace is reserved for core Marko packages):
+
+```php title="module.php"
+<?php
+
+declare(strict_types=1);
+
+use Acme\Database\CockroachDb\Diff\CockroachDbGenerator;
+use Marko\Core\Container\Container;
+use Marko\Database\Diff\SqlGeneratorInterface;
+
+return [
+    'boot' => function (Container $container): void {
+        $container->bind(SqlGeneratorInterface::class, CockroachDbGenerator::class);
+    },
+];
+```
+
+Because this is an explicit call inside your own `module.php`, the intent is clear and visible — there is no hidden conflict.
+
+### Override timing and load order
+
+Boot callbacks run in module sequence order. A variant module that `require`s its parent in `composer.json` automatically boots after it — no extra configuration needed. Use `sequence.after` only when there is no `require` relationship:
+
+```php title="module.php"
+return [
+    'sequence' => [
+        'after' => ['marko/database-pgsql'],
+    ],
+    'boot' => function (Container $container): void {
+        $container->bind(SqlGeneratorInterface::class, CockroachDbGenerator::class);
+    },
+];
+```
+
+For most sibling driver packages the `composer.json` `require` is sufficient — Marko derives the boot order from it automatically.
+
+### Singleton caveat
+
+If the interface being overridden is also listed in the parent module's `singletons` key **and** a request resolves it before the variant's boot callback runs, the container caches that first instance. Subsequent `bind()` calls will not replace the already-cached instance. The override pattern is safe whenever the interface is not a singleton, or when nothing resolves it before boot completes.
+
+If you need to override a singleton binding, ensure nothing resolves the interface during the registration phase (before boot runs), or use `$container->instance()` to replace the cached object directly.
+
+For the full database-specific application of this pattern — including dialect, schema, and query-builder interfaces — see [Database Package](/docs/packages/database/).
+
 ## Next Steps
 
 - [Preferences](/docs/concepts/preferences/) — swap implementations across modules

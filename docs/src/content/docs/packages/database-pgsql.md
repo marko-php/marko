@@ -164,6 +164,10 @@ public string $id;
 $article = $articleRepository->find('018e2b3c-d1a2-7000-a1b2-c3d4e5f60708');
 ```
 
+## Postgres-Wire-Compatible Databases (CockroachDB, YugabyteDB, etc.)
+
+`PgSqlConnection` speaks pure PDO over the PostgreSQL wire protocol and contains no Postgres-specific dialect logic, so any database that is wire-compatible with PostgreSQL can reuse it without a custom driver. Point your `DB_HOST` at CockroachDB, YugabyteDB, or another compatible engine and the rest of the stack works as-is. See the [Wire-compatible database variants](/docs/packages/database/#wire-compatible-database-variants) section of the database guide for the full pattern and configuration example.
+
 ## API Reference
 
 ### PgSqlConnection
