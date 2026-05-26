@@ -129,7 +129,7 @@ it('defines RepositoryInterface with findAll() method', function (): void {
     $method = $reflection->getMethod('findAll');
     $returnType = $method->getReturnType();
     expect($method->isPublic())->toBeTrue()
-        ->and($method->getParameters())->toHaveCount(0)
+        ->and($method->getParameters())->toBeEmpty()
         ->and($returnType->getName())->toBe(EntityCollection::class);
 });
 
@@ -1196,6 +1196,27 @@ function createMockQueryBuilder(
         public function orderBy(
             string $column,
             string $direction = 'ASC',
+        ): static {
+            return $this;
+        }
+
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static {
+            return $this;
+        }
+
+        public function selectRaw(
+            string $expression,
+            array $bindings = [],
+        ): static {
+            return $this;
+        }
+
+        public function whereRaw(
+            string $expression,
+            array $bindings = [],
         ): static {
             return $this;
         }

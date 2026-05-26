@@ -6,7 +6,7 @@ namespace Marko\Database\MySql\Tests\Query;
 
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
-use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Exceptions\InvalidColumnException;
 use Marko\Database\Exceptions\UnionShapeMismatchException;
 use Marko\Database\MySql\Connection\MySqlConnection;
 use Marko\Database\MySql\Query\MySqlQueryBuilder;
@@ -331,17 +331,19 @@ describe('MySqlQueryBuilder', function (): void {
         $recordedSql = '';
         $recordedBindings = [];
 
-        $recordingConnection = new class ($this->connection, $recordedSql, $recordedBindings) extends MySqlConnection
+        $recordingConnection = new class ($recordedSql, $recordedBindings) extends MySqlConnection
         {
             public function __construct(
-                private readonly ConnectionInterface $inner,
                 public string &$lastSql,
                 public array &$lastBindings,
             ) {}
 
             public function connect(): void {}
 
-            public function query(string $sql, array $bindings = []): array
+            public function query(
+                string $sql,
+                array $bindings = [],
+            ): array
             {
                 $this->lastSql = $sql;
                 $this->lastBindings = $bindings;
@@ -349,7 +351,10 @@ describe('MySqlQueryBuilder', function (): void {
                 return [];
             }
 
-            public function execute(string $sql, array $bindings = []): int
+            public function execute(
+                string $sql,
+                array $bindings = [],
+            ): int
             {
                 return 0;
             }
@@ -373,18 +378,21 @@ describe('MySqlQueryBuilder', function (): void {
             ->and($recordedBindings)->toBe(['active', 'inactive']);
     });
 
-    it('throws UnionShapeMismatchException when the two queries select different numbers of columns', function (): void {
-        $left = (new MySqlQueryBuilder($this->connection))
-            ->table('users')
-            ->select('name', 'email');
-
-        $right = (new MySqlQueryBuilder($this->connection))
-            ->table('users')
-            ->select('name');
-
-        expect(fn () => $left->union($right))
-            ->toThrow(UnionShapeMismatchException::class);
-    });
+    it(
+        'throws UnionShapeMismatchException when the two queries select different numbers of columns',
+        function (): void {
+            $left = (new MySqlQueryBuilder($this->connection))
+                ->table('users')
+                ->select('name', 'email');
+    
+            $right = (new MySqlQueryBuilder($this->connection))
+                ->table('users')
+                ->select('name');
+    
+            expect(fn () => $left->union($right))
+                ->toThrow(UnionShapeMismatchException::class);
+        }
+    );
 
     it('combines two queries with UNION ALL preserving duplicates', function (): void {
         $recordedSql = '';
@@ -399,7 +407,10 @@ describe('MySqlQueryBuilder', function (): void {
 
             public function connect(): void {}
 
-            public function query(string $sql, array $bindings = []): array
+            public function query(
+                string $sql,
+                array $bindings = [],
+            ): array
             {
                 $this->lastSql = $sql;
                 $this->lastBindings = $bindings;
@@ -407,7 +418,10 @@ describe('MySqlQueryBuilder', function (): void {
                 return [];
             }
 
-            public function execute(string $sql, array $bindings = []): int
+            public function execute(
+                string $sql,
+                array $bindings = [],
+            ): int
             {
                 return 0;
             }
@@ -439,14 +453,20 @@ describe('MySqlQueryBuilder', function (): void {
 
             public function connect(): void {}
 
-            public function query(string $sql, array $bindings = []): array
+            public function query(
+                string $sql,
+                array $bindings = [],
+            ): array
             {
                 $this->lastSql = $sql;
 
                 return [];
             }
 
-            public function execute(string $sql, array $bindings = []): int
+            public function execute(
+                string $sql,
+                array $bindings = [],
+            ): int
             {
                 return 0;
             }
@@ -475,14 +495,20 @@ describe('MySqlQueryBuilder', function (): void {
 
             public function connect(): void {}
 
-            public function query(string $sql, array $bindings = []): array
+            public function query(
+                string $sql,
+                array $bindings = [],
+            ): array
             {
                 $this->lastSql = $sql;
 
                 return [];
             }
 
-            public function execute(string $sql, array $bindings = []): int
+            public function execute(
+                string $sql,
+                array $bindings = [],
+            ): int
             {
                 return 0;
             }
@@ -516,7 +542,10 @@ describe('MySqlQueryBuilder', function (): void {
 
             public function connect(): void {}
 
-            public function query(string $sql, array $bindings = []): array
+            public function query(
+                string $sql,
+                array $bindings = [],
+            ): array
             {
                 $this->lastSql = $sql;
                 $this->lastBindings = $bindings;
@@ -524,7 +553,10 @@ describe('MySqlQueryBuilder', function (): void {
                 return [];
             }
 
-            public function execute(string $sql, array $bindings = []): int
+            public function execute(
+                string $sql,
+                array $bindings = [],
+            ): int
             {
                 return 0;
             }
@@ -596,5 +628,787 @@ describe('MySqlQueryBuilder', function (): void {
             ->and(array_key_exists('email', $results[0]))->toBeFalse()
             ->and($results[0]['author_name'])->toBe('Alice')
             ->and($results[0]['contact'])->toBe('alice@example.com');
+    });
+
+    describe('selectRaw', function (): void {
+        it('selectRaw appends the expression to the SELECT list after regular columns', function (): void {
+            $results = $this->builder
+                ->table('users')
+                ->select('name')
+                ->selectRaw("'static' AS extra")
+                ->get();
+
+            expect($results)->toHaveCount(3)
+                ->and($results[0])->toHaveKeys(['name', 'extra'])
+                ->and($results[0]['extra'])->toBe('static');
+        });
+
+        it(
+            'selectRaw alone (no prior select call) emits "SELECT *, <expression>" preserving the default *',
+            function (): void {
+                $recordedSql = '';
+                $recordingConnection = new class ($recordedSql) extends MySqlConnection
+                {
+                    public function __construct(public string &$lastSql) {}
+    
+                    public function connect(): void {}
+    
+                    public function query(
+                        string $sql,
+                        array $bindings = [],
+                    ): array
+                    {
+                        $this->lastSql = $sql;
+    
+                        return [];
+                    }
+    
+                    public function execute(
+                        string $sql,
+                        array $bindings = [],
+                    ): int
+                    {
+                        return 0;
+                    }
+                };
+    
+                (new MySqlQueryBuilder($recordingConnection))
+                    ->table('users')
+                    ->selectRaw('1 AS one')
+                    ->get();
+    
+                expect($recordedSql)->toBe('SELECT *, 1 AS one FROM `users`');
+            }
+        );
+
+        it(
+            'selectRaw can be called multiple times; expressions appear in call order in the SELECT list',
+            function (): void {
+                $recordedSql = '';
+                $recordingConnection = new class ($recordedSql) extends MySqlConnection
+                {
+                    public function __construct(public string &$lastSql) {}
+    
+                    public function connect(): void {}
+    
+                    public function query(
+                        string $sql,
+                        array $bindings = [],
+                    ): array
+                    {
+                        $this->lastSql = $sql;
+    
+                        return [];
+                    }
+    
+                    public function execute(
+                        string $sql,
+                        array $bindings = [],
+                    ): int
+                    {
+                        return 0;
+                    }
+                };
+    
+                (new MySqlQueryBuilder($recordingConnection))
+                    ->table('users')
+                    ->select('name')
+                    ->selectRaw('1 AS first')
+                    ->selectRaw('2 AS second')
+                    ->get();
+    
+                expect($recordedSql)->toBe('SELECT `name`, 1 AS first, 2 AS second FROM `users`');
+            }
+        );
+
+        it(
+            'selectRaw together with select() emits select() columns first then selectRaw expressions',
+            function (): void {
+                $recordedSql = '';
+                $recordingConnection = new class ($recordedSql) extends MySqlConnection
+                {
+                    public function __construct(public string &$lastSql) {}
+    
+                    public function connect(): void {}
+    
+                    public function query(
+                        string $sql,
+                        array $bindings = [],
+                    ): array
+                    {
+                        $this->lastSql = $sql;
+    
+                        return [];
+                    }
+    
+                    public function execute(
+                        string $sql,
+                        array $bindings = [],
+                    ): int
+                    {
+                        return 0;
+                    }
+                };
+    
+                (new MySqlQueryBuilder($recordingConnection))
+                    ->table('users')
+                    ->select('name', 'email')
+                    ->selectRaw('1 AS computed')
+                    ->get();
+    
+                expect($recordedSql)->toBe('SELECT `name`, `email`, 1 AS computed FROM `users`');
+            }
+        );
+
+        it(
+            'selectRaw with bindings places the bindings BEFORE WHERE bindings in the compiled bindings array',
+            function (): void {
+                $recordedBindings = [];
+                $recordingConnection = new class ($recordedBindings) extends MySqlConnection
+                {
+                    public function __construct(public array &$lastBindings) {}
+    
+                    public function connect(): void {}
+    
+                    public function query(
+                        string $sql,
+                        array $bindings = [],
+                    ): array
+                    {
+                        $this->lastBindings = $bindings;
+    
+                        return [];
+                    }
+    
+                    public function execute(
+                        string $sql,
+                        array $bindings = [],
+                    ): int
+                    {
+                        return 0;
+                    }
+                };
+    
+                (new MySqlQueryBuilder($recordingConnection))
+                    ->table('users')
+                    ->selectRaw('? AS val', [42])
+                    ->where('status', '=', 'active')
+                    ->get();
+    
+                expect($recordedBindings)->toBe([42, 'active']);
+            }
+        );
+
+        it('selectRaw bindings from multiple calls concatenate in call order', function (): void {
+            $recordedBindings = [];
+            $recordingConnection = new class ($recordedBindings) extends MySqlConnection
+            {
+                public function __construct(public array &$lastBindings) {}
+
+                public function connect(): void {}
+
+                public function query(
+                    string $sql,
+                    array $bindings = [],
+                ): array
+                {
+                    $this->lastBindings = $bindings;
+
+                    return [];
+                }
+
+                public function execute(
+                    string $sql,
+                    array $bindings = [],
+                ): int
+                {
+                    return 0;
+                }
+            };
+
+            (new MySqlQueryBuilder($recordingConnection))
+                ->table('users')
+                ->selectRaw('? AS first', [1])
+                ->selectRaw('? AS second', [2])
+                ->get();
+
+            expect($recordedBindings)->toBe([1, 2]);
+        });
+
+        it(
+            'running ->get() twice on the same builder produces identical SQL and bindings (no mutation of internal raw state)',
+            function (): void {
+                $sqls = [];
+                $bindingsList = [];
+                $recordingConnection = new class ($sqls, $bindingsList) extends MySqlConnection
+                {
+                    public function __construct(
+                        public array &$sqls,
+                        public array &$bindingsList,
+                    ) {}
+    
+                    public function connect(): void {}
+    
+                    public function query(
+                        string $sql,
+                        array $bindings = [],
+                    ): array
+                    {
+                        $this->sqls[] = $sql;
+                        $this->bindingsList[] = $bindings;
+    
+                        return [];
+                    }
+    
+                    public function execute(
+                        string $sql,
+                        array $bindings = [],
+                    ): int
+                    {
+                        return 0;
+                    }
+                };
+    
+                $builder = (new MySqlQueryBuilder($recordingConnection))
+                    ->table('users')
+                    ->selectRaw('? AS val', [99])
+                    ->where('status', '=', 'active');
+    
+                $builder->get();
+                $builder->get();
+    
+                expect($sqls[0])->toBe($sqls[1])
+                    ->and($bindingsList[0])->toBe($bindingsList[1]);
+            }
+        );
+
+        it('selectRaw throws InvalidColumnException when the expression contains a semicolon', function (): void {
+            expect(fn () => $this->builder->selectRaw('1; DROP TABLE users'))
+                ->toThrow(InvalidColumnException::class);
+        });
+
+        it(
+            'selectRaw throws InvalidColumnException when the expression contains a -- comment marker',
+            function (): void {
+                expect(fn () => $this->builder->selectRaw('1 -- comment'))
+                    ->toThrow(InvalidColumnException::class);
+            }
+        );
+
+        it(
+            'selectRaw throws InvalidColumnException when the expression contains a /* or */ block-comment marker',
+            function (): void {
+                expect(fn () => $this->builder->selectRaw('/* comment */ 1'))
+                    ->toThrow(InvalidColumnException::class);
+            }
+        );
+
+        it('selectRaw throws InvalidColumnException when the expression contains a backtick', function (): void {
+            expect(fn () => $this->builder->selectRaw('`name`'))
+                ->toThrow(InvalidColumnException::class);
+        });
+
+        it('selectRaw returns the builder for fluent chaining', function (): void {
+            $result = $this->builder->selectRaw('1 AS one');
+            expect($result)->toBe($this->builder);
+        });
+    });
+
+    describe('whereRaw', function (): void {
+        it(
+            'whereRaw appends the expression to the WHERE clause AND-combined with other conditions',
+            function (): void {
+                $results = $this->builder
+                    ->table('users')
+                    ->select('name')
+                    ->where('status', '=', 'active')
+                    ->whereRaw("name != 'Bob'")
+                    ->get();
+    
+                $names = array_column($results, 'name');
+                expect($results)->toHaveCount(2)
+                    ->and($names)->toContain('Alice')
+                    ->and($names)->toContain('Charlie');
+            }
+        );
+
+        it('whereRaw used alone (no prior where) emits "WHERE <expression>" with no leading AND', function (): void {
+            $recordedSql = '';
+            $recordingConnection = new class ($recordedSql) extends MySqlConnection
+            {
+                public function __construct(public string &$lastSql) {}
+
+                public function connect(): void {}
+
+                public function query(
+                    string $sql,
+                    array $bindings = [],
+                ): array
+                {
+                    $this->lastSql = $sql;
+
+                    return [];
+                }
+
+                public function execute(
+                    string $sql,
+                    array $bindings = [],
+                ): int
+                {
+                    return 0;
+                }
+            };
+
+            (new MySqlQueryBuilder($recordingConnection))
+                ->table('users')
+                ->whereRaw('status = ?', ['active'])
+                ->get();
+
+            expect($recordedSql)->toBe('SELECT * FROM `users` WHERE status = ?');
+        });
+
+        it('whereRaw can be called multiple times; expressions appear in call order, AND-combined', function (): void {
+            $recordedSql = '';
+            $recordingConnection = new class ($recordedSql) extends MySqlConnection
+            {
+                public function __construct(public string &$lastSql) {}
+
+                public function connect(): void {}
+
+                public function query(
+                    string $sql,
+                    array $bindings = [],
+                ): array
+                {
+                    $this->lastSql = $sql;
+
+                    return [];
+                }
+
+                public function execute(
+                    string $sql,
+                    array $bindings = [],
+                ): int
+                {
+                    return 0;
+                }
+            };
+
+            (new MySqlQueryBuilder($recordingConnection))
+                ->table('users')
+                ->whereRaw('status = ?', ['active'])
+                ->whereRaw('name != ?', ['Bob'])
+                ->get();
+
+            expect($recordedSql)->toBe('SELECT * FROM `users` WHERE status = ? AND name != ?');
+        });
+
+        it(
+            'whereRaw together with where() emits the regular where condition first then the raw expression, AND-combined',
+            function (): void {
+                $recordedSql = '';
+                $recordingConnection = new class ($recordedSql) extends MySqlConnection
+                {
+                    public function __construct(public string &$lastSql) {}
+    
+                    public function connect(): void {}
+    
+                    public function query(
+                        string $sql,
+                        array $bindings = [],
+                    ): array
+                    {
+                        $this->lastSql = $sql;
+    
+                        return [];
+                    }
+    
+                    public function execute(
+                        string $sql,
+                        array $bindings = [],
+                    ): int
+                    {
+                        return 0;
+                    }
+                };
+    
+                (new MySqlQueryBuilder($recordingConnection))
+                    ->table('users')
+                    ->where('status', '=', 'active')
+                    ->whereRaw('name != ?', ['Bob'])
+                    ->get();
+    
+                expect($recordedSql)->toBe('SELECT * FROM `users` WHERE `status` = ? AND name != ?');
+            }
+        );
+
+        it(
+            'whereRaw with bindings places its bindings in the WHERE position of the bindings array (after selectRaw bindings, after regular where bindings if both exist)',
+            function (): void {
+                $recordedBindings = [];
+                $recordingConnection = new class ($recordedBindings) extends MySqlConnection
+                {
+                    public function __construct(public array &$lastBindings) {}
+    
+                    public function connect(): void {}
+    
+                    public function query(
+                        string $sql,
+                        array $bindings = [],
+                    ): array
+                    {
+                        $this->lastBindings = $bindings;
+    
+                        return [];
+                    }
+    
+                    public function execute(
+                        string $sql,
+                        array $bindings = [],
+                    ): int
+                    {
+                        return 0;
+                    }
+                };
+    
+                (new MySqlQueryBuilder($recordingConnection))
+                    ->table('users')
+                    ->selectRaw('? AS sel', ['sel_val'])
+                    ->where('status', '=', 'active')
+                    ->whereRaw('name != ?', ['Bob'])
+                    ->get();
+    
+                expect($recordedBindings)->toBe(['sel_val', 'active', 'Bob']);
+            }
+        );
+
+        it('whereRaw bindings from multiple calls concatenate in call order', function (): void {
+            $recordedBindings = [];
+            $recordingConnection = new class ($recordedBindings) extends MySqlConnection
+            {
+                public function __construct(public array &$lastBindings) {}
+
+                public function connect(): void {}
+
+                public function query(
+                    string $sql,
+                    array $bindings = [],
+                ): array
+                {
+                    $this->lastBindings = $bindings;
+
+                    return [];
+                }
+
+                public function execute(
+                    string $sql,
+                    array $bindings = [],
+                ): int
+                {
+                    return 0;
+                }
+            };
+
+            (new MySqlQueryBuilder($recordingConnection))
+                ->table('users')
+                ->whereRaw('a = ?', [1])
+                ->whereRaw('b = ?', [2])
+                ->get();
+
+            expect($recordedBindings)->toBe([1, 2]);
+        });
+
+        it('count() honors whereRaw conditions (filtered count, not full-table count)', function (): void {
+            $count = $this->builder
+                ->table('users')
+                ->whereRaw("status = 'active'")
+                ->count();
+
+            expect($count)->toBe(2);
+        });
+
+        it('min() / max() / sum() / avg() honor whereRaw conditions', function (): void {
+            $min = (new MySqlQueryBuilder($this->connection))
+                ->table('users')
+                ->whereRaw("status = 'active'")
+                ->min('id');
+
+            $max = (new MySqlQueryBuilder($this->connection))
+                ->table('users')
+                ->whereRaw("status = 'active'")
+                ->max('id');
+
+            expect($min)->toBe(1)
+                ->and($max)->toBe(3);
+        });
+
+        it('whereRaw throws InvalidColumnException when the expression contains a semicolon', function (): void {
+            expect(fn () => $this->builder->whereRaw('1; DROP TABLE users'))
+                ->toThrow(InvalidColumnException::class);
+        });
+
+        it(
+            'whereRaw throws InvalidColumnException when the expression contains a -- comment marker',
+            function (): void {
+                expect(fn () => $this->builder->whereRaw('1 -- comment'))
+                    ->toThrow(InvalidColumnException::class);
+            }
+        );
+
+        it(
+            'whereRaw throws InvalidColumnException when the expression contains a /* or */ block-comment marker',
+            function (): void {
+                expect(fn () => $this->builder->whereRaw('/* comment */ 1'))
+                    ->toThrow(InvalidColumnException::class);
+            }
+        );
+
+        it('whereRaw throws InvalidColumnException when the expression contains a backtick', function (): void {
+            expect(fn () => $this->builder->whereRaw('`name` = ?', ['Alice']))
+                ->toThrow(InvalidColumnException::class);
+        });
+
+        it('whereRaw returns the builder for fluent chaining', function (): void {
+            $result = $this->builder->whereRaw('1 = 1');
+            expect($result)->toBe($this->builder);
+        });
+    });
+
+    describe('selectRaw and whereRaw combined', function (): void {
+        it(
+            'selectRaw and whereRaw used together produce bindings in [select-bindings..., where-bindings...] order in the final bindings array',
+            function (): void {
+                $recordedBindings = [];
+                $recordingConnection = new class ($recordedBindings) extends MySqlConnection
+                {
+                    public function __construct(public array &$lastBindings) {}
+    
+                    public function connect(): void {}
+    
+                    public function query(
+                        string $sql,
+                        array $bindings = [],
+                    ): array
+                    {
+                        $this->lastBindings = $bindings;
+    
+                        return [];
+                    }
+    
+                    public function execute(
+                        string $sql,
+                        array $bindings = [],
+                    ): int
+                    {
+                        return 0;
+                    }
+                };
+    
+                (new MySqlQueryBuilder($recordingConnection))
+                    ->table('users')
+                    ->selectRaw('? AS sel', ['sel_val'])
+                    ->whereRaw('status = ?', ['active'])
+                    ->get();
+    
+                expect($recordedBindings)->toBe(['sel_val', 'active']);
+            }
+        );
+
+        it(
+            'selectRaw and whereRaw flow correctly through compileSubquery() when this builder is used as a UNION right-hand side',
+            function (): void {
+                $recordedSql = '';
+                $recordedBindings = [];
+                $recordingConnection = new class ($recordedSql, $recordedBindings) extends MySqlConnection
+                {
+                    public function __construct(
+                        public string &$lastSql,
+                        public array &$lastBindings,
+                    ) {}
+    
+                    public function connect(): void {}
+    
+                    public function query(
+                        string $sql,
+                        array $bindings = [],
+                    ): array
+                    {
+                        $this->lastSql = $sql;
+                        $this->lastBindings = $bindings;
+    
+                        return [];
+                    }
+    
+                    public function execute(
+                        string $sql,
+                        array $bindings = [],
+                    ): int
+                    {
+                        return 0;
+                    }
+                };
+    
+                $left = (new MySqlQueryBuilder($recordingConnection))
+                    ->table('users')
+                    ->select('name');
+    
+                $right = (new MySqlQueryBuilder($recordingConnection))
+                    ->table('users')
+                    ->select('name')
+                    ->selectRaw('? AS sel', ['sel_val'])
+                    ->whereRaw('status = ?', ['active']);
+    
+                $left->union($right)->get();
+    
+                expect($recordedSql)->toContain('? AS sel')
+                    ->and($recordedSql)->toContain('status = ?')
+                    ->and($recordedBindings)->toBe(['sel_val', 'active']);
+            }
+        );
+    });
+
+    describe('orderByRaw compilation', function (): void {
+        it('compiles a raw ORDER BY expression with the given direction', function (): void {
+            $recordedSql = '';
+            $recordingConnection = new class ($recordedSql) extends MySqlConnection
+            {
+                public function __construct(public string &$lastSql) {}
+
+                public function connect(): void {}
+
+                public function query(
+                    string $sql,
+                    array $bindings = [],
+                ): array
+                {
+                    $this->lastSql = $sql;
+
+                    return [];
+                }
+
+                public function execute(
+                    string $sql,
+                    array $bindings = [],
+                ): int
+                {
+                    return 0;
+                }
+            };
+
+            (new MySqlQueryBuilder($recordingConnection))
+                ->table('users')
+                ->select('name')
+                ->orderByRaw('LENGTH(name)', 'DESC')
+                ->get();
+
+            expect($recordedSql)->toBe('SELECT `name` FROM `users` ORDER BY LENGTH(name) DESC');
+        });
+
+        it('defaults direction to ASC when omitted', function (): void {
+            $recordedSql = '';
+            $recordingConnection = new class ($recordedSql) extends MySqlConnection
+            {
+                public function __construct(public string &$lastSql) {}
+
+                public function connect(): void {}
+
+                public function query(
+                    string $sql,
+                    array $bindings = [],
+                ): array
+                {
+                    $this->lastSql = $sql;
+
+                    return [];
+                }
+
+                public function execute(
+                    string $sql,
+                    array $bindings = [],
+                ): int
+                {
+                    return 0;
+                }
+            };
+
+            (new MySqlQueryBuilder($recordingConnection))
+                ->table('users')
+                ->select('name')
+                ->orderByRaw('LENGTH(name)')
+                ->get();
+
+            expect($recordedSql)->toBe('SELECT `name` FROM `users` ORDER BY LENGTH(name) ASC');
+        });
+
+        it('preserves call order when mixing orderBy and orderByRaw', function (): void {
+            $recordedSql = '';
+            $recordingConnection = new class ($recordedSql) extends MySqlConnection
+            {
+                public function __construct(public string &$lastSql) {}
+
+                public function connect(): void {}
+
+                public function query(
+                    string $sql,
+                    array $bindings = [],
+                ): array
+                {
+                    $this->lastSql = $sql;
+
+                    return [];
+                }
+
+                public function execute(
+                    string $sql,
+                    array $bindings = [],
+                ): int
+                {
+                    return 0;
+                }
+            };
+
+            (new MySqlQueryBuilder($recordingConnection))
+                ->table('users')
+                ->select('name')
+                ->orderBy('status', 'ASC')
+                ->orderByRaw('LENGTH(name)', 'DESC')
+                ->get();
+
+            expect($recordedSql)->toBe('SELECT `name` FROM `users` ORDER BY `status` ASC, LENGTH(name) DESC');
+        });
+
+        it('returns the builder for fluent chaining', function (): void {
+            $result = $this->builder->orderByRaw('LENGTH(name)');
+            expect($result)->toBe($this->builder);
+        });
+    });
+
+    describe('orderByRaw denylist', function (): void {
+        it('throws InvalidColumnException when the expression contains a semicolon', function (): void {
+            expect(fn () => $this->builder->orderByRaw('name; DROP TABLE users'))
+                ->toThrow(InvalidColumnException::class);
+        });
+
+        it('throws InvalidColumnException when the expression contains a -- comment marker', function (): void {
+            expect(fn () => $this->builder->orderByRaw('name -- comment'))
+                ->toThrow(InvalidColumnException::class);
+        });
+
+        it('throws InvalidColumnException when the expression contains a /* block-comment marker', function (): void {
+            expect(fn () => $this->builder->orderByRaw('name /* comment */'))
+                ->toThrow(InvalidColumnException::class);
+        });
+
+        it('throws InvalidColumnException when the expression contains a backtick', function (): void {
+            expect(fn () => $this->builder->orderByRaw('`name`'))
+                ->toThrow(InvalidColumnException::class);
+        });
+    });
+
+    describe('having denylist (shared with raw helpers)', function (): void {
+        it('throws InvalidColumnException when having() expression contains a backtick', function (): void {
+            expect(fn () => $this->builder->having('`count` > ?', [5]))
+                ->toThrow(InvalidColumnException::class);
+        });
     });
 });

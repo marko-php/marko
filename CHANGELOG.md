@@ -38,6 +38,7 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 ### New Features
 * feat: add marko/page-cache and marko/page-cache-file packages
+* feat(database): add `selectRaw`, `whereRaw`, and `orderByRaw` to `QueryBuilderInterface` with positional bindings and denylist validation
 
 ## [0.5.0] - 2026-05-01
 

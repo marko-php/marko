@@ -188,6 +188,21 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
+        public function orderByRaw(string $expression, string $direction = 'ASC'): static
+        {
+            return $this;
+        }
+
+        public function selectRaw(string $expression, array $bindings = []): static
+        {
+            return $this;
+        }
+
+        public function whereRaw(string $expression, array $bindings = []): static
+        {
+            return $this;
+        }
+
         public function limit(int $limit): static
         {
             return $this;
@@ -369,6 +384,21 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
         }
 
         public function orderBy(string $column, string $direction = 'ASC'): static
+        {
+            return $this;
+        }
+
+        public function orderByRaw(string $expression, string $direction = 'ASC'): static
+        {
+            return $this;
+        }
+
+        public function selectRaw(string $expression, array $bindings = []): static
+        {
+            return $this;
+        }
+
+        public function whereRaw(string $expression, array $bindings = []): static
         {
             return $this;
         }
@@ -648,6 +678,21 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
+        public function orderByRaw(string $expression, string $direction = 'ASC'): static
+        {
+            return $this;
+        }
+
+        public function selectRaw(string $expression, array $bindings = []): static
+        {
+            return $this;
+        }
+
+        public function whereRaw(string $expression, array $bindings = []): static
+        {
+            return $this;
+        }
+
         public function limit(int $limit): static
         {
             return $this;
@@ -783,11 +828,9 @@ it('eager-loads relationships declared by a spec via the fluent builder', functi
 it('eager-loads nested relationship paths declared by a spec (e.g. "author.profile")', function (): void {
     $postRows = [['id' => 1, 'title' => 'Hello', 'status' => 'published', 'author_id' => 5]];
     $authorRows = [['id' => 5, 'name' => 'Alice', 'author_id' => 5]];
-    $profileRows = [['id' => 10, 'bio' => 'Writer', 'author_id' => 5]];
 
     $primaryBuilder = makeSpecStubBuilder($postRows);
     $authorBuilder = makeSpecStubBuilder($authorRows);
-    $profileBuilder = makeSpecStubBuilder($profileRows);
 
     // The loader uses a single factory — we use authorRows to cover the nested load
     $loader = makeSpecLoader($authorBuilder);

@@ -135,15 +135,18 @@ class MyService
 |---|---|
 | `table(string $table): static` | Set the target table |
 | `select(string ...$columns): static` | Choose columns to return |
+| `selectRaw(string $expression, array $bindings = []): static` | Append a raw SQL expression to the SELECT list |
 | `where(string $column, string $operator, mixed $value): static` | Add a WHERE condition |
 | `orWhere(string $column, string $operator, mixed $value): static` | Add an OR WHERE condition |
 | `whereIn(string $column, array $values): static` | Add a WHERE IN condition |
 | `whereNull(string $column): static` | Add a WHERE IS NULL condition |
 | `whereNotNull(string $column): static` | Add a WHERE IS NOT NULL condition |
+| `whereRaw(string $expression, array $bindings = []): static` | Add a raw SQL WHERE condition, AND-combined with other conditions |
 | `join(string $table, string $first, string $operator, string $second): static` | Inner join |
 | `leftJoin(string $table, string $first, string $operator, string $second): static` | Left join |
 | `rightJoin(string $table, string $first, string $operator, string $second): static` | Right join |
 | `orderBy(string $column, string $direction = 'ASC'): static` | Order results |
+| `orderByRaw(string $expression, string $direction = 'ASC'): static` | Order by a raw SQL expression |
 | `limit(int $limit): static` | Limit result count |
 | `offset(int $offset): static` | Skip rows |
 | `get(): array` | Execute and return all matching rows |
