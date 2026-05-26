@@ -8,6 +8,16 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.6.1] - 2026-05-26
+
+### Bug Fixes
+* fix(database): use SchemaRegistry in DiffCommand and MigrateCommand for extender merge by @michalbiarda in https://github.com/marko-php/marko/pull/67
+* fix(database-pgsql): normalise jsonb → json in introspector type map by @michalbiarda in https://github.com/marko-php/marko/pull/69
+* fix(database-pgsql): JSON-encode array bindings before passing to PDO by @michalbiarda in https://github.com/marko-php/marko/pull/72
+* fix(database): link entity extenders at boot so companions hydrate during HTTP requests by @michalbiarda in https://github.com/marko-php/marko/pull/74
+* fix(database-mysql): JSON-encode array bindings before passing to PDO by @markshust in https://github.com/marko-php/marko/pull/82
+
+
 ## [0.6.0] - 2026-05-12
 
 ### New Features
