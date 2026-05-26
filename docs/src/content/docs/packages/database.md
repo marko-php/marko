@@ -893,13 +893,13 @@ A wire-compatible variant inherits the parent's `ConnectionInterface` binding un
 
 ### CockroachDB example
 
-The following shows the complete wiring for a hypothetical `marko/database-cockroachdb` package. The class names are illustrative stubs — no CockroachDB driver is officially supported.
+The following shows the complete wiring for a hypothetical third-party `acme/database-cockroachdb` package. The `acme/` vendor and class names are illustrative — the `marko/` namespace is reserved for core Marko packages, so variant packages must ship under their own vendor namespace.
 
 **`composer.json`** — require the parent pgsql package (which transitively requires `marko/database`):
 
 ```json title="composer.json"
 {
-    "name": "marko/database-cockroachdb",
+    "name": "acme/database-cockroachdb",
     "description": "CockroachDB variant for Marko (PostgreSQL wire protocol)",
     "type": "marko-module",
     "require": {
@@ -907,7 +907,7 @@ The following shows the complete wiring for a hypothetical `marko/database-cockr
     },
     "autoload": {
         "psr-4": {
-            "Marko\\Database\\CockroachDb\\": "src/"
+            "Acme\\Database\\CockroachDb\\": "src/"
         }
     }
 }
@@ -920,15 +920,15 @@ The following shows the complete wiring for a hypothetical `marko/database-cockr
 
 declare(strict_types=1);
 
+use Acme\Database\CockroachDb\Diff\CockroachDbGenerator;
+use Acme\Database\CockroachDb\Introspection\CockroachDbIntrospector;
+use Acme\Database\CockroachDb\Query\CockroachDbQueryBuilder;
+use Acme\Database\CockroachDb\Query\CockroachDbQueryBuilderFactory;
 use Marko\Core\Container\Container;
 use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
-use Marko\Database\CockroachDb\Diff\CockroachDbGenerator;
-use Marko\Database\CockroachDb\Introspection\CockroachDbIntrospector;
-use Marko\Database\CockroachDb\Query\CockroachDbQueryBuilder;
-use Marko\Database\CockroachDb\Query\CockroachDbQueryBuilderFactory;
 
 // ConnectionInterface is intentionally omitted: CockroachDB speaks the
 // PostgreSQL wire protocol, so PgSqlConnection from marko/database-pgsql
@@ -944,7 +944,7 @@ return [
 ];
 ```
 
-Because `marko/database-cockroachdb` requires `marko/database-pgsql` in its `composer.json`, Marko automatically boots the variant after the parent — no `sequence` configuration is needed.
+Because `acme/database-cockroachdb` requires `marko/database-pgsql` in its `composer.json`, Marko automatically boots the variant after the parent — no `sequence` configuration is needed.
 
 For the underlying `boot` callback mechanism, see [Overriding another module's bindings](/docs/concepts/dependency-injection/#overriding-another-modules-bindings).
 
