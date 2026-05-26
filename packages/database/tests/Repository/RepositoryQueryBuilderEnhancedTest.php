@@ -90,9 +90,14 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
         /** @var array<array{expression: string, bindings: array<mixed>}> */
         public array $whereRawCalled = [];
 
+        /** @var array<string> */
+        public array $orderByRawCalled = [];
+
         public bool $selectRawShouldThrow = false;
 
         public bool $whereRawShouldThrow = false;
+
+        public bool $orderByRawShouldThrow = false;
 
         public function __construct(private readonly array $rows) {}
 
@@ -133,7 +138,10 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereJsonContains(string $path, mixed $value): static
+        public function whereJsonContains(
+            string $path,
+            mixed $value,
+        ): static
         {
             return $this;
         }
@@ -196,6 +204,12 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
             string $expression,
             string $direction = 'ASC',
         ): static {
+            if ($this->orderByRawShouldThrow) {
+                throw InvalidColumnException::invalidColumn($expression);
+            }
+
+            $this->orderByRawCalled[] = "$expression $direction";
+
             return $this;
         }
 
@@ -302,7 +316,10 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function having(string $expression, array $bindings = []): static
+        public function having(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
@@ -603,66 +620,101 @@ it('whereRaw propagates InvalidColumnException from the inner builder', function
     expect(fn () => $rqb->whereRaw('bad;expression'))->toThrow(InvalidColumnException::class);
 });
 
-it('the wrapper can chain selectRaw and whereRaw alongside the existing methods (e.g. select.selectRaw.where.whereRaw.orderBy)', function (): void {
-    $stub = makeRqbStubBuilder([]);
+it('orderByRaw delegates to the inner query builder with the same expression and direction', function (): void {
+    $stub = makeRqbStubBuilder();
     $rqb = makeRqb($stub);
 
-    $result = $rqb
-        ->select('id', 'name')
-        ->selectRaw('COALESCE(a, b) AS resolved', [1])
-        ->where('status', '=', 'active')
-        ->whereRaw('score > ?', [50])
-        ->orderBy('name', 'ASC');
+    $rqb->orderByRaw('LENGTH(name)', 'DESC');
 
-    expect($result)->toBeInstanceOf(RepositoryQueryBuilder::class)
-        ->and($stub->selectRawCalled)->toBe([
-            ['expression' => 'COALESCE(a, b) AS resolved', 'bindings' => [1]],
-        ])
-        ->and($stub->wheresCalled)->toBe(['status = active'])
-        ->and($stub->whereRawCalled)->toBe([
-            ['expression' => 'score > ?', 'bindings' => [50]],
-        ])
-        ->and($stub->orderByCalled)->toBe(['name ASC']);
+    expect($stub->orderByRawCalled)->toBe(['LENGTH(name) DESC']);
 });
 
-it('a QuerySpecification that calls $builder->selectRaw(...) inside its apply() method works correctly when invoked via matching()', function (): void {
-    $rows = [['id' => 1, 'name' => 'Alice']];
-    $stub = makeRqbStubBuilder($rows);
+it('orderByRaw returns the wrapper for fluent chaining', function (): void {
+    $stub = makeRqbStubBuilder();
     $rqb = makeRqb($stub);
 
-    $spec = new class () implements QuerySpecification
-    {
-        public function apply(QueryBuilderInterface $builder): void
+    $result = $rqb->orderByRaw('LENGTH(name)');
+
+    expect($result)->toBeInstanceOf(RepositoryQueryBuilder::class);
+});
+
+it('orderByRaw propagates InvalidColumnException from the inner builder', function (): void {
+    $stub = makeRqbStubBuilder();
+    $stub->orderByRawShouldThrow = true;
+    $rqb = makeRqb($stub);
+
+    expect(fn () => $rqb->orderByRaw('bad;expression'))->toThrow(InvalidColumnException::class);
+});
+
+it(
+    'the wrapper can chain selectRaw and whereRaw alongside the existing methods (e.g. select.selectRaw.where.whereRaw.orderBy)',
+    function (): void {
+        $stub = makeRqbStubBuilder([]);
+        $rqb = makeRqb($stub);
+    
+        $result = $rqb
+            ->select('id', 'name')
+            ->selectRaw('COALESCE(a, b) AS resolved', [1])
+            ->where('status', '=', 'active')
+            ->whereRaw('score > ?', [50])
+            ->orderBy('name', 'ASC');
+    
+        expect($result)->toBeInstanceOf(RepositoryQueryBuilder::class)
+            ->and($stub->selectRawCalled)->toBe([
+                ['expression' => 'COALESCE(a, b) AS resolved', 'bindings' => [1]],
+            ])
+            ->and($stub->wheresCalled)->toBe(['status = active'])
+            ->and($stub->whereRawCalled)->toBe([
+                ['expression' => 'score > ?', 'bindings' => [50]],
+            ])
+            ->and($stub->orderByCalled)->toBe(['name ASC']);
+    }
+);
+
+it(
+    'a QuerySpecification that calls $builder->selectRaw(...) inside its apply() method works correctly when invoked via matching()',
+    function (): void {
+        $rows = [['id' => 1, 'name' => 'Alice']];
+        $stub = makeRqbStubBuilder($rows);
+        $rqb = makeRqb($stub);
+    
+        $spec = new class () implements QuerySpecification
         {
-            $builder->selectRaw('COALESCE(a, b) AS resolved', [42]);
-        }
-    };
+            public function apply(QueryBuilderInterface $builder): void
+            {
+                $builder->selectRaw('COALESCE(a, b) AS resolved', [42]);
+            }
+        };
+    
+        $collection = $rqb->matching($spec);
+    
+        expect($collection)->toBeInstanceOf(EntityCollection::class)
+            ->and($stub->selectRawCalled)->toBe([
+                ['expression' => 'COALESCE(a, b) AS resolved', 'bindings' => [42]],
+            ]);
+    }
+);
 
-    $collection = $rqb->matching($spec);
-
-    expect($collection)->toBeInstanceOf(EntityCollection::class)
-        ->and($stub->selectRawCalled)->toBe([
-            ['expression' => 'COALESCE(a, b) AS resolved', 'bindings' => [42]],
-        ]);
-});
-
-it('a QuerySpecification that calls $builder->whereRaw(...) inside its apply() method works correctly when invoked via matching()', function (): void {
-    $rows = [['id' => 1, 'name' => 'Alice']];
-    $stub = makeRqbStubBuilder($rows);
-    $rqb = makeRqb($stub);
-
-    $spec = new class () implements QuerySpecification
-    {
-        public function apply(QueryBuilderInterface $builder): void
+it(
+    'a QuerySpecification that calls $builder->whereRaw(...) inside its apply() method works correctly when invoked via matching()',
+    function (): void {
+        $rows = [['id' => 1, 'name' => 'Alice']];
+        $stub = makeRqbStubBuilder($rows);
+        $rqb = makeRqb($stub);
+    
+        $spec = new class () implements QuerySpecification
         {
-            $builder->whereRaw('score > ?', [50]);
-        }
-    };
-
-    $collection = $rqb->matching($spec);
-
-    expect($collection)->toBeInstanceOf(EntityCollection::class)
-        ->and($stub->whereRawCalled)->toBe([
-            ['expression' => 'score > ?', 'bindings' => [50]],
-        ]);
-});
+            public function apply(QueryBuilderInterface $builder): void
+            {
+                $builder->whereRaw('score > ?', [50]);
+            }
+        };
+    
+        $collection = $rqb->matching($spec);
+    
+        expect($collection)->toBeInstanceOf(EntityCollection::class)
+            ->and($stub->whereRawCalled)->toBe([
+                ['expression' => 'score > ?', 'bindings' => [50]],
+            ]);
+    }
+);

@@ -1267,6 +1267,122 @@ describe('MySqlQueryBuilder', function (): void {
         );
     });
 
+    describe('orderByRaw compilation', function (): void {
+        it('compiles a raw ORDER BY expression with the given direction', function (): void {
+            $recordedSql = '';
+            $recordingConnection = new class ($recordedSql) extends MySqlConnection
+            {
+                public function __construct(public string &$lastSql) {}
+
+                public function connect(): void {}
+
+                public function query(
+                    string $sql,
+                    array $bindings = [],
+                ): array
+                {
+                    $this->lastSql = $sql;
+
+                    return [];
+                }
+
+                public function execute(
+                    string $sql,
+                    array $bindings = [],
+                ): int
+                {
+                    return 0;
+                }
+            };
+
+            (new MySqlQueryBuilder($recordingConnection))
+                ->table('users')
+                ->select('name')
+                ->orderByRaw('LENGTH(name)', 'DESC')
+                ->get();
+
+            expect($recordedSql)->toBe('SELECT `name` FROM `users` ORDER BY LENGTH(name) DESC');
+        });
+
+        it('defaults direction to ASC when omitted', function (): void {
+            $recordedSql = '';
+            $recordingConnection = new class ($recordedSql) extends MySqlConnection
+            {
+                public function __construct(public string &$lastSql) {}
+
+                public function connect(): void {}
+
+                public function query(
+                    string $sql,
+                    array $bindings = [],
+                ): array
+                {
+                    $this->lastSql = $sql;
+
+                    return [];
+                }
+
+                public function execute(
+                    string $sql,
+                    array $bindings = [],
+                ): int
+                {
+                    return 0;
+                }
+            };
+
+            (new MySqlQueryBuilder($recordingConnection))
+                ->table('users')
+                ->select('name')
+                ->orderByRaw('LENGTH(name)')
+                ->get();
+
+            expect($recordedSql)->toBe('SELECT `name` FROM `users` ORDER BY LENGTH(name) ASC');
+        });
+
+        it('preserves call order when mixing orderBy and orderByRaw', function (): void {
+            $recordedSql = '';
+            $recordingConnection = new class ($recordedSql) extends MySqlConnection
+            {
+                public function __construct(public string &$lastSql) {}
+
+                public function connect(): void {}
+
+                public function query(
+                    string $sql,
+                    array $bindings = [],
+                ): array
+                {
+                    $this->lastSql = $sql;
+
+                    return [];
+                }
+
+                public function execute(
+                    string $sql,
+                    array $bindings = [],
+                ): int
+                {
+                    return 0;
+                }
+            };
+
+            (new MySqlQueryBuilder($recordingConnection))
+                ->table('users')
+                ->select('name')
+                ->orderBy('status', 'ASC')
+                ->orderByRaw('LENGTH(name)', 'DESC')
+                ->get();
+
+            expect($recordedSql)->toBe('SELECT `name` FROM `users` ORDER BY `status` ASC, LENGTH(name) DESC');
+        });
+
+        it('returns the builder for fluent chaining', function (): void {
+            $result = $this->builder->orderByRaw('LENGTH(name)');
+            expect($result)->toBe($this->builder);
+        });
+    });
+
     describe('orderByRaw denylist', function (): void {
         it('throws InvalidColumnException when the expression contains a semicolon', function (): void {
             expect(fn () => $this->builder->orderByRaw('name; DROP TABLE users'))

@@ -360,6 +360,54 @@ describe('PgSqlQueryBuilder selectRaw + whereRaw combined', function (): void {
     );
 });
 
+describe('PgSqlQueryBuilder orderByRaw compilation', function (): void {
+    it('compiles a raw ORDER BY expression with the given direction', function (): void {
+        $connection = new MockConnection();
+        $builder = new PgSqlQueryBuilder($connection);
+
+        $builder
+            ->table('users')
+            ->select('name')
+            ->orderByRaw('LENGTH(name)', 'DESC')
+            ->get();
+
+        expect($connection->lastQuerySql)->toBe('SELECT "name" FROM "users" ORDER BY LENGTH(name) DESC');
+    });
+
+    it('defaults direction to ASC when omitted', function (): void {
+        $connection = new MockConnection();
+        $builder = new PgSqlQueryBuilder($connection);
+
+        $builder
+            ->table('users')
+            ->select('name')
+            ->orderByRaw('LENGTH(name)')
+            ->get();
+
+        expect($connection->lastQuerySql)->toBe('SELECT "name" FROM "users" ORDER BY LENGTH(name) ASC');
+    });
+
+    it('preserves call order when mixing orderBy and orderByRaw', function (): void {
+        $connection = new MockConnection();
+        $builder = new PgSqlQueryBuilder($connection);
+
+        $builder
+            ->table('users')
+            ->select('name')
+            ->orderBy('status', 'ASC')
+            ->orderByRaw('LENGTH(name)', 'DESC')
+            ->get();
+
+        expect($connection->lastQuerySql)->toBe('SELECT "name" FROM "users" ORDER BY "status" ASC, LENGTH(name) DESC');
+    });
+
+    it('returns the builder for fluent chaining', function (): void {
+        $builder = new PgSqlQueryBuilder(new MockConnection());
+        $result = $builder->orderByRaw('LENGTH(name)');
+        expect($result)->toBe($builder);
+    });
+});
+
 describe('PgSqlQueryBuilder orderByRaw denylist', function (): void {
     it('throws InvalidColumnException when the expression contains a semicolon', function (): void {
         $builder = new PgSqlQueryBuilder(new MockConnection());
