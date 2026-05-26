@@ -86,6 +86,10 @@
         },
         {
             "type": "path",
+            "url": "packages/database-readwrite"
+        },
+        {
+            "type": "path",
             "url": "packages/debugbar"
         },
         {
@@ -351,6 +355,7 @@
         "marko/database": "self.version",
         "marko/database-mysql": "self.version",
         "marko/database-pgsql": "self.version",
+        "marko/database-readwrite": "self.version",
         "marko/dev-server": "self.version",
         "marko/encryption": "self.version",
         "marko/encryption-openssl": "self.version",
@@ -466,6 +471,7 @@
             "Marko\\Database\\Tests\\": "packages/database/tests/",
             "Marko\\Database\\MySql\\Tests\\": "packages/database-mysql/tests/",
             "Marko\\Database\\PgSql\\Tests\\": "packages/database-pgsql/tests/",
+            "Marko\\Database\\ReadWrite\\Tests\\": "packages/database-readwrite/tests/",
             "Marko\\Debugbar\\Tests\\": "packages/debugbar/tests/",
             "Marko\\DevServer\\Tests\\": "packages/dev-server/tests/",
             "Marko\\Encryption\\Tests\\": "packages/encryption/tests/",

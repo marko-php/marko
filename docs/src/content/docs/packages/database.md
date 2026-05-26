@@ -877,19 +877,20 @@ marko db:seed
 
 Some databases speak an existing wire protocol (PostgreSQL or MySQL) but require different SQL dialect logic. CockroachDB, for example, accepts PostgreSQL connections but has its own DDL, introspection queries, and query-builder behaviour. A variant package can reuse the parent driver's connection and override only the four dialect interfaces.
 
-### The 5-binding split
+### The 6-binding split
 
-Every driver package binds five interfaces. They fall into two categories:
+Every driver package binds six interfaces. They fall into two categories:
 
 | Interface | Category | Role |
 |-----------|----------|------|
 | `ConnectionInterface` | **Wire** | PDO connection, DSN format, PostgreSQL/MySQL protocol |
+| `ConnectionFactoryInterface` | **Wire** | Creates `ConnectionInterface` instances from a `DatabaseConfig` |
 | `SqlGeneratorInterface` | Dialect | DDL generation for schema diffs |
 | `IntrospectorInterface` | Dialect | Reading existing schema from `information_schema` etc. |
 | `QueryBuilderInterface` | Dialect | SELECT/INSERT/UPDATE/DELETE SQL generation |
 | `QueryBuilderFactoryInterface` | Dialect | Constructs query builder instances |
 
-A wire-compatible variant inherits the parent's `ConnectionInterface` binding unchanged and overrides the four dialect interfaces.
+A wire-compatible variant inherits the parent's `ConnectionInterface` and `ConnectionFactoryInterface` bindings unchanged and overrides the four dialect interfaces.
 
 ### CockroachDB example
 
@@ -952,3 +953,7 @@ For the underlying `boot` callback mechanism, see [Overriding another module's b
 
 - [marko/database-pgsql](/docs/packages/database-pgsql/) — PostgreSQL driver
 - [marko/database-mysql](/docs/packages/database-mysql/) — MySQL driver
+
+## Read/Write Splitting
+
+To route reads to replicas and writes to a primary, see [marko/database-readwrite](/docs/packages/database-readwrite/). It wraps any existing driver connection using the decorator pattern — no changes to application code are required.

@@ -169,6 +169,14 @@ class MyService
 | `whereJsonMissing(string $path): static` | WHERE JSON key/path does not exist |
 | `raw(string $sql, array $bindings = []): array` | Execute raw SQL |
 
+### MySqlConnectionFactory
+
+Implements `ConnectionFactoryInterface`. Creates `MySqlConnection` instances from a `DatabaseConfig`. Used by `marko/database-readwrite` to build per-connection instances for the write primary and each read replica.
+
+| Method | Description |
+|---|---|
+| `make(DatabaseConfig $config): ConnectionInterface` | Create and return a new `MySqlConnection` for the given config |
+
 ### SQL Generator
 
 `MySqlGenerator` implements `SqlGeneratorInterface` --- produces MySQL-specific DDL from schema diffs (used by the migration system).
