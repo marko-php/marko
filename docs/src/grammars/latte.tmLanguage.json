@@ -1,0 +1,108 @@
+{
+	"fileTypes": [
+		"latte"
+	],
+	"name": "Latte",
+	"patterns": [
+		{
+			"begin": "\\{\\*",
+			"end": "\\*\\}",
+			"name": "comment.block.latte"
+		},
+		{
+			"begin": "\\{(\\{)?",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.tag.begin.latte"
+				}
+			},
+			"end": "\\}(\\})?",
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.definition.tag.end.latte"
+				}
+			},
+			"name": "source.latte",
+			"patterns": [
+				{
+					"match": "(?<=\\{)(\\![^}]*?)",
+					"name": "keyword.latte"
+				},
+				{
+					"match": "\\b((0(x|X)[0-9a-fA-F]*)|(([0-9]+\\.?[0-9]*)|(\\.[0-9]+))((e|E)(\\+|-)?[0-9]+)?)\\b",
+					"name": "constant.numeric.latte"
+				},
+				{
+					"match": "(?i)true|false|null",
+					"name": "constant.language.latte"
+				},
+				{
+					"captures": {
+						"1": {
+							"name": "keyword.control.single.latte"
+						},
+						"2": {
+							"patterns": [
+								{
+									"include": "source.php#php-types"
+								}
+							]
+						}
+					},
+					"match": "(?<=\\{)(varType|var)\\s+([^\\$][^\\s]+\\b)"
+				},
+				{
+					"match": "(?i)(?<=\\{)/?([a-z0-9_]+)\\s*",
+					"name": "keyword.control.latte"
+				},
+				{
+					"match": "(?i)(?<=\\s)(\\!|/|===|as|and|&&|or|\\|\\||\\+\\+|\\-\\-|==|<=>|>=|<=)\\s?",
+					"name": "keyword.operator.latte"
+				},
+				{
+					"match": "->",
+					"name": "keyword.operator.latte"
+				},
+				{
+					"captures": {
+						"1": {
+							"name": "keyword.other.latte"
+						},
+						"2": {
+							"name": "keyword.other.latte"
+						}
+					},
+					"match": "(\\|)(\\w+)(?:\\:([^\\|\\}]+))*?"
+				},
+				{
+					"name": "variable.other.latte",
+					"include": "#variable-name"
+				},
+				{
+					"name": "string.quoted.single.latte",
+					"include": "source.php#string-single-quoted"
+				},
+				{
+					"name": "string.quoted.double.latte",
+					"include": "source.php#string-double-quoted"
+				}
+			]
+		},
+		{
+			"include": "text.html.basic"
+		}
+	],
+	"repository": {
+		"variable-name": {
+			"patterns": [
+				{
+					"name": "variable.other.latte",
+					"match": "\\$[a-zA-Z_\\x80-\\xff][a-zA-Z0-9_\\x80-\\xff]*"
+				}
+			]
+		}
+	},
+	"scopeName": "source.latte"
+}
+
+
