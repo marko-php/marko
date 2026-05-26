@@ -7,11 +7,13 @@ namespace Marko\Database\MySql\Tests\Module;
 use Closure;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
+use Marko\Database\Connection\ConnectionFactoryInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Exceptions\ConfigurationException;
 use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\MySql\Connection\MySqlConnection;
+use Marko\Database\MySql\Connection\MySqlConnectionFactory;
 use Marko\Database\MySql\Query\MySqlQueryBuilderFactory;
 use Marko\Database\MySql\Sql\MySqlGenerator;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
@@ -49,7 +51,17 @@ describe('MySQL module.php bindings', function (): void {
         $moduleConfig = require $modulePath . '/module.php';
 
         expect($moduleConfig['bindings'])->toHaveKey(QueryBuilderFactoryInterface::class)
-            ->and($moduleConfig['bindings'][QueryBuilderFactoryInterface::class])->toBe(MySqlQueryBuilderFactory::class);
+            ->and($moduleConfig['bindings'][QueryBuilderFactoryInterface::class])->toBe(
+                MySqlQueryBuilderFactory::class
+            );
+    });
+
+    it('binds ConnectionFactoryInterface to MySqlConnectionFactory in the module', function (): void {
+        $modulePath = dirname(__DIR__, 2);
+        $moduleConfig = require $modulePath . '/module.php';
+
+        expect($moduleConfig['bindings'])->toHaveKey(ConnectionFactoryInterface::class)
+            ->and($moduleConfig['bindings'][ConnectionFactoryInterface::class])->toBe(MySqlConnectionFactory::class);
     });
 
     it('throws ConfigurationException when config file missing', function (): void {

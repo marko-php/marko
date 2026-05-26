@@ -26,6 +26,7 @@ $allPackages = [
     'marko/database',
     'marko/database-mysql',
     'marko/database-pgsql',
+    'marko/database-readwrite',
     'marko/dev-server',
     'marko/encryption',
     'marko/encryption-openssl',
@@ -112,7 +113,7 @@ it('removes all manual PSR-4 autoload entries for marko packages', function () u
         return;
     }
 
-    foreach ($rootComposer['autoload']['psr-4'] as $namespace => $path) {
+    foreach (array_keys($rootComposer['autoload']['psr-4']) as $namespace) {
         expect(str_starts_with($namespace, 'Marko\\'))->toBeFalse();
     }
 });

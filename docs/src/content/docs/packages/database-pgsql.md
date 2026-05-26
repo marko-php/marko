@@ -242,6 +242,14 @@ Implements `QueryBuilderInterface`. Fluent builder for PostgreSQL queries.
 | `whereJsonMissing(string $path): static` | WHERE JSON key/path does not exist |
 | `raw(string $sql, array $bindings = []): array` | Execute a raw SQL query |
 
+### PgSqlConnectionFactory
+
+Implements `ConnectionFactoryInterface`. Creates `PgSqlConnection` instances from a `DatabaseConfig`. Used by `marko/database-readwrite` to build per-connection instances for the write primary and each read replica.
+
+| Method | Description |
+|---|---|
+| `make(DatabaseConfig $config): ConnectionInterface` | Create and return a new `PgSqlConnection` for the given config |
+
 ### PgSqlIntrospector
 
 Implements `IntrospectorInterface`. Reads schema metadata from `information_schema` and `pg_catalog`.

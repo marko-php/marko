@@ -166,6 +166,7 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/database` | Interface | `ConnectionInterface`, query builder interfaces |
 | `marko/database-mysql` | Driver | MySQL/MariaDB implementation |
 | `marko/database-pgsql` | Driver | PostgreSQL implementation |
+| `marko/database-readwrite` | Driver | Read/write split decorator; routes reads to replicas, writes to primary |
 
 ### Caching
 

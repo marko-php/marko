@@ -6,11 +6,13 @@ namespace Marko\Database\PgSql\Tests\Module;
 
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Config\DatabaseConfig;
+use Marko\Database\Connection\ConnectionFactoryInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Exceptions\ConfigurationException;
 use Marko\Database\Introspection\IntrospectorInterface;
 use Marko\Database\PgSql\Connection\PgSqlConnection;
+use Marko\Database\PgSql\Connection\PgSqlConnectionFactory;
 use Marko\Database\PgSql\Introspection\PgSqlIntrospector;
 use Marko\Database\PgSql\Sql\PgSqlGenerator;
 
@@ -39,6 +41,14 @@ describe('PostgreSQL module.php bindings', function (): void {
 
         expect($moduleConfig['bindings'])->toHaveKey(IntrospectorInterface::class)
             ->and($moduleConfig['bindings'][IntrospectorInterface::class])->toBe(PgSqlIntrospector::class);
+    });
+
+    it('binds ConnectionFactoryInterface to PgSqlConnectionFactory in the module', function (): void {
+        $modulePath = dirname(__DIR__, 2);
+        $moduleConfig = require $modulePath . '/module.php';
+
+        expect($moduleConfig['bindings'])->toHaveKey(ConnectionFactoryInterface::class)
+            ->and($moduleConfig['bindings'][ConnectionFactoryInterface::class])->toBe(PgSqlConnectionFactory::class);
     });
 
     it('throws ConfigurationException when config file missing', function (): void {
