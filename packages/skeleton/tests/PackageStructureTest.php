@@ -85,3 +85,36 @@ it('has a README.md file', function (): void {
 
     expect(file_exists($packagePath . '/README.md'))->toBeTrue();
 });
+
+it('lists marko/view-twig in the skeleton composer suggest block', function (): void {
+    $composer = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
+
+    expect($composer['suggest'])->toHaveKey('marko/view-twig');
+});
+
+it('lists marko/view-latte in the skeleton composer suggest block', function (): void {
+    $composer = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
+
+    expect($composer['suggest'])->toHaveKey('marko/view-latte');
+});
+
+it('does not add marko/view-twig to require', function (): void {
+    $composer = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
+
+    expect($composer['require'])->not->toHaveKey('marko/view-twig');
+});
+
+it('does not add marko/view-latte to require', function (): void {
+    $composer = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
+
+    expect($composer['require'])->not->toHaveKey('marko/view-latte');
+});
+
+it('keeps the suggest entries valid JSON', function (): void {
+    $composerPath = __DIR__ . '/../composer.json';
+    $content = file_get_contents($composerPath);
+    $composer = json_decode($content, true);
+
+    expect(json_last_error())->toBe(JSON_ERROR_NONE)
+        ->and($composer['suggest'])->toBeArray();
+});

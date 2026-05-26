@@ -25,7 +25,7 @@ export default defineConfig({
 			expressiveCode: {
 				themes: [arcadeDark],
 				shiki: {
-					langs: [latteGrammar, 'dotenv'],
+					langs: [latteGrammar, 'twig', 'dotenv'],
 					langAlias: {
 						env: 'dotenv',
 					},

@@ -12,6 +12,10 @@
         "marko/dev-server": "*",
         "pestphp/pest": "^4.0"
     },
+    "suggest": {
+        "marko/view-twig": "Twig template engine driver (recommended for broader ecosystem familiarity)",
+        "marko/view-latte": "Latte template engine driver (compile-time safety, n:attribute syntax)"
+    },
     "config": {
         "allow-plugins": {
             "pestphp/pest-plugin": true

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Latte\Engine;
 use Marko\View\Latte\Extensions\SlotExtension;
 use Marko\View\Latte\LatteEngineFactory;
+use Marko\View\Latte\LatteViewConfig;
 use Marko\View\ViewConfig;
 
 describe('SlotExtension', function (): void {
@@ -87,7 +88,10 @@ describe('SlotExtension', function (): void {
         $engine->addExtension(new SlotExtension());
 
         $templatePath = $cacheDir . '/multi-slot.latte';
-        file_put_contents($templatePath, '<header>{slot header}{/slot}</header><main>{slot content}{/slot}</main><footer>{slot footer}{/slot}</footer>');
+        file_put_contents(
+            $templatePath,
+            '<header>{slot header}{/slot}</header><main>{slot content}{/slot}</main><footer>{slot footer}{/slot}</footer>',
+        );
 
         $html = $engine->renderToString($templatePath, [
             'slots' => [
@@ -110,9 +114,11 @@ describe('SlotExtension', function (): void {
         $viewConfig = $this->createMock(ViewConfig::class);
         $viewConfig->method('cacheDirectory')->willReturn($cacheDir);
         $viewConfig->method('autoRefresh')->willReturn(true);
-        $viewConfig->method('strictTypes')->willReturn(false);
 
-        $factory = new LatteEngineFactory($viewConfig);
+        $latteViewConfig = $this->createMock(LatteViewConfig::class);
+        $latteViewConfig->method('strictTypes')->willReturn(true);
+
+        $factory = new LatteEngineFactory($viewConfig, $latteViewConfig);
         $engine = $factory->create();
 
         $templatePath = $cacheDir . '/factory-slot.latte';

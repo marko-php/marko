@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Marko\View;
+namespace Marko\View\Twig;
 
 use Marko\Config\ConfigRepositoryInterface;
 
-readonly class ViewConfig
+readonly class TwigViewConfig
 {
     public function __construct(
         private ConfigRepositoryInterface $config,
@@ -25,5 +25,25 @@ readonly class ViewConfig
     public function autoRefresh(): bool
     {
         return $this->config->getBool('view.auto_refresh');
+    }
+
+    public function strictVariables(): bool
+    {
+        return $this->config->getBool('view.strict_variables');
+    }
+
+    public function autoescape(): string
+    {
+        return $this->config->getString('view.autoescape');
+    }
+
+    public function debug(): bool
+    {
+        return $this->config->getBool('view.debug');
+    }
+
+    public function charset(): string
+    {
+        return $this->config->getString('view.charset');
     }
 }
