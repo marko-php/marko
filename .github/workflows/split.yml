@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Create missing split repos
         env:
-          GH_TOKEN: ${{ secrets.SPLIT_TOKEN }}
+          GH_TOKEN: ${{ secrets.MARKO_BUILD_PAT }}
         run: ./bin/create-split-repos.sh
       - name: List packages
         id: list
@@ -54,9 +54,9 @@ jobs:
 
       - name: Split and push
         env:
-          SPLIT_TOKEN: ${{ secrets.SPLIT_TOKEN }}
+          MARKO_BUILD_PAT: ${{ secrets.MARKO_BUILD_PAT }}
         run: |
-          REPO="https://x-access-token:${SPLIT_TOKEN}@github.com/${SPLIT_ORG}/marko-${{ matrix.package }}.git"
+          REPO="https://x-access-token:${MARKO_BUILD_PAT}@github.com/${SPLIT_ORG}/marko-${{ matrix.package }}.git"
           SHA=$(splitsh-lite --prefix="packages/${{ matrix.package }}")
 
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
