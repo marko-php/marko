@@ -98,14 +98,15 @@ it('has default session.php config file', function () {
         ->and($config)->toHaveKey('cookie');
 });
 
-it('module.php declares SessionMiddleware as globalMiddleware at priority 20', function (): void {
+it('module.php declares SessionMiddleware as globalMiddleware', function (): void {
     $module = require dirname(__DIR__) . '/module.php';
 
-    $entry = array_find(
-        $module['globalMiddleware'] ?? [],
-        fn (array $e) => ($e['class'] ?? '') === 'Marko\\Session\\Middleware\\SessionMiddleware',
-    );
+    expect($module['globalMiddleware'] ?? [])
+        ->toContain('Marko\\Session\\Middleware\\SessionMiddleware');
+});
 
-    expect($entry)->not->toBeNull()
-        ->and($entry['priority'])->toBe(20);
+it('module.php declares marko/page-cache as a soft after dependency', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['sequence']['after'] ?? [])->toContain('marko/page-cache');
 });

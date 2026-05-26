@@ -56,14 +56,9 @@ it('declares marko/page-cache as a self.version requirement in the root composer
         ->and($composer['require']['marko/page-cache'])->toBe('self.version');
 });
 
-it('module.php declares PageCacheMiddleware as globalMiddleware at priority 10', function (): void {
+it('module.php declares PageCacheMiddleware as globalMiddleware', function (): void {
     $module = require dirname(__DIR__) . '/module.php';
 
-    $entry = array_find(
-        $module['globalMiddleware'] ?? [],
-        fn (array $e) => ($e['class'] ?? '') === 'Marko\\PageCache\\Middleware\\PageCacheMiddleware',
-    );
-
-    expect($entry)->not->toBeNull()
-        ->and($entry['priority'])->toBe(10);
+    expect($module['globalMiddleware'] ?? [])
+        ->toContain('Marko\\PageCache\\Middleware\\PageCacheMiddleware');
 });

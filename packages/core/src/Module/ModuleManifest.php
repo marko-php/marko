@@ -27,7 +27,7 @@ readonly class ModuleManifest
      * @param string $source Discovery source: vendor, modules, or app
      * @param array<string, string> $autoload PSR-4 autoload configuration from composer.json (namespace => path)
      * @param Closure|null $boot Boot callback to run after bindings are registered (from module.php). Parameters are auto-injected from the container — type-hint any registered dependency, including ContainerInterface.
-     * @param array<int, string|array{class: string, priority?: int}> $globalMiddleware Global HTTP middleware declared by this module (from module.php)
+     * @param array<int, class-string> $globalMiddleware Global HTTP middleware classes declared by this module (from module.php). Order across modules follows DependencyResolver (composer require + sequence: { after, before }); order within a module follows array declaration order.
      */
     public function __construct(
         public string $name,

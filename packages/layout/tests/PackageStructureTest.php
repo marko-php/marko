@@ -66,14 +66,15 @@ it('has a config/layout.php that returns a configuration array', function (): vo
     expect($config)->toBeArray();
 });
 
-it('module.php declares LayoutMiddleware as globalMiddleware at priority 30', function (): void {
+it('module.php declares LayoutMiddleware as globalMiddleware', function (): void {
     $module = require dirname(__DIR__) . '/module.php';
 
-    $entry = array_find(
-        $module['globalMiddleware'] ?? [],
-        fn (array $e) => ($e['class'] ?? '') === 'Marko\\Layout\\Middleware\\LayoutMiddleware',
-    );
+    expect($module['globalMiddleware'] ?? [])
+        ->toContain('Marko\\Layout\\Middleware\\LayoutMiddleware');
+});
 
-    expect($entry)->not->toBeNull()
-        ->and($entry['priority'])->toBe(30);
+it('module.php declares marko/session as a soft after dependency', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['sequence']['after'] ?? [])->toContain('marko/session');
 });

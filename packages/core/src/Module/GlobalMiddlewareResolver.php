@@ -10,9 +10,12 @@ use Marko\Routing\Middleware\MiddlewareInterface;
 /**
  * Resolves global HTTP middleware from module declarations.
  *
- * Collects globalMiddleware entries from all loaded modules, sorts by priority
- * (ascending = runs earlier), and deduplicates using source priority
- * (app > modules > vendor).
+ * Walks modules in the order supplied (DependencyResolver topologically sorts
+ * them via composer require + sequence: { after, before } before they reach
+ * here) and collects each module's globalMiddleware class-strings in
+ * declaration order. Each class is emitted once; a higher-source declaration
+ * (app > modules > vendor) takes the position of the same class declared by a
+ * lower-source module.
  */
 class GlobalMiddlewareResolver
 {
@@ -22,110 +25,87 @@ class GlobalMiddlewareResolver
         'app' => 2,
     ];
 
-    private const int DEFAULT_PRIORITY = 100;
-
     /**
      * Resolve global middleware from module declarations.
      *
-     * @param array<ModuleManifest> $modules
+     * @param array<ModuleManifest> $modules Modules in load order (already topologically sorted).
      * @return array<class-string<MiddlewareInterface>>
-     * @throws ModuleException When a module-declared class does not exist, is missing the class key, or does not implement MiddlewareInterface
+     * @throws ModuleException When a declared entry is not a class-string, the class does not exist, or it does not implement MiddlewareInterface.
      */
     public function resolve(array $modules): array
     {
-        // Candidate map: class => [priority, sourcePriority]
-        // We keep the highest-source-priority entry; within same source, the lowest priority value.
-        /** @var array<string, array{priority: int, sourcePriority: int}> $candidates */
-        $candidates = [];
+        /** @var array<string, int> $sourceByClass */
+        $sourceByClass = [];
+
+        /** @var array<int, string> $order */
+        $order = [];
 
         foreach ($modules as $module) {
-            $sourcePriority = self::SOURCE_PRIORITY[$module->source] ?? 0;
+            $moduleSource = self::SOURCE_PRIORITY[$module->source] ?? 0;
 
             foreach ($module->globalMiddleware as $entry) {
-                [$class, $priority] = $this->parseEntry($entry, $module->name);
+                $class = $this->parseEntry($entry, $module->name);
+                $this->validateClass($class, $module->name);
 
-                if (!class_exists($class)) {
-                    throw ModuleException::invalidMiddlewareClass(
-                        moduleName: $module->name,
-                        className: $class,
-                        reason: "Class '$class' does not exist",
-                    );
+                if (!isset($sourceByClass[$class])) {
+                    $sourceByClass[$class] = $moduleSource;
+                    $order[] = $class;
+                    continue;
                 }
 
-                if (!is_a($class, MiddlewareInterface::class, true)) {
-                    throw ModuleException::invalidMiddlewareClass(
-                        moduleName: $module->name,
-                        className: $class,
-                        reason: "Class '$class' does not implement " . MiddlewareInterface::class,
-                    );
+                if ($moduleSource > $sourceByClass[$class]) {
+                    // Higher source wins on position: drop the prior occurrence and re-append.
+                    $sourceByClass[$class] = $moduleSource;
+                    $order = array_values(array_filter(
+                        $order,
+                        fn (string $existing): bool => $existing !== $class,
+                    ));
+                    $order[] = $class;
                 }
-
-                $this->addCandidate($candidates, $class, $priority, $sourcePriority);
             }
         }
 
-        // Sort by priority ascending
-        uasort($candidates, fn (array $a, array $b) => $a['priority'] <=> $b['priority']);
-
-        return array_keys($candidates);
+        return $order;
     }
 
     /**
-     * Parse a single globalMiddleware entry (flat string or array form).
-     *
-     * @param mixed $entry
-     * @return array{0: string, 1: int}
-     * @throws ModuleException When entry is invalid
+     * @throws ModuleException
      */
     private function parseEntry(
         mixed $entry,
         string $moduleName,
-    ): array {
-        if (is_string($entry)) {
-            return [$entry, self::DEFAULT_PRIORITY];
-        }
-
-        if (!is_array($entry) || !isset($entry['class'])) {
+    ): string {
+        if (!is_string($entry)) {
             throw ModuleException::invalidMiddlewareEntry(
                 moduleName: $moduleName,
-                reason: "Each globalMiddleware entry must be a class-string or an array with a 'class' key",
+                reason: 'Each globalMiddleware entry must be a class-string',
             );
         }
 
-        return [$entry['class'], $entry['priority'] ?? self::DEFAULT_PRIORITY];
+        return $entry;
     }
 
     /**
-     * Add or update a candidate entry applying deduplication rules.
-     *
-     * Rules:
-     * - Higher source priority always wins (app > modules > vendor)
-     * - Within the same source, keep the lowest priority value (runs earliest)
-     *
-     * @param array<string, array{priority: int, sourcePriority: int}> $candidates
+     * @throws ModuleException
      */
-    private function addCandidate(
-        array &$candidates,
+    private function validateClass(
         string $class,
-        int $priority,
-        int $sourcePriority,
+        string $moduleName,
     ): void {
-        if (!isset($candidates[$class])) {
-            $candidates[$class] = ['priority' => $priority, 'sourcePriority' => $sourcePriority];
-            return;
+        if (!class_exists($class)) {
+            throw ModuleException::invalidMiddlewareClass(
+                moduleName: $moduleName,
+                className: $class,
+                reason: "Class '$class' does not exist",
+            );
         }
 
-        $existing = $candidates[$class];
-
-        if ($sourcePriority > $existing['sourcePriority']) {
-            // Higher source priority wins unconditionally
-            $candidates[$class] = ['priority' => $priority, 'sourcePriority' => $sourcePriority];
-            return;
-        }
-
-        if ($sourcePriority === $existing['sourcePriority'] && $priority < $existing['priority']) {
-            // Same source: keep the lower priority value (runs earlier)
-            $candidates[$class]['priority'] = $priority;
+        if (!is_a($class, MiddlewareInterface::class, true)) {
+            throw ModuleException::invalidMiddlewareClass(
+                moduleName: $moduleName,
+                className: $class,
+                reason: "Class '$class' does not implement " . MiddlewareInterface::class,
+            );
         }
     }
 }

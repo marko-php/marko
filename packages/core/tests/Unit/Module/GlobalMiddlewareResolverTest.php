@@ -43,10 +43,10 @@ function makeModuleManifest(
 }
 
 // ---------------------------------------------------------------------------
-// Requirement 1: flat list of class strings
+// Schema: class-string entries only (no priority numbers)
 // ---------------------------------------------------------------------------
 
-it('accepts globalMiddleware as a flat list of class strings in module.php', function (): void {
+it('accepts globalMiddleware as a flat list of class strings', function (): void {
     makeMiddlewareClass('Acme\Mw\AlphaMiddleware');
     makeMiddlewareClass('Acme\Mw\BetaMiddleware');
 
@@ -59,351 +59,259 @@ it('accepts globalMiddleware as a flat list of class strings in module.php', fun
         ],
     );
 
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module]);
+    $result = (new GlobalMiddlewareResolver())->resolve([$module]);
 
-    expect($result)
-        ->toContain('Acme\Mw\AlphaMiddleware')
-        ->toContain('Acme\Mw\BetaMiddleware');
+    expect($result)->toBe([
+        'Acme\Mw\AlphaMiddleware',
+        'Acme\Mw\BetaMiddleware',
+    ]);
 });
 
-// ---------------------------------------------------------------------------
-// Requirement 2: array form with class key and priority
-// ---------------------------------------------------------------------------
-
-it('accepts globalMiddleware entries as array with class key and priority', function (): void {
-    makeMiddlewareClass('Acme\Mw\GammaMiddleware');
+it('rejects array-form entries with a helpful exception', function (): void {
+    makeMiddlewareClass('Acme\Mw\ArrayFormMiddleware');
 
     $module = makeModuleManifest(
         name: 'acme/test',
         source: 'vendor',
         globalMiddleware: [
-            ['class' => 'Acme\Mw\GammaMiddleware', 'priority' => 25],
+            ['class' => 'Acme\Mw\ArrayFormMiddleware', 'priority' => 10],
         ],
     );
 
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module]);
-
-    expect($result)->toContain('Acme\Mw\GammaMiddleware');
+    expect(fn () => (new GlobalMiddlewareResolver())->resolve([$module]))
+        ->toThrow(
+            ModuleException::class,
+            "Invalid globalMiddleware entry in module 'acme/test'",
+        );
 });
 
 // ---------------------------------------------------------------------------
-// Requirement 3: default priority 100 for flat entries
+// Ordering: module load order, then declaration order within a module
 // ---------------------------------------------------------------------------
 
-it('defaults missing priority to 100', function (): void {
-    makeMiddlewareClass('Acme\Mw\DeltaMiddleware');
-    makeMiddlewareClass('Acme\Mw\EpsilonMiddleware');
-
-    // DeltaMiddleware is flat (default priority 100)
-    // EpsilonMiddleware has priority 50 — should come first
-    $module = makeModuleManifest(
-        name: 'acme/test',
-        source: 'vendor',
-        globalMiddleware: [
-            'Acme\Mw\DeltaMiddleware',
-            ['class' => 'Acme\Mw\EpsilonMiddleware', 'priority' => 50],
-        ],
-    );
-
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module]);
-
-    $deltaIndex = array_search('Acme\Mw\DeltaMiddleware', $result);
-    $epsilonIndex = array_search('Acme\Mw\EpsilonMiddleware', $result);
-
-    // EpsilonMiddleware (priority 50) should come before DeltaMiddleware (priority 100)
-    expect($epsilonIndex)->toBeLessThan($deltaIndex);
-});
-
-// ---------------------------------------------------------------------------
-// Requirement 4: merges globalMiddleware from multiple modules
-// ---------------------------------------------------------------------------
-
-it('merges globalMiddleware declarations from multiple modules', function (): void {
-    makeMiddlewareClass('Acme\Mw\ZetaMiddleware');
-    makeMiddlewareClass('Acme\Mw\OmegaMiddleware');
-
-    $moduleA = makeModuleManifest(
-        name: 'acme/mod-a',
-        source: 'vendor',
-        globalMiddleware: ['Acme\Mw\ZetaMiddleware'],
-    );
-
-    $moduleB = makeModuleManifest(
-        name: 'acme/mod-b',
-        source: 'vendor',
-        globalMiddleware: ['Acme\Mw\OmegaMiddleware'],
-    );
-
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$moduleA, $moduleB]);
-
-    expect($result)
-        ->toContain('Acme\Mw\ZetaMiddleware')
-        ->toContain('Acme\Mw\OmegaMiddleware');
-});
-
-// ---------------------------------------------------------------------------
-// Requirement 5: sorts merged result by priority ascending
-// ---------------------------------------------------------------------------
-
-it('sorts merged globalMiddleware by priority ascending', function (): void {
-    makeMiddlewareClass('Acme\Mw\EtaMiddleware');    // priority 30
-    makeMiddlewareClass('Acme\Mw\ThetaMiddleware');  // priority 10
-    makeMiddlewareClass('Acme\Mw\IotaMiddleware');   // priority 20
-
-    $moduleA = makeModuleManifest(
-        name: 'acme/mod-a',
-        source: 'vendor',
-        globalMiddleware: [
-            ['class' => 'Acme\Mw\EtaMiddleware', 'priority' => 30],
-            ['class' => 'Acme\Mw\IotaMiddleware', 'priority' => 20],
-        ],
-    );
-
-    $moduleB = makeModuleManifest(
-        name: 'acme/mod-b',
-        source: 'vendor',
-        globalMiddleware: [
-            ['class' => 'Acme\Mw\ThetaMiddleware', 'priority' => 10],
-        ],
-    );
-
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$moduleA, $moduleB]);
-
-    $thetaIndex = array_search('Acme\Mw\ThetaMiddleware', $result);
-    $iotaIndex = array_search('Acme\Mw\IotaMiddleware', $result);
-    $etaIndex = array_search('Acme\Mw\EtaMiddleware', $result);
-
-    expect($thetaIndex)->toBeLessThan($iotaIndex)
-        ->and($iotaIndex)->toBeLessThan($etaIndex);
-});
-
-// ---------------------------------------------------------------------------
-// Requirement 6: deduplication — app > modules > vendor source priority
-// ---------------------------------------------------------------------------
-
-it('deduplicates globalMiddleware entries preferring app over modules over vendor source', function (): void {
-    makeMiddlewareClass('Acme\Mw\KappaMiddleware');
-
-    $vendorModule = makeModuleManifest(
-        name: 'acme/vendor-mod',
-        source: 'vendor',
-        globalMiddleware: [
-            ['class' => 'Acme\Mw\KappaMiddleware', 'priority' => 10],
-        ],
-    );
-
-    $appModule = makeModuleManifest(
-        name: 'acme/app-mod',
-        source: 'app',
-        globalMiddleware: [
-            ['class' => 'Acme\Mw\KappaMiddleware', 'priority' => 50],
-        ],
-    );
-
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$vendorModule, $appModule]);
-
-    // Should appear only once — app source wins
-    $count = count(array_filter($result, fn ($c) => $c === 'Acme\Mw\KappaMiddleware'));
-    expect($count)->toBe(1);
-    // App entry has priority 50 — but app source always wins regardless
-    expect($result)->toContain('Acme\Mw\KappaMiddleware');
-});
-
-// ---------------------------------------------------------------------------
-// Requirement 7: within same source, keep lowest priority value
-// ---------------------------------------------------------------------------
-
-it('deduplicates globalMiddleware within the same source by keeping the lowest priority value', function (): void {
-    makeMiddlewareClass('Acme\Mw\LambdaMiddleware');
-    makeMiddlewareClass('Acme\Mw\MuMiddleware');
-
-    $module1 = makeModuleManifest(
-        name: 'acme/mod-a',
-        source: 'vendor',
-        globalMiddleware: [
-            ['class' => 'Acme\Mw\LambdaMiddleware', 'priority' => 80],
-            ['class' => 'Acme\Mw\MuMiddleware', 'priority' => 5],
-        ],
-    );
-
-    $module2 = makeModuleManifest(
-        name: 'acme/mod-b',
-        source: 'vendor',
-        globalMiddleware: [
-            ['class' => 'Acme\Mw\LambdaMiddleware', 'priority' => 40],  // lower → should win
-        ],
-    );
-
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module1, $module2]);
-
-    // LambdaMiddleware should appear once, with priority 40 (comes before MuMiddleware priority 5? no)
-    $count = count(array_filter($result, fn ($c) => $c === 'Acme\Mw\LambdaMiddleware'));
-    expect($count)->toBe(1);
-
-    $lambdaIndex = array_search('Acme\Mw\LambdaMiddleware', $result);
-    $muIndex = array_search('Acme\Mw\MuMiddleware', $result);
-
-    // MuMiddleware has priority 5, LambdaMiddleware's kept priority is 40 → mu comes first
-    expect($muIndex)->toBeLessThan($lambdaIndex);
-});
-
-// ---------------------------------------------------------------------------
-// Requirement 8: built-in priorities
-// ---------------------------------------------------------------------------
-
-it('assigns priority 10 to PageCacheMiddleware 20 to SessionMiddleware 30 to LayoutMiddleware as module declarations', function (): void {
-    makeMiddlewareClass('Marko\PageCache\Middleware\PageCacheMiddleware');
-    makeMiddlewareClass('Marko\Session\Middleware\SessionMiddleware');
-    makeMiddlewareClass('Marko\Layout\Middleware\LayoutMiddleware');
-
-    $pageCacheModule = makeModuleManifest(
-        name: 'marko/page-cache',
-        source: 'vendor',
-        globalMiddleware: [['class' => 'Marko\PageCache\Middleware\PageCacheMiddleware', 'priority' => 10]],
-    );
-
-    $sessionModule = makeModuleManifest(
-        name: 'marko/session',
-        source: 'vendor',
-        globalMiddleware: [['class' => 'Marko\Session\Middleware\SessionMiddleware', 'priority' => 20]],
-    );
-
-    $layoutModule = makeModuleManifest(
-        name: 'marko/layout',
-        source: 'vendor',
-        globalMiddleware: [['class' => 'Marko\Layout\Middleware\LayoutMiddleware', 'priority' => 30]],
-    );
-
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$pageCacheModule, $sessionModule, $layoutModule]);
-
-    $pageCacheIndex = array_search('Marko\PageCache\Middleware\PageCacheMiddleware', $result);
-    $sessionIndex = array_search('Marko\Session\Middleware\SessionMiddleware', $result);
-    $layoutIndex = array_search('Marko\Layout\Middleware\LayoutMiddleware', $result);
-
-    // All should be present and ordered: PageCache (10) < Session (20) < Layout (30)
-    expect($pageCacheIndex)->not->toBeFalse()
-        ->and($sessionIndex)->not->toBeFalse()
-        ->and($layoutIndex)->not->toBeFalse()
-        ->and($pageCacheIndex)->toBeLessThan($sessionIndex)
-        ->and($sessionIndex)->toBeLessThan($layoutIndex);
-});
-
-// ---------------------------------------------------------------------------
-// Requirement 9: returns class-string array in priority order
-// ---------------------------------------------------------------------------
-
-it('returns class-string array from discoverGlobalMiddleware in priority order', function (): void {
-    makeMiddlewareClass('Acme\Mw\NuMiddleware');
-    makeMiddlewareClass('Acme\Mw\XiMiddleware');
+it('preserves declaration order within a single module', function (): void {
+    makeMiddlewareClass('Acme\Mw\FirstMiddleware');
+    makeMiddlewareClass('Acme\Mw\SecondMiddleware');
+    makeMiddlewareClass('Acme\Mw\ThirdMiddleware');
 
     $module = makeModuleManifest(
         name: 'acme/test',
         source: 'vendor',
         globalMiddleware: [
-            ['class' => 'Acme\Mw\NuMiddleware', 'priority' => 200],
-            ['class' => 'Acme\Mw\XiMiddleware', 'priority' => 5],
+            'Acme\Mw\FirstMiddleware',
+            'Acme\Mw\SecondMiddleware',
+            'Acme\Mw\ThirdMiddleware',
         ],
     );
 
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module]);
+    $result = (new GlobalMiddlewareResolver())->resolve([$module]);
 
-    expect($result)->toBeArray();
-    foreach ($result as $entry) {
-        expect($entry)->toBeString();
-    }
+    expect($result)->toBe([
+        'Acme\Mw\FirstMiddleware',
+        'Acme\Mw\SecondMiddleware',
+        'Acme\Mw\ThirdMiddleware',
+    ]);
+});
 
-    $nuIndex = array_search('Acme\Mw\NuMiddleware', $result);
-    $xiIndex = array_search('Acme\Mw\XiMiddleware', $result);
+it('preserves module load order across modules', function (): void {
+    // Modules arrive already topologically sorted by DependencyResolver.
+    // The resolver must preserve that order, not re-sort by anything else.
+    makeMiddlewareClass('Acme\Mw\PageCacheMiddleware');
+    makeMiddlewareClass('Acme\Mw\SessionMiddleware');
+    makeMiddlewareClass('Acme\Mw\LayoutMiddleware');
 
-    // XiMiddleware (priority 5) should come before NuMiddleware (priority 200)
-    expect($xiIndex)->toBeLessThan($nuIndex);
+    $modules = [
+        makeModuleManifest(
+            name: 'acme/page-cache',
+            source: 'vendor',
+            globalMiddleware: ['Acme\Mw\PageCacheMiddleware'],
+        ),
+        makeModuleManifest(
+            name: 'acme/session',
+            source: 'vendor',
+            globalMiddleware: ['Acme\Mw\SessionMiddleware'],
+        ),
+        makeModuleManifest(
+            name: 'acme/layout',
+            source: 'vendor',
+            globalMiddleware: ['Acme\Mw\LayoutMiddleware'],
+        ),
+    ];
+
+    $result = (new GlobalMiddlewareResolver())->resolve($modules);
+
+    expect($result)->toBe([
+        'Acme\Mw\PageCacheMiddleware',
+        'Acme\Mw\SessionMiddleware',
+        'Acme\Mw\LayoutMiddleware',
+    ]);
+});
+
+it('merges globalMiddleware from multiple modules in module order', function (): void {
+    makeMiddlewareClass('Acme\Mw\ModuleAFirst');
+    makeMiddlewareClass('Acme\Mw\ModuleASecond');
+    makeMiddlewareClass('Acme\Mw\ModuleBOnly');
+
+    $modules = [
+        makeModuleManifest(
+            name: 'acme/a',
+            source: 'vendor',
+            globalMiddleware: ['Acme\Mw\ModuleAFirst', 'Acme\Mw\ModuleASecond'],
+        ),
+        makeModuleManifest(
+            name: 'acme/b',
+            source: 'vendor',
+            globalMiddleware: ['Acme\Mw\ModuleBOnly'],
+        ),
+    ];
+
+    $result = (new GlobalMiddlewareResolver())->resolve($modules);
+
+    expect($result)->toBe([
+        'Acme\Mw\ModuleAFirst',
+        'Acme\Mw\ModuleASecond',
+        'Acme\Mw\ModuleBOnly',
+    ]);
 });
 
 // ---------------------------------------------------------------------------
-// Requirement 10: throws exception when module-declared class does not exist
+// Deduplication: app > modules > vendor
 // ---------------------------------------------------------------------------
 
-it('throws a clear exception with suggestion when a module-declared class does not exist', function (): void {
+it('deduplicates by class string, emitting each middleware once', function (): void {
+    makeMiddlewareClass('Acme\Mw\DupedMiddleware');
+
+    $modules = [
+        makeModuleManifest(
+            name: 'acme/first',
+            source: 'vendor',
+            globalMiddleware: ['Acme\Mw\DupedMiddleware'],
+        ),
+        makeModuleManifest(
+            name: 'acme/second',
+            source: 'vendor',
+            globalMiddleware: ['Acme\Mw\DupedMiddleware'],
+        ),
+    ];
+
+    $result = (new GlobalMiddlewareResolver())->resolve($modules);
+
+    expect($result)->toBe(['Acme\Mw\DupedMiddleware']);
+});
+
+it('lets a higher-source declaration override the position of a lower-source one', function (): void {
+    // vendor declares A then B. App redeclares A after B — app wins on
+    // position, so the final order becomes [B, A].
+    makeMiddlewareClass('Acme\Mw\OverrideA');
+    makeMiddlewareClass('Acme\Mw\OverrideB');
+
+    $modules = [
+        makeModuleManifest(
+            name: 'acme/vendor-pkg',
+            source: 'vendor',
+            globalMiddleware: ['Acme\Mw\OverrideA', 'Acme\Mw\OverrideB'],
+        ),
+        makeModuleManifest(
+            name: 'acme/app-module',
+            source: 'app',
+            globalMiddleware: ['Acme\Mw\OverrideA'],
+        ),
+    ];
+
+    $result = (new GlobalMiddlewareResolver())->resolve($modules);
+
+    expect($result)->toBe([
+        'Acme\Mw\OverrideB',
+        'Acme\Mw\OverrideA',
+    ]);
+});
+
+it('does not let a lower-source declaration override a higher-source position', function (): void {
+    makeMiddlewareClass('Acme\Mw\KeepAppPosition');
+    makeMiddlewareClass('Acme\Mw\AfterIt');
+
+    $modules = [
+        makeModuleManifest(
+            name: 'acme/app-module',
+            source: 'app',
+            globalMiddleware: ['Acme\Mw\KeepAppPosition'],
+        ),
+        makeModuleManifest(
+            name: 'acme/vendor-pkg',
+            source: 'vendor',
+            globalMiddleware: ['Acme\Mw\KeepAppPosition', 'Acme\Mw\AfterIt'],
+        ),
+    ];
+
+    $result = (new GlobalMiddlewareResolver())->resolve($modules);
+
+    expect($result)->toBe([
+        'Acme\Mw\KeepAppPosition',
+        'Acme\Mw\AfterIt',
+    ]);
+});
+
+// ---------------------------------------------------------------------------
+// Validation: loud errors for bad declarations
+// ---------------------------------------------------------------------------
+
+it('throws a clear exception when a declared class does not exist', function (): void {
     $module = makeModuleManifest(
-        name: 'acme/bad',
+        name: 'acme/test',
         source: 'vendor',
-        globalMiddleware: ['Acme\NonExistent\GhostMiddleware'],
+        globalMiddleware: ['Acme\Mw\NonExistentMiddleware'],
     );
 
-    $resolver = new GlobalMiddlewareResolver();
-
-    expect(fn () => $resolver->resolve([$module]))
-        ->toThrow(ModuleException::class);
+    expect(fn () => (new GlobalMiddlewareResolver())->resolve([$module]))
+        ->toThrow(
+            ModuleException::class,
+            "Class 'Acme\\Mw\\NonExistentMiddleware' does not exist",
+        );
 });
 
-// ---------------------------------------------------------------------------
-// Requirement 11: throws exception when array-form entry is missing class key
-// ---------------------------------------------------------------------------
-
-it('throws a clear exception with suggestion when an array-form entry is missing the class key', function (): void {
-    $module = makeModuleManifest(
-        name: 'acme/bad',
-        source: 'vendor',
-        globalMiddleware: [['priority' => 10]],  // missing 'class' key
-    );
-
-    $resolver = new GlobalMiddlewareResolver();
-
-    expect(fn () => $resolver->resolve([$module]))
-        ->toThrow(ModuleException::class);
-});
-
-// ---------------------------------------------------------------------------
-// Requirement 12: throws exception when declared class doesn't implement MiddlewareInterface
-// ---------------------------------------------------------------------------
-
-it('throws a clear exception with suggestion when a declared class does not implement MiddlewareInterface', function (): void {
-    // Create a class that exists but doesn't implement MiddlewareInterface
-    if (!class_exists('Acme\Mw\NotAMiddleware')) {
-        eval('namespace Acme\Mw; class NotAMiddleware {}');
-    }
+it('throws a clear exception when a declared class does not implement MiddlewareInterface', function (): void {
+    eval('namespace Acme\\Mw; class NotAMiddleware {}');
 
     $module = makeModuleManifest(
-        name: 'acme/bad',
+        name: 'acme/test',
         source: 'vendor',
         globalMiddleware: ['Acme\Mw\NotAMiddleware'],
     );
 
-    $resolver = new GlobalMiddlewareResolver();
+    expect(fn () => (new GlobalMiddlewareResolver())->resolve([$module]))
+        ->toThrow(
+            ModuleException::class,
+            'does not implement Marko\\Routing\\Middleware\\MiddlewareInterface',
+        );
+});
 
-    expect(fn () => $resolver->resolve([$module]))
-        ->toThrow(ModuleException::class);
+it('throws a clear exception when an entry is not a string', function (): void {
+    $module = makeModuleManifest(
+        name: 'acme/test',
+        source: 'vendor',
+        globalMiddleware: [123],
+    );
+
+    expect(fn () => (new GlobalMiddlewareResolver())->resolve([$module]))
+        ->toThrow(
+            ModuleException::class,
+            "Invalid globalMiddleware entry in module 'acme/test'",
+        );
 });
 
 // ---------------------------------------------------------------------------
-// Requirement 13: returns empty array when modules have no globalMiddleware
+// Empty cases
 // ---------------------------------------------------------------------------
 
 it('returns empty array when modules exist but none declare globalMiddleware', function (): void {
-    $module = makeModuleManifest(name: 'acme/no-mw', source: 'vendor');
+    $modules = [
+        makeModuleManifest(name: 'acme/empty-one', source: 'vendor'),
+        makeModuleManifest(name: 'acme/empty-two', source: 'modules'),
+    ];
 
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([$module]);
-
-    expect($result)->toBe([]);
+    expect((new GlobalMiddlewareResolver())->resolve($modules))->toBe([]);
 });
 
-// ---------------------------------------------------------------------------
-// Requirement 14: returns empty array when no modules are loaded
-// ---------------------------------------------------------------------------
-
 it('returns empty array when no modules are loaded', function (): void {
-    $resolver = new GlobalMiddlewareResolver();
-    $result = $resolver->resolve([]);
-
-    expect($result)->toBe([]);
+    expect((new GlobalMiddlewareResolver())->resolve([]))->toBe([]);
 });

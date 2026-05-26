@@ -11,6 +11,11 @@ use Marko\Layout\LayoutResolver;
 use Marko\Layout\Middleware\LayoutMiddleware;
 
 return [
+    'sequence' => [
+        // Layout middleware reads session state, so session must run first.
+        // Soft ordering — only enforced when marko/session is also installed.
+        'after' => ['marko/session'],
+    ],
     'bindings' => [
         ComponentCollectorInterface::class => DiscoveringComponentCollector::class,
         LayoutProcessorInterface::class => LayoutProcessor::class,
@@ -20,6 +25,6 @@ return [
         LayoutResolver::class => LayoutResolver::class,
     ],
     'globalMiddleware' => [
-        ['class' => LayoutMiddleware::class, 'priority' => 30],
+        LayoutMiddleware::class,
     ],
 ];

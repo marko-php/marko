@@ -17,6 +17,6 @@ return [
         $validator->validate($modules->all());
     },
     'globalMiddleware' => [
-        ['class' => PageCacheMiddleware::class, 'priority' => 10],
+        PageCacheMiddleware::class,
     ],
 ];
