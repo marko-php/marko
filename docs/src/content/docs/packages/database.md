@@ -873,6 +873,81 @@ marko db:seed
 4. **No context switching** — Everything about your model in one place
 5. **Reduced cognitive load** — One file to understand, not entity + migration + mapping
 
+## Wire-compatible database variants
+
+Some databases speak an existing wire protocol (PostgreSQL or MySQL) but require different SQL dialect logic. CockroachDB, for example, accepts PostgreSQL connections but has its own DDL, introspection queries, and query-builder behaviour. A variant package can reuse the parent driver's connection and override only the four dialect interfaces.
+
+### The 5-binding split
+
+Every driver package binds five interfaces. They fall into two categories:
+
+| Interface | Category | Role |
+|-----------|----------|------|
+| `ConnectionInterface` | **Wire** | PDO connection, DSN format, PostgreSQL/MySQL protocol |
+| `SqlGeneratorInterface` | Dialect | DDL generation for schema diffs |
+| `IntrospectorInterface` | Dialect | Reading existing schema from `information_schema` etc. |
+| `QueryBuilderInterface` | Dialect | SELECT/INSERT/UPDATE/DELETE SQL generation |
+| `QueryBuilderFactoryInterface` | Dialect | Constructs query builder instances |
+
+A wire-compatible variant inherits the parent's `ConnectionInterface` binding unchanged and overrides the four dialect interfaces.
+
+### CockroachDB example
+
+The following shows the complete wiring for a hypothetical `marko/database-cockroachdb` package. The class names are illustrative stubs — no CockroachDB driver is officially supported.
+
+**`composer.json`** — require the parent pgsql package (which transitively requires `marko/database`):
+
+```json title="composer.json"
+{
+    "name": "marko/database-cockroachdb",
+    "description": "CockroachDB variant for Marko (PostgreSQL wire protocol)",
+    "type": "marko-module",
+    "require": {
+        "marko/database-pgsql": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Database\\CockroachDb\\": "src/"
+        }
+    }
+}
+```
+
+**`module.php`** — no static `bindings` for the dialect interfaces; a `boot` closure rebinds them after `marko/database-pgsql` has registered its own static bindings:
+
+```php title="module.php"
+<?php
+
+declare(strict_types=1);
+
+use Marko\Core\Container\Container;
+use Marko\Database\Diff\SqlGeneratorInterface;
+use Marko\Database\Introspection\IntrospectorInterface;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
+use Marko\Database\Query\QueryBuilderInterface;
+use Marko\Database\CockroachDb\Diff\CockroachDbGenerator;
+use Marko\Database\CockroachDb\Introspection\CockroachDbIntrospector;
+use Marko\Database\CockroachDb\Query\CockroachDbQueryBuilder;
+use Marko\Database\CockroachDb\Query\CockroachDbQueryBuilderFactory;
+
+// ConnectionInterface is intentionally omitted: CockroachDB speaks the
+// PostgreSQL wire protocol, so PgSqlConnection from marko/database-pgsql
+// connects and authenticates without modification.
+
+return [
+    'boot' => function (Container $container): void {
+        $container->bind(SqlGeneratorInterface::class, CockroachDbGenerator::class);
+        $container->bind(IntrospectorInterface::class, CockroachDbIntrospector::class);
+        $container->bind(QueryBuilderInterface::class, CockroachDbQueryBuilder::class);
+        $container->bind(QueryBuilderFactoryInterface::class, CockroachDbQueryBuilderFactory::class);
+    },
+];
+```
+
+Because `marko/database-cockroachdb` requires `marko/database-pgsql` in its `composer.json`, Marko automatically boots the variant after the parent — no `sequence` configuration is needed.
+
+For the underlying `boot` callback mechanism, see [Overriding another module's bindings](/docs/concepts/dependency-injection/#overriding-another-modules-bindings).
+
 ## Available Drivers
 
 - [marko/database-pgsql](/docs/packages/database-pgsql/) — PostgreSQL driver

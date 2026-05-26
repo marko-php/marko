@@ -26,14 +26,14 @@ describe('PgSqlQueryBuilder selectRaw', function (): void {
         function (): void {
             $connection = new MockConnection();
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             $builder
                 ->table('users')
                 ->selectRaw("'hello' AS greeting")
                 ->get();
-    
+
             expect($connection->lastQuerySql)->toBe("SELECT *, 'hello' AS greeting FROM \"users\"");
-        }
+        },
     );
 
     it(
@@ -41,15 +41,15 @@ describe('PgSqlQueryBuilder selectRaw', function (): void {
         function (): void {
             $connection = new MockConnection();
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             $builder
                 ->table('users')
                 ->selectRaw("'first' AS one")
                 ->selectRaw("'second' AS two")
                 ->get();
-    
+
             expect($connection->lastQuerySql)->toBe("SELECT *, 'first' AS one, 'second' AS two FROM \"users\"");
-        }
+        },
     );
 
     it('selectRaw together with select() emits select() columns first then selectRaw expressions', function (): void {
@@ -70,15 +70,15 @@ describe('PgSqlQueryBuilder selectRaw', function (): void {
         function (): void {
             $connection = new MockConnection();
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             $builder
                 ->table('users')
                 ->selectRaw('? AS val', [42])
                 ->where('id', '=', 1)
                 ->get();
-    
+
             expect($connection->lastQueryBindings)->toBe([42, 1]);
-        }
+        },
     );
 
     it('selectRaw bindings from multiple calls concatenate in call order', function (): void {
@@ -99,23 +99,23 @@ describe('PgSqlQueryBuilder selectRaw', function (): void {
         function (): void {
             $connection = new MockConnection();
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             $builder
                 ->table('users')
                 ->selectRaw('? AS val', [42])
                 ->where('id', '=', 1);
-    
+
             $builder->get();
             $firstSql = $connection->lastQuerySql;
             $firstBindings = $connection->lastQueryBindings;
-    
+
             $builder->get();
             $secondSql = $connection->lastQuerySql;
             $secondBindings = $connection->lastQueryBindings;
-    
+
             expect($firstSql)->toBe($secondSql)
                 ->and($firstBindings)->toBe($secondBindings);
-        }
+        },
     );
 
     it('selectRaw throws InvalidColumnException when the expression contains a semicolon', function (): void {
@@ -139,10 +139,10 @@ describe('PgSqlQueryBuilder selectRaw', function (): void {
         function (): void {
             $connection = new MockConnection();
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             expect(fn () => $builder->selectRaw('/* comment */'))
                 ->toThrow(InvalidColumnException::class);
-        }
+        },
     );
 
     it('selectRaw throws InvalidColumnException when the expression contains a backtick', function (): void {
@@ -207,15 +207,15 @@ describe('PgSqlQueryBuilder whereRaw', function (): void {
         function (): void {
             $connection = new MockConnection();
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             $builder
                 ->table('users')
                 ->where('id', '=', 1)
                 ->whereRaw('LENGTH(name) > 3')
                 ->get();
-    
+
             expect($connection->lastQuerySql)->toBe('SELECT * FROM "users" WHERE "id" = ? AND LENGTH(name) > 3');
-        }
+        },
     );
 
     it(
@@ -223,15 +223,15 @@ describe('PgSqlQueryBuilder whereRaw', function (): void {
         function (): void {
             $connection = new MockConnection();
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             $builder
                 ->table('users')
                 ->where('status', '=', 'active')
                 ->whereRaw('LENGTH(name) > ?', [3])
                 ->get();
-    
+
             expect($connection->lastQueryBindings)->toBe(['active', 3]);
-        }
+        },
     );
 
     it('whereRaw bindings from multiple calls concatenate in call order', function (): void {
@@ -268,10 +268,10 @@ describe('PgSqlQueryBuilder whereRaw', function (): void {
         function (): void {
             $connection = new MockConnection();
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             expect(fn () => $builder->whereRaw('/* comment */'))
                 ->toThrow(InvalidColumnException::class);
-        }
+        },
     );
 
     it('whereRaw throws InvalidColumnException when the expression contains a backtick', function (): void {
@@ -324,15 +324,15 @@ describe('PgSqlQueryBuilder selectRaw + whereRaw combined', function (): void {
         function (): void {
             $connection = new MockConnection();
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             $builder
                 ->table('users')
                 ->selectRaw('? AS sel_val', [10])
                 ->whereRaw('LENGTH(name) > ?', [3])
                 ->get();
-    
+
             expect($connection->lastQueryBindings)->toBe([10, 3]);
-        }
+        },
     );
 
     it(
@@ -340,23 +340,23 @@ describe('PgSqlQueryBuilder selectRaw + whereRaw combined', function (): void {
         function (): void {
             $leftConnection = new MockConnection();
             $rightConnection = new MockConnection();
-    
+
             $left = new PgSqlQueryBuilder($leftConnection);
             $left->table('users')->select('name');
-    
+
             $right = new PgSqlQueryBuilder($rightConnection);
             $right->table('admins')
                 ->select('name')
                 ->selectRaw('? AS extra', [99])
                 ->whereRaw('LENGTH(name) > ?', [2]);
-    
+
             $left->union($right)->get();
-    
+
             expect($leftConnection->lastQuerySql)->toBe(
                 '(SELECT "name" FROM "users") UNION (SELECT "name", ? AS extra FROM "admins" WHERE LENGTH(name) > ?)',
             )
                 ->and($leftConnection->lastQueryBindings)->toBe([99, 2]);
-        }
+        },
     );
 });
 
