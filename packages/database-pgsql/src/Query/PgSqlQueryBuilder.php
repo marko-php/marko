@@ -128,7 +128,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         string $expression,
         array $bindings = [],
     ): static {
-        $this->assertNoDangerousPatterns($expression);
+        IdentifierValidator::assertNoDangerousPatterns($expression);
         $this->rawSelects[] = $expression;
         array_push($this->rawSelectBindings, ...$bindings);
 
@@ -287,7 +287,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         string $expression,
         array $bindings = [],
     ): static {
-        $this->assertNoDangerousPatterns($expression);
+        IdentifierValidator::assertNoDangerousPatterns($expression);
         $this->rawWheres[] = ['expression' => $expression, 'bindings' => $bindings];
 
         return $this;
@@ -314,14 +314,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         string $expression,
         array $bindings = [],
     ): static {
-        if (
-            str_contains($expression, ';')
-            || str_contains($expression, '--')
-            || str_contains($expression, '/*')
-            || str_contains($expression, '*/')
-        ) {
-            throw InvalidColumnException::invalidColumn($expression);
-        }
+        IdentifierValidator::assertNoDangerousPatterns($expression);
 
         $this->havingClause = [
             'expression' => $expression,
@@ -404,6 +397,8 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         string $expression,
         string $direction = 'ASC',
     ): static {
+        IdentifierValidator::assertNoDangerousPatterns($expression);
+
         $direction = strtoupper($direction);
         if (!in_array($direction, ['ASC', 'DESC'], true)) {
             $direction = 'ASC';
@@ -719,22 +714,6 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         }
 
         return $compiledColumn;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    private function assertNoDangerousPatterns(string $expression): void
-    {
-        if (
-            str_contains($expression, ';')
-            || str_contains($expression, '--')
-            || str_contains($expression, '/*')
-            || str_contains($expression, '*/')
-            || str_contains($expression, '`')
-        ) {
-            throw InvalidColumnException::invalidColumn($expression);
-        }
     }
 
     private function buildSelectSql(): string

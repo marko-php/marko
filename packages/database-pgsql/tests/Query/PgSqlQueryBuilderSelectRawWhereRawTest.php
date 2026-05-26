@@ -359,3 +359,37 @@ describe('PgSqlQueryBuilder selectRaw + whereRaw combined', function (): void {
         }
     );
 });
+
+describe('PgSqlQueryBuilder orderByRaw denylist', function (): void {
+    it('throws InvalidColumnException when the expression contains a semicolon', function (): void {
+        $builder = new PgSqlQueryBuilder(new MockConnection());
+        expect(fn () => $builder->orderByRaw('name; DROP TABLE users'))
+            ->toThrow(InvalidColumnException::class);
+    });
+
+    it('throws InvalidColumnException when the expression contains a -- comment marker', function (): void {
+        $builder = new PgSqlQueryBuilder(new MockConnection());
+        expect(fn () => $builder->orderByRaw('name -- comment'))
+            ->toThrow(InvalidColumnException::class);
+    });
+
+    it('throws InvalidColumnException when the expression contains a /* block-comment marker', function (): void {
+        $builder = new PgSqlQueryBuilder(new MockConnection());
+        expect(fn () => $builder->orderByRaw('name /* comment */'))
+            ->toThrow(InvalidColumnException::class);
+    });
+
+    it('throws InvalidColumnException when the expression contains a backtick', function (): void {
+        $builder = new PgSqlQueryBuilder(new MockConnection());
+        expect(fn () => $builder->orderByRaw('`name`'))
+            ->toThrow(InvalidColumnException::class);
+    });
+});
+
+describe('PgSqlQueryBuilder having denylist (shared with raw helpers)', function (): void {
+    it('throws InvalidColumnException when having() expression contains a backtick', function (): void {
+        $builder = new PgSqlQueryBuilder(new MockConnection());
+        expect(fn () => $builder->having('`count` > ?', [5]))
+            ->toThrow(InvalidColumnException::class);
+    });
+});

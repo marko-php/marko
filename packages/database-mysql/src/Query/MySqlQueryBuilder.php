@@ -128,7 +128,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         string $expression,
         array $bindings = [],
     ): static {
-        $this->assertNoDangerousPatterns($expression);
+        IdentifierValidator::assertNoDangerousPatterns($expression);
         $this->rawSelects[] = $expression;
         array_push($this->rawSelectBindings, ...$bindings);
 
@@ -288,7 +288,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         string $expression,
         array $bindings = [],
     ): static {
-        $this->assertNoDangerousPatterns($expression);
+        IdentifierValidator::assertNoDangerousPatterns($expression);
         $this->rawWheres[] = ['expression' => $expression, 'bindings' => $bindings];
 
         return $this;
@@ -315,14 +315,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         string $expression,
         array $bindings = [],
     ): static {
-        if (
-            str_contains($expression, ';')
-            || str_contains($expression, '--')
-            || str_contains($expression, '/*')
-            || str_contains($expression, '*/')
-        ) {
-            throw InvalidColumnException::invalidColumn($expression);
-        }
+        IdentifierValidator::assertNoDangerousPatterns($expression);
 
         $this->havingClause = [
             'expression' => $expression,
@@ -405,6 +398,8 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         string $expression,
         string $direction = 'ASC',
     ): static {
+        IdentifierValidator::assertNoDangerousPatterns($expression);
+
         $direction = strtoupper($direction);
         if (!in_array($direction, ['ASC', 'DESC'], true)) {
             $direction = 'ASC';
@@ -960,19 +955,4 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $sql;
     }
 
-    /**
-     * @throws InvalidColumnException
-     */
-    private function assertNoDangerousPatterns(string $expression): void
-    {
-        if (
-            str_contains($expression, ';')
-            || str_contains($expression, '--')
-            || str_contains($expression, '/*')
-            || str_contains($expression, '*/')
-            || str_contains($expression, '`')
-        ) {
-            throw InvalidColumnException::invalidColumn($expression);
-        }
-    }
 }
