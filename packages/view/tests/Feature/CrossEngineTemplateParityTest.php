@@ -59,8 +59,9 @@ test('it asserts every template provider has a sibling for every registered engi
 
     foreach ($providers as $parent => $foundEngines) {
         foreach ($engines as $engineName => $engineMeta) {
+            $description = $engineMeta['description'] ?? $engineName;
             $message = "Parent module '$parent' has template providers for [" . implode(', ', array_keys($foundEngines))
-                . "] but is missing a provider for engine '$engineName'. "
+                . "] but is missing a provider for engine '$engineName' ($description). "
                 . "Expected a package like 'marko/" . basename($parent) . "-$engineName' declaring "
                 . "extra.marko.templates_for: '$parent'.";
 

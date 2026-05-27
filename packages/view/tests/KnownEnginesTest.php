@@ -30,7 +30,7 @@ it('lists twig first as the recommended engine', function () {
     expect(array_key_first($engines))->toBe('twig');
 });
 
-it('returns an array keyed by short engine name with extension and driver fields', function () {
+it('returns an array keyed by short engine name with extension, driver, and description fields', function () {
     $engines = require dirname(__DIR__) . '/known-engines.php';
 
     expect($engines)->toBeArray();
@@ -38,8 +38,23 @@ it('returns an array keyed by short engine name with extension and driver fields
     foreach ($engines as $name => $config) {
         expect($name)->toBeString()
             ->and($config)->toHaveKey('extension')
-            ->and($config)->toHaveKey('driver');
+            ->and($config)->toHaveKey('driver')
+            ->and($config)->toHaveKey('description')
+            ->and($config['description'])->toBeString()
+            ->and($config['description'])->not->toBeEmpty();
     }
+});
+
+it('includes a human-readable description for twig', function () {
+    $engines = require dirname(__DIR__) . '/known-engines.php';
+
+    expect($engines['twig']['description'])->toContain('Twig');
+});
+
+it('includes a human-readable description for latte', function () {
+    $engines = require dirname(__DIR__) . '/known-engines.php';
+
+    expect($engines['latte']['description'])->toContain('Latte');
 });
 
 it('uses declare strict_types', function () {
