@@ -37,6 +37,8 @@ body:
         - admin-api
         - admin-auth
         - admin-panel
+        - admin-panel-latte
+        - admin-panel-twig
         - amphp
         - api
         - authentication
