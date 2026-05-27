@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$viewsPath = dirname(__DIR__, 3) . '/resources/views';
+$viewsPath = dirname(__DIR__) . '/resources/views';
 
 it('creates base layout template with html shell, sidebar, and content block', function () use ($viewsPath): void {
     $templatePath = $viewsPath . '/layout/base.latte';

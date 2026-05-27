@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\View;
 
+use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\View\Exceptions\TemplateNotFoundException;
 
@@ -14,6 +15,9 @@ readonly class ModuleTemplateResolver implements TemplateResolverInterface
         private ViewConfig $viewConfig,
     ) {}
 
+    /**
+     * @throws TemplateNotFoundException
+     */
     public function resolve(
         string $template,
     ): string {
@@ -36,14 +40,20 @@ readonly class ModuleTemplateResolver implements TemplateResolverInterface
 
         $paths = [];
 
+        $siblingPaths = [];
+
         foreach ($this->moduleRepository->all() as $module) {
             if ($this->matchesModuleName($module->name, $moduleName)) {
-                $fullPath = $module->path . '/resources/views/' . $templatePath . $extension;
-                $paths[] = $fullPath;
+                $paths[] = $module->path . '/resources/views/' . $templatePath . $extension;
+                continue;
+            }
+
+            if ($this->matchesTemplatesFor($module, $moduleName)) {
+                $siblingPaths[] = $module->path . '/resources/views/' . $templatePath . $extension;
             }
         }
 
-        return $paths;
+        return array_merge($paths, $siblingPaths);
     }
 
     /**
@@ -61,6 +71,22 @@ readonly class ModuleTemplateResolver implements TemplateResolverInterface
         }
 
         return ['', $template];
+    }
+
+    /**
+     * Check if a module declares templates_for targeting the given short module name.
+     */
+    private function matchesTemplatesFor(
+        ModuleManifest $module,
+        string $shortModuleName,
+    ): bool {
+        $templatesFor = $module->extra['marko']['templates_for'] ?? null;
+
+        if (!is_string($templatesFor)) {
+            return false;
+        }
+
+        return $this->matchesModuleName($templatesFor, $shortModuleName);
     }
 
     /**
