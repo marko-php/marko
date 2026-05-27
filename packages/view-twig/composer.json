@@ -1,27 +1,27 @@
 {
-    "name": "marko/view-latte",
-    "description": "Latte templating driver for Marko Framework View",
+    "name": "marko/view-twig",
+    "description": "Twig templating driver for Marko Framework View",
     "license": "MIT",
     "type": "library",
     "require": {
         "php": "^8.5",
         "marko/view": "self.version",
-        "latte/latte": "^3.0"
+        "twig/twig": "^3.0"
     },
     "require-dev": {
         "pestphp/pest": "^4.0"
     },
     "conflict": {
-        "marko/view-twig": "*"
+        "marko/view-latte": "*"
     },
     "autoload": {
         "psr-4": {
-            "Marko\\View\\Latte\\": "src/"
+            "Marko\\View\\Twig\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Marko\\View\\Latte\\Tests\\": "tests/"
+            "Marko\\View\\Twig\\Tests\\": "tests/"
         }
     },
     "config": {

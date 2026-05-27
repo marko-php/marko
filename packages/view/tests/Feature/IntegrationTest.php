@@ -13,6 +13,7 @@ use Marko\View\Exceptions\NoDriverException;
 use Marko\View\Exceptions\TemplateNotFoundException;
 use Marko\View\Latte\LatteEngineFactory;
 use Marko\View\Latte\LatteView;
+use Marko\View\Latte\LatteViewConfig;
 use Marko\View\ModuleTemplateResolver;
 use Marko\View\TemplateResolverInterface;
 use Marko\View\ViewConfig;
@@ -53,8 +54,9 @@ describe('View Integration', function (): void {
 
         // Wire up the full view stack
         $viewConfig = new ViewConfig($config);
+        $latteViewConfig = new LatteViewConfig($config);
         $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-        $engineFactory = new LatteEngineFactory($viewConfig);
+        $engineFactory = new LatteEngineFactory($viewConfig, $latteViewConfig);
         $engine = $engineFactory->create();
         $view = new LatteView($engine, $templateResolver);
 
@@ -192,8 +194,9 @@ describe('View Integration', function (): void {
 
         // Wire up the full view stack
         $viewConfig = new ViewConfig($config);
+        $latteViewConfig = new LatteViewConfig($config);
         $templateResolver = new ModuleTemplateResolver($moduleRepository, $viewConfig);
-        $engineFactory = new LatteEngineFactory($viewConfig);
+        $engineFactory = new LatteEngineFactory($viewConfig, $latteViewConfig);
         $engine = $engineFactory->create();
         $view = new LatteView($engine, $templateResolver);
 

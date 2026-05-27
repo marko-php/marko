@@ -11,17 +11,17 @@ Latte templating driver for the Marko Framework. Implements `ViewInterface` from
 composer require marko/view-latte
 ```
 
-This automatically installs `marko/view`.
+This automatically installs `marko/view`. Note: `marko/view-latte` conflicts with `marko/view-twig` --- install only one view driver per project.
 
 ## Configuration
 
-Configure via the `view` config key:
+Configure via the `view` config key. Settings from `marko/view` (`cache_directory`, `auto_refresh`) apply to all drivers. The following are Latte-specific defaults:
 
 ```php title="config/view.php"
 return [
     'cache_directory' => '/path/to/cache',
-    'extension' => '.latte',
     'auto_refresh' => true,  // Set false in production
+    'extension' => '.latte',
     'strict_types' => true,
 ];
 ```
@@ -147,7 +147,7 @@ views/
 
 | Option | Type | Description |
 |---|---|---|
-| `cache_directory` | `string` | Directory for compiled template cache |
+| `cache_directory` | `string` | Directory for compiled template cache (from `marko/view`) |
+| `auto_refresh` | `bool` | Recompile templates when source changes --- set `false` in production (from `marko/view`) |
 | `extension` | `string` | Template file extension (default `.latte`) |
-| `auto_refresh` | `bool` | Recompile templates when source changes --- set `false` in production |
-| `strict_types` | `bool` | Enable strict type checking in templates |
+| `strict_types` | `bool` | Enable strict type checking in templates (default `true`) |

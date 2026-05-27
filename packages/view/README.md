@@ -8,7 +8,7 @@ View and template rendering interface -- defines how controllers render template
 composer require marko/view
 ```
 
-Note: You also need a view driver. Install `marko/view-latte` for Latte template support.
+Note: You also need a view driver. Install `marko/view-latte` for Latte template support or `marko/view-twig` for Twig template support.
 
 ## Quick Example
 

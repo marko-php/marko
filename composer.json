@@ -428,7 +428,8 @@
         "predis/predis": "^2.0",
         "rector/rector": "^2.3",
         "slevomat/coding-standard": "^8.26",
-        "squizlabs/php_codesniffer": "^4.0"
+        "squizlabs/php_codesniffer": "^4.0",
+        "twig/twig": "^3.0"
     },
     "scripts": {
         "test": "pest -c phpunit.xml --parallel --exclude-group=integration-destructive",
@@ -529,6 +530,8 @@
             "Marko\\Validation\\Tests\\": "packages/validation/tests/",
             "Marko\\View\\Tests\\": "packages/view/tests/",
             "Marko\\View\\Latte\\Tests\\": "packages/view-latte/tests/",
+            "Marko\\View\\Twig\\": "packages/view-twig/src/",
+            "Marko\\View\\Twig\\Tests\\": "packages/view-twig/tests/",
             "Marko\\Vite\\Tests\\": "packages/vite/tests/",
             "Marko\\Webhook\\Tests\\": "packages/webhook/tests/"
         }
