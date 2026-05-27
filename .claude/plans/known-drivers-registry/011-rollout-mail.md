@@ -1,6 +1,6 @@
 # Task 011: Roll out known-drivers pattern — marko/mail
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001, 004
 **Retry count**: 0
 

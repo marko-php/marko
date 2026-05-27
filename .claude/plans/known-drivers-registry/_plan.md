@@ -4,7 +4,7 @@
 2026-05-27
 
 ## Status
-ready
+completed
 
 ## Objective
 Establish `known-drivers.php` as the single curated source of truth for each interface package's drivers. Eliminate hardcoded driver lists scattered across `NoDriverException` classes and skeleton's `suggest` block — mechanically enforce sync via CI tests. Roll out to every interface package with ≥1 driver.
@@ -102,30 +102,30 @@ authentication (token), encryption (openssl), http (guzzle), log (file), notific
 
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | Add `KnownDriversValidator` to marko/testing | - | pending |
-| 002 | Pilot: database known-drivers.php | - | pending |
-| 003 | Pilot: refactor database `NoDriverException` (read from file + docs URLs) | 002 | pending |
-| 004 | Pilot: database validation test | 001, 002, 003 | pending |
-| 005 | Render context/suggestion + URL linkification in errors-advanced | - | pending |
-| 006 | Clean up marko/view test suite (move IntegrationTest) | - | pending |
-| 007 | Roll out: cache | 001, 004 | pending |
-| 008 | Roll out: errors | 001, 004 | pending |
-| 009 | Roll out: filesystem | 001, 004 | pending |
-| 010 | Roll out: inertia (creates new NoDriverException) | 001, 004 | pending |
-| 011 | Roll out: mail | 001, 004 | pending |
-| 012 | Roll out: media | 001, 004 | pending |
-| 013 | Roll out: pubsub | 001, 004 | pending |
-| 014 | Roll out: queue | 001, 004 | pending |
-| 015 | Roll out: session | 001, 004 | pending |
-| 016 | Roll out: view (both view-latte and view-twig) | 001, 004, 006 | pending |
-| 017 | Roll out: authentication (single-driver) | 001, 004 | pending |
-| 018 | Roll out: encryption (single-driver) | 001, 004 | pending |
-| 019 | Roll out: http (single-driver) | 001, 004 | pending |
-| 020 | Roll out: log (single-driver) | 001, 004 | pending |
-| 021 | Roll out: notification (single-driver) | 001, 004 | pending |
-| 022 | Roll out: translation (single-driver) | 001, 004 | pending |
-| 023 | Roll out: page-cache (single-driver; entity is add-on; renames noBinding to noDriverInstalled) | 001, 004 | pending |
-| 024 | Skeleton consolidation (suggest block with all drivers + add-ons) | 003, 007–023 | pending |
+| 001 | Add `KnownDriversValidator` to marko/testing | - | completed |
+| 002 | Pilot: database known-drivers.php | - | completed |
+| 003 | Pilot: refactor database `NoDriverException` (read from file + docs URLs) | 002 | completed |
+| 004 | Pilot: database validation test | 001, 002, 003 | completed |
+| 005 | Render context/suggestion + URL linkification in errors-advanced | - | completed |
+| 006 | Clean up marko/view test suite (move IntegrationTest) | - | completed |
+| 007 | Roll out: cache | 001, 004 | completed |
+| 008 | Roll out: errors | 001, 004 | completed |
+| 009 | Roll out: filesystem | 001, 004 | completed |
+| 010 | Roll out: inertia (creates new NoDriverException) | 001, 004 | completed |
+| 011 | Roll out: mail | 001, 004 | completed |
+| 012 | Roll out: media | 001, 004 | completed |
+| 013 | Roll out: pubsub | 001, 004 | completed |
+| 014 | Roll out: queue | 001, 004 | completed |
+| 015 | Roll out: session | 001, 004 | completed |
+| 016 | Roll out: view (both view-latte and view-twig) | 001, 004, 006 | completed |
+| 017 | Roll out: authentication (single-driver) | 001, 004 | completed |
+| 018 | Roll out: encryption (single-driver) | 001, 004 | completed |
+| 019 | Roll out: http (single-driver) | 001, 004 | completed |
+| 020 | Roll out: log (single-driver) | 001, 004 | completed |
+| 021 | Roll out: notification (single-driver) | 001, 004 | completed |
+| 022 | Roll out: translation (single-driver) | 001, 004 | completed |
+| 023 | Roll out: page-cache (single-driver; entity is add-on; renames noBinding to noDriverInstalled) | 001, 004 | completed |
+| 024 | Skeleton consolidation (suggest block with all drivers + add-ons) | 003, 007–023 | completed |
 
 ## Architecture Notes
 

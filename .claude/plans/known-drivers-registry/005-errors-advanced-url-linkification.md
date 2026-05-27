@@ -1,6 +1,6 @@
 # Task 005: Render context/suggestion + URL linkification in marko/errors-advanced
 
-**Status**: pending
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 

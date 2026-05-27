@@ -1,6 +1,6 @@
 # Task 023: Roll out known-drivers pattern — marko/page-cache (single-driver; entity is add-on)
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001, 004
 **Retry count**: 0
 

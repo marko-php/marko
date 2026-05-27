@@ -1,0 +1,8 @@
+{
+    "name": "marko/skeleton",
+    "require": {},
+    "suggest": {
+        "marko/cache-redis": "Wrong description for redis",
+        "marko/cache-memcached": "Memcached cache driver"
+    }
+}

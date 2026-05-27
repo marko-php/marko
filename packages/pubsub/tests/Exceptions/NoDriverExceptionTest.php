@@ -6,15 +6,6 @@ use Marko\PubSub\Exceptions\NoDriverException;
 use Marko\PubSub\Exceptions\PubSubException;
 
 describe('NoDriverException', function (): void {
-    it('has DRIVER_PACKAGES constant listing marko/pubsub-pgsql and marko/pubsub-redis', function (): void {
-        $reflection = new ReflectionClass(NoDriverException::class);
-        $constant = $reflection->getReflectionConstant('DRIVER_PACKAGES');
-
-        expect($constant)->not->toBeFalse()
-            ->and($constant->getValue())->toContain('marko/pubsub-pgsql')
-            ->and($constant->getValue())->toContain('marko/pubsub-redis');
-    });
-
     it('provides suggestion with composer require commands for all driver packages', function (): void {
         $exception = NoDriverException::noDriverInstalled();
 
@@ -32,5 +23,12 @@ describe('NoDriverException', function (): void {
         $exception = NoDriverException::noDriverInstalled();
 
         expect($exception)->toBeInstanceOf(PubSubException::class);
+    });
+
+    it('pubsub NoDriverException reads from known-drivers.php and includes docs URLs', function (): void {
+        $exception = NoDriverException::noDriverInstalled();
+
+        expect($exception->getSuggestion())->toContain('https://marko.build/docs/packages/pubsub-redis/')
+            ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/pubsub-pgsql/');
     });
 });

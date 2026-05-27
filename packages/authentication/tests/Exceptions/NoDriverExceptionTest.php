@@ -6,18 +6,25 @@ use Marko\Authentication\Exceptions\NoDriverException;
 use Marko\Core\Exceptions\MarkoException;
 
 describe('NoDriverException', function (): void {
-    it('has DRIVER_PACKAGES constant listing marko/authentication-token', function (): void {
+    it('authentication NoDriverException reads from known-drivers.php and includes docs URL', function (): void {
+        $knownDrivers = require __DIR__ . '/../../known-drivers.php';
+        $exception = NoDriverException::noDriverInstalled();
+
+        foreach ($knownDrivers as $package => $description) {
+            $basename = substr($package, strlen('marko/'));
+            expect($exception->getSuggestion())
+                ->toContain($package)
+                ->and($exception->getSuggestion())->toContain($description)
+                ->and($exception->getSuggestion())->toContain("composer require $package")
+                ->and($exception->getSuggestion())->toContain("https://marko.build/docs/packages/$basename/");
+        }
+    });
+
+    it('no longer exposes a DRIVER_PACKAGES const', function (): void {
         $reflection = new ReflectionClass(NoDriverException::class);
         $constant = $reflection->getReflectionConstant('DRIVER_PACKAGES');
 
-        expect($constant)->not->toBeFalse()
-            ->and($constant->getValue())->toContain('marko/authentication-token');
-    });
-
-    it('provides suggestion with composer require command', function (): void {
-        $exception = NoDriverException::noDriverInstalled();
-
-        expect($exception->getSuggestion())->toContain('composer require marko/authentication-token');
+        expect($constant)->toBeFalse();
     });
 
     it('includes context about resolving authentication interfaces', function (): void {

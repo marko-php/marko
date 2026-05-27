@@ -6,14 +6,17 @@ use Marko\Cache\Exceptions\NoDriverException;
 use Marko\Core\Exceptions\MarkoException;
 
 describe('NoDriverException', function (): void {
-    it('has DRIVER_PACKAGES constant listing marko/cache-array, marko/cache-file, and marko/cache-redis', function (): void {
-        $reflection = new ReflectionClass(NoDriverException::class);
-        $constant = $reflection->getReflectionConstant('DRIVER_PACKAGES');
+    it('cache NoDriverException reads from known-drivers.php and includes docs URLs', function (): void {
+        $exception = NoDriverException::noDriverInstalled();
+        $suggestion = $exception->getSuggestion();
 
-        expect($constant)->not->toBeFalse()
-            ->and($constant->getValue())->toContain('marko/cache-array')
-            ->and($constant->getValue())->toContain('marko/cache-file')
-            ->and($constant->getValue())->toContain('marko/cache-redis');
+        expect($suggestion)
+            ->toContain('marko/cache-file')
+            ->and($suggestion)->toContain('marko/cache-redis')
+            ->and($suggestion)->toContain('marko/cache-array')
+            ->and($suggestion)->toContain('https://marko.build/docs/packages/cache-file/')
+            ->and($suggestion)->toContain('https://marko.build/docs/packages/cache-redis/')
+            ->and($suggestion)->toContain('https://marko.build/docs/packages/cache-array/');
     });
 
     it('provides suggestion with composer require commands for all driver packages', function (): void {

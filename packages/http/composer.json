@@ -8,7 +8,8 @@
         "marko/core": "self.version"
     },
     "require-dev": {
-        "pestphp/pest": "^4.0"
+        "pestphp/pest": "^4.0",
+        "marko/testing": "self.version"
     },
     "autoload": {
         "psr-4": {

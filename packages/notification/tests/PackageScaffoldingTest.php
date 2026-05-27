@@ -36,6 +36,18 @@ describe('Package Scaffolding', function (): void {
         expect($composer)->not->toHaveKey('version');
     });
 
+    it('ships a known-drivers.php file listing marko/notification-database', function (): void {
+        $knownDriversPath = dirname(__DIR__) . '/known-drivers.php';
+
+        expect(file_exists($knownDriversPath))->toBeTrue();
+
+        $drivers = require $knownDriversPath;
+
+        expect($drivers)->toBeArray()
+            ->and($drivers)->toHaveKey('marko/notification-database')
+            ->and($drivers['marko/notification-database'])->toBe('Database-backed notification driver');
+    });
+
     it('returns valid module configuration array with bindings', function (): void {
         $module = require dirname(__DIR__) . '/module.php';
 

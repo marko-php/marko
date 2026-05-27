@@ -6,12 +6,13 @@ use Marko\Notification\Exceptions\NoDriverException;
 use Marko\Notification\Exceptions\NotificationException;
 
 describe('NoDriverException', function (): void {
-    it('has DRIVER_PACKAGES constant listing marko/notification-database', function (): void {
-        $reflection = new ReflectionClass(NoDriverException::class);
-        $constant = $reflection->getReflectionConstant('DRIVER_PACKAGES');
+    it('notification NoDriverException reads from known-drivers.php and includes docs URL', function (): void {
+        $exception = NoDriverException::noDriverInstalled();
 
-        expect($constant)->not->toBeFalse()
-            ->and($constant->getValue())->toContain('marko/notification-database');
+        expect($exception->getSuggestion())
+            ->toContain('marko/notification-database')
+            ->and($exception->getSuggestion())->toContain('composer require marko/notification-database')
+            ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/notification-database/');
     });
 
     it('provides suggestion with composer require command', function (): void {

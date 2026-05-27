@@ -1,6 +1,6 @@
 # Task 003: Pilot — refactor database NoDriverException to read known-drivers.php
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002
 **Retry count**: 0
 

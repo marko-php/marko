@@ -6,12 +6,12 @@ use Marko\Core\Exceptions\MarkoException;
 use Marko\Http\Exceptions\NoDriverException;
 
 describe('NoDriverException', function (): void {
-    it('has DRIVER_PACKAGES constant listing marko/http-guzzle', function (): void {
-        $reflection = new ReflectionClass(NoDriverException::class);
-        $constant = $reflection->getReflectionConstant('DRIVER_PACKAGES');
+    it('http NoDriverException reads from known-drivers.php and includes docs URL', function (): void {
+        $exception = NoDriverException::noDriverInstalled();
 
-        expect($constant)->not->toBeFalse()
-            ->and($constant->getValue())->toContain('marko/http-guzzle');
+        expect($exception->getSuggestion())
+            ->toContain('marko/http-guzzle')
+            ->toContain('https://marko.build/docs/packages/http-guzzle/');
     });
 
     it('provides suggestion with composer require command', function (): void {

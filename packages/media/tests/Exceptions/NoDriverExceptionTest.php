@@ -6,14 +6,16 @@ namespace Marko\Media\Tests\Exceptions;
 
 use Marko\Media\Exceptions\MediaException;
 use Marko\Media\Exceptions\NoDriverException;
-use ReflectionClass;
 
-it('has DRIVER_PACKAGES constant listing marko/media-gd and marko/media-imagick', function (): void {
-    $reflection = new ReflectionClass(NoDriverException::class);
-    $constants = $reflection->getConstants();
+it('media NoDriverException reads from known-drivers.php and includes docs URLs', function (): void {
+    $exception = NoDriverException::noDriverInstalled();
+    $suggestion = $exception->getSuggestion();
 
-    expect($constants)->toHaveKey('DRIVER_PACKAGES')
-        ->and($constants['DRIVER_PACKAGES'])->toBe(['marko/media-gd', 'marko/media-imagick']);
+    expect($suggestion)
+        ->toContain('marko/media-gd')
+        ->and($suggestion)->toContain('marko/media-imagick')
+        ->and($suggestion)->toContain('https://marko.build/docs/packages/media-gd/')
+        ->and($suggestion)->toContain('https://marko.build/docs/packages/media-imagick/');
 });
 
 it('provides suggestion with composer require commands for all driver packages', function (): void {

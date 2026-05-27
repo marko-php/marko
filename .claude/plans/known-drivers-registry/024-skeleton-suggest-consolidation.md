@@ -1,6 +1,6 @@
 # Task 024: Consolidate skeleton's composer suggest block
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 003, 007, 008, 009, 010, 011, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 023
 **Retry count**: 0
 

@@ -5,59 +5,84 @@ declare(strict_types=1);
 use Marko\View\Exceptions\NoDriverException;
 use Marko\View\Exceptions\ViewException;
 
-it('has DRIVER_PACKAGES constant listing marko/view-latte', function (): void {
-    $reflection = new ReflectionClass(NoDriverException::class);
-    $constant = $reflection->getReflectionConstant('DRIVER_PACKAGES');
+describe('NoDriverException', function (): void {
+    it('loads the driver list from known-drivers.php', function (): void {
+        $knownDrivers = require __DIR__ . '/../../known-drivers.php';
+        $exception = NoDriverException::noDriverInstalled();
 
-    expect($constant)->not->toBeFalse()
-        ->and($constant->getValue())->toContain('marko/view-latte');
-});
+        foreach (array_keys($knownDrivers) as $package) {
+            expect($exception->getSuggestion())->toContain($package);
+        }
+    });
 
-it('provides suggestion with composer require commands for all driver packages', function (): void {
-    $exception = NoDriverException::noDriverInstalled();
+    it('includes the description for each driver in the suggestion', function (): void {
+        $knownDrivers = require __DIR__ . '/../../known-drivers.php';
+        $exception = NoDriverException::noDriverInstalled();
 
-    expect($exception->getSuggestion())->toContain('composer require marko/view-latte');
-});
+        foreach ($knownDrivers as $package => $description) {
+            expect($exception->getSuggestion())->toContain($description);
+        }
+    });
 
-it('includes context about resolving ViewInterface', function (): void {
-    $exception = NoDriverException::noDriverInstalled();
+    it('includes a composer require command for each driver', function (): void {
+        $knownDrivers = require __DIR__ . '/../../known-drivers.php';
+        $exception = NoDriverException::noDriverInstalled();
 
-    expect($exception->getContext())->toContain('Attempted to resolve ViewInterface but no implementation is bound.');
-});
+        foreach (array_keys($knownDrivers) as $package) {
+            expect($exception->getSuggestion())->toContain("composer require $package");
+        }
+    });
 
-it('extends ViewException', function (): void {
-    $exception = NoDriverException::noDriverInstalled();
+    it('includes a derived docs URL for each driver', function (): void {
+        $knownDrivers = require __DIR__ . '/../../known-drivers.php';
+        $exception = NoDriverException::noDriverInstalled();
 
-    expect($exception)->toBeInstanceOf(ViewException::class);
-});
+        foreach (array_keys($knownDrivers) as $package) {
+            $basename = substr($package, strlen('marko/'));
+            expect($exception->getSuggestion())->toContain("https://marko.build/docs/packages/$basename/");
+        }
+    });
 
-it('lists marko/view-latte as an installable driver', function (): void {
-    $reflection = new ReflectionClass(NoDriverException::class);
-    $constant = $reflection->getReflectionConstant('DRIVER_PACKAGES');
+    it('derives docs URLs from the package basename (marko slash prefix stripped)', function (): void {
+        $exception = NoDriverException::noDriverInstalled();
 
-    expect($constant->getValue())->toContain('marko/view-latte');
-});
+        expect($exception->getSuggestion())->toContain('https://marko.build/docs/packages/view-twig/')
+            ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/view-latte/');
+    });
 
-it('lists marko/view-twig as an installable driver', function (): void {
-    $reflection = new ReflectionClass(NoDriverException::class);
-    $constant = $reflection->getReflectionConstant('DRIVER_PACKAGES');
+    it('lists view-twig first in the suggestion (matching known-drivers.php order)', function (): void {
+        $exception = NoDriverException::noDriverInstalled();
+        $suggestion = $exception->getSuggestion();
 
-    expect($constant->getValue())->toContain('marko/view-twig');
-});
+        $twigPos = strpos($suggestion, 'marko/view-twig');
+        $lattePos = strpos($suggestion, 'marko/view-latte');
 
-it('formats each driver as a composer require command in the suggestion', function (): void {
-    $exception = NoDriverException::noDriverInstalled();
+        expect($twigPos)->toBeLessThan($lattePos);
+    });
 
-    expect($exception->getSuggestion())
-        ->toContain('composer require marko/view-latte')
-        ->and($exception->getSuggestion())->toContain('composer require marko/view-twig');
-});
+    it('no longer exposes a DRIVER_PACKAGES const', function (): void {
+        $reflection = new ReflectionClass(NoDriverException::class);
+        $constant = $reflection->getReflectionConstant('DRIVER_PACKAGES');
 
-it('keeps DRIVER_PACKAGES alphabetically ordered', function (): void {
-    $reflection = new ReflectionClass(NoDriverException::class);
-    $packages = $reflection->getReflectionConstant('DRIVER_PACKAGES')->getValue();
-    $sorted = $packages;
-    sort($sorted);
+        expect($constant)->toBeFalse();
+    });
 
-    expect($packages)->toBe($sorted);
+    it('provides suggestion with composer require commands for all driver packages', function (): void {
+        $exception = NoDriverException::noDriverInstalled();
+
+        expect($exception->getSuggestion())->toContain('composer require marko/view-twig')
+            ->and($exception->getSuggestion())->toContain('composer require marko/view-latte');
+    });
+
+    it('includes context about resolving ViewInterface', function (): void {
+        $exception = NoDriverException::noDriverInstalled();
+
+        expect($exception->getContext())->toContain('Attempted to resolve ViewInterface but no implementation is bound.');
+    });
+
+    it('extends ViewException', function (): void {
+        $exception = NoDriverException::noDriverInstalled();
+
+        expect($exception)->toBeInstanceOf(ViewException::class);
+    });
 });

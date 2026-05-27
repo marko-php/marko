@@ -90,3 +90,15 @@ it('has module.php with bindings array', function () {
         ->and($config)->toHaveKey('bindings')
         ->and($config['bindings'])->toBeArray();
 });
+
+it('ships a known-drivers.php file listing marko/encryption-openssl', function () {
+    $knownDriversPath = dirname(__DIR__) . '/known-drivers.php';
+
+    expect(file_exists($knownDriversPath))->toBeTrue();
+
+    $drivers = require $knownDriversPath;
+
+    expect($drivers)->toBeArray()
+        ->and($drivers)->toHaveKey('marko/encryption-openssl')
+        ->and($drivers['marko/encryption-openssl'])->toBe('OpenSSL-based symmetric encryption driver (AES-256-GCM)');
+});

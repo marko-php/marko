@@ -1,6 +1,6 @@
 # Task 016: Roll out known-drivers pattern — marko/view
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001, 004, 006
 **Retry count**: 0
 

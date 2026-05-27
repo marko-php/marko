@@ -1,6 +1,6 @@
 # Task 006: Clean up marko/view test suite — zero dependency on marko/view-latte
 
-**Status**: pending
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 

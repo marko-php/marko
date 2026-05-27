@@ -1,6 +1,6 @@
 # Task 004: Pilot — add validation test in marko/database
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001, 002, 003
 **Retry count**: 0
 

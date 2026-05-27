@@ -58,7 +58,7 @@ HTML;
     private function formatDevelopment(
         ErrorReport $report,
     ): string {
-        $message = $this->escape($report->message);
+        $message = $this->escapeAndLinkifyUrls($report->message);
         $file = $this->escape($report->file);
         $line = $report->line;
         $codeSnippet = $this->formatCodeSnippet($report->file, $report->line);
@@ -66,6 +66,12 @@ HTML;
         $stackTrace = $this->formatStackTrace($report->trace);
         $requestData = $this->formatRequestData();
         $previousException = $this->formatPreviousException($report->previous);
+        $contextBlock = $report->context !== ''
+            ? '<p class="context">' . $this->escapeAndLinkifyUrls($report->context) . '</p>'
+            : '';
+        $suggestionBlock = $report->suggestion !== ''
+            ? '<p class="suggestion">' . $this->escapeAndLinkifyUrls($report->suggestion) . '</p>'
+            : '';
 
         return <<<HTML
 <!DOCTYPE html>
@@ -78,6 +84,8 @@ HTML;
 </head>
 <body>
 <p class="message">$message</p>
+$contextBlock
+$suggestionBlock
 <p class="location">$file:$line</p>
 <pre class="code-snippet"><code>$codeSnippet</code></pre>
 <div class="stack-trace">$stackTrace</div>
@@ -96,12 +104,16 @@ HTML;
         return <<<CSS
 body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
 .message { font-size: 1.2em; color: #333; }
+.context { color: #555; white-space: pre-wrap; }
+.suggestion { color: #555; white-space: pre-wrap; }
 .location { color: #666; }
 .code-snippet { background: #fff; padding: 10px; border: 1px solid #ddd; overflow-x: auto; }
 $syntaxCss
 @media (prefers-color-scheme: dark) {
 body { background: #1e1e1e; color: #d4d4d4; }
 .message { color: #d4d4d4; }
+.context { color: #b0b0b0; }
+.suggestion { color: #b0b0b0; }
 .location { color: #9cdcfe; }
 .code-snippet { background: #252526; border-color: #3c3c3c; }
 }
@@ -135,6 +147,31 @@ CSS;
         string $value,
     ): string {
         return htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+    private function escapeAndLinkifyUrls(
+        string $value,
+    ): string {
+        $pattern = '/(https?:\/\/[^\s<>"\']+)/';
+        $parts = preg_split($pattern, $value, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        $output = '';
+        foreach ($parts as $i => $part) {
+            if ($i % 2 === 0) {
+                $output .= htmlspecialchars($part, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            } else {
+                $trailing = '';
+                while (strlen($part) > 0 && in_array($part[-1], ['.', ',', ';', ':', '!', '?', ')', ']'], true)) {
+                    $trailing = $part[-1] . $trailing;
+                    $part = substr($part, 0, -1);
+                }
+                $escapedUrl = htmlspecialchars($part, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $output .= "<a href=\"$escapedUrl\" target=\"_blank\" rel=\"noopener noreferrer\">$escapedUrl</a>";
+                $output .= htmlspecialchars($trailing, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+        }
+
+        return $output;
     }
 
     /**

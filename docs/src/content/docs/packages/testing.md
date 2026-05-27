@@ -171,6 +171,25 @@ $provider->updateRememberToken($user, 'new-token');
 expect($provider->lastRememberTokenUpdate['token'])->toBe('new-token');
 ```
 
+### KnownDriversValidator
+
+`KnownDriversValidator` is a static utility for package authors to assert that a package's `known-drivers.php` file is well-formed and stays in sync with the skeleton's `suggest` block.
+
+```php
+use Marko\Testing\KnownDrivers\KnownDriversValidator;
+
+// Assert every key in known-drivers.php follows the 'marko/*' prefix pattern
+KnownDriversValidator::assertDocsUrlsResolveToValidPattern(
+    __DIR__ . '/../known-drivers.php',
+);
+
+// Assert skeleton composer.json suggest block contains every entry from known-drivers.php
+KnownDriversValidator::assertSkeletonSuggestContainsAll(
+    __DIR__ . '/../known-drivers.php',
+    __DIR__ . '/../../skeleton/composer.json',
+);
+```
+
 ## Pest Expectations
 
 Load the expectations file in your `Pest.php` to enable fluent assertions:
@@ -334,6 +353,13 @@ public function assertAttempted(?callable $callback = null): void;
 public function assertNotAttempted(): void;
 public function assertLoggedOut(): void;
 public function clear(): void;
+```
+
+### KnownDriversValidator
+
+```php
+public static function assertSkeletonSuggestContainsAll(string $knownDriversPath, string $skeletonComposerPath): void;
+public static function assertDocsUrlsResolveToValidPattern(string $knownDriversPath): void;
 ```
 
 ### AssertionFailedException

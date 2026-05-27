@@ -1,6 +1,6 @@
 # Task 012: Roll out known-drivers pattern — marko/media
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001, 004
 **Retry count**: 0
 

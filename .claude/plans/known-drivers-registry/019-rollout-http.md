@@ -1,6 +1,6 @@
 # Task 019: Roll out known-drivers pattern — marko/http (single-driver)
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001, 004
 **Retry count**: 0
 

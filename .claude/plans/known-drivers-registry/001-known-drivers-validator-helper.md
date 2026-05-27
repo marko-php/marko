@@ -1,6 +1,6 @@
 # Task 001: Add KnownDriversValidator helper to marko/testing
 
-**Status**: pending
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 
