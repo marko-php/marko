@@ -10,6 +10,8 @@ $allPackages = [
     'marko/admin-api',
     'marko/admin-auth',
     'marko/admin-panel',
+    'marko/admin-panel-latte',
+    'marko/admin-panel-twig',
     'marko/amphp',
     'marko/api',
     'marko/authentication',
@@ -78,7 +80,7 @@ $allPackages = [
     'marko/webhook',
 ];
 
-it('adds a require section entry for all 70 marko packages set to self.version', function () use ($rootComposer, $allPackages): void {
+it('adds a require section entry for all 72 marko packages set to self.version', function () use ($rootComposer, $allPackages): void {
     expect($rootComposer)->toHaveKey('require');
 
     foreach ($allPackages as $package) {
@@ -91,7 +93,7 @@ it('does not have a replace section (path repos install as symlinks without it)'
     expect($rootComposer)->not->toHaveKey('replace');
 });
 
-it('adds repositories section with path repos for all 70 packages', function () use ($rootComposer, $allPackages): void {
+it('adds repositories section with path repos for all 72 packages', function () use ($rootComposer, $allPackages): void {
     expect($rootComposer)->toHaveKey('repositories');
 
     $repoUrls = array_column($rootComposer['repositories'], 'url');

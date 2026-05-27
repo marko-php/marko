@@ -1,6 +1,6 @@
 # Task 001: Add known-engines.php to marko/view
 
-**Status**: pending
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 

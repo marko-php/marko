@@ -1,6 +1,6 @@
 # Task 002: Enhance ModuleTemplateResolver to honor templates_for metadata
 
-**Status**: pending
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 

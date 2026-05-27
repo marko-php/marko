@@ -1,6 +1,6 @@
 # Task 006: Move .latte templates and LayoutTemplateTest into admin-panel-latte
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002, 004
 **Retry count**: 0
 

@@ -22,6 +22,14 @@
         },
         {
             "type": "path",
+            "url": "packages/admin-panel-latte"
+        },
+        {
+            "type": "path",
+            "url": "packages/admin-panel-twig"
+        },
+        {
+            "type": "path",
             "url": "packages/amphp"
         },
         {
@@ -339,6 +347,8 @@
         "marko/admin-api": "self.version",
         "marko/admin-auth": "self.version",
         "marko/admin-panel": "self.version",
+        "marko/admin-panel-latte": "self.version",
+        "marko/admin-panel-twig": "self.version",
         "marko/amphp": "self.version",
         "marko/api": "self.version",
         "marko/authentication": "self.version",
@@ -456,6 +466,8 @@
             "Marko\\AdminApi\\Tests\\": "packages/admin-api/tests/",
             "Marko\\AdminAuth\\Tests\\": "packages/admin-auth/tests/",
             "Marko\\AdminPanel\\Tests\\": "packages/admin-panel/tests/",
+            "Marko\\AdminPanel\\Latte\\Tests\\": "packages/admin-panel-latte/tests/",
+            "Marko\\AdminPanel\\Twig\\Tests\\": "packages/admin-panel-twig/tests/",
             "Marko\\Amphp\\Tests\\": "packages/amphp/tests/",
             "Marko\\Api\\Tests\\": "packages/api/tests/",
             "Marko\\Authentication\\Tests\\": "packages/authentication/tests/",

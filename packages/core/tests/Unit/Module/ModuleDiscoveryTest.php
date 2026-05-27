@@ -623,6 +623,85 @@ it('ModuleManifest exposes a globalMiddleware property defaulting to empty array
         ->toBeEmpty();
 });
 
+it('ModuleManifest defaults extra to an empty array when not specified', function (): void {
+    $manifest = new ModuleManifest(
+        name: 'acme/test',
+        version: '1.0.0',
+    );
+
+    expect($manifest->extra)
+        ->toBeArray()
+        ->toBeEmpty();
+});
+
+it('ModuleDiscovery preserves the extra field when setting path and source', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
+    $vendorDir = $baseDir . '/vendor';
+
+    mkdir($vendorDir . '/marko/admin-panel-latte', 0755, true);
+    $composerData = [
+        'name' => 'marko/admin-panel-latte',
+        'extra' => [
+            'marko' => [
+                'module' => true,
+                'templates_for' => 'marko/admin-panel',
+            ],
+        ],
+    ];
+    file_put_contents(
+        $vendorDir . '/marko/admin-panel-latte/composer.json',
+        json_encode($composerData, JSON_PRETTY_PRINT),
+    );
+
+    $discovery = new ModuleDiscovery(new ManifestParser());
+    $modules = $discovery->discoverInVendor($vendorDir);
+
+    expect($modules)->toHaveCount(1)
+        ->and($modules[0]->extra)->toBeArray()
+        ->and($modules[0]->extra['marko']['templates_for'])->toBe('marko/admin-panel');
+
+    cleanupDirectory($baseDir);
+});
+
+it('ManifestParser populates the extra field from composer.json data', function (): void {
+    $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
+    mkdir($tempDir, 0755, true);
+
+    $composerData = [
+        'name' => 'marko/admin-panel-latte',
+        'extra' => [
+            'marko' => [
+                'module' => true,
+                'templates_for' => 'marko/admin-panel',
+            ],
+        ],
+    ];
+    file_put_contents($tempDir . '/composer.json', json_encode($composerData, JSON_PRETTY_PRINT));
+
+    $parser = new ManifestParser();
+    $manifest = $parser->parse($tempDir);
+
+    expect($manifest->extra)
+        ->toBeArray()
+        ->toHaveKey('marko')
+        ->and($manifest->extra['marko']['templates_for'])->toBe('marko/admin-panel');
+
+    cleanupDirectory($tempDir);
+});
+
+it('ModuleManifest exposes the extra array from composer.json', function (): void {
+    $manifest = new ModuleManifest(
+        name: 'acme/test',
+        version: '1.0.0',
+        extra: ['marko' => ['templates_for' => 'marko/admin-panel']],
+    );
+
+    expect($manifest->extra)
+        ->toBeArray()
+        ->toHaveKey('marko')
+        ->and($manifest->extra['marko']['templates_for'])->toBe('marko/admin-panel');
+});
+
 it('ManifestParser reads globalMiddleware from module.php and passes it to ModuleManifest', function (): void {
     $tempDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
     mkdir($tempDir, 0755, true);

@@ -1,0 +1,33 @@
+{
+    "name": "marko/admin-panel-latte",
+    "description": "Latte templates for marko/admin-panel",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "marko/admin-panel": "self.version",
+        "marko/view-latte": "self.version"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "self.version",
+        "marko/view": "self.version",
+        "marko/core": "self.version"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\AdminPanel\\Latte\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true,
+            "templates_for": "marko/admin-panel"
+        }
+    }
+}

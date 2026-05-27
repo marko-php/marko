@@ -1,6 +1,6 @@
 # Task 007: Hand-translate .twig templates into admin-panel-twig
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 002, 005
 **Retry count**: 0
 

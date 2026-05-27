@@ -1,0 +1,20 @@
+{% extends 'admin-panel::layout/base' %}
+
+{% set sections = sections|default([]) %}
+
+{% block content %}
+    <h1>Dashboard</h1>
+
+    <p>Welcome to the admin panel.</p>
+
+    {% if sections %}<section class="admin-sections">
+        <h2>Registered Sections</h2>
+        <ul class="sections-list">
+            {% for section in sections %}
+                <li>
+                    <strong>{{ section.getLabel() }}</strong>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>{% endif %}
+{% endblock %}

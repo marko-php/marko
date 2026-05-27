@@ -1,6 +1,6 @@
 # Task 003: Document engine-sibling pattern in architecture.md
 
-**Status**: pending
+**Status**: completed
 **Depends on**: none
 **Retry count**: 0
 

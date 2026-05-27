@@ -1,6 +1,6 @@
 # Task 009: Remove resources/views/ from marko/admin-panel; update composer.json suggest
 
-**Status**: pending
+**Status**: complete
 **Depends on**: 006, 007
 **Retry count**: 0
 
@@ -37,13 +37,13 @@ After cleanup, run `composer test` from the monorepo root. Expectations:
 - admin-panel-twig tests all pass (its 7 LayoutTemplateTest assertions plus PackageTest)
 
 ## Requirements (Test Descriptions)
-- [ ] `packages/admin-panel/resources/views/ no longer exists`
-- [ ] `packages/admin-panel/composer.json includes a suggest block`
-- [ ] `the suggest block lists marko/admin-panel-twig`
-- [ ] `the suggest block lists marko/admin-panel-latte`
-- [ ] `the suggest block does not place either engine sibling in require`
-- [ ] `PackageStructureTest does not assert on resources/views/ presence`
-- [ ] `all existing admin-panel unit tests continue to pass`
+- [x] `packages/admin-panel/resources/views/ no longer exists`
+- [x] `packages/admin-panel/composer.json includes a suggest block`
+- [x] `the suggest block lists marko/admin-panel-twig`
+- [x] `the suggest block lists marko/admin-panel-latte`
+- [x] `the suggest block does not place either engine sibling in require`
+- [x] `PackageStructureTest does not assert on resources/views/ presence`
+- [x] `all existing admin-panel unit tests continue to pass`
 
 ## Acceptance Criteria
 - `packages/admin-panel/resources/views/` is gone (directory removed)

@@ -1,6 +1,6 @@
 # Task 010: Add CrossEngineTemplateParityTest to marko/view
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 001, 006, 007
 **Retry count**: 0
 

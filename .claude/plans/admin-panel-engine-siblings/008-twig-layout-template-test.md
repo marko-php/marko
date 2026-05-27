@@ -1,6 +1,6 @@
 # Task 008: Write LayoutTemplateTest equivalent for Twig templates
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 007
 **Retry count**: 0
 

@@ -33,6 +33,10 @@
             "pestphp/pest-plugin": true
         }
     },
+    "suggest": {
+        "marko/admin-panel-twig": "Twig templates for the admin panel (recommended for broader ecosystem familiarity)",
+        "marko/admin-panel-latte": "Latte templates for the admin panel"
+    },
     "extra": {
         "marko": {
             "module": true

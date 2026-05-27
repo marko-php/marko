@@ -4,7 +4,7 @@
 2026-05-27
 
 ## Status
-ready
+completed
 
 ## Objective
 Extract template files from `marko/admin-panel` into engine-specific sibling packages (`marko/admin-panel-latte`, `marko/admin-panel-twig`). Establish the `marko/{module}-{engine}` pattern as the canonical approach for UI packages that want multi-engine support. Add a `CrossEngineTemplateParityTest` in `marko/view` to mechanically enforce template parity across registered core view engines.
@@ -106,16 +106,16 @@ This plan is a dependency of PR #91. PR #91's task 025 (skeleton suggest consoli
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | Add `known-engines.php` to marko/view | - | pending |
-| 002 | Expose `extra` on `ModuleManifest`; enhance `ModuleTemplateResolver` to honor `templates_for` metadata | - | pending |
-| 003 | Document engine-sibling pattern in architecture.md | - | pending |
-| 004 | Scaffold `marko/admin-panel-latte` package | - | pending |
-| 005 | Scaffold `marko/admin-panel-twig` package | - | pending |
-| 006 | Move `.latte` templates and LayoutTemplateTest from admin-panel to admin-panel-latte | 002, 004 | pending |
-| 007 | Hand-translate `.twig` templates into admin-panel-twig | 002, 005 | pending |
-| 008 | Write `LayoutTemplateTest` equivalent for Twig templates | 007 | pending |
-| 009 | Remove `resources/views/` from marko/admin-panel; update composer.json suggest | 006, 007 | pending |
-| 010 | Add `CrossEngineTemplateParityTest` to marko/view | 001, 006, 007 | pending |
+| 001 | Add `known-engines.php` to marko/view | - | completed |
+| 002 | Expose `extra` on `ModuleManifest`; enhance `ModuleTemplateResolver` to honor `templates_for` metadata | - | completed |
+| 003 | Document engine-sibling pattern in architecture.md | - | completed |
+| 004 | Scaffold `marko/admin-panel-latte` package | - | completed |
+| 005 | Scaffold `marko/admin-panel-twig` package | - | completed |
+| 006 | Move `.latte` templates and LayoutTemplateTest from admin-panel to admin-panel-latte | 002, 004 | completed |
+| 007 | Hand-translate `.twig` templates into admin-panel-twig | 002, 005 | completed |
+| 008 | Write `LayoutTemplateTest` equivalent for Twig templates | 007 | completed |
+| 009 | Remove `resources/views/` from marko/admin-panel; update composer.json suggest | 006, 007 | completed |
+| 010 | Add `CrossEngineTemplateParityTest` to marko/view | 001, 006, 007 | completed |
 
 **Note on task 002 scope:** Task 002 spans two packages — `marko/core` (extending `ModuleManifest`, `ManifestParser`, `ModuleDiscovery` to surface `extra` from composer.json) and `marko/view` (the resolver enhancement). The core changes are a prerequisite for the view changes; both must ship together in this task. Worker should not attempt to split them.
 
