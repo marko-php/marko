@@ -4,7 +4,7 @@
 2026-05-27
 
 ## Status
-planning
+ready
 
 ## Objective
 Extract template files from `marko/admin-panel` into engine-specific sibling packages (`marko/admin-panel-latte`, `marko/admin-panel-twig`). Establish the `marko/{module}-{engine}` pattern as the canonical approach for UI packages that want multi-engine support. Add a `CrossEngineTemplateParityTest` in `marko/view` to mechanically enforce template parity across registered core view engines.
