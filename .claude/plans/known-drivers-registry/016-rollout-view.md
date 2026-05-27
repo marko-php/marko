@@ -1,7 +1,7 @@
-# Task 017: Roll out known-drivers pattern — marko/view
+# Task 016: Roll out known-drivers pattern — marko/view
 
 **Status**: pending
-**Depends on**: 001, 005, 007
+**Depends on**: 001, 004, 006
 **Retry count**: 0
 
 ## Description
@@ -17,13 +17,13 @@ This task refactors the existing `NoDriverException` (currently has a `DRIVER_PA
   - Neither driver has a `conflict` block (PR #92 removed them)
   - `view/src/Exceptions/NoDriverException.php` has `private const array DRIVER_PACKAGES = ['marko/view-latte', 'marko/view-twig']`
   - Existing test `packages/view/tests/Exceptions/NoDriverExceptionTest.php` asserts against the const (must be updated)
-- Skeleton's composer.json — task 025 populates the `suggest` block; this task ships known-drivers.php content that task 025 must mirror verbatim
+- Skeleton's composer.json — task 024 populates the `suggest` block; this task ships known-drivers.php content that task 024 must mirror verbatim
 
 **Description text for known-drivers.php:**
 - `marko/view-twig` → `'Twig template engine driver (recommended for broader ecosystem familiarity)'`
 - `marko/view-latte` → `'Latte template engine driver (compile-time safety, n:attribute syntax)'`
 
-These descriptions must match what task 025 writes into skeleton's `suggest` block exactly (literal-equality CI check).
+These descriptions must match what task 024 writes into skeleton's `suggest` block exactly (literal-equality CI check).
 
 ## Sub-steps
 1. Create `packages/view/known-drivers.php` with both entries (Twig first)
@@ -37,7 +37,7 @@ These descriptions must match what task 025 writes into skeleton's `suggest` blo
 - [ ] `it lists marko/view-twig first as the recommended driver`
 - [ ] `view NoDriverException reads from known-drivers.php and includes docs URLs`
 - [ ] `view NoDriverException no longer exposes a DRIVER_PACKAGES const`
-- [ ] `validation test confirms skeleton suggest matches known-drivers.php (after task 025 runs; skip behavior holds before)`
+- [ ] `validation test confirms skeleton suggest matches known-drivers.php (after task 024 runs; skip behavior holds before)`
 - [ ] `existing NoDriverExceptionTest is updated to match new shape`
 
 ## Acceptance Criteria
@@ -46,6 +46,6 @@ These descriptions must match what task 025 writes into skeleton's `suggest` blo
 - Existing `NoDriverExceptionTest` updated; all assertions match new output format
 - New validation test passes
 - All existing view, view-latte, view-twig tests still pass
-- Description text in known-drivers.php matches task 025's skeleton suggest entries verbatim
+- Description text in known-drivers.php matches task 024's skeleton suggest entries verbatim
 - `marko/testing` in `packages/view/composer.json` `require-dev`
 - Code follows code standards

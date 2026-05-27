@@ -25,7 +25,7 @@ return [
 ];
 ```
 
-**Description-string contract:** these exact description strings (including the em-dash `—` character, NOT a hyphen) are the canonical strings. Task 025 must write them verbatim into skeleton's `suggest` block; any divergence (typo, ASCII hyphen vs em-dash) will fail the `assertSkeletonSuggestContainsAll` test. The `_plan.md` Architecture Notes section and task 025 already reference these exact strings — DO NOT alter them when implementing.
+**Description-string contract:** these exact description strings (including the em-dash `—` character, NOT a hyphen) are the canonical strings. Task 024 must write them verbatim into skeleton's `suggest` block; any divergence (typo, ASCII hyphen vs em-dash) will fail the `assertSkeletonSuggestContainsAll` test. The `_plan.md` Architecture Notes section and task 024 already reference these exact strings — DO NOT alter them when implementing.
 
 ## Requirements (Test Descriptions)
 - [ ] `it ships a known-drivers.php file in the database package`
@@ -39,5 +39,5 @@ return [
 - `packages/database/known-drivers.php` exists with the specified contents
 - File returns an array (no nested keys, no objects)
 - pgsql is the first entry
-- `packages/database/tests/KnownDriversTest.php` verifies all requirements (note: this is distinct from the larger `KnownDriversValidationTest.php` created in task 005 — this test verifies file shape; that test verifies cross-package sync)
+- `packages/database/tests/KnownDriversTest.php` verifies all requirements (note: this is distinct from the larger `KnownDriversValidationTest.php` created in task 004 — this test verifies file shape; that test verifies cross-package sync)
 - Code follows code standards

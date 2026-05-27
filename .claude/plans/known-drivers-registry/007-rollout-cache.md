@@ -1,11 +1,11 @@
-# Task 008: Roll out known-drivers pattern — marko/cache
+# Task 007: Roll out known-drivers pattern — marko/cache
 
 **Status**: pending
-**Depends on**: 001, 005
+**Depends on**: 001, 004
 **Retry count**: 0
 
 ## Description
-Apply the pilot pattern (tasks 002–005) to `marko/cache`. Three drivers: `cache-array`, `cache-file`, `cache-redis`. All bind `CacheInterface` and are mutually exclusive.
+Apply the pilot pattern (tasks 002–004) to `marko/cache`. Three drivers: `cache-array`, `cache-file`, `cache-redis`. All bind `CacheInterface` and are mutually exclusive.
 
 ## Context
 - Interface: `Marko\Cache\CacheInterface`

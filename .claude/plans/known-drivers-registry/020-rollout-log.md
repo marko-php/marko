@@ -1,7 +1,7 @@
-# Task 021: Roll out known-drivers pattern — marko/log (single-driver)
+# Task 020: Roll out known-drivers pattern — marko/log (single-driver)
 
 **Status**: pending
-**Depends on**: 001, 005
+**Depends on**: 001, 004
 **Retry count**: 0
 
 ## Description

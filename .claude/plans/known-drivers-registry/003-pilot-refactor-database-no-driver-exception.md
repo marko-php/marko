@@ -11,7 +11,7 @@ Refactor `Marko\Database\Exceptions\NoDriverException` to read its driver list f
 - Files to modify:
   - `packages/database/src/Exceptions/NoDriverException.php` (remove `DRIVER_PACKAGES` const; load known-drivers.php at exception-construction time)
   - `packages/database/tests/NoDriverExceptionTest.php` — has an existing test asserting `DRIVER_PACKAGES` const exists (lines 9-16 at plan creation). Remove that test or replace it with a "no longer exposes DRIVER_PACKAGES" assertion. Update the suggestion-text assertions to match the new format.
-- Reference: previous implementation in `packages/view/src/Exceptions/NoDriverException.php` (which still has the hardcoded const — this task supersedes that pattern for database; view gets refactored in task 017)
+- Reference: previous implementation in `packages/view/src/Exceptions/NoDriverException.php` (which still has the hardcoded const — this task supersedes that pattern for database; view gets refactored in task 016)
 
 **New suggestion text format:**
 ```

@@ -1,7 +1,7 @@
-# Task 018: Roll out known-drivers pattern — marko/authentication (single-driver)
+# Task 017: Roll out known-drivers pattern — marko/authentication (single-driver)
 
 **Status**: pending
-**Depends on**: 001, 005
+**Depends on**: 001, 004
 **Retry count**: 0
 
 ## Description

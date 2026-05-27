@@ -1,4 +1,4 @@
-# Task 006: Render context/suggestion + URL linkification in marko/errors-advanced
+# Task 005: Render context/suggestion + URL linkification in marko/errors-advanced
 
 **Status**: pending
 **Depends on**: none
@@ -7,7 +7,7 @@
 ## Description
 `marko/errors-advanced` renders exceptions as a pretty HTML page. Two gaps must be addressed:
 
-1. **`PrettyHtmlFormatter::formatDevelopment` does NOT currently render `$report->context` or `$report->suggestion`** — only `$report->message` is rendered. This means all the carefully-crafted context and suggestion text in `MarkoException` subclasses (including the new docs URLs added by the known-drivers refactor in tasks 003 and 008-024) is silently dropped from the HTML output. Confirm by reading `packages/errors-advanced/src/PrettyHtmlFormatter.php` lines 58-89.
+1. **`PrettyHtmlFormatter::formatDevelopment` does NOT currently render `$report->context` or `$report->suggestion`** — only `$report->message` is rendered. This means all the carefully-crafted context and suggestion text in `MarkoException` subclasses (including the new docs URLs added by the known-drivers refactor in tasks 003 and 007-023) is silently dropped from the HTML output. Confirm by reading `packages/errors-advanced/src/PrettyHtmlFormatter.php` lines 58-89.
 2. URLs in exception text render as plain text (not clickable) because the rendering uses a generic `htmlspecialchars` escape via the private `escape()` method.
 
 After this task: `context` and `suggestion` are rendered in the HTML output (each as its own paragraph block, positioned after the message), AND URLs in message/context/suggestion are auto-detected and rendered as `<a href="..." target="_blank" rel="noopener noreferrer">` links. Applied uniformly — this is a generic rendering improvement, not NoDriverException-specific.

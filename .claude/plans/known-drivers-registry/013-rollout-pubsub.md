@@ -1,7 +1,7 @@
-# Task 014: Roll out known-drivers pattern — marko/pubsub
+# Task 013: Roll out known-drivers pattern — marko/pubsub
 
 **Status**: pending
-**Depends on**: 001, 005
+**Depends on**: 001, 004
 **Retry count**: 0
 
 ## Description

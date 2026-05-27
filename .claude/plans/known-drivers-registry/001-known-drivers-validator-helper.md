@@ -15,7 +15,7 @@ Create `KnownDriversValidator` in `marko/testing` providing shared assertion met
 The class provides two static methods (each must skip-gracefully on missing files):
 
 1. **`assertSkeletonSuggestContainsAll(string $knownDriversPath, string $skeletonComposerPath): void`** — reads known-drivers.php, locates skeleton's composer.json, asserts every entry from known-drivers.php is present in skeleton's `suggest` block (descriptions must match verbatim). Skeleton's suggest MAY contain additional entries (add-ons, etc.).
-   **Skip behavior:** skip if (a) skeleton's composer.json is not on disk, OR (b) skeleton's composer.json exists but has no `suggest` key (still being built — task 025 populates it). Once skeleton has a `suggest` key, missing entries become hard failures. This three-state skip is REQUIRED so that per-interface validation tests in tasks 005, 008-024 can pass BEFORE task 025 runs. After task 025 lands, the skip falls through and real assertions fire.
+   **Skip behavior:** skip if (a) skeleton's composer.json is not on disk, OR (b) skeleton's composer.json exists but has no `suggest` key (still being built — task 024 populates it). Once skeleton has a `suggest` key, missing entries become hard failures. This three-state skip is REQUIRED so that per-interface validation tests in tasks 004, 007-023 can pass BEFORE task 024 runs. After task 024 lands, the skip falls through and real assertions fire.
 
 2. **`assertDocsUrlsResolveToValidPattern(string $knownDriversPath): void`** — reads known-drivers.php and asserts every key matches the `marko/*` prefix pattern (URLs are derived from package names; entries that don't follow the pattern can't generate valid URLs).
 

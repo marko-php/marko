@@ -1,7 +1,7 @@
-# Task 009: Roll out known-drivers pattern — marko/errors
+# Task 008: Roll out known-drivers pattern — marko/errors
 
 **Status**: pending
-**Depends on**: 001, 005
+**Depends on**: 001, 004
 **Retry count**: 0
 
 ## Description

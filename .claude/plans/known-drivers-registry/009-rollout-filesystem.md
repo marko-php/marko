@@ -1,7 +1,7 @@
-# Task 010: Roll out known-drivers pattern — marko/filesystem
+# Task 009: Roll out known-drivers pattern — marko/filesystem
 
 **Status**: pending
-**Depends on**: 001, 005
+**Depends on**: 001, 004
 **Retry count**: 0
 
 ## Description

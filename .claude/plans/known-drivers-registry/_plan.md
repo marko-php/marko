@@ -4,7 +4,7 @@
 2026-05-27
 
 ## Status
-planning
+ready
 
 ## Objective
 Establish `known-drivers.php` as the single curated source of truth for each interface package's drivers. Eliminate hardcoded driver lists scattered across `NoDriverException` classes and skeleton's `suggest` block — mechanically enforce sync via CI tests. Roll out to every interface package with ≥1 driver.
@@ -17,11 +17,11 @@ Closes #89
 ## Discovery Notes
 
 **Existing state:**
-- 18 packages already define a `NoDriverException` class. 17 use a `noDriverInstalled()` static factory; **`marko/page-cache` is the lone outlier — it uses `noBinding()`** (will be standardized to `noDriverInstalled()` in task 024). Most have a hardcoded `private const array DRIVER_PACKAGES = [...]`; a few have just a single hardcoded package in the suggestion text. Pattern is established but lists drift independently.
-- `marko/view`'s `NoDriverException` currently lists only `marko/view-latte` (no `marko/view-twig` package exists on disk in this monorepo). This plan formalizes the registry pattern; **the actual creation of `marko/view-twig` is OUT OF SCOPE** — it's a separate plan. For now, `view/known-drivers.php` will list only `marko/view-latte`.
-- **`marko/inertia` does NOT currently have a `NoDriverException`** — it must be created as part of task 011 following the established pattern.
+- 18 packages already define a `NoDriverException` class. 17 use a `noDriverInstalled()` static factory; **`marko/page-cache` is the lone outlier — it uses `noBinding()`** (will be standardized to `noDriverInstalled()` in task 023). Most have a hardcoded `private const array DRIVER_PACKAGES = [...]`; a few have just a single hardcoded package in the suggestion text. Pattern is established but lists drift independently.
+- `marko/view`'s `NoDriverException` currently lists both `marko/view-latte` and `marko/view-twig` (both packages now in monorepo after PR #88 and #92). This plan formalizes the registry pattern; the view rollout (task 016) refactors that exception to read from `known-drivers.php`.
+- **`marko/inertia` does NOT currently have a `NoDriverException`** — it must be created as part of task 010 following the established pattern.
 - The `admin` package has a `NoDriverException` but no drivers (admin-api/admin-auth/admin-panel are sub-modules of an admin system, not drivers). Excluded as a separate concern.
-- **Several existing tests assert against the soon-to-be-removed `DRIVER_PACKAGES` const** (e.g., `packages/database/tests/NoDriverExceptionTest.php` line 9-16). The refactor tasks (003, 008-017) must update or remove those assertions in addition to the source-file changes.
+- **Several existing tests assert against the soon-to-be-removed `DRIVER_PACKAGES` const** (e.g., `packages/database/tests/NoDriverExceptionTest.php` line 9-16). The refactor tasks (003, 007-016) must update or remove those assertions in addition to the source-file changes.
 
 **Driver classification (multi-driver, mutually-exclusive — bind same interface):**
 | Interface | Drivers | Recommended (listed first) |
@@ -36,7 +36,7 @@ Closes #89
 | pubsub | pgsql, redis | redis (purpose-built) |
 | queue | sync, database, rabbitmq | sync (zero-infrastructure default) |
 | session | file, database | file |
-| view | latte (only driver currently — view-twig not yet built) | latte |
+| view | twig, latte | twig (broader ecosystem familiarity) |
 
 **Single-driver interfaces (one driver currently — known-drivers.php still applies):**
 authentication (token), encryption (openssl), http (guzzle), log (file), notification (database), translation (file), page-cache (file)
@@ -47,7 +47,7 @@ authentication (token), encryption (openssl), http (guzzle), log (file), notific
 
 **Mechanical rule:** a package is a driver iff its `module.php` `bindings` array contains the interface's defining contract. Add-ons have empty `bindings: []` (database-readwrite, page-cache-entity confirmed). For v1, `known-drivers.php` is the curated source — interface-package maintainer decides. Marker interfaces or `extra.marko.driver_for` declarations are out of scope but viable follow-ups if drift becomes a problem.
 
-**errors-advanced URL rendering:** currently `PrettyHtmlFormatter::formatDevelopment` only renders `$report->message` through `escape()` — it does NOT currently render `$report->context` or `$report->suggestion` at all (verified in `packages/errors-advanced/src/PrettyHtmlFormatter.php` line 58-89). Task 006 in this plan does TWO things: (1) adds rendering of `context` and `suggestion` to the HTML output (so users actually see the NoDriverException's installation guidance), and (2) adds URL detection + `target="_blank" rel="noopener noreferrer"` linkification, applied uniformly to message, context, and suggestion fields. Without (1), the docs URLs we're adding to NoDriverException won't be visible in errors-advanced output at all.
+**errors-advanced URL rendering:** currently `PrettyHtmlFormatter::formatDevelopment` only renders `$report->message` through `escape()` — it does NOT currently render `$report->context` or `$report->suggestion` at all (verified in `packages/errors-advanced/src/PrettyHtmlFormatter.php` line 58-89). Task 005 in this plan does TWO things: (1) adds rendering of `context` and `suggestion` to the HTML output (so users actually see the NoDriverException's installation guidance), and (2) adds URL detection + `target="_blank" rel="noopener noreferrer"` linkification, applied uniformly to message, context, and suggestion fields. Without (1), the docs URLs we're adding to NoDriverException won't be visible in errors-advanced output at all.
 
 **marko/view test leak:** `packages/view/tests/Feature/IntegrationTest.php` uses `Marko\View\Latte\LatteEngineFactory` — a hard dependency on view-latte from inside the interface package's test suite. Cleanup task moves it to view-latte (where the integration test logically belongs).
 
@@ -105,27 +105,27 @@ authentication (token), encryption (openssl), http (guzzle), log (file), notific
 | 001 | Add `KnownDriversValidator` to marko/testing | - | pending |
 | 002 | Pilot: database known-drivers.php | - | pending |
 | 003 | Pilot: refactor database `NoDriverException` (read from file + docs URLs) | 002 | pending |
-| 005 | Pilot: database validation test | 001, 002, 003 | pending |
-| 006 | Render context/suggestion + URL linkification in errors-advanced | - | pending |
-| 007 | Clean up marko/view test suite (move IntegrationTest) | - | pending |
-| 008 | Roll out: cache | 001, 005 | pending |
-| 009 | Roll out: errors | 001, 005 | pending |
-| 010 | Roll out: filesystem | 001, 005 | pending |
-| 011 | Roll out: inertia (creates new NoDriverException) | 001, 005 | pending |
-| 012 | Roll out: mail | 001, 005 | pending |
-| 013 | Roll out: media | 001, 005 | pending |
-| 014 | Roll out: pubsub | 001, 005 | pending |
-| 015 | Roll out: queue | 001, 005 | pending |
-| 016 | Roll out: session | 001, 005 | pending |
-| 017 | Roll out: view (single-driver: only view-latte; view-twig out of scope) | 001, 005, 007 | pending |
-| 018 | Roll out: authentication (single-driver) | 001, 005 | pending |
-| 019 | Roll out: encryption (single-driver) | 001, 005 | pending |
-| 020 | Roll out: http (single-driver) | 001, 005 | pending |
-| 021 | Roll out: log (single-driver) | 001, 005 | pending |
-| 022 | Roll out: notification (single-driver) | 001, 005 | pending |
-| 023 | Roll out: translation (single-driver) | 001, 005 | pending |
-| 024 | Roll out: page-cache (single-driver; entity is add-on; renames noBinding to noDriverInstalled) | 001, 005 | pending |
-| 025 | Skeleton consolidation (suggest block with all drivers + add-ons) | 003, 008–024 | pending |
+| 004 | Pilot: database validation test | 001, 002, 003 | pending |
+| 005 | Render context/suggestion + URL linkification in errors-advanced | - | pending |
+| 006 | Clean up marko/view test suite (move IntegrationTest) | - | pending |
+| 007 | Roll out: cache | 001, 004 | pending |
+| 008 | Roll out: errors | 001, 004 | pending |
+| 009 | Roll out: filesystem | 001, 004 | pending |
+| 010 | Roll out: inertia (creates new NoDriverException) | 001, 004 | pending |
+| 011 | Roll out: mail | 001, 004 | pending |
+| 012 | Roll out: media | 001, 004 | pending |
+| 013 | Roll out: pubsub | 001, 004 | pending |
+| 014 | Roll out: queue | 001, 004 | pending |
+| 015 | Roll out: session | 001, 004 | pending |
+| 016 | Roll out: view (both view-latte and view-twig) | 001, 004, 006 | pending |
+| 017 | Roll out: authentication (single-driver) | 001, 004 | pending |
+| 018 | Roll out: encryption (single-driver) | 001, 004 | pending |
+| 019 | Roll out: http (single-driver) | 001, 004 | pending |
+| 020 | Roll out: log (single-driver) | 001, 004 | pending |
+| 021 | Roll out: notification (single-driver) | 001, 004 | pending |
+| 022 | Roll out: translation (single-driver) | 001, 004 | pending |
+| 023 | Roll out: page-cache (single-driver; entity is add-on; renames noBinding to noDriverInstalled) | 001, 004 | pending |
+| 024 | Skeleton consolidation (suggest block with all drivers + add-ons) | 003, 007–023 | pending |
 
 ## Architecture Notes
 
@@ -189,7 +189,7 @@ Each assertion:
 - Reads `known-drivers.php`
 - For `assertSkeletonSuggestContainsAll`: locates skeleton's composer.json, compares its `suggest` block to known-drivers.php entries
 - **Skips gracefully** (not fails) when files missing — since static methods cannot call `markTestSkipped()` directly, throw `\PHPUnit\Framework\SkippedWithMessageException` which Pest treats as a skip
-- Also skip when skeleton.composer.json exists but has no `suggest` key yet — required because per-interface validation tests (005, 008-024) run BEFORE skeleton consolidation (025) in topological order
+- Also skip when skeleton.composer.json exists but has no `suggest` key yet — required because per-interface validation tests (004, 007-023) run BEFORE skeleton consolidation (024) in topological order
 - Asserts the expected sync invariant when files are present and populated
 
 **errors-advanced URL handling:**
@@ -198,15 +198,15 @@ The `PrettyHtmlFormatter::formatDevelopment` currently only renders `$report->me
 ## Risks & Mitigations
 
 - **Risk:** Refactoring 18 NoDriverException classes is touch-heavy; subtle bugs (typos in interface names, wrong docs URL pattern) could slip through.
-  **Mitigation:** The validation tests (task 005's pattern, replicated per interface in tasks 008-024) mechanically catch drift between known-drivers.php and skeleton suggest entries. The docs URL derivation is centralized in one place (one helper per NoDriverException).
+  **Mitigation:** The validation tests (task 004's pattern, replicated per interface in tasks 007-023) mechanically catch drift between known-drivers.php and skeleton suggest entries. The docs URL derivation is centralized in one place (one helper per NoDriverException).
 
 - **Risk:** Tests run in CI where all packages are present (monorepo), but a user installing marko/view standalone could fail validation tests if they're written naively.
-  **Mitigation:** Skip-gracefully behavior in `KnownDriversValidator` (skips when skeleton.composer.json is missing). Validate by running `marko/view` tests with marko/view-latte uninstalled as part of task 007 acceptance criteria.
+  **Mitigation:** Skip-gracefully behavior in `KnownDriversValidator` (skips when skeleton.composer.json is missing). Validate by running `marko/view` tests with marko/view-latte uninstalled as part of task 006 acceptance criteria.
 
 - **Risk:** `errors-advanced` URL linkification could break existing output formatting if the regex over-matches (e.g., catching text that looks URL-ish but isn't).
   **Mitigation:** Conservative regex pattern (require `http://` or `https://` prefix; stop at whitespace or `<`). Add regression tests for non-URL text passing through unchanged. Tests run before merge.
 
-- **Risk:** Skeleton consolidation task (025) creates a long, hard-to-read suggest block in composer.json.
+- **Risk:** Skeleton consolidation task (024) creates a long, hard-to-read suggest block in composer.json.
   **Mitigation:** Composer suggest is read at install time only, never at runtime. Length is a one-time cost during scaffolding. The recommended-first ordering with descriptions makes it navigable.
 
 - **Risk:** The `admin/NoDriverException` excluded from this plan could confuse maintainers who see other packages refactored but admin left behind.

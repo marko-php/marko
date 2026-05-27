@@ -1,7 +1,7 @@
-# Task 023: Roll out known-drivers pattern — marko/translation (single-driver)
+# Task 022: Roll out known-drivers pattern — marko/translation (single-driver)
 
 **Status**: pending
-**Depends on**: 001, 005
+**Depends on**: 001, 004
 **Retry count**: 0
 
 ## Description

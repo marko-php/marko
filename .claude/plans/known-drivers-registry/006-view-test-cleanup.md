@@ -1,4 +1,4 @@
-# Task 007: Clean up marko/view test suite — zero dependency on marko/view-latte
+# Task 006: Clean up marko/view test suite — zero dependency on marko/view-latte
 
 **Status**: pending
 **Depends on**: none

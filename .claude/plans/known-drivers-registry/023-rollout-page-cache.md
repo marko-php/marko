@@ -1,7 +1,7 @@
-# Task 024: Roll out known-drivers pattern — marko/page-cache (single-driver; entity is add-on)
+# Task 023: Roll out known-drivers pattern — marko/page-cache (single-driver; entity is add-on)
 
 **Status**: pending
-**Depends on**: 001, 005
+**Depends on**: 001, 004
 **Retry count**: 0
 
 ## Description
@@ -10,7 +10,7 @@ Apply the single-driver variant to `marko/page-cache`. The page-cache family has
 ## Context
 - Driver: `marko/page-cache-file`
 - Add-on (NOT enrolled in known-drivers.php): `marko/page-cache-entity`
-- `marko/page-cache-entity` will appear in skeleton's suggest block (added in task 025) but is NOT enrolled in known-drivers.php (add-on, not a driver).
+- `marko/page-cache-entity` will appear in skeleton's suggest block (added in task 024) but is NOT enrolled in known-drivers.php (add-on, not a driver).
 
 **Description text for known-drivers.php:**
 - `marko/page-cache-file` → `'File-based page cache driver'`

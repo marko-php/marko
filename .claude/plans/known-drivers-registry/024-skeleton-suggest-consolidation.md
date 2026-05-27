@@ -1,7 +1,7 @@
-# Task 025: Consolidate skeleton's composer suggest block
+# Task 024: Consolidate skeleton's composer suggest block
 
 **Status**: pending
-**Depends on**: 003, 008, 009, 010, 011, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 023, 024
+**Depends on**: 003, 007, 008, 009, 010, 011, 012, 013, 014, 015, 016, 017, 018, 019, 020, 021, 022, 023
 **Retry count**: 0
 
 ## Description
@@ -11,7 +11,7 @@ Update `packages/skeleton/composer.json`'s `suggest` block to include every driv
 - File to modify: `packages/skeleton/composer.json`
 - New test file: `packages/skeleton/tests/KnownDriversSuggestParityTest.php`
 
-**CRITICAL: description-string source of truth.** The exact description string for each driver is defined in its interface's `known-drivers.php` (created in tasks 002, 008-017, 018-024). Skeleton's `suggest` block MUST use those exact strings (literal equality, including em-dashes, parenthetical clauses, and trailing punctuation). The `assertSkeletonSuggestContainsAll` validation test in each interface's KnownDriversValidationTest will fail if any string diverges by even a single character.
+**CRITICAL: description-string source of truth.** The exact description string for each driver is defined in its interface's `known-drivers.php` (created in tasks 002, 007-016, 017-023). Skeleton's `suggest` block MUST use those exact strings (literal equality, including em-dashes, parenthetical clauses, and trailing punctuation). The `assertSkeletonSuggestContainsAll` validation test in each interface's KnownDriversValidationTest will fail if any string diverges by even a single character.
 
 **Implementation procedure (do NOT copy from the sample below):**
 1. For each driver entry to add to skeleton's suggest, `require` the corresponding `packages/{interface}/known-drivers.php` file
