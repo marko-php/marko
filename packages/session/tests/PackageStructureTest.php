@@ -97,3 +97,16 @@ it('has default session.php config file', function () {
         ->and($config)->toHaveKey('lifetime')
         ->and($config)->toHaveKey('cookie');
 });
+
+it('module.php declares SessionMiddleware as globalMiddleware', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['globalMiddleware'] ?? [])
+        ->toContain('Marko\\Session\\Middleware\\SessionMiddleware');
+});
+
+it('module.php declares marko/page-cache as a soft after dependency', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['sequence']['after'] ?? [])->toContain('marko/page-cache');
+});

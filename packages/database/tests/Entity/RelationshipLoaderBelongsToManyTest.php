@@ -280,6 +280,27 @@ function makeBtmFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this;
         }
 
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static {
+            return $this;
+        }
+
+        public function selectRaw(
+            string $expression,
+            array $bindings = [],
+        ): static {
+            return $this;
+        }
+
+        public function whereRaw(
+            string $expression,
+            array $bindings = [],
+        ): static {
+            return $this;
+        }
+
         public function limit(int $limit): static
         {
             return $this;
@@ -531,6 +552,27 @@ function makeBtmDataAndTrackingFactory(array $responsesQueue, array &$queries): 
                 public function orderBy(
                     string $column,
                     string $direction = 'ASC',
+                ): static {
+                    return $this;
+                }
+
+                public function orderByRaw(
+                    string $expression,
+                    string $direction = 'ASC',
+                ): static {
+                    return $this;
+                }
+
+                public function selectRaw(
+                    string $expression,
+                    array $bindings = [],
+                ): static {
+                    return $this;
+                }
+
+                public function whereRaw(
+                    string $expression,
+                    array $bindings = [],
                 ): static {
                     return $this;
                 }
@@ -794,7 +836,7 @@ it('sets BelongsToMany property to empty array when no related entities found', 
     $loader = makeBtmLoader($qbFactory, $metadataFactory);
     $loader->load([$post], $relationship, $postMeta);
 
-    expect($post->tags)->toBe([]);
+    expect($post->tags)->toBeEmpty();
 });
 
 it('resolves through pivot table using two queries', function (): void {
@@ -1127,5 +1169,5 @@ it('handles parents with no pivot rows', function (): void {
     $loader->load([$post1, $post2], $relationship, $postMeta);
 
     expect($post1->tags)->toHaveCount(1)
-        ->and($post2->tags)->toBe([]);
+        ->and($post2->tags)->toBeEmpty();
 });

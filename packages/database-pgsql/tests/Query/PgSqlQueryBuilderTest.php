@@ -254,18 +254,21 @@ describe('PgSqlQueryBuilder', function (): void {
         );
     });
 
-    it('throws UnionShapeMismatchException when the two queries select different numbers of columns', function (): void {
-        $connection = new MockConnection();
-
-        $left = new PgSqlQueryBuilder($connection);
-        $left->table('users')->select('name', 'email');
-
-        $right = new PgSqlQueryBuilder(new MockConnection());
-        $right->table('admins')->select('name');
-
-        expect(fn () => $left->union($right))
-            ->toThrow(UnionShapeMismatchException::class);
-    });
+    it(
+        'throws UnionShapeMismatchException when the two queries select different numbers of columns',
+        function (): void {
+            $connection = new MockConnection();
+    
+            $left = new PgSqlQueryBuilder($connection);
+            $left->table('users')->select('name', 'email');
+    
+            $right = new PgSqlQueryBuilder(new MockConnection());
+            $right->table('admins')->select('name');
+    
+            expect(fn () => $left->union($right))
+                ->toThrow(UnionShapeMismatchException::class);
+        }
+    );
 
     it('combines two queries with UNION ALL preserving duplicates', function (): void {
         $connection = new MockConnection(

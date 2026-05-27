@@ -40,6 +40,8 @@ class ManifestParser
             singletons: $moduleData['singletons'] ?? [],
             autoload: $composerData['autoload']['psr-4'] ?? [],
             boot: $moduleData['boot'] ?? null,
+            globalMiddleware: $moduleData['globalMiddleware'] ?? [],
+            extra: $composerData['extra'] ?? [],
         );
     }
 

@@ -7,6 +7,11 @@ const arcadeDark = JSON.parse(
 	readFileSync(new URL('./src/themes/arcade-dark.json', import.meta.url), 'utf-8')
 );
 
+const latteGrammar = JSON.parse(
+	readFileSync(new URL('./src/grammars/latte.tmLanguage.json', import.meta.url), 'utf-8')
+);
+latteGrammar.name = 'latte';
+
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://marko.build',
@@ -19,6 +24,12 @@ export default defineConfig({
 			},
 			expressiveCode: {
 				themes: [arcadeDark],
+				shiki: {
+					langs: [latteGrammar, 'twig', 'dotenv'],
+					langAlias: {
+						env: 'dotenv',
+					},
+				},
 			},
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/markshust/marko' },

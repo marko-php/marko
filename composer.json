@@ -22,6 +22,14 @@
         },
         {
             "type": "path",
+            "url": "packages/admin-panel-latte"
+        },
+        {
+            "type": "path",
+            "url": "packages/admin-panel-twig"
+        },
+        {
+            "type": "path",
             "url": "packages/amphp"
         },
         {
@@ -83,6 +91,10 @@
         {
             "type": "path",
             "url": "packages/database-pgsql"
+        },
+        {
+            "type": "path",
+            "url": "packages/database-readwrite"
         },
         {
             "type": "path",
@@ -318,6 +330,10 @@
         },
         {
             "type": "path",
+            "url": "packages/view-twig"
+        },
+        {
+            "type": "path",
             "url": "packages/vite"
         },
         {
@@ -335,6 +351,8 @@
         "marko/admin-api": "self.version",
         "marko/admin-auth": "self.version",
         "marko/admin-panel": "self.version",
+        "marko/admin-panel-latte": "self.version",
+        "marko/admin-panel-twig": "self.version",
         "marko/amphp": "self.version",
         "marko/api": "self.version",
         "marko/authentication": "self.version",
@@ -351,6 +369,7 @@
         "marko/database": "self.version",
         "marko/database-mysql": "self.version",
         "marko/database-pgsql": "self.version",
+        "marko/database-readwrite": "self.version",
         "marko/dev-server": "self.version",
         "marko/encryption": "self.version",
         "marko/encryption-openssl": "self.version",
@@ -407,6 +426,7 @@
         "marko/validation": "self.version",
         "marko/view": "self.version",
         "marko/view-latte": "self.version",
+        "marko/view-twig": "self.version",
         "marko/vite": "self.version",
         "marko/webhook": "self.version"
     },
@@ -416,7 +436,6 @@
         "aws/aws-sdk-php": "^3.0",
         "friendsofphp/php-cs-fixer": "^3.92",
         "guzzlehttp/guzzle": "^7.0",
-        "latte/latte": "^3.0",
         "marko/debugbar": "self.version",
         "pestphp/pest": "^4.3",
         "php-amqplib/php-amqplib": "^3.0",
@@ -450,6 +469,8 @@
             "Marko\\AdminApi\\Tests\\": "packages/admin-api/tests/",
             "Marko\\AdminAuth\\Tests\\": "packages/admin-auth/tests/",
             "Marko\\AdminPanel\\Tests\\": "packages/admin-panel/tests/",
+            "Marko\\AdminPanel\\Latte\\Tests\\": "packages/admin-panel-latte/tests/",
+            "Marko\\AdminPanel\\Twig\\Tests\\": "packages/admin-panel-twig/tests/",
             "Marko\\Amphp\\Tests\\": "packages/amphp/tests/",
             "Marko\\Api\\Tests\\": "packages/api/tests/",
             "Marko\\Authentication\\Tests\\": "packages/authentication/tests/",
@@ -466,6 +487,7 @@
             "Marko\\Database\\Tests\\": "packages/database/tests/",
             "Marko\\Database\\MySql\\Tests\\": "packages/database-mysql/tests/",
             "Marko\\Database\\PgSql\\Tests\\": "packages/database-pgsql/tests/",
+            "Marko\\Database\\ReadWrite\\Tests\\": "packages/database-readwrite/tests/",
             "Marko\\Debugbar\\Tests\\": "packages/debugbar/tests/",
             "Marko\\DevServer\\Tests\\": "packages/dev-server/tests/",
             "Marko\\Encryption\\Tests\\": "packages/encryption/tests/",
@@ -523,6 +545,7 @@
             "Marko\\Validation\\Tests\\": "packages/validation/tests/",
             "Marko\\View\\Tests\\": "packages/view/tests/",
             "Marko\\View\\Latte\\Tests\\": "packages/view-latte/tests/",
+            "Marko\\View\\Twig\\Tests\\": "packages/view-twig/tests/",
             "Marko\\Vite\\Tests\\": "packages/vite/tests/",
             "Marko\\Webhook\\Tests\\": "packages/webhook/tests/"
         }

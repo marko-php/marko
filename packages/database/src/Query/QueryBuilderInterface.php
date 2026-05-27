@@ -30,6 +30,34 @@ interface QueryBuilderInterface
     public function select(string ...$columns): static;
 
     /**
+     * Add a raw SQL expression to the SELECT list.
+     *
+     * The expression is appended after any columns added via select(). Include
+     * "AS alias" in the expression if you need a column alias. If no select()
+     * call precedes this, the default '*' column is preserved (emitting
+     * `SELECT *, <expression>`).
+     *
+     * Security: $expression must not contain semicolons, SQL comment markers,
+     * or backticks. Never interpolate user-supplied values directly — use ?
+     * placeholders and pass values via $bindings.
+     *
+     * Binding order: bindings from selectRaw() are positioned before any WHERE
+     * bindings in the compiled query, in the order selectRaw() calls were made.
+     *
+     * Note: aggregate methods (count, min, max, sum, avg) build their own
+     * SELECT list and ignore selectRaw additions.
+     *
+     * @param string $expression Raw SQL select expression (e.g. "COALESCE(a, b) AS resolved")
+     * @param array  $bindings   Positional bindings for ? placeholders in the expression
+     * @return static For fluent chaining
+     * @throws InvalidColumnException When the expression contains dangerous patterns
+     */
+    public function selectRaw(
+        string $expression,
+        array $bindings = [],
+    ): static;
+
+    /**
      * Enable DISTINCT selection to deduplicate result rows.
      *
      * Note: When combined with union(), DISTINCT is applied only to this side
@@ -134,6 +162,33 @@ interface QueryBuilderInterface
     ): static;
 
     /**
+     * Add a raw SQL WHERE condition with optional positional bindings.
+     *
+     * The expression is AND-combined with any other where conditions, in call
+     * order, after the regular where()/whereIn/whereNull/etc. conditions.
+     *
+     * Aggregate methods (count, min, max, sum, avg) honor whereRaw conditions
+     * the same way they honor where().
+     *
+     * Security: $expression must not contain semicolons, SQL comment markers,
+     * or backticks. Never interpolate user-supplied values directly — use ?
+     * placeholders and pass values via $bindings.
+     *
+     * Binding order: bindings from whereRaw() are positioned after any
+     * selectRaw() bindings in the compiled query, in the order whereRaw()
+     * calls were made.
+     *
+     * @param string $expression Raw SQL WHERE expression (e.g. "COALESCE(price, base) > ?")
+     * @param array  $bindings   Positional bindings for ? placeholders
+     * @return static For fluent chaining
+     * @throws InvalidColumnException When the expression contains dangerous patterns
+     */
+    public function whereRaw(
+        string $expression,
+        array $bindings = [],
+    ): static;
+
+    /**
      * Add an INNER JOIN clause.
      *
      * @param string $table The table to join
@@ -204,7 +259,10 @@ interface QueryBuilderInterface
      * @return static For fluent chaining
      * @throws InvalidColumnException When the expression contains dangerous patterns
      */
-    public function having(string $expression, array $bindings = []): static;
+    public function having(
+        string $expression,
+        array $bindings = [],
+    ): static;
 
     /**
      * Add an ORDER BY clause.
@@ -215,6 +273,24 @@ interface QueryBuilderInterface
      */
     public function orderBy(
         string $column,
+        string $direction = 'ASC',
+    ): static;
+
+    /**
+     * Add an ORDER BY clause with a raw SQL expression.
+     *
+     * Security: $expression must not contain semicolons, SQL comment markers,
+     * or backticks. This method does not accept bindings — ORDER BY operates on
+     * column references and expressions, not user-supplied values. If you need
+     * a value here, compute it in PHP and use orderBy() with a regular column.
+     *
+     * @param string $expression The raw SQL expression to order by (e.g. a COALESCE expression)
+     * @param string $direction The sort direction (ASC or DESC)
+     * @return static For fluent chaining
+     * @throws InvalidColumnException When the expression contains dangerous patterns
+     */
+    public function orderByRaw(
+        string $expression,
         string $direction = 'ASC',
     ): static;
 

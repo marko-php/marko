@@ -94,17 +94,20 @@ describe('PgSqlQueryBuilder GROUP BY / HAVING', function (): void {
         );
     });
 
-    it('validates GROUP BY column identifiers against the alias/identifier whitelist (reuses the whitelist introduced in task 006)', function (): void {
-        $conn = new MockConnection();
-
-        expect(
-            fn () => (new PgSqlQueryBuilder($conn))
-            ->table('orders')
-            ->select('status')
-            ->groupBy('status; DROP TABLE orders--')
-            ->get(),
-        )->toThrow(InvalidColumnException::class);
-    });
+    it(
+        'validates GROUP BY column identifiers against the alias/identifier whitelist (reuses the whitelist introduced in task 006)',
+        function (): void {
+            $conn = new MockConnection();
+    
+            expect(
+                fn () => (new PgSqlQueryBuilder($conn))
+                ->table('orders')
+                ->select('status')
+                ->groupBy('status; DROP TABLE orders--')
+                ->get(),
+            )->toThrow(InvalidColumnException::class);
+        }
+    );
 
     it('rejects HAVING expressions containing semicolons or SQL comments', function (): void {
         $conn = new MockConnection();
@@ -137,20 +140,23 @@ describe('PgSqlQueryBuilder GROUP BY / HAVING', function (): void {
         )->toThrow(InvalidColumnException::class);
     });
 
-    it('composes HAVING bindings with WHERE bindings in the correct positional order at execute time', function (): void {
-        $conn = new MockConnection();
-
-        (new PgSqlQueryBuilder($conn))
-            ->table('orders')
-            ->select('status', 'country')
-            ->where('active', '=', 1)
-            ->groupBy('status', 'country')
-            ->having('COUNT(*) BETWEEN ? AND ?', [3, 10])
-            ->get();
-
-        expect($conn->lastQuerySql)->toBe(
-            'SELECT "status", "country" FROM "orders" WHERE "active" = ? GROUP BY "status", "country" HAVING COUNT(*) BETWEEN ? AND ?',
-        )
-            ->and($conn->lastQueryBindings)->toBe([1, 3, 10]);
-    });
+    it(
+        'composes HAVING bindings with WHERE bindings in the correct positional order at execute time',
+        function (): void {
+            $conn = new MockConnection();
+    
+            (new PgSqlQueryBuilder($conn))
+                ->table('orders')
+                ->select('status', 'country')
+                ->where('active', '=', 1)
+                ->groupBy('status', 'country')
+                ->having('COUNT(*) BETWEEN ? AND ?', [3, 10])
+                ->get();
+    
+            expect($conn->lastQuerySql)->toBe(
+                'SELECT "status", "country" FROM "orders" WHERE "active" = ? GROUP BY "status", "country" HAVING COUNT(*) BETWEEN ? AND ?',
+            )
+                ->and($conn->lastQueryBindings)->toBe([1, 3, 10]);
+        }
+    );
 });

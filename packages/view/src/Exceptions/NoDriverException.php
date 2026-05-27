@@ -8,6 +8,7 @@ class NoDriverException extends ViewException
 {
     private const array DRIVER_PACKAGES = [
         'marko/view-latte',
+        'marko/view-twig',
     ];
 
     public static function noDriverInstalled(): self

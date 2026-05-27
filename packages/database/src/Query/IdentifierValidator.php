@@ -47,7 +47,7 @@ class IdentifierValidator
     public static function parseSelectExpression(
         string $expression,
     ): array {
-        self::rejectDangerousPatterns($expression);
+        self::assertNoDangerousPatterns($expression);
 
         // Split on the AS keyword (case-insensitive), allowing surrounding whitespace
         $parts = preg_split('/\s+[Aa][Ss]\s+/', $expression, 2);
@@ -81,11 +81,17 @@ class IdentifierValidator
     }
 
     /**
-     * Reject expressions containing SQL injection patterns such as comments and semicolons.
+     * Reject raw SQL expressions containing dangerous patterns (statement terminators,
+     * comment markers, and backticks).
      *
-     * @throws InvalidColumnException
+     * Shared by every method on the QueryBuilder that accepts a raw expression
+     * (selectRaw, whereRaw, orderByRaw, having) so the denylist is defined in one
+     * place. Bindings for ? placeholders are passed separately and are not
+     * subject to this check.
+     *
+     * @throws InvalidColumnException When the expression contains a dangerous pattern
      */
-    private static function rejectDangerousPatterns(
+    public static function assertNoDangerousPatterns(
         string $expression,
     ): void {
         if (
@@ -93,6 +99,7 @@ class IdentifierValidator
             || str_contains($expression, '--')
             || str_contains($expression, '/*')
             || str_contains($expression, '*/')
+            || str_contains($expression, '`')
         ) {
             throw InvalidColumnException::invalidColumn($expression);
         }

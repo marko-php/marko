@@ -8,6 +8,8 @@ Server-rendered admin panel UI — provides login, dashboard, and permission-fil
 composer require marko/admin-panel
 ```
 
+You also need a template package matching your view engine: `marko/admin-panel-latte` (for Latte) or `marko/admin-panel-twig` (for Twig).
+
 ## Quick Example
 
 ```php

@@ -189,6 +189,7 @@ Marko ships as composable packages — require only what you need. Every package
 | [database](packages/database/README.md) | Database abstraction, migrations, entity management |
 | [database-pgsql](packages/database-pgsql/README.md) | PostgreSQL driver |
 | [database-mysql](packages/database-mysql/README.md) | MySQL driver |
+| [database-readwrite](packages/database-readwrite/README.md) | Read/write connection splitting |
 
 ### Caching
 

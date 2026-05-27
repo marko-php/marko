@@ -11,7 +11,7 @@ Server-rendered admin panel UI --- provides login, dashboard, and permission-fil
 composer require marko/admin-panel
 ```
 
-Requires [`marko/admin`](/docs/packages/admin/), [`marko/admin-auth`](/docs/packages/admin-auth/), and a view driver (e.g., [`marko/view-latte`](/docs/packages/view-latte/)).
+Requires [`marko/admin`](/docs/packages/admin/), [`marko/admin-auth`](/docs/packages/admin-auth/), a view driver, and a template sibling package. Install [`marko/admin-panel-latte`](/docs/packages/admin-panel-latte/) with [`marko/view-latte`](/docs/packages/view-latte/), or [`marko/admin-panel-twig`](/docs/packages/admin-panel-twig/) with [`marko/view-twig`](/docs/packages/view-twig/).
 
 ## Usage
 

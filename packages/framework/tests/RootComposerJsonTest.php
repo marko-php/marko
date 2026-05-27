@@ -10,6 +10,8 @@ $allPackages = [
     'marko/admin-api',
     'marko/admin-auth',
     'marko/admin-panel',
+    'marko/admin-panel-latte',
+    'marko/admin-panel-twig',
     'marko/amphp',
     'marko/api',
     'marko/authentication',
@@ -26,6 +28,7 @@ $allPackages = [
     'marko/database',
     'marko/database-mysql',
     'marko/database-pgsql',
+    'marko/database-readwrite',
     'marko/dev-server',
     'marko/encryption',
     'marko/encryption-openssl',
@@ -74,10 +77,11 @@ $allPackages = [
     'marko/validation',
     'marko/view',
     'marko/view-latte',
+    'marko/view-twig',
     'marko/webhook',
 ];
 
-it('adds a require section entry for all 70 marko packages set to self.version', function () use ($rootComposer, $allPackages): void {
+it('adds a require section entry for all 73 marko packages set to self.version', function () use ($rootComposer, $allPackages): void {
     expect($rootComposer)->toHaveKey('require');
 
     foreach ($allPackages as $package) {
@@ -90,7 +94,7 @@ it('does not have a replace section (path repos install as symlinks without it)'
     expect($rootComposer)->not->toHaveKey('replace');
 });
 
-it('adds repositories section with path repos for all 70 packages', function () use ($rootComposer, $allPackages): void {
+it('adds repositories section with path repos for all 73 packages', function () use ($rootComposer, $allPackages): void {
     expect($rootComposer)->toHaveKey('repositories');
 
     $repoUrls = array_column($rootComposer['repositories'], 'url');
@@ -112,7 +116,7 @@ it('removes all manual PSR-4 autoload entries for marko packages', function () u
         return;
     }
 
-    foreach ($rootComposer['autoload']['psr-4'] as $namespace => $path) {
+    foreach (array_keys($rootComposer['autoload']['psr-4']) as $namespace) {
         expect(str_starts_with($namespace, 'Marko\\'))->toBeFalse();
     }
 });
@@ -152,7 +156,6 @@ it('preserves existing require (php, ext-*) and require-dev (third-party) entrie
         'aws/aws-sdk-php',
         'friendsofphp/php-cs-fixer',
         'guzzlehttp/guzzle',
-        'latte/latte',
         'pestphp/pest',
         'php-amqplib/php-amqplib',
         'predis/predis',

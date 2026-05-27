@@ -11,7 +11,7 @@ View and template rendering interface --- defines how controllers render templat
 composer require marko/view
 ```
 
-Note: You also need a view driver. Install `marko/view-latte` for Latte template support.
+Note: You also need a view driver. Install `marko/view-latte` for Latte template support or `marko/view-twig` for Twig template support.
 
 ## Usage
 
@@ -56,7 +56,7 @@ Templates follow the `module::path` pattern:
 - `blog::post/show` --- resolves to the `blog` module's `resources/views/post/show` template
 - `admin-panel::dashboard/index` --- resolves to the `admin-panel` module's dashboard view
 
-The file extension is configured via `view.extension` in config (e.g., `.latte`).
+The file extension is configured by the installed driver (e.g., `.latte` for `marko/view-latte`, `.twig` for `marko/view-twig`).
 
 ### Template File Location
 
@@ -67,10 +67,12 @@ mymodule/
   resources/
     views/
       post/
-        index.latte
-        show.latte
-      layout.latte
+        index.{ext}
+        show.{ext}
+      layout.{ext}
 ```
+
+The file extension depends on the installed driver (`.latte` for `marko/view-latte`, `.twig` for `marko/view-twig`).
 
 ### Resolving Template Paths
 
@@ -89,7 +91,7 @@ readonly class TemplateFinder
         string $template,
     ): string {
         return $this->templateResolver->resolve($template);
-        // Returns: /path/to/blog/resources/views/post/show.latte
+        // Returns: /path/to/blog/resources/views/post/show.latte (or .twig, etc.)
     }
 }
 ```
@@ -111,10 +113,8 @@ class MyService
 
     public function setup(): void
     {
-        $extension = $this->viewConfig->extension();
         $cacheDir = $this->viewConfig->cacheDirectory();
         $autoRefresh = $this->viewConfig->autoRefresh();
-        $strictTypes = $this->viewConfig->strictTypes();
     }
 }
 ```
@@ -165,10 +165,8 @@ public function getSearchedPaths(string $template): array;
 ```php
 use Marko\View\ViewConfig;
 
-public function extension(): string;
 public function cacheDirectory(): string;
 public function autoRefresh(): bool;
-public function strictTypes(): bool;
 ```
 
 ### Exceptions
@@ -177,4 +175,9 @@ public function strictTypes(): bool;
 |-----------|-------------|
 | `ViewException` | Base exception for all view errors --- extends `MarkoException` |
 | `TemplateNotFoundException` | Thrown when a template cannot be found --- includes all searched paths |
-| `NoDriverException` | Thrown when no view driver is installed --- suggests `composer require marko/view-latte` |
+| `NoDriverException` | Thrown when no view driver is installed --- suggests `composer require marko/view-latte` or `composer require marko/view-twig` |
+
+## Related Packages
+
+- [`marko/view-latte`](/docs/packages/view-latte/) --- Latte templating driver
+- [`marko/view-twig`](/docs/packages/view-twig/) --- Twig templating driver

@@ -166,6 +166,7 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/database` | Interface | `ConnectionInterface`, query builder interfaces |
 | `marko/database-mysql` | Driver | MySQL/MariaDB implementation |
 | `marko/database-pgsql` | Driver | PostgreSQL implementation |
+| `marko/database-readwrite` | Driver | Read/write split decorator; routes reads to replicas, writes to primary |
 
 ### Caching
 
@@ -471,6 +472,114 @@ To replace a bundled package:
 1. Use Composer's `replace` directive to tell Composer you're providing that package yourself
 2. Require your alternative package
 3. Your alternative binds the same interfaces
+
+---
+
+## Engine-Specific Template Siblings
+
+### The Problem
+
+UI packages that ship templates must pick a template engine — and that choice locks every consumer into that engine. Naive alternatives don't scale:
+
+- **Bundle all engines in one package**: One package grows indefinitely, ships code most users never need, and every engine update touches the same repo.
+- **Subdirectory-per-engine**: Still one install, still one dependency graph, and the "which templates does my engine actually use?" question becomes implicit rather than explicit.
+
+The framework needs a first-class answer.
+
+### The Pattern
+
+Split UI packages into two layers:
+
+- **`marko/{module}`** — PHP code only (controllers, services, routes). Engine-agnostic. Ships no templates.
+- **`marko/{module}-{engine}`** — Templates only, one package per supported engine. For example: `marko/admin-panel-latte`, `marko/admin-panel-twig`.
+
+Engine siblings declare their relationship in `composer.json`:
+
+```json
+{
+    "name": "marko/admin-panel-latte",
+    "extra": {
+        "marko": {
+            "templates_for": "marko/admin-panel"
+        }
+    },
+    "require": {
+        "marko/admin-panel": "*",
+        "marko/view-latte": "*"
+    }
+}
+```
+
+The `extra.marko.templates_for` key is the canonical signal. `ModuleTemplateResolver` reads it during boot to build the resolution map.
+
+Engine siblings do **not** need Composer `conflict` declarations against each other. Installing both `marko/admin-panel-latte` and `marko/admin-panel-twig` is harmless — the resolver routes to the right templates based on the configured view extension, and Marko's DI-level detection handles any actual interface conflicts at the driver layer.
+
+### How Resolution Works
+
+`ModuleTemplateResolver` searches two locations when a controller asks for a template:
+
+1. The parent module's own `resources/views/` directory.
+2. Any installed module that declares `templates_for: marko/{parent}`.
+
+Controllers reference templates using the parent module's namespace regardless of which engine sibling is installed:
+
+```php
+// In marko/admin-panel — works whether latte or twig sibling is installed
+return $this->view->render('admin-panel::dashboard/index');
+```
+
+The abstraction is preserved. Controllers never know which engine is in use.
+
+### When to Use This Pattern
+
+Use the engine-sibling pattern for **reusable, shipped UI modules** where the maintainer cannot predict the consumer's engine choice.
+
+Good candidates:
+
+- `marko/admin-panel` — ships an admin UI usable by any Marko application
+- Future admin dashboards, form builders, debug bars
+- Any package intended for Packagist where consumers are unknown
+
+The test is simple: *could this package end up in 10 different applications that each chose a different template engine?* If yes, use the sibling pattern.
+
+### When NOT to Use This Pattern
+
+**application-specific modules should hard-depend on their engine and ship templates directly.**
+
+```
+app/blog/          — your team chose Latte; use Latte, ship .latte files, done
+app/admin/         — same project, same engine choice, same answer
+```
+
+Multi-engine packaging is overhead with zero benefit when there is only one consumer and that consumer has already chosen an engine. Introducing siblings here adds Composer packages, CI pipelines, and template translation work for no practical gain.
+
+Rule of thumb: if the module lives in `app/` or `modules/`, don't use the sibling pattern.
+
+### Trade-offs
+
+**Costs:**
+
+- Each engine sibling is a separate Composer package to maintain (its own `composer.json`, tests, release cycle).
+- Adopting a new core template engine requires writing template translations for every existing UI module before the new engine is usable with shipped UI packages.
+
+**Benefits:**
+
+- Genuine engine choice for consumers — they install the sibling that matches their stack.
+- Upholds the framework principle of "explicit over implicit": the dependency on a specific engine lives in the sibling, not buried inside the core UI module.
+
+**Realistic scale:**
+
+The mainstream PHP template engine ecosystem is small. Expect 2–3 engines (Twig, Latte, and possibly Blade) as a realistic ceiling. Beyond that, the maintenance math becomes a liability. The `CrossEngineTemplateParityTest` makes this concrete — it is a real commitment, not a suggestion.
+
+### The Parity Test
+
+`marko/view` ships `CrossEngineTemplateParityTest`, a mechanical build gate that enforces template parity across all registered core engines.
+
+**What it does:** For every UI module that ships an engine sibling for *any* core engine, the test asserts that siblings exist for *all* core engines. Adopting a new engine without translating templates for every existing UI module fails the build.
+
+**Why this matters:** Parity is not optional. A consumer choosing Twig must be able to install every shipped UI module, not just the ones someone happened to translate. The test turns "we should do this" into "we must do this before merging."
+
+Contributors adding a new core engine driver should expect to write sibling templates for all existing UI modules — the test will tell them exactly which ones are missing.
 
 ---
 

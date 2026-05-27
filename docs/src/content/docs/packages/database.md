@@ -355,7 +355,35 @@ Use `getEntities()` / `firstEntity()` for typed domain objects. Drop to `get()` 
 
 #### Available filters
 
-`where`, `whereIn`, `whereNull`, `whereNotNull`, `orWhere`, `join`, `leftJoin`, `rightJoin`, `orderBy`, `limit`, `offset`, `select`. All return `static` for chaining. The escape hatch is `raw(string $sql, array $bindings = [])` for queries the builder can't express.
+`where`, `whereIn`, `whereNull`, `whereNotNull`, `orWhere`, `whereRaw`, `join`, `leftJoin`, `rightJoin`, `orderBy`, `orderByRaw`, `limit`, `offset`, `select`, `selectRaw`. All return `static` for chaining. The escape hatch is `raw(string $sql, array $bindings = [])` for queries the builder can't express.
+
+#### Raw expressions
+
+Use `selectRaw` and `whereRaw` when the structured builder methods cannot express the SQL you need. Both accept a raw expression string and an optional array of positional `?` bindings. A denylist rejects expressions containing `;`, `--`, `/*`, `*/`, or backticks --- use `?` placeholders for user-supplied values instead of interpolating them directly.
+
+```php
+// Compute a derived column inline
+$rows = $this->query()
+    ->select('id', 'title')
+    ->selectRaw('COALESCE(published_at, created_at) AS display_date')
+    ->get();
+
+// Filter on an expression that where() cannot express
+$rows = $this->query()
+    ->whereRaw('COALESCE(price, base_price) > ?', [100])
+    ->orderBy('title')
+    ->get();
+
+// Both can be combined freely with structured methods
+$rows = $this->query()
+    ->select('status')
+    ->selectRaw('COUNT(*) AS total')
+    ->whereRaw('EXTRACT(YEAR FROM created_at) = ?', [2024])
+    ->groupBy('status')
+    ->get();
+```
+
+`whereRaw` conditions are AND-combined with all other `where*` conditions and are also honoured by aggregate methods (`count`, `min`, `max`, `sum`, `avg`).
 
 #### Aggregate functions
 
@@ -845,7 +873,87 @@ marko db:seed
 4. **No context switching** — Everything about your model in one place
 5. **Reduced cognitive load** — One file to understand, not entity + migration + mapping
 
+## Wire-compatible database variants
+
+Some databases speak an existing wire protocol (PostgreSQL or MySQL) but require different SQL dialect logic. CockroachDB, for example, accepts PostgreSQL connections but has its own DDL, introspection queries, and query-builder behaviour. A variant package can reuse the parent driver's connection and override only the four dialect interfaces.
+
+### The 6-binding split
+
+Every driver package binds six interfaces. They fall into two categories:
+
+| Interface | Category | Role |
+|-----------|----------|------|
+| `ConnectionInterface` | **Wire** | PDO connection, DSN format, PostgreSQL/MySQL protocol |
+| `ConnectionFactoryInterface` | **Wire** | Creates `ConnectionInterface` instances from a `DatabaseConfig` |
+| `SqlGeneratorInterface` | Dialect | DDL generation for schema diffs |
+| `IntrospectorInterface` | Dialect | Reading existing schema from `information_schema` etc. |
+| `QueryBuilderInterface` | Dialect | SELECT/INSERT/UPDATE/DELETE SQL generation |
+| `QueryBuilderFactoryInterface` | Dialect | Constructs query builder instances |
+
+A wire-compatible variant inherits the parent's `ConnectionInterface` and `ConnectionFactoryInterface` bindings unchanged and overrides the four dialect interfaces.
+
+### CockroachDB example
+
+The following shows the complete wiring for a hypothetical third-party `acme/database-cockroachdb` package. The `acme/` vendor and class names are illustrative — the `marko/` namespace is reserved for core Marko packages, so variant packages must ship under their own vendor namespace.
+
+**`composer.json`** — require the parent pgsql package (which transitively requires `marko/database`):
+
+```json title="composer.json"
+{
+    "name": "acme/database-cockroachdb",
+    "description": "CockroachDB variant for Marko (PostgreSQL wire protocol)",
+    "type": "marko-module",
+    "require": {
+        "marko/database-pgsql": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Acme\\Database\\CockroachDb\\": "src/"
+        }
+    }
+}
+```
+
+**`module.php`** — no static `bindings` for the dialect interfaces; a `boot` closure rebinds them after `marko/database-pgsql` has registered its own static bindings:
+
+```php title="module.php"
+<?php
+
+declare(strict_types=1);
+
+use Acme\Database\CockroachDb\Diff\CockroachDbGenerator;
+use Acme\Database\CockroachDb\Introspection\CockroachDbIntrospector;
+use Acme\Database\CockroachDb\Query\CockroachDbQueryBuilder;
+use Acme\Database\CockroachDb\Query\CockroachDbQueryBuilderFactory;
+use Marko\Core\Container\Container;
+use Marko\Database\Diff\SqlGeneratorInterface;
+use Marko\Database\Introspection\IntrospectorInterface;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
+use Marko\Database\Query\QueryBuilderInterface;
+
+// ConnectionInterface is intentionally omitted: CockroachDB speaks the
+// PostgreSQL wire protocol, so PgSqlConnection from marko/database-pgsql
+// connects and authenticates without modification.
+
+return [
+    'boot' => function (Container $container): void {
+        $container->bind(SqlGeneratorInterface::class, CockroachDbGenerator::class);
+        $container->bind(IntrospectorInterface::class, CockroachDbIntrospector::class);
+        $container->bind(QueryBuilderInterface::class, CockroachDbQueryBuilder::class);
+        $container->bind(QueryBuilderFactoryInterface::class, CockroachDbQueryBuilderFactory::class);
+    },
+];
+```
+
+Because `acme/database-cockroachdb` requires `marko/database-pgsql` in its `composer.json`, Marko automatically boots the variant after the parent — no `sequence` configuration is needed.
+
+For the underlying `boot` callback mechanism, see [Overriding another module's bindings](/docs/concepts/dependency-injection/#overriding-another-modules-bindings).
+
 ## Available Drivers
 
 - [marko/database-pgsql](/docs/packages/database-pgsql/) — PostgreSQL driver
 - [marko/database-mysql](/docs/packages/database-mysql/) — MySQL driver
+
+## Read/Write Splitting
+
+To route reads to replicas and writes to a primary, see [marko/database-readwrite](/docs/packages/database-readwrite/). It wraps any existing driver connection using the decorator pattern — no changes to application code are required.

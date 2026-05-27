@@ -164,6 +164,10 @@ public string $id;
 $article = $articleRepository->find('018e2b3c-d1a2-7000-a1b2-c3d4e5f60708');
 ```
 
+## Postgres-Wire-Compatible Databases (CockroachDB, YugabyteDB, etc.)
+
+`PgSqlConnection` speaks pure PDO over the PostgreSQL wire protocol and contains no Postgres-specific dialect logic, so any database that is wire-compatible with PostgreSQL can reuse it without a custom driver. Point your `DB_HOST` at CockroachDB, YugabyteDB, or another compatible engine and the rest of the stack works as-is. See the [Wire-compatible database variants](/docs/packages/database/#wire-compatible-database-variants) section of the database guide for the full pattern and configuration example.
+
 ## API Reference
 
 ### PgSqlConnection
@@ -204,15 +208,18 @@ Implements `QueryBuilderInterface`. Fluent builder for PostgreSQL queries.
 |---|---|
 | `table(string $table): static` | Set the target table |
 | `select(string ...$columns): static` | Choose columns (defaults to `*`) |
+| `selectRaw(string $expression, array $bindings = []): static` | Append a raw SQL expression to the SELECT list |
 | `where(string $column, string $operator, mixed $value): static` | Add a WHERE condition |
 | `orWhere(string $column, string $operator, mixed $value): static` | Add an OR WHERE condition |
 | `whereIn(string $column, array $values): static` | Add a WHERE IN condition |
 | `whereNull(string $column): static` | Add a WHERE IS NULL condition |
 | `whereNotNull(string $column): static` | Add a WHERE IS NOT NULL condition |
+| `whereRaw(string $expression, array $bindings = []): static` | Add a raw SQL WHERE condition, AND-combined with other conditions |
 | `join(string $table, string $first, string $operator, string $second): static` | INNER JOIN |
 | `leftJoin(string $table, string $first, string $operator, string $second): static` | LEFT JOIN |
 | `rightJoin(string $table, string $first, string $operator, string $second): static` | RIGHT JOIN |
 | `orderBy(string $column, string $direction = 'ASC'): static` | Add ORDER BY clause |
+| `orderByRaw(string $expression, string $direction = 'ASC'): static` | Order by a raw SQL expression |
 | `limit(int $limit): static` | Set LIMIT |
 | `offset(int $offset): static` | Set OFFSET |
 | `get(): array` | Execute SELECT and return all rows |
@@ -234,6 +241,14 @@ Implements `QueryBuilderInterface`. Fluent builder for PostgreSQL queries.
 | `whereJsonExists(string $path): static` | WHERE JSON key/path exists |
 | `whereJsonMissing(string $path): static` | WHERE JSON key/path does not exist |
 | `raw(string $sql, array $bindings = []): array` | Execute a raw SQL query |
+
+### PgSqlConnectionFactory
+
+Implements `ConnectionFactoryInterface`. Creates `PgSqlConnection` instances from a `DatabaseConfig`. Used by `marko/database-readwrite` to build per-connection instances for the write primary and each read replica.
+
+| Method | Description |
+|---|---|
+| `make(DatabaseConfig $config): ConnectionInterface` | Create and return a new `PgSqlConnection` for the given config |
 
 ### PgSqlIntrospector
 

@@ -148,6 +148,27 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static {
+            return $this;
+        }
+
+        public function selectRaw(
+            string $expression,
+            array $bindings = [],
+        ): static {
+            return $this;
+        }
+
+        public function whereRaw(
+            string $expression,
+            array $bindings = [],
+        ): static {
+            return $this;
+        }
+
         public function limit(int $limit): static
         {
             return $this;

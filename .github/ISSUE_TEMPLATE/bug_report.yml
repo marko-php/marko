@@ -65,6 +65,7 @@ body:
         - database
         - database-mysql
         - database-pgsql
+        - database-readwrite
         - debugbar
         - dev-server
         - encryption
@@ -123,6 +124,7 @@ body:
         - validation
         - view
         - view-latte
+        - view-twig
         - vite
         - webhook
         - other

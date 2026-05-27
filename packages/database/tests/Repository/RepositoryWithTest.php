@@ -197,6 +197,27 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static {
+            return $this;
+        }
+
+        public function selectRaw(
+            string $expression,
+            array $bindings = [],
+        ): static {
+            return $this;
+        }
+
+        public function whereRaw(
+            string $expression,
+            array $bindings = [],
+        ): static {
+            return $this;
+        }
+
         public function limit(int $limit): static
         {
             return $this;
@@ -545,17 +566,10 @@ describe('with() Method', function (): void {
 describe('Eager Loading Integration', function (): void {
     it('passes loaded entities to RelationshipLoader', function (): void {
         $userRows = [['id' => 1, 'name' => 'Alice', 'country_id' => null]];
-        // Track whether the query builder was used (indicating load was called)
-        $queryCalled = false;
 
-        $trackingBuilder = new class ($queryCalled) implements QueryBuilderInterface
+        $trackingBuilder = new class () implements QueryBuilderInterface
         {
             public bool $getCalled = false;
-
-            public function __construct(bool &$queryCalled)
-            {
-                // store reference not needed; use getCalled instead
-            }
 
             public function table(string $table): static
             {
@@ -647,6 +661,27 @@ describe('Eager Loading Integration', function (): void {
             public function orderBy(
                 string $column,
                 string $direction = 'ASC',
+            ): static {
+                return $this;
+            }
+
+            public function orderByRaw(
+                string $expression,
+                string $direction = 'ASC',
+            ): static {
+                return $this;
+            }
+
+            public function selectRaw(
+                string $expression,
+                array $bindings = [],
+            ): static {
+                return $this;
+            }
+
+            public function whereRaw(
+                string $expression,
+                array $bindings = [],
             ): static {
                 return $this;
             }
@@ -795,13 +830,9 @@ describe('Eager Loading Integration', function (): void {
     });
 
     it('returns null from find when entity not found without loading relationships', function (): void {
-        $queryCalled = false;
-
-        $trackingBuilder = new class ($queryCalled) implements QueryBuilderInterface
+        $trackingBuilder = new class () implements QueryBuilderInterface
         {
             public bool $whereInCalled = false;
-
-            public function __construct(bool &$queryCalled) {}
 
             public function table(string $table): static
             {
@@ -893,6 +924,27 @@ describe('Eager Loading Integration', function (): void {
             public function orderBy(
                 string $column,
                 string $direction = 'ASC',
+            ): static {
+                return $this;
+            }
+
+            public function orderByRaw(
+                string $expression,
+                string $direction = 'ASC',
+            ): static {
+                return $this;
+            }
+
+            public function selectRaw(
+                string $expression,
+                array $bindings = [],
+            ): static {
+                return $this;
+            }
+
+            public function whereRaw(
+                string $expression,
+                array $bindings = [],
             ): static {
                 return $this;
             }
@@ -1034,13 +1086,9 @@ describe('Eager Loading Integration', function (): void {
     it('loads multiple relationships when multiple names specified', function (): void {
         $userRows = [['id' => 1, 'name' => 'Alice', 'country_id' => null]];
 
-        $callCount = 0;
-
-        $countingBuilder = new class ($callCount) implements QueryBuilderInterface
+        $countingBuilder = new class () implements QueryBuilderInterface
         {
             public int $whereInCount = 0;
-
-            public function __construct(int &$callCount) {}
 
             public function table(string $table): static
             {
@@ -1132,6 +1180,27 @@ describe('Eager Loading Integration', function (): void {
             public function orderBy(
                 string $column,
                 string $direction = 'ASC',
+            ): static {
+                return $this;
+            }
+
+            public function orderByRaw(
+                string $expression,
+                string $direction = 'ASC',
+            ): static {
+                return $this;
+            }
+
+            public function selectRaw(
+                string $expression,
+                array $bindings = [],
+            ): static {
+                return $this;
+            }
+
+            public function whereRaw(
+                string $expression,
+                array $bindings = [],
             ): static {
                 return $this;
             }

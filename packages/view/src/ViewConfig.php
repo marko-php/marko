@@ -26,9 +26,4 @@ readonly class ViewConfig
     {
         return $this->config->getBool('view.auto_refresh');
     }
-
-    public function strictTypes(): bool
-    {
-        return $this->config->getBool('view.strict_types');
-    }
 }
