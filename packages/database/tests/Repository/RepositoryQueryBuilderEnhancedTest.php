@@ -141,8 +141,7 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
         public function whereJsonContains(
             string $path,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -319,8 +318,7 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
         public function having(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -651,14 +649,14 @@ it(
     function (): void {
         $stub = makeRqbStubBuilder([]);
         $rqb = makeRqb($stub);
-    
+
         $result = $rqb
             ->select('id', 'name')
             ->selectRaw('COALESCE(a, b) AS resolved', [1])
             ->where('status', '=', 'active')
             ->whereRaw('score > ?', [50])
             ->orderBy('name', 'ASC');
-    
+
         expect($result)->toBeInstanceOf(RepositoryQueryBuilder::class)
             ->and($stub->selectRawCalled)->toBe([
                 ['expression' => 'COALESCE(a, b) AS resolved', 'bindings' => [1]],
@@ -668,7 +666,7 @@ it(
                 ['expression' => 'score > ?', 'bindings' => [50]],
             ])
             ->and($stub->orderByCalled)->toBe(['name ASC']);
-    }
+    },
 );
 
 it(
@@ -677,7 +675,7 @@ it(
         $rows = [['id' => 1, 'name' => 'Alice']];
         $stub = makeRqbStubBuilder($rows);
         $rqb = makeRqb($stub);
-    
+
         $spec = new class () implements QuerySpecification
         {
             public function apply(QueryBuilderInterface $builder): void
@@ -685,14 +683,14 @@ it(
                 $builder->selectRaw('COALESCE(a, b) AS resolved', [42]);
             }
         };
-    
+
         $collection = $rqb->matching($spec);
-    
+
         expect($collection)->toBeInstanceOf(EntityCollection::class)
             ->and($stub->selectRawCalled)->toBe([
                 ['expression' => 'COALESCE(a, b) AS resolved', 'bindings' => [42]],
             ]);
-    }
+    },
 );
 
 it(
@@ -701,7 +699,7 @@ it(
         $rows = [['id' => 1, 'name' => 'Alice']];
         $stub = makeRqbStubBuilder($rows);
         $rqb = makeRqb($stub);
-    
+
         $spec = new class () implements QuerySpecification
         {
             public function apply(QueryBuilderInterface $builder): void
@@ -709,12 +707,12 @@ it(
                 $builder->whereRaw('score > ?', [50]);
             }
         };
-    
+
         $collection = $rqb->matching($spec);
-    
+
         expect($collection)->toBeInstanceOf(EntityCollection::class)
             ->and($stub->whereRawCalled)->toBe([
                 ['expression' => 'score > ?', 'bindings' => [50]],
             ]);
-    }
+    },
 );

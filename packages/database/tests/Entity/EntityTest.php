@@ -140,18 +140,21 @@ it('overwrites an existing companion of the same class when reattached', functio
         ->and($parent->companion(CompanionEntity::class))->toBe($second);
 });
 
-it('shares storage between the public Entity::attachCompanion and the internal hydrator attach (one WeakMap, not two)', function (): void {
-    $hydrator = new EntityHydrator();
-    $parent = new ParentEntity();
-    $companionViaEntity = new CompanionEntity();
-    $companionViaHydrator = new AnotherCompanionEntity();
-
-    // Attach one via Entity public API, one via hydrator internal API
+it(
+    'shares storage between the public Entity::attachCompanion and the internal hydrator attach (one WeakMap, not two)',
+    function (): void {
+        $hydrator = new EntityHydrator();
+        $parent = new ParentEntity();
+        $companionViaEntity = new CompanionEntity();
+        $companionViaHydrator = new AnotherCompanionEntity();
+    
+        // Attach one via Entity public API, one via hydrator internal API
     $parent->attachCompanion($companionViaEntity);
-    $hydrator->attachCompanion($parent, $companionViaHydrator);
-
-    // Both are visible through the same Entity::companions() call
+        $hydrator->attachCompanion($parent, $companionViaHydrator);
+    
+        // Both are visible through the same Entity::companions() call
     expect($parent->companions())->toHaveCount(2)
-        ->and($parent->companion(CompanionEntity::class))->toBe($companionViaEntity)
-        ->and($parent->companion(AnotherCompanionEntity::class))->toBe($companionViaHydrator);
-});
+            ->and($parent->companion(CompanionEntity::class))->toBe($companionViaEntity)
+            ->and($parent->companion(AnotherCompanionEntity::class))->toBe($companionViaHydrator);
+    }
+);

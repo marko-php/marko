@@ -18,7 +18,10 @@ readonly class PubSubListenCommand implements CommandInterface
         private EventLoopRunner $runner,
     ) {}
 
-    public function execute(Input $input, Output $output): int
+    public function execute(
+        Input $input,
+        Output $output,
+    ): int
     {
         $output->writeLine('Starting pub/sub listener...');
         $output->writeLine('Press Ctrl+C to stop.');

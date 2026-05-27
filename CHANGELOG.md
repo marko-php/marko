@@ -34,13 +34,6 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 * @michalbiarda made their first contribution in https://github.com/marko-php/marko/pull/58
 
 
-## [Unreleased]
-
-### New Features
-* feat: add marko/page-cache and marko/page-cache-file packages
-* feat(database): add `selectRaw`, `whereRaw`, and `orderByRaw` to `QueryBuilderInterface` with positional bindings and denylist validation
-* feat(core): add module-declared global middleware support via globalMiddleware key in module.php
-
 ## [0.5.0] - 2026-05-01
 
 ### New Features

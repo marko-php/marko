@@ -9,7 +9,10 @@ class CircularSlotException extends LayoutException
     /**
      * @param array<string> $chain
      */
-    public static function forSlot(string $slot, array $chain): self
+    public static function forSlot(
+        string $slot,
+        array $chain,
+    ): self
     {
         $chainPath = implode(' -> ', $chain);
 

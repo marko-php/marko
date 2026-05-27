@@ -29,34 +29,53 @@ describe('DispatchWebhookJob', function (): void {
         {
             public bool $postCalled = false;
 
-            public function request(string $method, string $url, array $options = []): HttpResponse
+            public function request(
+                string $method,
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 return new HttpResponse(200, 'OK');
             }
 
-            public function get(string $url, array $options = []): HttpResponse
+            public function get(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 return new HttpResponse(200, 'OK');
             }
 
-            public function post(string $url, array $options = []): HttpResponse
+            public function post(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 $this->postCalled = true;
 
                 return new HttpResponse(200, 'OK');
             }
 
-            public function put(string $url, array $options = []): HttpResponse
+            public function put(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 return new HttpResponse(200, 'OK');
             }
 
-            public function patch(string $url, array $options = []): HttpResponse
+            public function patch(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 return new HttpResponse(200, 'OK');
             }
 
-            public function delete(string $url, array $options = []): HttpResponse
+            public function delete(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 return new HttpResponse(200, 'OK');
             }

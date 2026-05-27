@@ -102,7 +102,10 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this;
     }
 
-    public function whereJsonContains(string $path, mixed $value): static
+    public function whereJsonContains(
+        string $path,
+        mixed $value,
+    ): static
     {
         $this->queryBuilder->whereJsonContains($path, $value);
 
@@ -192,7 +195,10 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         return $this;
     }
 
-    public function having(string $expression, array $bindings = []): static
+    public function having(
+        string $expression,
+        array $bindings = [],
+    ): static
     {
         $this->queryBuilder->having($expression, $bindings);
 

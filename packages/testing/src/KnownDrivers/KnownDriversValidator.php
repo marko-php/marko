@@ -28,8 +28,7 @@ class KnownDriversValidator
     }
 
     /**
-     * @throws InvalidArgumentException
-     * @throws AssertionFailedError
+     * @throws InvalidArgumentException|AssertionFailedError
      */
     public static function assertDocsUrlsResolveToValidPattern(string $knownDriversPath): void
     {
@@ -45,9 +44,7 @@ class KnownDriversValidator
     }
 
     /**
-     * @throws InvalidArgumentException
-     * @throws SkippedWithMessageException
-     * @throws AssertionFailedError
+     * @throws InvalidArgumentException|SkippedWithMessageException|AssertionFailedError
      */
     public static function assertSkeletonSuggestContainsAll(
         string $knownDriversPath,

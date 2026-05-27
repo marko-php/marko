@@ -300,7 +300,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         foreach ($columns as $column) {
             if (!IdentifierValidator::isValidIdentifier($column) && !preg_match(
                 '/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/',
-                $column
+                $column,
             )) {
                 throw InvalidColumnException::invalidColumn($column);
             }
@@ -954,5 +954,4 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 
         return $sql;
     }
-
 }

@@ -35,7 +35,10 @@ class MySqlMockConnection implements ConnectionInterface
         return true;
     }
 
-    public function query(string $sql, array $bindings = []): array
+    public function query(
+        string $sql,
+        array $bindings = [],
+    ): array
     {
         $this->lastQuerySql = $sql;
         $this->lastQueryBindings = $bindings;
@@ -43,7 +46,10 @@ class MySqlMockConnection implements ConnectionInterface
         return $this->queryReturn;
     }
 
-    public function execute(string $sql, array $bindings = []): int
+    public function execute(
+        string $sql,
+        array $bindings = [],
+    ): int
     {
         return 0;
     }
@@ -111,22 +117,25 @@ describe('MySqlQueryBuilder JSON operators', function (): void {
             ->and($result)->toHaveCount(1);
     });
 
-    it('returns rows whose JSON object contains a nested value via whereJsonContains() with a path', function (): void {
-        $connection = new MySqlMockConnection(
-            queryReturn: [['id' => 2]],
-        );
-        $builder = new MySqlQueryBuilder($connection);
-
-        $result = $builder
-            ->table('users')
-            ->whereJsonContains('data->roles', 'admin')
-            ->get();
-
-        expect($connection->lastQuerySql)
-            ->toContain("JSON_CONTAINS(JSON_EXTRACT(`data`, '$.roles'), ?)")
-            ->and($connection->lastQueryBindings[0])->toBe('"admin"')
-            ->and($result)->toHaveCount(1);
-    });
+    it(
+        'returns rows whose JSON object contains a nested value via whereJsonContains() with a path',
+        function (): void {
+            $connection = new MySqlMockConnection(
+                queryReturn: [['id' => 2]],
+            );
+            $builder = new MySqlQueryBuilder($connection);
+    
+            $result = $builder
+                ->table('users')
+                ->whereJsonContains('data->roles', 'admin')
+                ->get();
+    
+            expect($connection->lastQuerySql)
+                ->toContain("JSON_CONTAINS(JSON_EXTRACT(`data`, '$.roles'), ?)")
+                ->and($connection->lastQueryBindings[0])->toBe('"admin"')
+                ->and($result)->toHaveCount(1);
+        }
+    );
 
     it('returns rows where a JSON path exists via whereJsonExists()', function (): void {
         $connection = new MySqlMockConnection(
@@ -176,39 +185,42 @@ describe('MySqlQueryBuilder JSON operators', function (): void {
             ->and($connection->lastQueryBindings)->toBe([$maliciousValue]);
     });
 
-    it('emits correct MySQL SQL for every JSON operator (JSON_EXTRACT / JSON_UNQUOTE / JSON_CONTAINS / JSON_CONTAINS_PATH)', function (): void {
-        $connection = new MySqlMockConnection();
-        $builder = new MySqlQueryBuilder($connection);
-
-        // JSON_EXTRACT via -> in WHERE
+    it(
+        'emits correct MySQL SQL for every JSON operator (JSON_EXTRACT / JSON_UNQUOTE / JSON_CONTAINS / JSON_CONTAINS_PATH)',
+        function (): void {
+            $connection = new MySqlMockConnection();
+            $builder = new MySqlQueryBuilder($connection);
+    
+            // JSON_EXTRACT via -> in WHERE
         $builder->table('users')->where('data->user->name', '=', 'Bob')->get();
-        expect($connection->lastQuerySql)
-            ->toContain("JSON_EXTRACT(`data`, '$.user.name')");
-
-        // JSON_UNQUOTE via ->> in WHERE
+            expect($connection->lastQuerySql)
+                ->toContain("JSON_EXTRACT(`data`, '$.user.name')");
+    
+            // JSON_UNQUOTE via ->> in WHERE
         $builder2 = new MySqlQueryBuilder($connection);
-        $builder2->table('users')->where('data->>user', '=', 'Bob')->get();
-        expect($connection->lastQuerySql)
-            ->toContain("JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.user'))");
-
-        // JSON_CONTAINS on plain column
+            $builder2->table('users')->where('data->>user', '=', 'Bob')->get();
+            expect($connection->lastQuerySql)
+                ->toContain("JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.user'))");
+    
+            // JSON_CONTAINS on plain column
         $builder3 = new MySqlQueryBuilder($connection);
-        $builder3->table('users')->whereJsonContains('tags', 'premium')->get();
-        expect($connection->lastQuerySql)
-            ->toContain('JSON_CONTAINS(`tags`, ?)');
-
-        // JSON_CONTAINS_PATH existence
+            $builder3->table('users')->whereJsonContains('tags', 'premium')->get();
+            expect($connection->lastQuerySql)
+                ->toContain('JSON_CONTAINS(`tags`, ?)');
+    
+            // JSON_CONTAINS_PATH existence
         $builder4 = new MySqlQueryBuilder($connection);
-        $builder4->table('users')->whereJsonExists('data->addr')->get();
-        expect($connection->lastQuerySql)
-            ->toContain("JSON_CONTAINS_PATH(`data`, 'one', '$.addr')");
-
-        // NOT JSON_CONTAINS_PATH missing
+            $builder4->table('users')->whereJsonExists('data->addr')->get();
+            expect($connection->lastQuerySql)
+                ->toContain("JSON_CONTAINS_PATH(`data`, 'one', '$.addr')");
+    
+            // NOT JSON_CONTAINS_PATH missing
         $builder5 = new MySqlQueryBuilder($connection);
-        $builder5->table('users')->whereJsonMissing('data->addr')->get();
-        expect($connection->lastQuerySql)
-            ->toContain("NOT JSON_CONTAINS_PATH(`data`, 'one', '$.addr')");
-    });
+            $builder5->table('users')->whereJsonMissing('data->addr')->get();
+            expect($connection->lastQuerySql)
+                ->toContain("NOT JSON_CONTAINS_PATH(`data`, 'one', '$.addr')");
+        }
+    );
 
     it('composes JSON path operators with WHERE, GROUP BY, HAVING, ORDER BY, and LIMIT correctly', function (): void {
         $connection = new MySqlMockConnection();

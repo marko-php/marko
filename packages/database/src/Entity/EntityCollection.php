@@ -115,7 +115,10 @@ class EntityCollection implements Countable, IteratorAggregate
     /**
      * @return self<T>
      */
-    public function sortBy(string $property, bool $descending = false): self
+    public function sortBy(
+        string $property,
+        bool $descending = false,
+    ): self
     {
         $sorted = $this->entities;
         usort($sorted, function (Entity $a, Entity $b) use ($property, $descending): int {

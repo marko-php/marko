@@ -106,7 +106,9 @@ class StubAdminSection implements AdminSectionInterface
 }
 
 it('requires authentication via AdminAuthMiddleware for dashboard', function (): void {
-    $middlewareAttributes = (new ReflectionMethod(DashboardController::class, 'index'))->getAttributes(Middleware::class);
+    $middlewareAttributes = (new ReflectionMethod(DashboardController::class, 'index'))->getAttributes(
+        Middleware::class
+    );
 
     expect($middlewareAttributes)->toHaveCount(1)
         ->and($middlewareAttributes[0]->newInstance()->middleware)->toContain(AdminAuthMiddleware::class);

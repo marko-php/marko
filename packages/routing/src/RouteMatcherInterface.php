@@ -6,5 +6,8 @@ namespace Marko\Routing;
 
 interface RouteMatcherInterface
 {
-    public function match(string $method, string $path): ?MatchedRoute;
+    public function match(
+        string $method,
+        string $path,
+    ): ?MatchedRoute;
 }

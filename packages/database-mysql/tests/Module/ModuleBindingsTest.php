@@ -52,7 +52,7 @@ describe('MySQL module.php bindings', function (): void {
 
         expect($moduleConfig['bindings'])->toHaveKey(QueryBuilderFactoryInterface::class)
             ->and($moduleConfig['bindings'][QueryBuilderFactoryInterface::class])->toBe(
-                MySqlQueryBuilderFactory::class
+                MySqlQueryBuilderFactory::class,
             );
     });
 

@@ -44,19 +44,30 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
             throw new RuntimeException('Not implemented');
         }
 
-        public function write(string $path, string $contents, array $options = []): bool
+        public function write(
+            string $path,
+            string $contents,
+            array $options = [],
+        ): bool
         {
             $this->written[$path] = $contents;
 
             return true;
         }
 
-        public function writeStream(string $path, mixed $resource, array $options = []): bool
+        public function writeStream(
+            string $path,
+            mixed $resource,
+            array $options = [],
+        ): bool
         {
             return true;
         }
 
-        public function append(string $path, string $contents): bool
+        public function append(
+            string $path,
+            string $contents,
+        ): bool
         {
             return true;
         }
@@ -68,12 +79,18 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
             return true;
         }
 
-        public function copy(string $source, string $destination): bool
+        public function copy(
+            string $source,
+            string $destination,
+        ): bool
         {
             return true;
         }
 
-        public function move(string $source, string $destination): bool
+        public function move(
+            string $source,
+            string $destination,
+        ): bool
         {
             return true;
         }
@@ -108,7 +125,10 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
             return true;
         }
 
-        public function setVisibility(string $path, string $visibility): bool
+        public function setVisibility(
+            string $path,
+            string $visibility,
+        ): bool
         {
             return true;
         }
@@ -162,17 +182,28 @@ it('returns unhealthy status when filesystem write fails', function () {
             throw new RuntimeException('Not implemented');
         }
 
-        public function write(string $path, string $contents, array $options = []): bool
+        public function write(
+            string $path,
+            string $contents,
+            array $options = [],
+        ): bool
         {
             throw new RuntimeException('Filesystem not writable');
         }
 
-        public function writeStream(string $path, mixed $resource, array $options = []): bool
+        public function writeStream(
+            string $path,
+            mixed $resource,
+            array $options = [],
+        ): bool
         {
             return false;
         }
 
-        public function append(string $path, string $contents): bool
+        public function append(
+            string $path,
+            string $contents,
+        ): bool
         {
             return false;
         }
@@ -182,12 +213,18 @@ it('returns unhealthy status when filesystem write fails', function () {
             return false;
         }
 
-        public function copy(string $source, string $destination): bool
+        public function copy(
+            string $source,
+            string $destination,
+        ): bool
         {
             return false;
         }
 
-        public function move(string $source, string $destination): bool
+        public function move(
+            string $source,
+            string $destination,
+        ): bool
         {
             return false;
         }
@@ -222,7 +259,10 @@ it('returns unhealthy status when filesystem write fails', function () {
             return false;
         }
 
-        public function setVisibility(string $path, string $visibility): bool
+        public function setVisibility(
+            string $path,
+            string $visibility,
+        ): bool
         {
             return false;
         }

@@ -30,6 +30,7 @@ class SlotNode extends StatementNode
         $node = $tag->node = new static();
         $node->name = $tag->parser->stream->consume()->text;
         yield;
+
         return $node;
     }
 

@@ -295,33 +295,42 @@ it('throws EntityException when two extenders declare an index with the same nam
     ]))->toThrow(EntityException::class);
 });
 
-it('updates the EntityMetadataFactory cache so that a subsequent parse(parentClass) returns metadata with extenders populated', function (): void {
-    $this->registry->registerEntities([ProductEntity::class, ProductExtenderEntity::class]);
+it(
+    'updates the EntityMetadataFactory cache so that a subsequent parse(parentClass) returns metadata with extenders populated',
+    function (): void {
+        $this->registry->registerEntities([ProductEntity::class, ProductExtenderEntity::class]);
+    
+        $cachedMetadata = $this->metadataFactory->parse(ProductEntity::class);
+    
+        expect($cachedMetadata->extenders)->toContain(ProductExtenderEntity::class);
+    }
+);
 
-    $cachedMetadata = $this->metadataFactory->parse(ProductEntity::class);
-
-    expect($cachedMetadata->extenders)->toContain(ProductExtenderEntity::class);
-});
-
-it('handles registration order independence when an extender appears before its parent in the input array', function (): void {
-    // Extender listed first, parent second — must still merge correctly
+it(
+    'handles registration order independence when an extender appears before its parent in the input array',
+    function (): void {
+        // Extender listed first, parent second — must still merge correctly
     $this->registry->registerEntities([ProductSecondExtenderEntity::class, ProductEntity::class]);
+    
+        $table = $this->registry->getTable('products');
+        $columnNames = array_map(fn ($c) => $c->name, $table->columns);
+    
+        expect($table)->not->toBeNull()
+            ->and($columnNames)->toContain('barcode');
+    }
+);
 
-    $table = $this->registry->getTable('products');
-    $columnNames = array_map(fn ($c) => $c->name, $table->columns);
-
-    expect($table)->not->toBeNull()
-        ->and($columnNames)->toContain('barcode');
-});
-
-it('includes a discovered extender from EntityDiscovery in the merged table (regression test for discovery integration)', function (): void {
-    // Both ProductEntity and ProductExtenderEntity extend Entity with #[Table],
+it(
+    'includes a discovered extender from EntityDiscovery in the merged table (regression test for discovery integration)',
+    function (): void {
+        // Both ProductEntity and ProductExtenderEntity extend Entity with #[Table],
     // so EntityDiscovery would find both. Simulate by passing both to registerEntities.
     $this->registry->registerEntities([ProductEntity::class, ProductExtenderEntity::class]);
-
-    $table = $this->registry->getTable('products');
-
-    expect($table)->not->toBeNull()
-        ->and($table->columns)->toHaveCount(3)
-        ->and($this->registry->getEntityClass('products'))->toBe(ProductEntity::class);
-});
+    
+        $table = $this->registry->getTable('products');
+    
+        expect($table)->not->toBeNull()
+            ->and($table->columns)->toHaveCount(3)
+            ->and($this->registry->getEntityClass('products'))->toBe(ProductEntity::class);
+    }
+);

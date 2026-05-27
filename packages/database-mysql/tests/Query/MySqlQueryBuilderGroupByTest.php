@@ -29,7 +29,10 @@ function makeRecordingConnection(string &$lastSql, array &$lastBindings): MySqlC
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             $this->lastSql = $sql;
             $this->lastBindings = $bindings;
@@ -37,7 +40,10 @@ function makeRecordingConnection(string &$lastSql, array &$lastBindings): MySqlC
             return [];
         }
 
-        public function execute(string $sql, array $bindings = []): int
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int
         {
             return 0;
         }
@@ -157,19 +163,22 @@ describe('MySqlQueryBuilder GROUP BY / HAVING', function (): void {
         );
     });
 
-    it('validates GROUP BY column identifiers against the alias/identifier whitelist (reuses the whitelist introduced in task 006)', function (): void {
-        $sql = '';
-        $bindings = [];
-        $conn = makeRecordingConnection($sql, $bindings);
-
-        expect(
-            fn () => (new MySqlQueryBuilder($conn))
-            ->table('orders')
-            ->select('status')
-            ->groupBy('status; DROP TABLE orders--')
-            ->get(),
-        )->toThrow(InvalidColumnException::class);
-    });
+    it(
+        'validates GROUP BY column identifiers against the alias/identifier whitelist (reuses the whitelist introduced in task 006)',
+        function (): void {
+            $sql = '';
+            $bindings = [];
+            $conn = makeRecordingConnection($sql, $bindings);
+    
+            expect(
+                fn () => (new MySqlQueryBuilder($conn))
+                ->table('orders')
+                ->select('status')
+                ->groupBy('status; DROP TABLE orders--')
+                ->get(),
+            )->toThrow(InvalidColumnException::class);
+        }
+    );
 
     it('rejects HAVING expressions containing semicolons or SQL comments', function (): void {
         $sql = '';
@@ -204,22 +213,25 @@ describe('MySqlQueryBuilder GROUP BY / HAVING', function (): void {
         )->toThrow(InvalidColumnException::class);
     });
 
-    it('composes HAVING bindings with WHERE bindings in the correct positional order at execute time', function (): void {
-        $sql = '';
-        $bindings = [];
-        $conn = makeRecordingConnection($sql, $bindings);
-
-        (new MySqlQueryBuilder($conn))
-            ->table('orders')
-            ->select('status', 'country')
-            ->where('active', '=', 1)
-            ->groupBy('status', 'country')
-            ->having('COUNT(*) BETWEEN ? AND ?', [3, 10])
-            ->get();
-
-        expect($sql)->toBe(
-            'SELECT `status`, `country` FROM `orders` WHERE `active` = ? GROUP BY `status`, `country` HAVING COUNT(*) BETWEEN ? AND ?',
-        )
-            ->and($bindings)->toBe([1, 3, 10]);
-    });
+    it(
+        'composes HAVING bindings with WHERE bindings in the correct positional order at execute time',
+        function (): void {
+            $sql = '';
+            $bindings = [];
+            $conn = makeRecordingConnection($sql, $bindings);
+    
+            (new MySqlQueryBuilder($conn))
+                ->table('orders')
+                ->select('status', 'country')
+                ->where('active', '=', 1)
+                ->groupBy('status', 'country')
+                ->having('COUNT(*) BETWEEN ? AND ?', [3, 10])
+                ->get();
+    
+            expect($sql)->toBe(
+                'SELECT `status`, `country` FROM `orders` WHERE `active` = ? GROUP BY `status`, `country` HAVING COUNT(*) BETWEEN ? AND ?',
+            )
+                ->and($bindings)->toBe([1, 3, 10]);
+        }
+    );
 });

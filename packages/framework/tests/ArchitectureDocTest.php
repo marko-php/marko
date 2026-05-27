@@ -40,14 +40,20 @@ it('the section explains when to use the pattern (reusable UI packages)', functi
         ->and($content)->toContain('UI');
 });
 
-it('the section explains when NOT to use the pattern (application-specific modules)', function () use ($architecturePath) {
-    $content = file_get_contents($architecturePath);
+it(
+    'the section explains when NOT to use the pattern (application-specific modules)',
+    function () use ($architecturePath) {
+        $content = file_get_contents($architecturePath);
+    
+        expect($content)->toContain('application-specific');
+    }
+);
 
-    expect($content)->toContain('application-specific');
-});
-
-it('the section mentions the CrossEngineTemplateParityTest as the enforcement mechanism', function () use ($architecturePath) {
-    $content = file_get_contents($architecturePath);
-
-    expect($content)->toContain('CrossEngineTemplateParityTest');
-});
+it(
+    'the section mentions the CrossEngineTemplateParityTest as the enforcement mechanism',
+    function () use ($architecturePath) {
+        $content = file_get_contents($architecturePath);
+    
+        expect($content)->toContain('CrossEngineTemplateParityTest');
+    }
+);

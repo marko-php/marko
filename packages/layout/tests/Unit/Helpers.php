@@ -25,7 +25,10 @@ final class Helpers
 
             public function singleton(string $id): void {}
 
-            public function instance(string $id, object $instance): void {}
+            public function instance(
+                string $id,
+                object $instance,
+            ): void {}
 
             public function call(Closure $callable): mixed
             {

@@ -27,7 +27,10 @@ readonly class DiscoveringComponentCollector implements ComponentCollectorInterf
      * @param array<int, class-string> $classNames
      * @throws DuplicateComponentException|Error|ReflectionException
      */
-    public function collect(array $classNames, string $handle): ComponentCollection
+    public function collect(
+        array $classNames,
+        string $handle,
+    ): ComponentCollection
     {
         $discovered = $this->discoverComponentClasses();
         $merged = array_values(array_unique(array_merge($discovered, $classNames)));

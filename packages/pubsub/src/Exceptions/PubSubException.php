@@ -8,7 +8,10 @@ use Marko\Core\Exceptions\MarkoException;
 
 class PubSubException extends MarkoException
 {
-    public static function connectionFailed(string $driver, string $reason): self
+    public static function connectionFailed(
+        string $driver,
+        string $reason,
+    ): self
     {
         return new self(
             message: "Failed to connect to pub/sub driver '$driver'.",
@@ -17,7 +20,10 @@ class PubSubException extends MarkoException
         );
     }
 
-    public static function subscriptionFailed(string $channel, string $reason): self
+    public static function subscriptionFailed(
+        string $channel,
+        string $reason,
+    ): self
     {
         return new self(
             message: "Failed to subscribe to channel '$channel'.",
@@ -26,7 +32,10 @@ class PubSubException extends MarkoException
         );
     }
 
-    public static function publishFailed(string $channel, string $reason): self
+    public static function publishFailed(
+        string $channel,
+        string $reason,
+    ): self
     {
         return new self(
             message: "Failed to publish to channel '$channel'.",

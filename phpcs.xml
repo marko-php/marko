@@ -3,8 +3,6 @@
     <description>Marko Framework Coding Standard</description>
 
     <file>packages</file>
-    <file>demo/app</file>
-    <file>demo/modules</file>
 
     <!-- Exclude vendor directories -->
     <exclude-pattern>*/vendor/*</exclude-pattern>

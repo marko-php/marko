@@ -6,7 +6,10 @@ namespace Marko\Layout\Exceptions;
 
 class SlotNotFoundException extends LayoutException
 {
-    public static function forSlot(string $slot, string $layout): self
+    public static function forSlot(
+        string $slot,
+        string $layout,
+    ): self
     {
         return new self(
             message: "Slot '$slot' not found in layout '$layout'.",

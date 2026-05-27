@@ -290,10 +290,10 @@ describe('QueryBuilderInterface', function (): void {
             $reflection = new ReflectionClass(QueryBuilderInterface::class);
             $method = $reflection->getMethod('selectRaw');
             $params = $method->getParameters();
-    
+
             expect($params[0]->getName())->toBe('expression')
                 ->and($params[0]->getType()?->getName())->toBe('string');
-        }
+        },
     );
 
     it(
@@ -302,12 +302,12 @@ describe('QueryBuilderInterface', function (): void {
             $reflection = new ReflectionClass(QueryBuilderInterface::class);
             $method = $reflection->getMethod('selectRaw');
             $params = $method->getParameters();
-    
+
             expect($params[1]->getName())->toBe('bindings')
                 ->and($params[1]->getType()?->getName())->toBe('array')
                 ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
                 ->and($params[1]->getDefaultValue())->toBeEmpty();
-        }
+        },
     );
 
     it('QueryBuilderInterface::selectRaw returns static', function (): void {
@@ -330,10 +330,10 @@ describe('QueryBuilderInterface', function (): void {
             $reflection = new ReflectionClass(QueryBuilderInterface::class);
             $method = $reflection->getMethod('whereRaw');
             $params = $method->getParameters();
-    
+
             expect($params[0]->getName())->toBe('expression')
                 ->and($params[0]->getType()?->getName())->toBe('string');
-        }
+        },
     );
 
     it(
@@ -342,12 +342,12 @@ describe('QueryBuilderInterface', function (): void {
             $reflection = new ReflectionClass(QueryBuilderInterface::class);
             $method = $reflection->getMethod('whereRaw');
             $params = $method->getParameters();
-    
+
             expect($params[1]->getName())->toBe('bindings')
                 ->and($params[1]->getType()?->getName())->toBe('array')
                 ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
                 ->and($params[1]->getDefaultValue())->toBeEmpty();
-        }
+        },
     );
 
     it('QueryBuilderInterface::whereRaw returns static', function (): void {
@@ -370,10 +370,10 @@ describe('QueryBuilderInterface', function (): void {
             $reflection = new ReflectionClass(QueryBuilderInterface::class);
             $method = $reflection->getMethod('orderByRaw');
             $params = $method->getParameters();
-    
+
             expect($params[0]->getName())->toBe('expression')
                 ->and($params[0]->getType()?->getName())->toBe('string');
-        }
+        },
     );
 
     it(
@@ -382,12 +382,12 @@ describe('QueryBuilderInterface', function (): void {
             $reflection = new ReflectionClass(QueryBuilderInterface::class);
             $method = $reflection->getMethod('orderByRaw');
             $params = $method->getParameters();
-    
+
             expect($params[1]->getName())->toBe('direction')
                 ->and($params[1]->getType()?->getName())->toBe('string')
                 ->and($params[1]->isDefaultValueAvailable())->toBeTrue()
                 ->and($params[1]->getDefaultValue())->toBe('ASC');
-        }
+        },
     );
 
     it('QueryBuilderInterface::orderByRaw returns static', function (): void {

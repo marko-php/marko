@@ -30,7 +30,10 @@ class SpyAmphpRedisSubscriber implements AmphpRedisSubscriberInterface
      * @param array<string, AmphpRedisSubscription> $channelSubscriptions
      * @param array<string, AmphpRedisSubscription> $patternSubscriptions
      */
-    public function __construct(array $channelSubscriptions = [], array $patternSubscriptions = [])
+    public function __construct(
+        array $channelSubscriptions = [],
+        array $patternSubscriptions = [],
+    )
     {
         $this->channelSubscriptions = $channelSubscriptions;
         $this->patternSubscriptions = $patternSubscriptions;

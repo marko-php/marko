@@ -25,7 +25,11 @@ class CatalogPrefixComponent {}
 #[Component(template: 'other/page.phtml', slot: 'content', handle: 'checkout_cart')]
 class OtherPageComponent {}
 
-#[Component(template: 'multi/component.phtml', slot: 'content', handle: ['catalog_product_show', 'catalog_category_view'])]
+#[Component(
+    template: 'multi/component.phtml',
+    slot: 'content',
+    handle: ['catalog_product_show', 'catalog_category_view']
+)]
 class MultiHandleComponent {}
 
 #[Component(template: 'root/layout.phtml', slots: ['content', 'sidebar'], handle: 'default')]

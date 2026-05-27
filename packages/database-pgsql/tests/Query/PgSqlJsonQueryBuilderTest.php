@@ -104,16 +104,16 @@ describe('PgSqlQueryBuilder JSON operators', function (): void {
                 queryReturn: [['id' => 2]],
             );
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             $result = $builder
                 ->table('users')
                 ->whereJsonContains('data->roles', 'admin')
                 ->get();
-    
+
             expect($connection->lastQuerySql)
                 ->toContain('"data"->\'roles\' @> ?')
                 ->and($result)->toHaveCount(1);
-        }
+        },
     );
 
     it('returns rows where a JSON path exists via whereJsonExists()', function (): void {

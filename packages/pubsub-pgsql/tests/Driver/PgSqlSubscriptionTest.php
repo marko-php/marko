@@ -18,7 +18,10 @@ class SubscriptionMockPostgresListener implements PostgresListener, IteratorAggr
     private string $channel;
 
     /** @param PostgresNotification[] $notifications */
-    public function __construct(string $channel, array $notifications = [])
+    public function __construct(
+        string $channel,
+        array $notifications = [],
+    )
     {
         $this->channel = $channel;
         $this->notifications = $notifications;

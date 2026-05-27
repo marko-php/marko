@@ -8,6 +8,9 @@ use Marko\Routing\Http\Response;
 use Marko\View\TemplateResolverInterface;
 use Marko\View\ViewInterface;
 use Twig\Environment;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 
 class TwigView implements ViewInterface
 {
@@ -21,9 +24,7 @@ class TwigView implements ViewInterface
 
     /**
      * @param array<string, mixed> $data
-     * @throws \Twig\Error\LoaderError
-     * @throws \Twig\Error\RuntimeError
-     * @throws \Twig\Error\SyntaxError
+     * @throws LoaderError|RuntimeError|SyntaxError
      */
     public function render(
         string $template,
@@ -36,9 +37,7 @@ class TwigView implements ViewInterface
 
     /**
      * @param array<string, mixed> $data
-     * @throws \Twig\Error\LoaderError
-     * @throws \Twig\Error\RuntimeError
-     * @throws \Twig\Error\SyntaxError
+     * @throws LoaderError|RuntimeError|SyntaxError
      */
     public function renderToString(
         string $template,

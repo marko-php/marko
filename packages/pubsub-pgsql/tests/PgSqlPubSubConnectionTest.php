@@ -16,7 +16,10 @@ use Marko\PubSub\PgSql\PgSqlPubSubConnection;
  */
 class ConnectionStubPostgresConnection implements PostgresConnection
 {
-    public function notify(string $channel, string $payload = ''): PostgresResult
+    public function notify(
+        string $channel,
+        string $payload = '',
+    ): PostgresResult
     {
         throw new RuntimeException('Not implemented in stub');
     }
@@ -41,7 +44,10 @@ class ConnectionStubPostgresConnection implements PostgresConnection
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function execute(string $sql, array $params = []): PostgresResult
+    public function execute(
+        string $sql,
+        array $params = [],
+    ): PostgresResult
     {
         throw new RuntimeException('Not implemented in stub');
     }

@@ -165,29 +165,35 @@ describe('MySqlQueryBuilder aggregates', function (): void {
         expect($min)->toBe(20);
     });
 
-    it('rejects aggregate column identifiers that fail the identifier whitelist (no SQL injection)', function (): void {
-        expect(fn () => $this->builder->table('scores')->min('points; DROP TABLE scores--'))
-            ->toThrow(InvalidColumnException::class)
-            ->and(fn () => $this->builder->table('scores')->max("col' OR '1'='1"))
-            ->toThrow(InvalidColumnException::class)
-            ->and(fn () => $this->builder->table('scores')->sum('1=1'))
-            ->toThrow(InvalidColumnException::class)
-            ->and(fn () => $this->builder->table('scores')->avg('/*bad*/'))
-            ->toThrow(InvalidColumnException::class);
-    });
+    it(
+        'rejects aggregate column identifiers that fail the identifier whitelist (no SQL injection)',
+        function (): void {
+            expect(fn () => $this->builder->table('scores')->min('points; DROP TABLE scores--'))
+                ->toThrow(InvalidColumnException::class)
+                ->and(fn () => $this->builder->table('scores')->max("col' OR '1'='1"))
+                ->toThrow(InvalidColumnException::class)
+                ->and(fn () => $this->builder->table('scores')->sum('1=1'))
+                ->toThrow(InvalidColumnException::class)
+                ->and(fn () => $this->builder->table('scores')->avg('/*bad*/'))
+                ->toThrow(InvalidColumnException::class);
+        }
+    );
 
-    it('existing int return type of count() remains int (no nullable); only the signature gains an optional column argument', function (): void {
-        $reflection = new ReflectionClass(MySqlQueryBuilder::class);
-        $method = $reflection->getMethod('count');
-        $returnType = $method->getReturnType();
-        $params = $method->getParameters();
-
-        expect($returnType?->getName())->toBe('int')
-            ->and($returnType?->allowsNull())->toBeFalse()
-            ->and($params)->toHaveCount(1)
-            ->and($params[0]->getName())->toBe('column')
-            ->and($params[0]->isOptional())->toBeTrue()
-            ->and($params[0]->allowsNull())->toBeTrue()
-            ->and($params[0]->getDefaultValue())->toBeNull();
-    });
+    it(
+        'existing int return type of count() remains int (no nullable); only the signature gains an optional column argument',
+        function (): void {
+            $reflection = new ReflectionClass(MySqlQueryBuilder::class);
+            $method = $reflection->getMethod('count');
+            $returnType = $method->getReturnType();
+            $params = $method->getParameters();
+    
+            expect($returnType?->getName())->toBe('int')
+                ->and($returnType?->allowsNull())->toBeFalse()
+                ->and($params)->toHaveCount(1)
+                ->and($params[0]->getName())->toBe('column')
+                ->and($params[0]->isOptional())->toBeTrue()
+                ->and($params[0]->allowsNull())->toBeTrue()
+                ->and($params[0]->getDefaultValue())->toBeNull();
+        }
+    );
 });

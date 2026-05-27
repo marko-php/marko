@@ -93,7 +93,10 @@ function stubCollector(ComponentCollection $collection): ComponentCollectorInter
     {
         public function __construct(private readonly ComponentCollection $stub) {}
 
-        public function collect(array $classNames, string $handle): ComponentCollection
+        public function collect(
+            array $classNames,
+            string $handle,
+        ): ComponentCollection
         {
             return $this->stub;
         }
@@ -112,12 +115,18 @@ function stubView(callable $renderFn): ViewInterface
     {
         public function __construct(private readonly mixed $renderFn) {}
 
-        public function render(string $template, array $data = []): Response
+        public function render(
+            string $template,
+            array $data = [],
+        ): Response
         {
             return Response::html(($this->renderFn)($template, $data));
         }
 
-        public function renderToString(string $template, array $data = []): string
+        public function renderToString(
+            string $template,
+            array $data = [],
+        ): string
         {
             return ($this->renderFn)($template, $data);
         }
@@ -196,6 +205,7 @@ describe('LayoutProcessor', function (): void {
 
         $view = stubView(function (string $template, array $data) use (&$rendered): string {
             $rendered[$template] = $data;
+
             return '<div/>';
         });
 
@@ -214,6 +224,7 @@ describe('LayoutProcessor', function (): void {
             if ($template === 'layouts/root.html') {
                 $slotsPassed = $data['slots'] ?? null;
             }
+
             return '<div/>';
         });
 
@@ -232,6 +243,7 @@ describe('LayoutProcessor', function (): void {
             if ($template === 'layouts/root.html') {
                 $layoutTemplateCalled = true;
             }
+
             return '<div/>';
         });
 
@@ -284,6 +296,7 @@ describe('LayoutProcessor', function (): void {
             if ($template !== 'layouts/root.html') {
                 $renderOrder[] = $template;
             }
+
             return '<div/>';
         });
 
@@ -311,6 +324,7 @@ describe('LayoutProcessor', function (): void {
 
         $view = stubView(function (string $template, array $data) use (&$renderedData): string {
             $renderedData[$template] = $data;
+
             return '<div/>';
         });
 

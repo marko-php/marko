@@ -23,6 +23,7 @@ class LmFixtureController
     public function index(): string
     {
         $this->actionInvoked = true;
+
         return 'controller response';
     }
 }
@@ -68,7 +69,10 @@ function stubMatcher(?MatchedRoute $matched): RouteMatcherInterface
     {
         public function __construct(private readonly ?MatchedRoute $stub) {}
 
-        public function match(string $method, string $path): ?MatchedRoute
+        public function match(
+            string $method,
+            string $path,
+        ): ?MatchedRoute
         {
             return $this->stub;
         }

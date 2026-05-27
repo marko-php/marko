@@ -16,7 +16,10 @@ readonly class PgSqlPublisher implements PublisherInterface
         private PubSubConfig $config,
     ) {}
 
-    public function publish(string $channel, Message $message): void
+    public function publish(
+        string $channel,
+        Message $message,
+    ): void
     {
         $prefixed = $this->config->prefix() . $channel;
         $this->connection->connection()->notify($prefixed, $message->payload);

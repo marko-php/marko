@@ -98,7 +98,7 @@ describe('PgSqlQueryBuilder GROUP BY / HAVING', function (): void {
         'validates GROUP BY column identifiers against the alias/identifier whitelist (reuses the whitelist introduced in task 006)',
         function (): void {
             $conn = new MockConnection();
-    
+
             expect(
                 fn () => (new PgSqlQueryBuilder($conn))
                 ->table('orders')
@@ -106,7 +106,7 @@ describe('PgSqlQueryBuilder GROUP BY / HAVING', function (): void {
                 ->groupBy('status; DROP TABLE orders--')
                 ->get(),
             )->toThrow(InvalidColumnException::class);
-        }
+        },
     );
 
     it('rejects HAVING expressions containing semicolons or SQL comments', function (): void {
@@ -144,7 +144,7 @@ describe('PgSqlQueryBuilder GROUP BY / HAVING', function (): void {
         'composes HAVING bindings with WHERE bindings in the correct positional order at execute time',
         function (): void {
             $conn = new MockConnection();
-    
+
             (new PgSqlQueryBuilder($conn))
                 ->table('orders')
                 ->select('status', 'country')
@@ -152,11 +152,11 @@ describe('PgSqlQueryBuilder GROUP BY / HAVING', function (): void {
                 ->groupBy('status', 'country')
                 ->having('COUNT(*) BETWEEN ? AND ?', [3, 10])
                 ->get();
-    
+
             expect($conn->lastQuerySql)->toBe(
                 'SELECT "status", "country" FROM "orders" WHERE "active" = ? GROUP BY "status", "country" HAVING COUNT(*) BETWEEN ? AND ?',
             )
                 ->and($conn->lastQueryBindings)->toBe([1, 3, 10]);
-        }
+        },
     );
 });

@@ -46,7 +46,10 @@ class PIIT_HasherAfterPlugin
     public static array $log = [];
 
     /** @noinspection PhpUnused - Invoked via plugin interception */
-    public function hash(mixed $result, string $value): string
+    public function hash(
+        mixed $result,
+        string $value,
+    ): string
     {
         self::$log[] = "after:$result";
 
@@ -67,7 +70,10 @@ class PIIT_LoggingPlugin
     }
 
     /** @noinspection PhpUnused - Invoked via plugin interception */
-    public function hashAfter(mixed $result, string $value): string
+    public function hashAfter(
+        mixed $result,
+        string $value,
+    ): string
     {
         self::$log[] = "after:$result";
 
@@ -98,7 +104,10 @@ class PIIT_FirstAfterPlugin
     public static array $log = [];
 
     /** @noinspection PhpUnused - Invoked via plugin interception */
-    public function hash(mixed $result, string $value): string
+    public function hash(
+        mixed $result,
+        string $value,
+    ): string
     {
         self::$log[] = "first-after:$result";
 
@@ -111,7 +120,10 @@ class PIIT_SecondAfterPlugin
     public static array $log = [];
 
     /** @noinspection PhpUnused - Invoked via plugin interception */
-    public function hash(mixed $result, string $value): string
+    public function hash(
+        mixed $result,
+        string $value,
+    ): string
     {
         self::$log[] = "second-after:$result";
 

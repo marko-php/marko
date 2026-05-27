@@ -6,7 +6,11 @@ namespace Marko\Layout;
 
 readonly class HandleResolver
 {
-    public function generate(string $path, string $controllerClass, string $action): string
+    public function generate(
+        string $path,
+        string $controllerClass,
+        string $action,
+    ): string
     {
         $segments = explode('/', trim($path, '/'));
         $routePart = $segments[0] !== '' ? $segments[0] : 'index';
@@ -17,7 +21,10 @@ readonly class HandleResolver
         return strtolower("{$routePart}_{$controllerPart}_$action");
     }
 
-    public function matches(string $componentHandle, string $pageHandle): bool
+    public function matches(
+        string $componentHandle,
+        string $pageHandle,
+    ): bool
     {
         if ($componentHandle === 'default') {
             return true;

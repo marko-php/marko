@@ -30,7 +30,10 @@ class MockPostgresListener implements PostgresListener, IteratorAggregate
     private string $channel;
 
     /** @param PostgresNotification[] $notifications */
-    public function __construct(string $channel, array $notifications = [])
+    public function __construct(
+        string $channel,
+        array $notifications = [],
+    )
     {
         $this->channel = $channel;
         $this->notifications = $notifications;
@@ -82,7 +85,10 @@ class SubscriberStubPostgresConnection implements PostgresConnection
         return $listener;
     }
 
-    public function notify(string $channel, string $payload = ''): PostgresResult
+    public function notify(
+        string $channel,
+        string $payload = '',
+    ): PostgresResult
     {
         throw new RuntimeException('Not implemented in stub');
     }
@@ -102,7 +108,10 @@ class SubscriberStubPostgresConnection implements PostgresConnection
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function execute(string $sql, array $params = []): PostgresResult
+    public function execute(
+        string $sql,
+        array $params = [],
+    ): PostgresResult
     {
         throw new RuntimeException('Not implemented in stub');
     }

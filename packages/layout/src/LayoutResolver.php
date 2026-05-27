@@ -23,7 +23,10 @@ readonly class LayoutResolver
      * @return array{componentClass: class-string, attribute: Component}
      * @throws LayoutNotFoundException|ReflectionException
      */
-    public function resolve(string $controllerClass, string $method): array
+    public function resolve(
+        string $controllerClass,
+        string $method,
+    ): array
     {
         $classReflection = new ReflectionClass($controllerClass);
         $methodReflection = new ReflectionMethod($controllerClass, $method);
