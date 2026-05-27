@@ -8,6 +8,28 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.7.0] - 2026-05-27
+
+### Breaking Changes
+* feat: extract admin-panel templates into engine-specific sibling packages by @markshust in https://github.com/marko-php/marko/pull/94
+### New Features
+* feat(database): add selectRaw, whereRaw, and orderByRaw to QueryBuilderInterface by @michalbiarda in https://github.com/marko-php/marko/pull/78
+* feat(core): allow packages to declare global middleware in module.php by @michalbiarda in https://github.com/marko-php/marko/pull/80
+* feat(database-readwrite): add marko/database-readwrite package by @markshust in https://github.com/marko-php/marko/pull/86
+* feat: add Twig template engine driver as sibling to Latte by @markshust in https://github.com/marko-php/marko/pull/88
+* feat: centralize driver registries with known-drivers.php pattern by @markshust in https://github.com/marko-php/marko/pull/91
+### Bug Fixes
+* fix(docs): resolve expressive-code build warnings for latte and env by @markshust in https://github.com/marko-php/marko/pull/83
+* fix: point split workflow at MARKO_BUILD_PAT secret by @markshust in https://github.com/marko-php/marko/pull/84
+* fix: drop workflow-file PUT that 404s on freshly created split repos by @markshust in https://github.com/marko-php/marko/pull/87
+* fix: harden 0.7.0 release (lint config, test fixes, dep refresh) by @markshust in https://github.com/marko-php/marko/pull/95
+### Documentation
+* docs: document boot-callback dialect override pattern for postgres-wire-compatible databases by @markshust in https://github.com/marko-php/marko/pull/85
+### Refactoring
+* refactor(view): align ViewInterface bindings with Marko's simple-binding preference by @markshust in https://github.com/marko-php/marko/pull/90
+* refactor(view): drop mutual conflict; align with multi-driver pattern by @markshust in https://github.com/marko-php/marko/pull/92
+
+
 ## [0.6.1] - 2026-05-26
 
 ### Bug Fixes
