@@ -11,9 +11,6 @@
     "require-dev": {
         "pestphp/pest": "^4.0"
     },
-    "conflict": {
-        "marko/view-twig": "*"
-    },
     "autoload": {
         "psr-4": {
             "Marko\\View\\Latte\\": "src/"
