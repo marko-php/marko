@@ -330,6 +330,10 @@
         },
         {
             "type": "path",
+            "url": "packages/view-twig"
+        },
+        {
+            "type": "path",
             "url": "packages/vite"
         },
         {
@@ -422,6 +426,7 @@
         "marko/validation": "self.version",
         "marko/view": "self.version",
         "marko/view-latte": "self.version",
+        "marko/view-twig": "self.version",
         "marko/vite": "self.version",
         "marko/webhook": "self.version"
     },
@@ -431,15 +436,13 @@
         "aws/aws-sdk-php": "^3.0",
         "friendsofphp/php-cs-fixer": "^3.92",
         "guzzlehttp/guzzle": "^7.0",
-        "latte/latte": "^3.0",
         "marko/debugbar": "self.version",
         "pestphp/pest": "^4.3",
         "php-amqplib/php-amqplib": "^3.0",
         "predis/predis": "^2.0",
         "rector/rector": "^2.3",
         "slevomat/coding-standard": "^8.26",
-        "squizlabs/php_codesniffer": "^4.0",
-        "twig/twig": "^3.0"
+        "squizlabs/php_codesniffer": "^4.0"
     },
     "scripts": {
         "test": "pest -c phpunit.xml --parallel --exclude-group=integration-destructive",
@@ -542,7 +545,6 @@
             "Marko\\Validation\\Tests\\": "packages/validation/tests/",
             "Marko\\View\\Tests\\": "packages/view/tests/",
             "Marko\\View\\Latte\\Tests\\": "packages/view-latte/tests/",
-            "Marko\\View\\Twig\\": "packages/view-twig/src/",
             "Marko\\View\\Twig\\Tests\\": "packages/view-twig/tests/",
             "Marko\\Vite\\Tests\\": "packages/vite/tests/",
             "Marko\\Webhook\\Tests\\": "packages/webhook/tests/"

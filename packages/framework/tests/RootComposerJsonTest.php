@@ -77,10 +77,11 @@ $allPackages = [
     'marko/validation',
     'marko/view',
     'marko/view-latte',
+    'marko/view-twig',
     'marko/webhook',
 ];
 
-it('adds a require section entry for all 72 marko packages set to self.version', function () use ($rootComposer, $allPackages): void {
+it('adds a require section entry for all 73 marko packages set to self.version', function () use ($rootComposer, $allPackages): void {
     expect($rootComposer)->toHaveKey('require');
 
     foreach ($allPackages as $package) {
@@ -93,7 +94,7 @@ it('does not have a replace section (path repos install as symlinks without it)'
     expect($rootComposer)->not->toHaveKey('replace');
 });
 
-it('adds repositories section with path repos for all 72 packages', function () use ($rootComposer, $allPackages): void {
+it('adds repositories section with path repos for all 73 packages', function () use ($rootComposer, $allPackages): void {
     expect($rootComposer)->toHaveKey('repositories');
 
     $repoUrls = array_column($rootComposer['repositories'], 'url');
@@ -155,7 +156,6 @@ it('preserves existing require (php, ext-*) and require-dev (third-party) entrie
         'aws/aws-sdk-php',
         'friendsofphp/php-cs-fixer',
         'guzzlehttp/guzzle',
-        'latte/latte',
         'pestphp/pest',
         'php-amqplib/php-amqplib',
         'predis/predis',
