@@ -118,7 +118,10 @@ function makeStringPkConnection(array $queryResults = [], array &$executedSql = 
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             $result = $this->queryResults[$this->queryIndex] ?? [];
             $this->queryIndex++;
@@ -126,7 +129,10 @@ function makeStringPkConnection(array $queryResults = [], array &$executedSql = 
             return $result;
         }
 
-        public function execute(string $sql, array $bindings = []): int
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int
         {
             $this->executedSql[] = $sql;
             $this->executedBindings[] = $bindings;
@@ -165,12 +171,19 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
-        public function where(string $column, string $operator, mixed $value): static
+        public function where(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static
         {
             return $this;
         }
 
-        public function whereIn(string $column, array $values): static
+        public function whereIn(
+            string $column,
+            array $values,
+        ): static
         {
             $this->capturedWhereIn[] = ['column' => $column, 'values' => $values];
 
@@ -187,7 +200,10 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
-        public function whereJsonContains(string $path, mixed $value): static
+        public function whereJsonContains(
+            string $path,
+            mixed $value,
+        ): static
         {
             return $this;
         }
@@ -202,42 +218,73 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
-        public function orWhere(string $column, string $operator, mixed $value): static
+        public function orWhere(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static
         {
             return $this;
         }
 
-        public function join(string $table, string $first, string $operator, string $second): static
+        public function join(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function leftJoin(string $table, string $first, string $operator, string $second): static
+        public function leftJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function rightJoin(string $table, string $first, string $operator, string $second): static
+        public function rightJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function orderBy(string $column, string $direction = 'ASC'): static
+        public function orderBy(
+            string $column,
+            string $direction = 'ASC',
+        ): static
         {
             return $this;
         }
 
-        public function orderByRaw(string $expression, string $direction = 'ASC'): static
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static
         {
             return $this;
         }
 
-        public function selectRaw(string $expression, array $bindings = []): static
+        public function selectRaw(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
 
-        public function whereRaw(string $expression, array $bindings = []): static
+        public function whereRaw(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
@@ -332,12 +379,18 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             return $this;
         }
 
-        public function having(string $expression, array $bindings = []): static
+        public function having(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
 
-        public function raw(string $sql, array $bindings = []): array
+        public function raw(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             return [];
         }
@@ -467,9 +520,21 @@ it('loads a BelongsTo relationship when the foreign key is a string', function (
         tableName: 'orders',
         primaryKey: 'uuid',
         properties: [
-            'uuid' => new PropertyMetadata(name: 'uuid', columnName: 'uuid', type: 'string', nullable: true, isPrimaryKey: true, isAutoIncrement: false),
+            'uuid' => new PropertyMetadata(
+                name: 'uuid',
+                columnName: 'uuid',
+                type: 'string',
+                nullable: true,
+                isPrimaryKey: true,
+                isAutoIncrement: false
+            ),
             'status' => new PropertyMetadata(name: 'status', columnName: 'status', type: 'string'),
-            'productUuid' => new PropertyMetadata(name: 'productUuid', columnName: 'product_uuid', type: 'string', nullable: true),
+            'productUuid' => new PropertyMetadata(
+                name: 'productUuid',
+                columnName: 'product_uuid',
+                type: 'string',
+                nullable: true
+            ),
         ],
         relationships: [
             'product' => new RelationshipMetadata(
@@ -518,9 +583,21 @@ it('loads a HasMany relationship when the parent primary key is a string', funct
         tableName: 'orders',
         primaryKey: 'uuid',
         properties: [
-            'uuid' => new PropertyMetadata(name: 'uuid', columnName: 'uuid', type: 'string', nullable: true, isPrimaryKey: true, isAutoIncrement: false),
+            'uuid' => new PropertyMetadata(
+                name: 'uuid',
+                columnName: 'uuid',
+                type: 'string',
+                nullable: true,
+                isPrimaryKey: true,
+                isAutoIncrement: false
+            ),
             'status' => new PropertyMetadata(name: 'status', columnName: 'status', type: 'string'),
-            'productUuid' => new PropertyMetadata(name: 'productUuid', columnName: 'product_uuid', type: 'string', nullable: true),
+            'productUuid' => new PropertyMetadata(
+                name: 'productUuid',
+                columnName: 'product_uuid',
+                type: 'string',
+                nullable: true
+            ),
         ],
         relationships: [
             'lines' => new RelationshipMetadata(
@@ -574,9 +651,21 @@ it('batches WHERE IN queries correctly for string foreign keys without SQL injec
         tableName: 'orders',
         primaryKey: 'uuid',
         properties: [
-            'uuid' => new PropertyMetadata(name: 'uuid', columnName: 'uuid', type: 'string', nullable: true, isPrimaryKey: true, isAutoIncrement: false),
+            'uuid' => new PropertyMetadata(
+                name: 'uuid',
+                columnName: 'uuid',
+                type: 'string',
+                nullable: true,
+                isPrimaryKey: true,
+                isAutoIncrement: false
+            ),
             'status' => new PropertyMetadata(name: 'status', columnName: 'status', type: 'string'),
-            'productUuid' => new PropertyMetadata(name: 'productUuid', columnName: 'product_uuid', type: 'string', nullable: true),
+            'productUuid' => new PropertyMetadata(
+                name: 'productUuid',
+                columnName: 'product_uuid',
+                type: 'string',
+                nullable: true
+            ),
         ],
         relationships: [
             'lines' => new RelationshipMetadata(

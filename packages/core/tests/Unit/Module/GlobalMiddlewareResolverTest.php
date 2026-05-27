@@ -23,9 +23,9 @@ function makeMiddlewareClass(string $className): void
 
     eval(
         "namespace $namespace; " .
-        "class $shortName implements \\" . MiddlewareInterface::class . " { " .
+        "class $shortName implements \\" . MiddlewareInterface::class . ' { ' .
         "public function handle(\Marko\Routing\Http\Request \$request, callable \$next): \Marko\Routing\Http\Response { return \$next(\$request); } " .
-        "}"
+        '}'
     );
 }
 

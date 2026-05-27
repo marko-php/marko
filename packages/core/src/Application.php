@@ -304,7 +304,6 @@ class Application
         $this->commandRunner = new CommandRunner($this->container, $this->commandRegistry);
     }
 
-
     /**
      * @throws RouteException|RouteConflictException|ReflectionException
      */

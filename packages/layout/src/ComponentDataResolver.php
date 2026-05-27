@@ -17,7 +17,11 @@ readonly class ComponentDataResolver
      * @return array<string, mixed>
      * @throws ReflectionException
      */
-    public function resolve(object $component, array $routeParams, Request $request): array
+    public function resolve(
+        object $component,
+        array $routeParams,
+        Request $request,
+    ): array
     {
         if (!method_exists($component, 'data')) {
             return [];
@@ -47,7 +51,10 @@ readonly class ComponentDataResolver
         return $component->data(...$parameters);
     }
 
-    private function castToType(mixed $value, ?ReflectionType $type): mixed
+    private function castToType(
+        mixed $value,
+        ?ReflectionType $type,
+    ): mixed
     {
         if (!$type instanceof ReflectionNamedType) {
             return $value;

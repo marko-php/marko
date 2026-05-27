@@ -8,7 +8,10 @@ use Marko\Core\Exceptions\MarkoException;
 
 class DevServerException extends MarkoException
 {
-    public static function processFailedToStart(string $name, string $command): self
+    public static function processFailedToStart(
+        string $name,
+        string $command,
+    ): self
     {
         return new self(
             message: "Failed to start process '$name' with command: $command",

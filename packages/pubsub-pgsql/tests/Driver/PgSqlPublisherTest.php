@@ -24,7 +24,10 @@ class PublisherStubPostgresConnection implements PostgresConnection
     /** @var array<int, array{channel: string, payload: string}> */
     public array $notifyCalls = [];
 
-    public function notify(string $channel, string $payload = ''): PostgresResult
+    public function notify(
+        string $channel,
+        string $payload = '',
+    ): PostgresResult
     {
         $this->notifyCalls[] = ['channel' => $channel, 'payload' => $payload];
 
@@ -51,7 +54,10 @@ class PublisherStubPostgresConnection implements PostgresConnection
         throw new RuntimeException('Not implemented in stub');
     }
 
-    public function execute(string $sql, array $params = []): PostgresResult
+    public function execute(
+        string $sql,
+        array $params = [],
+    ): PostgresResult
     {
         throw new RuntimeException('Not implemented in stub');
     }

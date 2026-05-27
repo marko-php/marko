@@ -65,12 +65,18 @@ function makeInsertConnection(): ConnectionInterface
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             return [];
         }
 
-        public function execute(string $sql, array $bindings = []): int
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int
         {
             return 1;
         }
@@ -102,7 +108,10 @@ function makeUpdateConnection(): ConnectionInterface
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             if ($this->firstQuery) {
                 $this->firstQuery = false;
@@ -115,7 +124,10 @@ function makeUpdateConnection(): ConnectionInterface
             return [];
         }
 
-        public function execute(string $sql, array $bindings = []): int
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int
         {
             return 1;
         }
@@ -147,7 +159,10 @@ function makeDeleteConnection(): ConnectionInterface
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             if ($this->firstQuery) {
                 $this->firstQuery = false;
@@ -160,7 +175,10 @@ function makeDeleteConnection(): ConnectionInterface
             return [];
         }
 
-        public function execute(string $sql, array $bindings = []): int
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int
         {
             return 1;
         }

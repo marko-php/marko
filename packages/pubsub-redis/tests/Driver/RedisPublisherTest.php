@@ -29,7 +29,10 @@ class PublisherTestStubRedisLink implements RedisLink
     /** @var array<int, array{command: string, parameters: array<int|float|string>}> */
     public array $calls = [];
 
-    public function execute(string $command, array $parameters): RedisResponse
+    public function execute(
+        string $command,
+        array $parameters,
+    ): RedisResponse
     {
         $this->calls[] = ['command' => $command, 'parameters' => $parameters];
 

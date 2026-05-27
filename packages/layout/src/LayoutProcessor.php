@@ -124,7 +124,10 @@ readonly class LayoutProcessor implements LayoutProcessorInterface
      * @param array<string> $topLevelSlots
      * @throws CircularSlotException
      */
-    private function detectCircularReferences(ComponentCollection $collection, array $topLevelSlots): void
+    private function detectCircularReferences(
+        ComponentCollection $collection,
+        array $topLevelSlots,
+    ): void
     {
         // Build a map: slot name -> sub-slots it leads to (via components in that slot)
         /** @var array<string, array<string>> $slotToSubSlots */

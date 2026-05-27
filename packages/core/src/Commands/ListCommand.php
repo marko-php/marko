@@ -34,7 +34,10 @@ readonly class ListCommand implements CommandInterface
         $displayNames = [];
         foreach ($commands as $definition) {
             if ($definition->aliases !== []) {
-                $displayNames[$definition->name] = $definition->name . ' (' . implode(', ', $definition->aliases) . ')';
+                $displayNames[$definition->name] = $definition->name . ' (' . implode(
+                    ', ',
+                    $definition->aliases
+                ) . ')';
             } else {
                 $displayNames[$definition->name] = $definition->name;
             }

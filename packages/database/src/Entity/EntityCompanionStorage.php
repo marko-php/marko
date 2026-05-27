@@ -67,7 +67,10 @@ class EntityCompanionStorage
     /**
      * Attach a companion to an entity, keyed by the companion's class.
      */
-    public function attach(Entity $entity, Entity $companion): void
+    public function attach(
+        Entity $entity,
+        Entity $companion,
+    ): void
     {
         $bag = $this->companions[$entity] ?? [];
         $bag[$companion::class] = $companion;

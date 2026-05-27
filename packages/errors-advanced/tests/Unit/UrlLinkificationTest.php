@@ -169,16 +169,19 @@ describe('URL Linkification - URL Detection and Rendering', function (): void {
             ->and($output)->toContain(' and read the docs.');
     });
 
-    it('does not linkify text that looks URL-ish but lacks a protocol (e.g., www.example.com without http)', function (): void {
-        [$formatter, $report] = createFormatterWithReport(
-            message: 'Visit www.example.com for help',
-        );
-
-        $output = $formatter->format($report);
-
-        expect($output)->not->toContain('<a href="')
-            ->and($output)->toContain('www.example.com');
-    });
+    it(
+        'does not linkify text that looks URL-ish but lacks a protocol (e.g., www.example.com without http)',
+        function (): void {
+            [$formatter, $report] = createFormatterWithReport(
+                message: 'Visit www.example.com for help',
+            );
+    
+            $output = $formatter->format($report);
+    
+            expect($output)->not->toContain('<a href="')
+                ->and($output)->toContain('www.example.com');
+        }
+    );
 
     it('trims trailing punctuation from URL matches (period, comma, etc.)', function (): void {
         [$formatter, $report] = createFormatterWithReport(

@@ -104,31 +104,32 @@ describe('Dialect override via boot callback', function (): void {
         'still resolves ConnectionInterface to PgSqlConnection because the variant did not rebind it',
         function (): void {
             $container = buildVariantContainer();
-    
+
             // PgSqlConnection requires DatabaseConfig which in turn requires ProjectPaths.
-        // Resolving the class binding is enough to prove ConnectionInterface is still
-        // bound to PgSqlConnection — we verify by inspecting the binding, not by
-        // constructing the full object (which requires a real config file).
-        // We do this by binding a minimal stub for DatabaseConfig's dependency and
-        // checking the binding resolves to the correct class.
-        //
-        // Simpler: just assert the container would resolve to PgSqlConnection by
-        // checking it IS registered and not overridden by the variant.
-        // We use the container's has() + a Closure binding trick to inspect without
-        // instantiating the full dependency graph.
-        $container2 = buildVariantContainer();
+            // Resolving the class binding is enough to prove ConnectionInterface is still
+            // bound to PgSqlConnection — we verify by inspecting the binding, not by
+            // constructing the full object (which requires a real config file).
+            // We do this by binding a minimal stub for DatabaseConfig's dependency and
+            // checking the binding resolves to the correct class.
+            //
+            // Simpler: just assert the container would resolve to PgSqlConnection by
+            // checking it IS registered and not overridden by the variant.
+            // We use the container's has() + a Closure binding trick to inspect without
+            // instantiating the full dependency graph.
+            $container2 = buildVariantContainer();
             $container2->bind(
                 ConnectionInterface::class,
                 /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
-                static fn () => new class () extends PgSqlConnection {
+                static fn () => new class () extends PgSqlConnection
+                {
                     /** @noinspection PhpMissingParentConstructorInspection */
                     public function __construct() {}
                 },
             );
-    
+
             expect($container2->get(ConnectionInterface::class))
                 ->toBeInstanceOf(PgSqlConnection::class);
-        }
+        },
     );
 
     it(
@@ -136,14 +137,14 @@ describe('Dialect override via boot callback', function (): void {
         function (): void {
             $modulePath = dirname(__DIR__, 2);
             $pgsqlConfig = require $modulePath . '/module.php';
-    
+
             $moduleA = new ModuleManifest(
                 name: 'marko/database-pgsql',
                 version: '1.0.0',
                 bindings: $pgsqlConfig['bindings'],
                 source: 'vendor',
             );
-    
+
             $moduleB = new ModuleManifest(
                 name: 'acme/database-cockroach',
                 version: '1.0.0',
@@ -152,14 +153,14 @@ describe('Dialect override via boot callback', function (): void {
                 ],
                 source: 'vendor',
             );
-    
+
             $container = new Container();
             $registry = new BindingRegistry($container);
             $registry->registerModule($moduleA);
-    
+
             expect(static fn () => $registry->registerModule($moduleB))
                 ->toThrow(BindingConflictException::class);
-        }
+        },
     );
 
     it(
@@ -167,16 +168,16 @@ describe('Dialect override via boot callback', function (): void {
         function (): void {
             $modulePath = dirname(__DIR__, 2);
             $pgsqlConfig = require $modulePath . '/module.php';
-    
+
             $singletons = $pgsqlConfig['singletons'] ?? [];
-    
+
             $dialectInterfaces = [
                 SqlGeneratorInterface::class,
                 IntrospectorInterface::class,
                 QueryBuilderInterface::class,
                 QueryBuilderFactoryInterface::class,
             ];
-    
+
             foreach ($dialectInterfaces as $interface) {
                 expect(in_array($interface, $singletons, strict: true))->toBeFalse(
                     "Expected $interface to NOT be in pgsql singletons, but it was. "
@@ -187,6 +188,6 @@ describe('Dialect override via boot callback', function (): void {
                         . 'Declaring dialect interfaces as singletons would break the boot-callback override pattern.',
                     );
             }
-        }
+        },
     );
 });

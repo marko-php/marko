@@ -6,17 +6,20 @@ use Marko\Admin\Exceptions\AdminException;
 use Marko\Admin\Exceptions\NoDriverException;
 
 describe('NoDriverException', function (): void {
-    it('has DRIVER_PACKAGES constant listing marko/admin-api, marko/admin-auth, and marko/admin-panel', function (): void {
-        $reflection = new ReflectionClass(NoDriverException::class);
-        $constants = $reflection->getConstants();
-
-        expect($constants)->toHaveKey('DRIVER_PACKAGES')
-            ->and($constants['DRIVER_PACKAGES'])->toBe([
-                'marko/admin-api',
-                'marko/admin-auth',
-                'marko/admin-panel',
-            ]);
-    });
+    it(
+        'has DRIVER_PACKAGES constant listing marko/admin-api, marko/admin-auth, and marko/admin-panel',
+        function (): void {
+            $reflection = new ReflectionClass(NoDriverException::class);
+            $constants = $reflection->getConstants();
+    
+            expect($constants)->toHaveKey('DRIVER_PACKAGES')
+                ->and($constants['DRIVER_PACKAGES'])->toBe([
+                    'marko/admin-api',
+                    'marko/admin-auth',
+                    'marko/admin-panel',
+                ]);
+        }
+    );
 
     it('provides suggestion with composer require commands for all driver packages', function (): void {
         $exception = NoDriverException::noDriverInstalled();

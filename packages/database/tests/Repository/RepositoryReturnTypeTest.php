@@ -52,12 +52,18 @@ function createReturnTypeMockConnection(array $queryResult = []): ConnectionInte
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             return $this->queryResult;
         }
 
-        public function execute(string $sql, array $bindings = []): int
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int
         {
             return 1;
         }

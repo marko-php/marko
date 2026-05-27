@@ -5,7 +5,9 @@ declare(strict_types=1);
 it('packages/admin-panel/resources/views/ no longer exists', function (): void {
     $viewsDir = dirname(__DIR__, 2) . '/resources/views';
 
-    expect(is_dir($viewsDir))->toBeFalse('resources/views/ directory should not exist after engine sibling extraction');
+    expect(is_dir($viewsDir))->toBeFalse(
+        'resources/views/ directory should not exist after engine sibling extraction'
+    );
 });
 
 it('packages/admin-panel/composer.json includes a suggest block', function (): void {

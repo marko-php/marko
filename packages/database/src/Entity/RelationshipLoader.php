@@ -410,7 +410,10 @@ readonly class RelationshipLoader
      * @param Entity[] $entities
      * @return array<mixed>
      */
-    private function collectPropertyValues(array $entities, string $propertyName): array
+    private function collectPropertyValues(
+        array $entities,
+        string $propertyName,
+    ): array
     {
         return array_map(fn (Entity $entity) => $this->getPropertyValue($entity, $propertyName), $entities);
     }
@@ -418,7 +421,10 @@ readonly class RelationshipLoader
     /**
      * Get a property value from an entity via reflection.
      */
-    private function getPropertyValue(Entity $entity, string $propertyName): mixed
+    private function getPropertyValue(
+        Entity $entity,
+        string $propertyName,
+    ): mixed
     {
         $reflection = new ReflectionClass($entity);
         $property = $reflection->getProperty($propertyName);
@@ -433,7 +439,11 @@ readonly class RelationshipLoader
     /**
      * Set a property value on an entity via reflection.
      */
-    private function setProperty(Entity $entity, string $propertyName, mixed $value): void
+    private function setProperty(
+        Entity $entity,
+        string $propertyName,
+        mixed $value,
+    ): void
     {
         $reflection = new ReflectionClass($entity);
         $property = $reflection->getProperty($propertyName);
@@ -454,7 +464,11 @@ readonly class RelationshipLoader
      *
      * @param Entity[] $entities
      */
-    private function setPropertyOnAll(array $entities, string $propertyName, mixed $value): void
+    private function setPropertyOnAll(
+        array $entities,
+        string $propertyName,
+        mixed $value,
+    ): void
     {
         foreach ($entities as $entity) {
             $this->setProperty($entity, $propertyName, $value);

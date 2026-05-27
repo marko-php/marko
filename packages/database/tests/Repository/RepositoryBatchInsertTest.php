@@ -120,14 +120,20 @@ function makeBatchSpyConnection(array &$sqlLog, int $firstId = 1): ConnectionInt
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             $this->sqlLog[] = ['type' => 'query', 'sql' => $sql, 'bindings' => $bindings];
 
             return [];
         }
 
-        public function execute(string $sql, array $bindings = []): int
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int
         {
             if ($this->shouldThrow) {
                 $this->shouldThrow = false;
@@ -174,12 +180,18 @@ function makeBatchTransactionConnection(array &$log, bool $failInsert = false): 
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             return [];
         }
 
-        public function execute(string $sql, array $bindings = []): int
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int
         {
             if ($this->failInsert && str_contains($sql, 'INSERT')) {
                 throw new RuntimeException('Simulated DB failure on INSERT');
@@ -281,7 +293,13 @@ it('fires Creating event for each entity before insert', function (): void {
     $sqlLog = [];
     $connection = makeBatchSpyConnection($sqlLog, 1);
     $dispatcher = new BatchFakeDispatcher();
-    $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator(), null, $dispatcher);
+    $repository = new BatchUserRepository(
+        $connection,
+        new EntityMetadataFactory(),
+        new EntityHydrator(),
+        null,
+        $dispatcher
+    );
 
     $user1 = new BatchUser();
     $user1->name = 'Alice';
@@ -303,7 +321,13 @@ it('fires Created event for each entity after insert', function (): void {
     $sqlLog = [];
     $connection = makeBatchSpyConnection($sqlLog, 1);
     $dispatcher = new BatchFakeDispatcher();
-    $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator(), null, $dispatcher);
+    $repository = new BatchUserRepository(
+        $connection,
+        new EntityMetadataFactory(),
+        new EntityHydrator(),
+        null,
+        $dispatcher
+    );
 
     $user1 = new BatchUser();
     $user1->name = 'Alice';
@@ -327,37 +351,42 @@ it('fires Created event for each entity after insert', function (): void {
     expect(max($creatingIdx) < min($createdIdx))->toBeTrue();
 });
 
-it('populates auto-generated primary keys back onto each entity when the driver supports it (MySQL: lastInsertId returns the FIRST id, increment by one per row assuming no gaps; PostgreSQL: use INSERT ... RETURNING id)', function (): void {
-    $sqlLog = [];
-    // Simulate MySQL: lastInsertId() returns first inserted ID = 10
+it(
+    'populates auto-generated primary keys back onto each entity when the driver supports it (MySQL: lastInsertId returns the FIRST id, increment by one per row assuming no gaps; PostgreSQL: use INSERT ... RETURNING id)',
+    function (): void {
+        $sqlLog = [];
+        // Simulate MySQL: lastInsertId() returns first inserted ID = 10
     $connection = makeBatchSpyConnection($sqlLog, 10);
-    $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+        $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+    
+        $user1 = new BatchUser();
+        $user1->name = 'Alice';
+        $user1->email = 'alice@example.com';
+    
+        $user2 = new BatchUser();
+        $user2->name = 'Bob';
+        $user2->email = 'bob@example.com';
+    
+        $user3 = new BatchUser();
+        $user3->name = 'Carol';
+        $user3->email = 'carol@example.com';
+    
+        expect($user1->id)->toBeNull()
+            ->and($user2->id)->toBeNull()
+            ->and($user3->id)->toBeNull();
+    
+        $repository->insertBatch([$user1, $user2, $user3]);
+    
+        expect($user1->id)->toBe(10)
+            ->and($user2->id)->toBe(11)
+            ->and($user3->id)->toBe(12);
+    }
+);
 
-    $user1 = new BatchUser();
-    $user1->name = 'Alice';
-    $user1->email = 'alice@example.com';
-
-    $user2 = new BatchUser();
-    $user2->name = 'Bob';
-    $user2->email = 'bob@example.com';
-
-    $user3 = new BatchUser();
-    $user3->name = 'Carol';
-    $user3->email = 'carol@example.com';
-
-    expect($user1->id)->toBeNull()
-        ->and($user2->id)->toBeNull()
-        ->and($user3->id)->toBeNull();
-
-    $repository->insertBatch([$user1, $user2, $user3]);
-
-    expect($user1->id)->toBe(10)
-        ->and($user2->id)->toBe(11)
-        ->and($user3->id)->toBe(12);
-});
-
-it('documents and tests that MySQL populated-id logic is correct only when innodb_autoinc_lock_mode permits sequential ids (contiguous block)', function (): void {
-    // MySQL innodb_autoinc_lock_mode=2 (interleaved, the default since MySQL 8.0) does NOT
+it(
+    'documents and tests that MySQL populated-id logic is correct only when innodb_autoinc_lock_mode permits sequential ids (contiguous block)',
+    function (): void {
+        // MySQL innodb_autoinc_lock_mode=2 (interleaved, the default since MySQL 8.0) does NOT
     // guarantee a contiguous block of IDs for a single multi-row INSERT in a concurrent
     // environment. The MySQL id-recovery strategy (LAST_INSERT_ID + row-count math) is
     // therefore only reliable under lock_mode=0 (traditional) or lock_mode=1 (consecutive),
@@ -366,30 +395,31 @@ it('documents and tests that MySQL populated-id logic is correct only when innod
     // This test verifies the documented contract: given a contiguous block starting at
     // firstId, each entity receives firstId + its zero-based index in the batch.
 
-    $sqlLog = [];
-    // firstId=5 simulates a scenario where rows 5, 6, 7 are a contiguous block
+        $sqlLog = [];
+        // firstId=5 simulates a scenario where rows 5, 6, 7 are a contiguous block
     $connection = makeBatchSpyConnection($sqlLog, 5);
-    $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
-
-    $users = [];
-    for ($i = 0; $i < 3; $i++) {
-        $u = new BatchUser();
-        $u->name = "User $i";
-        $u->email = "user$i@example.com";
-        $users[] = $u;
-    }
-
-    $repository->insertBatch($users);
-
-    // Under contiguous-block assumption: IDs are 5, 6, 7
+        $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+    
+        $users = [];
+        for ($i = 0; $i < 3; $i++) {
+            $u = new BatchUser();
+            $u->name = "User $i";
+            $u->email = "user$i@example.com";
+            $users[] = $u;
+        }
+    
+        $repository->insertBatch($users);
+    
+        // Under contiguous-block assumption: IDs are 5, 6, 7
     expect($users[0]->id)->toBe(5)
-        ->and($users[1]->id)->toBe(6)
-        ->and($users[2]->id)->toBe(7);
-
-    // Verify that only a single INSERT statement was issued
+            ->and($users[1]->id)->toBe(6)
+            ->and($users[2]->id)->toBe(7);
+    
+        // Verify that only a single INSERT statement was issued
     $insertStmts = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'INSERT')));
-    expect($insertStmts)->toHaveCount(1);
-});
+        expect($insertStmts)->toHaveCount(1);
+    }
+);
 
 it('throws a descriptive exception when the input array is empty', function (): void {
     $sqlLog = [];

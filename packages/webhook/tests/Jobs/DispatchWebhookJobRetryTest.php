@@ -27,32 +27,51 @@ describe('DispatchWebhookJob retry', function (): void {
 
         $httpClient = new class () implements HttpClientInterface
         {
-            public function request(string $method, string $url, array $options = []): HttpResponse
+            public function request(
+                string $method,
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
 
-            public function get(string $url, array $options = []): HttpResponse
+            public function get(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
 
-            public function post(string $url, array $options = []): HttpResponse
+            public function post(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
 
-            public function put(string $url, array $options = []): HttpResponse
+            public function put(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
 
-            public function patch(string $url, array $options = []): HttpResponse
+            public function patch(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
 
-            public function delete(string $url, array $options = []): HttpResponse
+            public function delete(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
@@ -108,32 +127,51 @@ describe('DispatchWebhookJob retry', function (): void {
 
         $httpClient = new class () implements HttpClientInterface
         {
-            public function request(string $method, string $url, array $options = []): HttpResponse
+            public function request(
+                string $method,
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
 
-            public function get(string $url, array $options = []): HttpResponse
+            public function get(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
 
-            public function post(string $url, array $options = []): HttpResponse
+            public function post(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
 
-            public function put(string $url, array $options = []): HttpResponse
+            public function put(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
 
-            public function patch(string $url, array $options = []): HttpResponse
+            public function patch(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }
 
-            public function delete(string $url, array $options = []): HttpResponse
+            public function delete(
+                string $url,
+                array $options = [],
+            ): HttpResponse
             {
                 throw new RuntimeException('Connection timed out');
             }

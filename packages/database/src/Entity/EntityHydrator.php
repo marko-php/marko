@@ -235,7 +235,10 @@ class EntityHydrator
      * Delegates into the shared EntityCompanionStorage so companions set here
      * are visible through Entity::companions() / Entity::companion().
      */
-    public function attachCompanion(Entity $entity, Entity $companion): void
+    public function attachCompanion(
+        Entity $entity,
+        Entity $companion,
+    ): void
     {
         EntityCompanionStorage::instance()->attach($entity, $companion);
     }

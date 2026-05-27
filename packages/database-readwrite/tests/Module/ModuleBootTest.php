@@ -29,16 +29,14 @@ function makeTestConnection(): ConnectionInterface&TransactionInterface
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return [];
         }
 
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             return 0;
         }
 
@@ -98,8 +96,7 @@ function makeConfigRepository(
         public function get(
             string $key,
             ?string $scope = null,
-        ): mixed
-        {
+        ): mixed {
             return match ($key) {
                 'database.driver' => $this->driver,
                 'database.connections' => [
@@ -114,48 +111,42 @@ function makeConfigRepository(
         public function has(
             string $key,
             ?string $scope = null,
-        ): bool
-        {
+        ): bool {
             return true;
         }
 
         public function getString(
             string $key,
             ?string $scope = null,
-        ): string
-        {
+        ): string {
             return '';
         }
 
         public function getInt(
             string $key,
             ?string $scope = null,
-        ): int
-        {
+        ): int {
             return 0;
         }
 
         public function getBool(
             string $key,
             ?string $scope = null,
-        ): bool
-        {
+        ): bool {
             return false;
         }
 
         public function getFloat(
             string $key,
             ?string $scope = null,
-        ): float
-        {
+        ): float {
             return 0.0;
         }
 
         public function getArray(
             string $key,
             ?string $scope = null,
-        ): array
-        {
+        ): array {
             return [];
         }
 
@@ -202,8 +193,7 @@ function makeTestContainer(ConfigRepositoryInterface $config, ConnectionFactoryI
         public function instance(
             string $id,
             object $instance,
-        ): void
-        {
+        ): void {
             $this->registered[$id] = $instance;
         }
 
@@ -311,8 +301,7 @@ describe('module boot callback', function (): void {
             public function get(
                 string $key,
                 ?string $scope = null,
-            ): mixed
-            {
+            ): mixed {
                 return match ($key) {
                     'database.driver' => 'readwrite',
                     'database.connections' => [
@@ -330,48 +319,42 @@ describe('module boot callback', function (): void {
             public function has(
                 string $key,
                 ?string $scope = null,
-            ): bool
-            {
+            ): bool {
                 return true;
             }
 
             public function getString(
                 string $key,
                 ?string $scope = null,
-            ): string
-            {
+            ): string {
                 return '';
             }
 
             public function getInt(
                 string $key,
                 ?string $scope = null,
-            ): int
-            {
+            ): int {
                 return 0;
             }
 
             public function getBool(
                 string $key,
                 ?string $scope = null,
-            ): bool
-            {
+            ): bool {
                 return false;
             }
 
             public function getFloat(
                 string $key,
                 ?string $scope = null,
-            ): float
-            {
+            ): float {
                 return 0.0;
             }
 
             public function getArray(
                 string $key,
                 ?string $scope = null,
-            ): array
-            {
+            ): array {
                 return [];
             }
 

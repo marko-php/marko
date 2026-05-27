@@ -141,6 +141,7 @@ describe('SseStream', function (): void {
         $stream = new SseStream(
             dataProvider: function () use (&$callCount): array {
                 $callCount++;
+
                 return [new SseEvent(data: "event-$callCount")];
             },
             timeout: 0,
@@ -157,6 +158,7 @@ describe('SseStream', function (): void {
         $stream = new SseStream(
             dataProvider: function () use (&$callCount): array {
                 $callCount++;
+
                 return $callCount <= 2
                     ? [new SseEvent(data: "event-$callCount")]
                     : [];

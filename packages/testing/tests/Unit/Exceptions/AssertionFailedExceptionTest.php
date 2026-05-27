@@ -5,18 +5,21 @@ declare(strict_types=1);
 use Marko\Core\Exceptions\MarkoException;
 use Marko\Testing\Exceptions\AssertionFailedException;
 
-it('creates AssertionFailedException extending MarkoException with message, context, and suggestion', function (): void {
-    $exception = new AssertionFailedException(
-        message: 'Test assertion failed',
-        context: 'some context',
-        suggestion: 'some suggestion',
-    );
-
-    expect($exception)->toBeInstanceOf(MarkoException::class)
-        ->and($exception->getMessage())->toBe('Test assertion failed')
-        ->and($exception->getContext())->toBe('some context')
-        ->and($exception->getSuggestion())->toBe('some suggestion');
-});
+it(
+    'creates AssertionFailedException extending MarkoException with message, context, and suggestion',
+    function (): void {
+        $exception = new AssertionFailedException(
+            message: 'Test assertion failed',
+            context: 'some context',
+            suggestion: 'some suggestion',
+        );
+    
+        expect($exception)->toBeInstanceOf(MarkoException::class)
+            ->and($exception->getMessage())->toBe('Test assertion failed')
+            ->and($exception->getContext())->toBe('some context')
+            ->and($exception->getSuggestion())->toBe('some suggestion');
+    }
+);
 
 it('creates AssertionFailedException with static factory methods for common assertion failures', function (): void {
     expect(AssertionFailedException::expectedDispatched('MyEvent'))

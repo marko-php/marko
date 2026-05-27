@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Marko\Core\Exceptions;
 
+use Marko\Routing\Middleware\MiddlewareInterface;
+
 class ModuleException extends MarkoException
 {
     public static function invalidManifest(
@@ -36,7 +38,7 @@ class ModuleException extends MarkoException
         return new self(
             message: "Invalid globalMiddleware entry in module '$moduleName': $reason",
             context: "While resolving global middleware for '$moduleName'",
-            suggestion: "Ensure '$className' exists and implements " . \Marko\Routing\Middleware\MiddlewareInterface::class,
+            suggestion: "Ensure '$className' exists and implements " . MiddlewareInterface::class,
         );
     }
 

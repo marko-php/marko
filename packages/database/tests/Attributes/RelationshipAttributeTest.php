@@ -21,7 +21,12 @@ class RelUserEntity extends Entity
     #[HasMany(RelPostEntity::class, foreignKey: 'author_id')]
     public array $posts = [];
 
-    #[BelongsToMany(RelRoleEntity::class, pivotClass: RelUserRoleEntity::class, foreignKey: 'user_id', relatedKey: 'role_id')]
+    #[BelongsToMany(
+        RelRoleEntity::class,
+        pivotClass: RelUserRoleEntity::class,
+        foreignKey: 'user_id',
+        relatedKey: 'role_id'
+    )]
     public array $roles = [];
 }
 

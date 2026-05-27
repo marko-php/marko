@@ -60,7 +60,9 @@ describe('NoDriverException', function (): void {
     it('includes context about resolving mail interfaces', function (): void {
         $exception = NoDriverException::noDriverInstalled();
 
-        expect($exception->getContext())->toBe('Attempted to resolve a mail interface but no implementation is bound.');
+        expect($exception->getContext())->toBe(
+            'Attempted to resolve a mail interface but no implementation is bound.'
+        );
     });
 
     it('extends MarkoException', function (): void {

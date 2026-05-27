@@ -316,17 +316,26 @@ test('it authenticates via remember token cookie', function (): void {
             return null;
         }
 
-        public function validateCredentials(AuthenticatableInterface $user, array $credentials): bool
+        public function validateCredentials(
+            AuthenticatableInterface $user,
+            array $credentials,
+        ): bool
         {
             return false;
         }
 
-        public function retrieveByRememberToken(int|string $identifier, string $token): ?AuthenticatableInterface
+        public function retrieveByRememberToken(
+            int|string $identifier,
+            string $token,
+        ): ?AuthenticatableInterface
         {
             return $this->userByRememberToken;
         }
 
-        public function updateRememberToken(AuthenticatableInterface $user, ?string $token): void
+        public function updateRememberToken(
+            AuthenticatableInterface $user,
+            ?string $token,
+        ): void
         {
             $user->setRememberToken($token);
         }
@@ -416,17 +425,26 @@ test('it regenerates remember token on each use', function (): void {
             return null;
         }
 
-        public function validateCredentials(AuthenticatableInterface $user, array $credentials): bool
+        public function validateCredentials(
+            AuthenticatableInterface $user,
+            array $credentials,
+        ): bool
         {
             return false;
         }
 
-        public function retrieveByRememberToken(int|string $identifier, string $token): ?AuthenticatableInterface
+        public function retrieveByRememberToken(
+            int|string $identifier,
+            string $token,
+        ): ?AuthenticatableInterface
         {
             return $this->userByRememberToken;
         }
 
-        public function updateRememberToken(AuthenticatableInterface $user, ?string $token): void
+        public function updateRememberToken(
+            AuthenticatableInterface $user,
+            ?string $token,
+        ): void
         {
             $user->setRememberToken($token);
         }

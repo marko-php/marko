@@ -343,8 +343,7 @@ describe('MySqlQueryBuilder', function (): void {
             public function query(
                 string $sql,
                 array $bindings = [],
-            ): array
-            {
+            ): array {
                 $this->lastSql = $sql;
                 $this->lastBindings = $bindings;
 
@@ -354,8 +353,7 @@ describe('MySqlQueryBuilder', function (): void {
             public function execute(
                 string $sql,
                 array $bindings = [],
-            ): int
-            {
+            ): int {
                 return 0;
             }
         };
@@ -384,14 +382,14 @@ describe('MySqlQueryBuilder', function (): void {
             $left = (new MySqlQueryBuilder($this->connection))
                 ->table('users')
                 ->select('name', 'email');
-    
+
             $right = (new MySqlQueryBuilder($this->connection))
                 ->table('users')
                 ->select('name');
-    
+
             expect(fn () => $left->union($right))
                 ->toThrow(UnionShapeMismatchException::class);
-        }
+        },
     );
 
     it('combines two queries with UNION ALL preserving duplicates', function (): void {
@@ -410,8 +408,7 @@ describe('MySqlQueryBuilder', function (): void {
             public function query(
                 string $sql,
                 array $bindings = [],
-            ): array
-            {
+            ): array {
                 $this->lastSql = $sql;
                 $this->lastBindings = $bindings;
 
@@ -421,8 +418,7 @@ describe('MySqlQueryBuilder', function (): void {
             public function execute(
                 string $sql,
                 array $bindings = [],
-            ): int
-            {
+            ): int {
                 return 0;
             }
         };
@@ -456,8 +452,7 @@ describe('MySqlQueryBuilder', function (): void {
             public function query(
                 string $sql,
                 array $bindings = [],
-            ): array
-            {
+            ): array {
                 $this->lastSql = $sql;
 
                 return [];
@@ -466,8 +461,7 @@ describe('MySqlQueryBuilder', function (): void {
             public function execute(
                 string $sql,
                 array $bindings = [],
-            ): int
-            {
+            ): int {
                 return 0;
             }
         };
@@ -498,8 +492,7 @@ describe('MySqlQueryBuilder', function (): void {
             public function query(
                 string $sql,
                 array $bindings = [],
-            ): array
-            {
+            ): array {
                 $this->lastSql = $sql;
 
                 return [];
@@ -508,8 +501,7 @@ describe('MySqlQueryBuilder', function (): void {
             public function execute(
                 string $sql,
                 array $bindings = [],
-            ): int
-            {
+            ): int {
                 return 0;
             }
         };
@@ -545,8 +537,7 @@ describe('MySqlQueryBuilder', function (): void {
             public function query(
                 string $sql,
                 array $bindings = [],
-            ): array
-            {
+            ): array {
                 $this->lastSql = $sql;
                 $this->lastBindings = $bindings;
 
@@ -556,8 +547,7 @@ describe('MySqlQueryBuilder', function (): void {
             public function execute(
                 string $sql,
                 array $bindings = [],
-            ): int
-            {
+            ): int {
                 return 0;
             }
         };
@@ -650,35 +640,33 @@ describe('MySqlQueryBuilder', function (): void {
                 $recordingConnection = new class ($recordedSql) extends MySqlConnection
                 {
                     public function __construct(public string &$lastSql) {}
-    
+
                     public function connect(): void {}
-    
+
                     public function query(
                         string $sql,
                         array $bindings = [],
-                    ): array
-                    {
+                    ): array {
                         $this->lastSql = $sql;
-    
+
                         return [];
                     }
-    
+
                     public function execute(
                         string $sql,
                         array $bindings = [],
-                    ): int
-                    {
+                    ): int {
                         return 0;
                     }
                 };
-    
+
                 (new MySqlQueryBuilder($recordingConnection))
                     ->table('users')
                     ->selectRaw('1 AS one')
                     ->get();
-    
+
                 expect($recordedSql)->toBe('SELECT *, 1 AS one FROM `users`');
-            }
+            },
         );
 
         it(
@@ -688,37 +676,35 @@ describe('MySqlQueryBuilder', function (): void {
                 $recordingConnection = new class ($recordedSql) extends MySqlConnection
                 {
                     public function __construct(public string &$lastSql) {}
-    
+
                     public function connect(): void {}
-    
+
                     public function query(
                         string $sql,
                         array $bindings = [],
-                    ): array
-                    {
+                    ): array {
                         $this->lastSql = $sql;
-    
+
                         return [];
                     }
-    
+
                     public function execute(
                         string $sql,
                         array $bindings = [],
-                    ): int
-                    {
+                    ): int {
                         return 0;
                     }
                 };
-    
+
                 (new MySqlQueryBuilder($recordingConnection))
                     ->table('users')
                     ->select('name')
                     ->selectRaw('1 AS first')
                     ->selectRaw('2 AS second')
                     ->get();
-    
+
                 expect($recordedSql)->toBe('SELECT `name`, 1 AS first, 2 AS second FROM `users`');
-            }
+            },
         );
 
         it(
@@ -728,36 +714,34 @@ describe('MySqlQueryBuilder', function (): void {
                 $recordingConnection = new class ($recordedSql) extends MySqlConnection
                 {
                     public function __construct(public string &$lastSql) {}
-    
+
                     public function connect(): void {}
-    
+
                     public function query(
                         string $sql,
                         array $bindings = [],
-                    ): array
-                    {
+                    ): array {
                         $this->lastSql = $sql;
-    
+
                         return [];
                     }
-    
+
                     public function execute(
                         string $sql,
                         array $bindings = [],
-                    ): int
-                    {
+                    ): int {
                         return 0;
                     }
                 };
-    
+
                 (new MySqlQueryBuilder($recordingConnection))
                     ->table('users')
                     ->select('name', 'email')
                     ->selectRaw('1 AS computed')
                     ->get();
-    
+
                 expect($recordedSql)->toBe('SELECT `name`, `email`, 1 AS computed FROM `users`');
-            }
+            },
         );
 
         it(
@@ -767,36 +751,34 @@ describe('MySqlQueryBuilder', function (): void {
                 $recordingConnection = new class ($recordedBindings) extends MySqlConnection
                 {
                     public function __construct(public array &$lastBindings) {}
-    
+
                     public function connect(): void {}
-    
+
                     public function query(
                         string $sql,
                         array $bindings = [],
-                    ): array
-                    {
+                    ): array {
                         $this->lastBindings = $bindings;
-    
+
                         return [];
                     }
-    
+
                     public function execute(
                         string $sql,
                         array $bindings = [],
-                    ): int
-                    {
+                    ): int {
                         return 0;
                     }
                 };
-    
+
                 (new MySqlQueryBuilder($recordingConnection))
                     ->table('users')
                     ->selectRaw('? AS val', [42])
                     ->where('status', '=', 'active')
                     ->get();
-    
+
                 expect($recordedBindings)->toBe([42, 'active']);
-            }
+            },
         );
 
         it('selectRaw bindings from multiple calls concatenate in call order', function (): void {
@@ -810,8 +792,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function query(
                     string $sql,
                     array $bindings = [],
-                ): array
-                {
+                ): array {
                     $this->lastBindings = $bindings;
 
                     return [];
@@ -820,8 +801,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function execute(
                     string $sql,
                     array $bindings = [],
-                ): int
-                {
+                ): int {
                     return 0;
                 }
             };
@@ -846,40 +826,38 @@ describe('MySqlQueryBuilder', function (): void {
                         public array &$sqls,
                         public array &$bindingsList,
                     ) {}
-    
+
                     public function connect(): void {}
-    
+
                     public function query(
                         string $sql,
                         array $bindings = [],
-                    ): array
-                    {
+                    ): array {
                         $this->sqls[] = $sql;
                         $this->bindingsList[] = $bindings;
-    
+
                         return [];
                     }
-    
+
                     public function execute(
                         string $sql,
                         array $bindings = [],
-                    ): int
-                    {
+                    ): int {
                         return 0;
                     }
                 };
-    
+
                 $builder = (new MySqlQueryBuilder($recordingConnection))
                     ->table('users')
                     ->selectRaw('? AS val', [99])
                     ->where('status', '=', 'active');
-    
+
                 $builder->get();
                 $builder->get();
-    
+
                 expect($sqls[0])->toBe($sqls[1])
                     ->and($bindingsList[0])->toBe($bindingsList[1]);
-            }
+            },
         );
 
         it('selectRaw throws InvalidColumnException when the expression contains a semicolon', function (): void {
@@ -892,7 +870,7 @@ describe('MySqlQueryBuilder', function (): void {
             function (): void {
                 expect(fn () => $this->builder->selectRaw('1 -- comment'))
                     ->toThrow(InvalidColumnException::class);
-            }
+            },
         );
 
         it(
@@ -900,7 +878,7 @@ describe('MySqlQueryBuilder', function (): void {
             function (): void {
                 expect(fn () => $this->builder->selectRaw('/* comment */ 1'))
                     ->toThrow(InvalidColumnException::class);
-            }
+            },
         );
 
         it('selectRaw throws InvalidColumnException when the expression contains a backtick', function (): void {
@@ -924,12 +902,12 @@ describe('MySqlQueryBuilder', function (): void {
                     ->where('status', '=', 'active')
                     ->whereRaw("name != 'Bob'")
                     ->get();
-    
+
                 $names = array_column($results, 'name');
                 expect($results)->toHaveCount(2)
                     ->and($names)->toContain('Alice')
                     ->and($names)->toContain('Charlie');
-            }
+            },
         );
 
         it('whereRaw used alone (no prior where) emits "WHERE <expression>" with no leading AND', function (): void {
@@ -943,8 +921,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function query(
                     string $sql,
                     array $bindings = [],
-                ): array
-                {
+                ): array {
                     $this->lastSql = $sql;
 
                     return [];
@@ -953,8 +930,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function execute(
                     string $sql,
                     array $bindings = [],
-                ): int
-                {
+                ): int {
                     return 0;
                 }
             };
@@ -978,8 +954,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function query(
                     string $sql,
                     array $bindings = [],
-                ): array
-                {
+                ): array {
                     $this->lastSql = $sql;
 
                     return [];
@@ -988,8 +963,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function execute(
                     string $sql,
                     array $bindings = [],
-                ): int
-                {
+                ): int {
                     return 0;
                 }
             };
@@ -1010,36 +984,34 @@ describe('MySqlQueryBuilder', function (): void {
                 $recordingConnection = new class ($recordedSql) extends MySqlConnection
                 {
                     public function __construct(public string &$lastSql) {}
-    
+
                     public function connect(): void {}
-    
+
                     public function query(
                         string $sql,
                         array $bindings = [],
-                    ): array
-                    {
+                    ): array {
                         $this->lastSql = $sql;
-    
+
                         return [];
                     }
-    
+
                     public function execute(
                         string $sql,
                         array $bindings = [],
-                    ): int
-                    {
+                    ): int {
                         return 0;
                     }
                 };
-    
+
                 (new MySqlQueryBuilder($recordingConnection))
                     ->table('users')
                     ->where('status', '=', 'active')
                     ->whereRaw('name != ?', ['Bob'])
                     ->get();
-    
+
                 expect($recordedSql)->toBe('SELECT * FROM `users` WHERE `status` = ? AND name != ?');
-            }
+            },
         );
 
         it(
@@ -1049,37 +1021,35 @@ describe('MySqlQueryBuilder', function (): void {
                 $recordingConnection = new class ($recordedBindings) extends MySqlConnection
                 {
                     public function __construct(public array &$lastBindings) {}
-    
+
                     public function connect(): void {}
-    
+
                     public function query(
                         string $sql,
                         array $bindings = [],
-                    ): array
-                    {
+                    ): array {
                         $this->lastBindings = $bindings;
-    
+
                         return [];
                     }
-    
+
                     public function execute(
                         string $sql,
                         array $bindings = [],
-                    ): int
-                    {
+                    ): int {
                         return 0;
                     }
                 };
-    
+
                 (new MySqlQueryBuilder($recordingConnection))
                     ->table('users')
                     ->selectRaw('? AS sel', ['sel_val'])
                     ->where('status', '=', 'active')
                     ->whereRaw('name != ?', ['Bob'])
                     ->get();
-    
+
                 expect($recordedBindings)->toBe(['sel_val', 'active', 'Bob']);
-            }
+            },
         );
 
         it('whereRaw bindings from multiple calls concatenate in call order', function (): void {
@@ -1093,8 +1063,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function query(
                     string $sql,
                     array $bindings = [],
-                ): array
-                {
+                ): array {
                     $this->lastBindings = $bindings;
 
                     return [];
@@ -1103,8 +1072,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function execute(
                     string $sql,
                     array $bindings = [],
-                ): int
-                {
+                ): int {
                     return 0;
                 }
             };
@@ -1152,7 +1120,7 @@ describe('MySqlQueryBuilder', function (): void {
             function (): void {
                 expect(fn () => $this->builder->whereRaw('1 -- comment'))
                     ->toThrow(InvalidColumnException::class);
-            }
+            },
         );
 
         it(
@@ -1160,7 +1128,7 @@ describe('MySqlQueryBuilder', function (): void {
             function (): void {
                 expect(fn () => $this->builder->whereRaw('/* comment */ 1'))
                     ->toThrow(InvalidColumnException::class);
-            }
+            },
         );
 
         it('whereRaw throws InvalidColumnException when the expression contains a backtick', function (): void {
@@ -1182,36 +1150,34 @@ describe('MySqlQueryBuilder', function (): void {
                 $recordingConnection = new class ($recordedBindings) extends MySqlConnection
                 {
                     public function __construct(public array &$lastBindings) {}
-    
+
                     public function connect(): void {}
-    
+
                     public function query(
                         string $sql,
                         array $bindings = [],
-                    ): array
-                    {
+                    ): array {
                         $this->lastBindings = $bindings;
-    
+
                         return [];
                     }
-    
+
                     public function execute(
                         string $sql,
                         array $bindings = [],
-                    ): int
-                    {
+                    ): int {
                         return 0;
                     }
                 };
-    
+
                 (new MySqlQueryBuilder($recordingConnection))
                     ->table('users')
                     ->selectRaw('? AS sel', ['sel_val'])
                     ->whereRaw('status = ?', ['active'])
                     ->get();
-    
+
                 expect($recordedBindings)->toBe(['sel_val', 'active']);
-            }
+            },
         );
 
         it(
@@ -1225,45 +1191,43 @@ describe('MySqlQueryBuilder', function (): void {
                         public string &$lastSql,
                         public array &$lastBindings,
                     ) {}
-    
+
                     public function connect(): void {}
-    
+
                     public function query(
                         string $sql,
                         array $bindings = [],
-                    ): array
-                    {
+                    ): array {
                         $this->lastSql = $sql;
                         $this->lastBindings = $bindings;
-    
+
                         return [];
                     }
-    
+
                     public function execute(
                         string $sql,
                         array $bindings = [],
-                    ): int
-                    {
+                    ): int {
                         return 0;
                     }
                 };
-    
+
                 $left = (new MySqlQueryBuilder($recordingConnection))
                     ->table('users')
                     ->select('name');
-    
+
                 $right = (new MySqlQueryBuilder($recordingConnection))
                     ->table('users')
                     ->select('name')
                     ->selectRaw('? AS sel', ['sel_val'])
                     ->whereRaw('status = ?', ['active']);
-    
+
                 $left->union($right)->get();
-    
+
                 expect($recordedSql)->toContain('? AS sel')
                     ->and($recordedSql)->toContain('status = ?')
                     ->and($recordedBindings)->toBe(['sel_val', 'active']);
-            }
+            },
         );
     });
 
@@ -1279,8 +1243,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function query(
                     string $sql,
                     array $bindings = [],
-                ): array
-                {
+                ): array {
                     $this->lastSql = $sql;
 
                     return [];
@@ -1289,8 +1252,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function execute(
                     string $sql,
                     array $bindings = [],
-                ): int
-                {
+                ): int {
                     return 0;
                 }
             };
@@ -1315,8 +1277,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function query(
                     string $sql,
                     array $bindings = [],
-                ): array
-                {
+                ): array {
                     $this->lastSql = $sql;
 
                     return [];
@@ -1325,8 +1286,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function execute(
                     string $sql,
                     array $bindings = [],
-                ): int
-                {
+                ): int {
                     return 0;
                 }
             };
@@ -1351,8 +1311,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function query(
                     string $sql,
                     array $bindings = [],
-                ): array
-                {
+                ): array {
                     $this->lastSql = $sql;
 
                     return [];
@@ -1361,8 +1320,7 @@ describe('MySqlQueryBuilder', function (): void {
                 public function execute(
                     string $sql,
                     array $bindings = [],
-                ): int
-                {
+                ): int {
                     return 0;
                 }
             };

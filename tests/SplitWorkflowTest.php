@@ -35,9 +35,9 @@ it('pushes branch updates to split repos on branch push', function () use ($work
     expect($workflowContent)->toContain('refs/heads/${BRANCH}');
 });
 
-it('uses SPLIT_TOKEN secret for authentication', function () use ($workflowContent): void {
-    expect($workflowContent)->toContain('secrets.SPLIT_TOKEN')
-        ->toContain('SPLIT_TOKEN');
+it('uses MARKO_BUILD_PAT secret for authentication', function () use ($workflowContent): void {
+    expect($workflowContent)->toContain('secrets.MARKO_BUILD_PAT')
+        ->toContain('MARKO_BUILD_PAT');
 });
 
 it('configures the target organization as an environment variable for easy changes', function () use ($workflowContent): void {

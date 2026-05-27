@@ -6,7 +6,11 @@ namespace Marko\Layout\Exceptions;
 
 class DuplicateComponentException extends LayoutException
 {
-    public static function forComponent(string $name, string $moduleA, string $moduleB): self
+    public static function forComponent(
+        string $name,
+        string $moduleA,
+        string $moduleB,
+    ): self
     {
         return new self(
             message: "Component '$name' is registered in multiple modules.",

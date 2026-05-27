@@ -9,5 +9,8 @@ interface PublisherInterface
     /**
      * Publish a message to a channel.
      */
-    public function publish(string $channel, Message $message): void;
+    public function publish(
+        string $channel,
+        Message $message,
+    ): void;
 }

@@ -6,6 +6,7 @@ use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\View\Twig\TwigEngineFactory;
 use Marko\View\Twig\TwigViewConfig;
 use Twig\Environment;
+use Twig\Extension\EscaperExtension;
 
 function makeTwigViewConfig(array $overrides = []): TwigViewConfig
 {
@@ -55,7 +56,7 @@ describe('TwigEngineFactory', function (): void {
         $factory = new TwigEngineFactory(makeTwigViewConfig(['view.autoescape' => 'js']));
         $env = $factory->create();
 
-        $escaper = $env->getExtension(\Twig\Extension\EscaperExtension::class);
+        $escaper = $env->getExtension(EscaperExtension::class);
         expect($escaper->getDefaultStrategy('template.html.twig'))->toBe('js');
     });
 

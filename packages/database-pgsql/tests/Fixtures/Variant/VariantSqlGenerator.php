@@ -36,16 +36,14 @@ class VariantSqlGenerator implements SqlGeneratorInterface
     public function generateAddColumn(
         string $table,
         Column $column,
-    ): string
-    {
+    ): string {
         return '';
     }
 
     public function generateDropColumn(
         string $table,
         string $columnName,
-    ): string
-    {
+    ): string {
         return '';
     }
 
@@ -53,40 +51,35 @@ class VariantSqlGenerator implements SqlGeneratorInterface
         string $table,
         Column $column,
         Column $oldColumn,
-    ): string
-    {
+    ): string {
         return '';
     }
 
     public function generateAddIndex(
         string $table,
         Index $index,
-    ): string
-    {
+    ): string {
         return '';
     }
 
     public function generateDropIndex(
         string $table,
         string $indexName,
-    ): string
-    {
+    ): string {
         return '';
     }
 
     public function generateAddForeignKey(
         string $table,
         ForeignKey $foreignKey,
-    ): string
-    {
+    ): string {
         return '';
     }
 
     public function generateDropForeignKey(
         string $table,
         string $keyName,
-    ): string
-    {
+    ): string {
         return '';
     }
 }

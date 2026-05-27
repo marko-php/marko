@@ -30,7 +30,13 @@ class LpnFixtureController
 class LpnFixtureRootComponent {}
 
 // A component that lives in "content" slot but defines sub-slots: tab.details and tab.reviews
-#[Component(template: 'components/tabs.html', slot: 'content', handle: 'default', sortOrder: 10, slots: ['tab.details', 'tab.reviews'])]
+#[Component(
+    template: 'components/tabs.html',
+    slot: 'content',
+    handle: 'default',
+    sortOrder: 10,
+    slots: ['tab.details', 'tab.reviews']
+)]
 class LpnFixtureTabsComponent {}
 
 // Components targeting sub-slots
@@ -53,7 +59,13 @@ class LpnFixtureTwoSlotRootComponent {}
 #[Component(template: 'components/nav.html', slot: 'header', handle: 'default', sortOrder: 10)]
 class LpnFixtureNavComponent {}
 
-#[Component(template: 'components/body.html', slot: 'main', handle: 'default', sortOrder: 10, slots: ['body.sidebar', 'body.content'])]
+#[Component(
+    template: 'components/body.html',
+    slot: 'main',
+    handle: 'default',
+    sortOrder: 10,
+    slots: ['body.sidebar', 'body.content']
+)]
 class LpnFixtureBodyComponent {}
 
 #[Component(template: 'components/sidebar.html', slot: 'body.sidebar', handle: 'default', sortOrder: 10)]
@@ -63,16 +75,33 @@ class LpnFixtureSidebarNestedComponent {}
 class LpnFixtureMainContentComponent {}
 
 // Deep nesting: tab.details itself defines sub-slots
-#[Component(template: 'components/tabs-deep.html', slot: 'content', handle: 'default', sortOrder: 10, slots: ['tab.details'])]
+#[Component(
+    template: 'components/tabs-deep.html',
+    slot: 'content',
+    handle: 'default',
+    sortOrder: 10,
+    slots: ['tab.details']
+)]
 class LpnFixtureDeepTabsComponent {}
 
-#[Component(template: 'components/deep-details.html', slot: 'tab.details', handle: 'default', sortOrder: 10, slots: ['detail.images', 'detail.description'])]
+#[Component(
+    template: 'components/deep-details.html',
+    slot: 'tab.details',
+    handle: 'default',
+    sortOrder: 10,
+    slots: ['detail.images', 'detail.description']
+)]
 class LpnFixtureDeepDetailsComponent {}
 
 #[Component(template: 'components/detail-images.html', slot: 'detail.images', handle: 'default', sortOrder: 10)]
 class LpnFixtureDetailImagesComponent {}
 
-#[Component(template: 'components/detail-description.html', slot: 'detail.description', handle: 'default', sortOrder: 20)]
+#[Component(
+    template: 'components/detail-description.html',
+    slot: 'detail.description',
+    handle: 'default',
+    sortOrder: 20
+)]
 class LpnFixtureDetailDescriptionComponent {}
 
 // Circular reference fixtures
@@ -80,10 +109,22 @@ class LpnFixtureDetailDescriptionComponent {}
 // B is in cycle.b, B defines sub-slot: content (pointing back to layout's top-level!)
 // Actually: circular means slot graph has a cycle. Let's use:
 // X defines sub-slot: cycle.y; Y defines sub-slot: cycle.x; X is in cycle.x; Y is in cycle.y
-#[Component(template: 'components/cycle-x.html', slot: 'content', handle: 'default', sortOrder: 10, slots: ['cycle.y'])]
+#[Component(
+    template: 'components/cycle-x.html',
+    slot: 'content',
+    handle: 'default',
+    sortOrder: 10,
+    slots: ['cycle.y']
+)]
 class LpnFixtureCycleXComponent {}
 
-#[Component(template: 'components/cycle-y.html', slot: 'cycle.y', handle: 'default', sortOrder: 10, slots: ['cycle.x'])]
+#[Component(
+    template: 'components/cycle-y.html',
+    slot: 'cycle.y',
+    handle: 'default',
+    sortOrder: 10,
+    slots: ['cycle.x']
+)]
 class LpnFixtureCycleYComponent {}
 
 #[Component(template: 'components/cycle-filler.html', slot: 'cycle.x', handle: 'default', sortOrder: 10)]
@@ -97,7 +138,10 @@ function lpnStubCollector(ComponentCollection $collection): ComponentCollectorIn
     {
         public function __construct(private readonly ComponentCollection $stub) {}
 
-        public function collect(array $classNames, string $handle): ComponentCollection
+        public function collect(
+            array $classNames,
+            string $handle,
+        ): ComponentCollection
         {
             return $this->stub;
         }
@@ -115,12 +159,18 @@ function lpnStubView(callable $renderFn): ViewInterface
     {
         public function __construct(private readonly mixed $renderFn) {}
 
-        public function render(string $template, array $data = []): Response
+        public function render(
+            string $template,
+            array $data = [],
+        ): Response
         {
             return Response::html(($this->renderFn)($template, $data));
         }
 
-        public function renderToString(string $template, array $data = []): string
+        public function renderToString(
+            string $template,
+            array $data = [],
+        ): string
         {
             return ($this->renderFn)($template, $data);
         }

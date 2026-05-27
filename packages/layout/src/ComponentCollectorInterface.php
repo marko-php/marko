@@ -11,7 +11,10 @@ interface ComponentCollectorInterface
      *
      * @param array<int, class-string> $classNames
      */
-    public function collect(array $classNames, string $handle): ComponentCollection;
+    public function collect(
+        array $classNames,
+        string $handle,
+    ): ComponentCollection;
 
     /**
      * Discover a ComponentDefinition from a single class.

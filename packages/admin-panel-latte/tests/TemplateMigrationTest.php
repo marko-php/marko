@@ -30,7 +30,9 @@ it('LayoutTemplateTest.php exists in packages/admin-panel-latte/tests/', functio
 it('LayoutTemplateTest.php has been removed from packages/admin-panel/tests/Unit/Template/', function (): void {
     $oldTestPath = dirname(__DIR__, 2) . '/admin-panel/tests/Unit/Template/LayoutTemplateTest.php';
 
-    expect(file_exists($oldTestPath))->toBeFalse('LayoutTemplateTest.php should not exist in admin-panel/tests/Unit/Template/');
+    expect(file_exists($oldTestPath))->toBeFalse(
+        'LayoutTemplateTest.php should not exist in admin-panel/tests/Unit/Template/'
+    );
 });
 
 it('the moved Pest file uses dirname(__DIR__) for $viewsPath (one level up)', function (): void {

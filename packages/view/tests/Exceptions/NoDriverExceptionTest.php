@@ -77,7 +77,9 @@ describe('NoDriverException', function (): void {
     it('includes context about resolving ViewInterface', function (): void {
         $exception = NoDriverException::noDriverInstalled();
 
-        expect($exception->getContext())->toContain('Attempted to resolve ViewInterface but no implementation is bound.');
+        expect($exception->getContext())->toContain(
+            'Attempted to resolve ViewInterface but no implementation is bound.'
+        );
     });
 
     it('extends ViewException', function (): void {

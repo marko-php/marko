@@ -9,7 +9,11 @@ class AmbiguousSortOrderException extends LayoutException
     /**
      * @param array<string> $components
      */
-    public static function forComponents(string $slot, int $sortOrder, array $components): self
+    public static function forComponents(
+        string $slot,
+        int $sortOrder,
+        array $components,
+    ): self
     {
         $componentList = implode(', ', $components);
 

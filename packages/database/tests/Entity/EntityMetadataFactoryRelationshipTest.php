@@ -303,7 +303,12 @@ it('parses BelongsToMany attribute from entity property', function (): void {
         #[Column(primaryKey: true, autoIncrement: true)]
         public int $id;
 
-        #[BelongsToMany(entityClass: Entity::class, pivotClass: Entity::class, foreignKey: 'user_id', relatedKey: 'role_id')]
+        #[BelongsToMany(
+            entityClass: Entity::class,
+            pivotClass: Entity::class,
+            foreignKey: 'user_id',
+            relatedKey: 'role_id'
+        )]
         public array $roles = [];
     };
 
@@ -318,7 +323,12 @@ it('extracts entity class from BelongsToMany attribute', function (): void {
         #[Column(primaryKey: true, autoIncrement: true)]
         public int $id;
 
-        #[BelongsToMany(entityClass: Entity::class, pivotClass: Entity::class, foreignKey: 'user_id', relatedKey: 'role_id')]
+        #[BelongsToMany(
+            entityClass: Entity::class,
+            pivotClass: Entity::class,
+            foreignKey: 'user_id',
+            relatedKey: 'role_id'
+        )]
         public array $roles = [];
     };
 
@@ -333,7 +343,12 @@ it('extracts pivot class from BelongsToMany attribute', function (): void {
         #[Column(primaryKey: true, autoIncrement: true)]
         public int $id;
 
-        #[BelongsToMany(entityClass: Entity::class, pivotClass: Entity::class, foreignKey: 'user_id', relatedKey: 'role_id')]
+        #[BelongsToMany(
+            entityClass: Entity::class,
+            pivotClass: Entity::class,
+            foreignKey: 'user_id',
+            relatedKey: 'role_id'
+        )]
         public array $roles = [];
     };
 
@@ -348,7 +363,12 @@ it('extracts foreign key from BelongsToMany attribute', function (): void {
         #[Column(primaryKey: true, autoIncrement: true)]
         public int $id;
 
-        #[BelongsToMany(entityClass: Entity::class, pivotClass: Entity::class, foreignKey: 'user_id', relatedKey: 'role_id')]
+        #[BelongsToMany(
+            entityClass: Entity::class,
+            pivotClass: Entity::class,
+            foreignKey: 'user_id',
+            relatedKey: 'role_id'
+        )]
         public array $roles = [];
     };
 
@@ -363,7 +383,12 @@ it('extracts related key from BelongsToMany attribute', function (): void {
         #[Column(primaryKey: true, autoIncrement: true)]
         public int $id;
 
-        #[BelongsToMany(entityClass: Entity::class, pivotClass: Entity::class, foreignKey: 'user_id', relatedKey: 'role_id')]
+        #[BelongsToMany(
+            entityClass: Entity::class,
+            pivotClass: Entity::class,
+            foreignKey: 'user_id',
+            relatedKey: 'role_id'
+        )]
         public array $roles = [];
     };
 
@@ -378,7 +403,12 @@ it('sets relationship type to BelongsToMany', function (): void {
         #[Column(primaryKey: true, autoIncrement: true)]
         public int $id;
 
-        #[BelongsToMany(entityClass: Entity::class, pivotClass: Entity::class, foreignKey: 'user_id', relatedKey: 'role_id')]
+        #[BelongsToMany(
+            entityClass: Entity::class,
+            pivotClass: Entity::class,
+            foreignKey: 'user_id',
+            relatedKey: 'role_id'
+        )]
         public array $roles = [];
     };
 
@@ -450,7 +480,12 @@ it('accepts EntityCollection type for BelongsToMany property', function (): void
         #[Column(primaryKey: true, autoIncrement: true)]
         public int $id;
 
-        #[BelongsToMany(entityClass: Entity::class, pivotClass: Entity::class, foreignKey: 'user_id', relatedKey: 'role_id')]
+        #[BelongsToMany(
+            entityClass: Entity::class,
+            pivotClass: Entity::class,
+            foreignKey: 'user_id',
+            relatedKey: 'role_id'
+        )]
         public EntityCollection $roles;
     };
 

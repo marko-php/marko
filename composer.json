@@ -548,6 +548,9 @@
             "Marko\\View\\Twig\\Tests\\": "packages/view-twig/tests/",
             "Marko\\Vite\\Tests\\": "packages/vite/tests/",
             "Marko\\Webhook\\Tests\\": "packages/webhook/tests/"
-        }
+        },
+        "files": [
+            "packages/database-mysql/tests/Connection/Helpers.php"
+        ]
     }
 }

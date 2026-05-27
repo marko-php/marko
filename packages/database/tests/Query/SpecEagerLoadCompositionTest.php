@@ -126,14 +126,21 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function where(string $column, string $operator, mixed $value): static
+        public function where(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static
         {
             $this->wheresCalled[] = "$column $operator $value";
 
             return $this;
         }
 
-        public function whereIn(string $column, array $values): static
+        public function whereIn(
+            string $column,
+            array $values,
+        ): static
         {
             return $this;
         }
@@ -148,7 +155,10 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereJsonContains(string $path, mixed $value): static
+        public function whereJsonContains(
+            string $path,
+            mixed $value,
+        ): static
         {
             return $this;
         }
@@ -163,42 +173,73 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function orWhere(string $column, string $operator, mixed $value): static
+        public function orWhere(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static
         {
             return $this;
         }
 
-        public function join(string $table, string $first, string $operator, string $second): static
+        public function join(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function leftJoin(string $table, string $first, string $operator, string $second): static
+        public function leftJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function rightJoin(string $table, string $first, string $operator, string $second): static
+        public function rightJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function orderBy(string $column, string $direction = 'ASC'): static
+        public function orderBy(
+            string $column,
+            string $direction = 'ASC',
+        ): static
         {
             return $this;
         }
 
-        public function orderByRaw(string $expression, string $direction = 'ASC'): static
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static
         {
             return $this;
         }
 
-        public function selectRaw(string $expression, array $bindings = []): static
+        public function selectRaw(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
 
-        public function whereRaw(string $expression, array $bindings = []): static
+        public function whereRaw(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
@@ -268,7 +309,10 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function having(string $expression, array $bindings = []): static
+        public function having(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
@@ -293,7 +337,10 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return null;
         }
 
-        public function raw(string $sql, array $bindings = []): array
+        public function raw(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             return [];
         }
@@ -326,12 +373,19 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function where(string $column, string $operator, mixed $value): static
+        public function where(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static
         {
             return $this;
         }
 
-        public function whereIn(string $column, array $values): static
+        public function whereIn(
+            string $column,
+            array $values,
+        ): static
         {
             $this->whereInCount++;
 
@@ -348,7 +402,10 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function whereJsonContains(string $path, mixed $value): static
+        public function whereJsonContains(
+            string $path,
+            mixed $value,
+        ): static
         {
             return $this;
         }
@@ -363,42 +420,73 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function orWhere(string $column, string $operator, mixed $value): static
+        public function orWhere(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static
         {
             return $this;
         }
 
-        public function join(string $table, string $first, string $operator, string $second): static
+        public function join(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function leftJoin(string $table, string $first, string $operator, string $second): static
+        public function leftJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function rightJoin(string $table, string $first, string $operator, string $second): static
+        public function rightJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function orderBy(string $column, string $direction = 'ASC'): static
+        public function orderBy(
+            string $column,
+            string $direction = 'ASC',
+        ): static
         {
             return $this;
         }
 
-        public function orderByRaw(string $expression, string $direction = 'ASC'): static
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static
         {
             return $this;
         }
 
-        public function selectRaw(string $expression, array $bindings = []): static
+        public function selectRaw(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
 
-        public function whereRaw(string $expression, array $bindings = []): static
+        public function whereRaw(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
@@ -468,7 +556,10 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this;
         }
 
-        public function having(string $expression, array $bindings = []): static
+        public function having(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
@@ -493,7 +584,10 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return null;
         }
 
-        public function raw(string $sql, array $bindings = []): array
+        public function raw(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             return [];
         }
@@ -515,12 +609,18 @@ function makeSpecConnection(array $rows = []): ConnectionInterface
             return true;
         }
 
-        public function query(string $sql, array $bindings = []): array
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             return $this->rows;
         }
 
-        public function execute(string $sql, array $bindings = []): int
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int
         {
             return 0;
         }
@@ -618,12 +718,19 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function where(string $column, string $operator, mixed $value): static
+        public function where(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static
         {
             return $this;
         }
 
-        public function whereIn(string $column, array $values): static
+        public function whereIn(
+            string $column,
+            array $values,
+        ): static
         {
             return $this;
         }
@@ -638,7 +745,10 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function whereJsonContains(string $path, mixed $value): static
+        public function whereJsonContains(
+            string $path,
+            mixed $value,
+        ): static
         {
             return $this;
         }
@@ -653,42 +763,73 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function orWhere(string $column, string $operator, mixed $value): static
+        public function orWhere(
+            string $column,
+            string $operator,
+            mixed $value,
+        ): static
         {
             return $this;
         }
 
-        public function join(string $table, string $first, string $operator, string $second): static
+        public function join(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function leftJoin(string $table, string $first, string $operator, string $second): static
+        public function leftJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function rightJoin(string $table, string $first, string $operator, string $second): static
+        public function rightJoin(
+            string $table,
+            string $first,
+            string $operator,
+            string $second,
+        ): static
         {
             return $this;
         }
 
-        public function orderBy(string $column, string $direction = 'ASC'): static
+        public function orderBy(
+            string $column,
+            string $direction = 'ASC',
+        ): static
         {
             return $this;
         }
 
-        public function orderByRaw(string $expression, string $direction = 'ASC'): static
+        public function orderByRaw(
+            string $expression,
+            string $direction = 'ASC',
+        ): static
         {
             return $this;
         }
 
-        public function selectRaw(string $expression, array $bindings = []): static
+        public function selectRaw(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
 
-        public function whereRaw(string $expression, array $bindings = []): static
+        public function whereRaw(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
@@ -758,7 +899,10 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function having(string $expression, array $bindings = []): static
+        public function having(
+            string $expression,
+            array $bindings = [],
+        ): static
         {
             return $this;
         }
@@ -783,7 +927,10 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return null;
         }
 
-        public function raw(string $sql, array $bindings = []): array
+        public function raw(
+            string $sql,
+            array $bindings = [],
+        ): array
         {
             return [];
         }
@@ -882,51 +1029,57 @@ it('merges eager loads across multiple specs without duplicating queries', funct
     expect($countingBuilder->whereInCount)->toBe(1);
 });
 
-it('still supports explicit $repo->with(...)->matching(...) callers (fixes pre-existing bug where matching() passed the raw inner builder)', function (): void {
-    $postRows = [['id' => 1, 'title' => 'Hello', 'status' => 'published', 'author_id' => 5]];
-    $authorRows = [['id' => 5, 'name' => 'Alice', 'author_id' => 5]];
-
-    $primaryBuilder = makeSpecStubBuilder($postRows);
-    $relatedBuilder = makeSpecStubBuilder($authorRows);
-    $loader = makeSpecLoader($relatedBuilder);
-    $repo = makeSpecRepository(loader: $loader, primaryBuilder: $primaryBuilder);
-
-    // Plain spec that applies no eager load — eager load comes from call-site with()
+it(
+    'still supports explicit $repo->with(...)->matching(...) callers (fixes pre-existing bug where matching() passed the raw inner builder)',
+    function (): void {
+        $postRows = [['id' => 1, 'title' => 'Hello', 'status' => 'published', 'author_id' => 5]];
+        $authorRows = [['id' => 5, 'name' => 'Alice', 'author_id' => 5]];
+    
+        $primaryBuilder = makeSpecStubBuilder($postRows);
+        $relatedBuilder = makeSpecStubBuilder($authorRows);
+        $loader = makeSpecLoader($relatedBuilder);
+        $repo = makeSpecRepository(loader: $loader, primaryBuilder: $primaryBuilder);
+    
+        // Plain spec that applies no eager load — eager load comes from call-site with()
     $spec = new class () implements QuerySpecification
-    {
-        public function apply(EntityQueryBuilderInterface $builder): void
         {
-            $builder->where('status', '=', 'published');
-        }
-    };
+            public function apply(EntityQueryBuilderInterface $builder): void
+            {
+                $builder->where('status', '=', 'published');
+            }
+        };
+    
+        $collection = $repo->with('author')->matching($spec);
+    
+        expect($collection->count())->toBe(1)
+            ->and($collection->first()->author)->toBeInstanceOf(SpecAuthor::class);
+    }
+);
 
-    $collection = $repo->with('author')->matching($spec);
-
-    expect($collection->count())->toBe(1)
-        ->and($collection->first()->author)->toBeInstanceOf(SpecAuthor::class);
-});
-
-it('merges call-site $repo->with(...) relationships with spec-declared with() relationships without duplicates', function (): void {
-    $postRows = [['id' => 1, 'title' => 'Hello', 'status' => 'published', 'author_id' => 5]];
-
-    $countingBuilder = makeCountingBuilder([['id' => 5, 'name' => 'Alice', 'author_id' => 5]]);
-    $primaryBuilder = makeSpecStubBuilder($postRows);
-    $loader = makeSpecLoader($countingBuilder);
-    $repo = makeSpecRepository(loader: $loader, primaryBuilder: $primaryBuilder);
-
-    $spec = new class () implements QuerySpecification
-    {
-        public function apply(EntityQueryBuilderInterface $builder): void
+it(
+    'merges call-site $repo->with(...) relationships with spec-declared with() relationships without duplicates',
+    function (): void {
+        $postRows = [['id' => 1, 'title' => 'Hello', 'status' => 'published', 'author_id' => 5]];
+    
+        $countingBuilder = makeCountingBuilder([['id' => 5, 'name' => 'Alice', 'author_id' => 5]]);
+        $primaryBuilder = makeSpecStubBuilder($postRows);
+        $loader = makeSpecLoader($countingBuilder);
+        $repo = makeSpecRepository(loader: $loader, primaryBuilder: $primaryBuilder);
+    
+        $spec = new class () implements QuerySpecification
         {
-            $builder->with('author');
-        }
-    };
-
-    // Both call-site and spec declare 'author' — should issue only one query
+            public function apply(EntityQueryBuilderInterface $builder): void
+            {
+                $builder->with('author');
+            }
+        };
+    
+        // Both call-site and spec declare 'author' — should issue only one query
     $repo->with('author')->matching($spec);
-
-    expect($countingBuilder->whereInCount)->toBe(1);
-});
+    
+        expect($countingBuilder->whereInCount)->toBe(1);
+    }
+);
 
 it('does not execute N+1 queries when a spec declares eager loads', function (): void {
     // 3 posts, all with author_id = 5
@@ -956,36 +1109,42 @@ it('does not execute N+1 queries when a spec declares eager loads', function ():
         ->and($countingBuilder->whereInCount)->toBe(1);
 });
 
-it('validates each spec-declared relationship name against entity metadata and throws on unknown names (consistent with Repository::with())', function (): void {
-    $postRows = [['id' => 1, 'title' => 'Hello', 'status' => 'published', 'author_id' => 5]];
-    $primaryBuilder = makeSpecStubBuilder($postRows);
-    $loader = makeSpecLoader(makeSpecStubBuilder());
-    $repo = makeSpecRepository(loader: $loader, primaryBuilder: $primaryBuilder);
-
-    $spec = new class () implements QuerySpecification
-    {
-        public function apply(EntityQueryBuilderInterface $builder): void
+it(
+    'validates each spec-declared relationship name against entity metadata and throws on unknown names (consistent with Repository::with())',
+    function (): void {
+        $postRows = [['id' => 1, 'title' => 'Hello', 'status' => 'published', 'author_id' => 5]];
+        $primaryBuilder = makeSpecStubBuilder($postRows);
+        $loader = makeSpecLoader(makeSpecStubBuilder());
+        $repo = makeSpecRepository(loader: $loader, primaryBuilder: $primaryBuilder);
+    
+        $spec = new class () implements QuerySpecification
         {
-            $builder->with('nonExistentRelationship');
-        }
-    };
+            public function apply(EntityQueryBuilderInterface $builder): void
+            {
+                $builder->with('nonExistentRelationship');
+            }
+        };
+    
+        expect(fn () => $repo->matching($spec))->toThrow(RepositoryException::class);
+    }
+);
 
-    expect(fn () => $repo->matching($spec))->toThrow(RepositoryException::class);
-});
-
-it('existing single-method QuerySpecification implementations continue to compile after updating only the apply() parameter type hint', function (): void {
-    // A spec using the new signature — verifies backward-compatible refactor
+it(
+    'existing single-method QuerySpecification implementations continue to compile after updating only the apply() parameter type hint',
+    function (): void {
+        // A spec using the new signature — verifies backward-compatible refactor
     $spec = new class () implements QuerySpecification
-    {
-        public function apply(EntityQueryBuilderInterface $builder): void
         {
-            $builder->where('status', '=', 'active');
-        }
-    };
-
-    $reflection = new ReflectionClass($spec);
-    $method = $reflection->getMethod('apply');
-    $params = $method->getParameters();
-
-    expect($params[0]->getType()?->getName())->toBe(EntityQueryBuilderInterface::class);
-});
+            public function apply(EntityQueryBuilderInterface $builder): void
+            {
+                $builder->where('status', '=', 'active');
+            }
+        };
+    
+        $reflection = new ReflectionClass($spec);
+        $method = $reflection->getMethod('apply');
+        $params = $method->getParameters();
+    
+        expect($params[0]->getType()?->getName())->toBe(EntityQueryBuilderInterface::class);
+    }
+);

@@ -23,8 +23,7 @@ class ModuleLoader implements LoaderInterface
     ) {}
 
     /**
-     * @throws LoaderError When $name does not use module namespace format or file cannot be read
-     * @throws TemplateNotFoundException When template cannot be found
+     * @throws LoaderError|TemplateNotFoundException
      */
     public function getSourceContext(string $name): Source
     {
@@ -46,8 +45,7 @@ class ModuleLoader implements LoaderInterface
     }
 
     /**
-     * @throws LoaderError When $name does not use module namespace format
-     * @throws TemplateNotFoundException When template cannot be found
+     * @throws LoaderError|TemplateNotFoundException
      */
     public function getCacheKey(string $name): string
     {
@@ -59,7 +57,10 @@ class ModuleLoader implements LoaderInterface
     /**
      * @throws TemplateNotFoundException When template cannot be found
      */
-    public function isFresh(string $name, int $time): bool
+    public function isFresh(
+        string $name,
+        int $time,
+    ): bool
     {
         $path = $this->resolvePath($name);
 

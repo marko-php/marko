@@ -24,5 +24,5 @@ it(
         $latteViewConfig = new LatteViewConfig($config);
 
         $latteViewConfig->strictTypes();
-    }
+    },
 )->throws(ConfigNotFoundException::class);

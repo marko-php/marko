@@ -21,8 +21,7 @@ class VariantQueryBuilder implements QueryBuilderInterface
     public function selectRaw(
         string $expression,
         array $bindings = [],
-    ): static
-    {
+    ): static {
         return $this;
     }
 
@@ -35,16 +34,14 @@ class VariantQueryBuilder implements QueryBuilderInterface
         string $column,
         string $operator,
         mixed $value,
-    ): static
-    {
+    ): static {
         return $this;
     }
 
     public function whereIn(
         string $column,
         array $values,
-    ): static
-    {
+    ): static {
         return $this;
     }
 
@@ -61,8 +58,7 @@ class VariantQueryBuilder implements QueryBuilderInterface
     public function whereJsonContains(
         string $path,
         mixed $value,
-    ): static
-    {
+    ): static {
         return $this;
     }
 
@@ -80,16 +76,14 @@ class VariantQueryBuilder implements QueryBuilderInterface
         string $column,
         string $operator,
         mixed $value,
-    ): static
-    {
+    ): static {
         return $this;
     }
 
     public function whereRaw(
         string $expression,
         array $bindings = [],
-    ): static
-    {
+    ): static {
         return $this;
     }
 
@@ -98,8 +92,7 @@ class VariantQueryBuilder implements QueryBuilderInterface
         string $first,
         string $operator,
         string $second,
-    ): static
-    {
+    ): static {
         return $this;
     }
 
@@ -108,8 +101,7 @@ class VariantQueryBuilder implements QueryBuilderInterface
         string $first,
         string $operator,
         string $second,
-    ): static
-    {
+    ): static {
         return $this;
     }
 
@@ -118,8 +110,7 @@ class VariantQueryBuilder implements QueryBuilderInterface
         string $first,
         string $operator,
         string $second,
-    ): static
-    {
+    ): static {
         return $this;
     }
 
@@ -131,24 +122,21 @@ class VariantQueryBuilder implements QueryBuilderInterface
     public function having(
         string $expression,
         array $bindings = [],
-    ): static
-    {
+    ): static {
         return $this;
     }
 
     public function orderBy(
         string $column,
         string $direction = 'ASC',
-    ): static
-    {
+    ): static {
         return $this;
     }
 
     public function orderByRaw(
         string $expression,
         string $direction = 'ASC',
-    ): static
-    {
+    ): static {
         return $this;
     }
 
@@ -235,8 +223,7 @@ class VariantQueryBuilder implements QueryBuilderInterface
     public function raw(
         string $sql,
         array $bindings = [],
-    ): array
-    {
+    ): array {
         return [];
     }
 }

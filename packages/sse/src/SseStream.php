@@ -45,6 +45,7 @@ readonly class SseStream implements IteratorAggregate
     {
         if ($this->subscription !== null) {
             yield from $this->iterateSubscription();
+
             return;
         }
 
@@ -60,7 +61,7 @@ readonly class SseStream implements IteratorAggregate
         $startTime = time();
 
         foreach ($this->subscription as $message) {
-            if ((time() - $startTime) >= $this->timeout) {
+            if (time() - $startTime >= $this->timeout) {
                 return;
             }
 
@@ -96,7 +97,7 @@ readonly class SseStream implements IteratorAggregate
                 $lastHeartbeat = time();
             }
 
-            if ((time() - $startTime) >= $this->timeout) {
+            if (time() - $startTime >= $this->timeout) {
                 return;
             }
 

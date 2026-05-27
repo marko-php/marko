@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 it('composer.json exists with correct namespace', function (): void {
     $composerPath = dirname(__DIR__) . '/composer.json';
 

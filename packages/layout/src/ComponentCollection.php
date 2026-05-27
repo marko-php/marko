@@ -76,7 +76,11 @@ class ComponentCollection
     /**
      * @throws ComponentNotFoundException
      */
-    public function move(string $className, string $newSlot, ?int $newSortOrder = null): void
+    public function move(
+        string $className,
+        string $newSlot,
+        ?int $newSortOrder = null,
+    ): void
     {
         $definition = $this->get($className);
 
@@ -124,7 +128,10 @@ class ComponentCollection
      * @return array<int, ComponentDefinition>
      * @throws AmbiguousSortOrderException
      */
-    private function sort(array $components, string $slot): array
+    private function sort(
+        array $components,
+        string $slot,
+    ): array
     {
         // First pass: sort by sortOrder, detecting ambiguities
         usort($components, function (ComponentDefinition $a, ComponentDefinition $b) use ($slot): int {

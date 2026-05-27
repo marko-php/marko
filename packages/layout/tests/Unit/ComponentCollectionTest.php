@@ -146,16 +146,19 @@ it('respects after constraint over sortOrder when sorting', function (): void {
         ->and($result[1]->className)->toBe('App\Components\BComponent');
 });
 
-it('throws AmbiguousSortOrderException when two components have same sortOrder with no before or after constraints', function (): void {
-    $collection = new ComponentCollection();
-    $a = makeDefinition('App\Components\AComponent', 'header', sortOrder: 10);
-    $b = makeDefinition('App\Components\BComponent', 'header', sortOrder: 10);
-    $collection->add($a);
-    $collection->add($b);
-
-    expect(fn () => $collection->forSlot('header'))
-        ->toThrow(AmbiguousSortOrderException::class);
-});
+it(
+    'throws AmbiguousSortOrderException when two components have same sortOrder with no before or after constraints',
+    function (): void {
+        $collection = new ComponentCollection();
+        $a = makeDefinition('App\Components\AComponent', 'header', sortOrder: 10);
+        $b = makeDefinition('App\Components\BComponent', 'header', sortOrder: 10);
+        $collection->add($a);
+        $collection->add($b);
+    
+        expect(fn () => $collection->forSlot('header'))
+            ->toThrow(AmbiguousSortOrderException::class);
+    }
+);
 
 it('moves a component to a different slot', function (): void {
     $collection = new ComponentCollection();

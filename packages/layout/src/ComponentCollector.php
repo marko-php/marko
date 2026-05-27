@@ -24,7 +24,10 @@ readonly class ComponentCollector implements ComponentCollectorInterface
      * @param array<int, class-string> $classNames
      * @throws Error|ReflectionException|Exceptions\DuplicateComponentException
      */
-    public function collect(array $classNames, string $handle): ComponentCollection
+    public function collect(
+        array $classNames,
+        string $handle,
+    ): ComponentCollection
     {
         $collection = new ComponentCollection();
 
@@ -136,7 +139,10 @@ readonly class ComponentCollector implements ComponentCollectorInterface
     /**
      * Resolve a class-reference handle to a string handle via RouteCollection.
      */
-    private function resolveClassReferenceHandle(string $controllerClass, string $action): ?string
+    private function resolveClassReferenceHandle(
+        string $controllerClass,
+        string $action,
+    ): ?string
     {
         foreach ($this->routeCollection->all() as $route) {
             if ($route->controller === $controllerClass && $route->action === $action) {
