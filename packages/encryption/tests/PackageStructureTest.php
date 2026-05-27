@@ -100,5 +100,5 @@ it('ships a known-drivers.php file listing marko/encryption-openssl', function (
 
     expect($drivers)->toBeArray()
         ->and($drivers)->toHaveKey('marko/encryption-openssl')
-        ->and($drivers['marko/encryption-openssl'])->toBe('OpenSSL-based symmetric encryption driver (AES-256-GCM)');
+        ->and($drivers['marko/encryption-openssl'])->toBe('OpenSSL-based encryption driver (AES-256-GCM)');
 });

@@ -94,7 +94,7 @@ it('ships a known-drivers.php file listing marko/log-file', function () {
 
     expect($drivers)->toBeArray()
         ->and($drivers)->toHaveKey('marko/log-file')
-        ->and($drivers['marko/log-file'])->toBe('File-based logger with rotation');
+        ->and($drivers['marko/log-file'])->toBe('File-based log driver (with log rotation)');
 });
 
 it('has default log.php config file', function () {

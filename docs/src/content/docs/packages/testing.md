@@ -173,7 +173,7 @@ expect($provider->lastRememberTokenUpdate['token'])->toBe('new-token');
 
 ### KnownDriversValidator
 
-`KnownDriversValidator` is a static utility for package authors to assert that a package's `known-drivers.php` file is well-formed and stays in sync with the skeleton's `suggest` block.
+`KnownDriversValidator` is a static utility for package authors to assert that a package's `known-drivers.php` file is well-formed and stays in sync with the skeleton's `suggest` block. See [Known Drivers](/concepts/known-drivers/) for the file format and description-string conventions.
 
 ```php
 use Marko\Testing\KnownDrivers\KnownDriversValidator;

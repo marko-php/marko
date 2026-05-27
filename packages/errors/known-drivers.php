@@ -3,6 +3,6 @@
 declare(strict_types=1);
 
 return [
-    'marko/errors-simple' => 'Simple error handler (recommended for production — minimal information disclosure)',
-    'marko/errors-advanced' => 'Advanced error handler with pretty stack traces and suggestions (recommended for development)',
+    'marko/errors-simple' => 'Simple errors driver (recommended; minimal information disclosure, production-safe)',
+    'marko/errors-advanced' => 'Advanced errors driver (pretty stack traces and suggestions; for development)',
 ];
