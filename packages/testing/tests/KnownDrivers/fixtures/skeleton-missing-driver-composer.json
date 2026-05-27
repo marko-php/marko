@@ -1,0 +1,7 @@
+{
+    "name": "marko/skeleton",
+    "require": {},
+    "suggest": {
+        "marko/cache-redis": "Redis cache driver"
+    }
+}

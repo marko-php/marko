@@ -6,23 +6,38 @@ namespace Marko\Queue\Exceptions;
 
 class NoDriverException extends QueueException
 {
-    private const array DRIVER_PACKAGES = [
-        'marko/queue-database',
-        'marko/queue-rabbitmq',
-        'marko/queue-sync',
-    ];
-
     public static function noDriverInstalled(): self
     {
-        $packageList = implode("\n", array_map(
-            fn (string $pkg) => "- `composer require $pkg`",
-            self::DRIVER_PACKAGES,
-        ));
+        $drivers = require __DIR__ . '/../../known-drivers.php';
+        $packageList = self::formatDriverList($drivers);
 
         return new self(
             message: 'No queue driver installed.',
             context: 'Attempted to resolve a queue interface but no implementation is bound.',
-            suggestion: "Install a queue driver:\n$packageList",
+            suggestion: "Install one of these drivers:\n$packageList",
         );
+    }
+
+    /**
+     * @param array<string, string> $drivers
+     */
+    private static function formatDriverList(array $drivers): string
+    {
+        $lines = [];
+        foreach ($drivers as $package => $description) {
+            $docsUrl = self::docsUrl($package);
+            $lines[] = "- $package: $description";
+            $lines[] = "  Install: composer require $package";
+            $lines[] = "  Docs: $docsUrl";
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private static function docsUrl(string $package): string
+    {
+        $basename = substr($package, strlen('marko/'));
+
+        return "https://marko.build/docs/packages/$basename/";
     }
 }

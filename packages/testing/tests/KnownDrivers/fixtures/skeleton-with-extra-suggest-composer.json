@@ -1,0 +1,9 @@
+{
+    "name": "marko/skeleton",
+    "require": {},
+    "suggest": {
+        "marko/cache-redis": "Redis cache driver",
+        "marko/cache-memcached": "Memcached cache driver",
+        "marko/some-addon": "An extra add-on not in known-drivers.php"
+    }
+}

@@ -16,6 +16,7 @@ composer require marko/testing --dev
 
 `FakeEventDispatcher`, `FakeMailer`, `FakeQueue`, `FakeSession`, `FakeCookieJar`, `FakeLogger`, `FakeConfigRepository`, `FakeAuthenticatable`, `FakeUserProvider`, `FakeGuard`
 
+
 ## Usage
 
 ### FakeEventDispatcher
@@ -153,6 +154,21 @@ $guard->assertGuest();
 $guard->assertLoggedOut();
 ```
 
+### KnownDriversValidator
+
+```php
+use Marko\Testing\KnownDrivers\KnownDriversValidator;
+
+KnownDriversValidator::assertDocsUrlsResolveToValidPattern(
+    __DIR__ . '/../known-drivers.php',
+);
+
+KnownDriversValidator::assertSkeletonSuggestContainsAll(
+    __DIR__ . '/../known-drivers.php',
+    __DIR__ . '/../../skeleton/composer.json',
+);
+```
+
 ## API Reference
 
 ### FakeEventDispatcher
@@ -196,6 +212,11 @@ $guard->assertLoggedOut();
 - `assertAttempted(?callable $callback = null): void` — Assert attempt() was called, optionally matching credentials via callback
 - `assertNotAttempted(): void` — Assert attempt() was never called
 - `assertLoggedOut(): void` — Assert logout() was called
+
+### KnownDriversValidator
+
+- `assertDocsUrlsResolveToValidPattern(string $knownDriversPath): void` — Assert every key in `known-drivers.php` follows the `marko/*` prefix pattern
+- `assertSkeletonSuggestContainsAll(string $knownDriversPath, string $skeletonComposerPath): void` — Assert the skeleton's `suggest` block contains every entry from `known-drivers.php` with matching descriptions
 
 ## Pest Expectations
 

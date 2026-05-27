@@ -65,3 +65,15 @@ it('has tests directory for tests', function () {
 it('has config directory for default configuration', function () {
     expect(is_dir(dirname(__DIR__) . '/config'))->toBeTrue();
 });
+
+it('ships a known-drivers.php file listing marko/translation-file', function (): void {
+    $knownDriversPath = dirname(__DIR__) . '/known-drivers.php';
+
+    expect(file_exists($knownDriversPath))->toBeTrue();
+
+    $drivers = require $knownDriversPath;
+
+    expect($drivers)->toBeArray()
+        ->and($drivers)->toHaveKey('marko/translation-file')
+        ->and($drivers['marko/translation-file'])->toBe('File-based translation driver (PHP array files per locale)');
+});

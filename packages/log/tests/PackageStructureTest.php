@@ -85,6 +85,18 @@ it('has config directory for default configuration', function () {
     expect(is_dir($configPath))->toBeTrue();
 });
 
+it('ships a known-drivers.php file listing marko/log-file', function () {
+    $knownDriversPath = dirname(__DIR__) . '/known-drivers.php';
+
+    expect(file_exists($knownDriversPath))->toBeTrue();
+
+    $drivers = require $knownDriversPath;
+
+    expect($drivers)->toBeArray()
+        ->and($drivers)->toHaveKey('marko/log-file')
+        ->and($drivers['marko/log-file'])->toBe('File-based log driver (with log rotation)');
+});
+
 it('has default log.php config file', function () {
     $configPath = dirname(__DIR__) . '/config/log.php';
 

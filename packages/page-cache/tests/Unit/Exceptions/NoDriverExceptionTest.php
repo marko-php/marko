@@ -5,15 +5,16 @@ declare(strict_types=1);
 use Marko\PageCache\Exceptions\NoDriverException;
 use Marko\PageCache\Exceptions\PageCacheException;
 
-it('produces a NoDriverException via static factory with helpful message and suggestion', function (): void {
-    $exception = NoDriverException::noBinding();
+it('page-cache NoDriverException reads from known-drivers.php and includes docs URL', function (): void {
+    $exception = NoDriverException::noDriverInstalled();
 
-    expect($exception->getMessage())->not->toBeEmpty()
-        ->and($exception->getSuggestion())->toContain('marko/page-cache-');
+    expect($exception->getSuggestion())
+        ->toContain('marko/page-cache-file')
+        ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/page-cache-file/');
 });
 
-it('inherits NoDriverException from PageCacheException', function (): void {
-    $exception = NoDriverException::noBinding();
+it('page-cache NoDriverException exposes a noDriverInstalled() factory (renamed from noBinding for consistency)', function (): void {
+    $exception = NoDriverException::noDriverInstalled();
 
     expect($exception)->toBeInstanceOf(NoDriverException::class)
         ->and($exception)->toBeInstanceOf(PageCacheException::class);

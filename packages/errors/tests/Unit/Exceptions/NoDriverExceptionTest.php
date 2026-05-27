@@ -6,13 +6,14 @@ use Marko\Core\Exceptions\MarkoException;
 use Marko\Errors\Exceptions\NoDriverException;
 
 describe('NoDriverException', function (): void {
-    it('has DRIVER_PACKAGES constant listing marko/errors-advanced and marko/errors-simple', function (): void {
-        $reflection = new ReflectionClass(NoDriverException::class);
-        $constant = $reflection->getReflectionConstant('DRIVER_PACKAGES');
+    it('errors NoDriverException reads from known-drivers.php and includes docs URLs', function (): void {
+        $exception = NoDriverException::noDriverInstalled();
 
-        expect($constant)->not->toBeFalse()
-            ->and($constant->getValue())->toContain('marko/errors-advanced')
-            ->and($constant->getValue())->toContain('marko/errors-simple');
+        expect($exception->getSuggestion())
+            ->toContain('marko/errors-simple')
+            ->and($exception->getSuggestion())->toContain('marko/errors-advanced')
+            ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/errors-simple/')
+            ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/errors-advanced/');
     });
 
     it('provides suggestion with composer require commands for all driver packages', function (): void {
