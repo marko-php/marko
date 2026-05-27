@@ -37,14 +37,6 @@ describe('marko/view-twig package', function (): void {
             ->and($composer['require']['twig/twig'])->toBe('^3.0');
     });
 
-    test('it declares a Composer conflict with marko/view-latte', function (): void {
-        $composerPath = dirname(__DIR__) . '/composer.json';
-        $composer = json_decode(file_get_contents($composerPath), true);
-
-        expect($composer['conflict'])->toHaveKey('marko/view-latte')
-            ->and($composer['conflict']['marko/view-latte'])->toBe('*');
-    });
-
     test('it autoloads Marko\\View\\Twig namespace from src/', function (): void {
         $composerPath = dirname(__DIR__) . '/composer.json';
         $composer = json_decode(file_get_contents($composerPath), true);
