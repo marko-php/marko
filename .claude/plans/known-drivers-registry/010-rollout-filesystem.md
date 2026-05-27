@@ -20,21 +20,17 @@ Apply the pilot pattern to `marko/filesystem`. Two drivers: `filesystem-local`, 
 ## Sub-steps
 1. Create `packages/filesystem/known-drivers.php`
 2. Refactor `packages/filesystem/src/Exceptions/NoDriverException.php`. Update existing `packages/filesystem/tests/Unit/Exceptions/NoDriverExceptionTest.php` to match the new output format.
-3. Add mutual `conflict` blocks to both driver composer.json files
-4. Add `packages/filesystem/tests/KnownDriversValidationTest.php`
-5. Verify `marko/testing` is in `packages/filesystem/composer.json` `require-dev`; add it if missing
+3. Add `packages/filesystem/tests/KnownDriversValidationTest.php`
+4. Verify `marko/testing` is in `packages/filesystem/composer.json` `require-dev`; add it if missing
 
 ## Requirements (Test Descriptions)
 - [ ] `it ships a known-drivers.php file listing both filesystem drivers`
 - [ ] `it lists marko/filesystem-local first as the recommended driver`
 - [ ] `filesystem NoDriverException reads from known-drivers.php and includes docs URLs`
-- [ ] `each filesystem driver declares conflict with the sibling driver`
-- [ ] `validation test confirms conflict blocks match known-drivers list`
 
 ## Acceptance Criteria
 - `packages/filesystem/known-drivers.php` exists
 - `NoDriverException` refactored
-- Both driver composer.json files have correctly-populated `conflict` blocks
 - Validation test passes
 - Existing filesystem tests still pass
 - Code follows code standards

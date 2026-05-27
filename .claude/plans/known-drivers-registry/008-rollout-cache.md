@@ -21,22 +21,18 @@ Apply the pilot pattern (tasks 002–005) to `marko/cache`. Three drivers: `cach
 ## Sub-steps (each yields one or more requirements)
 1. Create `packages/cache/known-drivers.php` with the three entries (file first)
 2. Refactor `packages/cache/src/Exceptions/NoDriverException.php` to read from known-drivers.php and include docs URLs (same shape as task 003). Update existing `packages/cache/tests/Exceptions/NoDriverExceptionTest.php` assertions to match the new output format.
-3. Add mutual `conflict` blocks to all three driver composer.json files: each driver's conflict block lists the other two
-4. Add `packages/cache/tests/KnownDriversValidationTest.php` using `KnownDriversValidator`
-5. Verify `marko/testing` is in `packages/cache/composer.json` `require-dev`; add it (`"marko/testing": "self.version"`) if missing
+3. Add `packages/cache/tests/KnownDriversValidationTest.php` using `KnownDriversValidator`
+4. Verify `marko/testing` is in `packages/cache/composer.json` `require-dev`; add it (`"marko/testing": "self.version"`) if missing
 
 ## Requirements (Test Descriptions)
 - [ ] `it ships a known-drivers.php file listing all three cache drivers`
 - [ ] `it lists marko/cache-file first as the recommended driver`
 - [ ] `cache NoDriverException reads from known-drivers.php and includes docs URLs`
-- [ ] `each cache driver declares conflict with both other drivers`
-- [ ] `validation test confirms conflict blocks match known-drivers list`
 - [ ] `validation test skips skeleton parity assertion when skeleton is absent`
 
 ## Acceptance Criteria
 - `packages/cache/known-drivers.php` exists with three entries
 - `NoDriverException` refactored to mirror database/NoDriverException pattern
-- All three driver composer.json files have correctly-populated `conflict` blocks
 - Validation test passes
 - Existing cache tests still pass
 - Code follows code standards

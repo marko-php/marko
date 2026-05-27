@@ -19,21 +19,17 @@ Apply the pilot pattern to `marko/session`. Two drivers: `session-file`, `sessio
 ## Sub-steps
 1. Create `packages/session/known-drivers.php`
 2. Refactor `packages/session/src/Exceptions/NoDriverException.php`. Update existing `packages/session/tests/Unit/Exceptions/NoDriverExceptionTest.php` to match the new output format.
-3. Add mutual `conflict` blocks to both driver composer.json files
-4. Add `packages/session/tests/KnownDriversValidationTest.php`
-5. Verify `marko/testing` is in `packages/session/composer.json` `require-dev`; add it if missing
+3. Add `packages/session/tests/KnownDriversValidationTest.php`
+4. Verify `marko/testing` is in `packages/session/composer.json` `require-dev`; add it if missing
 
 ## Requirements (Test Descriptions)
 - [ ] `it ships a known-drivers.php file listing both session drivers`
 - [ ] `it lists marko/session-file first as the recommended driver`
 - [ ] `session NoDriverException reads from known-drivers.php and includes docs URLs`
-- [ ] `each session driver declares conflict with the sibling driver`
-- [ ] `validation test confirms conflict blocks match known-drivers list`
 
 ## Acceptance Criteria
 - `packages/session/known-drivers.php` exists
 - `NoDriverException` refactored
-- Both driver composer.json files have correctly-populated `conflict` blocks
 - Validation test passes
 - Existing session tests still pass
 - Code follows code standards

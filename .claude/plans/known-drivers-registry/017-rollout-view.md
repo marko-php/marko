@@ -5,43 +5,47 @@
 **Retry count**: 0
 
 ## Description
-Apply the single-driver variant of the pilot pattern to `marko/view`. **Only one driver exists on disk: `marko/view-latte`.** Despite earlier plan notes mentioning `marko/view-twig`, that package does not exist in this monorepo and is OUT OF SCOPE for this plan. When a second driver (twig or otherwise) lands later, the entry is added to `known-drivers.php` and the validation tests automatically gain teeth.
+Apply the rollout pattern to `marko/view`. After PR #92, **both `marko/view-latte` and `marko/view-twig` exist in the monorepo** with no Composer `conflict` between them (Marko uses runtime `BindingConflictException` for double-binding detection). Both drivers belong in `known-drivers.php`.
 
-This task refactors the existing `NoDriverException` (currently has a `DRIVER_PACKAGES` const listing only `marko/view-latte`) to read from `known-drivers.php`.
+This task refactors the existing `NoDriverException` (currently has a `DRIVER_PACKAGES` const) to read from `known-drivers.php`.
 
 ## Context
-- Interface: `Marko\View\ViewInterface` (verified at `packages/view/src/ViewInterface.php`)
-- Driver (single, currently): `marko/view-latte`
-- **Pre-existing state (verified at plan creation):**
-  - `view-latte/composer.json` does NOT have a `conflict` block (no sibling to conflict with yet)
-  - `view/src/Exceptions/NoDriverException.php` has `private const array DRIVER_PACKAGES = ['marko/view-latte']` — single entry
+- Interface: `Marko\View\ViewInterface`
+- Drivers: `marko/view-twig`, `marko/view-latte` (both present in monorepo after PR #92)
+- Recommended-first ordering: `view-twig` (broader ecosystem familiarity — established when view-twig was introduced in PR #88)
+- **Pre-existing state (verified):**
+  - Neither driver has a `conflict` block (PR #92 removed them)
+  - `view/src/Exceptions/NoDriverException.php` has `private const array DRIVER_PACKAGES = ['marko/view-latte', 'marko/view-twig']`
   - Existing test `packages/view/tests/Exceptions/NoDriverExceptionTest.php` asserts against the const (must be updated)
-- Skeleton's composer.json does NOT yet have a `suggest` block — it will be created in task 025
+- Skeleton's composer.json — task 025 populates the `suggest` block; this task ships known-drivers.php content that task 025 must mirror verbatim
 
 **Description text for known-drivers.php:**
+- `marko/view-twig` → `'Twig template engine driver (recommended for broader ecosystem familiarity)'`
 - `marko/view-latte` → `'Latte template engine driver (compile-time safety, n:attribute syntax)'`
 
-This description must match what task 025 writes into skeleton's `suggest` block exactly (literal-equality CI check enforced by `KnownDriversValidator::assertSkeletonSuggestContainsAll`). Task 025 must use the same string.
+These descriptions must match what task 025 writes into skeleton's `suggest` block exactly (literal-equality CI check).
 
 ## Sub-steps
-1. Create `packages/view/known-drivers.php` with the single `marko/view-latte` entry
-2. Refactor `packages/view/src/Exceptions/NoDriverException.php` to read from known-drivers.php (remove `DRIVER_PACKAGES` const; add `noDriverInstalled()` factory using the same shape as task 003)
-3. Update `packages/view/tests/Exceptions/NoDriverExceptionTest.php` to match the new shape (remove `DRIVER_PACKAGES` assertion, add assertions for docs URL inclusion)
-4. Add `packages/view/tests/KnownDriversValidationTest.php` using `KnownDriversValidator` (vacuous conflict assertion since only one driver — same as single-driver tasks 018-024)
-5. Add `marko/testing` to `packages/view/composer.json` `require-dev` (needed for the validation test)
+1. Create `packages/view/known-drivers.php` with both entries (Twig first)
+2. Refactor `packages/view/src/Exceptions/NoDriverException.php` to read from known-drivers.php (remove `DRIVER_PACKAGES` const; add docs URL derivation as in task 003)
+3. Update `packages/view/tests/Exceptions/NoDriverExceptionTest.php` to match the new shape
+4. Add `packages/view/tests/KnownDriversValidationTest.php` using `KnownDriversValidator`
+5. Add `marko/testing` to `packages/view/composer.json` `require-dev` if not already present
 
 ## Requirements (Test Descriptions)
-- [ ] `it ships a known-drivers.php file listing marko/view-latte`
-- [ ] `view NoDriverException reads from known-drivers.php and includes a docs URL`
+- [ ] `it ships a known-drivers.php file listing both view drivers`
+- [ ] `it lists marko/view-twig first as the recommended driver`
+- [ ] `view NoDriverException reads from known-drivers.php and includes docs URLs`
 - [ ] `view NoDriverException no longer exposes a DRIVER_PACKAGES const`
-- [ ] `validation test passes (vacuous conflict assertion with one driver)`
+- [ ] `validation test confirms skeleton suggest matches known-drivers.php (after task 025 runs; skip behavior holds before)`
 - [ ] `existing NoDriverExceptionTest is updated to match new shape`
 
 ## Acceptance Criteria
-- `packages/view/known-drivers.php` exists with one entry (`marko/view-latte`)
+- `packages/view/known-drivers.php` exists with both entries, view-twig first
 - `DRIVER_PACKAGES` const removed from view's `NoDriverException`
 - Existing `NoDriverExceptionTest` updated; all assertions match new output format
 - New validation test passes
-- All existing view, view-latte tests still pass
-- `marko/testing` added as `require-dev` in `packages/view/composer.json` if not already present
+- All existing view, view-latte, view-twig tests still pass
+- Description text in known-drivers.php matches task 025's skeleton suggest entries verbatim
+- `marko/testing` in `packages/view/composer.json` `require-dev`
 - Code follows code standards

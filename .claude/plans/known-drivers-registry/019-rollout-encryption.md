@@ -9,7 +9,7 @@ Apply the single-driver variant of the pilot pattern to `marko/encryption`. Sing
 
 ## Context
 - Driver: `marko/encryption-openssl`
-- No siblings; no conflict declaration needed
+
 
 **Description text for known-drivers.php:**
 - `marko/encryption-openssl` → `'OpenSSL-based symmetric encryption driver (AES-256-GCM)'`
@@ -23,7 +23,7 @@ Apply the single-driver variant of the pilot pattern to `marko/encryption`. Sing
 ## Requirements (Test Descriptions)
 - [ ] `it ships a known-drivers.php file listing marko/encryption-openssl`
 - [ ] `encryption NoDriverException reads from known-drivers.php and includes docs URL`
-- [ ] `validation test passes (vacuous conflict assertion with one driver)`
+- [ ] `validation test passes`
 
 ## Acceptance Criteria
 - `packages/encryption/known-drivers.php` exists with the single entry

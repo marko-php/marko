@@ -7,7 +7,9 @@
 planning
 
 ## Objective
-Establish `known-drivers.php` as the single curated source of truth for each interface package's mutually-exclusive drivers. Eliminate hardcoded driver lists scattered across `NoDriverException` classes, driver `composer.json` `conflict` blocks, and skeleton's `suggest` block — mechanically enforce sync via CI tests. Roll out to every interface package with ≥1 driver.
+Establish `known-drivers.php` as the single curated source of truth for each interface package's drivers. Eliminate hardcoded driver lists scattered across `NoDriverException` classes and skeleton's `suggest` block — mechanically enforce sync via CI tests. Roll out to every interface package with ≥1 driver.
+
+**Note on scope reduction:** an earlier version of this plan also added mutual Composer `conflict` declarations to every multi-driver family. PR #92 settled the broader design question: Marko relies on DI-level `BindingConflictException` (boot-time) for double-binding detection, NOT Composer-level conflict declarations. So this plan no longer adds conflict blocks, no longer validates them, and the pilot's standalone "add conflict blocks" task has been removed.
 
 ## Related Issues
 Closes #89
@@ -40,7 +42,7 @@ Closes #89
 authentication (token), encryption (openssl), http (guzzle), log (file), notification (database), translation (file), page-cache (file)
 
 **Optional add-ons (NOT enrolled in known-drivers.php):**
-- `marko/database-readwrite` — decorator wrapping the configured driver via boot callback; coexists with mysql/pgsql. **Not present in this monorepo's `packages/` directory** (lives in a sibling split repo). Skeleton's suggest block still references it; no on-disk validation required since add-ons don't participate in the conflict-block check.
+- `marko/database-readwrite` — decorator wrapping the configured driver via boot callback; coexists with mysql/pgsql. **Not present in this monorepo's `packages/` directory** (lives in a sibling split repo). Skeleton's suggest block still references it; no on-disk validation required since add-ons don't appear in known-drivers.php.
 - `marko/page-cache-entity` — bridge package adding observer-based cache invalidation; coexists with page-cache-file. Present in the monorepo.
 
 **Mechanical rule:** a package is a driver iff its `module.php` `bindings` array contains the interface's defining contract. Add-ons have empty `bindings: []` (database-readwrite, page-cache-entity confirmed). For v1, `known-drivers.php` is the curated source — interface-package maintainer decides. Marker interfaces or `extra.marko.driver_for` declarations are out of scope but viable follow-ups if drift becomes a problem.
@@ -49,7 +51,7 @@ authentication (token), encryption (openssl), http (guzzle), log (file), notific
 
 **marko/view test leak:** `packages/view/tests/Feature/IntegrationTest.php` uses `Marko\View\Latte\LatteEngineFactory` — a hard dependency on view-latte from inside the interface package's test suite. Cleanup task moves it to view-latte (where the integration test logically belongs).
 
-**Test infrastructure decision:** A shared `KnownDriversValidator` class in `marko/testing` provides assertion helpers (`assertConflictBlocksMatch`, `assertSkeletonSuggestContainsAll`). Each interface package's test file is a thin wrapper passing its own `known-drivers.php` path. Skip gracefully when sibling driver packages or skeleton aren't on disk (enables marko/view-only installs to pass tests without view-latte present).
+**Test infrastructure decision:** A shared `KnownDriversValidator` class in `marko/testing` provides one assertion helper: `assertSkeletonSuggestContainsAll`. Each interface package's test file is a thin wrapper passing its own `known-drivers.php` path. Skip gracefully when skeleton isn't on disk (enables marko/view-only installs to pass tests without skeleton present).
 
 ## Scope
 
@@ -58,8 +60,7 @@ authentication (token), encryption (openssl), http (guzzle), log (file), notific
 **Phase A — Pilot (database):**
 - Create `packages/database/known-drivers.php` with pgsql-first ordering
 - Refactor `marko/database`'s `NoDriverException` to read from known-drivers.php; include descriptions and derived docs URLs (`https://marko.build/docs/packages/{basename}/`)
-- Update `database-mysql` and `database-pgsql` `composer.json` to declare mutual `conflict`
-- Add CI validation test in `marko/database` (uses shared helper)
+- Add CI validation test in `marko/database` (uses shared helper) — asserts skeleton suggest parity only
 
 **Phase B — Shared infrastructure (parallel with pilot):**
 - Create `KnownDriversValidator` in `marko/testing` with assertion helpers
@@ -68,11 +69,11 @@ authentication (token), encryption (openssl), http (guzzle), log (file), notific
 
 **Phase C — Roll out to multi-driver interfaces (10, parallel):**
 - cache, errors, filesystem, inertia, mail, media, pubsub, queue, session, view
-- Each gets: known-drivers.php, refactored NoDriverException, mutual conflict blocks on drivers, validation test
+- Each gets: known-drivers.php, refactored NoDriverException, validation test (skeleton-suggest parity)
 
 **Phase D — Roll out to single-driver interfaces (7, parallel):**
 - authentication, encryption, http, log, notification, translation, page-cache
-- Each gets: known-drivers.php (one entry), refactored NoDriverException, validation test (vacuous conflict assertion)
+- Each gets: known-drivers.php (one entry), refactored NoDriverException, validation test
 
 **Phase E — Skeleton consolidation:**
 - Update `marko/skeleton`'s `composer.json` `suggest` block with all drivers (recommended-first per interface) and the two confirmed add-ons (`marko/database-readwrite`, `marko/page-cache-entity`) with explanatory text
@@ -88,9 +89,8 @@ authentication (token), encryption (openssl), http (guzzle), log (file), notific
 ## Success Criteria
 - [ ] Every interface package with ≥1 driver has a `known-drivers.php` file
 - [ ] Every interface package with a `NoDriverException` reads its driver list from `known-drivers.php` (no more hardcoded `DRIVER_PACKAGES` consts)
-- [ ] Every driver in a multi-driver family declares Composer `conflict` against all its siblings
 - [ ] Skeleton's `suggest` block includes every entry from every `known-drivers.php` file plus optional add-ons
-- [ ] CI validation tests enforce sync between `known-drivers.php`, driver `conflict` blocks, and skeleton `suggest` — fails build on drift
+- [ ] CI validation tests enforce sync between `known-drivers.php` and skeleton `suggest` — fails build on drift
 - [ ] CI tests skip gracefully (not fail) when sibling driver packages aren't on disk
 - [ ] `marko/view` test suite has zero dependency on `marko/view-latte` — passes with view-latte uninstalled
 - [ ] `marko/errors-advanced` renders URLs in exception suggestion text as `target="_blank"` links
@@ -105,14 +105,13 @@ authentication (token), encryption (openssl), http (guzzle), log (file), notific
 | 001 | Add `KnownDriversValidator` to marko/testing | - | pending |
 | 002 | Pilot: database known-drivers.php | - | pending |
 | 003 | Pilot: refactor database `NoDriverException` (read from file + docs URLs) | 002 | pending |
-| 004 | Pilot: database-mysql/pgsql conflict blocks | 002 | pending |
-| 005 | Pilot: database validation test | 001, 002, 003, 004 | pending |
+| 005 | Pilot: database validation test | 001, 002, 003 | pending |
 | 006 | Render context/suggestion + URL linkification in errors-advanced | - | pending |
 | 007 | Clean up marko/view test suite (move IntegrationTest) | - | pending |
 | 008 | Roll out: cache | 001, 005 | pending |
 | 009 | Roll out: errors | 001, 005 | pending |
 | 010 | Roll out: filesystem | 001, 005 | pending |
-| 011 | Roll out: inertia (creates new NoDriverException + 3 conflict blocks) | 001, 005 | pending |
+| 011 | Roll out: inertia (creates new NoDriverException) | 001, 005 | pending |
 | 012 | Roll out: mail | 001, 005 | pending |
 | 013 | Roll out: media | 001, 005 | pending |
 | 014 | Roll out: pubsub | 001, 005 | pending |
@@ -181,7 +180,6 @@ namespace Marko\Testing\KnownDrivers;
 
 class KnownDriversValidator
 {
-    public static function assertConflictBlocksMatch(string $knownDriversPath, string $packagesDir): void;
     public static function assertSkeletonSuggestContainsAll(string $knownDriversPath, string $skeletonComposerPath): void;
     public static function assertDocsUrlsResolveToValidPattern(string $knownDriversPath): void;
 }
@@ -189,9 +187,9 @@ class KnownDriversValidator
 
 Each assertion:
 - Reads `known-drivers.php`
-- Locates the referenced sibling/skeleton packages on disk via `$packagesDir`
+- For `assertSkeletonSuggestContainsAll`: locates skeleton's composer.json, compares its `suggest` block to known-drivers.php entries
 - **Skips gracefully** (not fails) when files missing — since static methods cannot call `markTestSkipped()` directly, throw `\PHPUnit\Framework\SkippedWithMessageException` which Pest treats as a skip
-- For `assertSkeletonSuggestContainsAll` specifically, also skip when skeleton.composer.json exists but has no `suggest` key yet — this is required because per-interface validation tests (005, 008-024) run BEFORE skeleton consolidation (025) in topological order
+- Also skip when skeleton.composer.json exists but has no `suggest` key yet — required because per-interface validation tests (005, 008-024) run BEFORE skeleton consolidation (025) in topological order
 - Asserts the expected sync invariant when files are present and populated
 
 **errors-advanced URL handling:**
@@ -200,22 +198,16 @@ The `PrettyHtmlFormatter::formatDevelopment` currently only renders `$report->me
 ## Risks & Mitigations
 
 - **Risk:** Refactoring 18 NoDriverException classes is touch-heavy; subtle bugs (typos in interface names, wrong docs URL pattern) could slip through.
-  **Mitigation:** The validation tests (task 005's pattern, replicated per interface in tasks 008-024) mechanically catch drift between known-drivers.php and the composer.json metadata. The docs URL derivation is centralized in one place (one helper per NoDriverException, or pulled into a shared helper).
+  **Mitigation:** The validation tests (task 005's pattern, replicated per interface in tasks 008-024) mechanically catch drift between known-drivers.php and skeleton suggest entries. The docs URL derivation is centralized in one place (one helper per NoDriverException).
 
-- **Risk:** Tests run in CI where all packages are present (monorepo), but a user installing marko/view standalone would fail validation tests if they're written naively.
-  **Mitigation:** Skip-gracefully behavior in `KnownDriversValidator`. Validate by running `marko/view` tests with marko/view-latte uninstalled as part of task 007 acceptance criteria.
-
-- **Risk:** Adding `conflict` declarations to ~25+ driver packages may break existing applications that intentionally co-install incompatible drivers (unlikely but possible during development).
-  **Mitigation:** This is the correct fail-loud behavior per Marko principles. Any app that worked accidentally with two drivers installed would have hit `BindingConflictException` at runtime anyway — failing at install time is strictly better. Document the change in the PR description.
+- **Risk:** Tests run in CI where all packages are present (monorepo), but a user installing marko/view standalone could fail validation tests if they're written naively.
+  **Mitigation:** Skip-gracefully behavior in `KnownDriversValidator` (skips when skeleton.composer.json is missing). Validate by running `marko/view` tests with marko/view-latte uninstalled as part of task 007 acceptance criteria.
 
 - **Risk:** `errors-advanced` URL linkification could break existing output formatting if the regex over-matches (e.g., catching text that looks URL-ish but isn't).
   **Mitigation:** Conservative regex pattern (require `http://` or `https://` prefix; stop at whitespace or `<`). Add regression tests for non-URL text passing through unchanged. Tests run before merge.
 
 - **Risk:** Skeleton consolidation task (025) creates a long, hard-to-read suggest block in composer.json.
   **Mitigation:** Composer suggest is read at install time only, never at runtime. Length is a one-time cost during scaffolding. The recommended-first ordering with descriptions makes it navigable.
-
-- **Risk:** Single-driver interface validation tests are vacuous (no siblings to compare conflict blocks against). The test may pass even if real misconfiguration exists.
-  **Mitigation:** Vacuous-but-correct is acceptable for v1. When a second driver is added to any of these interfaces, the validation test starts doing real work without code changes — that's a feature. Documented in task 018-024.
 
 - **Risk:** The `admin/NoDriverException` excluded from this plan could confuse maintainers who see other packages refactored but admin left behind.
   **Mitigation:** Add a one-line code comment in `admin/NoDriverException` flagging it as vestigial pending investigation. Document in PR.

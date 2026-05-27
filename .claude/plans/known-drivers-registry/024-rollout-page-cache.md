@@ -10,7 +10,7 @@ Apply the single-driver variant to `marko/page-cache`. The page-cache family has
 ## Context
 - Driver: `marko/page-cache-file`
 - Add-on (NOT enrolled in known-drivers.php): `marko/page-cache-entity`
-- `marko/page-cache-entity` will appear in skeleton's suggest block (added in task 025) but is NOT subject to conflict declarations or driver-list validation.
+- `marko/page-cache-entity` will appear in skeleton's suggest block (added in task 025) but is NOT enrolled in known-drivers.php (add-on, not a driver).
 
 **Description text for known-drivers.php:**
 - `marko/page-cache-file` → `'File-based page cache driver'`
@@ -19,21 +19,18 @@ Apply the single-driver variant to `marko/page-cache`. The page-cache family has
 1. Create `packages/page-cache/known-drivers.php` with ONLY the file driver entry
 2. Refactor `packages/page-cache/src/Exceptions/NoDriverException.php`. **Note:** unlike the other 17 NoDriverException classes (which use a `noDriverInstalled()` factory), page-cache's current factory is `noBinding()`. **Rename it to `noDriverInstalled()` for consistency** with the rest of the codebase as part of this refactor. Confirm no callers exist (per plan scope notes, the exception is currently unused — `NoDriverException` factories are not yet wired to any throw site). Update the existing test `packages/page-cache/tests/Unit/Exceptions/NoDriverExceptionTest.php` to use the new method name.
 3. Add `packages/page-cache/tests/KnownDriversValidationTest.php`
-4. Verify `page-cache-entity`'s composer.json has NO `conflict` block (it should coexist with the file driver) — currently verified at plan creation: no `conflict` block present.
-5. Add `marko/testing` to `packages/page-cache/composer.json` `require-dev` if not already present (verify against current composer.json)
+4. Add `marko/testing` to `packages/page-cache/composer.json` `require-dev` if not already present (verify against current composer.json)
 
 ## Requirements (Test Descriptions)
 - [ ] `it ships a known-drivers.php file listing only marko/page-cache-file`
 - [ ] `it does not list marko/page-cache-entity (add-on, not driver)`
 - [ ] `page-cache NoDriverException reads from known-drivers.php and includes docs URL`
 - [ ] `page-cache NoDriverException exposes a noDriverInstalled() factory (renamed from noBinding for consistency)`
-- [ ] `marko/page-cache-entity does not declare a conflict with marko/page-cache-file`
 - [ ] `validation test passes`
 
 ## Acceptance Criteria
 - `packages/page-cache/known-drivers.php` exists with the single entry
 - `NoDriverException` refactored
-- `page-cache-entity/composer.json` does NOT have a conflict against page-cache-file (verify; should already be absent)
 - Validation test passes
 - Existing page-cache tests still pass
 - Code follows code standards

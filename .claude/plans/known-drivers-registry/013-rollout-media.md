@@ -20,21 +20,17 @@ Apply the pilot pattern to `marko/media`. Two drivers: `media-gd`, `media-imagic
 ## Sub-steps
 1. Create `packages/media/known-drivers.php`
 2. Refactor `packages/media/src/Exceptions/NoDriverException.php`. Update existing `packages/media/tests/Exceptions/NoDriverExceptionTest.php` to match the new output format.
-3. Add mutual `conflict` blocks to both driver composer.json files
-4. Add `packages/media/tests/KnownDriversValidationTest.php`
-5. Verify `marko/testing` is in `packages/media/composer.json` `require-dev`; add it if missing
+3. Add `packages/media/tests/KnownDriversValidationTest.php`
+4. Verify `marko/testing` is in `packages/media/composer.json` `require-dev`; add it if missing
 
 ## Requirements (Test Descriptions)
 - [ ] `it ships a known-drivers.php file listing both media drivers`
 - [ ] `it lists marko/media-gd first as the recommended driver`
 - [ ] `media NoDriverException reads from known-drivers.php and includes docs URLs`
-- [ ] `each media driver declares conflict with the sibling driver`
-- [ ] `validation test confirms conflict blocks match known-drivers list`
 
 ## Acceptance Criteria
 - `packages/media/known-drivers.php` exists
 - `NoDriverException` refactored
-- Both driver composer.json files have correctly-populated `conflict` blocks
 - Validation test passes
 - Existing media tests still pass
 - Code follows code standards

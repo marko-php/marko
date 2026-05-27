@@ -22,23 +22,18 @@ Apply the pilot pattern to `marko/inertia`. Three drivers: `inertia-react`, `ine
 ## Sub-steps
 1. Create `packages/inertia/known-drivers.php`
 2. **Create** `packages/inertia/src/Exceptions/NoDriverException.php` (file does not exist yet) using the established pattern from task 003. Add a corresponding `packages/inertia/tests/Exceptions/NoDriverExceptionTest.php`.
-3. Add mutual `conflict` blocks to all three driver composer.json files (each lists the other two)
-4. Add `packages/inertia/tests/KnownDriversValidationTest.php` using `KnownDriversValidator`
-5. Add `marko/testing` to `packages/inertia/composer.json` `require-dev` (needed for the validation test)
+3. Add `packages/inertia/tests/KnownDriversValidationTest.php` using `KnownDriversValidator`
+4. Add `marko/testing` to `packages/inertia/composer.json` `require-dev` (needed for the validation test)
 
-**Note:** Inertia drivers represent frontend framework choice — fundamentally not mixable (a single Inertia app uses one frontend). The conflict declaration is correct here.
 
 ## Requirements (Test Descriptions)
 - [ ] `it ships a known-drivers.php file listing all three inertia drivers`
 - [ ] `it lists marko/inertia-react first as the recommended driver`
 - [ ] `inertia NoDriverException reads from known-drivers.php and includes docs URLs`
-- [ ] `each inertia driver declares conflict with both other drivers`
-- [ ] `validation test confirms conflict blocks match known-drivers list`
 
 ## Acceptance Criteria
 - `packages/inertia/known-drivers.php` exists with three entries
 - `NoDriverException` exists (created if missing) and reads from known-drivers.php
-- All three driver composer.json files have correctly-populated `conflict` blocks listing both siblings
 - Validation test passes
 - Existing inertia tests still pass
 - Code follows code standards

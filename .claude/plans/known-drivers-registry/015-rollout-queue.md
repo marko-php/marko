@@ -21,21 +21,17 @@ Apply the pilot pattern to `marko/queue`. Three drivers: `queue-sync`, `queue-da
 ## Sub-steps
 1. Create `packages/queue/known-drivers.php`
 2. Refactor `packages/queue/src/Exceptions/NoDriverException.php`. Update existing `packages/queue/tests/NoDriverExceptionTest.php` to match the new output format.
-3. Add mutual `conflict` blocks to all three driver composer.json files (each lists the other two)
-4. Add `packages/queue/tests/KnownDriversValidationTest.php`
-5. Verify `marko/testing` is in `packages/queue/composer.json` `require-dev`; add it if missing
+3. Add `packages/queue/tests/KnownDriversValidationTest.php`
+4. Verify `marko/testing` is in `packages/queue/composer.json` `require-dev`; add it if missing
 
 ## Requirements (Test Descriptions)
 - [ ] `it ships a known-drivers.php file listing all three queue drivers`
 - [ ] `it lists marko/queue-sync first as the recommended development default`
 - [ ] `queue NoDriverException reads from known-drivers.php and includes docs URLs`
-- [ ] `each queue driver declares conflict with both other drivers`
-- [ ] `validation test confirms conflict blocks match known-drivers list`
 
 ## Acceptance Criteria
 - `packages/queue/known-drivers.php` exists with three entries
 - `NoDriverException` refactored
-- All three driver composer.json files have correctly-populated `conflict` blocks listing both siblings
 - Validation test passes
 - Existing queue tests still pass
 - Code follows code standards
