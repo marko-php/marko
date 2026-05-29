@@ -72,6 +72,7 @@ body:
         - database-readwrite
         - debugbar
         - devserver
+        - docs
         - encryption
         - encryption-openssl
         - env
