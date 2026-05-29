@@ -1,0 +1,9 @@
+{
+    "name": "foo/baz",
+    "description": "Vendor package two levels deep without a module.php manifest",
+    "autoload": {
+        "psr-4": {
+            "Foo\\Baz\\": "src/"
+        }
+    }
+}
