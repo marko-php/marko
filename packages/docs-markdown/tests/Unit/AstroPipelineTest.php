@@ -35,10 +35,12 @@ it('renders the same pages count as before the migration', function () use ($sym
         }
     }
 
-    // Current develop content migrated into the package: 119 pages
-    // (.md + .mdx). The ai-assisted-development section adds more in a
-    // later phase; this count tracks the migrated baseline.
-    expect($count)->toBe(119);
+    // Migration-integrity guard: the symlinked source must expose at least
+    // the migrated baseline of 119 pages (.md + .mdx). Asserted as a floor,
+    // not an exact count, so adding new doc pages in later phases doesn't
+    // churn this test — the invariant we care about is "no pages were lost
+    // in the move," not a frozen total.
+    expect($count)->toBeGreaterThanOrEqual(119);
 });
 
 it('preserves image and asset paths through the rename', function () use ($packageDocs): void {

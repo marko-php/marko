@@ -83,6 +83,7 @@ body:
         - layout
         - log
         - log-file
+        - lsp
         - mail
         - mail-log
         - mail-smtp
