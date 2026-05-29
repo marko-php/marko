@@ -242,6 +242,7 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | Package | Type | Description |
 |---------|------|-------------|
 | `marko/docs` | Interface | `DocsSearchInterface` — contract for searching Marko documentation; ships no driver |
+| `marko/docs-markdown` | Content | Canonical Marko docs content as a Composer module; the marko.build site symlinks to it and search drivers index it |
 
 ---
 

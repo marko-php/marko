@@ -16,6 +16,15 @@ latteGrammar.name = 'latte';
 export default defineConfig({
 	site: 'https://marko.build',
 	base: '/docs',
+	// Docs content is symlinked from packages/docs-markdown/docs. preserveSymlinks
+	// keeps Vite resolving imports (e.g. @astrojs/starlight/components in .mdx
+	// pages) from the symlink path so they find docs/node_modules, not the
+	// package's real location which has no node_modules.
+	vite: {
+		resolve: {
+			preserveSymlinks: true,
+		},
+	},
 	integrations: [
 		starlight({
 			title: 'MARKO DOCS',
