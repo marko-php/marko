@@ -1,0 +1,9 @@
+{
+    "name": "local/deep",
+    "description": "Deeply nested modules directory package",
+    "autoload": {
+        "psr-4": {
+            "Local\\Deep\\": "src/"
+        }
+    }
+}

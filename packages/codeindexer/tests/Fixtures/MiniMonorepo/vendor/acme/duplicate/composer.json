@@ -1,0 +1,9 @@
+{
+    "name": "acme/duplicate",
+    "description": "Vendor-level duplicate module that the app-level module overrides",
+    "autoload": {
+        "psr-4": {
+            "Acme\\Duplicate\\": "src/"
+        }
+    }
+}

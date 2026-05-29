@@ -49,6 +49,7 @@ body:
         - cache-file
         - cache-redis
         - cli
+        - codeindexer
         - config
         - core
         - cors
