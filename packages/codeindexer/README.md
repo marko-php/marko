@@ -27,4 +27,4 @@ marko indexer:rebuild
 
 ## Documentation
 
-Full API reference and configuration: [marko/codeindexer](https://marko.build/docs/ai-assisted-development/codeindexer/)
+Full usage, API reference, and examples: [marko/codeindexer](https://marko.build/docs/packages/codeindexer/)
