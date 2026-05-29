@@ -114,6 +114,10 @@
         },
         {
             "type": "path",
+            "url": "packages/docs"
+        },
+        {
+            "type": "path",
             "url": "packages/encryption"
         },
         {
@@ -381,6 +385,7 @@
         "marko/database-pgsql": "self.version",
         "marko/database-readwrite": "self.version",
         "marko/devserver": "self.version",
+        "marko/docs": "self.version",
         "marko/encryption": "self.version",
         "marko/encryption-openssl": "self.version",
         "marko/env": "self.version",
@@ -502,6 +507,7 @@
             "Marko\\Database\\ReadWrite\\Tests\\": "packages/database-readwrite/tests/",
             "Marko\\Debugbar\\Tests\\": "packages/debugbar/tests/",
             "Marko\\DevServer\\Tests\\": "packages/devserver/tests/",
+            "Marko\\Docs\\Tests\\": "packages/docs/tests/",
             "Marko\\Encryption\\Tests\\": "packages/encryption/tests/",
             "Marko\\Encryption\\OpenSsl\\Tests\\": "packages/encryption-openssl/tests/",
             "Marko\\Env\\Tests\\": "packages/env/tests/",

@@ -237,6 +237,12 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/codeindexer` | Tool | Static analysis indexer — attributes, configs, templates, translations into a cached symbol table |
 | `marko/claude-plugins` | Tool | Claude Code marketplace and plugins (marko-skills, marko-lsp, marko-mcp) for AI-assisted development |
 
+### Documentation Search
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/docs` | Interface | `DocsSearchInterface` — contract for searching Marko documentation; ships no driver |
+
 ---
 
 ## Naming Conventions
