@@ -59,6 +59,7 @@ body:
         - database-pgsql
         - database-readwrite
         - debugbar
+        - devai
         - devserver
         - docs
         - docs-fts

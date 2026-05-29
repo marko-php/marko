@@ -27,7 +27,9 @@ claude mcp add marko-mcp -- marko mcp:serve
 
 ## Tools
 
-Always available (backed by the code index):
+Always available (13 total):
+
+Index-backed tools (10):
 
 | Tool | Purpose |
 |------|---------|
@@ -38,14 +40,19 @@ Always available (backed by the code index):
 | `resolve_template` | Resolve a `module::template` to an absolute path |
 | `get_config_schema`, `check_config_key` | Inspect config keys |
 | `validate_module` | Validate a module's structure |
-| `app_info` | PHP / Marko / DB engine / installed package versions |
 
-Runtime tools (degrade gracefully when their dependency isn't present):
+Runtime tools (3):
+
+| Tool | Notes |
+|------|-------|
+| `app_info` | Application name and installed package versions |
+| `read_log_entries` | Reads recent log entries; filter by `level` (use `level: error, limit: 1` for the most recent error) |
+| `run_console_command` | Runs a `marko` CLI command and captures output |
+
+Conditional tools (registered only when their dependency is present):
 
 | Tool | Requires | Notes |
 |------|----------|-------|
-| `read_log_entries` | a log directory | Reads recent log entries; filter by `level` (use `level: error, limit: 1` for the most recent error) |
-| `run_console_command` | — | Runs a `marko` CLI command and captures output |
 | `query_database` | a `marko/database` driver | Read-only by default; registered only when a DB connection is available |
 | `search_docs` | a docs driver (`marko/docs-fts` / `marko/docs-vec`) | Registered only when a `DocsSearchInterface` is bound |
 

@@ -1,0 +1,42 @@
+{
+    "name": "marko/devai",
+    "description": "AI development tooling installer/orchestrator for Marko Framework — wires MCP, LSP, and per-agent configs",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "self.version",
+        "marko/cli": "self.version",
+        "marko/mcp": "self.version",
+        "marko/lsp": "self.version",
+        "marko/docs": "self.version",
+        "marko/claude-plugins": "self.version"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0"
+    },
+    "suggest": {
+        "marko/docs-fts": "Full-text docs search driver (recommended default — enables search_docs out of the box; run `marko docs-fts:build` after install)",
+        "marko/docs-vec": "Semantic vector docs search driver (alternative to docs-fts with richer relevance; requires a one-time model download)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\DevAi\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\DevAi\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

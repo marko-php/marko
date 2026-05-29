@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-// Skipped until the marko/devai phase. The ai-assisted-development section
-// documents mcp, lsp, devai, and the per-agent integrations — none of which
-// exist on develop yet. The section content is added to this package and this
-// test is un-skipped together with marko/devai in a later split PR.
+// The ai-assisted-development section documents mcp, lsp, devai, and the
+// per-agent integrations. The section content and this assertion landed
+// together with marko/devai.
 it('adds an AI-assisted development section with required pages', function () {
     $docsRoot = dirname(__DIR__, 2) . '/docs/ai-assisted-development';
     $required = [
@@ -22,4 +21,4 @@ it('adds an AI-assisted development section with required pages', function () {
         expect(str_starts_with($content, '---'))->toBeTrue("Missing frontmatter in $rel");
         expect(str_contains($content, 'title:'))->toBeTrue("Missing title frontmatter in $rel");
     }
-})->skip('ai-assisted-development section lands with marko/devai (later split PR)');
+});
