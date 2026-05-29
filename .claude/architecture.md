@@ -238,6 +238,7 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/lsp` | Tool | Language Server Protocol implementation — Marko-aware completions, diagnostics, navigation; reads the codeindexer index |
 | `marko/mcp` | Tool | MCP server exposing Marko codebase introspection to AI agents; reads the codeindexer index, with optional docs-search and runtime tools |
 | `marko/claude-plugins` | Tool | Claude Code marketplace and plugins (marko-skills, marko-lsp, marko-mcp) for AI-assisted development |
+| `marko/devai` | Tool | One-command installer that wires MCP + LSP + skills into six coding agents; requires `marko/docs` (driver is the user's choice) |
 
 ### Documentation Search
 

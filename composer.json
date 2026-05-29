@@ -110,6 +110,10 @@
         },
         {
             "type": "path",
+            "url": "packages/devai"
+        },
+        {
+            "type": "path",
             "url": "packages/devserver"
         },
         {
@@ -404,6 +408,7 @@
         "marko/database-mysql": "self.version",
         "marko/database-pgsql": "self.version",
         "marko/database-readwrite": "self.version",
+        "marko/devai": "self.version",
         "marko/devserver": "self.version",
         "marko/docs": "self.version",
         "marko/docs-fts": "self.version",
@@ -531,6 +536,7 @@
             "Marko\\Database\\PgSql\\Tests\\": "packages/database-pgsql/tests/",
             "Marko\\Database\\ReadWrite\\Tests\\": "packages/database-readwrite/tests/",
             "Marko\\Debugbar\\Tests\\": "packages/debugbar/tests/",
+            "Marko\\DevAi\\Tests\\": "packages/devai/tests/",
             "Marko\\DevServer\\Tests\\": "packages/devserver/tests/",
             "Marko\\Docs\\Tests\\": "packages/docs/tests/",
             "Marko\\DocsFts\\Tests\\": "packages/docs-fts/tests/",
@@ -595,10 +601,13 @@
             "Marko\\View\\Latte\\Tests\\": "packages/view-latte/tests/",
             "Marko\\View\\Twig\\Tests\\": "packages/view-twig/tests/",
             "Marko\\Vite\\Tests\\": "packages/vite/tests/",
-            "Marko\\Webhook\\Tests\\": "packages/webhook/tests/"
+            "Marko\\Webhook\\Tests\\": "packages/webhook/tests/",
+            "Marko\\Skeleton\\": "packages/skeleton/src/",
+            "Marko\\Skeleton\\Tests\\": "packages/skeleton/tests/"
         },
         "files": [
-            "packages/database-mysql/tests/Connection/Helpers.php"
+            "packages/database-mysql/tests/Connection/Helpers.php",
+            "packages/devai/tests/Helpers.php"
         ]
     }
 }
