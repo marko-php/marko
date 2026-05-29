@@ -118,7 +118,15 @@
         },
         {
             "type": "path",
+            "url": "packages/docs-fts"
+        },
+        {
+            "type": "path",
             "url": "packages/docs-markdown"
+        },
+        {
+            "type": "path",
+            "url": "packages/docs-vec"
         },
         {
             "type": "path",
@@ -394,7 +402,9 @@
         "marko/database-readwrite": "self.version",
         "marko/devserver": "self.version",
         "marko/docs": "self.version",
+        "marko/docs-fts": "self.version",
         "marko/docs-markdown": "self.version",
+        "marko/docs-vec": "self.version",
         "marko/encryption": "self.version",
         "marko/encryption-openssl": "self.version",
         "marko/env": "self.version",
@@ -518,7 +528,9 @@
             "Marko\\Debugbar\\Tests\\": "packages/debugbar/tests/",
             "Marko\\DevServer\\Tests\\": "packages/devserver/tests/",
             "Marko\\Docs\\Tests\\": "packages/docs/tests/",
+            "Marko\\DocsFts\\Tests\\": "packages/docs-fts/tests/",
             "Marko\\DocsMarkdown\\Tests\\": "packages/docs-markdown/tests/",
+            "Marko\\DocsVec\\Tests\\": "packages/docs-vec/tests/",
             "Marko\\Encryption\\Tests\\": "packages/encryption/tests/",
             "Marko\\Encryption\\OpenSsl\\Tests\\": "packages/encryption-openssl/tests/",
             "Marko\\Env\\Tests\\": "packages/env/tests/",

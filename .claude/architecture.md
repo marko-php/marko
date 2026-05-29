@@ -243,7 +243,9 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | Package | Type | Description |
 |---------|------|-------------|
 | `marko/docs` | Interface | `DocsSearchInterface` — contract for searching Marko documentation; ships no driver |
+| `marko/docs-fts` | Driver | Lexical search driver — SQLite FTS5/BM25; no model required |
 | `marko/docs-markdown` | Content | Canonical Marko docs content as a Composer module; the marko.build site symlinks to it and search drivers index it |
+| `marko/docs-vec` | Driver | Hybrid search driver — FTS5 + sqlite-vec semantic ranking with on-demand ONNX model |
 
 ---
 
