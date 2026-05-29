@@ -89,6 +89,7 @@ body:
         - mail
         - mail-log
         - mail-smtp
+        - mcp
         - media
         - media-gd
         - media-imagick

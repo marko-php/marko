@@ -230,6 +230,10 @@
         },
         {
             "type": "path",
+            "url": "packages/mcp"
+        },
+        {
+            "type": "path",
             "url": "packages/media"
         },
         {
@@ -430,6 +434,7 @@
         "marko/mail": "self.version",
         "marko/mail-log": "self.version",
         "marko/mail-smtp": "self.version",
+        "marko/mcp": "self.version",
         "marko/media": "self.version",
         "marko/media-gd": "self.version",
         "marko/media-imagick": "self.version",
@@ -556,6 +561,7 @@
             "Marko\\Mail\\Tests\\": "packages/mail/tests/",
             "Marko\\Mail\\Log\\Tests\\": "packages/mail-log/tests/",
             "Marko\\Mail\\Smtp\\Tests\\": "packages/mail-smtp/tests/",
+            "Marko\\Mcp\\Tests\\": "packages/mcp/tests/",
             "Marko\\Media\\Tests\\": "packages/media/tests/",
             "Marko\\MediaGd\\Tests\\": "packages/media-gd/tests/",
             "Marko\\MediaImagick\\Tests\\": "packages/media-imagick/tests/",
