@@ -61,6 +61,7 @@ body:
         - debugbar
         - devserver
         - docs
+        - docs-markdown
         - encryption
         - encryption-openssl
         - env

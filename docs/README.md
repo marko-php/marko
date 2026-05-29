@@ -1,49 +1,56 @@
-# Starlight Starter Kit: Basics
+# marko.build docs site
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+The [marko.build/docs](https://marko.build/docs/) documentation site, built with [Astro](https://astro.build/) + [Starlight](https://starlight.astro.build/).
 
-```
-npm create astro@latest -- --template starlight
-```
+## Content lives in `marko/docs-markdown`
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+The documentation content is **not** stored in this directory. It lives in the `marko/docs-markdown` package so the docs are a first-class Composer module — the same content the AI search drivers (`marko/docs-fts`, `marko/docs-vec`) index is what this site renders. One source of truth, not a copy.
 
-## 🚀 Project Structure
-
-Inside of your Astro + Starlight project, you'll see the following folders and files:
+`src/content/docs` is a **symlink** into that package:
 
 ```
-.
-├── public/
+docs/src/content/docs  →  ../../../packages/docs-markdown/docs
+```
+
+To edit a docs page, edit the file under `packages/docs-markdown/docs/` (or through the symlink — they are the same file).
+
+### Windows: enable symlink support
+
+Git symlinks work out of the box on macOS and Linux. On Windows, enable symlink support **before** cloning (or re-checkout after enabling):
+
+```bash
+git config --global core.symlinks true
+```
+
+You also need [Developer Mode](https://learn.microsoft.com/windows/apps/get-started/enable-your-device-for-development) enabled (or run git as administrator) so Windows permits symlink creation. With that set, `src/content/docs` resolves to the package content and the site builds normally.
+
+> This affects **only** local builds of this website on Windows. The AI tooling (`codeindexer`, `docs-fts`, `docs-vec`, `mcp`, `lsp`) reads the package's real `docs/` directory directly — never the symlink — so it works identically on every platform regardless of this setting.
+
+## Commands
+
+All commands are run from the `docs/` directory:
+
+| Command | Action |
+| :------ | :----- |
+| `npm install` | Install dependencies |
+| `npm run dev` | Start local dev server at `localhost:4321` |
+| `npm run build` | Build the production site to `./dist/` |
+| `npm run preview` | Preview the build locally before deploying |
+
+## Structure
+
+```
+docs/
 ├── src/
-│   ├── assets/
+│   ├── assets/            # Images and static assets (live here, not in the package)
+│   ├── components/        # Astro components
 │   ├── content/
-│   │   └── docs/
+│   │   └── docs  ───────▶ symlink to packages/docs-markdown/docs
 │   └── content.config.ts
 ├── astro.config.mjs
-├── package.json
-└── tsconfig.json
+└── package.json
 ```
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+## Learn more
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
-
-Static assets, like favicons, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+[Starlight docs](https://starlight.astro.build/) · [Astro docs](https://docs.astro.build)
