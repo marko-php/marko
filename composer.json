@@ -102,7 +102,7 @@
         },
         {
             "type": "path",
-            "url": "packages/dev-server"
+            "url": "packages/devserver"
         },
         {
             "type": "path",
@@ -266,7 +266,7 @@
         },
         {
             "type": "path",
-            "url": "packages/rate-limiting"
+            "url": "packages/ratelimiter"
         },
         {
             "type": "path",
@@ -370,7 +370,7 @@
         "marko/database-mysql": "self.version",
         "marko/database-pgsql": "self.version",
         "marko/database-readwrite": "self.version",
-        "marko/dev-server": "self.version",
+        "marko/devserver": "self.version",
         "marko/encryption": "self.version",
         "marko/encryption-openssl": "self.version",
         "marko/env": "self.version",
@@ -411,7 +411,7 @@
         "marko/queue-database": "self.version",
         "marko/queue-rabbitmq": "self.version",
         "marko/queue-sync": "self.version",
-        "marko/rate-limiting": "self.version",
+        "marko/ratelimiter": "self.version",
         "marko/routing": "self.version",
         "marko/scheduler": "self.version",
         "marko/search": "self.version",
@@ -489,7 +489,7 @@
             "Marko\\Database\\PgSql\\Tests\\": "packages/database-pgsql/tests/",
             "Marko\\Database\\ReadWrite\\Tests\\": "packages/database-readwrite/tests/",
             "Marko\\Debugbar\\Tests\\": "packages/debugbar/tests/",
-            "Marko\\DevServer\\Tests\\": "packages/dev-server/tests/",
+            "Marko\\DevServer\\Tests\\": "packages/devserver/tests/",
             "Marko\\Encryption\\Tests\\": "packages/encryption/tests/",
             "Marko\\Encryption\\OpenSsl\\Tests\\": "packages/encryption-openssl/tests/",
             "Marko\\Env\\Tests\\": "packages/env/tests/",
@@ -530,7 +530,7 @@
             "Marko\\Queue\\Database\\Tests\\": "packages/queue-database/tests/",
             "Marko\\Queue\\Rabbitmq\\Tests\\": "packages/queue-rabbitmq/tests/",
             "Marko\\Queue\\Sync\\Tests\\": "packages/queue-sync/tests/",
-            "Marko\\RateLimiting\\Tests\\": "packages/rate-limiting/tests/",
+            "Marko\\RateLimiter\\Tests\\": "packages/ratelimiter/tests/",
             "Marko\\Routing\\Tests\\": "packages/routing/tests/",
             "Marko\\Scheduler\\Tests\\": "packages/scheduler/tests/",
             "Marko\\Search\\Tests\\": "packages/search/tests/",

@@ -298,7 +298,7 @@ Marko ships as composable packages — require only what you need. Every package
 | [hashing](packages/hashing/README.md) | Password hashing |
 | [security](packages/security/README.md) | Security utilities and middleware |
 | [cors](packages/cors/README.md) | Cross-Origin Resource Sharing |
-| [rate-limiting](packages/rate-limiting/README.md) | Request rate limiting |
+| [ratelimiter](packages/ratelimiter/README.md) | Request rate limiting |
 
 ### Admin
 
@@ -324,7 +324,7 @@ Marko ships as composable packages — require only what you need. Every package
 | [scheduler](packages/scheduler/README.md) | Task scheduling |
 | [health](packages/health/README.md) | Health check endpoints |
 | [webhook](packages/webhook/README.md) | Webhook handling |
-| [dev-server](packages/dev-server/README.md) | Local development server |
+| [devserver](packages/devserver/README.md) | Local development server |
 
 ### Testing
 

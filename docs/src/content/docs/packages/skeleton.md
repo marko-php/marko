@@ -73,7 +73,7 @@ marko up
 
 | Package | Description |
 |---|---|
-| [`marko/dev-server`](/docs/packages/dev-server/) | `marko up` / `marko down` development environment |
+| [`marko/devserver`](/docs/packages/devserver/) | `marko up` / `marko down` development environment |
 | `pestphp/pest` | Testing framework |
 
 ## Environment Configuration

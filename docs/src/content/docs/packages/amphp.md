@@ -39,9 +39,9 @@ Press `Ctrl+C` to stop the listener gracefully.
 
 ### Development server auto-detection
 
-When using [marko/dev-server](/docs/packages/dev-server/), add `pubsub:listen` to your processes configuration so it starts alongside the web server:
+When using [marko/devserver](/docs/packages/devserver/), add `pubsub:listen` to your processes configuration so it starts alongside the web server:
 
-```php title="config/dev-server.php"
+```php title="config/dev.php"
 return [
     'processes' => [
         'pubsub' => 'marko pubsub:listen',
