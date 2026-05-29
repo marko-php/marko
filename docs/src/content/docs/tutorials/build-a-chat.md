@@ -29,7 +29,7 @@ composer require marko/core marko/routing marko/config marko/env \
     marko/database marko/database-pgsql \
     marko/authentication marko/session marko/session-database \
     marko/pubsub marko/pubsub-redis marko/sse \
-    marko/view marko/view-latte marko/dev-server
+    marko/view marko/view-latte marko/devserver
 ```
 
 ## Step 2: Configure Redis PubSub

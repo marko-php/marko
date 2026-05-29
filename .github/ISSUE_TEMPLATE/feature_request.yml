@@ -57,7 +57,7 @@ body:
         - database-pgsql
         - database-readwrite
         - debugbar
-        - dev-server
+        - devserver
         - encryption
         - encryption-openssl
         - env
@@ -98,7 +98,7 @@ body:
         - queue-database
         - queue-rabbitmq
         - queue-sync
-        - rate-limiting
+        - ratelimiter
         - routing
         - scheduler
         - search
