@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{Vendor}}\{{Name}}\Tests\Plugins;
+
+use {{Vendor}}\{{Name}}\Plugins\{{TargetClass}}Plugin;
+use {{TargetClass}};
+
+describe('{{TargetClass}}Plugin', function (): void {
+    beforeEach(function (): void {
+        $this->plugin = new {{TargetClass}}Plugin();
+    });
+
+    it('before methodName returns null to pass through when no interception is needed', function (): void {
+        $result = $this->plugin->methodName(/* test arguments */);
+
+        expect($result)->toBeNull();
+    });
+
+    it('before methodName returns array to modify arguments', function (): void {
+        // Example: return [$modifiedArg1, $modifiedArg2] to replace the original arguments
+        $result = $this->plugin->methodName(/* original arguments */);
+
+        expect($result)->toBeArray();
+    });
+
+    it('before methodName short-circuits when condition is met', function (): void {
+        // Example: return a non-null, non-array value to skip the original method
+        $result = $this->plugin->methodName(/* triggering arguments */);
+
+        expect($result)->not->toBeNull()
+            ->and($result)->not->toBeArray();
+    });
+
+    it('after methodName returns the (possibly modified) result', function (): void {
+        $originalResult = /* sample return value from target */null;
+
+        $result = $this->plugin->methodName($originalResult /* , ...args */);
+
+        expect($result)->toBe($originalResult);
+    });
+
+    it('after methodName enriches the result', function (): void {
+        $originalResult = /* sample input result */[];
+
+        $result = $this->plugin->methodName($originalResult /* , ...args */);
+
+        // Assert that the returned result contains the expected enrichment
+        expect($result)->toBeArray();
+    });
+});
