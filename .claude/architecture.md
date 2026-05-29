@@ -235,6 +235,7 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | Package | Type | Description |
 |---------|------|-------------|
 | `marko/codeindexer` | Tool | Static analysis indexer — attributes, configs, templates, translations into a cached symbol table |
+| `marko/lsp` | Tool | Language Server Protocol implementation — Marko-aware completions, diagnostics, navigation; reads the codeindexer index |
 | `marko/claude-plugins` | Tool | Claude Code marketplace and plugins (marko-skills, marko-lsp, marko-mcp) for AI-assisted development |
 
 ### Documentation Search
