@@ -66,6 +66,10 @@
         },
         {
             "type": "path",
+            "url": "packages/claude-plugins"
+        },
+        {
+            "type": "path",
             "url": "packages/cli"
         },
         {
@@ -366,6 +370,7 @@
         "marko/cache-array": "self.version",
         "marko/cache-file": "self.version",
         "marko/cache-redis": "self.version",
+        "marko/claude-plugins": "self.version",
         "marko/cli": "self.version",
         "marko/codeindexer": "self.version",
         "marko/config": "self.version",
@@ -485,6 +490,7 @@
             "Marko\\Cache\\File\\Tests\\": "packages/cache-file/tests/",
             "Marko\\Cache\\Memory\\Tests\\": "packages/cache-array/tests/",
             "Marko\\Cache\\Redis\\Tests\\": "packages/cache-redis/tests/",
+            "Marko\\ClaudePlugins\\Tests\\": "packages/claude-plugins/tests/",
             "Marko\\Cli\\Tests\\": "packages/cli/tests/",
             "Marko\\CodeIndexer\\Tests\\": "packages/codeindexer/tests/",
             "Marko\\Config\\Tests\\": "packages/config/tests/",

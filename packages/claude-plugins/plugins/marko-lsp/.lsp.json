@@ -1,0 +1,9 @@
+{
+  "marko-lsp": {
+    "command": "${CLAUDE_PLUGIN_ROOT}/bin/marko-lsp",
+    "args": [],
+    "extensionToLanguage": {
+      ".php": "php"
+    }
+  }
+}

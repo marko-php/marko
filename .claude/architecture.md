@@ -230,6 +230,13 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/validation` | Feature | Input validation |
 | `marko/framework` | Metapackage | Bundles common packages |
 
+### AI Development Tooling
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/codeindexer` | Tool | Static analysis indexer — attributes, configs, templates, translations into a cached symbol table |
+| `marko/claude-plugins` | Tool | Claude Code marketplace and plugins (marko-skills, marko-lsp, marko-mcp) for AI-assisted development |
+
 ---
 
 ## Naming Conventions

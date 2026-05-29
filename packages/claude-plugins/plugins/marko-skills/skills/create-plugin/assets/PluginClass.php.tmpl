@@ -1,0 +1,43 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{Vendor}}\{{Name}}\Plugins;
+
+use {{TargetClass}};
+use Marko\Core\Attributes\After;
+use Marko\Core\Attributes\Before;
+use Marko\Core\Attributes\Plugin;
+
+#[Plugin(target: {{TargetClass}}::class)]
+class {{TargetClass}}Plugin
+{
+    /**
+     * Before interceptor: runs before the target method.
+     *
+     * Return semantics:
+     *   null            → pass-through: original method runs with original arguments
+     *   array           → argument modification: original method runs with these values
+     *   any other value → short-circuit: original method is NOT called; this value is returned
+     */
+    #[Before(sortOrder: 10)]
+    public function methodName(/* same signature as target method */): null
+    {
+        // Observe, validate, or log without changing behavior — return null to pass through.
+        return null;
+    }
+
+    /**
+     * After interceptor: runs after the target method (or after a Before short-circuit).
+     *
+     * $result holds the return value of the original method (or the short-circuit value).
+     * Chain: when multiple After plugins target the same method, each one's return value
+     * feeds the next as $result. Always return the (possibly modified) result.
+     */
+    #[After(sortOrder: 10)]
+    public function methodName(mixed $result /* , ...same args as target */): mixed
+    {
+        // Transform or enrich the result, then return it.
+        return $result;
+    }
+}
