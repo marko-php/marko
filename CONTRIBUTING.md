@@ -70,6 +70,20 @@ From a clean `develop` branch:
 
 The script handles everything: merges develop into main, runs tests, tags, pushes, creates a GitHub Release with auto-generated notes, and returns develop to sync with main. Version format is `X.Y.Z` — no `v` prefix.
 
+## GitHub Actions
+
+When adding or editing workflows under `.github/workflows/`:
+
+- **Pin third-party actions to the latest stable major.** Currently that means `actions/checkout@v6`, etc. Older majors (`@v4`, `@v5`) emit Node deprecation warnings as GitHub rolls runners forward.
+- **Stay consistent with the rest of the repo.** Before introducing a new action version, grep the existing workflows — if `actions/checkout@v6` is already in use, match it rather than picking a different major.
+- **Don't pin to floating refs** (`@main`, `@master`). Majors are stable enough; floating refs are not.
+
+A quick check:
+
+```bash
+grep -rh 'uses: actions/' .github/workflows/ | sort -u
+```
+
 ## Code Standards
 
 See [`.claude/code-standards.md`](.claude/code-standards.md) for PHP-specific conventions (strict types, constructor promotion, type declarations, etc.).
