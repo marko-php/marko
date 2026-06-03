@@ -1,0 +1,30 @@
+name: README Package Catalog Check
+
+on:
+  pull_request:
+    paths:
+      - 'packages/**/composer.json'
+      - 'packages/*'
+      - 'README.md'
+      - 'bin/check-readme-packages.sh'
+      - '.github/workflows/readme-package-check.yml'
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'packages/**/composer.json'
+      - 'README.md'
+      - 'bin/check-readme-packages.sh'
+      - '.github/workflows/readme-package-check.yml'
+
+jobs:
+  check:
+    name: Catalog drift check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run drift check
+        run: bin/check-readme-packages.sh
