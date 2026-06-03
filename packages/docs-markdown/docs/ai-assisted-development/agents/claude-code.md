@@ -7,8 +7,14 @@ description: Set up Marko's AI tooling with Anthropic Claude Code — CLAUDE.md 
 
 ## Prerequisites
 
-- Claude Code installed: `npm install -g @anthropic-ai/claude-code`
-- Authenticated: `claude auth login`
+- **Claude Code installed.** The recommended method is the native installer (no Node.js required, auto-updates in the background):
+
+  ```bash
+  curl -fsSL https://claude.ai/install.sh | bash
+  ```
+
+  This covers macOS, Linux, and WSL; see the [Claude Code setup docs](https://docs.claude.com/en/docs/claude-code/setup) for Windows and other options. The legacy `npm install -g @anthropic-ai/claude-code` still works, but the native installer is now the preferred path.
+- **Authenticated.** Run `claude` in your terminal and complete the browser sign-in on first launch (there is no separate `auth login` command — use `/login` inside a session to switch or manage credentials). Run `claude doctor` to confirm the installation type.
 - `marko/devai` installed (see [Installation](../installation/))
 
 ## What devai:install writes
@@ -29,12 +35,13 @@ The installer writes merged Marko guidelines to `AGENTS.md`. The `CLAUDE.md` fil
 
 `devai:install` writes (or merges into) `.claude/settings.json` with two keys:
 
-- `extraKnownMarketplaces.marko` — registers the Marko plugin marketplace so Claude Code can fetch plugin metadata
-- `enabledPlugins` — activates `marko-skills@marko`, `marko-lsp@marko`, and `marko-mcp@marko`
+- `extraKnownMarketplaces.marko` — registers the Marko plugin marketplace so Claude Code can fetch plugin metadata.
 
-When run inside the Marko monorepo the marketplace source points to the local `packages/claude-plugins/plugins` path; for external projects it points to the `marko-php/marko` GitHub repo.
+  This is a named entry under Claude Code's `extraKnownMarketplaces` map. Its `source` tells Claude Code where to read the marketplace manifest (`.claude-plugin/marketplace.json`) from: when run inside the Marko monorepo the source is the local `packages/claude-plugins/plugins` path, and for external projects it is the `marko-php/marko` GitHub repo. Registering the marketplace does not install anything on its own — it only makes the `@marko` plugins discoverable.
 
-On first trust of the project folder, Claude Code fetches and installs the three plugins automatically.
+- `enabledPlugins` — activates `marko-skills@marko`, `marko-lsp@marko`, and `marko-mcp@marko`.
+
+  Each entry is a `plugin@marketplace` key set to `true`. Listing a plugin here tells Claude Code to install it from the registered marketplace and keep it enabled. On first trust of the project folder, Claude Code reads these entries and fetches the three plugins automatically — wiring the MCP server, the LSP server, and the scaffolding skills in a single step. `devai:install` only ever adds or replaces the `*@marko` entries, so any other plugins you have enabled are preserved.
 
 ### Plugins
 

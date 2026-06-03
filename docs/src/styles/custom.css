@@ -38,6 +38,11 @@
   --sl-color-accent: #3498db;
   --sl-color-accent-high: #7ec8e3;
 
+  /* Left sidebar width (Starlight default is 18.75rem). Starlight derives the
+     whole page layout from this single variable, so overriding it here is the
+     only change needed — content width (--sl-content-width) is independent. */
+  --sl-sidebar-width: 19.75rem;
+
   --sl-color-white: #fcfcfc;
   --sl-color-gray-1: #e8e8e8;
   --sl-color-gray-2: #bcbcbc;
