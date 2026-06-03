@@ -200,6 +200,14 @@ Marko ships as composable packages — require only what you need. Every package
 | [cache-file](packages/cache-file/README.md) | Filesystem cache driver |
 | [cache-redis](packages/cache-redis/README.md) | Redis cache driver |
 
+### Full-Page Caching
+
+| Package | Description |
+|---------|-------------|
+| [page-cache](packages/page-cache/README.md) | Full-page HTTP cache contracts and middleware |
+| [page-cache-file](packages/page-cache-file/README.md) | File-based page cache driver |
+| [page-cache-entity](packages/page-cache-entity/README.md) | Auto-purge page cache tags on entity save/delete |
+
 ### Session
 
 | Package | Description |
@@ -238,6 +246,7 @@ Marko ships as composable packages — require only what you need. Every package
 |---------|-------------|
 | [view](packages/view/README.md) | View contracts and template resolution |
 | [view-latte](packages/view-latte/README.md) | Latte template engine integration |
+| [view-twig](packages/view-twig/README.md) | Twig template engine integration |
 | [layout](packages/layout/README.md) | Attribute-driven layout system with slot-based component composition |
 
 ### Error Handling
@@ -308,6 +317,8 @@ Marko ships as composable packages — require only what you need. Every package
 | [admin-auth](packages/admin-auth/README.md) | Admin authentication |
 | [admin-api](packages/admin-api/README.md) | Admin REST API |
 | [admin-panel](packages/admin-panel/README.md) | Admin UI panel |
+| [admin-panel-latte](packages/admin-panel-latte/README.md) | Latte templates for admin panel |
+| [admin-panel-twig](packages/admin-panel-twig/README.md) | Twig templates for admin panel |
 
 ### Utilities
 
@@ -325,6 +336,36 @@ Marko ships as composable packages — require only what you need. Every package
 | [health](packages/health/README.md) | Health check endpoints |
 | [webhook](packages/webhook/README.md) | Webhook handling |
 | [devserver](packages/devserver/README.md) | Local development server |
+| [debugbar](packages/debugbar/README.md) | Development debugbar and request profiler |
+
+### Frontend & Build
+
+| Package | Description |
+|---------|-------------|
+| [vite](packages/vite/README.md) | Vite integration — asset manifest resolution and dev-server detection |
+| [inertia](packages/inertia/README.md) | Inertia.js protocol — middleware, response factory, shared data, SSR |
+| [inertia-react](packages/inertia-react/README.md) | React frontend marker binding for Inertia |
+| [inertia-svelte](packages/inertia-svelte/README.md) | Svelte frontend marker binding for Inertia |
+| [inertia-vue](packages/inertia-vue/README.md) | Vue 3 frontend marker binding for Inertia |
+
+### Documentation
+
+| Package | Description |
+|---------|-------------|
+| [docs](packages/docs/README.md) | Documentation search contracts |
+| [docs-markdown](packages/docs-markdown/README.md) | Canonical Marko documentation content |
+| [docs-fts](packages/docs-fts/README.md) | FTS5 lexical search driver for documentation |
+| [docs-vec](packages/docs-vec/README.md) | Hybrid FTS5 + sqlite-vec semantic search driver |
+
+### AI-Assisted Development
+
+| Package | Description |
+|---------|-------------|
+| [devai](packages/devai/README.md) | AI tooling installer/orchestrator — wires MCP, LSP, and per-agent configs |
+| [mcp](packages/mcp/README.md) | Model Context Protocol server exposing Marko codebase introspection |
+| [lsp](packages/lsp/README.md) | Language Server Protocol implementation for Marko semantics |
+| [codeindexer](packages/codeindexer/README.md) | Shared static-analysis library backing the AI tooling |
+| [claude-plugins](packages/claude-plugins/README.md) | Claude Code marketplace manifest and plugin assets |
 
 ### Testing
 
