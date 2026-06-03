@@ -106,7 +106,7 @@ $results['composer_update_output'] = implode("\n", array_slice($updateOutput, -5
 
 // Step 3: Run test suite (exclude destructive group to avoid recursion)
 exec(
-    'cd ' . escapeshellarg($root) . ' && ' . $php . ' vendor/bin/pest --parallel --exclude-group=integration-destructive 2>&1',
+    'cd ' . escapeshellarg($root) . ' && ' . $php . ' -d memory_limit=2G vendor/bin/pest --parallel --exclude-group=integration-destructive 2>&1',
     $testOutput,
     $testExit,
 );
@@ -159,7 +159,7 @@ it('runs the full test suite and all tests pass', function () use ($root): void 
     exec(
         'cd ' . escapeshellarg(
             $root
-        ) . ' && ' . $php . ' vendor/bin/pest --parallel --exclude-group=integration-destructive 2>&1',
+        ) . ' && ' . $php . ' -d memory_limit=2G vendor/bin/pest --parallel --exclude-group=integration-destructive 2>&1',
         $output,
         $exitCode,
     );
