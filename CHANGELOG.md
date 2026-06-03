@@ -8,6 +8,28 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.8.0] - 2026-06-03
+
+### New Features
+* feat: add marko/codeindexer (with interface subtraction) by @markshust in https://github.com/marko-php/marko/pull/97
+* feat: add marko/claude-plugins by @markshust in https://github.com/marko-php/marko/pull/99
+* feat: add marko/docs (documentation search contract) by @markshust in https://github.com/marko-php/marko/pull/100
+* feat: add marko/docs-markdown (docs content as a module) by @markshust in https://github.com/marko-php/marko/pull/101
+* feat: add marko/lsp by @markshust in https://github.com/marko-php/marko/pull/102
+* feat: add marko/docs-fts + marko/docs-vec (docs search drivers) by @markshust in https://github.com/marko-php/marko/pull/103
+* feat: add marko/mcp (PersistLastErrorPlugin + LastErrorTool dropped, Runtime/Contracts flattened) by @markshust in https://github.com/marko-php/marko/pull/104
+* feat: add marko/devai (4 marker interfaces collapsed into single install()) by @markshust in https://github.com/marko-php/marko/pull/105
+### Bug Fixes
+* fix: raise memory_limit in composer test scripts by @markshust in https://github.com/marko-php/marko/pull/107
+* fix: raise memory_limit in release.sh test invocation by @markshust in https://github.com/marko-php/marko/pull/108
+* fix: raise memory_limit in IntegrationVerificationTest pest subprocesses by @markshust in https://github.com/marko-php/marko/pull/109
+### Documentation
+* docs: add marko/codeindexer reference page + fix README doc link by @markshust in https://github.com/marko-php/marko/pull/98
+* docs: widen sidebar + fix Claude Code install method + clarify MCP verification by @markshust in https://github.com/marko-php/marko/pull/106
+### Other Changes
+* rename: rate-limiting → ratelimiter and dev-server → devserver by @markshust in https://github.com/marko-php/marko/pull/96
+
+
 ## [0.7.0] - 2026-05-27
 
 ### Breaking Changes
