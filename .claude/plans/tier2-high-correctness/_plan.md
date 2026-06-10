@@ -19,6 +19,15 @@ none
 ## Discovery Notes
 - **New plan.** No existing `tier2-high-correctness` task files; the directory was
   empty at authoring time.
+- **Task 013 is a gap-audit follow-up (F10).** The original Tier 2 sweep (F1–F9)
+  missed `marko/docs-vec`, the hybrid FTS5 + vector docs search driver. A later
+  audit found `VecSearch::search()` crashes on every query that returns an FTS hit
+  (an array offset is written onto a float in the RRF fusion loop) and leaks a raw
+  `PDOException` to callers on malformed FTS5 MATCH text (`SearchDocsTool` catches
+  only `DocsException`). It was never caught because the existing `search()` tests
+  all `->skip` when sqlite-vec is unavailable, so the FTS path is never exercised
+  in CI. Task 013 fixes both in the single file and adds FTS-only-path tests that
+  are NOT gated on sqlite-vec.
 - **F1 supersedes the deferred slice of `plugin-interceptor-proxy-fix`.** That plan
   is fully `completed` (tasks 001–008), and its interface-wrapper strategy works
   (the wrapper calls `new $className()` then `initInterception($target, ...)`, so
@@ -76,6 +85,8 @@ none
 - F8: read/write `transaction()` sticky-write, write-statement routing to primary,
   replica-selection safety after fallback removal.
 - F9: PostgreSQL-correct `insertBatch()` primary-key assignment via `RETURNING`.
+- F10: docs-vec hybrid search — fix the RRF fusion crash on FTS hits and convert
+  malformed-FTS5-MATCH `PDOException` to `DocsException`.
 
 ### Out of Scope
 - The interface-wrapper strategy, plugin registry, trait, and container wiring already
@@ -106,6 +117,9 @@ none
 - [ ] Writes inside `transaction()` and `INSERT ... RETURNING` route to the primary;
       replica selection never indexes a removed replica.
 - [ ] `insertBatch()` assigns each entity its true DB id on both mysql and pgsql.
+- [ ] docs-vec hybrid search returns ranked results for any query that produces an
+      FTS hit (no crash), and a malformed FTS5 MATCH surfaces as a `DocsException`
+      (caught by `SearchDocsTool`) rather than a raw `PDOException`.
 - [ ] All tests passing
 - [ ] Code follows project standards
 
@@ -124,13 +138,14 @@ none
 | 010 | F7a: concrete StreamSocket implements SocketInterface (mail-smtp) | - | pending |
 | 011 | F7b: factory connect→EHLO→STARTTLS(220)→AUTH(case-insensitive) sequence + SmtpConfig defaults removal + module binding (mail-smtp) | 010 | pending |
 | 012 | F7c: DATA dot-stuffing + multi-recipient correctness (mail-smtp) | 011 | pending |
+| 013 | F10: docs-vec RRF fusion crash fix + malformed-FTS5-MATCH PDOException→DocsException (docs-vec) | - | pending |
 
 Parallel batches (each task is a distinct file-cluster; 008 and 005 now serialize
 after 009 because 009's `ConnectionInterface::driverName()` addition edits the same
 `ReadWriteConnection.php` / queue-database + readwrite test-stub files those tasks touch,
 and the abstract-method addition must land first or the suites fail to load):
 ```
-Batch 1: 001  002  003  004  009  010
+Batch 1: 001  002  003  004  009  010  013
 Batch 2: 005 (←004,009)   006 (←004)   008 (←009)   011 (←010)
 Batch 3: 007 (←006)   012 (←011)
 ```
