@@ -14,6 +14,16 @@ none
 
 ## Discovery Notes
 - **New work.** No existing plan in `.claude/plans/` covers these specific hardening items. Adjacent plans (`sse-package`, `session-package`, `encryption`, `core-package`, `routing-package`, `cache-package`, `testing-package`, `layout-component-discovery`) define the packages themselves; this plan only touches already-built code.
+- **Tasks 013–024 are gap-audit + dropped-from-consolidation follow-ups now folded into this tier.** They were surfaced by a later low-severity audit pass (and items deferred out of an earlier consolidation), and are added here without renumbering or touching tasks 001–012. Each was independently re-verified by reading its cited source before being written; path/line drift was corrected against the actual files.
+- **Source-read drift corrections for the added tasks (verification notes):**
+  - **018:** The SQL generators live at `packages/database-{mysql,pgsql}/src/Sql/*Generator.php`, NOT `src/Schema/`. Confirmed maps: MySQL `TYPE_MAP` is missing `uuid`/`enum`; PgSQL `TYPE_MAP` is missing `tinyint`/`bool`/`blob` aliases; `decimal` is `DECIMAL(10,2)` on mysql vs bare `DECIMAL` on pgsql.
+  - **019:** The MySQL connection does NOT have a `bindValues()` method; it calls `$statement->execute($this->prepareBindings($bindings))`, where `prepareBindings()` only JSON-encodes array values — everything else binds as `PARAM_STR`. The pgsql sibling's `bindValues()` (`PgSqlConnection.php` ~187-213) selects explicit `PARAM_BOOL`/`PARAM_NULL`/`PARAM_INT`/`PARAM_STR` and IS the parity target.
+  - **022:** PACKAGE drift — `AdminAuthMiddleware` and `PermissionRegistry`/`PermissionRegistryInterface` live in `packages/admin-auth/`, NOT `packages/admin-api/`. The middleware does honor wildcards via `PermissionRegistry::matches()`; `SectionController` (admin-api) uses bare `$user->hasPermission()` and currently injects only `AdminSectionRegistryInterface` + `GuardInterface` (so the fix must inject `PermissionRegistryInterface`).
+  - **023:** Confirmed — `Job::$attempts` is `public private(set) int = 0` with only `incrementAttempts()` and no reset; `JobInterface` exposes `attempts` as a get-only hook, so the fix adds a `resetAttempts()` to `Job` and `JobInterface`. `Worker` gates real retries on `$job->attempts < $job->maxAttempts`, confirming a non-reset retry re-fails immediately.
+  - **024:** Confirmed — `DebugbarStorage::all()` calls the full-decode `get($id)` per file; the default `masked` list (`config/debugbar.php`) uses `*`→`.+` matching, so `*.password` cannot mask a TOP-LEVEL `password`, and `dsn` is absent entirely.
+  - **016:** `LspProtocol::handleMessage()` ALREADY emits `-32700` for un-decodable JSON bodies; the gap is purely that a header-level malformed frame (`Content-Length: 0`) collapses to the same `null` as EOF in `serve()`, so the fix is the EOF-vs-malformed distinction at the protocol boundary.
+  - **014:** `DocsException::searchFailed()` factory already exists — reuse it, no new factory needed.
+- **All cited findings reproduced in source; none were skipped.** The only adjustments were path/line/method-name drift (above), not absent bugs.
 - **No Tier 3 collision on `Request::path()`.** `tier3-medium-fixes/` is empty (no `_plan.md`, no task files). There is no prior task that touches `Request::path()` or Content-Type handling, so Task 008 owns these changes outright.
 - **Existing conventions confirmed by source reads:**
   - All target packages already use `MarkoException`-style exceptions with `message`/`context`/`suggestion` named params and static factory methods (`InvalidSignatureException`, `SseException`, `LayoutException`→`AmbiguousSortOrderException`, `BindingException`, `LogWriteException`, `DecryptionException`/`EncryptionException`). New factories must follow this shape.
@@ -31,6 +41,9 @@ none
 - F4 OpenSSL AEAD enforcement, false iv-length handling, payload field-type validation.
 - F5 Log line-injection: CR/LF escaping option for the line formatter (default-safe).
 - F6 misc correctness: container cycle detection, manifest `php*`-vendor filter, request Content-Type/path decode, FakeSession null semantics, layout deterministic ambiguity detection, cache-file tmp cleanup / clear glob / mkdir race.
+- F7 tooling/devx hardening (added tasks 013–017): codeindexer cache deserialize safety + corruption rebuild; docs-fts MATCH error → `DocsException`; mcp read-only DB guard against stacked statements; lsp resilience to a malformed frame; Translator placeholder-ordering correctness.
+- F8 database sibling parity (added tasks 018–020): SQL generator type-map parity (mysql/pgsql), MySQL connection explicit PDO param binding, valid empty `whereIn`/`whereNotIn` on both builders.
+- F9 media/admin/queue/debugbar correctness (added tasks 021–024): GD format+alpha preservation and checked encodes; admin-api section visibility wildcard-awareness + `show()` filter parity; queue retry attempt reset; debugbar lazy `all()` + default-mask completeness.
 
 ### Out of Scope
 - Any change to public interface signatures (`WebhookReceiverInterface`, `SessionHandlerInterface`, `EncryptorInterface`, `LoggerInterface`, `ContainerInterface`, `SessionInterface`).
@@ -51,6 +64,18 @@ none
 - [ ] `FakeSession::has()` reports a stored `null` as present, matching production `Session::has()`.
 - [ ] Layout ambiguity detection finds an ambiguous pair deterministically even with 17+ components.
 - [ ] cache-file leaves no orphan `.tmp` files on rename failure, `clear()` removes tmp files too, and concurrent directory creation does not error.
+- [ ] codeindexer treats a corrupt cache as a rebuild trigger (never a silently-empty index) and restricts `unserialize` to a class allowlist.
+- [ ] docs-fts converts a malformed FTS5 MATCH into `DocsException` (never a raw `PDOException`).
+- [ ] mcp read-only DB tool rejects stacked statements (`SELECT 1; DELETE ...`) while still allowing plain selects and opt-in writes.
+- [ ] lsp server responds to a malformed frame with a `-32700` parse error and keeps serving; only true EOF ends the loop.
+- [ ] Translator resolves `:attribute` correctly when `:attr` also exists and never re-replaces a placeholder inside a replacement value.
+- [ ] Each shared abstract column type (`uuid`, `enum`, `bool`, `tinyint`, `blob`, `decimal`) generates valid DDL on BOTH mysql and pgsql generators, with consistent decimal precision.
+- [ ] MySQL connection binds `false`/`true`/`null`/int with correct PDO types (parity with pgsql), not coerced to strings.
+- [ ] `whereIn(col, [])` / `whereNotIn(col, [])` generate valid SQL (no-match / match-all) on both builders — never `IN ()`.
+- [ ] GD resize/crop preserve the source format and transparency, and surface a loud error on encode failure.
+- [ ] admin-api section visibility honors wildcard permissions, and `show()` enforces the same filter as `index()`.
+- [ ] queue RetryCommand resets a retried job's attempts so the worker performs real retries.
+- [ ] debugbar `all()` lists summaries without fully decoding every dataset, and the default mask redacts common secret-named keys (`password`/`secret`/`key`/`token`/`dsn`) at top level and nested.
 - [ ] All tests passing
 - [ ] Code follows project standards
 
@@ -69,8 +94,25 @@ none
 | 010 | FakeSession null-key `has()` parity | - | pending |
 | 011 | Layout deterministic ambiguous-sort-order detection | - | pending |
 | 012 | cache-file tmp cleanup, clear glob, mkdir race | - | pending |
+| 013 | codeindexer cache unserialize hardening (allowed_classes + non-array load failure) | - | pending |
+| 014 | docs-fts malformed MATCH wraps PDOException in DocsException | - | pending |
+| 015 | mcp read-only DB guard rejects stacked statements | - | pending |
+| 016 | lsp server resilience to a malformed frame (parse error, keep serving) | - | pending |
+| 017 | Translator placeholder replacement ordering (single-pass strtr) | - | pending |
+| 018 | SQL generator type-map parity across mysql/pgsql | - | pending |
+| 019 | MySQL connection binds explicit PDO param types (parity with pgsql) | - | pending |
+| 020 | query builder empty `whereIn`/`whereNotIn` → valid no-match/match-all | cross-tier rebase | pending |
+| 021 | GD preserve source format + alpha; check encode returns | - | pending |
+| 022 | admin-api section visibility wildcard-aware + show() filter parity | - | pending |
+| 023 | queue RetryCommand resets attempts before re-queue | Tier-2 coordination | pending |
+| 024 | debugbar lazy `all()` + default-mask completeness | - | pending |
 
-All twelve tasks are independent (no shared files). Tasks 003 and 005 both touch the `sse` package but different files (Task 003: `SseEvent.php` + `SseException.php`; Task 005: `SseStream.php` only). They may run in parallel, but note a LOGICAL coupling: `SseStream::iterateSubscription()` constructs `new SseEvent(data:, event:)`, and Task 003 adds CRLF validation to the `SseEvent` constructor. If Task 005 lands first, its message fixtures must use channel/payload values WITHOUT CRLF so they remain valid once Task 003's constructor guard exists. Whichever task finishes last MUST re-run the full `packages/sse/tests/` suite to catch interaction regressions.
+The original twelve tasks (001–012) are independent (no shared files). Tasks 003 and 005 both touch the `sse` package but different files (Task 003: `SseEvent.php` + `SseException.php`; Task 005: `SseStream.php` only). They may run in parallel, but note a LOGICAL coupling: `SseStream::iterateSubscription()` constructs `new SseEvent(data:, event:)`, and Task 003 adds CRLF validation to the `SseEvent` constructor. If Task 005 lands first, its message fixtures must use channel/payload values WITHOUT CRLF so they remain valid once Task 003's constructor guard exists. Whichever task finishes last MUST re-run the full `packages/sse/tests/` suite to catch interaction regressions.
+
+Tasks 013–024 (gap-audit + dropped-from-consolidation follow-ups) are likewise independent and parallel, with two cross-tier coordination notes:
+- **Task 020** shares `MySqlQueryBuilder.php` / `PgSqlQueryBuilder.php` with Tier 1 / Tier 2 / Tier 3 query-builder tasks. It must be rebased sequentially onto whatever those tiers land; re-locate the `IN (%s)` compile loop before editing and re-run both builders' suites. (See its Implementation Notes.)
+- **Task 023** shares the queue attempt model with Tier 2 queue tasks 004 / 005 / 006. It must consume Tier 2's attempt-counting changes (rebase onto them, adopt their reset/increment API) rather than introduce a parallel mechanism. (See its Implementation Notes.)
+- Tasks 018, 019, 020 all touch the `database-mysql`/`database-pgsql` sibling pair but DIFFERENT files (018: `src/Sql/*Generator.php`; 019: `src/Connection/*Connection.php`; 020: `src/Query/*QueryBuilder.php`), so they are mutually parallel.
 
 ## Architecture Notes
 - **Exceptions:** Reuse each package's existing base exception. New factory methods follow `message`/`context`/`suggestion` named-parameter convention. New exception classes:
