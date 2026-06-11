@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Queue;
 
 use DateTimeImmutable;
+use Marko\Queue\Exceptions\SerializationException;
 use Throwable;
 
 class Worker implements WorkerInterface
@@ -13,10 +14,14 @@ class Worker implements WorkerInterface
 
     public function __construct(
         private readonly QueueInterface $queue,
-        private readonly FailedJobRepositoryInterface $failedRepository,
+        private readonly FailedJobRepositoryInterface $failedJobRepository,
         private readonly QueueConfig $config,
+        private readonly JobEnvelope $jobEnvelope,
     ) {}
 
+    /**
+     * @throws SerializationException
+     */
     public function work(
         ?string $queue = null,
         bool $once = false,
@@ -55,6 +60,9 @@ class Worker implements WorkerInterface
         $this->running = false;
     }
 
+    /**
+     * @throws SerializationException
+     */
     private function handleFailedJob(
         JobInterface $job,
         Throwable $e,
@@ -64,10 +72,10 @@ class Worker implements WorkerInterface
             $delay = (int) pow(2, $job->attempts) * 10;
             $this->queue->release($job->id, $delay);
         } else {
-            $this->failedRepository->store(new FailedJob(
+            $this->failedJobRepository->store(new FailedJob(
                 id: $job->id,
                 queue: $queue ?? $this->config->queue(),
-                payload: $job->serialize(),
+                payload: $this->jobEnvelope->wrap($job->serialize()),
                 exception: $e->getMessage() . "\n" . $e->getTraceAsString(),
                 failedAt: new DateTimeImmutable(),
             ));

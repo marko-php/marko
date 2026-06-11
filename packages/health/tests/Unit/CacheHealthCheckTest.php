@@ -7,7 +7,7 @@ use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Health\Checks\CacheHealthCheck;
 use Marko\Health\Value\HealthStatus;
 
-it('checks cache read/write via CacheHealthCheck', function () {
+it('checks cache read/write via CacheHealthCheck', function (): void {
     $store = [];
     $cache = new class ($store) implements CacheInterface
     {
@@ -72,6 +72,14 @@ it('checks cache read/write via CacheHealthCheck', function () {
         {
             return true;
         }
+
+        public function increment(
+            string $key,
+            int $ttl,
+        ): int
+        {
+            return 1;
+        }
     };
 
     $check = new CacheHealthCheck($cache);
@@ -84,7 +92,7 @@ it('checks cache read/write via CacheHealthCheck', function () {
         ->and($result->name)->toBe('cache');
 });
 
-it('returns unhealthy status when cache write fails', function () {
+it('returns unhealthy status when cache write fails', function (): void {
     $cache = new class () implements CacheInterface
     {
         public function get(
@@ -139,6 +147,14 @@ it('returns unhealthy status when cache write fails', function () {
         public function deleteMultiple(array $keys): bool
         {
             return false;
+        }
+
+        public function increment(
+            string $key,
+            int $ttl,
+        ): int
+        {
+            return 1;
         }
     };
 

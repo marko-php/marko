@@ -8,10 +8,10 @@ use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\RateLimiter\Contracts\RateLimiterInterface;
 
-class RateLimiter implements RateLimiterInterface
+readonly class RateLimiter implements RateLimiterInterface
 {
     public function __construct(
-        private readonly CacheInterface $cache,
+        private CacheInterface $cache,
     ) {}
 
     /**
@@ -23,9 +23,9 @@ class RateLimiter implements RateLimiterInterface
         int $decaySeconds,
     ): RateLimitResult {
         $cacheKey = $this->getCacheKey($key);
-        $attempts = (int) $this->cache->get($cacheKey, 0);
+        $count = $this->cache->increment($cacheKey, $decaySeconds);
 
-        if ($attempts >= $maxAttempts) {
+        if ($count > $maxAttempts) {
             $item = $this->cache->getItem($cacheKey);
             $retryAfter = null;
 
@@ -40,11 +40,9 @@ class RateLimiter implements RateLimiterInterface
             );
         }
 
-        $this->cache->set($cacheKey, $attempts + 1, $decaySeconds);
-
         return new RateLimitResult(
             allowed: true,
-            remaining: $maxAttempts - $attempts - 1,
+            remaining: max(0, $maxAttempts - $count),
         );
     }
 

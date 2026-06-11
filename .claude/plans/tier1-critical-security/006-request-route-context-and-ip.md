@@ -1,6 +1,6 @@
 # Task 006: F2+F5 — Request server()/ip() accessors, withRoute()/controller()/action(), and Router route-context wiring
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -22,15 +22,15 @@ Give `marko/routing` the request facts that the rate limiter (F2) and the admin 
   - `server(string $key)` returns `$this->server[$key] ?? null` (raw, no `HTTP_` prefixing — that's what `header()` does). `ip()` returns `$this->server['REMOTE_ADDR'] ?? null`. The `$server` array values are `mixed`; cast/treat as `?string`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns a raw server param by key via server()`
-- [ ] `it returns null from server() when the key is absent`
-- [ ] `it returns the REMOTE_ADDR value via ip()`
-- [ ] `it returns null from ip() when REMOTE_ADDR is absent`
-- [ ] `it ignores X-Forwarded-For when resolving ip()`
-- [ ] `it returns a new Request carrying the controller and action via withRoute()`
-- [ ] `it leaves the original Request unchanged after withRoute() (immutability)`
-- [ ] `it returns null from controller() and action() before withRoute() is called`
-- [ ] `it makes the matched controller and action visible to middleware during Router::handle()`
+- [x] `it returns a raw server param by key via server()`
+- [x] `it returns null from server() when the key is absent`
+- [x] `it returns the REMOTE_ADDR value via ip()`
+- [x] `it returns null from ip() when REMOTE_ADDR is absent`
+- [x] `it ignores X-Forwarded-For when resolving ip()`
+- [x] `it returns a new Request carrying the controller and action via withRoute()`
+- [x] `it leaves the original Request unchanged after withRoute() (immutability)`
+- [x] `it returns null from controller() and action() before withRoute() is called`
+- [x] `it makes the matched controller and action visible to middleware during Router::handle()`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -38,4 +38,9 @@ Give `marko/routing` the request facts that the rate limiter (F2) and the admin 
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `server(string $key): ?string` to `Request` — returns `$this->server[$key] ?? null`, casting to string. Raw access, no `HTTP_` prefix (that's `header()`'s job).
+- Added `ip(): ?string` to `Request` — delegates to `$this->server('REMOTE_ADDR')`. No proxy-header consulting by design.
+- Added `?string $controller = null` and `?string $action = null` readonly constructor params to `Request` (defaults preserve all existing call sites).
+- Added `withRoute(string $controller, string $action): self` — returns `new self(...)` with all existing fields preserved plus new controller/action. PHP 8.5.1 does not yet support `clone() with {}` syntax (RFC not shipped in this build), so manual constructor cloning is used.
+- Added `controller(): ?string` and `action(): ?string` accessors returning the respective properties.
+- In `Router::handle()`, added `$request = $request->withRoute($matched->route->controller, $matched->route->action)` after the 404 check and before the handler closure and `$this->pipeline->process(...)` call. The route-bearing request flows through the middleware pipeline and into the controller handler automatically.

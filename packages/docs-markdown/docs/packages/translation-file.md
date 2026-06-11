@@ -113,3 +113,5 @@ readonly class FileTranslationLoader implements TranslationLoaderInterface
 | `addNamespace(string $namespace, string $path): void` | Register a namespace with its language directory path for `namespace::group.key` lookups. |
 
 If a namespace is used but not registered, a `TranslationException` is thrown with a helpful suggestion to register it.
+
+Locale, group, and namespace path segments are validated against the pattern `^[A-Za-z0-9_-]+$` before any file path is constructed. Segments containing path traversal characters or other unsafe characters throw `TranslationException` loudly rather than attempting to load the file.

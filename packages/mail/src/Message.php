@@ -156,10 +156,21 @@ class Message
         return $this;
     }
 
+    /**
+     * @throws MessageException
+     */
     public function header(
         string $name,
         string $value,
     ): self {
+        if (str_contains($name, "\r") || str_contains($name, "\n")) {
+            throw MessageException::headerInjection('header name', $name);
+        }
+
+        if (str_contains($value, "\r") || str_contains($value, "\n")) {
+            throw MessageException::headerInjection('header value', $value);
+        }
+
         $this->headers[$name] = $value;
 
         return $this;

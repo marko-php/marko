@@ -14,6 +14,25 @@ use Marko\Database\Exceptions\InvalidColumnException;
 class IdentifierValidator
 {
     /**
+     * Allowed SQL comparison operators.
+     */
+    public const array OPERATORS = [
+        '=',
+        '!=',
+        '<>',
+        '<',
+        '>',
+        '<=',
+        '>=',
+        'LIKE',
+        'NOT LIKE',
+        'IN',
+        'NOT IN',
+        'IS',
+        'IS NOT',
+    ];
+
+    /**
      * Known aggregate function names that are allowed in SELECT expressions.
      */
     public const array AGGREGATE_FUNCTIONS = [
@@ -69,6 +88,52 @@ class IdentifierValidator
             'column' => $column,
             'alias' => $alias,
         ];
+    }
+
+    /**
+     * Escape an embedded delimiter character by doubling it.
+     *
+     * Used to safely embed identifiers inside backtick or double-quote delimiters
+     * by doubling any occurrence of the delimiter character within the string.
+     */
+    public static function escapeDelimiter(
+        string $identifier,
+        string $delimiter,
+    ): string {
+        return str_replace($delimiter, $delimiter . $delimiter, $identifier);
+    }
+
+    /**
+     * Assert that the given string is a valid plain or qualified identifier.
+     *
+     * Accepts:
+     *  - Plain identifiers: /^[a-zA-Z_][a-zA-Z0-9_]*$/
+     *  - Qualified identifiers: /^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/
+     *
+     * @throws InvalidColumnException When the identifier is invalid
+     */
+    public static function assertValidIdentifier(
+        string $identifier,
+    ): void {
+        if (
+            !preg_match(self::IDENTIFIER_PATTERN, $identifier)
+            && !preg_match(self::QUALIFIED_PATTERN, $identifier)
+        ) {
+            throw InvalidColumnException::invalidColumn($identifier);
+        }
+    }
+
+    /**
+     * Assert that the given operator is in the allowlist.
+     *
+     * @throws InvalidColumnException When the operator is not in the allowlist
+     */
+    public static function assertValidOperator(
+        string $operator,
+    ): void {
+        if (!in_array($operator, self::OPERATORS, true)) {
+            throw InvalidColumnException::invalidOperator($operator);
+        }
     }
 
     /**

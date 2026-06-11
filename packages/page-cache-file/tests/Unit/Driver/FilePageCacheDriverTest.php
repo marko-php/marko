@@ -213,3 +213,48 @@ it('returns true from clear when the cache directory does not exist', function (
 
     expect($result)->toBeTrue();
 });
+
+it('still round-trips a legitimately stored page-cache entry', function (): void {
+    $request = createTestRequest('GET', '/roundtrip');
+    $response = new Response(body: 'Hello Roundtrip', statusCode: 200, headers: ['X-Test' => 'value']);
+    $policy = new CachePolicy(ttl: 3600, tags: []);
+
+    $this->driver->store($request, $response, $policy);
+    $result = $this->driver->lookup($request);
+
+    expect($result)->toBeInstanceOf(Response::class)
+        ->and($result->body())->toBe('Hello Roundtrip')
+        ->and($result->statusCode())->toBe(200)
+        ->and($result->headers())->toBe(['X-Test' => 'value']);
+});
+
+it('does not instantiate a disallowed class when decoding a tampered page-cache payload', function (): void {
+    $request = createTestRequest('GET', '/tampered');
+    $key = CacheKey::fromRequest($request);
+    $pagesDir = $this->tmpDir . '/pages';
+
+    if (!is_dir($pagesDir)) {
+        mkdir($pagesDir, 0755, true);
+    }
+
+    // Write a page-cache file whose payload embeds a serialized stdClass object
+    // as the body. With allowed_classes => false, the object will NOT be instantiated
+    // (it becomes __PHP_Incomplete_Class), so the Response body will not be a stdClass.
+    // Without the hardening (bare unserialize), the body WOULD be a live stdClass.
+    $payloadWithObject = serialize([
+        'status_code' => 200,
+        'body' => new stdClass(),
+        'headers' => [],
+        'expires_at' => time() + 9999,
+        'created_at' => time(),
+    ]);
+
+    file_put_contents($pagesDir . '/' . $key->hash() . '.cache', $payloadWithObject);
+
+    $result = $this->driver->lookup($request);
+
+    // The driver must not return a Response containing a live stdClass body.
+    // Either it returns null (guards reject the non-string body) or it returns a
+    // Response whose body is NOT a stdClass instance.
+    expect($result)->toBeNull();
+});

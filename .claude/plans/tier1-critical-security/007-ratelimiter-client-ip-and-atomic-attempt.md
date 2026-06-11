@@ -1,6 +1,6 @@
 # Task 007: F2 — Trusted-proxy client-IP resolution + atomic RateLimiter::attempt()
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [004, 005, 006]
 **Retry count**: 0
 
@@ -33,19 +33,19 @@ Close the rate-limiter bypass and the non-atomic increment. Add `packages/rateli
   - `it('blocks when max attempts exceeded')` / `it('stores cache key with TTL for decay window')` must continue to pass: blocked requests increment past the limit but stay blocked, and the TTL is applied on the first increment only.
 
 ## Requirements (Test Descriptions)
-- [ ] `it resolves the client IP from REMOTE_ADDR when no proxies are trusted`
-- [ ] `it ignores a forged X-Forwarded-For when REMOTE_ADDR is not a trusted proxy`
-- [ ] `it honors X-Forwarded-For only when REMOTE_ADDR is in trusted_proxies`
-- [ ] `it resolves the right-most untrusted hop from a multi-entry X-Forwarded-For chain`
-- [ ] `it skips a forged non-IP X-Forwarded-For entry`
-- [ ] `it matches an IPv6 REMOTE_ADDR against a trusted_proxies entry`
-- [ ] `it fails closed (no shared global key) when REMOTE_ADDR is absent`
-- [ ] `it never returns a shared constant key when the client IP is resolvable`
-- [ ] `it derives distinct rate-limit keys for two clients behind different REMOTE_ADDR values`
-- [ ] `it defaults trusted_proxies to an empty list from config`
-- [ ] `it increments attempts atomically via the cache increment on attempt()`
-- [ ] `it blocks the request once attempts reach maxAttempts`
-- [ ] `it reports remaining attempts decreasing across successive attempts`
+- [x] `it resolves the client IP from REMOTE_ADDR when no proxies are trusted`
+- [x] `it ignores a forged X-Forwarded-For when REMOTE_ADDR is not a trusted proxy`
+- [x] `it honors X-Forwarded-For only when REMOTE_ADDR is in trusted_proxies`
+- [x] `it resolves the right-most untrusted hop from a multi-entry X-Forwarded-For chain`
+- [x] `it skips a forged non-IP X-Forwarded-For entry`
+- [x] `it matches an IPv6 REMOTE_ADDR against a trusted_proxies entry`
+- [x] `it fails closed (no shared global key) when REMOTE_ADDR is absent`
+- [x] `it never returns a shared constant key when the client IP is resolvable`
+- [x] `it derives distinct rate-limit keys for two clients behind different REMOTE_ADDR values`
+- [x] `it defaults trusted_proxies to an empty list from config`
+- [x] `it increments attempts atomically via the cache increment on attempt()`
+- [x] `it blocks the request once attempts reach maxAttempts`
+- [x] `it reports remaining attempts decreasing across successive attempts`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -53,4 +53,9 @@ Close the rate-limiter bypass and the non-atomic increment. Add `packages/rateli
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `packages/ratelimiter/config/ratelimiter.php` with `trusted_proxies: []` default.
+- Added `packages/ratelimiter/src/ClientIpResolver.php`: resolves real client IP using trusted-proxy strategy. When REMOTE_ADDR is in `trusted_proxies`, walks the X-Forwarded-For chain right-to-left skipping trusted proxies, returning the right-most untrusted hop. Validates all XFF entries with `filter_var(..., FILTER_VALIDATE_IP)` — invalid entries are skipped. IPv6 support via `inet_pton`/`inet_ntop` normalization. When REMOTE_ADDR is absent, throws `ClientIpException` (fail-closed, no shared key).
+- Added `packages/ratelimiter/src/Exceptions/ClientIpException.php` extending `MarkoException`.
+- Rewrote `RateLimitMiddleware::resolveKey()` → replaced with `ClientIpResolver` injection. Middleware now accepts `ClientIpResolver` as second constructor parameter (named `$clientIpResolver`). Removed the `'unknown'` fallback — propagates `ClientIpException` instead.
+- Rewrote `RateLimiter::attempt()` from non-atomic `get→compare→set` to atomic `increment()`. Comparison changed from `>= maxAttempts` to `> maxAttempts` (increment-first means count already includes current attempt). `remaining = max(0, maxAttempts - count)` clamped to prevent negative values on blocked path. `retryAfter` still read from `getItem()` TTL, NOT the counter.
+- All existing `RateLimiterTest.php` tests (including `tooManyAttempts()` and `clear()` read-only assertions) continue to pass — `tooManyAttempts()` and `clear()` were not changed.

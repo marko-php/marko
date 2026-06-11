@@ -8,21 +8,27 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\FailedJobRepositoryInterface;
+use Marko\Queue\JobEnvelope;
 
 /** @noinspection PhpUnused */
 #[Command(name: 'queue:failed', description: 'List all failed jobs')]
 readonly class FailedCommand implements CommandInterface
 {
     public function __construct(
-        private FailedJobRepositoryInterface $repository,
+        private FailedJobRepositoryInterface $failedJobRepository,
+        private JobEnvelope $jobEnvelope,
     ) {}
 
+    /**
+     * @throws SerializationException
+     */
     public function execute(
         Input $input,
         Output $output,
     ): int {
-        $failedJobs = $this->repository->all();
+        $failedJobs = $this->failedJobRepository->all();
 
         if (count($failedJobs) === 0) {
             $output->writeLine('No failed jobs.');
@@ -67,10 +73,15 @@ readonly class FailedCommand implements CommandInterface
         return 0;
     }
 
+    /**
+     * @throws SerializationException
+     */
     private function extractJobClass(
         string $payload,
     ): string {
-        $data = @unserialize($payload);
+        $inner = $this->jobEnvelope->verifyAndUnwrap($payload);
+
+        $data = @unserialize($inner);
 
         if (is_array($data) && isset($data['class'])) {
             return $data['class'];

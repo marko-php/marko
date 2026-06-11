@@ -19,6 +19,14 @@ composer require marko/queue
 
 Note: You typically install a driver package (like `marko/queue-database`) which requires this automatically.
 
+`marko/queue` requires [`marko/encryption`](/docs/packages/encryption/) and a non-empty `encryption.key` in your config. Job payloads are HMAC-signed when enqueued and verified before deserialization; if the key is empty or the signature does not match, a `SerializationException` is thrown loudly.
+
+```php title="config/encryption.php"
+return [
+    'key' => $_ENV['APP_KEY'] ?? '',
+];
+```
+
 ## Usage
 
 ### Creating Jobs
@@ -215,4 +223,4 @@ public function maxAttempts(): int;
 |-----------|-------------|
 | `QueueException` | Base exception for all queue errors --- includes `getContext()` and `getSuggestion()` methods |
 | `JobFailedException` | Thrown when a job fails during execution |
-| `SerializationException` | Thrown when a job payload cannot be serialized or deserialized |
+| `SerializationException` | Thrown when a job payload cannot be serialized or deserialized, when `encryption.key` is empty, or when an HMAC signature does not match (tampered payload) |

@@ -16,6 +16,8 @@ readonly class Request
         private array $query = [],
         private array $post = [],
         private string $body = '',
+        private ?string $controller = null,
+        private ?string $action = null,
     ) {}
 
     public static function fromGlobals(): self
@@ -84,6 +86,43 @@ readonly class Request
     public function body(): string
     {
         return $this->body;
+    }
+
+    public function server(
+        string $key,
+    ): ?string {
+        $value = $this->server[$key] ?? null;
+
+        return $value !== null ? (string) $value : null;
+    }
+
+    public function ip(): ?string
+    {
+        return $this->server('REMOTE_ADDR');
+    }
+
+    public function withRoute(
+        string $controller,
+        string $action,
+    ): self {
+        return new self(
+            server: $this->server,
+            query: $this->query,
+            post: $this->post,
+            body: $this->body,
+            controller: $controller,
+            action: $action,
+        );
+    }
+
+    public function controller(): ?string
+    {
+        return $this->controller;
+    }
+
+    public function action(): ?string
+    {
+        return $this->action;
     }
 
     public function header(

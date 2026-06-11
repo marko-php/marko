@@ -78,5 +78,6 @@ Implements all methods from `CacheInterface`. See [marko/cache](/docs/packages/c
 | `getMultiple(array $keys, mixed $default = null): iterable` | Retrieve multiple values at once |
 | `setMultiple(array $values, ?int $ttl = null): bool` | Store multiple values at once |
 | `deleteMultiple(array $keys): bool` | Remove multiple entries at once |
+| `increment(string $key, int $ttl): int` | Atomically increment an integer counter; TTL applied only on first increment |
 
 TTL behavior: a positive TTL sets an expiration timestamp. A `null` TTL falls back to the configured `default_ttl`. A TTL of `0` or less means the entry never expires. Expired entries are lazily purged on the next read.

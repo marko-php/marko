@@ -13,7 +13,7 @@ Implements `QueueInterface` and `FailedJobRepositoryInterface` from [`marko/queu
 composer require marko/queue-rabbitmq
 ```
 
-This automatically installs `marko/queue` and `php-amqplib/php-amqplib`.
+This automatically installs `marko/queue` and `php-amqplib/php-amqplib`. A non-empty `encryption.key` (via [`marko/encryption`](/docs/packages/encryption/)) is also required because job payloads are HMAC-signed --- see [`marko/queue`](/docs/packages/queue/) for details.
 
 ## Usage
 

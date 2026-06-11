@@ -39,9 +39,14 @@ readonly class FilePageCacheDriver implements PageCacheInterface
             return null;
         }
 
-        $data = unserialize($content);
+        $data = unserialize($content, ['allowed_classes' => false]);
 
-        if (!is_array($data) || !isset($data['status_code'], $data['body'], $data['headers'], $data['expires_at'])) {
+        if (!is_array($data)
+            || !isset($data['status_code'], $data['body'], $data['headers'], $data['expires_at'])
+            || !is_int($data['status_code'])
+            || !is_string($data['body'])
+            || !is_array($data['headers'])
+        ) {
             return null;
         }
 
@@ -129,9 +134,16 @@ readonly class FilePageCacheDriver implements PageCacheInterface
         try {
             flock($fp, LOCK_EX);
             $content = stream_get_contents($fp);
-            $hashes = $content !== false && $content !== '' ? unserialize($content) : [];
+            $decoded = $content !== false && $content !== '' ? unserialize(
+                $content,
+                ['allowed_classes' => false]
+            ) : [];
+            $hashes = is_array($decoded) ? $decoded : [];
 
             foreach ($hashes as $hash) {
+                if (!is_string($hash)) {
+                    continue;
+                }
                 $pagePath = $this->pagePath($hash);
                 if (file_exists($pagePath)) {
                     @unlink($pagePath);
@@ -245,9 +257,10 @@ readonly class FilePageCacheDriver implements PageCacheInterface
         try {
             flock($fp, LOCK_EX);
             $existing = stream_get_contents($fp);
-            $hashes = $existing !== false && $existing !== ''
-                ? unserialize($existing)
+            $decoded = $existing !== false && $existing !== ''
+                ? unserialize($existing, ['allowed_classes' => false])
                 : [];
+            $hashes = is_array($decoded) ? $decoded : [];
             $hashes = array_values(array_unique([...$hashes, $pageHash]));
             ftruncate($fp, 0);
             rewind($fp);

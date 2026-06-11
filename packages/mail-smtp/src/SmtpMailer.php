@@ -8,6 +8,8 @@ use Marko\Mail\Address;
 use Marko\Mail\Attachment;
 use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Exception\MessageException;
+use Marko\Mail\Exception\TransportException;
+use Marko\Mail\Exceptions\MessageException as SmtpMessageException;
 use Marko\Mail\Message;
 use Random\RandomException;
 
@@ -18,7 +20,7 @@ readonly class SmtpMailer implements MailerInterface
     ) {}
 
     /**
-     * @throws MessageException|RandomException
+     * @throws MessageException|SmtpMessageException|TransportException|RandomException
      */
     public function send(
         Message $message,
@@ -45,6 +47,9 @@ readonly class SmtpMailer implements MailerInterface
         return true;
     }
 
+    /**
+     * @throws TransportException
+     */
     public function sendRaw(
         string $to,
         string $raw,
@@ -88,7 +93,7 @@ readonly class SmtpMailer implements MailerInterface
     }
 
     /**
-     * @throws RandomException
+     * @throws SmtpMessageException|RandomException
      */
     private function buildMessage(
         Message $message,
@@ -134,6 +139,9 @@ readonly class SmtpMailer implements MailerInterface
         return $headers . "\r\n" . $body;
     }
 
+    /**
+     * @throws SmtpMessageException
+     */
     private function buildHeaders(
         Message $message,
         bool $hasRegularAttachments,
@@ -148,27 +156,35 @@ readonly class SmtpMailer implements MailerInterface
         // From
         $from = $message->from;
         if ($from !== null) {
-            $headers[] = 'From: ' . $from->toString();
+            $fromLine = 'From: ' . $from->toString();
+            $this->assertNoCrlf('From header', $fromLine);
+            $headers[] = $fromLine;
         }
 
         // To
         $toAddresses = $message->to;
         if ($toAddresses !== []) {
             $to = array_map(fn (Address $addr) => $addr->toString(), $toAddresses);
-            $headers[] = 'To: ' . implode(', ', $to);
+            $toLine = 'To: ' . implode(', ', $to);
+            $this->assertNoCrlf('To header', $toLine);
+            $headers[] = $toLine;
         }
 
         // Cc
         $ccAddresses = $message->cc;
         if ($ccAddresses !== []) {
             $cc = array_map(fn (Address $addr) => $addr->toString(), $ccAddresses);
-            $headers[] = 'Cc: ' . implode(', ', $cc);
+            $ccLine = 'Cc: ' . implode(', ', $cc);
+            $this->assertNoCrlf('Cc header', $ccLine);
+            $headers[] = $ccLine;
         }
 
         // Reply-To
         $replyTo = $message->replyTo;
         if ($replyTo !== null) {
-            $headers[] = 'Reply-To: ' . $replyTo->toString();
+            $replyToLine = 'Reply-To: ' . $replyTo->toString();
+            $this->assertNoCrlf('Reply-To header', $replyToLine);
+            $headers[] = $replyToLine;
         }
 
         // Subject
@@ -204,6 +220,8 @@ readonly class SmtpMailer implements MailerInterface
 
         // Custom headers
         foreach ($message->headers as $name => $value) {
+            $this->assertNoCrlf('header name', $name);
+            $this->assertNoCrlf('header value', $value);
             $headers[] = "$name: $value";
         }
 
@@ -401,6 +419,18 @@ readonly class SmtpMailer implements MailerInterface
     private function generateBoundary(): string
     {
         return '=_Part_' . bin2hex(random_bytes(16));
+    }
+
+    /**
+     * @throws SmtpMessageException
+     */
+    private function assertNoCrlf(
+        string $field,
+        string $value,
+    ): void {
+        if (str_contains($value, "\r") || str_contains($value, "\n") || str_contains($value, "\x00")) {
+            throw SmtpMessageException::headerInjection($field, $value);
+        }
     }
 
     private function encodeHeader(

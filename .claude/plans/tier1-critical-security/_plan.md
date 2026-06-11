@@ -4,7 +4,7 @@
 2026-06-10
 
 ## Status
-ready
+completed
 
 ## Objective
 Close the six Critical/High security findings from the framework audit: SQL injection in the query builders (F1), rate-limiter bypass / global DoS / non-atomic increment (F2), LFI/RCE in the translation file loader (F3), mail header (CRLF) injection (F4), broken access control where `#[RequiresPermission]` is never enforced (F5), and PHP object injection via bare `unserialize()` of queue/cache payloads (F6).
@@ -77,20 +77,20 @@ Phase-1 confirmed against source. Every finding is **new security-hardening work
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | F1: `IdentifierValidator` operator allowlist + identifier/delimiter helpers (shared `marko/database`) | - | pending |
-| 002 | F1: harden `MySqlQueryBuilder` (escape delimiter, validate identifiers + operators) | 001 | pending |
-| 003 | F1: harden `PgSqlQueryBuilder` (parity with mysql) | 001 | pending |
-| 004 | F2: add atomic `increment()` to `CacheInterface` (`marko/cache`) | - | pending |
-| 005 | F2: implement `increment()` in array/file/redis cache drivers | 004 | pending |
-| 006 | F2+F5: `Request` accessors — `server()`/`ip()` and `withRoute()`/`controller()`/`action()`; `Router::handle()` attaches route context | - | pending |
-| 007 | F2: `ClientIpResolver` + `config/ratelimiter.php`; `resolveKey()` + atomic `RateLimiter::attempt()` | 004, 005, 006 | pending |
-| 008 | F3: validate locale/group/namespace path segments in `FileTranslationLoader` | - | pending |
-| 009 | F4: reject CRLF in `Address` name and `Message::header()` (`marko/mail`) | - | pending |
-| 010 | F4: defensive header hardening in `SmtpMailer::buildHeaders()` | 009 | pending |
-| 011 | F5: enforce `#[RequiresPermission]` in `AdminAuthMiddleware` via route context | 006 | pending |
-| 012 | F6: `allowed_classes => false` for `page-cache-file`; object-preserving hardening for `cache-file` (local file cluster) | 005 | pending |
-| 013 | F6: HMAC-signed envelope for `cache-redis` | 005 | pending |
-| 014 | F6: HMAC-signed envelope for the `queue` package via a `JobEnvelope` signer + new `module.php`; harden `queue-database`/`queue-rabbitmq`/`Worker`/Commands unserialize sinks | - | pending |
+| 001 | F1: `IdentifierValidator` operator allowlist + identifier/delimiter helpers (shared `marko/database`) | - | completed |
+| 002 | F1: harden `MySqlQueryBuilder` (escape delimiter, validate identifiers + operators) | 001 | completed |
+| 003 | F1: harden `PgSqlQueryBuilder` (parity with mysql) | 001 | completed |
+| 004 | F2: add atomic `increment()` to `CacheInterface` (`marko/cache`) | - | completed |
+| 005 | F2: implement `increment()` in array/file/redis cache drivers | 004 | completed |
+| 006 | F2+F5: `Request` accessors — `server()`/`ip()` and `withRoute()`/`controller()`/`action()`; `Router::handle()` attaches route context | - | completed |
+| 007 | F2: `ClientIpResolver` + `config/ratelimiter.php`; `resolveKey()` + atomic `RateLimiter::attempt()` | 004, 005, 006 | completed |
+| 008 | F3: validate locale/group/namespace path segments in `FileTranslationLoader` | - | completed |
+| 009 | F4: reject CRLF in `Address` name and `Message::header()` (`marko/mail`) | - | completed |
+| 010 | F4: defensive header hardening in `SmtpMailer::buildHeaders()` | 009 | completed |
+| 011 | F5: enforce `#[RequiresPermission]` in `AdminAuthMiddleware` via route context | 006 | completed |
+| 012 | F6: `allowed_classes => false` for `page-cache-file`; object-preserving hardening for `cache-file` (local file cluster) | 005 | completed |
+| 013 | F6: HMAC-signed envelope for `cache-redis` | 005 | completed |
+| 014 | F6: HMAC-signed envelope for the `queue` package via a `JobEnvelope` signer + new `module.php`; harden `queue-database`/`queue-rabbitmq`/`Worker`/Commands unserialize sinks | - | completed |
 
 ## Architecture Notes
 - All new exceptions use the three-part `MarkoException` shape (`message`, `context`, `suggestion`) with named args and static factory methods, matching `InvalidColumnException` / `MessageException`.

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\Command\WorkCommand;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
+use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
@@ -17,6 +19,12 @@ use Marko\Queue\Sync\SyncQueue;
 use Marko\Queue\Worker;
 use Marko\Queue\WorkerInterface;
 use Marko\Testing\Fake\FakeConfigRepository;
+
+function createIntegrationJobEnvelope(
+    string $key = 'test-key-for-integration',
+): JobEnvelope {
+    return new JobEnvelope(new EncryptionConfig(new FakeConfigRepository(['encryption.key' => $key])));
+}
 
 /**
  * Create a test queue config.
@@ -217,7 +225,7 @@ describe('Integration Tests', function (): void {
         $job = new class ('Hello, World!', $capture) extends Job
         {
             public function __construct(
-                private readonly string $message,
+                private string $message,
                 private object $capture,
             ) {}
 
@@ -232,7 +240,7 @@ describe('Integration Tests', function (): void {
         $queue = createInMemoryQueue();
         $failedRepository = createIntegrationFailedJobRepository();
         $config = createIntegrationQueueConfig();
-        $worker = new Worker($queue, $failedRepository, $config);
+        $worker = new Worker($queue, $failedRepository, $config, createIntegrationJobEnvelope());
 
         // 1. Push the job to the queue
         $jobId = $queue->push($job);
@@ -296,6 +304,7 @@ describe('Integration Tests', function (): void {
             ->and($queue->size())->toBe(1);
 
         // Pop the job from the queue
+        /** @var AsyncObserverJob $poppedJob */
         $poppedJob = $queue->pop();
 
         expect($poppedJob)->toBeInstanceOf(AsyncObserverJob::class);
@@ -334,7 +343,7 @@ describe('Integration Tests', function (): void {
         $queue = createInMemoryQueue();
         $failedRepository = createIntegrationFailedJobRepository();
         $config = createIntegrationQueueConfig();
-        $worker = new Worker($queue, $failedRepository, $config);
+        $worker = new Worker($queue, $failedRepository, $config, createIntegrationJobEnvelope());
 
         // Push a job to the queue
         $queue->push($job);
@@ -396,7 +405,7 @@ describe('Integration Tests', function (): void {
         expect($nullRepository)->toBeInstanceOf(FailedJobRepositoryInterface::class);
 
         // Verify Worker implements WorkerInterface
-        $worker = new Worker($syncQueue, $nullRepository, $queueConfig);
+        $worker = new Worker($syncQueue, $nullRepository, $queueConfig, createIntegrationJobEnvelope());
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);
 

@@ -13,7 +13,7 @@ Implements `QueueInterface` from [`marko/queue`](/docs/packages/queue/) and requ
 composer require marko/queue-database
 ```
 
-Requires [`marko/database`](/docs/packages/database/) for the database connection.
+Requires [`marko/database`](/docs/packages/database/) for the database connection. Also requires a non-empty `encryption.key` (via [`marko/encryption`](/docs/packages/encryption/)) because job payloads are HMAC-signed --- see [`marko/queue`](/docs/packages/queue/) for details.
 
 ## Usage
 

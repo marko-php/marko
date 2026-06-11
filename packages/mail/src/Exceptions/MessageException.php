@@ -18,6 +18,19 @@ class MessageException extends MarkoException
         );
     }
 
+    public static function headerInjection(
+        string $field,
+        string $value,
+    ): self {
+        $safe = addcslashes($value, "\r\n");
+
+        return new self(
+            message: "Header injection attempt detected in $field: '$safe'",
+            context: "While setting $field to value containing CR or LF characters",
+            suggestion: 'Remove carriage return (\\r) and line feed (\\n) characters from the value',
+        );
+    }
+
     public static function attachmentNotFound(
         string $path,
     ): self {

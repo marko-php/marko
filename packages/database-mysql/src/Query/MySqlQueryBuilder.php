@@ -66,7 +66,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     private ?array $havingClause = null;
 
     /**
-     * @var array<array{column: string, direction: string}>
+     * @var array<array{column: string, direction: string, raw: bool}>
      */
     private array $orders = [];
 
@@ -105,9 +105,14 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         private readonly ConnectionInterface $connection,
     ) {}
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function table(
         string $table,
     ): static {
+        IdentifierValidator::assertValidIdentifier($table);
+
         $this->table = $table;
 
         return $this;
@@ -142,6 +147,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws UnionShapeMismatchException
+     */
     public function union(
         QueryBuilderInterface $other,
     ): static {
@@ -157,6 +165,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws UnionShapeMismatchException
+     */
     public function unionAll(
         QueryBuilderInterface $other,
     ): static {
@@ -177,6 +188,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return count($this->columns);
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function compileSubquery(
         array &$bindings,
     ): string {
@@ -189,11 +203,20 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $sql;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function where(
         string $column,
         string $operator,
         mixed $value,
     ): static {
+        if (!JsonPathParser::isJsonPath($column)) {
+            IdentifierValidator::assertValidIdentifier($column);
+        }
+
+        IdentifierValidator::assertValidOperator($operator);
+
         $this->wheres[] = [
             'column' => $column,
             'operator' => $operator,
@@ -204,10 +227,15 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function whereIn(
         string $column,
         array $values,
     ): static {
+        IdentifierValidator::assertValidIdentifier($column);
+
         $this->whereIns[] = [
             'column' => $column,
             'values' => $values,
@@ -216,17 +244,27 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function whereNull(
         string $column,
     ): static {
+        IdentifierValidator::assertValidIdentifier($column);
+
         $this->whereNulls[] = $column;
 
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function whereNotNull(
         string $column,
     ): static {
+        IdentifierValidator::assertValidIdentifier($column);
+
         $this->whereNotNulls[] = $column;
 
         return $this;
@@ -266,11 +304,20 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function orWhere(
         string $column,
         string $operator,
         mixed $value,
     ): static {
+        if (!JsonPathParser::isJsonPath($column)) {
+            IdentifierValidator::assertValidIdentifier($column);
+        }
+
+        IdentifierValidator::assertValidOperator($operator);
+
         $this->wheres[] = [
             'column' => $column,
             'operator' => $operator,
@@ -294,6 +341,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function groupBy(
         string ...$columns,
     ): static {
@@ -311,6 +361,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function having(
         string $expression,
         array $bindings = [],
@@ -325,12 +378,20 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function join(
         string $table,
         string $first,
         string $operator,
         string $second,
     ): static {
+        IdentifierValidator::assertValidIdentifier($table);
+        IdentifierValidator::assertValidIdentifier($first);
+        IdentifierValidator::assertValidOperator($operator);
+        IdentifierValidator::assertValidIdentifier($second);
+
         $this->joins[] = [
             'type' => 'INNER',
             'table' => $table,
@@ -342,12 +403,20 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function leftJoin(
         string $table,
         string $first,
         string $operator,
         string $second,
     ): static {
+        IdentifierValidator::assertValidIdentifier($table);
+        IdentifierValidator::assertValidIdentifier($first);
+        IdentifierValidator::assertValidOperator($operator);
+        IdentifierValidator::assertValidIdentifier($second);
+
         $this->joins[] = [
             'type' => 'LEFT',
             'table' => $table,
@@ -359,12 +428,20 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function rightJoin(
         string $table,
         string $first,
         string $operator,
         string $second,
     ): static {
+        IdentifierValidator::assertValidIdentifier($table);
+        IdentifierValidator::assertValidIdentifier($first);
+        IdentifierValidator::assertValidOperator($operator);
+        IdentifierValidator::assertValidIdentifier($second);
+
         $this->joins[] = [
             'type' => 'RIGHT',
             'table' => $table,
@@ -376,10 +453,17 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function orderBy(
         string $column,
         string $direction = 'ASC',
     ): static {
+        if (!JsonPathParser::isJsonPath($column)) {
+            IdentifierValidator::assertValidIdentifier($column);
+        }
+
         $direction = strtoupper($direction);
         if (!in_array($direction, ['ASC', 'DESC'], true)) {
             $direction = 'ASC';
@@ -394,6 +478,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function orderByRaw(
         string $expression,
         string $direction = 'ASC',
@@ -430,6 +517,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function get(): array
     {
         if (!empty($this->unions)) {
@@ -442,6 +532,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this->connection->query($sql, $this->bindings);
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function first(): ?array
     {
         $this->limit(1);
@@ -450,12 +543,19 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $results[0] ?? null;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function insert(
         array $data,
     ): int {
         $this->bindings = [];
 
         $columns = array_keys($data);
+        foreach ($columns as $col) {
+            IdentifierValidator::assertValidIdentifier((string) $col);
+        }
+
         $quotedColumns = array_map(fn ($col) => $this->quoteIdentifier($col), $columns);
         $placeholders = array_fill(0, count($data), '?');
 
@@ -472,6 +572,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this->connection->lastInsertId();
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function update(
         array $data,
     ): int {
@@ -479,6 +582,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 
         $sets = [];
         foreach ($data as $column => $value) {
+            IdentifierValidator::assertValidIdentifier((string) $column);
             $sets[] = sprintf('%s = ?', $this->quoteIdentifier($column));
             $this->bindings[] = $value;
         }
@@ -517,6 +621,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return (int) $this->runAggregate($expr);
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function min(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -526,6 +633,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('MIN(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function max(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -535,6 +645,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('MAX(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function sum(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -544,6 +657,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('SUM(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function avg(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -563,6 +679,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     /**
      * Quote a database identifier with backticks (MySQL style).
      *
+     * Embedded backticks are doubled (`` ` `` → ` `` ``) per part to prevent
+     * delimiter break-out.
+     *
      * @param string $identifier The identifier to quote
      * @return string The quoted identifier
      */
@@ -574,12 +693,12 @@ class MySqlQueryBuilder implements QueryBuilderInterface
             $parts = explode('.', $identifier);
 
             return implode('.', array_map(
-                fn ($part) => '`' . $part . '`',
+                fn ($part) => '`' . IdentifierValidator::escapeDelimiter($part, '`') . '`',
                 $parts,
             ));
         }
 
-        return '`' . $identifier . '`';
+        return '`' . IdentifierValidator::escapeDelimiter($identifier, '`') . '`';
     }
 
     /**
@@ -611,6 +730,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return is_int($value + 0) ? (int) $value : (float) $value;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     private function executeUnion(): array
     {
         $bindings = [];
@@ -721,6 +843,9 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return $compiledColumn;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     private function buildSelectSql(): string
     {
         $quotedColumns = array_map(function (string $col): string {

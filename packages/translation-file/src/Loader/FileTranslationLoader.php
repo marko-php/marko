@@ -19,6 +19,9 @@ class FileTranslationLoader implements TranslationLoaderInterface
         private readonly string $basePath,
     ) {}
 
+    /**
+     * @throws TranslationException
+     */
     public function load(
         string $locale,
         string $group,
@@ -65,18 +68,33 @@ class FileTranslationLoader implements TranslationLoaderInterface
         string $group,
         ?string $namespace,
     ): string {
+        $this->assertValidPathSegment($locale, 'locale');
+        $this->assertValidPathSegment($group, 'group');
+
         if ($namespace === null) {
             return $this->basePath . '/lang/' . $locale . '/' . $group . '.php';
         }
 
+        $this->assertValidPathSegment($namespace, 'namespace');
+
         if (!isset($this->namespaces[$namespace])) {
-            throw new TranslationException(
-                message: "Translation namespace '$namespace' is not registered",
-                context: "Namespace: $namespace, Locale: $locale, Group: $group",
-                suggestion: "Register the namespace with \$loader->addNamespace('$namespace', '/path/to/$namespace/lang')",
-            );
+            throw TranslationException::namespaceNotRegistered($namespace, $locale, $group);
         }
 
         return $this->namespaces[$namespace] . '/' . $locale . '/' . $group . '.php';
+    }
+
+    /**
+     * Assert that a path segment contains only safe characters.
+     *
+     * @throws TranslationException
+     */
+    private function assertValidPathSegment(
+        string $value,
+        string $segment,
+    ): void {
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $value)) {
+            throw TranslationException::invalidPathSegment($segment, $value);
+        }
     }
 }

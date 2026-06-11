@@ -57,6 +57,23 @@ describe('Address', function (): void {
         'special characters without quotes' => ['user<>@domain.com'],
     ]);
 
+    it('rejects a carriage return in the Address display name', function (): void {
+        expect(fn () => new Address('user@example.com', "John\rDoe"))
+            ->toThrow(MessageException::class);
+    });
+
+    it('rejects a line feed in the Address display name', function (): void {
+        expect(fn () => new Address('user@example.com', "John\nDoe"))
+            ->toThrow(MessageException::class);
+    });
+
+    it('still constructs an Address with a legitimate display name', function (): void {
+        $address = new Address('user@example.com', 'John Doe');
+
+        expect($address->name)->toBe('John Doe')
+            ->and($address->email)->toBe('user@example.com');
+    });
+
     it('handles edge cases in names', function (string $name, string $expected): void {
         $address = new Address('user@example.com', $name);
 
@@ -73,7 +90,6 @@ describe('Address', function (): void {
             str_repeat('A', 100) . ' <user@example.com>',
         ],
         'name with angle brackets' => ['John <Admin> Doe', 'John <Admin> Doe <user@example.com>'],
-        'name with newline characters' => ["John\nDoe", "John\nDoe <user@example.com>"],
         'name with tab characters' => ["John\tDoe", "John\tDoe <user@example.com>"],
         'empty string name' => ['', ' <user@example.com>'],
         'whitespace only name' => ['   ', '    <user@example.com>'],

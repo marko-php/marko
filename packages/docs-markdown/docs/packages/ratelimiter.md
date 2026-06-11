@@ -3,7 +3,7 @@ title: marko/ratelimiter
 description: Cache-backed rate limiter with route middleware — throttle requests by IP with configurable limits and automatic Retry-After headers.
 ---
 
-Cache-backed rate limiter with route middleware --- throttle requests by IP with configurable limits and automatic `Retry-After` headers. Rate limiting uses the [cache](/docs/packages/cache/) layer to track request attempts per key (typically client IP). When limits are exceeded, the middleware returns a 429 response with a `Retry-After` header. Responses include `X-RateLimit-Limit` and `X-RateLimit-Remaining` headers so clients can self-throttle.
+Cache-backed rate limiter with route middleware --- throttle requests by IP with configurable limits and automatic `Retry-After` headers. Rate limiting uses the [cache](/docs/packages/cache/) layer to track request attempts per key (typically client IP) via atomic increments. When limits are exceeded, the middleware returns a 429 response with a `Retry-After` header. Responses include `X-RateLimit-Limit` and `X-RateLimit-Remaining` headers so clients can self-throttle.
 
 ## Installation
 
@@ -12,6 +12,28 @@ composer require marko/ratelimiter
 ```
 
 Requires [`marko/cache`](/docs/packages/cache/) for the storage backend and [`marko/routing`](/docs/packages/routing/) for the middleware.
+
+## Configuration
+
+Publish the default config and add it to your project:
+
+```php title="config/ratelimiter.php"
+return [
+    /*
+    | A list of IP addresses (IPv4 or IPv6) that are trusted reverse proxies.
+    | When REMOTE_ADDR matches a trusted proxy, the X-Forwarded-For header is
+    | honored to resolve the real client IP. The right-most untrusted hop in
+    | the XFF chain is used to prevent header-spoofing attacks.
+    |
+    | Default: [] (no proxies trusted — REMOTE_ADDR is always used directly)
+    */
+    'trusted_proxies' => [],
+];
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `trusted_proxies` | `[]` | IP addresses of trusted reverse proxies. When empty, `REMOTE_ADDR` is always used and `X-Forwarded-For` is ignored. |
 
 ## Usage
 
@@ -36,14 +58,16 @@ class ApiController
 }
 ```
 
-The middleware defaults to 60 requests per 60 seconds. It resolves the client IP from the `X-Forwarded-For` header, falling back to `Remote-Addr`. Configure limits via constructor injection:
+The middleware defaults to 60 requests per 60 seconds. It resolves the real client IP via `ClientIpResolver`: `REMOTE_ADDR` is used directly unless it belongs to a configured trusted proxy, in which case the right-most untrusted hop from `X-Forwarded-For` is used instead. Configure limits via constructor injection:
 
 ```php
+use Marko\RateLimiter\ClientIpResolver;
 use Marko\RateLimiter\Contracts\RateLimiterInterface;
 use Marko\RateLimiter\Middleware\RateLimitMiddleware;
 
 $middleware = new RateLimitMiddleware(
     limiter: $rateLimiter,
+    clientIpResolver: $clientIpResolver,
     maxAttempts: 100,
     decaySeconds: 120,
 );
@@ -103,7 +127,7 @@ use Marko\RateLimiter\RateLimiter;
 use Marko\RateLimiter\RateLimitResult;
 
 #[Preference(replaces: RateLimiter::class)]
-class SlidingWindowRateLimiter extends RateLimiter
+readonly class SlidingWindowRateLimiter extends RateLimiter
 {
     public function attempt(
         string $key,
@@ -133,6 +157,18 @@ public function remaining(): int;
 public function retryAfter(): ?int;
 ```
 
+### ClientIpResolver
+
+Resolves the real client IP from a request, respecting the `ratelimiter.trusted_proxies` config. When `REMOTE_ADDR` is not in the trusted list, `X-Forwarded-For` is ignored entirely (prevents header forgery). When it is trusted, the right-most untrusted hop in the `X-Forwarded-For` chain is returned.
+
+```php
+use Marko\RateLimiter\ClientIpResolver;
+
+public function resolve(Request $request): string;
+```
+
+Throws `ClientIpException` if `REMOTE_ADDR` is missing, and `ConfigNotFoundException` if the config key is absent.
+
 ### RateLimitMiddleware
 
 ```php
@@ -144,5 +180,6 @@ Constructor parameters:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `$limiter` | `RateLimiterInterface` | --- | The rate limiter instance |
+| `$clientIpResolver` | `ClientIpResolver` | --- | Resolves the real client IP |
 | `$maxAttempts` | `int` | `60` | Maximum requests allowed in the window |
 | `$decaySeconds` | `int` | `60` | Time window in seconds before attempts reset |

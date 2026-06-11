@@ -66,7 +66,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
     private ?array $havingClause = null;
 
     /**
-     * @var array<array{column: string, direction: string}>
+     * @var array<array{column: string, direction: string, raw: bool}>
      */
     private array $orders = [];
 
@@ -105,9 +105,13 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         private readonly ConnectionInterface $connection,
     ) {}
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function table(
         string $table,
     ): static {
+        IdentifierValidator::assertValidIdentifier($table);
         $this->table = $table;
 
         return $this;
@@ -142,6 +146,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws UnionShapeMismatchException
+     */
     public function union(
         QueryBuilderInterface $other,
     ): static {
@@ -157,6 +164,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws UnionShapeMismatchException
+     */
     public function unionAll(
         QueryBuilderInterface $other,
     ): static {
@@ -177,6 +187,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return count($this->columns);
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function compileSubquery(
         array &$bindings,
     ): string {
@@ -188,11 +201,20 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $sql;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function where(
         string $column,
         string $operator,
         mixed $value,
     ): static {
+        if (!JsonPathParser::isJsonPath($column)) {
+            IdentifierValidator::assertValidIdentifier($column);
+        }
+
+        IdentifierValidator::assertValidOperator($operator);
+
         $this->wheres[] = [
             'column' => $column,
             'operator' => $operator,
@@ -203,10 +225,15 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function whereIn(
         string $column,
         array $values,
     ): static {
+        IdentifierValidator::assertValidIdentifier($column);
+
         $this->whereIns[] = [
             'column' => $column,
             'values' => $values,
@@ -215,17 +242,25 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function whereNull(
         string $column,
     ): static {
+        IdentifierValidator::assertValidIdentifier($column);
         $this->whereNulls[] = $column;
 
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function whereNotNull(
         string $column,
     ): static {
+        IdentifierValidator::assertValidIdentifier($column);
         $this->whereNotNulls[] = $column;
 
         return $this;
@@ -265,11 +300,20 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function orWhere(
         string $column,
         string $operator,
         mixed $value,
     ): static {
+        if (!JsonPathParser::isJsonPath($column)) {
+            IdentifierValidator::assertValidIdentifier($column);
+        }
+
+        IdentifierValidator::assertValidOperator($operator);
+
         $this->wheres[] = [
             'column' => $column,
             'operator' => $operator,
@@ -293,6 +337,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function groupBy(
         string ...$columns,
     ): static {
@@ -310,6 +357,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function having(
         string $expression,
         array $bindings = [],
@@ -324,12 +374,20 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function join(
         string $table,
         string $first,
         string $operator,
         string $second,
     ): static {
+        IdentifierValidator::assertValidIdentifier($table);
+        IdentifierValidator::assertValidIdentifier($first);
+        IdentifierValidator::assertValidOperator($operator);
+        IdentifierValidator::assertValidIdentifier($second);
+
         $this->joins[] = [
             'type' => 'INNER',
             'table' => $table,
@@ -341,12 +399,20 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function leftJoin(
         string $table,
         string $first,
         string $operator,
         string $second,
     ): static {
+        IdentifierValidator::assertValidIdentifier($table);
+        IdentifierValidator::assertValidIdentifier($first);
+        IdentifierValidator::assertValidOperator($operator);
+        IdentifierValidator::assertValidIdentifier($second);
+
         $this->joins[] = [
             'type' => 'LEFT',
             'table' => $table,
@@ -358,12 +424,20 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function rightJoin(
         string $table,
         string $first,
         string $operator,
         string $second,
     ): static {
+        IdentifierValidator::assertValidIdentifier($table);
+        IdentifierValidator::assertValidIdentifier($first);
+        IdentifierValidator::assertValidOperator($operator);
+        IdentifierValidator::assertValidIdentifier($second);
+
         $this->joins[] = [
             'type' => 'RIGHT',
             'table' => $table,
@@ -375,10 +449,17 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function orderBy(
         string $column,
         string $direction = 'ASC',
     ): static {
+        if (!JsonPathParser::isJsonPath($column)) {
+            IdentifierValidator::assertValidIdentifier($column);
+        }
+
         $direction = strtoupper($direction);
         if (!in_array($direction, ['ASC', 'DESC'], true)) {
             $direction = 'ASC';
@@ -393,6 +474,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function orderByRaw(
         string $expression,
         string $direction = 'ASC',
@@ -429,6 +513,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function get(): array
     {
         if (!empty($this->unions)) {
@@ -440,6 +527,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this->connection->query($sql, $this->bindings);
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function first(): ?array
     {
         $this->limit(1);
@@ -448,12 +538,19 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $results[0] ?? null;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function insert(
         array $data,
     ): int {
         $this->bindings = [];
         $columns = array_keys($data);
         $values = array_values($data);
+
+        foreach ($columns as $col) {
+            IdentifierValidator::assertValidIdentifier($col);
+        }
 
         $quotedColumns = array_map(
             fn (string $col): string => $this->quoteIdentifier($col),
@@ -479,6 +576,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return (int) ($result[0]['id'] ?? 0);
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function update(
         array $data,
     ): int {
@@ -486,6 +586,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         $setParts = [];
 
         foreach ($data as $column => $value) {
+            IdentifierValidator::assertValidIdentifier($column);
             $setParts[] = sprintf(
                 '%s = ?',
                 $this->quoteIdentifier($column),
@@ -518,8 +619,15 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this->connection->execute($sql, $this->bindings);
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function count(?string $column = null): int
     {
+        if ($column !== null) {
+            IdentifierValidator::assertValidIdentifier($column);
+        }
+
         $expr = $column !== null
             ? 'COUNT(' . $this->quoteIdentifier($column) . ') as aggregate'
             : 'COUNT(*) as aggregate';
@@ -527,6 +635,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return (int) $this->runAggregate($expr);
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function min(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -536,6 +647,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('MIN(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function max(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -545,6 +659,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('MAX(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function sum(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -554,6 +671,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $this->runAggregate('SUM(' . $this->quoteIdentifier($column) . ') as aggregate');
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     public function avg(string $column): int|float|null
     {
         if (!IdentifierValidator::isValidIdentifier($column)) {
@@ -580,13 +700,13 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
             return implode(
                 '.',
                 array_map(
-                    fn (string $part): string => '"' . $part . '"',
+                    fn (string $part): string => '"' . IdentifierValidator::escapeDelimiter($part, '"') . '"',
                     $parts,
                 ),
             );
         }
 
-        return '"' . $identifier . '"';
+        return '"' . IdentifierValidator::escapeDelimiter($identifier, '"') . '"';
     }
 
     /**
@@ -618,6 +738,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return is_int($value + 0) ? (int) $value : (float) $value;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     private function executeUnion(): array
     {
         $bindings = [];
@@ -716,6 +839,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         return $compiledColumn;
     }
 
+    /**
+     * @throws InvalidColumnException
+     */
     private function buildSelectSql(): string
     {
         $this->bindings = [];

@@ -2,15 +2,23 @@
 
 declare(strict_types=1);
 
+use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
+use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Worker;
 use Marko\Queue\WorkerInterface;
 use Marko\Testing\Fake\FakeConfigRepository;
+
+function createWorkerTestEnvelope(
+    string $key = 'test-key-for-worker',
+): JobEnvelope {
+    return new JobEnvelope(new EncryptionConfig(new FakeConfigRepository(['encryption.key' => $key])));
+}
 
 function createTestQueueConfig(
     array $values = [],
@@ -244,7 +252,7 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config);
+        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);
 
@@ -337,7 +345,7 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config);
+        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
 
         $worker->work(once: true);
 
@@ -424,7 +432,7 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config);
+        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
 
         $worker->work(once: true);
 
@@ -452,7 +460,7 @@ describe('Worker', function (): void {
         // Create queue that references the static helper
         $queue = new StopTestQueue();
 
-        $worker = new Worker($queue, $failedRepository, $config);
+        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
         StopTestHelper::$worker = $worker;
 
         $worker->work();
@@ -536,7 +544,7 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config);
+        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
 
         // With once=true, worker should process exactly one job and return
         $worker->work(once: true);
@@ -606,7 +614,7 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config);
+        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
 
         // With once=true and no jobs, worker should return immediately
         $worker->work(once: true);
@@ -614,7 +622,7 @@ describe('Worker', function (): void {
         expect($popCount)->toBe(1);
     });
 
-    test('Worker uses exponential backoff', function (): void {
+    test('uses exponential backoff', function (): void {
         // Test that retry delay follows formula: 2^attempts * 10 seconds
         // After 1st attempt (attempts=1): 2^1 * 10 = 20 seconds
         // After 2nd attempt (attempts=2): 2^2 * 10 = 40 seconds
@@ -700,7 +708,7 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config);
+        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
 
         // Process jobs (once each)
         $worker->work(once: true); // 1st attempt

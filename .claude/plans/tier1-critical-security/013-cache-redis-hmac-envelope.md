@@ -1,6 +1,6 @@
 # Task 013: F6 — HMAC-signed envelope for cache-redis payloads
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [005]
 **Retry count**: 0
 
@@ -25,14 +25,14 @@ Close PHP object injection over the network-reachable Redis cache. `RedisCacheDr
   - `increment()` (added in task 005) stores a plain integer and reads it back as an int — it must NOT go through the HMAC envelope (it uses Redis `INCR`, not serialize). Keep `increment()` outside the envelope path; only `set()`/`get()`/`getItem()` serialize values.
 
 ## Requirements (Test Descriptions)
-- [ ] `it stores an HMAC-signed envelope when setting a redis cache value`
-- [ ] `it returns the original value when the stored envelope HMAC verifies`
-- [ ] `it rejects a redis value whose HMAC does not verify before unserializing it`
-- [ ] `it does not unserialize a redis value that has been tampered with`
-- [ ] `it throws loudly when the signing key is empty`
-- [ ] `it rejects a stored value that has no envelope framing (legacy/unsigned data)`
-- [ ] `it does not route increment() integer counters through the HMAC envelope`
-- [ ] `it round-trips a legitimate value through set and get`
+- [x] `it stores an HMAC-signed envelope when setting a redis cache value`
+- [x] `it returns the original value when the stored envelope HMAC verifies`
+- [x] `it rejects a redis value whose HMAC does not verify before unserializing it`
+- [x] `it does not unserialize a redis value that has been tampered with`
+- [x] `it throws loudly when the signing key is empty`
+- [x] `it rejects a stored value that has no envelope framing (legacy/unsigned data)`
+- [x] `it does not route increment() integer counters through the HMAC envelope`
+- [x] `it round-trips a legitimate value through set and get`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -40,4 +40,10 @@ Close PHP object injection over the network-reachable Redis cache. `RedisCacheDr
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+- Created `packages/cache-redis/src/Exceptions/TamperedCacheValueException.php` extending `CacheException` with `signatureMismatch()` and `emptySigningKey()` factory methods.
+- Created `packages/cache-redis/src/Signer/CacheValueSigner.php` (readonly class) mirroring the `JobEnvelope` pattern: `wrap()` and `verifyAndUnwrap()` using `hash_hmac('sha256', ...)` / `hash_equals()`. Envelope format: `{64-char-hex-hmac}.{serialized-payload}`.
+- Injected `CacheValueSigner` as a third constructor parameter in `RedisCacheDriver`. The `get()`, `set()`, and `getItem()` methods use the signer; `increment()` is explicitly excluded.
+- Added `marko/encryption` to `packages/cache-redis/composer.json` `require`.
+- Updated `createDriver()` test helper to accept `signingKey` param and inject `CacheValueSigner` via `EncryptionConfig` / `FakeConfigRepository`.
+- All 8 new tests pass; original 47 tests still pass (55 total).

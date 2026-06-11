@@ -22,8 +22,6 @@ readonly class AdminAuthMiddleware implements MiddlewareInterface
         private GuardInterface $guard,
         private AdminConfigInterface $adminConfig,
         private PermissionRegistryInterface $permissionRegistry,
-        private ?string $controller = null,
-        private ?string $action = null,
     ) {}
 
     /**
@@ -37,7 +35,7 @@ readonly class AdminAuthMiddleware implements MiddlewareInterface
             return $this->unauthorizedResponse($request);
         }
 
-        $requiredPermission = $this->getRequiredPermission();
+        $requiredPermission = $this->getRequiredPermission($request);
 
         if ($requiredPermission !== null) {
             $user = $this->guard->user();
@@ -112,13 +110,16 @@ readonly class AdminAuthMiddleware implements MiddlewareInterface
     /**
      * @throws ReflectionException
      */
-    private function getRequiredPermission(): ?string
+    private function getRequiredPermission(Request $request): ?string
     {
-        if ($this->controller === null || $this->action === null) {
+        $controller = $request->controller();
+        $action = $request->action();
+
+        if ($controller === null || $action === null) {
             return null;
         }
 
-        $reflection = new ReflectionMethod($this->controller, $this->action);
+        $reflection = new ReflectionMethod($controller, $action);
         $attributes = $reflection->getAttributes(RequiresPermission::class);
 
         if (empty($attributes)) {

@@ -34,6 +34,9 @@ class ArrayCacheDriver implements CacheInterface
         private readonly CacheConfig $config,
     ) {}
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function get(
         string $key,
         mixed $default = null,
@@ -53,6 +56,9 @@ class ArrayCacheDriver implements CacheInterface
         return $this->storage[$key]['value'];
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function set(
         string $key,
         mixed $value,
@@ -72,6 +78,9 @@ class ArrayCacheDriver implements CacheInterface
         return true;
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function has(
         string $key,
     ): bool {
@@ -90,6 +99,9 @@ class ArrayCacheDriver implements CacheInterface
         return true;
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function delete(
         string $key,
     ): bool {
@@ -107,6 +119,9 @@ class ArrayCacheDriver implements CacheInterface
         return true;
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function getItem(
         string $key,
     ): CacheItemInterface {
@@ -130,6 +145,9 @@ class ArrayCacheDriver implements CacheInterface
         return CacheItem::hit($key, $data['value'], $expiresAt);
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function getMultiple(
         array $keys,
         mixed $default = null,
@@ -143,6 +161,9 @@ class ArrayCacheDriver implements CacheInterface
         return $result;
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function setMultiple(
         array $values,
         ?int $ttl = null,
@@ -154,6 +175,9 @@ class ArrayCacheDriver implements CacheInterface
         return true;
     }
 
+    /**
+     * @throws InvalidKeyException
+     */
     public function deleteMultiple(
         array $keys,
     ): bool {
@@ -162,6 +186,31 @@ class ArrayCacheDriver implements CacheInterface
         }
 
         return true;
+    }
+
+    /**
+     * @throws InvalidKeyException
+     */
+    public function increment(
+        string $key,
+        int $ttl,
+    ): int {
+        $this->validateKey($key);
+
+        if (!isset($this->storage[$key]) || $this->isExpired($this->storage[$key])) {
+            $expiresAt = $ttl > 0 ? time() + $ttl : null;
+            $this->storage[$key] = [
+                'value' => 1,
+                'expires_at' => $expiresAt,
+                'created_at' => time(),
+            ];
+
+            return 1;
+        }
+
+        $this->storage[$key]['value']++;
+
+        return $this->storage[$key]['value'];
     }
 
     /**

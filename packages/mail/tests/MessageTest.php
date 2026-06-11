@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Mail\Address;
 use Marko\Mail\Attachment;
+use Marko\Mail\Exceptions\MessageException;
 use Marko\Mail\Message;
 
 describe('Message', function (): void {
@@ -16,19 +17,19 @@ describe('Message', function (): void {
     it('getters return correct data', function (): void {
         $message = Message::create();
 
-        expect($message->to)->toBe([])
-            ->and($message->cc)->toBe([])
-            ->and($message->bcc)->toBe([])
+        expect($message->to)->toBeEmpty()
+            ->and($message->cc)->toBeEmpty()
+            ->and($message->bcc)->toBeEmpty()
             ->and($message->from)->toBeNull()
             ->and($message->replyTo)->toBeNull()
             ->and($message->subject)->toBeNull()
             ->and($message->html)->toBeNull()
             ->and($message->text)->toBeNull()
-            ->and($message->attachments)->toBe([])
-            ->and($message->headers)->toBe([])
+            ->and($message->attachments)->toBeEmpty()
+            ->and($message->headers)->toBeEmpty()
             ->and($message->priority)->toBeNull()
             ->and($message->view)->toBeNull()
-            ->and($message->viewData)->toBe([]);
+            ->and($message->viewData)->toBeEmpty();
     });
 
     it('to adds recipient', function (): void {
@@ -224,6 +225,44 @@ describe('Message', function (): void {
         } finally {
             unlink($testFile);
         }
+    });
+
+    it('rejects a carriage return or line feed in a custom header name', function (string $name): void {
+        expect(fn () => Message::create()->header($name, 'value'))
+            ->toThrow(MessageException::class);
+    })->with([
+        'carriage return in name' => ["X-Bad\rHeader"],
+        'line feed in name' => ["X-Bad\nHeader"],
+    ]);
+
+    it('rejects a carriage return or line feed in a custom header value', function (string $value): void {
+        expect(fn () => Message::create()->header('X-Custom', $value))
+            ->toThrow(MessageException::class);
+    })->with([
+        'carriage return in value' => ["bad\rvalue"],
+        'line feed in value' => ["bad\nvalue"],
+    ]);
+
+    it('still stores a legitimate custom header', function (): void {
+        $message = Message::create()->header('X-Custom-Header', 'safe-value');
+
+        expect($message->headers)->toHaveKey('X-Custom-Header')
+            ->and($message->headers['X-Custom-Header'])->toBe('safe-value');
+    });
+
+    it('throws MessageException with a helpful suggestion when header injection is detected', function (): void {
+        $exception = null;
+
+        try {
+            Message::create()->header('X-Custom', "injected\r\nHeader: evil");
+        } catch (MessageException $e) {
+            $exception = $e;
+        }
+
+        expect($exception)->toBeInstanceOf(MessageException::class)
+            ->and($exception->getMessage())->toContain('Header injection attempt detected')
+            ->and($exception->getSuggestion())->toContain('\\r')
+            ->and($exception->getSuggestion())->toContain('\\n');
     });
 
     it('header adds custom header', function (): void {

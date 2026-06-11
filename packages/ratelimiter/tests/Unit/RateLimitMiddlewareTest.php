@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use Marko\RateLimiter\ClientIpResolver;
 use Marko\RateLimiter\Contracts\RateLimiterInterface;
+use Marko\RateLimiter\Exceptions\ClientIpException;
 use Marko\RateLimiter\Middleware\RateLimitMiddleware;
 use Marko\RateLimiter\RateLimitResult;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
+use Marko\Testing\Fake\FakeConfigRepository;
 
 function createMockLimiter(
     RateLimitResult $result,
@@ -39,6 +42,15 @@ function createMockLimiter(
     };
 }
 
+function createMiddlewareResolver(array $trustedProxies = []): ClientIpResolver
+{
+    $config = new FakeConfigRepository([
+        'ratelimiter.trusted_proxies' => $trustedProxies,
+    ]);
+
+    return new ClientIpResolver($config);
+}
+
 describe('RateLimitMiddleware', function (): void {
     it('implements MiddlewareInterface', function (): void {
         $limiter = createMockLimiter(new RateLimitResult(
@@ -46,7 +58,7 @@ describe('RateLimitMiddleware', function (): void {
             remaining: 59,
         ));
 
-        $middleware = new RateLimitMiddleware($limiter);
+        $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
 
         expect($middleware)->toBeInstanceOf(MiddlewareInterface::class);
     });
@@ -57,8 +69,8 @@ describe('RateLimitMiddleware', function (): void {
             remaining: 59,
         ));
 
-        $middleware = new RateLimitMiddleware($limiter);
-        $request = new Request(server: ['HTTP_X_FORWARDED_FOR' => '192.168.1.1']);
+        $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
+        $request = new Request(server: ['REMOTE_ADDR' => '192.168.1.1']);
         $next = fn (Request $r) => new Response('OK', 200);
 
         $response = $middleware->handle($request, $next);
@@ -74,8 +86,8 @@ describe('RateLimitMiddleware', function (): void {
         ));
 
         $nextCalled = false;
-        $middleware = new RateLimitMiddleware($limiter);
-        $request = new Request(server: ['HTTP_X_FORWARDED_FOR' => '10.0.0.1']);
+        $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
+        $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.1']);
         $next = function (Request $r) use (&$nextCalled) {
             $nextCalled = true;
 
@@ -95,8 +107,8 @@ describe('RateLimitMiddleware', function (): void {
         ));
 
         $nextCalled = false;
-        $middleware = new RateLimitMiddleware($limiter);
-        $request = new Request(server: ['HTTP_X_FORWARDED_FOR' => '10.0.0.1']);
+        $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
+        $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.1']);
         $next = function (Request $r) use (&$nextCalled) {
             $nextCalled = true;
 
@@ -118,9 +130,10 @@ describe('RateLimitMiddleware', function (): void {
 
         $middleware = new RateLimitMiddleware(
             limiter: $limiter,
+            clientIpResolver: createMiddlewareResolver(),
             maxAttempts: 100,
         );
-        $request = new Request(server: ['HTTP_X_FORWARDED_FOR' => '10.0.0.1']);
+        $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.1']);
         $next = fn (Request $r) => new Response('OK');
 
         $response = $middleware->handle($request, $next);
@@ -140,8 +153,8 @@ describe('RateLimitMiddleware', function (): void {
             retryAfter: 45,
         ));
 
-        $middleware = new RateLimitMiddleware($limiter);
-        $request = new Request(server: ['HTTP_X_FORWARDED_FOR' => '10.0.0.1']);
+        $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
+        $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.1']);
         $next = fn (Request $r) => new Response('OK');
 
         $response = $middleware->handle($request, $next);
@@ -187,8 +200,8 @@ describe('RateLimitMiddleware', function (): void {
             ): void {}
         };
 
-        $middleware = new RateLimitMiddleware($limiter);
-        $request = new Request(server: ['HTTP_X_FORWARDED_FOR' => '203.0.113.50']);
+        $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
+        $request = new Request(server: ['REMOTE_ADDR' => '203.0.113.50']);
         $next = fn (Request $r) => new Response('OK');
 
         $middleware->handle($request, $next);
@@ -196,7 +209,7 @@ describe('RateLimitMiddleware', function (): void {
         expect($capturedKey)->toBe('203.0.113.50');
     });
 
-    it('falls back to Remote-Addr header when X-Forwarded-For missing', function (): void {
+    it('uses REMOTE_ADDR directly when no trusted proxies are configured', function (): void {
         $capturedKey = null;
 
         $limiter = new class ($capturedKey) implements RateLimiterInterface
@@ -231,8 +244,8 @@ describe('RateLimitMiddleware', function (): void {
             ): void {}
         };
 
-        $middleware = new RateLimitMiddleware($limiter);
-        $request = new Request(server: ['HTTP_REMOTE_ADDR' => '10.0.0.99']);
+        $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
+        $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.99']);
         $next = fn (Request $r) => new Response('OK');
 
         $middleware->handle($request, $next);
@@ -240,47 +253,17 @@ describe('RateLimitMiddleware', function (): void {
         expect($capturedKey)->toBe('10.0.0.99');
     });
 
-    it('falls back to unknown when no IP headers present', function (): void {
-        $capturedKey = null;
+    it('throws ClientIpException when REMOTE_ADDR is absent', function (): void {
+        $limiter = createMockLimiter(new RateLimitResult(
+            allowed: true,
+            remaining: 59,
+        ));
 
-        $limiter = new class ($capturedKey) implements RateLimiterInterface
-        {
-            public function __construct(
-                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
-                private ?string &$capturedKey,
-            ) {}
-
-            public function attempt(
-                string $key,
-                int $maxAttempts,
-                int $decaySeconds,
-            ): RateLimitResult {
-                $this->capturedKey = $key;
-
-                return new RateLimitResult(
-                    allowed: true,
-                    remaining: 59,
-                );
-            }
-
-            public function tooManyAttempts(
-                string $key,
-                int $maxAttempts,
-            ): bool {
-                return false;
-            }
-
-            public function clear(
-                string $key,
-            ): void {}
-        };
-
-        $middleware = new RateLimitMiddleware($limiter);
+        $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
         $request = new Request();
         $next = fn (Request $r) => new Response('OK');
 
-        $middleware->handle($request, $next);
-
-        expect($capturedKey)->toBe('unknown');
+        expect(fn () => $middleware->handle($request, $next))
+            ->toThrow(ClientIpException::class);
     });
 });
