@@ -27,6 +27,10 @@ Close the rate-limiter bypass and the non-atomic increment. Add `packages/rateli
   - Whitespace: XFF entries are `value, value` with spaces — trim each entry before comparison.
   - Validate XFF entries as IPs (`filter_var(..., FILTER_VALIDATE_IP)`); reject/skip garbage so a forged header cannot inject a non-IP key.
 - Atomic `attempt()` ordering: increment FIRST, then compare the returned count to `maxAttempts`. Because the count keeps growing on blocked requests, do NOT use the count itself to derive `retryAfter` — read the remaining TTL via `getItem()` (still present) for the blocked-path `retryAfter`. Confirm the first allowed attempt returns `remaining = maxAttempts - 1` and the (maxAttempts+1)-th call is blocked.
+- CRITICAL — the existing `RateLimiterTest` suite (`packages/ratelimiter/tests/Unit/RateLimiterTest.php`) MUST keep passing after the rewrite. Specific constraints surfaced by those tests:
+  - `it('reports too many attempts without incrementing')` asserts the counter is EXACTLY `maxAttempts` after N `attempt()` calls and that `tooManyAttempts()` does NOT change it — so `tooManyAttempts()` and `clear()` MUST stay read-only (`get()`/`delete()`), never `increment()`.
+  - `it('returns remaining attempts count')` expects `remaining()` = 2,1,0 across three attempts at limit 3 — so compute `remaining = max(0, $maxAttempts - $count)` where `$count` is the value RETURNED by `increment()`. Clamp at 0 so the blocked path (count > maxAttempts) still reports `remaining = 0`.
+  - `it('blocks when max attempts exceeded')` / `it('stores cache key with TTL for decay window')` must continue to pass: blocked requests increment past the limit but stay blocked, and the TTL is applied on the first increment only.
 
 ## Requirements (Test Descriptions)
 - [ ] `it resolves the client IP from REMOTE_ADDR when no proxies are trusted`
