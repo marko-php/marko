@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Core;
 
+use Marko\Core\Command\CommandDefinition;
 use Marko\Core\Command\CommandDiscovery;
 use Marko\Core\Command\CommandRegistry;
 use Marko\Core\Command\CommandRunner;
@@ -11,16 +12,21 @@ use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Container\PreferenceDiscovery;
+use Marko\Core\Container\PreferenceRecord;
 use Marko\Core\Container\PreferenceRegistry;
 use Marko\Core\Discovery\ClassFileParser;
+use Marko\Core\Discovery\DiscoveryCache;
+use Marko\Core\Discovery\DiscoveryEnvironment;
 use Marko\Core\Event\EventDispatcher;
 use Marko\Core\Event\EventDispatcherInterface;
+use Marko\Core\Event\ObserverDefinition;
 use Marko\Core\Event\ObserverDiscovery;
 use Marko\Core\Event\ObserverRegistry;
 use Marko\Core\Exceptions\BindingConflictException;
 use Marko\Core\Exceptions\BindingException;
 use Marko\Core\Exceptions\CircularDependencyException;
 use Marko\Core\Exceptions\CommandException;
+use Marko\Core\Exceptions\DiscoveryCacheException;
 use Marko\Core\Exceptions\EventException;
 use Marko\Core\Exceptions\ModuleException;
 use Marko\Core\Exceptions\PluginException;
@@ -34,6 +40,7 @@ use Marko\Core\Module\ModuleRepository;
 use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Core\Plugin\InterceptorClassGenerator;
+use Marko\Core\Plugin\PluginDefinition;
 use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginInterceptor;
 use Marko\Core\Plugin\PluginRegistry;
@@ -86,7 +93,7 @@ class Application
     ) {}
 
     /**
-     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException|RuntimeException
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException|RuntimeException|DiscoveryCacheException
      */
     public static function boot(string $basePath): self
     {
@@ -106,7 +113,7 @@ class Application
     }
 
     /**
-     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException
+     * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException|DiscoveryCacheException
      */
     public function initialize(): void
     {
@@ -146,21 +153,45 @@ class Application
 
         // Register ProjectPaths for dependency injection (base path derived from vendor path)
         $basePath = dirname($this->vendorPath);
-        $this->container->instance(ProjectPaths::class, new ProjectPaths($basePath));
+        $projectPaths = new ProjectPaths($basePath);
+        $this->container->instance(ProjectPaths::class, $projectPaths);
 
         // Register bindings from all modules
         foreach ($this->modules as $module) {
             $bindingRegistry->registerModule($module);
         }
 
-        // Discover and register preferences
-        $this->discoverPreferences();
+        // Determine whether to hydrate from cache or run live scans.
+        // The gate reads DiscoveryEnvironment (which reads $_ENV directly) — no marko/config dependency.
+        $env = new DiscoveryEnvironment();
+        $cache = new DiscoveryCache($projectPaths, $env);
+        $useCache = $env->enabled() && $env->environment() !== 'development' && $cache->exists();
 
-        // Discover and register plugins
-        $this->discoverPlugins();
+        // Load cache payload once (shared across all four subsystem forks).
+        // A corrupt cache throws DiscoveryCacheException loudly — no silent fallback.
+        /** @var array{preferences: PreferenceRecord[], plugins: PluginDefinition[], observers: ObserverDefinition[], commands: CommandDefinition[]}|null $cachePayload */
+        $cachePayload = $useCache ? $cache->load() : null;
 
-        // Discover and register observers
-        $this->discoverObservers();
+        // Fork 1 — preferences (independent of the other three)
+        if ($cachePayload !== null) {
+            $this->registerPreferencesFromCache($cachePayload['preferences']);
+        } else {
+            $this->discoverPreferences();
+        }
+
+        // Fork 2 — plugins (independent of the other three)
+        if ($cachePayload !== null) {
+            $this->registerPluginsFromCache($cachePayload['plugins']);
+        } else {
+            $this->discoverPlugins();
+        }
+
+        // Fork 3 — observers (independent; MUST run before EventDispatcher is created below)
+        if ($cachePayload !== null) {
+            $this->registerObserversFromCache($cachePayload['observers']);
+        } else {
+            $this->discoverObservers();
+        }
 
         // Create event dispatcher and register in container
         $this->eventDispatcher = new EventDispatcher($this->container, $this->observerRegistry);
@@ -170,8 +201,12 @@ class Application
         $moduleRepository = new ModuleRepository($this->modules);
         $this->container->instance(ModuleRepositoryInterface::class, $moduleRepository);
 
-        // Discover and register commands
-        $this->discoverCommands();
+        // Fork 4 — commands (MUST run after module repository is bound above)
+        if ($cachePayload !== null) {
+            $this->registerCommandsFromCache($cachePayload['commands']);
+        } else {
+            $this->discoverCommands();
+        }
 
         // Discover and register routes (if routing package is available)
         $this->discoverRoutes();
@@ -295,6 +330,64 @@ class Application
         $commands = $commandDiscovery->discover($this->modules);
 
         foreach ($commands as $definition) {
+            $this->commandRegistry->register($definition);
+        }
+
+        // Bind registry in container so commands can inject it
+        $this->container->instance(CommandRegistry::class, $this->commandRegistry);
+
+        $this->commandRunner = new CommandRunner($this->container, $this->commandRegistry);
+    }
+
+    /**
+     * @param PreferenceRecord[] $records
+     *
+     * @throws PreferenceConflictException
+     */
+    private function registerPreferencesFromCache(array $records): void
+    {
+        foreach ($records as $record) {
+            $this->preferenceRegistry->register(
+                $record->replaces,
+                $record->replacement,
+            );
+        }
+    }
+
+    /**
+     * @param PluginDefinition[] $definitions
+     *
+     * @throws PluginException|ReflectionException
+     */
+    private function registerPluginsFromCache(array $definitions): void
+    {
+        foreach ($definitions as $definition) {
+            $this->pluginRegistry->register($definition);
+        }
+    }
+
+    /**
+     * @param ObserverDefinition[] $definitions
+     */
+    private function registerObserversFromCache(array $definitions): void
+    {
+        $this->observerRegistry = new ObserverRegistry();
+
+        foreach ($definitions as $definition) {
+            $this->observerRegistry->register($definition);
+        }
+    }
+
+    /**
+     * @param CommandDefinition[] $definitions
+     *
+     * @throws CommandException
+     */
+    private function registerCommandsFromCache(array $definitions): void
+    {
+        $this->commandRegistry = new CommandRegistry();
+
+        foreach ($definitions as $definition) {
             $this->commandRegistry->register($definition);
         }
 

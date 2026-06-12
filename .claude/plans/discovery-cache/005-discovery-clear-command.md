@@ -1,6 +1,6 @@
 # Task 005: discovery:clear command
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [002]
 **Retry count**: 0
 
@@ -8,6 +8,8 @@
 
 ## Description
 Add the `discovery:clear` CLI command. It removes the compiled discovery cache file via `DiscoveryCache::clear()`, reporting success. Clearing is idempotent: clearing when no cache exists is reported as success, not an error.
+
+**Recovery-path limitation (must be documented in the command and the corrupt-cache exception, Task 002).** `discovery:clear` runs AFTER `Application::initialize()` (see `CliKernel::doRun()`), and Task 006 makes a CORRUPT cache throw during `initialize()`. So `discovery:clear` CANNOT recover a corrupt cache — boot throws before the command dispatches. It only works when boot succeeds (cache valid or absent). The recovery instruction for a corrupt cache is to delete the file directly; the `DiscoveryCacheException` suggestion (Task 002) names that path first. `discovery:clear` is the convenience path for a valid cache you simply want to remove.
 
 ## Context
 - Related files:
@@ -21,10 +23,10 @@ Add the `discovery:clear` CLI command. It removes the compiled discovery cache f
 - Standards: strict types, constructor promotion, no final, no magic methods, full type declarations. MUST NOT reference `Marko\Config`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it removes an existing cache file and returns exit code 0`
-- [ ] `it reports the cache as cleared via writeLine`
-- [ ] `it returns exit code 0 and reports success when no cache file exists`
-- [ ] `it leaves DiscoveryCache exists() false after running`
+- [x] `it removes an existing cache file and returns exit code 0`
+- [x] `it reports the cache as cleared via writeLine`
+- [x] `it returns exit code 0 and reports success when no cache file exists`
+- [x] `it leaves DiscoveryCache exists() false after running`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -32,4 +34,9 @@ Add the `discovery:clear` CLI command. It removes the compiled discovery cache f
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created `DiscoveryClearCommand` at `packages/core/src/Commands/DiscoveryClearCommand.php`
+- `readonly class` — all constructor properties are immutable
+- Injects `DiscoveryCache` directly (concrete autowirable class)
+- `DiscoveryCache::clear()` is already idempotent (handles absent file), so the command always succeeds with exit code 0
+- Output message: "Discovery cache cleared successfully."
+- Tests at `packages/core/tests/Command/DiscoveryClearCommandTest.php` cover all 4 requirements

@@ -20,10 +20,12 @@ Ensure Composer's global bin directory is in your PATH.
 From any directory within a Marko project:
 
 ```bash
-marko list              # Show all available commands
-marko module:list       # List installed modules
-marko cache:clear       # Clear cache (if cache module installed)
-marko db:migrate        # Run migrations (if database module installed)
+marko list                  # Show all available commands
+marko module:list           # List installed modules
+marko discovery:cache       # Compile the discovery cache (run on deploy)
+marko discovery:clear       # Remove the discovery cache
+marko cache:clear           # Clear cache (if cache module installed)
+marko db:migrate            # Run migrations (if database module installed)
 ```
 
 ### Creating Commands

@@ -144,6 +144,8 @@ After the tag is pushed, everything else is automatic:
   ```
 - Every release-worthy commit on `develop` has a `#NN` reference in its message (the default for both merge commits and squash merges via the GitHub UI)
 
+**Application deploy note:** After deploying a new release to a server, regenerate the discovery cache: `marko discovery:cache`. There is no automatic invalidation --- serving stale discovery means missing preferences, plugins, observers, or commands until the cache is recompiled.
+
 **If tests fail:** Fix the failing tests and re-run `./bin/release.sh`. Do not skip tests. The script aborts before touching `CHANGELOG.md` or creating any tag, so a failed run leaves no garbage commits.
 
 **If a PR is missing from the generated notes:** the only realistic cause is a commit on `develop` that doesn't reference its PR with `#NN`. Add a `(#NN)` to the commit message (or amend before tagging) and re-run. The script lists every PR it found at the start of generation so missing ones are visible immediately.
