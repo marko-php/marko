@@ -24,7 +24,7 @@ none
   - **016:** `LspProtocol::handleMessage()` ALREADY emits `-32700` for un-decodable JSON bodies; the gap is purely that a header-level malformed frame (`Content-Length: 0`) collapses to the same `null` as EOF in `serve()`, so the fix is the EOF-vs-malformed distinction at the protocol boundary.
   - **014:** `DocsException::searchFailed()` factory already exists — reuse it, no new factory needed.
 - **All cited findings reproduced in source; none were skipped.** The only adjustments were path/line/method-name drift (above), not absent bugs.
-- **No Tier 3 collision on `Request::path()`.** `tier3-medium-fixes/` is empty (no `_plan.md`, no task files). There is no prior task that touches `Request::path()` or Content-Type handling, so Task 008 owns these changes outright.
+- **STALE / CORRECTED — Tier 3 DOES interact with `Request::path()`.** The original note ("`tier3-medium-fixes/` is empty; Task 008 owns `path()` outright") was written before Tier 1–4 merged and is now wrong. Tier 3 (merged) added per-parameter percent-decoding in `RouteMatcher::extractParameters()` (`rawurldecode($matches[$name])`, `RouteMatcher.php` line 64) plus a test (`RouteRegexEscapingTest.php`: "rawurldecodes a matched parameter value exactly once") that pins decode-once semantics. Since `Router::match(..., $request->path())` feeds `path()` straight into the matcher, adding `rawurldecode` to `path()` would double-decode parameters and turn an encoded `%2F` into a structural `/`. **Task 008 has been scoped down to the Content-Type/Content-Length `header()` CGI-key fallback ONLY; the `path()` decode is removed.**
 - **Existing conventions confirmed by source reads:**
   - All target packages already use `MarkoException`-style exceptions with `message`/`context`/`suggestion` named params and static factory methods (`InvalidSignatureException`, `SseException`, `LayoutException`→`AmbiguousSortOrderException`, `BindingException`, `LogWriteException`, `DecryptionException`/`EncryptionException`). New factories must follow this shape.
   - `EncryptionException`/`DecryptionException` extend a local base (NOT `MarkoException`) but share the same constructor signature.
@@ -40,9 +40,9 @@ none
 - F3 SSE `event`/`id` CR/LF sanitization + subscription-path heartbeat/idle-timeout.
 - F4 OpenSSL AEAD enforcement, false iv-length handling, payload field-type validation.
 - F5 Log line-injection: CR/LF escaping option for the line formatter (default-safe).
-- F6 misc correctness: container cycle detection, manifest `php*`-vendor filter, request Content-Type/path decode, FakeSession null semantics, layout deterministic ambiguity detection, cache-file tmp cleanup / clear glob / mkdir race.
+- F6 misc correctness: container cycle detection, manifest `php*`-vendor filter, request Content-Type/Content-Length CGI-key header fallback (path decode dropped — collides with Tier 3 RouteMatcher), FakeSession null semantics, layout deterministic ambiguity detection, cache-file tmp cleanup / clear glob / mkdir race.
 - F7 tooling/devx hardening (added tasks 013–017): codeindexer cache deserialize safety + corruption rebuild; docs-fts MATCH error → `DocsException`; mcp read-only DB guard against stacked statements; lsp resilience to a malformed frame; Translator placeholder-ordering correctness.
-- F8 database sibling parity (added tasks 018–020): SQL generator type-map parity (mysql/pgsql), MySQL connection explicit PDO param binding, valid empty `whereIn`/`whereNotIn` on both builders.
+- F8 database sibling parity (added tasks 018–020): SQL generator type-map parity (mysql/pgsql), MySQL connection explicit PDO param binding, valid empty `whereIn` on both builders (`whereNotIn` removed from scope — no such method exists in the codebase).
 - F9 media/admin/queue/debugbar correctness (added tasks 021–024): GD format+alpha preservation and checked encodes; admin-api section visibility wildcard-awareness + `show()` filter parity; queue retry attempt reset; debugbar lazy `all()` + default-mask completeness.
 
 ### Out of Scope
@@ -60,7 +60,7 @@ none
 - [ ] Log messages containing newlines cannot forge a second log line when escaping is enabled (default).
 - [ ] Mutual constructor dependency cycles throw a loud `CircularDependencyException` instead of exhausting the stack.
 - [ ] `phpunit/phpunit` and other `php*`-vendor packages survive manifest filtering; `php`, `php-64bit`, `ext-*`, `lib-*` are still dropped.
-- [ ] `Request::header('Content-Type')` reads the CGI `CONTENT_TYPE` key; `path()` decodes percent-encoded segments.
+- [ ] `Request::header('Content-Type')` reads the CGI `CONTENT_TYPE` key (the `path()` percent-decode was dropped — it would double-decode against Tier 3's RouteMatcher).
 - [ ] `FakeSession::has()` reports a stored `null` as present, matching production `Session::has()`.
 - [ ] Layout ambiguity detection finds an ambiguous pair deterministically even with 17+ components.
 - [ ] cache-file leaves no orphan `.tmp` files on rename failure, `clear()` removes tmp files too, and concurrent directory creation does not error.
@@ -71,7 +71,7 @@ none
 - [ ] Translator resolves `:attribute` correctly when `:attr` also exists and never re-replaces a placeholder inside a replacement value.
 - [ ] Each shared abstract column type (`uuid`, `enum`, `bool`, `tinyint`, `blob`, `decimal`) generates valid DDL on BOTH mysql and pgsql generators, with consistent decimal precision.
 - [ ] MySQL connection binds `false`/`true`/`null`/int with correct PDO types (parity with pgsql), not coerced to strings.
-- [ ] `whereIn(col, [])` / `whereNotIn(col, [])` generate valid SQL (no-match / match-all) on both builders — never `IN ()`.
+- [ ] `whereIn(col, [])` generates valid SQL (no-match `1 = 0`) on both builders — never `IN ()`. (`whereNotIn` is out of scope: no such method exists.)
 - [ ] GD resize/crop preserve the source format and transparency, and surface a loud error on encode failure.
 - [ ] admin-api section visibility honors wildcard permissions, and `show()` enforces the same filter as `index()`.
 - [ ] queue RetryCommand resets a retried job's attempts so the worker performs real retries.
@@ -89,7 +89,7 @@ none
 | 005 | SSE subscription heartbeat + idle timeout | - | pending |
 | 006 | Log line-injection CR/LF escaping (line formatter) | - | pending |
 | 007 | Core container circular-dependency detection | - | pending |
-| 008 | Routing Request Content-Type header + path decode | - | pending |
+| 008 | Routing Request Content-Type/Content-Length header CGI-key fallback (path decode dropped — Tier 3 collision) | - | pending |
 | 009 | Core manifest `php*`-vendor dependency filter fix | - | pending |
 | 010 | FakeSession null-key `has()` parity | - | pending |
 | 011 | Layout deterministic ambiguous-sort-order detection | - | pending |
@@ -101,7 +101,7 @@ none
 | 017 | Translator placeholder replacement ordering (single-pass strtr) | - | pending |
 | 018 | SQL generator type-map parity across mysql/pgsql | - | pending |
 | 019 | MySQL connection binds explicit PDO param types (parity with pgsql) | - | pending |
-| 020 | query builder empty `whereIn`/`whereNotIn` → valid no-match/match-all | cross-tier rebase | pending |
+| 020 | query builder empty `whereIn` → valid no-match (`1 = 0`); `whereNotIn` out of scope (no such method) | cross-tier rebase | pending |
 | 021 | GD preserve source format + alpha; check encode returns | - | pending |
 | 022 | admin-api section visibility wildcard-aware + show() filter parity | - | pending |
 | 023 | queue RetryCommand resets attempts before re-queue | Tier-2 coordination | pending |
@@ -109,9 +109,9 @@ none
 
 The original twelve tasks (001–012) are independent (no shared files). Tasks 003 and 005 both touch the `sse` package but different files (Task 003: `SseEvent.php` + `SseException.php`; Task 005: `SseStream.php` only). They may run in parallel, but note a LOGICAL coupling: `SseStream::iterateSubscription()` constructs `new SseEvent(data:, event:)`, and Task 003 adds CRLF validation to the `SseEvent` constructor. If Task 005 lands first, its message fixtures must use channel/payload values WITHOUT CRLF so they remain valid once Task 003's constructor guard exists. Whichever task finishes last MUST re-run the full `packages/sse/tests/` suite to catch interaction regressions.
 
-Tasks 013–024 (gap-audit + dropped-from-consolidation follow-ups) are likewise independent and parallel, with two cross-tier coordination notes:
-- **Task 020** shares `MySqlQueryBuilder.php` / `PgSqlQueryBuilder.php` with Tier 1 / Tier 2 / Tier 3 query-builder tasks. It must be rebased sequentially onto whatever those tiers land; re-locate the `IN (%s)` compile loop before editing and re-run both builders' suites. (See its Implementation Notes.)
-- **Task 023** shares the queue attempt model with Tier 2 queue tasks 004 / 005 / 006. It must consume Tier 2's attempt-counting changes (rebase onto them, adopt their reset/increment API) rather than introduce a parallel mechanism. (See its Implementation Notes.)
+Tasks 013–024 (gap-audit + dropped-from-consolidation follow-ups) are likewise independent and parallel. NOTE: Tier 1–4 are ALREADY MERGED on this branch, so the cross-tier items below are now "build against current merged source," not "rebase onto a pending tier":
+- **Task 020** shares `MySqlQueryBuilder.php` / `PgSqlQueryBuilder.php` with the already-merged Tier 1/2/3 query-builder changes. The `IN (%s)` compile loop is currently at mysql lines 950-957 / pgsql lines 958-967 — re-confirm by searching for the `sprintf('%s IN (%s)', ...)` before editing in case a same-wave task shifts it, and re-run both builders' suites. Scope is empty-`whereIn` ONLY (`whereNotIn` does not exist).
+- **Task 023** consumes the already-merged Tier 1 `JobEnvelope` HMAC seam and Tier 2 attempt model in `RetryCommand` / `Job`. It adds `resetAttempts()` to `Job`/`JobInterface` and inserts the reset between `unserialize(verifyAndUnwrap(...))` and `queue->push(...)` — it must NOT remove the `verifyAndUnwrap` envelope call. (See its Context + Implementation Notes.)
 - Tasks 018, 019, 020 all touch the `database-mysql`/`database-pgsql` sibling pair but DIFFERENT files (018: `src/Sql/*Generator.php`; 019: `src/Connection/*Connection.php`; 020: `src/Query/*QueryBuilder.php`), so they are mutually parallel.
 
 ## Architecture Notes
