@@ -13,13 +13,15 @@ DEFAULT APPROACH — implement a real listener: subscribe via the pubsub `Subscr
 - Related files:
   - `packages/amphp/src/Command/PubSubListenCommand.php` (lines 13-33 — `#[Command(name: 'pubsub:listen')]`, `execute()` writes two lines, calls `$this->runner->run()`, writes "Listener stopped.")
   - `packages/amphp/src/EventLoopRunner.php` (lines 9-43 — `run()`/`stop()`/`isRunning()` flag plumbing; `doRun()` = `EventLoop::run()`, `doStop()` = `EventLoop::getDriver()->stop()`)
-  - `packages/amphp/src/AmphpConfig.php` (`shutdownTimeout(): int` → `config->getInt('amphp.shutdown_timeout')`)
-  - `packages/amphp/config/amphp.php` (`'shutdown_timeout' => (int) ($_ENV['AMPHP_SHUTDOWN_TIMEOUT'] ?? 30)`)
+  - `packages/amphp/src/AmphpConfig.php` (`shutdownTimeout(): int` → `config->getInt('amphp.shutdown_timeout')`; **ADD a `channels(): array` getter** → `config->getArray('amphp.channels')`, throws `ConfigNotFoundException` when missing — no hardcoded fallback)
+  - `packages/amphp/config/amphp.php` (currently has ONLY `'shutdown_timeout'` — **ADD a `'channels' => [...]` key**; channel defaults belong here, not in code)
+  - `packages/amphp/composer.json` (**ADD `"marko/pubsub": "self.version"` to require** — the package does NOT depend on `marko/pubsub` today, so `SubscriberInterface` is not autoloadable/type-hintable without this)
   - `packages/amphp/module.php` (binding/registration — wire the new dependencies here)
   - pubsub contract: `packages/pubsub/src/SubscriberInterface.php` (`subscribe(string ...$channels): Subscription`), `packages/pubsub/src/Subscription.php` (`IteratorAggregate<int, Message>`, `getIterator(): Generator`, `cancel(): void`), `packages/pubsub/src/Message.php`
   - `packages/amphp/src/Exceptions/AmphpException.php` (currently `extends MarkoException` with no factories — add factories for any new loud-error path, e.g. no channels configured)
 - Patterns to follow:
-  - Constructor inject `SubscriberInterface`, `AmphpConfig`, and the configured channel list (channels come from a `config/*.php` getter — no hardcoded channel names in code).
+  - **Prerequisite wiring (verified missing at review time):** add `"marko/pubsub": "self.version"` to `amphp/composer.json`, add the `'channels'` config key to `config/amphp.php`, and add `AmphpConfig::channels()`. Without these the listener cannot type-hint `SubscriberInterface` or read its channel list.
+  - Constructor inject `SubscriberInterface`, `AmphpConfig`, and the message-dispatch target. Read the channel list from `AmphpConfig::channels()` (no hardcoded channel names in code).
   - Use `EventLoop::queue()`/`EventLoop::onSignal(SIGINT, ...)` (Revolt) to register the subscription consumer and the shutdown handler. On signal, call the subscription's `cancel()` and stop the loop within `shutdownTimeout()` seconds.
   - Dispatch each `Message`: emit to the framework's event/dispatch seam or invoke a configured handler — surface the received message in a way the test can assert. Keep the dispatch target explicit (constructor-injected), not a service-locator lookup.
   - Loud errors: if no channels are configured, throw an `AmphpException` factory (message/context/suggestion) rather than silently running an idle loop.

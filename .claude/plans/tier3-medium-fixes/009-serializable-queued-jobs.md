@@ -8,13 +8,31 @@
 `DispatchWebhookJob` and `SendNotificationJob` hold live services (`WebhookDispatcherInterface`/`WebhookDeliveryService`/`QueueInterface` wrap a Guzzle client + PDO; `NotificationSender` wraps channels with PDO/mailer). `Job::serialize()` is `serialize($this)`, which PHP cannot do for closures/PDO — enqueueing onto a persistent driver crashes. Refactor both jobs to hold only serializable scalars/value-objects/ids and resolve their collaborators from the container at `handle()` time, mirroring `AsyncObserverJob`'s resolver pattern.
 
 ## Context
-- Related files: `packages/webhook/src/Jobs/DispatchWebhookJob.php` (constructor ~18-25 holds dispatcher/deliveryService/config/queue, handle ~27-58 re-enqueues a `new self(...)`), `packages/notification/src/Job/SendNotificationJob.php` (constructor ~14-19 holds `NotificationSender`, handle ~21-24), `packages/queue/src/Job.php` (`serialize()`/`unserialize()` ~26-35), `packages/queue/src/AsyncObserverJob.php` (`handle(?callable $resolver = null)` resolver pattern), `packages/queue/src/Worker.php` (`work()` pop → incrementAttempts → handle → delete ~27-50), `packages/webhook/module.php`, `packages/notification/module.php` (boot resolves services from container), `packages/webhook/tests/Jobs/DispatchWebhookJobTest.php` + `DispatchWebhookJobRetryTest.php`
-- Patterns to follow: store only the serializable payload (`WebhookPayload` value object, attempt number) / notifiable+notification data; resolve `WebhookDispatcherInterface`, `WebhookDeliveryService`, `ConfigRepositoryInterface`, `QueueInterface`, and `NotificationSender` from the container inside `handle()` (mirror `AsyncObserverJob`'s resolver / however Tier 2 wires container access onto `Job`/`Worker`); keep retry/backoff behavior; `WebhookPayload` and `NotificationInterface`/`NotifiableInterface` payloads must themselves be serializable.
+- Related files: `packages/webhook/src/Jobs/DispatchWebhookJob.php` (constructor ~18-25 holds dispatcher/deliveryService/config/queue, handle ~27-58 re-enqueues a `new self(...)` and calls `$this->queue->later(...)`), `packages/notification/src/Job/SendNotificationJob.php` (constructor ~14-19 holds `NotificationSender`, handle ~21-24), `packages/queue/src/Job.php` (`serialize()`/`unserialize()` 26-35, base setters live here), `packages/queue/src/AsyncObserverJob.php` (`setContainer()`/`setJobEnvelope()` setters + parameterless `handle()` — the EXISTING container seam), `packages/queue/src/Worker.php` (`work()` 27-63 — container/envelope are injected ONLY for `AsyncObserverJob` via the `instanceof` gate at 46-50), `packages/queue/src/JobInterface.php` (`handle(): void`), `packages/webhook/module.php`, `packages/notification/module.php` (boot resolves services from container), `packages/webhook/tests/Jobs/DispatchWebhookJobTest.php` + `DispatchWebhookJobRetryTest.php`
+- Patterns to follow: store only the serializable payload (`WebhookPayload` value object, attempt number) / notifiable+notification data; resolve `WebhookDispatcherInterface`, `WebhookDeliveryService`, `ConfigRepositoryInterface`, `QueueInterface`, and `NotificationSender` from the container inside `handle()`; keep retry/backoff behavior; `WebhookPayload` and `NotificationInterface`/`NotifiableInterface` payloads must themselves be serializable.
+- **Retry re-enqueue (DispatchWebhookJob):** `handle()` currently builds `new self($this->payload, $this->dispatcher, ..., $this->attemptNumber + 1)` and calls `$this->queue->later($delay, $nextJob)`. After the refactor the retry job must be constructed in its payload-only shape (`new self($this->payload, $this->attemptNumber + 1)`), and the `QueueInterface` used for `later()` must be resolved from the container at handle-time, NOT held as a property. Likewise `SendNotificationJob::handle()` resolves `NotificationSender` from the container; the notification `module.php` boot already registers channels and needs no change.
 
-### Cross-tier sequencing (REQUIRED)
-`Job.php` and `Worker.php` are shared with Tier 1 (`Job::serialize()`/`unserialize()` HMAC envelope — Tier 1 Task 015) and Tier 2 (`AsyncObserverJob` self-resolution + `Worker` wiring — Tier 2 Tasks 004/006). **Rebase order: Tier 1 → Tier 2 → this task.** Before implementing, rebase onto the merged Tier 1 + Tier 2 state.
+### Cross-tier sequencing + container-seam wiring (REQUIRED — verified against MERGED Tier1/Tier2 code)
+`Job.php` and `Worker.php` are shared with Tier 1 (`Job::serialize()`/`unserialize()` HMAC envelope — Tier 1 Task 015) and Tier 2 (`AsyncObserverJob` self-resolution + `Worker` wiring). Tier 1 + Tier 2 are ALREADY MERGED on this branch — read the current files, do not rebase against an imagined earlier state.
 
-**Verified at review time:** `Worker::work()` (queue/src/Worker.php ~39-42) currently calls `$job->handle()` with **zero arguments** and `Job::serialize()` is bare `serialize($this)`. `AsyncObserverJob::handle(?callable $resolver = null)` self-resolves only because the resolver defaults to null and the job reaches the container some other way. Tier 2 Task 006 is the task that wires container access onto `AsyncObserverJob`/`Worker` (it explicitly states the container must be injected post-deserialization, never serialized). **This task MUST consume whatever container/resolver seam Tier 2 lands — do NOT add a parallel resolver argument to `Worker::work()` or a serialized container property.** The tests below assert behavior (clean serialize + successful dispatch), not a specific resolver signature, so they survive whichever mechanism Tier 2 lands. If Tier 2 has not landed at implementation time, escalate rather than inventing a competing seam.
+**Verified at review time — the container seam does NOT reach these jobs today:**
+- `Worker::work()` injects the container ONLY for `AsyncObserverJob`:
+  ```php
+  if ($job instanceof AsyncObserverJob) {
+      $job->setContainer($this->container);
+      $job->setJobEnvelope($this->jobEnvelope);
+  }
+  $job->incrementAttempts();
+  $job->handle();   // parameterless — no resolver argument exists
+  ```
+- The seam is the `setContainer()`/`setJobEnvelope()` setters defined on `AsyncObserverJob` (NOT on the base `Job`, NOT on `JobInterface`). `JobInterface::handle()` is `handle(): void`.
+
+**Therefore this task MUST extend the seam so webhook/notification jobs receive the container in the real Worker path — not just via a manual `setContainer()` in a unit test.** The required wiring:
+1. Lift the container/envelope-aware contract to a shared abstraction — a `ContainerAwareJobInterface` (with `setContainer()` / `setJobEnvelope()`) implemented by `AsyncObserverJob`, `DispatchWebhookJob`, and `SendNotificationJob` (or move the setters onto the base `Job` and have `AsyncObserverJob` keep its current ones). Keep the container/envelope as non-serialized nullable properties (never serialized).
+2. Widen the `Worker::work()` gate from `instanceof AsyncObserverJob` to the shared interface so EVERY container-aware job gets `setContainer()`/`setJobEnvelope()` before `handle()`. Do NOT add a resolver argument to `Worker::work()` or a serialized container property.
+3. Do not break the HMAC-signed `JobEnvelope` path (`wrap`/`verifyAndUnwrap`) — the envelope continues to wrap the serialized job in the failed-job and queue paths.
+
+If anything about the existing seam is ambiguous at implementation time, escalate rather than inventing a parallel resolver.
 
 ## Requirements (Test Descriptions)
 - [ ] `it serializes and unserializes a DispatchWebhookJob without error`
@@ -23,6 +41,8 @@
 - [ ] `it serializes and unserializes a SendNotificationJob without error`
 - [ ] `it sends the notification to the notifiables when an unserialized SendNotificationJob is handled`
 - [ ] `it holds only serializable data and no live service instances on either job`
+- [ ] `it receives the container from the Worker so a webhook or notification job resolves its services in the real Worker path` (drive through `Worker::work()`, not a manual setContainer() in the test, to prove the gate was widened beyond AsyncObserverJob)
+- [ ] `it re-enqueues a webhook retry resolving the queue from the container at handle-time`
 
 ## Acceptance Criteria
 - All requirements have passing tests
