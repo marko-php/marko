@@ -1,6 +1,6 @@
 # Task 017: MySQL query builder emits valid SQL for offset without limit
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -21,10 +21,10 @@
 Confirmed against MERGED source: `buildLimitOffsetClause()` is now at lines **1068-1081** (the original cited 943-956 has DRIFTED after Tier 1's edits to this file). The body still emits the two clauses independently; a bare offset produces ` OFFSET n` with no `LIMIT`. The bug and the fix are unchanged — only the line numbers moved.
 
 ## Requirements (Test Descriptions)
-- [ ] `it produces valid MySQL SQL for an offset without a limit`
-- [ ] `it does not emit a bare OFFSET clause without a LIMIT`
-- [ ] `it leaves limit and offset together unchanged`
-- [ ] `it leaves a limit without an offset unchanged`
+- [x] `it produces valid MySQL SQL for an offset without a limit`
+- [x] `it does not emit a bare OFFSET clause without a LIMIT`
+- [x] `it leaves limit and offset together unchanged`
+- [x] `it leaves a limit without an offset unchanged`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -32,4 +32,6 @@ Confirmed against MERGED source: `buildLimitOffsetClause()` is now at lines **10
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `elseif ($this->offsetValue !== null)` branch to `buildLimitOffsetClause()` in `MySqlQueryBuilder.php` — when offset is set without a limit, emits `LIMIT 18446744073709551615` (MySQL's documented "all rows from offset" idiom) before the `OFFSET n` clause.
+- New test file: `packages/database-mysql/tests/Query/MySqlQueryBuilderLimitOffsetTest.php` with a stub `LimitOffsetMockConnection` that records compiled SQL without requiring a real DB connection.
+- All 4 requirements tested as unit tests; full package suite (205 tests) passes.

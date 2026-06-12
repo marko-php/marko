@@ -199,9 +199,9 @@ Implements all methods from `FilesystemInterface`. See [`marko/filesystem`](/doc
 | `size(string $path): int` | Get the file size in bytes |
 | `lastModified(string $path): int` | Get the last modified timestamp |
 | `mimeType(string $path): string` | Get the MIME type |
-| `listDirectory(string $path = '/'): DirectoryListingInterface` | List files and directories |
+| `listDirectory(string $path = '/'): DirectoryListingInterface` | List files and directories. Paginates automatically via S3 continuation tokens, so directories with more than 1 000 objects are fully enumerated. |
 | `makeDirectory(string $path): bool` | Create a directory marker |
-| `deleteDirectory(string $path): bool` | Delete a directory and all its contents |
+| `deleteDirectory(string $path): bool` | Delete a directory and all its contents. Paginates via continuation tokens to handle directories with more than 1 000 objects; throws `FilesystemException` loudly if any individual delete fails. |
 | `setVisibility(string $path, string $visibility): bool` | Set file visibility via ACL (`public` or `private`) |
 | `visibility(string $path): string` | Get the current visibility (`public` or `private`) |
 

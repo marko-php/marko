@@ -34,11 +34,11 @@ Tier 2 Task 002 touches errors-**ADVANCED** and references `SimpleErrorHandler` 
 Confirmed against source: `handleError()` 101-127 only special-cases Deprecated/Notice and otherwise calls `handleException()` (destructive 500 + continue). `handleNonFatal()` 87-99 early-returns under `!isCli()`. The "E_WARNING destroys response" and "web notices dropped" findings both hold. (Original cited `handleNonFatal ~87-99` and the destructive path `~101-127` — exact match.)
 
 ## Requirements (Test Descriptions)
-- [ ] `it does not clear output buffers when handling a recoverable warning`
-- [ ] `it does not replace the response with a 500 page on a recoverable warning`
-- [ ] `it reports a non-fatal error in web SAPI instead of discarding it`
-- [ ] `it still renders a 500 page for an uncaught exception`
-- [ ] `it still handles a fatal error on shutdown`
+- [x] `it does not clear output buffers when handling a recoverable warning`
+- [x] `it does not replace the response with a 500 page on a recoverable warning`
+- [x] `it reports a non-fatal error in web SAPI instead of discarding it`
+- [x] `it still renders a 500 page for an uncaught exception`
+- [x] `it still handles a fatal error on shutdown`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -46,4 +46,21 @@ Confirmed against source: `handleError()` 101-127 only special-cases Deprecated/
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+### Changes made
+
+**`packages/errors-simple/src/SimpleErrorHandler.php`:**
+
+1. `handleError()`: Extended the non-fatal branch to include `Severity::Warning` alongside `Severity::Deprecated` and `Severity::Notice`. Recoverable warnings now route to `handleNonFatal()` instead of `handleException()`, preventing buffer teardown and 500-page replacement.
+
+2. `handleNonFatal()`: Removed the `if (!$this->environment->isCli()) { return; }` early exit. Web SAPI now calls `$this->writeToErrorLog($entry)` instead of silently dropping the error.
+
+3. `writeToErrorLog()`: New protected hook method that calls `error_log()` by default. Extracted as a separate method so tests can override it to capture messages without triggering PHP's error_log side effect.
+
+**`packages/errors-simple/tests/Unit/SimpleErrorHandlerTest.php`:**
+- Added `WebSapiNonFatalCapturingHandler` test fixture (overrides only `clearOutputBuffers`, `setHttpStatusCode`, and `writeToErrorLog`) to test the real `handleNonFatal()` path without I/O side-effects.
+- Added 5 new tests per the requirements.
+- Updated existing tests for `E_WARNING` that previously expected destructive 500-page output — now correctly expect non-fatal capture.
+
+**`packages/errors-simple/tests/Feature/ErrorHandlingTest.php`:**
+- Updated "handles PHP warning in CLI/web context" tests to reflect the new non-destructive behavior for warnings.

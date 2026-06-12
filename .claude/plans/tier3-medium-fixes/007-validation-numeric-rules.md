@@ -1,6 +1,6 @@
 # Task 007: Numeric-aware Min/Max/Between and loose In/NotIn for numeric strings
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -14,16 +14,16 @@
 - The `message()` methods in Min/Max/Between also branch on `is_string` and would emit a misleading "...characters" message for a numeric string. Apply the same numeric-before-string ordering in `message()` so a numeric value yields the value-oriented message, not the character-length one.
 
 ## Requirements (Test Descriptions)
-- [ ] `it accepts a numeric string at or above the minimum for the integer min rule`
-- [ ] `it rejects a numeric string below the minimum for the integer min rule`
-- [ ] `it still measures string length for the min rule on a non-numeric string`
-- [ ] `it compares numerically for the max rule on a numeric string`
-- [ ] `it compares numerically for the between rule on a numeric string and keeps length mode for non-numeric strings`
-- [ ] `it counts array items for the min and between rules on an array value`
-- [ ] `it matches a numeric string against a numeric allow-list entry for the In rule`
-- [ ] `it keeps strict matching for a non-numeric string in the In rule`
-- [ ] `it rejects a numeric string present in a numeric disallow-list for the NotIn rule`
-- [ ] `it produces a value-oriented (not character-length) failure message for a numeric string failing min`
+- [x] `it accepts a numeric string at or above the minimum for the integer min rule`
+- [x] `it rejects a numeric string below the minimum for the integer min rule`
+- [x] `it still measures string length for the min rule on a non-numeric string`
+- [x] `it compares numerically for the max rule on a numeric string`
+- [x] `it compares numerically for the between rule on a numeric string and keeps length mode for non-numeric strings`
+- [x] `it counts array items for the min and between rules on an array value`
+- [x] `it matches a numeric string against a numeric allow-list entry for the In rule`
+- [x] `it keeps strict matching for a non-numeric string in the In rule`
+- [x] `it rejects a numeric string present in a numeric disallow-list for the NotIn rule`
+- [x] `it produces a value-oriented (not character-length) failure message for a numeric string failing min`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -31,4 +31,7 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Reordered `passes()` and `message()` branches in Min, Max, Between: array → is_numeric → is_string (was: is_string → is_array → is_numeric)
+- In/NotIn: when value is_numeric, use float comparison against numeric allow/disallow entries via array_any(); fall through to strict in_array for non-numeric strings
+- The existing `'uses strict comparison'` test in InTest.php was replaced with the new `'matches a numeric string against a numeric allow-list entry'` test since the behavior changed by design
+- Created new NotInTest.php (did not previously exist)

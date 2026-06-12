@@ -8,7 +8,8 @@
         "amphp/amp": "^3",
         "revolt/event-loop": "^1",
         "marko/core": "self.version",
-        "marko/config": "self.version"
+        "marko/config": "self.version",
+        "marko/pubsub": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0",

@@ -17,10 +17,25 @@ readonly class InertiaMiddleware implements MiddlewareInterface
         private ConfigRepositoryInterface $config,
     ) {}
 
+    /**
+     * @throws InertiaConfigurationException
+     */
     public function handle(
         Request $request,
         callable $next,
     ): Response {
+        if ($this->isVersionMismatch($request)) {
+            return new Response(
+                body: '',
+                statusCode: 409,
+                headers: [
+                    'Vary' => 'X-Inertia',
+                    'X-Inertia' => 'true',
+                    'X-Inertia-Location' => $request->server('REQUEST_URI') ?? $request->path(),
+                ],
+            );
+        }
+
         $response = $next($request);
 
         if (! $this->isInertiaRequest($request)) {
@@ -46,29 +61,32 @@ readonly class InertiaMiddleware implements MiddlewareInterface
 
         $headers['X-Inertia'] = 'true';
 
-        $configuredVersion = $this->nullableScalarConfig('inertia.version');
-        $requestVersion = $request->header('X-Inertia-Version');
-
-        if (
-            $request->method() === 'GET'
-            && $configuredVersion !== null
-            && $requestVersion !== null
-            && $requestVersion !== $configuredVersion
-        ) {
-            return new Response(
-                body: '',
-                statusCode: 409,
-                headers: array_merge($headers, [
-                    'X-Inertia-Location' => $request->path(),
-                ]),
-            );
-        }
-
         return new Response(
             body: $response->body(),
             statusCode: $response->statusCode(),
             headers: $headers,
         );
+    }
+
+    /**
+     * @throws InertiaConfigurationException
+     */
+    private function isVersionMismatch(Request $request): bool
+    {
+        if (! $this->isInertiaRequest($request)) {
+            return false;
+        }
+
+        if ($request->method() !== 'GET') {
+            return false;
+        }
+
+        $configuredVersion = $this->nullableScalarConfig('inertia.version');
+        $requestVersion = $request->header('X-Inertia-Version');
+
+        return $configuredVersion !== null
+            && $requestVersion !== null
+            && $requestVersion !== $configuredVersion;
     }
 
     private function isInertiaRequest(Request $request): bool
@@ -93,6 +111,9 @@ readonly class InertiaMiddleware implements MiddlewareInterface
         return implode(', ', $values);
     }
 
+    /**
+     * @throws InertiaConfigurationException
+     */
     private function nullableScalarConfig(string $key): ?string
     {
         try {

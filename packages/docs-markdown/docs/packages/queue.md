@@ -67,6 +67,42 @@ class ImportProducts extends Job
 
 When a job fails and has remaining attempts, the worker releases it back to the queue with exponential backoff (`2^attempts * 10` seconds). Once all attempts are exhausted, the job is stored in the failed job repository.
 
+### Jobs That Need Container Services
+
+If your job needs to resolve services (like a mailer or repository) from the container at handle-time rather than serializing them, implement `ContainerAwareJobInterface`. The worker automatically injects the container before calling `handle()`:
+
+```php
+use Marko\Queue\Job;
+use Marko\Queue\ContainerAwareJobInterface;
+use Marko\Queue\JobEnvelope;
+use Marko\Core\Container\ContainerInterface;
+
+class SendOrderEmail extends Job implements ContainerAwareJobInterface
+{
+    private ContainerInterface $container;
+
+    public function __construct(
+        private readonly int $orderId,
+        private readonly string $email,
+    ) {}
+
+    public function setContainer(ContainerInterface $container): void
+    {
+        $this->container = $container;
+    }
+
+    public function setJobEnvelope(JobEnvelope $jobEnvelope): void {}
+
+    public function handle(): void
+    {
+        $mailer = $this->container->get(MailerInterface::class);
+        $mailer->send($this->email, "Order #{$this->orderId} confirmed");
+    }
+}
+```
+
+Store only scalar values (IDs, strings) in the job's constructor — resolve heavy services from the container in `handle()`. This avoids serializing objects that may not survive across queue backends.
+
 ### Dispatching Jobs
 
 Inject `QueueInterface` and push jobs:
@@ -236,6 +272,19 @@ public function queue(): string;
 public function retryAfter(): int;
 public function maxAttempts(): int;
 ```
+
+### ContainerAwareJobInterface
+
+```php
+use Marko\Queue\ContainerAwareJobInterface;
+use Marko\Queue\JobEnvelope;
+use Marko\Core\Container\ContainerInterface;
+
+public function setContainer(ContainerInterface $container): void;
+public function setJobEnvelope(JobEnvelope $jobEnvelope): void;
+```
+
+Implement this interface on any job class that needs to resolve services from the container when `handle()` runs. The `Worker` detects the interface and calls both setters before invoking `handle()`. Keep job constructor arguments to scalars and IDs only --- resolve services inside `handle()`.
 
 ### Exceptions
 

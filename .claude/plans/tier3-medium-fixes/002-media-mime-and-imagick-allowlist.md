@@ -1,6 +1,6 @@
 # Task 002: Media MIME-from-content derivation and Imagick raster-format allowlist
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -15,13 +15,13 @@
 - **finfo availability:** guard with a loud `UploadException` if `finfo_open`/the fileinfo extension is unavailable rather than silently trusting the caller MIME.
 
 ## Requirements (Test Descriptions)
-- [ ] `it derives the MIME type from file content via finfo and ignores the caller-supplied mimeType during upload`
-- [ ] `it rejects an upload loudly when the content-derived MIME type is not in the allowed list`
-- [ ] `it rejects an upload loudly when the content-derived MIME type does not match the declared file extension`
-- [ ] `it accepts an upload whose content-derived MIME type is in the allowed list`
-- [ ] `it throws an ImagickProcessingException when the image format is not in the raster allowlist`
-- [ ] `it processes and writes an allowlisted raster image successfully`
-- [ ] `it reads the Imagick raster allowlist from configuration and throws ConfigNotFoundException when the key is missing`
+- [x] `it derives the MIME type from file content via finfo and ignores the caller-supplied mimeType during upload`
+- [x] `it rejects an upload loudly when the content-derived MIME type is not in the allowed list`
+- [x] `it rejects an upload loudly when the content-derived MIME type does not match the declared file extension`
+- [x] `it accepts an upload whose content-derived MIME type is in the allowed list`
+- [x] `it throws an ImagickProcessingException when the image format is not in the raster allowlist`
+- [x] `it processes and writes an allowlisted raster image successfully`
+- [x] `it reads the Imagick raster allowlist from configuration and throws ConfigNotFoundException when the key is missing`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -29,4 +29,13 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+- Added `mimeExtensionMap()` getter to `MediaConfig` backed by a new `mime_extension_map` key in `config/media.php` (maps MIME type → allowed extensions array)
+- `MediaManager::upload()` now derives MIME from file content via `finfo_open(FILEINFO_MIME_TYPE)` instead of trusting `$file->mimeType`; throws `UploadException::finfoUnavailable()` if the fileinfo extension is missing; persists the derived MIME to `$media->mimeType`
+- Added `UploadException::finfoUnavailable()` and `UploadException::mimeExtensionMismatch()` static factory methods following the three-part message/context/suggestion shape
+- Created `packages/media-imagick/src/Config/ImagickConfig.php` (readonly class) with `allowedRasterFormats()` getter
+- Created `packages/media-imagick/config/media-imagick.php` with `allowed_raster_formats` defaulting to `['JPEG', 'PNG', 'GIF', 'WEBP', 'AVIF']`
+- Added `ImagickProcessingException::formatNotAllowed()` and `ImagickProcessingException::processingFailed()` factory methods
+- `ImagickImageProcessor` now accepts `ImagickConfig` as a required constructor parameter and calls `assertAllowedFormat()` (uses `strtoupper()` comparison) before processing in all four methods (resize, crop, convert, thumbnail)
+- Updated existing `ImagickImageProcessorTest` to pass `makeImagickConfig()` to `new ImagickImageProcessor()`
+- Updated test helpers in `MediaManagerTest` to use real JPEG binary content so `finfo` correctly detects `image/jpeg`; `finfo_close()` removed (deprecated in PHP 8.5)

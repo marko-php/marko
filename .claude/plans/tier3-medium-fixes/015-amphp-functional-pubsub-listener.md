@@ -1,6 +1,6 @@
 # Task 015: amphp pubsub:listen becomes a functional listener with graceful shutdown
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [016]
 **Retry count**: 0
 
@@ -36,11 +36,11 @@ If a functional async listener is out of scope at implementation time, the no-ps
 Confirmed: `EventLoopRunner::doRun()` calls `EventLoop::run()` with nothing registered; `PubSubListenCommand` never touches `AmphpConfig` or any subscriber; no `onSignal` anywhere in the package. `shutdownTimeout()` and its config key have no callers.
 
 ## Requirements (Test Descriptions)
-- [ ] `it subscribes to the configured pub/sub channels`
-- [ ] `it dispatches a received message to the configured handler`
-- [ ] `it throws AmphpException when no channels are configured`
-- [ ] `it stops the listener on shutdown signal`
-- [ ] `it bounds graceful shutdown by the configured shutdown_timeout`
+- [x] `it subscribes to the configured pub/sub channels`
+- [x] `it dispatches a received message to the configured handler`
+- [x] `it throws AmphpException when no channels are configured`
+- [x] `it stops the listener on shutdown signal`
+- [x] `it bounds graceful shutdown by the configured shutdown_timeout`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -48,4 +48,11 @@ Confirmed: `EventLoopRunner::doRun()` calls `EventLoop::run()` with nothing regi
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created `MessageHandlerInterface` at `packages/amphp/src/Command/MessageHandlerInterface.php` — the explicit, constructor-injected dispatch target
+- Added `channels(): array` getter to `AmphpConfig` reading `amphp.channels` config key
+- Added `'channels'` key to `config/amphp.php` parsed from `AMPHP_CHANNELS` env var (comma-separated)
+- Added `noChannelsConfigured()` factory method to `AmphpException` with message/context/suggestion
+- Added `queue()`, `onSignal()`, and `delay()` methods to `EventLoopRunner` — these delegate to `EventLoop::*` static calls but are overridable for testing
+- Updated `PubSubListenCommand` to inject `AmphpConfig`, `SubscriberInterface`, and `MessageHandlerInterface`; validates channels, subscribes, queues message processing, installs SIGINT handler with graceful shutdown bounded by `shutdownTimeout()`
+- Added `"marko/pubsub": "self.version"` to `packages/amphp/composer.json`
+- All 5 requirements tested via injected fakes and an overridable `TestEventLoopRunner` — no live event loop or socket needed

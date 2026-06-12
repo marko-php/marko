@@ -20,4 +20,14 @@ readonly class AmphpConfig
     {
         return $this->config->getInt('amphp.shutdown_timeout');
     }
+
+    /**
+     * @return array<int, string>
+     *
+     * @throws ConfigNotFoundException
+     */
+    public function channels(): array
+    {
+        return $this->config->getArray('amphp.channels');
+    }
 }

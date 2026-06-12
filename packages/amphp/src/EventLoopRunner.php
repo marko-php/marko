@@ -31,6 +31,29 @@ class EventLoopRunner
         return $this->running;
     }
 
+    public function queue(callable $callback): void
+    {
+        EventLoop::queue($callback);
+    }
+
+    public function onSignal(
+        int $signal,
+        callable $handler,
+    ): void {
+        EventLoop::onSignal($signal, function () use ($handler): void {
+            $handler();
+        });
+    }
+
+    public function delay(
+        float $seconds,
+        callable $callback,
+    ): void {
+        EventLoop::delay($seconds, function () use ($callback): void {
+            $callback();
+        });
+    }
+
     protected function doRun(): void
     {
         EventLoop::run();

@@ -44,15 +44,17 @@ readonly class DatabaseSessionHandler implements SessionHandlerInterface
         string $id,
         string $data,
     ): bool {
-        $this->connection->execute(
-            'DELETE FROM sessions WHERE id = ?',
-            [$id],
-        );
-
-        $this->connection->execute(
-            'INSERT INTO sessions (id, payload, last_activity) VALUES (?, ?, ?)',
-            [$id, $data, time()],
-        );
+        if ($this->connection->driverName() === 'mysql') {
+            $this->connection->execute(
+                'INSERT INTO sessions (id, payload, last_activity) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE payload = VALUES(payload), last_activity = VALUES(last_activity)',
+                [$id, $data, time()],
+            );
+        } else {
+            $this->connection->execute(
+                'INSERT INTO sessions (id, payload, last_activity) VALUES (?, ?, ?) ON CONFLICT (id) DO UPDATE SET payload = excluded.payload, last_activity = excluded.last_activity',
+                [$id, $data, time()],
+            );
+        }
 
         return true;
     }

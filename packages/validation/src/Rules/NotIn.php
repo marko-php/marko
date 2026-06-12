@@ -9,9 +9,9 @@ use Marko\Validation\Contracts\RuleInterface;
 class NotIn implements RuleInterface
 {
     /**
-     * @var array
+     * @var array<mixed>
      */
-    private array $values;
+    private readonly array $values;
 
     public function __construct(
         mixed ...$values,
@@ -26,6 +26,13 @@ class NotIn implements RuleInterface
     ): bool {
         if ($value === null || $value === '') {
             return true;
+        }
+
+        if (is_numeric($value)) {
+            return !array_any(
+                $this->values,
+                fn (mixed $disallowed) => is_numeric($disallowed) && (float) $disallowed === (float) $value,
+            );
         }
 
         return !in_array($value, $this->values, true);

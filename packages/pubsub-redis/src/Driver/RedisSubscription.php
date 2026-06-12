@@ -11,30 +11,42 @@ use Marko\PubSub\Subscription;
 
 readonly class RedisSubscription implements Subscription
 {
+    /**
+     * @param AmphpRedisSubscription[] $amphpSubscriptions
+     * @param string[]|null[]          $channels           Channel name per subscription (null for pattern subs)
+     * @param string[]|null[]          $patterns           Pattern per subscription (null for channel subs)
+     */
     public function __construct(
-        private AmphpRedisSubscription $amphpSubscription,
+        private array $amphpSubscriptions,
         private string $prefix,
-        private ?string $channel = null,
-        private ?string $pattern = null,
+        private array $channels = [],
+        private array $patterns = [],
     ) {}
 
     public function getIterator(): Generator
     {
-        if ($this->pattern !== null) {
-            foreach ($this->amphpSubscription as [$payload, $matchedChannel]) {
-                $channel = $this->stripPrefix($matchedChannel);
-                yield new Message(channel: $channel, payload: $payload, pattern: $this->pattern);
-            }
-        } else {
-            foreach ($this->amphpSubscription as $payload) {
-                yield new Message(channel: (string) $this->channel, payload: $payload);
+        foreach ($this->amphpSubscriptions as $index => $amphpSubscription) {
+            $pattern = $this->patterns[$index] ?? null;
+            $channel = $this->channels[$index] ?? null;
+
+            if ($pattern !== null) {
+                foreach ($amphpSubscription as [$payload, $matchedChannel]) {
+                    $strippedChannel = $this->stripPrefix($matchedChannel);
+                    yield new Message(channel: $strippedChannel, payload: $payload, pattern: $pattern);
+                }
+            } else {
+                foreach ($amphpSubscription as $payload) {
+                    yield new Message(channel: (string) $channel, payload: $payload);
+                }
             }
         }
     }
 
     public function cancel(): void
     {
-        $this->amphpSubscription->unsubscribe();
+        foreach ($this->amphpSubscriptions as $amphpSubscription) {
+            $amphpSubscription->unsubscribe();
+        }
     }
 
     private function stripPrefix(string $channel): string

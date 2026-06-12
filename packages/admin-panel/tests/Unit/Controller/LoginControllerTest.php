@@ -6,11 +6,16 @@ namespace Marko\AdminPanel\Tests\Unit\Controller\Login;
 
 use Marko\Admin\Config\AdminConfigInterface;
 use Marko\AdminPanel\Controller\LoginController;
+use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Security\Contracts\CsrfTokenManagerInterface;
+use Marko\Security\Exceptions\CsrfTokenMismatchException;
+use Marko\Security\Middleware\CsrfMiddleware;
 use Marko\Testing\Fake\FakeAuthenticatable;
 use Marko\Testing\Fake\FakeGuard;
 use Marko\View\ViewInterface;
+use ReflectionMethod;
 
 // Stub for ViewInterface
 class LoginStubView implements ViewInterface
@@ -42,11 +47,11 @@ class LoginStubView implements ViewInterface
 }
 
 // Stub for AdminConfigInterface
-class LoginStubAdminConfig implements AdminConfigInterface
+readonly class LoginStubAdminConfig implements AdminConfigInterface
 {
     public function __construct(
-        private readonly string $routePrefix = '/admin',
-        private readonly string $name = 'Admin',
+        private string $routePrefix = '/admin',
+        private string $name = 'Admin',
     ) {}
 
     public function getRoutePrefix(): string
@@ -59,6 +64,129 @@ class LoginStubAdminConfig implements AdminConfigInterface
         return $this->name;
     }
 }
+
+// Stub for CsrfTokenManagerInterface
+readonly class LoginStubCsrfTokenManager implements CsrfTokenManagerInterface
+{
+    public function __construct(
+        private string $storedToken = 'test-csrf-token',
+    ) {}
+
+    public function get(): string
+    {
+        return $this->storedToken;
+    }
+
+    public function validate(string $token): bool
+    {
+        return hash_equals($this->storedToken, $token);
+    }
+
+    public function regenerate(): string
+    {
+        return $this->storedToken;
+    }
+}
+
+it('rejects a POST to the admin login route when no CSRF token is supplied', function (): void {
+    $csrfTokenManager = new LoginStubCsrfTokenManager('test-csrf-token');
+    $middleware = new CsrfMiddleware(tokenManager: $csrfTokenManager);
+
+    $middlewareAttributes = (new ReflectionMethod(LoginController::class, 'authenticate'))->getAttributes(
+        Middleware::class,
+    );
+
+    expect($middlewareAttributes)->toHaveCount(1)
+        ->and($middlewareAttributes[0]->newInstance()->middleware)->toContain(CsrfMiddleware::class);
+
+    $request = new Request(server: ['REQUEST_METHOD' => 'POST']);
+
+    $middleware->handle($request, fn (Request $r) => new Response('OK', 200));
+})->throws(CsrfTokenMismatchException::class);
+
+it('rejects a POST to the admin login route when the CSRF token is invalid', function (): void {
+    $csrfTokenManager = new LoginStubCsrfTokenManager('test-csrf-token');
+    $middleware = new CsrfMiddleware(tokenManager: $csrfTokenManager);
+
+    $middlewareAttributes = (new ReflectionMethod(LoginController::class, 'authenticate'))->getAttributes(
+        Middleware::class,
+    );
+
+    expect($middlewareAttributes)->toHaveCount(1)
+        ->and($middlewareAttributes[0]->newInstance()->middleware)->toContain(CsrfMiddleware::class);
+
+    $request = new Request(
+        server: ['REQUEST_METHOD' => 'POST'],
+        post: ['_token' => 'wrong-token'],
+    );
+
+    $middleware->handle($request, fn (Request $r) => new Response('OK', 200));
+})->throws(CsrfTokenMismatchException::class);
+
+it('allows a POST to the admin login route when a valid CSRF token is supplied', function (): void {
+    $csrfTokenManager = new LoginStubCsrfTokenManager('test-csrf-token');
+    $middleware = new CsrfMiddleware(tokenManager: $csrfTokenManager);
+
+    $middlewareAttributes = (new ReflectionMethod(LoginController::class, 'authenticate'))->getAttributes(
+        Middleware::class,
+    );
+
+    expect($middlewareAttributes)->toHaveCount(1)
+        ->and($middlewareAttributes[0]->newInstance()->middleware)->toContain(CsrfMiddleware::class);
+
+    $request = new Request(
+        server: ['REQUEST_METHOD' => 'POST'],
+        post: ['_token' => 'test-csrf-token'],
+    );
+
+    $response = $middleware->handle($request, fn (Request $r) => new Response('OK', 200));
+
+    expect($response->statusCode())->toBe(200);
+});
+
+it('rejects a POST to the admin logout route when no valid CSRF token is supplied', function (): void {
+    $csrfTokenManager = new LoginStubCsrfTokenManager('test-csrf-token');
+    $middleware = new CsrfMiddleware(tokenManager: $csrfTokenManager);
+
+    $middlewareAttributes = (new ReflectionMethod(LoginController::class, 'logout'))->getAttributes(
+        Middleware::class,
+    );
+
+    expect($middlewareAttributes)->toHaveCount(1)
+        ->and($middlewareAttributes[0]->newInstance()->middleware)->toContain(CsrfMiddleware::class);
+
+    $request = new Request(server: ['REQUEST_METHOD' => 'POST']);
+
+    $middleware->handle($request, fn (Request $r) => new Response('OK', 200));
+})->throws(CsrfTokenMismatchException::class);
+
+it('exposes a CSRF token value to the login view so the form can submit it', function (): void {
+    $view = new LoginStubView();
+    $guard = new FakeGuard(name: 'admin');
+    $adminConfig = new LoginStubAdminConfig();
+    $csrfTokenManager = new LoginStubCsrfTokenManager('test-csrf-token');
+
+    $controller = new LoginController(
+        view: $view,
+        guard: $guard,
+        adminConfig: $adminConfig,
+        csrfTokenManager: $csrfTokenManager,
+    );
+
+    $request = new Request();
+    $controller->showLoginForm($request);
+
+    expect($view->lastData)->toHaveKey('csrfToken')
+        ->and($view->lastData['csrfToken'])->toBe('test-csrf-token');
+});
+
+it('does not require a CSRF token for the GET login form route', function (): void {
+    $middlewareAttributes = (new ReflectionMethod(LoginController::class, 'showLoginForm'))->getAttributes(
+        Middleware::class,
+    );
+
+    expect($middlewareAttributes)->toBeEmpty();
+});
 
 it('redirects authenticated users from login page to dashboard', function (): void {
     $view = new LoginStubView();
@@ -73,6 +201,7 @@ it('redirects authenticated users from login page to dashboard', function (): vo
         view: $view,
         guard: $guard,
         adminConfig: $adminConfig,
+        csrfTokenManager: new LoginStubCsrfTokenManager(),
     );
 
     $request = new Request();
@@ -93,6 +222,7 @@ it('authenticates user on POST /admin/login with valid credentials', function ()
         view: $view,
         guard: $guard,
         adminConfig: $adminConfig,
+        csrfTokenManager: new LoginStubCsrfTokenManager(),
     );
 
     $request = new Request(post: [
@@ -119,6 +249,7 @@ it('redirects to dashboard after successful login', function (): void {
         view: $view,
         guard: $guard,
         adminConfig: $adminConfig,
+        csrfTokenManager: new LoginStubCsrfTokenManager(),
     );
 
     $request = new Request(post: [
@@ -141,6 +272,7 @@ it('returns to login with error on invalid credentials', function (): void {
         view: $view,
         guard: $guard,
         adminConfig: $adminConfig,
+        csrfTokenManager: new LoginStubCsrfTokenManager(),
     );
 
     $request = new Request(post: [
@@ -170,6 +302,7 @@ it('logs out user on POST /admin/logout and redirects to login', function (): vo
         view: $view,
         guard: $guard,
         adminConfig: $adminConfig,
+        csrfTokenManager: new LoginStubCsrfTokenManager(),
     );
 
     $request = new Request();
@@ -190,6 +323,7 @@ it('renders login form on GET /admin/login', function (): void {
         view: $view,
         guard: $guard,
         adminConfig: $adminConfig,
+        csrfTokenManager: new LoginStubCsrfTokenManager(),
     );
 
     $request = new Request();

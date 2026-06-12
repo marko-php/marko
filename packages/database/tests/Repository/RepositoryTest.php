@@ -1317,6 +1317,7 @@ function createMockQueryBuilder(
 
         public function insert(
             array $data,
+            ?string $primaryKey = null,
         ): int {
             return 1;
         }

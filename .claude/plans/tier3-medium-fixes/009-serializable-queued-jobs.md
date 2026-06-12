@@ -1,6 +1,6 @@
 # Task 009: Serializable webhook and notification jobs that resolve services at handle-time
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -35,14 +35,14 @@
 If anything about the existing seam is ambiguous at implementation time, escalate rather than inventing a parallel resolver.
 
 ## Requirements (Test Descriptions)
-- [ ] `it serializes and unserializes a DispatchWebhookJob without error`
-- [ ] `it dispatches the webhook payload when a unserialized DispatchWebhookJob is handled`
-- [ ] `it re-enqueues a retry job that is itself serializable after a webhook failure`
-- [ ] `it serializes and unserializes a SendNotificationJob without error`
-- [ ] `it sends the notification to the notifiables when an unserialized SendNotificationJob is handled`
-- [ ] `it holds only serializable data and no live service instances on either job`
-- [ ] `it receives the container from the Worker so a webhook or notification job resolves its services in the real Worker path` (drive through `Worker::work()`, not a manual setContainer() in the test, to prove the gate was widened beyond AsyncObserverJob)
-- [ ] `it re-enqueues a webhook retry resolving the queue from the container at handle-time`
+- [x] `it serializes and unserializes a DispatchWebhookJob without error`
+- [x] `it dispatches the webhook payload when a unserialized DispatchWebhookJob is handled`
+- [x] `it re-enqueues a retry job that is itself serializable after a webhook failure`
+- [x] `it serializes and unserializes a SendNotificationJob without error`
+- [x] `it sends the notification to the notifiables when an unserialized SendNotificationJob is handled`
+- [x] `it holds only serializable data and no live service instances on either job`
+- [x] `it receives the container from the Worker so a webhook or notification job resolves its services in the real Worker path` (drive through `Worker::work()`, not a manual setContainer() in the test, to prove the gate was widened beyond AsyncObserverJob)
+- [x] `it re-enqueues a webhook retry resolving the queue from the container at handle-time`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -50,4 +50,11 @@ If anything about the existing seam is ambiguous at implementation time, escalat
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created `ContainerAwareJobInterface` in `packages/queue/src/` with `setContainer()` and `setJobEnvelope()` methods
+- `AsyncObserverJob` updated to `implements ContainerAwareJobInterface` (refactored existing setters)
+- `Worker::work()` gate widened from `instanceof AsyncObserverJob` to `instanceof ContainerAwareJobInterface`
+- `DispatchWebhookJob` refactored: constructor now holds only `WebhookPayload` and `int $attemptNumber`; implements `ContainerAwareJobInterface`; resolves all services from container at `handle()` time
+- `SendNotificationJob` refactored: constructor holds only `NotifiableInterface|array` and `NotificationInterface`; implements `ContainerAwareJobInterface`; resolves `NotificationSender` from container at `handle()` time
+- `NotificationSender::queue()` updated to use new constructor (removed `$this` from args)
+- Root cause of PHP fatal error in `SerializableWebhookJobTest.php`: dispatcher stub anonymous classes initially had `dispatch(): mixed` return type, which is incompatible with `WebhookDispatcherInterface::dispatch(): WebhookResponse` — PHP fatal error at class definition time caused silent process crash with exit code 2 and no test output. Fixed by using correct `WebhookResponse` return type in all stubs.
+- Helper class pattern (`SerializableWebhookJobTestHelpers`) used instead of namespace-level functions to avoid PSR-4 autoload redeclaration issues.

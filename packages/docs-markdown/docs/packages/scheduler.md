@@ -57,7 +57,18 @@ $schedule->call(function () {
 })->cron('30 3 * * 1-5')->description('Weekday report');
 ```
 
-Supports standard 5-field cron: `minute hour day-of-month month day-of-week`. Fields support wildcards (`*`), steps (`*/5`), ranges (`1-5`), and lists (`1,15,30`).
+Supports standard 5-field cron: `minute hour day-of-month month day-of-week`. Fields support:
+
+| Syntax | Example | Meaning |
+|--------|---------|---------|
+| Wildcard | `*` | Every value |
+| Step | `*/5` | Every 5 units |
+| Range | `1-5` | Values 1 through 5 |
+| Range+step | `1-5/2` | Values 1, 3, 5 |
+| List | `1,15,30` | Values 1, 15, and 30 |
+| Combined | `1-5,10` | Values 1–5 and 10 |
+
+**Day-of-week:** Both `0` and `7` represent Sunday. When both day-of-month and day-of-week are restricted (neither is `*`), a day matches if *either* field matches (standard cron OR semantics). An invalid or malformed expression throws `InvalidCronExpressionException` loudly.
 
 ### Running the Scheduler
 
@@ -121,5 +132,10 @@ public function run(): mixed;
 ### CronExpression
 
 ```php
+use Marko\Scheduler\CronExpression;
+use Marko\Scheduler\Exceptions\InvalidCronExpressionException;
+
 public static function matches(string $expression, DateTimeInterface $time): bool;
 ```
+
+Throws `InvalidCronExpressionException` if the expression does not have exactly 5 fields or contains characters that cannot be parsed. All fields are validated before any matching occurs.

@@ -45,6 +45,33 @@ class TestableErrorHandler extends SimpleErrorHandler
     }
 }
 
+/**
+ * Minimal override that suppresses only I/O side-effects but lets handleNonFatal() run.
+ * Used to verify handleNonFatal() is NOT silently dropped in web SAPI.
+ */
+class WebSapiNonFatalCapturingHandler extends SimpleErrorHandler
+{
+    /** @var string[] */
+    public array $errorLogMessages = [];
+
+    protected function clearOutputBuffers(): void
+    {
+        // No-op in tests
+    }
+
+    protected function setHttpStatusCode(
+        int $code,
+    ): void {
+        // No-op in tests
+    }
+
+    protected function writeToErrorLog(
+        string $message,
+    ): void {
+        $this->errorLogMessages[] = $message;
+    }
+}
+
 describe('SimpleErrorHandler', function (): void {
     it('implements ErrorHandlerInterface', function (): void {
         $environment = new Environment();
@@ -73,8 +100,8 @@ describe('SimpleErrorHandler', function (): void {
         $output = ob_get_clean();
 
         // TextFormatter produces plain text with Stack Trace
-        expect($output)->toContain('Stack Trace');
-        expect($output)->not->toContain('<html');
+        expect($output)->toContain('Stack Trace')
+            ->not->toContain('<html');
     });
 
     it('uses BasicHtmlFormatter for web errors', function (): void {
@@ -89,8 +116,8 @@ describe('SimpleErrorHandler', function (): void {
         $output = ob_get_clean();
 
         // BasicHtmlFormatter produces HTML
-        expect($output)->toContain('<!DOCTYPE html>');
-        expect($output)->toContain('<html');
+        expect($output)->toContain('<!DOCTYPE html>')
+            ->toContain('<html');
     });
 
     it('creates ErrorReport from Throwable', function (): void {
@@ -104,8 +131,8 @@ describe('SimpleErrorHandler', function (): void {
         $output = ob_get_clean();
 
         // handleException should create an ErrorReport and call handle()
-        expect($output)->toContain('Exception from handleException');
-        expect($output)->toContain('Exception');
+        expect($output)->toContain('Exception from handleException')
+            ->toContain('Exception');
     });
 
     it('creates ErrorReport from PHP error', function (): void {
@@ -116,15 +143,13 @@ describe('SimpleErrorHandler', function (): void {
         $originalLevel = error_reporting();
         error_reporting(E_ALL);
 
-        ob_start();
         $handler->handleError(E_WARNING, 'Test PHP warning', '/test/file.php', 42);
-        $output = ob_get_clean();
 
         error_reporting($originalLevel);
 
-        // handleError should create an ErrorReport from the PHP error
-        expect($output)->toContain('Test PHP warning');
-        expect($output)->toContain('/test/file.php');
+        // handleError should create an ErrorReport via handleNonFatal (non-destructive)
+        expect($handler->nonFatalReports)->toHaveCount(1)
+            ->and($handler->nonFatalReports[0]->message)->toBe('Test PHP warning');
     });
 
     it('converts PHP errors to ErrorException', function (): void {
@@ -134,14 +159,13 @@ describe('SimpleErrorHandler', function (): void {
         $originalLevel = error_reporting();
         error_reporting(E_ALL);
 
-        ob_start();
         $handler->handleError(E_WARNING, 'Undefined variable', '/app/code.php', 100);
-        $output = ob_get_clean();
 
         error_reporting($originalLevel);
 
-        // The output should reference ErrorException
-        expect($output)->toContain('ErrorException');
+        // Warnings are routed through handleNonFatal as ErrorException
+        expect($handler->nonFatalReports)->toHaveCount(1)
+            ->and($handler->nonFatalReports[0]->message)->toBe('Undefined variable');
     });
 
     it('handles deprecation notices loudly but non-destructively', function (): void {
@@ -157,14 +181,14 @@ describe('SimpleErrorHandler', function (): void {
 
         error_reporting($originalLevel);
 
-        // Should be handled but not written to stdout or clear buffers
-        expect($result)->toBeTrue();
-        expect($output)->toBeEmpty();
-        expect($handler->buffersClearedCount)->toBe(0);
-        // Should still report the error loudly via handleNonFatal
-        expect($handler->nonFatalReports)->toHaveCount(1);
-        expect($handler->nonFatalReports[0]->severity)->toBe(Severity::Deprecated);
-        expect($handler->nonFatalReports[0]->message)->toBe('Function xyz() is deprecated');
+        // Should be handled but not written to stdout or clear buffers,
+        // and should still report the error loudly via handleNonFatal.
+        expect($result)->toBeTrue()
+            ->and($output)->toBeEmpty()
+            ->and($handler->buffersClearedCount)->toBe(0)
+            ->and($handler->nonFatalReports)->toHaveCount(1)
+            ->and($handler->nonFatalReports[0]->severity)->toBe(Severity::Deprecated)
+            ->and($handler->nonFatalReports[0]->message)->toBe('Function xyz() is deprecated');
     });
 
     it('handles notice-level errors loudly but non-destructively', function (): void {
@@ -180,10 +204,10 @@ describe('SimpleErrorHandler', function (): void {
 
         error_reporting($originalLevel);
 
-        expect($result)->toBeTrue();
-        expect($output)->toBeEmpty();
-        expect($handler->nonFatalReports)->toHaveCount(1);
-        expect($handler->nonFatalReports[0]->severity)->toBe(Severity::Notice);
+        expect($result)->toBeTrue()
+            ->and($output)->toBeEmpty()
+            ->and($handler->nonFatalReports)->toHaveCount(1)
+            ->and($handler->nonFatalReports[0]->severity)->toBe(Severity::Notice);
     });
 
     it('reports deprecation notices in production too', function (): void {
@@ -199,10 +223,10 @@ describe('SimpleErrorHandler', function (): void {
 
         error_reporting($originalLevel);
 
-        expect($result)->toBeTrue();
-        expect($output)->toBeEmpty();
         // Non-fatal errors are still reported, even in production
-        expect($handler->nonFatalReports)->toHaveCount(1);
+        expect($result)->toBeTrue()
+            ->and($output)->toBeEmpty()
+            ->and($handler->nonFatalReports)->toHaveCount(1);
     });
 
     it('outputs formatted error to stdout in CLI', function (): void {
@@ -217,8 +241,8 @@ describe('SimpleErrorHandler', function (): void {
         $output = ob_get_clean();
 
         // Output should be captured (proving it went to stdout)
-        expect($output)->not->toBeEmpty();
-        expect($output)->toContain('Stdout test');
+        expect($output)->not->toBeEmpty()
+            ->toContain('Stdout test');
     });
 
     it('outputs formatted error to response in web', function (): void {
@@ -233,9 +257,9 @@ describe('SimpleErrorHandler', function (): void {
         $output = ob_get_clean();
 
         // Output should be HTML response
-        expect($output)->not->toBeEmpty();
-        expect($output)->toContain('Web response test');
-        expect($output)->toContain('<!DOCTYPE html>');
+        expect($output)->not->toBeEmpty()
+            ->toContain('Web response test')
+            ->toContain('<!DOCTYPE html>');
     });
 
     it('respects error_reporting level', function (): void {
@@ -256,8 +280,8 @@ describe('SimpleErrorHandler', function (): void {
         error_reporting($originalLevel);
 
         // The error should be silently ignored (return false)
-        expect($result)->toBeFalse();
-        expect($output)->toBeEmpty();
+        expect($result)->toBeFalse()
+            ->and($output)->toBeEmpty();
     });
 
     it('returns true from handleError when error is handled', function (): void {
@@ -288,9 +312,9 @@ describe('SimpleErrorHandler', function (): void {
         $output = ob_get_clean();
 
         // In development, should see stack trace, file info, and error details
-        expect($output)->toContain('Stack Trace');
-        expect($output)->toContain('Development error details');
-        expect($output)->toContain($report->file);
+        expect($output)->toContain('Stack Trace')
+            ->toContain('Development error details')
+            ->toContain($report->file);
     });
 
     it('shows generic message in production mode', function (): void {
@@ -305,9 +329,9 @@ describe('SimpleErrorHandler', function (): void {
         $output = ob_get_clean();
 
         // In production, should NOT see stack trace but should see basic error
-        expect($output)->not->toContain('Stack Trace');
-        // Should have an error ID for reference
-        expect($output)->toContain($report->id);
+        // (an error ID for reference).
+        expect($output)->not->toContain('Stack Trace')
+            ->toContain($report->id);
     });
 
     it('catches exceptions in formatters and falls back to plain text', function (): void {
@@ -333,9 +357,9 @@ describe('SimpleErrorHandler', function (): void {
         $output = ob_get_clean();
 
         // Should fall back to plain text with the original error message
-        expect($output)->toContain('Original error');
-        // Should be plain text, not formatted
-        expect($output)->not->toContain('Stack Trace');
+        // (plain text, not formatted).
+        expect($output)->toContain('Original error')
+            ->not->toContain('Stack Trace');
     });
 
     it('sets HTTP 500 status code for web errors', function (): void {
@@ -364,7 +388,93 @@ describe('SimpleErrorHandler', function (): void {
         $output = ob_get_clean();
 
         // Buffer clearing should have been called
-        expect($handler->buffersClearedCount)->toBe(1);
-        expect($output)->toContain('Buffer test');
+        expect($handler->buffersClearedCount)->toBe(1)
+            ->and($output)->toContain('Buffer test');
+    });
+
+    it('does not clear output buffers when handling a recoverable warning', function (): void {
+        $environment = new Environment(sapi: 'cli', envVars: ['MARKO_ENV' => 'development']);
+        $handler = new TestableErrorHandler($environment);
+
+        $originalLevel = error_reporting();
+        error_reporting(E_ALL);
+
+        ob_start();
+        $handler->handleError(E_WARNING, 'Recoverable warning', '/test/file.php', 10);
+        ob_end_clean();
+
+        error_reporting($originalLevel);
+
+        expect($handler->buffersClearedCount)->toBe(0);
+    });
+
+    it('does not replace the response with a 500 page on a recoverable warning', function (): void {
+        $environment = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'development']);
+        $handler = new TestableErrorHandler($environment);
+
+        $originalLevel = error_reporting();
+        error_reporting(E_ALL);
+
+        ob_start();
+        echo 'prior response content';
+        $handler->handleError(E_WARNING, 'Recoverable warning', '/test/file.php', 10);
+        $output = ob_get_clean();
+
+        error_reporting($originalLevel);
+
+        expect($output)->toContain('prior response content')
+            ->and($output)->not->toContain('<!DOCTYPE html>')
+            ->and($handler->statusCodeSet)->toBeNull();
+    });
+
+    it('reports a non-fatal error in web SAPI instead of discarding it', function (): void {
+        $environment = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'development']);
+        $handler = new WebSapiNonFatalCapturingHandler($environment);
+
+        $originalLevel = error_reporting();
+        error_reporting(E_ALL);
+
+        $handler->handleError(E_USER_NOTICE, 'Web SAPI notice test', '/test/file.php', 1);
+
+        error_reporting($originalLevel);
+
+        // Should have reported via error_log instead of silently discarding it
+        expect($handler->errorLogMessages)->toHaveCount(1)
+            ->and($handler->errorLogMessages[0])->toContain('Notice')
+            ->and($handler->errorLogMessages[0])->toContain('Web SAPI notice test');
+    });
+
+    it('still renders a 500 page for an uncaught exception', function (): void {
+        $environment = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'development']);
+        $handler = new TestableErrorHandler($environment);
+
+        ob_start();
+        $handler->handleException(new Exception('Uncaught exception'));
+        $output = ob_get_clean();
+
+        expect($output)->toContain('<!DOCTYPE html>')
+            ->and($handler->statusCodeSet)->toBe(500)
+            ->and($handler->buffersClearedCount)->toBe(1);
+    });
+
+    it('still handles a fatal error on shutdown', function (): void {
+        $environment = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'development']);
+        $handler = new TestableErrorHandler($environment);
+
+        $originalLevel = error_reporting();
+        error_reporting(E_ALL);
+
+        // handleShutdown should call handleError for fatal types, which calls handleException
+        // We can test this by directly calling handleError with E_ERROR
+        ob_start();
+        $handler->handleError(E_ERROR, 'Fatal error', '/test/file.php', 1);
+        $output = ob_get_clean();
+
+        error_reporting($originalLevel);
+
+        // Fatal errors (E_ERROR) should still produce a 500 page
+        expect($output)->toContain('<!DOCTYPE html>')
+            ->and($handler->statusCodeSet)->toBe(500)
+            ->and($handler->buffersClearedCount)->toBe(1);
     });
 });

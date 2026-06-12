@@ -386,8 +386,7 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
         public function whereJsonContains(
             string $path,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -509,8 +508,10 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
             return $this->rows[0] ?? null;
         }
 
-        public function insert(array $data): int
-        {
+        public function insert(
+            array $data,
+            ?string $primaryKey = null,
+        ): int {
             return 0;
         }
 
@@ -544,8 +545,7 @@ function makeNestedFakeQueryBuilder(array $rows): QueryBuilderInterface
         public function having(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 

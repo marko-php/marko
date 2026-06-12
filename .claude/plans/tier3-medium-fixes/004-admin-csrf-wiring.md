@@ -1,6 +1,6 @@
 # Task 004: Wire security CSRF middleware onto admin state-changing routes
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -15,12 +15,12 @@ The admin panel exposes state-changing POST routes (`/admin/login`, `/admin/logo
 - Patterns to follow: apply `#[Middleware(CsrfMiddleware::class)]` at the **method level** on `authenticate()` and `logout()` (NOT class level — `showLoginForm()` is GET and must stay reachable without a token); add `"marko/security": "self.version"` to the **admin-panel** composer require only (no hardcoded version); inject `CsrfTokenManagerInterface` into `LoginController` and pass `csrfToken` (from `->get()`) to the login view; the GET login form must call `->get()` so the same session-stored token validates on the subsequent POST.
 
 ## Requirements (Test Descriptions)
-- [ ] `it rejects a POST to the admin login route when no CSRF token is supplied`
-- [ ] `it rejects a POST to the admin login route when the CSRF token is invalid`
-- [ ] `it allows a POST to the admin login route when a valid CSRF token is supplied`
-- [ ] `it rejects a POST to the admin logout route when no valid CSRF token is supplied`
-- [ ] `it exposes a CSRF token value to the login view so the form can submit it`
-- [ ] `it does not require a CSRF token for the GET login form route`
+- [x] `it rejects a POST to the admin login route when no CSRF token is supplied`
+- [x] `it rejects a POST to the admin login route when the CSRF token is invalid`
+- [x] `it allows a POST to the admin login route when a valid CSRF token is supplied`
+- [x] `it rejects a POST to the admin logout route when no valid CSRF token is supplied`
+- [x] `it exposes a CSRF token value to the login view so the form can submit it`
+- [x] `it does not require a CSRF token for the GET login form route`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -28,4 +28,9 @@ The admin panel exposes state-changing POST routes (`/admin/login`, `/admin/logo
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `#[Middleware(CsrfMiddleware::class)]` at method level on `authenticate()` and `logout()` in `LoginController`
+- `showLoginForm()` (GET) intentionally has no middleware attribute
+- Injected `CsrfTokenManagerInterface` as 4th constructor parameter in `LoginController`
+- `csrfToken` exposed to view via `$this->csrfTokenManager->get()` in `showLoginForm()`
+- Added `"marko/security": "self.version"` to `packages/admin-panel/composer.json` require
+- All 6 tests in `LoginControllerTest.php` verify attribute presence via reflection + middleware behavior

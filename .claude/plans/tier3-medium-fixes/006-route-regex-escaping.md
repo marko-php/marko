@@ -1,6 +1,6 @@
 # Task 006: preg_quote literal route segments and consistent param decoding
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -13,12 +13,12 @@
 - **No file collision with Task 005:** Task 005 edits `Router.php` only; this task edits `RouteDefinition.php` + `RouteMatcher.php`. Both reference `Request::path()` but neither modifies it. Safe to run in parallel.
 
 ## Requirements (Test Descriptions)
-- [ ] `it matches a literal dot in a path segment only against a real dot`
-- [ ] `it does not match a path where a literal dot position contains a different character`
-- [ ] `it matches a path containing a hash character without breaking the regex delimiter`
-- [ ] `it still captures a named parameter for a route with a {param} placeholder`
-- [ ] `it matches a path containing other regex metacharacters literally`
-- [ ] `it rawurldecodes a matched parameter value exactly once`
+- [x] `it matches a literal dot in a path segment only against a real dot`
+- [x] `it does not match a path where a literal dot position contains a different character`
+- [x] `it matches a path containing a hash character without breaking the regex delimiter`
+- [x] `it still captures a named parameter for a route with a {param} placeholder`
+- [x] `it matches a path containing other regex metacharacters literally`
+- [x] `it rawurldecodes a matched parameter value exactly once`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -26,4 +26,7 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `RouteDefinition::buildRegex()` now uses `preg_split` with `PREG_SPLIT_DELIM_CAPTURE` to split on `{param}` placeholders, applies `preg_quote($part, '#')` to literal segments, and inserts `(?P<name>[^/]+)` for parameter placeholders.
+- `RouteMatcher::extractParameters()` now applies `rawurldecode()` to each matched parameter value — single, canonical decode point.
+- `Request::path()` left unchanged (stays un-decoded); matching runs against raw path.
+- Note: the plan mentioned editing `RouteMatcher.php` in the Context section (not `Request.php`). Only `RouteDefinition.php` and `RouteMatcher.php` were modified.

@@ -1,6 +1,6 @@
 # Task 020: pgsql insert() returns the actual primary key, not a hardcoded "id"
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -27,10 +27,10 @@
 Confirmed against MERGED source: `insert()` is at lines **544-577** (the original cited 451-480 has DRIFTED — that range is now `orderBy`/`offset`). RETURNING hardcodes `$this->quoteIdentifier('id')` at line **571**; the read is `(int) ($result[0]['id'] ?? 0)` at line **576**.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns the generated key for a table whose primary key is not named id`
-- [ ] `it emits a RETURNING clause naming the table primary-key column`
-- [ ] `it still returns the generated id for a table whose primary key is id (default when no primary key is specified)`
-- [ ] `it throws a loud exception when the RETURNING row lacks the expected primary-key column instead of returning zero`
+- [x] `it returns the generated key for a table whose primary key is not named id`
+- [x] `it emits a RETURNING clause naming the table primary-key column`
+- [x] `it still returns the generated id for a table whose primary key is id (default when no primary key is specified)`
+- [x] `it throws a loud exception when the RETURNING row lacks the expected primary-key column instead of returning zero`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -38,4 +38,8 @@ Confirmed against MERGED source: `insert()` is at lines **544-577** (the origina
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added optional `?string $primaryKey = null` parameter to `QueryBuilderInterface::insert()`, `PgSqlQueryBuilder::insert()`, and `MySqlQueryBuilder::insert()`
+- `PgSqlQueryBuilder::insert()` now uses `$primaryKey ?? 'id'` for `RETURNING <pk>` and reads back `$result[0][$pk]` instead of the hardcoded `$result[0]['id']`
+- Created `InsertReturningException` in `packages/database-pgsql/src/Exceptions/` with a `missingPrimaryKeyColumn()` factory method — throws loud error instead of silently returning `0` when the RETURNING row is missing the expected PK column
+- `MySqlQueryBuilder::insert()` accepts the parameter for interface parity but ignores it (still uses `lastInsertId()`)
+- All 4 requirements have passing tests in `PgSqlQueryBuilderTest.php`

@@ -21,10 +21,18 @@ it('fails for value not in list', function () {
     expect($rule->passes('status', 'deleted', []))->toBeFalse();
 });
 
-it('uses strict comparison', function () {
+it('matches a numeric string against a numeric allow-list entry for the In rule', function () {
     $rule = new In(1, 2, 3);
 
-    expect($rule->passes('count', '1', []))->toBeFalse();
+    expect($rule->passes('count', '1', []))->toBeTrue()
+        ->and($rule->passes('count', '2', []))->toBeTrue();
+});
+
+it('keeps strict matching for a non-numeric string in the In rule', function () {
+    $rule = new In('active', 'inactive');
+
+    expect($rule->passes('status', 'active', []))->toBeTrue()
+        ->and($rule->passes('status', 'deleted', []))->toBeFalse();
 });
 
 it('passes for null value', function () {

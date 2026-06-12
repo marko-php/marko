@@ -16,6 +16,12 @@ use Marko\Media\Service\MediaManager;
 use Marko\Media\Value\UploadedFile;
 use Marko\Testing\Fake\FakeConfigRepository;
 
+function makeJpegContent(): string
+{
+    // Minimal valid JPEG header (SOI + APP0 JFIF marker) so finfo detects image/jpeg
+    return "\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00";
+}
+
 function makeUploadedFile(
     string $name = 'photo.jpg',
     string $tmpPath = '',
@@ -25,7 +31,7 @@ function makeUploadedFile(
 ): UploadedFile {
     return new UploadedFile(
         name: $name,
-        tmpPath: $tmpPath !== '' ? $tmpPath : createTempFile('JPEG data'),
+        tmpPath: $tmpPath !== '' ? $tmpPath : createTempFile(makeJpegContent()),
         mimeType: $mimeType,
         size: $size,
         extension: $extension,
@@ -46,6 +52,7 @@ function makeMediaConfig(
     string $disk = 'local',
     array $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     array $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    array $mimeExtensionMap = ['image/jpeg' => ['jpg', 'jpeg'], 'image/png' => ['png'], 'image/gif' => ['gif'], 'image/webp' => ['webp']],
 ): MediaConfig {
     $configRepo = new FakeConfigRepository([
         'media.disk' => $disk,
@@ -53,9 +60,20 @@ function makeMediaConfig(
         'media.allowed_mime_types' => $allowedMimeTypes,
         'media.allowed_extensions' => $allowedExtensions,
         'media.url_prefix' => '/storage',
+        'media.mime_extension_map' => $mimeExtensionMap,
     ]);
 
     return new MediaConfig($configRepo);
+}
+
+function createJpegTempFile(): string
+{
+    $path = tempnam(sys_get_temp_dir(), 'marko_media_jpeg_');
+    // Minimal valid JPEG header (SOI + APP0 JFIF marker)
+    $jpeg = "\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00";
+    file_put_contents($path, $jpeg);
+
+    return $path;
 }
 
 function makeFilesystem(): FilesystemInterface
@@ -279,7 +297,14 @@ it('validates MIME type against configured whitelist and throws UploadException'
     $filesystem = makeFilesystem();
     $config = makeMediaConfig(allowedMimeTypes: ['image/jpeg', 'image/png']);
     $repository = makeRepository();
-    $file = makeUploadedFile(mimeType: 'application/pdf', extension: 'pdf');
+    // File content is plain text — finfo detects text/plain, which is not in the allowlist
+    $file = new UploadedFile(
+        name: 'document.txt',
+        tmpPath: createTempFile('plain text content'),
+        mimeType: 'text/plain',
+        size: 100,
+        extension: 'txt',
+    );
 
     $manager = new MediaManager(
         filesystem: $filesystem,
@@ -359,7 +384,8 @@ it('retrieves file contents from storage via Media entity path and disk', functi
     $filesystem = makeFilesystem();
     $config = makeMediaConfig();
     $repository = makeRepository();
-    $tmpPath = createTempFile('JPEG image data');
+    $jpegContent = makeJpegContent();
+    $tmpPath = createTempFile($jpegContent);
     $file = makeUploadedFile(tmpPath: $tmpPath);
 
     $manager = new MediaManager(
@@ -372,7 +398,7 @@ it('retrieves file contents from storage via Media entity path and disk', functi
 
     $contents = $manager->retrieve($media);
 
-    expect($contents)->toBe('JPEG image data');
+    expect($contents)->toBe($jpegContent);
 });
 
 it('uploads a file to the configured disk via filesystem interface', function (): void {
@@ -391,4 +417,121 @@ it('uploads a file to the configured disk via filesystem interface', function ()
 
     expect($media)->toBeInstanceOf(Media::class)
         ->and($filesystem->written)->not->toBeEmpty();
+});
+
+it(
+    'derives the MIME type from file content via finfo and ignores the caller-supplied mimeType during upload',
+    function (): void {
+        $filesystem = makeFilesystem();
+        $config = makeMediaConfig();
+        $repository = makeRepository();
+        $tmpPath = createJpegTempFile();
+
+        // Caller supplies wrong mimeType — but file content is JPEG
+        $file = new UploadedFile(
+            name: 'photo.jpg',
+            tmpPath: $tmpPath,
+            mimeType: 'image/png',
+            size: 1024,
+            extension: 'jpg',
+        );
+
+        $manager = new MediaManager(
+            filesystem: $filesystem,
+            config: $config,
+            repository: $repository,
+        );
+
+        $media = $manager->upload($file);
+
+        // The persisted MIME should reflect the content-derived type, not the caller-supplied one
+        expect($media->mimeType)->toBe('image/jpeg');
+
+        @unlink($tmpPath);
+    },
+);
+
+it('rejects an upload loudly when the content-derived MIME type is not in the allowed list', function (): void {
+    $filesystem = makeFilesystem();
+    $config = makeMediaConfig(allowedMimeTypes: ['image/png', 'image/gif']);
+    $repository = makeRepository();
+    $tmpPath = createJpegTempFile();
+
+    // Content is JPEG — finfo will derive image/jpeg, which is not in the allowlist
+    $file = new UploadedFile(
+        name: 'photo.jpg',
+        tmpPath: $tmpPath,
+        mimeType: 'image/png',
+        size: 1024,
+        extension: 'jpg',
+    );
+
+    $manager = new MediaManager(
+        filesystem: $filesystem,
+        config: $config,
+        repository: $repository,
+    );
+
+    expect(fn () => $manager->upload($file))
+        ->toThrow(UploadException::class, 'image/jpeg');
+
+    @unlink($tmpPath);
+});
+
+it(
+    'rejects an upload loudly when the content-derived MIME type does not match the declared file extension',
+    function (): void {
+        $filesystem = makeFilesystem();
+        $config = makeMediaConfig();
+        $repository = makeRepository();
+        $tmpPath = createJpegTempFile();
+
+        // Content is JPEG (image/jpeg), but extension declares it as PNG
+        $file = new UploadedFile(
+            name: 'photo.png',
+            tmpPath: $tmpPath,
+            mimeType: 'image/jpeg',
+            size: 1024,
+            extension: 'png',
+        );
+
+        $manager = new MediaManager(
+            filesystem: $filesystem,
+            config: $config,
+            repository: $repository,
+        );
+
+        expect(fn () => $manager->upload($file))
+            ->toThrow(UploadException::class, 'png');
+
+        @unlink($tmpPath);
+    },
+);
+
+it('accepts an upload whose content-derived MIME type is in the allowed list', function (): void {
+    $filesystem = makeFilesystem();
+    $config = makeMediaConfig();
+    $repository = makeRepository();
+    $tmpPath = createJpegTempFile();
+
+    $file = new UploadedFile(
+        name: 'photo.jpg',
+        tmpPath: $tmpPath,
+        mimeType: 'image/jpeg',
+        size: 1024,
+        extension: 'jpg',
+    );
+
+    $manager = new MediaManager(
+        filesystem: $filesystem,
+        config: $config,
+        repository: $repository,
+    );
+
+    $media = $manager->upload($file);
+
+    expect($media)->toBeInstanceOf(Media::class)
+        ->and($media->mimeType)->toBe('image/jpeg');
+
+    @unlink($tmpPath);
 });

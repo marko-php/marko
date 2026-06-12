@@ -33,7 +33,7 @@ function makeRedisSubscriptionWithMessages(array $messages): AmphpRedisSubscript
 
 it('creates RedisSubscription implementing Subscription interface', function (): void {
     $amphpSub = makeRedisSubscriptionEmptyAmphpSub();
-    $subscription = new RedisSubscription($amphpSub, 'marko:', 'orders');
+    $subscription = new RedisSubscription([$amphpSub], 'marko:', ['orders']);
 
     expect($subscription)->toBeInstanceOf(Subscription::class)
         ->and($subscription)->toBeInstanceOf(RedisSubscription::class);
@@ -41,11 +41,11 @@ it('creates RedisSubscription implementing Subscription interface', function ():
 
 it('iterates messages as Message value objects with channel and payload', function (): void {
     $amphpSub = makeRedisSubscriptionWithMessages(['{"id":1}', '{"id":2}']);
-    $subscription = new RedisSubscription($amphpSub, 'marko:', 'orders');
+    $subscription = new RedisSubscription([$amphpSub], 'marko:', ['orders']);
 
     $messages = iterator_to_array($subscription->getIterator());
 
-    expect(count($messages))->toBe(2)
+    expect($messages)->toHaveCount(2)
         ->and($messages[0])->toBeInstanceOf(Message::class)
         ->and($messages[0]->channel)->toBe('orders')
         ->and($messages[0]->payload)->toBe('{"id":1}')
@@ -60,11 +60,11 @@ it('strips prefix from channel name in received messages', function (): void {
         ['hello', 'myapp:orders'],
         ['world', 'myapp:events'],
     ]);
-    $subscription = new RedisSubscription($amphpSub, 'myapp:', null, 'events:*');
+    $subscription = new RedisSubscription([$amphpSub], 'myapp:', [], ['events:*']);
 
     $messages = iterator_to_array($subscription->getIterator());
 
-    expect(count($messages))->toBe(2)
+    expect($messages)->toHaveCount(2)
         ->and($messages[0]->channel)->toBe('orders')
         ->and($messages[0]->payload)->toBe('hello')
         ->and($messages[0]->pattern)->toBe('events:*')
@@ -72,10 +72,22 @@ it('strips prefix from channel name in received messages', function (): void {
         ->and($messages[1]->payload)->toBe('world');
 });
 
+it('delivers a redis message published to a non-first subscribed channel', function (): void {
+    $firstSub = makeRedisSubscriptionEmptyAmphpSub();
+    $secondSub = makeRedisSubscriptionWithMessages(['payload-from-second']);
+    $subscription = new RedisSubscription([$firstSub, $secondSub], 'app:', ['first', 'second']);
+
+    $messages = iterator_to_array($subscription->getIterator());
+
+    expect($messages)->toHaveCount(1)
+        ->and($messages[0]->channel)->toBe('second')
+        ->and($messages[0]->payload)->toBe('payload-from-second');
+});
+
 it('cancels subscription via cancel method', function (): void {
     $queue = new Queue();
     $amphpSub = new AmphpRedisSubscription($queue->iterate(), static function (): void {});
-    $subscription = new RedisSubscription($amphpSub, 'marko:', 'orders');
+    $subscription = new RedisSubscription([$amphpSub], 'marko:', ['orders']);
 
     $subscription->cancel();
 

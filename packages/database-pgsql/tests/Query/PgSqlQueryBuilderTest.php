@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Database\PgSql\Tests\Query;
 
 use Marko\Database\Exceptions\UnionShapeMismatchException;
+use Marko\Database\PgSql\Exceptions\InsertReturningException;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilder;
 use Marko\Database\Query\QueryBuilderInterface;
 use ReflectionClass;
@@ -356,4 +357,66 @@ describe('PgSqlQueryBuilder', function (): void {
             'SELECT "users"."name" AS "author_name" FROM "users"',
         );
     });
+
+    it('returns the generated key for a table whose primary key is not named id', function (): void {
+        $connection = new MockConnection(
+            queryReturn: [['user_id' => 99]],
+        );
+
+        $builder = new PgSqlQueryBuilder($connection);
+        $id = $builder
+            ->table('user_profiles')
+            ->insert(['name' => 'Alice'], primaryKey: 'user_id');
+
+        expect($connection->lastQuerySql)->toBe(
+            'INSERT INTO "user_profiles" ("name") VALUES (?) RETURNING "user_id"',
+        )
+            ->and($id)->toBe(99);
+    });
+
+    it('emits a RETURNING clause naming the table primary-key column', function (): void {
+        $connection = new MockConnection(
+            queryReturn: [['order_uuid' => 42]],
+        );
+
+        $builder = new PgSqlQueryBuilder($connection);
+        $builder
+            ->table('orders')
+            ->insert(['total' => 100], primaryKey: 'order_uuid');
+
+        expect($connection->lastQuerySql)->toContain('RETURNING "order_uuid"');
+    });
+
+    it(
+        'still returns the generated id for a table whose primary key is id (default when no primary key is specified)',
+        function (): void {
+            $connection = new MockConnection(
+                queryReturn: [['id' => 7]],
+            );
+
+            $builder = new PgSqlQueryBuilder($connection);
+            $id = $builder
+                ->table('articles')
+                ->insert(['title' => 'Hello World']);
+
+            expect($connection->lastQuerySql)->toBe(
+                'INSERT INTO "articles" ("title") VALUES (?) RETURNING "id"',
+            )
+                ->and($id)->toBe(7);
+        },
+    );
+
+    it(
+        'throws a loud exception when the RETURNING row lacks the expected primary-key column instead of returning zero',
+        function (): void {
+            $connection = new MockConnection(
+                queryReturn: [['some_other_column' => 5]],
+            );
+
+            $builder = new PgSqlQueryBuilder($connection);
+
+            expect(fn () => $builder->table('events')->insert(['name' => 'Launch'], primaryKey: 'event_id'))
+                ->toThrow(InsertReturningException::class);
+        },
+    );
 });

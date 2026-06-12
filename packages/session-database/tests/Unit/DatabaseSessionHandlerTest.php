@@ -15,6 +15,13 @@ class MockConnection implements ConnectionInterface
     /** @var array<string, array{id: string, payload: string, last_activity: int}> */
     public array $sessions = [];
 
+    /** @var array<int, array{sql: string, bindings: array<int, mixed>}> */
+    public array $executedStatements = [];
+
+    public function __construct(
+        private readonly string $driver = 'sqlite',
+    ) {}
+
     public function connect(): void {}
 
     public function disconnect(): void {}
@@ -45,12 +52,24 @@ class MockConnection implements ConnectionInterface
         string $sql,
         array $bindings = [],
     ): int {
-        if (str_contains($sql, 'INSERT')) {
-            $this->sessions[$bindings[0]] = [
-                'id' => $bindings[0],
-                'payload' => $bindings[1],
-                'last_activity' => $bindings[2],
-            ];
+        $this->executedStatements[] = ['sql' => $sql, 'bindings' => $bindings];
+
+        if (str_contains($sql, 'INSERT') || str_contains($sql, 'insert')) {
+            $id = $bindings[0];
+            $payload = $bindings[1];
+            $lastActivity = $bindings[2];
+
+            if (isset($this->sessions[$id])) {
+                // Upsert: update existing
+                $this->sessions[$id]['payload'] = $payload;
+                $this->sessions[$id]['last_activity'] = $lastActivity;
+            } else {
+                $this->sessions[$id] = [
+                    'id' => $id,
+                    'payload' => $payload,
+                    'last_activity' => $lastActivity,
+                ];
+            }
 
             return 1;
         }
@@ -97,7 +116,7 @@ class MockConnection implements ConnectionInterface
 
     public function driverName(): string
     {
-        return 'sqlite';
+        return $this->driver;
     }
 }
 
@@ -208,5 +227,62 @@ describe('DatabaseSessionHandler', function (): void {
         expect($count)->toBe(0)
             ->and($this->connection->sessions)->toHaveKey('recent')
             ->and($this->connection->sessions['recent']['payload'])->toBe('fresh-data');
+    });
+
+    it('writes a session row via a single upsert statement', function (): void {
+        $this->handler->write('upsert-id', 'upsert-data');
+
+        expect($this->connection->executedStatements)->toHaveCount(1);
+    });
+
+    it('updates the payload and last_activity for an existing session id without dropping the row', function (): void {
+        $this->connection->sessions['existing-id'] = [
+            'id' => 'existing-id',
+            'payload' => 'original-data',
+            'last_activity' => time() - 100,
+        ];
+
+        $this->handler->write('existing-id', 'updated-data');
+
+        expect($this->connection->sessions['existing-id']['payload'])->toBe('updated-data')
+            ->and($this->connection->executedStatements)->toHaveCount(1);
+    });
+
+    it('preserves a session row when two writes target the same id in sequence', function (): void {
+        $this->handler->write('seq-id', 'first-write');
+        $this->handler->write('seq-id', 'second-write');
+
+        expect($this->connection->sessions)->toHaveKey('seq-id')
+            ->and($this->connection->sessions['seq-id']['payload'])->toBe('second-write');
+    });
+
+    it('issues the MySQL upsert form for a MySQL connection', function (): void {
+        $mysqlConnection = new MockConnection('mysql');
+        $handler = new DatabaseSessionHandler($mysqlConnection);
+
+        $handler->write('mysql-id', 'mysql-data');
+
+        $sql = $mysqlConnection->executedStatements[0]['sql'];
+        expect($sql)->toContain('ON DUPLICATE KEY UPDATE');
+    });
+
+    it('issues the ON CONFLICT upsert form for a Postgres or SQLite connection', function (): void {
+        $pgsqlConnection = new MockConnection('pgsql');
+        $handler = new DatabaseSessionHandler($pgsqlConnection);
+
+        $handler->write('pgsql-id', 'pgsql-data');
+
+        $sql = $pgsqlConnection->executedStatements[0]['sql'];
+        expect($sql)->toContain('ON CONFLICT')
+            ->and($sql)->toContain('DO UPDATE');
+
+        $sqliteConnection = new MockConnection('sqlite');
+        $sqliteHandler = new DatabaseSessionHandler($sqliteConnection);
+
+        $sqliteHandler->write('sqlite-id', 'sqlite-data');
+
+        $sqliteSql = $sqliteConnection->executedStatements[0]['sql'];
+        expect($sqliteSql)->toContain('ON CONFLICT')
+            ->and($sqliteSql)->toContain('DO UPDATE');
     });
 });

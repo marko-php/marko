@@ -31,8 +31,24 @@ readonly class MediaManager implements MediaManagerInterface
             throw UploadException::fileTooLarge($file->size, $this->config->maxFileSize());
         }
 
-        if (!in_array($file->mimeType, $this->config->allowedMimeTypes(), true)) {
-            throw UploadException::invalidMimeType($file->mimeType, $this->config->allowedMimeTypes());
+        $derivedMimeType = $this->deriveContentMimeType($file->tmpPath);
+
+        if (!in_array($derivedMimeType, $this->config->allowedMimeTypes(), true)) {
+            throw UploadException::invalidMimeType($derivedMimeType, $this->config->allowedMimeTypes());
+        }
+
+        $mimeExtensionMap = $this->config->mimeExtensionMap();
+
+        if (isset($mimeExtensionMap[$derivedMimeType]) && !in_array(
+            $file->extension,
+            $mimeExtensionMap[$derivedMimeType],
+            true,
+        )) {
+            throw UploadException::mimeExtensionMismatch(
+                $derivedMimeType,
+                $file->extension,
+                $mimeExtensionMap[$derivedMimeType],
+            );
         }
 
         if (!in_array($file->extension, $this->config->allowedExtensions(), true)) {
@@ -46,12 +62,32 @@ readonly class MediaManager implements MediaManagerInterface
         $media = new Media();
         $media->filename = basename($path);
         $media->originalFilename = $file->name;
-        $media->mimeType = $file->mimeType;
+        $media->mimeType = $derivedMimeType;
         $media->size = $file->size;
         $media->disk = $this->config->disk();
         $media->path = $path;
 
         return $this->repository->save($media);
+    }
+
+    /**
+     * @throws UploadException
+     */
+    private function deriveContentMimeType(string $tmpPath): string
+    {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
+        if ($finfo === false) {
+            throw UploadException::finfoUnavailable();
+        }
+
+        $mimeType = finfo_file($finfo, $tmpPath);
+
+        if ($mimeType === false) {
+            throw UploadException::finfoUnavailable();
+        }
+
+        return $mimeType;
     }
 
     public function retrieve(

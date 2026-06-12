@@ -93,3 +93,10 @@ it('returns correct message for number', function () {
 
     expect($rule->message('age', 150))->toBe('The age field must not exceed 100.');
 });
+
+it('compares numerically for the max rule on a numeric string', function () {
+    $rule = new Max(100);
+
+    expect($rule->passes('age', '50', []))->toBeTrue()
+        ->and($rule->passes('age', '150', []))->toBeFalse();
+});

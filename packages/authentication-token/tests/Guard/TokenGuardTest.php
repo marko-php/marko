@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AuthenticationToken\Tests\Guard;
 
+use DateTimeImmutable;
 use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
@@ -172,4 +173,121 @@ it('authenticates user by hashing token and looking up in repository', function 
     $authenticatedUser = $guard->user();
 
     expect($authenticatedUser)->toBe($user);
+});
+
+it('resolves the user for a token whose expiresAt is null', function (): void {
+    $user = new FakeAuthenticatable(id: 1);
+
+    $token = new PersonalAccessToken();
+    $token->tokenableId = 1;
+    $token->tokenableType = FakeAuthenticatable::class;
+    $token->expiresAt = null;
+
+    $repository = makeRepository($token);
+    $request = makeRequest('Bearer valid-token');
+    $guard = new TokenGuard($repository, $request);
+    $guard->provider = makeUserProvider($user);
+
+    expect($guard->user())->toBe($user);
+});
+
+it('resolves the user for a token whose expiresAt is in the future', function (): void {
+    $user = new FakeAuthenticatable(id: 1);
+    $future = (new DateTimeImmutable('+1 hour'))->format('Y-m-d H:i:s');
+
+    $token = new PersonalAccessToken();
+    $token->tokenableId = 1;
+    $token->tokenableType = FakeAuthenticatable::class;
+    $token->expiresAt = $future;
+
+    $repository = makeRepository($token);
+    $request = makeRequest('Bearer valid-token');
+    $guard = new TokenGuard($repository, $request);
+    $guard->provider = makeUserProvider($user);
+
+    expect($guard->user())->toBe($user);
+});
+
+it('treats a token whose expiresAt is in the past as unauthenticated and returns no user', function (): void {
+    $user = new FakeAuthenticatable(id: 1);
+    $past = (new DateTimeImmutable('-1 hour'))->format('Y-m-d H:i:s');
+
+    $token = new PersonalAccessToken();
+    $token->tokenableId = 1;
+    $token->tokenableType = FakeAuthenticatable::class;
+    $token->expiresAt = $past;
+
+    $repository = makeRepository($token);
+    $request = makeRequest('Bearer expired-token');
+    $guard = new TokenGuard($repository, $request);
+    $guard->provider = makeUserProvider($user);
+
+    expect($guard->user())->toBeNull();
+});
+
+it('returns false from hasAbility when the resolved token has expired', function (): void {
+    $user = new FakeAuthenticatable(id: 1);
+    $past = (new DateTimeImmutable('-1 hour'))->format('Y-m-d H:i:s');
+
+    $token = new PersonalAccessToken();
+    $token->tokenableId = 1;
+    $token->tokenableType = FakeAuthenticatable::class;
+    $token->abilities = json_encode(['read']);
+    $token->expiresAt = $past;
+
+    $repository = makeRepository($token);
+    $request = makeRequest('Bearer expired-token');
+    $guard = new TokenGuard($repository, $request);
+    $guard->provider = makeUserProvider($user);
+
+    expect($guard->hasAbility('read'))->toBeFalse();
+});
+
+it('preserves the timing-safe SHA-256 hash lookup when resolving a token', function (): void {
+    $user = new FakeAuthenticatable(id: 1);
+    $rawToken = 'my-raw-token';
+    $expectedHash = hash('sha256', $rawToken);
+
+    $capturedHash = null;
+    $repository = new class ($capturedHash) implements TokenRepositoryInterface
+    {
+        public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property captures hash */
+            private ?string &$capturedHash,
+        ) {}
+
+        public function find(int $id): ?PersonalAccessToken
+        {
+            return null;
+        }
+
+        public function findByToken(string $tokenHash): ?PersonalAccessToken
+        {
+            $this->capturedHash = $tokenHash;
+            $token = new PersonalAccessToken();
+            $token->tokenableId = 1;
+            $token->tokenableType = FakeAuthenticatable::class;
+
+            return $token;
+        }
+
+        public function create(PersonalAccessToken $token): PersonalAccessToken
+        {
+            return $token;
+        }
+
+        public function revoke(int $id): void {}
+
+        public function revokeAllForUser(
+            string $type,
+            int|string $id,
+        ): void {}
+    };
+
+    $request = makeRequest('Bearer ' . $rawToken);
+    $guard = new TokenGuard($repository, $request);
+    $guard->provider = makeUserProvider($user);
+    $guard->user();
+
+    expect($capturedHash)->toBe($expectedHash);
 });

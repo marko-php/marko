@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Marko\AuthenticationToken\Guard;
 
+use DateTimeImmutable;
 use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\AuthenticationToken\Contracts\TokenRepositoryInterface;
 use Marko\AuthenticationToken\Entity\PersonalAccessToken;
+use Marko\AuthenticationToken\Exceptions\ExpiredTokenException;
 use Marko\Routing\Http\Request;
 
 class TokenGuard implements GuardInterface
@@ -49,6 +51,9 @@ class TokenGuard implements GuardInterface
         return substr($header, 7);
     }
 
+    /**
+     * @throws ExpiredTokenException
+     */
     private function resolveTokenEntity(): ?PersonalAccessToken
     {
         if ($this->tokenResolved) {
@@ -63,14 +68,28 @@ class TokenGuard implements GuardInterface
         }
 
         $tokenHash = hash('sha256', $rawToken);
-        $this->resolvedToken = $this->repository->findByToken($tokenHash);
+        $token = $this->repository->findByToken($tokenHash);
+
+        if ($token !== null && $token->expiresAt !== null) {
+            $expiresAt = new DateTimeImmutable($token->expiresAt);
+
+            if ($expiresAt < new DateTimeImmutable()) {
+                throw ExpiredTokenException::forToken($rawToken, $expiresAt);
+            }
+        }
+
+        $this->resolvedToken = $token;
 
         return $this->resolvedToken;
     }
 
     public function user(): ?AuthenticatableInterface
     {
-        $tokenEntity = $this->resolveTokenEntity();
+        try {
+            $tokenEntity = $this->resolveTokenEntity();
+        } catch (ExpiredTokenException) {
+            return null;
+        }
 
         if ($tokenEntity === null) {
             return null;
@@ -110,7 +129,11 @@ class TokenGuard implements GuardInterface
     public function hasAbility(
         string $ability,
     ): bool {
-        $tokenEntity = $this->resolveTokenEntity();
+        try {
+            $tokenEntity = $this->resolveTokenEntity();
+        } catch (ExpiredTokenException) {
+            return false;
+        }
 
         if ($tokenEntity === null || $tokenEntity->abilities === null) {
             return false;

@@ -44,7 +44,7 @@ class Worker implements WorkerInterface
             }
 
             try {
-                if ($job instanceof AsyncObserverJob) {
+                if ($job instanceof ContainerAwareJobInterface) {
                     $job->setContainer($this->container);
                     $job->setJobEnvelope($this->jobEnvelope);
                 }

@@ -48,6 +48,15 @@ readonly class MediaConfig
     }
 
     /**
+     * @return array<string, array<string>>
+     * @throws ConfigNotFoundException
+     */
+    public function mimeExtensionMap(): array
+    {
+        return $this->config->getArray('media.mime_extension_map');
+    }
+
+    /**
      * @throws ConfigNotFoundException
      */
     public function urlPrefix(): string

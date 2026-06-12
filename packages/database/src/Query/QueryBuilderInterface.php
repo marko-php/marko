@@ -376,9 +376,13 @@ interface QueryBuilderInterface
      * Insert a new row into the table.
      *
      * @param array<string, mixed> $data Column-value pairs to insert
-     * @return int The last insert ID
+     * @param string|null $primaryKey The name of the primary key column (defaults to 'id' when null)
+     * @return int The generated primary key value
      */
-    public function insert(array $data): int;
+    public function insert(
+        array $data,
+        ?string $primaryKey = null,
+    ): int;
 
     /**
      * Update rows in the table.

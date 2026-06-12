@@ -94,3 +94,19 @@ it('returns correct message for number', function () {
 
     expect($rule->message('age', 0))->toBe('The age field must be between 1 and 100.');
 });
+
+it(
+    'compares numerically for the between rule on a numeric string and keeps length mode for non-numeric strings',
+    function () {
+        $numericRule = new Between(18, 65);
+
+        expect($numericRule->passes('age', '25', []))->toBeTrue()
+            ->and($numericRule->passes('age', '17', []))->toBeFalse()
+            ->and($numericRule->passes('age', '66', []))->toBeFalse();
+
+        $stringRule = new Between(3, 5);
+
+        expect($stringRule->passes('name', 'abc', []))->toBeTrue()
+            ->and($stringRule->passes('name', 'ab', []))->toBeFalse();
+    },
+);

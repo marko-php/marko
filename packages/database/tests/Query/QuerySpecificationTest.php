@@ -78,8 +78,7 @@ describe('QuerySpecification', function (): void {
             public function whereJsonContains(
                 string $path,
                 mixed $value,
-            ): static
-            {
+            ): static {
                 return $this;
             }
 
@@ -201,8 +200,10 @@ describe('QuerySpecification', function (): void {
                 return null;
             }
 
-            public function insert(array $data): int
-            {
+            public function insert(
+                array $data,
+                ?string $primaryKey = null,
+            ): int {
                 return 0;
             }
 
@@ -236,8 +237,7 @@ describe('QuerySpecification', function (): void {
             public function having(
                 string $expression,
                 array $bindings = [],
-            ): static
-            {
+            ): static {
                 return $this;
             }
 
@@ -323,8 +323,7 @@ describe('QuerySpecification', function (): void {
             public function whereJsonContains(
                 string $path,
                 mixed $value,
-            ): static
-            {
+            ): static {
                 return $this;
             }
 
@@ -446,8 +445,10 @@ describe('QuerySpecification', function (): void {
                 return null;
             }
 
-            public function insert(array $data): int
-            {
+            public function insert(
+                array $data,
+                ?string $primaryKey = null,
+            ): int {
                 return 0;
             }
 
@@ -481,8 +482,7 @@ describe('QuerySpecification', function (): void {
             public function having(
                 string $expression,
                 array $bindings = [],
-            ): static
-            {
+            ): static {
                 return $this;
             }
 

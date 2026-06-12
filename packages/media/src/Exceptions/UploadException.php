@@ -6,6 +6,32 @@ namespace Marko\Media\Exceptions;
 
 class UploadException extends MediaException
 {
+    public static function finfoUnavailable(): self
+    {
+        return new self(
+            message: 'Cannot derive MIME type from file content: the fileinfo extension is not available',
+            context: 'Attempted to call finfo_open() to detect MIME type from file bytes',
+            suggestion: 'Enable the fileinfo PHP extension (ext-fileinfo) on this server',
+        );
+    }
+
+    /**
+     * @param array<string> $expectedExtensions
+     */
+    public static function mimeExtensionMismatch(
+        string $derivedMimeType,
+        string $declaredExtension,
+        array $expectedExtensions,
+    ): self {
+        $expectedList = implode(', ', $expectedExtensions);
+
+        return new self(
+            message: "File extension '$declaredExtension' does not match the content-derived MIME type '$derivedMimeType'",
+            context: "Content-derived MIME type '$derivedMimeType' expects one of these extensions: $expectedList",
+            suggestion: 'Rename the file to use an extension matching its actual content, or upload the correct file type',
+        );
+    }
+
     /**
      * @param array<string> $allowed
      */

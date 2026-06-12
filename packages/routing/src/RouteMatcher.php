@@ -61,7 +61,7 @@ class RouteMatcher implements RouteMatcherInterface
 
         foreach ($route->parameters as $name) {
             if (isset($matches[$name])) {
-                $parameters[$name] = $matches[$name];
+                $parameters[$name] = rawurldecode($matches[$name]);
             }
         }
 

@@ -1,6 +1,6 @@
 # Task 001: CORS wildcard+credentials hardening and Vary: Origin
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -13,12 +13,12 @@
 - **Guard placement (VERIFIED):** the wildcard+credentials rejection must run BEFORE the `OPTIONS` branch (~28) — otherwise a credentialed preflight slips through the OPTIONS path unguarded. Add `Vary: Origin` in BOTH the preflight response (~39-43) and the normal reflected response (~55-59), since today neither sets it.
 
 ## Requirements (Test Descriptions)
-- [ ] `it throws a CorsException when allowed origins contain a wildcard and credentials are supported`
-- [ ] `it never emits Access-Control-Allow-Credentials together with a wildcard Access-Control-Allow-Origin`
-- [ ] `it reflects an explicitly allowed origin and emits Access-Control-Allow-Credentials true when credentials are supported`
-- [ ] `it adds a Vary: Origin header when reflecting an allowed origin on a normal request`
-- [ ] `it adds a Vary: Origin header on the preflight OPTIONS response when the origin is allowed`
-- [ ] `it leaves the response unchanged and adds no CORS headers when the Origin is not allowed`
+- [x] `it throws a CorsException when allowed origins contain a wildcard and credentials are supported`
+- [x] `it never emits Access-Control-Allow-Credentials together with a wildcard Access-Control-Allow-Origin`
+- [x] `it reflects an explicitly allowed origin and emits Access-Control-Allow-Credentials true when credentials are supported`
+- [x] `it adds a Vary: Origin header when reflecting an allowed origin on a normal request`
+- [x] `it adds a Vary: Origin header on the preflight OPTIONS response when the origin is allowed`
+- [x] `it leaves the response unchanged and adds no CORS headers when the Origin is not allowed`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -26,4 +26,8 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `CorsException::wildcardWithCredentials()` static factory in `packages/cors/src/Exceptions/CorsException.php`
+- Guard placed in `CorsMiddleware::handle()` before the OPTIONS branch, so credentialed preflight requests also fail loudly
+- `Vary: Origin` added to both the preflight response (OPTIONS branch) and the normal reflected-origin response
+- Requirements 2, 3, and 6 passed immediately — the existing code already handled those cases correctly
+- 13 total tests pass (7 original + 6 new)

@@ -33,8 +33,7 @@ class SpyAmphpRedisSubscriber implements AmphpRedisSubscriberInterface
     public function __construct(
         array $channelSubscriptions = [],
         array $patternSubscriptions = [],
-    )
-    {
+    ) {
         $this->channelSubscriptions = $channelSubscriptions;
         $this->patternSubscriptions = $patternSubscriptions;
     }
@@ -126,4 +125,20 @@ it('subscribes to patterns with prefix applied via psubscribe', function (): voi
 
     expect($subscription)->toBeInstanceOf(Subscription::class)
         ->and($subscriber->spy->subscribedPatterns)->toBe(['myapp:events:*']);
+});
+
+it('subscribes a redis subscription to every requested channel', function (): void {
+    $subscriber = createTestableRedisSubscriber(prefix: 'app:');
+    $subscription = $subscriber->subscribe('orders', 'notifications', 'alerts');
+
+    expect($subscription)->toBeInstanceOf(Subscription::class)
+        ->and($subscriber->spy->subscribedChannels)->toBe(['app:orders', 'app:notifications', 'app:alerts']);
+});
+
+it('subscribes a redis pattern subscription to every requested pattern', function (): void {
+    $subscriber = createTestableRedisSubscriber(prefix: 'app:');
+    $subscription = $subscriber->psubscribe('orders:*', 'events:*');
+
+    expect($subscription)->toBeInstanceOf(Subscription::class)
+        ->and($subscriber->spy->subscribedPatterns)->toBe(['app:orders:*', 'app:events:*']);
 });

@@ -21,16 +21,16 @@ readonly class Min implements RuleInterface
             return true;
         }
 
-        if (is_string($value)) {
-            return mb_strlen($value) >= $this->minimum;
-        }
-
         if (is_array($value)) {
             return count($value) >= $this->minimum;
         }
 
         if (is_numeric($value)) {
             return (float) $value >= $this->minimum;
+        }
+
+        if (is_string($value)) {
+            return mb_strlen($value) >= $this->minimum;
         }
 
         return false;
@@ -40,12 +40,16 @@ readonly class Min implements RuleInterface
         string $field,
         mixed $value,
     ): string {
-        if (is_string($value)) {
-            return "The $field field must be at least $this->minimum characters.";
-        }
-
         if (is_array($value)) {
             return "The $field field must have at least $this->minimum items.";
+        }
+
+        if (is_numeric($value)) {
+            return "The $field field must be at least $this->minimum.";
+        }
+
+        if (is_string($value)) {
+            return "The $field field must be at least $this->minimum characters.";
         }
 
         return "The $field field must be at least $this->minimum.";

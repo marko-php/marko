@@ -21,8 +21,8 @@ test('middleware passes through non-inertia requests unchanged', function () {
 
     $response = $this->middleware->handle($request, fn () => $originalResponse);
 
-    expect($response->body())->toBe('OK');
-    expect($response->headers())->not->toHaveKey('X-Inertia');
+    expect($response->body())->toBe('OK')
+        ->and($response->headers())->not->toHaveKey('X-Inertia');
 });
 
 test('middleware adds inertia headers for inertia requests', function () {
@@ -31,8 +31,8 @@ test('middleware adds inertia headers for inertia requests', function () {
 
     $response = $this->middleware->handle($request, fn () => $originalResponse);
 
-    expect($response->headers()['X-Inertia'])->toBe('true');
-    expect($response->headers()['Vary'])->toBe('X-Inertia');
+    expect($response->headers()['X-Inertia'])->toBe('true')
+        ->and($response->headers()['Vary'])->toBe('X-Inertia');
 });
 
 test('middleware leaves redirects unchanged for inertia requests', function () {
@@ -41,10 +41,10 @@ test('middleware leaves redirects unchanged for inertia requests', function () {
 
     $response = $this->middleware->handle($request, fn () => $originalResponse);
 
-    expect($response->statusCode())->toBe(302);
-    expect($response->headers()['Location'])->toBe('/other');
-    expect($response->headers()['Vary'])->toBe('X-Inertia');
-    expect($response->headers())->not->toHaveKey('X-Inertia-Location');
+    expect($response->statusCode())->toBe(302)
+        ->and($response->headers()['Location'])->toBe('/other')
+        ->and($response->headers()['Vary'])->toBe('X-Inertia')
+        ->and($response->headers())->not->toHaveKey('X-Inertia-Location');
 });
 
 test('middleware upgrades non-get inertia redirects to 303', function () {
@@ -56,9 +56,9 @@ test('middleware upgrades non-get inertia redirects to 303', function () {
 
     $response = $this->middleware->handle($request, fn () => $originalResponse);
 
-    expect($response->statusCode())->toBe(303);
-    expect($response->headers()['Location'])->toBe('/updated');
-    expect($response->headers()['Vary'])->toBe('X-Inertia');
+    expect($response->statusCode())->toBe(303)
+        ->and($response->headers()['Location'])->toBe('/updated')
+        ->and($response->headers()['Vary'])->toBe('X-Inertia');
 });
 
 test('middleware returns 409 on version mismatch', function () {
@@ -71,8 +71,54 @@ test('middleware returns 409 on version mismatch', function () {
 
     $response = $this->middleware->handle($request, fn () => $originalResponse);
 
+    expect($response->statusCode())->toBe(409)
+        ->and($response->headers()['X-Inertia-Location'])->toBe('/');
+});
+
+it('includes the query string in the 409 X-Inertia-Location header', function (): void {
+    $request = new Request(server: [
+        'REQUEST_METHOD' => 'GET',
+        'REQUEST_URI' => '/users?page=2',
+        'HTTP_X_INERTIA' => 'true',
+        'HTTP_X_INERTIA_VERSION' => '0.9',
+    ]);
+
+    $response = $this->middleware->handle($request, fn () => new Response(body: '{}'));
+
+    expect($response->statusCode())->toBe(409)
+        ->and($response->headers()['X-Inertia-Location'])->toBe('/users?page=2');
+});
+
+it('returns a 409 on an asset-version mismatch', function (): void {
+    $request = new Request(server: [
+        'REQUEST_METHOD' => 'GET',
+        'HTTP_X_INERTIA' => 'true',
+        'HTTP_X_INERTIA_VERSION' => '0.9',
+    ]);
+
+    $response = $this->middleware->handle($request, fn () => new Response(body: '{}'));
+
     expect($response->statusCode())->toBe(409);
-    expect($response->headers()['X-Inertia-Location'])->toBe('/');
+});
+
+it('does not lose flash data on an asset-version mismatch', function (): void {
+    $request = new Request(server: [
+        'REQUEST_METHOD' => 'GET',
+        'HTTP_X_INERTIA' => 'true',
+        'HTTP_X_INERTIA_VERSION' => '0.9',
+    ]);
+
+    $controllerWasCalled = false;
+    $next = function () use (&$controllerWasCalled): Response {
+        $controllerWasCalled = true;
+
+        return new Response(body: '{}');
+    };
+
+    $response = $this->middleware->handle($request, $next);
+
+    expect($response->statusCode())->toBe(409)
+        ->and($controllerWasCalled)->toBeFalse();
 });
 
 test('middleware does not return 409 for non-get version mismatches', function () {
@@ -85,8 +131,8 @@ test('middleware does not return 409 for non-get version mismatches', function (
 
     $response = $this->middleware->handle($request, fn () => $originalResponse);
 
-    expect($response->statusCode())->toBe(200);
-    expect($response->headers()['X-Inertia'])->toBe('true');
+    expect($response->statusCode())->toBe(200)
+        ->and($response->headers()['X-Inertia'])->toBe('true');
 });
 
 test('middleware throws a loud exception for invalid version config', function () {

@@ -20,11 +20,11 @@
 Confirmed against source: line 46 concatenation has no `realpath`/containment; `file_exists` (48) is the only guard. `DocsMarkdownException` currently has exactly one factory (`pageNotFound`). Namespace `Marko\DocsMarkdown`; package `marko/docs-markdown`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it reads markdown for a legitimate page id`
-- [ ] `it throws DocsMarkdownException for an id containing path-traversal segments`
-- [ ] `it does not read a .md file outside the docs directory via a traversal id`
-- [ ] `it still throws pageNotFound for a clean id that does not exist`
-- [ ] `it populates message, context, and suggestion on the traversal exception`
+- [x] `it reads markdown for a legitimate page id`
+- [x] `it throws DocsMarkdownException for an id containing path-traversal segments`
+- [x] `it does not read a .md file outside the docs directory via a traversal id`
+- [x] `it still throws pageNotFound for a clean id that does not exist`
+- [x] `it populates message, context, and suggestion on the traversal exception`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -32,4 +32,7 @@ Confirmed against source: line 46 concatenation has no `realpath`/containment; `
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `DocsMarkdownException::pathTraversal(string $id, string $docsPath): self` factory following the same message/context/suggestion shape as `pageNotFound`.
+- Updated `MarkdownRepository::getRawMarkdown()` to call `realpath()` on the candidate path. If it resolves (file exists), checks that it starts with `realpath($docsPath) . DIRECTORY_SEPARATOR`. If outside the root → throws `pathTraversal`. If unresolvable (file doesn't exist) → falls through to existing `pageNotFound` logic.
+- CRITICAL ordering preserved: a clean-but-missing id never gets `pathTraversal`; only ids that resolve to a real file outside the docs root trigger `pathTraversal`.
+- Tests use `sys_get_temp_dir()` temp files with `uniqid()` to create real `.md` files outside the docs root for traversal verification.

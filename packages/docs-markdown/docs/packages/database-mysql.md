@@ -151,7 +151,7 @@ class MyService
 | `offset(int $offset): static` | Skip rows |
 | `get(): array` | Execute and return all matching rows |
 | `first(): ?array` | Execute and return the first row, or `null` |
-| `insert(array $data): int` | Insert a row and return the last insert ID |
+| `insert(array $data, ?string $primaryKey = null): int` | Insert a row and return the last insert ID. The `$primaryKey` parameter is accepted for interface compatibility but ignored --- MySQL always uses `lastInsertId()`. |
 | `update(array $data): int` | Update matching rows and return the affected count |
 | `delete(): int` | Delete matching rows and return the affected count |
 | `count(?string $column = null): int` | Return the count of matching rows (`COUNT(*)` or `COUNT(column)`) |

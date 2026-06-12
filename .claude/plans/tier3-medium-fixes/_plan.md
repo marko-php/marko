@@ -4,7 +4,7 @@
 2026-06-10
 
 ## Status
-ready
+completed
 
 ## Objective
 Fix twenty medium-severity security and correctness defects. The original twelve span CORS, media processing, API tokens, admin CSRF, routing, validation, scheduling, queued jobs, session storage, page-cache, and the S3 filesystem driver. A gap-audit / dropped-from-consolidation follow-up adds eight more (tasks 013–020) across docs-markdown, devai process running, the amphp listener, both pubsub drivers, the MySQL and pgsql query builders, the Inertia integration, and the simple error handler. Each fix is a focused, test-first change to existing packages — no new packages.
@@ -118,26 +118,26 @@ Cross-tier file-sharing note (query builders — Tier1/Tier2 ALREADY MERGED; ver
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | CORS: reject wildcard+credentials, add `Vary: Origin` | - | pending |
-| 002 | Media: derive MIME from content; Imagick raster-format allowlist | - | pending |
-| 003 | API tokens: optional expiry on create + guard enforcement | - | pending |
-| 004 | Admin CSRF: wire security CsrfMiddleware onto admin-panel login/logout + login token (admin-api GET-only, out of scope) | - | pending |
-| 005 | Router: cast POST/query scalars; loud error for missing/invalid required params | - | pending |
-| 006 | Routing: `preg_quote` literal segments + consistent param decoding | - | pending |
-| 007 | Validation: numeric-aware Min/Max/Between; loose In/NotIn for numeric strings | - | pending |
-| 008 | Scheduler: correct cron parsing, DOW 0/7, DOM+DOW OR, loud malformed error | - | pending |
-| 009 | Queue: serializable webhook/notification jobs resolving services at handle-time | - | pending |
-| 010 | Session: atomic DB upsert + loud write-after-close | - | pending |
-| 011 | Page-cache: single canonical query normalization for store and purge | - | pending |
-| 012 | S3: root-prefix fix, continuation-token paging, loud per-key delete errors | - | pending |
-| 013 | docs-markdown: reject path-traversal page IDs (realpath containment) | - | pending |
-| 014 | devai: drain stdout/stderr concurrently to avoid pipe deadlock | - | pending |
-| 015 | amphp: functional pubsub:listen (subscribe/dispatch/graceful shutdown) — OR remove command+dead config (product decision) | 016 | pending |
-| 016 | pubsub: multi-channel subscribe in both redis and pgsql drivers | - | pending |
-| 017 | MySQL: valid SQL for offset without limit | - | pending |
-| 018 | Inertia: include query string in url + version check that preserves flash | - | pending |
-| 019 | errors-simple: non-destructive recoverable warnings + surface web non-fatal errors | - | pending |
-| 020 | pgsql: insert() returns the actual primary key via additive ?string $primaryKey param (no Tier 2 helper exists to consume) | - | pending |
+| 001 | CORS: reject wildcard+credentials, add `Vary: Origin` | - | completed |
+| 002 | Media: derive MIME from content; Imagick raster-format allowlist | - | completed |
+| 003 | API tokens: optional expiry on create + guard enforcement | - | completed |
+| 004 | Admin CSRF: wire security CsrfMiddleware onto admin-panel login/logout + login token (admin-api GET-only, out of scope) | - | completed |
+| 005 | Router: cast POST/query scalars; loud error for missing/invalid required params | - | completed |
+| 006 | Routing: `preg_quote` literal segments + consistent param decoding | - | completed |
+| 007 | Validation: numeric-aware Min/Max/Between; loose In/NotIn for numeric strings | - | completed |
+| 008 | Scheduler: correct cron parsing, DOW 0/7, DOM+DOW OR, loud malformed error | - | completed |
+| 009 | Queue: serializable webhook/notification jobs resolving services at handle-time | - | completed |
+| 010 | Session: atomic DB upsert + loud write-after-close | - | completed |
+| 011 | Page-cache: single canonical query normalization for store and purge | - | completed |
+| 012 | S3: root-prefix fix, continuation-token paging, loud per-key delete errors | - | completed |
+| 013 | docs-markdown: reject path-traversal page IDs (realpath containment) | - | completed |
+| 014 | devai: drain stdout/stderr concurrently to avoid pipe deadlock | - | completed |
+| 015 | amphp: functional pubsub:listen (subscribe/dispatch/graceful shutdown) — OR remove command+dead config (product decision) | 016 | completed |
+| 016 | pubsub: multi-channel subscribe in both redis and pgsql drivers | - | completed |
+| 017 | MySQL: valid SQL for offset without limit | - | completed |
+| 018 | Inertia: include query string in url + version check that preserves flash | - | completed |
+| 019 | errors-simple: non-destructive recoverable warnings + surface web non-fatal errors | - | completed |
+| 020 | pgsql: insert() returns the actual primary key via additive ?string $primaryKey param (no Tier 2 helper exists to consume) | - | completed |
 
 Tasks 001–012 are file-cluster-isolated with no inter-task code dependencies and may run fully in parallel. Among the follow-up wave, **015 depends on 016** (the functional listener needs working multi-channel subscribe), so run 016 first; 013, 014, 017, 018, 019, 020 are mutually independent. Cross-plan ordering constraints (not in-plan dependencies): Tier 1 + Tier 2 are ALREADY MERGED on this branch — read the current files. Task 009 must WIDEN the existing `instanceof AsyncObserverJob` container-seam gate to a shared interface (not just consume a Tier 2 resolver). Task 017 stays scoped to `buildLimitOffsetClause()` (now lines 1068-1081). Task 020 must INTRODUCE its own PK signal (additive param) — Tier 2 added only `driverName()`, NOT a PK-aware RETURNING helper, so there is nothing to consume.
 

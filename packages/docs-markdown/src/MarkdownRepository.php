@@ -12,7 +12,7 @@ use RecursiveIteratorIterator;
 class MarkdownRepository
 {
     public function __construct(
-        private string $docsPath,
+        private readonly string $docsPath,
     ) {}
 
     public function getDocsPath(): string
@@ -44,6 +44,16 @@ class MarkdownRepository
     public function getRawMarkdown(string $id): string
     {
         $filePath = $this->docsPath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $id) . '.md';
+
+        $resolvedCandidate = realpath($filePath);
+
+        if ($resolvedCandidate !== false) {
+            $resolvedRoot = realpath($this->docsPath);
+
+            if ($resolvedRoot === false || !str_starts_with($resolvedCandidate, $resolvedRoot . DIRECTORY_SEPARATOR)) {
+                throw DocsMarkdownException::pathTraversal($id, $this->docsPath);
+            }
+        }
 
         if (!file_exists($filePath)) {
             throw DocsMarkdownException::pageNotFound($id, $this->docsPath);

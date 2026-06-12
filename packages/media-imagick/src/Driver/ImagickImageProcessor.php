@@ -6,16 +6,19 @@ namespace Marko\MediaImagick\Driver;
 
 use Imagick;
 use ImagickException;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Media\Contracts\ImageProcessorInterface;
+use Marko\MediaImagick\Config\ImagickConfig;
 use Marko\MediaImagick\Exceptions\ImagickProcessingException;
 
-class ImagickImageProcessor implements ImageProcessorInterface
+readonly class ImagickImageProcessor implements ImageProcessorInterface
 {
     /**
      * @throws ImagickProcessingException
      */
-    public function __construct()
-    {
+    public function __construct(
+        private ImagickConfig $config,
+    ) {
         if (!class_exists('Imagick')) {
             throw new ImagickProcessingException(
                 message: 'Imagick extension is not available',
@@ -26,7 +29,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
     }
 
     /**
-     * @throws ImagickProcessingException
+     * @throws ImagickProcessingException|ConfigNotFoundException
      */
     public function resize(
         string $imagePath,
@@ -36,6 +39,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
     ): string {
         try {
             $imagick = new Imagick($imagePath);
+            $this->assertAllowedFormat($imagick->getImageFormat());
 
             if ($maintainAspect) {
                 $imagick->thumbnailImage($width, $height, true);
@@ -60,7 +64,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
     }
 
     /**
-     * @throws ImagickProcessingException
+     * @throws ImagickProcessingException|ConfigNotFoundException
      */
     public function crop(
         string $imagePath,
@@ -71,6 +75,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
     ): string {
         try {
             $imagick = new Imagick($imagePath);
+            $this->assertAllowedFormat($imagick->getImageFormat());
             $imagick->cropImage($width, $height, $x, $y);
 
             $format = strtolower($imagick->getImageFormat());
@@ -90,7 +95,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
     }
 
     /**
-     * @throws ImagickProcessingException
+     * @throws ImagickProcessingException|ConfigNotFoundException
      */
     public function convert(
         string $imagePath,
@@ -98,6 +103,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
     ): string {
         try {
             $imagick = new Imagick($imagePath);
+            $this->assertAllowedFormat($imagick->getImageFormat());
             $imagick->setImageFormat($format);
 
             $outputPath = sys_get_temp_dir() . '/' . uniqid('imagick_', true) . '.' . strtolower($format);
@@ -116,7 +122,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
     }
 
     /**
-     * @throws ImagickProcessingException
+     * @throws ImagickProcessingException|ConfigNotFoundException
      */
     public function thumbnail(
         string $imagePath,
@@ -124,6 +130,7 @@ class ImagickImageProcessor implements ImageProcessorInterface
     ): string {
         try {
             $imagick = new Imagick($imagePath);
+            $this->assertAllowedFormat($imagick->getImageFormat());
             $imagick->thumbnailImage($maxDimension, $maxDimension, true, true);
 
             $format = strtolower($imagick->getImageFormat());
@@ -139,6 +146,19 @@ class ImagickImageProcessor implements ImageProcessorInterface
                 suggestion: 'Verify the image file exists and is readable',
                 previous: $e,
             );
+        }
+    }
+
+    /**
+     * @throws ImagickProcessingException|ConfigNotFoundException
+     */
+    private function assertAllowedFormat(string $format): void
+    {
+        $allowedFormats = $this->config->allowedRasterFormats();
+        $upperFormat = strtoupper($format);
+
+        if (!in_array($upperFormat, $allowedFormats, true)) {
+            throw ImagickProcessingException::formatNotAllowed($upperFormat, $allowedFormats);
         }
     }
 }

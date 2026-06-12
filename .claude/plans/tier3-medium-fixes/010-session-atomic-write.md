@@ -1,6 +1,6 @@
 # Task 010: Atomic session DB upsert and loud write-after-close
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -18,13 +18,13 @@
 `Session::save()` calls `session_write_close()` but never resets `$this->started`. The fix must flip `started` to `false` (or an equivalent "closed" flag) inside `save()` so a subsequent `set()`/write hits `ensureStarted()`-style guarding and throws loudly instead of silently mutating `$this->data` that is never persisted.
 
 ## Requirements (Test Descriptions)
-- [ ] `it writes a session row via a single upsert statement`
-- [ ] `it updates the payload and last_activity for an existing session id without dropping the row`
-- [ ] `it preserves a session row when two writes target the same id in sequence`
-- [ ] `it issues the MySQL upsert form for a MySQL connection`
-- [ ] `it issues the ON CONFLICT upsert form for a Postgres or SQLite connection`
-- [ ] `it throws a loud session exception when set is called after save`
-- [ ] `it persists data written before save`
+- [x] `it writes a session row via a single upsert statement`
+- [x] `it updates the payload and last_activity for an existing session id without dropping the row`
+- [x] `it preserves a session row when two writes target the same id in sequence`
+- [x] `it issues the MySQL upsert form for a MySQL connection`
+- [x] `it issues the ON CONFLICT upsert form for a Postgres or SQLite connection`
+- [x] `it throws a loud session exception when set is called after save`
+- [x] `it persists data written before save`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -32,4 +32,7 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `DatabaseSessionHandler::write()` now issues a single dialect-aware upsert: `INSERT ... ON DUPLICATE KEY UPDATE` for MySQL, `INSERT ... ON CONFLICT (id) DO UPDATE SET` for pgsql/sqlite, branching on `$this->connection->driverName()`
+- `MockConnection` in `DatabaseSessionHandlerTest.php` extended with `$executedStatements` tracking array and a `$driver` constructor param to enable dialect-specific assertions
+- `Session::save()` now sets `$this->started = false` after `session_write_close()`, so any subsequent `set()`/`get()`/etc. hits `ensureStarted()` and throws `SessionNotStartedException`
+- `SessionTest.php` created at `packages/session/tests/Unit/SessionTest.php` using reflection to set `started = true` without triggering real PHP session functions

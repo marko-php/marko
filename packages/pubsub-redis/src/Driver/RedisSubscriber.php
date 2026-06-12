@@ -21,10 +21,15 @@ readonly class RedisSubscriber implements SubscriberInterface
         $amphpSubscriber = $this->createAmphpSubscriber();
         $prefix = $this->config->prefix();
 
-        $channel = $channels[0];
-        $amphpSubscription = $amphpSubscriber->subscribe($prefix . $channel);
+        $amphpSubscriptions = [];
+        $channelNames = [];
 
-        return new RedisSubscription($amphpSubscription, $prefix, $channel);
+        foreach ($channels as $channel) {
+            $amphpSubscriptions[] = $amphpSubscriber->subscribe($prefix . $channel);
+            $channelNames[] = $channel;
+        }
+
+        return new RedisSubscription($amphpSubscriptions, $prefix, $channelNames);
     }
 
     public function psubscribe(string ...$patterns): Subscription
@@ -32,11 +37,16 @@ readonly class RedisSubscriber implements SubscriberInterface
         $amphpSubscriber = $this->createAmphpSubscriber();
         $prefix = $this->config->prefix();
 
-        $pattern = $patterns[0];
-        $prefixedPattern = $prefix . $pattern;
-        $amphpSubscription = $amphpSubscriber->subscribeToPattern($prefixedPattern);
+        $amphpSubscriptions = [];
+        $patternNames = [];
 
-        return new RedisSubscription($amphpSubscription, $prefix, null, $pattern);
+        foreach ($patterns as $pattern) {
+            $prefixedPattern = $prefix . $pattern;
+            $amphpSubscriptions[] = $amphpSubscriber->subscribeToPattern($prefixedPattern);
+            $patternNames[] = $pattern;
+        }
+
+        return new RedisSubscription($amphpSubscriptions, $prefix, [], $patternNames);
     }
 
     protected function createAmphpSubscriber(): AmphpRedisSubscriberInterface
