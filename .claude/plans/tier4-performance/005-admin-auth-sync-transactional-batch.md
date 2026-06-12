@@ -16,9 +16,10 @@ Cheap correctness+perf improvement folded into the F3 cluster; depends on 004 to
   - `packages/database/src/Connection/TransactionInterface.php` and `Repository::insertBatch` (conditional-transaction guard: only begin/commit when the connection implements `TransactionInterface` and is not already in a transaction — mirror this)
   - `packages/admin-auth/tests/` (RoleRepository tests)
 - Patterns to follow:
-  - Begin a transaction only when supported (same guard `insertBatch` uses); on success commit, on `Throwable` rollback and rethrow.
-  - Replace the per-id INSERT loop with a single multi-row `INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?),(?,?)...` (chunk if the id count is large).
+  - Begin a transaction only when supported (same guard `insertBatch` uses at lines 334-338: `$this->connection instanceof TransactionInterface && !$this->connection->inTransaction()`); on success commit, on `Throwable` rollback and rethrow.
+  - Replace the per-id INSERT loop with a single multi-row `INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?),(?,?)...` (chunk if the id count is large; use a typed rows-per-chunk constant kept well within the pgsql 65535-parameter limit).
   - Empty permission-id list still clears existing rows (DELETE runs) and issues no INSERT.
+  - The "supports transactions" test needs a stub implementing BOTH `ConnectionInterface` AND `TransactionInterface` (with `beginTransaction`/`commit`/`rollback`/`inTransaction`); the "does not support transactions" test uses a plain `ConnectionInterface` stub. EITHER stub MUST implement `driverName(): string` (Tier 2 interface addition) or it fatals at instantiation.
 
 ## Requirements (Test Descriptions)
 - [ ] `it replaces a role's permissions with the new set`

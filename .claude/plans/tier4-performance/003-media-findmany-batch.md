@@ -13,12 +13,12 @@
 ## Context
 - Related files:
   - `packages/media/src/Service/AttachmentManager.php` (`findByAttachable` ~46-63 — the per-id loop; `readonly class`)
-  - `packages/media/src/Contracts/MediaRepositoryInterface.php` (only has `save`/`delete`/`find(int): ?Media` — add `findMany`)
-  - `packages/media/src/Contracts/MediaAttachmentRepositoryInterface.php` (`findByAttachable` returns `array<int>` ids)
-  - `packages/media/tests/Service/AttachmentManagerTest.php` (`makeMediaRepository` anonymous-class mock implementing `MediaRepositoryInterface` — MUST add `findMany`)
-  - `packages/media/tests/Service/MediaManagerTest.php` (~line 228, second anonymous-class mock implementing `MediaRepositoryInterface` — MUST add `findMany`)
+  - `packages/media/src/Contracts/MediaRepositoryInterface.php` (only has `save`/`delete`/`find(int $id): ?Media` — add `findMany`; ids are `int`)
+  - `packages/media/src/Contracts/MediaAttachmentRepositoryInterface.php` (`findByAttachable` returns `array<int>` ids — these `int` ids are what `findMany` receives)
+  - `packages/media/tests/Service/AttachmentManagerTest.php` (`makeMediaRepository` anonymous-class mock at line 76 implementing `MediaRepositoryInterface` — MUST add `findMany`)
+  - `packages/media/tests/Service/MediaManagerTest.php` (`makeRepository` at line 244, second anonymous-class mock implementing `MediaRepositoryInterface` — MUST add `findMany`)
 - Patterns to follow:
-  - Add `MediaRepositoryInterface::findMany(array $ids): array` returning `array<Media>`, documented: empty input -> empty array with no query; result keyed/ordered is the caller's concern (the contract returns a flat `array<Media>` of the matched rows, order unspecified).
+  - Add `MediaRepositoryInterface::findMany(array $ids): array` (`@param array<int> $ids`) returning `array<Media>`, documented: empty input -> empty array with no query; the contract returns a flat `array<Media>` of the matched rows in unspecified order (the caller — `AttachmentManager` — is responsible for any ordering). Confirmed: there is NO concrete `MediaRepository` class in-package and exactly two in-repo implementers (the two test mocks above) — both must add the method or the `marko/media` suite fatals.
   - The mock `findMany` returns the stored media for each requested id that exists, skipping misses (mirrors `find()` returning null).
   - `AttachmentManager::findByAttachable` calls `findMany($mediaIds)` once, then re-orders the returned media to match the attachment id list and skips ids with no matching media (preserve current null-skip + ordering behavior) — the re-ordering/skip logic lives in `AttachmentManager`, not the repository.
   - Query-count assertions: the mock records how many times `findMany` (vs `find`) is invoked; assert `find` is never called and `findMany` is called exactly once regardless of attachment count.
