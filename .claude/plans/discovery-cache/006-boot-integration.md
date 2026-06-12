@@ -23,6 +23,27 @@ gated by `class_exists`), so `$_ENV` is populated before the gate reads it. When
 `marko/env` is absent, `DiscoveryEnvironment` falls back to its documented defaults
 (enabled, production) — which is the safe production default. Document this in a test.
 
+**The gate runs during CLI boot too.** `CliKernel::doRun()` calls `$app->initialize()` BEFORE
+dispatching ANY command — including `discovery:cache` and `discovery:clear`. Consequences:
+- On a cache HIT, the CLI itself boots from the cache. `discovery:cache` still recompiles correctly:
+  it reads `ModuleRepositoryInterface->all()` (always the LIVE resolved module list — module discovery
+  is never cached, `$this->modules` is set at line 130 before the fork) and runs a fresh
+  `DiscoveryCompiler` scan, independent of the hydrated registries.
+- On a CORRUPT cache, `initialize()` throws — so `discovery:clear` CANNOT run through a corrupt boot
+  (boot precedes dispatch). This is intentional (loud errors), but it means the corrupt-cache recovery
+  story is "delete the file directly," which is why `DiscoveryCacheException`'s suggestion (Task 002)
+  names the file path first. Document this in a test and keep the `discovery:clear` limitation note
+  (Task 005) consistent.
+
+**Test isolation (MANDATORY).** `$_ENV` is process-global and Pest runs in parallel per worker. Every
+test here that sets `APP_ENV`/`DISCOVERY_CACHE_ENABLED`/`DISCOVERY_CACHE_PATH` MUST snapshot and
+restore those three keys (beforeEach/afterEach or try/finally), leaving `$_ENV` as found — otherwise it
+flips the ~40 existing `Application::initialize()` tests in `ApplicationTest.php` into cache mode. Every
+test that writes a real cache file MUST use a UNIQUE per-test temp base and delete it in cleanup
+(mirror `appTestCleanupDirectory`), so a leftover `storage/cache/discovery.php` never bleeds into
+another boot test. `$cache->exists()` is resolved against `ProjectPaths::$base` (the per-test temp
+base), so a unique+cleaned temp base gives isolation for free.
+
 ## Description of refactor
 Split each of `discoverPreferences/Plugins/Observers/Commands` into two halves: a "scan → definitions" half (existing discovery call) and a "register definitions into the registry" half. Boot then sources the definition lists from EITHER the live scan OR `DiscoveryCache::load()`, and runs the same registration half for both paths.
 
@@ -32,6 +53,19 @@ Split each of `discoverPreferences/Plugins/Observers/Commands` into two halves: 
 - `discoverPreferences()`/`discoverPlugins()` register into `$this->preferenceRegistry`/`$this->pluginRegistry` (constructed earlier at lines 137-138, unchanged).
 
 The cleanest refactor: keep the four `discoverX()` methods doing scan-and-register (unchanged), and add four parallel `registerXFromCache(array $definitions)` (or a single hydrate-and-register path) that perform ONLY the registry construction + registration + container wiring halves, fed by `DiscoveryCache::load()`. The fork chooses which to call per subsystem.
+
+**Preserve the EXACT existing interleaving — do NOT wrap all four scans in one `if`.** Verified against
+`Application::initialize()`: preferences (line 157) → plugins (160) → observers (163) → [create
+`EventDispatcher` + bind `EventDispatcherInterface`, lines 166-167; create `ModuleRepository` + bind
+`ModuleRepositoryInterface`, lines 170-171] → commands (174). The event-dispatcher and module-repository
+wiring sits BETWEEN observers and commands and is unchanged. Therefore each subsystem must choose
+scan-vs-cache INDEPENDENTLY at its current call site (four small forks, or four `registerXFromCache`
+methods invoked in place), NOT one monolithic branch around all four — otherwise the ordering breaks.
+
+**Each subsystem's two halves are MUTUALLY EXCLUSIVE — exactly one runs per boot.** On a cache hit, run
+only `registerXFromCache`; on a miss/dev/disabled, run only `discoverX()`. Registering from BOTH would
+double-register and `CommandRegistry::register()` throws `duplicateCommandName` (and the preference/plugin
+registries would conflict too). This is the most likely refactor bug — guard it with a test.
 
 All other boot wiring (module discovery, autoloaders, container/registry construction, bindings, event dispatcher creation, `discoverRoutes`, module `boot` callbacks) is unchanged. Only the source of the four definition lists changes. NOTE: `discoverRoutes` (RoutingBootstrapper) is NOT cached and still runs its own scan every request — that is in-scope-excluded and unchanged.
 
@@ -50,13 +84,17 @@ All other boot wiring (module discovery, autoloaders, container/registry constru
 ## Requirements (Test Descriptions)
 - [ ] `it hydrates preferences, plugins, observers, and commands from the cache when enabled and environment is not development and the cache exists`
 - [ ] `it binds CommandRegistry in the container and creates the CommandRunner on a cache hit (commands are runnable without a scan)`
+- [ ] `it registers each cached command exactly once and never throws duplicateCommandName on a cache hit (scan and cache halves are mutually exclusive)`
+- [ ] `it preserves the existing boot ordering on a cache hit (observers registered before the event dispatcher is created; commands after the module repository is bound)`
 - [ ] `it does not consult the filesystem for markers on a cache hit (a class present on disk but absent from the cache is not registered)`
 - [ ] `it always rescans the filesystem in development even when a cache file exists (a class present on disk is registered regardless of cache contents)`
 - [ ] `it rescans the filesystem when caching is enabled but no cache file exists`
 - [ ] `it rescans the filesystem when caching is disabled by env (DISCOVERY_CACHE_ENABLED=false)`
 - [ ] `it throws DiscoveryCacheException during boot when the cache exists but is corrupt and caching is enabled outside development`
+- [ ] `it skips the corrupt-cache throw in development (rescans instead) so a corrupt cache never blocks dev boot`
 - [ ] `it produces the same registered preferences, plugins, observers, and commands from a valid cache as from a fresh scan of the same modules`
 - [ ] `it rescans (defaults to enabled production) when marko/env is not installed and no env vars are set`
+- [ ] `it restores $_ENV and removes any temp cache file after each test so other Application::initialize() tests are unaffected`
 
 ## Acceptance Criteria
 - All requirements have passing tests

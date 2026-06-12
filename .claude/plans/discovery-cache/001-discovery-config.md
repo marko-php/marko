@@ -39,18 +39,24 @@ for the CLI commands (which run after full boot). Core's boot never reads this f
 - Standards: strict types, constructor promotion, no final, no magic methods, full type declarations, `readonly` where appropriate.
 
 ## Implementation detail
-- `DiscoveryEnvironment` getters and defaults (read from `$_ENV`):
-  - `enabled(): bool` ← `DISCOVERY_CACHE_ENABLED`, default `true`. Treat the string values `'0'`, `'false'`, `''` (case-insensitive `false`) as `false`; everything else truthy. Document the exact coercion in the test.
+- `DiscoveryEnvironment` getters and defaults (read from `$_ENV`). Getters read `$_ENV` LIVE at call time (not cached in the constructor), so tests can set env, then construct, then assert; and so the bootstrap sequence (EnvLoader populates `$_ENV` before the gate reads it) holds:
+  - `enabled(): bool` ← `DISCOVERY_CACHE_ENABLED`, default `true`. **Coercion (production-safety):** treat the case-insensitive string values `'0'`, `'false'`, `'no'`, `'off'`, and `''` as `false`; every other present value is `true`; an absent key defaults to `true`. This wider false-set matches operator intent (a deploy that sets `=no`/`=off` to disable the cache actually disables it, avoiding a stale-cache-in-prod surprise). Document the exact coercion in the test.
   - `environment(): string` ← `APP_ENV`, default `'production'`.
   - `cachePath(): string` ← `DISCOVERY_CACHE_PATH`, default `'storage/cache/discovery.php'` (relative — resolved against `ProjectPaths::$base` by `DiscoveryCache`, Task 002).
-- `config/discovery.php` returns `['enabled' => ..., 'environment' => ..., 'cache_path' => ...]` reading the SAME three `$_ENV` keys with the SAME defaults so the two layers never disagree.
+- `config/discovery.php` returns `['enabled' => ..., 'environment' => ..., 'cache_path' => ...]` reading the SAME three `$_ENV` keys with the SAME defaults/coercion so the two layers never disagree. NOTE: the file basename becomes the top-level config key, so `marko/config` consumers read `discovery.enabled` / `discovery.environment` / `discovery.cache_path`.
+
+## Test isolation (MANDATORY)
+- `$_ENV` is process-global and Pest runs in parallel per worker. Every test that sets `DISCOVERY_CACHE_ENABLED`, `APP_ENV`, or `DISCOVERY_CACHE_PATH` MUST snapshot those three keys in `beforeEach` and restore them exactly (including unsetting keys that were absent) in `afterEach` (or use `try/finally`). Leaking a mutated `$_ENV` would silently flip the ~40 existing `Application::initialize()` tests in `packages/core/tests/Unit/ApplicationTest.php` into "cache enabled, production" mode. Exercise the no-env-set default path explicitly to prove the defaults.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns enabled() true by default and false when DISCOVERY_CACHE_ENABLED is "0", "false", or empty`
+- [ ] `it returns enabled() true by default (no env set) and treats DISCOVERY_CACHE_ENABLED values 0, false, no, off, and empty (case-insensitive) as disabled`
+- [ ] `it returns enabled() true for any other present DISCOVERY_CACHE_ENABLED value (e.g. "1", "true", "yes")`
 - [ ] `it returns environment() from APP_ENV and defaults to production when APP_ENV is unset`
 - [ ] `it returns cachePath() from DISCOVERY_CACHE_PATH and defaults to storage/cache/discovery.php`
+- [ ] `it reads $_ENV live at call time (a value set after construction is reflected)`
 - [ ] `it reads no value from marko/config and has no Marko\Config import (boot-time reader is config-package-free)`
 - [ ] `the shipped config/discovery.php returns an array with enabled, environment, and cache_path keys matching the DiscoveryEnvironment defaults when no env vars are set`
+- [ ] `it snapshots and restores the three $_ENV keys around each test so no env state leaks (verify $_ENV unchanged after the suite for keys that were originally absent)`
 
 ## Acceptance Criteria
 - All requirements have passing tests

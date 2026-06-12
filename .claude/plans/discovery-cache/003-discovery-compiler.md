@@ -24,11 +24,12 @@ Add `DiscoveryCompiler`, which runs the four existing attribute-marker discovery
     - `CommandDiscovery` — `new CommandDiscovery($classFileParser)`, called `discover($this->modules)` (whole module list at once).
   - Because `ObserverDiscovery`/`CommandDiscovery` take the module LIST while `PreferenceDiscovery`/`PluginDiscovery` take a single module, the compiler must loop modules for the latter two and pass the full list to the former two — mirroring `Application` exactly, preserving module order (do not sort or dedupe).
   - Test setup `createTestModule` + temp `src/` fixtures in `packages/core/tests/Unit/Module/ModuleDiscoveryTest.php` for building module fixtures with attribute-bearing classes.
-- Standards: strict types, constructor promotion, no final, no magic methods, full type declarations. Payload keys must match `DiscoveryCache` exactly (`version`, `preferences`, `plugins`, `observers`, `commands`).
+- Standards: strict types, constructor promotion, no final, no magic methods, full type declarations. Payload keys must match `DiscoveryCache` exactly (`version`, `preferences`, `plugins`, `observers`, `commands`). The `'version'` value MUST be `DiscoveryCache::CACHE_VERSION` (the constant from Task 002) — NEVER a hardcoded literal, or a future bump silently desyncs the compiler from the loader and every fresh cache fails its own version check.
+- **Equivalence invariant (load-bearing).** `Application` resolves `ObserverDiscovery` through the container (`$this->container->get(ObserverDiscovery::class)`, autowired), while the compiler `new`s it directly. These are equivalent ONLY because no `#[Preference]` currently targets a discovery class. Add a code comment in `DiscoveryCompiler` documenting that it intentionally bypasses container/preference resolution for the discovery classes themselves, and why that is safe (discovery runs before preferences apply to discovery classes; no preference targets them). The equivalence test below must compare the compiled output against the SAME construction the reference uses so this invariant is guarded, not assumed.
 
 ## Requirements (Test Descriptions)
 - [ ] `it compiles an empty payload (empty preference, plugin, observer, command arrays) for modules with no attribute-bearing classes`
-- [ ] `it includes the current cache schema version key in the compiled payload`
+- [ ] `it includes the current cache schema version key sourced from DiscoveryCache::CACHE_VERSION (not a hardcoded literal) in the compiled payload`
 - [ ] `it compiles preferences discovered across all modules into the payload preferences array`
 - [ ] `it compiles plugins, observers, and commands discovered across all modules into their respective payload arrays`
 - [ ] `it produces a payload that, written and reloaded through DiscoveryCache, yields discovery objects identical to running the four discovery passes directly over the same modules`

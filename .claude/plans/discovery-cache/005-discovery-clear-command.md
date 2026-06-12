@@ -9,6 +9,8 @@
 ## Description
 Add the `discovery:clear` CLI command. It removes the compiled discovery cache file via `DiscoveryCache::clear()`, reporting success. Clearing is idempotent: clearing when no cache exists is reported as success, not an error.
 
+**Recovery-path limitation (must be documented in the command and the corrupt-cache exception, Task 002).** `discovery:clear` runs AFTER `Application::initialize()` (see `CliKernel::doRun()`), and Task 006 makes a CORRUPT cache throw during `initialize()`. So `discovery:clear` CANNOT recover a corrupt cache — boot throws before the command dispatches. It only works when boot succeeds (cache valid or absent). The recovery instruction for a corrupt cache is to delete the file directly; the `DiscoveryCacheException` suggestion (Task 002) names that path first. `discovery:clear` is the convenience path for a valid cache you simply want to remove.
+
 ## Context
 - Related files:
   - `/Users/markshust/Sites/marko/packages/core/src/Commands/DiscoveryClearCommand.php` (NEW)
