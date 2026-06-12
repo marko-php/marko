@@ -136,7 +136,7 @@ readonly class FilePageCacheDriver implements PageCacheInterface
             $content = stream_get_contents($fp);
             $decoded = $content !== false && $content !== '' ? unserialize(
                 $content,
-                ['allowed_classes' => false]
+                ['allowed_classes' => false],
             ) : [];
             $hashes = is_array($decoded) ? $decoded : [];
 

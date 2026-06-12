@@ -119,11 +119,11 @@ it(
     'verifies the envelope before unserializing in the failed command and preserves the Unknown fallback',
     function (): void {
         $envelope = createFailedCommandEnvelope();
-    
+
         // Use a serialized stdClass object (not an array) — this triggers the 'Unknown' fallback since
-    // extractJobClass expects is_array($data) && isset($data['class']), but a serialized object is not an array.
-    $wrappedObjectPayload = $envelope->wrap(serialize(new stdClass()));
-    
+        // extractJobClass expects is_array($data) && isset($data['class']), but a serialized object is not an array.
+        $wrappedObjectPayload = $envelope->wrap(serialize(new stdClass()));
+
         $failedJobs = [
             new FailedJob(
                 id: 'obj-job-id',
@@ -133,12 +133,12 @@ it(
                 failedAt: new DateTimeImmutable('2026-01-21 09:45:00'),
             ),
         ];
-    
+
         $repository = Helpers::createStubFailedJobRepository($failedJobs);
         $command = new FailedCommand($repository, $envelope);
         ['output' => $output] = executeFailedCommand($command);
-    
+
         // The job class should be 'Unknown' since the payload is a serialized object, not array with 'class' key
-    expect($output)->toContain('Unknown');
-    }
+        expect($output)->toContain('Unknown');
+    },
 );

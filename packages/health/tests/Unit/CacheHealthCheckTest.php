@@ -76,8 +76,7 @@ it('checks cache read/write via CacheHealthCheck', function (): void {
         public function increment(
             string $key,
             int $ttl,
-        ): int
-        {
+        ): int {
             return 1;
         }
     };
@@ -152,8 +151,7 @@ it('returns unhealthy status when cache write fails', function (): void {
         public function increment(
             string $key,
             int $ttl,
-        ): int
-        {
+        ): int {
             return 1;
         }
     };

@@ -52,7 +52,7 @@ describe('IdentifierValidator', function (): void {
                 ->toThrow(InvalidColumnException::class)
                 ->and(fn () => IdentifierValidator::assertValidOperator('= --'))
                 ->toThrow(InvalidColumnException::class);
-        }
+        },
     );
 
     it('accepts a plain identifier via assertValidIdentifier', function (): void {
@@ -82,7 +82,7 @@ describe('IdentifierValidator', function (): void {
                 ->toThrow(InvalidColumnException::class)
                 ->and(fn () => IdentifierValidator::assertValidIdentifier('name/*comment*/'))
                 ->toThrow(InvalidColumnException::class);
-        }
+        },
     );
 
     it('escapes an embedded backtick by doubling it via escapeDelimiter', function (): void {

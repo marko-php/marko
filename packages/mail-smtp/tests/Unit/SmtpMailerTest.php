@@ -665,28 +665,28 @@ it(
         ]);
         $transport = new SmtpTransport($socket);
         $transport->connect('smtp.example.com', 587);
-    
+
         $mailer = new SmtpMailer($transport);
-    
+
         $message = Message::create()
             ->from('sender@example.com')
             ->to('recipient@example.com')
             ->subject('Clean Subject')
             ->header('X-Trace', 'abc123')
             ->text('body');
-    
+
         $mailer->send($message);
-    
+
         $written = implode('', $socket->written);
-    
+
         // Each header should appear as its own line; X-Trace value must not contain embedded newlines
-    $headerBlock = explode("\r\n\r\n", $written)[0];
+        $headerBlock = explode("\r\n\r\n", $written)[0];
         $headerLines = explode("\r\n", $headerBlock);
         $traceLines = array_filter($headerLines, fn (string $line) => str_starts_with($line, 'X-Trace:'));
-    
+
         expect(count($traceLines))->toBe(1)
             ->and(array_values($traceLines)[0])->toBe('X-Trace: abc123');
-    }
+    },
 );
 
 it('still RFC-2047 encodes a Subject containing non-ASCII characters', function (): void {

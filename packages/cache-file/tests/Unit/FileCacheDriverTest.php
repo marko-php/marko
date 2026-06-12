@@ -353,12 +353,12 @@ it(
         $object = new stdClass();
         $object->name = 'preserved-object';
         $this->driver->set('object-key', $object);
-    
+
         $result = $this->driver->get('object-key');
-    
+
         expect($result)->toBeInstanceOf(stdClass::class)
             ->and($result->name)->toBe('preserved-object');
-    }
+    },
 );
 
 it('still round-trips a legitimately stored array value through the file cache', function (): void {

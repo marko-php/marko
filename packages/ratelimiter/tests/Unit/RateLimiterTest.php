@@ -196,8 +196,7 @@ describe('RateLimiter', function (): void {
             public function increment(
                 string $key,
                 int $ttl,
-            ): int
-            {
+            ): int {
                 $this->incrementCalled = true;
                 $this->incrementKey = $key;
 

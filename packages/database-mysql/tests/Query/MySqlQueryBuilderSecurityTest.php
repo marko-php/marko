@@ -41,8 +41,7 @@ class SecurityMockConnection implements ConnectionInterface
     public function query(
         string $sql,
         array $bindings = [],
-    ): array
-    {
+    ): array {
         $this->lastQuerySql = $sql;
         $this->lastQueryBindings = $bindings;
 
@@ -52,8 +51,7 @@ class SecurityMockConnection implements ConnectionInterface
     public function execute(
         string $sql,
         array $bindings = [],
-    ): int
-    {
+    ): int {
         return 0;
     }
 
@@ -152,10 +150,10 @@ describe('MySqlQueryBuilder security hardening', function (): void {
                 ->table('users')
                 ->where('data->name', '=', 'Bob')
                 ->get();
-    
+
             expect($this->connection->lastQuerySql)
                 ->toContain('JSON_EXTRACT(`data`, \'$.name\')');
-        }
+        },
     );
 
     it('still allows count() with no column (COUNT(*))', function (): void {

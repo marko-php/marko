@@ -55,8 +55,7 @@ readonly class ClientIpResolver
     private function isTrustedProxy(
         string $ip,
         array $trustedProxies,
-    ): bool
-    {
+    ): bool {
         $normalized = $this->normalizeIp($ip);
 
         return array_any($trustedProxies, fn (string $proxy) => $this->normalizeIp($proxy) === $normalized);
@@ -71,8 +70,7 @@ readonly class ClientIpResolver
     private function resolveFromXff(
         string $xff,
         array $trustedProxies,
-    ): ?string
-    {
+    ): ?string {
         $entries = array_reverse(array_map('trim', explode(',', $xff)));
 
         foreach ($entries as $entry) {

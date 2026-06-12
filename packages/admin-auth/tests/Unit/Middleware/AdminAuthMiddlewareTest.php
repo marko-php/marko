@@ -402,45 +402,45 @@ it(
     'returns a 403 forbidden response when the authenticated user is not an admin user on a gated route',
     function (): void {
         $guard = new FakeGuard(name: 'admin', attemptResult: false);
-    
+
         // Authenticated as a non-admin user (not AdminUserInterface)
-    $nonAdminUser = new class () implements AuthenticatableInterface
+        $nonAdminUser = new class () implements AuthenticatableInterface
         {
             public function getAuthIdentifier(): int|string
             {
                 return 99;
             }
-    
+
             public function getAuthIdentifierName(): string
             {
                 return 'id';
             }
-    
+
             public function getAuthPassword(): string
             {
                 return 'password';
             }
-    
+
             public function getRememberToken(): ?string
             {
                 return null;
             }
-    
+
             public function setRememberToken(?string $token): void {}
-    
+
             public function getRememberTokenName(): string
             {
                 return 'remember_token';
             }
         };
         $guard->setUser($nonAdminUser);
-    
+
         $middleware = createMiddleware(guard: $guard);
-    
+
         $request = (new Request())->withRoute(TestControllerWithPermission::class, 'create');
-    
+
         $response = $middleware->handle($request, createSuccessNext());
-    
+
         expect($response->statusCode())->toBe(403);
-    }
+    },
 );

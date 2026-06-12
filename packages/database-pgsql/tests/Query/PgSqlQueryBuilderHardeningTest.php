@@ -120,14 +120,14 @@ describe('PgSqlQueryBuilder hardening', function (): void {
                 queryReturn: [['id' => 1]],
             );
             $builder = new PgSqlQueryBuilder($connection);
-    
+
             $builder->table('users')
                 ->where('data->name', '=', 'John')
                 ->get();
-    
+
             expect($connection->lastQuerySql)->toContain('->')
                 ->and($connection->lastQuerySql)->toContain('WHERE');
-        }
+        },
     );
 
     it('still allows count() with no column (COUNT(*))', function (): void {
