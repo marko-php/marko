@@ -1,6 +1,6 @@
 # Task 023: RetryCommand doesn't reset attempts
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -29,10 +29,10 @@ A retry must actually give the job fresh attempts; otherwise the command is a no
   - In `retryJob()` and `retryAll()`, call `$job->resetAttempts()` AFTER `$job = unserialize($this->jobEnvelope->verifyAndUnwrap(...))` and BEFORE `queue->push(...)`. Leave the `verifyAndUnwrap(...)` envelope call and the `failedJobRepository->delete(...)` ordering untouched.
 
 ## Requirements (Test Descriptions)
-- [ ] `it resets a retried job's attempts to zero before re-queuing`
-- [ ] `it resets attempts when retrying all failed jobs`
-- [ ] `it re-pushes the retried job to its original queue`
-- [ ] `it deletes the failed-job record after retrying`
+- [x] `it resets a retried job's attempts to zero before re-queuing`
+- [x] `it resets attempts when retrying all failed jobs`
+- [x] `it re-pushes the retried job to its original queue`
+- [x] `it deletes the failed-job record after retrying`
 
 ## Acceptance Criteria
 - A retried job has `attempts === 0` when pushed back, so the worker performs real retries before it can fail again.

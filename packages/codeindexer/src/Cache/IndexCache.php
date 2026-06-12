@@ -7,11 +7,9 @@ namespace Marko\CodeIndexer\Cache;
 use Marko\CodeIndexer\Attributes\AttributeParser;
 use Marko\CodeIndexer\Config\ConfigScanner;
 use Marko\CodeIndexer\Contract\IndexCacheInterface;
+use Marko\CodeIndexer\Exceptions\IndexCacheException;
 use Marko\CodeIndexer\Module\ModuleWalker;
 use Marko\CodeIndexer\Translations\TranslationScanner;
-use Marko\CodeIndexer\Views\TemplateScanner;
-use Marko\CodeIndexer\Exceptions\IndexCacheException;
-use Marko\Core\Path\ProjectPaths;
 use Marko\CodeIndexer\ValueObject\CommandEntry;
 use Marko\CodeIndexer\ValueObject\ConfigKeyEntry;
 use Marko\CodeIndexer\ValueObject\ModuleInfo;
@@ -21,6 +19,8 @@ use Marko\CodeIndexer\ValueObject\PreferenceEntry;
 use Marko\CodeIndexer\ValueObject\RouteEntry;
 use Marko\CodeIndexer\ValueObject\TemplateEntry;
 use Marko\CodeIndexer\ValueObject\TranslationEntry;
+use Marko\CodeIndexer\Views\TemplateScanner;
+use Marko\Core\Path\ProjectPaths;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -111,7 +111,25 @@ class IndexCache implements IndexCacheInterface
             return false;
         }
 
-        $this->data = unserialize((string) file_get_contents($cachePath));
+        $result = @unserialize((string) file_get_contents($cachePath), [
+            'allowed_classes' => [
+                CommandEntry::class,
+                ConfigKeyEntry::class,
+                ModuleInfo::class,
+                ObserverEntry::class,
+                PluginEntry::class,
+                PreferenceEntry::class,
+                RouteEntry::class,
+                TemplateEntry::class,
+                TranslationEntry::class,
+            ],
+        ]);
+
+        if (!is_array($result)) {
+            return false;
+        }
+
+        $this->data = $result;
 
         return true;
     }
@@ -120,6 +138,8 @@ class IndexCache implements IndexCacheInterface
      * Lazy-load the cache from disk on first read so consumers (MCP server,
      * LSP server, etc.) don't have to remember to call load() at startup.
      * Falls back to a full build() when the cache is missing or stale.
+     *
+     * @throws IndexCacheException
      */
     private function ensureLoaded(): void
     {
@@ -174,7 +194,10 @@ class IndexCache implements IndexCacheInterface
         return false;
     }
 
-    /** @return list<ModuleInfo> */
+    /**
+     * @return list<ModuleInfo>
+     * @throws IndexCacheException
+     */
     public function getModules(): array
     {
         $this->ensureLoaded();
@@ -182,7 +205,10 @@ class IndexCache implements IndexCacheInterface
         return $this->data['modules'] ?? [];
     }
 
-    /** @return list<ObserverEntry> */
+    /**
+     * @return list<ObserverEntry>
+     * @throws IndexCacheException
+     */
     public function getObservers(): array
     {
         $this->ensureLoaded();
@@ -190,7 +216,10 @@ class IndexCache implements IndexCacheInterface
         return $this->data['observers'] ?? [];
     }
 
-    /** @return list<PluginEntry> */
+    /**
+     * @return list<PluginEntry>
+     * @throws IndexCacheException
+     */
     public function getPlugins(): array
     {
         $this->ensureLoaded();
@@ -198,7 +227,10 @@ class IndexCache implements IndexCacheInterface
         return $this->data['plugins'] ?? [];
     }
 
-    /** @return list<PreferenceEntry> */
+    /**
+     * @return list<PreferenceEntry>
+     * @throws IndexCacheException
+     */
     public function getPreferences(): array
     {
         $this->ensureLoaded();
@@ -206,7 +238,10 @@ class IndexCache implements IndexCacheInterface
         return $this->data['preferences'] ?? [];
     }
 
-    /** @return list<CommandEntry> */
+    /**
+     * @return list<CommandEntry>
+     * @throws IndexCacheException
+     */
     public function getCommands(): array
     {
         $this->ensureLoaded();
@@ -214,7 +249,10 @@ class IndexCache implements IndexCacheInterface
         return $this->data['commands'] ?? [];
     }
 
-    /** @return list<RouteEntry> */
+    /**
+     * @return list<RouteEntry>
+     * @throws IndexCacheException
+     */
     public function getRoutes(): array
     {
         $this->ensureLoaded();
@@ -222,7 +260,10 @@ class IndexCache implements IndexCacheInterface
         return $this->data['routes'] ?? [];
     }
 
-    /** @return list<ConfigKeyEntry> */
+    /**
+     * @return list<ConfigKeyEntry>
+     * @throws IndexCacheException
+     */
     public function getConfigKeys(): array
     {
         $this->ensureLoaded();
@@ -230,7 +271,10 @@ class IndexCache implements IndexCacheInterface
         return $this->data['configKeys'] ?? [];
     }
 
-    /** @return list<TemplateEntry> */
+    /**
+     * @return list<TemplateEntry>
+     * @throws IndexCacheException
+     */
     public function getTemplates(): array
     {
         $this->ensureLoaded();
@@ -238,7 +282,10 @@ class IndexCache implements IndexCacheInterface
         return $this->data['templates'] ?? [];
     }
 
-    /** @return list<TranslationEntry> */
+    /**
+     * @return list<TranslationEntry>
+     * @throws IndexCacheException
+     */
     public function getTranslationKeys(): array
     {
         $this->ensureLoaded();
@@ -246,7 +293,10 @@ class IndexCache implements IndexCacheInterface
         return $this->data['translationKeys'] ?? [];
     }
 
-    /** @return list<ObserverEntry> */
+    /**
+     * @return list<ObserverEntry>
+     * @throws IndexCacheException
+     */
     public function findObserversForEvent(string $eventClass): array
     {
         return array_values(
@@ -257,7 +307,10 @@ class IndexCache implements IndexCacheInterface
         );
     }
 
-    /** @return list<PluginEntry> */
+    /**
+     * @return list<PluginEntry>
+     * @throws IndexCacheException
+     */
     public function findPluginsForTarget(string $targetClass): array
     {
         return array_values(
@@ -276,8 +329,7 @@ class IndexCache implements IndexCacheInterface
     public function set(
         string $key,
         mixed $value,
-    ): void
-    {
+    ): void {
         $this->data[$key] = $value;
     }
 

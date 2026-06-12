@@ -30,26 +30,38 @@ class LspProtocol
         $this->handlers[$method] = $handler;
     }
 
+    /**
+     * @throws JsonException
+     */
     public function serve(): void
     {
         while (!$this->shutdown && !feof($this->input)) {
             $message = $this->readMessage();
-            if ($message === null) {
+            if ($message === false) {
                 break;
+            }
+            if ($message === null) {
+                $this->writeResponse(
+                    ['jsonrpc' => '2.0', 'error' => ['code' => -32700, 'message' => 'Parse error'], 'id' => null],
+                );
+                continue;
             }
             $this->handleMessage($message);
         }
     }
 
-    /** @return string|null Raw JSON body, or null on EOF */
-    public function readMessage(): ?string
+    /**
+     * @return string|false|null Raw JSON body, false on EOF, null on malformed frame
+     */
+    public function readMessage(): string|false|null
     {
         $contentLength = 0;
+        $sawHeader = false;
 
         while (true) {
             $line = fgets($this->input);
             if ($line === false) {
-                return null;
+                return false;
             }
             $line = rtrim($line, "\r\n");
             if ($line === '') {
@@ -57,10 +69,11 @@ class LspProtocol
             }
             if (preg_match('/^Content-Length:\s*(\d+)/i', $line, $m)) {
                 $contentLength = (int) $m[1];
+                $sawHeader = true;
             }
         }
 
-        if ($contentLength === 0) {
+        if (!$sawHeader || $contentLength === 0) {
             return null;
         }
 
@@ -79,11 +92,14 @@ class LspProtocol
         return $body;
     }
 
+    /**
+     * @throws JsonException
+     */
     public function handleMessage(string $jsonBody): void
     {
         try {
             $request = json_decode($jsonBody, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
+        } catch (JsonException) {
             $this->writeResponse(
                 ['jsonrpc' => '2.0', 'error' => ['code' => -32700, 'message' => 'Parse error'], 'id' => null],
             );
@@ -134,7 +150,7 @@ class LspProtocol
             $this->writeResponse(
                 ['jsonrpc' => '2.0', 'error' => ['code' => $e->getJsonRpcCode(), 'message' => $e->getMessage()], 'id' => $id],
             );
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             if ($isNotification) {
                 return;
             }
@@ -163,8 +179,10 @@ class LspProtocol
      *
      * @throws JsonException
      */
-    public function notify(string $method, array $params): void
-    {
+    public function notify(
+        string $method,
+        array $params,
+    ): void {
         $this->writeResponse(['jsonrpc' => '2.0', 'method' => $method, 'params' => $params]);
     }
 

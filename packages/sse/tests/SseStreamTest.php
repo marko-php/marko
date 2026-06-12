@@ -203,4 +203,129 @@ describe('SseStream', function (): void {
 
         expect($chunks)->toBeEmpty();
     });
+
+    it('yields a formatted event for each message from the subscription', function (): void {
+        $subscription = new class () implements Subscription
+        {
+            public function getIterator(): Generator
+            {
+                yield new Message(channel: 'news', payload: 'hello');
+                yield new Message(channel: 'news', payload: 'world');
+            }
+
+            public function cancel(): void {}
+        };
+
+        $stream = new SseStream(subscription: $subscription, timeout: 300, pollInterval: 0);
+        $chunks = iterator_to_array($stream);
+        $dataChunks = array_values(array_filter($chunks, fn (string $c): bool => str_starts_with($c, 'event:')));
+
+        expect($dataChunks)->toHaveCount(2)
+            ->and($dataChunks[0])->toContain('event: news')
+            ->and($dataChunks[1])->toContain('event: news');
+    });
+
+    it('stops iterating the subscription once the timeout is exceeded', function (): void {
+        $subscription = new class () implements Subscription
+        {
+            public function getIterator(): Generator
+            {
+                // Yield null (idle) indefinitely — timeout=0 must bound iteration
+                while (true) {
+                    yield null;
+                }
+            }
+
+            public function cancel(): void {}
+        };
+
+        $stream = new SseStream(subscription: $subscription, timeout: 0, pollInterval: 0, heartbeatInterval: 9999);
+        $chunks = iterator_to_array($stream);
+
+        // With timeout=0 the stream must terminate (not loop forever)
+        // No real messages so we expect only possible heartbeats or empty
+        $dataChunks = array_filter($chunks, fn (string $c): bool => str_starts_with($c, 'event:'));
+
+        expect($dataChunks)->toBeEmpty();
+    });
+
+    it('emits a keepalive heartbeat when the subscription is idle past the heartbeat interval', function (): void {
+        $subscription = new class () implements Subscription
+        {
+            public function getIterator(): Generator
+            {
+                // Idle ticks then done
+                yield null;
+                yield null;
+            }
+
+            public function cancel(): void {}
+        };
+
+        $stream = new SseStream(
+            subscription: $subscription,
+            timeout: 300,
+            pollInterval: 0,
+            heartbeatInterval: 0,
+        );
+        $chunks = iterator_to_array($stream);
+        $heartbeats = array_filter($chunks, fn (string $c): bool => str_starts_with($c, ': keepalive'));
+
+        expect($heartbeats)->not->toBeEmpty();
+    });
+
+    it('resets the heartbeat timer after a real message is yielded', function (): void {
+        $subscription = new class () implements Subscription
+        {
+            public function getIterator(): Generator
+            {
+                // Real message first
+                yield new Message(channel: 'chan', payload: 'ping');
+                // Then end immediately
+            }
+
+            public function cancel(): void {}
+        };
+
+        $stream = new SseStream(
+            subscription: $subscription,
+            timeout: 300,
+            pollInterval: 0,
+            heartbeatInterval: 9999,
+        );
+        $chunks = iterator_to_array($stream);
+        $heartbeats = array_filter($chunks, fn (string $c): bool => str_starts_with($c, ': keepalive'));
+        $events = array_filter($chunks, fn (string $c): bool => str_starts_with($c, 'event:'));
+
+        // One real event, no heartbeat (heartbeat interval is huge, timer reset by message)
+        expect($events)->toHaveCount(1)
+            ->and($heartbeats)->toBeEmpty();
+    });
+
+    it('cancels the subscription when close is called', function (): void {
+        $cancelled = false;
+
+        $subscription = new class ($cancelled) implements Subscription
+        {
+            public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property used to track cancellation */
+                private bool &$cancelled,
+            ) {}
+
+            public function getIterator(): Generator
+            {
+                yield new Message(channel: 'chan', payload: 'hi');
+            }
+
+            public function cancel(): void
+            {
+                $this->cancelled = true;
+            }
+        };
+
+        $stream = new SseStream(subscription: $subscription, pollInterval: 0);
+        $stream->close();
+
+        expect($cancelled)->toBeTrue();
+    });
 });

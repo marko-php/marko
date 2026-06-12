@@ -132,4 +132,66 @@ describe('OpenSslEncryptor', function (): void {
 
         new OpenSslEncryptor(createTestEncryptionConfig(key: $shortKey));
     })->throws(EncryptionException::class, 'Invalid encryption key');
+
+    it('throws EncryptionException at construction when the configured cipher is not AEAD', function (): void {
+        new OpenSslEncryptor(createTestEncryptionConfig(cipher: 'aes-256-cbc'));
+    })->throws(EncryptionException::class);
+
+    it(
+        'throws EncryptionException at construction when the configured cipher is unknown to openssl',
+        function (): void {
+            new OpenSslEncryptor(createTestEncryptionConfig(cipher: 'not-a-real-cipher'));
+        },
+    )->throws(EncryptionException::class);
+
+    it('constructs successfully with the default aes-256-gcm cipher', function (): void {
+        $encryptor = new OpenSslEncryptor(createTestEncryptionConfig(cipher: 'aes-256-gcm'));
+
+        expect($encryptor)->toBeInstanceOf(OpenSslEncryptor::class);
+    });
+
+    it('throws DecryptionException invalidPayload when a payload field is not a string', function (): void {
+        $encryptor = new OpenSslEncryptor(createTestEncryptionConfig());
+        $encrypted = $encryptor->encrypt('secret');
+
+        $json = base64_decode($encrypted, true);
+        $payload = json_decode($json, true);
+        $payload['iv'] = 12345;
+        $tampered = base64_encode(json_encode($payload));
+
+        $encryptor->decrypt($tampered);
+    })->throws(DecryptionException::class);
+
+    it('throws DecryptionException invalidPayload when a required payload field is missing', function (): void {
+        $encryptor = new OpenSslEncryptor(createTestEncryptionConfig());
+        $encrypted = $encryptor->encrypt('secret');
+
+        $json = base64_decode($encrypted, true);
+        $payload = json_decode($json, true);
+        unset($payload['tag']);
+        $tampered = base64_encode(json_encode($payload));
+
+        $encryptor->decrypt($tampered);
+    })->throws(DecryptionException::class);
+
+    it('round-trips encrypt then decrypt with the default AEAD cipher', function (): void {
+        $encryptor = new OpenSslEncryptor(createTestEncryptionConfig(cipher: 'aes-256-gcm'));
+        $plaintext = 'Hello AEAD world!';
+
+        $decrypted = $encryptor->decrypt($encryptor->encrypt($plaintext));
+
+        expect($decrypted)->toBe($plaintext);
+    });
+
+    it('throws DecryptionException rather than a TypeError for a crafted non-string iv', function (): void {
+        $encryptor = new OpenSslEncryptor(createTestEncryptionConfig());
+        $encrypted = $encryptor->encrypt('secret');
+
+        $json = base64_decode($encrypted, true);
+        $payload = json_decode($json, true);
+        $payload['iv'] = ['not', 'a', 'string'];
+        $tampered = base64_encode(json_encode($payload));
+
+        $encryptor->decrypt($tampered);
+    })->throws(DecryptionException::class);
 });

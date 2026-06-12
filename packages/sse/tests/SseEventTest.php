@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Sse\Exceptions\SseException;
 use Marko\Sse\SseEvent;
 
 it('formats event with all fields (event, id, retry, data)', function (): void {
@@ -55,4 +56,37 @@ it('terminates frame with double newline', function (): void {
     $event = new SseEvent(data: 'test');
 
     expect($event->format())->toEndWith("\n\n");
+});
+
+it('throws SseException when event contains a line feed', function (): void {
+    expect(fn () => new SseEvent(data: 'hello', event: "bad\nevent"))
+        ->toThrow(SseException::class);
+});
+
+it('throws SseException when event contains a carriage return', function (): void {
+    expect(fn () => new SseEvent(data: 'hello', event: "bad\revent"))
+        ->toThrow(SseException::class);
+});
+
+it('throws SseException when a string id contains a line feed', function (): void {
+    expect(fn () => new SseEvent(data: 'hello', id: "bad\nid"))
+        ->toThrow(SseException::class);
+});
+
+it('allows a normal event and id without CRLF', function (): void {
+    $event = new SseEvent(data: 'hello', event: 'message', id: 'abc-123');
+
+    expect($event->format())->toBe("event: message\nid: abc-123\ndata: hello\n\n");
+});
+
+it('still splits multi-line data into multiple data fields', function (): void {
+    $event = new SseEvent(data: "line one\nline two");
+
+    expect($event->format())->toBe("data: line one\ndata: line two\n\n");
+});
+
+it('allows an integer id unchanged', function (): void {
+    $event = new SseEvent(data: 'hello', id: 42);
+
+    expect($event->format())->toBe("id: 42\ndata: hello\n\n");
 });

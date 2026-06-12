@@ -53,7 +53,7 @@ Conditional tools (registered only when their dependency is present):
 
 | Tool | Requires | Notes |
 |------|----------|-------|
-| `query_database` | a `marko/database` driver | Read-only by default; registered only when a DB connection is available |
+| `query_database` | a `marko/database` driver | Read-only by default; rejects stacked statements (e.g. `SELECT 1; DELETE ...`); registered only when a DB connection is available |
 | `search_docs` | a docs driver (`marko/docs-fts` / `marko/docs-vec`) | Registered only when a `DocsSearchInterface` is bound |
 
 > There is intentionally **no `last_error` tool** and no global error-capture plugin. "Most recent error" is `read_log_entries(level: 'error', limit: 1)` — one tool, no production-time side effects.

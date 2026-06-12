@@ -11,6 +11,7 @@ use Marko\AdminApi\Controller\SectionController;
 use Marko\AdminAuth\Entity\AdminUser;
 use Marko\AdminAuth\Entity\Role;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
+use Marko\AdminAuth\PermissionRegistry;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Http\Response;
@@ -25,14 +26,14 @@ function createTestSection(
     int $sortOrder,
     array $menuItems = [],
 ): AdminSectionInterface {
-    return new class ($id, $label, $icon, $sortOrder, $menuItems) implements AdminSectionInterface
+    return new readonly class ($id, $label, $icon, $sortOrder, $menuItems) implements AdminSectionInterface
     {
         public function __construct(
-            private readonly string $id,
-            private readonly string $label,
-            private readonly string $icon,
-            private readonly int $sortOrder,
-            private readonly array $menuItems,
+            private string $id,
+            private string $label,
+            private string $icon,
+            private int $sortOrder,
+            private array $menuItems,
         ) {}
 
         public function getId(): string
@@ -92,6 +93,7 @@ it('returns list of admin sections on GET /admin/api/v1/sections', function (): 
     $controller = new SectionController(
         sectionRegistry: $registry,
         guard: $guard,
+        permissionRegistry: new PermissionRegistry(),
     );
 
     $response = $controller->index();
@@ -162,6 +164,7 @@ it('filters sections by user permissions', function (): void {
     $controller = new SectionController(
         sectionRegistry: $registry,
         guard: $guard,
+        permissionRegistry: new PermissionRegistry(),
     );
 
     $response = $controller->index();
@@ -204,6 +207,7 @@ it('returns section detail with menu items on GET /admin/api/v1/sections/{id}', 
     $controller = new SectionController(
         sectionRegistry: $registry,
         guard: $guard,
+        permissionRegistry: new PermissionRegistry(),
     );
 
     $response = $controller->show('catalog');
@@ -242,6 +246,7 @@ it('returns 404 when section not found', function (): void {
     $controller = new SectionController(
         sectionRegistry: $registry,
         guard: $guard,
+        permissionRegistry: new PermissionRegistry(),
     );
 
     $response = $controller->show('nonexistent');
@@ -269,6 +274,7 @@ it('uses ApiResponse format for all responses', function (): void {
     $controller = new SectionController(
         sectionRegistry: $registry,
         guard: $guard,
+        permissionRegistry: new PermissionRegistry(),
     );
 
     // Index response has data and meta keys
@@ -285,6 +291,182 @@ it('uses ApiResponse format for all responses', function (): void {
         ->and($showBody)->toHaveKey('data')
         ->and($showBody)->toHaveKey('meta')
         ->and($notFoundBody)->toHaveKey('errors');
+});
+
+it('shows catalog sections to a user granted the catalog wildcard permission', function (): void {
+    $registry = new AdminSectionRegistry();
+    $registry->register(createTestSection('catalog', 'Catalog', 'box', 10, [
+        new MenuItem(
+            id: 'products',
+            label: 'Products',
+            url: '/admin/catalog/products',
+            permission: 'catalog.products.view',
+        ),
+    ]));
+    $registry->register(createTestSection('sales', 'Sales', 'cart', 20, [
+        new MenuItem(id: 'orders', label: 'Orders', url: '/admin/sales/orders', permission: 'sales.orders.view'),
+    ]));
+
+    $guard = new FakeGuard(name: 'admin-api', attemptResult: false);
+    $editorRole = new Role();
+    $editorRole->id = 2;
+    $editorRole->name = 'Editor';
+    $editorRole->slug = 'editor';
+    $guard->setUser(createTestAdminUser(
+        roles: [$editorRole],
+        permissionKeys: ['catalog.*'],
+    ));
+
+    $permissionRegistry = new PermissionRegistry();
+    $controller = new SectionController(
+        sectionRegistry: $registry,
+        guard: $guard,
+        permissionRegistry: $permissionRegistry,
+    );
+
+    $response = $controller->index();
+    $body = json_decode($response->body(), true);
+
+    expect($body['data'])->toHaveCount(1)
+        ->and($body['data'][0]['id'])->toBe('catalog');
+});
+
+it('hides sections the user has no matching permission for', function (): void {
+    $registry = new AdminSectionRegistry();
+    $registry->register(createTestSection('catalog', 'Catalog', 'box', 10, [
+        new MenuItem(
+            id: 'products',
+            label: 'Products',
+            url: '/admin/catalog/products',
+            permission: 'catalog.products.view',
+        ),
+    ]));
+    $registry->register(createTestSection('sales', 'Sales', 'cart', 20, [
+        new MenuItem(id: 'orders', label: 'Orders', url: '/admin/sales/orders', permission: 'sales.orders.view'),
+    ]));
+
+    $guard = new FakeGuard(name: 'admin-api', attemptResult: false);
+    $editorRole = new Role();
+    $editorRole->id = 2;
+    $editorRole->name = 'Editor';
+    $editorRole->slug = 'editor';
+    $guard->setUser(createTestAdminUser(
+        roles: [$editorRole],
+        permissionKeys: ['system.config.view'],
+    ));
+
+    $controller = new SectionController(
+        sectionRegistry: $registry,
+        guard: $guard,
+        permissionRegistry: new PermissionRegistry(),
+    );
+
+    $response = $controller->index();
+    $body = json_decode($response->body(), true);
+
+    expect($body['data'])->toBeEmpty();
+});
+
+it('shows a section to a user with the exact permission', function (): void {
+    $registry = new AdminSectionRegistry();
+    $registry->register(createTestSection('catalog', 'Catalog', 'box', 10, [
+        new MenuItem(
+            id: 'products',
+            label: 'Products',
+            url: '/admin/catalog/products',
+            permission: 'catalog.products.view',
+        ),
+    ]));
+
+    $guard = new FakeGuard(name: 'admin-api', attemptResult: false);
+    $editorRole = new Role();
+    $editorRole->id = 2;
+    $editorRole->name = 'Editor';
+    $editorRole->slug = 'editor';
+    $guard->setUser(createTestAdminUser(
+        roles: [$editorRole],
+        permissionKeys: ['catalog.products.view'],
+    ));
+
+    $controller = new SectionController(
+        sectionRegistry: $registry,
+        guard: $guard,
+        permissionRegistry: new PermissionRegistry(),
+    );
+
+    $response = $controller->index();
+    $body = json_decode($response->body(), true);
+
+    expect($body['data'])->toHaveCount(1)
+        ->and($body['data'][0]['id'])->toBe('catalog');
+});
+
+it('enforces the permission filter in show for an inaccessible section', function (): void {
+    $registry = new AdminSectionRegistry();
+    $registry->register(createTestSection('catalog', 'Catalog', 'box', 10, [
+        new MenuItem(
+            id: 'products',
+            label: 'Products',
+            url: '/admin/catalog/products',
+            permission: 'catalog.products.view',
+        ),
+    ]));
+
+    $guard = new FakeGuard(name: 'admin-api', attemptResult: false);
+    $editorRole = new Role();
+    $editorRole->id = 2;
+    $editorRole->name = 'Editor';
+    $editorRole->slug = 'editor';
+    $guard->setUser(createTestAdminUser(
+        roles: [$editorRole],
+        permissionKeys: ['sales.orders.view'],
+    ));
+
+    $controller = new SectionController(
+        sectionRegistry: $registry,
+        guard: $guard,
+        permissionRegistry: new PermissionRegistry(),
+    );
+
+    $response = $controller->show('catalog');
+    $body = json_decode($response->body(), true);
+
+    expect($response->statusCode())->toBe(404)
+        ->and($body)->toHaveKey('errors');
+});
+
+it('returns the section from show for an accessible section', function (): void {
+    $registry = new AdminSectionRegistry();
+    $registry->register(createTestSection('catalog', 'Catalog', 'box', 10, [
+        new MenuItem(
+            id: 'products',
+            label: 'Products',
+            url: '/admin/catalog/products',
+            permission: 'catalog.products.view',
+        ),
+    ]));
+
+    $guard = new FakeGuard(name: 'admin-api', attemptResult: false);
+    $editorRole = new Role();
+    $editorRole->id = 2;
+    $editorRole->name = 'Editor';
+    $editorRole->slug = 'editor';
+    $guard->setUser(createTestAdminUser(
+        roles: [$editorRole],
+        permissionKeys: ['catalog.*'],
+    ));
+
+    $controller = new SectionController(
+        sectionRegistry: $registry,
+        guard: $guard,
+        permissionRegistry: new PermissionRegistry(),
+    );
+
+    $response = $controller->show('catalog');
+    $body = json_decode($response->body(), true);
+
+    expect($response->statusCode())->toBe(200)
+        ->and($body['data']['id'])->toBe('catalog');
 });
 
 it('applies AdminAuthMiddleware to all routes', function (): void {

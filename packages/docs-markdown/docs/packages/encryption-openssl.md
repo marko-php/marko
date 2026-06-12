@@ -76,7 +76,7 @@ try {
 }
 ```
 
-An `EncryptionException` is thrown at construction time if the key is missing or invalid, and during `encrypt()` if the OpenSSL operation fails. A `DecryptionException` is thrown for malformed payloads, corrupted data, or key mismatches.
+An `EncryptionException` is thrown at construction time if the key is missing or invalid, if the configured cipher is not recognized by OpenSSL (`EncryptionException::invalidCipher()`), or if the cipher is recognized but is not an AEAD mode (`EncryptionException::nonAeadCipher()`). Only AEAD ciphers (those ending in `-gcm` or `-ccm`) are accepted; the default `aes-256-gcm` satisfies this requirement. An `EncryptionException` is also thrown during `encrypt()` if the OpenSSL operation fails. A `DecryptionException` is thrown for malformed payloads, corrupted data, or key mismatches.
 
 ## Customization
 

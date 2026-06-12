@@ -10,6 +10,7 @@ use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
+use RuntimeException;
 
 readonly class FileCacheDriver implements CacheInterface
 {
@@ -42,7 +43,7 @@ readonly class FileCacheDriver implements CacheInterface
     }
 
     /**
-     * @throws InvalidKeyException
+     * @throws InvalidKeyException|RuntimeException
      */
     public function set(
         string $key,
@@ -110,15 +111,21 @@ readonly class FileCacheDriver implements CacheInterface
             return true;
         }
 
-        $files = glob($this->config->path() . '/*.cache');
+        $cacheFiles = glob($this->config->path() . '/*.cache');
 
-        if ($files === false) {
+        if ($cacheFiles === false) {
+            return false;
+        }
+
+        $tmpFiles = glob($this->config->path() . '/*.tmp.*');
+
+        if ($tmpFiles === false) {
             return false;
         }
 
         $success = true;
 
-        foreach ($files as $file) {
+        foreach (array_merge($cacheFiles, $tmpFiles) as $file) {
             if (!unlink($file)) {
                 $success = false;
             }
@@ -206,7 +213,7 @@ readonly class FileCacheDriver implements CacheInterface
     }
 
     /**
-     * @throws InvalidKeyException
+     * @throws InvalidKeyException|RuntimeException
      */
     public function increment(
         string $key,
@@ -323,7 +330,13 @@ readonly class FileCacheDriver implements CacheInterface
             return false;
         }
 
-        return rename($tempPath, $filePath);
+        if (!@rename($tempPath, $filePath)) {
+            @unlink($tempPath);
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -339,12 +352,17 @@ readonly class FileCacheDriver implements CacheInterface
         return time() > $data['expires_at'];
     }
 
+    /**
+     * @throws RuntimeException
+     */
     private function ensureDirectoryExists(): void
     {
-        if (is_dir($this->config->path())) {
-            return;
-        }
+        @mkdir($this->config->path(), 0755, recursive: true);
 
-        mkdir($this->config->path(), 0755, true);
+        if (!is_dir($this->config->path())) {
+            throw new RuntimeException(
+                'Cache directory could not be created: ' . $this->config->path(),
+            );
+        }
     }
 }

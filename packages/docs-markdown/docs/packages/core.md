@@ -231,3 +231,13 @@ class MarkoException extends Exception
     public function getSuggestion(): string;
 }
 ```
+
+### CircularDependencyException
+
+```php
+use Marko\Core\Exceptions\CircularDependencyException;
+```
+
+Thrown by the container when a mutual constructor dependency cycle is detected (e.g. class A requires class B which requires class A). Rather than exhausting the call stack, the container detects the cycle and throws immediately with a human-readable chain (`A -> B -> A`) and a suggestion to remove the circular reference.
+
+Implements `Psr\Container\ContainerExceptionInterface`.

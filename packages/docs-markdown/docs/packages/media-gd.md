@@ -3,7 +3,7 @@ title: marko/media-gd
 description: GD image processing for marko/media — resize, crop, and convert images using PHP's built-in GD extension.
 ---
 
-GD image processing for [marko/media](/docs/packages/media/) --- resize, crop, and convert images using PHP's built-in GD extension with no additional system dependencies. Covers the common image operations --- resize with aspect ratio preservation, crop by coordinates, format conversion, and thumbnail generation --- without requiring any system-level image library. For advanced needs like AVIF encoding or higher-quality resampling, see `marko/media-imagick`.
+GD image processing for [marko/media](/docs/packages/media/) --- resize, crop, and convert images using PHP's built-in GD extension with no additional system dependencies. Covers the common image operations --- resize with aspect ratio preservation, crop by coordinates, format conversion, and thumbnail generation --- without requiring any system-level image library. Resize and crop operations preserve the source format and handle alpha-channel transparency for PNG and WebP. Encode failures (e.g. disk write errors) throw `GdProcessingException` immediately rather than silently producing an empty file. For advanced needs like AVIF encoding or higher-quality resampling, see `marko/media-imagick`.
 
 Implements `ImageProcessorInterface` from `marko/media`. Requires `ext-gd`, which ships with most PHP installations. Throws `GdProcessingException` if the extension is unavailable.
 
@@ -134,4 +134,4 @@ All methods return the file path to the processed image (written to the system t
 
 | Exception | Thrown When |
 |---|---|
-| `GdProcessingException` | The GD extension is unavailable, the source image cannot be loaded, or an unsupported format is requested |
+| `GdProcessingException` | The GD extension is unavailable, the source image cannot be loaded, an unsupported format is requested, or the encode step fails (e.g. write error) |

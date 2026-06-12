@@ -1,6 +1,6 @@
 # Task 003: SSE `event`/`id` CR/LF sanitization
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -22,12 +22,12 @@
   - Validate in the constructor (the class is `readonly`), so an `SseEvent` with a CRLF-bearing `event`/`id` can never be constructed. Add `@throws SseException` to the constructor PHPDoc.
 
 ## Requirements (Test Descriptions)
-- [ ] `it throws SseException when event contains a line feed`
-- [ ] `it throws SseException when event contains a carriage return`
-- [ ] `it throws SseException when a string id contains a line feed`
-- [ ] `it allows a normal event and id without CRLF`
-- [ ] `it still splits multi-line data into multiple data fields`
-- [ ] `it allows an integer id unchanged`
+- [x] `it throws SseException when event contains a line feed`
+- [x] `it throws SseException when event contains a carriage return`
+- [x] `it throws SseException when a string id contains a line feed`
+- [x] `it allows a normal event and id without CRLF`
+- [x] `it still splits multi-line data into multiple data fields`
+- [x] `it allows an integer id unchanged`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -35,4 +35,9 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `SseException::invalidField(string $field, string $value): self` static factory with three-part message/context/suggestion pattern matching existing factories.
+- Added CR/LF validation in `SseEvent` constructor: checks `event` (non-null string only) and `id` (string only — int ids skip the check entirely to avoid TypeError under strict_types).
+- Added `@throws SseException` PHPDoc to the constructor.
+- `SseException.php` needed `json_encode()` in the context message — no `@throws JsonException` needed as it uses no flags that throw.
+- Data splitting behavior is unchanged; only `event` and `id` fields are validated.
+- All 6 requirements were covered by the single implementation in the first test cycle (CR and LF are checked together, id and event validated in the same constructor body).

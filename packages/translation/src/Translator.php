@@ -20,6 +20,9 @@ class Translator implements TranslatorInterface
         private readonly string $fallbackLocale,
     ) {}
 
+    /**
+     * @throws MissingTranslationException
+     */
     public function get(
         string $key,
         array $replacements = [],
@@ -45,6 +48,9 @@ class Translator implements TranslatorInterface
         return $this->applyReplacements($value, $replacements);
     }
 
+    /**
+     * @throws MissingTranslationException|TranslationException
+     */
     public function choice(
         string $key,
         int $count,
@@ -160,17 +166,23 @@ class Translator implements TranslatorInterface
     /**
      * Apply :placeholder replacements to a translation string.
      *
+     * Uses a single-pass strtr() so that a short placeholder prefix (e.g. :attr)
+     * never corrupts a longer one (e.g. :attribute), and replacement values that
+     * themselves contain :placeholder tokens are never re-substituted.
+     *
      * @param array<string, string> $replacements
      */
     private function applyReplacements(
         string $value,
         array $replacements,
     ): string {
+        $map = [];
+
         foreach ($replacements as $placeholder => $replacement) {
-            $value = str_replace(":$placeholder", $replacement, $value);
+            $map[":$placeholder"] = $replacement;
         }
 
-        return $value;
+        return strtr($value, $map);
     }
 
     /**

@@ -8,7 +8,6 @@ use Marko\CodeIndexer\Config\ConfigScanner;
 use Marko\CodeIndexer\Exceptions\IndexCacheException;
 use Marko\CodeIndexer\Module\ModuleWalker;
 use Marko\CodeIndexer\Translations\TranslationScanner;
-use Marko\CodeIndexer\Views\TemplateScanner;
 use Marko\CodeIndexer\ValueObject\CommandEntry;
 use Marko\CodeIndexer\ValueObject\ConfigKeyEntry;
 use Marko\CodeIndexer\ValueObject\ModuleInfo;
@@ -18,6 +17,7 @@ use Marko\CodeIndexer\ValueObject\PreferenceEntry;
 use Marko\CodeIndexer\ValueObject\RouteEntry;
 use Marko\CodeIndexer\ValueObject\TemplateEntry;
 use Marko\CodeIndexer\ValueObject\TranslationEntry;
+use Marko\CodeIndexer\Views\TemplateScanner;
 use Marko\Core\Path\ProjectPaths;
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@ it('it builds a fresh index by running all scanners and walkers', function () us
         $attributeParser,
         $configScanner,
         $templateScanner,
-        $translationScanner
+        $translationScanner,
     );
     $cache->build();
 
@@ -342,7 +342,7 @@ it('it writes serialized cache to .marko/index.cache', function () use (&$tmpDir
         $attributeParser,
         $configScanner,
         $templateScanner,
-        $translationScanner
+        $translationScanner,
     );
     $cache->build();
 
@@ -438,7 +438,7 @@ it('it loads cache from disk without re-scanning when cache is fresh', function 
         $attributeParser,
         $configScanner,
         $templateScanner,
-        $translationScanner
+        $translationScanner,
     );
     $cache->build();
 
@@ -449,7 +449,7 @@ it('it loads cache from disk without re-scanning when cache is fresh', function 
         $attributeParser,
         $configScanner,
         $templateScanner,
-        $translationScanner
+        $translationScanner,
     );
     $loaded = $cache2->load();
 
@@ -533,7 +533,7 @@ it('it invalidates cache when any source file mtime exceeds cache mtime', functi
         $attributeParser,
         $configScanner,
         $templateScanner,
-        $translationScanner
+        $translationScanner,
     );
     $cache->build();
 
@@ -548,7 +548,7 @@ it('it invalidates cache when any source file mtime exceeds cache mtime', functi
         $attributeParser,
         $configScanner,
         $templateScanner,
-        $translationScanner
+        $translationScanner,
     );
     $loaded = $cache2->load();
 
@@ -556,14 +556,14 @@ it('it invalidates cache when any source file mtime exceeds cache mtime', functi
 });
 
 it(
-    'it exposes getModules, getObservers, getPlugins, getPreferences, getCommands, getRoutes, getConfigKeys, getTemplates, getTranslationKeys methods',
+    'exposes get methods for every indexed entry type',
     function () use (&$tmpDirs): void {
         $rootPath = makeTempDir();
         $tmpDirs[] = $rootPath;
-    
+
         $module = makeModule($rootPath . '/module');
         mkdir($module->path, 0755, true);
-    
+
         $observer = makeIndexObserver();
         $plugin = makeIndexPlugin();
         $preference = makeIndexPreference();
@@ -572,11 +572,11 @@ it(
         $configKey = makeIndexConfigKey();
         $template = makeIndexTemplate();
         $translation = makeIndexTranslation();
-    
+
         $walker = new class ($module) extends ModuleWalker
         {
             public function __construct(private readonly ModuleInfo $module) {}
-    
+
             public function walk(): array
             {
                 return [$this->module];
@@ -591,27 +591,27 @@ it(
                 private readonly CommandEntry $command,
                 private readonly RouteEntry $route,
             ) {}
-    
+
             public function observers(ModuleInfo $m): array
             {
                 return [$this->observer];
             }
-    
+
             public function plugins(ModuleInfo $m): array
             {
                 return [$this->plugin];
             }
-    
+
             public function preferences(ModuleInfo $m): array
             {
                 return [$this->preference];
             }
-    
+
             public function commands(ModuleInfo $m): array
             {
                 return [$this->command];
             }
-    
+
             public function routes(ModuleInfo $m): array
             {
                 return [$this->route];
@@ -620,7 +620,7 @@ it(
         $configScanner = new class ($configKey) extends ConfigScanner
         {
             public function __construct(private readonly ConfigKeyEntry $key) {}
-    
+
             public function scan(ModuleInfo $m): array
             {
                 return [$this->key];
@@ -629,7 +629,7 @@ it(
         $templateScanner = new class ($template) extends TemplateScanner
         {
             public function __construct(private readonly TemplateEntry $entry) {}
-    
+
             public function scan(ModuleInfo $m): array
             {
                 return [$this->entry];
@@ -638,23 +638,23 @@ it(
         $translationScanner = new class ($translation) extends TranslationScanner
         {
             public function __construct(private readonly TranslationEntry $entry) {}
-    
+
             public function scan(ModuleInfo $m): array
             {
                 return [$this->entry];
             }
         };
-    
+
         $cache = makeIndexCache(
             $rootPath,
             $walker,
             $attributeParser,
             $configScanner,
             $templateScanner,
-            $translationScanner
+            $translationScanner,
         );
         $cache->build();
-    
+
         expect($cache->getModules()[0])->toBe($module)
             ->and($cache->getObservers()[0])->toBe($observer)
             ->and($cache->getPlugins()[0])->toBe($plugin)
@@ -664,7 +664,7 @@ it(
             ->and($cache->getConfigKeys()[0])->toBe($configKey)
             ->and($cache->getTemplates()[0])->toBe($template)
             ->and($cache->getTranslationKeys()[0])->toBe($translation);
-    }
+    },
 );
 
 it(
@@ -672,31 +672,31 @@ it(
     function () use (&$tmpDirs): void {
         $rootPath = makeTempDir();
         $tmpDirs[] = $rootPath;
-    
+
         $module = makeModule($rootPath . '/module');
         mkdir($module->path, 0755, true);
-    
+
         $matchingObserver = makeIndexObserver(); // event: 'Test\Module\Events\FooEvent'
-    $otherObserver = new ObserverEntry(
+        $otherObserver = new ObserverEntry(
             class: 'Test\\Module\\Observers\\BarObserver',
             event: 'Test\\Module\\Events\\BarEvent',
             method: 'handle',
             sortOrder: 0,
         );
-    
+
         $matchingPlugin = makeIndexPlugin(); // target: 'Test\Module\Services\FooService'
-    $otherPlugin = new PluginEntry(
+        $otherPlugin = new PluginEntry(
             class: 'Test\\Module\\Plugins\\BarPlugin',
             target: 'Test\\Module\\Services\\BarService',
             method: 'run',
             type: 'after',
             sortOrder: 0,
         );
-    
+
         $walker = new class ($module) extends ModuleWalker
         {
             public function __construct(private readonly ModuleInfo $module) {}
-    
+
             public function walk(): array
             {
                 return [$this->module];
@@ -710,27 +710,27 @@ it(
                 private readonly PluginEntry $plug1,
                 private readonly PluginEntry $plug2,
             ) {}
-    
+
             public function observers(ModuleInfo $m): array
             {
                 return [$this->obs1, $this->obs2];
             }
-    
+
             public function plugins(ModuleInfo $m): array
             {
                 return [$this->plug1, $this->plug2];
             }
-    
+
             public function preferences(ModuleInfo $m): array
             {
                 return [];
             }
-    
+
             public function commands(ModuleInfo $m): array
             {
                 return [];
             }
-    
+
             public function routes(ModuleInfo $m): array
             {
                 return [];
@@ -757,43 +757,347 @@ it(
                 return [];
             }
         };
-    
+
         $cache = makeIndexCache(
             $rootPath,
             $walker,
             $attributeParser,
             $configScanner,
             $templateScanner,
-            $translationScanner
+            $translationScanner,
         );
         $cache->build();
-    
+
         $fooObservers = $cache->findObserversForEvent('Test\\Module\\Events\\FooEvent');
         expect($fooObservers)->toHaveCount(1)
             ->and($fooObservers[0]->class)->toBe('Test\\Module\\Observers\\FooObserver');
-    
+
         $emptyObservers = $cache->findObserversForEvent('Test\\Module\\Events\\UnknownEvent');
         expect($emptyObservers)->toBeEmpty();
-    
+
         $fooPlugins = $cache->findPluginsForTarget('Test\\Module\\Services\\FooService');
         expect($fooPlugins)->toHaveCount(1)
             ->and($fooPlugins[0]->class)->toBe('Test\\Module\\Plugins\\FooPlugin');
-    
+
         $emptyPlugins = $cache->findPluginsForTarget('Test\\Module\\Services\\UnknownService');
         expect($emptyPlugins)->toBeEmpty();
-    }
+    },
 );
+
+// ── helpers for stub cache creation ──────────────────────────────────────────
+
+function makeEmptyStubs(string $rootPath): IndexCache
+{
+    $walker = new class () extends ModuleWalker
+    {
+        public function __construct() {}
+
+        public function walk(): array
+        {
+            return [];
+        }
+    };
+    $attributeParser = new class () extends AttributeParser
+    {
+        public function observers(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function plugins(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function preferences(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function commands(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function routes(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+    $configScanner = new class () extends ConfigScanner
+    {
+        public function scan(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+    $templateScanner = new class () extends TemplateScanner
+    {
+        public function scan(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+    $translationScanner = new class () extends TranslationScanner
+    {
+        public function scan(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+
+    return makeIndexCache($rootPath, $walker, $attributeParser, $configScanner, $templateScanner, $translationScanner);
+}
+
+function makeOneModuleStubs(string $rootPath, ModuleInfo $module): IndexCache
+{
+    $walker = new class ($module) extends ModuleWalker
+    {
+        public function __construct(private readonly ModuleInfo $module) {}
+
+        public function walk(): array
+        {
+            return [$this->module];
+        }
+    };
+    $attributeParser = new class () extends AttributeParser
+    {
+        public function observers(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function plugins(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function preferences(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function commands(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function routes(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+    $configScanner = new class () extends ConfigScanner
+    {
+        public function scan(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+    $templateScanner = new class () extends TemplateScanner
+    {
+        public function scan(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+    $translationScanner = new class () extends TranslationScanner
+    {
+        public function scan(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+
+    return makeIndexCache($rootPath, $walker, $attributeParser, $configScanner, $templateScanner, $translationScanner);
+}
+
+it(
+    'it rebuilds the index when the cache file is corrupt instead of reporting an empty index',
+    function () use (&$tmpDirs): void {
+        $rootPath = makeTempDir();
+        $tmpDirs[] = $rootPath;
+
+        $module = makeModule($rootPath . '/module');
+        mkdir($module->path, 0755, true);
+
+        // First: build a valid cache
+        $cache = makeOneModuleStubs($rootPath, $module);
+        $cache->build();
+
+        // Corrupt the cache file
+        $cacheFile = $rootPath . '/.marko/index.cache';
+        file_put_contents($cacheFile, 'this is not valid serialized data !!!corrupt!!!');
+
+        // Second: create a fresh cache instance backed by the same module
+        // When getModules() is called, ensureLoaded() should detect load() failed
+        // and call build() which re-scans and returns real data
+        $cache2 = makeOneModuleStubs($rootPath, $module);
+
+        // The corrupt cache must NOT produce an empty index; it must rebuild
+        $modules = $cache2->getModules();
+
+        expect($modules)->toHaveCount(1)
+            ->and($modules[0]->name)->toBe('test/module');
+    },
+);
+
+it('it returns false from load when the cache deserializes to a non-array', function () use (&$tmpDirs): void {
+    $rootPath = makeTempDir();
+    $tmpDirs[] = $rootPath;
+
+    // Create the .marko dir and write a non-array serialized value
+    mkdir($rootPath . '/.marko', 0755, true);
+    $cacheFile = $rootPath . '/.marko/index.cache';
+    file_put_contents($cacheFile, serialize('just a string, not an array'));
+
+    $cache = makeEmptyStubs($rootPath);
+    $result = $cache->load();
+
+    expect($result)->toBeFalse();
+});
+
+it('it restricts unserialize to the indexer value-object allowlist', function () use (&$tmpDirs): void {
+    $rootPath = makeTempDir();
+    $tmpDirs[] = $rootPath;
+
+    // Craft a payload that embeds a class NOT in the allowlist
+    // unserialize with ['allowed_classes' => [...]] returns __PHP_Incomplete_Class for blocked classes
+    // but we should return false (treat as corrupt) when result is not a valid array
+    //
+    // Here we embed stdClass — not in the allowlist — as a value in the array, then verify
+    // the loaded result treats the cache as corrupt (load returns false).
+    mkdir($rootPath . '/.marko', 0755, true);
+    $cacheFile = $rootPath . '/.marko/index.cache';
+
+    // Serialize an object of a class that is NOT in the allowlist
+    $disallowedPayload = serialize(new stdClass());
+    file_put_contents($cacheFile, $disallowedPayload);
+
+    $cache = makeEmptyStubs($rootPath);
+    $result = $cache->load();
+
+    // A disallowed class object (not an array) must cause load() to return false
+    expect($result)->toBeFalse();
+});
+
+it('it loads a valid cache file and reports its contents', function () use (&$tmpDirs): void {
+    $rootPath = makeTempDir();
+    $tmpDirs[] = $rootPath;
+
+    $module = makeModule($rootPath . '/module');
+    mkdir($module->path, 0755, true);
+
+    $observer = makeIndexObserver();
+
+    $walker = new class ($module) extends ModuleWalker
+    {
+        public function __construct(private readonly ModuleInfo $module) {}
+
+        public function walk(): array
+        {
+            return [$this->module];
+        }
+    };
+    $attributeParser = new class ($observer) extends AttributeParser
+    {
+        public function __construct(private readonly ObserverEntry $observer) {}
+
+        public function observers(ModuleInfo $m): array
+        {
+            return [$this->observer];
+        }
+
+        public function plugins(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function preferences(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function commands(ModuleInfo $m): array
+        {
+            return [];
+        }
+
+        public function routes(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+    $configScanner = new class () extends ConfigScanner
+    {
+        public function scan(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+    $templateScanner = new class () extends TemplateScanner
+    {
+        public function scan(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+    $translationScanner = new class () extends TranslationScanner
+    {
+        public function scan(ModuleInfo $m): array
+        {
+            return [];
+        }
+    };
+
+    // Build cache with one module and one observer
+    $cache = makeIndexCache(
+        $rootPath,
+        $walker,
+        $attributeParser,
+        $configScanner,
+        $templateScanner,
+        $translationScanner,
+    );
+    $cache->build();
+
+    // Load on a fresh instance
+    $cache2 = makeIndexCache(
+        $rootPath,
+        $walker,
+        $attributeParser,
+        $configScanner,
+        $templateScanner,
+        $translationScanner,
+    );
+    $loaded = $cache2->load();
+
+    expect($loaded)->toBeTrue()
+        ->and($cache2->getModules())->toHaveCount(1)
+        ->and($cache2->getObservers())->toHaveCount(1)
+        ->and($cache2->getObservers()[0]->class)->toBe('Test\\Module\\Observers\\FooObserver');
+});
+
+it('it still returns false from load when the cache file is missing', function () use (&$tmpDirs): void {
+    $rootPath = makeTempDir();
+    $tmpDirs[] = $rootPath;
+
+    $cache = makeEmptyStubs($rootPath);
+    $result = $cache->load();
+
+    expect($result)->toBeFalse();
+});
 
 it(
     'it throws IndexCacheException with helpful suggestion when cache dir is unwritable',
     function () use (&$tmpDirs): void {
         $rootPath = makeTempDir();
         $tmpDirs[] = $rootPath;
-    
+
         // Create .marko dir and make it unreadable/unwritable
-    $markoDir = $rootPath . '/.marko';
+        $markoDir = $rootPath . '/.marko';
         mkdir($markoDir, 0000, true);
-    
+
         $walker = new class () extends ModuleWalker
         {
             public function __construct() {}
@@ -809,22 +1113,22 @@ it(
             {
                 return [];
             }
-    
+
             public function plugins(ModuleInfo $m): array
             {
                 return [];
             }
-    
+
             public function preferences(ModuleInfo $m): array
             {
                 return [];
             }
-    
+
             public function commands(ModuleInfo $m): array
             {
                 return [];
             }
-    
+
             public function routes(ModuleInfo $m): array
             {
                 return [];
@@ -851,29 +1155,29 @@ it(
                 return [];
             }
         };
-    
+
         $cache = makeIndexCache(
             $rootPath,
             $walker,
             $attributeParser,
             $configScanner,
             $templateScanner,
-            $translationScanner
+            $translationScanner,
         );
-    
+
         $thrown = null;
         try {
             $cache->build();
         } catch (IndexCacheException $e) {
             $thrown = $e;
         }
-    
+
         expect($thrown)->toBeInstanceOf(IndexCacheException::class)
             ->and($thrown->getMessage())->toContain('Cannot write to index cache')
             ->and($thrown->getSuggestion())->not->toBeEmpty()
             ->and($thrown->getSuggestion())->toContain('.marko');
-    
+
         // Restore permissions so afterEach cleanup can delete the dir
-    chmod($markoDir, 0755);
-    }
+        chmod($markoDir, 0755);
+    },
 );

@@ -21,11 +21,11 @@
   - `headers()` (the bulk accessor) is out of scope; do not change its contract.
 
 ## Requirements (Test Descriptions)
-- [ ] `it reads Content-Type from the CGI CONTENT_TYPE server key when HTTP_CONTENT_TYPE is absent`
-- [ ] `it still reads Content-Type from HTTP_CONTENT_TYPE when present`
-- [ ] `it reads Content-Length from the CGI CONTENT_LENGTH server key`
-- [ ] `it does not read an un-prefixed key for a non-CGI header name`
-- [ ] `it returns the default when neither header form is present`
+- [x] `it reads Content-Type from the CGI CONTENT_TYPE server key when HTTP_CONTENT_TYPE is absent`
+- [x] `it still reads Content-Type from HTTP_CONTENT_TYPE when present`
+- [x] `it reads Content-Length from the CGI CONTENT_LENGTH server key`
+- [x] `it does not read an un-prefixed key for a non-CGI header name`
+- [x] `it returns the default when neither header form is present`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -33,4 +33,4 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+Fixed `Request::header()` to fall back to bare CGI server keys `CONTENT_TYPE` and `CONTENT_LENGTH` when the `HTTP_` prefixed variant is absent. The normalization logic (`strtoupper(str_replace('-', '_', $name))`) is now extracted to a local `$normalized` variable used for both the HTTP_ key lookup and the CGI fallback check. The CGI fallback is gated on `$normalized === 'CONTENT_TYPE' || $normalized === 'CONTENT_LENGTH'` so no other header name accidentally reads an un-prefixed server key. `path()` was intentionally left unchanged per the scope correction.

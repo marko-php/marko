@@ -59,17 +59,34 @@ readonly class SseStream implements IteratorAggregate
     private function iterateSubscription(): Generator
     {
         $startTime = time();
+        $lastActivity = time();
+        $iterator = $this->subscription->getIterator();
+        $iterator->rewind();
 
-        foreach ($this->subscription as $message) {
+        while ($iterator->valid()) {
             if (time() - $startTime >= $this->timeout) {
                 return;
             }
 
-            $event = new SseEvent(
-                data: $message->payload,
-                event: $message->channel,
-            );
-            yield $event->format();
+            $message = $iterator->current();
+
+            if ($message !== null) {
+                $event = new SseEvent(
+                    data: $message->payload,
+                    event: $message->channel,
+                );
+                yield $event->format();
+                $lastActivity = time();
+            } else {
+                if (time() - $lastActivity >= $this->heartbeatInterval) {
+                    yield ": keepalive\n\n";
+                    $lastActivity = time();
+                }
+
+                sleep($this->pollInterval);
+            }
+
+            $iterator->next();
         }
     }
 

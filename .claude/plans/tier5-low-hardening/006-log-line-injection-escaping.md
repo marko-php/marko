@@ -1,6 +1,6 @@
 # Task 006: Log line-injection CR/LF escaping (line formatter)
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -23,13 +23,13 @@
   - The `log/module.php` closure (NOT the factory) reads the flag from `LogConfig` and passes it to `LineFormatter`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it escapes a newline in the message so the output is a single physical line when escaping is enabled`
-- [ ] `it escapes a carriage return in the message when escaping is enabled`
-- [ ] `it preserves the raw newline in the message when escaping is disabled`
-- [ ] `it escapes newlines embedded in context values when escaping is enabled`
-- [ ] `it produces exactly one trailing newline per formatted record even when the message ends in a newline`
-- [ ] `it defaults escapeNewlines to true when the LineFormatter is constructed without the flag`
-- [ ] `it wires escape_newlines from LogConfig into the LineFormatter via the log module binding`
+- [x] `it escapes a newline in the message so the output is a single physical line when escaping is enabled`
+- [x] `it escapes a carriage return in the message when escaping is enabled`
+- [x] `it preserves the raw newline in the message when escaping is disabled`
+- [x] `it escapes newlines embedded in context values when escaping is enabled`
+- [x] `it produces exactly one trailing newline per formatted record even when the message ends in a newline`
+- [x] `it defaults escapeNewlines to true when the LineFormatter is constructed without the flag`
+- [x] `it wires escape_newlines from LogConfig into the LineFormatter via the log module binding`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -37,4 +37,10 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `bool $escapeNewlines = true` constructor parameter to `LineFormatter` (readonly class)
+- When enabled, replaces `\r` and `\n` in interpolated message/context values with literal `\\r`/`\\n` BEFORE substitution into the format template
+- Added `escapeNewlines()` getter to `LogConfig` calling `getBool('log.escape_newlines')`
+- Added `'escape_newlines' => true` default to `config/log.php`
+- Updated `module.php` closure to pass `escapeNewlines: $config->escapeNewlines()` to `LineFormatter`
+- The trailing `rtrim($output) . "\n"` behavior is preserved — escaped newlines (now `\\n` literals) are not stripped by `rtrim`
+- Created `packages/log/tests/Unit/ModuleTest.php` to verify the module binding wires the flag correctly

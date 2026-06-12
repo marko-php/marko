@@ -131,7 +131,7 @@ describe('PgSqlGenerator', function (): void {
             ['type' => 'timestamp', 'expected' => 'TIMESTAMP'],
             ['type' => 'date', 'expected' => 'DATE'],
             ['type' => 'time', 'expected' => 'TIME'],
-            ['type' => 'decimal', 'expected' => 'DECIMAL'],
+            ['type' => 'decimal', 'expected' => 'DECIMAL(10,2)'],
             ['type' => 'float', 'expected' => 'REAL'],
             ['type' => 'double', 'expected' => 'DOUBLE PRECISION'],
             ['type' => 'json', 'expected' => 'JSONB'],
@@ -403,6 +403,38 @@ describe('PgSqlGenerator', function (): void {
 
         // SERIAL implies NOT NULL in PostgreSQL
         expect($sql)->toContain('"id" SERIAL PRIMARY KEY');
+    });
+
+    it('generates a valid PostgreSQL type for a tinyint column', function (): void {
+        $column = new Column(name: 'flags', type: 'tinyint');
+
+        $sql = $this->generator->generateAddColumn('t', $column);
+
+        expect($sql)->toContain('SMALLINT');
+    });
+
+    it('generates a valid PostgreSQL type for a bool column', function (): void {
+        $column = new Column(name: 'active', type: 'bool');
+
+        $sql = $this->generator->generateAddColumn('t', $column);
+
+        expect($sql)->toContain('BOOLEAN');
+    });
+
+    it('generates a valid PostgreSQL type for a blob column', function (): void {
+        $column = new Column(name: 'data', type: 'blob');
+
+        $sql = $this->generator->generateAddColumn('t', $column);
+
+        expect($sql)->toContain('BYTEA');
+    });
+
+    it('generates DECIMAL with the shared precision for a decimal column', function (): void {
+        $column = new Column(name: 'price', type: 'decimal');
+
+        $sql = $this->generator->generateAddColumn('t', $column);
+
+        expect($sql)->toContain('DECIMAL(10,2)');
     });
 
     it('emits PostgreSQL jsonb DDL type for #[Column(type: \'json\')]', function (): void {

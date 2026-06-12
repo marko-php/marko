@@ -138,7 +138,8 @@ class ManifestParser
     ): array {
         return array_filter(
             $require,
-            fn (string $package) => !str_starts_with($package, 'php')
+            fn (string $package) => $package !== 'php'
+                && $package !== 'php-64bit'
                 && !str_starts_with($package, 'ext-')
                 && !str_starts_with($package, 'lib-'),
             ARRAY_FILTER_USE_KEY,

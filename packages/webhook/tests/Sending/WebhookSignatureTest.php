@@ -10,10 +10,11 @@ describe('WebhookSignature', function (): void {
     it('signs payloads with HMAC-SHA256 via WebhookSignature utility', function (): void {
         $payload = '{"event":"order.created","data":{"order_id":123}}';
         $secret = 'my-secret';
+        $timestamp = time();
 
-        $signature = WebhookSignature::sign($payload, $secret);
+        $signature = WebhookSignature::sign($payload, $secret, $timestamp);
 
-        $expectedHash = hash_hmac('sha256', $payload, $secret);
+        $expectedHash = hash_hmac('sha256', "$timestamp.$payload", $secret);
         $expected = 'sha256=' . $expectedHash;
 
         expect($signature)->toBe($expected)

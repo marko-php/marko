@@ -1,6 +1,6 @@
 # Task 016: lsp server dies on one malformed frame
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -27,10 +27,10 @@
   - Tests should drive a fake input stream containing: a malformed frame (e.g. a header block with `Content-Length: 0` or no Content-Length), followed by a valid framed message, followed by EOF — and assert the valid message is still handled and the loop terminates only at EOF.
 
 ## Requirements (Test Descriptions)
-- [ ] `it does not terminate the serve loop on a malformed frame`
-- [ ] `it writes a JSON-RPC parse error for a malformed frame`
-- [ ] `it processes a valid message that follows a malformed frame`
-- [ ] `it ends the serve loop on genuine end of input`
+- [x] `it does not terminate the serve loop on a malformed frame`
+- [x] `it writes a JSON-RPC parse error for a malformed frame`
+- [x] `it processes a valid message that follows a malformed frame`
+- [x] `it ends the serve loop on genuine end of input`
 
 ## Acceptance Criteria
 - A malformed frame produces a `-32700` parse-error response and the server keeps serving.
@@ -41,4 +41,7 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Changed `readMessage()` return type from `?string` to `string|false|null`: `false` = true EOF (fgets returned false), `null` = malformed frame (header block completed but no Content-Length or Content-Length=0), `string` = valid body.
+- Added `$sawHeader` tracking so a header block with no Content-Length header also signals malformed rather than EOF.
+- Updated `serve()`: `false` → `break` (EOF, shutdown); `null` → write `-32700` parse error and `continue` (malformed, keep serving); `string` → `handleMessage()` as before.
+- No interface signature changes to `LspServer`; `writeResponse()` reused for the malformed-frame parse error response.

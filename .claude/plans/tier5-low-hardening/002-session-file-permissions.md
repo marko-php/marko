@@ -1,6 +1,6 @@
 # Task 002: Session-file restrictive permissions + checked writes
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -22,12 +22,12 @@
   - `open()`: replace the `mkdir($this->path, 0755, true)` with `0700` for the directory. Guard that a concurrent/failed mkdir which still leaves the dir present is tolerated (mirror Task 012's create-then-verify if needed), but keeping the existing `if (!is_dir(...))` guard plus `0700` is sufficient for this task's scope.
 
 ## Requirements (Test Descriptions)
-- [ ] `it creates a session file with 0600 permissions after write`
-- [ ] `it creates the session directory with 0700 permissions on open`
-- [ ] `it throws SessionWriteException when fwrite does not write all bytes`
-- [ ] `it throws SessionWriteException when ftruncate fails`
-- [ ] `it still reads back exactly what was written for a normal write`
-- [ ] `it leaves an existing session file at 0600 after a subsequent rewrite`
+- [x] `it creates a session file with 0600 permissions after write`
+- [x] `it creates the session directory with 0700 permissions on open`
+- [x] `it throws SessionWriteException when fwrite does not write all bytes`
+- [x] `it throws SessionWriteException when ftruncate fails`
+- [x] `it still reads back exactly what was written for a normal write`
+- [x] `it leaves an existing session file at 0600 after a subsequent rewrite`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -35,4 +35,9 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created `SessionWriteException` at `packages/session-file/src/Exceptions/SessionWriteException.php` extending `MarkoException` with two factory methods: `partialWrite()` and `truncateFailed()`
+- Updated `FileSessionHandler::open()` to use `0700` instead of `0755` for directory creation
+- Updated `FileSessionHandler::write()` to: (1) `chmod($path, 0600)` unconditionally after acquiring lock, (2) check `ftruncate` return value and throw `SessionWriteException::truncateFailed()` on failure, (3) check `fwrite` return value and throw `SessionWriteException::partialWrite()` when `false` or bytes differ from expected; handle/lock release via `finally` block
+- Updated constructor path check to handle protocol URLs (`://`) — prevents `getcwd()` prepend for stream-wrapped paths used in tests
+- Tests use custom PHP stream wrapper classes (`PartialWriteStream`, `FailTruncateStream`) registered/unregistered around each test; `stream_metadata()` implemented on wrappers to suppress `chmod()` warning
+- Requirements 5 and 6 passed immediately (existing write logic already correct after requirements 1-4 implementation)

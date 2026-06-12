@@ -1,6 +1,6 @@
 # Task 010: FakeSession null-key `has()` parity
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -18,11 +18,11 @@
   - Test the contract, not the implementation: store `null`, assert `has()` is true; assert `has()` is false for a never-set key.
 
 ## Requirements (Test Descriptions)
-- [ ] `it reports a key with a stored null value as present`
-- [ ] `it reports a never-set key as absent`
-- [ ] `it reports a key with a non-null value as present`
-- [ ] `it reports a removed key as absent`
-- [ ] `it matches production Session has semantics for null values`
+- [x] `it reports a key with a stored null value as present`
+- [x] `it reports a never-set key as absent`
+- [x] `it reports a key with a non-null value as present`
+- [x] `it reports a removed key as absent`
+- [x] `it matches production Session has semantics for null values`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -30,4 +30,7 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Changed `FakeSession::has()` from `isset($this->data[$key])` to `array_key_exists($key, $this->data)` in `packages/testing/src/Fake/FakeSession.php` line 50.
+- This is a single-line fix that aligns null semantics with production `Session::has()`.
+- `get()` was intentionally left unchanged — the `??` operator is correct for a getter with a default, returning the default for both missing and null values.
+- Added 4 targeted tests to `packages/testing/tests/Unit/Fake/FakeSessionTest.php` covering null-stored keys, never-set keys, non-null keys, removed keys, and a combined production-semantics parity test.

@@ -382,3 +382,72 @@ it('treats a file cache entry that decodes to an unexpected shape as a miss', fu
     expect($this->driver->get('key'))->toBeNull()
         ->and($this->driver->has('key'))->toBeFalse();
 });
+
+it('leaves no orphan tmp file when the rename step fails', function (): void {
+    mkdir($this->cachePath, 0755, true);
+
+    $key = 'orphan-test-key';
+    $hash = hash('xxh128', $key);
+    $targetPath = $this->cachePath . '/' . $hash . '.cache';
+
+    // Make the target path a directory so rename() fails
+    mkdir($targetPath, 0755, true);
+
+    $result = $this->driver->set($key, 'some-value');
+
+    expect($result)->toBeFalse()
+        ->and(glob($this->cachePath . '/*.tmp.*'))->toBeEmpty();
+
+    // Cleanup the directory we created as the "target"
+    rmdir($targetPath);
+});
+
+it('removes leftover tmp files when clear is called', function (): void {
+    mkdir($this->cachePath, 0755, true);
+
+    // Pre-seed a leftover tmp file
+    $tmpFile = $this->cachePath . '/somehash.cache.tmp.' . uniqid();
+    file_put_contents($tmpFile, 'leftover');
+
+    $this->driver->clear();
+
+    expect(glob($this->cachePath . '/*.tmp.*'))->toBeEmpty();
+});
+
+it('still removes cache files when clear is called', function (): void {
+    $this->driver->set('key1', 'value1');
+    $this->driver->set('key2', 'value2');
+
+    $this->driver->clear();
+
+    expect(glob($this->cachePath . '/*.cache'))->toBeEmpty();
+});
+
+it('does not error when the cache directory already exists', function (): void {
+    // Pre-create the directory (simulates a concurrent creator winning the race)
+    mkdir($this->cachePath, 0755, true);
+
+    // set() calls ensureDirectoryExists() — must not throw or warn
+    $result = $this->driver->set('key', 'value');
+
+    expect($result)->toBeTrue();
+});
+
+it('creates the cache directory when it is missing', function (): void {
+    // $this->cachePath does not exist yet
+    expect(is_dir($this->cachePath))->toBeFalse();
+
+    $result = $this->driver->set('key', 'value');
+
+    expect($result)->toBeTrue()
+        ->and(is_dir($this->cachePath))->toBeTrue();
+});
+
+it('writes and reads back a value successfully after directory creation', function (): void {
+    // Directory does not exist — driver must create it and still write+read correctly
+    expect(is_dir($this->cachePath))->toBeFalse();
+
+    $this->driver->set('greeting', 'hello');
+
+    expect($this->driver->get('greeting'))->toBe('hello');
+});

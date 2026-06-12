@@ -23,6 +23,11 @@ abstract class Job implements JobInterface
         $this->attempts++;
     }
 
+    public function resetAttempts(): void
+    {
+        $this->attempts = 0;
+    }
+
     public function serialize(): string
     {
         return serialize($this);

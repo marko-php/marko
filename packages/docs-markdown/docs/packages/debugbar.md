@@ -151,16 +151,17 @@ When capturing, every response carries:
 
 ### Sensitive value masking
 
-The request and config collectors mask common sensitive keys. The config collector default mask list:
+The request and config collectors mask common sensitive keys. The config collector default mask list covers both top-level and nested keys:
 
-- `*.key`
-- `*.password`
-- `*.secret`
-- `*.token`
+- `key`, `*.key`
+- `password`, `*.password`
+- `secret`, `*.secret`
+- `token`, `*.token`
+- `dsn`, `*.dsn`
 - `*.api_key`
 - `*.private_key`
 
-Override via `debugbar.options.config.masked` in app config for project-specific rules.
+Top-level entries (e.g. `key`, `password`) match root config keys directly. Wildcard entries (e.g. `*.key`) match the same name at any nesting depth. Override via `debugbar.options.config.masked` in app config for project-specific rules.
 
 ## API Reference
 

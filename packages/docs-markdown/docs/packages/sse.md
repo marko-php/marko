@@ -146,6 +146,8 @@ public function __construct(
 public function format(): string;
 ```
 
+The constructor validates `event` and `id`: if either contains a CR (`\r`) or LF (`\n`) character, `SseException::invalidField()` is thrown. SSE field values must be single-line.
+
 ### SseStream
 
 ```php
@@ -170,7 +172,7 @@ public function getIterator(): Generator;
 |---|---|---|
 | `timeout` | Yes | Yes |
 | `pollInterval` | Yes | No — events arrive instantly |
-| `heartbeatInterval` | Yes | No — no keepalives sent |
+| `heartbeatInterval` | Yes | Yes — keepalive emitted when no messages arrive within the interval |
 
 ### StreamingResponse
 
@@ -186,7 +188,8 @@ public function send(): void;
 
 ### SseException
 
-Extends [`MarkoException`](/docs/packages/core/). Throw for domain-specific SSE error conditions. Includes two factory methods:
+Extends [`MarkoException`](/docs/packages/core/). Includes factory methods:
 
 - `SseException::ambiguousSource()` --- thrown when both a `dataProvider` and a `subscription` are passed to `SseStream`.
 - `SseException::noSource()` --- thrown when neither a `dataProvider` nor a `subscription` is provided.
+- `SseException::invalidField(string $field, string $value)` --- thrown by `SseEvent` constructor when the `event` or `id` field contains a CR (`\r`) or LF (`\n`) character. SSE field values must not span multiple lines; passing a value with embedded newlines is an error.

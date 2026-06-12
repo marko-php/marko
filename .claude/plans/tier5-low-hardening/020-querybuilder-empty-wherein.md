@@ -1,6 +1,6 @@
 # Task 020: whereIn([]) emits invalid `IN ()`
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -28,10 +28,10 @@ An empty `IN` set has a well-defined logical answer (no row is in the empty set)
 
 ## Requirements (Test Descriptions)
 For each builder (MySQL and PgSQL):
-- [ ] `it compiles whereIn with an empty array to a no-match condition`
-- [ ] `it binds no parameters for an empty whereIn`
-- [ ] `it still compiles whereIn with a non-empty array to an IN clause`
-- [ ] `it composes an empty whereIn with other where clauses using AND`
+- [x] `it compiles whereIn with an empty array to a no-match condition`
+- [x] `it binds no parameters for an empty whereIn`
+- [x] `it still compiles whereIn with a non-empty array to an IN clause`
+- [x] `it composes an empty whereIn with other where clauses using AND`
 
 ## Acceptance Criteria
 - `whereIn(col, [])` produces valid SQL that returns zero rows on both drivers.

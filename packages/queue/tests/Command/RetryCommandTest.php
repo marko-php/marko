@@ -181,6 +181,134 @@ it('requires job ID or --all flag', function (): void {
         ->and($result)->toContain('Please provide a job ID or use --all flag');
 });
 
+it('resets a retried job\'s attempts to zero before re-queuing', function (): void {
+    $envelope = createRetryCommandEnvelope();
+
+    // Create a job that has already been attempted 3 times (at maxAttempts)
+    $job = new TestRetryJob('test-data');
+    $job->incrementAttempts();
+    $job->incrementAttempts();
+    $job->incrementAttempts();
+
+    $failedJob = new FailedJob(
+        id: 'failed-job-001',
+        queue: 'default',
+        payload: $envelope->wrap($job->serialize()),
+        exception: 'Test exception',
+        failedAt: new DateTimeImmutable('2024-01-01 12:00:00'),
+    );
+
+    $repository = Helpers::createStubFailedJobRepository([$failedJob]);
+    $queue = Helpers::createStubQueue();
+
+    $command = new RetryCommand($repository, $queue, $envelope);
+
+    ['output' => $output] = Helpers::createOutputStream();
+    $input = new Input(['marko', 'queue:retry', 'failed-job-001']);
+
+    $command->execute($input, $output);
+
+    /** @var TestRetryJob $pushedJob */
+    $pushedJob = $queue->pushedJobs[0]['job'];
+
+    expect($pushedJob->attempts)->toBe(0);
+});
+
+it('resets attempts when retrying all failed jobs', function (): void {
+    $envelope = createRetryCommandEnvelope();
+
+    $job1 = new TestRetryJob('data-1');
+    $job1->incrementAttempts();
+    $job1->incrementAttempts();
+    $job1->incrementAttempts();
+
+    $job2 = new TestRetryJob('data-2');
+    $job2->incrementAttempts();
+
+    $failedJobs = [
+        new FailedJob(
+            id: 'bulk-job-001',
+            queue: 'default',
+            payload: $envelope->wrap($job1->serialize()),
+            exception: 'Exception 1',
+            failedAt: new DateTimeImmutable('2024-01-01 12:00:00'),
+        ),
+        new FailedJob(
+            id: 'bulk-job-002',
+            queue: 'emails',
+            payload: $envelope->wrap($job2->serialize()),
+            exception: 'Exception 2',
+            failedAt: new DateTimeImmutable('2024-01-01 12:00:00'),
+        ),
+    ];
+
+    $repository = Helpers::createStubFailedJobRepository($failedJobs);
+    $queue = Helpers::createStubQueue();
+
+    $command = new RetryCommand($repository, $queue, $envelope);
+
+    ['output' => $output] = Helpers::createOutputStream();
+    $input = new Input(['marko', 'queue:retry', '--all']);
+
+    $command->execute($input, $output);
+
+    /** @var TestRetryJob $pushedJob1 */
+    $pushedJob1 = $queue->pushedJobs[0]['job'];
+
+    /** @var TestRetryJob $pushedJob2 */
+    $pushedJob2 = $queue->pushedJobs[1]['job'];
+
+    expect($pushedJob1->attempts)->toBe(0)
+        ->and($pushedJob2->attempts)->toBe(0);
+});
+
+it('re-pushes the retried job to its original queue', function (): void {
+    $envelope = createRetryCommandEnvelope();
+    $failedJob = new FailedJob(
+        id: 'queue-test-job',
+        queue: 'notifications',
+        payload: $envelope->wrap((new TestRetryJob('data'))->serialize()),
+        exception: 'Test exception',
+        failedAt: new DateTimeImmutable('2024-01-01 12:00:00'),
+    );
+
+    $repository = Helpers::createStubFailedJobRepository([$failedJob]);
+    $queue = Helpers::createStubQueue();
+
+    $command = new RetryCommand($repository, $queue, $envelope);
+
+    ['output' => $output] = Helpers::createOutputStream();
+    $input = new Input(['marko', 'queue:retry', 'queue-test-job']);
+
+    $command->execute($input, $output);
+
+    expect($queue->pushedJobs)->toHaveCount(1)
+        ->and($queue->pushedJobs[0]['queue'])->toBe('notifications');
+});
+
+it('deletes the failed-job record after retrying', function (): void {
+    $envelope = createRetryCommandEnvelope();
+    $failedJob = new FailedJob(
+        id: 'delete-test-job',
+        queue: 'default',
+        payload: $envelope->wrap((new TestRetryJob('data'))->serialize()),
+        exception: 'Test exception',
+        failedAt: new DateTimeImmutable('2024-01-01 12:00:00'),
+    );
+
+    $repository = Helpers::createStubFailedJobRepository([$failedJob]);
+    $queue = Helpers::createStubQueue();
+
+    $command = new RetryCommand($repository, $queue, $envelope);
+
+    ['output' => $output] = Helpers::createOutputStream();
+    $input = new Input(['marko', 'queue:retry', 'delete-test-job']);
+
+    $command->execute($input, $output);
+
+    expect($repository->deletedIds)->toBe(['delete-test-job']);
+});
+
 it('rejects a tampered failed-job payload in the retry command', function (): void {
     $envelope = createRetryCommandEnvelope();
 

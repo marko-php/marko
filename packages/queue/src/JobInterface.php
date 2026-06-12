@@ -18,6 +18,8 @@ interface JobInterface
 
     public function incrementAttempts(): void;
 
+    public function resetAttempts(): void;
+
     public function serialize(): string;
 
     public static function unserialize(string $data): static;

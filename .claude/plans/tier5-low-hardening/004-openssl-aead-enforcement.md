@@ -1,6 +1,6 @@
 # Task 004: OpenSSL AEAD enforcement + payload type validation
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -24,13 +24,13 @@
   - The default cipher `aes-256-gcm` must continue to work end-to-end.
 
 ## Requirements (Test Descriptions)
-- [ ] `it throws EncryptionException at construction when the configured cipher is not AEAD`
-- [ ] `it throws EncryptionException at construction when the configured cipher is unknown to openssl`
-- [ ] `it constructs successfully with the default aes-256-gcm cipher`
-- [ ] `it throws DecryptionException invalidPayload when a payload field is not a string`
-- [ ] `it throws DecryptionException invalidPayload when a required payload field is missing`
-- [ ] `it round-trips encrypt then decrypt with the default AEAD cipher`
-- [ ] `it throws DecryptionException rather than a TypeError for a crafted non-string iv`
+- [x] `it throws EncryptionException at construction when the configured cipher is not AEAD`
+- [x] `it throws EncryptionException at construction when the configured cipher is unknown to openssl`
+- [x] `it constructs successfully with the default aes-256-gcm cipher`
+- [x] `it throws DecryptionException invalidPayload when a payload field is not a string`
+- [x] `it throws DecryptionException invalidPayload when a required payload field is missing`
+- [x] `it round-trips encrypt then decrypt with the default AEAD cipher`
+- [x] `it throws DecryptionException rather than a TypeError for a crafted non-string iv`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -38,4 +38,10 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `nonAeadCipher()` and `invalidCipher()` static factory methods to `EncryptionException`
+- `OpenSslEncryptor` constructor now fetches cipher once via `strtolower($this->config->cipher())`, validates it is in `openssl_get_cipher_methods()` (throws `invalidCipher()`), and checks it ends with `-gcm` or `-ccm` (throws `nonAeadCipher()`); stores result in `private readonly string $cipher`
+- `openssl_cipher_iv_length()` returning `false` now throws `EncryptionException` at construction; iv length stored in `private readonly int $ivLength`
+- `encrypt()` uses `$this->cipher` and `$this->ivLength` instead of re-calling config; added `@throws RandomException` per loud-errors standard
+- `decrypt()` replaced `isset()` checks with explicit `is_string($payload['iv'] ?? null)` etc. to catch non-string fields before `base64_decode` is called
+- `OpenSslEncryptor` kept as plain `class` (not `readonly class`) per task guardrails — designed for extension
+- Default cipher `aes-256-gcm` continues to work end-to-end; all 30 package tests pass

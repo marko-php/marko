@@ -541,6 +541,45 @@ describe('MySqlGenerator', function (): void {
         expect($sql)->toContain('`id` INT NOT NULL AUTO_INCREMENT');
     });
 
+    it('generates a valid MySQL type for a uuid column', function (): void {
+        $generator = new MySqlGenerator();
+
+        $table = new Table(
+            name: 't',
+            columns: [new Column(name: 'id', type: 'uuid')],
+        );
+
+        $sql = $generator->generateCreateTable($table);
+
+        expect($sql)->toContain('`id` CHAR(36) NOT NULL');
+    });
+
+    it('generates a valid MySQL type for an enum column', function (): void {
+        $generator = new MySqlGenerator();
+
+        $table = new Table(
+            name: 't',
+            columns: [new Column(name: 'status', type: 'enum', length: 50)],
+        );
+
+        $sql = $generator->generateCreateTable($table);
+
+        expect($sql)->toContain('`status` VARCHAR(50) NOT NULL');
+    });
+
+    it('generates DECIMAL with the shared precision for a decimal column', function (): void {
+        $generator = new MySqlGenerator();
+
+        $table = new Table(
+            name: 't',
+            columns: [new Column(name: 'price', type: 'decimal')],
+        );
+
+        $sql = $generator->generateCreateTable($table);
+
+        expect($sql)->toContain('`price` DECIMAL(10,2) NOT NULL');
+    });
+
     it('emits MySQL JSON DDL type for #[Column(type: \'json\')]', function (): void {
         $generator = new MySqlGenerator();
 

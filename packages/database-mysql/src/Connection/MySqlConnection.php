@@ -13,6 +13,7 @@ use Marko\Database\Exceptions\TransactionException;
 use Marko\Database\MySql\Exceptions\ConnectionException;
 use PDO;
 use PDOException;
+use PDOStatement;
 use Throwable;
 
 class MySqlConnection implements ConnectionInterface, TransactionInterface
@@ -126,7 +127,8 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         $this->ensureConnected();
 
         $statement = $this->pdo->prepare($sql);
-        $statement->execute($this->prepareBindings($bindings));
+        $this->bindValues($statement, $bindings);
+        $statement->execute();
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -141,36 +143,44 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         $this->ensureConnected();
 
         $statement = $this->pdo->prepare($sql);
-        $statement->execute($this->prepareBindings($bindings));
+        $this->bindValues($statement, $bindings);
+        $statement->execute();
 
         return $statement->rowCount();
     }
 
     /**
-     * JSON-encode any array values so PDO does not silently cast them to the literal string "Array".
-     *
      * @param array<int|string, mixed> $bindings
-     *
-     * @return array<int|string, mixed>
      *
      * @throws ConnectionException
      */
-    private function prepareBindings(
+    private function bindValues(
+        PDOStatement $statement,
         array $bindings,
-    ): array {
+    ): void {
         foreach ($bindings as $key => $value) {
-            if (!is_array($value)) {
+            $param = is_int($key) ? $key + 1 : $key;
+
+            if (is_array($value)) {
+                try {
+                    $encoded = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                } catch (JsonException $e) {
+                    throw ConnectionException::invalidArrayBinding($param, $e);
+                }
+
+                $statement->bindValue($param, $encoded, PDO::PARAM_STR);
+
                 continue;
             }
 
-            try {
-                $bindings[$key] = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-            } catch (JsonException $e) {
-                throw ConnectionException::invalidArrayBinding($key, $e);
-            }
+            $type = match (true) {
+                is_bool($value) => PDO::PARAM_BOOL,
+                is_null($value) => PDO::PARAM_NULL,
+                is_int($value) => PDO::PARAM_INT,
+                default => PDO::PARAM_STR,
+            };
+            $statement->bindValue($param, $value, $type);
         }
-
-        return $bindings;
     }
 
     /**

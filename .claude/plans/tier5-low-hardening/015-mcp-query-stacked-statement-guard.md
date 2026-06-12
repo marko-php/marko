@@ -1,6 +1,6 @@
 # Task 015: mcp read-only DB guard bypass via stacked statements
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -23,11 +23,11 @@ This is a local stdio-only tool, so the severity is Low, but the read-only guard
   - Do NOT attempt a full SQL parser. A string-literal-aware `;` scan is sufficient and matches the loud-but-pragmatic intent. Keep `ALLOWED_PREFIXES` and the `allowWrite`/`confirm` behavior untouched.
 
 ## Requirements (Test Descriptions)
-- [ ] `it rejects a stacked statement that starts with SELECT`
-- [ ] `it allows a single SELECT statement`
-- [ ] `it allows a single SELECT statement with a trailing semicolon`
-- [ ] `it does not treat a semicolon inside a string literal as a statement separator`
-- [ ] `it still permits write statements when allowWrite and confirm are both true`
+- [x] `it rejects a stacked statement that starts with SELECT`
+- [x] `it allows a single SELECT statement`
+- [x] `it allows a single SELECT statement with a trailing semicolon`
+- [x] `it does not treat a semicolon inside a string literal as a statement separator`
+- [x] `it still permits write statements when allowWrite and confirm are both true`
 
 ## Acceptance Criteria
 - `SELECT 1; DELETE FROM users` is rejected on the read-only path; a plain `SELECT ...` (with or without a trailing `;`) is allowed.
@@ -38,4 +38,4 @@ This is a local stdio-only tool, so the severity is Low, but the read-only guard
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+Added `hasStackedStatements(string $sql): bool` to `QueryDatabaseTool`. It scans the SQL char-by-char tracking single-quote and double-quote state (honoring doubled/escaped quotes) and returns `true` if a `;` is found outside a string literal with non-whitespace content following it. A bare trailing `;` is allowed. `isAllowedPrefix()` now requires BOTH the existing first-token allowlist AND `!hasStackedStatements()`. The `allowWrite=true`+`confirm=true` opt-in write path is unaffected — it bypasses `isAllowedPrefix()` entirely.

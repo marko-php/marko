@@ -1,6 +1,6 @@
 # Task 018: SQL generator type-map parity across mysql/pgsql
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -32,15 +32,15 @@ True modularity means siblings must accept the same abstract type vocabulary and
 
 ## Requirements (Test Descriptions)
 For `MySqlGeneratorTest`:
-- [ ] `it generates a valid MySQL type for a uuid column`
-- [ ] `it generates a valid MySQL type for an enum column`
-- [ ] `it generates DECIMAL with the shared precision for a decimal column`
+- [x] `it generates a valid MySQL type for a uuid column`
+- [x] `it generates a valid MySQL type for an enum column`
+- [x] `it generates DECIMAL with the shared precision for a decimal column`
 
 For `PgSqlGeneratorTest`:
-- [ ] `it generates a valid PostgreSQL type for a tinyint column`
-- [ ] `it generates a valid PostgreSQL type for a bool column`
-- [ ] `it generates a valid PostgreSQL type for a blob column`
-- [ ] `it generates DECIMAL with the shared precision for a decimal column`
+- [x] `it generates a valid PostgreSQL type for a tinyint column`
+- [x] `it generates a valid PostgreSQL type for a bool column`
+- [x] `it generates a valid PostgreSQL type for a blob column`
+- [x] `it generates DECIMAL with the shared precision for a decimal column`
 
 ## Acceptance Criteria
 - Each shared abstract type (`uuid`, `enum`, `bool`, `tinyint`, `blob`, `decimal`) generates valid DDL on BOTH generators.
@@ -51,4 +51,6 @@ For `PgSqlGeneratorTest`:
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- MySQL `TYPE_MAP`: added `uuid` → `CHAR(36)` (conventional UUID storage in MySQL) and `enum` → `VARCHAR` (pragmatic, matching pgsql).
+- PgSQL `TYPE_MAP`: added `int` → `INTEGER`, `tinyint` → `SMALLINT`, `bool` → `BOOLEAN`, `blob` → `BYTEA`; changed `decimal` from bare `DECIMAL` to `DECIMAL(10,2)` to match MySQL precision.
+- Updated existing PgSQL test `it maps Column types to PostgreSQL data types` decimal expectation from `DECIMAL` to `DECIMAL(10,2)`.

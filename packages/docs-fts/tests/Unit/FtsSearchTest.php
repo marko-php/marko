@@ -20,11 +20,11 @@ beforeEach(function (): void {
     mkdir($docsPath . '/getting-started', 0755, true);
     file_put_contents(
         $docsPath . '/getting-started/installation.md',
-        "# Installation\n\nHow to install Marko Framework..."
+        "# Installation\n\nHow to install Marko Framework...",
     );
     file_put_contents(
         $docsPath . '/getting-started/quickstart.md',
-        "# Quickstart\n\nFirst steps with the framework after installation."
+        "# Quickstart\n\nFirst steps with the framework after installation.",
     );
     file_put_contents($docsPath . '/index.md', "# Welcome\n\nMarko documentation home.");
 
@@ -101,4 +101,29 @@ it('returns nav tree via listNav', function (): void {
 
     expect($nav)->not->toBeEmpty()
         ->and($nav[0])->toBeInstanceOf(DocsNavEntry::class);
+});
+
+it('throws DocsException when the MATCH expression is malformed', function (): void {
+    expect(fn () => $this->search->search(new DocsQuery('"unbalanced')))->toThrow(DocsException::class);
+});
+
+it('does not leak a PDOException from a malformed search query', function (): void {
+    $thrown = null;
+
+    try {
+        $this->search->search(new DocsQuery('"unbalanced'));
+    } catch (Throwable $e) {
+        $thrown = $e;
+    }
+
+    expect($thrown)->not->toBeNull()
+        ->and($thrown)->not->toBeInstanceOf(PDOException::class)
+        ->and($thrown)->toBeInstanceOf(DocsException::class);
+});
+
+it('returns results for a valid search query', function (): void {
+    $results = $this->search->search(new DocsQuery('installation'));
+
+    expect($results)->not->toBeEmpty()
+        ->and($results[0])->toBeInstanceOf(DocsResult::class);
 });

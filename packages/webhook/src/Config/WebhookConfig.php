@@ -16,6 +16,8 @@ readonly class WebhookConfig
 
     public int $retryDelay;
 
+    public int $timestampTolerance;
+
     /**
      * @throws ConfigNotFoundException
      */
@@ -25,5 +27,6 @@ readonly class WebhookConfig
         $this->timeout = $config->getInt('webhook.timeout');
         $this->maxRetries = $config->getInt('webhook.max_retries');
         $this->retryDelay = $config->getInt('webhook.retry_delay');
+        $this->timestampTolerance = $config->getInt('webhook.timestamp_tolerance');
     }
 }

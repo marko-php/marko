@@ -147,3 +147,33 @@ it('returns null from controller() and action() before withRoute() is called', f
     expect($request->controller())->toBeNull()
         ->and($request->action())->toBeNull();
 });
+
+it('reads Content-Type from the CGI CONTENT_TYPE server key when HTTP_CONTENT_TYPE is absent', function () {
+    $request = new Request(server: ['CONTENT_TYPE' => 'application/json']);
+
+    expect($request->header('Content-Type'))->toBe('application/json');
+});
+
+it('still reads Content-Type from HTTP_CONTENT_TYPE when present', function () {
+    $request = new Request(server: ['HTTP_CONTENT_TYPE' => 'text/html', 'CONTENT_TYPE' => 'application/json']);
+
+    expect($request->header('Content-Type'))->toBe('text/html');
+});
+
+it('reads Content-Length from the CGI CONTENT_LENGTH server key', function () {
+    $request = new Request(server: ['CONTENT_LENGTH' => '42']);
+
+    expect($request->header('Content-Length'))->toBe('42');
+});
+
+it('does not read an un-prefixed key for a non-CGI header name', function () {
+    $request = new Request(server: ['X_CUSTOM' => 'should-not-appear']);
+
+    expect($request->header('X-Custom'))->toBeNull();
+});
+
+it('returns the default when neither header form is present', function () {
+    $request = new Request(server: []);
+
+    expect($request->header('Content-Type', 'text/plain'))->toBe('text/plain');
+});

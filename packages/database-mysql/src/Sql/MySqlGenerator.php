@@ -46,6 +46,8 @@ class MySqlGenerator implements SqlGeneratorInterface
         'blob' => 'BLOB',
         'binary' => 'BLOB',
         'json' => 'JSON',
+        'uuid' => 'CHAR(36)',
+        'enum' => 'VARCHAR',
     ];
 
     /**

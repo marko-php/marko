@@ -47,7 +47,7 @@ class FakeSession implements SessionInterface
     public function has(
         string $key,
     ): bool {
-        return isset($this->data[$key]);
+        return array_key_exists($key, $this->data);
     }
 
     public function remove(

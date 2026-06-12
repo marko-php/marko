@@ -26,4 +26,17 @@ class SseException extends MarkoException
             suggestion: 'Pass a dataProvider closure or a Subscription instance to SseStream.',
         );
     }
+
+    public static function invalidField(
+        string $field,
+        string $value,
+    ): self {
+        return new self(
+            message: "SSE field '$field' must not contain CR or LF characters.",
+            context: "SseEvent was constructed with a '$field' value containing a carriage return or line feed: " . json_encode(
+                $value,
+            ),
+            suggestion: "Remove all CR (\\r) and LF (\\n) characters from the '$field' value before constructing SseEvent.",
+        );
+    }
 }

@@ -80,8 +80,7 @@ class ComponentCollection
         string $className,
         string $newSlot,
         ?int $newSortOrder = null,
-    ): void
-    {
+    ): void {
         $definition = $this->get($className);
 
         $sortOrder = $newSortOrder ?? $definition->sortOrder;
@@ -131,28 +130,47 @@ class ComponentCollection
     private function sort(
         array $components,
         string $slot,
-    ): array
-    {
-        // First pass: sort by sortOrder, detecting ambiguities
-        usort($components, function (ComponentDefinition $a, ComponentDefinition $b) use ($slot): int {
-            if ($a->sortOrder === $b->sortOrder) {
-                $aResolved = $a->before !== null || $a->after !== null;
-                $bResolved = $b->before !== null || $b->after !== null;
+    ): array {
+        // First pass: deterministically detect ambiguities by grouping on sortOrder
+        $this->detectAmbiguities($components, $slot);
 
-                if (!$aResolved && !$bResolved) {
-                    throw AmbiguousSortOrderException::forComponents(
-                        slot: $slot,
-                        sortOrder: $a->sortOrder,
-                        components: [$a->className, $b->className],
-                    );
-                }
-            }
+        // Second pass: sort with a total-order comparator (className tie-break, never throws)
+        usort(
+            $components,
+            fn (ComponentDefinition $a, ComponentDefinition $b): int =>
+                $a->sortOrder <=> $b->sortOrder ?: strcmp($a->className, $b->className),
+        );
 
-            return $a->sortOrder <=> $b->sortOrder;
-        });
-
-        // Second pass: apply before/after constraints
+        // Third pass: apply before/after constraints
         return $this->applyConstraints($components);
+    }
+
+    /**
+     * @param array<int, ComponentDefinition> $components
+     * @throws AmbiguousSortOrderException
+     */
+    private function detectAmbiguities(
+        array $components,
+        string $slot,
+    ): void {
+        /** @var array<int, array<int, string>> $groups */
+        $groups = [];
+
+        foreach ($components as $def) {
+            if ($def->before === null && $def->after === null) {
+                $groups[$def->sortOrder][] = $def->className;
+            }
+        }
+
+        foreach ($groups as $sortOrder => $classNames) {
+            if (count($classNames) >= 2) {
+                throw AmbiguousSortOrderException::forComponents(
+                    slot: $slot,
+                    sortOrder: $sortOrder,
+                    components: $classNames,
+                );
+            }
+        }
     }
 
     /**

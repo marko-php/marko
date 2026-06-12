@@ -4,7 +4,7 @@
 2026-06-10
 
 ## Status
-ready
+completed
 
 ## Objective
 Harden a set of low-severity security and correctness gaps across nine packages (webhook, session-file, sse, encryption-openssl, log/log-file, core, routing, testing, layout, cache-file) without changing public contracts. Each fix is small, isolated to a single file-cluster, and verified by behavioral TDD tests.
@@ -82,30 +82,30 @@ none
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | Webhook inbound replay protection (timestamp freshness window) | - | pending |
-| 002 | Session-file restrictive permissions + checked writes | - | pending |
-| 003 | SSE `event`/`id` CR/LF sanitization | - | pending |
-| 004 | OpenSSL AEAD enforcement + payload type validation | - | pending |
-| 005 | SSE subscription heartbeat + idle timeout | - | pending |
-| 006 | Log line-injection CR/LF escaping (line formatter) | - | pending |
-| 007 | Core container circular-dependency detection | - | pending |
-| 008 | Routing Request Content-Type/Content-Length header CGI-key fallback (path decode dropped — Tier 3 collision) | - | pending |
-| 009 | Core manifest `php*`-vendor dependency filter fix | - | pending |
-| 010 | FakeSession null-key `has()` parity | - | pending |
-| 011 | Layout deterministic ambiguous-sort-order detection | - | pending |
-| 012 | cache-file tmp cleanup, clear glob, mkdir race | - | pending |
-| 013 | codeindexer cache unserialize hardening (allowed_classes + non-array load failure) | - | pending |
-| 014 | docs-fts malformed MATCH wraps PDOException in DocsException | - | pending |
-| 015 | mcp read-only DB guard rejects stacked statements | - | pending |
-| 016 | lsp server resilience to a malformed frame (parse error, keep serving) | - | pending |
-| 017 | Translator placeholder replacement ordering (single-pass strtr) | - | pending |
-| 018 | SQL generator type-map parity across mysql/pgsql | - | pending |
-| 019 | MySQL connection binds explicit PDO param types (parity with pgsql) | - | pending |
-| 020 | query builder empty `whereIn` → valid no-match (`1 = 0`); `whereNotIn` out of scope (no such method) | cross-tier rebase | pending |
-| 021 | GD preserve source format + alpha; check encode returns | - | pending |
-| 022 | admin-api section visibility wildcard-aware + show() filter parity | - | pending |
-| 023 | queue RetryCommand resets attempts before re-queue | Tier-2 coordination | pending |
-| 024 | debugbar lazy `all()` + default-mask completeness | - | pending |
+| 001 | Webhook inbound replay protection (timestamp freshness window) | - | completed |
+| 002 | Session-file restrictive permissions + checked writes | - | completed |
+| 003 | SSE `event`/`id` CR/LF sanitization | - | completed |
+| 004 | OpenSSL AEAD enforcement + payload type validation | - | completed |
+| 005 | SSE subscription heartbeat + idle timeout | - | completed |
+| 006 | Log line-injection CR/LF escaping (line formatter) | - | completed |
+| 007 | Core container circular-dependency detection | - | completed |
+| 008 | Routing Request Content-Type/Content-Length header CGI-key fallback (path decode dropped — Tier 3 collision) | - | completed |
+| 009 | Core manifest `php*`-vendor dependency filter fix | - | completed |
+| 010 | FakeSession null-key `has()` parity | - | completed |
+| 011 | Layout deterministic ambiguous-sort-order detection | - | completed |
+| 012 | cache-file tmp cleanup, clear glob, mkdir race | - | completed |
+| 013 | codeindexer cache unserialize hardening (allowed_classes + non-array load failure) | - | completed |
+| 014 | docs-fts malformed MATCH wraps PDOException in DocsException | - | completed |
+| 015 | mcp read-only DB guard rejects stacked statements | - | completed |
+| 016 | lsp server resilience to a malformed frame (parse error, keep serving) | - | completed |
+| 017 | Translator placeholder replacement ordering (single-pass strtr) | - | completed |
+| 018 | SQL generator type-map parity across mysql/pgsql | - | completed |
+| 019 | MySQL connection binds explicit PDO param types (parity with pgsql) | - | completed |
+| 020 | query builder empty `whereIn` → valid no-match (`1 = 0`); `whereNotIn` out of scope (no such method) | cross-tier rebase | completed |
+| 021 | GD preserve source format + alpha; check encode returns | - | completed |
+| 022 | admin-api section visibility wildcard-aware + show() filter parity | - | completed |
+| 023 | queue RetryCommand resets attempts before re-queue | Tier-2 coordination | completed |
+| 024 | debugbar lazy `all()` + default-mask completeness | - | completed |
 
 The original twelve tasks (001–012) are independent (no shared files). Tasks 003 and 005 both touch the `sse` package but different files (Task 003: `SseEvent.php` + `SseException.php`; Task 005: `SseStream.php` only). They may run in parallel, but note a LOGICAL coupling: `SseStream::iterateSubscription()` constructs `new SseEvent(data:, event:)`, and Task 003 adds CRLF validation to the `SseEvent` constructor. If Task 005 lands first, its message fixtures must use channel/payload values WITHOUT CRLF so they remain valid once Task 003's constructor guard exists. Whichever task finishes last MUST re-run the full `packages/sse/tests/` suite to catch interaction regressions.
 
