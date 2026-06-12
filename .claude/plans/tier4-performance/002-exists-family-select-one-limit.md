@@ -1,6 +1,6 @@
 # Task 002: F1 — `SELECT 1 ... LIMIT 1` for `exists` / `existsBy` / `isColumnUnique`
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [001]
 **Retry count**: 0
 
@@ -23,16 +23,16 @@ This depends on 001 because both edit the same `Repository.php` lookup region; s
   - Any new inline anonymous `ConnectionInterface` stub MUST implement `driverName(): string` (Tier 2 interface addition) or it fatals at instantiation.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns true from exists when a row with the id is present`
-- [ ] `it returns false from exists when no row has the id`
-- [ ] `it probes exists with SELECT 1 and LIMIT 1 and does not hydrate an entity`
-- [ ] `it returns true from existsBy when criteria match a row`
-- [ ] `it returns false from existsBy when criteria match nothing`
-- [ ] `it probes existsBy with SELECT 1 and LIMIT 1`
-- [ ] `it returns true from isColumnUnique when no other row holds the value`
-- [ ] `it returns false from isColumnUnique when another row holds the value`
-- [ ] `it excludes the given id from the isColumnUnique uniqueness check`
-- [ ] `it probes isColumnUnique with SELECT 1 and LIMIT 1 instead of SELECT star`
+- [x] `it returns true from exists when a row with the id is present`
+- [x] `it returns false from exists when no row has the id`
+- [x] `it probes exists with SELECT 1 and LIMIT 1 and does not hydrate an entity`
+- [x] `it returns true from existsBy when criteria match a row`
+- [x] `it returns false from existsBy when criteria match nothing`
+- [x] `it probes existsBy with SELECT 1 and LIMIT 1`
+- [x] `it returns true from isColumnUnique when no other row holds the value`
+- [x] `it returns false from isColumnUnique when another row holds the value`
+- [x] `it excludes the given id from the isColumnUnique uniqueness check`
+- [x] `it probes isColumnUnique with SELECT 1 and LIMIT 1 instead of SELECT star`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -40,4 +40,9 @@ This depends on 001 because both edit the same `Repository.php` lookup region; s
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Replaced `exists()` body with `SELECT 1 FROM <table> WHERE <pk> = ? LIMIT 1`, returns `count($rows) > 0`
+- Replaced `existsBy()` body with same property→column mapping as `findBy`, `SELECT 1 ... LIMIT 1`, returns `count($rows) > 0`
+- Replaced `isColumnUnique()` body with `SELECT 1 FROM <table> WHERE <column> = ? [AND <pk> != ?] LIMIT 1`, returns `count($rows) === 0`
+- None of the three methods delegate to `find`/`findOneBy` — no hydration, no eager-loading on any probe path
+- New test file: `packages/database/tests/Feature/RepositoryExistsTest.php` with 10 tests covering boolean correctness and SQL shape assertions
+- Anonymous `ConnectionInterface` stub includes `driverName(): string` as required by Tier 2 interface

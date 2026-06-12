@@ -130,10 +130,23 @@ readonly class RedisCacheDriver implements CacheInterface
         array $keys,
         mixed $default = null,
     ): iterable {
+        foreach ($keys as $key) {
+            $this->validateKey($key);
+        }
+
+        $prefixedKeys = array_map(fn ($k) => $this->prefixKey($k), $keys);
+        $raw = $this->connection->client()->mget(...$prefixedKeys);
+
         $result = [];
 
-        foreach ($keys as $key) {
-            $result[$key] = $this->get($key, $default);
+        foreach ($keys as $i => $key) {
+            $value = $raw[$i] ?? null;
+
+            if ($value === null) {
+                $result[$key] = $default;
+            } else {
+                $result[$key] = unserialize($this->cacheValueSigner->verifyAndUnwrap($value));
+            }
         }
 
         return $result;
@@ -147,8 +160,24 @@ readonly class RedisCacheDriver implements CacheInterface
         ?int $ttl = null,
     ): bool {
         foreach ($values as $key => $value) {
-            $this->set($key, $value, $ttl);
+            $this->validateKey($key);
         }
+
+        $ttl ??= $this->config->defaultTtl();
+        $client = $this->connection->client();
+
+        $client->pipeline(function ($pipe) use ($values, $ttl): void {
+            foreach ($values as $key => $value) {
+                $prefixedKey = $this->prefixKey($key);
+                $envelope = $this->cacheValueSigner->wrap(serialize($value));
+
+                if ($ttl > 0) {
+                    $pipe->setex($prefixedKey, $ttl, $envelope);
+                } else {
+                    $pipe->set($prefixedKey, $envelope);
+                }
+            }
+        });
 
         return true;
     }
@@ -160,8 +189,12 @@ readonly class RedisCacheDriver implements CacheInterface
         array $keys,
     ): bool {
         foreach ($keys as $key) {
-            $this->delete($key);
+            $this->validateKey($key);
         }
+
+        $prefixedKeys = array_map(fn ($k) => $this->prefixKey($k), $keys);
+
+        $this->connection->client()->del(...$prefixedKeys);
 
         return true;
     }

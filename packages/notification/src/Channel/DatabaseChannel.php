@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace Marko\Notification\Channel;
 
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Notification\Contracts\BatchChannelInterface;
 use Marko\Notification\Contracts\ChannelInterface;
 use Marko\Notification\Contracts\NotifiableInterface;
 use Marko\Notification\Contracts\NotificationInterface;
 use Marko\Notification\Exceptions\ChannelException;
+use Random\RandomException;
 use Throwable;
 
-class DatabaseChannel implements ChannelInterface
+class DatabaseChannel implements ChannelInterface, BatchChannelInterface
 {
+    /**
+     * Maximum rows per INSERT statement to keep placeholder count within driver limits.
+     * 7 columns × 500 rows = 3500 placeholders (safely under the 65535 MySQL/PDO limit).
+     */
+    private const int ROWS_PER_CHUNK = 500;
+
     public function __construct(
         private ConnectionInterface $connection,
     ) {}
@@ -47,7 +55,47 @@ class DatabaseChannel implements ChannelInterface
     }
 
     /**
+     * Persist notifications for multiple notifiables using chunked multi-row INSERTs.
+     *
+     * @param array<NotifiableInterface> $notifiables
+     * @throws ChannelException On batch insert failure
+     */
+    public function sendMany(
+        array $notifiables,
+        NotificationInterface $notification,
+    ): void {
+        $chunks = array_chunk($notifiables, self::ROWS_PER_CHUNK);
+
+        foreach ($chunks as $chunk) {
+            try {
+                $placeholderRow = '(?, ?, ?, ?, ?, ?, ?)';
+                $placeholders = implode(', ', array_fill(0, count($chunk), $placeholderRow));
+
+                $sql = 'INSERT INTO notifications (id, type, notifiable_type, notifiable_id, data, read_at, created_at) VALUES ' . $placeholders;
+
+                $bindings = [];
+                foreach ($chunk as $notifiable) {
+                    $data = $notification->toDatabase($notifiable);
+                    $bindings[] = $this->generateUuid();
+                    $bindings[] = $notification::class;
+                    $bindings[] = $notifiable->getNotifiableType();
+                    $bindings[] = (string) $notifiable->getNotifiableId();
+                    $bindings[] = json_encode($data, JSON_THROW_ON_ERROR);
+                    $bindings[] = null;
+                    $bindings[] = date('Y-m-d H:i:s');
+                }
+
+                $this->connection->execute($sql, $bindings);
+            } catch (Throwable $e) {
+                throw ChannelException::deliveryFailed('database', $e->getMessage());
+            }
+        }
+    }
+
+    /**
      * Generate a UUID v4 string.
+     *
+     * @throws RandomException
      */
     private function generateUuid(): string
     {

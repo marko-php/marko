@@ -52,11 +52,19 @@ readonly class AttachmentManager implements AttachmentInterface
             $attachableId,
         );
 
+        if ($mediaIds === []) {
+            return [];
+        }
+
+        $mediaById = [];
+        foreach ($this->mediaRepository->findMany($mediaIds) as $media) {
+            $mediaById[(int) $media->id] = $media;
+        }
+
         $result = [];
         foreach ($mediaIds as $id) {
-            $media = $this->mediaRepository->find($id);
-            if ($media !== null) {
-                $result[] = $media;
+            if (isset($mediaById[$id])) {
+                $result[] = $mediaById[$id];
             }
         }
 

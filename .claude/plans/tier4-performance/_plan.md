@@ -4,7 +4,7 @@
 2026-06-10
 
 ## Status
-ready
+completed
 
 ## Objective
 Eliminate N+1 query loops and missing `LIMIT 1` optimizations on hot lookup, attachment, admin-auth, Redis multi-key, and notification fan-out paths so each operation issues a bounded, batched number of queries/round-trips instead of one per row/key/recipient.
@@ -66,13 +66,13 @@ Each task writes the behavioral (correct-result) assertions FIRST, then the quer
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | F1: `LIMIT 1` for `findOneBy` | - | pending |
-| 002 | F1: `SELECT 1 ... LIMIT 1` for `exists`/`existsBy`/`isColumnUnique` | 001 | pending |
-| 003 | F2: add `findMany` to `MediaRepositoryInterface` (+ test mocks) + single-call `findByAttachable` | - | pending |
-| 004 | F3: `getPermissionsForRoles` batch query (+ interface mocks) + rewire `loadRolesAndPermissions` | - | pending |
-| 005 | F3 (optional): transactional + batched `syncPermissions` (no `syncRoles`) | 004 | pending |
-| 006 | F4: batched Redis multi-key ops (MGET / pipeline / variadic DEL) | - | pending |
-| 007 | F5: new `BatchChannelInterface` + `DatabaseChannel::sendMany` + sender grouping | - | pending |
+| 001 | F1: `LIMIT 1` for `findOneBy` | - | completed |
+| 002 | F1: `SELECT 1 ... LIMIT 1` for `exists`/`existsBy`/`isColumnUnique` | 001 | completed |
+| 003 | F2: add `findMany` to `MediaRepositoryInterface` (+ test mocks) + single-call `findByAttachable` | - | completed |
+| 004 | F3: `getPermissionsForRoles` batch query (+ interface mocks) + rewire `loadRolesAndPermissions` | - | completed |
+| 005 | F3 (optional): transactional + batched `syncPermissions` (no `syncRoles`) | 004 | completed |
+| 006 | F4: batched Redis multi-key ops (MGET / pipeline / variadic DEL) | - | completed |
+| 007 | F5: new `BatchChannelInterface` + `DatabaseChannel::sendMany` + sender grouping | - | completed |
 
 ## Architecture Notes
 - **F1 — `findOneBy`** currently delegates to `findBy($criteria)->first()`, fetching ALL matching rows + hydrating + eager-loading every one. Add a query path that appends `LIMIT 1` so the DB returns at most one row; the single returned entity must still be eager-loaded (preserve `orm-relationships` behavior). `findBy` itself is unchanged.

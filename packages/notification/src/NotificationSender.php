@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Notification;
 
+use Marko\Notification\Contracts\BatchChannelInterface;
 use Marko\Notification\Contracts\NotifiableInterface;
 use Marko\Notification\Contracts\NotificationInterface;
 use Marko\Notification\Exceptions\ChannelException;
@@ -31,18 +32,39 @@ readonly class NotificationSender
     ): void {
         $notifiables = is_array($notifiables) ? $notifiables : [$notifiables];
 
+        // Build a map of channel-name => list of recipients that declared that channel.
+        /** @var array<string, array<NotifiableInterface>> $channelRecipients */
+        $channelRecipients = [];
+
         foreach ($notifiables as $notifiable) {
             $channels = $notification->channels($notifiable);
 
             foreach ($channels as $channelName) {
-                $channel = $this->manager->channel($channelName);
+                $channelRecipients[$channelName][] = $notifiable;
+            }
+        }
 
+        // For each channel, use batch path when supported and multiple recipients; otherwise per-recipient.
+        foreach ($channelRecipients as $channelName => $recipients) {
+            $channel = $this->manager->channel($channelName);
+
+            if ($channel instanceof BatchChannelInterface && count($recipients) > 1) {
                 try {
-                    $channel->send($notifiable, $notification);
+                    $channel->sendMany($recipients, $notification);
                 } catch (ChannelException $e) {
                     throw $e;
                 } catch (Throwable $e) {
                     throw NotificationException::sendFailed($channelName, $e->getMessage());
+                }
+            } else {
+                foreach ($recipients as $notifiable) {
+                    try {
+                        $channel->send($notifiable, $notification);
+                    } catch (ChannelException $e) {
+                        throw $e;
+                    } catch (Throwable $e) {
+                        throw NotificationException::sendFailed($channelName, $e->getMessage());
+                    }
                 }
             }
         }

@@ -1,6 +1,6 @@
 # Task 003: F2 — Batch media hydration in `AttachmentManager::findByAttachable`
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -24,13 +24,13 @@
   - Query-count assertions: the mock records how many times `findMany` (vs `find`) is invoked; assert `find` is never called and `findMany` is called exactly once regardless of attachment count.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns the media entities for all attached ids`
-- [ ] `it returns media in the order of the attachment id list`
-- [ ] `it skips ids that have no matching media row`
-- [ ] `it returns an empty array when there are no attachments`
-- [ ] `it resolves all attachments with a single findMany call and never calls find per id`
-- [ ] `it defines findMany on MediaRepositoryInterface returning an array of Media`
-- [ ] `it does not invoke findMany when there are no attachment ids`
+- [x] `it returns the media entities for all attached ids`
+- [x] `it returns media in the order of the attachment id list`
+- [x] `it skips ids that have no matching media row`
+- [x] `it returns an empty array when there are no attachments`
+- [x] `it resolves all attachments with a single findMany call and never calls find per id`
+- [x] `it defines findMany on MediaRepositoryInterface returning an array of Media`
+- [x] `it does not invoke findMany when there are no attachment ids`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -38,4 +38,9 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `findMany(array $ids): array` to `MediaRepositoryInterface` with documented contract (empty input → empty array no query; caller responsible for ordering; consumer implements single `WHERE id IN (...)` query)
+- Rewired `AttachmentManager::findByAttachable` to call `findMany` once, then re-order by attachment id list and skip missing ids in PHP
+- Added `findMany` to both in-package test mocks: `makeMediaRepository` in `AttachmentManagerTest.php` and `makeRepository` in `MediaManagerTest.php`
+- Added `makeTrackingMediaRepository` mock with `findCallCount`/`findManyCallCount` properties to verify N+1 elimination
+- Added `MediaRepositoryInterfaceTest.php` for the interface definition requirement
+- Pre-existing full-suite crash in `notification`/`notification-database` packages is unrelated to this task

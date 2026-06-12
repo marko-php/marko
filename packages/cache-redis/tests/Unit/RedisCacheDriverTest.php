@@ -15,6 +15,29 @@ use Marko\Testing\Fake\FakeConfigRepository;
 use Predis\Client;
 use Predis\ClientInterface;
 
+readonly class MockPipelineRecorder
+{
+    public function __construct(
+        private MockRedisClient $client,
+    ) {}
+
+    public function setex(
+        string $key,
+        int $seconds,
+        string $value,
+    ): void {
+        $this->client->storage[$key] = $value;
+        $this->client->ttls[$key] = $seconds;
+    }
+
+    public function set(
+        string $key,
+        string $value,
+    ): void {
+        $this->client->storage[$key] = $value;
+    }
+}
+
 /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
 class MockRedisClient extends Client
 {
@@ -23,6 +46,12 @@ class MockRedisClient extends Client
 
     /** @var array<string, int> */
     public array $ttls = [];
+
+    public int $mgetCount = 0;
+
+    public int $pipelineCount = 0;
+
+    public int $delCount = 0;
 
     /** @noinspection PhpMissingParentConstructorInspection */
     public function __construct() {}
@@ -71,6 +100,7 @@ class MockRedisClient extends Client
     public function del(
         ...$keys,
     ): int {
+        $this->delCount++;
         $count = 0;
         $flatKeys = [];
 
@@ -90,6 +120,38 @@ class MockRedisClient extends Client
         }
 
         return $count;
+    }
+
+    public function mget(
+        ...$keys,
+    ): array {
+        $this->mgetCount++;
+        $flatKeys = [];
+
+        foreach ($keys as $key) {
+            if (is_array($key)) {
+                $flatKeys = array_merge($flatKeys, $key);
+            } else {
+                $flatKeys[] = $key;
+            }
+        }
+
+        return array_map(fn ($k) => $this->storage[$k] ?? null, $flatKeys);
+    }
+
+    public function pipeline(
+        ...$arguments,
+    ): mixed {
+        $this->pipelineCount++;
+
+        $callback = $arguments[0] ?? null;
+
+        if (is_callable($callback)) {
+            $recorder = new MockPipelineRecorder($this);
+            $callback($recorder);
+        }
+
+        return [];
     }
 
     public function keys(
@@ -506,5 +568,168 @@ describe('RedisCacheDriver', function (): void {
         $driver->set('complex', $value);
 
         expect($driver->get('complex'))->toBe($value);
+    });
+
+    it('returns values for all requested keys via getMultiple', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->set('key1', 'value1');
+        $driver->set('key2', 'value2');
+
+        $result = $driver->getMultiple(['key1', 'key2']);
+
+        expect($result)->toBe(['key1' => 'value1', 'key2' => 'value2']);
+    });
+
+    it('returns the default for missing keys in getMultiple', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $result = $driver->getMultiple(['missing1', 'missing2'], 'fallback');
+
+        expect($result)->toBe(['missing1' => 'fallback', 'missing2' => 'fallback']);
+    });
+
+    it('preserves input key order in the getMultiple result', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->set('z', 'z-val');
+        $driver->set('a', 'a-val');
+
+        $result = $driver->getMultiple(['z', 'a']);
+
+        expect(array_keys($result))->toBe(['z', 'a']);
+    });
+
+    it('issues a single MGET for getMultiple instead of one get per key', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->set('key1', 'v1');
+        $driver->set('key2', 'v2');
+
+        $mockClient->mgetCount = 0;
+
+        $driver->getMultiple(['key1', 'key2']);
+
+        expect($mockClient->mgetCount)->toBe(1);
+    });
+
+    it('verifies the HMAC envelope on each value read by getMultiple', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $mockClient->storage['marko:cache:tampered'] = str_repeat('a', 64) . '.' . serialize('bad');
+
+        expect(fn () => $driver->getMultiple(['tampered']))
+            ->toThrow(TamperedCacheValueException::class);
+    });
+
+    it('stores all pairs via setMultiple with the given TTL', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->setMultiple(['key1' => 'v1', 'key2' => 'v2'], 120);
+
+        expect($driver->get('key1'))->toBe('v1')
+            ->and($driver->get('key2'))->toBe('v2')
+            ->and($mockClient->ttls['marko:cache:key1'])->toBe(120)
+            ->and($mockClient->ttls['marko:cache:key2'])->toBe(120);
+    });
+
+    it('applies the default TTL in setMultiple when none is given', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient, defaultTtl: 3600);
+
+        $driver->setMultiple(['key1' => 'v1']);
+
+        expect($mockClient->ttls['marko:cache:key1'])->toBe(3600);
+    });
+
+    it('stores persistent pairs without a TTL when setMultiple TTL is zero', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->setMultiple(['key1' => 'v1'], 0);
+
+        expect(isset($mockClient->storage['marko:cache:key1']))->toBeTrue()
+            ->and(isset($mockClient->ttls['marko:cache:key1']))->toBeFalse();
+    });
+
+    it('issues the setMultiple writes in a single pipeline', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $mockClient->pipelineCount = 0;
+
+        $driver->setMultiple(['key1' => 'v1', 'key2' => 'v2']);
+
+        expect($mockClient->pipelineCount)->toBe(1);
+    });
+
+    it('stores each setMultiple value as a signed HMAC envelope', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->setMultiple(['key1' => 'v1']);
+
+        $stored = $mockClient->storage['marko:cache:key1'];
+
+        expect(strlen($stored))->toBeGreaterThan(65)
+            ->and(substr($stored, 64, 1))->toBe('.');
+    });
+
+    it('round-trips values written by setMultiple back through getMultiple', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->setMultiple(['alpha' => 'hello', 'beta' => [1, 2, 3]]);
+
+        $result = $driver->getMultiple(['alpha', 'beta']);
+
+        expect($result)->toBe(['alpha' => 'hello', 'beta' => [1, 2, 3]]);
+    });
+
+    it('deletes all given keys via deleteMultiple', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->set('key1', 'v1');
+        $driver->set('key2', 'v2');
+        $driver->set('key3', 'v3');
+
+        $driver->deleteMultiple(['key1', 'key2']);
+
+        expect($driver->has('key1'))->toBeFalse()
+            ->and($driver->has('key2'))->toBeFalse()
+            ->and($driver->has('key3'))->toBeTrue();
+    });
+
+    it('issues a single variadic DEL for deleteMultiple', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->set('key1', 'v1');
+        $driver->set('key2', 'v2');
+
+        $mockClient->delCount = 0;
+
+        $driver->deleteMultiple(['key1', 'key2']);
+
+        expect($mockClient->delCount)->toBe(1);
+    });
+
+    it('validates every key in the multi-key operations', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        expect(fn () => $driver->getMultiple(['valid', 'invalid/key']))
+            ->toThrow(InvalidKeyException::class)
+            ->and(fn () => $driver->setMultiple(['valid' => 'v', 'invalid/key' => 'v']))
+            ->toThrow(InvalidKeyException::class)
+            ->and(fn () => $driver->deleteMultiple(['valid', 'invalid/key']))
+            ->toThrow(InvalidKeyException::class);
     });
 });

@@ -227,12 +227,46 @@ abstract class Repository implements RepositoryInterface
     /**
      * Find a single entity matching the given criteria.
      *
+     * Issues a LIMIT 1 query so the database returns at most one row.
+     * The returned entity is fully hydrated and eager-loaded, identical to findBy()->first()
+     * but without fetching all matching rows first.
+     *
      * @return TEntity|null
      */
     public function findOneBy(
         array $criteria,
     ): ?Entity {
-        return $this->findBy($criteria)->first();
+        $propertyToColumn = $this->metadata->getPropertyToColumnMap();
+        $conditions = [];
+        $bindings = [];
+
+        foreach ($criteria as $property => $value) {
+            $column = $propertyToColumn[$property] ?? $property;
+            $conditions[] = "$column = ?";
+            $bindings[] = $value;
+        }
+
+        $sql = sprintf(
+            'SELECT * FROM %s WHERE %s LIMIT 1',
+            $this->metadata->tableName,
+            implode(' AND ', $conditions),
+        );
+
+        $rows = $this->connection->query($sql, $bindings);
+
+        if (count($rows) === 0) {
+            return null;
+        }
+
+        $entity = $this->hydrator->hydrate(
+            static::ENTITY_CLASS,
+            $rows[0],
+            $this->metadata,
+        );
+
+        $this->eagerLoadRelationships([$entity]);
+
+        return $entity;
     }
 
     /**
@@ -537,26 +571,63 @@ abstract class Repository implements RepositoryInterface
 
     /**
      * Check if an entity with the given ID exists.
+     *
+     * Issues a `SELECT 1 FROM <table> WHERE <pk> = ? LIMIT 1` probe —
+     * no hydration, no eager-loading.
      */
     public function exists(
         int|string $id,
     ): bool {
-        return $this->find(id: $id) !== null;
+        $columnName = $this->metadata->getPrimaryKeyProperty()->columnName;
+
+        $sql = sprintf(
+            'SELECT 1 FROM %s WHERE %s = ? LIMIT 1',
+            $this->metadata->tableName,
+            $columnName,
+        );
+
+        $rows = $this->connection->query($sql, [$id]);
+
+        return count($rows) > 0;
     }
 
     /**
      * Check if any entity matches the given criteria.
+     *
+     * Issues a `SELECT 1 FROM <table> WHERE ... LIMIT 1` probe —
+     * no hydration, no eager-loading.
      *
      * @param array<string, mixed> $criteria Column-value pairs to match
      */
     public function existsBy(
         array $criteria,
     ): bool {
-        return $this->findOneBy(criteria: $criteria) !== null;
+        $propertyToColumn = $this->metadata->getPropertyToColumnMap();
+        $conditions = [];
+        $bindings = [];
+
+        foreach ($criteria as $property => $value) {
+            $column = $propertyToColumn[$property] ?? $property;
+            $conditions[] = "$column = ?";
+            $bindings[] = $value;
+        }
+
+        $sql = sprintf(
+            'SELECT 1 FROM %s WHERE %s LIMIT 1',
+            $this->metadata->tableName,
+            implode(' AND ', $conditions),
+        );
+
+        $rows = $this->connection->query($sql, $bindings);
+
+        return count($rows) > 0;
     }
 
     /**
      * Check if a column value is unique, optionally excluding an entity by ID.
+     *
+     * Issues a `SELECT 1 FROM <table> WHERE <column> = ? [AND <pk> != ?] LIMIT 1`
+     * probe — no hydration, no eager-loading.
      */
     protected function isColumnUnique(
         string $column,
@@ -564,7 +635,7 @@ abstract class Repository implements RepositoryInterface
         int|string|null $excludeId = null,
     ): bool {
         $sql = sprintf(
-            'SELECT * FROM %s WHERE %s = ?',
+            'SELECT 1 FROM %s WHERE %s = ?',
             $this->metadata->tableName,
             $column,
         );
@@ -575,6 +646,8 @@ abstract class Repository implements RepositoryInterface
             $sql .= " AND $pkColumn != ?";
             $bindings[] = $excludeId;
         }
+
+        $sql .= ' LIMIT 1';
 
         $rows = $this->connection->query($sql, $bindings);
 

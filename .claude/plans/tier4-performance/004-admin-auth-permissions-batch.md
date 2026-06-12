@@ -1,6 +1,6 @@
 # Task 004: F3 — Batch permission loading for all roles in one query
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -24,14 +24,14 @@
   - Query-count assertions: `createRoleMockConnectionWithHistory` records each `query()` call; assert exactly one permissions query for N roles, that its SQL contains `IN (` with N placeholders, and that the resulting permission-key set is identical to the per-role loop.
 
 ## Requirements (Test Descriptions)
-- [ ] `it loads the same permission set as the per-role implementation`
-- [ ] `it deduplicates permission keys shared across roles`
-- [ ] `it issues exactly one permissions query for a user with multiple roles`
-- [ ] `it issues no permissions query when the user has no roles`
-- [ ] `it returns an empty array from getPermissionsForRoles without querying when given no role ids`
-- [ ] `it queries permissions with a WHERE role_id IN clause whose placeholder count matches the role ids`
-- [ ] `it sets roles and unique permission keys on the authenticated user`
-- [ ] `it defines getPermissionsForRoles on RoleRepositoryInterface`
+- [x] `it loads the same permission set as the per-role implementation`
+- [x] `it deduplicates permission keys shared across roles`
+- [x] `it issues exactly one permissions query for a user with multiple roles`
+- [x] `it issues no permissions query when the user has no roles`
+- [x] `it returns an empty array from getPermissionsForRoles without querying when given no role ids`
+- [x] `it queries permissions with a WHERE role_id IN clause whose placeholder count matches the role ids`
+- [x] `it sets roles and unique permission keys on the authenticated user`
+- [x] `it defines getPermissionsForRoles on RoleRepositoryInterface`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -39,4 +39,11 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `getPermissionsForRoles(array $roleIds): array` to `RoleRepositoryInterface` with `@throws EntityException` and `@param array<int> $roleIds`
+- Implemented in `RoleRepository` with `SELECT DISTINCT p.* FROM permissions p INNER JOIN role_permissions rp ON p.id = rp.permission_id WHERE rp.role_id IN (?, ...)` — placeholders built from count of role ids
+- Empty `$roleIds` short-circuits to `[]` with no query issued (SQL syntax error protection)
+- Rewired `AdminUserProvider::loadRolesAndPermissions` to collect non-null role ids and call `getPermissionsForRoles` once; `array_unique` on permission keys preserved
+- Added `@throws EntityException` to `loadRolesAndPermissions`, `retrieveById`, `retrieveByCredentials`, `retrieveByRememberToken`
+- Added `getPermissionsForRoles` to `createMockRoleRepo` anonymous readonly class in `AdminUserProviderTest` — returns deduplicated union across the requested ids
+- Added `TrackingRoleRepo` named class in `AdminUserProviderTest` with `getPermissionsForRole` throwing (to assert it is never called) and `batchCallCount`/`batchRoleIdsReceived` tracking
+- Updated `$expectedMethods` list in `RoleRepositoryInterfaceTest` to include `getPermissionsForRoles`; test title left unchanged (it does not enumerate all method names)

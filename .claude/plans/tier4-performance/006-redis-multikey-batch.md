@@ -1,6 +1,6 @@
 # Task 006: F4 — Batch Redis multi-key ops (MGET / pipeline / variadic DEL)
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -32,20 +32,20 @@ If you bypass the signer: (1) the EXISTING tests `sets multiple keys` and `gets 
   - Independent of any Tier 1 `CacheInterface::increment`; do not touch it.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns values for all requested keys via getMultiple`
-- [ ] `it returns the default for missing keys in getMultiple`
-- [ ] `it preserves input key order in the getMultiple result`
-- [ ] `it issues a single MGET for getMultiple instead of one get per key`
-- [ ] `it verifies the HMAC envelope on each value read by getMultiple`
-- [ ] `it stores all pairs via setMultiple with the given TTL`
-- [ ] `it applies the default TTL in setMultiple when none is given`
-- [ ] `it stores persistent pairs without a TTL when setMultiple TTL is zero`
-- [ ] `it issues the setMultiple writes in a single pipeline`
-- [ ] `it stores each setMultiple value as a signed HMAC envelope`
-- [ ] `it round-trips values written by setMultiple back through getMultiple`
-- [ ] `it deletes all given keys via deleteMultiple`
-- [ ] `it issues a single variadic DEL for deleteMultiple`
-- [ ] `it validates every key in the multi-key operations`
+- [x] `it returns values for all requested keys via getMultiple`
+- [x] `it returns the default for missing keys in getMultiple`
+- [x] `it preserves input key order in the getMultiple result`
+- [x] `it issues a single MGET for getMultiple instead of one get per key`
+- [x] `it verifies the HMAC envelope on each value read by getMultiple`
+- [x] `it stores all pairs via setMultiple with the given TTL`
+- [x] `it applies the default TTL in setMultiple when none is given`
+- [x] `it stores persistent pairs without a TTL when setMultiple TTL is zero`
+- [x] `it issues the setMultiple writes in a single pipeline`
+- [x] `it stores each setMultiple value as a signed HMAC envelope`
+- [x] `it round-trips values written by setMultiple back through getMultiple`
+- [x] `it deletes all given keys via deleteMultiple`
+- [x] `it issues a single variadic DEL for deleteMultiple`
+- [x] `it validates every key in the multi-key operations`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -53,4 +53,9 @@ If you bypass the signer: (1) the EXISTING tests `sets multiple keys` and `gets 
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `getMultiple`: validates all keys first, then calls `mget(...$prefixedKeys)` for a single round-trip; maps results back by input-key index, applying `verifyAndUnwrap` + `unserialize` on hits and `$default` for nulls.
+- `setMultiple`: validates all keys first, resolves TTL (null → default), then calls `pipeline(callable)` once; the callback queues `setex` (TTL>0) or `set` (TTL 0) per pair with `wrap(serialize($value))` envelopes.
+- `deleteMultiple`: validates all keys first, then calls `del(...$prefixedKeys)` as a single variadic call.
+- `MockRedisClient` extended with `mget`, `pipeline` (via `MockPipelineRecorder`), and invocation counters (`mgetCount`, `pipelineCount`, `delCount`). `del` counter also added.
+- `MockPipelineRecorder` added as a named class at file top — applies `setex`/`set` commands directly to the mock client's `storage`/`ttls`, keeping the HMAC round-trip intact.
+- All HMAC signing paths preserved: `setMultiple` wraps via signer, `getMultiple` verifies via signer. TamperedCacheValueException propagates correctly.

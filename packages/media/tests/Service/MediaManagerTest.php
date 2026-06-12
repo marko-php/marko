@@ -274,6 +274,19 @@ function makeRepository(): MediaRepositoryInterface
         ): ?Media {
             return $this->saved[$id] ?? null;
         }
+
+        /**
+         * @param array<int> $ids
+         * @return array<Media>
+         */
+        public function findMany(
+            array $ids,
+        ): array {
+            return array_values(array_filter(
+                array_map(fn (int $id) => $this->saved[$id] ?? null, $ids),
+                fn ($m) => $m !== null,
+            ));
+        }
     };
 }
 

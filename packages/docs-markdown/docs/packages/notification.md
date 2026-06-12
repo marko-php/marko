@@ -236,6 +236,48 @@ interface ChannelInterface
 }
 ```
 
+### BatchChannelInterface
+
+Channels may opt into batch delivery by implementing `BatchChannelInterface` in addition to `ChannelInterface`. When `NotificationSender` fans out a notification to more than one recipient on the same channel and that channel implements `BatchChannelInterface`, it calls `sendMany()` instead of per-recipient `send()` calls. For non-batch channels the fallback per-recipient path is always used.
+
+```php
+use Marko\Notification\Contracts\BatchChannelInterface;
+use Marko\Notification\Contracts\ChannelInterface;
+use Marko\Notification\Contracts\NotifiableInterface;
+use Marko\Notification\Contracts\NotificationInterface;
+
+class SmsChannel implements ChannelInterface, BatchChannelInterface
+{
+    public function send(
+        NotifiableInterface $notifiable,
+        NotificationInterface $notification,
+    ): void {
+        // single-recipient delivery
+    }
+
+    public function sendMany(
+        array $notifiables,
+        NotificationInterface $notification,
+    ): void {
+        // bulk delivery in one operation
+    }
+}
+```
+
+The built-in `DatabaseChannel` implements `BatchChannelInterface` and persists multiple recipients via a single chunked multi-row INSERT.
+
+```php
+use Marko\Notification\Contracts\BatchChannelInterface;
+use Marko\Notification\Contracts\NotifiableInterface;
+use Marko\Notification\Contracts\NotificationInterface;
+
+interface BatchChannelInterface
+{
+    /** @param array<NotifiableInterface> $notifiables */
+    public function sendMany(array $notifiables, NotificationInterface $notification): void;
+}
+```
+
 ### Exceptions
 
 | Exception | Description |

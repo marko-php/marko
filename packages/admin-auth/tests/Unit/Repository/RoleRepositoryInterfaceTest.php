@@ -9,7 +9,7 @@ use Marko\AdminAuth\Repository\RoleRepositoryInterface;
 use Marko\Database\Repository\RepositoryInterface;
 use ReflectionClass;
 
-it('creates RoleRepositoryInterface with find, findBySlug, all, save, delete methods', function (): void {
+it('defines RoleRepositoryInterface extending RepositoryInterface with role methods', function (): void {
     $reflection = new ReflectionClass(RoleRepositoryInterface::class);
 
     expect($reflection->isInterface())->toBeTrue()
@@ -19,6 +19,7 @@ it('creates RoleRepositoryInterface with find, findBySlug, all, save, delete met
     $expectedMethods = [
         'findBySlug',
         'getPermissionsForRole',
+        'getPermissionsForRoles',
         'syncPermissions',
         'isSlugUnique',
     ];
@@ -97,4 +98,19 @@ it('isSlugUnique method signature requires slug and optional excludeId', functio
 
     $returnType = $method->getReturnType();
     expect($returnType->getName())->toBe('bool');
+});
+
+it('defines getPermissionsForRoles on RoleRepositoryInterface', function (): void {
+    $reflection = new ReflectionClass(RoleRepositoryInterface::class);
+
+    expect($reflection->hasMethod('getPermissionsForRoles'))->toBeTrue();
+
+    $method = $reflection->getMethod('getPermissionsForRoles');
+    $parameters = $method->getParameters();
+
+    expect($method->isPublic())->toBeTrue()
+        ->and($parameters)->toHaveCount(1)
+        ->and($parameters[0]->getName())->toBe('roleIds')
+        ->and($parameters[0]->getType()->getName())->toBe('array')
+        ->and($method->getReturnType()->getName())->toBe('array');
 });
