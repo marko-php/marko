@@ -5,12 +5,25 @@ declare(strict_types=1);
 namespace Marko\Database\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Database\Query\IdentifierValidator;
 
 /**
  * Exception thrown when a column expression fails validation.
  */
 class InvalidColumnException extends MarkoException
 {
+    public static function invalidOperator(
+        string $operator,
+    ): self {
+        $allowed = implode(', ', IdentifierValidator::OPERATORS);
+
+        return new self(
+            message: "Invalid operator '$operator': operator is not in the allowlist",
+            context: "Validating SQL comparison operator '$operator'",
+            suggestion: "Use one of the allowed operators: $allowed",
+        );
+    }
+
     public static function invalidAlias(
         string $alias,
     ): self {

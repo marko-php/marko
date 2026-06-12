@@ -1,6 +1,6 @@
 # Task 002: F1 — Harden MySqlQueryBuilder against identifier + operator injection
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [001]
 **Retry count**: 0
 
@@ -23,21 +23,21 @@ Route every non-raw identifier in `MySqlQueryBuilder` through `IdentifierValidat
   - `where()`/`orWhere()` validation must reject the column, NOT just rely on `quoteIdentifier()` escaping — escaping a backtick prevents breakout but a column like `a` + comment still needs the identifier assertion. Validate at the storage method.
 
 ## Requirements (Test Descriptions)
-- [ ] `it escapes an embedded backtick in a column name when quoting an identifier`
-- [ ] `it rejects a where column containing a backtick or SQL comment`
-- [ ] `it rejects a where operator not in the allowlist`
-- [ ] `it rejects an orWhere operator not in the allowlist`
-- [ ] `it rejects a whereIn column that is not a valid identifier`
-- [ ] `it rejects a whereNull column that is not a valid identifier`
-- [ ] `it rejects an orderBy column that is not a valid identifier`
-- [ ] `it rejects a join operator not in the allowlist`
-- [ ] `it rejects a join table or column that is not a valid identifier`
-- [ ] `it rejects a table name that is not a valid identifier`
-- [ ] `it rejects an insert column key that is not a valid identifier`
-- [ ] `it rejects an update column key that is not a valid identifier`
-- [ ] `it still compiles a JSON-path where column (data->name) without rejecting it as an invalid identifier`
-- [ ] `it still allows count() with no column (COUNT(*))`
-- [ ] `it still builds a valid SELECT with a qualified identifier and an allowlisted operator`
+- [x] `it escapes an embedded backtick in a column name when quoting an identifier`
+- [x] `it rejects a where column containing a backtick or SQL comment`
+- [x] `it rejects a where operator not in the allowlist`
+- [x] `it rejects an orWhere operator not in the allowlist`
+- [x] `it rejects a whereIn column that is not a valid identifier`
+- [x] `it rejects a whereNull column that is not a valid identifier`
+- [x] `it rejects an orderBy column that is not a valid identifier`
+- [x] `it rejects a join operator not in the allowlist`
+- [x] `it rejects a join table or column that is not a valid identifier`
+- [x] `it rejects a table name that is not a valid identifier`
+- [x] `it rejects an insert column key that is not a valid identifier`
+- [x] `it rejects an update column key that is not a valid identifier`
+- [x] `it still compiles a JSON-path where column (data->name) without rejecting it as an invalid identifier`
+- [x] `it still allows count() with no column (COUNT(*))`
+- [x] `it still builds a valid SELECT with a qualified identifier and an allowlisted operator`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -45,4 +45,17 @@ Route every non-raw identifier in `MySqlQueryBuilder` through `IdentifierValidat
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+All 15 requirements implemented via strict TDD (Red-Green-Refactor):
+
+1. `quoteIdentifier()` — escaped backtick delimiter per-part using `IdentifierValidator::escapeDelimiter($part, '`')` after splitting on `.`.
+2. `where()` / `orWhere()` — added `assertValidIdentifier()` on the non-JSON-path branch (gated by `JsonPathParser::isJsonPath($column)`) and `assertValidOperator()` for the operator. JSON-path columns (e.g. `data->name`) bypass identifier validation so existing JSON query builder tests continue to pass.
+3. `whereIn()`, `whereNull()`, `whereNotNull()` — added `assertValidIdentifier()` at storage time.
+4. `orderBy()` — added `assertValidIdentifier()` on the non-JSON-path branch (same carve-out as `where()`).
+5. `join()`, `leftJoin()`, `rightJoin()` — validated table, first column, operator, and second column at storage time.
+6. `table()` — validated at the setter so the error surfaces at the call site rather than deep in SQL build.
+7. `insert()` — validate all array keys before quoting.
+8. `update()` — validate each column key in the loop before quoting.
+9. `count(?string $column)` — no change needed; `null` path already emits `COUNT(*)` without touching `assertValidIdentifier()`.
+
+Test file: `packages/database-mysql/tests/Query/MySqlQueryBuilderSecurityTest.php` — introduces `SecurityMockConnection` (separate class name to avoid redeclaration conflict with `MySqlMockConnection` in `MySqlJsonQueryBuilderTest.php` when running in parallel).

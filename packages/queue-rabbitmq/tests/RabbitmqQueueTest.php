@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
+use Marko\Encryption\Config\EncryptionConfig;
+use Marko\Queue\Exceptions\SerializationException;
+use Marko\Queue\JobEnvelope;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Rabbitmq\Exchange\ExchangeConfig;
 use Marko\Queue\Rabbitmq\Exchange\ExchangeType;
 use Marko\Queue\Rabbitmq\RabbitmqConnection;
 use Marko\Queue\Rabbitmq\RabbitmqQueue;
 use Marko\Queue\Rabbitmq\Tests\Fixtures\TestJob;
+use Marko\Testing\Fake\FakeConfigRepository;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -167,6 +171,12 @@ function createMockChannel(
     return new MockQueueChannel($basicGetReturn, $queueMessageCount, $queuePurgeCount, $passiveDeclareThrows);
 }
 
+function createRabbitmqTestEnvelope(
+    string $key = 'test-hmac-key-for-queue-rabbitmq',
+): JobEnvelope {
+    return new JobEnvelope(new EncryptionConfig(new FakeConfigRepository(['encryption.key' => $key])));
+}
+
 function createTestableRabbitmqConnection(
     MockQueueChannel $mockChannel,
 ): RabbitmqConnection {
@@ -213,7 +223,7 @@ test('it implements QueueInterface', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
 
     expect($queue)->toBeInstanceOf(QueueInterface::class);
 });
@@ -226,7 +236,7 @@ test('it pushes job to RabbitMQ queue and returns job ID', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('push test');
 
     $id = $queue->push($job);
@@ -246,7 +256,7 @@ test('it sets job ID on pushed job', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('id test');
 
     $id = $queue->push($job);
@@ -262,7 +272,7 @@ test('it publishes serialized job payload as message body', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('payload test');
 
     $queue->push($job);
@@ -278,8 +288,9 @@ test('it publishes serialized job payload as message body', function (): void {
     $msg = $publishCalls[0]['msg'];
     $body = $msg->getBody();
 
-    // The body should be the serialized job (which can be unserialized back)
-    $unserialized = unserialize($body);
+    // The body is an HMAC-signed envelope; verify and unwrap before unserializing
+    $envelope = createRabbitmqTestEnvelope();
+    $unserialized = unserialize($envelope->verifyAndUnwrap($body));
     expect($unserialized)->toBeInstanceOf(TestJob::class)
         ->and($unserialized->message)->toBe('payload test');
 });
@@ -292,7 +303,7 @@ test('it stores job ID in message header', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('header test');
 
     $id = $queue->push($job);
@@ -311,12 +322,13 @@ test('it stores job ID in message header', function (): void {
 });
 
 test('it pops next available job from queue', function (): void {
+    $envelope = createRabbitmqTestEnvelope();
     $job = new TestJob('pop test');
     $job->setId('test-job-id');
-    $serialized = $job->serialize();
+    $wrappedPayload = $envelope->wrap($job->serialize());
 
     $amqpMessage = new AMQPMessage(
-        $serialized,
+        $wrappedPayload,
         ['application_headers' => new AMQPTable(['job_id' => 'test-job-id'])],
     );
     $amqpMessage->setDeliveryTag(42);
@@ -328,7 +340,7 @@ test('it pops next available job from queue', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
 
     /** @var TestJob $popped */
     $popped = $queue->pop();
@@ -339,12 +351,13 @@ test('it pops next available job from queue', function (): void {
 });
 
 test('it tracks delivery tag for popped job', function (): void {
+    $envelope = createRabbitmqTestEnvelope();
     $job = new TestJob('track test');
     $job->setId('tracked-job-id');
-    $serialized = $job->serialize();
+    $wrappedPayload = $envelope->wrap($job->serialize());
 
     $amqpMessage = new AMQPMessage(
-        $serialized,
+        $wrappedPayload,
         ['application_headers' => new AMQPTable(['job_id' => 'tracked-job-id'])],
     );
     $amqpMessage->setDeliveryTag(99);
@@ -356,7 +369,7 @@ test('it tracks delivery tag for popped job', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
     $queue->pop();
 
     // Verify the delivery tag was tracked by deleting the job (which sends ack)
@@ -380,19 +393,20 @@ test('it returns null when queue is empty on pop', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $result = $queue->pop();
 
     expect($result)->toBeNull();
 });
 
 test('it deletes job by acknowledging delivery tag', function (): void {
+    $envelope = createRabbitmqTestEnvelope();
     $job = new TestJob('delete test');
     $job->setId('delete-job-id');
-    $serialized = $job->serialize();
+    $wrappedPayload = $envelope->wrap($job->serialize());
 
     $amqpMessage = new AMQPMessage(
-        $serialized,
+        $wrappedPayload,
         ['application_headers' => new AMQPTable(['job_id' => 'delete-job-id'])],
     );
     $amqpMessage->setDeliveryTag(77);
@@ -404,7 +418,7 @@ test('it deletes job by acknowledging delivery tag', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
     $queue->pop();
 
     $deleted = $queue->delete('delete-job-id');
@@ -428,7 +442,7 @@ test('it returns false when deleting unknown job ID', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $result = $queue->delete('nonexistent-job-id');
 
     expect($result)->toBeFalse();
@@ -449,7 +463,7 @@ test('it declares exchange and queue on first operation', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
 
     // No declarations before any operation
     expect($channel->calls)->toBeEmpty();
@@ -500,7 +514,7 @@ test('it uses configured exchange type for declaration', function (): void {
         autoDelete: true,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $queue->push(new TestJob('fanout test'));
 
     $exchangeDeclareCalls = array_values(array_filter(
@@ -523,7 +537,7 @@ test('it queues delayed job with TTL expiration header', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('delayed test');
 
     $queue->later(30, $job);
@@ -542,8 +556,9 @@ test('it queues delayed job with TTL expiration header', function (): void {
     expect($msg->get('expiration'))->toBe('30000')
         ->and($msg->get('delivery_mode'))->toBe(AMQPMessage::DELIVERY_MODE_PERSISTENT);
 
-    // Verify the body is the serialized job
-    $unserialized = unserialize($msg->getBody());
+    // Verify the body is the HMAC-signed envelope wrapping the serialized job
+    $envelope = createRabbitmqTestEnvelope();
+    $unserialized = unserialize($envelope->verifyAndUnwrap($msg->getBody()));
     expect($unserialized)->toBeInstanceOf(TestJob::class)
         ->and($unserialized->message)->toBe('delayed test');
 });
@@ -556,7 +571,7 @@ test('it declares delay queue with dead letter exchange configuration', function
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('dlx test');
 
     $queue->later(60, $job);
@@ -598,7 +613,7 @@ test('it returns job ID for delayed job', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('id delayed test');
 
     $id = $queue->later(10, $job);
@@ -621,12 +636,13 @@ test('it returns job ID for delayed job', function (): void {
 });
 
 test('it releases job back to queue immediately when no delay', function (): void {
+    $envelope = createRabbitmqTestEnvelope();
     $job = new TestJob('release test');
     $job->setId('release-job-id');
-    $serialized = $job->serialize();
+    $wrappedPayload = $envelope->wrap($job->serialize());
 
     $amqpMessage = new AMQPMessage(
-        $serialized,
+        $wrappedPayload,
         ['application_headers' => new AMQPTable(['job_id' => 'release-job-id'])],
     );
     $amqpMessage->setDeliveryTag(55);
@@ -638,7 +654,7 @@ test('it releases job back to queue immediately when no delay', function (): voi
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
     $queue->pop();
 
     $result = $queue->release('release-job-id');
@@ -656,12 +672,13 @@ test('it releases job back to queue immediately when no delay', function (): voi
 });
 
 test('it releases job with delay via delay queue mechanism', function (): void {
+    $envelope = createRabbitmqTestEnvelope();
     $job = new TestJob('delay release test');
     $job->setId('delay-release-id');
-    $serialized = $job->serialize();
+    $wrappedPayload = $envelope->wrap($job->serialize());
 
     $amqpMessage = new AMQPMessage(
-        $serialized,
+        $wrappedPayload,
         ['application_headers' => new AMQPTable(['job_id' => 'delay-release-id'])],
     );
     $amqpMessage->setDeliveryTag(66);
@@ -673,7 +690,7 @@ test('it releases job with delay via delay queue mechanism', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
     $queue->pop();
 
     $result = $queue->release('delay-release-id', 45);
@@ -731,7 +748,7 @@ test('it returns false when releasing unknown job ID', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $result = $queue->release('nonexistent-job-id');
 
     expect($result)->toBeFalse();
@@ -752,7 +769,7 @@ test('it returns queue size via passive declare', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $size = $queue->size();
 
     expect($size)->toBe(7);
@@ -774,7 +791,7 @@ test('it returns zero size for empty or non-existent queue', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $size = $queue->size('nonexistent-queue');
 
     expect($size)->toBe(0);
@@ -788,7 +805,7 @@ test('it clears all messages from queue via purge', function (): void {
         type: ExchangeType::Direct,
     );
 
-    $queue = new RabbitmqQueue($connection, $exchangeConfig);
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $count = $queue->clear();
 
     expect($count)->toBe(15);
@@ -800,4 +817,56 @@ test('it clears all messages from queue via purge', function (): void {
 
     expect($purgeCalls)->toHaveCount(1)
         ->and($purgeCalls[0]['queue'])->toBe('default');
+});
+
+test('it verifies the envelope before unserializing in RabbitmqQueue (pop/consume)', function (): void {
+    $envelope = createRabbitmqTestEnvelope();
+    $job = new TestJob('verify envelope test');
+    $job->setId('verify-job-id');
+    $wrappedPayload = $envelope->wrap($job->serialize());
+
+    $amqpMessage = new AMQPMessage(
+        $wrappedPayload,
+        ['application_headers' => new AMQPTable(['job_id' => 'verify-job-id'])],
+    );
+    $amqpMessage->setDeliveryTag(1);
+
+    $channel = createMockChannel(basicGetReturn: $amqpMessage);
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
+
+    /** @var TestJob $popped */
+    $popped = $queue->pop();
+
+    expect($popped)->toBeInstanceOf(TestJob::class)
+        ->and($popped->message)->toBe('verify envelope test');
+});
+
+test('it rejects a tampered RabbitmqQueue payload before unserializing', function (): void {
+    $envelope = createRabbitmqTestEnvelope();
+
+    $fakeHmac = str_repeat('b', 64);
+    $tamperedPayload = $fakeHmac . '.O:8:"EvilJob":0:{}';
+
+    $amqpMessage = new AMQPMessage(
+        $tamperedPayload,
+        ['application_headers' => new AMQPTable(['job_id' => 'tampered-id'])],
+    );
+    $amqpMessage->setDeliveryTag(1);
+
+    $channel = createMockChannel(basicGetReturn: $amqpMessage);
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
+
+    expect(fn () => $queue->pop())->toThrow(SerializationException::class);
 });

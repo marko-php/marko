@@ -669,6 +669,68 @@ it('runs global middleware before route middleware', function (): void {
     expect($order)->toBe(['global', 'route']);
 });
 
+it('makes the matched controller and action visible to middleware during Router::handle()', function (): void {
+    $capturedController = null;
+    $capturedAction = null;
+
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'GET',
+        path: '/hello',
+        controller: 'App\\Controllers\\HelloController',
+        action: 'greet',
+        middleware: ['App\\Middleware\\InspectMiddleware'],
+    ));
+
+    $controller = new class ()
+    {
+        public function greet(): Response
+        {
+            return new Response('Hello');
+        }
+    };
+
+    $middleware = new class ($capturedController, $capturedAction) implements MiddlewareInterface
+    {
+        public function __construct(
+            private ?string &$capturedController,
+            private ?string &$capturedAction,
+        ) {}
+
+        public function handle(
+            Request $request,
+            callable $next,
+        ): Response {
+            $this->capturedController = $request->controller();
+            $this->capturedAction = $request->action();
+
+            return $next($request);
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturnCallback(fn (string $class) => match ($class) {
+            'App\\Controllers\\HelloController' => $controller,
+            'App\\Middleware\\InspectMiddleware' => $middleware,
+        });
+
+    $router = new Router(
+        matcher: new RouteMatcher($routes),
+        container: $container,
+    );
+
+    $request = new Request(server: [
+        'REQUEST_METHOD' => 'GET',
+        'REQUEST_URI' => '/hello',
+    ]);
+
+    $router->handle($request);
+
+    expect($capturedController)->toBe('App\\Controllers\\HelloController')
+        ->and($capturedAction)->toBe('greet');
+});
+
 class TestController
 {
     public function index(): Response

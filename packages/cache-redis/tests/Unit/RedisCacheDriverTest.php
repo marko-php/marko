@@ -7,7 +7,10 @@ use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
+use Marko\Cache\Redis\Exceptions\TamperedCacheValueException;
 use Marko\Cache\Redis\RedisConnection;
+use Marko\Cache\Redis\Signer\CacheValueSigner;
+use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Predis\Client;
 use Predis\ClientInterface;
@@ -110,6 +113,29 @@ class MockRedisClient extends Client
 
         return $this->ttls[$key] ?? -1;
     }
+
+    public function incr(
+        $key,
+    ): int {
+        $current = (int) ($this->storage[$key] ?? 0);
+        $new = $current + 1;
+        $this->storage[$key] = (string) $new;
+
+        return $new;
+    }
+
+    public function expire(
+        $key,
+        $seconds,
+    ): int {
+        if (!isset($this->storage[$key])) {
+            return 0;
+        }
+
+        $this->ttls[$key] = $seconds;
+
+        return 1;
+    }
 }
 
 function createMockClient(): MockRedisClient
@@ -127,9 +153,18 @@ function createCacheConfig(
     ]));
 }
 
+function createSigner(
+    string $key = 'test-signing-key',
+): CacheValueSigner {
+    return new CacheValueSigner(new EncryptionConfig(new FakeConfigRepository([
+        'encryption.key' => $key,
+    ])));
+}
+
 function createDriver(
     ?MockRedisClient $mockClient = null,
     int $defaultTtl = 3600,
+    string $signingKey = 'test-signing-key',
 ): RedisCacheDriver {
     $mockClient ??= createMockClient();
     $connection = new class ($mockClient) extends RedisConnection
@@ -147,7 +182,7 @@ function createDriver(
     };
     $config = createCacheConfig($defaultTtl);
 
-    return new RedisCacheDriver($connection, $config);
+    return new RedisCacheDriver($connection, $config, createSigner($signingKey));
 }
 
 describe('RedisCacheDriver', function (): void {
@@ -360,5 +395,116 @@ describe('RedisCacheDriver', function (): void {
 
     it('returns true when deleting multiple', function (): void {
         expect($this->driver->deleteMultiple(['key1', 'key2']))->toBeTrue();
+    });
+
+    it('returns 1 when incrementing a key that does not yet exist (redis driver)', function (): void {
+        expect($this->driver->increment('counter', 60))->toBe(1);
+    });
+
+    it('returns the incremented value on a subsequent increment (redis driver)', function (): void {
+        $this->driver->increment('counter', 60);
+
+        expect($this->driver->increment('counter', 60))->toBe(2);
+    });
+
+    it('sets an expiry on the key when incrementing (redis driver)', function (): void {
+        $this->driver->increment('counter', 60);
+
+        expect($this->mockClient->ttls['marko:cache:counter'])->toBe(60);
+    });
+
+    it('does not reset the ttl on a subsequent increment (redis driver)', function (): void {
+        $this->driver->increment('counter', 60);
+
+        // Simulate TTL not being reset by verifying expire() is only called when value is 1
+        // Set ttl to a different value to detect if it was changed
+        $this->mockClient->ttls['marko:cache:counter'] = 999;
+
+        $this->driver->increment('counter', 60);
+
+        expect($this->mockClient->ttls['marko:cache:counter'])->toBe(999);
+    });
+
+    it('stores an HMAC-signed envelope when setting a redis cache value', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->set('key', 'value');
+
+        $stored = $mockClient->storage['marko:cache:key'];
+
+        expect(strlen($stored))->toBeGreaterThan(65)
+            ->and(substr($stored, 64, 1))->toBe('.');
+    });
+
+    it('returns the original value when the stored envelope HMAC verifies', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->set('key', 'hello world');
+
+        expect($driver->get('key'))->toBe('hello world');
+    });
+
+    it('rejects a redis value whose HMAC does not verify before unserializing it', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $serialized = serialize('legitimate value');
+        $fakeHmac = str_repeat('a', 64);
+        $mockClient->storage['marko:cache:key'] = $fakeHmac . '.' . $serialized;
+
+        expect(fn () => $driver->get('key'))
+            ->toThrow(TamperedCacheValueException::class);
+    });
+
+    it('does not unserialize a redis value that has been tampered with', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->set('key', 'original value');
+
+        $stored = $mockClient->storage['marko:cache:key'];
+        $hmac = substr($stored, 0, 64);
+        $mockClient->storage['marko:cache:key'] = $hmac . '.' . serialize('tampered value');
+
+        expect(fn () => $driver->get('key'))
+            ->toThrow(TamperedCacheValueException::class);
+    });
+
+    it('throws loudly when the signing key is empty', function (): void {
+        $driver = createDriver(signingKey: '');
+
+        expect(fn () => $driver->set('key', 'value'))
+            ->toThrow(TamperedCacheValueException::class);
+    });
+
+    it('rejects a stored value that has no envelope framing (legacy/unsigned data)', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $mockClient->storage['marko:cache:key'] = serialize('unsigned value');
+
+        expect(fn () => $driver->get('key'))
+            ->toThrow(TamperedCacheValueException::class);
+    });
+
+    it('does not route increment() integer counters through the HMAC envelope', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $driver->increment('counter', 60);
+
+        expect($mockClient->storage['marko:cache:counter'])->toBe('1');
+    });
+
+    it('round-trips a legitimate value through set and get', function (): void {
+        $mockClient = createMockClient();
+        $driver = createDriver($mockClient);
+
+        $value = ['nested' => ['array' => true, 'count' => 42]];
+        $driver->set('complex', $value);
+
+        expect($driver->get('complex'))->toBe($value);
     });
 });

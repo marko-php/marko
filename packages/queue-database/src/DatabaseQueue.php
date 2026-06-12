@@ -7,17 +7,24 @@ namespace Marko\Queue\Database;
 use DateTimeImmutable;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\TransactionInterface;
+use Marko\Queue\Exceptions\SerializationException;
+use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
 use Marko\Queue\QueueInterface;
+use Random\RandomException;
 
-class DatabaseQueue implements QueueInterface
+readonly class DatabaseQueue implements QueueInterface
 {
     public function __construct(
         private ConnectionInterface $connection,
+        private JobEnvelope $jobEnvelope,
         private string $table = 'jobs',
         private string $defaultQueue = 'default',
     ) {}
 
+    /**
+     * @throws RandomException|SerializationException
+     */
     public function push(
         JobInterface $job,
         ?string $queue = null,
@@ -25,6 +32,9 @@ class DatabaseQueue implements QueueInterface
         return $this->insertJob($job, $queue, 0);
     }
 
+    /**
+     * @throws RandomException|SerializationException
+     */
     public function later(
         int $delay,
         JobInterface $job,
@@ -33,6 +43,9 @@ class DatabaseQueue implements QueueInterface
         return $this->insertJob($job, $queue, $delay);
     }
 
+    /**
+     * @throws RandomException|SerializationException
+     */
     private function insertJob(
         JobInterface $job,
         ?string $queue,
@@ -49,7 +62,7 @@ class DatabaseQueue implements QueueInterface
             [
                 'id' => $id,
                 'queue' => $queue ?? $this->defaultQueue,
-                'payload' => $job->serialize(),
+                'payload' => $this->jobEnvelope->wrap($job->serialize()),
                 'attempts' => 0,
                 'reserved_at' => null,
                 'available_at' => $availableAt->format('Y-m-d H:i:s'),
@@ -60,6 +73,9 @@ class DatabaseQueue implements QueueInterface
         return $id;
     }
 
+    /**
+     * @throws RandomException
+     */
     private function generateId(): string
     {
         return sprintf(
@@ -75,6 +91,9 @@ class DatabaseQueue implements QueueInterface
         );
     }
 
+    /**
+     * @throws SerializationException
+     */
     public function pop(
         ?string $queue = null,
     ): ?JobInterface {
@@ -88,6 +107,9 @@ class DatabaseQueue implements QueueInterface
         return $this->popJob($queueName);
     }
 
+    /**
+     * @throws SerializationException
+     */
     private function popJob(
         string $queueName,
     ): ?JobInterface {
@@ -117,7 +139,7 @@ class DatabaseQueue implements QueueInterface
         );
 
         /** @var JobInterface $job */
-        $job = unserialize($row['payload']);
+        $job = unserialize($this->jobEnvelope->verifyAndUnwrap($row['payload']));
         $job->setId($row['id']);
 
         // Sync attempts count with database

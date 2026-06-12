@@ -204,9 +204,16 @@ class Request
     public function body(): string;
     public function header(string $name, ?string $default = null): ?string;
     public function headers(): array;
+    public function server(string $key): ?string;
+    public function ip(): ?string;
+    public function withRoute(string $controller, string $action): self;
+    public function controller(): ?string;
+    public function action(): ?string;
     public static function fromGlobals(): self;
 }
 ```
+
+`ip()` returns `REMOTE_ADDR` from the server bag (equivalent to `server('REMOTE_ADDR')`). `withRoute()` returns a new immutable `Request` with the matched controller class and action method attached; `controller()` and `action()` retrieve them. The router attaches route context before invoking middleware, which allows middleware (such as `AdminAuthMiddleware`) to inspect which controller method is handling the request.
 
 ### Response
 

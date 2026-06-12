@@ -37,7 +37,7 @@ Unauthenticated requests are redirected to the admin login page (or receive a 40
 
 ### Requiring Permissions
 
-Use `#[RequiresPermission]` to enforce specific permissions on a route:
+Use `#[RequiresPermission]` to enforce specific permissions on a route. `AdminAuthMiddleware` reads the attribute from the matched controller method via reflection and returns a 403 response (or JSON `{"error":"Forbidden"}` for API requests) when the authenticated user lacks the required permission. Super admin roles bypass this check.
 
 ```php title="ProductController.php"
 use Marko\AdminAuth\Attributes\RequiresPermission;
@@ -193,6 +193,8 @@ class AdminAuthMiddleware implements MiddlewareInterface
     public function handle(Request $request, callable $next): Response;
 }
 ```
+
+Permission enforcement relies on the router attaching route context to the request before middleware runs (see [`marko/routing`](/docs/packages/routing/) --- `Request::withRoute()`). If no route context is present, `#[RequiresPermission]` is not evaluated and the request passes through authenticated.
 
 ### Repository Interfaces
 

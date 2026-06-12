@@ -1,6 +1,6 @@
 # Task 003: F1 — Harden PgSqlQueryBuilder against identifier + operator injection (parity with mysql)
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [001]
 **Retry count**: 0
 
@@ -22,21 +22,21 @@ Apply the exact same hardening as task 002 to `PgSqlQueryBuilder` so the two dri
   - `quoteIdentifier()` splits on `.`; escape the double-quote delimiter PER PART (after splitting) via `escapeDelimiter($part, '"')`, then wrap.
 
 ## Requirements (Test Descriptions)
-- [ ] `it escapes an embedded double-quote in a column name when quoting an identifier`
-- [ ] `it rejects a where column containing a double-quote or SQL comment`
-- [ ] `it rejects a where operator not in the allowlist`
-- [ ] `it rejects an orWhere operator not in the allowlist`
-- [ ] `it rejects a whereIn column that is not a valid identifier`
-- [ ] `it rejects a whereNull column that is not a valid identifier`
-- [ ] `it rejects an orderBy column that is not a valid identifier`
-- [ ] `it rejects a join operator not in the allowlist`
-- [ ] `it rejects a join table or column that is not a valid identifier`
-- [ ] `it rejects a table name that is not a valid identifier`
-- [ ] `it rejects an insert column key that is not a valid identifier`
-- [ ] `it rejects an update column key that is not a valid identifier`
-- [ ] `it still compiles a JSON-path where column (data->name) without rejecting it as an invalid identifier`
-- [ ] `it still allows count() with no column (COUNT(*))`
-- [ ] `it still builds a valid SELECT with a qualified identifier and an allowlisted operator`
+- [x] `it escapes an embedded double-quote in a column name when quoting an identifier`
+- [x] `it rejects a where column containing a double-quote or SQL comment`
+- [x] `it rejects a where operator not in the allowlist`
+- [x] `it rejects an orWhere operator not in the allowlist`
+- [x] `it rejects a whereIn column that is not a valid identifier`
+- [x] `it rejects a whereNull column that is not a valid identifier`
+- [x] `it rejects an orderBy column that is not a valid identifier`
+- [x] `it rejects a join operator not in the allowlist`
+- [x] `it rejects a join table or column that is not a valid identifier`
+- [x] `it rejects a table name that is not a valid identifier`
+- [x] `it rejects an insert column key that is not a valid identifier`
+- [x] `it rejects an update column key that is not a valid identifier`
+- [x] `it still compiles a JSON-path where column (data->name) without rejecting it as an invalid identifier`
+- [x] `it still allows count() with no column (COUNT(*))`
+- [x] `it still builds a valid SELECT with a qualified identifier and an allowlisted operator`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -44,4 +44,14 @@ Apply the exact same hardening as task 002 to `PgSqlQueryBuilder` so the two dri
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `quoteIdentifier()` updated to escape embedded `"` per part using `IdentifierValidator::escapeDelimiter($part, '"')` before wrapping in double-quotes.
+- `table()` validates identifier via `IdentifierValidator::assertValidIdentifier()`.
+- `where()` and `orWhere()` guard with `JsonPathParser::isJsonPath()` before calling `assertValidIdentifier()` (JSON paths bypass the identifier check), then validate operator via `assertValidOperator()`.
+- `whereIn()`, `whereNull()`, `whereNotNull()` validate column via `assertValidIdentifier()`.
+- `orderBy()` guards with `JsonPathParser::isJsonPath()` before calling `assertValidIdentifier()`.
+- `join()`, `leftJoin()`, `rightJoin()` validate table, first, operator, and second identifiers/operator.
+- `insert()` validates each column key before building the query.
+- `update()` validates each column key in the foreach loop.
+- `count()` validates non-null column via `assertValidIdentifier()`.
+- All 15 requirements implemented with tests in `packages/database-pgsql/tests/Query/PgSqlQueryBuilderHardeningTest.php`.
+- 194 total tests pass (179 pre-existing + 15 new), no regressions.

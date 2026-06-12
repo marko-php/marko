@@ -3,7 +3,7 @@ title: marko/cache-redis
 description: Redis cache driver — fast, persistent caching backed by Redis for production workloads.
 ---
 
-Redis cache driver --- fast, persistent caching backed by Redis for production workloads. Stores serialized data in Redis with automatic TTL expiration. Supports key prefixing to isolate cache namespaces, configurable host/port/database, and optional authentication. Uses Predis as the Redis client library.
+Redis cache driver --- fast, persistent caching backed by Redis for production workloads. Stores HMAC-signed, serialized data in Redis with automatic TTL expiration. Values are tamper-evident: reads verify the signature before deserializing, so modified entries are rejected loudly. Supports key prefixing to isolate cache namespaces, configurable host/port/database, and optional authentication. Uses Predis as the Redis client library.
 
 Implements `CacheInterface` from [`marko/cache`](/docs/packages/cache/).
 
@@ -13,7 +13,13 @@ Implements `CacheInterface` from [`marko/cache`](/docs/packages/cache/).
 composer require marko/cache-redis
 ```
 
-This automatically installs `marko/cache` and `predis/predis`.
+This automatically installs `marko/cache`, `predis/predis`, and [`marko/encryption`](/docs/packages/encryption/). A non-empty `encryption.key` is required; reads and writes throw `TamperedCacheValueException` if the key is empty or a stored value's HMAC does not verify.
+
+```php title="config/encryption.php"
+return [
+    'key' => $_ENV['APP_KEY'] ?? '',
+];
+```
 
 ## Configuration
 
@@ -106,6 +112,7 @@ Implements all methods from `CacheInterface`. See [`marko/cache`](/docs/packages
 | `getMultiple(array $keys, mixed $default = null): iterable` | Retrieve multiple values at once |
 | `setMultiple(array $values, ?int $ttl = null): bool` | Store multiple key-value pairs at once |
 | `deleteMultiple(array $keys): bool` | Remove multiple entries at once |
+| `increment(string $key, int $ttl): int` | Atomically increment an integer counter; TTL applied only on first increment |
 
 ### RedisConnection
 
@@ -118,6 +125,7 @@ Implements all methods from `CacheInterface`. See [`marko/cache`](/docs/packages
 
 ### Storage Details
 
-- Values are serialized with PHP's `serialize()` and stored as Redis strings.
+- Values are serialized with PHP's `serialize()`, wrapped in an HMAC-SHA256 envelope, and stored as Redis strings. Reads verify the HMAC before deserializing; tampered or corrupted entries throw `TamperedCacheValueException`.
 - A `null` TTL falls back to `default_ttl` from config. A TTL greater than `0` uses Redis `SETEX` for native expiration. A TTL of `0` or less means the entry never expires.
+- `increment()` uses Redis `INCR` (atomic). The TTL is set only when the key is first created (count reaches `1`); subsequent increments do not reset it.
 - `clear()` removes only keys matching the configured prefix --- other Redis data is not affected.

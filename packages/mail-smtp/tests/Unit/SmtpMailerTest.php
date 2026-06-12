@@ -6,10 +6,12 @@ namespace Marko\Mail\Smtp\Tests\Unit;
 
 use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Exception\MessageException;
+use Marko\Mail\Exceptions\MessageException as SmtpMessageException;
 use Marko\Mail\Message;
 use Marko\Mail\Smtp\SmtpMailer;
 use Marko\Mail\Smtp\SmtpTransport;
 use Marko\Mail\Smtp\SocketInterface;
+use ReflectionProperty;
 
 test('SmtpMailer implements MailerInterface', function (): void {
     $transport = createSmtpMockTransport();
@@ -649,6 +651,152 @@ test('SmtpMailer sendRaw sends pre-formatted message', function (): void {
     expect($writtenString)->toContain('RCPT TO:<recipient@example.com>')
         ->and($writtenString)->toContain('Subject: Raw Email')
         ->and($writtenString)->toContain('This is a raw email body.');
+});
+
+it(
+    'joins headers with CRLF only between distinct headers (no injected CRLF inside a single header)',
+    function (): void {
+        $socket = new SmtpMockSocket([
+            '220 smtp.example.com ESMTP ready',
+            '250 OK',
+            '250 OK',
+            '354 Start mail input',
+            '250 OK',
+        ]);
+        $transport = new SmtpTransport($socket);
+        $transport->connect('smtp.example.com', 587);
+
+        $mailer = new SmtpMailer($transport);
+
+        $message = Message::create()
+            ->from('sender@example.com')
+            ->to('recipient@example.com')
+            ->subject('Clean Subject')
+            ->header('X-Trace', 'abc123')
+            ->text('body');
+
+        $mailer->send($message);
+
+        $written = implode('', $socket->written);
+
+        // Each header should appear as its own line; X-Trace value must not contain embedded newlines
+        $headerBlock = explode("\r\n\r\n", $written)[0];
+        $headerLines = explode("\r\n", $headerBlock);
+        $traceLines = array_filter($headerLines, fn (string $line) => str_starts_with($line, 'X-Trace:'));
+
+        expect(count($traceLines))->toBe(1)
+            ->and(array_values($traceLines)[0])->toBe('X-Trace: abc123');
+    },
+);
+
+it('still RFC-2047 encodes a Subject containing non-ASCII characters', function (): void {
+    $socket = new SmtpMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '250 OK',
+        '250 OK',
+        '354 Start mail input',
+        '250 OK',
+    ]);
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+
+    $mailer = new SmtpMailer($transport);
+
+    $message = Message::create()
+        ->from('sender@example.com')
+        ->to('recipient@example.com')
+        ->subject('こんにちは')
+        ->text('body');
+
+    $mailer->send($message);
+
+    $written = implode('', $socket->written);
+
+    expect($written)->toMatch('/Subject: =\?UTF-8\?[BQ]\?.+\?=/');
+});
+
+it('builds a valid header block for a message with legitimate From, To, and Subject', function (): void {
+    $socket = new SmtpMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '250 OK',
+        '250 OK',
+        '354 Start mail input',
+        '250 OK',
+    ]);
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+
+    $mailer = new SmtpMailer($transport);
+
+    $message = Message::create()
+        ->from('alice@example.com', 'Alice')
+        ->to('bob@example.com', 'Bob')
+        ->subject('Hello Bob')
+        ->text('Hi there');
+
+    $result = $mailer->send($message);
+
+    $written = implode('', $socket->written);
+
+    expect($result)->toBeTrue()
+        ->and($written)->toContain('From: Alice <alice@example.com>')
+        ->and($written)->toContain('To: Bob <bob@example.com>')
+        ->and($written)->toContain('Subject: Hello Bob')
+        ->and($written)->toContain('MIME-Version: 1.0');
+});
+
+it('rejects a custom header value containing CR or LF when building headers', function (): void {
+    $socket = new SmtpMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '250 OK',
+        '250 OK',
+        '354 Start mail input',
+        '250 OK',
+    ]);
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+
+    $mailer = new SmtpMailer($transport);
+
+    $message = Message::create()
+        ->from('sender@example.com')
+        ->to('recipient@example.com')
+        ->subject('Test')
+        ->text('body');
+
+    // Inject a malicious header value bypassing Message::header() validation
+    $reflection = new ReflectionProperty(Message::class, 'headers');
+    $reflection->setValue($message, ['X-Evil' => "safe\r\nBcc: injected@evil.com"]);
+
+    expect(fn () => $mailer->send($message))
+        ->toThrow(SmtpMessageException::class, 'Header injection attempt detected');
+});
+
+it('rejects a custom header name containing CR or LF when building headers', function (): void {
+    $socket = new SmtpMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '250 OK',
+        '250 OK',
+        '354 Start mail input',
+        '250 OK',
+    ]);
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+
+    $mailer = new SmtpMailer($transport);
+
+    $message = Message::create()
+        ->from('sender@example.com')
+        ->to('recipient@example.com')
+        ->subject('Test')
+        ->text('body');
+
+    // Inject a malicious header name bypassing Message::header() validation
+    $reflection = new ReflectionProperty(Message::class, 'headers');
+    $reflection->setValue($message, ["X-Evil\r\nBcc" => 'injected@evil.com']);
+
+    expect(fn () => $mailer->send($message))
+        ->toThrow(SmtpMessageException::class, 'Header injection attempt detected');
 });
 
 function createSmtpMockTransport(

@@ -18,6 +18,10 @@ readonly class Address
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw MessageException::invalidEmailAddress($email);
         }
+
+        if ($name !== null && (str_contains($name, "\r") || str_contains($name, "\n"))) {
+            throw MessageException::headerInjection('display name', $name);
+        }
     }
 
     public function toString(): string

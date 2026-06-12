@@ -136,3 +136,24 @@ it('deletes all tag index files in addition to page files when clear is called',
     expect($remainingTagFiles)->toBeEmpty()
         ->and($remainingPageFiles)->toBeEmpty();
 });
+
+it('does not instantiate a disallowed class when decoding a tampered page-cache hash index', function (): void {
+    $tag = 'tampered-tag';
+    $tagsDir = $this->tmpDir . '/tags';
+
+    if (!is_dir($tagsDir)) {
+        mkdir($tagsDir, 0755, true);
+    }
+
+    $tagFile = $tagsDir . '/' . hash('xxh128', $tag) . '.tag';
+
+    // Write a tag index file that embeds a serialized stdClass in the hashes array.
+    // With allowed_classes => false this object becomes __PHP_Incomplete_Class and
+    // is not instantiated. The purgeTag call must not throw and must succeed.
+    $tamperedIndex = serialize([new stdClass(), 'legitimate-hash-value']);
+    file_put_contents($tagFile, $tamperedIndex);
+
+    $result = $this->driver->purgeTag($tag);
+
+    expect($result)->toBeTrue();
+});

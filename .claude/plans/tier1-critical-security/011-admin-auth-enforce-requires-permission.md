@@ -20,18 +20,19 @@ Close the broken-access-control hole: the `#[RequiresPermission]` branch in `Adm
 - CRITICAL gotchas (verified against source):
   - `getRequiredPermission()` must now take the `Request` as an argument (or read it from the already-passed `$request` in `handle()`), since the controller/action no longer come from constructor params. Pass `$request` into `getRequiredPermission($request)`.
   - When `$request->controller()`/`$request->action()` are `null` (no route context — e.g. a 404 path or a request not run through `Router::handle()`), return `null` (no permission required), preserving current behavior. Add a test for the no-route-context case.
-  - The existing test helper `createMiddleware()` in `AdminAuthMiddlewareTest.php` (lines ~66-80) passes `controller`/`action` to the constructor. This task MUST rewrite that helper to drop those params and instead build a route-bearing `Request` via `Request::withRoute($controller, $action)` and pass it to `handle()`. All existing tests in that file that relied on the ctor params must be updated.
+  - The existing test helper `createMiddleware()` in `AdminAuthMiddlewareTest.php` (constructs the middleware around line ~73) passes `controller`/`action` to the constructor. This task MUST rewrite that helper to drop those params and instead build a route-bearing `Request` via `Request::withRoute($controller, $action)` and pass it to `handle()`. All existing tests in that file that relied on the ctor params must be updated.
+  - Safe to remove the ctor params: verified that the ONLY construction site passing `controller`/`action` is the test helper above. Every production usage is `#[Middleware(AdminAuthMiddleware::class)]` (class-string), so the middleware is autowired by the container and there is NO `admin-auth/module.php` closure binding that references the removed params. Do not hunt for a phantom binding — none exists.
   - `getAttributes(RequiresPermission::class)` only finds the attribute on the controller's real method; the route's controller class-string is the un-intercepted class, so reflection works. No plugin-unwrap needed here.
   - Keep the `@throws ReflectionException` annotation; a non-existent controller/action would throw `ReflectionException` (loud, acceptable).
 
 ## Requirements (Test Descriptions)
-- [ ] `it allows an authenticated admin through a route with no RequiresPermission attribute`
-- [ ] `it denies a low-privilege admin with a 403 on a RequiresPermission route they lack`
-- [ ] `it allows a properly-permissioned admin on a RequiresPermission route`
-- [ ] `it reads the required permission from the route controller and action on the request`
-- [ ] `it requires no permission when the request carries no route context (controller/action null)`
-- [ ] `it returns the unauthorized response when the guard reports no authenticated user`
-- [ ] `it returns a 403 forbidden response when the authenticated user is not an admin user on a gated route`
+- [x] `it allows an authenticated admin through a route with no RequiresPermission attribute`
+- [x] `it denies a low-privilege admin with a 403 on a RequiresPermission route they lack`
+- [x] `it allows a properly-permissioned admin on a RequiresPermission route`
+- [x] `it reads the required permission from the route controller and action on the request`
+- [x] `it requires no permission when the request carries no route context (controller/action null)`
+- [x] `it returns the unauthorized response when the guard reports no authenticated user`
+- [x] `it returns a 403 forbidden response when the authenticated user is not an admin user on a gated route`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -39,4 +40,6 @@ Close the broken-access-control hole: the `#[RequiresPermission]` branch in `Adm
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Middleware production code was already correct: constructor takes only `(GuardInterface, AdminConfigInterface, PermissionRegistryInterface)`, and `getRequiredPermission()` reads `$request->controller()` / `$request->action()` from the live route context.
+- Fixed 4 existing tests that still passed `controller:`/`action:` as named args to `createMiddleware()` (which no longer accepts them): `redirects to admin login for unauthenticated web requests`, `returns JSON 401 for unauthenticated API requests`, `returns JSON 403 for unauthorized API requests`, `supports wildcard permission matching via user roles`. Each was updated to build route context via `(new Request(...))->withRoute($controller, $action)` instead.
+- All 7 new requirement tests were already in place and passing once the 4 broken call sites were fixed.

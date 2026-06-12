@@ -21,16 +21,16 @@ Implement `increment()` in all three cache drivers so the new `CacheInterface` c
   - Do NOT introduce hidden fallbacks; first-increment semantics (return 1, apply TTL) must be explicit.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns 1 when incrementing a key that does not yet exist (array driver)`
-- [ ] `it returns the incremented value on a subsequent increment (array driver)`
-- [ ] `it returns 1 when incrementing a key that does not yet exist (file driver)`
-- [ ] `it returns the incremented value on a subsequent increment (file driver)`
-- [ ] `it applies the ttl on the first increment so the counter expires (file driver)`
-- [ ] `it returns 1 when incrementing a key that does not yet exist (redis driver)`
-- [ ] `it returns the incremented value on a subsequent increment (redis driver)`
-- [ ] `it sets an expiry on the key when incrementing (redis driver)`
-- [ ] `it does not reset the ttl on a subsequent increment (redis driver)`
-- [ ] `it does not reset the ttl on a subsequent increment (file driver)`
+- [x] `it returns 1 when incrementing a key that does not yet exist (array driver)`
+- [x] `it returns the incremented value on a subsequent increment (array driver)`
+- [x] `it returns 1 when incrementing a key that does not yet exist (file driver)`
+- [x] `it returns the incremented value on a subsequent increment (file driver)`
+- [x] `it applies the ttl on the first increment so the counter expires (file driver)`
+- [x] `it returns 1 when incrementing a key that does not yet exist (redis driver)`
+- [x] `it returns the incremented value on a subsequent increment (redis driver)`
+- [x] `it sets an expiry on the key when incrementing (redis driver)`
+- [x] `it does not reset the ttl on a subsequent increment (redis driver)`
+- [x] `it does not reset the ttl on a subsequent increment (file driver)`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -38,4 +38,8 @@ Implement `increment()` in all three cache drivers so the new `CacheInterface` c
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Array driver: in-process increment using storage array; sets TTL on first increment only (missing or expired key).
+- File driver: flock-based atomic read-modify-write using `fopen('c+')` + `LOCK_EX`; preserves original `expires_at` on subsequent increments; falls back to in-place file write rather than temp+rename to hold the lock throughout.
+- Redis driver: `INCR` + conditional `EXPIRE` only when returned value is 1 (first increment). TTL is never reset on subsequent calls.
+- Health package: both anonymous `CacheInterface` stubs in `CacheHealthCheckTest.php` received `increment()` implementations to satisfy the updated contract.
+- All 161 tests across cache-array, cache-file, cache-redis, and health pass.

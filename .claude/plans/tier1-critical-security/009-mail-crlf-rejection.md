@@ -18,13 +18,13 @@ Stop mail header (CRLF) injection at the source value objects in `marko/mail`. R
   - Reject CR (`\r`) and LF (`\n`) anywhere in the string; do NOT silently strip.
 
 ## Requirements (Test Descriptions)
-- [ ] `it rejects a carriage return in the Address display name`
-- [ ] `it rejects a line feed in the Address display name`
-- [ ] `it still constructs an Address with a legitimate display name`
-- [ ] `it rejects a carriage return or line feed in a custom header name`
-- [ ] `it rejects a carriage return or line feed in a custom header value`
-- [ ] `it still stores a legitimate custom header`
-- [ ] `it throws MessageException with a helpful suggestion when header injection is detected`
+- [x] `it rejects a carriage return in the Address display name`
+- [x] `it rejects a line feed in the Address display name`
+- [x] `it still constructs an Address with a legitimate display name`
+- [x] `it rejects a carriage return or line feed in a custom header name`
+- [x] `it rejects a carriage return or line feed in a custom header value`
+- [x] `it still stores a legitimate custom header`
+- [x] `it throws MessageException with a helpful suggestion when header injection is detected`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -32,4 +32,8 @@ Stop mail header (CRLF) injection at the source value objects in `marko/mail`. R
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `MessageException::headerInjection(string $field, string $value): self` factory using the three-part MarkoException shape (message/context/suggestion with named args). The value is sanitized with `addcslashes` in the message so CR/LF are visible as `\r`/`\n` rather than breaking the message string.
+- Added CRLF rejection to `Address::__construct()` — checks `$name` for `\r` or `\n` after the existing email validation, throws `MessageException::headerInjection('display name', $name)`.
+- Added CRLF rejection to `Message::header()` — checks both `$name` and `$value` for `\r` or `\n`, throws `MessageException::headerInjection()` accordingly. Added `@throws MessageException` doc block.
+- Removed the `'name with newline characters'` data case from the existing `AddressTest` dataset (it asserted `\n` was accepted), replaced with explicit rejection tests.
+- All 131 mail package tests pass.

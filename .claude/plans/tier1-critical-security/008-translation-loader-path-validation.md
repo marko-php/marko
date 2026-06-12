@@ -1,6 +1,6 @@
 # Task 008: F3 — Validate locale/group/namespace path segments in FileTranslationLoader
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -22,15 +22,15 @@ Stop LFI/RCE in the translation file loader. `FileTranslationLoader::resolveFile
   - Do not rely on `realpath()` containment alone; the regex denylist of `.`/`/`/`\\`/null-byte via the allowlist pattern is the locked approach. The pattern `^[A-Za-z0-9_-]+$` already excludes `.`, `/`, `\`, and `\0`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it rejects a locale containing a path traversal sequence (../)`
-- [ ] `it rejects a group containing a path traversal sequence (../)`
-- [ ] `it rejects a locale containing a null byte`
-- [ ] `it rejects a group containing a slash or dot path separator`
-- [ ] `it rejects an invalid namespace path segment in the namespaced branch`
-- [ ] `it rejects an empty locale or group segment`
-- [ ] `it still loads a valid locale and group from the non-namespaced branch`
-- [ ] `it still loads a valid namespaced locale and group from a registered namespace`
-- [ ] `it throws TranslationException with a helpful suggestion when a segment is invalid`
+- [x] `it rejects a locale containing a path traversal sequence (../)`
+- [x] `it rejects a group containing a path traversal sequence (../)`
+- [x] `it rejects a locale containing a null byte`
+- [x] `it rejects a group containing a slash or dot path separator`
+- [x] `it rejects an invalid namespace path segment in the namespaced branch`
+- [x] `it rejects an empty locale or group segment`
+- [x] `it still loads a valid locale and group from the non-namespaced branch`
+- [x] `it still loads a valid namespaced locale and group from a registered namespace`
+- [x] `it throws TranslationException with a helpful suggestion when a segment is invalid`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -38,4 +38,7 @@ Stop LFI/RCE in the translation file loader. `FileTranslationLoader::resolveFile
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `TranslationException::invalidPathSegment(string $segment, string $value): self` factory to `packages/translation/src/Exceptions/TranslationException.php` with the three-part MarkoException shape (message/context/suggestion).
+- Added `assertValidPathSegment(string $value, string $segment): void` private method to `FileTranslationLoader` that validates against `/^[A-Za-z0-9_-]+$/` — rejects path traversal sequences, slashes, dots, null bytes, and empty strings.
+- Validation called at the TOP of `resolveFilePath()` for `$locale` and `$group` (covering both branches), and for `$namespace` before the namespaced branch proceeds — closing LFI/RCE sink (F3).
+- All 9 new tests in `packages/translation-file/tests/PathValidationTest.php`; all pass. No pre-existing tests broken.

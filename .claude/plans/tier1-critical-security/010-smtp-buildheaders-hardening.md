@@ -1,6 +1,6 @@
 # Task 010: F4 — Defensive header hardening in SmtpMailer::buildHeaders()
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [009]
 **Retry count**: 0
 
@@ -20,11 +20,11 @@ Defense in depth at the SMTP layer: `SmtpMailer::buildHeaders()` writes From/To/
   - Reject `\r` and `\n` (and ideally `\x00`); do not strip.
 
 ## Requirements (Test Descriptions)
-- [ ] `it rejects a custom header name containing CR or LF when building headers`
-- [ ] `it rejects a custom header value containing CR or LF when building headers`
-- [ ] `it builds a valid header block for a message with legitimate From, To, and Subject`
-- [ ] `it still RFC-2047 encodes a Subject containing non-ASCII characters`
-- [ ] `it joins headers with CRLF only between distinct headers (no injected CRLF inside a single header)`
+- [x] `it rejects a custom header name containing CR or LF when building headers`
+- [x] `it rejects a custom header value containing CR or LF when building headers`
+- [x] `it builds a valid header block for a message with legitimate From, To, and Subject`
+- [x] `it still RFC-2047 encodes a Subject containing non-ASCII characters`
+- [x] `it joins headers with CRLF only between distinct headers (no injected CRLF inside a single header)`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -32,4 +32,9 @@ Defense in depth at the SMTP layer: `SmtpMailer::buildHeaders()` writes From/To/
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `assertNoCrlf(string $field, string $value): void` private helper to `SmtpMailer` that throws `Marko\Mail\Exceptions\MessageException::headerInjection()` on any CR, LF, or null byte.
+- Applied checks to both the custom-header loop (name and value independently) and the assembled From/To/Cc/Reply-To header line strings for defense in depth.
+- Subject's `encodeHeader()` RFC-2047 path is unchanged.
+- Used `Marko\Mail\Exceptions\MessageException` (task 009's class) aliased as `SmtpMessageException` to avoid collision with the existing `Marko\Mail\Exception\MessageException` already used in the file for `noRecipients()`.
+- Tests use `ReflectionProperty` to bypass `Message::header()` validation and directly inject malicious values into `$message->headers`, proving the SMTP layer independently guards against injection.
+- Added `@throws` doc blocks to `buildHeaders()`, `buildMessage()`, and `send()` per code standards.

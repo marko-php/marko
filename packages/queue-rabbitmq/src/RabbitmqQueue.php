@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Queue\Rabbitmq;
 
 use Exception;
+use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Rabbitmq\Exchange\ExchangeConfig;
@@ -26,6 +27,7 @@ class RabbitmqQueue implements QueueInterface
     public function __construct(
         private readonly RabbitmqConnection $connection,
         private readonly ExchangeConfig $exchangeConfig,
+        private readonly JobEnvelope $jobEnvelope,
         private readonly string $defaultQueue = 'default',
     ) {}
 
@@ -44,7 +46,7 @@ class RabbitmqQueue implements QueueInterface
         $queueName = $queue ?? $this->defaultQueue;
 
         $message = new AMQPMessage(
-            $job->serialize(),
+            $this->jobEnvelope->wrap($job->serialize()),
             [
                 'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
                 'application_headers' => new AMQPTable(['job_id' => $id]),
@@ -88,7 +90,7 @@ class RabbitmqQueue implements QueueInterface
         $job->setId($id);
 
         $message = new AMQPMessage(
-            $job->serialize(),
+            $this->jobEnvelope->wrap($job->serialize()),
             [
                 'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
                 'expiration' => (string) ($delay * 1000),
@@ -117,7 +119,7 @@ class RabbitmqQueue implements QueueInterface
         }
 
         /** @var JobInterface $job */
-        $job = unserialize($message->getBody());
+        $job = unserialize($this->jobEnvelope->verifyAndUnwrap($message->getBody()));
 
         $headers = $message->get('application_headers')->getNativeData();
         $jobId = $headers['job_id'];

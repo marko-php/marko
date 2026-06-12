@@ -100,4 +100,19 @@ interface CacheInterface
     public function deleteMultiple(
         array $keys,
     ): bool;
+
+    /**
+     * Atomically increment the integer stored at $key and return the new value.
+     *
+     * If the key does not exist, it is created with a value of 1 and the TTL is
+     * applied at that moment. On subsequent increments the TTL is NOT reset —
+     * resetting on every call would turn a fixed rate-limit window into a
+     * never-closing window.
+     *
+     * @throws InvalidKeyException
+     */
+    public function increment(
+        string $key,
+        int $ttl,
+    ): int;
 }

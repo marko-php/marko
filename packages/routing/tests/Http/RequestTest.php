@@ -86,3 +86,64 @@ it('returns all headers', function () {
         ->and($headers)->not->toHaveKey('Request-Method')
         ->and($headers)->not->toHaveKey('Server-Name');
 });
+
+it('returns a raw server param by key via server()', function () {
+    $request = new Request(server: ['SERVER_NAME' => 'example.com', 'SERVER_PORT' => '443']);
+
+    expect($request->server('SERVER_NAME'))->toBe('example.com')
+        ->and($request->server('SERVER_PORT'))->toBe('443');
+});
+
+it('returns null from server() when the key is absent', function () {
+    $request = new Request(server: ['SERVER_NAME' => 'example.com']);
+
+    expect($request->server('MISSING_KEY'))->toBeNull();
+});
+
+it('returns the REMOTE_ADDR value via ip()', function () {
+    $request = new Request(server: ['REMOTE_ADDR' => '192.168.1.1']);
+
+    expect($request->ip())->toBe('192.168.1.1');
+});
+
+it('returns null from ip() when REMOTE_ADDR is absent', function () {
+    $request = new Request(server: ['SERVER_NAME' => 'example.com']);
+
+    expect($request->ip())->toBeNull();
+});
+
+it('ignores X-Forwarded-For when resolving ip()', function () {
+    $request = new Request(server: [
+        'REMOTE_ADDR' => '10.0.0.1',
+        'HTTP_X_FORWARDED_FOR' => '203.0.113.1',
+    ]);
+
+    expect($request->ip())->toBe('10.0.0.1');
+});
+
+it('returns a new Request carrying the controller and action via withRoute()', function () {
+    $request = new Request(server: ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/']);
+
+    $routed = $request->withRoute('App\\Controllers\\HomeController', 'index');
+
+    expect($routed)->toBeInstanceOf(Request::class)
+        ->and($routed->controller())->toBe('App\\Controllers\\HomeController')
+        ->and($routed->action())->toBe('index');
+});
+
+it('leaves the original Request unchanged after withRoute() (immutability)', function () {
+    $request = new Request(server: ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/']);
+
+    $routed = $request->withRoute('App\\Controllers\\HomeController', 'index');
+
+    expect($request->controller())->toBeNull()
+        ->and($request->action())->toBeNull()
+        ->and($routed)->not->toBe($request);
+});
+
+it('returns null from controller() and action() before withRoute() is called', function () {
+    $request = new Request(server: ['REQUEST_METHOD' => 'GET']);
+
+    expect($request->controller())->toBeNull()
+        ->and($request->action())->toBeNull();
+});

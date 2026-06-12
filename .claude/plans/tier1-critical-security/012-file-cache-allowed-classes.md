@@ -1,6 +1,6 @@
 # Task 012: F6 — Harden unserialize() in file cache backends (allowed_classes=false for page-cache; object-preserving for cache-file)
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [005]
 **Retry count**: 0
 
@@ -23,12 +23,12 @@ Net effect: `page-cache-file` gets `allowed_classes => false` at all three `unse
   - HMAC is reserved for network brokers (tasks 013/014).
 
 ## Requirements (Test Descriptions)
-- [ ] `it treats a file cache entry that decodes to an unexpected shape as a miss`
-- [ ] `it still round-trips a legitimately stored array value through the file cache`
-- [ ] `it still round-trips a legitimately stored object value through the file cache (object support preserved)`
-- [ ] `it does not instantiate a disallowed class when decoding a tampered page-cache payload`
-- [ ] `it does not instantiate a disallowed class when decoding a tampered page-cache hash index`
-- [ ] `it still round-trips a legitimately stored page-cache entry`
+- [x] `it treats a file cache entry that decodes to an unexpected shape as a miss`
+- [x] `it still round-trips a legitimately stored array value through the file cache`
+- [x] `it still round-trips a legitimately stored object value through the file cache (object support preserved)`
+- [x] `it does not instantiate a disallowed class when decoding a tampered page-cache payload`
+- [x] `it does not instantiate a disallowed class when decoding a tampered page-cache hash index`
+- [x] `it still round-trips a legitimately stored page-cache entry`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -36,4 +36,16 @@ Net effect: `page-cache-file` gets `allowed_classes => false` at all three `unse
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+### page-cache-file (`FilePageCacheDriver`)
+- `lookup()`: Changed `unserialize($content)` to `unserialize($content, ['allowed_classes' => false])`. Added type guards (`is_int`, `is_string`, `is_array`) so that `__PHP_Incomplete_Class` objects produced by `allowed_classes => false` cause a shape-validation miss (returns `null`) rather than a `TypeError` when constructing `Response`.
+- `purgeTag()`: Changed tag-index `unserialize($content)` to `unserialize($content, ['allowed_classes' => false])`. Extracted result into `$decoded`, with `is_array($decoded)` guard. Added `is_string($hash)` check inside the `foreach` loop to skip any non-string entries (e.g., `__PHP_Incomplete_Class` values from a tampered file).
+- `appendToTagIndex()`: Same treatment as `purgeTag()` — `allowed_classes => false` + `is_array` guard.
+
+### cache-file (`FileCacheDriver`)
+- No changes to `unserialize()` calls. The general cache legitimately stores objects (`stdClass` etc.), and the trust boundary is the local filesystem. Shape validation (`is_array && array_key_exists('value') && isset('created_at')`) already rejects malformed payloads (returns `null` / miss). Object support preserved — existing `it('sets and gets object value')` test continues to pass.
+
+### Tests added (6 total)
+- `packages/cache-file/tests/Unit/FileCacheDriverTest.php`: 3 new tests (shape-miss, array round-trip, object round-trip) — all passed immediately, confirming existing behavior.
+- `packages/page-cache-file/tests/Unit/Driver/FilePageCacheDriverTest.php`: 2 new tests (page-cache round-trip, payload tamper guard).
+- `packages/page-cache-file/tests/Unit/Driver/FilePageCacheDriverTagsTest.php`: 1 new test (hash-index tamper guard).

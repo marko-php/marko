@@ -4,24 +4,32 @@ declare(strict_types=1);
 
 namespace Marko\RateLimiter\Middleware;
 
+use JsonException;
+use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\RateLimiter\ClientIpResolver;
 use Marko\RateLimiter\Contracts\RateLimiterInterface;
+use Marko\RateLimiter\Exceptions\ClientIpException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 
-class RateLimitMiddleware implements MiddlewareInterface
+readonly class RateLimitMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly RateLimiterInterface $limiter,
-        private readonly int $maxAttempts = 60,
-        private readonly int $decaySeconds = 60,
+        private RateLimiterInterface $limiter,
+        private ClientIpResolver $clientIpResolver,
+        private int $maxAttempts = 60,
+        private int $decaySeconds = 60,
     ) {}
 
+    /**
+     * @throws ClientIpException|ConfigNotFoundException|JsonException
+     */
     public function handle(
         Request $request,
         callable $next,
     ): Response {
-        $key = $this->resolveKey($request);
+        $key = $this->clientIpResolver->resolve($request);
         $result = $this->limiter->attempt($key, $this->maxAttempts, $this->decaySeconds);
 
         if (!$result->allowed()) {
@@ -48,13 +56,5 @@ class RateLimitMiddleware implements MiddlewareInterface
                 'X-RateLimit-Remaining' => (string) $result->remaining(),
             ]),
         );
-    }
-
-    private function resolveKey(
-        Request $request,
-    ): string {
-        return $request->header('X-Forwarded-For')
-            ?? $request->header('Remote-Addr')
-            ?? 'unknown';
     }
 }

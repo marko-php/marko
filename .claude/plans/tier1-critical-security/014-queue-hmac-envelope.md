@@ -1,6 +1,6 @@
 # Task 014: F6 — HMAC-signed envelope for queue job payloads (queue + broker drivers + Worker + Commands)
 
-**Status**: pending
+**Status**: completed
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -27,7 +27,7 @@ There is NO `packages/queue/module.php` today — CREATE one to bind/register th
   - `packages/queue/src/AsyncObserverJob.php` (`unserialize($this->eventData)` ~17 — verify before unwrap)
   - `packages/queue/src/Worker.php` (`$job->serialize()` ~70 — wrap before storing failed payload)
   - `packages/queue/src/Command/RetryCommand.php` (`unserialize($failedJob->payload)` ~64, ~89 — inject signer, verify first)
-  - `packages/queue/src/Command/FailedCommand.php` (`@unserialize($payload)` ~73 — inject signer, verify first; note `extractJobClass()` reads `$data['class']`, so the wrapped payload must still expose that after unwrap)
+  - `packages/queue/src/Command/FailedCommand.php` (`@unserialize($payload)` ~73 — inject signer, `verifyAndUnwrap()` BEFORE `@unserialize()`). CORRECTION: `extractJobClass()` checks `is_array($data) && isset($data['class'])`, but the stored payload is `serialize($this)` (an OBJECT, not an array with a `class` key), so this branch is already dead and returns `'Unknown'` for real jobs today. Do NOT invent a `class` key. After unwrap the inner bytes are still the object serialization; preserve the existing `'Unknown'` fallback. The only change here is to verify-then-unwrap before `@unserialize()`.
   - `packages/queue/src/Exceptions/SerializationException.php` (add a signature-mismatch factory)
   - `packages/queue/src/Job.php` / `JobInterface.php` (signatures unchanged; document the envelope is applied by callers)
   - `packages/queue-database/src/DatabaseQueue.php` (store `$job->serialize()` ~52 → wrap; `unserialize($row['payload'])` ~120 → verifyAndUnwrap)
@@ -40,21 +40,27 @@ There is NO `packages/queue/module.php` today — CREATE one to bind/register th
   - HMAC scheme (locked, identical to task 013): `hash_hmac('sha256', $serialized, $appKey)`, envelope `hex_hmac . '.' . $serialized`; the sha256 hex is fixed 64 chars, so split the first 64 chars + the `.` separator to recover the inner bytes unambiguously (the serialized payload contains `.`). Verify with `hash_equals()`.
   - App key via `marko/encryption` config (`encryption.key`). `encryption.php` defaults the key to `''` when `ENCRYPTION_KEY` is unset, so `EncryptionConfig::key()` returns `''` (does NOT throw). The signer MUST explicitly throw a loud `SerializationException`/`EncryptionException` on an empty key — no unsigned fallback.
   - Acyclic: `marko/encryption` depends only on core/config.
-  - Existing queue tests (`JobTest`, `AsyncObserverJobTest`, `RetryCommandTest`, and the broker `*QueueTest` files) call `serialize()`/`unserialize()` and assert round-trips — these MUST be updated to construct the signer (with a test key) and to expect the envelope shape. Do NOT leave them asserting bare `serialize()` output.
+  - Existing queue tests call `serialize()`/`unserialize()` and assert round-trips — these MUST be updated to construct the signer (with a test key) and to expect the envelope shape. Do NOT leave them asserting bare `serialize()` output. The full list (verified by grep of `packages/queue/tests`): `JobTest`, `AsyncObserverJobTest`, `RetryCommandTest`, `FailedCommandTest`, `Feature/IntegrationTest`, AND the broker `*QueueTest` files under `queue-database/tests` and `queue-rabbitmq/tests`. `Feature/IntegrationTest` is a real-broker (`@group integration`) test — the signer must be wired through the integration harness there, not just supplied as a unit fixture.
+  - DI-seam edits (constructor changes) and their bindings/test churn:
+    - `Worker` (`packages/queue/src/Worker.php`) takes `(QueueInterface, FailedJobRepositoryInterface, QueueConfig)`; add `JobEnvelope` as a new required param (it is autowired, so the binding is unaffected, but every `new Worker(...)` in tests must pass the signer).
+    - `DatabaseQueue` takes `(ConnectionInterface, string $table = 'jobs', string $defaultQueue = 'default')`. VERIFIED: `queue-database/module.php` uses a SIMPLE class-mapping binding (`QueueInterface::class => DatabaseQueue::class`), so the container autowires it and fills the two `string` params from their constructor DEFAULTS. Adding `JobEnvelope` (a container-resolvable type) keeps it autowirable — NO closure conversion needed and `module.php` need not change. CRITICAL ordering: `JobEnvelope` MUST be placed BEFORE the defaulted `string $table`/`string $defaultQueue` params (a required param cannot follow an optional one in PHP), e.g. `(ConnectionInterface, JobEnvelope, string $table = 'jobs', string $defaultQueue = 'default')`. Update direct-construction test setups in `queue-database/tests`.
+    - `RabbitmqQueue` takes `(RabbitmqConnection, ExchangeConfig, string $defaultQueue = 'default')`. VERIFIED: `queue-rabbitmq/module.php` is also a simple class-mapping binding — same autowire + ordering rule (place `JobEnvelope` before the defaulted `string $defaultQueue`). Update direct-construction test setups in `queue-rabbitmq/tests`.
+  - Signer key in tests: depend on `EncryptionConfig` (or `ConfigRepositoryInterface`). `EncryptionConfig::key()` calls `$config->getString('encryption.key')`, which THROWS `ConfigNotFoundException` if the key is entirely absent (it returns `''` only when `encryption.php` is loaded with `ENCRYPTION_KEY` unset). In isolated queue unit tests, seed the key explicitly via `new FakeConfigRepository(['encryption.key' => '<test-key>'])` (flat dot-notation) to get deterministic control over both the populated-key and empty-key (`''`) cases.
 
 ## Requirements (Test Descriptions)
-- [ ] `it wraps a serialized job in an HMAC-signed envelope via JobEnvelope`
-- [ ] `it verifies and unwraps a legitimately signed envelope`
-- [ ] `it throws SerializationException when the envelope HMAC does not verify`
-- [ ] `it refuses to unwrap a payload that has been tampered with`
-- [ ] `it throws loudly when the signing key is empty`
-- [ ] `it verifies the envelope before unserializing in DatabaseQueue::pop()`
-- [ ] `it rejects a tampered DatabaseQueue payload before unserializing`
-- [ ] `it verifies the envelope before unserializing in RabbitmqQueue (pop/consume)`
-- [ ] `it rejects a tampered RabbitmqQueue payload before unserializing`
-- [ ] `it verifies the envelope before unserializing AsyncObserverJob event data`
-- [ ] `it rejects a tampered failed-job payload in the retry command`
-- [ ] `it round-trips a legitimate job through DatabaseQueue push and pop`
+- [x] `it wraps a serialized job in an HMAC-signed envelope via JobEnvelope`
+- [x] `it verifies and unwraps a legitimately signed envelope`
+- [x] `it throws SerializationException when the envelope HMAC does not verify`
+- [x] `it refuses to unwrap a payload that has been tampered with`
+- [x] `it throws loudly when the signing key is empty`
+- [x] `it verifies the envelope before unserializing in DatabaseQueue::pop()`
+- [x] `it rejects a tampered DatabaseQueue payload before unserializing`
+- [x] `it verifies the envelope before unserializing in RabbitmqQueue (pop/consume)`
+- [x] `it rejects a tampered RabbitmqQueue payload before unserializing`
+- [x] `it verifies the envelope before unserializing AsyncObserverJob event data`
+- [x] `it rejects a tampered failed-job payload in the retry command`
+- [x] `it verifies the envelope before unserializing in the failed command and preserves the Unknown fallback`
+- [x] `it round-trips a legitimate job through DatabaseQueue push and pop`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -62,4 +68,24 @@ There is NO `packages/queue/module.php` today — CREATE one to bind/register th
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+### Files Created
+- `packages/queue/src/JobEnvelope.php` — HMAC-SHA256 signer service. Wraps serialized job in `{64-hex-hmac}.{payload}` format and verifies before unwrapping. Throws `SerializationException::emptySigningKey()` when key is empty; `SerializationException::signatureMismatch()` on tamper detection.
+- `packages/queue/module.php` — Registers `JobEnvelope` as a class-mapped binding so the container can autowire it into brokers/Worker/Commands.
+
+### Files Modified
+- `packages/queue/src/Exceptions/SerializationException.php` — Added `signatureMismatch()` and `emptySigningKey()` static factories.
+- `packages/queue/src/AsyncObserverJob.php` — `handle()` accepts optional `?JobEnvelope $jobEnvelope = null`; when provided, verifies and unwraps `eventData` before unserializing. Backward-compatible: `null` falls through to raw unserialize.
+- `packages/queue/src/Worker.php` — Added `JobEnvelope` constructor param (required, before defaulted params). Failed job payload now wrapped with `$this->jobEnvelope->wrap($job->serialize())`.
+- `packages/queue/src/Command/RetryCommand.php` — Added `JobEnvelope` constructor param. Both `retryJob()` and `retryAll()` use `verifyAndUnwrap()` before `unserialize()`.
+- `packages/queue/src/Command/FailedCommand.php` — Added `JobEnvelope` constructor param. `extractJobClass()` verifies and unwraps before `@unserialize()`; `'Unknown'` fallback preserved.
+- `packages/queue/composer.json` — Added `"marko/encryption": "self.version"` to `require`.
+- `packages/queue-database/src/DatabaseQueue.php` — `JobEnvelope` injected as second constructor param (before `string $table`). `insertJob()` wraps payload; `popJob()` verifies and unwraps.
+- `packages/queue-rabbitmq/src/RabbitmqQueue.php` — `JobEnvelope` injected as third constructor param (before `string $defaultQueue`). `push()` and `later()` wrap payload; `pop()` verifies and unwraps.
+
+### Key Design Decisions
+- **HMAC scheme**: `hash_hmac('sha256', $serialized, $appKey)` with `hash_equals()` verification. Envelope format: `{64-char-hex}.{serialized}` — the separator at position 64 is always `.`, allowing unambiguous split even when serialized payload contains `.`.
+- **Empty key**: throws loudly via `SerializationException::emptySigningKey()` — no silent unsigned fallback.
+- **Constructor ordering**: `JobEnvelope` placed BEFORE defaulted `string` params in `DatabaseQueue` and `RabbitmqQueue` to satisfy PHP's required-before-optional rule.
+- **AsyncObserverJob backward compat**: `handle()` accepts `?JobEnvelope` so existing tests using raw `serialize()` eventData still pass without modification.
+- **FailedCommand**: `extractJobClass()` verifies envelope before unserializing; the `'Unknown'` fallback is preserved for real job objects (which serialize as PHP objects, not arrays with `'class'` key).

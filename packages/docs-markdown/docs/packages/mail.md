@@ -141,7 +141,7 @@ public function html(string $html): self;
 public function text(string $text): self;
 public function attach(string $path, ?string $name = null, ?string $mimeType = null): self;
 public function embed(string $path, string $contentId, ?string $name = null, ?string $mimeType = null): self;
-public function header(string $name, string $value): self;
+public function header(string $name, string $value): self;  // throws MessageException if name or value contains CR/LF
 public function priority(int $priority): self;
 public function view(string $template): self;
 public function with(array|string $key, mixed $value = null): self;
@@ -160,6 +160,8 @@ readonly class Address
     public function toString(): string;
 }
 ```
+
+The `Address` constructor throws `MessageException` if the email address is invalid or if the display name contains CR or LF characters (mail header injection protection).
 
 ### Attachment
 

@@ -10,17 +10,20 @@ use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
+use Marko\Cache\Redis\Exceptions\TamperedCacheValueException;
 use Marko\Cache\Redis\RedisConnection;
+use Marko\Cache\Redis\Signer\CacheValueSigner;
 
-class RedisCacheDriver implements CacheInterface
+readonly class RedisCacheDriver implements CacheInterface
 {
     public function __construct(
-        private readonly RedisConnection $connection,
-        private readonly CacheConfig $config,
+        private RedisConnection $connection,
+        private CacheConfig $config,
+        private CacheValueSigner $cacheValueSigner,
     ) {}
 
     /**
-     * @throws InvalidKeyException
+     * @throws InvalidKeyException|TamperedCacheValueException
      */
     public function get(
         string $key,
@@ -34,11 +37,11 @@ class RedisCacheDriver implements CacheInterface
             return $default;
         }
 
-        return unserialize($data);
+        return unserialize($this->cacheValueSigner->verifyAndUnwrap($data));
     }
 
     /**
-     * @throws InvalidKeyException
+     * @throws InvalidKeyException|TamperedCacheValueException
      */
     public function set(
         string $key,
@@ -49,12 +52,12 @@ class RedisCacheDriver implements CacheInterface
 
         $ttl ??= $this->config->defaultTtl();
         $prefixedKey = $this->prefixKey($key);
-        $serialized = serialize($value);
+        $envelope = $this->cacheValueSigner->wrap(serialize($value));
 
         if ($ttl > 0) {
-            $this->connection->client()->setex($prefixedKey, $ttl, $serialized);
+            $this->connection->client()->setex($prefixedKey, $ttl, $envelope);
         } else {
-            $this->connection->client()->set($prefixedKey, $serialized);
+            $this->connection->client()->set($prefixedKey, $envelope);
         }
 
         return true;
@@ -97,7 +100,7 @@ class RedisCacheDriver implements CacheInterface
     }
 
     /**
-     * @throws InvalidKeyException
+     * @throws InvalidKeyException|TamperedCacheValueException
      */
     public function getItem(
         string $key,
@@ -117,11 +120,11 @@ class RedisCacheDriver implements CacheInterface
             ? (new DateTimeImmutable())->setTimestamp(time() + $ttl)
             : null;
 
-        return CacheItem::hit($key, unserialize($data), $expiresAt);
+        return CacheItem::hit($key, unserialize($this->cacheValueSigner->verifyAndUnwrap($data)), $expiresAt);
     }
 
     /**
-     * @throws InvalidKeyException
+     * @throws InvalidKeyException|TamperedCacheValueException
      */
     public function getMultiple(
         array $keys,
@@ -137,7 +140,7 @@ class RedisCacheDriver implements CacheInterface
     }
 
     /**
-     * @throws InvalidKeyException
+     * @throws InvalidKeyException|TamperedCacheValueException
      */
     public function setMultiple(
         array $values,
@@ -161,6 +164,27 @@ class RedisCacheDriver implements CacheInterface
         }
 
         return true;
+    }
+
+    /**
+     * @throws InvalidKeyException
+     */
+    public function increment(
+        string $key,
+        int $ttl,
+    ): int {
+        $this->validateKey($key);
+
+        $client = $this->connection->client();
+        $prefixedKey = $this->prefixKey($key);
+
+        $newValue = $client->incr($prefixedKey);
+
+        if ($newValue === 1 && $ttl > 0) {
+            $client->expire($prefixedKey, $ttl);
+        }
+
+        return $newValue;
     }
 
     /**

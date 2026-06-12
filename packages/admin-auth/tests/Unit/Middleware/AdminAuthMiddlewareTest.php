@@ -11,6 +11,7 @@ use Marko\AdminAuth\Entity\AdminUser;
 use Marko\AdminAuth\Entity\Role;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
 use Marko\AdminAuth\PermissionRegistry;
+use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
@@ -44,11 +45,11 @@ class TestControllerWithWildcardPermission
 }
 
 // Simple stub for AdminConfigInterface
-class StubAdminConfig implements AdminConfigInterface
+readonly class StubAdminConfig implements AdminConfigInterface
 {
     public function __construct(
-        private readonly string $routePrefix = '/admin',
-        private readonly string $name = 'Admin',
+        private string $routePrefix = '/admin',
+        private string $name = 'Admin',
     ) {}
 
     public function getRoutePrefix(): string
@@ -66,16 +67,12 @@ class StubAdminConfig implements AdminConfigInterface
 function createMiddleware(
     ?GuardInterface $guard = null,
     ?AdminConfigInterface $adminConfig = null,
-    ?string $controller = null,
-    ?string $action = null,
     ?PermissionRegistryInterface $permissionRegistry = null,
 ): AdminAuthMiddleware {
     return new AdminAuthMiddleware(
         guard: $guard ?? new FakeGuard(name: 'admin', attemptResult: false),
         adminConfig: $adminConfig ?? new StubAdminConfig(),
         permissionRegistry: $permissionRegistry ?? new PermissionRegistry(),
-        controller: $controller,
-        action: $action,
     );
 }
 
@@ -103,15 +100,10 @@ function createSuccessNext(): callable
 
 it('returns 401 when user is not authenticated', function (): void {
     $guard = new FakeGuard(name: 'admin', attemptResult: false); // No user set
-    $middleware = createMiddleware(
-        guard: $guard,
-        controller: TestControllerWithPermission::class,
-        action: 'create',
-    );
+    $middleware = createMiddleware(guard: $guard);
 
-    $request = new Request(server: [
-        'HTTP_ACCEPT' => 'application/json',
-    ]);
+    $request = (new Request(server: ['HTTP_ACCEPT' => 'application/json']))
+        ->withRoute(TestControllerWithPermission::class, 'create');
 
     $response = $middleware->handle($request, createSuccessNext());
 
@@ -123,13 +115,9 @@ it('passes through when user is authenticated and no RequiresPermission attribut
     $user = createAdminUser();
     $guard->setUser($user);
 
-    $middleware = createMiddleware(
-        guard: $guard,
-        controller: TestControllerWithoutPermission::class,
-        action: 'index',
-    );
+    $middleware = createMiddleware(guard: $guard);
 
-    $request = new Request();
+    $request = (new Request())->withRoute(TestControllerWithoutPermission::class, 'index');
 
     $response = $middleware->handle($request, createSuccessNext());
 
@@ -150,13 +138,9 @@ it('passes through when user has the required permission', function (): void {
     );
     $guard->setUser($user);
 
-    $middleware = createMiddleware(
-        guard: $guard,
-        controller: TestControllerWithPermission::class,
-        action: 'create',
-    );
+    $middleware = createMiddleware(guard: $guard);
 
-    $request = new Request();
+    $request = (new Request())->withRoute(TestControllerWithPermission::class, 'create');
 
     $response = $middleware->handle($request, createSuccessNext());
 
@@ -178,13 +162,9 @@ it('returns 403 when user lacks the required permission', function (): void {
     );
     $guard->setUser($user);
 
-    $middleware = createMiddleware(
-        guard: $guard,
-        controller: TestControllerWithPermission::class,
-        action: 'create',
-    );
+    $middleware = createMiddleware(guard: $guard);
 
-    $request = new Request();
+    $request = (new Request())->withRoute(TestControllerWithPermission::class, 'create');
 
     $response = $middleware->handle($request, createSuccessNext());
 
@@ -206,13 +186,9 @@ it('passes through for super admin users regardless of permission', function ():
     );
     $guard->setUser($user);
 
-    $middleware = createMiddleware(
-        guard: $guard,
-        controller: TestControllerWithPermission::class,
-        action: 'create',
-    );
+    $middleware = createMiddleware(guard: $guard);
 
-    $request = new Request();
+    $request = (new Request())->withRoute(TestControllerWithPermission::class, 'create');
 
     $response = $middleware->handle($request, createSuccessNext());
 
@@ -227,15 +203,13 @@ it('redirects to admin login for unauthenticated web requests', function (): voi
     $middleware = createMiddleware(
         guard: $guard,
         adminConfig: $adminConfig,
-        controller: TestControllerWithPermission::class,
-        action: 'create',
     );
 
     // Web request: no Accept: application/json header
-    $request = new Request(server: [
+    $request = (new Request(server: [
         'REQUEST_METHOD' => 'GET',
         'REQUEST_URI' => '/admin/posts/create',
-    ]);
+    ]))->withRoute(TestControllerWithPermission::class, 'create');
 
     $response = $middleware->handle($request, createSuccessNext());
 
@@ -247,18 +221,14 @@ it('redirects to admin login for unauthenticated web requests', function (): voi
 it('returns JSON 401 for unauthenticated API requests', function (): void {
     $guard = new FakeGuard(name: 'admin', attemptResult: false); // No user
 
-    $middleware = createMiddleware(
-        guard: $guard,
-        controller: TestControllerWithPermission::class,
-        action: 'create',
-    );
+    $middleware = createMiddleware(guard: $guard);
 
     // API request: has "Accept: application/json" header
-    $request = new Request(server: [
+    $request = (new Request(server: [
         'REQUEST_METHOD' => 'POST',
         'REQUEST_URI' => '/admin/api/posts',
         'HTTP_ACCEPT' => 'application/json',
-    ]);
+    ]))->withRoute(TestControllerWithPermission::class, 'create');
 
     $response = $middleware->handle($request, createSuccessNext());
 
@@ -282,18 +252,14 @@ it('returns JSON 403 for unauthorized API requests', function (): void {
     );
     $guard->setUser($user);
 
-    $middleware = createMiddleware(
-        guard: $guard,
-        controller: TestControllerWithPermission::class,
-        action: 'create',
-    );
+    $middleware = createMiddleware(guard: $guard);
 
     // API request
-    $request = new Request(server: [
+    $request = (new Request(server: [
         'REQUEST_METHOD' => 'POST',
         'REQUEST_URI' => '/admin/api/posts',
         'HTTP_ACCEPT' => 'application/json',
-    ]);
+    ]))->withRoute(TestControllerWithPermission::class, 'create');
 
     $response = $middleware->handle($request, createSuccessNext());
 
@@ -317,12 +283,100 @@ it('supports wildcard permission matching via user roles', function (): void {
     );
     $guard->setUser($user);
 
-    $middleware = createMiddleware(
-        guard: $guard,
-        controller: TestControllerWithWildcardPermission::class,
-        action: 'delete',
-    );
+    $middleware = createMiddleware(guard: $guard);
 
+    $request = (new Request())->withRoute(TestControllerWithWildcardPermission::class, 'delete');
+
+    $response = $middleware->handle($request, createSuccessNext());
+
+    expect($response->statusCode())->toBe(200)
+        ->and($response->body())->toBe('success');
+});
+
+it('allows an authenticated admin through a route with no RequiresPermission attribute', function (): void {
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
+    $user = createAdminUser();
+    $guard->setUser($user);
+
+    $middleware = createMiddleware(guard: $guard);
+
+    $request = (new Request())->withRoute(TestControllerWithoutPermission::class, 'index');
+
+    $response = $middleware->handle($request, createSuccessNext());
+
+    expect($response->statusCode())->toBe(200)
+        ->and($response->body())->toBe('success');
+});
+
+it('denies a low-privilege admin with a 403 on a RequiresPermission route they lack', function (): void {
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
+    $viewerRole = new Role();
+    $viewerRole->id = 1;
+    $viewerRole->name = 'Viewer';
+    $viewerRole->slug = 'viewer';
+
+    $user = createAdminUser(roles: [$viewerRole], permissionKeys: ['posts.view']);
+    $guard->setUser($user);
+
+    $middleware = createMiddleware(guard: $guard);
+
+    $request = (new Request())->withRoute(TestControllerWithPermission::class, 'create');
+
+    $response = $middleware->handle($request, createSuccessNext());
+
+    expect($response->statusCode())->toBe(403);
+});
+
+it('allows a properly-permissioned admin on a RequiresPermission route', function (): void {
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
+    $editorRole = new Role();
+    $editorRole->id = 1;
+    $editorRole->name = 'Editor';
+    $editorRole->slug = 'editor';
+
+    $user = createAdminUser(roles: [$editorRole], permissionKeys: ['posts.create', 'posts.edit']);
+    $guard->setUser($user);
+
+    $middleware = createMiddleware(guard: $guard);
+
+    $request = (new Request())->withRoute(TestControllerWithPermission::class, 'create');
+
+    $response = $middleware->handle($request, createSuccessNext());
+
+    expect($response->statusCode())->toBe(200)
+        ->and($response->body())->toBe('success');
+});
+
+it('reads the required permission from the route controller and action on the request', function (): void {
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
+    $viewerRole = new Role();
+    $viewerRole->id = 1;
+    $viewerRole->name = 'Viewer';
+    $viewerRole->slug = 'viewer';
+
+    // User has no posts.create permission
+    $user = createAdminUser(roles: [$viewerRole], permissionKeys: ['posts.view']);
+    $guard->setUser($user);
+
+    $middleware = createMiddleware(guard: $guard);
+
+    // Route context attached via withRoute — NOT via constructor params
+    $request = (new Request())->withRoute(TestControllerWithPermission::class, 'create');
+
+    $response = $middleware->handle($request, createSuccessNext());
+
+    // Permission must have been read from the request's route context
+    expect($response->statusCode())->toBe(403);
+});
+
+it('requires no permission when the request carries no route context (controller/action null)', function (): void {
+    $guard = new FakeGuard(name: 'admin', attemptResult: false);
+    $user = createAdminUser();
+    $guard->setUser($user);
+
+    $middleware = createMiddleware(guard: $guard);
+
+    // No withRoute() — request has no route context
     $request = new Request();
 
     $response = $middleware->handle($request, createSuccessNext());
@@ -330,3 +384,63 @@ it('supports wildcard permission matching via user roles', function (): void {
     expect($response->statusCode())->toBe(200)
         ->and($response->body())->toBe('success');
 });
+
+it('returns the unauthorized response when the guard reports no authenticated user', function (): void {
+    $guard = new FakeGuard(name: 'admin', attemptResult: false); // No user set
+
+    $middleware = createMiddleware(guard: $guard);
+
+    $request = (new Request(server: ['HTTP_ACCEPT' => 'application/json']))
+        ->withRoute(TestControllerWithPermission::class, 'create');
+
+    $response = $middleware->handle($request, createSuccessNext());
+
+    expect($response->statusCode())->toBe(401);
+});
+
+it(
+    'returns a 403 forbidden response when the authenticated user is not an admin user on a gated route',
+    function (): void {
+        $guard = new FakeGuard(name: 'admin', attemptResult: false);
+
+        // Authenticated as a non-admin user (not AdminUserInterface)
+        $nonAdminUser = new class () implements AuthenticatableInterface
+        {
+            public function getAuthIdentifier(): int|string
+            {
+                return 99;
+            }
+
+            public function getAuthIdentifierName(): string
+            {
+                return 'id';
+            }
+
+            public function getAuthPassword(): string
+            {
+                return 'password';
+            }
+
+            public function getRememberToken(): ?string
+            {
+                return null;
+            }
+
+            public function setRememberToken(?string $token): void {}
+
+            public function getRememberTokenName(): string
+            {
+                return 'remember_token';
+            }
+        };
+        $guard->setUser($nonAdminUser);
+
+        $middleware = createMiddleware(guard: $guard);
+
+        $request = (new Request())->withRoute(TestControllerWithPermission::class, 'create');
+
+        $response = $middleware->handle($request, createSuccessNext());
+
+        expect($response->statusCode())->toBe(403);
+    },
+);

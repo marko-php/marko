@@ -156,4 +156,58 @@ describe('RateLimiter', function (): void {
             ->and($config->get('cache.default_ttl'))->toBe(3600)
             ->and($config->get('cache.path'))->toBe('/tmp/cache');
     });
+
+    it('blocks the request once attempts reach maxAttempts', function (): void {
+        for ($i = 0; $i < 5; $i++) {
+            $this->limiter->attempt('test-key', 5, 60);
+        }
+
+        $result = $this->limiter->attempt('test-key', 5, 60);
+
+        expect($result->allowed())->toBeFalse()
+            ->and($result->remaining())->toBe(0);
+    });
+
+    it('reports remaining attempts decreasing across successive attempts', function (): void {
+        $result1 = $this->limiter->attempt('test-key', 5, 60);
+        $result2 = $this->limiter->attempt('test-key', 5, 60);
+        $result3 = $this->limiter->attempt('test-key', 5, 60);
+
+        expect($result1->remaining())->toBe(4)
+            ->and($result2->remaining())->toBe(3)
+            ->and($result3->remaining())->toBe(2);
+    });
+
+    it('increments attempts atomically via the cache increment on attempt()', function (): void {
+        $incrementCalled = false;
+        $incrementKey = null;
+
+        $cache = new class ($incrementCalled, $incrementKey) extends ArrayCacheDriver
+        {
+            public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+                private bool &$incrementCalled,
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+                private ?string &$incrementKey,
+            ) {
+                parent::__construct(createRateLimitCacheConfig());
+            }
+
+            public function increment(
+                string $key,
+                int $ttl,
+            ): int {
+                $this->incrementCalled = true;
+                $this->incrementKey = $key;
+
+                return parent::increment($key, $ttl);
+            }
+        };
+
+        $limiter = new RateLimiter($cache);
+        $limiter->attempt('test-key', 5, 60);
+
+        expect($incrementCalled)->toBeTrue()
+            ->and($incrementKey)->toBe('rate_limit.test-key');
+    });
 });

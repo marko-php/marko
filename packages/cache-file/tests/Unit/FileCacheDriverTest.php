@@ -315,3 +315,70 @@ it('removes expired item on getItem', function (): void {
 
     expect($item->isHit())->toBeFalse();
 });
+
+it('returns 1 when incrementing a key that does not yet exist (file driver)', function (): void {
+    expect($this->driver->increment('counter', 60))->toBe(1);
+});
+
+it('returns the incremented value on a subsequent increment (file driver)', function (): void {
+    $this->driver->increment('counter', 60);
+
+    expect($this->driver->increment('counter', 60))->toBe(2);
+});
+
+it('applies the ttl on the first increment so the counter expires (file driver)', function (): void {
+    $this->driver->increment('counter', 60);
+
+    $item = $this->driver->getItem('counter');
+
+    expect($item->isHit())->toBeTrue()
+        ->and($item->expiresAt())->not->toBeNull();
+});
+
+it('does not reset the ttl on a subsequent increment (file driver)', function (): void {
+    $this->driver->increment('counter', 60);
+
+    $firstExpiry = $this->driver->getItem('counter')->expiresAt();
+
+    $this->driver->increment('counter', 60);
+
+    $secondExpiry = $this->driver->getItem('counter')->expiresAt();
+
+    expect($secondExpiry)->toEqual($firstExpiry);
+});
+
+it(
+    'still round-trips a legitimately stored object value through the file cache (object support preserved)',
+    function (): void {
+        $object = new stdClass();
+        $object->name = 'preserved-object';
+        $this->driver->set('object-key', $object);
+
+        $result = $this->driver->get('object-key');
+
+        expect($result)->toBeInstanceOf(stdClass::class)
+            ->and($result->name)->toBe('preserved-object');
+    },
+);
+
+it('still round-trips a legitimately stored array value through the file cache', function (): void {
+    $value = ['name' => 'cached-array', 'items' => [1, 2, 3]];
+    $this->driver->set('array-key', $value);
+
+    expect($this->driver->get('array-key'))->toBe($value);
+});
+
+it('treats a file cache entry that decodes to an unexpected shape as a miss', function (): void {
+    $hash = hash('xxh128', 'key');
+    $filePath = $this->cachePath . '/' . $hash . '.cache';
+
+    if (!is_dir($this->cachePath)) {
+        mkdir($this->cachePath, 0755, true);
+    }
+
+    // Write a serialized payload that is valid PHP but has the wrong shape (no 'value' key)
+    file_put_contents($filePath, serialize(['corrupt' => 'data']));
+
+    expect($this->driver->get('key'))->toBeNull()
+        ->and($this->driver->has('key'))->toBeFalse();
+});

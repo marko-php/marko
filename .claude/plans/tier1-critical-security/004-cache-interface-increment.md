@@ -19,9 +19,9 @@ Add an atomic `increment(string $key, int $ttl): int` to `CacheInterface` (`mark
   - TTL semantics (document in the interface PHPDoc): the TTL is applied when the counter is FIRST created (return value 1). It is NOT reset on subsequent increments — resetting on every call turns a fixed rate-limit window into a never-closing window. Word the PHPDoc so drivers implement first-call-only TTL.
 
 ## Requirements (Test Descriptions)
-- [ ] `it declares an increment method on CacheInterface accepting a string key and int ttl`
-- [ ] `it declares increment as returning int`
-- [ ] `it documents increment as throwing InvalidKeyException`
+- [x] `it declares an increment method on CacheInterface accepting a string key and int ttl`
+- [x] `it declares increment as returning int`
+- [x] `it documents increment as throwing InvalidKeyException`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -29,4 +29,6 @@ Add an atomic `increment(string $key, int $ttl): int` to `CacheInterface` (`mark
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `increment(string $key, int $ttl): int` to `CacheInterface` with PHPDoc documenting atomicity and first-call-only TTL semantics.
+- Created `packages/cache/tests/Unit/Contracts/CacheInterfaceTest.php` with 3 reflection-based tests verifying the method signature, return type, and @throws tag.
+- KNOWN BREAKAGE: Adding `increment()` to `CacheInterface` breaks all implementers. The anonymous `CacheInterface` test doubles in `packages/health/tests/Unit/CacheHealthCheckTest.php` (lines 12 and 88) will fatal until task 005 updates them. Do NOT gate task 004 completion on the health suite — that is task 005's responsibility.

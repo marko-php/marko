@@ -5,10 +5,14 @@ declare(strict_types=1);
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
+use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Command\RetryCommand;
+use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\FailedJob;
 use Marko\Queue\Job;
+use Marko\Queue\JobEnvelope;
 use Marko\Queue\Tests\Command\Helpers;
+use Marko\Testing\Fake\FakeConfigRepository;
 
 /**
  * A simple test job for retry testing.
@@ -25,19 +29,27 @@ class TestRetryJob extends Job
     }
 }
 
+function createRetryCommandEnvelope(
+    string $key = 'test-key-for-retry-command',
+): JobEnvelope {
+    return new JobEnvelope(new EncryptionConfig(new FakeConfigRepository(['encryption.key' => $key])));
+}
+
 /**
- * Helper to create a FailedJob with a serialized TestRetryJob.
+ * Helper to create a FailedJob with an HMAC-signed wrapped payload.
  */
 function createFailedJob(
     string $id,
     string $queue = 'default',
+    ?JobEnvelope $envelope = null,
 ): FailedJob {
+    $envelope ??= createRetryCommandEnvelope();
     $job = new TestRetryJob('test-data');
 
     return new FailedJob(
         id: $id,
         queue: $queue,
-        payload: $job->serialize(),
+        payload: $envelope->wrap($job->serialize()),
         exception: 'Test exception',
         failedAt: new DateTimeImmutable('2024-01-01 12:00:00'),
     );
@@ -62,7 +74,7 @@ it('retries specific job by ID', function (): void {
     $repository = Helpers::createStubFailedJobRepository([$failedJob]);
     $queue = Helpers::createStubQueue();
 
-    $command = new RetryCommand($repository, $queue);
+    $command = new RetryCommand($repository, $queue, createRetryCommandEnvelope());
 
     ['output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'queue:retry', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890']);
@@ -83,7 +95,7 @@ it('supports all flag', function (): void {
     $repository = Helpers::createStubFailedJobRepository($failedJobs);
     $queue = Helpers::createStubQueue();
 
-    $command = new RetryCommand($repository, $queue);
+    $command = new RetryCommand($repository, $queue, createRetryCommandEnvelope());
 
     ['output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'queue:retry', '--all']);
@@ -102,7 +114,7 @@ it('shows success message for single job', function (): void {
     $repository = Helpers::createStubFailedJobRepository([$failedJob]);
     $queue = Helpers::createStubQueue();
 
-    $command = new RetryCommand($repository, $queue);
+    $command = new RetryCommand($repository, $queue, createRetryCommandEnvelope());
 
     ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'queue:retry', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890']);
@@ -123,7 +135,7 @@ it('shows success message for all jobs', function (): void {
     $repository = Helpers::createStubFailedJobRepository($failedJobs);
     $queue = Helpers::createStubQueue();
 
-    $command = new RetryCommand($repository, $queue);
+    $command = new RetryCommand($repository, $queue, createRetryCommandEnvelope());
 
     ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'queue:retry', '--all']);
@@ -139,7 +151,7 @@ it('handles invalid ID', function (): void {
     $repository = Helpers::createStubFailedJobRepository();
     $queue = Helpers::createStubQueue();
 
-    $command = new RetryCommand($repository, $queue);
+    $command = new RetryCommand($repository, $queue, createRetryCommandEnvelope());
 
     ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'queue:retry', 'non-existent-job-id']);
@@ -156,7 +168,7 @@ it('requires job ID or --all flag', function (): void {
     $repository = Helpers::createStubFailedJobRepository();
     $queue = Helpers::createStubQueue();
 
-    $command = new RetryCommand($repository, $queue);
+    $command = new RetryCommand($repository, $queue, createRetryCommandEnvelope());
 
     ['stream' => $stream, 'output' => $output] = Helpers::createOutputStream();
     $input = new Input(['marko', 'queue:retry']);
@@ -167,4 +179,30 @@ it('requires job ID or --all flag', function (): void {
 
     expect($exitCode)->toBe(1)
         ->and($result)->toContain('Please provide a job ID or use --all flag');
+});
+
+it('rejects a tampered failed-job payload in the retry command', function (): void {
+    $envelope = createRetryCommandEnvelope();
+
+    $fakeHmac = str_repeat('d', 64);
+    $tamperedPayload = $fakeHmac . '.O:8:"EvilJob":0:{}';
+
+    $failedJob = new FailedJob(
+        id: 'tampered-job-id',
+        queue: 'default',
+        payload: $tamperedPayload,
+        exception: 'Test exception',
+        failedAt: new DateTimeImmutable('2024-01-01 12:00:00'),
+    );
+
+    $repository = Helpers::createStubFailedJobRepository([$failedJob]);
+    $queue = Helpers::createStubQueue();
+
+    $command = new RetryCommand($repository, $queue, $envelope);
+
+    ['output' => $output] = Helpers::createOutputStream();
+    $input = new Input(['marko', 'queue:retry', 'tampered-job-id']);
+
+    expect(fn () => $command->execute($input, $output))
+        ->toThrow(SerializationException::class);
 });

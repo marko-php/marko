@@ -43,6 +43,8 @@ readonly class Router
             return new Response('Not Found', 404);
         }
 
+        $request = $request->withRoute($matched->route->controller, $matched->route->action);
+
         $handler = function (Request $request) use ($matched): Response {
             $controller = $this->container->get($matched->route->controller);
 

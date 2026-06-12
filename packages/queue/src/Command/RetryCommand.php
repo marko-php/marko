@@ -8,7 +8,9 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\FailedJobRepositoryInterface;
+use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
 use Marko\Queue\QueueInterface;
 
@@ -19,8 +21,12 @@ readonly class RetryCommand implements CommandInterface
     public function __construct(
         private FailedJobRepositoryInterface $failedJobRepository,
         private QueueInterface $queue,
+        private JobEnvelope $jobEnvelope,
     ) {}
 
+    /**
+     * @throws SerializationException
+     */
     public function execute(
         Input $input,
         Output $output,
@@ -46,6 +52,9 @@ readonly class RetryCommand implements CommandInterface
         return array_any($input->getArguments(), fn ($arg) => $arg === '--all');
     }
 
+    /**
+     * @throws SerializationException
+     */
     private function retryAll(
         Output $output,
     ): int {
@@ -61,7 +70,7 @@ readonly class RetryCommand implements CommandInterface
 
         foreach ($failedJobs as $failedJob) {
             /** @var JobInterface $job */
-            $job = unserialize($failedJob->payload);
+            $job = unserialize($this->jobEnvelope->verifyAndUnwrap($failedJob->payload));
             $this->queue->push($job, $failedJob->queue);
             $this->failedJobRepository->delete($failedJob->id);
             $count++;
@@ -72,6 +81,9 @@ readonly class RetryCommand implements CommandInterface
         return 0;
     }
 
+    /**
+     * @throws SerializationException
+     */
     private function retryJob(
         string $jobId,
         Output $output,
@@ -84,9 +96,9 @@ readonly class RetryCommand implements CommandInterface
             return 1;
         }
 
-        // Unserialize the job from the payload
+        // Verify and unserialize the job from the payload
         /** @var JobInterface $job */
-        $job = unserialize($failedJob->payload);
+        $job = unserialize($this->jobEnvelope->verifyAndUnwrap($failedJob->payload));
 
         // Push it back to the queue
         $this->queue->push($job, $failedJob->queue);

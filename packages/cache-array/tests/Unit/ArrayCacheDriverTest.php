@@ -237,3 +237,13 @@ it('is isolated per instance', function (): void {
 
     expect($driver2->has('key'))->toBeFalse();
 });
+
+it('returns 1 when incrementing a key that does not yet exist (array driver)', function (): void {
+    expect($this->driver->increment('counter', 60))->toBe(1);
+});
+
+it('returns the incremented value on a subsequent increment (array driver)', function (): void {
+    $this->driver->increment('counter', 60);
+
+    expect($this->driver->increment('counter', 60))->toBe(2);
+});

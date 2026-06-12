@@ -84,6 +84,7 @@ Implements all methods from `CacheInterface`. See `marko/cache` for the full con
 | `getMultiple(array $keys, mixed $default = null): iterable` | Retrieve multiple values at once |
 | `setMultiple(array $values, ?int $ttl = null): bool` | Store multiple key-value pairs at once |
 | `deleteMultiple(array $keys): bool` | Remove multiple entries at once |
+| `increment(string $key, int $ttl): int` | Atomically increment an integer counter; TTL applied only on first increment |
 
 ### Storage Details
 

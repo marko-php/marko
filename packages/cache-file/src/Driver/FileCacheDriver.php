@@ -208,6 +208,54 @@ readonly class FileCacheDriver implements CacheInterface
     /**
      * @throws InvalidKeyException
      */
+    public function increment(
+        string $key,
+        int $ttl,
+    ): int {
+        $this->validateKey($key);
+        $this->ensureDirectoryExists();
+
+        $filePath = $this->getFilePath($key);
+        $fh = fopen($filePath, 'c+');
+
+        if ($fh === false) {
+            return 1;
+        }
+
+        flock($fh, LOCK_EX);
+
+        $content = stream_get_contents($fh);
+        $data = $content !== '' && $content !== false ? unserialize($content) : null;
+
+        if (!is_array($data)
+            || !array_key_exists('value', $data)
+            || !isset($data['created_at'])
+            || ($data['expires_at'] !== null && time() > $data['expires_at'])
+        ) {
+            $expiresAt = $ttl > 0 ? time() + $ttl : null;
+            $newValue = 1;
+            $data = [
+                'value' => $newValue,
+                'expires_at' => $expiresAt,
+                'created_at' => time(),
+            ];
+        } else {
+            $newValue = (int) $data['value'] + 1;
+            $data['value'] = $newValue;
+        }
+
+        ftruncate($fh, 0);
+        rewind($fh);
+        fwrite($fh, serialize($data));
+        flock($fh, LOCK_UN);
+        fclose($fh);
+
+        return $newValue;
+    }
+
+    /**
+     * @throws InvalidKeyException
+     */
     private function validateKey(
         string $key,
     ): void {

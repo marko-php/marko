@@ -1,6 +1,6 @@
 # Task 013: F6 — HMAC-signed envelope for cache-redis payloads
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [005]
 **Retry count**: 0
 
@@ -17,20 +17,22 @@ Close PHP object injection over the network-reachable Redis cache. `RedisCacheDr
 - File-ownership note: task 005 also edits `RedisCacheDriver.php` (adds `increment()`). This task depends on 005 and runs AFTER it to avoid a parallel edit conflict.
 - Patterns to follow:
   - HMAC scheme (locked, identical to task 014): `hash_hmac('sha256', $serialized, $appKey)`, envelope `hex_hmac . '.' . $serialized`, verify with `hash_equals()`. The HMAC is over the RAW `serialize($value)` bytes; on read, split on the FIRST `.` (the hmac hex is fixed-length 64 chars for sha256 — split on the first 64 chars + `.` to avoid ambiguity since the serialized payload itself contains `.`). Document the exact framing so task 014 matches byte-for-byte.
-  - App key via `marko/encryption` `EncryptionConfig::key()` (config key `encryption.key`). NOTE: `encryption.php` defaults the key to `''` when `ENCRYPTION_KEY` is unset, so `EncryptionConfig::key()` returns `''` (it does NOT throw). The signer MUST explicitly check for an empty key and throw a loud exception (no unsigned fallback). Constant-time compare via `hash_equals()` only.
+  - App key via `marko/encryption` `EncryptionConfig::key()` (config key `encryption.key`). NOTE: `encryption.php` defaults the key to `''` when `ENCRYPTION_KEY` is unset, so `EncryptionConfig::key()` returns `''` when that config file is loaded (it does NOT throw in that case). The signer MUST explicitly check for an empty key and throw a loud exception (no unsigned fallback). Constant-time compare via `hash_equals()` only.
+  - Test config seeding: `EncryptionConfig::key()` calls `$config->getString('encryption.key')`, which THROWS `ConfigNotFoundException` if the key is entirely absent from config (it returns `''` only when `encryption.php` is loaded). In isolated `cache-redis` unit tests, seed the key explicitly with `new FakeConfigRepository(['encryption.key' => '<test-key>'])` (flat dot-notation, per `marko/testing`) — this gives deterministic control over both the populated-key round-trip tests and the empty-key (`''`) "throws loudly" test.
   - Acyclic dependency: `marko/encryption` depends only on core/config, so cache-redis → encryption is safe.
-  - Build a thin local signer within the package to respect boundaries; inject `EncryptionConfig` (or a `ConfigRepositoryInterface`) into the driver/signer via `module.php`. The driver is container-managed so injection works (unlike the queue `Job`).
+  - Build a thin local signer within the package to respect boundaries; inject `EncryptionConfig` (or a `ConfigRepositoryInterface`) into the driver/signer. `cache-redis/module.php` today is a simple binding (`CacheInterface::class => RedisCacheDriver::class`); adding `EncryptionConfig` (or the local signer) as a new `RedisCacheDriver` constructor param keeps it autowirable — no closure needed — because the new dependency is a container-resolvable type, not a scalar. The driver is container-managed so injection works (unlike the queue `Job`).
+  - The envelope must cover EVERY serialize/unserialize value path, not just `get()`/`set()`: `getItem()` (~120) unserializes too, and `getMultiple()`/`setMultiple()` delegate to `get()`/`set()` so they inherit the envelope automatically. Verify `getItem()` rejects a tampered value the same way `get()` does. Only `increment()` (added in task 005, uses `INCR`) stays outside the envelope.
   - `increment()` (added in task 005) stores a plain integer and reads it back as an int — it must NOT go through the HMAC envelope (it uses Redis `INCR`, not serialize). Keep `increment()` outside the envelope path; only `set()`/`get()`/`getItem()` serialize values.
 
 ## Requirements (Test Descriptions)
-- [ ] `it stores an HMAC-signed envelope when setting a redis cache value`
-- [ ] `it returns the original value when the stored envelope HMAC verifies`
-- [ ] `it rejects a redis value whose HMAC does not verify before unserializing it`
-- [ ] `it does not unserialize a redis value that has been tampered with`
-- [ ] `it throws loudly when the signing key is empty`
-- [ ] `it rejects a stored value that has no envelope framing (legacy/unsigned data)`
-- [ ] `it does not route increment() integer counters through the HMAC envelope`
-- [ ] `it round-trips a legitimate value through set and get`
+- [x] `it stores an HMAC-signed envelope when setting a redis cache value`
+- [x] `it returns the original value when the stored envelope HMAC verifies`
+- [x] `it rejects a redis value whose HMAC does not verify before unserializing it`
+- [x] `it does not unserialize a redis value that has been tampered with`
+- [x] `it throws loudly when the signing key is empty`
+- [x] `it rejects a stored value that has no envelope framing (legacy/unsigned data)`
+- [x] `it does not route increment() integer counters through the HMAC envelope`
+- [x] `it round-trips a legitimate value through set and get`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -38,4 +40,10 @@ Close PHP object injection over the network-reachable Redis cache. `RedisCacheDr
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+- Created `packages/cache-redis/src/Exceptions/TamperedCacheValueException.php` extending `CacheException` with `signatureMismatch()` and `emptySigningKey()` factory methods.
+- Created `packages/cache-redis/src/Signer/CacheValueSigner.php` (readonly class) mirroring the `JobEnvelope` pattern: `wrap()` and `verifyAndUnwrap()` using `hash_hmac('sha256', ...)` / `hash_equals()`. Envelope format: `{64-char-hex-hmac}.{serialized-payload}`.
+- Injected `CacheValueSigner` as a third constructor parameter in `RedisCacheDriver`. The `get()`, `set()`, and `getItem()` methods use the signer; `increment()` is explicitly excluded.
+- Added `marko/encryption` to `packages/cache-redis/composer.json` `require`.
+- Updated `createDriver()` test helper to accept `signingKey` param and inject `CacheValueSigner` via `EncryptionConfig` / `FakeConfigRepository`.
+- All 8 new tests pass; original 47 tests still pass (55 total).
