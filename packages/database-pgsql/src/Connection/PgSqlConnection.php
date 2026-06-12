@@ -223,6 +223,11 @@ class PgSqlConnection implements ConnectionInterface, TransactionInterface
         return (int) $this->pdo->lastInsertId();
     }
 
+    public function driverName(): string
+    {
+        return 'pgsql';
+    }
+
     /**
      * @throws TransactionException|ConnectionException
      */

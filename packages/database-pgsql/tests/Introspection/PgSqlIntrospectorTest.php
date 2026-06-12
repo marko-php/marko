@@ -668,5 +668,10 @@ function createTestConnection(
         {
             return 0;
         }
+
+        public function driverName(): string
+        {
+            return 'pgsql';
+        }
     };
 }

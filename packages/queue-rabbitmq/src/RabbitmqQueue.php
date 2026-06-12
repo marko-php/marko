@@ -16,13 +16,19 @@ use Random\RandomException;
 
 class RabbitmqQueue implements QueueInterface
 {
-    private bool $declared = false;
+    /** @var array<string, true> */
+    private array $declaredQueues = [];
+
+    private bool $exchangeDeclared = false;
 
     /** @var array<string, int> */
     private array $deliveryTags = [];
 
     /** @var array<string, string> */
     private array $messagePayloads = [];
+
+    /** @var array<string, string> */
+    private array $queueNames = [];
 
     public function __construct(
         private readonly RabbitmqConnection $connection,
@@ -127,6 +133,7 @@ class RabbitmqQueue implements QueueInterface
 
         $this->deliveryTags[$jobId] = $message->getDeliveryTag();
         $this->messagePayloads[$jobId] = $message->getBody();
+        $this->queueNames[$jobId] = $queueName;
 
         return $job;
     }
@@ -191,13 +198,30 @@ class RabbitmqQueue implements QueueInterface
 
         $deliveryTag = $this->deliveryTags[$jobId];
         $channel = $this->connection->channel();
+        $queueName = $this->queueNames[$jobId];
+
+        /** @var JobInterface $job */
+        $job = unserialize($this->jobEnvelope->verifyAndUnwrap($this->messagePayloads[$jobId]));
+        $job->incrementAttempts();
+        $updatedBody = $this->jobEnvelope->wrap($job->serialize());
+
+        $channel->basic_ack($deliveryTag);
 
         if ($delay === 0) {
-            $channel->basic_nack($deliveryTag, false, true);
-        } else {
-            $channel->basic_nack($deliveryTag);
+            $message = new AMQPMessage(
+                $updatedBody,
+                [
+                    'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                    'application_headers' => new AMQPTable(['job_id' => $jobId]),
+                ],
+            );
 
-            $queueName = $this->defaultQueue;
+            $channel->basic_publish(
+                $message,
+                $this->exchangeConfig->name,
+                $this->resolveRoutingKey($queueName),
+            );
+        } else {
             $delayQueue = $queueName . '_delay';
 
             $channel->queue_declare(
@@ -211,7 +235,7 @@ class RabbitmqQueue implements QueueInterface
             );
 
             $message = new AMQPMessage(
-                $this->messagePayloads[$jobId],
+                $updatedBody,
                 [
                     'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
                     'expiration' => (string) ($delay * 1000),
@@ -224,6 +248,7 @@ class RabbitmqQueue implements QueueInterface
 
         unset($this->deliveryTags[$jobId]);
         unset($this->messagePayloads[$jobId]);
+        unset($this->queueNames[$jobId]);
 
         return true;
     }
@@ -234,19 +259,24 @@ class RabbitmqQueue implements QueueInterface
     private function declare(
         ?string $queue = null,
     ): void {
-        if ($this->declared) {
+        $queueName = $queue ?? $this->defaultQueue;
+
+        if (isset($this->declaredQueues[$queueName])) {
             return;
         }
 
         $channel = $this->connection->channel();
-        $queueName = $queue ?? $this->defaultQueue;
 
-        $channel->exchange_declare(
-            $this->exchangeConfig->name,
-            $this->exchangeConfig->type->value,
-            durable: $this->exchangeConfig->durable,
-            auto_delete: $this->exchangeConfig->autoDelete,
-        );
+        if (!$this->exchangeDeclared) {
+            $channel->exchange_declare(
+                $this->exchangeConfig->name,
+                $this->exchangeConfig->type->value,
+                durable: $this->exchangeConfig->durable,
+                auto_delete: $this->exchangeConfig->autoDelete,
+            );
+
+            $this->exchangeDeclared = true;
+        }
 
         $channel->queue_declare(
             $queueName,
@@ -260,7 +290,7 @@ class RabbitmqQueue implements QueueInterface
             $this->resolveRoutingKey($queueName),
         );
 
-        $this->declared = true;
+        $this->declaredQueues[$queueName] = true;
     }
 
     private function resolveRoutingKey(

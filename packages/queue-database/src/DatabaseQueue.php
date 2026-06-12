@@ -20,6 +20,7 @@ readonly class DatabaseQueue implements QueueInterface
         private JobEnvelope $jobEnvelope,
         private string $table = 'jobs',
         private string $defaultQueue = 'default',
+        private int $retryAfter = 90,
     ) {}
 
     /**
@@ -114,12 +115,16 @@ readonly class DatabaseQueue implements QueueInterface
         string $queueName,
     ): ?JobInterface {
         $now = new DateTimeImmutable();
+        $reclaimCutoff = $now->modify("-$this->retryAfter seconds");
+
+        $skipLocked = $this->supportsSkipLocked() ? ' FOR UPDATE SKIP LOCKED' : '';
 
         $rows = $this->connection->query(
-            "SELECT * FROM $this->table WHERE queue = :queue AND reserved_at IS NULL AND available_at <= :now ORDER BY available_at ASC, created_at ASC LIMIT 1",
+            "SELECT * FROM $this->table WHERE queue = :queue AND (reserved_at IS NULL OR reserved_at <= :reclaim_cutoff) AND available_at <= :now ORDER BY available_at ASC, created_at ASC LIMIT 1$skipLocked",
             [
                 'queue' => $queueName,
                 'now' => $now->format('Y-m-d H:i:s'),
+                'reclaim_cutoff' => $reclaimCutoff->format('Y-m-d H:i:s'),
             ],
         );
 
@@ -129,27 +134,32 @@ readonly class DatabaseQueue implements QueueInterface
 
         $row = $rows[0];
 
-        $this->connection->execute(
-            "UPDATE $this->table SET reserved_at = :reserved_at, attempts = :attempts WHERE id = :id",
+        $affectedRows = $this->connection->execute(
+            "UPDATE $this->table SET reserved_at = :reserved_at WHERE id = :id AND (reserved_at IS NULL OR reserved_at <= :reclaim_cutoff)",
             [
                 'reserved_at' => $now->format('Y-m-d H:i:s'),
-                'attempts' => (int) $row['attempts'] + 1,
                 'id' => $row['id'],
+                'reclaim_cutoff' => $reclaimCutoff->format('Y-m-d H:i:s'),
             ],
         );
+
+        if ($affectedRows === 0) {
+            return null;
+        }
 
         /** @var JobInterface $job */
         $job = unserialize($this->jobEnvelope->verifyAndUnwrap($row['payload']));
         $job->setId($row['id']);
 
-        // Sync attempts count with database
-        for ($i = 0; $i < (int) $row['attempts'] + 1; $i++) {
-            if ($job->attempts <= $i) {
-                $job->incrementAttempts();
-            }
-        }
-
         return $job;
+    }
+
+    private function supportsSkipLocked(): bool
+    {
+        return match ($this->connection->driverName()) {
+            'mysql', 'pgsql' => true,
+            default => false,
+        };
     }
 
     public function size(

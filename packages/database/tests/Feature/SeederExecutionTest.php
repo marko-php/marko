@@ -64,6 +64,11 @@ function createTrackingConnection(
         {
             return 1;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 }
 
@@ -123,6 +128,11 @@ function createOrderTrackingConnection(
         {
             return 1;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 }
 
@@ -179,6 +189,11 @@ function createRunTrackingConnection(
         public function lastInsertId(): int
         {
             return 1;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }

@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use Marko\Mail\Config\MailConfig;
+use Marko\Mail\Exception\MailException;
 use Marko\Mail\Smtp\SmtpConfig;
 use Marko\Testing\Fake\FakeConfigRepository;
 
 it('extracts host from mail config', function (): void {
     $configRepo = new FakeConfigRepository([
-        'mail.smtp' => ['host' => 'smtp.example.com'],
+        'mail.smtp' => ['host' => 'smtp.example.com', 'port' => 587, 'encryption' => 'tls', 'timeout' => 30, 'auth_mode' => 'login'],
     ]);
 
     $mailConfig = new MailConfig($configRepo);
@@ -19,7 +20,7 @@ it('extracts host from mail config', function (): void {
 
 it('extracts port from mail config', function (): void {
     $configRepo = new FakeConfigRepository([
-        'mail.smtp' => ['port' => 465],
+        'mail.smtp' => ['host' => 'localhost', 'port' => 465, 'encryption' => 'tls', 'timeout' => 30, 'auth_mode' => 'login'],
     ]);
 
     $mailConfig = new MailConfig($configRepo);
@@ -30,7 +31,7 @@ it('extracts port from mail config', function (): void {
 
 it('extracts encryption setting', function (): void {
     $configRepo = new FakeConfigRepository([
-        'mail.smtp' => ['encryption' => 'ssl'],
+        'mail.smtp' => ['host' => 'localhost', 'port' => 587, 'encryption' => 'ssl', 'timeout' => 30, 'auth_mode' => 'login'],
     ]);
 
     $mailConfig = new MailConfig($configRepo);
@@ -42,6 +43,11 @@ it('extracts encryption setting', function (): void {
 it('extracts username and password', function (): void {
     $configRepo = new FakeConfigRepository([
         'mail.smtp' => [
+            'host' => 'localhost',
+            'port' => 587,
+            'encryption' => 'tls',
+            'timeout' => 30,
+            'auth_mode' => 'login',
             'username' => 'user@example.com',
             'password' => 'secret123',
         ],
@@ -56,7 +62,7 @@ it('extracts username and password', function (): void {
 
 it('extracts timeout setting', function (): void {
     $configRepo = new FakeConfigRepository([
-        'mail.smtp' => ['timeout' => 60],
+        'mail.smtp' => ['host' => 'localhost', 'port' => 587, 'encryption' => 'tls', 'timeout' => 60, 'auth_mode' => 'login'],
     ]);
 
     $mailConfig = new MailConfig($configRepo);
@@ -67,7 +73,7 @@ it('extracts timeout setting', function (): void {
 
 it('extracts auth_mode setting', function (): void {
     $configRepo = new FakeConfigRepository([
-        'mail.smtp' => ['auth_mode' => 'plain'],
+        'mail.smtp' => ['host' => 'localhost', 'port' => 587, 'encryption' => 'tls', 'timeout' => 30, 'auth_mode' => 'plain'],
     ]);
 
     $mailConfig = new MailConfig($configRepo);
@@ -76,25 +82,44 @@ it('extracts auth_mode setting', function (): void {
     expect($smtpConfig->authMode())->toBe('plain');
 });
 
-it('provides default values for optional settings', function (): void {
+it('returns null username and password when absent from config', function (): void {
     $configRepo = new FakeConfigRepository([
-        'mail.smtp' => [],
+        'mail.smtp' => ['host' => 'localhost', 'port' => 587, 'encryption' => 'tls', 'timeout' => 30, 'auth_mode' => 'login'],
     ]);
 
     $mailConfig = new MailConfig($configRepo);
     $smtpConfig = new SmtpConfig($mailConfig);
 
-    expect($smtpConfig->host())->toBe('localhost')
-        ->and($smtpConfig->port())->toBe(587)
-        ->and($smtpConfig->encryption())->toBe('tls')
-        ->and($smtpConfig->username())->toBeNull()
-        ->and($smtpConfig->password())->toBeNull()
-        ->and($smtpConfig->timeout())->toBe(30)
-        ->and($smtpConfig->authMode())->toBe('login');
+    expect($smtpConfig->username())->toBeNull()
+        ->and($smtpConfig->password())->toBeNull();
 });
 
+it(
+    'throws a loud exception (no hardcoded fallback) when a required SmtpConfig key (host/port/encryption/timeout/auth_mode) is missing',
+    function (string $missingKey): void {
+        $requiredKeys = ['host' => 'localhost', 'port' => 587, 'encryption' => 'tls', 'timeout' => 30, 'auth_mode' => 'login'];
+        unset($requiredKeys[$missingKey]);
+
+        $configRepo = new FakeConfigRepository(['mail.smtp' => $requiredKeys]);
+        $mailConfig = new MailConfig($configRepo);
+        $smtpConfig = new SmtpConfig($mailConfig);
+
+        // Access the getter to trigger the exception
+        match ($missingKey) {
+            'host' => $smtpConfig->host(),
+            'port' => $smtpConfig->port(),
+            'encryption' => $smtpConfig->encryption(),
+            'timeout' => $smtpConfig->timeout(),
+            'auth_mode' => $smtpConfig->authMode(),
+        };
+    },
+)->throws(MailException::class)
+    ->with(['host', 'port', 'encryption', 'timeout', 'auth_mode']);
+
 it('uses FakeConfigRepository in SmtpConfigTest', function (): void {
-    $repo = new FakeConfigRepository(['mail.smtp' => ['host' => 'localhost']]);
+    $repo = new FakeConfigRepository(
+        ['mail.smtp' => ['host' => 'localhost', 'port' => 587, 'encryption' => 'tls', 'timeout' => 30, 'auth_mode' => 'login']],
+    );
     $mailConfig = new MailConfig($repo);
     $smtpConfig = new SmtpConfig($mailConfig);
 

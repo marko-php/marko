@@ -8,7 +8,7 @@ use Codewithkyrian\Transformers\Pipelines\Pipeline;
 use Marko\DocsVec\Exceptions\VecRuntimeException;
 use PDO;
 
-class VecRuntime
+readonly class VecRuntime
 {
     private const string MODEL_DIR = '/resources/models/bge-small-en-v1.5';
 
@@ -39,6 +39,18 @@ class VecRuntime
 
         $pdo->sqliteCreateFunction('load_extension', fn () => null, 0);
         $pdo->exec("SELECT load_extension('" . $extensionPath . "')");
+
+        return $pdo;
+    }
+
+    /**
+     * Opens a plain SQLite connection without loading the sqlite-vec extension.
+     * Use this when only FTS5 queries are needed (no vector search).
+     */
+    public function openPlainConnection(string $databasePath = ':memory:'): PDO
+    {
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         return $pdo;
     }
@@ -96,12 +108,6 @@ class VecRuntime
             $this->packageRoot . '/resources/sqlite-vec/vec0.dylib',
         ];
 
-        foreach ($candidates as $candidate) {
-            if (file_exists($candidate)) {
-                return $candidate;
-            }
-        }
-
-        return null;
+        return array_find($candidates, fn (string $candidate): bool => file_exists($candidate));
     }
 }

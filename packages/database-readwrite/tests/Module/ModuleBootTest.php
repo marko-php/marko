@@ -50,6 +50,11 @@ function makeTestConnection(): ConnectionInterface&TransactionInterface
             return 0;
         }
 
+        public function driverName(): string
+        {
+            return 'mysql';
+        }
+
         public function beginTransaction(): void {}
 
         public function commit(): void {}
@@ -85,7 +90,7 @@ function makeConfigRepository(
         $extraReads,
     );
 
-    return new class ($driver, $readStrategy, $reads) implements ConfigRepositoryInterface
+    return new readonly class ($driver, $readStrategy, $reads) implements ConfigRepositoryInterface
     {
         public function __construct(
             private string $driver,
@@ -170,8 +175,8 @@ function makeTestContainer(ConfigRepositoryInterface $config, ConnectionFactoryI
         public array $registered = [];
 
         public function __construct(
-            private ConfigRepositoryInterface $config,
-            private ConnectionFactoryInterface $factory,
+            private readonly ConfigRepositoryInterface $config,
+            private readonly ConnectionFactoryInterface $factory,
         ) {}
 
         public function get(string $id): mixed

@@ -1,6 +1,6 @@
 # Task 011: F7b — Factory connect→EHLO→STARTTLS(220)→AUTH(case-insensitive) sequence + SmtpConfig defaults + module binding
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [010]
 **Retry count**: 0
 
@@ -67,18 +67,18 @@ mode matching case-insensitive, make STARTTLS assert the 220 reply, remove
     `$written`, `$tlsEnabled`).
 
 ## Requirements (Test Descriptions)
-- [ ] `it connects, sends EHLO, and authenticates using values from SmtpConfig when create() builds the mailer`
-- [ ] `it authenticates when the configured auth mode is lowercase "login" (case-insensitive matching)`
-- [ ] `it authenticates when the configured auth mode is lowercase "plain"`
-- [ ] `it performs STARTTLS only after confirming a 220 reply, and throws TransportException
+- [x] `it connects, sends EHLO, and authenticates using values from SmtpConfig when create() builds the mailer`
+- [x] `it authenticates when the configured auth mode is lowercase "login" (case-insensitive matching)`
+- [x] `it authenticates when the configured auth mode is lowercase "plain"`
+- [x] `it performs STARTTLS only after confirming a 220 reply, and throws TransportException
       when the server does not reply 220 to STARTTLS`
-- [ ] `it skips authentication when no username/password is configured (null credentials
+- [x] `it skips authentication when no username/password is configured (null credentials
       are valid; no exception thrown)`
-- [ ] `it does not issue STARTTLS when encryption is "ssl" (implicit TLS from connect)`
-- [ ] `it throws a loud exception (no hardcoded fallback) when a required SmtpConfig key
+- [x] `it does not issue STARTTLS when encryption is "ssl" (implicit TLS from connect)`
+- [x] `it throws a loud exception (no hardcoded fallback) when a required SmtpConfig key
       (host/port/encryption/timeout/auth_mode) is missing`
-- [ ] `config/mail.php smtp section includes an auth_mode default`
-- [ ] `it binds SocketInterface to the concrete StreamSocket in module.php`
+- [x] `config/mail.php smtp section includes an auth_mode default`
+- [x] `it binds SocketInterface to the concrete StreamSocket in module.php`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -86,4 +86,13 @@ mode matching case-insensitive, make STARTTLS assert the 220 reply, remove
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `auth_mode => 'login'` to `packages/mail/config/mail.php` smtp section
+- Updated `SmtpConfig` to throw `MailException::missingRequiredSmtpKey()` for required keys (host/port/encryption/timeout/auth_mode); username/password remain nullable with `?? null` fallback
+- Added `MailException::missingRequiredSmtpKey()` static factory method
+- Updated `SmtpTransport::startTls()` to assert 220 reply before calling `enableTls()`
+- Updated `SmtpTransport::authenticate()` to use `strtoupper($mode)` for case-insensitive matching
+- Updated `SmtpMailerFactory::create()` to run full connect→ehlo→[STARTTLS+re-ehlo]→[authenticate] sequence; STARTTLS only when encryption==='tls'; auth skipped when username/password are null
+- Added `SocketInterface => StreamSocket` binding to `module.php`
+- Extracted `MockSocket` class to `packages/mail-smtp/tests/Unit/MockSocket.php` (autoloaded via PSR-4)
+- Created `packages/mail-smtp/tests/Unit/Helpers.php` with `Helpers::createMockSocket()` and `Helpers::createSmtpConfig()` static helpers
+- Updated `SmtpTransportTest.php` to delegate `createMockSocket()` to `Helpers::createMockSocket()`

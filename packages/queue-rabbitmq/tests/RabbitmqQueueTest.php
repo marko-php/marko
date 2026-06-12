@@ -661,14 +661,23 @@ test('it releases job back to queue immediately when no delay', function (): voi
 
     expect($result)->toBeTrue();
 
-    $nackCalls = array_values(array_filter(
+    // Should ack the original delivery (not nack-requeue) and republish with incremented attempts
+    $ackCalls = array_values(array_filter(
         $channel->calls,
-        fn (array $call) => $call['method'] === 'basic_nack',
+        fn (array $call) => $call['method'] === 'basic_ack',
     ));
 
-    expect($nackCalls)->toHaveCount(1)
-        ->and($nackCalls[0]['delivery_tag'])->toBe(55)
-        ->and($nackCalls[0]['requeue'])->toBeTrue();
+    expect($ackCalls)->toHaveCount(1)
+        ->and($ackCalls[0]['delivery_tag'])->toBe(55);
+
+    $publishCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_publish',
+    ));
+
+    expect($publishCalls)->toHaveCount(1)
+        ->and($publishCalls[0]['exchange'])->toBe('test-exchange')
+        ->and($publishCalls[0]['routing_key'])->toBe('default');
 });
 
 test('it releases job with delay via delay queue mechanism', function (): void {
@@ -697,15 +706,14 @@ test('it releases job with delay via delay queue mechanism', function (): void {
 
     expect($result)->toBeTrue();
 
-    // Should nack without requeue
-    $nackCalls = array_values(array_filter(
+    // Should ack the original delivery (not nack) and republish with incremented attempts
+    $ackCalls = array_values(array_filter(
         $channel->calls,
-        fn (array $call) => $call['method'] === 'basic_nack',
+        fn (array $call) => $call['method'] === 'basic_ack',
     ));
 
-    expect($nackCalls)->toHaveCount(1)
-        ->and($nackCalls[0]['delivery_tag'])->toBe(66)
-        ->and($nackCalls[0]['requeue'])->toBeFalse();
+    expect($ackCalls)->toHaveCount(1)
+        ->and($ackCalls[0]['delivery_tag'])->toBe(66);
 
     // Should declare the delay queue with DLX config
     $delayQueueCalls = array_values(array_filter(
@@ -869,4 +877,246 @@ test('it rejects a tampered RabbitmqQueue payload before unserializing', functio
     $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
 
     expect(fn () => $queue->pop())->toThrow(SerializationException::class);
+});
+
+test(
+    'it republishes a released job with an incremented attempt count so a subsequent pop() observes attempts greater than the original',
+    function (): void {
+        $envelope = createRabbitmqTestEnvelope();
+        $job = new TestJob('attempt test');
+        $job->setId('attempt-job-id');
+        $wrappedPayload = $envelope->wrap($job->serialize());
+
+        $amqpMessage = new AMQPMessage(
+            $wrappedPayload,
+            ['application_headers' => new AMQPTable(['job_id' => 'attempt-job-id'])],
+        );
+        $amqpMessage->setDeliveryTag(10);
+
+        $channel = createMockChannel(basicGetReturn: $amqpMessage);
+        $connection = createTestableRabbitmqConnection($channel);
+        $exchangeConfig = new ExchangeConfig(
+            name: 'test-exchange',
+            type: ExchangeType::Direct,
+        );
+
+        $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
+        $popped = $queue->pop();
+
+        expect($popped->attempts)->toBe(0);
+
+        // Release with delay=1 to use the republish path
+        $queue->release('attempt-job-id', 1);
+
+        // The publish call should contain an incremented attempts count
+        $publishCalls = array_values(array_filter(
+            $channel->calls,
+            fn (array $call) => $call['method'] === 'basic_publish',
+        ));
+
+        expect($publishCalls)->toHaveCount(1);
+
+        /** @var AMQPMessage $msg */
+        $msg = $publishCalls[0]['msg'];
+        $republishedJob = unserialize($envelope->verifyAndUnwrap($msg->getBody()));
+
+        expect($republishedJob->attempts)->toBeGreaterThan(0);
+    },
+);
+
+test(
+    'it terminates retries: after maxAttempts releases the attempt count reaches maxAttempts so the worker stops retrying and the job is eligible for the failed store',
+    function (): void {
+        $envelope = createRabbitmqTestEnvelope();
+        $job = new TestJob('terminate test');
+        $job->setId('terminate-job-id');
+        $maxAttempts = $job->maxAttempts;
+
+        // Simulate maxAttempts releases
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            // Reconstruct envelope for each pop cycle
+            $wrappedPayload = $envelope->wrap($job->serialize());
+
+            $amqpMessage = new AMQPMessage(
+                $wrappedPayload,
+                ['application_headers' => new AMQPTable(['job_id' => 'terminate-job-id'])],
+            );
+            $amqpMessage->setDeliveryTag($i + 1);
+
+            $channel = createMockChannel(basicGetReturn: $amqpMessage);
+            $connection = createTestableRabbitmqConnection($channel);
+            $exchangeConfig = new ExchangeConfig(
+                name: 'test-exchange',
+                type: ExchangeType::Direct,
+            );
+
+            $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
+            $queue->pop();
+            $queue->release('terminate-job-id', 10);
+
+            // Get the republished job to use in next iteration
+            $publishCalls = array_values(array_filter(
+                $channel->calls,
+                fn (array $call) => $call['method'] === 'basic_publish',
+            ));
+
+            /** @var AMQPMessage $msg */
+            $msg = $publishCalls[0]['msg'];
+            /** @var TestJob $job */
+            $job = unserialize($envelope->verifyAndUnwrap($msg->getBody()));
+            $job->setId('terminate-job-id');
+        }
+
+        expect($job->attempts)->toBe($maxAttempts);
+    },
+);
+
+test('it releases a job back to its originating queue, not the hardcoded default queue', function (): void {
+    $envelope = createRabbitmqTestEnvelope();
+    $job = new TestJob('origin queue test');
+    $job->setId('origin-job-id');
+    $wrappedPayload = $envelope->wrap($job->serialize());
+
+    $amqpMessage = new AMQPMessage(
+        $wrappedPayload,
+        ['application_headers' => new AMQPTable(['job_id' => 'origin-job-id'])],
+    );
+    $amqpMessage->setDeliveryTag(20);
+
+    $channel = createMockChannel(basicGetReturn: $amqpMessage);
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    // Pop from a non-default queue
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
+    $queue->pop(queue: 'custom-queue');
+
+    // Release with delay=0 (immediate republish path)
+    $queue->release('origin-job-id', 0);
+
+    $publishCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_publish',
+    ));
+
+    expect($publishCalls)->toHaveCount(1)
+        ->and($publishCalls[0]['routing_key'])->toBe('custom-queue');
+});
+
+test('it derives the delay queue name from the originating queue when releasing with a delay', function (): void {
+    $envelope = createRabbitmqTestEnvelope();
+    $job = new TestJob('delay origin test');
+    $job->setId('delay-origin-id');
+    $wrappedPayload = $envelope->wrap($job->serialize());
+
+    $amqpMessage = new AMQPMessage(
+        $wrappedPayload,
+        ['application_headers' => new AMQPTable(['job_id' => 'delay-origin-id'])],
+    );
+    $amqpMessage->setDeliveryTag(30);
+
+    $channel = createMockChannel(basicGetReturn: $amqpMessage);
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    // Pop from a non-default queue
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
+    $queue->pop(queue: 'priority-queue');
+
+    // Release with delay — delay queue should be derived from originating queue
+    $queue->release('delay-origin-id', 30);
+
+    $delayQueueDeclareCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'queue_declare' && str_ends_with($call['queue'], '_delay'),
+    ));
+
+    expect($delayQueueDeclareCalls)->toHaveCount(1)
+        ->and($delayQueueDeclareCalls[0]['queue'])->toBe('priority-queue_delay');
+
+    $publishCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_publish',
+    ));
+
+    expect($publishCalls)->toHaveCount(1)
+        ->and($publishCalls[0]['routing_key'])->toBe('priority-queue_delay');
+});
+
+test('it declares each distinct queue (a second queue name triggers its own queue_declare)', function (): void {
+    $channel = createMockChannel();
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
+
+    // Push to first queue
+    $queue->push(new TestJob('first'), 'queue-a');
+
+    // Push to second distinct queue
+    $queue->push(new TestJob('second'), 'queue-b');
+
+    $queueDeclareCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'queue_declare' && !($call['passive'] ?? false),
+    ));
+
+    $declaredQueueNames = array_map(fn (array $call) => $call['queue'], $queueDeclareCalls);
+
+    expect($declaredQueueNames)->toContain('queue-a')
+        ->and($declaredQueueNames)->toContain('queue-b');
+
+    // Exchange should only be declared once even for two queues
+    $exchangeDeclareCalls = array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'exchange_declare',
+    );
+
+    expect($exchangeDeclareCalls)->toHaveCount(1);
+});
+
+test('it preserves the job id when republishing a released job', function (): void {
+    $envelope = createRabbitmqTestEnvelope();
+    $job = new TestJob('preserve id test');
+    $job->setId('preserve-id-job');
+    $wrappedPayload = $envelope->wrap($job->serialize());
+
+    $amqpMessage = new AMQPMessage(
+        $wrappedPayload,
+        ['application_headers' => new AMQPTable(['job_id' => 'preserve-id-job'])],
+    );
+    $amqpMessage->setDeliveryTag(40);
+
+    $channel = createMockChannel(basicGetReturn: $amqpMessage);
+    $connection = createTestableRabbitmqConnection($channel);
+    $exchangeConfig = new ExchangeConfig(
+        name: 'test-exchange',
+        type: ExchangeType::Direct,
+    );
+
+    $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
+    $queue->pop();
+    $queue->release('preserve-id-job', 5);
+
+    $publishCalls = array_values(array_filter(
+        $channel->calls,
+        fn (array $call) => $call['method'] === 'basic_publish',
+    ));
+
+    expect($publishCalls)->toHaveCount(1);
+
+    /** @var AMQPMessage $msg */
+    $msg = $publishCalls[0]['msg'];
+    $headers = $msg->get('application_headers')->getNativeData();
+
+    expect($headers['job_id'])->toBe('preserve-id-job');
 });

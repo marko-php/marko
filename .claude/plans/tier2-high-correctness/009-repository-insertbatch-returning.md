@@ -1,6 +1,6 @@
 # Task 009: F9 — Repository::insertBatch RETURNING-based PK assignment + connection dialect accessor
 
-**Status**: pending
+**Status**: complete
 **Depends on**: none
 **Retry count**: 0
 
@@ -76,19 +76,19 @@ for a single multi-row insert is guaranteed). This requires a dialect signal, wh
     `count($entities)`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it assigns each entity its true database id when batch-inserting two or more
+- [x] `it assigns each entity its true database id when batch-inserting two or more
       entities on a postgresql connection (ids are not shifted by count-1)`
-- [ ] `it assigns consecutive ids correctly when batch-inserting on a mysql connection`
-- [ ] `it builds an INSERT ... RETURNING <primaryKey> statement on a postgresql connection`
-- [ ] `it builds a plain multi-row INSERT (no RETURNING) and uses LAST_INSERT_ID offset on mysql`
-- [ ] `it exposes the connection driver name via the ConnectionInterface accessor`
-- [ ] `it returns the true ids for three or more entities on pgsql (not just two), proving
+- [x] `it assigns consecutive ids correctly when batch-inserting on a mysql connection`
+- [x] `it builds an INSERT ... RETURNING <primaryKey> statement on a postgresql connection`
+- [x] `it builds a plain multi-row INSERT (no RETURNING) and uses LAST_INSERT_ID offset on mysql`
+- [x] `it exposes the connection driver name via the ConnectionInterface accessor`
+- [x] `it returns the true ids for three or more entities on pgsql (not just two), proving
       positional mapping over the full RETURNING result set`
-- [ ] `it throws a loud BatchInsertException when the pgsql RETURNING result count does not
+- [x] `it throws a loud BatchInsertException when the pgsql RETURNING result count does not
       match the number of entities`
-- [ ] `it routes the RETURNING write through the write connection (not a replica) on a
+- [x] `it routes the RETURNING write through the write connection (not a replica) on a
       read/write connection`
-- [ ] `the full test suite still loads after the ConnectionInterface method is added (every
+- [x] `the full test suite still loads after the ConnectionInterface method is added (every
       stub implementer across database/database-*/search/session-database/queue-database/
       health/admin-auth declares driverName())`
 
@@ -98,4 +98,9 @@ for a single multi-row insert is guaranteed). This requires a dialect signal, wh
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `driverName(): string` to `ConnectionInterface` returning a per-driver constant
+- `MySqlConnection::driverName()` returns `'mysql'`, `PgSqlConnection::driverName()` returns `'pgsql'`, `ReadWriteConnection::driverName()` passes through to `$this->write->driverName()`
+- `Repository::insertBatch()` branches on `$this->connection->driverName() === 'pgsql'`: pgsql path appends `RETURNING <pk>` and calls `query()`, MySQL path keeps `lastInsertId() + offset`
+- `BatchInsertException::returningRowCountMismatch()` factory method added for loud failure when RETURNING row count mismatches entity count
+- All ~43 test stubs across 9 packages updated to add `driverName()` (most return `'sqlite'`, driver-specific named stubs return their respective driver)
+- php-cs-fixer repeatedly reverted `driverName()` from production classes and some stubs between runs — had to re-add multiple times; fixed at end of task

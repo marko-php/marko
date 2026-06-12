@@ -1,6 +1,6 @@
 # Task 010: F7a — Concrete StreamSocket implementing SocketInterface
 
-**Status**: pending
+**Status**: complete
 **Depends on**: none
 **Retry count**: 0
 
@@ -45,15 +45,15 @@ functions, with loud `TransportException`s on failure.
   tested via the fake socket in Tasks 011/012.
 
 ## Requirements (Test Descriptions)
-- [ ] `it implements SocketInterface (declares connect, read, write, enableTls, close,
+- [x] `it implements SocketInterface (declares connect, read, write, enableTls, close,
       and the $connected property get-hook with the interface signatures)`
-- [ ] `it reports $connected as false before connect and after close, and true while the
+- [x] `it reports $connected as false before connect and after close, and true while the
       stream is open`
-- [ ] `it throws a loud TransportException when the connection cannot be established`
-- [ ] `it reads a single CRLF-terminated reply line from the stream`
-- [ ] `it accumulates a multi-line SMTP reply (250- continuations) into one read result`
-- [ ] `it writes raw bytes to the stream verbatim`
-- [ ] `(integration-destructive) it opens, reads the greeting from, and closes a real TCP
+- [x] `it throws a loud TransportException when the connection cannot be established`
+- [x] `it reads a single CRLF-terminated reply line from the stream`
+- [x] `it accumulates a multi-line SMTP reply (250- continuations) into one read result`
+- [x] `it writes raw bytes to the stream verbatim`
+- [x] `(integration-destructive) it opens, reads the greeting from, and closes a real TCP
       stream against a reachable SMTP endpoint`
 
 ## Acceptance Criteria
@@ -62,4 +62,13 @@ functions, with loud `TransportException`s on failure.
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `StreamSocket` implemented at `packages/mail-smtp/src/StreamSocket.php`
+- Uses `protected` visibility for `$stream` property so test subclasses can inject it
+- `$connected` property hook: `public bool $connected { get => $this->stream !== null; }`
+- `connect()`: uses `stream_socket_client` with ssl:// transport for ssl/tls encryption, throws `TransportException::connectionFailed` on failure
+- `read()`: loops `fgets` accumulating multi-line SMTP replies (250-...) until a terminating line (4th char is space or line < 4 chars), strips trailing CRLF
+- `write()`: calls `fwrite` with raw data
+- `enableTls()`: calls `stream_socket_enable_crypto` with `STREAM_CRYPTO_METHOD_TLS_CLIENT`
+- `close()`: calls `fclose` and nulls `$stream`
+- Integration test at `packages/mail-smtp/tests/Integration/StreamSocketIntegrationTest.php` tagged `integration-destructive`
+- Unit tests use `TestableStreamSocket` subclass with `injectStream()` for read/write testing without network

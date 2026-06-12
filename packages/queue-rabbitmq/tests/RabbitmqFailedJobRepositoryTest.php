@@ -251,10 +251,7 @@ test('it retrieves all failed jobs from queue', function (): void {
         ->and($failedJobs[0]->id)->toBe('failed-1')
         ->and($failedJobs[0]->queue)->toBe('default')
         ->and($failedJobs[1]->id)->toBe('failed-2')
-        ->and($failedJobs[1]->queue)->toBe('emails')
-        ->and($channel->nackedTags)->toHaveCount(2);
-
-    // Messages should be nacked/requeued (not acked/removed)
+        ->and($failedJobs[1]->queue)->toBe('emails');
 });
 
 test('it returns empty array when no failed jobs exist', function (): void {
@@ -264,7 +261,7 @@ test('it returns empty array when no failed jobs exist', function (): void {
 
     $failedJobs = $repository->all();
 
-    expect($failedJobs)->toBe([]);
+    expect($failedJobs)->toBeEmpty();
 });
 
 test('it finds failed job by ID', function (): void {
@@ -344,10 +341,9 @@ test('it deletes failed job by ID and returns true', function (): void {
 
     $result = $repository->delete('failed-1');
 
+    // Drain-then-restore: all messages acked, then non-deleted ones re-published
     expect($result)->toBeTrue()
-        ->and($channel->ackedTags)->toHaveCount(1);
-
-    // The target message should have been acked (removed)
+        ->and($channel->ackedTags)->toHaveCount(2);
 });
 
 test('it returns false when deleting non-existent failed job', function (): void {
@@ -367,8 +363,9 @@ test('it returns false when deleting non-existent failed job', function (): void
 
     $result = $repository->delete('non-existent');
 
+    // Non-matching target: all messages acked and re-published (none deleted)
     expect($result)->toBeFalse()
-        ->and($channel->ackedTags)->toBe([]);
+        ->and($channel->ackedTags)->toHaveCount(1);
 });
 
 test('it clears all failed jobs via queue purge', function (): void {
@@ -410,3 +407,171 @@ test('it counts failed jobs via passive queue declare', function (): void {
 
     expect($count)->toBe(5);
 });
+
+it('sets the AMQP message_id to the failed job id when storing a failed job', function (): void {
+    $channel = new MockFailedJobChannel();
+    $connection = createFailedJobTestConnection($channel);
+    $repository = new RabbitmqFailedJobRepository($connection);
+
+    $failedJob = new FailedJob(
+        id: 'job-uuid-001',
+        queue: 'default',
+        payload: '{"class":"TestJob"}',
+        exception: 'RuntimeException: fail',
+        failedAt: new DateTimeImmutable('2024-03-01T12:00:00+00:00'),
+    );
+
+    $repository->store($failedJob);
+
+    $properties = $channel->publishedMessages[0]['properties'];
+
+    expect($properties['message_id'])->toBe('job-uuid-001');
+});
+
+it('deletes only the matching failed job and returns true, leaving the others intact', function (): void {
+    $channel = new MockFailedJobChannel();
+    $connection = createFailedJobTestConnection($channel);
+    $repository = new RabbitmqFailedJobRepository($connection);
+
+    $job1 = new FailedJob(
+        id: 'del-keep-1',
+        queue: 'default',
+        payload: '{"class":"Job1"}',
+        exception: 'Error 1',
+        failedAt: new DateTimeImmutable('2024-01-15T10:30:00+00:00'),
+    );
+    $job2 = new FailedJob(
+        id: 'del-target-2',
+        queue: 'emails',
+        payload: '{"class":"Job2"}',
+        exception: 'Error 2',
+        failedAt: new DateTimeImmutable('2024-01-15T11:00:00+00:00'),
+    );
+
+    $repository->store($job1);
+    $repository->store($job2);
+
+    $result = $repository->delete('del-target-2');
+
+    // Returns true for found target
+    expect($result)->toBeTrue()
+        // Both messages drained and acked
+        ->and($channel->ackedTags)->toHaveCount(2)
+        ->and($channel->nackedTags)->toBeEmpty()
+        // Only the non-matching job is re-published (target is deleted)
+        ->and($channel->publishedMessages)->toHaveCount(3); // 2 store + 1 restore
+});
+
+it('returns false from delete() when no failed job matches the id', function (): void {
+    $channel = new MockFailedJobChannel();
+    $connection = createFailedJobTestConnection($channel);
+    $repository = new RabbitmqFailedJobRepository($connection);
+
+    $job = new FailedJob(
+        id: 'del-false-1',
+        queue: 'default',
+        payload: '{"class":"Job1"}',
+        exception: 'Error 1',
+        failedAt: new DateTimeImmutable('2024-01-15T10:30:00+00:00'),
+    );
+
+    $repository->store($job);
+
+    $result = $repository->delete('no-such-id');
+
+    expect($result)->toBeFalse();
+});
+
+it('returns null from find() when no failed job matches the id', function (): void {
+    $channel = new MockFailedJobChannel();
+    $connection = createFailedJobTestConnection($channel);
+    $repository = new RabbitmqFailedJobRepository($connection);
+
+    $job = new FailedJob(
+        id: 'find-null-1',
+        queue: 'default',
+        payload: '{"class":"Job1"}',
+        exception: 'Error 1',
+        failedAt: new DateTimeImmutable('2024-01-15T10:30:00+00:00'),
+    );
+
+    $repository->store($job);
+
+    $found = $repository->find('does-not-exist');
+
+    expect($found)->toBeNull();
+});
+
+it('returns the matching failed job from find() by id and terminates', function (): void {
+    $channel = new MockFailedJobChannel();
+    $connection = createFailedJobTestConnection($channel);
+    $repository = new RabbitmqFailedJobRepository($connection);
+
+    $job1 = new FailedJob(
+        id: 'find-term-1',
+        queue: 'default',
+        payload: '{"class":"Job1"}',
+        exception: 'Error 1',
+        failedAt: new DateTimeImmutable('2024-01-15T10:30:00+00:00'),
+    );
+    $job2 = new FailedJob(
+        id: 'find-term-2',
+        queue: 'emails',
+        payload: '{"class":"Job2"}',
+        exception: 'Error 2',
+        failedAt: new DateTimeImmutable('2024-01-15T11:00:00+00:00'),
+    );
+
+    $repository->store($job1);
+    $repository->store($job2);
+
+    $found = $repository->find('find-term-2');
+
+    // Returns correct job
+    expect($found)->toBeInstanceOf(FailedJob::class)
+        ->and($found->id)->toBe('find-term-2')
+        // Drain-then-restore: all messages acked (not nacked-requeued)
+        ->and($channel->ackedTags)->toHaveCount(2)
+        ->and($channel->nackedTags)->toBeEmpty()
+        // Restore: both messages re-published (find is read-only)
+        ->and($channel->publishedMessages)->toHaveCount(4); // 2 store + 2 restore
+});
+
+it(
+    'returns all stored failed jobs from all() and the call terminates (no infinite basic_get/basic_nack requeue loop)',
+    function (): void {
+        $channel = new MockFailedJobChannel();
+        $connection = createFailedJobTestConnection($channel);
+        $repository = new RabbitmqFailedJobRepository($connection);
+
+        $job1 = new FailedJob(
+            id: 'term-1',
+            queue: 'default',
+            payload: '{"class":"Job1"}',
+            exception: 'Error 1',
+            failedAt: new DateTimeImmutable('2024-01-15T10:30:00+00:00'),
+        );
+        $job2 = new FailedJob(
+            id: 'term-2',
+            queue: 'emails',
+            payload: '{"class":"Job2"}',
+            exception: 'Error 2',
+            failedAt: new DateTimeImmutable('2024-01-15T11:00:00+00:00'),
+        );
+
+        $repository->store($job1);
+        $repository->store($job2);
+
+        $failedJobs = $repository->all();
+
+        // Returns correct jobs
+        expect($failedJobs)->toHaveCount(2)
+                ->and($failedJobs[0]->id)->toBe('term-1')
+                ->and($failedJobs[1]->id)->toBe('term-2')
+                // Drain-then-restore: all messages must be acked (consumed), never nacked-requeued
+            ->and($channel->ackedTags)->toHaveCount(2)
+                ->and($channel->nackedTags)->toBeEmpty()
+                // Restore: messages re-published so they are not lost
+            ->and($channel->publishedMessages)->toHaveCount(4); // 2 store + 2 restore
+    },
+);

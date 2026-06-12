@@ -62,4 +62,16 @@ class BatchInsertException extends MarkoException
             suggestion: 'Ensure all entities have the same columns initialised before passing them to insertBatch()',
         );
     }
+
+    public static function returningRowCountMismatch(
+        int $expectedCount,
+        int $actualCount,
+        string $pkColumn,
+    ): self {
+        return new self(
+            message: "INSERT ... RETURNING returned $actualCount row(s) but $expectedCount entities were inserted",
+            context: "Calling insertBatch() on a PostgreSQL connection with RETURNING $pkColumn",
+            suggestion: 'This is an unexpected database response; verify the INSERT statement and database triggers',
+        );
+    }
 }

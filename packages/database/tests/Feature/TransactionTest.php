@@ -68,6 +68,11 @@ describe('Transaction Handling', function (): void {
                 return 1;
             }
 
+            public function driverName(): string
+            {
+                return 'sqlite';
+            }
+
             public function beginTransaction(): void
             {
                 $this->inTransaction = true;
@@ -191,6 +196,11 @@ describe('Transaction Handling', function (): void {
             public function lastInsertId(): int
             {
                 return 1;
+            }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
             }
 
             public function beginTransaction(): void
@@ -325,6 +335,11 @@ describe('Transaction Handling', function (): void {
             public function lastInsertId(): int
             {
                 return 1;
+            }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
             }
 
             public function beginTransaction(): void {}

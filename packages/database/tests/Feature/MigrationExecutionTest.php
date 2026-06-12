@@ -101,6 +101,11 @@ PHP;
             {
                 return 1;
             }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
+            }
         };
 
         // Mock repository
@@ -209,6 +214,11 @@ PHP;
             {
                 return 1;
             }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
+            }
         };
 
         $repository = $this->createMock(MigrationRepository::class);
@@ -287,6 +297,11 @@ PHP;
             public function lastInsertId(): int
             {
                 return 1;
+            }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
             }
         };
 
@@ -417,6 +432,11 @@ PHP;
             public function lastInsertId(): int
             {
                 return 1;
+            }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
             }
         };
 

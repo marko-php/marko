@@ -338,17 +338,41 @@ abstract class Repository implements RepositoryInterface
         }
 
         try {
-            $this->connection->execute($sql, $bindings);
-
-            // Populate auto-increment IDs (MySQL strategy: LAST_INSERT_ID + row offset)
             $pkProperty = $this->metadata->getPrimaryKeyProperty();
-            if ($pkProperty?->isAutoIncrement === true) {
-                $firstId = $this->connection->lastInsertId();
-                $reflection = new ReflectionClass($entities[0]);
+            $isAutoIncrement = $pkProperty?->isAutoIncrement === true;
 
+            if ($isAutoIncrement && $this->connection->driverName() === 'pgsql') {
+                // PostgreSQL: use INSERT ... RETURNING <pk> to get exact ids in insert order.
+                // lastInsertId() on pgsql resolves to LASTVAL() (the LAST row's id), so
+                // the MySQL offset-arithmetic strategy would produce shifted ids.
+                $pkColumn = $pkProperty->columnName;
+                $returningRows = $this->connection->query("$sql RETURNING $pkColumn", $bindings);
+
+                $actualCount = count($returningRows);
+                $expectedCount = count($entities);
+
+                if ($actualCount !== $expectedCount) {
+                    throw BatchInsertException::returningRowCountMismatch($expectedCount, $actualCount, $pkColumn);
+                }
+
+                $reflection = new ReflectionClass($entities[0]);
                 foreach ($entities as $offset => $entity) {
                     $property = $reflection->getProperty($this->metadata->primaryKey);
-                    $property->setValue($entity, $firstId + $offset);
+                    $property->setValue($entity, (int) $returningRows[$offset][$pkColumn]);
+                }
+            } else {
+                $this->connection->execute($sql, $bindings);
+
+                // MySQL strategy: LAST_INSERT_ID() returns the FIRST inserted id for a
+                // single multi-row INSERT when innodb_autoinc_lock_mode is 0 or 1.
+                if ($isAutoIncrement) {
+                    $firstId = $this->connection->lastInsertId();
+                    $reflection = new ReflectionClass($entities[0]);
+
+                    foreach ($entities as $offset => $entity) {
+                        $property = $reflection->getProperty($this->metadata->primaryKey);
+                        $property->setValue($entity, $firstId + $offset);
+                    }
                 }
             }
 

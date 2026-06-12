@@ -6,6 +6,7 @@ namespace Marko\Core\Plugin;
 
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Exceptions\PluginException;
+use ReflectionClass;
 use ReflectionException;
 
 readonly class PluginInterceptor
@@ -94,9 +95,43 @@ readonly class PluginInterceptor
         );
 
         /** @var PluginInterceptedInterface&object $instance */
-        $instance = new $className();
+        $instance = (new ReflectionClass($className))->newInstanceWithoutConstructor();
+        $this->copyProperties($target, $instance);
         $instance->initInterception($target, $resolvedId, $this->container, $this->registry);
 
         return $instance;
+    }
+
+    /**
+     * Copy all property values from $source onto $destination by walking the
+     * class hierarchy of $source. Only properties declared in each class are
+     * processed at that level to avoid double-setting inherited properties.
+     * Private/protected properties are accessible via reflection in PHP 8.1+.
+     */
+    private function copyProperties(
+        object $source,
+        object $destination,
+    ): void {
+        $class = new ReflectionClass($source);
+
+        while ($class !== false) {
+            foreach ($class->getProperties() as $property) {
+                if ($property->isStatic()) {
+                    continue;
+                }
+
+                if ($property->getDeclaringClass()->getName() !== $class->getName()) {
+                    continue;
+                }
+
+                if (!$property->isInitialized($source)) {
+                    continue;
+                }
+
+                $property->setValue($destination, $property->getValue($source));
+            }
+
+            $class = $class->getParentClass();
+        }
     }
 }

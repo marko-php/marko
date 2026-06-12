@@ -1,6 +1,6 @@
 # Task 006: F4a — RabbitmqQueue attempt persistence + release-to-origin-queue + per-queue declare
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [004]
 **Retry count**: 0
 
@@ -53,14 +53,14 @@ attempts into the republished payload and release to the correct queue.
     unserialize hardening; rebase onto that seam.
 
 ## Requirements (Test Descriptions)
-- [ ] `it republishes a released job with an incremented attempt count so a subsequent
+- [x] `it republishes a released job with an incremented attempt count so a subsequent
       pop() observes attempts greater than the original`
-- [ ] `it terminates retries: after maxAttempts releases the attempt count reaches
+- [x] `it terminates retries: after maxAttempts releases the attempt count reaches
       maxAttempts so the worker stops retrying and the job is eligible for the failed store`
-- [ ] `it releases a job back to its originating queue, not the hardcoded default queue`
-- [ ] `it derives the delay queue name from the originating queue when releasing with a delay`
-- [ ] `it declares each distinct queue (a second queue name triggers its own queue_declare)`
-- [ ] `it preserves the job id when republishing a released job`
+- [x] `it releases a job back to its originating queue, not the hardcoded default queue`
+- [x] `it derives the delay queue name from the originating queue when releasing with a delay`
+- [x] `it declares each distinct queue (a second queue name triggers its own queue_declare)`
+- [x] `it preserves the job id when republishing a released job`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -68,4 +68,9 @@ attempts into the republished payload and release to the correct queue.
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+- Changed `release()` from `basic_nack(requeue: true)` to `basic_ack + basic_publish` for BOTH branches (delay=0 and delay>0) so attempt counts are persisted in the republished payload.
+- Added `$queueNames[$jobId]` map populated in `pop()` alongside delivery tags and payloads, so `release()` republishes to the originating queue rather than the hardcoded `$this->defaultQueue`.
+- Replaced single `$declared: bool` with `$declaredQueues: array<string, true>` (per-queue tracking) and a separate `$exchangeDeclared: bool` (exchange only declared once) so distinct queues each get their own `queue_declare`/`queue_bind` on first use.
+- Updated two existing release tests (`it releases job back to queue immediately when no delay` and `it releases job with delay via delay queue mechanism`) to expect `basic_ack + basic_publish` instead of `basic_nack`.
+- All 6 new requirement tests added; requirements 2–6 passed immediately since the implementation was complete after requirement 1.

@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Container\ContainerInterface;
 use Marko\Encryption\Config\EncryptionConfig;
+use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
@@ -18,6 +20,66 @@ function createWorkerTestEnvelope(
     string $key = 'test-key-for-worker',
 ): JobEnvelope {
     return new JobEnvelope(new EncryptionConfig(new FakeConfigRepository(['encryption.key' => $key])));
+}
+
+function createWorkerStubContainer(object $observer): ContainerInterface
+{
+    return new readonly class ($observer) implements ContainerInterface
+    {
+        public function __construct(
+            private object $observer,
+        ) {}
+
+        public function get(string $id): object
+        {
+            return $this->observer;
+        }
+
+        public function has(string $id): bool
+        {
+            return true;
+        }
+
+        public function singleton(string $id): void {}
+
+        public function instance(
+            string $id,
+            object $instance,
+        ): void {}
+
+        public function call(Closure $callable): mixed
+        {
+            return null;
+        }
+    };
+}
+
+function createNullWorkerContainer(): ContainerInterface
+{
+    return new class () implements ContainerInterface
+    {
+        public function get(string $id): never
+        {
+            throw new RuntimeException("No container binding for: $id");
+        }
+
+        public function has(string $id): bool
+        {
+            return false;
+        }
+
+        public function singleton(string $id): void {}
+
+        public function instance(
+            string $id,
+            object $instance,
+        ): void {}
+
+        public function call(Closure $callable): mixed
+        {
+            return null;
+        }
+    };
 }
 
 function createTestQueueConfig(
@@ -252,7 +314,13 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
+        $worker = new Worker(
+            $queue,
+            $failedRepository,
+            $config,
+            createWorkerTestEnvelope(),
+            createNullWorkerContainer(),
+        );
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);
 
@@ -345,7 +413,13 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
+        $worker = new Worker(
+            $queue,
+            $failedRepository,
+            $config,
+            createWorkerTestEnvelope(),
+            createNullWorkerContainer(),
+        );
 
         $worker->work(once: true);
 
@@ -432,7 +506,13 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
+        $worker = new Worker(
+            $queue,
+            $failedRepository,
+            $config,
+            createWorkerTestEnvelope(),
+            createNullWorkerContainer(),
+        );
 
         $worker->work(once: true);
 
@@ -460,7 +540,13 @@ describe('Worker', function (): void {
         // Create queue that references the static helper
         $queue = new StopTestQueue();
 
-        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
+        $worker = new Worker(
+            $queue,
+            $failedRepository,
+            $config,
+            createWorkerTestEnvelope(),
+            createNullWorkerContainer(),
+        );
         StopTestHelper::$worker = $worker;
 
         $worker->work();
@@ -544,7 +630,13 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
+        $worker = new Worker(
+            $queue,
+            $failedRepository,
+            $config,
+            createWorkerTestEnvelope(),
+            createNullWorkerContainer(),
+        );
 
         // With once=true, worker should process exactly one job and return
         $worker->work(once: true);
@@ -614,7 +706,13 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
+        $worker = new Worker(
+            $queue,
+            $failedRepository,
+            $config,
+            createWorkerTestEnvelope(),
+            createNullWorkerContainer(),
+        );
 
         // With once=true and no jobs, worker should return immediately
         $worker->work(once: true);
@@ -708,7 +806,13 @@ describe('Worker', function (): void {
         $failedRepository = createTestFailedJobRepository();
         $config = createTestQueueConfig();
 
-        $worker = new Worker($queue, $failedRepository, $config, createWorkerTestEnvelope());
+        $worker = new Worker(
+            $queue,
+            $failedRepository,
+            $config,
+            createWorkerTestEnvelope(),
+            createNullWorkerContainer(),
+        );
 
         // Process jobs (once each)
         $worker->work(once: true); // 1st attempt
@@ -721,4 +825,102 @@ describe('Worker', function (): void {
             ->and($capture->releasedDelays[1])->toBe(40)  // 2^2 * 10 = 40
             ->and($capture->releasedDelays[2])->toBe(80); // 2^3 * 10 = 80
     });
+
+    test(
+        'constructs a Worker with a ContainerInterface dependency (added after the existing JobEnvelope dep) and the worker injects both the container and the JobEnvelope into a popped AsyncObserverJob before calling handle()',
+        function (): void {
+            $capture = (object) ['called' => false, 'event' => null];
+
+            $observer = new readonly class ($capture)
+            {
+                public function __construct(
+                    private object $capture,
+                ) {}
+
+                /** @noinspection PhpUnused - Invoked via container resolution */
+                public function handle(object $event): void
+                {
+                    $this->capture->called = true;
+                    $this->capture->event = $event;
+                }
+            };
+
+            $event = new stdClass();
+            $event->payload = 'worker-injects-container';
+
+            $envelope = createWorkerTestEnvelope();
+            $container = createWorkerStubContainer($observer);
+
+            $job = new AsyncObserverJob(
+                observerClass: $observer::class,
+                eventData: $envelope->wrap(serialize($event)),
+            );
+            $job->setId('async-job-1');
+
+            $queue = new class ($job) implements QueueInterface
+            {
+                private bool $popped = false;
+
+                public function __construct(
+                    private readonly JobInterface $job,
+                ) {}
+
+                public function push(
+                    JobInterface $job,
+                    ?string $queue = null,
+                ): string {
+                    return 'async-job-1';
+                }
+
+                public function later(
+                    int $delay,
+                    JobInterface $job,
+                    ?string $queue = null,
+                ): string {
+                    return 'async-job-1';
+                }
+
+                public function pop(?string $queue = null): ?JobInterface
+                {
+                    if ($this->popped) {
+                        return null;
+                    }
+                    $this->popped = true;
+
+                    return $this->job;
+                }
+
+                public function size(?string $queue = null): int
+                {
+                    return 0;
+                }
+
+                public function clear(?string $queue = null): int
+                {
+                    return 0;
+                }
+
+                public function delete(string $jobId): bool
+                {
+                    return true;
+                }
+
+                public function release(
+                    string $jobId,
+                    int $delay = 0,
+                ): bool {
+                    return true;
+                }
+            };
+
+            $failedRepository = createTestFailedJobRepository();
+            $config = createTestQueueConfig();
+
+            $worker = new Worker($queue, $failedRepository, $config, $envelope, $container);
+            $worker->work(once: true);
+
+            expect($capture->called)->toBeTrue()
+                ->and($capture->event->payload)->toBe('worker-injects-container');
+        },
+    );
 });

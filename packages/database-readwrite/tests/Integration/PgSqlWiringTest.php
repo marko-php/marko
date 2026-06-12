@@ -57,6 +57,11 @@ function makePgSqlTestConnection(array &$queryCalls = [], array &$executeCalls =
             return 1;
         }
 
+        public function driverName(): string
+        {
+            return 'pgsql';
+        }
+
         public function beginTransaction(): void {}
 
         public function commit(): void {}

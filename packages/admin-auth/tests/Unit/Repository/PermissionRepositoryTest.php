@@ -249,7 +249,7 @@ function createPermissionMockConnectionWithHistory(
          * @param array<array{sql: string, bindings: array<mixed>}> $queryHistory
          */
         public function __construct(
-            private array $queryResult,
+            private readonly array $queryResult,
             private array &$queryHistory,
         ) {}
 
@@ -296,6 +296,11 @@ function createPermissionMockConnectionWithHistory(
         public function lastInsertId(): int
         {
             return 1;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }
@@ -376,6 +381,11 @@ function createPermissionSyncMockConnection(
         public function lastInsertId(): int
         {
             return 2;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }

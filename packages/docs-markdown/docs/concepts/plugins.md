@@ -265,7 +265,7 @@ The strategy depends on the target:
 | Target | Strategy |
 |---|---|
 | Interface (e.g., `HasherInterface`) | Generated class `implements` the interface |
-| Non-readonly concrete class | Generated class `extends` the concrete class |
+| Non-readonly concrete class | Generated class `extends` the concrete class --- works even when the constructor has mandatory promoted dependencies resolved via DI |
 | Readonly concrete class | Error — target the interface instead |
 
 In all cases, the generated class implements `PluginInterceptedInterface`, which provides `getPluginTarget()` for code that needs access to the underlying real instance.

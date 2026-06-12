@@ -143,8 +143,7 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
         public function whereJsonContains(
             string $path,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -301,8 +300,7 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
         public function having(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -365,6 +363,11 @@ function makeWithConnection(array $rows = []): ConnectionInterface
         public function lastInsertId(): int
         {
             return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }
@@ -617,8 +620,7 @@ describe('Eager Loading Integration', function (): void {
             public function whereJsonContains(
                 string $path,
                 mixed $value,
-            ): static
-            {
+            ): static {
                 return $this;
             }
 
@@ -775,8 +777,7 @@ describe('Eager Loading Integration', function (): void {
             public function having(
                 string $expression,
                 array $bindings = [],
-            ): static
-            {
+            ): static {
                 return $this;
             }
 
@@ -886,8 +887,7 @@ describe('Eager Loading Integration', function (): void {
             public function whereJsonContains(
                 string $path,
                 mixed $value,
-            ): static
-            {
+            ): static {
                 return $this;
             }
 
@@ -1044,8 +1044,7 @@ describe('Eager Loading Integration', function (): void {
             public function having(
                 string $expression,
                 array $bindings = [],
-            ): static
-            {
+            ): static {
                 return $this;
             }
 
@@ -1148,8 +1147,7 @@ describe('Eager Loading Integration', function (): void {
             public function whereJsonContains(
                 string $path,
                 mixed $value,
-            ): static
-            {
+            ): static {
                 return $this;
             }
 
@@ -1306,8 +1304,7 @@ describe('Eager Loading Integration', function (): void {
             public function having(
                 string $expression,
                 array $bindings = [],
-            ): static
-            {
+            ): static {
                 return $this;
             }
 

@@ -1,6 +1,6 @@
 # Task 013: F10 — docs-vec hybrid search crashes on FTS hits + leaks raw PDOException
 
-**Status**: pending
+**Status**: complete
 **Depends on**: none
 **Retry count**: 0
 
@@ -100,13 +100,13 @@ method:
     `PDOException` specifically.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns ranked DocsResult objects for a query that produces one or more FTS hits without erroring`
-- [ ] `it combines FTS and vector RRF scores into a single bucket and sets the chunk for an FTS-only entry`
-- [ ] `it still searches successfully on the FTS-only path when no embedding model is available`
-- [ ] `it throws DocsException not PDOException when the search text is a malformed FTS5 MATCH expression`
-- [ ] `it includes the underlying FTS5 parse reason in the DocsException message`
-- [ ] `it returns an empty list for a valid query that matches no documents`
-- [ ] `it preserves the existing DocsException when the index file is missing (does not convert it twice)`
+- [x] `it returns ranked DocsResult objects for a query that produces one or more FTS hits without erroring`
+- [x] `it combines FTS and vector RRF scores into a single bucket and sets the chunk for an FTS-only entry`
+- [x] `it still searches successfully on the FTS-only path when no embedding model is available`
+- [x] `it throws DocsException not PDOException when the search text is a malformed FTS5 MATCH expression`
+- [x] `it includes the underlying FTS5 parse reason in the DocsException message`
+- [x] `it returns an empty list for a valid query that matches no documents`
+- [x] `it preserves the existing DocsException when the index file is missing (does not convert it twice)`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -116,4 +116,8 @@ method:
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Fixed FTS fusion crash: line 65 in `VecSearch::search()` wrote a float onto the bucket key (`$fused[$key] = (float)`); changed to `$fused[$key]['score'] = (float)` to mirror the vec branch shape.
+- Added `PDOException` catch in `VecSearch::ftsSearch()` wrapping `execute()`/`fetchAll()`; converts to `DocsException::searchFailed($e->getMessage())` so the raw exception no longer escapes.
+- Added `VecRuntime::openPlainConnection()` — opens a plain SQLite PDO without loading the sqlite-vec extension. Used by `VecSearch::pdo()` when `isSqliteVecAvailable()` returns false.
+- Modified `VecSearch::pdo()` to branch on `isSqliteVecAvailable()`: uses `openConnection()` when available, `openPlainConnection()` otherwise. This enables the FTS-only path in CI without sqlite-vec.
+- New FTS-only test helper `buildFtsTestIndex()` / `buildFtsIndexDirectly()` in `VecSearchTest.php` — builds a real temp-dir SQLite FTS5 index using a plain `PDO` (no sqlite-vec). The 7 new tests exercise the FTS path unconditionally.

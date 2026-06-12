@@ -32,7 +32,7 @@ class ReadWriteConnection implements ConnectionInterface, TransactionInterface
         string $sql,
         array $bindings = [],
     ): array {
-        if ($this->stickyWrite) {
+        if ($this->stickyWrite || $this->isWriteStatement($sql)) {
             return $this->write->query($sql, $bindings);
         }
 
@@ -78,6 +78,11 @@ class ReadWriteConnection implements ConnectionInterface, TransactionInterface
         return $this->write->lastInsertId();
     }
 
+    public function driverName(): string
+    {
+        return $this->write->driverName();
+    }
+
     public function connect(): void
     {
         $this->write->connect();
@@ -116,11 +121,47 @@ class ReadWriteConnection implements ConnectionInterface, TransactionInterface
 
     public function transaction(callable $callback): mixed
     {
-        return $this->write->transaction($callback);
+        $this->stickyWrite = true;
+
+        try {
+            return $this->write->transaction($callback);
+        } finally {
+            $this->stickyWrite = false;
+        }
     }
 
     public function resetStickyState(): void
     {
         $this->stickyWrite = false;
+    }
+
+    /**
+     * Detects whether a SQL statement is a write operation (INSERT, UPDATE, DELETE).
+     *
+     * Leading whitespace and a leading SQL line comment (-- ...) or block comment
+     * (/* ... *\/) are stripped before sniffing the first keyword, case-insensitively.
+     *
+     * NOTE (v1 limitation): CTEs — a leading WITH clause whose final DML is INSERT/
+     * UPDATE/DELETE — are NOT detected here and will route to a replica. Use execute()
+     * or beginTransaction()/commit() for write CTEs, or call resetStickyState() after
+     * routing to ensure correct behaviour. With ... INSERT ... RETURNING should use
+     * execute() instead.
+     */
+    private function isWriteStatement(string $sql): bool
+    {
+        $trimmed = ltrim($sql);
+
+        // Strip a leading line comment: -- ...
+        if (str_starts_with($trimmed, '--')) {
+            $trimmed = ltrim(substr($trimmed, (int) strpos($trimmed, "\n") + 1));
+        }
+
+        // Strip a leading block comment: /* ... */
+        if (str_starts_with($trimmed, '/*')) {
+            $end = strpos($trimmed, '*/');
+            $trimmed = $end !== false ? ltrim(substr($trimmed, $end + 2)) : $trimmed;
+        }
+
+        return (bool) preg_match('/^(INSERT|UPDATE|DELETE)\b/i', $trimmed);
     }
 }

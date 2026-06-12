@@ -189,7 +189,8 @@ throw new MarkoException(
 #[Plugin(target: ClassName::class)]            // Mark class as plugin
 #[Before]                                       // Run before target method
 #[After]                                        // Run after target method
-#[Observer(event: EventClass::class)]           // React to events
+#[Observer(event: EventClass::class)]           // React to events (synchronous)
+#[Observer(event: EventClass::class, async: true)] // Push to queue and handle in background
 #[Command(name: 'cmd:name', description: '')] // Register CLI command
 ```
 

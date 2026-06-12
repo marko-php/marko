@@ -52,10 +52,10 @@ function createSqliteConnection(): ConnectionInterface
     $pdo = new PDO('sqlite::memory:');
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    return new class ($pdo) implements ConnectionInterface
+    return new readonly class ($pdo) implements ConnectionInterface
     {
         public function __construct(
-            private readonly PDO $pdo,
+            private PDO $pdo,
         ) {}
 
         public function connect(): void {}
@@ -70,8 +70,7 @@ function createSqliteConnection(): ConnectionInterface
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             $statement = $this->pdo->prepare($sql);
             $statement->execute($bindings);
 
@@ -81,8 +80,7 @@ function createSqliteConnection(): ConnectionInterface
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             $statement = $this->pdo->prepare($sql);
             $statement->execute($bindings);
 
@@ -97,6 +95,11 @@ function createSqliteConnection(): ConnectionInterface
         public function lastInsertId(): int
         {
             return (int) $this->pdo->lastInsertId();
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }
@@ -303,36 +306,36 @@ describe('Table Extension Integration', function (): void {
         function (): void {
             $metadataFactory = new EntityMetadataFactory();
             $connection = createSqliteConnection();
-    
+
             // Create a table WITHOUT the extender columns (simulates rolling deploy where
-        // the DB schema is still on the old version without profile columns)
-        $connection->execute(
+            // the DB schema is still on the old version without profile columns)
+            $connection->execute(
                 'CREATE TABLE int_users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL)',
             );
-    
+
             // Seed a row that has no profile columns at all
-        $connection->execute(
+            $connection->execute(
                 'INSERT INTO int_users (name, email) VALUES (?, ?)',
                 ['Eve', 'eve@example.com'],
             );
             $insertedId = $connection->lastInsertId();
-    
+
             // Register entities so metadata knows about the extender
-        $schemaBuilder = new SchemaBuilder();
+            $schemaBuilder = new SchemaBuilder();
             $registry = new SchemaRegistry($metadataFactory, $schemaBuilder);
             $registry->registerEntities([IntUser::class, IntUserProfile::class]);
-    
+
             $hydrator = new EntityHydrator($metadataFactory);
             $repository = new IntUserRepository($connection, $metadataFactory, $hydrator);
-    
+
             /** @var IntUser $user */
             $user = $repository->find($insertedId);
-    
+
             // Hydration must succeed without error and companion must simply be absent
-        expect($user)->not->toBeNull()
-                ->and($user->name)->toBe('Eve')
-                ->and($user->companion(IntUserProfile::class))->toBeNull();
-        }
+            expect($user)->not->toBeNull()
+                    ->and($user->name)->toBe('Eve')
+                    ->and($user->companion(IntUserProfile::class))->toBeNull();
+        },
     );
 
     it('detects column-name conflicts at registration time across two extenders', function (): void {
@@ -352,19 +355,19 @@ describe('Table Extension Integration', function (): void {
         'preserves migrate diff parity by including extender columns in the parent\'s Table value object',
         function (): void {
             // Approach: assert on the merged Table value object (no real DB differ needed).
-        // The merged Table is what SchemaRegistry exposes after registerEntities(),
-        // and it is the same object handed to DiffCalculator — so if the Table has
-        // the extender columns, the differ will produce the correct ADD COLUMN statements.
+            // The merged Table is what SchemaRegistry exposes after registerEntities(),
+            // and it is the same object handed to DiffCalculator — so if the Table has
+            // the extender columns, the differ will produce the correct ADD COLUMN statements.
 
             $metadataFactory = new EntityMetadataFactory();
             $schemaBuilder = new SchemaBuilder();
             $registry = new SchemaRegistry($metadataFactory, $schemaBuilder);
             $registry->registerEntities([IntUser::class, IntUserProfile::class]);
-    
+
             $mergedTable = $registry->getTable('int_users');
-    
+
             // Simulate an existing DB table that is missing the extender columns
-        $dbTable = new Table(
+            $dbTable = new Table(
                 name: 'int_users',
                 columns: [
                     new Column(name: 'id', type: 'INTEGER', primaryKey: true, autoIncrement: true),
@@ -373,59 +376,59 @@ describe('Table Extension Integration', function (): void {
                 ],
                 indexes: [],
             );
-    
+
             $diffCalculator = new DiffCalculator();
             $diff = $diffCalculator->calculate(
                 ['int_users' => $mergedTable],
                 ['int_users' => $dbTable],
             );
-    
+
             expect($diff->tablesToAlter)->toHaveKey('int_users');
-    
+
             $tableDiff = $diff->tablesToAlter['int_users'];
             $addedNames = array_map(fn ($col) => $col->name, $tableDiff->columnsToAdd);
-    
+
             expect($addedNames)
                 ->toContain('bio')
                 ->toContain('timezone');
-        }
+        },
     );
 
     it(
         'discovers an extender via EntityDiscovery and registers it correctly into the parent\'s merged schema',
         function (): void {
             $fixturesPath = __DIR__ . '/Fixtures';
-    
+
             $classFileParser = new ClassFileParser();
             $discovery = new EntityDiscovery($classFileParser);
-    
+
             $discovered = $discovery->discoverInPath($fixturesPath);
-    
+
             // All three fixture classes live in the Fixtures directory
-        expect($discovered)->toContain(IntUser::class)
-                ->and($discovered)->toContain(IntUserProfile::class);
-    
+            expect($discovered)->toContain(IntUser::class)
+                    ->and($discovered)->toContain(IntUserProfile::class);
+
             // Register the discovered set (parent + extender only, exclude conflict fixture)
-        $filteredClasses = array_values(array_filter(
+            $filteredClasses = array_values(array_filter(
                 $discovered,
                 fn (string $class) => $class !== IntUserSettings::class,
             ));
-    
+
             $metadataFactory = new EntityMetadataFactory();
             $schemaBuilder = new SchemaBuilder();
             $registry = new SchemaRegistry($metadataFactory, $schemaBuilder);
             $registry->registerEntities($filteredClasses);
-    
+
             $table = $registry->getTable('int_users');
             $columnNames = array_map(fn ($col) => $col->name, $table->columns);
-    
+
             expect($columnNames)
                 ->toContain('id')
                 ->toContain('name')
                 ->toContain('email')
                 ->toContain('bio')
                 ->toContain('timezone');
-        }
+        },
     );
 
     it('raises a loud error when constructing a Repository against an extender class', function (): void {

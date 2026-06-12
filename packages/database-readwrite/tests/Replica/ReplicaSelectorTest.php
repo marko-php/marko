@@ -96,6 +96,39 @@ describe('WeightedReplicaSelector', function (): void {
 
         expect($selected)->toBe($replica);
     });
+
+    it(
+        'selects a valid remaining replica after one replica has been removed during fallback (never indexes a removed/undefined slot)',
+        function (): void {
+            // Simulate fallback: originally 3 replicas with weights [1, 1, 1], but
+            // after a failure the caller passes only 2 replicas (array_values'd subset).
+            $replica1 = createFakeConnection();
+            $replica2 = createFakeConnection();
+
+            $selector = new WeightedReplicaSelector([1, 1, 1]);
+
+            // Run 100 times to make sure we never get a missing-index error
+            foreach (range(1, 100) as $_) {
+                $selected = $selector->select([$replica1, $replica2]);
+                expect(in_array($selected, [$replica1, $replica2], true))->toBeTrue();
+            }
+        },
+    );
+
+    it(
+        'never returns null or throws a TypeError from select() when the passed replica array is smaller than the original weights array',
+        function (): void {
+            $replica = createFakeConnection();
+
+            // weights for 5 replicas but only 1 is passed
+            $selector = new WeightedReplicaSelector([10, 20, 30, 40, 50]);
+
+            foreach (range(1, 100) as $_) {
+                $selected = $selector->select([$replica]);
+                expect($selected)->toBe($replica);
+            }
+        },
+    );
 });
 
 function createFakeConnection(): ConnectionInterface
@@ -133,6 +166,11 @@ function createFakeConnection(): ConnectionInterface
         public function lastInsertId(): int
         {
             return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'mysql';
         }
     };
 }

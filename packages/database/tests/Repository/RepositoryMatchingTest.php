@@ -94,8 +94,7 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
         public function whereJsonContains(
             string $path,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -252,8 +251,7 @@ function makeStubBuilder(array $rows = []): QueryBuilderInterface
         public function having(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -318,11 +316,16 @@ function makeRepository(QueryBuilderInterface $stubBuilder): ProductRepository
         {
             return 0;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 
-    $factory = new class ($stubBuilder) implements QueryBuilderFactoryInterface
+    $factory = new readonly class ($stubBuilder) implements QueryBuilderFactoryInterface
     {
-        public function __construct(private readonly QueryBuilderInterface $builder) {}
+        public function __construct(private QueryBuilderInterface $builder) {}
 
         public function create(): QueryBuilderInterface
         {
@@ -469,6 +472,11 @@ describe('Repository matching()', function (): void {
             {
                 return 0;
             }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
+            }
         };
 
         $repo = new ProductRepository(
@@ -523,9 +531,9 @@ describe('Specification Composition', function (): void {
         $stub = makeStubBuilder($rows);
         $repo = makeRepository($stub);
 
-        $statusSpec = new class ('active') implements QuerySpecification
+        $statusSpec = new readonly class ('active') implements QuerySpecification
         {
-            public function __construct(private readonly string $status) {}
+            public function __construct(private string $status) {}
 
             public function apply(QueryBuilderInterface $builder): void
             {
@@ -533,9 +541,9 @@ describe('Specification Composition', function (): void {
             }
         };
 
-        $minPriceSpec = new class (500) implements QuerySpecification
+        $minPriceSpec = new readonly class (500) implements QuerySpecification
         {
-            public function __construct(private readonly int $minPrice) {}
+            public function __construct(private int $minPrice) {}
 
             public function apply(QueryBuilderInterface $builder): void
             {

@@ -1,6 +1,6 @@
 # Task 004: F6 — AsyncObserverJob self-resolves and invokes observer; Worker wiring
 
-**Status**: pending
+**Status**: complete
 **Depends on**: none
 **Retry count**: 0
 
@@ -128,24 +128,24 @@ BOTH the container AND the envelope onto the popped `AsyncObserverJob` before ca
   re-adding a raw `unserialize($this->eventData)`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it resolves the observer from the container and calls handle() with the
+- [x] `it resolves the observer from the container and calls handle() with the
       deserialized event when the async observer job is processed`
-- [ ] `it executes an #[Observer(async: true)] observer end-to-end when its queued job runs
+- [x] `it executes an #[Observer(async: true)] observer end-to-end when its queued job runs
       (dispatch pushes a job, worker processes it, observer's handler is invoked once)`
-- [ ] `it passes the original event payload to the observer (the event reconstructed
+- [x] `it passes the original event payload to the observer (the event reconstructed
       from eventData equals the dispatched event)`
-- [ ] `it no longer silently does nothing when handle() is called (it resolves and invokes
+- [x] `it no longer silently does nothing when handle() is called (it resolves and invokes
       the observer using the injected container)`
-- [ ] `it surfaces a loud error when the observer class cannot be resolved (no silent swallow)`
-- [ ] `it throws a loud error when handle() runs before a container has been set (never a no-op)`
-- [ ] `it serializes and unserializes without the container or envelope (both are null
+- [x] `it surfaces a loud error when the observer class cannot be resolved (no silent swallow)`
+- [x] `it throws a loud error when handle() runs before a container has been set (never a no-op)`
+- [x] `it serializes and unserializes without the container or envelope (both are null
       across the serialize round-trip; no magic methods)`
-- [ ] `it constructs a Worker with a ContainerInterface dependency (added after the
+- [x] `it constructs a Worker with a ContainerInterface dependency (added after the
       existing JobEnvelope dep) and the worker injects both the container and the
       JobEnvelope into a popped AsyncObserverJob before calling handle()`
-- [ ] `it verifies the signed envelope before unserializing eventData when a JobEnvelope
+- [x] `it verifies the signed envelope before unserializing eventData when a JobEnvelope
       has been set (Tier-1 verification path preserved, not bypassed)`
-- [ ] `it throws SerializationException when the signed eventData is tampered and an
+- [x] `it throws SerializationException when the signed eventData is tampered and an
       envelope is set (Tier-1 tamper-detection regression guard still passes)`
 
 ## Acceptance Criteria
@@ -154,4 +154,12 @@ BOTH the container AND the envelope onto the popped `AsyncObserverJob` before ca
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `AsyncObserverJob` gained `private ?ContainerInterface $container = null` and `private ?JobEnvelope $jobEnvelope = null` properties with `setContainer()` and `setJobEnvelope()` setters.
+- `handle()` signature changed to `handle(): void` (compatible with `JobInterface::handle(): void`). It throws `RuntimeException` when container is null (loud error, never a no-op).
+- `handle()` uses `$this->jobEnvelope` for HMAC-signed envelope verification (Tier-1 path preserved) and `$this->container->get($this->observerClass)` for observer resolution.
+- Both `$container` and `$jobEnvelope` are null at push/serialize time; Worker sets them at pop time via `instanceof AsyncObserverJob` guard.
+- `Worker` gained `ContainerInterface $container` as the 5th constructor parameter (after `JobEnvelope`).
+- `Worker::work()` guards `if ($job instanceof AsyncObserverJob)` and calls `setContainer()` + `setJobEnvelope()` before `handle()`.
+- All 10 `new Worker(...)` call sites updated: 7 in `WorkerTest.php`, 3 in `Feature/IntegrationTest.php`.
+- Existing resolver-based tests in `AsyncObserverJobTest.php` rewritten to use `setContainer()` + `setJobEnvelope()`.
+- Tier-1 envelope verification and tamper detection tests preserved (using `setJobEnvelope()` instead of resolver param).

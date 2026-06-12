@@ -1,6 +1,6 @@
 # Task 008: F8 — ReadWriteConnection transaction sticky-write + write routing + replica-selection safety
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [009]
 **Retry count**: 0
 
@@ -65,16 +65,16 @@ write-producing statements to the primary, and make replica selection safe after
     still never compute an index `>= count($replicas)`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it routes query() calls executed inside a transaction() callback to the primary, not a replica`
-- [ ] `it resets sticky-write state after the transaction() callback completes`
-- [ ] `it resets sticky-write state even when the transaction() callback throws`
-- [ ] `it routes an INSERT ... RETURNING statement issued via query() to the primary`
-- [ ] `it routes a write statement to the primary even when it has leading whitespace or a
+- [x] `it routes query() calls executed inside a transaction() callback to the primary, not a replica`
+- [x] `it resets sticky-write state after the transaction() callback completes`
+- [x] `it resets sticky-write state even when the transaction() callback throws`
+- [x] `it routes an INSERT ... RETURNING statement issued via query() to the primary`
+- [x] `it routes a write statement to the primary even when it has leading whitespace or a
       leading SQL comment before the INSERT/UPDATE/DELETE keyword (case-insensitive)`
-- [ ] `it continues routing plain SELECTs to a replica when not in a transaction and not sticky`
-- [ ] `it selects a valid remaining replica after one replica has been removed during
+- [x] `it continues routing plain SELECTs to a replica when not in a transaction and not sticky`
+- [x] `it selects a valid remaining replica after one replica has been removed during
       fallback (never indexes a removed/undefined slot)`
-- [ ] `it never returns null or throws a TypeError from select() when the passed replica
+- [x] `it never returns null or throws a TypeError from select() when the passed replica
       array is smaller than the original weights array`
 
 ## Acceptance Criteria
@@ -83,4 +83,12 @@ write-producing statements to the primary, and make replica selection safe after
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+### transaction() sticky-write
+`ReadWriteConnection::transaction()` now sets `$this->stickyWrite = true` before delegating to `$write->transaction($callback)` and resets it in a `finally` block, ensuring sticky-write is cleared even when the callback throws.
+
+### query() write routing
+`ReadWriteConnection::query()` calls a private `isWriteStatement()` helper that strips leading whitespace and optional leading `--` line comment or `/* */` block comment, then matches `/^(INSERT|UPDATE|DELETE)\b/i`. Matching statements are routed to `$this->write`. v1 limitation documented in code comments: `WITH ... INSERT ... RETURNING` CTEs are not detected and route to a replica.
+
+### WeightedReplicaSelector safe indexing
+`WeightedReplicaSelector::select()` now slices `$this->weights` to `count($replicas)` elements before computing the cumulative distribution, so the returned index is always within bounds of the passed array even after a replica has been removed by the fallback loop.

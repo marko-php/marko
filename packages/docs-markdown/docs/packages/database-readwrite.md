@@ -119,6 +119,7 @@ The sticky flag is set by:
 
 - `execute()` — any INSERT, UPDATE, DELETE, or DDL statement
 - `beginTransaction()` — entering a transaction
+- `transaction(callable $callback)` — the entire callback runs on the primary; the sticky flag is cleared automatically when the callback completes
 
 ```php
 use Marko\Database\Connection\ConnectionInterface;
@@ -148,6 +149,10 @@ class OrderService
 ```
 
 The sticky flag persists until `resetStickyState()` is called. In a PHP-FPM application this happens automatically because each request runs in a fresh process. In long-running processes you must call it manually (see [Long-Running Processes](#long-running-processes)).
+
+:::caution[v1 limitation: write CTEs]
+CTEs that begin with `WITH` followed by an `INSERT`, `UPDATE`, or `DELETE` are **not** detected as write statements by the automatic routing logic. `WITH ... INSERT ... RETURNING` (or similar) will route to a replica unless you use `execute()` directly, or call `beginTransaction()` / `commit()` to enter a transaction first.
+:::
 
 ## `prepare()` Policy
 
@@ -246,7 +251,8 @@ Implements `ConnectionInterface` and `TransactionInterface`. Routes reads to rep
 | `commit(): void` | Write | Commit the current transaction |
 | `rollback(): void` | Write | Roll back the current transaction |
 | `inTransaction(): bool` | Write | Check if a transaction is active |
-| `transaction(callable $callback): mixed` | Write | Run a callback inside an auto-managed transaction |
+| `transaction(callable $callback): mixed` | Write (sets sticky temporarily) | Run a callback inside an auto-managed transaction; sticky flag is set for the callback duration and cleared on completion |
+| `driverName(): string` | Write (delegates) | Return the write connection's driver name (e.g. `'mysql'`, `'pgsql'`) |
 | `resetStickyState(): void` | — | Clear the sticky flag; subsequent reads route to replicas again |
 
 ### ReadException

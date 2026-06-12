@@ -196,5 +196,10 @@ function createConstructorMockConnection(
         {
             return $this->lastInsertId;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 }

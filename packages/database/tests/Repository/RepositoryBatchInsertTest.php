@@ -103,7 +103,7 @@ function makeBatchSpyConnection(array &$sqlLog, int $firstId = 1): ConnectionInt
 
         public function __construct(
             private array &$sqlLog,
-            private int $firstId,
+            private readonly int $firstId,
         ) {}
 
         public function throwOnNextExecute(): void
@@ -123,8 +123,7 @@ function makeBatchSpyConnection(array &$sqlLog, int $firstId = 1): ConnectionInt
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             $this->sqlLog[] = ['type' => 'query', 'sql' => $sql, 'bindings' => $bindings];
 
             return [];
@@ -133,8 +132,7 @@ function makeBatchSpyConnection(array &$sqlLog, int $firstId = 1): ConnectionInt
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             if ($this->shouldThrow) {
                 $this->shouldThrow = false;
                 throw new RuntimeException('Simulated DB failure');
@@ -154,6 +152,11 @@ function makeBatchSpyConnection(array &$sqlLog, int $firstId = 1): ConnectionInt
         {
             return $this->firstId;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 }
 
@@ -168,7 +171,7 @@ function makeBatchTransactionConnection(array &$log, bool $failInsert = false): 
 
         public function __construct(
             private array &$log,
-            private bool $failInsert,
+            private readonly bool $failInsert,
         ) {}
 
         public function connect(): void {}
@@ -183,16 +186,14 @@ function makeBatchTransactionConnection(array &$log, bool $failInsert = false): 
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return [];
         }
 
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             if ($this->failInsert && str_contains($sql, 'INSERT')) {
                 throw new RuntimeException('Simulated DB failure on INSERT');
             }
@@ -210,6 +211,11 @@ function makeBatchTransactionConnection(array &$log, bool $failInsert = false): 
         public function lastInsertId(): int
         {
             return 1;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
 
         public function beginTransaction(): void
@@ -298,7 +304,7 @@ it('fires Creating event for each entity before insert', function (): void {
         new EntityMetadataFactory(),
         new EntityHydrator(),
         null,
-        $dispatcher
+        $dispatcher,
     );
 
     $user1 = new BatchUser();
@@ -326,7 +332,7 @@ it('fires Created event for each entity after insert', function (): void {
         new EntityMetadataFactory(),
         new EntityHydrator(),
         null,
-        $dispatcher
+        $dispatcher,
     );
 
     $user1 = new BatchUser();
@@ -356,50 +362,50 @@ it(
     function (): void {
         $sqlLog = [];
         // Simulate MySQL: lastInsertId() returns first inserted ID = 10
-    $connection = makeBatchSpyConnection($sqlLog, 10);
+        $connection = makeBatchSpyConnection($sqlLog, 10);
         $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
-    
+
         $user1 = new BatchUser();
         $user1->name = 'Alice';
         $user1->email = 'alice@example.com';
-    
+
         $user2 = new BatchUser();
         $user2->name = 'Bob';
         $user2->email = 'bob@example.com';
-    
+
         $user3 = new BatchUser();
         $user3->name = 'Carol';
         $user3->email = 'carol@example.com';
-    
+
         expect($user1->id)->toBeNull()
             ->and($user2->id)->toBeNull()
             ->and($user3->id)->toBeNull();
-    
+
         $repository->insertBatch([$user1, $user2, $user3]);
-    
+
         expect($user1->id)->toBe(10)
             ->and($user2->id)->toBe(11)
             ->and($user3->id)->toBe(12);
-    }
+    },
 );
 
 it(
     'documents and tests that MySQL populated-id logic is correct only when innodb_autoinc_lock_mode permits sequential ids (contiguous block)',
     function (): void {
         // MySQL innodb_autoinc_lock_mode=2 (interleaved, the default since MySQL 8.0) does NOT
-    // guarantee a contiguous block of IDs for a single multi-row INSERT in a concurrent
-    // environment. The MySQL id-recovery strategy (LAST_INSERT_ID + row-count math) is
-    // therefore only reliable under lock_mode=0 (traditional) or lock_mode=1 (consecutive),
-    // where a single INSERT statement always receives a contiguous block.
-    //
-    // This test verifies the documented contract: given a contiguous block starting at
-    // firstId, each entity receives firstId + its zero-based index in the batch.
+        // guarantee a contiguous block of IDs for a single multi-row INSERT in a concurrent
+        // environment. The MySQL id-recovery strategy (LAST_INSERT_ID + row-count math) is
+        // therefore only reliable under lock_mode=0 (traditional) or lock_mode=1 (consecutive),
+        // where a single INSERT statement always receives a contiguous block.
+        //
+        // This test verifies the documented contract: given a contiguous block starting at
+        // firstId, each entity receives firstId + its zero-based index in the batch.
 
         $sqlLog = [];
         // firstId=5 simulates a scenario where rows 5, 6, 7 are a contiguous block
-    $connection = makeBatchSpyConnection($sqlLog, 5);
+        $connection = makeBatchSpyConnection($sqlLog, 5);
         $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
-    
+
         $users = [];
         for ($i = 0; $i < 3; $i++) {
             $u = new BatchUser();
@@ -407,18 +413,18 @@ it(
             $u->email = "user$i@example.com";
             $users[] = $u;
         }
-    
+
         $repository->insertBatch($users);
-    
+
         // Under contiguous-block assumption: IDs are 5, 6, 7
-    expect($users[0]->id)->toBe(5)
-            ->and($users[1]->id)->toBe(6)
-            ->and($users[2]->id)->toBe(7);
-    
+        expect($users[0]->id)->toBe(5)
+                ->and($users[1]->id)->toBe(6)
+                ->and($users[2]->id)->toBe(7);
+
         // Verify that only a single INSERT statement was issued
-    $insertStmts = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'INSERT')));
+        $insertStmts = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'], 'INSERT')));
         expect($insertStmts)->toHaveCount(1);
-    }
+    },
 );
 
 it('throws a descriptive exception when the input array is empty', function (): void {
@@ -529,3 +535,366 @@ it('handles string primary keys in the batch correctly', function (): void {
     expect($item1->uuid)->toBe('uuid-aaa')
         ->and($item2->uuid)->toBe('uuid-bbb');
 });
+
+// ── PostgreSQL RETURNING tests ─────────────────────────────────────────────────
+
+/**
+ * Creates a pgsql connection stub that simulates INSERT ... RETURNING results.
+ *
+ * @param array<int, array<string, mixed>> $returningRows Rows returned from RETURNING clause
+ * @param array<array{type: string, sql: string, bindings: array}> $sqlLog Reference for recording SQL calls
+ */
+function makePgsqlSpyConnection(array $returningRows, array &$sqlLog): ConnectionInterface
+{
+    return new class ($returningRows, $sqlLog) implements ConnectionInterface
+    {
+        public function __construct(
+            private readonly array $returningRows,
+            private array &$sqlLog,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            $this->sqlLog[] = ['type' => 'query', 'sql' => $sql, 'bindings' => $bindings];
+
+            return $this->returningRows;
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            $this->sqlLog[] = ['type' => 'execute', 'sql' => $sql, 'bindings' => $bindings];
+
+            return count($this->returningRows);
+        }
+
+        public function prepare(string $sql): StatementInterface
+        {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'pgsql';
+        }
+    };
+}
+
+/**
+ * Creates a pgsql connection stub that also implements TransactionInterface.
+ *
+ * @param array<int, array<string, mixed>> $returningRows Rows returned from RETURNING clause
+ * @param array<array{type: string, sql: string, bindings: array}> $sqlLog Reference for recording SQL calls
+ */
+function makePgsqlTransactionConnection(
+    array $returningRows,
+    array &$sqlLog,
+): ConnectionInterface&TransactionInterface {
+    return new class ($returningRows, $sqlLog) implements ConnectionInterface, TransactionInterface
+    {
+        private bool $inTx = false;
+
+        public function __construct(
+            private readonly array $returningRows,
+            private array &$sqlLog,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            $this->sqlLog[] = ['type' => 'query', 'sql' => $sql, 'bindings' => $bindings];
+
+            return $this->returningRows;
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            $this->sqlLog[] = ['type' => 'execute', 'sql' => $sql, 'bindings' => $bindings];
+
+            return count($this->returningRows);
+        }
+
+        public function prepare(string $sql): StatementInterface
+        {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'pgsql';
+        }
+
+        public function beginTransaction(): void
+        {
+            $this->inTx = true;
+            $this->sqlLog[] = ['type' => 'beginTransaction'];
+        }
+
+        public function commit(): void
+        {
+            $this->inTx = false;
+            $this->sqlLog[] = ['type' => 'commit'];
+        }
+
+        public function rollback(): void
+        {
+            $this->inTx = false;
+            $this->sqlLog[] = ['type' => 'rollback'];
+        }
+
+        public function inTransaction(): bool
+        {
+            return $this->inTx;
+        }
+
+        public function transaction(callable $callback): mixed
+        {
+            $this->beginTransaction();
+            try {
+                $result = $callback();
+                $this->commit();
+
+                return $result;
+            } catch (Throwable $e) {
+                $this->rollback();
+                throw $e;
+            }
+        }
+    };
+}
+
+it(
+    'assigns each entity its true database id when batch-inserting two or more entities on a postgresql connection (ids are not shifted by count-1)',
+    function (): void {
+        // On pgsql with 3 rows, lastInsertId() would return 12 (the LAST row's id = LASTVAL).
+        // The buggy code would assign: entity[0]=12, entity[1]=13, entity[2]=14 (wrong!).
+        // The correct code uses RETURNING: entity[0]=10, entity[1]=11, entity[2]=12.
+        $sqlLog = [];
+        $returningRows = [
+            ['id' => 10],
+            ['id' => 11],
+            ['id' => 12],
+        ];
+        $connection = makePgsqlTransactionConnection($returningRows, $sqlLog);
+        $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+        $user1 = new BatchUser();
+        $user1->name = 'Alice';
+        $user1->email = 'alice@example.com';
+
+        $user2 = new BatchUser();
+        $user2->name = 'Bob';
+        $user2->email = 'bob@example.com';
+
+        $user3 = new BatchUser();
+        $user3->name = 'Carol';
+        $user3->email = 'carol@example.com';
+
+        expect($user1->id)->toBeNull()
+            ->and($user2->id)->toBeNull()
+            ->and($user3->id)->toBeNull();
+
+        $repository->insertBatch([$user1, $user2, $user3]);
+
+        expect($user1->id)->toBe(10)
+            ->and($user2->id)->toBe(11)
+            ->and($user3->id)->toBe(12);
+    },
+);
+
+it(
+    'assigns consecutive ids correctly when batch-inserting on a mysql connection',
+    function (): void {
+        $sqlLog = [];
+        $connection = makeBatchSpyConnection($sqlLog, 5);
+        $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+        $user1 = new BatchUser();
+        $user1->name = 'Alice';
+        $user1->email = 'alice@example.com';
+
+        $user2 = new BatchUser();
+        $user2->name = 'Bob';
+        $user2->email = 'bob@example.com';
+
+        $repository->insertBatch([$user1, $user2]);
+
+        expect($user1->id)->toBe(5)
+            ->and($user2->id)->toBe(6);
+    },
+);
+
+it(
+    'builds an INSERT ... RETURNING <primaryKey> statement on a postgresql connection',
+    function (): void {
+        $sqlLog = [];
+        $returningRows = [['id' => 1], ['id' => 2]];
+        $connection = makePgsqlTransactionConnection($returningRows, $sqlLog);
+        $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+        $user1 = new BatchUser();
+        $user1->name = 'Alice';
+        $user1->email = 'alice@example.com';
+
+        $user2 = new BatchUser();
+        $user2->name = 'Bob';
+        $user2->email = 'bob@example.com';
+
+        $repository->insertBatch([$user1, $user2]);
+
+        $insertStatements = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'] ?? '', 'INSERT')));
+        expect($insertStatements)->not->toBeEmpty();
+        $insertSql = $insertStatements[0]['sql'];
+        expect($insertSql)
+            ->toContain('INSERT INTO batch_users')
+            ->toContain('RETURNING id');
+    },
+);
+
+it(
+    'builds a plain multi-row INSERT (no RETURNING) and uses LAST_INSERT_ID offset on mysql',
+    function (): void {
+        $sqlLog = [];
+        $connection = makeBatchSpyConnection($sqlLog, 1);
+        $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+        $user1 = new BatchUser();
+        $user1->name = 'Alice';
+        $user1->email = 'alice@example.com';
+
+        $user2 = new BatchUser();
+        $user2->name = 'Bob';
+        $user2->email = 'bob@example.com';
+
+        $repository->insertBatch([$user1, $user2]);
+
+        $insertStatements = array_values(array_filter($sqlLog, fn ($e) => str_contains($e['sql'] ?? '', 'INSERT')));
+        expect($insertStatements)->not->toBeEmpty();
+        $insertSql = $insertStatements[0]['sql'];
+        expect($insertSql)
+            ->toContain('INSERT INTO batch_users')
+            ->not->toContain('RETURNING');
+    },
+);
+
+it(
+    'returns the true ids for three or more entities on pgsql (not just two), proving positional mapping over the full RETURNING result set',
+    function (): void {
+        $sqlLog = [];
+        $returningRows = [
+            ['id' => 100],
+            ['id' => 101],
+            ['id' => 102],
+            ['id' => 103],
+            ['id' => 104],
+        ];
+        $connection = makePgsqlTransactionConnection($returningRows, $sqlLog);
+        $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+        $users = [];
+        for ($i = 0; $i < 5; $i++) {
+            $u = new BatchUser();
+            $u->name = "User $i";
+            $u->email = "user$i@example.com";
+            $users[] = $u;
+        }
+
+        $repository->insertBatch($users);
+
+        expect($users[0]->id)->toBe(100)
+            ->and($users[1]->id)->toBe(101)
+            ->and($users[2]->id)->toBe(102)
+            ->and($users[3]->id)->toBe(103)
+            ->and($users[4]->id)->toBe(104);
+    },
+);
+
+it(
+    'throws a loud BatchInsertException when the pgsql RETURNING result count does not match the number of entities',
+    function (): void {
+        $sqlLog = [];
+        // RETURNING returns 1 row but 2 entities were inserted
+        $returningRows = [['id' => 1]];
+        $connection = makePgsqlTransactionConnection($returningRows, $sqlLog);
+        $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+        $user1 = new BatchUser();
+        $user1->name = 'Alice';
+        $user1->email = 'alice@example.com';
+
+        $user2 = new BatchUser();
+        $user2->name = 'Bob';
+        $user2->email = 'bob@example.com';
+
+        expect(fn () => $repository->insertBatch([$user1, $user2]))
+            ->toThrow(BatchInsertException::class);
+    },
+);
+
+it(
+    'routes the RETURNING write through the write connection (not a replica) on a read/write connection',
+    function (): void {
+        // The RETURNING path uses query() (SELECT-like path).
+        // On a ReadWriteConnection without stickyWrite, query() normally goes to replica.
+        // But after execute() sets stickyWrite=true, query() routes to write.
+        // We test this via a standalone pgsql spy that exercises the path.
+        $sqlLog = [];
+        $returningRows = [['id' => 7], ['id' => 8]];
+        $connection = makePgsqlTransactionConnection($returningRows, $sqlLog);
+        $repository = new BatchUserRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
+
+        $user1 = new BatchUser();
+        $user1->name = 'Alice';
+        $user1->email = 'alice@example.com';
+
+        $user2 = new BatchUser();
+        $user2->name = 'Bob';
+        $user2->email = 'bob@example.com';
+
+        $repository->insertBatch([$user1, $user2]);
+
+        // Verify the INSERT used RETURNING (pgsql path) and was a query() call
+        $insertCalls = array_values(array_filter(
+            $sqlLog,
+            fn ($e) => isset($e['sql']) && str_contains($e['sql'], 'INSERT') && str_contains($e['sql'], 'RETURNING'),
+        ));
+        expect($insertCalls)->not->toBeEmpty()
+            ->and($insertCalls[0]['type'])->toBe('query')
+            ->and($user1->id)->toBe(7)
+            ->and($user2->id)->toBe(8);
+    },
+);

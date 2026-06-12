@@ -128,7 +128,27 @@ marko queue:work --once
 
 ### Configuration
 
-The `QueueConfig` class provides typed access to queue configuration values:
+Queue behavior is controlled by `config/queue.php`:
+
+```php title="config/queue.php"
+return [
+    'driver'       => 'database',   // 'sync', 'database', or 'rabbitmq'
+    'connection'   => 'default',
+    'queue'        => 'default',
+    'retry_after'  => 90,           // seconds before a reserved-but-unfinished job is reclaimed
+    'max_attempts' => 3,
+];
+```
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `driver` | `sync` | Queue backend: `sync`, `database`, or `rabbitmq` |
+| `connection` | `default` | Named connection passed to the driver |
+| `queue` | `default` | Default queue name |
+| `retry_after` | `90` | Seconds after which a reserved job that has not been deleted or released is considered crashed and becomes eligible for re-reservation |
+| `max_attempts` | `3` | How many times a job is attempted before it is moved to the failed-job store |
+
+The `QueueConfig` class provides typed access to these values:
 
 ```php
 use Marko\Queue\QueueConfig;

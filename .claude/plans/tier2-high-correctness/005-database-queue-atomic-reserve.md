@@ -1,6 +1,6 @@
 # Task 005: F5 — DatabaseQueue atomic reserve + reservation-timeout reclaim + single attempt source
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [004, 009]
 **Retry count**: 0
 
@@ -52,15 +52,15 @@ timed-out reservations, and make attempt counting have a single source of truth 
     unserialize hardening; rebase onto that seam.
 
 ## Requirements (Test Descriptions)
-- [ ] `it reserves a job atomically so a second concurrent pop() of the same queue does
+- [x] `it reserves a job atomically so a second concurrent pop() of the same queue does
       not return the already-reserved job (affected-rows guard returns null on race loss)`
-- [ ] `it issues the reserve UPDATE with a reserved_at IS NULL guard`
-- [ ] `it reclaims a job whose reservation is older than queue.retry_after and makes it
+- [x] `it issues the reserve UPDATE with a reserved_at IS NULL guard`
+- [x] `it reclaims a job whose reservation is older than queue.retry_after and makes it
       available to pop() again`
-- [ ] `it does not reclaim a job whose reservation is within the retry_after window`
-- [ ] `it counts exactly one attempt per execution (popping then processing a job once
+- [x] `it does not reclaim a job whose reservation is within the retry_after window`
+- [x] `it counts exactly one attempt per execution (popping then processing a job once
       yields attempts == 1, not 2)`
-- [ ] `it reaches maxAttempts after exactly maxAttempts executions (job moves to failed
+- [x] `it reaches maxAttempts after exactly maxAttempts executions (job moves to failed
       store on the Nth, not the (N-1)th, failure)`
 
 ## Acceptance Criteria
@@ -69,4 +69,9 @@ timed-out reservations, and make attempt counting have a single source of truth 
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `retryAfter` constructor parameter (default 90s) to `DatabaseQueue`; replaces `QueueConfig` injection to keep the class narrowly scoped
+- `popJob` SELECT widened to `(reserved_at IS NULL OR reserved_at <= :reclaim_cutoff)` where `reclaim_cutoff = now - retryAfter` to reclaim crashed reservations
+- `FOR UPDATE SKIP LOCKED` gated on `$connection->driverName()` (mysql/pgsql only); SQLite uses no locking but the affected-rows guard still provides correctness
+- UPDATE uses `WHERE id = :id AND (reserved_at IS NULL OR reserved_at <= :reclaim_cutoff)` as atomic guard; affected-rows = 0 → race lost → return null
+- Removed DB-side `attempts = attempts + 1` increment and the post-sync loop from `popJob`; Worker's `incrementAttempts()` is the single source of truth
+- Job returns with `attempts = 0` from `pop()`; Worker increments to 1 on first execution → `maxAttempts = N` means exactly N executions before failure

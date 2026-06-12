@@ -16,7 +16,7 @@ class MockConnection implements ConnectionInterface
 
     public function __construct(
         private array $queryResults = [],
-        private int $executeResult = 0,
+        private readonly int $executeResult = 0,
     ) {}
 
     public function connect(): void {}
@@ -56,6 +56,11 @@ class MockConnection implements ConnectionInterface
     {
         return 1;
     }
+
+    public function driverName(): string
+    {
+        return 'sqlite';
+    }
 }
 
 function createMockConnection(
@@ -87,13 +92,13 @@ test('DatabaseFailedJobRepository store saves failed job', function (): void {
 
     $repository->store($failedJob);
 
-    expect($connection->executedStatements)->toHaveCount(1);
-    expect($connection->executedStatements[0]['sql'])->toContain('INSERT INTO');
-    expect($connection->executedStatements[0]['sql'])->toContain('failed_jobs');
-    expect($connection->executedStatements[0]['bindings'])->toContain('failed-123');
-    expect($connection->executedStatements[0]['bindings'])->toContain('default');
-    expect($connection->executedStatements[0]['bindings'])->toContain('{"class":"TestJob","data":{}}');
-    expect($connection->executedStatements[0]['bindings'])->toContain('RuntimeException: Test error');
+    expect($connection->executedStatements)->toHaveCount(1)
+        ->and($connection->executedStatements[0]['sql'])->toContain('INSERT INTO')
+        ->and($connection->executedStatements[0]['sql'])->toContain('failed_jobs')
+        ->and($connection->executedStatements[0]['bindings'])->toContain('failed-123')
+        ->and($connection->executedStatements[0]['bindings'])->toContain('default')
+        ->and($connection->executedStatements[0]['bindings'])->toContain('{"class":"TestJob","data":{}}')
+        ->and($connection->executedStatements[0]['bindings'])->toContain('RuntimeException: Test error');
 });
 
 test('DatabaseFailedJobRepository all retrieves all failed jobs', function (): void {
@@ -119,14 +124,14 @@ test('DatabaseFailedJobRepository all retrieves all failed jobs', function (): v
 
     $failedJobs = $repository->all();
 
-    expect($failedJobs)->toHaveCount(2);
-    expect($failedJobs[0])->toBeInstanceOf(FailedJob::class);
-    expect($failedJobs[0]->id)->toBe('failed-1');
-    expect($failedJobs[0]->queue)->toBe('default');
-    expect($failedJobs[1]->id)->toBe('failed-2');
-    expect($failedJobs[1]->queue)->toBe('emails');
-    expect($connection->executedQueries[0]['sql'])->toContain('SELECT');
-    expect($connection->executedQueries[0]['sql'])->toContain('failed_jobs');
+    expect($failedJobs)->toHaveCount(2)
+        ->and($failedJobs[0])->toBeInstanceOf(FailedJob::class)
+        ->and($failedJobs[0]->id)->toBe('failed-1')
+        ->and($failedJobs[0]->queue)->toBe('default')
+        ->and($failedJobs[1]->id)->toBe('failed-2')
+        ->and($failedJobs[1]->queue)->toBe('emails')
+        ->and($connection->executedQueries[0]['sql'])->toContain('SELECT')
+        ->and($connection->executedQueries[0]['sql'])->toContain('failed_jobs');
 });
 
 test('DatabaseFailedJobRepository find retrieves by ID', function (): void {
@@ -145,11 +150,11 @@ test('DatabaseFailedJobRepository find retrieves by ID', function (): void {
 
     $failedJob = $repository->find('failed-123');
 
-    expect($failedJob)->toBeInstanceOf(FailedJob::class);
-    expect($failedJob->id)->toBe('failed-123');
-    expect($failedJob->queue)->toBe('default');
-    expect($connection->executedQueries[0]['sql'])->toContain('WHERE');
-    expect($connection->executedQueries[0]['bindings'])->toBe(['failed-123']);
+    expect($failedJob)->toBeInstanceOf(FailedJob::class)
+        ->and($failedJob->id)->toBe('failed-123')
+        ->and($failedJob->queue)->toBe('default')
+        ->and($connection->executedQueries[0]['sql'])->toContain('WHERE')
+        ->and($connection->executedQueries[0]['bindings'])->toBe(['failed-123']);
 });
 
 test('DatabaseFailedJobRepository find returns null for non-existent ID', function (): void {
@@ -167,11 +172,11 @@ test('DatabaseFailedJobRepository delete removes by ID', function (): void {
 
     $result = $repository->delete('failed-123');
 
-    expect($result)->toBeTrue();
-    expect($connection->executedStatements)->toHaveCount(1);
-    expect($connection->executedStatements[0]['sql'])->toContain('DELETE FROM');
-    expect($connection->executedStatements[0]['sql'])->toContain('failed_jobs');
-    expect($connection->executedStatements[0]['bindings'])->toBe(['failed-123']);
+    expect($result)->toBeTrue()
+        ->and($connection->executedStatements)->toHaveCount(1)
+        ->and($connection->executedStatements[0]['sql'])->toContain('DELETE FROM')
+        ->and($connection->executedStatements[0]['sql'])->toContain('failed_jobs')
+        ->and($connection->executedStatements[0]['bindings'])->toBe(['failed-123']);
 });
 
 test('DatabaseFailedJobRepository delete returns false when ID not found', function (): void {
@@ -189,11 +194,11 @@ test('DatabaseFailedJobRepository clear removes all', function (): void {
 
     $cleared = $repository->clear();
 
-    expect($cleared)->toBe(5);
-    expect($connection->executedStatements)->toHaveCount(1);
-    expect($connection->executedStatements[0]['sql'])->toContain('DELETE FROM');
-    expect($connection->executedStatements[0]['sql'])->toContain('failed_jobs');
-    expect($connection->executedStatements[0]['sql'])->not->toContain('WHERE');
+    expect($cleared)->toBe(5)
+        ->and($connection->executedStatements)->toHaveCount(1)
+        ->and($connection->executedStatements[0]['sql'])->toContain('DELETE FROM')
+        ->and($connection->executedStatements[0]['sql'])->toContain('failed_jobs')
+        ->and($connection->executedStatements[0]['sql'])->not->toContain('WHERE');
 });
 
 test('DatabaseFailedJobRepository count returns total', function (): void {
@@ -204,9 +209,9 @@ test('DatabaseFailedJobRepository count returns total', function (): void {
 
     $count = $repository->count();
 
-    expect($count)->toBe(42);
-    expect($connection->executedQueries[0]['sql'])->toContain('SELECT COUNT');
-    expect($connection->executedQueries[0]['sql'])->toContain('failed_jobs');
+    expect($count)->toBe(42)
+        ->and($connection->executedQueries[0]['sql'])->toContain('SELECT COUNT')
+        ->and($connection->executedQueries[0]['sql'])->toContain('failed_jobs');
 });
 
 test('DatabaseFailedJobRepository stores exception details', function (): void {
@@ -244,8 +249,8 @@ test('DatabaseFailedJobRepository stores exception details', function (): void {
 
     // Verify the complete exception is preserved with newlines and stack trace
     $storedExceptionIndex = array_search($exceptionMessage, $bindings);
-    expect($storedExceptionIndex)->not->toBeFalse('Exception message should be in bindings');
-    expect($bindings[$storedExceptionIndex])->toContain('Stack trace:');
-    expect($bindings[$storedExceptionIndex])->toContain('DatabaseQueue->pop()');
-    expect($bindings[$storedExceptionIndex])->toContain('Previous:');
+    expect($storedExceptionIndex)->not->toBeFalse('Exception message should be in bindings')
+        ->and($bindings[$storedExceptionIndex])->toContain('Stack trace:')
+        ->and($bindings[$storedExceptionIndex])->toContain('DatabaseQueue->pop()')
+        ->and($bindings[$storedExceptionIndex])->toContain('Previous:');
 });

@@ -44,7 +44,8 @@ class SmtpTransport
     public function startTls(): void
     {
         $this->socket->write("STARTTLS\r\n");
-        $this->socket->read();
+        $response = $this->socket->read();
+        $this->expectResponseCode($response, 220);
 
         if (!$this->socket->enableTls()) {
             throw TransportException::tlsFailed($this->host);
@@ -60,10 +61,11 @@ class SmtpTransport
         string $mode = 'LOGIN',
     ): void {
         $this->username = $username;
+        $normalizedMode = strtoupper($mode);
 
-        if ($mode === 'LOGIN') {
+        if ($normalizedMode === 'LOGIN') {
             $this->authenticateLogin($username, $password);
-        } elseif ($mode === 'PLAIN') {
+        } elseif ($normalizedMode === 'PLAIN') {
             $this->authenticatePlain($username, $password);
         }
     }
@@ -133,9 +135,24 @@ class SmtpTransport
         $response = $this->socket->read();
         $this->expectResponseCode($response, 354);
 
-        $this->socket->write($content . "\r\n.\r\n");
+        $stuffed = $this->dotStuff($content);
+        $this->socket->write($stuffed . "\r\n.\r\n");
         $response = $this->socket->read();
         $this->expectSuccess($response);
+    }
+
+    private function dotStuff(
+        string $content,
+    ): string {
+        $lines = explode("\r\n", $content);
+
+        foreach ($lines as &$line) {
+            if (str_starts_with($line, '.')) {
+                $line = '.' . $line;
+            }
+        }
+
+        return implode("\r\n", $lines);
     }
 
     public function quit(): void

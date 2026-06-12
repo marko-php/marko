@@ -94,6 +94,11 @@ class MockConnection implements ConnectionInterface
     {
         return 0;
     }
+
+    public function driverName(): string
+    {
+        return 'sqlite';
+    }
 }
 
 beforeEach(function (): void {

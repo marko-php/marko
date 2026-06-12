@@ -4,7 +4,7 @@
 2026-06-10
 
 ## Status
-ready
+completed
 
 ## Objective
 Remediate eight high-severity correctness defects that silently break core Marko
@@ -126,19 +126,19 @@ none
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | F1: concrete-subclass interceptor instantiation for constructor-DI targets (core/Plugin) | - | pending |
-| 002 | F2: errors-advanced standalone boot + real register()/handleError() | - | pending |
-| 003 | F3: tokenizer-based ClassFileParser::extractClassName (core/Discovery) | - | pending |
-| 004 | F6: AsyncObserverJob self-resolves + invokes observer; Worker gains ContainerInterface dep + wiring (queue) | - | pending |
-| 005 | F5: DatabaseQueue atomic reserve + reservation-timeout reclaim + attempt source (queue-database) | 004, 009 | pending |
-| 006 | F4a: RabbitmqQueue attempt persistence + release-to-origin-queue + per-queue declare (queue-rabbitmq) | 004 | pending |
-| 007 | F4b: RabbitmqFailedJobRepository non-livelocking store (queue-rabbitmq) | 006 | pending |
-| 008 | F8: ReadWriteConnection transaction sticky-write + write routing + replica selection safety (database-readwrite) | 009 | pending |
-| 009 | F9: Repository::insertBatch RETURNING-based PK assignment + ConnectionInterface::driverName() accessor (database, ~43 stub implementers) | - | pending |
-| 010 | F7a: concrete StreamSocket implements SocketInterface (mail-smtp) | - | pending |
-| 011 | F7b: factory connect→EHLO→STARTTLS(220)→AUTH(case-insensitive) sequence + SmtpConfig defaults removal + module binding (mail-smtp) | 010 | pending |
-| 012 | F7c: DATA dot-stuffing + multi-recipient correctness (mail-smtp) | 011 | pending |
-| 013 | F10: docs-vec RRF fusion crash fix + malformed-FTS5-MATCH PDOException→DocsException (docs-vec) | - | pending |
+| 001 | F1: concrete-subclass interceptor instantiation for constructor-DI targets (core/Plugin) | - | completed |
+| 002 | F2: errors-advanced standalone boot + real register()/handleError() | - | completed |
+| 003 | F3: tokenizer-based ClassFileParser::extractClassName (core/Discovery) | - | completed |
+| 004 | F6: AsyncObserverJob self-resolves + invokes observer; Worker gains ContainerInterface dep + wiring (queue) | - | completed |
+| 005 | F5: DatabaseQueue atomic reserve + reservation-timeout reclaim + attempt source (queue-database) | 004, 009 | completed |
+| 006 | F4a: RabbitmqQueue attempt persistence + release-to-origin-queue + per-queue declare (queue-rabbitmq) | 004 | completed |
+| 007 | F4b: RabbitmqFailedJobRepository non-livelocking store (queue-rabbitmq) | 006 | completed |
+| 008 | F8: ReadWriteConnection transaction sticky-write + write routing + replica selection safety (database-readwrite) | 009 | completed |
+| 009 | F9: Repository::insertBatch RETURNING-based PK assignment + ConnectionInterface::driverName() accessor (database, ~43 stub implementers) | - | completed |
+| 010 | F7a: concrete StreamSocket implements SocketInterface (mail-smtp) | - | completed |
+| 011 | F7b: factory connect→EHLO→STARTTLS(220)→AUTH(case-insensitive) sequence + SmtpConfig defaults removal + module binding (mail-smtp) | 010 | completed |
+| 012 | F7c: DATA dot-stuffing + multi-recipient correctness (mail-smtp) | 011 | completed |
+| 013 | F10: docs-vec RRF fusion crash fix + malformed-FTS5-MATCH PDOException→DocsException (docs-vec) | - | completed |
 
 Parallel batches (each task is a distinct file-cluster; 008 and 005 now serialize
 after 009 because 009's `ConnectionInterface::driverName()` addition edits the same

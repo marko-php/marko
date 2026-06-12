@@ -727,7 +727,7 @@ $postRepository->insertBatch($posts);
 
 - Relationships are **not** auto-persisted. Persist related entities separately before calling `insertBatch()`.
 - `EntityCreating` / `EntityCreated` events fire synchronously for every entity in the batch. For high-throughput imports, mark observers async via `marko/queue` or drop to the raw query builder to avoid the per-row overhead.
-- All entities must be of the same type and have identical column sets. `BatchInsertException` is thrown for empty input, mixed types, or mismatched columns.
+- All entities must be of the same type and have identical column sets. `BatchInsertException` is thrown for empty input, mixed types, mismatched columns, or (on PostgreSQL) when the number of rows returned by `RETURNING` does not equal the number of inserted entities.
 
 **ID assignment after batch insert:**
 
@@ -883,7 +883,7 @@ Every driver package binds six interfaces. They fall into two categories:
 
 | Interface | Category | Role |
 |-----------|----------|------|
-| `ConnectionInterface` | **Wire** | PDO connection, DSN format, PostgreSQL/MySQL protocol |
+| `ConnectionInterface` | **Wire** | PDO connection, DSN format, PostgreSQL/MySQL protocol; exposes `driverName(): string` (e.g. `'mysql'`, `'pgsql'`) so dialect-aware code can branch without a live connection |
 | `ConnectionFactoryInterface` | **Wire** | Creates `ConnectionInterface` instances from a `DatabaseConfig` |
 | `SqlGeneratorInterface` | Dialect | DDL generation for schema diffs |
 | `IntrospectorInterface` | Dialect | Reading existing schema from `information_schema` etc. |
