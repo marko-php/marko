@@ -13,9 +13,12 @@ functions, with loud `TransportException`s on failure.
 ## Context
 - Related files:
   - `/Users/markshust/Sites/marko/packages/mail-smtp/src/SocketInterface.php`
-    (methods: `connect(string $host, int $port, ?string $encryption = null, int
-    $timeout = 30): void`, `read(): string`, `write(string $data): void`,
-    `enableTls(): bool`, and a `close()`-style method — confirm the full interface)
+    (VERIFIED full contract: `connect(string $host, int $port, ?string $encryption = null,
+    int $timeout = 30): void`, `read(): string`, `write(string $data): void`,
+    `enableTls(): bool`, `close(): void`, AND a property hook
+    `public bool $connected { get; }`. The `$connected` get-hook is a REQUIRED interface
+    member — `StreamSocket` is fatal at load time without it. Back it with whether the
+    stream resource is currently open.)
   - `/Users/markshust/Sites/marko/packages/mail/src/Exception/TransportException.php`
     (`connectionFailed(host, port)`, `tlsFailed(host)`, `authenticationFailed(username)`,
     `unexpectedResponse(code, response)` — use these loud factories)
@@ -31,6 +34,10 @@ functions, with loud `TransportException`s on failure.
   - `enableTls()`: `stream_socket_enable_crypto($stream, true,
     STREAM_CRYPTO_METHOD_TLS_CLIENT)` returning the bool result.
   - `close()`: `fclose` and null the resource.
+  - `$connected` (property get-hook): return `true` while the stream resource is a live
+    open resource, `false` after `close()` or before `connect()`. Implement it as a
+    `public bool $connected { get => $this->stream !== null; }` hook (or equivalent) to
+    satisfy the interface property member.
   - No magic methods; full types; `declare(strict_types=1)`. Live network behaviour is
     covered by the thin integration test only.
 - Note: the live socket test opens a real TCP stream — group it `integration-destructive`
@@ -38,8 +45,10 @@ functions, with loud `TransportException`s on failure.
   tested via the fake socket in Tasks 011/012.
 
 ## Requirements (Test Descriptions)
-- [ ] `it implements SocketInterface (declares connect, read, write, enableTls, close
-      with the interface signatures)`
+- [ ] `it implements SocketInterface (declares connect, read, write, enableTls, close,
+      and the $connected property get-hook with the interface signatures)`
+- [ ] `it reports $connected as false before connect and after close, and true while the
+      stream is open`
 - [ ] `it throws a loud TransportException when the connection cannot be established`
 - [ ] `it reads a single CRLF-terminated reply line from the stream`
 - [ ] `it accumulates a multi-line SMTP reply (250- continuations) into one read result`
