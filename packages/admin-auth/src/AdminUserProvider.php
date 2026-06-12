@@ -10,6 +10,7 @@ use Marko\AdminAuth\Repository\RoleRepositoryInterface;
 use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
+use Marko\Database\Exceptions\EntityException;
 
 readonly class AdminUserProvider implements UserProviderInterface
 {
@@ -19,6 +20,9 @@ readonly class AdminUserProvider implements UserProviderInterface
         private PasswordHasherInterface $passwordHasher,
     ) {}
 
+    /**
+     * @throws EntityException
+     */
     public function retrieveById(
         int|string $identifier,
     ): ?AuthenticatableInterface {
@@ -37,6 +41,9 @@ readonly class AdminUserProvider implements UserProviderInterface
         return $user;
     }
 
+    /**
+     * @throws EntityException
+     */
     public function retrieveByCredentials(
         array $credentials,
     ): ?AuthenticatableInterface {
@@ -70,6 +77,9 @@ readonly class AdminUserProvider implements UserProviderInterface
         return $this->passwordHasher->verify($password, $user->getAuthPassword());
     }
 
+    /**
+     * @throws EntityException
+     */
     public function retrieveByRememberToken(
         int|string $identifier,
         string $token,
@@ -106,28 +116,28 @@ readonly class AdminUserProvider implements UserProviderInterface
         $this->userRepository->save($user);
     }
 
+    /**
+     * @throws EntityException
+     */
     private function loadRolesAndPermissions(
         AdminUser $user,
     ): void {
         $roles = $this->userRepository->getRolesForUser($user->id);
 
-        $permissionKeys = [];
+        $roleIds = array_filter(
+            array_map(fn (mixed $role): ?int => $role->id, $roles),
+            fn (?int $id): bool => $id !== null,
+        );
 
-        foreach ($roles as $role) {
-            if ($role->id === null) {
-                continue;
-            }
+        $permissions = $this->roleRepository->getPermissionsForRoles(array_values($roleIds));
 
-            $permissions = $this->roleRepository->getPermissionsForRole($role->id);
-
-            foreach ($permissions as $permission) {
-                $permissionKeys[] = $permission->key;
-            }
-        }
+        $permissionKeys = array_unique(
+            array_map(fn (mixed $permission): string => $permission->key, $permissions),
+        );
 
         $user->setRoles(
             roles: $roles,
-            permissionKeys: array_unique($permissionKeys),
+            permissionKeys: $permissionKeys,
         );
     }
 }

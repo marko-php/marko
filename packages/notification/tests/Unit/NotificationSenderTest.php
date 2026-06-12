@@ -116,6 +116,24 @@ test('it queues notification via QueueInterface when available', function (): vo
     $sender->queue($notifiable, $notification);
 });
 
+test('it falls back to per-recipient send for channels without batch support', function (): void {
+    $notifiableA = $this->createMock(NotifiableInterface::class);
+    $notifiableB = $this->createMock(NotifiableInterface::class);
+
+    // Plain ChannelInterface (not BatchChannelInterface) — expects 2 individual send() calls
+    $channel = $this->createMock(ChannelInterface::class);
+    $channel->expects($this->exactly(2))->method('send');
+
+    $manager = new NotificationManager();
+    $manager->register('database', $channel);
+
+    $notification = $this->createMock(NotificationInterface::class);
+    $notification->method('channels')->willReturn(['database']);
+
+    $sender = new NotificationSender($manager);
+    $sender->send([$notifiableA, $notifiableB], $notification);
+});
+
 test('it wraps channel delivery failures in ChannelException', function (): void {
     $notifiable = $this->createMock(NotifiableInterface::class);
 

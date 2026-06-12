@@ -428,7 +428,14 @@ use Marko\Media\Entity\Media;
 public function save(Media $media): Media;
 public function delete(int $id): void;
 public function find(int $id): ?Media;
+
+/** @return array<Media> */
+public function findMany(array $ids): array;
 ```
+
+`findMany()` accepts an `array<int>` of IDs and returns all matching `Media` entities in a single query. Empty input returns an empty array without issuing a query. IDs with no matching row are silently skipped. The returned order is unspecified --- callers are responsible for reordering when a specific order is required.
+
+Consumers implementing `MediaRepositoryInterface` must add this method.
 
 ### MediaAttachmentRepositoryInterface
 

@@ -17,6 +17,107 @@ use Marko\Database\Entity\EntityCollection;
 use ReflectionClass;
 use RuntimeException;
 
+/**
+ * Tracking role repo: records which batch methods were called.
+ * getPermissionsForRole throws to confirm it is never called after rewiring.
+ */
+class TrackingRoleRepo implements RoleRepositoryInterface
+{
+    /** @var array<int> */
+    public array $batchRoleIdsReceived = [];
+
+    public int $batchCallCount = 0;
+
+    /**
+     * @param array<int, array<Permission>> $permissionsMap
+     */
+    public function __construct(
+        private readonly array $permissionsMap = [],
+    ) {}
+
+    public function find(int|string $id): ?Role
+    {
+        return null;
+    }
+
+    public function findOrFail(int|string $id): Role
+    {
+        throw new RuntimeException('Not found');
+    }
+
+    public function findAll(): EntityCollection
+    {
+        return new EntityCollection();
+    }
+
+    public function findBy(array $criteria): EntityCollection
+    {
+        return new EntityCollection();
+    }
+
+    public function findOneBy(array $criteria): ?Role
+    {
+        return null;
+    }
+
+    public function existsBy(array $criteria): bool
+    {
+        return false;
+    }
+
+    public function findBySlug(string $slug): ?Role
+    {
+        return null;
+    }
+
+    public function getPermissionsForRole(int $roleId): array
+    {
+        throw new RuntimeException('getPermissionsForRole must not be called after rewiring to batch');
+    }
+
+    public function getPermissionsForRoles(array $roleIds): array
+    {
+        $this->batchCallCount++;
+        $this->batchRoleIdsReceived = $roleIds;
+
+        if ($roleIds === []) {
+            return [];
+        }
+
+        $permissions = [];
+        $seen = [];
+
+        foreach ($roleIds as $rid) {
+            foreach ($this->permissionsMap[$rid] ?? [] as $permission) {
+                if (!in_array($permission->key, $seen, true)) {
+                    $seen[] = $permission->key;
+                    $permissions[] = $permission;
+                }
+            }
+        }
+
+        return $permissions;
+    }
+
+    public function syncPermissions(
+        int $roleId,
+        array $permissionIds,
+    ): void {}
+
+    public function isSlugUnique(
+        string $slug,
+        ?int $excludeId = null,
+    ): bool {
+        return true;
+    }
+
+    public function save(Entity $entity): void {}
+
+    public function delete(Entity $entity): void {}
+
+    public function insertBatch(array $entities): void {}
+}
+
 it('implements UserProviderInterface', function (): void {
     $reflection = new ReflectionClass(AdminUserProvider::class);
 
@@ -207,6 +308,123 @@ it('updates remember token via updateRememberToken', function (): void {
         ->and($userRepo->lastSavedUser)->toBe($user);
 });
 
+it('loads the same permission set as the per-role implementation', function (): void {
+    $user = createTestAdminUser();
+
+    $editorRole = new Role();
+    $editorRole->id = 1;
+    $editorRole->name = 'Editor';
+    $editorRole->slug = 'editor';
+    $editorRole->isSuperAdmin = '0';
+
+    $permission1 = new Permission();
+    $permission1->id = 1;
+    $permission1->key = 'posts.create';
+    $permission1->label = 'Create Posts';
+    $permission1->group = 'posts';
+
+    $permission2 = new Permission();
+    $permission2->id = 2;
+    $permission2->key = 'posts.edit';
+    $permission2->label = 'Edit Posts';
+    $permission2->group = 'posts';
+
+    $roleRepo = new TrackingRoleRepo(permissionsMap: [
+        1 => [$permission1, $permission2],
+    ]);
+    $userRepo = createMockUserRepo(findReturn: $user, rolesReturn: [$editorRole]);
+    $hasher = createMockHasher();
+
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+
+    $result = $provider->retrieveById(1);
+
+    expect($result)->toBeInstanceOf(AdminUser::class)
+        ->and($result->hasPermission('posts.create'))->toBeTrue()
+        ->and($result->hasPermission('posts.edit'))->toBeTrue()
+        ->and($roleRepo->batchCallCount)->toBe(1);
+});
+
+it('deduplicates permission keys shared across roles', function (): void {
+    $user = createTestAdminUser();
+
+    $editorRole = new Role();
+    $editorRole->id = 1;
+    $editorRole->name = 'Editor';
+    $editorRole->slug = 'editor';
+    $editorRole->isSuperAdmin = '0';
+
+    $moderatorRole = new Role();
+    $moderatorRole->id = 2;
+    $moderatorRole->name = 'Moderator';
+    $moderatorRole->slug = 'moderator';
+    $moderatorRole->isSuperAdmin = '0';
+
+    $sharedPermission = new Permission();
+    $sharedPermission->id = 1;
+    $sharedPermission->key = 'posts.create';
+    $sharedPermission->label = 'Create Posts';
+    $sharedPermission->group = 'posts';
+
+    $uniquePermission = new Permission();
+    $uniquePermission->id = 2;
+    $uniquePermission->key = 'comments.moderate';
+    $uniquePermission->label = 'Moderate Comments';
+    $uniquePermission->group = 'comments';
+
+    $roleRepo = new TrackingRoleRepo(permissionsMap: [
+        1 => [$sharedPermission],
+        2 => [$sharedPermission, $uniquePermission],
+    ]);
+    $userRepo = createMockUserRepo(findReturn: $user, rolesReturn: [$editorRole, $moderatorRole]);
+    $hasher = createMockHasher();
+
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+
+    $result = $provider->retrieveById(1);
+
+    $roles = $result->getRoles();
+
+    expect($result)->toBeInstanceOf(AdminUser::class)
+        ->and($result->hasPermission('posts.create'))->toBeTrue()
+        ->and($result->hasPermission('comments.moderate'))->toBeTrue()
+        ->and($roles)->toHaveCount(2)
+        ->and($roleRepo->batchCallCount)->toBe(1);
+});
+
+it('sets roles and unique permission keys on the authenticated user', function (): void {
+    $user = createTestAdminUser();
+
+    $editorRole = new Role();
+    $editorRole->id = 1;
+    $editorRole->name = 'Editor';
+    $editorRole->slug = 'editor';
+    $editorRole->isSuperAdmin = '0';
+
+    $permission = new Permission();
+    $permission->id = 1;
+    $permission->key = 'posts.create';
+    $permission->label = 'Create Posts';
+    $permission->group = 'posts';
+
+    $roleRepo = new TrackingRoleRepo(permissionsMap: [
+        1 => [$permission],
+    ]);
+    $userRepo = createMockUserRepo(findReturn: $user, rolesReturn: [$editorRole]);
+    $hasher = createMockHasher();
+
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+
+    $result = $provider->retrieveById(1);
+
+    expect($result)->toBeInstanceOf(AdminUser::class)
+        ->and($result->getRoles())->toHaveCount(1)
+        ->and($result->getRoles()[0]->getSlug())->toBe('editor')
+        ->and($result->hasPermission('posts.create'))->toBeTrue()
+        ->and($roleRepo->batchCallCount)->toBe(1)
+        ->and($roleRepo->batchRoleIdsReceived)->toBe([1]);
+});
+
 // Helper functions
 
 function createTestAdminUser(
@@ -369,6 +587,28 @@ function createMockRoleRepo(
             int $roleId,
         ): array {
             return $this->permissionsMap[$roleId] ?? [];
+        }
+
+        public function getPermissionsForRoles(
+            array $roleIds,
+        ): array {
+            if ($roleIds === []) {
+                return [];
+            }
+
+            $permissions = [];
+            $seen = [];
+
+            foreach ($roleIds as $roleId) {
+                foreach ($this->permissionsMap[$roleId] ?? [] as $permission) {
+                    if (!in_array($permission->key, $seen, true)) {
+                        $seen[] = $permission->key;
+                        $permissions[] = $permission;
+                    }
+                }
+            }
+
+            return $permissions;
         }
 
         public function syncPermissions(

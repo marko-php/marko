@@ -210,9 +210,13 @@ interface RoleRepositoryInterface extends RepositoryInterface
 {
     public function findBySlug(string $slug): ?Role;
     public function getPermissionsForRole(int $roleId): array;
+    /** @return array<Permission> */
+    public function getPermissionsForRoles(array $roleIds): array;
     public function syncPermissions(int $roleId, array $permissionIds): void;
     public function isSlugUnique(string $slug, ?int $excludeId = null): bool;
 }
+
+`getPermissionsForRoles()` returns the deduplicated permission set across all given role IDs in a single query. Empty input returns an empty array without issuing a query.
 
 interface PermissionRepositoryInterface extends RepositoryInterface
 {

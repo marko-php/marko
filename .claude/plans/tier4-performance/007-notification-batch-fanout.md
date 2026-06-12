@@ -1,6 +1,6 @@
 # Task 007: F5 — Batched database-channel notification fan-out
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -22,23 +22,23 @@ The sender resolves channels **per recipient** (the current code calls `$notific
   - `packages/notification/src/Channel/DatabaseChannel.php` (`send` — single raw INSERT with id/type/notifiable_type/notifiable_id/data/read_at/created_at + `generateUuid`)
   - `packages/notification/src/Contracts/ChannelInterface.php` (UNCHANGED — do not edit)
   - new `packages/notification/src/Contracts/BatchChannelInterface.php` (add this; `sendMany(array, NotificationInterface): void`, `@throws ChannelException`)
-  - `packages/notification/tests/Unit/NotificationSenderTest.php` and `tests/Unit/Channel/DatabaseChannelTest.php` (existing per-recipient send + mock-`ConnectionInterface` patterns to extend)
+  - `packages/notification/tests/Unit/NotificationSenderTest.php` (existing tests use PHPUnit `createMock(ChannelInterface::class)` — the existing `database`-channel mocks are plain `ChannelInterface`, NOT `BatchChannelInterface`, so they correctly fall back to per-recipient `send()` and stay green; register a real `DatabaseChannel` or a `BatchChannelInterface` mock for the new batch test) and `tests/Unit/Channel/DatabaseChannelTest.php` (uses PHPUnit `createMock(ConnectionInterface::class)`; the new batch query-count test needs a hand-written anonymous stub instead, which must implement `driverName()`)
   - `packages/database/src/Repository/Repository.php` `insertBatch` (~314-323 placeholder/multi-row VALUES construction shape only — NOT the PK loop)
 - Patterns to follow:
-  - `DatabaseChannel::sendMany`: build one multi-row `INSERT INTO notifications (id, type, notifiable_type, notifiable_id, data, read_at, created_at) VALUES (?,?,?,?,?,?,?),(...)` over all recipients, chunked so the placeholder count stays within driver limits; each row carries the same column data the single-send path writes (fresh UUID per row via `generateUuid`, notification class name, `json_encode` of `toDatabase($notifiable)` per recipient, null `read_at`, current timestamp). A failed `execute()` is wrapped in `ChannelException::deliveryFailed('database', ...)` exactly as `send()` does.
-  - The sender groups recipients by their per-recipient-resolved channel name before dispatch; non-`BatchChannelInterface` channels and single-recipient groups use the existing `send()` path (preserving `ChannelException`/`NotificationException` wrapping).
-  - Query-count assertions: anonymous `ConnectionInterface` stub recording each `execute()`; assert the number of INSERT statements equals the chunk count (one when N fits a single chunk), that N rows' worth of bindings are present, and each row's UUID is distinct.
+  - `DatabaseChannel::sendMany`: build one multi-row `INSERT INTO notifications (id, type, notifiable_type, notifiable_id, data, read_at, created_at) VALUES (?,?,?,?,?,?,?),(...)` over all recipients, chunked so the placeholder count stays within driver limits (use a typed rows-per-chunk constant); each row carries the same column data the single-send path writes (fresh UUID per row via `generateUuid`, `$notification::class`, `(string) $notifiable->getNotifiableId()`, `$notifiable->getNotifiableType()`, `json_encode($notification->toDatabase($notifiable), JSON_THROW_ON_ERROR)` per recipient, null `read_at`, `date('Y-m-d H:i:s')`). `generateUuid()` calls `random_bytes()` (`RandomException`) and the json_encode throws `JsonException` — wrap the ENTIRE per-chunk build+execute in `try { ... } catch (Throwable $e) { throw ChannelException::deliveryFailed('database', $e->getMessage()); }` exactly as `send()` does, so UUID/JSON failures are wrapped too. Declare `@throws ChannelException` on `sendMany`.
+  - The sender groups recipients by their per-recipient-resolved channel name (resolved via `$this->manager->channel($channelName)`, which throws `NotificationException::unknownChannel` — keep that resolution so the existing unknown-channel test stays green). For each channel: if the resolved channel `instanceof BatchChannelInterface` and the group has >1 recipient, call `sendMany($group, $notification)`, ELSE call `send()` per recipient. BOTH the `sendMany` call and the per-recipient `send` calls MUST be wrapped in the SAME try/catch the current `send` loop uses (lines 40-47): `catch (ChannelException) { rethrow }` / `catch (Throwable) { throw NotificationException::sendFailed($channelName, ...) }`. Do not let the batch path skip this wrapping.
+  - Query-count assertions: a NEW anonymous `ConnectionInterface` stub recording each `execute()` (it MUST implement `driverName(): string` — Tier 2 interface addition — or it fatals; the existing `DatabaseChannelTest` uses PHPUnit `createMock` which auto-stubs `driverName`, but a hand-written stub does not). Assert the number of INSERT statements equals the chunk count (one when N fits a single chunk), that N rows' worth of bindings are present, and each row's UUID is distinct.
 
 ## Requirements (Test Descriptions)
-- [ ] `it persists a notification for every recipient on the database channel`
-- [ ] `it issues a single multi-row insert when all recipients fit one chunk`
-- [ ] `it issues one insert per chunk when recipients exceed the chunk size`
-- [ ] `it writes the same column data per row as the single-recipient send`
-- [ ] `it generates a distinct id for each persisted notification row`
-- [ ] `it falls back to per-recipient send for channels without batch support`
-- [ ] `it routes each recipient only to the channels that recipient declared`
-- [ ] `it wraps a batch insert failure in a channel exception`
-- [ ] `it leaves MailChannel and other ChannelInterface implementations unchanged`
+- [x] `it persists a notification for every recipient on the database channel`
+- [x] `it issues a single multi-row insert when all recipients fit one chunk`
+- [x] `it issues one insert per chunk when recipients exceed the chunk size`
+- [x] `it writes the same column data per row as the single-recipient send`
+- [x] `it generates a distinct id for each persisted notification row`
+- [x] `it falls back to per-recipient send for channels without batch support`
+- [x] `it routes each recipient only to the channels that recipient declared`
+- [x] `it wraps a batch insert failure in a channel exception`
+- [x] `it leaves MailChannel and other ChannelInterface implementations unchanged`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -46,4 +46,8 @@ The sender resolves channels **per recipient** (the current code calls `$notific
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `BatchChannelInterface` at `src/Contracts/BatchChannelInterface.php` with `sendMany(array $notifiables, NotificationInterface): void`
+- `DatabaseChannel` now implements both `ChannelInterface` and `BatchChannelInterface`; `sendMany` builds chunked multi-row INSERTs with `ROWS_PER_CHUNK = 500` (7 cols × 500 = 3500 placeholders, within driver limits)
+- `NotificationSender::send` refactored to build a channel-name → recipients map first, then for each channel: calls `sendMany` when the channel implements `BatchChannelInterface` and >1 recipient; falls back to per-recipient `send` otherwise
+- `ChannelInterface` left completely unchanged
+- Test coverage: `DatabaseChannelBatchTest.php` uses a hand-written `BatchTestConnection` stub (implements `driverName()`) to count `execute()` calls and inspect bindings directly
