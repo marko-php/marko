@@ -52,6 +52,7 @@ it('supports notifications without responses', function (): void {
     $called = false;
     $this->protocol->registerMethod('$/notification', function () use (&$called): null {
         $called = true;
+
         return null;
     });
     // Notifications have no "id" field
@@ -65,4 +66,93 @@ it('supports notifications without responses', function (): void {
 it('handles graceful shutdown on exit notification', function (): void {
     $this->protocol->handleMessage('{"jsonrpc":"2.0","method":"exit"}');
     expect($this->protocol->isShutdown())->toBeTrue();
+});
+
+it('does not terminate the serve loop on a malformed frame', function (): void {
+    $validBody = '{"jsonrpc":"2.0","method":"echo","params":{},"id":1}';
+    $validFrame = 'Content-Length: ' . strlen($validBody) . "\r\n\r\n" . $validBody;
+
+    // Malformed frame: Content-Length: 0, then valid frame, then EOF
+    $malformedFrame = "Content-Length: 0\r\n\r\n";
+
+    fwrite($this->in, $malformedFrame . $validFrame);
+    rewind($this->in);
+
+    $handled = false;
+    $this->protocol->registerMethod('echo', function () use (&$handled): array {
+        $handled = true;
+
+        return [];
+    });
+
+    $this->protocol->serve();
+
+    expect($handled)->toBeTrue();
+});
+
+it('writes a JSON-RPC parse error for a malformed frame', function (): void {
+    $validBody = '{"jsonrpc":"2.0","method":"echo","params":{},"id":1}';
+    $validFrame = 'Content-Length: ' . strlen($validBody) . "\r\n\r\n" . $validBody;
+    $malformedFrame = "Content-Length: 0\r\n\r\n";
+
+    fwrite($this->in, $malformedFrame . $validFrame);
+    rewind($this->in);
+
+    $this->protocol->registerMethod('echo', fn (): array => []);
+    $this->protocol->serve();
+
+    rewind($this->out);
+    $output = (string) stream_get_contents($this->out);
+
+    // First response should be a parse error
+    $firstFrameEnd = strpos($output, "\r\n\r\n");
+    $firstBody = substr($output, $firstFrameEnd + 4);
+    $firstResponseEnd = strpos($firstBody, 'Content-Length:');
+    $firstResponseJson = $firstResponseEnd !== false ? substr($firstBody, 0, $firstResponseEnd) : $firstBody;
+
+    $resp = json_decode(trim($firstResponseJson), true);
+    expect($resp['error']['code'])->toBe(-32700)
+        ->and($resp['id'])->toBeNull();
+});
+
+it('processes a valid message that follows a malformed frame', function (): void {
+    $validBody = '{"jsonrpc":"2.0","method":"echo","params":{"x":42},"id":5}';
+    $validFrame = 'Content-Length: ' . strlen($validBody) . "\r\n\r\n" . $validBody;
+    $malformedFrame = "Content-Length: 0\r\n\r\n";
+
+    fwrite($this->in, $malformedFrame . $validFrame);
+    rewind($this->in);
+
+    $this->protocol->registerMethod('echo', fn (array $p): array => $p);
+    $this->protocol->serve();
+
+    rewind($this->out);
+    $output = (string) stream_get_contents($this->out);
+
+    // Find the second JSON-RPC frame (after the parse error frame)
+    $firstEnd = strpos($output, "\r\n\r\n");
+    $firstBodyStart = $firstEnd + 4;
+
+    // Parse the first response length from Content-Length header
+    $firstHeader = substr($output, 0, $firstEnd);
+    preg_match('/Content-Length:\s*(\d+)/i', $firstHeader, $m);
+    $firstBodyLen = (int) $m[1];
+    $secondFrameStart = $firstBodyStart + $firstBodyLen;
+
+    $secondFrameEnd = strpos($output, "\r\n\r\n", $secondFrameStart);
+    $secondBody = substr($output, $secondFrameEnd + 4);
+
+    $resp = json_decode($secondBody, true);
+    expect($resp['result'])->toBe(['x' => 42])
+        ->and($resp['id'])->toBe(5);
+});
+
+it('ends the serve loop on genuine end of input', function (): void {
+    // Empty stream = immediate EOF, serve loop should exit cleanly
+    rewind($this->in);
+
+    $this->protocol->serve();
+
+    // If we get here without hanging, the loop ended on EOF
+    expect(true)->toBeTrue();
 });

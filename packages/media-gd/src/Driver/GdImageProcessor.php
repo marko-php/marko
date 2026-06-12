@@ -35,6 +35,7 @@ class GdImageProcessor implements ImageProcessorInterface
         bool $maintainAspect = true,
     ): string {
         $source = $this->loadImage($imagePath);
+        $extension = $this->detectFormat($imagePath);
 
         if ($maintainAspect) {
             [$width, $height] = $this->calculateAspectRatioDimensions(
@@ -46,10 +47,11 @@ class GdImageProcessor implements ImageProcessorInterface
         }
 
         $canvas = imagecreatetruecolor($width, $height);
+        $this->prepareCanvasAlpha($canvas, $extension);
         imagecopyresampled($canvas, $source, 0, 0, 0, 0, $width, $height, imagesx($source), imagesy($source));
 
-        $outputPath = sys_get_temp_dir() . '/' . uniqid('marko-gd-', true) . '.png';
-        imagepng($canvas, $outputPath);
+        $outputPath = sys_get_temp_dir() . '/' . uniqid('marko-gd-', true) . '.' . $extension;
+        $this->encode($canvas, $extension, $outputPath);
 
         return $outputPath;
     }
@@ -65,12 +67,14 @@ class GdImageProcessor implements ImageProcessorInterface
         int $height,
     ): string {
         $source = $this->loadImage($imagePath);
+        $extension = $this->detectFormat($imagePath);
 
         $canvas = imagecreatetruecolor($width, $height);
+        $this->prepareCanvasAlpha($canvas, $extension);
         imagecopy($canvas, $source, 0, 0, $x, $y, $width, $height);
 
-        $outputPath = sys_get_temp_dir() . '/' . uniqid('marko-gd-', true) . '.png';
-        imagepng($canvas, $outputPath);
+        $outputPath = sys_get_temp_dir() . '/' . uniqid('marko-gd-', true) . '.' . $extension;
+        $this->encode($canvas, $extension, $outputPath);
 
         return $outputPath;
     }
@@ -86,12 +90,7 @@ class GdImageProcessor implements ImageProcessorInterface
         $extension = $this->normalizeFormat($format);
         $outputPath = sys_get_temp_dir() . '/' . uniqid('marko-gd-', true) . '.' . $extension;
 
-        match ($extension) {
-            'jpeg' => imagejpeg($source, $outputPath),
-            'png' => imagepng($source, $outputPath),
-            'webp' => imagewebp($source, $outputPath),
-            'gif' => imagegif($source, $outputPath),
-        };
+        $this->encode($source, $extension, $outputPath);
 
         return $outputPath;
     }
@@ -116,6 +115,61 @@ class GdImageProcessor implements ImageProcessorInterface
         }
 
         return $this->resize($imagePath, $newWidth, $newHeight, false);
+    }
+
+    /**
+     * @throws GdProcessingException
+     */
+    private function detectFormat(
+        string $imagePath,
+    ): string {
+        $imageType = exif_imagetype($imagePath);
+
+        if ($imageType === false) {
+            throw GdProcessingException::processingFailed('detect-format', $imagePath);
+        }
+
+        $extension = image_type_to_extension($imageType, false);
+
+        if ($extension === false) {
+            throw GdProcessingException::processingFailed('detect-format', $imagePath);
+        }
+
+        return $this->normalizeFormat($extension);
+    }
+
+    private function prepareCanvasAlpha(
+        GdImage $canvas,
+        string $extension,
+    ): void {
+        if (!in_array($extension, ['png', 'webp'], true)) {
+            return;
+        }
+
+        imagealphablending($canvas, false);
+        imagesavealpha($canvas, true);
+        $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
+        imagefilledrectangle($canvas, 0, 0, imagesx($canvas) - 1, imagesy($canvas) - 1, $transparent);
+    }
+
+    /**
+     * @throws GdProcessingException
+     */
+    protected function encode(
+        GdImage $image,
+        string $extension,
+        string $outputPath,
+    ): void {
+        $result = match ($extension) {
+            'jpeg' => imagejpeg($image, $outputPath),
+            'png' => imagepng($image, $outputPath),
+            'webp' => imagewebp($image, $outputPath),
+            'gif' => imagegif($image, $outputPath),
+        };
+
+        if ($result === false) {
+            throw GdProcessingException::processingFailed('encode', $outputPath);
+        }
     }
 
     /**

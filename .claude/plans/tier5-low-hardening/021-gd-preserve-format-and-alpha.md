@@ -1,6 +1,6 @@
 # Task 021: GD re-encodes to PNG and flattens alpha
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -32,11 +32,11 @@ Loud errors plus "do what the caller expects": a resize must not change the form
   - Do NOT change the public method signatures (`resize`/`crop`/`thumbnail`/`convert` keep their parameters). `thumbnail()` already delegates to `resize()`, so it inherits the fix.
 
 ## Requirements (Test Descriptions)
-- [ ] `it outputs a JPEG when resizing a JPEG source`
-- [ ] `it outputs a PNG when resizing a PNG source`
-- [ ] `it preserves transparency when resizing a transparent PNG`
-- [ ] `it preserves the source format when cropping`
-- [ ] `it throws GdProcessingException when encoding fails`
+- [x] `it outputs a JPEG when resizing a JPEG source`
+- [x] `it outputs a PNG when resizing a PNG source`
+- [x] `it preserves transparency when resizing a transparent PNG`
+- [x] `it preserves the source format when cropping`
+- [x] `it throws GdProcessingException when encoding fails`
 
 ## Acceptance Criteria
 - Resizing/cropping preserves the source image format (JPEG stays JPEG, PNG stays PNG).
@@ -47,4 +47,9 @@ Loud errors plus "do what the caller expects": a resize must not change the form
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `detectFormat(string $imagePath): string` private method using `exif_imagetype()` + `image_type_to_extension()` to detect source format; throws `GdProcessingException` loudly if detection fails.
+- Added `prepareCanvasAlpha(GdImage $canvas, string $extension): void` private method that sets `imagealphablending(false)` + `imagesavealpha(true)` and fills with a transparent color for PNG/WebP canvases.
+- Extracted `encode(GdImage $image, string $extension, string $outputPath): void` as a shared `protected` method used by `resize()`, `crop()`, and `convert()` — single encode path, checks return value and throws `GdProcessingException::processingFailed('encode', ...)` on failure.
+- Made `encode()` `protected` (not `private`) to allow test subclassing for encode failure simulation.
+- Both `resize()` and `crop()` now detect format, prepare alpha (if needed), and encode via the shared method.
+- `thumbnail()` inherits the fixes automatically via `resize()`.

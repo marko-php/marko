@@ -4,32 +4,25 @@ declare(strict_types=1);
 
 namespace Marko\Encryption\Exceptions;
 
-use Exception;
-use Throwable;
+use Marko\Core\Exceptions\MarkoException;
 
-class EncryptionException extends Exception
+class EncryptionException extends MarkoException
 {
-    public function __construct(
-        string $message,
-        private readonly string $context = '',
-        private readonly string $suggestion = '',
-        int $code = 0,
-        ?Throwable $previous = null,
-    ) {
-        parent::__construct(
-            $message,
-            $code,
-            $previous,
+    public static function nonAeadCipher(string $cipher): self
+    {
+        return new self(
+            message: "Cipher '$cipher' is not an AEAD mode",
+            context: 'Validating encryption cipher at construction',
+            suggestion: 'Use an AEAD cipher such as aes-256-gcm or aes-128-gcm',
         );
     }
 
-    public function getContext(): string
+    public static function invalidCipher(string $cipher): self
     {
-        return $this->context;
-    }
-
-    public function getSuggestion(): string
-    {
-        return $this->suggestion;
+        return new self(
+            message: "Cipher '$cipher' is not recognized by OpenSSL",
+            context: 'Validating encryption cipher at construction',
+            suggestion: 'Use a valid OpenSSL cipher such as aes-256-gcm',
+        );
     }
 }

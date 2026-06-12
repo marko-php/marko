@@ -1,6 +1,6 @@
 # Task 011: Layout deterministic ambiguous-sort-order detection
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -21,12 +21,12 @@
   - Test must include a case with 17+ components where exactly one ambiguous pair exists, proving detection no longer depends on which pairs the sort happens to compare. (PHP switches `usort` to a non-comparing fast path / introsort that skips pairs above ~16 elements — hence the 17+ threshold is load-bearing.)
 
 ## Requirements (Test Descriptions)
-- [ ] `it detects an ambiguous sort-order pair among 17 or more components`
-- [ ] `it throws AmbiguousSortOrderException naming the conflicting components`
-- [ ] `it does not throw when components share a sort order but all but one are resolved by before/after`
-- [ ] `it does not throw when all sort orders are unique`
-- [ ] `it sorts resolved components by sort order deterministically`
-- [ ] `it still applies before/after constraints after the ambiguity check`
+- [x] `it detects an ambiguous sort-order pair among 17 or more components`
+- [x] `it throws AmbiguousSortOrderException naming the conflicting components`
+- [x] `it does not throw when components share a sort order but all but one are resolved by before/after`
+- [x] `it does not throw when all sort orders are unique`
+- [x] `it sorts resolved components by sort order deterministically`
+- [x] `it still applies before/after constraints after the ambiguity check`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -34,4 +34,9 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Extracted ambiguity detection into `detectAmbiguities()` private method on `ComponentCollection`
+- Groups components by `sortOrder` using a foreach O(n) scan; only counts components where `before === null && after === null` (unresolved)
+- Throws `AmbiguousSortOrderException::forComponents()` for any group with 2+ unresolved components — deterministic regardless of component count/ordering
+- `usort` comparator now uses `sortOrder <=> sortOrder ?: strcmp(className, className)` total-order (className tie-break) — never throws
+- `applyConstraints()` second pass unchanged
+- All 6 new tests added to `packages/layout/tests/Unit/ComponentCollectionTest.php`; all 132 layout tests pass

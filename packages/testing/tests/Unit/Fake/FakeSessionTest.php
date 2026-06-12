@@ -6,13 +6,13 @@ use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Flash\FlashBag;
 use Marko\Testing\Fake\FakeSession;
 
-it('FakeSession implements SessionInterface', function () {
+it('FakeSession implements SessionInterface', function (): void {
     $session = new FakeSession();
 
     expect($session)->toBeInstanceOf(SessionInterface::class);
 });
 
-it('FakeSession stores and retrieves values in memory', function () {
+it('FakeSession stores and retrieves values in memory', function (): void {
     $session = new FakeSession();
 
     $session->set('key', 'value');
@@ -30,7 +30,7 @@ it('FakeSession stores and retrieves values in memory', function () {
     expect($session->has('key'))->toBeFalse();
 });
 
-it('FakeSession tracks whether session was started', function () {
+it('FakeSession tracks whether session was started', function (): void {
     $session = new FakeSession();
 
     expect($session->started)->toBeFalse();
@@ -40,7 +40,7 @@ it('FakeSession tracks whether session was started', function () {
     expect($session->started)->toBeTrue();
 });
 
-it('FakeSession tracks whether session was regenerated', function () {
+it('FakeSession tracks whether session was regenerated', function (): void {
     $session = new FakeSession();
 
     expect($session->regenerated)->toBeFalse();
@@ -50,7 +50,7 @@ it('FakeSession tracks whether session was regenerated', function () {
     expect($session->regenerated)->toBeTrue();
 });
 
-it('FakeSession supports flash messages via FlashBag', function () {
+it('FakeSession supports flash messages via FlashBag', function (): void {
     $session = new FakeSession();
 
     expect($session->flash())->toBeInstanceOf(FlashBag::class);
@@ -62,7 +62,7 @@ it('FakeSession supports flash messages via FlashBag', function () {
         ->and($session->flash()->get('success'))->toBe([]);
 });
 
-it('FakeSession generates and tracks session IDs', function () {
+it('FakeSession generates and tracks session IDs', function (): void {
     $session = new FakeSession();
 
     $id = $session->getId();
@@ -76,7 +76,49 @@ it('FakeSession generates and tracks session IDs', function () {
     expect($session->getId())->not->toBe('custom-id');
 });
 
-it('FakeSession clears all stored values', function () {
+it('matches production Session has semantics for null values', function (): void {
+    $session = new FakeSession();
+
+    $session->set('null-key', null);
+    $session->set('value-key', 'value');
+
+    expect($session->has('null-key'))->toBeTrue()
+        ->and($session->has('value-key'))->toBeTrue()
+        ->and($session->has('missing-key'))->toBeFalse();
+});
+
+it('reports a removed key as absent', function (): void {
+    $session = new FakeSession();
+
+    $session->set('key', null);
+    $session->remove('key');
+
+    expect($session->has('key'))->toBeFalse();
+});
+
+it('reports a key with a non-null value as present', function (): void {
+    $session = new FakeSession();
+
+    $session->set('key', 'value');
+
+    expect($session->has('key'))->toBeTrue();
+});
+
+it('reports a never-set key as absent', function (): void {
+    $session = new FakeSession();
+
+    expect($session->has('missing'))->toBeFalse();
+});
+
+it('reports a key with a stored null value as present', function (): void {
+    $session = new FakeSession();
+
+    $session->set('key', null);
+
+    expect($session->has('key'))->toBeTrue();
+});
+
+it('FakeSession clears all stored values', function (): void {
     $session = new FakeSession();
 
     $session->set('key1', 'value1');

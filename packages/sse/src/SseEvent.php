@@ -5,16 +5,28 @@ declare(strict_types=1);
 namespace Marko\Sse;
 
 use JsonException;
+use Marko\Sse\Exceptions\SseException;
 use NoDiscard;
 
 readonly class SseEvent
 {
+    /**
+     * @throws SseException
+     */
     public function __construct(
         public string|array $data,
         public ?string $event = null,
         public string|int|null $id = null,
         public ?int $retry = null,
-    ) {}
+    ) {
+        if ($this->event !== null && (str_contains($this->event, "\n") || str_contains($this->event, "\r"))) {
+            throw SseException::invalidField('event', $this->event);
+        }
+
+        if (is_string($this->id) && (str_contains($this->id, "\n") || str_contains($this->id, "\r"))) {
+            throw SseException::invalidField('id', $this->id);
+        }
+    }
 
     /**
      * @throws JsonException

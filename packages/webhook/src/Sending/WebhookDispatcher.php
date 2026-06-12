@@ -24,12 +24,14 @@ readonly class WebhookDispatcher implements WebhookDispatcherInterface
         WebhookPayload $payload,
     ): WebhookResponse {
         $body = json_encode(['event' => $payload->event, 'data' => $payload->data]);
-        $signature = WebhookSignature::sign($body, $payload->secret);
+        $timestamp = time();
+        $signature = WebhookSignature::sign($body, $payload->secret, $timestamp);
 
         $httpResponse = $this->httpClient->post($payload->url, [
             'headers' => [
                 'Content-Type' => 'application/json',
                 'X-Webhook-Signature' => $signature,
+                'X-Webhook-Timestamp' => (string) $timestamp,
             ],
             'body' => $body,
         ]);

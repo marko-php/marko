@@ -9,7 +9,8 @@ class WebhookSignature
     public static function sign(
         string $payload,
         string $secret,
+        int $timestamp,
     ): string {
-        return 'sha256=' . hash_hmac('sha256', $payload, $secret);
+        return 'sha256=' . hash_hmac('sha256', "$timestamp.$payload", $secret);
     }
 }

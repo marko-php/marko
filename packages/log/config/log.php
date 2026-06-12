@@ -11,4 +11,5 @@ return [
     'date_format' => 'Y-m-d H:i:s',
     'max_files' => (int) ($_ENV['LOG_MAX_FILES'] ?? 30),
     'max_file_size' => (int) ($_ENV['LOG_MAX_FILE_SIZE'] ?? 10 * 1024 * 1024),
+    'escape_newlines' => true,
 ];

@@ -9,10 +9,15 @@ use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Encryption\Contracts\EncryptorInterface;
 use Marko\Encryption\Exceptions\DecryptionException;
 use Marko\Encryption\Exceptions\EncryptionException;
+use Random\RandomException;
 
 class OpenSslEncryptor implements EncryptorInterface
 {
     private readonly string $key;
+
+    private readonly string $cipher;
+
+    private readonly int $ivLength;
 
     /**
      * @throws EncryptionException
@@ -31,20 +36,41 @@ class OpenSslEncryptor implements EncryptorInterface
         }
 
         $this->key = $key;
+
+        $cipher = strtolower($this->config->cipher());
+
+        if (!in_array($cipher, openssl_get_cipher_methods(), true)) {
+            throw EncryptionException::invalidCipher($cipher);
+        }
+
+        if (!str_ends_with($cipher, '-gcm') && !str_ends_with($cipher, '-ccm')) {
+            throw EncryptionException::nonAeadCipher($cipher);
+        }
+
+        $ivLength = openssl_cipher_iv_length($cipher);
+
+        if ($ivLength === false) {
+            throw new EncryptionException(
+                message: "Failed to determine IV length for cipher '$cipher'",
+                context: 'Initializing OpenSSL encryptor at construction',
+                suggestion: 'Ensure the cipher is supported by the installed OpenSSL version',
+            );
+        }
+
+        $this->cipher = $cipher;
+        $this->ivLength = $ivLength;
     }
 
     /**
-     * @throws EncryptionException
+     * @throws EncryptionException|RandomException
      */
     public function encrypt(
         string $value,
     ): string {
-        $cipher = $this->config->cipher();
-        $ivLength = openssl_cipher_iv_length($cipher);
-        $iv = random_bytes($ivLength);
+        $iv = random_bytes($this->ivLength);
         $tag = '';
 
-        $encrypted = openssl_encrypt($value, $cipher, $this->key, OPENSSL_RAW_DATA, $iv, $tag);
+        $encrypted = openssl_encrypt($value, $this->cipher, $this->key, OPENSSL_RAW_DATA, $iv, $tag);
 
         if ($encrypted === false) {
             throw new EncryptionException(
@@ -86,7 +112,13 @@ class OpenSslEncryptor implements EncryptorInterface
 
         $payload = json_decode($json, true);
 
-        if (!is_array($payload) || !isset($payload['iv'], $payload['value'], $payload['tag'])) {
+        if (!is_array($payload)) {
+            throw DecryptionException::invalidPayload();
+        }
+
+        if (!is_string($payload['iv'] ?? null) || !is_string($payload['value'] ?? null) || !is_string(
+            $payload['tag'] ?? null,
+        )) {
             throw DecryptionException::invalidPayload();
         }
 
@@ -98,7 +130,7 @@ class OpenSslEncryptor implements EncryptorInterface
             throw DecryptionException::invalidPayload();
         }
 
-        $decrypted = openssl_decrypt($value, $this->config->cipher(), $this->key, OPENSSL_RAW_DATA, $iv, $tag);
+        $decrypted = openssl_decrypt($value, $this->cipher, $this->key, OPENSSL_RAW_DATA, $iv, $tag);
 
         if ($decrypted === false) {
             throw DecryptionException::invalidKey();

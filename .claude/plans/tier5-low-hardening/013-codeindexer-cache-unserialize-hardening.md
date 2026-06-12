@@ -1,6 +1,6 @@
 # Task 013: codeindexer unsafe cache deserialize + silent corruption
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -23,11 +23,11 @@ This violates two core principles: it's a silent failure (an empty index masquer
   - Keep the existing missing-file and `isStale()` early returns unchanged.
 
 ## Requirements (Test Descriptions)
-- [ ] `it rebuilds the index when the cache file is corrupt instead of reporting an empty index`
-- [ ] `it returns false from load when the cache deserializes to a non-array`
-- [ ] `it restricts unserialize to the indexer value-object allowlist`
-- [ ] `it loads a valid cache file and reports its contents`
-- [ ] `it still returns false from load when the cache file is missing`
+- [x] `it rebuilds the index when the cache file is corrupt instead of reporting an empty index`
+- [x] `it returns false from load when the cache deserializes to a non-array`
+- [x] `it restricts unserialize to the indexer value-object allowlist`
+- [x] `it loads a valid cache file and reports its contents`
+- [x] `it still returns false from load when the cache file is missing`
 
 ## Acceptance Criteria
 - A corrupt/truncated cache never yields a silently-empty index; it triggers a rebuild (or a loud error), and getters return real data afterward.
@@ -37,4 +37,7 @@ This violates two core principles: it's a silent failure (an empty index masquer
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `IndexCache::load()` now calls `@unserialize()` with `allowed_classes` restricted to the 9 value-object classes (`CommandEntry`, `ConfigKeyEntry`, `ModuleInfo`, `ObserverEntry`, `PluginEntry`, `PreferenceEntry`, `RouteEntry`, `TemplateEntry`, `TranslationEntry`).
+- After `unserialize()`, if the result is not an array (corrupt data, blocked class, truncated file), `load()` returns `false`, causing `ensureLoaded()` to call `build()` and rebuild from source.
+- The `@` suppressor is intentional to prevent PHP's unserialize warning from surfacing to callers; the corrupt-cache case is handled cleanly by the `!is_array($result)` guard.
+- 5 new tests added to `IndexCacheTest.php`; total codeindexer test count: 71 (was 66).

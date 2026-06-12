@@ -606,6 +606,132 @@ describe('MySqlConnection', function (): void {
             ->not->toBe('Array');
     });
 
+    it('binds a true boolean correctly', function (): void {
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE flags (id INTEGER PRIMARY KEY, active INTEGER)');
+
+                return $pdo;
+            }
+        };
+
+        $connection->execute('INSERT INTO flags (active) VALUES (?)', [true]);
+
+        $rows = $connection->query('SELECT active FROM flags');
+
+        expect($rows[0]['active'])->not->toBe('1');
+    });
+
+    it('binds a null value as SQL NULL', function (): void {
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE items (id INTEGER PRIMARY KEY, label TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        $connection->execute('INSERT INTO items (label) VALUES (?)', [null]);
+
+        $rows = $connection->query('SELECT label FROM items');
+
+        expect($rows[0]['label'])->toBeNull();
+    });
+
+    it('binds an integer value as an integer', function (): void {
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE counters (id INTEGER PRIMARY KEY, value INTEGER)');
+
+                return $pdo;
+            }
+        };
+
+        $connection->execute('INSERT INTO counters (value) VALUES (?)', [42]);
+
+        $rows = $connection->query('SELECT value FROM counters WHERE value = ?', [42]);
+
+        expect($rows)->toHaveCount(1)
+            ->and($rows[0]['value'])->toBe(42);
+    });
+
+    it('binds a false boolean as a boolean not an empty string', function (): void {
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE flags (id INTEGER PRIMARY KEY, active INTEGER)');
+
+                return $pdo;
+            }
+        };
+
+        $connection->execute('INSERT INTO flags (active) VALUES (?)', [false]);
+
+        $rows = $connection->query('SELECT active FROM flags');
+
+        expect($rows[0]['active'])->not->toBe('');
+    });
+
+    it('still JSON-encodes array bindings and throws on un-encodable arrays', function (): void {
+        $config = createTestDatabaseConfig();
+        $connection = new class ($config) extends MySqlConnection
+        {
+            protected function createPdo(
+                string $dsn,
+                string $username,
+                string $password,
+                array $options,
+            ): PDO {
+                $pdo = new PDO('sqlite::memory:', options: $options);
+                $pdo->exec('CREATE TABLE items (id INTEGER PRIMARY KEY, metadata TEXT)');
+
+                return $pdo;
+            }
+        };
+
+        // Verify array values are JSON-encoded
+        $connection->execute('INSERT INTO items (metadata) VALUES (?)', [['key' => 'value']]);
+        $rows = $connection->query('SELECT metadata FROM items');
+        expect($rows[0]['metadata'])->toBe('{"key":"value"}');
+
+        // Verify un-encodable array throws ConnectionException
+        expect(fn () => $connection->execute(
+            'INSERT INTO items (metadata) VALUES (?)',
+            [[NAN]],
+        ))->toThrow(ConnectionException::class);
+    });
+
     it('throws ConnectionException when an array binding is not JSON-encodable', function (): void {
         $config = createTestDatabaseConfig();
         $connection = new class ($config) extends MySqlConnection
@@ -626,6 +752,6 @@ describe('MySqlConnection', function (): void {
         expect(fn () => $connection->execute(
             'INSERT INTO items (metadata) VALUES (?)',
             [[NAN]],
-        ))->toThrow(ConnectionException::class, "Failed to JSON-encode array bound to parameter '0'");
+        ))->toThrow(ConnectionException::class, "Failed to JSON-encode array bound to parameter '1'");
     });
 });

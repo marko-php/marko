@@ -78,16 +78,24 @@ Implements all methods from `SessionHandlerInterface`. See [`marko/session`](/do
 
 | Method | Description |
 |---|---|
-| `open(string $path, string $name): bool` | Prepare the storage directory, creating it if needed |
+| `open(string $path, string $name): bool` | Prepare the storage directory (created with mode `0700` if absent) |
 | `close(): bool` | Close the session (no-op for file driver) |
 | `read(string $id): string\|false` | Read session data using a shared lock (`LOCK_SH`) |
-| `write(string $id, string $data): bool` | Write session data using an exclusive lock (`LOCK_EX`) |
+| `write(string $id, string $data): bool` | Write session data using an exclusive lock (`LOCK_EX`); sets file mode `0600`; throws `SessionWriteException` on partial or failed write |
 | `destroy(string $id): bool` | Delete a session file from disk |
 | `gc(int $max_lifetime): int\|false` | Remove session files older than `$max_lifetime` seconds, returns count of deleted files |
+
+### Exceptions
+
+| Exception | Description |
+|---|---|
+| `SessionWriteException` | Thrown when the session file cannot be truncated or the write is incomplete (e.g. disk full, permissions error) |
 
 ### Storage Details
 
 - Each session is stored as `sess_{id}` in the configured path.
+- The session directory is created with mode `0700` (owner-only access).
+- Each session file is created/written with mode `0600` (owner read/write only).
 - Reads acquire a shared lock (`LOCK_SH`) so multiple requests can read concurrently.
-- Writes acquire an exclusive lock (`LOCK_EX`) with truncate-then-write to prevent corruption.
+- Writes acquire an exclusive lock (`LOCK_EX`) with truncate-then-write to prevent corruption. If the truncation or write fails (e.g. disk full or permission error), a `SessionWriteException` is thrown immediately --- no silent partial writes.
 - Garbage collection compares file modification times against the max lifetime and removes expired files.

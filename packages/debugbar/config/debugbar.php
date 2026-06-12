@@ -34,10 +34,16 @@ return [
         ],
         'config' => [
             'masked' => [
+                'key',
                 '*.key',
+                'password',
                 '*.password',
+                'secret',
                 '*.secret',
+                'token',
                 '*.token',
+                'dsn',
+                '*.dsn',
                 '*.api_key',
                 '*.private_key',
             ],

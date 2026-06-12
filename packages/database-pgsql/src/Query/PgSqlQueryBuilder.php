@@ -956,17 +956,21 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
 
         // WHERE IN conditions
         foreach ($this->whereIns as $whereIn) {
-            $placeholders = [];
-            foreach ($whereIn['values'] as $value) {
-                $placeholders[] = '?';
-                $this->bindings[] = $value;
-            }
+            if ($whereIn['values'] === []) {
+                $condition = '1 = 0';
+            } else {
+                $placeholders = [];
+                foreach ($whereIn['values'] as $value) {
+                    $placeholders[] = '?';
+                    $this->bindings[] = $value;
+                }
 
-            $condition = sprintf(
-                '%s IN (%s)',
-                $this->quoteIdentifier($whereIn['column']),
-                implode(', ', $placeholders),
-            );
+                $condition = sprintf(
+                    '%s IN (%s)',
+                    $this->quoteIdentifier($whereIn['column']),
+                    implode(', ', $placeholders),
+                );
+            }
 
             if (empty($conditions)) {
                 $conditions[] = $condition;

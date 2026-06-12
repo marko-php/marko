@@ -154,10 +154,10 @@ it(
         $b = makeDefinition('App\Components\BComponent', 'header', sortOrder: 10);
         $collection->add($a);
         $collection->add($b);
-    
+
         expect(fn () => $collection->forSlot('header'))
             ->toThrow(AmbiguousSortOrderException::class);
-    }
+    },
 );
 
 it('moves a component to a different slot', function (): void {
@@ -202,4 +202,100 @@ it('returns components grouped by slot', function (): void {
     expect($grouped)->toHaveKeys(['header', 'footer'])
         ->and($grouped['header'])->toHaveCount(2)
         ->and($grouped['footer'])->toHaveCount(1);
+});
+
+it('detects an ambiguous sort-order pair among 17 or more components', function (): void {
+    $collection = new ComponentCollection();
+
+    // Add 15 components with unique sort orders (10, 20, ..., 150)
+    for ($i = 1; $i <= 15; $i++) {
+        $collection->add(makeDefinition("App\\Components\\C{$i}Component", 'main', sortOrder: $i * 10));
+    }
+
+    // Add 2 more components with the same sort order 999 and no before/after — ambiguous pair
+    $collection->add(makeDefinition('App\Components\AmbiguousAComponent', 'main', sortOrder: 999));
+    $collection->add(makeDefinition('App\Components\AmbiguousBComponent', 'main', sortOrder: 999));
+
+    // 17 total components; without deterministic pre-scan usort skips the ambiguous pair
+    expect(fn () => $collection->forSlot('main'))
+        ->toThrow(AmbiguousSortOrderException::class);
+});
+
+it('still applies before/after constraints after the ambiguity check', function (): void {
+    $collection = new ComponentCollection();
+    // A: sortOrder 20, B: sortOrder 10 but must come after A
+    $a = makeDefinition('App\Components\AComponent', 'widget', sortOrder: 20);
+    $b = makeDefinition('App\Components\BComponent', 'widget', sortOrder: 10, after: 'App\Components\AComponent');
+    $collection->add($a);
+    $collection->add($b);
+
+    $result = $collection->forSlot('widget');
+
+    // B has after constraint: A then B, despite B having lower sortOrder
+    expect($result[0]->className)->toBe('App\Components\AComponent')
+        ->and($result[1]->className)->toBe('App\Components\BComponent');
+});
+
+it('sorts resolved components by sort order deterministically', function (): void {
+    $collection = new ComponentCollection();
+    // Components with same sortOrder; B and C have before/after so only A is unresolved
+    // Expected order: B (sortOrder 10, before A), A (sortOrder 10), C (sortOrder 10, after A)
+    $a = makeDefinition('App\Components\AComponent', 'footer', sortOrder: 10);
+    $b = makeDefinition('App\Components\BComponent', 'footer', sortOrder: 10, before: 'App\Components\AComponent');
+    $c = makeDefinition('App\Components\CComponent', 'footer', sortOrder: 20);
+    $collection->add($c);
+    $collection->add($a);
+    $collection->add($b);
+
+    $result = $collection->forSlot('footer');
+
+    expect($result[0]->className)->toBe('App\Components\BComponent')
+        ->and($result[1]->className)->toBe('App\Components\AComponent')
+        ->and($result[2]->className)->toBe('App\Components\CComponent');
+});
+
+it('does not throw when all sort orders are unique', function (): void {
+    $collection = new ComponentCollection();
+    $collection->add(makeDefinition('App\Components\AComponent', 'nav', sortOrder: 10));
+    $collection->add(makeDefinition('App\Components\BComponent', 'nav', sortOrder: 20));
+    $collection->add(makeDefinition('App\Components\CComponent', 'nav', sortOrder: 30));
+
+    $result = $collection->forSlot('nav');
+
+    expect($result)->toHaveCount(3);
+});
+
+it(
+    'does not throw when components share a sort order but all but one are resolved by before/after',
+    function (): void {
+        $collection = new ComponentCollection();
+        // A and B share sortOrder 10; B has a before constraint, so only A is unresolved
+        $collection->add(makeDefinition('App\Components\AComponent', 'sidebar', sortOrder: 10));
+        $collection->add(
+            makeDefinition('App\Components\BComponent', 'sidebar', sortOrder: 10, before: 'App\Components\AComponent'),
+        );
+
+        // Should not throw: only one unresolved component at sortOrder 10
+        $result = $collection->forSlot('sidebar');
+
+        expect($result)->toHaveCount(2);
+    },
+);
+
+it('throws AmbiguousSortOrderException naming the conflicting components', function (): void {
+    $collection = new ComponentCollection();
+    $collection->add(makeDefinition('App\Components\AComponent', 'content', sortOrder: 50));
+    $collection->add(makeDefinition('App\Components\BComponent', 'content', sortOrder: 50));
+
+    $exception = null;
+
+    try {
+        $collection->forSlot('content');
+    } catch (AmbiguousSortOrderException $e) {
+        $exception = $e;
+    }
+
+    expect($exception)->not->toBeNull()
+        ->and($exception->getContext())->toContain('App\Components\AComponent')
+        ->and($exception->getContext())->toContain('App\Components\BComponent');
 });

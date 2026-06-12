@@ -98,6 +98,7 @@ class MyService
         $dateFormat = $this->logConfig->dateFormat();
         $maxFiles = $this->logConfig->maxFiles();
         $maxFileSize = $this->logConfig->maxFileSize();
+        $escapeNewlines = $this->logConfig->escapeNewlines(); // default true
     }
 }
 ```
@@ -136,7 +137,7 @@ class JsonFormatter implements LogFormatterInterface
 }
 ```
 
-The default `LineFormatter` uses the format `[{datetime}] {channel}.{level}: {message} {context}` and accepts custom format and date format strings via its constructor.
+The default `LineFormatter` uses the format `[{datetime}] {channel}.{level}: {message} {context}` and accepts custom format and date format strings via its constructor. It also accepts an `escapeNewlines` boolean (default `true`) that collapses any CR (`\r`) or LF (`\n`) characters in the interpolated message and serialized context to the literal escape sequences `\r` and `\n`. This prevents log line-injection attacks where a message containing embedded newlines could be mistaken for multiple log entries. Disable it only if a downstream log processor requires literal newlines.
 
 ## API Reference
 
@@ -210,6 +211,7 @@ public function format(): string;
 public function dateFormat(): string;
 public function maxFiles(): int;
 public function maxFileSize(): int;
+public function escapeNewlines(): bool; // log.escape_newlines, default true
 ```
 
 ### Exceptions

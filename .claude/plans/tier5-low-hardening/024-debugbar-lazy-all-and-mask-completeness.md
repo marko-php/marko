@@ -1,6 +1,6 @@
 # Task 024: debugbar all() full-decode perf + config-mask completeness
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -32,16 +32,16 @@ The `all()` change is a dev-time performance hardening (no behavior change to th
 
 ## Requirements (Test Descriptions)
 For `DebugbarStorageTest`:
-- [ ] `it lists stored datasets without fully decoding every dataset file`
-- [ ] `it returns the same summary fields for each listed dataset`
-- [ ] `it orders listed datasets by most-recent first`
+- [x] `it lists stored datasets without fully decoding every dataset file`
+- [x] `it returns the same summary fields for each listed dataset`
+- [x] `it orders listed datasets by most-recent first`
 
 For `ConfigCollectorTest`:
-- [ ] `it masks a top-level password config key`
-- [ ] `it masks a top-level secret config key`
-- [ ] `it masks a dsn config key`
-- [ ] `it still masks a nested password key`
-- [ ] `it leaves non-secret config keys visible`
+- [x] `it masks a top-level password config key`
+- [x] `it masks a top-level secret config key`
+- [x] `it masks a dsn config key`
+- [x] `it still masks a nested password key`
+- [x] `it leaves non-secret config keys visible`
 
 ## Acceptance Criteria
 - `all()` produces the identical summary list without fully decoding every dataset file (uses an index or summary-only read).
@@ -51,4 +51,9 @@ For `ConfigCollectorTest`:
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `DebugbarStorage::put()` now writes a companion `{id}.summary.json` alongside `{id}.json` containing only `id`, `stored_at`, `profiler_url`, and `summary` fields.
+- `DebugbarStorage::all()` now globs `*.summary.json` files and reads those lightweight files instead of calling `get()` per file — full-dataset decode no longer happens during listing.
+- `prune()` updated to skip `.summary.json` files when counting max files, and also removes companion summary files when pruning old datasets.
+- `clear()` updated to also remove `.summary.json` files.
+- `config/debugbar.php` `masked` list expanded: added bare top-level patterns (`key`, `password`, `secret`, `token`, `dsn`) alongside the existing nested wildcard forms (`*.key`, `*.password`, etc.) and added `dsn`/`*.dsn`.
+- Tests in `DebugbarStorageTest.php` and `ConfigCollectorTest.php` cover all 8 requirements.

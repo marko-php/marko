@@ -74,6 +74,8 @@ $session->destroy();
 expect($session->destroyed)->toBeTrue();
 ```
 
+`has()` returns `true` when a key is stored, even if its value is `null`. This matches the behavior of the production `Session` implementation.
+
 ### FakeCookieJar
 
 ```php

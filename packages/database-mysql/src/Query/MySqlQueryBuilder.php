@@ -948,13 +948,17 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         }
 
         foreach ($this->whereIns as $whereIn) {
-            $placeholders = array_fill(0, count($whereIn['values']), '?');
-            $condition = sprintf(
-                '%s IN (%s)',
-                $this->quoteIdentifier($whereIn['column']),
-                implode(', ', $placeholders),
-            );
-            $this->bindings = array_merge($this->bindings, $whereIn['values']);
+            if ($whereIn['values'] === []) {
+                $condition = '1 = 0';
+            } else {
+                $placeholders = array_fill(0, count($whereIn['values']), '?');
+                $condition = sprintf(
+                    '%s IN (%s)',
+                    $this->quoteIdentifier($whereIn['column']),
+                    implode(', ', $placeholders),
+                );
+                $this->bindings = array_merge($this->bindings, $whereIn['values']);
+            }
 
             if (!empty($conditions)) {
                 $condition = 'AND ' . $condition;

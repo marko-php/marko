@@ -158,7 +158,7 @@ marko queue:work --once
 | Command | Description |
 |---------|-------------|
 | `marko queue:failed` | List failed jobs |
-| `marko queue:retry <id>` | Retry a failed job |
+| `marko queue:retry <id>` | Retry a failed job (resets attempt counter so the job gets its full `maxAttempts`) |
 | `marko queue:clear` | Clear all jobs from a queue |
 | `marko queue:status` | Show queue size |
 
@@ -234,6 +234,7 @@ public int $maxAttempts { get; }
 public function handle(): void;
 public function setId(string $id): void;
 public function incrementAttempts(): void;
+public function resetAttempts(): void;
 public function serialize(): string;
 public static function unserialize(string $data): static;
 ```

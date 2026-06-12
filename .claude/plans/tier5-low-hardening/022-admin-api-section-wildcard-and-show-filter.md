@@ -1,6 +1,6 @@
 # Task 022: admin-api section visibility ignores wildcards and show() skips filter
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -31,11 +31,11 @@ The menu and the route gate must agree on who can see what; today the menu is st
   - Do not change the route attributes or `ApiResponse` contract.
 
 ## Requirements (Test Descriptions)
-- [ ] `it shows catalog sections to a user granted the catalog wildcard permission`
-- [ ] `it hides sections the user has no matching permission for`
-- [ ] `it shows a section to a user with the exact permission`
-- [ ] `it enforces the permission filter in show for an inaccessible section`
-- [ ] `it returns the section from show for an accessible section`
+- [x] `it shows catalog sections to a user granted the catalog wildcard permission`
+- [x] `it hides sections the user has no matching permission for`
+- [x] `it shows a section to a user with the exact permission`
+- [x] `it enforces the permission filter in show for an inaccessible section`
+- [x] `it returns the section from show for an accessible section`
 
 ## Acceptance Criteria
 - A user with `catalog.*` sees catalog sections in both `index()` and `show()`.
@@ -46,4 +46,8 @@ The menu and the route gate must agree on who can see what; today the menu is st
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Injected `PermissionRegistryInterface $permissionRegistry` into `SectionController` (readonly class, constructor promotion).
+- Updated `userCanAccessSection()` to mirror `AdminAuthMiddleware::userHasPermission()`: after the exact `$user->hasPermission()` check, iterates the user's permission keys with `$permissionRegistry->matches($permissionKey, $permission)` via `array_any()`.
+- Added permission visibility check at the top of `show()`: after resolving the section, if the user is an `AdminUserInterface` and `!userCanAccessSection($user, $section)`, returns `ApiResponse::notFound(...)` - same shape as the unknown-id not-found response.
+- All existing tests updated to pass `permissionRegistry: new PermissionRegistry()` in controller construction.
+- Requirements 2, 3, and 5 passed immediately after Requirement 1's implementation (the code covered those cases already); only Requirement 4 required additional code (the `show()` visibility filter).

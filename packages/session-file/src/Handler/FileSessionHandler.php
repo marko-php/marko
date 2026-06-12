@@ -6,6 +6,7 @@ namespace Marko\Session\File\Handler;
 
 use Marko\Session\Config\SessionConfig;
 use Marko\Session\Contracts\SessionHandlerInterface;
+use Marko\Session\File\Exceptions\SessionWriteException;
 
 readonly class FileSessionHandler implements SessionHandlerInterface
 {
@@ -16,7 +17,7 @@ readonly class FileSessionHandler implements SessionHandlerInterface
     ) {
         $path = $config->path();
 
-        if (!str_starts_with($path, '/')) {
+        if (!str_starts_with($path, '/') && !str_contains($path, '://')) {
             $path = getcwd() . '/' . $path;
         }
 
@@ -28,7 +29,7 @@ readonly class FileSessionHandler implements SessionHandlerInterface
         string $name,
     ): bool {
         if (!is_dir($this->path)) {
-            mkdir($this->path, 0755, true);
+            mkdir($this->path, 0700, true);
         }
 
         return true;
@@ -63,6 +64,9 @@ readonly class FileSessionHandler implements SessionHandlerInterface
         return $data !== false ? $data : '';
     }
 
+    /**
+     * @throws SessionWriteException
+     */
     public function write(
         string $id,
         string $data,
@@ -75,11 +79,25 @@ readonly class FileSessionHandler implements SessionHandlerInterface
             return false;
         }
 
-        flock($handle, LOCK_EX);
-        ftruncate($handle, 0);
-        fwrite($handle, $data);
-        flock($handle, LOCK_UN);
-        fclose($handle);
+        try {
+            flock($handle, LOCK_EX);
+            chmod($path, 0600);
+
+            if (!ftruncate($handle, 0)) {
+                throw SessionWriteException::truncateFailed($path);
+            }
+
+            $expected = strlen($data);
+            $written = fwrite($handle, $data);
+
+            if ($written === false || $written !== $expected) {
+                throw SessionWriteException::partialWrite($path, $written === false ? 0 : $written, $expected);
+            }
+
+            flock($handle, LOCK_UN);
+        } finally {
+            fclose($handle);
+        }
 
         return true;
     }

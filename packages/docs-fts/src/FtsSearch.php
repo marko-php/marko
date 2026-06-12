@@ -12,14 +12,15 @@ use Marko\Docs\ValueObject\DocsQuery;
 use Marko\Docs\ValueObject\DocsResult;
 use Marko\DocsMarkdown\MarkdownRepository;
 use PDO;
+use PDOException;
 
 class FtsSearch implements DocsSearchInterface
 {
     private ?PDO $pdo = null;
 
     public function __construct(
-        private MarkdownRepository $repository,
-        private string $indexPath,
+        private readonly MarkdownRepository $repository,
+        private readonly string $indexPath,
     ) {}
 
     /**
@@ -41,15 +42,22 @@ class FtsSearch implements DocsSearchInterface
         ");
         $stmt->bindValue(':q', $query->query, PDO::PARAM_STR);
         $stmt->bindValue(':limit', $query->limit, PDO::PARAM_INT);
-        $stmt->execute();
 
-        $results = [];
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $results[] = new DocsResult(
-                pageId: $row['page_id'],
-                title: $row['title'],
-                excerpt: $row['excerpt'],
-                score: -((float) $row['score']),
+        try {
+            $stmt->execute();
+
+            $results = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $results[] = new DocsResult(
+                    pageId: $row['page_id'],
+                    title: $row['title'],
+                    excerpt: $row['excerpt'],
+                    score: -((float) $row['score']),
+                );
+            }
+        } catch (PDOException $e) {
+            throw DocsException::searchFailed(
+                "Malformed MATCH query '$query->query': {$e->getMessage()}",
             );
         }
 
@@ -114,7 +122,7 @@ class FtsSearch implements DocsSearchInterface
 
         if (!is_file($this->indexPath)) {
             throw DocsException::searchFailed(
-                "FTS5 index not found at $this->indexPath. Run `marko docs-fts:build` to generate it."
+                "FTS5 index not found at $this->indexPath. Run `marko docs-fts:build` to generate it.",
             );
         }
 

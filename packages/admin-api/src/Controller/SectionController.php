@@ -10,6 +10,7 @@ use Marko\Admin\Contracts\AdminSectionRegistryInterface;
 use Marko\Admin\Contracts\MenuItemInterface;
 use Marko\Admin\Exceptions\AdminException;
 use Marko\AdminApi\ApiResponse;
+use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
 use Marko\AdminAuth\Entity\AdminUserInterface;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
 use Marko\Authentication\Contracts\GuardInterface;
@@ -23,6 +24,7 @@ readonly class SectionController
     public function __construct(
         private AdminSectionRegistryInterface $sectionRegistry,
         private GuardInterface $guard,
+        private PermissionRegistryInterface $permissionRegistry,
     ) {}
 
     /**
@@ -68,6 +70,12 @@ readonly class SectionController
             return ApiResponse::notFound("Section '$id' not found");
         }
 
+        $user = $this->guard->user();
+
+        if ($user instanceof AdminUserInterface && !$this->userCanAccessSection($user, $section)) {
+            return ApiResponse::notFound("Section '$id' not found");
+        }
+
         $menuItems = array_map(
             static fn (MenuItemInterface $menuItem): array => [
                 'id' => $menuItem->getId(),
@@ -99,14 +107,25 @@ readonly class SectionController
             return true;
         }
 
-        foreach ($menuItems as $menuItem) {
-            $permission = $menuItem->getPermission();
+        return array_any(
+            $menuItems,
+            fn (MenuItemInterface $menuItem): bool => $this->userCanAccessMenuItem($user, $menuItem),
+        );
+    }
 
-            if ($permission === '' || $user->hasPermission($permission)) {
-                return true;
-            }
+    private function userCanAccessMenuItem(
+        AdminUserInterface $user,
+        MenuItemInterface $menuItem,
+    ): bool {
+        $permission = $menuItem->getPermission();
+
+        if ($permission === '' || $user->hasPermission($permission)) {
+            return true;
         }
 
-        return false;
+        return array_any(
+            $user->getPermissionKeys(),
+            fn (string $permissionKey): bool => $this->permissionRegistry->matches($permissionKey, $permission),
+        );
     }
 }

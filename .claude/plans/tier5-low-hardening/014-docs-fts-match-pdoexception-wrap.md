@@ -1,6 +1,6 @@
 # Task 014: docs-fts malformed MATCH leaks PDOException
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -24,9 +24,9 @@ Loud errors must stay within the package's own exception type so callers can cat
   - `use PDOException;` at the top (the file already `use PDO;`). Keep `@throws DocsException` on `search()` accurate.
 
 ## Requirements (Test Descriptions)
-- [ ] `it throws DocsException when the MATCH expression is malformed`
-- [ ] `it does not leak a PDOException from a malformed search query`
-- [ ] `it returns results for a valid search query`
+- [x] `it throws DocsException when the MATCH expression is malformed`
+- [x] `it does not leak a PDOException from a malformed search query`
+- [x] `it returns results for a valid search query`
 
 ## Acceptance Criteria
 - A malformed FTS5 MATCH query surfaces as `DocsException` (via `searchFailed`), never as a raw `PDOException`.
@@ -36,4 +36,8 @@ Loud errors must stay within the package's own exception type so callers can cat
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `use PDOException;` import to `FtsSearch.php`
+- Wrapped `$stmt->execute()` and the `fetchAll()` loop in `try/catch (PDOException $e)` in `search()`
+- On catch, throws `DocsException::searchFailed()` with the query string and PDO message embedded in the reason string (no `previous` channel on `searchFailed`)
+- Added 3 tests to `FtsSearchTest.php`: malformed MATCH throws DocsException, no PDOException leak, valid query still works
+- Test uses unbalanced quote `"unbalanced` as malformed FTS5 MATCH — no optional extension required (uses SQLite's built-in FTS5)

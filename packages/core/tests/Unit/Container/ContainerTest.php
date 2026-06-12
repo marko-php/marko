@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Core\Container\Container;
 use Marko\Core\Container\PreferenceRegistry;
 use Marko\Core\Exceptions\BindingException;
+use Marko\Core\Exceptions\CircularDependencyException;
 use Marko\Core\Plugin\InterceptorClassGenerator;
 use Marko\Core\Plugin\PluginDefinition;
 use Marko\Core\Plugin\PluginInterceptedInterface;
@@ -12,6 +13,7 @@ use Marko\Core\Plugin\PluginInterceptor;
 use Marko\Core\Plugin\PluginRegistry;
 use Marko\TestFixture\Exceptions\NoDriverException;
 use Marko\TestFixture\SomeInterface;
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 require_once __DIR__ . '/Fixtures/TestFixtureInterface.php';
@@ -79,6 +81,93 @@ readonly class ClassWithClosureParameter
         public ?Closure $factory = null,
     ) {}
 }
+
+// Circular dependency fixtures
+class CircularA
+{
+    public function __construct(CircularB $b) {}
+}
+
+class CircularB
+{
+    public function __construct(CircularA $a) {}
+}
+
+class SelfReferencing
+{
+    public function __construct(SelfReferencing $self) {}
+}
+
+it('throws CircularDependencyException when two classes have mutual constructor dependencies', function (): void {
+    $container = new Container();
+
+    expect(fn () => $container->get(CircularA::class))
+        ->toThrow(CircularDependencyException::class);
+});
+
+it('throws CircularDependencyException for a self-referencing constructor dependency', function (): void {
+    $container = new Container();
+
+    expect(fn () => $container->get(SelfReferencing::class))
+        ->toThrow(CircularDependencyException::class);
+});
+
+it('implements Psr ContainerExceptionInterface on CircularDependencyException', function (): void {
+    $container = new Container();
+    $exception = null;
+
+    try {
+        $container->get(CircularA::class);
+    } catch (CircularDependencyException $e) {
+        $exception = $e;
+    }
+
+    expect($exception)
+        ->toBeInstanceOf(CircularDependencyException::class)
+        ->toBeInstanceOf(ContainerExceptionInterface::class);
+});
+
+it('can resolve a class again after a previous resolution threw an exception', function (): void {
+    $container = new Container();
+
+    // First attempt - circular dependency throws
+    try {
+        $container->get(CircularA::class);
+    } catch (CircularDependencyException) {
+        // expected
+    }
+
+    // Second attempt - should throw CircularDependencyException again (not be stuck)
+    expect(fn () => $container->get(CircularA::class))
+        ->toThrow(CircularDependencyException::class);
+});
+
+it('still resolves a normal acyclic dependency graph', function (): void {
+    $container = new Container();
+
+    $instance = $container->get(ClassWithNestedDependencies::class);
+
+    expect($instance)->toBeInstanceOf(ClassWithNestedDependencies::class)
+        ->and($instance->middle)->toBeInstanceOf(MiddleDependency::class)
+        ->and($instance->middle->deep)->toBeInstanceOf(DeepDependency::class);
+});
+
+it('includes the dependency chain in the CircularDependencyException message', function (): void {
+    $container = new Container();
+    $exception = null;
+
+    try {
+        $container->get(CircularA::class);
+    } catch (CircularDependencyException $e) {
+        $exception = $e;
+    }
+
+    expect($exception)
+        ->not->toBeNull()
+        ->and($exception->getMessage())
+        ->toContain(CircularA::class)
+        ->toContain(CircularB::class);
+});
 
 it('resolves a class with no constructor dependencies', function (): void {
     $container = new Container();

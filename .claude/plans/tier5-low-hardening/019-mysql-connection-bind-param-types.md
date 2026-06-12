@@ -1,6 +1,6 @@
 # Task 019: MySQL connection binds bool/null/int as strings
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -26,11 +26,11 @@ Sibling driver packages must behave identically for the same input. pgsql alread
   - Note: PDO param keys may be positional (`?`) or named; mirror exactly how pgsql derives the `$param` (1-based index for positional). Read pgsql's `bindValues` loop fully before writing.
 
 ## Requirements (Test Descriptions)
-- [ ] `it binds a false boolean as a boolean not an empty string`
-- [ ] `it binds a true boolean correctly`
-- [ ] `it binds a null value as SQL NULL`
-- [ ] `it binds an integer value as an integer`
-- [ ] `it still JSON-encodes array bindings and throws on un-encodable arrays`
+- [x] `it binds a false boolean as a boolean not an empty string`
+- [x] `it binds a true boolean correctly`
+- [x] `it binds a null value as SQL NULL`
+- [x] `it binds an integer value as an integer`
+- [x] `it still JSON-encodes array bindings and throws on un-encodable arrays`
 
 ## Acceptance Criteria
 - Binding `false`/`true`/`null`/int values through the mysql connection produces the correct DB values, matching pgsql behavior (no boolean→`''` coercion).
@@ -40,4 +40,8 @@ Sibling driver packages must behave identically for the same input. pgsql alread
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Replaced `prepareBindings()` (which only JSON-encoded arrays) with `bindValues(PDOStatement, array)` mirroring the pgsql sibling exactly.
+- `query()` and `execute()` now call `$this->bindValues($statement, $bindings); $statement->execute();` instead of `$statement->execute($this->prepareBindings($bindings))`.
+- `bindValues()` uses 1-based positional param index (`$key + 1`) for integer keys, matching pgsql and PDO convention. This corrects the pre-existing test that asserted `'0'` as the param in error messages — updated to `'1'`.
+- Array handling (JSON-encode + `PARAM_STR`) and `ConnectionException::invalidArrayBinding` path preserved intact.
+- `PDOStatement` import added; `JsonException` import already present.

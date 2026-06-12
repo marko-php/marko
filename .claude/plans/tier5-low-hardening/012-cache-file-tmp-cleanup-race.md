@@ -1,6 +1,6 @@
 # Task 012: cache-file tmp cleanup, clear glob, mkdir race
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -21,12 +21,12 @@
   - For the mkdir race, a single-process test cannot truly race; instead assert the BEHAVIOR: pre-create the cache directory, then exercise a `set()` (which calls `ensureDirectoryExists()`) and assert it does not warn/error and the write succeeds. The create-then-verify shape (`@mkdir(...); if (!is_dir($path)) throw/return-failure`) is what makes a real concurrent winner tolerable; document the chosen failure behavior (the method returns `void` today — keep it `void` and let a still-missing dir surface via the subsequent write failure, OR throw a loud error; pick one and note it. Prefer keeping the signature and letting the write fail loudly since `set()` already returns bool).
 
 ## Requirements (Test Descriptions)
-- [ ] `it leaves no orphan tmp file when the rename step fails`
-- [ ] `it removes leftover tmp files when clear is called`
-- [ ] `it still removes cache files when clear is called`
-- [ ] `it does not error when the cache directory already exists`
-- [ ] `it creates the cache directory when it is missing`
-- [ ] `it writes and reads back a value successfully after directory creation`
+- [x] `it leaves no orphan tmp file when the rename step fails`
+- [x] `it removes leftover tmp files when clear is called`
+- [x] `it still removes cache files when clear is called`
+- [x] `it does not error when the cache directory already exists`
+- [x] `it creates the cache directory when it is missing`
+- [x] `it writes and reads back a value successfully after directory creation`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -34,4 +34,7 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `write()`: Used `@rename()` to suppress the PHP warning on failure, then `@unlink($tempPath)` before returning false so no orphan remains.
+- `clear()`: Added a second `glob('*.tmp.*')` call alongside the existing `*.cache` glob; both false-checks preserved; results merged via `array_merge()` before unlinking.
+- `ensureDirectoryExists()`: Replaced check-then-create with `@mkdir(..., recursive: true)` followed by re-check of `is_dir()`. A concurrent creator that wins the race results in mkdir returning false but `is_dir()` true — no error. Only a still-missing directory triggers a `RuntimeException`.
+- Tier-1 `increment()` and `unserialize` with `allowed_classes` are undisturbed.

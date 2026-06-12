@@ -1,6 +1,6 @@
 # Task 007: Core container circular-dependency detection
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -23,12 +23,12 @@
   - Use class-level fixtures (two classes with mutual constructor dependencies) defined at the top of the test file. NOTE: the container autowires concrete classes directly (no binding needed) — a fixture `class A { __construct(B $b){} }` and `class B { __construct(A $a){} }` resolved via `$container->get(A::class)` is sufficient to trigger the cycle.
 
 ## Requirements (Test Descriptions)
-- [ ] `it throws CircularDependencyException when two classes have mutual constructor dependencies`
-- [ ] `it throws CircularDependencyException for a self-referencing constructor dependency`
-- [ ] `it includes the dependency chain in the CircularDependencyException message`
-- [ ] `it still resolves a normal acyclic dependency graph`
-- [ ] `it can resolve a class again after a previous resolution threw an exception`
-- [ ] `it implements Psr ContainerExceptionInterface on CircularDependencyException`
+- [x] `it throws CircularDependencyException when two classes have mutual constructor dependencies`
+- [x] `it throws CircularDependencyException for a self-referencing constructor dependency`
+- [x] `it includes the dependency chain in the CircularDependencyException message`
+- [x] `it still resolves a normal acyclic dependency graph`
+- [x] `it can resolve a class again after a previous resolution threw an exception`
+- [x] `it implements Psr ContainerExceptionInterface on CircularDependencyException`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -36,4 +36,10 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `private array<string, bool> $resolving` to `Container` to track in-progress resolutions
+- Guard is placed BEFORE the `ReflectionClass` construction so self-referencing classes are caught immediately
+- Guard is placed ONLY in the constructor-dependency branch (not closure/instance early-returns)
+- `finally` block wraps the entire dependency resolution + `newInstanceArgs` to clear the set on any exception
+- Chain string built via `[...array_keys($this->resolving), $id]` — insertion order preserved by PHP associative arrays
+- Updated `CircularDependencyException` to implement `ContainerExceptionInterface` and added `forChain()` factory method (kept existing `detected()` for backward compatibility with module loader)
+- Updated `@throws` on `get()`, `call()`, and `resolve()` to include `CircularDependencyException`

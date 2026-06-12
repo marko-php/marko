@@ -6,4 +6,5 @@ return [
     'timeout' => 30,
     'max_retries' => 3,
     'retry_delay' => 60,
+    'timestamp_tolerance' => 300,
 ];

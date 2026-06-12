@@ -71,6 +71,7 @@ readonly class RetryCommand implements CommandInterface
         foreach ($failedJobs as $failedJob) {
             /** @var JobInterface $job */
             $job = unserialize($this->jobEnvelope->verifyAndUnwrap($failedJob->payload));
+            $job->resetAttempts();
             $this->queue->push($job, $failedJob->queue);
             $this->failedJobRepository->delete($failedJob->id);
             $count++;
@@ -99,6 +100,7 @@ readonly class RetryCommand implements CommandInterface
         // Verify and unserialize the job from the payload
         /** @var JobInterface $job */
         $job = unserialize($this->jobEnvelope->verifyAndUnwrap($failedJob->payload));
+        $job->resetAttempts();
 
         // Push it back to the queue
         $this->queue->push($job, $failedJob->queue);

@@ -11,9 +11,10 @@ describe('WebhookVerifier', function (): void {
         $verifier = new WebhookVerifier();
         $body = '{"event":"order.created","data":{"order_id":123}}';
         $secret = 'my-secret';
-        $hash = hash_hmac('sha256', $body, $secret);
+        $timestamp = (string) time();
+        $hash = hash_hmac('sha256', "$timestamp.$body", $secret);
         $signature = 'sha256=' . $hash;
 
-        expect($verifier->verify($body, $signature, $secret))->toBeTrue();
+        expect($verifier->verify($body, $timestamp, $signature, $secret, 300))->toBeTrue();
     });
 });

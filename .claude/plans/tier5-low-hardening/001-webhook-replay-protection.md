@@ -1,6 +1,6 @@
 # Task 001: Webhook inbound replay protection (timestamp freshness window)
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -32,15 +32,15 @@ The inbound webhook path (`WebhookReceiver` → `WebhookVerifier`) HMAC-verifies
   - Run the full `packages/webhook/tests/` suite at the end — not just the new tests — to prove nothing else regressed.
 
 ## Requirements (Test Descriptions)
-- [ ] `it accepts a freshly-signed request whose timestamp is within the tolerance window`
-- [ ] `it rejects a request whose timestamp is older than the tolerance window`
-- [ ] `it rejects a request whose timestamp is in the future beyond the tolerance window`
-- [ ] `it rejects a request when the timestamp header is missing`
-- [ ] `it accepts a request whose timestamp is exactly at the tolerance boundary`
-- [ ] `it rejects a request when the timestamp is tampered with but the body signature was computed for a different timestamp`
-- [ ] `it reads the tolerance from WebhookConfig (timestamp_tolerance) rather than a hardcoded value`
-- [ ] `it round-trips a payload signed by WebhookSignature through WebhookReceiver successfully`
-- [ ] `it keeps the existing WebhookReceiver JSON-parsing behavior for a valid signed-and-timestamped request`
+- [x] `it accepts a freshly-signed request whose timestamp is within the tolerance window`
+- [x] `it rejects a request whose timestamp is older than the tolerance window`
+- [x] `it rejects a request whose timestamp is in the future beyond the tolerance window`
+- [x] `it rejects a request when the timestamp header is missing`
+- [x] `it accepts a request whose timestamp is exactly at the tolerance boundary`
+- [x] `it rejects a request when the timestamp is tampered with but the body signature was computed for a different timestamp`
+- [x] `it reads the tolerance from WebhookConfig (timestamp_tolerance) rather than a hardcoded value`
+- [x] `it round-trips a payload signed by WebhookSignature through WebhookReceiver successfully`
+- [x] `it keeps the existing WebhookReceiver JSON-parsing behavior for a valid signed-and-timestamped request`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -48,4 +48,34 @@ The inbound webhook path (`WebhookReceiver` → `WebhookVerifier`) HMAC-verifies
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+### Wire Format
+- Signed message: `"$timestamp.$body"` (dot-delimited, timestamp is Unix epoch int)
+- HMAC: `'sha256=' . hash_hmac('sha256', "$timestamp.$body", $secret)`
+- Headers: `X-Webhook-Signature` (existing) + `X-Webhook-Timestamp` (new, string int)
+
+### Final API Signatures
+- `WebhookSignature::sign(string $payload, string $secret, int $timestamp): string`
+- `WebhookVerifier::verify(string $body, string $timestamp, string $signature, string $secret, int $tolerance): bool`
+- `WebhookReceiver::__construct(WebhookVerifier $verifier, WebhookConfig $webhookConfig)`
+- `WebhookConfig::$timestampTolerance: int` (constructor-assigned, matches `webhook.timestamp_tolerance`)
+- `WebhookDispatcher::dispatch()` now generates `time()` timestamp, adds `X-Webhook-Timestamp` header
+
+### Rejection Hierarchy in WebhookReceiver
+1. Missing `X-Webhook-Timestamp` header → `InvalidSignatureException::missingTimestamp()`
+2. `abs(time() - $ts) > $tolerance` → `InvalidSignatureException::staleTimestamp()`
+3. HMAC mismatch (via `WebhookVerifier::verify()`) → `InvalidSignatureException::forRequest()`
+
+### Tolerance Check
+- Symmetric: `abs(time() - $timestamp) > $tolerance` rejects both stale-past AND future-skew
+- Exact boundary `abs(time() - $timestamp) === $tolerance` is accepted
+- Default tolerance: 300 seconds (5 minutes) in `config/webhook.php`
+
+### Existing Tests Updated
+- `WebhookVerifierTest.php`: updated to new `verify($body, $timestamp, $signature, $secret, $tolerance)` signature
+- `WebhookSignatureTest.php`: updated to new `sign($payload, $secret, $timestamp)` signature
+- `WebhookReceiverTest.php`: updated to include `X-Webhook-Timestamp` header and use `WebhookConfig`
+- `WebhookDispatcherTest.php`: updated to expect `X-Webhook-Timestamp` header and timestamped signature
+
+### New Test File
+- `tests/Receiving/WebhookFreshnessTest.php`: 9 tests covering all freshness requirements

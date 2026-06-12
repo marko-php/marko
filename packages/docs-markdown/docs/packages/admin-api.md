@@ -47,7 +47,7 @@ Response:
 }
 ```
 
-Sections are filtered based on the authenticated user's permissions --- only sections with at least one accessible menu item are returned.
+Sections are filtered based on the authenticated user's permissions --- only sections with at least one accessible menu item are returned. Permission checks honor wildcard permissions (e.g. a user holding `catalog.*` can access any menu item whose permission starts with `catalog.`).
 
 ### Section Detail
 
@@ -79,7 +79,7 @@ Response:
 }
 ```
 
-Returns 404 if the section ID does not exist.
+Returns 404 if the section ID does not exist or if the authenticated user does not have access to any menu item in that section (same visibility rules as the list endpoint).
 
 ### Current User
 

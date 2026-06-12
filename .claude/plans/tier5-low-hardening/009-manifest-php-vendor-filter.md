@@ -1,6 +1,6 @@
 # Task 009: Core manifest `php*`-vendor dependency filter fix
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -20,13 +20,13 @@ The current filter intent is to drop non-module platform deps before extracting 
   - Keep `ARRAY_FILTER_USE_KEY` and the closure shape.
 
 ## Requirements (Test Descriptions)
-- [ ] `it does not drop a phpunit/phpunit requirement`
-- [ ] `it does not drop a phpstan/phpstan requirement`
-- [ ] `it drops the exact php platform requirement`
-- [ ] `it drops the php-64bit platform requirement`
-- [ ] `it drops ext-* requirements`
-- [ ] `it drops lib-* requirements`
-- [ ] `it keeps marko/* module requirements`
+- [x] `it does not drop a phpunit/phpunit requirement`
+- [x] `it does not drop a phpstan/phpstan requirement`
+- [x] `it drops the exact php platform requirement`
+- [x] `it drops the php-64bit platform requirement`
+- [x] `it drops ext-* requirements`
+- [x] `it drops lib-* requirements`
+- [x] `it keeps marko/* module requirements`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -34,4 +34,7 @@ The current filter intent is to drop non-module platform deps before extracting 
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Fixed `extractMarkoRequirements()` in `ManifestParser` to use exact `=== 'php'` and `=== 'php-64bit'` checks instead of `str_starts_with($package, 'php')` prefix match
+- Kept existing `ext-`/`lib-` prefix drops and `ARRAY_FILTER_USE_KEY` shape unchanged
+- Added `ManifestParserTest.php` with 7 tests covering all filter cases
+- Extracted `createTempModuleDir`, `removeTempModuleDir`, and `parseModuleRequire` helpers to eliminate repeated setup across 7 tests

@@ -149,7 +149,24 @@ it('config file contains all required keys with defaults', function (): void {
         ->and($config)->toHaveKey('format')
         ->and($config)->toHaveKey('date_format')
         ->and($config)->toHaveKey('max_files')
-        ->and($config)->toHaveKey('max_file_size');
+        ->and($config)->toHaveKey('max_file_size')
+        ->and($config)->toHaveKey('escape_newlines')
+        ->and($config['escape_newlines'])->toBeTrue();
+});
+
+it('reads escape_newlines from config', function (): void {
+    $config = new LogConfig(new FakeConfigRepository([
+        'log.escape_newlines' => true,
+    ]));
+
+    expect($config->escapeNewlines())->toBeTrue();
+});
+
+it('throws when escape_newlines is not configured', function (): void {
+    $config = new LogConfig(new FakeConfigRepository());
+
+    expect(fn () => $config->escapeNewlines())
+        ->toThrow(ConfigNotFoundException::class);
 });
 
 it('uses FakeConfigRepository in LogConfigTest', function (): void {

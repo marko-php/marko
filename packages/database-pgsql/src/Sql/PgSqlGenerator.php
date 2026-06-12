@@ -30,21 +30,25 @@ class PgSqlGenerator implements SqlGeneratorInterface
      */
     private const array TYPE_MAP = [
         'integer' => 'INTEGER',
+        'int' => 'INTEGER',
         'bigint' => 'BIGINT',
         'smallint' => 'SMALLINT',
+        'tinyint' => 'SMALLINT',
         'string' => 'VARCHAR',
         'text' => 'TEXT',
         'boolean' => 'BOOLEAN',
+        'bool' => 'BOOLEAN',
         'datetime' => 'TIMESTAMP',
         'timestamp' => 'TIMESTAMP',
         'date' => 'DATE',
         'time' => 'TIME',
-        'decimal' => 'DECIMAL',
+        'decimal' => 'DECIMAL(10,2)',
         'float' => 'REAL',
         'double' => 'DOUBLE PRECISION',
         'json' => 'JSONB',
         'uuid' => 'UUID',
         'binary' => 'BYTEA',
+        'blob' => 'BYTEA',
         'enum' => 'VARCHAR',
     ];
 

@@ -1,6 +1,6 @@
 # Task 017: Translator placeholder replacement ordering
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -27,10 +27,10 @@ Fix by replacing in a single non-recursive pass: order placeholders longest-name
   - Keep the method `private` and its signature unchanged. No config or interface changes.
 
 ## Requirements (Test Descriptions)
-- [ ] `it resolves :attribute to its own value when :attr is also a placeholder`
-- [ ] `it does not re-replace a placeholder appearing inside a replacement value`
-- [ ] `it replaces a single placeholder with its value`
-- [ ] `it leaves a string with no placeholders unchanged`
+- [x] `it resolves :attribute to its own value when :attr is also a placeholder`
+- [x] `it does not re-replace a placeholder appearing inside a replacement value`
+- [x] `it replaces a single placeholder with its value`
+- [x] `it leaves a string with no placeholders unchanged`
 
 ## Acceptance Criteria
 - With replacements `['attr' => 'x', 'attribute' => 'y']`, the string `:attribute` resolves to `y` (not corrupted by the `:attr` substitution).
@@ -40,4 +40,4 @@ Fix by replacing in a single non-recursive pass: order placeholders longest-name
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+Replaced the sequential `foreach`/`str_replace` loop in `applyReplacements()` with a single `strtr($value, $map)` call where `$map` is built as `[":$placeholder" => $replacement]`. `strtr` is single-pass and longest-key-preferring, which fixes both bugs (overlapping prefix corruption and re-substitution of replacement values) with no manual sorting. Four tests added to `TranslatorTest.php` covering: overlapping prefix, no re-replacement, single placeholder, and no-placeholder passthrough.

@@ -17,6 +17,8 @@ class DebugbarStorage
 
     /**
      * @param array<string, mixed> $dataset
+     *
+     * @throws JsonException
      */
     public function put(array $dataset): void
     {
@@ -35,6 +37,32 @@ class DebugbarStorage
         file_put_contents(
             $directory.'/'.$id.'.json',
             json_encode($dataset, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+            LOCK_EX,
+        );
+
+        $summary = is_array($dataset['summary'] ?? null)
+            ? $this->stringKeyArray($dataset['summary'])
+            : [];
+
+        $storedAt = is_string($dataset['stored_at'] ?? null)
+            ? $dataset['stored_at']
+            : date(DATE_ATOM);
+
+        $profilerUrl = is_string($dataset['profiler_url'] ?? null)
+            ? $dataset['profiler_url']
+            : '/_debugbar/'.$id;
+
+        file_put_contents(
+            $directory.'/'.$id.'.summary.json',
+            json_encode(
+                [
+                    'id' => $id,
+                    'stored_at' => $storedAt,
+                    'profiler_url' => $profilerUrl,
+                    'summary' => $summary,
+                ],
+                JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+            ),
             LOCK_EX,
         );
 
@@ -70,7 +98,7 @@ class DebugbarStorage
      */
     public function all(): array
     {
-        $files = glob($this->directory().'/*.json') ?: [];
+        $files = glob($this->directory().'/*.summary.json') ?: [];
         $items = [];
 
         foreach ($files as $file) {
@@ -78,26 +106,37 @@ class DebugbarStorage
                 continue;
             }
 
-            $id = basename($file, '.json');
-            $dataset = $this->get($id);
+            $id = basename($file, '.summary.json');
 
-            if ($dataset === null) {
+            if (! $this->validId($id)) {
                 continue;
             }
 
-            $summary = is_array($dataset['summary'] ?? null)
-                ? $this->stringKeyArray($dataset['summary'])
+            try {
+                $meta = json_decode((string) file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
+            } catch (JsonException) {
+                continue;
+            }
+
+            if (! is_array($meta)) {
+                continue;
+            }
+
+            $summary = is_array($meta['summary'] ?? null)
+                ? $this->stringKeyArray($meta['summary'])
                 : [];
+
+            $mtime = (int) filemtime($file);
 
             $items[] = [
                 'id' => $id,
                 'stored_at' => $this->stringValue(
-                    $dataset['stored_at'] ?? null,
-                    date(DATE_ATOM, (int) filemtime($file)),
+                    $meta['stored_at'] ?? null,
+                    date(DATE_ATOM, $mtime),
                 ),
-                'profiler_url' => $this->stringValue($dataset['profiler_url'] ?? null, '/_debugbar/'.$id),
+                'profiler_url' => $this->stringValue($meta['profiler_url'] ?? null, '/_debugbar/'.$id),
                 'summary' => $summary,
-                'mtime' => (int) filemtime($file),
+                'mtime' => $mtime,
             ];
         }
 
@@ -111,10 +150,20 @@ class DebugbarStorage
 
     public function clear(): int
     {
-        $files = glob($this->directory().'/*.json') ?: [];
+        $directory = $this->directory();
         $deleted = 0;
 
-        foreach ($files as $file) {
+        foreach (glob($directory.'/*.summary.json') ?: [] as $file) {
+            if (is_file($file)) {
+                unlink($file);
+            }
+        }
+
+        foreach (glob($directory.'/*.json') ?: [] as $file) {
+            if (str_ends_with($file, '.summary.json')) {
+                continue;
+            }
+
             if (is_file($file) && unlink($file)) {
                 $deleted++;
             }
@@ -142,7 +191,13 @@ class DebugbarStorage
             return;
         }
 
-        $files = glob($this->directory().'/*.json') ?: [];
+        $directory = $this->directory();
+        $allJson = glob($directory.'/*.json') ?: [];
+
+        $files = array_values(array_filter(
+            $allJson,
+            static fn (string $f): bool => ! str_ends_with($f, '.summary.json'),
+        ));
 
         if (count($files) <= $maxFiles) {
             return;
@@ -156,6 +211,12 @@ class DebugbarStorage
         foreach (array_slice($files, $maxFiles) as $file) {
             if (is_file($file)) {
                 unlink($file);
+            }
+
+            $summaryFile = $directory.'/'.basename($file, '.json').'.summary.json';
+
+            if (is_file($summaryFile)) {
+                unlink($summaryFile);
             }
         }
     }

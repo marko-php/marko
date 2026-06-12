@@ -15,6 +15,7 @@ return [
             return new LineFormatter(
                 format: $config->format(),
                 dateFormat: $config->dateFormat(),
+                escapeNewlines: $config->escapeNewlines(),
             );
         },
     ],

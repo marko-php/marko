@@ -72,7 +72,51 @@ readonly class QueryDatabaseTool implements ToolHandlerInterface
     {
         $first = strtoupper(strtok($sql, " \t\n\r") ?: '');
 
-        return in_array($first, self::ALLOWED_PREFIXES, strict: true);
+        return in_array($first, self::ALLOWED_PREFIXES, strict: true)
+            && ! $this->hasStackedStatements($sql);
+    }
+
+    private function hasStackedStatements(string $sql): bool
+    {
+        $len = strlen($sql);
+        $inSingle = false;
+        $inDouble = false;
+
+        for ($i = 0; $i < $len; $i++) {
+            $char = $sql[$i];
+
+            if ($char === "'" && ! $inDouble) {
+                // Handle escaped/doubled single quotes
+                if ($inSingle && $i + 1 < $len && $sql[$i + 1] === "'") {
+                    $i++;
+                } else {
+                    $inSingle = ! $inSingle;
+                }
+
+                continue;
+            }
+
+            if ($char === '"' && ! $inSingle) {
+                // Handle escaped/doubled double quotes
+                if ($inDouble && $i + 1 < $len && $sql[$i + 1] === '"') {
+                    $i++;
+                } else {
+                    $inDouble = ! $inDouble;
+                }
+
+                continue;
+            }
+
+            if ($char === ';' && ! $inSingle && ! $inDouble) {
+                $rest = substr($sql, $i + 1);
+
+                if (trim($rest) !== '') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /** @param list<array<string, mixed>> $rows */

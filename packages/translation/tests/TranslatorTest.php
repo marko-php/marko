@@ -10,7 +10,7 @@ use Marko\Translation\Translator;
 function createMockLoader(
     array $translations = [],
 ): TranslationLoaderInterface {
-    return new class ($translations) implements TranslationLoaderInterface
+    return new readonly class ($translations) implements TranslationLoaderInterface
     {
         /**
          * @param array<string, array<string, array<string, mixed>>> $translations
@@ -31,14 +31,14 @@ function createMockLoader(
     };
 }
 
-it('implements TranslatorInterface', function () {
+it('implements TranslatorInterface', function (): void {
     $loader = createMockLoader();
     $translator = new Translator($loader, 'en', 'en');
 
     expect($translator)->toBeInstanceOf(TranslatorInterface::class);
 });
 
-it('resolves simple translation key via loader', function () {
+it('resolves simple translation key via loader', function (): void {
     $loader = createMockLoader([
         'en.messages' => [
             'welcome' => 'Welcome!',
@@ -50,7 +50,7 @@ it('resolves simple translation key via loader', function () {
     expect($translator->get('messages.welcome'))->toBe('Welcome!');
 });
 
-it('resolves nested dot-notation keys from loaded arrays', function () {
+it('resolves nested dot-notation keys from loaded arrays', function (): void {
     $loader = createMockLoader([
         'en.messages' => [
             'nested' => [
@@ -64,7 +64,7 @@ it('resolves nested dot-notation keys from loaded arrays', function () {
     expect($translator->get('messages.nested.deep'))->toBe('Nested value');
 });
 
-it('replaces :placeholder tokens with provided replacements', function () {
+it('replaces :placeholder tokens with provided replacements', function (): void {
     $loader = createMockLoader([
         'en.messages' => [
             'welcome' => 'Welcome, :name!',
@@ -80,7 +80,7 @@ it('replaces :placeholder tokens with provided replacements', function () {
         );
 });
 
-it('falls back to fallback locale when key missing in primary locale', function () {
+it('falls back to fallback locale when key missing in primary locale', function (): void {
     $loader = createMockLoader([
         'en.messages' => [
             'welcome' => 'Welcome!',
@@ -93,7 +93,7 @@ it('falls back to fallback locale when key missing in primary locale', function 
     expect($translator->get('messages.welcome'))->toBe('Welcome!');
 });
 
-it('throws MissingTranslationException when key missing in all locales', function () {
+it('throws MissingTranslationException when key missing in all locales', function (): void {
     $loader = createMockLoader([
         'en.messages' => [],
         'fr.messages' => [],
@@ -104,7 +104,55 @@ it('throws MissingTranslationException when key missing in all locales', functio
     $translator->get('messages.nonexistent');
 })->throws(MissingTranslationException::class);
 
-it('selects correct plural form for zero, one, and other counts', function () {
+it('resolves :attribute to its own value when :attr is also a placeholder', function (): void {
+    $loader = createMockLoader([
+        'en.messages' => [
+            'field' => 'The :attribute field',
+        ],
+    ]);
+
+    $translator = new Translator($loader, 'en', 'en');
+
+    expect($translator->get('messages.field', ['attr' => 'x', 'attribute' => 'y']))->toBe('The y field');
+});
+
+it('does not re-replace a placeholder appearing inside a replacement value', function (): void {
+    $loader = createMockLoader([
+        'en.messages' => [
+            'msg' => 'Hello :name',
+        ],
+    ]);
+
+    $translator = new Translator($loader, 'en', 'en');
+
+    expect($translator->get('messages.msg', ['name' => ':greeting', 'greeting' => 'world']))->toBe('Hello :greeting');
+});
+
+it('replaces a single placeholder with its value', function (): void {
+    $loader = createMockLoader([
+        'en.messages' => [
+            'greet' => 'Hi :user',
+        ],
+    ]);
+
+    $translator = new Translator($loader, 'en', 'en');
+
+    expect($translator->get('messages.greet', ['user' => 'Alice']))->toBe('Hi Alice');
+});
+
+it('leaves a string with no placeholders unchanged', function (): void {
+    $loader = createMockLoader([
+        'en.messages' => [
+            'plain' => 'No placeholders here',
+        ],
+    ]);
+
+    $translator = new Translator($loader, 'en', 'en');
+
+    expect($translator->get('messages.plain', ['anything' => 'ignored']))->toBe('No placeholders here');
+});
+
+it('selects correct plural form for zero, one, and other counts', function (): void {
     $loader = createMockLoader([
         'en.messages' => [
             'items' => 'zero:No items|one:One item|other::count items',

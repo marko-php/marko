@@ -19,13 +19,16 @@ Override defaults in your config file:
 
 ```php title="config/webhook.php"
 return [
-    'timeout'     => 30,   // seconds before the HTTP request times out
-    'max_retries' => 3,    // maximum delivery attempts (including the first)
-    'retry_delay' => 60,   // base delay in seconds; multiplied exponentially per attempt
+    'timeout'             => 30,  // seconds before the HTTP request times out
+    'max_retries'         => 3,   // maximum delivery attempts (including the first)
+    'retry_delay'         => 60,  // base delay in seconds; multiplied exponentially per attempt
+    'timestamp_tolerance' => 300, // seconds a webhook timestamp may differ from server time
 ];
 ```
 
 With the defaults, a job that fails on every attempt retries at 120 s, 240 s, and 480 s.
+
+The `timestamp_tolerance` controls replay-attack protection for inbound webhooks. Requests whose `X-Webhook-Timestamp` header is more than this many seconds in the past or future are rejected.
 
 ## Usage
 
@@ -58,7 +61,7 @@ public function notifySubscriber(): void
 }
 ```
 
-The dispatcher automatically signs the request body and sends it as an `X-Webhook-Signature: sha256={hash}` header.
+The dispatcher automatically records the current Unix timestamp, includes it as an `X-Webhook-Timestamp` header, and signs the message as `"{timestamp}.{body}"` — producing an `X-Webhook-Signature: sha256={hash}` header. The receiver verifies both the timestamp freshness and the signature before accepting the payload.
 
 ### Sending Asynchronously with Retry
 
@@ -90,7 +93,7 @@ Failed deliveries retry up to `max_retries` times with delays calculated as `ret
 
 ### Receiving Webhooks
 
-Use `WebhookReceiver::receive()` in a controller to verify the signature and parse the payload. An `InvalidSignatureException` is thrown if the signature does not match:
+Use `WebhookReceiver::receive()` in a controller to verify the signature and parse the payload. An `InvalidSignatureException` is thrown if the `X-Webhook-Timestamp` header is absent, if the timestamp is outside the tolerance window, or if the signature does not match:
 
 ```php
 use Marko\Routing\Http\Request;
@@ -203,7 +206,7 @@ public function receive(Request $request, string $secret): array;
 ```php
 use Marko\Webhook\Receiving\WebhookVerifier;
 
-public function verify(string $body, string $signature, string $secret): bool;
+public function verify(string $body, string $timestamp, string $signature, string $secret, int $tolerance): bool;
 ```
 
 ### WebhookSignature
@@ -211,8 +214,8 @@ public function verify(string $body, string $signature, string $secret): bool;
 ```php
 use Marko\Webhook\Sending\WebhookSignature;
 
-// Returns "sha256={hash}"
-public static function sign(string $payload, string $secret): string;
+// Returns "sha256={hash}"; message is "{timestamp}.{payload}"
+public static function sign(string $payload, string $secret, int $timestamp): string;
 ```
 
 ### DispatchWebhookJob
@@ -259,9 +262,25 @@ public function recordFailure(WebhookPayload $payload, string $error, int $attem
 ```php
 use Marko\Webhook\Config\WebhookConfig;
 
-public int $timeout;      // from webhook.timeout
-public int $maxRetries;   // from webhook.max_retries
-public int $retryDelay;   // from webhook.retry_delay
+public int $timeout;             // from webhook.timeout
+public int $maxRetries;          // from webhook.max_retries
+public int $retryDelay;          // from webhook.retry_delay
+public int $timestampTolerance;  // from webhook.timestamp_tolerance
+```
+
+### InvalidSignatureException
+
+```php
+use Marko\Webhook\Exceptions\InvalidSignatureException;
+
+// Thrown when X-Webhook-Timestamp header is absent
+InvalidSignatureException::missingTimestamp();
+
+// Thrown when the timestamp is outside the tolerance window
+InvalidSignatureException::staleTimestamp(int $timestamp, int $tolerance);
+
+// Thrown when the HMAC signature does not match
+InvalidSignatureException::forRequest();
 ```
 
 ### Interfaces

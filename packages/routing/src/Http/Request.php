@@ -129,9 +129,18 @@ readonly class Request
         string $name,
         ?string $default = null,
     ): ?string {
-        $serverKey = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+        $normalized = strtoupper(str_replace('-', '_', $name));
+        $serverKey = 'HTTP_' . $normalized;
 
-        return $this->server[$serverKey] ?? $default;
+        if (isset($this->server[$serverKey])) {
+            return (string) $this->server[$serverKey];
+        }
+
+        if (($normalized === 'CONTENT_TYPE' || $normalized === 'CONTENT_LENGTH') && isset($this->server[$normalized])) {
+            return (string) $this->server[$normalized];
+        }
+
+        return $default;
     }
 
     /**
