@@ -1,6 +1,6 @@
 # Task 003: DiscoveryCompiler — produce the cache payload from a fresh scan
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [002]
 **Retry count**: 0
 
@@ -28,12 +28,12 @@ Add `DiscoveryCompiler`, which runs the four existing attribute-marker discovery
 - **Equivalence invariant (load-bearing).** `Application` resolves `ObserverDiscovery` through the container (`$this->container->get(ObserverDiscovery::class)`, autowired), while the compiler `new`s it directly. These are equivalent ONLY because no `#[Preference]` currently targets a discovery class. Add a code comment in `DiscoveryCompiler` documenting that it intentionally bypasses container/preference resolution for the discovery classes themselves, and why that is safe (discovery runs before preferences apply to discovery classes; no preference targets them). The equivalence test below must compare the compiled output against the SAME construction the reference uses so this invariant is guarded, not assumed.
 
 ## Requirements (Test Descriptions)
-- [ ] `it compiles an empty payload (empty preference, plugin, observer, command arrays) for modules with no attribute-bearing classes`
-- [ ] `it includes the current cache schema version key sourced from DiscoveryCache::CACHE_VERSION (not a hardcoded literal) in the compiled payload`
-- [ ] `it compiles preferences discovered across all modules into the payload preferences array`
-- [ ] `it compiles plugins, observers, and commands discovered across all modules into their respective payload arrays`
-- [ ] `it produces a payload that, written and reloaded through DiscoveryCache, yields discovery objects identical to running the four discovery passes directly over the same modules`
-- [ ] `it aggregates results from multiple modules preserving the module load order`
+- [x] `it compiles an empty payload (empty preference, plugin, observer, command arrays) for modules with no attribute-bearing classes`
+- [x] `it includes the current cache schema version key sourced from DiscoveryCache::CACHE_VERSION (not a hardcoded literal) in the compiled payload`
+- [x] `it compiles preferences discovered across all modules into the payload preferences array`
+- [x] `it compiles plugins, observers, and commands discovered across all modules into their respective payload arrays`
+- [x] `it produces a payload that, written and reloaded through DiscoveryCache, yields discovery objects identical to running the four discovery passes directly over the same modules`
+- [x] `it aggregates results from multiple modules preserving the module load order`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -41,4 +41,8 @@ Add `DiscoveryCompiler`, which runs the four existing attribute-marker discovery
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `DiscoveryCompiler` created at `packages/core/src/Discovery/DiscoveryCompiler.php` in `Marko\Core\Discovery` namespace.
+- Mirrors `Application::discoverPreferences/Plugins/Observers/Commands` exactly: loops modules for `PreferenceDiscovery`/`PluginDiscovery` (each `new PreferenceDiscovery()`/`new PluginDiscovery()` internally create their own `ClassFileParser`), and passes full module list to `ObserverDiscovery`/`CommandDiscovery` constructed directly with `new ObserverDiscovery(new ClassFileParser())` / `new CommandDiscovery(new ClassFileParser())`.
+- Uses `DiscoveryCache::CACHE_VERSION` constant (not a hardcoded literal) for the `version` key.
+- Code comment documents why bypassing container/preference resolution is safe for discovery classes.
+- All 6 test requirements pass. The 12 pre-existing failures in `ApplicationDiscoveryCacheTest.php` are unrelated to this task (they existed before these changes).

@@ -1,6 +1,6 @@
 # Task 005: discovery:clear command
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [002]
 **Retry count**: 0
 
@@ -23,10 +23,10 @@ Add the `discovery:clear` CLI command. It removes the compiled discovery cache f
 - Standards: strict types, constructor promotion, no final, no magic methods, full type declarations. MUST NOT reference `Marko\Config`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it removes an existing cache file and returns exit code 0`
-- [ ] `it reports the cache as cleared via writeLine`
-- [ ] `it returns exit code 0 and reports success when no cache file exists`
-- [ ] `it leaves DiscoveryCache exists() false after running`
+- [x] `it removes an existing cache file and returns exit code 0`
+- [x] `it reports the cache as cleared via writeLine`
+- [x] `it returns exit code 0 and reports success when no cache file exists`
+- [x] `it leaves DiscoveryCache exists() false after running`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -34,4 +34,9 @@ Add the `discovery:clear` CLI command. It removes the compiled discovery cache f
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created `DiscoveryClearCommand` at `packages/core/src/Commands/DiscoveryClearCommand.php`
+- `readonly class` — all constructor properties are immutable
+- Injects `DiscoveryCache` directly (concrete autowirable class)
+- `DiscoveryCache::clear()` is already idempotent (handles absent file), so the command always succeeds with exit code 0
+- Output message: "Discovery cache cleared successfully."
+- Tests at `packages/core/tests/Command/DiscoveryClearCommandTest.php` cover all 4 requirements

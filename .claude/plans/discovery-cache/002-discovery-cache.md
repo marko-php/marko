@@ -1,6 +1,6 @@
 # Task 002: DiscoveryCache read/write/exists/clear with loud corruption errors
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [001]
 **Retry count**: 0
 
@@ -30,20 +30,20 @@ Add `DiscoveryCache`, the component that owns the compiled cache file at `storag
 - Standards: strict types, constructor promotion (`ProjectPaths`, `DiscoveryEnvironment`), no final, no magic methods, full type declarations. NO reference to `Marko\Config`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it writes a discovery payload to a return-array PHP file at the configured cache path and creates the directory if missing`
-- [ ] `it reports exists() true after a write and false before any write or after clear`
-- [ ] `it clears the cache file and clear() is idempotent when the file is already absent`
-- [ ] `it loads a written cache back into PreferenceRecord, PluginDefinition, ObserverDefinition, and CommandDefinition objects identical to the payload`
-- [ ] `it round-trips PluginDefinition beforeMethods/afterMethods associative arrays preserving target-method keys and the pluginMethod/sortOrder shape`
-- [ ] `it round-trips empty definition arrays and empty aliases/beforeMethods/afterMethods without turning associative arrays into lists`
-- [ ] `it resolves a relative cache_path against the project base path and uses an absolute cache_path unchanged`
-- [ ] `it throws DiscoveryCacheException when the cache file content is not a PHP array`
-- [ ] `it throws DiscoveryCacheException when the cache file is missing required keys (version, preferences, plugins, observers, commands)`
-- [ ] `it throws DiscoveryCacheException when the cache version key does not match the current cache schema version`
-- [ ] `it throws DiscoveryCacheException when a record within a section is missing a required field (e.g. a plugin entry without targetClass)`
-- [ ] `it throws DiscoveryCacheException when a record field has the wrong type (e.g. observer priority is a string, command aliases is not an array, plugin beforeMethods is not an array)`
-- [ ] `it throws DiscoveryCacheException::notWritable when the target directory cannot be created or the file/rename cannot be written (never returns false silently)`
-- [ ] `it throws DiscoveryCacheException whose suggestion names the cache file path to delete as the primary recovery, plus discovery:clear, when content is corrupt`
+- [x] `it writes a discovery payload to a return-array PHP file at the configured cache path and creates the directory if missing`
+- [x] `it reports exists() true after a write and false before any write or after clear`
+- [x] `it clears the cache file and clear() is idempotent when the file is already absent`
+- [x] `it loads a written cache back into PreferenceRecord, PluginDefinition, ObserverDefinition, and CommandDefinition objects identical to the payload`
+- [x] `it round-trips PluginDefinition beforeMethods/afterMethods associative arrays preserving target-method keys and the pluginMethod/sortOrder shape`
+- [x] `it round-trips empty definition arrays and empty aliases/beforeMethods/afterMethods without turning associative arrays into lists`
+- [x] `it resolves a relative cache_path against the project base path and uses an absolute cache_path unchanged`
+- [x] `it throws DiscoveryCacheException when the cache file content is not a PHP array`
+- [x] `it throws DiscoveryCacheException when the cache file is missing required keys (version, preferences, plugins, observers, commands)`
+- [x] `it throws DiscoveryCacheException when the cache version key does not match the current cache schema version`
+- [x] `it throws DiscoveryCacheException when a record within a section is missing a required field (e.g. a plugin entry without targetClass)`
+- [x] `it throws DiscoveryCacheException when a record field has the wrong type (e.g. observer priority is a string, command aliases is not an array, plugin beforeMethods is not an array)`
+- [x] `it throws DiscoveryCacheException::notWritable when the target directory cannot be created or the file/rename cannot be written (never returns false silently)`
+- [x] `it throws DiscoveryCacheException whose suggestion names the cache file path to delete as the primary recovery, plus discovery:clear, when content is corrupt`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -51,4 +51,11 @@ Add `DiscoveryCache`, the component that owns the compiled cache file at `storag
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `DiscoveryCacheException` in `packages/core/src/Exceptions/` extending `MarkoException` with four static factories: `unreadable`, `malformed`, `versionMismatch`, `notWritable`
+- Added `DiscoveryCache` in `packages/core/src/Discovery/` with `CACHE_VERSION = 1` constant; constructor takes `ProjectPaths` + `DiscoveryEnvironment` (both `private readonly`)
+- Path resolution: absolute paths (leading `/` or Windows drive letter) used as-is; relative paths resolved against `$projectPaths->base`
+- `write()` serializes via `var_export` in `<?php return [...];` format with a generated-file comment; writes atomically via temp file + `rename()` in same directory; throws `notWritable` on any failure
+- `load()` validates: is-array, has required keys, version match, then per-section field-type validation before constructing value objects; all corrupt content throws loudly
+- `clear()` is idempotent — no-op when file absent
+- `@mkdir` with `@` suppresses PHP warnings on permission-denied (test environment runs as non-root); exception is still thrown via the `false` return check
+- 14 tests covering all requirements; full suite: 6708 passed

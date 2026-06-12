@@ -1,6 +1,6 @@
 # Task 004: discovery:cache command
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [002, 003]
 **Retry count**: 0
 
@@ -31,11 +31,11 @@ ad-hoc paths.
 - Standards: strict types, constructor promotion, no final, no magic methods, full type declarations. `DiscoveryCacheCommand` is in `marko/core` and MUST NOT reference `Marko\Config` (it injects `DiscoveryCache`/`DiscoveryCompiler`/`ModuleRepositoryInterface` only).
 
 ## Requirements (Test Descriptions)
-- [ ] `it compiles discovery and writes the cache file, returning exit code 0`
-- [ ] `it writes a cache file that DiscoveryCache reports as existing after the command runs`
-- [ ] `it reports the cache file path and the counts of cached preferences, plugins, observers, and commands`
-- [ ] `it returns a non-zero exit code and a helpful message (catching DiscoveryCacheException::notWritable) when the cache cannot be written`
-- [ ] `it overwrites a pre-existing cache file with freshly compiled content`
+- [x] `it compiles discovery and writes the cache file, returning exit code 0`
+- [x] `it writes a cache file that DiscoveryCache reports as existing after the command runs`
+- [x] `it reports the cache file path and the counts of cached preferences, plugins, observers, and commands`
+- [x] `it returns a non-zero exit code and a helpful message (catching DiscoveryCacheException::notWritable) when the cache cannot be written`
+- [x] `it overwrites a pre-existing cache file with freshly compiled content`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -43,4 +43,6 @@ ad-hoc paths.
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created `packages/core/src/Commands/DiscoveryCacheCommand.php`: `readonly` class, `#[Command(name: 'discovery:cache')]`, injects `DiscoveryCompiler`, `DiscoveryCache`, `ModuleRepositoryInterface`. Calls `compile(modules)`, then `write(payload)`, reports path via `$discoveryCache->path()` and per-section counts. Catches `DiscoveryCacheException` and returns exit code 1 with message + suggestion.
+- Added `public path(): string` method to `DiscoveryCache` to expose the resolved cache path without duplicating resolution logic in the command.
+- Test file at `packages/core/tests/Command/DiscoveryCacheCommandTest.php`. Uses unique temp dirs per test with cleanup. The non-writable test creates a `0555` (read-only) directory so `file_put_contents` fails and `DiscoveryCacheException::notWritable` is thrown.

@@ -4,7 +4,7 @@
 2026-06-10
 
 ## Status
-ready
+completed
 
 ## Objective
 Eliminate the per-request, full-codebase PHP-file scan in `Application::initialize()` by adding a CLI-compiled discovery cache: a `discovery:cache` command compiles attribute-marker discovery (preferences, plugins, observers, commands) into a generated `return [...]` PHP file that boot loads instead of rescanning, outside development.
@@ -99,12 +99,12 @@ This plan MUST land AFTER `tier2-high-correctness/003-classfileparser-tokenizer.
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | `DiscoveryEnvironment` env reader (core, NO marko/config) + shipped `config/discovery.php` defaults | - | pending |
-| 002 | `DiscoveryCacheException` + `DiscoveryCache` read/write/exists/clear + hydrate/serialize | 001 | pending |
-| 003 | `DiscoveryCompiler` — run the four scans, produce the plain-array payload | 002 | pending |
-| 004 | `discovery:cache` command (compile + write) | 002, 003 | pending |
-| 005 | `discovery:clear` command (remove cache file) | 002 | pending |
-| 006 | Boot integration in `Application::initialize()` (cache hit skips scan; dev always rescans; corrupt throws) | 001, 002 | pending |
+| 001 | `DiscoveryEnvironment` env reader (core, NO marko/config) + shipped `config/discovery.php` defaults | - | completed |
+| 002 | `DiscoveryCacheException` + `DiscoveryCache` read/write/exists/clear + hydrate/serialize | 001 | completed |
+| 003 | `DiscoveryCompiler` — run the four scans, produce the plain-array payload | 002 | completed |
+| 004 | `discovery:cache` command (compile + write) | 002, 003 | completed |
+| 005 | `discovery:clear` command (remove cache file) | 002 | completed |
+| 006 | Boot integration in `Application::initialize()` (cache hit skips scan; dev always rescans; corrupt throws) | 001, 002 | completed |
 
 **Hard cross-plan prerequisite:** all tasks below depend on `tier2-high-correctness/003-classfileparser-tokenizer` having merged first (see Prerequisite note above). Do not begin this plan until that task is on `develop`.
 

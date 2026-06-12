@@ -166,6 +166,82 @@ return [
 ];
 ```
 
+### Discovery Cache
+
+On every boot, Marko scans all module PHP files to discover `#[Preference]`, `#[Plugin]`, `#[Observer]`, and `#[Command]` attributes. In production this scan can be eliminated by compiling its results into a single PHP file --- the discovery cache.
+
+#### Compiling the cache
+
+```bash
+marko discovery:cache
+```
+
+Scans all modules, writes the compiled cache, and reports per-section counts:
+
+```
+Discovery cache compiled successfully.
+Cache path: /var/www/html/storage/cache/discovery.php
+preferences: 4
+plugins: 12
+observers: 7
+commands: 9
+```
+
+#### Clearing the cache
+
+```bash
+marko discovery:clear
+```
+
+Deletes the compiled cache file. Idempotent --- safe to run when no cache exists.
+
+#### How boot uses the cache
+
+At boot, `Application::initialize()` reads three environment variables directly (not via `marko/config`, so the gate works before any config package is loaded):
+
+| Variable | Default | Description |
+|---|---|---|
+| `APP_ENV` | `production` | Application environment. Set to `development` to disable the cache. |
+| `DISCOVERY_CACHE_ENABLED` | `true` | Set to `0`, `false`, `no`, `off`, or empty to disable. |
+| `DISCOVERY_CACHE_PATH` | `storage/cache/discovery.php` | Path to the cache file. Relative paths resolve from the project root; absolute paths are used as-is. |
+
+The cache is used when **all three conditions** are true:
+
+1. `DISCOVERY_CACHE_ENABLED` is truthy
+2. `APP_ENV` is not `development`
+3. The cache file exists at `DISCOVERY_CACHE_PATH`
+
+If the cache file is **missing**, boot falls back to a normal full rescan --- no error.
+
+If the cache file is **corrupt, malformed, or version-mismatched**, boot throws `DiscoveryCacheException` immediately. There is no silent fallback. Run `marko discovery:clear` then `marko discovery:cache` to rebuild.
+
+In **`development`** environment the cache is always bypassed, so adding or editing a `#[Plugin]`, `#[Observer]`, `#[Preference]`, or `#[Command]` takes effect on the next request without any manual step.
+
+#### Configuration via `marko/config`
+
+When `marko/config` is installed, the same keys are available as a config file:
+
+```php title="config/discovery.php"
+return [
+    'enabled'    => true,   // mirrors DISCOVERY_CACHE_ENABLED
+    'environment' => 'production', // mirrors APP_ENV
+    'cache_path' => 'storage/cache/discovery.php', // mirrors DISCOVERY_CACHE_PATH
+];
+```
+
+The core-owned `config/discovery.php` is shipped with `marko/core` and populates these values from `$_ENV` automatically. The boot gate reads `DiscoveryEnvironment` directly and does not depend on `marko/config`.
+
+#### Deploy requirement
+
+There is no file-modification-time invalidation. Whenever code changes (new modules, updated attributes), regenerate the cache as part of your deploy:
+
+```bash
+composer install --no-dev --optimize-autoloader
+marko discovery:cache
+```
+
+Serving stale discovery results in missing preferences, plugins, observers, or commands until the cache is recompiled.
+
 ### Throwing Rich Exceptions
 
 Include context and fix suggestions:
@@ -241,3 +317,22 @@ use Marko\Core\Exceptions\CircularDependencyException;
 Thrown by the container when a mutual constructor dependency cycle is detected (e.g. class A requires class B which requires class A). Rather than exhausting the call stack, the container detects the cycle and throws immediately with a human-readable chain (`A -> B -> A`) and a suggestion to remove the circular reference.
 
 Implements `Psr\Container\ContainerExceptionInterface`.
+
+### DiscoveryCacheException
+
+```php
+use Marko\Core\Exceptions\DiscoveryCacheException;
+```
+
+Thrown by `Application::initialize()` when the discovery cache file is corrupt, structurally invalid, or carries a version number that does not match the running core version. There is no silent fallback --- a bad cache is a loud error.
+
+Named constructors:
+
+| Method | When thrown |
+|---|---|
+| `DiscoveryCacheException::unreadable($path)` | Cache file exists but cannot be read |
+| `DiscoveryCacheException::malformed($path, $reason)` | Cache file structure is invalid or missing required keys |
+| `DiscoveryCacheException::versionMismatch($path, $found, $expected)` | Cache was compiled by a different core version |
+| `DiscoveryCacheException::notWritable($path)` | Cache directory or file is not writable (thrown by `discovery:cache`) |
+
+Fix in all cases: `marko discovery:clear && marko discovery:cache`.

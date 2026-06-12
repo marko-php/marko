@@ -1,6 +1,6 @@
 # Task 001: DiscoveryEnvironment reader and shipped config defaults
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -49,14 +49,14 @@ for the CLI commands (which run after full boot). Core's boot never reads this f
 - `$_ENV` is process-global and Pest runs in parallel per worker. Every test that sets `DISCOVERY_CACHE_ENABLED`, `APP_ENV`, or `DISCOVERY_CACHE_PATH` MUST snapshot those three keys in `beforeEach` and restore them exactly (including unsetting keys that were absent) in `afterEach` (or use `try/finally`). Leaking a mutated `$_ENV` would silently flip the ~40 existing `Application::initialize()` tests in `packages/core/tests/Unit/ApplicationTest.php` into "cache enabled, production" mode. Exercise the no-env-set default path explicitly to prove the defaults.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns enabled() true by default (no env set) and treats DISCOVERY_CACHE_ENABLED values 0, false, no, off, and empty (case-insensitive) as disabled`
-- [ ] `it returns enabled() true for any other present DISCOVERY_CACHE_ENABLED value (e.g. "1", "true", "yes")`
-- [ ] `it returns environment() from APP_ENV and defaults to production when APP_ENV is unset`
-- [ ] `it returns cachePath() from DISCOVERY_CACHE_PATH and defaults to storage/cache/discovery.php`
-- [ ] `it reads $_ENV live at call time (a value set after construction is reflected)`
-- [ ] `it reads no value from marko/config and has no Marko\Config import (boot-time reader is config-package-free)`
-- [ ] `the shipped config/discovery.php returns an array with enabled, environment, and cache_path keys matching the DiscoveryEnvironment defaults when no env vars are set`
-- [ ] `it snapshots and restores the three $_ENV keys around each test so no env state leaks (verify $_ENV unchanged after the suite for keys that were originally absent)`
+- [x] `it returns enabled() true by default (no env set) and treats DISCOVERY_CACHE_ENABLED values 0, false, no, off, and empty (case-insensitive) as disabled`
+- [x] `it returns enabled() true for any other present DISCOVERY_CACHE_ENABLED value (e.g. "1", "true", "yes")`
+- [x] `it returns environment() from APP_ENV and defaults to production when APP_ENV is unset`
+- [x] `it returns cachePath() from DISCOVERY_CACHE_PATH and defaults to storage/cache/discovery.php`
+- [x] `it reads $_ENV live at call time (a value set after construction is reflected)`
+- [x] `it reads no value from marko/config and has no Marko\Config import (boot-time reader is config-package-free)`
+- [x] `the shipped config/discovery.php returns an array with enabled, environment, and cache_path keys matching the DiscoveryEnvironment defaults when no env vars are set`
+- [x] `it snapshots and restores the three $_ENV keys around each test so no env state leaks (verify $_ENV unchanged after the suite for keys that were originally absent)`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -65,4 +65,7 @@ for the CLI commands (which run after full boot). Core's boot never reads this f
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `DiscoveryEnvironment` at `packages/core/src/Discovery/DiscoveryEnvironment.php` — reads `$_ENV` live at call time for all three keys; uses a typed `FALSE_VALUES` constant array for coercion; no marko/config imports
+- `config/discovery.php` at `packages/core/config/discovery.php` — mirrors same coercion logic using a local `$falseValues` variable; returns `['enabled', 'environment', 'cache_path']`
+- Test isolation: `beforeEach`/`afterEach` snapshot/restore all three `$_ENV` keys; unsets keys that were originally absent
+- All 8 tests pass; phpcs and php-cs-fixer clean; 501 core tests pass

@@ -1,6 +1,6 @@
 # Task 006: Boot integration — prefer cache outside development
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [001, 002]
 **Retry count**: 0
 
@@ -82,19 +82,19 @@ All other boot wiring (module discovery, autoloaders, container/registry constru
 - Standards: strict types, constructor promotion, no final, no magic methods, full type declarations. The boot path MUST NOT reference `Marko\Config`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it hydrates preferences, plugins, observers, and commands from the cache when enabled and environment is not development and the cache exists`
-- [ ] `it binds CommandRegistry in the container and creates the CommandRunner on a cache hit (commands are runnable without a scan)`
-- [ ] `it registers each cached command exactly once and never throws duplicateCommandName on a cache hit (scan and cache halves are mutually exclusive)`
-- [ ] `it preserves the existing boot ordering on a cache hit (observers registered before the event dispatcher is created; commands after the module repository is bound)`
-- [ ] `it does not consult the filesystem for markers on a cache hit (a class present on disk but absent from the cache is not registered)`
-- [ ] `it always rescans the filesystem in development even when a cache file exists (a class present on disk is registered regardless of cache contents)`
-- [ ] `it rescans the filesystem when caching is enabled but no cache file exists`
-- [ ] `it rescans the filesystem when caching is disabled by env (DISCOVERY_CACHE_ENABLED=false)`
-- [ ] `it throws DiscoveryCacheException during boot when the cache exists but is corrupt and caching is enabled outside development`
-- [ ] `it skips the corrupt-cache throw in development (rescans instead) so a corrupt cache never blocks dev boot`
-- [ ] `it produces the same registered preferences, plugins, observers, and commands from a valid cache as from a fresh scan of the same modules`
-- [ ] `it rescans (defaults to enabled production) when marko/env is not installed and no env vars are set`
-- [ ] `it restores $_ENV and removes any temp cache file after each test so other Application::initialize() tests are unaffected`
+- [x] `it hydrates preferences, plugins, observers, and commands from the cache when enabled and environment is not development and the cache exists`
+- [x] `it binds CommandRegistry in the container and creates the CommandRunner on a cache hit (commands are runnable without a scan)`
+- [x] `it registers each cached command exactly once and never throws duplicateCommandName on a cache hit (scan and cache halves are mutually exclusive)`
+- [x] `it preserves the existing boot ordering on a cache hit (observers registered before the event dispatcher is created; commands after the module repository is bound)`
+- [x] `it does not consult the filesystem for markers on a cache hit (a class present on disk but absent from the cache is not registered)`
+- [x] `it always rescans the filesystem in development even when a cache file exists (a class present on disk is registered regardless of cache contents)`
+- [x] `it rescans the filesystem when caching is enabled but no cache file exists`
+- [x] `it rescans the filesystem when caching is disabled by env (DISCOVERY_CACHE_ENABLED=false)`
+- [x] `it throws DiscoveryCacheException during boot when the cache exists but is corrupt and caching is enabled outside development`
+- [x] `it skips the corrupt-cache throw in development (rescans instead) so a corrupt cache never blocks dev boot`
+- [x] `it produces the same registered preferences, plugins, observers, and commands from a valid cache as from a fresh scan of the same modules`
+- [x] `it rescans (defaults to enabled production) when marko/env is not installed and no env vars are set`
+- [x] `it restores $_ENV and removes any temp cache file after each test so other Application::initialize() tests are unaffected`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -102,4 +102,16 @@ All other boot wiring (module discovery, autoloaders, container/registry constru
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+### Application.php changes
+- Added imports: `CommandDefinition`, `PreferenceRecord`, `ObserverDefinition`, `PluginDefinition`, `DiscoveryCache`, `DiscoveryEnvironment`, `DiscoveryCacheException`
+- `initialize()` now extracts `$projectPaths` as a local variable (passed to `DiscoveryCache`), computes `$useCache` gate, loads `$cachePayload` once (shared across four forks)
+- Four independent forks replace the four `discoverX()` calls: `registerPreferencesFromCache`, `registerPluginsFromCache`, `registerObserversFromCache`, `registerCommandsFromCache`
+- `registerCommandsFromCache` mirrors `discoverCommands()` container wiring: constructs `CommandRegistry`, binds it in container, creates `CommandRunner`
+- `registerObserversFromCache` mirrors `discoverObservers()`: constructs `ObserverRegistry` before registering
+- Corrupt cache (file exists but invalid) throws `DiscoveryCacheException` loudly (no silent fallback)
+- Development + disabled + no-file all fall through to existing scan path
+
+### Test isolation
+- `cacheTestSnapshotEnv()` snapshots and restores `APP_ENV`, `DISCOVERY_CACHE_ENABLED`, `DISCOVERY_CACHE_PATH` via try/finally in every test
+- Each test uses a unique `bin2hex(random_bytes(8))` temp base; cleanup via `cacheTestCleanupDirectory()`
