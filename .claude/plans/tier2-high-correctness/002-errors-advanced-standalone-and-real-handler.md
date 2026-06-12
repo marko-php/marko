@@ -1,6 +1,6 @@
 # Task 002: F2 — errors-advanced standalone boot + real register()/handleError()
 
-**Status**: pending
+**Status**: complete
 **Depends on**: none
 **Retry count**: 0
 
@@ -54,19 +54,19 @@ deliberate loud `BindingConflictException`).
     code level is fine; the binding must remain on `AdvancedErrorHandler`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it installs an error handler and an exception handler when register() is called`
-- [ ] `it restores the previously installed handlers when unregister() is called`
-- [ ] `it does not swallow warnings: handleError() surfaces a non-fatal warning loudly
+- [x] `it installs an error handler and an exception handler when register() is called`
+- [x] `it restores the previously installed handlers when unregister() is called`
+- [x] `it does not swallow warnings: handleError() surfaces a non-fatal warning loudly
       rather than returning true with no side effect`
-- [ ] `it surfaces deprecations and notices without halting execution or clearing output buffers`
-- [ ] `it respects error_reporting(): handleError() returns false for a level masked off
+- [x] `it surfaces deprecations and notices without halting execution or clearing output buffers`
+- [x] `it respects error_reporting(): handleError() returns false for a level masked off
       by the current error_reporting setting`
-- [ ] `it is idempotent: calling register() twice installs handlers only once`
-- [ ] `it registers a shutdown handler that surfaces a fatal error captured at shutdown
+- [x] `it is idempotent: calling register() twice installs handlers only once`
+- [x] `it registers a shutdown handler that surfaces a fatal error captured at shutdown
       (handleShutdown is idempotent and only acts on fatal error types)`
-- [ ] `it boots successfully with errors-advanced as the sole error driver (module bindings
+- [x] `it boots successfully with errors-advanced as the sole error driver (module bindings
       load and the booted handler reports E_USER_WARNING loudly)`
-- [ ] `each test restores prior handler state via unregister() so global handlers do not
+- [x] `each test restores prior handler state via unregister() so global handlers do not
       leak across the suite`
 
 ## Acceptance Criteria
@@ -75,4 +75,9 @@ deliberate loud `BindingConflictException`).
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+- Added `$registered`, `$previousExceptionHandler`, `$previousErrorHandler`, `$handledFatalError` state fields to `AdvancedErrorHandler`
+- Implemented `register()` (idempotent, stores previous handlers), `unregister()` (restores previous handlers), `handleShutdown()` (fatal-type masking, idempotent), `handleNonFatal()` (writes to stderr in CLI, no buffer clearing), and real `handleError()` (respects `error_reporting()`, converts to `ErrorException`, routes non-fatals to `handleNonFatal` and fatals to `handleException`)
+- `TestableAdvancedHandler` subclass in the test file overrides `handleNonFatal()` to capture reports and exposes `isRegistered()` for state inspection
+- Tests use `beforeEach`/`afterEach` pattern (mirroring `errors-simple`'s `HandlerRegistrationTest`) to save/restore global handler state and avoid risky test detection
+- Boot test uses an inline anonymous stub `ContainerInterface` to exercise the `module.php` boot closure without requiring a real container

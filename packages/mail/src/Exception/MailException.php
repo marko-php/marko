@@ -17,4 +17,14 @@ class MailException extends MarkoException
             suggestion: 'Create a mail.php configuration file or publish the default config.',
         );
     }
+
+    public static function missingRequiredSmtpKey(
+        string $key,
+    ): self {
+        return new self(
+            message: "Required SMTP configuration key '$key' is missing.",
+            context: "The 'mail.smtp.$key' config key must be present",
+            suggestion: "Add '$key' to the smtp section of config/mail.php.",
+        );
+    }
 }

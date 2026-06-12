@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Queue;
 
 use DateTimeImmutable;
+use Marko\Core\Container\ContainerInterface;
 use Marko\Queue\Exceptions\SerializationException;
 use Throwable;
 
@@ -17,6 +18,7 @@ class Worker implements WorkerInterface
         private readonly FailedJobRepositoryInterface $failedJobRepository,
         private readonly QueueConfig $config,
         private readonly JobEnvelope $jobEnvelope,
+        private readonly ContainerInterface $container,
     ) {}
 
     /**
@@ -42,6 +44,11 @@ class Worker implements WorkerInterface
             }
 
             try {
+                if ($job instanceof AsyncObserverJob) {
+                    $job->setContainer($this->container);
+                    $job->setJobEnvelope($this->jobEnvelope);
+                }
+
                 $job->incrementAttempts();
                 $job->handle();
                 $this->queue->delete($job->id);

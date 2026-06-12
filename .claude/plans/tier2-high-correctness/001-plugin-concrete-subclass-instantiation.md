@@ -55,20 +55,20 @@ must remain unchanged.) Do NOT emit a zero-arg constructor on the generated subc
   - Anonymous-class stub guidelines in `.claude/testing.md` (skipping parent ctor).
 
 ## Requirements (Test Descriptions)
-- [ ] `it intercepts a #[Before] plugin method on a concrete class whose constructor
+- [x] `it intercepts a #[Before] plugin method on a concrete class whose constructor
       has a mandatory promoted dependency without throwing ArgumentCountError`
-- [ ] `it intercepts an #[After] plugin method on a constructor-DI concrete class and
+- [x] `it intercepts an #[After] plugin method on a constructor-DI concrete class and
       returns the plugin-modified result`
-- [ ] `it runs a PLUGGED method that reads a constructor-injected property and returns the
+- [x] `it runs a PLUGGED method that reads a constructor-injected property and returns the
       real injected value (parent:: call sees the copied state, not an uninitialized property)`
-- [ ] `it delegates non-plugged public methods on a constructor-DI concrete target,
+- [x] `it delegates non-plugged public methods on a constructor-DI concrete target,
       reading the real constructor-injected state without an uninitialized-property Error`
-- [ ] `it copies private and protected properties from the target onto the interceptor
+- [x] `it copies private and protected properties from the target onto the interceptor
       (state from base classes in the hierarchy is preserved)`
-- [ ] `it does not invoke the target's parent constructor when building the concrete
+- [x] `it does not invoke the target's parent constructor when building the concrete
       subclass interceptor (instantiates via newInstanceWithoutConstructor)`
-- [ ] `it leaves the interface-wrapper strategy unchanged for interface targets with plugins`
-- [ ] `it still throws the existing loud PluginException for readonly concrete targets`
+- [x] `it leaves the interface-wrapper strategy unchanged for interface targets with plugins`
+- [x] `it still throws the existing loud PluginException for readonly concrete targets`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -76,4 +76,19 @@ must remain unchanged.) Do NOT emit a zero-arg constructor on the generated subc
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+### Changes made
+
+**`packages/core/src/Plugin/PluginInterceptor.php`** — The concrete-subclass path:
+- Replaced `new $className()` with `(new ReflectionClass($className))->newInstanceWithoutConstructor()`
+- Added `$this->copyProperties($target, $instance)` call before `initInterception()`
+- Added `copyProperties(object $source, object $destination): void` private method
+  that walks the source class hierarchy, processes only properties declared in each
+  class (to avoid double-setting inherited readonly properties), checks initialization,
+  and copies values via `ReflectionProperty::setValue()` (accessible in PHP 8.1+
+  without `setAccessible()` which is deprecated in PHP 8.1+)
+
+**`packages/core/tests/Unit/Plugin/PluginConcreteSubclassDITest.php`** — New test file
+with 8 tests covering all requirements. Key insight: `ReflectionClass::getProperties()`
+returns inherited properties too, so the filter `$property->getDeclaringClass()->getName() === $class->getName()`
+prevents double-setting readonly inherited properties when walking the hierarchy.

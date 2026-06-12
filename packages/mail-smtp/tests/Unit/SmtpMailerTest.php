@@ -6,12 +6,68 @@ namespace Marko\Mail\Smtp\Tests\Unit;
 
 use Marko\Mail\Contracts\MailerInterface;
 use Marko\Mail\Exception\MessageException;
+use Marko\Mail\Exception\TransportException;
 use Marko\Mail\Exceptions\MessageException as SmtpMessageException;
 use Marko\Mail\Message;
 use Marko\Mail\Smtp\SmtpMailer;
 use Marko\Mail\Smtp\SmtpTransport;
 use Marko\Mail\Smtp\SocketInterface;
 use ReflectionProperty;
+
+it('throws a loud TransportException when the server rejects a RCPT TO recipient', function (): void {
+    $socket = new SmtpMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '250 OK', // MAIL FROM
+        '550 No such user here', // RCPT TO rejected
+    ]);
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+
+    $mailer = new SmtpMailer($transport);
+
+    $message = Message::create()
+        ->from('sender@example.com')
+        ->to('unknown@example.com')
+        ->subject('Test')
+        ->text('Hello');
+
+    expect(fn () => $mailer->send($message))
+        ->toThrow(TransportException::class, 'Unexpected SMTP response.');
+});
+
+it('sends one RCPT TO command per recipient across to, cc, and bcc', function (): void {
+    $socket = new SmtpMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '250 OK', // MAIL FROM
+        '250 OK', // RCPT TO (to)
+        '250 OK', // RCPT TO (cc)
+        '250 OK', // RCPT TO (bcc)
+        '354 Start mail input', // DATA
+        '250 OK', // End of DATA
+    ]);
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+
+    $mailer = new SmtpMailer($transport);
+
+    $message = Message::create()
+        ->from('sender@example.com')
+        ->to('to@example.com')
+        ->cc('cc@example.com')
+        ->bcc('bcc@example.com')
+        ->subject('Multi-recipient test')
+        ->text('Hello');
+
+    $result = $mailer->send($message);
+
+    $written = implode('', $socket->written);
+
+    expect($result)->toBeTrue()
+        ->and($written)->toContain("RCPT TO:<to@example.com>\r\n")
+        ->and($written)->toContain("RCPT TO:<cc@example.com>\r\n")
+        ->and($written)->toContain("RCPT TO:<bcc@example.com>\r\n")
+        ->and(substr_count($written, 'RCPT TO:'))->toBe(3);
+});
 
 test('SmtpMailer implements MailerInterface', function (): void {
     $transport = createSmtpMockTransport();

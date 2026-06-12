@@ -110,6 +110,25 @@ class DefaultPriorityObserver
 }
 ```
 
+## Async Observers
+
+Add `async: true` to push the observer to the queue instead of running it inline. The event is serialized, dispatched as an `AsyncObserverJob`, and executed by a queue worker. The worker resolves the observer from the container so all normal constructor injection works.
+
+```php
+use Marko\Core\Attributes\Observer;
+
+#[Observer(event: PostCreated::class, async: true)]
+class SendPostNotification
+{
+    public function handle(PostCreated $event): void
+    {
+        // Runs in a background worker, not in the HTTP request
+    }
+}
+```
+
+Async observers require [`marko/queue`](/docs/packages/queue/) and a configured queue driver. The worker must be running (`marko queue:work`) for async observers to execute. Retry and failure behavior follow the same `max_attempts` and `retry_after` config as regular jobs.
+
 ## Built-in Events
 
 Marko packages dispatch events at meaningful points:

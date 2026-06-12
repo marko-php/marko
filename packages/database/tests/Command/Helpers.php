@@ -215,6 +215,11 @@ final class Helpers
             {
                 return 0;
             }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
+            }
         };
     }
 

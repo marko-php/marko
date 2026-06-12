@@ -16,12 +16,12 @@ class MockConnection implements ConnectionInterface
 {
     public string $lastQuerySql = '';
 
-    /** @var array */
+    /** @var array<mixed> */
     public array $lastQueryBindings = [];
 
     public string $lastExecuteSql = '';
 
-    /** @var array */
+    /** @var array<mixed> */
     public array $lastExecuteBindings = [];
 
     /**
@@ -80,5 +80,10 @@ class MockConnection implements ConnectionInterface
     public function lastInsertId(): int
     {
         return 0;
+    }
+
+    public function driverName(): string
+    {
+        return 'pgsql';
     }
 }

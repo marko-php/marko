@@ -50,4 +50,14 @@ interface ConnectionInterface
      * @return int The last insert ID
      */
     public function lastInsertId(): int;
+
+    /**
+     * Return the driver name for this connection (e.g. 'mysql', 'pgsql').
+     *
+     * Returns a per-driver constant so callers can branch on dialect
+     * without requiring a live database connection.
+     *
+     * @return string Driver name
+     */
+    public function driverName(): string;
 }

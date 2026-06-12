@@ -68,16 +68,14 @@ function makeInsertConnection(): ConnectionInterface
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return [];
         }
 
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             return 1;
         }
 
@@ -89,6 +87,11 @@ function makeInsertConnection(): ConnectionInterface
         public function lastInsertId(): int
         {
             return 42;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }
@@ -111,8 +114,7 @@ function makeUpdateConnection(): ConnectionInterface
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             if ($this->firstQuery) {
                 $this->firstQuery = false;
 
@@ -127,8 +129,7 @@ function makeUpdateConnection(): ConnectionInterface
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             return 1;
         }
 
@@ -140,6 +141,11 @@ function makeUpdateConnection(): ConnectionInterface
         public function lastInsertId(): int
         {
             return 1;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }
@@ -162,8 +168,7 @@ function makeDeleteConnection(): ConnectionInterface
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             if ($this->firstQuery) {
                 $this->firstQuery = false;
 
@@ -178,8 +183,7 @@ function makeDeleteConnection(): ConnectionInterface
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             return 1;
         }
 
@@ -191,6 +195,11 @@ function makeDeleteConnection(): ConnectionInterface
         public function lastInsertId(): int
         {
             return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }

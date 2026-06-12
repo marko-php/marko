@@ -1,6 +1,6 @@
 # Task 012: F7c — DATA dot-stuffing + multi-recipient correctness
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [011]
 **Retry count**: 0
 
@@ -32,13 +32,13 @@ envelope handling end-to-end.
     surfaces a loud `TransportException` (no silent skip).
 
 ## Requirements (Test Descriptions)
-- [ ] `it doubles a leading dot on a message body line that begins with "." in DATA`
-- [ ] `it doubles the leading dot on a line consisting solely of "." so it is not treated
+- [x] `it doubles a leading dot on a message body line that begins with "." in DATA`
+- [x] `it doubles the leading dot on a line consisting solely of "." so it is not treated
       as the DATA terminator`
-- [ ] `it leaves message lines that do not begin with a dot unchanged`
-- [ ] `it appends the \r\n.\r\n terminator exactly once and does not dot-stuff the terminator`
-- [ ] `it sends one RCPT TO command per recipient across to, cc, and bcc`
-- [ ] `it throws a loud TransportException when the server rejects a RCPT TO recipient`
+- [x] `it leaves message lines that do not begin with a dot unchanged`
+- [x] `it appends the \r\n.\r\n terminator exactly once and does not dot-stuff the terminator`
+- [x] `it sends one RCPT TO command per recipient across to, cc, and bcc`
+- [x] `it throws a loud TransportException when the server rejects a RCPT TO recipient`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -46,4 +46,7 @@ envelope handling end-to-end.
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `dotStuff(string $content): string` private method to `SmtpTransport` that splits on `\r\n`, prefixes any line starting with `.` with an extra `.`, and rejoins.
+- Called from `data()` before appending the `\r\n.\r\n` terminator — the terminator is appended after stuffing so it is never double-stuffed.
+- Requirements 2–6 passed immediately (existing implementation already covered multi-recipient, rejection throwing, and the terminator placement); only requirement 1 required new implementation code.
+- 6 new tests added: 4 in `SmtpTransportTest.php`, 2 in `SmtpMailerTest.php`.

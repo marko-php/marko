@@ -75,6 +75,11 @@ function createTrackingConnectionStub(
             return 1;
         }
 
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
+
         public function beginTransaction(): void
         {
             $this->data[] = $this->trackBindings ? ['sql' => 'BEGIN', 'bindings' => []] : 'BEGIN';

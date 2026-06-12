@@ -269,5 +269,10 @@ function createEventMockConnection(
         {
             return $this->isNew ? 1 : 0;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 }

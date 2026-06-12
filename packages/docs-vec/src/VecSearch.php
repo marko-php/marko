@@ -14,6 +14,7 @@ use Marko\DocsMarkdown\MarkdownRepository;
 use Marko\DocsVec\Query\QueryEmbedder;
 use Marko\DocsVec\Runtime\VecRuntime;
 use PDO;
+use PDOException;
 use Throwable;
 
 class VecSearch implements DocsSearchInterface
@@ -62,7 +63,7 @@ class VecSearch implements DocsSearchInterface
 
         foreach ($ftsResults as $rank => $chunk) {
             $key = (string) $chunk['chunk_id'];
-            $fused[$key] = ($fused[$key]['score'] ?? 0.0) + 1.0 / (self::RRF_K + $rank + 1);
+            $fused[$key]['score'] = ($fused[$key]['score'] ?? 0.0) + 1.0 / (self::RRF_K + $rank + 1);
             $fused[$key]['chunk'] = $chunk;
         }
 
@@ -96,13 +97,14 @@ class VecSearch implements DocsSearchInterface
 
     /**
      * @return list<array{chunk_id: int, page_id: string, title: string, excerpt: string}>
+     *
+     * @throws DocsException
      */
     private function ftsSearch(
         PDO $pdo,
         string $query,
         int $limit,
-    ): array
-    {
+    ): array {
         $stmt = $pdo->prepare("
             SELECT chunk_id, page_id, title,
                    snippet(docs_fts, 3, '<mark>', '</mark>', '...', 32) AS excerpt
@@ -113,9 +115,14 @@ class VecSearch implements DocsSearchInterface
         ");
         $stmt->bindValue(':q', $query, PDO::PARAM_STR);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $stmt->execute();
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw DocsException::searchFailed($e->getMessage());
+        }
     }
 
     /**
@@ -127,8 +134,7 @@ class VecSearch implements DocsSearchInterface
         PDO $pdo,
         array $embedding,
         int $limit,
-    ): array
-    {
+    ): array {
         $json = json_encode($embedding);
         $stmt = $pdo->prepare("
             SELECT v.chunk_id, f.page_id, f.title, '' AS excerpt, vec_distance_cosine(v.embedding, :emb) AS distance
@@ -200,12 +206,16 @@ class VecSearch implements DocsSearchInterface
 
         if (! is_file($this->indexPath)) {
             throw DocsException::searchFailed(
-                "Index not found at $this->indexPath. Run \`marko docs-vec:build\` to generate it."
+                "Index not found at $this->indexPath. Run \`marko docs-vec:build\` to generate it.",
             );
         }
 
         try {
-            $this->pdo = $this->runtime->openConnection($this->indexPath);
+            if ($this->runtime->isSqliteVecAvailable()) {
+                $this->pdo = $this->runtime->openConnection($this->indexPath);
+            } else {
+                $this->pdo = $this->runtime->openPlainConnection($this->indexPath);
+            }
         } catch (Throwable $e) {
             throw DocsException::searchFailed('Failed to open index: ' . $e->getMessage());
         }

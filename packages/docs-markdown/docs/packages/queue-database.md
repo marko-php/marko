@@ -3,7 +3,7 @@ title: marko/queue-database
 description: Database queue driver — stores and processes jobs in SQL tables with transaction-safe polling and failed job persistence.
 ---
 
-Database queue driver --- stores and processes jobs in SQL tables with transaction-safe polling and failed job persistence. Jobs are stored in a `jobs` table and polled by the worker process. The driver uses row-level locking (via transactions when available) to prevent duplicate processing. Failed jobs are persisted to a `failed_jobs` table for later inspection and retry. Includes migrations for both tables.
+Database queue driver --- stores and processes jobs in SQL tables with atomic reservation and failed job persistence. Jobs are stored in a `jobs` table and polled by the worker process. On MySQL and PostgreSQL the driver uses `FOR UPDATE SKIP LOCKED` inside a transaction to atomically claim each job, preventing duplicate processing across multiple workers. Crashed reservations (jobs reserved but neither deleted nor released within `queue.retry_after` seconds) are automatically reclaimed on the next poll cycle. Failed jobs are persisted to a `failed_jobs` table for later inspection and retry. Includes migrations for both tables.
 
 Implements `QueueInterface` from [`marko/queue`](/docs/packages/queue/) and requires [`marko/database`](/docs/packages/database/) for the database connection.
 
@@ -81,7 +81,9 @@ marko queue:work
 
 ### DatabaseQueue
 
-Implements `QueueInterface`. Accepts a `ConnectionInterface` connection, an optional table name (defaults to `jobs`), and an optional default queue name (defaults to `default`).
+Implements `QueueInterface`. Constructor accepts a `ConnectionInterface` connection, a `JobEnvelope`, an optional table name (defaults to `jobs`), an optional default queue name (defaults to `default`), and an optional `retryAfter` timeout in seconds (defaults to `90` — overridden at runtime via `queue.retry_after` config).
+
+On MySQL and PostgreSQL, `pop()` uses `FOR UPDATE SKIP LOCKED` inside a transaction to atomically claim the next available job, making it safe to run multiple concurrent workers. Jobs whose `reserved_at` timestamp is older than `retry_after` seconds are treated as crashed and become eligible for re-reservation.
 
 | Method | Description |
 |---|---|

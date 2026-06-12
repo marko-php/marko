@@ -42,6 +42,11 @@ it('checks database connectivity via DatabaseHealthCheck', function () {
         {
             return 0;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 
     $check = new DatabaseHealthCheck($connection);
@@ -88,6 +93,11 @@ it('returns unhealthy status when database query fails', function () {
         public function lastInsertId(): int
         {
             return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 

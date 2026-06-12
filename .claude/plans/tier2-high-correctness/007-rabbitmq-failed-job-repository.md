@@ -1,6 +1,6 @@
 # Task 007: F4b — RabbitmqFailedJobRepository non-livelocking store
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [006]
 **Retry count**: 0
 
@@ -39,13 +39,13 @@ terminate and return correct results, with stable message identification.
     jobs, and `clear()` must still purge.
 
 ## Requirements (Test Descriptions)
-- [ ] `it sets the AMQP message_id to the failed job id when storing a failed job`
-- [ ] `it returns all stored failed jobs from all() and the call terminates (no infinite
+- [x] `it sets the AMQP message_id to the failed job id when storing a failed job`
+- [x] `it returns all stored failed jobs from all() and the call terminates (no infinite
       basic_get/basic_nack requeue loop)`
-- [ ] `it returns the matching failed job from find() by id and terminates`
-- [ ] `it returns null from find() when no failed job matches the id`
-- [ ] `it deletes only the matching failed job and returns true, leaving the others intact`
-- [ ] `it returns false from delete() when no failed job matches the id`
+- [x] `it returns the matching failed job from find() by id and terminates`
+- [x] `it returns null from find() when no failed job matches the id`
+- [x] `it deletes only the matching failed job and returns true, leaving the others intact`
+- [x] `it returns false from delete() when no failed job matches the id`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -53,4 +53,16 @@ terminate and return correct results, with stable message identification.
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+
+Fixed the livelock bug in `RabbitmqFailedJobRepository` by replacing the `basic_nack(requeue:true)` pattern with a drain-then-restore approach:
+
+- `all()`: drain all messages with `basic_ack`, deserialize them, re-publish all back
+- `find(id)`: drain all with `basic_ack`, re-publish all back, return matching one
+- `delete(id)`: drain all with `basic_ack`, re-publish only non-matching ones
+
+Extracted three private helpers to eliminate duplication:
+- `drain(channel)`: loops `basic_get` + `basic_ack` until empty, returns drained messages
+- `republish(channel, message)`: re-publishes a drained message with original properties
+- `publishPersistent(channel, body, messageId)`: creates and publishes a persistent AMQP message
+
+The `message_id` property was already set correctly on `store()` — the fix was purely in the read paths.

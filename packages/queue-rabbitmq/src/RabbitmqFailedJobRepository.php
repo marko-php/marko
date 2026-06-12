@@ -10,14 +10,15 @@ use Exception;
 use JsonException;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
+use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 
-class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
+readonly class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
 {
     private const string QUEUE_NAME = 'failed_jobs';
 
     public function __construct(
-        private readonly RabbitmqConnection $connection,
+        private RabbitmqConnection $connection,
     ) {}
 
     /**
@@ -42,25 +43,23 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
             'failedAt' => $failedJob->failedAt->format('c'),
         ], JSON_THROW_ON_ERROR);
 
-        $message = new AMQPMessage($body, [
-            'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
-            'message_id' => $failedJob->id,
-        ]);
-
-        $channel->basic_publish($message, '', self::QUEUE_NAME);
+        $this->publishPersistent($channel, $body, $failedJob->id);
     }
 
     /**
+     * @return list<FailedJob>
+     *
      * @throws DateMalformedStringException|JsonException|Exception
      */
     public function all(): array
     {
         $channel = $this->connection->channel();
+        $drained = $this->drain($channel);
         $failedJobs = [];
 
-        while ($message = $channel->basic_get(self::QUEUE_NAME)) {
+        foreach ($drained as $message) {
             $failedJobs[] = $this->deserializeMessage($message);
-            $channel->basic_nack($message->getDeliveryTag(), false, true);
+            $this->republish($channel, $message);
         }
 
         return $failedJobs;
@@ -73,14 +72,15 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
         string $id,
     ): ?FailedJob {
         $channel = $this->connection->channel();
+        $drained = $this->drain($channel);
         $found = null;
 
-        while ($message = $channel->basic_get(self::QUEUE_NAME)) {
+        foreach ($drained as $message) {
             if ($message->get('message_id') === $id) {
                 $found = $this->deserializeMessage($message);
             }
 
-            $channel->basic_nack($message->getDeliveryTag(), false, true);
+            $this->republish($channel, $message);
         }
 
         return $found;
@@ -93,14 +93,14 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
         string $id,
     ): bool {
         $channel = $this->connection->channel();
+        $drained = $this->drain($channel);
         $found = false;
 
-        while ($message = $channel->basic_get(self::QUEUE_NAME)) {
+        foreach ($drained as $message) {
             if ($message->get('message_id') === $id) {
-                $channel->basic_ack($message->getDeliveryTag());
                 $found = true;
             } else {
-                $channel->basic_nack($message->getDeliveryTag(), false, true);
+                $this->republish($channel, $message);
             }
         }
 
@@ -127,6 +127,58 @@ class RabbitmqFailedJobRepository implements FailedJobRepositoryInterface
         [, $messageCount] = $channel->queue_declare(self::QUEUE_NAME, passive: true);
 
         return (int) $messageCount;
+    }
+
+    /**
+     * Drain all messages from the queue with basic_ack, returning them for processing.
+     * This avoids infinite nack-requeue loops on the real broker.
+     *
+     * @return list<AMQPMessage>
+     *
+     * @throws Exception
+     */
+    private function drain(AMQPChannel $channel): array
+    {
+        $messages = [];
+
+        while ($message = $channel->basic_get(self::QUEUE_NAME)) {
+            $messages[] = $message;
+            $channel->basic_ack($message->getDeliveryTag());
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Re-publish a drained message back to the failed jobs queue (restore it).
+     *
+     * @throws Exception
+     */
+    private function republish(
+        AMQPChannel $channel,
+        AMQPMessage $message,
+    ): void {
+        $this->publishPersistent($channel, $message->getBody(), $message->get('message_id'));
+    }
+
+    /**
+     * Publish a persistent message to the failed jobs queue.
+     *
+     * @throws Exception
+     */
+    private function publishPersistent(
+        AMQPChannel $channel,
+        string $body,
+        string $messageId,
+    ): void {
+        $channel->basic_publish(
+            new AMQPMessage($body, [
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                'message_id' => $messageId,
+            ]),
+            '',
+            self::QUEUE_NAME,
+        );
     }
 
     /**

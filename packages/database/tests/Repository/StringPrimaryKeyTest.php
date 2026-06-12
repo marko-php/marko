@@ -121,8 +121,7 @@ function makeStringPkConnection(array $queryResults = [], array &$executedSql = 
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             $result = $this->queryResults[$this->queryIndex] ?? [];
             $this->queryIndex++;
 
@@ -132,8 +131,7 @@ function makeStringPkConnection(array $queryResults = [], array &$executedSql = 
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             $this->executedSql[] = $sql;
             $this->executedBindings[] = $bindings;
 
@@ -148,6 +146,11 @@ function makeStringPkConnection(array $queryResults = [], array &$executedSql = 
         public function lastInsertId(): int
         {
             return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }
@@ -175,16 +178,14 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             string $column,
             string $operator,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function whereIn(
             string $column,
             array $values,
-        ): static
-        {
+        ): static {
             $this->capturedWhereIn[] = ['column' => $column, 'values' => $values];
 
             return $this;
@@ -203,8 +204,7 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
         public function whereJsonContains(
             string $path,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -222,8 +222,7 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             string $column,
             string $operator,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -232,8 +231,7 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -242,8 +240,7 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -252,40 +249,35 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function orderBy(
             string $column,
             string $direction = 'ASC',
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function orderByRaw(
             string $expression,
             string $direction = 'ASC',
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function selectRaw(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function whereRaw(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -382,16 +374,14 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
         public function having(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function raw(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return [];
         }
     };
@@ -526,14 +516,14 @@ it('loads a BelongsTo relationship when the foreign key is a string', function (
                 type: 'string',
                 nullable: true,
                 isPrimaryKey: true,
-                isAutoIncrement: false
+                isAutoIncrement: false,
             ),
             'status' => new PropertyMetadata(name: 'status', columnName: 'status', type: 'string'),
             'productUuid' => new PropertyMetadata(
                 name: 'productUuid',
                 columnName: 'product_uuid',
                 type: 'string',
-                nullable: true
+                nullable: true,
             ),
         ],
         relationships: [
@@ -589,14 +579,14 @@ it('loads a HasMany relationship when the parent primary key is a string', funct
                 type: 'string',
                 nullable: true,
                 isPrimaryKey: true,
-                isAutoIncrement: false
+                isAutoIncrement: false,
             ),
             'status' => new PropertyMetadata(name: 'status', columnName: 'status', type: 'string'),
             'productUuid' => new PropertyMetadata(
                 name: 'productUuid',
                 columnName: 'product_uuid',
                 type: 'string',
-                nullable: true
+                nullable: true,
             ),
         ],
         relationships: [
@@ -657,14 +647,14 @@ it('batches WHERE IN queries correctly for string foreign keys without SQL injec
                 type: 'string',
                 nullable: true,
                 isPrimaryKey: true,
-                isAutoIncrement: false
+                isAutoIncrement: false,
             ),
             'status' => new PropertyMetadata(name: 'status', columnName: 'status', type: 'string'),
             'productUuid' => new PropertyMetadata(
                 name: 'productUuid',
                 columnName: 'product_uuid',
                 type: 'string',
-                nullable: true
+                nullable: true,
             ),
         ],
         relationships: [

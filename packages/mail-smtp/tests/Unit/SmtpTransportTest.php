@@ -205,6 +205,118 @@ test('SmtpTransport handles server disconnect', function (): void {
     $transport->rcptTo('recipient@example.com');
 })->throws(TransportException::class, 'Unexpected SMTP response.');
 
+it('authenticates when the configured auth mode is lowercase "login" (case-insensitive matching)', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '334 VXNlcm5hbWU6',
+        '334 UGFzc3dvcmQ6',
+        '235 Authentication successful',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->authenticate('user@example.com', 'secret', 'login');
+
+    expect($socket->written)->toContain("AUTH LOGIN\r\n");
+});
+
+it('authenticates when the configured auth mode is lowercase "plain"', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '235 Authentication successful',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->authenticate('user@example.com', 'secret', 'plain');
+
+    $expectedCredentials = base64_encode("\0user@example.com\0secret");
+    expect($socket->written)->toContain("AUTH PLAIN $expectedCredentials\r\n");
+});
+
+it(
+    'performs STARTTLS only after confirming a 220 reply, and throws TransportException when the server does not reply 220 to STARTTLS',
+    function (): void {
+        $socket = createMockSocket([
+            '220 smtp.example.com ESMTP ready',
+            '500 STARTTLS not supported',
+        ]);
+
+        $transport = new SmtpTransport($socket);
+        $transport->connect('smtp.example.com', 587);
+        $transport->startTls();
+    },
+)->throws(TransportException::class);
+
+it('appends the \r\n.\r\n terminator exactly once and does not dot-stuff the terminator', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '354 Start mail input',
+        '250 OK',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->data("Subject: Test\r\n\r\nHello World");
+
+    $written = $socket->written;
+    // The terminator "\r\n.\r\n" appears exactly once at the end of the body write
+    $bodyWrite = $written[1]; // second write is the body+terminator
+    expect($bodyWrite)->toEndWith("\r\n.\r\n")
+        ->and(substr_count($bodyWrite, "\r\n.\r\n"))->toBe(1);
+});
+
+it('leaves message lines that do not begin with a dot unchanged', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '354 Start mail input',
+        '250 OK',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->data("Subject: Test\r\n\r\nNormal line\r\nAnother line");
+
+    $written = $socket->written;
+    // Lines not starting with dot must be unchanged
+    expect($written)->toContain("Subject: Test\r\n\r\nNormal line\r\nAnother line\r\n.\r\n");
+});
+
+it(
+    'doubles the leading dot on a line consisting solely of "." so it is not treated as the DATA terminator',
+    function (): void {
+        $socket = createMockSocket([
+            '220 smtp.example.com ESMTP ready',
+            '354 Start mail input',
+            '250 OK',
+        ]);
+
+        $transport = new SmtpTransport($socket);
+        $transport->connect('smtp.example.com', 587);
+        $transport->data("Subject: Test\r\n\r\n.");
+
+        $written = $socket->written;
+        // A lone "." must be stuffed to ".." so it's not the terminator
+        expect($written)->toContain("Subject: Test\r\n\r\n..\r\n.\r\n");
+    },
+);
+
+it('doubles a leading dot on a message body line that begins with "." in DATA', function (): void {
+    $socket = createMockSocket([
+        '220 smtp.example.com ESMTP ready',
+        '354 Start mail input',
+        '250 OK',
+    ]);
+
+    $transport = new SmtpTransport($socket);
+    $transport->connect('smtp.example.com', 587);
+    $transport->data("Subject: Test\r\n\r\n.This line starts with a dot");
+
+    $written = $socket->written;
+    // The dot-stuffed body should be sent (the leading dot is doubled)
+    expect($written)->toContain("Subject: Test\r\n\r\n..This line starts with a dot\r\n.\r\n");
+});
+
 test('SmtpTransport handles various SMTP error codes', function (
     int $errorCode,
     string $errorMessage,
@@ -340,61 +452,5 @@ function createMockSocket(
     array $responses,
     bool $tlsSuccess = true,
 ): MockSocket {
-    return new MockSocket($responses, $tlsSuccess);
-}
-
-class MockSocket implements SocketInterface
-{
-    public private(set) bool $connected = false;
-
-    public private(set) bool $tlsEnabled = false;
-
-    private int $responseIndex = 0;
-
-    /** @var array<string> */
-    public private(set) array $written = [];
-
-    public private(set) string $host = '';
-
-    public function __construct(
-        private readonly array $responses,
-        private readonly bool $tlsSuccess = true,
-    ) {}
-
-    public function connect(
-        string $host,
-        int $port,
-        ?string $encryption = null,
-        int $timeout = 30,
-    ): void {
-        $this->host = $host;
-        $this->connected = true;
-    }
-
-    public function read(): string
-    {
-        return $this->responses[$this->responseIndex++] ?? '';
-    }
-
-    public function write(
-        string $data,
-    ): void {
-        $this->written[] = $data;
-    }
-
-    public function enableTls(): bool
-    {
-        if ($this->tlsSuccess) {
-            $this->tlsEnabled = true;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    public function close(): void
-    {
-        $this->connected = false;
-    }
+    return Helpers::createMockSocket($responses, $tlsSuccess);
 }

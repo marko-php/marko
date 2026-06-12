@@ -55,16 +55,14 @@ function createReturnTypeMockConnection(array $queryResult = []): ConnectionInte
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return $this->queryResult;
         }
 
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             return 1;
         }
 
@@ -76,6 +74,11 @@ function createReturnTypeMockConnection(array $queryResult = []): ConnectionInte
         public function lastInsertId(): int
         {
             return 1;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }

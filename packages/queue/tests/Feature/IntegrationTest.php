@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\Core\Container\ContainerInterface;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\Command\WorkCommand;
@@ -24,6 +25,34 @@ function createIntegrationJobEnvelope(
     string $key = 'test-key-for-integration',
 ): JobEnvelope {
     return new JobEnvelope(new EncryptionConfig(new FakeConfigRepository(['encryption.key' => $key])));
+}
+
+function createIntegrationNullContainer(): ContainerInterface
+{
+    return new class () implements ContainerInterface
+    {
+        public function get(string $id): never
+        {
+            throw new RuntimeException("No container binding for: $id");
+        }
+
+        public function has(string $id): bool
+        {
+            return false;
+        }
+
+        public function singleton(string $id): void {}
+
+        public function instance(
+            string $id,
+            object $instance,
+        ): void {}
+
+        public function call(Closure $callable): mixed
+        {
+            return null;
+        }
+    };
 }
 
 /**
@@ -240,7 +269,13 @@ describe('Integration Tests', function (): void {
         $queue = createInMemoryQueue();
         $failedRepository = createIntegrationFailedJobRepository();
         $config = createIntegrationQueueConfig();
-        $worker = new Worker($queue, $failedRepository, $config, createIntegrationJobEnvelope());
+        $worker = new Worker(
+            $queue,
+            $failedRepository,
+            $config,
+            createIntegrationJobEnvelope(),
+            createIntegrationNullContainer(),
+        );
 
         // 1. Push the job to the queue
         $jobId = $queue->push($job);
@@ -309,8 +344,38 @@ describe('Integration Tests', function (): void {
 
         expect($poppedJob)->toBeInstanceOf(AsyncObserverJob::class);
 
-        // Execute the job with a resolver that returns our observer
-        $poppedJob->handle(fn (string $class): object => $observer);
+        // Set up the container on the popped job (as Worker does) and execute
+        $container = new readonly class ($observer) implements ContainerInterface
+        {
+            public function __construct(
+                private object $observer,
+            ) {}
+
+            public function get(string $id): object
+            {
+                return $this->observer;
+            }
+
+            public function has(string $id): bool
+            {
+                return true;
+            }
+
+            public function singleton(string $id): void {}
+
+            public function instance(
+                string $id,
+                object $instance,
+            ): void {}
+
+            public function call(Closure $callable): mixed
+            {
+                return null;
+            }
+        };
+
+        $poppedJob->setContainer($container);
+        $poppedJob->handle();
 
         // Verify observer was called with the correct event
         expect($capture->called)->toBeTrue()
@@ -321,6 +386,151 @@ describe('Integration Tests', function (): void {
 
         // Verify queue is empty
     });
+
+    test(
+        'it executes an #[Observer(async: true)] observer end-to-end when its queued job runs (dispatch pushes a job, worker processes it, observer\'s handler is invoked once)',
+        function (): void {
+            $capture = (object) ['callCount' => 0, 'event' => null];
+
+            $observer = new class ($capture)
+            {
+                public function __construct(
+                    private object $capture,
+                ) {}
+
+                public function handle(object $event): void
+                {
+                    $this->capture->callCount++;
+                    $this->capture->event = $event;
+                }
+            };
+
+            $event = new stdClass();
+            $event->type = 'user.signed_up';
+            $event->userId = 99;
+
+            $envelope = createIntegrationJobEnvelope();
+            $container = new readonly class ($observer) implements ContainerInterface
+            {
+                public function __construct(
+                    private object $observer,
+                ) {}
+
+                public function get(string $id): object
+                {
+                    return $this->observer;
+                }
+
+                public function has(string $id): bool
+                {
+                    return true;
+                }
+
+                public function singleton(string $id): void {}
+
+                public function instance(
+                    string $id,
+                    object $instance,
+                ): void {}
+
+                public function call(Closure $callable): mixed
+                {
+                    return null;
+                }
+            };
+
+            // Simulate EventDispatcher: wraps serialized event and pushes the job
+            $job = new AsyncObserverJob(
+                observerClass: $observer::class,
+                eventData: $envelope->wrap(serialize($event)),
+            );
+
+            $queue = createInMemoryQueue();
+            $queue->push($job);
+
+            $failedRepository = createIntegrationFailedJobRepository();
+            $config = createIntegrationQueueConfig();
+
+            // Worker holds envelope + container; injects both into popped AsyncObserverJob
+            $worker = new Worker($queue, $failedRepository, $config, $envelope, $container);
+            $worker->work(once: true);
+
+            expect($capture->callCount)->toBe(1)
+                ->and($capture->event->type)->toBe('user.signed_up')
+                ->and($capture->event->userId)->toBe(99);
+        },
+    );
+
+    test(
+        'it passes the original event payload to the observer (the event reconstructed from eventData equals the dispatched event)',
+        function (): void {
+            $capture = (object) ['event' => null];
+
+            $observer = new class ($capture)
+            {
+                public function __construct(
+                    private object $capture,
+                ) {}
+
+                public function handle(object $event): void
+                {
+                    $this->capture->event = $event;
+                }
+            };
+
+            $event = new stdClass();
+            $event->id = 42;
+            $event->name = 'payload-test';
+
+            $envelope = createIntegrationJobEnvelope();
+            $container = new readonly class ($observer) implements ContainerInterface
+            {
+                public function __construct(
+                    private object $observer,
+                ) {}
+
+                public function get(string $id): object
+                {
+                    return $this->observer;
+                }
+
+                public function has(string $id): bool
+                {
+                    return true;
+                }
+
+                public function singleton(string $id): void {}
+
+                public function instance(
+                    string $id,
+                    object $instance,
+                ): void {}
+
+                public function call(Closure $callable): mixed
+                {
+                    return null;
+                }
+            };
+
+            $job = new AsyncObserverJob(
+                observerClass: $observer::class,
+                eventData: $envelope->wrap(serialize($event)),
+            );
+
+            $queue = createInMemoryQueue();
+            $queue->push($job);
+
+            $failedRepository = createIntegrationFailedJobRepository();
+            $config = createIntegrationQueueConfig();
+
+            $worker = new Worker($queue, $failedRepository, $config, $envelope, $container);
+            $worker->work(once: true);
+
+            expect($capture->event)->not->toBeNull()
+                ->and($capture->event->id)->toBe(42)
+                ->and($capture->event->name)->toBe('payload-test');
+        },
+    );
 
     test('CLI commands work with drivers', function (): void {
         // Track job execution
@@ -343,7 +553,13 @@ describe('Integration Tests', function (): void {
         $queue = createInMemoryQueue();
         $failedRepository = createIntegrationFailedJobRepository();
         $config = createIntegrationQueueConfig();
-        $worker = new Worker($queue, $failedRepository, $config, createIntegrationJobEnvelope());
+        $worker = new Worker(
+            $queue,
+            $failedRepository,
+            $config,
+            createIntegrationJobEnvelope(),
+            createIntegrationNullContainer(),
+        );
 
         // Push a job to the queue
         $queue->push($job);
@@ -405,7 +621,13 @@ describe('Integration Tests', function (): void {
         expect($nullRepository)->toBeInstanceOf(FailedJobRepositoryInterface::class);
 
         // Verify Worker implements WorkerInterface
-        $worker = new Worker($syncQueue, $nullRepository, $queueConfig, createIntegrationJobEnvelope());
+        $worker = new Worker(
+            $syncQueue,
+            $nullRepository,
+            $queueConfig,
+            createIntegrationJobEnvelope(),
+            createIntegrationNullContainer(),
+        );
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);
 

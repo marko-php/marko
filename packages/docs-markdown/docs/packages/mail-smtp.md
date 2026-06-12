@@ -135,14 +135,14 @@ Low-level SMTP protocol transport --- manages the socket connection, TLS negotia
 
 ### SmtpConfig
 
-Reads SMTP settings from the `smtp` key in `config/mail.php` via `MailConfig`.
+Reads SMTP settings from the `smtp` key in `config/mail.php` via `MailConfig`. The required keys throw `MailException` if absent; `username` and `password` return `null` when not set (no-auth SMTP).
 
-| Method | Description |
-|---|---|
-| `host(): string` | SMTP server hostname (default: `localhost`) |
-| `port(): int` | SMTP server port (default: `587`) |
-| `encryption(): ?string` | Encryption method (default: `tls`) |
-| `username(): ?string` | Authentication username |
-| `password(): ?string` | Authentication password |
-| `timeout(): int` | Connection timeout in seconds (default: `30`) |
-| `authMode(): ?string` | Authentication mode (default: `login`) |
+| Method | Required | Description |
+|---|---|---|
+| `host(): string` | Yes | SMTP server hostname --- throws if missing |
+| `port(): int` | Yes | SMTP server port --- throws if missing |
+| `encryption(): string` | Yes | Encryption method (`'tls'`, `'ssl'`, or `'none'`) --- throws if missing |
+| `timeout(): int` | Yes | Connection timeout in seconds --- throws if missing |
+| `authMode(): string` | Yes | Authentication mode (`'login'` or `'plain'`) --- throws if missing |
+| `username(): ?string` | No | Authentication username; `null` for no-auth SMTP |
+| `password(): ?string` | No | Authentication password; `null` for no-auth SMTP |

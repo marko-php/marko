@@ -130,8 +130,7 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             string $column,
             string $operator,
             mixed $value,
-        ): static
-        {
+        ): static {
             $this->wheresCalled[] = "$column $operator $value";
 
             return $this;
@@ -140,8 +139,7 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
         public function whereIn(
             string $column,
             array $values,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -158,8 +156,7 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
         public function whereJsonContains(
             string $path,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -177,8 +174,7 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             string $column,
             string $operator,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -187,8 +183,7 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -197,8 +192,7 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -207,40 +201,35 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function orderBy(
             string $column,
             string $direction = 'ASC',
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function orderByRaw(
             string $expression,
             string $direction = 'ASC',
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function selectRaw(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function whereRaw(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -312,8 +301,7 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
         public function having(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -340,8 +328,7 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
         public function raw(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return [];
         }
     };
@@ -377,16 +364,14 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             string $column,
             string $operator,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function whereIn(
             string $column,
             array $values,
-        ): static
-        {
+        ): static {
             $this->whereInCount++;
 
             return $this;
@@ -405,8 +390,7 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
         public function whereJsonContains(
             string $path,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -424,8 +408,7 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             string $column,
             string $operator,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -434,8 +417,7 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -444,8 +426,7 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -454,40 +435,35 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function orderBy(
             string $column,
             string $direction = 'ASC',
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function orderByRaw(
             string $expression,
             string $direction = 'ASC',
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function selectRaw(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function whereRaw(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -559,8 +535,7 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
         public function having(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -587,8 +562,7 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
         public function raw(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return [];
         }
     };
@@ -596,9 +570,9 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
 
 function makeSpecConnection(array $rows = []): ConnectionInterface
 {
-    return new class ($rows) implements ConnectionInterface
+    return new readonly class ($rows) implements ConnectionInterface
     {
-        public function __construct(private readonly array $rows) {}
+        public function __construct(private array $rows) {}
 
         public function connect(): void {}
 
@@ -612,16 +586,14 @@ function makeSpecConnection(array $rows = []): ConnectionInterface
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return $this->rows;
         }
 
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             return 0;
         }
 
@@ -634,14 +606,19 @@ function makeSpecConnection(array $rows = []): ConnectionInterface
         {
             return 0;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 }
 
 function makeSpecQbFactory(QueryBuilderInterface $builder): QueryBuilderFactoryInterface
 {
-    return new class ($builder) implements QueryBuilderFactoryInterface
+    return new readonly class ($builder) implements QueryBuilderFactoryInterface
     {
-        public function __construct(private readonly QueryBuilderInterface $builder) {}
+        public function __construct(private QueryBuilderInterface $builder) {}
 
         public function create(): QueryBuilderInterface
         {
@@ -722,16 +699,14 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             string $column,
             string $operator,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function whereIn(
             string $column,
             array $values,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -748,8 +723,7 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
         public function whereJsonContains(
             string $path,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -767,8 +741,7 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             string $column,
             string $operator,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -777,8 +750,7 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -787,8 +759,7 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -797,40 +768,35 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             string $first,
             string $operator,
             string $second,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function orderBy(
             string $column,
             string $direction = 'ASC',
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function orderByRaw(
             string $expression,
             string $direction = 'ASC',
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function selectRaw(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
         public function whereRaw(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -902,8 +868,7 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
         public function having(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -930,8 +895,7 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
         public function raw(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             return [];
         }
     };
@@ -1034,38 +998,38 @@ it(
     function (): void {
         $postRows = [['id' => 1, 'title' => 'Hello', 'status' => 'published', 'author_id' => 5]];
         $authorRows = [['id' => 5, 'name' => 'Alice', 'author_id' => 5]];
-    
+
         $primaryBuilder = makeSpecStubBuilder($postRows);
         $relatedBuilder = makeSpecStubBuilder($authorRows);
         $loader = makeSpecLoader($relatedBuilder);
         $repo = makeSpecRepository(loader: $loader, primaryBuilder: $primaryBuilder);
-    
+
         // Plain spec that applies no eager load — eager load comes from call-site with()
-    $spec = new class () implements QuerySpecification
+        $spec = new class () implements QuerySpecification
         {
             public function apply(EntityQueryBuilderInterface $builder): void
             {
                 $builder->where('status', '=', 'published');
             }
         };
-    
+
         $collection = $repo->with('author')->matching($spec);
-    
+
         expect($collection->count())->toBe(1)
             ->and($collection->first()->author)->toBeInstanceOf(SpecAuthor::class);
-    }
+    },
 );
 
 it(
     'merges call-site $repo->with(...) relationships with spec-declared with() relationships without duplicates',
     function (): void {
         $postRows = [['id' => 1, 'title' => 'Hello', 'status' => 'published', 'author_id' => 5]];
-    
+
         $countingBuilder = makeCountingBuilder([['id' => 5, 'name' => 'Alice', 'author_id' => 5]]);
         $primaryBuilder = makeSpecStubBuilder($postRows);
         $loader = makeSpecLoader($countingBuilder);
         $repo = makeSpecRepository(loader: $loader, primaryBuilder: $primaryBuilder);
-    
+
         $spec = new class () implements QuerySpecification
         {
             public function apply(EntityQueryBuilderInterface $builder): void
@@ -1073,12 +1037,12 @@ it(
                 $builder->with('author');
             }
         };
-    
+
         // Both call-site and spec declare 'author' — should issue only one query
-    $repo->with('author')->matching($spec);
-    
+        $repo->with('author')->matching($spec);
+
         expect($countingBuilder->whereInCount)->toBe(1);
-    }
+    },
 );
 
 it('does not execute N+1 queries when a spec declares eager loads', function (): void {
@@ -1116,7 +1080,7 @@ it(
         $primaryBuilder = makeSpecStubBuilder($postRows);
         $loader = makeSpecLoader(makeSpecStubBuilder());
         $repo = makeSpecRepository(loader: $loader, primaryBuilder: $primaryBuilder);
-    
+
         $spec = new class () implements QuerySpecification
         {
             public function apply(EntityQueryBuilderInterface $builder): void
@@ -1124,27 +1088,27 @@ it(
                 $builder->with('nonExistentRelationship');
             }
         };
-    
+
         expect(fn () => $repo->matching($spec))->toThrow(RepositoryException::class);
-    }
+    },
 );
 
 it(
     'existing single-method QuerySpecification implementations continue to compile after updating only the apply() parameter type hint',
     function (): void {
         // A spec using the new signature — verifies backward-compatible refactor
-    $spec = new class () implements QuerySpecification
+        $spec = new class () implements QuerySpecification
         {
             public function apply(EntityQueryBuilderInterface $builder): void
             {
                 $builder->where('status', '=', 'active');
             }
         };
-    
+
         $reflection = new ReflectionClass($spec);
         $method = $reflection->getMethod('apply');
         $params = $method->getParameters();
-    
+
         expect($params[0]->getType()?->getName())->toBe(EntityQueryBuilderInterface::class);
-    }
+    },
 );

@@ -196,6 +196,11 @@ class MySqlConnection implements ConnectionInterface, TransactionInterface
         return (int) $this->pdo->lastInsertId();
     }
 
+    public function driverName(): string
+    {
+        return 'mysql';
+    }
+
     /**
      * @throws ConnectionException|TransactionException
      */

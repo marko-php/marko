@@ -456,6 +456,11 @@ it('inserts new entity with save() when no ID', function (): void {
         {
             return 123;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 
     $metadataFactory = new EntityMetadataFactory();
@@ -533,6 +538,11 @@ it('updates existing entity with save() when has ID', function (): void {
         {
             return 1;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 
     $metadataFactory = new EntityMetadataFactory();
@@ -608,6 +618,11 @@ it('only updates dirty fields on existing entity', function (): void {
         {
             return 1;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 
     $metadataFactory = new EntityMetadataFactory();
@@ -669,6 +684,11 @@ it('sets auto-generated ID on entity after insert', function (): void {
         public function lastInsertId(): int
         {
             return 456;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 
@@ -745,6 +765,11 @@ it('deletes entity with delete()', function (): void {
         public function lastInsertId(): int
         {
             return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 
@@ -838,6 +863,11 @@ it('supports count() method returning total count', function (): void {
         {
             return 0;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 
     $metadataFactory = new EntityMetadataFactory();
@@ -896,6 +926,11 @@ it('supports exists(id) method returning boolean', function (): void {
         public function lastInsertId(): int
         {
             return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 
@@ -1079,6 +1114,11 @@ function createMockConnection(
         {
             return 1;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 }
 
@@ -1146,8 +1186,7 @@ function createMockQueryBuilder(
         public function whereJsonContains(
             string $path,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -1315,8 +1354,7 @@ function createMockQueryBuilder(
         public function having(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -1345,10 +1383,10 @@ function createMockQueryBuilder(
 function createMockQueryBuilderFactory(
     ConnectionInterface $connection,
 ): QueryBuilderFactoryInterface {
-    return new class ($connection) implements QueryBuilderFactoryInterface
+    return new readonly class ($connection) implements QueryBuilderFactoryInterface
     {
         public function __construct(
-            private readonly ConnectionInterface $connection,
+            private ConnectionInterface $connection,
         ) {}
 
         public function create(): QueryBuilderInterface
@@ -1463,6 +1501,11 @@ function createStorageConnection(
         {
             return $this->nextId - 1;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 }
 
@@ -1475,7 +1518,7 @@ function createSpyConnection(array &$sqlLog, array $queryResults = []): Connecti
 
         public function __construct(
             private array &$sqlLog,
-            private array $queryResults,
+            private readonly array $queryResults,
         ) {}
 
         public function connect(): void {}
@@ -1490,8 +1533,7 @@ function createSpyConnection(array &$sqlLog, array $queryResults = []): Connecti
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             $this->sqlLog[] = ['sql' => $sql, 'bindings' => $bindings];
             $result = $this->queryResults[$this->queryIndex] ?? [];
             $this->queryIndex++;
@@ -1502,8 +1544,7 @@ function createSpyConnection(array &$sqlLog, array $queryResults = []): Connecti
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             $this->sqlLog[] = ['sql' => $sql, 'bindings' => $bindings];
 
             return 1;
@@ -1517,6 +1558,11 @@ function createSpyConnection(array &$sqlLog, array $queryResults = []): Connecti
         public function lastInsertId(): int
         {
             return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 }
@@ -1540,8 +1586,7 @@ class OrderRepository extends Repository
         string $column,
         mixed $value,
         ?int $excludeId = null,
-    ): bool
-    {
+    ): bool {
         return $this->isColumnUnique($column, $value, $excludeId);
     }
 }
@@ -1596,12 +1641,12 @@ it(
         $sqlLog = [];
         $connection = createSpyConnection($sqlLog, [[]], [[]]);
         $repository = new OrderRepository($connection, new EntityMetadataFactory(), new EntityHydrator());
-    
+
         $repository->exposeIsColumnUnique('status', 'shipped', 42);
-    
+
         expect($sqlLog[0]['sql'])->toContain('AND order_uuid != ?')
             ->and($sqlLog[0]['sql'])->not->toContain('AND status != ?');
-    }
+    },
 );
 
 it('continues to work for entities that DO declare a primary key explicitly', function (): void {
@@ -1667,6 +1712,11 @@ it('Repository::count() delegates to the builder without duplicating logic', fun
         {
             return 0;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 
     $queryBuilderFactory = new class ($builderCountCalled, $connection) implements QueryBuilderFactoryInterface
@@ -1721,16 +1771,14 @@ describe('companion insert and update', function (): void {
             public function query(
                 string $sql,
                 array $bindings = [],
-            ): array
-            {
+            ): array {
                 return [];
             }
 
             public function execute(
                 string $sql,
                 array $bindings = [],
-            ): int
-            {
+            ): int {
                 $this->sqlLog[] = ['sql' => $sql, 'bindings' => $bindings];
 
                 return 1;
@@ -1744,6 +1792,11 @@ describe('companion insert and update', function (): void {
             public function lastInsertId(): int
             {
                 return $this->lastInsertId;
+            }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
             }
         };
     }
@@ -1775,23 +1828,23 @@ describe('companion insert and update', function (): void {
             $metadataFactory = new EntityMetadataFactory();
             $hydrator = new EntityHydrator($metadataFactory);
             $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
-    
+
             $account = new RepositoryTestAccount();
             $account->username = 'bob';
-    
+
             $profile = new RepositoryTestAccountProfile();
             $profile->bio = 'Hello';
             $profile->website = 'https://example.com';
             $account->attachCompanion($profile);
-    
+
             $repository->save($account);
-    
+
             expect($sqlLog)->toHaveCount(1)
                 ->and($sqlLog[0]['sql'])->toContain('INSERT INTO accounts')
                 ->and($sqlLog[0]['sql'])->toContain('username')
                 ->and($sqlLog[0]['sql'])->toContain('bio')
                 ->and($sqlLog[0]['sql'])->toContain('website');
-        }
+        },
     );
 
     it('inserts a parent entity with multiple attached companions using all merged columns', function (): void {
@@ -2054,25 +2107,25 @@ describe('companion insert and update', function (): void {
             $metadataFactory = new EntityMetadataFactory();
             $hydrator = new EntityHydrator($metadataFactory);
             $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
-    
+
             $account = new RepositoryTestAccount();
             $account->username = 'leo';
-    
+
             $profile = new RepositoryTestAccountProfile();
             $profile->bio = 'Fresh bio';
             $profile->website = 'https://leo.dev';
             $account->attachCompanion($profile);
-    
+
             $repository->save($account);
-    
+
             // The companion was freshly constructed — after INSERT it must have
-        // originalValues so subsequent updates diff correctly.
-        $originalValues = $hydrator->getOriginalValues($profile);
-    
+            // originalValues so subsequent updates diff correctly.
+            $originalValues = $hydrator->getOriginalValues($profile);
+
             expect($originalValues)->not->toBeEmpty()
                 ->and($originalValues['bio'])->toBe('Fresh bio')
                 ->and($originalValues['website'])->toBe('https://leo.dev');
-        }
+        },
     );
 
     it(
@@ -2082,10 +2135,10 @@ describe('companion insert and update', function (): void {
             $connection = createAccountSpyConnection($ignored);
             $metadataFactory = new EntityMetadataFactory();
             $hydrator = new EntityHydrator($metadataFactory);
-    
+
             expect(fn () => new ExtenderRepository($connection, $metadataFactory, $hydrator))
                 ->toThrow(RepositoryException::class, 'has no primary key of its own');
-        }
+        },
     );
 
     it(
@@ -2096,17 +2149,17 @@ describe('companion insert and update', function (): void {
             $metadataFactory = new EntityMetadataFactory();
             $hydrator = new EntityHydrator($metadataFactory);
             $repository = new AccountRepository($connection, $metadataFactory, $hydrator);
-    
+
             $account = new RepositoryTestAccount();
             $account->username = 'mike';
-    
+
             $profile = new RepositoryTestAccountProfile();
             $profile->bio = 'Bio';
             $profile->website = 'https://mike.io';
             $account->attachCompanion($profile);
-    
+
             expect(fn () => $repository->insertBatch([$account]))
                 ->toThrow(BatchInsertException::class, 'companions');
-        }
+        },
     );
 });

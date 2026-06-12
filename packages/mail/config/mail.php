@@ -42,6 +42,7 @@ return [
         'username' => null,
         'password' => null,
         'timeout' => 30,
+        'auth_mode' => 'login',
     ],
 
     /*

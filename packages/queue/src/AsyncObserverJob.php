@@ -4,39 +4,56 @@ declare(strict_types=1);
 
 namespace Marko\Queue;
 
+use Marko\Core\Container\ContainerInterface;
 use Marko\Queue\Exceptions\SerializationException;
+use RuntimeException;
 
 class AsyncObserverJob extends Job
 {
+    private ?ContainerInterface $container = null;
+
+    private ?JobEnvelope $jobEnvelope = null;
+
     public function __construct(
         public readonly string $observerClass,
         public readonly string $eventData,
     ) {}
 
+    public function setContainer(ContainerInterface $container): void
+    {
+        $this->container = $container;
+    }
+
+    public function setJobEnvelope(JobEnvelope $jobEnvelope): void
+    {
+        $this->jobEnvelope = $jobEnvelope;
+    }
+
     /**
      * Execute the async observer job.
      *
-     * When a JobEnvelope is provided, the eventData is treated as an HMAC-signed envelope
-     * and is verified before unserializing. Pass a JobEnvelope when running in a secure
-     * context (e.g., inside the Worker) where the eventData was wrapped at construction time.
+     * Resolves the observer from the container and invokes its handle() method
+     * with the deserialized event. When a JobEnvelope has been set, the eventData
+     * is treated as an HMAC-signed envelope and verified before unserializing.
      *
-     * @throws SerializationException
+     * @throws SerializationException|RuntimeException
      */
-    public function handle(
-        ?callable $resolver = null,
-        ?JobEnvelope $jobEnvelope = null,
-    ): void {
-        $rawEventData = $jobEnvelope !== null
-            ? $jobEnvelope->verifyAndUnwrap($this->eventData)
+    public function handle(): void
+    {
+        if ($this->container === null) {
+            throw new RuntimeException(
+                'AsyncObserverJob::handle() was called without a container. '
+                . 'Call setContainer() before handle() to provide the DI container for observer resolution.',
+            );
+        }
+
+        $rawEventData = $this->jobEnvelope !== null
+            ? $this->jobEnvelope->verifyAndUnwrap($this->eventData)
             : $this->eventData;
 
         $event = unserialize($rawEventData);
 
-        if ($resolver !== null) {
-            $observer = $resolver($this->observerClass);
-            $observer->handle($event);
-        }
-        // When no resolver provided, this is a no-op placeholder
-        // Real implementation will use container to resolve observer
+        $observer = $this->container->get($this->observerClass);
+        $observer->handle($event);
     }
 }

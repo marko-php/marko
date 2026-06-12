@@ -64,6 +64,13 @@ function makeConnection(array $overrides = []): ConnectionInterface&TransactionI
             return $this->overrides['lastInsertId'] ?? 42;
         }
 
+        public function driverName(): string
+        {
+            $this->calls[] = 'driverName';
+
+            return $this->overrides['driverName'] ?? 'mysql';
+        }
+
         public function beginTransaction(): void
         {
             $this->calls[] = 'beginTransaction';
@@ -97,7 +104,7 @@ function makeConnection(array $overrides = []): ConnectionInterface&TransactionI
 
 function makeSelector(ConnectionInterface $replica): ReplicaSelectorInterface
 {
-    return new class ($replica) implements ReplicaSelectorInterface
+    return new readonly class ($replica) implements ReplicaSelectorInterface
     {
         public function __construct(private ConnectionInterface $replica) {}
 
@@ -165,6 +172,11 @@ function makeThrowingConnection(string $message = 'connection refused'): Connect
         public function lastInsertId(): int
         {
             return 0;
+        }
+
+        public function driverName(): string
+        {
+            return 'mysql';
         }
 
         public function beginTransaction(): void {}
@@ -591,6 +603,11 @@ describe('ReadWriteConnection', function (): void {
                 return 0;
             }
 
+            public function driverName(): string
+            {
+                return 'mysql';
+            }
+
             public function beginTransaction(): void {}
 
             public function commit(): void {}
@@ -635,5 +652,114 @@ describe('ReadWriteConnection', function (): void {
             expect($e->getMessage())->toContain('replica1 timed out')
                 ->and($e->getMessage())->toContain('replica2 refused');
         }
+    });
+
+    it(
+        'routes query() calls executed inside a transaction() callback to the primary, not a replica',
+        function (): void {
+            $write = makeConnection(['query' => [['id' => 1]]]);
+            $replica = makeConnection(['query' => [['id' => 99]]]);
+            $selector = makeSelector($replica);
+
+            $conn = new ReadWriteConnection($write, [$replica], $selector);
+            $result = null;
+            $conn->transaction(function () use ($conn, &$result): void {
+                $result = $conn->query('SELECT 1');
+            });
+
+            expect($result)->toBe([['id' => 1]])
+                ->and($write->calls)->toContain(['query', 'SELECT 1', []])
+                ->and($replica->calls)->not->toContain(['query', 'SELECT 1', []]);
+        },
+    );
+
+    it('resets sticky-write state after the transaction() callback completes', function (): void {
+        $write = makeConnection(['query' => [['id' => 1]]]);
+        $replica = makeConnection(['query' => [['id' => 99]]]);
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+        $conn->transaction(function (): void {});
+        $result = $conn->query('SELECT 1');
+
+        expect($result)->toBe([['id' => 99]])
+            ->and($replica->calls)->toContain(['query', 'SELECT 1', []])
+            ->and($write->calls)->not->toContain(['query', 'SELECT 1', []]);
+    });
+
+    it('routes an INSERT ... RETURNING statement issued via query() to the primary', function (): void {
+        $write = makeConnection(['query' => [['id' => 1]]]);
+        $replica = makeConnection(['query' => [['id' => 99]]]);
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+        $result = $conn->query('INSERT INTO users (name) VALUES (?) RETURNING id', ['Alice']);
+
+        expect($result)->toBe([['id' => 1]])
+            ->and($write->calls)->toContain(['query', 'INSERT INTO users (name) VALUES (?) RETURNING id', ['Alice']])
+            ->and($replica->calls)->not->toContain(
+                ['query', 'INSERT INTO users (name) VALUES (?) RETURNING id', ['Alice']],
+            );
+    });
+
+    it('continues routing plain SELECTs to a replica when not in a transaction and not sticky', function (): void {
+        $write = makeConnection(['query' => [['id' => 1]]]);
+        $replica = makeConnection(['query' => [['id' => 99]]]);
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+        $result = $conn->query('SELECT * FROM users');
+
+        expect($result)->toBe([['id' => 99]])
+            ->and($replica->calls)->toContain(['query', 'SELECT * FROM users', []])
+            ->and($write->calls)->not->toContain(['query', 'SELECT * FROM users', []]);
+    });
+
+    it(
+        'routes a write statement to the primary even when it has leading whitespace or a leading SQL comment before the INSERT/UPDATE/DELETE keyword (case-insensitive)',
+        function (): void {
+            $write = makeConnection(['query' => [['id' => 1]]]);
+            $replica = makeConnection(['query' => [['id' => 99]]]);
+            $selector = makeSelector($replica);
+
+            $conn = new ReadWriteConnection($write, [$replica], $selector);
+
+            // Leading whitespace
+            $result1 = $conn->query('   INSERT INTO foo VALUES (1) RETURNING id');
+            // Leading line comment
+            $result2 = $conn->query("-- a comment\nUPDATE foo SET x = 1 RETURNING id");
+            // Leading block comment
+            $result3 = $conn->query('/* note */ DELETE FROM foo WHERE id = 1 RETURNING id');
+            // Uppercase
+            $result4 = $conn->query('insert into bar values (2) returning id');
+
+            expect($result1)->toBe([['id' => 1]])
+                ->and($result2)->toBe([['id' => 1]])
+                ->and($result3)->toBe([['id' => 1]])
+                ->and($result4)->toBe([['id' => 1]])
+                ->and($replica->calls)->toBeEmpty();
+        },
+    );
+
+    it('resets sticky-write state even when the transaction() callback throws', function (): void {
+        $write = makeConnection(['query' => [['id' => 1]]]);
+        $replica = makeConnection(['query' => [['id' => 99]]]);
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+
+        try {
+            $conn->transaction(function (): void {
+                throw new RuntimeException('rollback!');
+            });
+        } catch (RuntimeException) {
+            // expected
+        }
+
+        $result = $conn->query('SELECT 1');
+
+        expect($result)->toBe([['id' => 99]])
+            ->and($replica->calls)->toContain(['query', 'SELECT 1', []])
+            ->and($write->calls)->not->toContain(['query', 'SELECT 1', []]);
     });
 });

@@ -4,7 +4,7 @@
 2026-06-10
 
 ## Status
-ready
+completed
 
 ## Objective
 Remediate eight high-severity correctness defects that silently break core Marko
@@ -126,19 +126,19 @@ none
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | F1: concrete-subclass interceptor instantiation for constructor-DI targets (core/Plugin) | - | pending |
-| 002 | F2: errors-advanced standalone boot + real register()/handleError() | - | pending |
-| 003 | F3: tokenizer-based ClassFileParser::extractClassName (core/Discovery) | - | pending |
-| 004 | F6: AsyncObserverJob self-resolves + invokes observer; Worker gains ContainerInterface dep + wiring (queue) | - | pending |
-| 005 | F5: DatabaseQueue atomic reserve + reservation-timeout reclaim + attempt source (queue-database) | 004, 009 | pending |
-| 006 | F4a: RabbitmqQueue attempt persistence + release-to-origin-queue + per-queue declare (queue-rabbitmq) | 004 | pending |
-| 007 | F4b: RabbitmqFailedJobRepository non-livelocking store (queue-rabbitmq) | 006 | pending |
-| 008 | F8: ReadWriteConnection transaction sticky-write + write routing + replica selection safety (database-readwrite) | 009 | pending |
-| 009 | F9: Repository::insertBatch RETURNING-based PK assignment + ConnectionInterface::driverName() accessor (database, ~43 stub implementers) | - | pending |
-| 010 | F7a: concrete StreamSocket implements SocketInterface (mail-smtp) | - | pending |
-| 011 | F7b: factory connect→EHLO→STARTTLS(220)→AUTH(case-insensitive) sequence + SmtpConfig defaults removal + module binding (mail-smtp) | 010 | pending |
-| 012 | F7c: DATA dot-stuffing + multi-recipient correctness (mail-smtp) | 011 | pending |
-| 013 | F10: docs-vec RRF fusion crash fix + malformed-FTS5-MATCH PDOException→DocsException (docs-vec) | - | pending |
+| 001 | F1: concrete-subclass interceptor instantiation for constructor-DI targets (core/Plugin) | - | completed |
+| 002 | F2: errors-advanced standalone boot + real register()/handleError() | - | completed |
+| 003 | F3: tokenizer-based ClassFileParser::extractClassName (core/Discovery) | - | completed |
+| 004 | F6: AsyncObserverJob self-resolves + invokes observer; Worker gains ContainerInterface dep + wiring (queue) | - | completed |
+| 005 | F5: DatabaseQueue atomic reserve + reservation-timeout reclaim + attempt source (queue-database) | 004, 009 | completed |
+| 006 | F4a: RabbitmqQueue attempt persistence + release-to-origin-queue + per-queue declare (queue-rabbitmq) | 004 | completed |
+| 007 | F4b: RabbitmqFailedJobRepository non-livelocking store (queue-rabbitmq) | 006 | completed |
+| 008 | F8: ReadWriteConnection transaction sticky-write + write routing + replica selection safety (database-readwrite) | 009 | completed |
+| 009 | F9: Repository::insertBatch RETURNING-based PK assignment + ConnectionInterface::driverName() accessor (database, ~43 stub implementers) | - | completed |
+| 010 | F7a: concrete StreamSocket implements SocketInterface (mail-smtp) | - | completed |
+| 011 | F7b: factory connect→EHLO→STARTTLS(220)→AUTH(case-insensitive) sequence + SmtpConfig defaults removal + module binding (mail-smtp) | 010 | completed |
+| 012 | F7c: DATA dot-stuffing + multi-recipient correctness (mail-smtp) | 011 | completed |
+| 013 | F10: docs-vec RRF fusion crash fix + malformed-FTS5-MATCH PDOException→DocsException (docs-vec) | - | completed |
 
 Parallel batches (each task is a distinct file-cluster; 008 and 005 now serialize
 after 009 because 009's `ConnectionInterface::driverName()` addition edits the same
@@ -202,18 +202,28 @@ and 008 (Batch 2). They must NOT be parallelized with 009 — they share files w
   the single source of truth (or the DB, but exactly one), so `maxAttempts` = N
   executions. Note mysql vs pgsql `SKIP LOCKED` syntax is identical; document the
   `retry_after` config key.
-- **F6 AsyncObserverJob.** Give `AsyncObserverJob` access to the container so
-  `handle()` resolves the observer (`$container->get($this->observerClass)`) and calls
-  `->handle($event)` with NO external resolver. `Worker` gains a new
-  `ContainerInterface` constructor dependency (autowired in production; ~10 `new
-  Worker(...)` test call sites in WorkerTest + Feature/IntegrationTest must be updated)
-  and sets the container on a popped `AsyncObserverJob` (via a `setContainer()` setter,
-  guarded by `instanceof AsyncObserverJob`) before calling `handle()`. The container is a
-  `private ?ContainerInterface $container = null` property that is null at push/serialize
-  time, so `serialize($this)` is safe and no `__serialize`/`__sleep` magic method is
-  needed (Marko bans magic methods). `handle()` keeps the `JobInterface::handle(): void`
-  signature (the `$resolver` param is removed; the existing resolver-based
-  `AsyncObserverJobTest` must be rewritten to use `setContainer()`).
+- **F6 AsyncObserverJob (post-Tier-1).** Give `AsyncObserverJob` access to the container
+  so `handle()` resolves the observer (`$container->get($this->observerClass)`) and calls
+  `->handle($event)` with NO external resolver. Tier 1 already changed both signatures
+  this touches: `Worker::__construct` already takes FOUR params
+  `(QueueInterface, FailedJobRepositoryInterface, QueueConfig, JobEnvelope)`, and
+  `AsyncObserverJob::handle(?callable $resolver = null, ?JobEnvelope $jobEnvelope = null)`
+  already verifies the signed envelope before `unserialize`. So `Worker` gains a FIFTH
+  `ContainerInterface` constructor param (added AFTER `JobEnvelope`; autowired in
+  production; the 10 `new Worker(...)` test call sites in WorkerTest +
+  Feature/IntegrationTest each already pass the Tier-1 envelope helper as the 4th arg and
+  must APPEND a container stub as the 5th). The Worker sets BOTH the container and its
+  `JobEnvelope` on a popped `AsyncObserverJob` (via `setContainer()` + `setJobEnvelope()`
+  setters, guarded by `instanceof AsyncObserverJob`) before calling `handle()`, so
+  signed-envelope verification is preserved. `container` and `jobEnvelope` are
+  `private ?... = null` properties, null at push/serialize time, so `serialize($this)` is
+  safe and no magic method is needed (Marko bans magic methods). `handle()` keeps a
+  `JobInterface::handle(): void`-compatible signature (the public `$resolver` param is
+  removed), still calls `verifyAndUnwrap($this->eventData)` when an envelope is set, and
+  must NOT re-introduce a raw `unserialize($this->eventData)`. The existing
+  `AsyncObserverJobTest` has THREE resolver-passing tests (incl. two Tier-1 envelope
+  regression guards) that must be rewritten to `setContainer()`/`setJobEnvelope()`, not
+  deleted.
 - **F8 read/write.** `transaction()` must set `stickyWrite = true` for the whole
   callback (like `beginTransaction()`), then delegate to `$write->transaction()`, and
   reset sticky in a `finally` so a throwing callback still clears it. (The write driver's
@@ -292,7 +302,14 @@ and 008 (Batch 2). They must NOT be parallelized with 009 — they share files w
   Mitigation: every test calling `register()` (incl. the module-boot test) must
   `unregister()` in `afterEach`/`finally`; non-fatals are triggered via
   `trigger_error(E_USER_*)`, not real fatals.
-- **F6 Worker contract addition:** adding `ContainerInterface` to `Worker::__construct`
-  breaks ~10 `new Worker(...)` test call sites. Mitigation: Task 004 enumerates them
-  (WorkerTest 7, Feature/IntegrationTest 3) and the existing resolver-based
-  `AsyncObserverJobTest` is rewritten to `setContainer()`.
+- **F6 Worker contract addition:** adding `ContainerInterface` as the FIFTH
+  `Worker::__construct` param (after Tier-1's `JobEnvelope`) breaks the 10 `new
+  Worker(...)` test call sites, each of which already passes the envelope helper as the
+  4th arg. Mitigation: Task 004 enumerates them with correct post-Tier-1 line numbers
+  (WorkerTest lines 255/348/435/463/547/617/711, Feature/IntegrationTest lines
+  243/346/408) and the fix APPENDS a container stub as the 5th arg. The three
+  resolver-passing `AsyncObserverJobTest` tests (incl. the two Tier-1 envelope/tamper
+  regression guards) are rewritten to `setContainer()`/`setJobEnvelope()`.
+- **F7 socket interface member:** `SocketInterface` includes a `public bool $connected
+  { get; }` property hook in addition to its methods. Mitigation: Task 010 enumerates it
+  so the concrete `StreamSocket` implements the get-hook and does not fail at load time.

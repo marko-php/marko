@@ -155,6 +155,11 @@ describe('Repository CRUD Operations', function (): void {
             {
                 return $this->lastId;
             }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
+            }
         };
 
         $metadataFactory = new EntityMetadataFactory();
@@ -254,6 +259,11 @@ describe('Repository CRUD Operations', function (): void {
             {
                 return 1;
             }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
+            }
         };
 
         $metadataFactory = new EntityMetadataFactory();
@@ -303,6 +313,11 @@ describe('Repository CRUD Operations', function (): void {
             public function lastInsertId(): int
             {
                 return 0;
+            }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
             }
         };
 
@@ -354,6 +369,11 @@ describe('Repository CRUD Operations', function (): void {
             public function lastInsertId(): int
             {
                 return 0;
+            }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
             }
         };
 
@@ -413,6 +433,11 @@ describe('Repository CRUD Operations', function (): void {
             public function lastInsertId(): int
             {
                 return 0;
+            }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
             }
         };
 

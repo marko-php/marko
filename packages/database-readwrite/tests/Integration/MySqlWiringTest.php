@@ -14,7 +14,7 @@ use Marko\Database\ReadWrite\Replica\WeightedReplicaSelector;
 
 function makeMySqlTestConnection(bool $failOnQuery = false): ConnectionInterface&TransactionInterface
 {
-    return new class ($failOnQuery) implements ConnectionInterface, TransactionInterface
+    return new readonly class ($failOnQuery) implements ConnectionInterface, TransactionInterface
     {
         public function __construct(private bool $failOnQuery) {}
 
@@ -55,6 +55,11 @@ function makeMySqlTestConnection(bool $failOnQuery = false): ConnectionInterface
             return 0;
         }
 
+        public function driverName(): string
+        {
+            return 'mysql';
+        }
+
         public function beginTransaction(): void {}
 
         public function commit(): void {}
@@ -90,7 +95,7 @@ function makeMySqlConfigRepository(
 
     $finalReads = $reads !== [] ? $reads : $defaultReads;
 
-    return new class ($readStrategy, $finalReads) implements ConfigRepositoryInterface
+    return new readonly class ($readStrategy, $finalReads) implements ConfigRepositoryInterface
     {
         public function __construct(
             private string $readStrategy,

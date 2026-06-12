@@ -13,6 +13,18 @@ use Marko\Queue\JobEnvelope;
 use Marko\Queue\QueueInterface;
 use Marko\Testing\Fake\FakeConfigRepository;
 
+function createTestQueue(
+    ConnectionInterface $connection,
+    ?JobEnvelope $envelope = null,
+    int $retryAfter = 90,
+): DatabaseQueue {
+    return new DatabaseQueue(
+        connection: $connection,
+        jobEnvelope: $envelope ?? createTestEnvelope(),
+        retryAfter: $retryAfter,
+    );
+}
+
 function createTestEnvelope(
     string $key = 'test-hmac-key-for-queue-database',
 ): JobEnvelope {
@@ -135,8 +147,7 @@ test('DatabaseQueue pop retrieves and reserves next job', function () {
             $this->stringContains('UPDATE'),
             $this->callback(function (array $bindings) {
                 return isset($bindings['reserved_at'])
-                    && isset($bindings['attempts'])
-                    && $bindings['attempts'] === 1
+                    && !isset($bindings['attempts'])
                     && $bindings['id'] === 'job-123';
             }),
         )
@@ -147,7 +158,7 @@ test('DatabaseQueue pop retrieves and reserves next job', function () {
 
     expect($poppedJob)->toBeInstanceOf(TestJob::class)
         ->and($poppedJob->id)->toBe('job-123')
-        ->and($poppedJob->attempts)->toBe(1);
+        ->and($poppedJob->attempts)->toBe(0);
 });
 
 test('DatabaseQueue pop returns null when empty', function () {
@@ -380,6 +391,11 @@ test('DatabaseQueue uses transactions for pop', function () {
             return 1;
         }
 
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
+
         public function beginTransaction(): void
         {
             $this->transactionCalls[] = ['operation' => 'beginTransaction'];
@@ -547,6 +563,302 @@ test('it rejects a tampered DatabaseQueue payload before unserializing', functio
     expect(fn () => $queue->pop())->toThrow(SerializationException::class);
 });
 
+it(
+    'reaches maxAttempts after exactly maxAttempts executions (job moves to failed store on the Nth, not the (N-1)th, failure)',
+    function (): void {
+        $envelope = createTestEnvelope();
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $job = new TestJob('maxAttempts test');
+        $job->setId('job-max');
+        $wrappedPayload = $envelope->wrap($job->serialize());
+
+        $connection->method('query')->willReturn([
+            [
+                'id' => 'job-max',
+                'queue' => 'default',
+                'payload' => $wrappedPayload,
+                'attempts' => 0,
+                'reserved_at' => null,
+                'available_at' => '2024-01-01 00:00:00',
+                'created_at' => '2024-01-01 00:00:00',
+            ],
+        ]);
+        $connection->method('execute')->willReturn(1);
+
+        $queue = createTestQueue($connection, $envelope);
+
+        /** @var TestJob $poppedJob */
+        $poppedJob = $queue->pop();
+        $maxAttempts = $poppedJob->maxAttempts;
+
+        expect($poppedJob)->not->toBeNull()
+            ->and($poppedJob->attempts)->toBe(0, 'Fresh pop should have attempts=0 (DB no longer increments)');
+
+        // Simulate Worker calling incrementAttempts() on each execution failure
+        for ($execution = 1; $execution <= $maxAttempts - 1; $execution++) {
+            $poppedJob->incrementAttempts();
+            // Before the Nth execution, job.attempts < maxAttempts → should not fail permanently
+            expect($poppedJob->attempts < $poppedJob->maxAttempts)->toBeTrue(
+                "After $execution execution(s), should not yet reach maxAttempts",
+            );
+        }
+
+        // On the Nth execution, Worker increments to maxAttempts → store as failed
+        $poppedJob->incrementAttempts();
+        expect($poppedJob->attempts)->toBe($maxAttempts)
+            ->and($poppedJob->attempts >= $poppedJob->maxAttempts)->toBeTrue(
+                'After maxAttempts executions, job should be stored as failed (not on N-1)',
+            );
+    },
+);
+
+it(
+    'counts exactly one attempt per execution (popping then processing a job once yields attempts == 1, not 2)',
+    function (): void {
+        $envelope = createTestEnvelope();
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $job = new TestJob('attempt count test');
+        $wrappedPayload = $envelope->wrap($job->serialize());
+
+        $connection->method('query')->willReturn([
+            [
+                'id' => 'job-attempt',
+                'queue' => 'default',
+                'payload' => $wrappedPayload,
+                'attempts' => 0,
+                'reserved_at' => null,
+                'available_at' => '2024-01-01 00:00:00',
+                'created_at' => '2024-01-01 00:00:00',
+            ],
+        ]);
+        $connection->method('execute')->willReturn(1);
+
+        $queue = createTestQueue($connection, $envelope);
+
+        /** @var TestJob $poppedJob */
+        $poppedJob = $queue->pop();
+
+        // After pop: attempts must be 0 (DB no longer increments)
+        expect($poppedJob)->toBeInstanceOf(TestJob::class)
+                ->and($poppedJob->attempts)->toBe(0);
+
+        // Worker calls incrementAttempts() once
+        $poppedJob->incrementAttempts();
+
+        // After one Worker execution: exactly 1 attempt
+        expect($poppedJob->attempts)->toBe(1);
+    },
+);
+
+it('does not reclaim a job whose reservation is within the retry_after window', function (): void {
+    $envelope = createTestEnvelope();
+
+    $retryAfter = 90;
+    // reserved_at just 1 second ago — well within the retry_after window
+    $recentReservedAt = (new DateTimeImmutable())->modify('-1 second')->format('Y-m-d H:i:s');
+
+    $capturedBindings = [];
+    $connection = new class ($recentReservedAt, $capturedBindings) implements ConnectionInterface
+    {
+        public function __construct(
+            private readonly string $recentReservedAt,
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property tracks bindings in external variable */
+            private array &$capturedBindings,
+        ) {}
+
+        public function connect(): void {}
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+
+        public function query(
+            string $sql,
+            array $bindings = [],
+        ): array {
+            $this->capturedBindings = $bindings;
+
+            // Simulate DB: only return the job if its reserved_at is past the reclaim cutoff
+            if (!isset($bindings['reclaim_cutoff'])) {
+                return [];
+            }
+
+            $cutoff = new DateTimeImmutable($bindings['reclaim_cutoff']);
+            $reservedAt = new DateTimeImmutable($this->recentReservedAt);
+
+            // The job is NOT past the cutoff, so DB returns empty
+            if ($reservedAt > $cutoff) {
+                return [];
+            }
+
+            return [['id' => 'job-recent', 'queue' => 'default', 'payload' => '', 'attempts' => 0, 'reserved_at' => $this->recentReservedAt, 'available_at' => '2024-01-01 00:00:00', 'created_at' => '2024-01-01 00:00:00']];
+        }
+
+        public function execute(
+            string $sql,
+            array $bindings = [],
+        ): int {
+            return 1;
+        }
+
+        public function prepare(
+            string $sql,
+        ): StatementInterface {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function lastInsertId(): int
+        {
+            return 1;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
+    };
+
+    $queue = createTestQueue($connection, $envelope, $retryAfter);
+    $result = $queue->pop();
+
+    // Job reserved 1 second ago (within 90s window) should NOT be returned
+    expect($result)->toBeNull()
+        ->and($capturedBindings)->toHaveKey('reclaim_cutoff');
+
+    // The reclaim_cutoff must be at least retry_after - 1 seconds ago
+    $cutoff = new DateTimeImmutable($capturedBindings['reclaim_cutoff']);
+    $expectedCutoff = (new DateTimeImmutable())->modify("-$retryAfter seconds");
+    expect($cutoff->getTimestamp())->toBeLessThanOrEqual($expectedCutoff->getTimestamp() + 1);
+});
+
+it(
+    'reclaims a job whose reservation is older than queue.retry_after and makes it available to pop() again',
+    function (): void {
+        $envelope = createTestEnvelope();
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $job = new TestJob('reclaim test');
+        $wrappedPayload = $envelope->wrap($job->serialize());
+
+        $retryAfter = 90;
+        // reserved_at more than retry_after seconds ago — should be reclaimable
+        $oldReservedAt = (new DateTimeImmutable())->modify("-$retryAfter seconds")->modify('-1 second')->format(
+            'Y-m-d H:i:s',
+        );
+
+        $capturedSql = '';
+        $capturedBindings = [];
+        $connection->expects($this->once())
+            ->method('query')
+            ->with(
+                $this->callback(function (string $sql) use (&$capturedSql): bool {
+                    $capturedSql = $sql;
+
+                    return true;
+                }),
+                $this->callback(function (array $bindings) use (&$capturedBindings): bool {
+                    $capturedBindings = $bindings;
+
+                    return true;
+                }),
+            )
+            ->willReturn([
+                [
+                    'id' => 'job-reclaim',
+                    'queue' => 'default',
+                    'payload' => $wrappedPayload,
+                    'attempts' => 1,
+                    'reserved_at' => $oldReservedAt,
+                    'available_at' => '2024-01-01 00:00:00',
+                    'created_at' => '2024-01-01 00:00:00',
+                ],
+            ]);
+
+        $connection->method('execute')->willReturn(1);
+
+        $queue = createTestQueue($connection, $envelope, $retryAfter);
+        $poppedJob = $queue->pop();
+
+        expect($poppedJob)->not->toBeNull()
+            ->and($capturedSql)->toContain('reserved_at IS NULL OR reserved_at <=')
+            ->and($capturedBindings)->toHaveKey('reclaim_cutoff');
+    },
+);
+
+it('issues the reserve UPDATE with a reserved_at IS NULL guard', function (): void {
+    $envelope = createTestEnvelope();
+    $connection = $this->createMock(ConnectionInterface::class);
+
+    $job = new TestJob('guard test');
+    $wrappedPayload = $envelope->wrap($job->serialize());
+
+    $connection->method('query')->willReturn([
+        [
+            'id' => 'job-guard',
+            'queue' => 'default',
+            'payload' => $wrappedPayload,
+            'attempts' => 0,
+            'reserved_at' => null,
+            'available_at' => '2024-01-01 00:00:00',
+            'created_at' => '2024-01-01 00:00:00',
+        ],
+    ]);
+
+    $capturedSql = '';
+    $connection->expects($this->once())
+        ->method('execute')
+        ->with(
+            $this->callback(function (string $sql) use (&$capturedSql): bool {
+                $capturedSql = $sql;
+
+                return true;
+            }),
+            $this->anything(),
+        )
+        ->willReturn(1);
+
+    $queue = createTestQueue($connection, $envelope);
+    $queue->pop();
+
+    expect($capturedSql)->toContain('reserved_at IS NULL');
+});
+
+it(
+    'reserves a job atomically so a second concurrent pop() of the same queue does not return the already-reserved job (affected-rows guard returns null on race loss)',
+    function (): void {
+        $envelope = createTestEnvelope();
+        $connection = $this->createMock(ConnectionInterface::class);
+
+        $job = new TestJob('atomic test');
+        $wrappedPayload = $envelope->wrap($job->serialize());
+
+        $connection->method('query')->willReturn([
+            [
+                'id' => 'job-atomic',
+                'queue' => 'default',
+                'payload' => $wrappedPayload,
+                'attempts' => 0,
+                'reserved_at' => null,
+                'available_at' => '2024-01-01 00:00:00',
+                'created_at' => '2024-01-01 00:00:00',
+            ],
+        ]);
+
+        // Simulate race loss: UPDATE affects 0 rows (another worker reserved it first)
+        $connection->method('execute')->willReturn(0);
+
+        $queue = createTestQueue($connection, $envelope);
+        $result = $queue->pop();
+
+        expect($result)->toBeNull();
+    },
+);
+
 test('it round-trips a legitimate job through DatabaseQueue push and pop', function (): void {
     $envelope = createTestEnvelope();
 
@@ -601,6 +913,11 @@ test('it round-trips a legitimate job through DatabaseQueue push and pop', funct
         public function lastInsertId(): int
         {
             return 1;
+        }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
         }
     };
 

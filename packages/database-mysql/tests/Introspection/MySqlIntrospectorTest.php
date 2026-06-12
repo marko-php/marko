@@ -72,6 +72,11 @@ function createMockConnection(
         {
             return 0;
         }
+
+        public function driverName(): string
+        {
+            return 'sqlite';
+        }
     };
 }
 
@@ -441,6 +446,11 @@ describe('MySqlIntrospector', function (): void {
             {
                 return 0;
             }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
+            }
         };
 
         $introspector = new MySqlIntrospector($connection, 'my_app_db');
@@ -552,6 +562,11 @@ describe('MySqlIntrospector', function (): void {
             public function lastInsertId(): int
             {
                 return 0;
+            }
+
+            public function driverName(): string
+            {
+                return 'sqlite';
             }
         };
 
