@@ -34,22 +34,92 @@ class ClassFileParser
             return null;
         }
 
+        $tokens = token_get_all($contents);
         $namespace = null;
-        $class = null;
+        $typeName = null;
+        $prevSignificant = null;
+        $tokenCount = count($tokens);
 
-        if (preg_match('/namespace\s+([^;]+);/', $contents, $matches)) {
-            $namespace = $matches[1];
+        for ($i = 0; $i < $tokenCount; $i++) {
+            $token = $tokens[$i];
+
+            if (!is_array($token)) {
+                $prevSignificant = $token;
+                continue;
+            }
+
+            [$id] = $token;
+
+            // Skip whitespace and comments for tracking purposes
+            if (in_array($id, [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            if ($id === T_NAMESPACE) {
+                // Consume namespace name tokens until ';' or '{'
+                $namespaceParts = [];
+                for ($j = $i + 1; $j < $tokenCount; $j++) {
+                    $t = $tokens[$j];
+                    if (!is_array($t)) {
+                        // ';' or '{' ends the namespace
+                        break;
+                    }
+                    [$tid, $tval] = $t;
+                    if (in_array($tid, [T_STRING, T_NAME_QUALIFIED, T_NS_SEPARATOR], true)) {
+                        $namespaceParts[] = $tval;
+                    } elseif ($tid !== T_WHITESPACE) {
+                        break;
+                    }
+                }
+                $namespace = implode('', $namespaceParts);
+                $prevSignificant = $token;
+                continue;
+            }
+
+            if (in_array($id, [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM], true)) {
+                // Skip ::class constant references
+                if ($prevSignificant === '::' || (is_array(
+                    $prevSignificant,
+                ) && $prevSignificant[0] === T_DOUBLE_COLON)) {
+                    $prevSignificant = $token;
+                    continue;
+                }
+
+                // Skip anonymous classes (new class)
+                if (is_array($prevSignificant) && $prevSignificant[0] === T_NEW) {
+                    $prevSignificant = $token;
+                    continue;
+                }
+
+                // Find the name token (T_STRING) after the type keyword, skipping whitespace
+                for ($j = $i + 1; $j < $tokenCount; $j++) {
+                    $t = $tokens[$j];
+                    if (!is_array($t)) {
+                        break;
+                    }
+                    [$tid, $tval] = $t;
+                    if ($tid === T_WHITESPACE) {
+                        continue;
+                    }
+                    if ($tid === T_STRING) {
+                        $typeName = $tval;
+                    }
+                    break;
+                }
+
+                if ($typeName !== null) {
+                    break;
+                }
+            }
+
+            $prevSignificant = $token;
         }
 
-        if (preg_match('/class\s+(\w+)/', $contents, $matches)) {
-            $class = $matches[1];
-        }
-
-        if ($class === null) {
+        if ($typeName === null) {
             return null;
         }
 
-        return $namespace !== null ? $namespace . '\\' . $class : $class;
+        return $namespace !== null ? $namespace . '\\' . $typeName : $typeName;
     }
 
     /**
