@@ -263,8 +263,10 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
             return $this->rows[0] ?? null;
         }
 
-        public function insert(array $data): int
-        {
+        public function insert(
+            array $data,
+            ?string $primaryKey = null,
+        ): int {
             return 0;
         }
 
@@ -497,8 +499,10 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
             return $this->rows[0] ?? null;
         }
 
-        public function insert(array $data): int
-        {
+        public function insert(
+            array $data,
+            ?string $primaryKey = null,
+        ): int {
             return 0;
         }
 
@@ -830,8 +834,10 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return null;
         }
 
-        public function insert(array $data): int
-        {
+        public function insert(
+            array $data,
+            ?string $primaryKey = null,
+        ): int {
             return 0;
         }
 

@@ -1,6 +1,6 @@
 # Task 003: API token optional expiry on create and guard enforcement
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -12,13 +12,13 @@ Personal access tokens never expire: `TokenManager::createToken()` never sets `e
 - Patterns to follow: additive optional nullable parameter (default null) — do not break existing callers; keep `hash('sha256', $rawToken)` + repository `findByToken` lookup; loud expiry handling via the existing `ExpiredTokenException`; null-safe `DateTimeImmutable` comparison.
 
 ## Requirements (Test Descriptions)
-- [ ] `it stores the provided expiresAt on the created personal access token`
-- [ ] `it leaves expiresAt null when no expiry is provided to createToken`
-- [ ] `it resolves the user for a token whose expiresAt is null`
-- [ ] `it resolves the user for a token whose expiresAt is in the future`
-- [ ] `it treats a token whose expiresAt is in the past as unauthenticated and returns no user`
-- [ ] `it returns false from hasAbility when the resolved token has expired`
-- [ ] `it preserves the timing-safe SHA-256 hash lookup when resolving a token`
+- [x] `it stores the provided expiresAt on the created personal access token`
+- [x] `it leaves expiresAt null when no expiry is provided to createToken`
+- [x] `it resolves the user for a token whose expiresAt is null`
+- [x] `it resolves the user for a token whose expiresAt is in the future`
+- [x] `it treats a token whose expiresAt is in the past as unauthenticated and returns no user`
+- [x] `it returns false from hasAbility when the resolved token has expired`
+- [x] `it preserves the timing-safe SHA-256 hash lookup when resolving a token`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -26,4 +26,8 @@ Personal access tokens never expire: `TokenManager::createToken()` never sets `e
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added optional `?DateTimeInterface $expiresAt = null` parameter to `TokenManager::createToken()` — stored as `'Y-m-d H:i:s'` string on the entity; null means no expiry
+- `TokenGuard::resolveTokenEntity()` now throws `ExpiredTokenException::forToken()` when `expiresAt` is set and in the past
+- `user()` and `hasAbility()` each catch `ExpiredTokenException` and return `null`/`false` respectively — keeps the guard contract intact while using the loud-error exception internally
+- SHA-256 hash lookup path unchanged; test confirms `findByToken()` receives `hash('sha256', $rawToken)`
+- Token resolution cache (`tokenResolved` flag) correctly handles expired tokens: set to `true` before the throw so subsequent calls return cached `null`

@@ -75,7 +75,7 @@ class Inertia
      *
      * @param array<string, mixed> $props
      *
-     * @throws JsonException
+     * @throws InertiaConfigurationException|JsonException
      */
     public function render(
         Request $request,
@@ -89,7 +89,7 @@ class Inertia
         $page = [
             'component' => $component,
             'props' => $props,
-            'url' => $request->path(),
+            'url' => $request->server('REQUEST_URI') ?? $request->path(),
             'version' => $this->version(),
         ];
 
@@ -132,6 +132,8 @@ class Inertia
 
     /**
      * Get the configured asset version.
+     *
+     * @throws InertiaConfigurationException
      */
     public function version(): ?string
     {
@@ -208,7 +210,7 @@ class Inertia
      *
      * @param array<string, mixed> $page
      *
-     * @throws JsonException
+     * @throws InertiaConfigurationException|JsonException
      */
     private function renderRootView(
         array $page,
@@ -264,6 +266,8 @@ HTML;
      *
      * @param array<string, mixed> $page
      * @return array{head: string, body: string}|null
+     *
+     * @throws InertiaConfigurationException
      */
     private function trySsr(array $page): ?array
     {
@@ -274,6 +278,9 @@ HTML;
         return $this->ssrClient->render($page);
     }
 
+    /**
+     * @throws InertiaConfigurationException
+     */
     private function configBool(string $key): bool
     {
         try {
@@ -283,6 +290,9 @@ HTML;
         }
     }
 
+    /**
+     * @throws InertiaConfigurationException
+     */
     private function nullableScalarConfig(string $key): ?string
     {
         try {

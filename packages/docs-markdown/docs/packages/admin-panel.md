@@ -11,7 +11,7 @@ Server-rendered admin panel UI --- provides login, dashboard, and permission-fil
 composer require marko/admin-panel
 ```
 
-Requires [`marko/admin`](/docs/packages/admin/), [`marko/admin-auth`](/docs/packages/admin-auth/), a view driver, and a template sibling package. Install [`marko/admin-panel-latte`](/docs/packages/admin-panel-latte/) with [`marko/view-latte`](/docs/packages/view-latte/), or [`marko/admin-panel-twig`](/docs/packages/admin-panel-twig/) with [`marko/view-twig`](/docs/packages/view-twig/).
+Requires [`marko/admin`](/docs/packages/admin/), [`marko/admin-auth`](/docs/packages/admin-auth/), [`marko/security`](/docs/packages/security/), a view driver, and a template sibling package. Install [`marko/admin-panel-latte`](/docs/packages/admin-panel-latte/) with [`marko/view-latte`](/docs/packages/view-latte/), or [`marko/admin-panel-twig`](/docs/packages/admin-panel-twig/) with [`marko/view-twig`](/docs/packages/view-twig/).
 
 ## Usage
 
@@ -22,9 +22,11 @@ The panel registers these routes automatically:
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/admin/login` | Login form |
-| POST | `/admin/login` | Authenticate |
-| POST | `/admin/logout` | Logout |
+| POST | `/admin/login` | Authenticate (requires valid CSRF token) |
+| POST | `/admin/logout` | Logout (requires valid CSRF token) |
 | GET | `/admin` | Dashboard (requires auth) |
+
+The login and logout `POST` routes are protected by `CsrfMiddleware` from [`marko/security`](/docs/packages/security/). The login form receives a CSRF token via the `csrfToken` template variable; the template must include it as a hidden field named `_token`. Requests without a valid token are rejected before authentication logic runs.
 
 ### Building the Sidebar Menu
 
@@ -121,11 +123,15 @@ interface AdminMenuBuilderInterface
 
 ```php
 use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
+use Marko\Security\Middleware\CsrfMiddleware;
 
-#[Get(path: '/admin/login')]   // showLoginForm
-#[Post(path: '/admin/login')]  // authenticate
-#[Post(path: '/admin/logout')] // logout
+#[Get(path: '/admin/login')]                    // showLoginForm
+#[Post(path: '/admin/login')]
+#[Middleware(CsrfMiddleware::class)]             // authenticate — CSRF required
+#[Post(path: '/admin/logout')]
+#[Middleware(CsrfMiddleware::class)]             // logout — CSRF required
 ```
 
 ### DashboardController Routes

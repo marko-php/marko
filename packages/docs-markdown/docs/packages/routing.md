@@ -45,7 +45,7 @@ class ProductController
 }
 ```
 
-Route parameters are automatically passed to method arguments.
+Route parameters, POST body values, and query string values are automatically resolved and passed to method arguments. Typed scalar parameters (`int`, `float`, `bool`, `string`) are cast to the declared type. If a required typed scalar parameter cannot be found in the route, POST body, or query string, the router returns a `400` response (via `InvalidRouteParameterException`) instead of throwing a `TypeError`.
 
 ### Available Methods
 
@@ -244,3 +244,7 @@ interface MiddlewareInterface
     public function handle(Request $request, callable $next): Response;
 }
 ```
+
+### Parameter Resolution
+
+The router resolves controller method parameters in priority order: route path params → POST body → query string → default value. Typed scalars (`int`, `float`, `bool`, `string`) are automatically cast. A required typed scalar with no matching source throws `InvalidRouteParameterException`, which the router catches and converts to a `400` response. Route path literals containing dots or other regex metacharacters are matched literally (via `preg_quote`). URL-encoded path segments are decoded once before matching.

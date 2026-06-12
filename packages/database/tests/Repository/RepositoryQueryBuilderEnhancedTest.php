@@ -283,8 +283,10 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
             return $this->rows[0] ?? null;
         }
 
-        public function insert(array $data): int
-        {
+        public function insert(
+            array $data,
+            ?string $primaryKey = null,
+        ): int {
             return 0;
         }
 

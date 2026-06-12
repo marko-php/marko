@@ -731,6 +731,304 @@ it('makes the matched controller and action visible to middleware during Router:
         ->and($capturedAction)->toBe('greet');
 });
 
+it('prefers a route param over a POST value of the same name', function (): void {
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'POST',
+        path: '/users/{id}',
+        controller: 'App\\Controllers\\UserController',
+        action: 'update',
+    ));
+
+    $receivedId = null;
+    $controller = new class ($receivedId)
+    {
+        public function __construct(
+            private ?int &$receivedId,
+        ) {}
+
+        public function update(
+            int $id,
+        ): Response {
+            $this->receivedId = $id;
+
+            return new Response('OK');
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturn($controller);
+
+    $router = new Router(
+        matcher: new RouteMatcher($routes),
+        container: $container,
+    );
+
+    $request = new Request(
+        server: ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/users/99'],
+        post: ['id' => '5'],
+    );
+
+    $router->handle($request);
+
+    expect($receivedId)->toBe(99);
+});
+
+it('still injects the default value for an optional param that has one', function (): void {
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'GET',
+        path: '/items',
+        controller: 'App\\Controllers\\ItemController',
+        action: 'index',
+    ));
+
+    $receivedPage = null;
+    $controller = new class ($receivedPage)
+    {
+        public function __construct(
+            private ?int &$receivedPage,
+        ) {}
+
+        public function index(
+            int $page = 1,
+        ): Response {
+            $this->receivedPage = $page;
+
+            return new Response('OK');
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturn($controller);
+
+    $router = new Router(
+        matcher: new RouteMatcher($routes),
+        container: $container,
+    );
+
+    $request = new Request(
+        server: ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/items'],
+    );
+
+    $router->handle($request);
+
+    expect($receivedPage)->toBe(1);
+});
+
+it('does not raise a TypeError when a required typed scalar param is missing', function (): void {
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'GET',
+        path: '/items',
+        controller: 'App\\Controllers\\ItemController',
+        action: 'index',
+    ));
+
+    $controller = new class ()
+    {
+        public function index(
+            int $page,
+        ): Response {
+            return new Response('OK');
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturn($controller);
+
+    $router = new Router(
+        matcher: new RouteMatcher($routes),
+        container: $container,
+    );
+
+    $request = new Request(
+        server: ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/items'],
+    );
+
+    $threw = false;
+    try {
+        $router->handle($request);
+    } catch (TypeError) {
+        $threw = true;
+    }
+
+    expect($threw)->toBeFalse();
+});
+
+it('returns a 4xx response naming the parameter when a required typed scalar param is missing', function (): void {
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'POST',
+        path: '/items',
+        controller: 'App\\Controllers\\ItemController',
+        action: 'store',
+    ));
+
+    $controller = new class ()
+    {
+        public function store(
+            int $count,
+        ): Response {
+            return new Response('OK');
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturn($controller);
+
+    $router = new Router(
+        matcher: new RouteMatcher($routes),
+        container: $container,
+    );
+
+    $request = new Request(
+        server: ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/items'],
+    );
+
+    $response = $router->handle($request);
+
+    expect($response->statusCode())->toBeGreaterThanOrEqual(400)
+        ->and($response->statusCode())->toBeLessThan(500)
+        ->and($response->body())->toContain('count');
+});
+
+it('casts a query-string value to a typed scalar action parameter', function (): void {
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'GET',
+        path: '/items',
+        controller: 'App\\Controllers\\ItemController',
+        action: 'index',
+    ));
+
+    $receivedPage = null;
+    $controller = new class ($receivedPage)
+    {
+        public function __construct(
+            private ?int &$receivedPage,
+        ) {}
+
+        public function index(
+            int $page,
+        ): Response {
+            $this->receivedPage = $page;
+
+            return new Response('OK');
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturn($controller);
+
+    $router = new Router(
+        matcher: new RouteMatcher($routes),
+        container: $container,
+    );
+
+    $request = new Request(
+        server: ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/items'],
+        query: ['page' => '3'],
+    );
+
+    $router->handle($request);
+
+    expect($receivedPage)->toBe(3);
+});
+
+it('casts a POST value to a bool action parameter', function (): void {
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'POST',
+        path: '/toggle',
+        controller: 'App\\Controllers\\ToggleController',
+        action: 'store',
+    ));
+
+    $receivedActive = null;
+    $controller = new class ($receivedActive)
+    {
+        public function __construct(
+            private ?bool &$receivedActive,
+        ) {}
+
+        public function store(
+            bool $active,
+        ): Response {
+            $this->receivedActive = $active;
+
+            return new Response('OK');
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturn($controller);
+
+    $router = new Router(
+        matcher: new RouteMatcher($routes),
+        container: $container,
+    );
+
+    $request = new Request(
+        server: ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/toggle'],
+        post: ['active' => '1'],
+    );
+
+    $router->handle($request);
+
+    expect($receivedActive)->toBeTrue();
+});
+
+it('casts a POST value to an int action parameter', function (): void {
+    $routes = new RouteCollection();
+    $routes->add(new RouteDefinition(
+        method: 'POST',
+        path: '/items',
+        controller: 'App\\Controllers\\ItemController',
+        action: 'store',
+    ));
+
+    $receivedCount = null;
+    $controller = new class ($receivedCount)
+    {
+        public function __construct(
+            private ?int &$receivedCount,
+        ) {}
+
+        public function store(
+            int $count,
+        ): Response {
+            $this->receivedCount = $count;
+
+            return new Response('OK');
+        }
+    };
+
+    $container = $this->createMock(ContainerInterface::class);
+    $container->method('get')
+        ->willReturn($controller);
+
+    $router = new Router(
+        matcher: new RouteMatcher($routes),
+        container: $container,
+    );
+
+    $request = new Request(
+        server: ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/items'],
+        post: ['count' => '42'],
+    );
+
+    $router->handle($request);
+
+    expect($receivedCount)->toBe(42);
+});
+
 class TestController
 {
     public function index(): Response

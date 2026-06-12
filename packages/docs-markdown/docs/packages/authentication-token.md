@@ -29,6 +29,7 @@ return [
 Inject `TokenManager` and call `createToken()`. Capture `plainTextToken` immediately --- it is never retrievable again.
 
 ```php title="ApiTokenController.php"
+use DateTimeImmutable;
 use Marko\AuthenticationToken\Service\TokenManager;
 use Marko\Authentication\AuthenticatableInterface;
 
@@ -52,8 +53,25 @@ class ApiTokenController
             'token' => $newToken->plainTextToken,
         ]);
     }
+
+    public function storeWithExpiry(
+        AuthenticatableInterface $user,
+    ): Response {
+        $newToken = $this->tokenManager->createToken(
+            user: $user,
+            name: 'short-lived',
+            abilities: ['posts:read'],
+            expiresAt: new DateTimeImmutable('+30 days'),
+        );
+
+        return new Response([
+            'token' => $newToken->plainTextToken,
+        ]);
+    }
 }
 ```
+
+The `expiresAt` parameter is optional (`null` by default). A `null` expiry means the token never expires. When a non-null expiry is set and the current time is past it, `TokenGuard` rejects the token and returns `null` from `user()`.
 
 > **Security note:** The plain-text token is available only on `NewAccessToken::$plainTextToken` at creation time. The database stores only a SHA-256 hash. If you lose the plain text, you must revoke and re-issue.
 
@@ -146,7 +164,11 @@ The package uses the `personal_access_tokens` table. Columns:
 ### TokenManager
 
 ```php
-public function createToken(AuthenticatableInterface $user, string $name, array $abilities = []): NewAccessToken;
+use DateTimeInterface;
+use Marko\Authentication\AuthenticatableInterface;
+use Marko\AuthenticationToken\Contracts\NewAccessToken;
+
+public function createToken(AuthenticatableInterface $user, string $name, array $abilities = [], ?DateTimeInterface $expiresAt = null): NewAccessToken;
 public function revokeToken(int $tokenId): void;
 public function revokeAllTokens(AuthenticatableInterface $user): void;
 ```

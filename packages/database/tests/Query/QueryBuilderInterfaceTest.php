@@ -210,9 +210,12 @@ describe('QueryBuilderInterface', function (): void {
         $method = $reflection->getMethod('insert');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(1)
+        expect($params)->toHaveCount(2)
             ->and($params[0]->getName())->toBe('data')
-            ->and($params[0]->getType()?->getName())->toBe('array');
+            ->and($params[0]->getType()?->getName())->toBe('array')
+            ->and($params[1]->getName())->toBe('primaryKey')
+            ->and($params[1]->getType()?->getName())->toBe('string')
+            ->and($params[1]->isOptional())->toBeTrue();
 
         $returnType = $method->getReturnType();
         expect($returnType?->getName())->toBe('int');

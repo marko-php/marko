@@ -10,6 +10,8 @@ The default error handler --- catches exceptions and displays them with full con
 - **Development** --- Full details including suggestions from `MarkoException`
 - **Production** --- Generic message with error ID (no sensitive paths or code)
 
+Non-fatal PHP errors (warnings, notices, deprecations) are reported via `error_log` in the web SAPI rather than halting the response or replacing the page with a 500 error. Fatal errors and uncaught exceptions still replace the response.
+
 ## Installation
 
 ```bash

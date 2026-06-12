@@ -16,13 +16,10 @@ readonly class CacheKey
 
     public static function fromRequest(Request $request): self
     {
-        $queryArray = $request->query();
-        ksort($queryArray);
-
         return new self(
             method: $request->method(),
             path: $request->path(),
-            query: http_build_query($queryArray),
+            query: self::buildQuery($request->query()),
         );
     }
 
@@ -32,8 +29,16 @@ readonly class CacheKey
             return '';
         }
 
-        $rawForParse = str_replace('+', '%2B', $rawQuery);
-        parse_str($rawForParse, $queryArray);
+        parse_str($rawQuery, $queryArray);
+
+        return self::buildQuery($queryArray);
+    }
+
+    /**
+     * @param array<string, mixed> $queryArray
+     */
+    private static function buildQuery(array $queryArray): string
+    {
         ksort($queryArray);
 
         return http_build_query($queryArray, '', '&', PHP_QUERY_RFC3986);

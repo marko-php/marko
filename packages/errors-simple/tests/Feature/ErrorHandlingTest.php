@@ -68,7 +68,7 @@ describe('Error Handling Integration', function (): void {
             ->and($output)->toContain('Test web error');
     });
 
-    it('handles PHP warning in CLI context', function (): void {
+    it('handles PHP warning in CLI context non-destructively', function (): void {
         $env = new Environment(sapi: 'cli', envVars: ['MARKO_ENV' => 'development']);
         $handler = new TestableErrorHandler($env);
 
@@ -81,13 +81,15 @@ describe('Error Handling Integration', function (): void {
 
         error_reporting($originalLevel);
 
+        // Warnings are non-fatal: no output, no buffer teardown, but report is captured
         expect($result)->toBeTrue()
-            ->and($output)->toContain('ErrorException')
-            ->and($output)->toContain('Test warning message')
-            ->and($output)->toContain('/test/file.php:42');
+            ->and($output)->toBeEmpty()
+            ->and($handler->nonFatalReports)->toHaveCount(1)
+            ->and($handler->nonFatalReports[0]->severity)->toBe(Severity::Warning)
+            ->and($handler->nonFatalReports[0]->message)->toBe('Test warning message');
     });
 
-    it('handles PHP warning in web context', function (): void {
+    it('handles PHP warning in web context non-destructively', function (): void {
         $env = new Environment(sapi: 'cgi', envVars: ['MARKO_ENV' => 'development']);
         $handler = new TestableErrorHandler($env);
 
@@ -95,15 +97,18 @@ describe('Error Handling Integration', function (): void {
         error_reporting(E_ALL);
 
         ob_start();
+        echo 'existing response';
         $result = $handler->handleError(E_WARNING, 'Test web warning', '/web/file.php', 100);
         $output = ob_get_clean();
 
         error_reporting($originalLevel);
 
+        // Warnings must not destroy the in-progress response
         expect($result)->toBeTrue()
-            ->and($output)->toContain('<!DOCTYPE html>')
-            ->and($output)->toContain('ErrorException')
-            ->and($output)->toContain('Test web warning');
+            ->and($output)->toContain('existing response')
+            ->and($output)->not->toContain('<!DOCTYPE html>')
+            ->and($handler->nonFatalReports)->toHaveCount(1)
+            ->and($handler->nonFatalReports[0]->severity)->toBe(Severity::Warning);
     });
 
     it('handles MarkoException with context and suggestion', function (): void {
@@ -244,13 +249,13 @@ describe('Error Handling Integration', function (): void {
 
         error_reporting($originalLevel);
 
-        // Deprecation should be handled but NOT wipe out prior output
-        expect($result)->toBeTrue();
-        expect($output)->toContain('prior output');
-        expect($output)->not->toContain('An error occurred');
-        // Should still be reported loudly
-        expect($handler->nonFatalReports)->toHaveCount(1);
-        expect($handler->nonFatalReports[0]->severity)->toBe(Severity::Deprecated);
+        // Deprecation should be handled but NOT wipe out prior output,
+        // and should still be reported loudly.
+        expect($result)->toBeTrue()
+            ->and($output)->toContain('prior output')
+            ->and($output)->not->toContain('An error occurred')
+            ->and($handler->nonFatalReports)->toHaveCount(1)
+            ->and($handler->nonFatalReports[0]->severity)->toBe(Severity::Deprecated);
     });
 
     it('registers and unregisters cleanly', function (): void {

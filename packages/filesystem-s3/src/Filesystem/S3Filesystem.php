@@ -19,7 +19,7 @@ use Marko\Filesystem\Values\FileInfo;
 use Psr\Http\Message\RequestInterface;
 use Throwable;
 
-class S3Filesystem implements FilesystemInterface
+readonly class S3Filesystem implements FilesystemInterface
 {
     /**
      * @var array<string, string>
@@ -70,8 +70,8 @@ class S3Filesystem implements FilesystemInterface
     ];
 
     public function __construct(
-        private readonly S3Client $client,
-        private readonly S3Config $config,
+        private S3Client $client,
+        private S3Config $config,
     ) {}
 
     public function exists(
@@ -322,6 +322,9 @@ class S3Filesystem implements FilesystemInterface
         }
     }
 
+    /**
+     * @throws FilesystemException
+     */
     public function delete(
         string $path,
     ): bool {
@@ -407,63 +410,77 @@ class S3Filesystem implements FilesystemInterface
         return $this->info($path)->mimeType;
     }
 
+    /**
+     * @throws FilesystemException
+     */
     public function listDirectory(
         string $path = '/',
     ): DirectoryListingInterface {
         try {
-            $prefix = $this->prefixPath(rtrim($path, '/')) . '/';
-
-            if ($prefix === '/') {
-                $prefix = $this->config->prefix !== '' ? $this->config->prefix . '/' : '';
-            }
-
-            $result = $this->client->listObjectsV2([
-                'Bucket' => $this->config->bucket,
-                'Prefix' => $prefix,
-                'Delimiter' => '/',
-            ]);
+            $normalized = rtrim($path, '/');
+            $prefix = $normalized === '' || $normalized === '/'
+                ? ($this->config->prefix !== '' ? $this->config->prefix . '/' : '')
+                : rtrim($this->prefixPath($normalized), '/') . '/';
 
             $entries = [];
+            $continuationToken = null;
 
-            $contents = $result['Contents'] ?? [];
+            do {
+                $params = [
+                    'Bucket' => $this->config->bucket,
+                    'Prefix' => $prefix,
+                    'Delimiter' => '/',
+                ];
 
-            foreach ($contents as $object) {
-                $key = $this->stripPrefix((string) $object['Key']);
-
-                // Skip the directory marker itself
-                if ($key === rtrim($path, '/') . '/' || $key === '') {
-                    continue;
+                if ($continuationToken !== null) {
+                    $params['ContinuationToken'] = $continuationToken;
                 }
 
-                $lastModified = $object['LastModified'] ?? null;
-                $timestamp = $lastModified instanceof DateTimeInterface
-                    ? $lastModified->getTimestamp()
-                    : 0;
+                $result = $this->client->listObjectsV2($params);
 
-                $entries[] = new DirectoryEntry(
-                    path: $key,
-                    isDirectory: false,
-                    size: (int) ($object['Size'] ?? 0),
-                    lastModified: $timestamp,
-                );
-            }
+                $contents = $result['Contents'] ?? [];
 
-            $commonPrefixes = $result['CommonPrefixes'] ?? [];
+                foreach ($contents as $object) {
+                    $key = $this->stripPrefix((string) $object['Key']);
 
-            foreach ($commonPrefixes as $prefix) {
-                $dirPath = rtrim($this->stripPrefix((string) $prefix['Prefix']), '/');
+                    // Skip the directory marker itself
+                    if ($key === rtrim($path, '/') . '/' || $key === '') {
+                        continue;
+                    }
 
-                if ($dirPath === '') {
-                    continue;
+                    $lastModified = $object['LastModified'] ?? null;
+                    $timestamp = $lastModified instanceof DateTimeInterface
+                        ? $lastModified->getTimestamp()
+                        : 0;
+
+                    $entries[] = new DirectoryEntry(
+                        path: $key,
+                        isDirectory: false,
+                        size: (int) ($object['Size'] ?? 0),
+                        lastModified: $timestamp,
+                    );
                 }
 
-                $entries[] = new DirectoryEntry(
-                    path: $dirPath,
-                    isDirectory: true,
-                    size: 0,
-                    lastModified: 0,
-                );
-            }
+                $commonPrefixes = $result['CommonPrefixes'] ?? [];
+
+                foreach ($commonPrefixes as $commonPrefix) {
+                    $dirPath = rtrim($this->stripPrefix((string) $commonPrefix['Prefix']), '/');
+
+                    if ($dirPath === '') {
+                        continue;
+                    }
+
+                    $entries[] = new DirectoryEntry(
+                        path: $dirPath,
+                        isDirectory: true,
+                        size: 0,
+                        lastModified: 0,
+                    );
+                }
+
+                $isTruncated = (bool) ($result['IsTruncated'] ?? false);
+                $continuationToken = $isTruncated ? ($result['NextContinuationToken'] ?? null) : null;
+            } while ($continuationToken !== null);
 
             return new DirectoryListing($entries);
         } catch (S3Exception $e) {
@@ -476,6 +493,9 @@ class S3Filesystem implements FilesystemInterface
         }
     }
 
+    /**
+     * @throws FilesystemException
+     */
     public function makeDirectory(
         string $path,
     ): bool {
@@ -509,30 +529,62 @@ class S3Filesystem implements FilesystemInterface
         try {
             $prefix = rtrim($this->prefixPath($path), '/') . '/';
 
-            $result = $this->client->listObjectsV2([
-                'Bucket' => $this->config->bucket,
-                'Prefix' => $prefix,
-            ]);
-
-            $objects = $result['Contents'] ?? [];
-
-            if ($objects === []) {
+            if ($prefix === '/') {
                 return true;
             }
 
-            $deleteObjects = array_map(
-                static fn (array $object): array => ['Key' => $object['Key']],
-                $objects,
-            );
+            $continuationToken = null;
 
-            $this->client->deleteObjects([
-                'Bucket' => $this->config->bucket,
-                'Delete' => [
-                    'Objects' => $deleteObjects,
-                ],
-            ]);
+            do {
+                $params = [
+                    'Bucket' => $this->config->bucket,
+                    'Prefix' => $prefix,
+                ];
+
+                if ($continuationToken !== null) {
+                    $params['ContinuationToken'] = $continuationToken;
+                }
+
+                $result = $this->client->listObjectsV2($params);
+                $objects = $result['Contents'] ?? [];
+
+                if ($objects !== []) {
+                    $deleteObjects = array_map(
+                        static fn (array $object): array => ['Key' => $object['Key']],
+                        $objects,
+                    );
+
+                    $deleteResult = $this->client->deleteObjects([
+                        'Bucket' => $this->config->bucket,
+                        'Delete' => [
+                            'Objects' => $deleteObjects,
+                        ],
+                    ]);
+
+                    $errors = $deleteResult['Errors'] ?? [];
+
+                    if ($errors !== []) {
+                        $failedKeys = array_map(
+                            static fn (array $error): string => (string) $error['Key'],
+                            $errors,
+                        );
+                        $keyList = implode(', ', $failedKeys);
+
+                        throw new FilesystemException(
+                            message: "Failed to delete objects in '$path': $keyList",
+                            context: 'deleteObjects reported errors for the listed keys',
+                            suggestion: 'Verify your AWS credentials have delete permissions for all objects',
+                        );
+                    }
+                }
+
+                $isTruncated = (bool) ($result['IsTruncated'] ?? false);
+                $continuationToken = $isTruncated ? ($result['NextContinuationToken'] ?? null) : null;
+            } while ($continuationToken !== null);
 
             return true;
+        } catch (FilesystemException $e) {
+            throw $e;
         } catch (S3Exception $e) {
             throw new FilesystemException(
                 message: "Failed to delete directory: '$path'",

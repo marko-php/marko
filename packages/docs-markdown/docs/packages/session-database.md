@@ -82,6 +82,6 @@ Implements `SessionHandlerInterface`. Accepts a `ConnectionInterface` connection
 | `open(string $path, string $name): bool` | Open the session store. Returns `true`. |
 | `close(): bool` | Close the session store. Returns `true`. |
 | `read(string $id): string\|false` | Read session data by ID. Returns an empty string if the session does not exist. |
-| `write(string $id, string $data): bool` | Write session data --- deletes any existing row for the ID, then inserts a new row with the current timestamp. |
+| `write(string $id, string $data): bool` | Write session data using a single atomic upsert. MySQL uses `ON DUPLICATE KEY UPDATE`; PostgreSQL uses `ON CONFLICT (id) DO UPDATE`. No separate delete-then-insert. |
 | `destroy(string $id): bool` | Delete a session by ID. |
 | `gc(int $max_lifetime): int\|false` | Delete sessions where `last_activity` is older than `max_lifetime` seconds. Returns the number of deleted rows. |

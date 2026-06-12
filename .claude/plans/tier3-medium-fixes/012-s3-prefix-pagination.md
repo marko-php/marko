@@ -1,6 +1,6 @@
 # Task 012: S3 root-prefix fix, continuation-token paging, and loud per-key delete errors
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -12,12 +12,12 @@ The S3 driver has three listing/deletion defects: `listDirectory()` constructs a
 - Patterns to follow: build the root prefix without a leading/double slash (when `path` is root, prefix is the config prefix or empty, not `/`); loop `listObjectsV2` while `IsTruncated`, passing `ContinuationToken => NextContinuationToken`, accumulating `Contents`/`CommonPrefixes`; for delete, page through the listing and call `deleteObjects` per ≤1000-key batch; inspect the `Errors` array on each `deleteObjects` result and throw a `FilesystemException` (message/context/suggestion listing the failed keys) when any key fails; tests use `MockS3Client::create([...])` returning successive `Aws\Result` objects.
 
 ## Requirements (Test Descriptions)
-- [ ] `it lists entries at the prefixed root without a double-slash prefix`
-- [ ] `it follows the continuation token to return objects beyond the first listing page`
-- [ ] `it aggregates common prefixes across multiple truncated listing pages`
-- [ ] `it deletes more than one thousand objects by paging through continuation tokens`
-- [ ] `it throws a loud FilesystemException naming the keys when deleteObjects reports per-key errors`
-- [ ] `it returns true and makes no delete call when the directory prefix is empty`
+- [x] `it lists entries at the prefixed root without a double-slash prefix`
+- [x] `it follows the continuation token to return objects beyond the first listing page`
+- [x] `it aggregates common prefixes across multiple truncated listing pages`
+- [x] `it deletes more than one thousand objects by paging through continuation tokens`
+- [x] `it throws a loud FilesystemException naming the keys when deleteObjects reports per-key errors`
+- [x] `it returns true and makes no delete call when the directory prefix is empty`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -25,4 +25,6 @@ The S3 driver has three listing/deletion defects: `listDirectory()` constructs a
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `listDirectory`: Replaced single `listObjectsV2` call with a `do/while` loop following `IsTruncated`/`NextContinuationToken`. Fixed root-prefix construction: when `path` is `/` or empty, build prefix directly from `config->prefix` (avoiding the `prefixPath('')` → `uploads/` + `/` = `uploads//` double-slash bug).
+- `deleteDirectory`: Added early return `true` when computed prefix is `/` (empty root case). Replaced single-page list+delete with a `do/while` loop: each page calls `listObjectsV2`, batches the page's keys into `deleteObjects`, then checks the `Errors` array from the response. On any per-key errors, throws `FilesystemException` with all failed key names in the message. FilesystemException is re-thrown before the S3Exception catch to avoid it being swallowed.
+- Tests added in `packages/filesystem-s3/tests/Unit/Filesystem/S3PaginationTest.php`.

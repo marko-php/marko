@@ -6,6 +6,7 @@ namespace Marko\Routing;
 
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Plugin\PluginInterceptedInterface;
+use Marko\Routing\Exceptions\InvalidRouteParameterException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
@@ -48,12 +49,16 @@ readonly class Router
         $handler = function (Request $request) use ($matched): Response {
             $controller = $this->container->get($matched->route->controller);
 
-            $parameters = $this->resolveParameters(
-                $controller,
-                $matched->route->action,
-                $matched->parameters,
-                $request,
-            );
+            try {
+                $parameters = $this->resolveParameters(
+                    $controller,
+                    $matched->route->action,
+                    $matched->parameters,
+                    $request,
+                );
+            } catch (InvalidRouteParameterException $e) {
+                return new Response($e->getMessage(), 400);
+            }
 
             $result = $controller->{$matched->route->action}(...$parameters);
 
@@ -74,7 +79,7 @@ readonly class Router
      *
      * @param array<string, mixed> $routeParams
      * @return array<mixed>
-     * @throws ReflectionException
+     * @throws ReflectionException|InvalidRouteParameterException
      */
     private function resolveParameters(
         object $controller,
@@ -103,17 +108,35 @@ readonly class Router
             if (array_key_exists($name, $routeParams)) {
                 $parameters[] = $this->castToType($routeParams[$name], $type);
             } elseif (($postValue = $request->post($name)) !== null) {
-                $parameters[] = $postValue;
+                $parameters[] = $this->castToType($postValue, $type);
             } elseif (($queryValue = $request->query($name)) !== null) {
-                $parameters[] = $queryValue;
+                $parameters[] = $this->castToType($queryValue, $type);
             } elseif ($param->isDefaultValueAvailable()) {
                 $parameters[] = $param->getDefaultValue();
+            } elseif ($this->isRequiredTypedScalar($type)) {
+                throw InvalidRouteParameterException::missingRequired(
+                    paramName: $name,
+                    expectedType: $type->getName(),
+                    controller: $reflectionTarget::class,
+                    action: $action,
+                );
             } else {
                 $parameters[] = null;
             }
         }
 
         return $parameters;
+    }
+
+    private function isRequiredTypedScalar(
+        ?ReflectionType $type,
+    ): bool {
+        if (!$type instanceof ReflectionNamedType) {
+            return false;
+        }
+
+        return in_array($type->getName(), ['int', 'float', 'bool', 'string'], true)
+            && !$type->allowsNull();
     }
 
     private function castToType(

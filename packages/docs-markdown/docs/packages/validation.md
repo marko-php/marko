@@ -98,17 +98,31 @@ $errors->count();             // total error count across all fields
 | URL | `url` | Must be a valid URL |
 | Alpha | `alpha` | Letters only |
 | AlphaNumeric | `alpha_num` | Letters and numbers only |
-| Min | `min:5` | Minimum value/length |
-| Max | `max:255` | Maximum value/length |
-| Between | `between:1,100` | Value/length within range |
-| In | `in:draft,published` | Must be one of the listed values |
-| NotIn | `not_in:admin,root` | Must not be one of the listed values |
+| Min | `min:5` | Minimum value (numeric) or minimum length (string) or minimum count (array) |
+| Max | `max:255` | Maximum value (numeric) or maximum length (string) or maximum count (array) |
+| Between | `between:1,100` | Value range (numeric), length range (string), or count range (array) |
+| In | `in:draft,published` | Must be one of the listed values; numeric strings are compared numerically |
+| NotIn | `not_in:admin,root` | Must not be one of the listed values; numeric strings are compared numerically |
 | Same | `same:other_field` | Must match another field |
 | Different | `different:other_field` | Must differ from another field |
 | Confirmed | `confirmed` | Must have a matching `_confirmation` field |
 | Regex | `regex:/^\d{3}$/` | Must match the pattern |
 | Date | `date` or `date:Y-m-d` | Must be a valid date |
 | Array | `array` | Must be an array |
+
+### Numeric-Aware Rules
+
+`Min`, `Max`, and `Between` check the *value* numerically when the input is numeric (including numeric strings), and check *length* for non-numeric strings. This means `integer|min:18` accepts the string `"25"` as valid, and `max:100` rejects `"150"` even when sent as a string from a form:
+
+```php
+$errors = $this->validator->validate(
+    ['age' => '25'],
+    ['age' => 'required|integer|min:18'],
+);
+// No errors — "25" is numeric, 25.0 >= 18
+```
+
+`In` and `NotIn` compare numeric strings numerically: `in:1,2,3` accepts `"2"` even though it is not strictly identical to the integer `2`.
 
 ### Mixed Rule Formats
 

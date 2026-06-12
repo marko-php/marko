@@ -1,6 +1,6 @@
 # Task 005: Router casts POST/query scalars and fails loudly for missing required params
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -19,13 +19,13 @@
 - `bool` casting is lossy: `(bool) "0"` is `false` but `(bool) "false"` is `true`. Tests for bool casting must assert against the actual `(bool)` cast semantics (`"1"`/`"0"` style), not English `"true"`/`"false"` strings, so the cast is loud and predictable rather than surprising.
 
 ## Requirements (Test Descriptions)
-- [ ] `it casts a POST value to an int action parameter`
-- [ ] `it casts a POST value to a bool action parameter`
-- [ ] `it casts a query-string value to a typed scalar action parameter`
-- [ ] `it returns a 4xx response naming the parameter when a required typed scalar param is missing`
-- [ ] `it does not raise a TypeError when a required typed scalar param is missing`
-- [ ] `it still injects the default value for an optional param that has one`
-- [ ] `it prefers a route param over a POST value of the same name`
+- [x] `it casts a POST value to an int action parameter`
+- [x] `it casts a POST value to a bool action parameter`
+- [x] `it casts a query-string value to a typed scalar action parameter`
+- [x] `it returns a 4xx response naming the parameter when a required typed scalar param is missing`
+- [x] `it does not raise a TypeError when a required typed scalar param is missing`
+- [x] `it still injects the default value for an optional param that has one`
+- [x] `it prefers a route param over a POST value of the same name`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -33,4 +33,9 @@
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Applied `castToType()` to both POST (`$postValue`) and query (`$queryValue`) scalars in `resolveParameters()` — mirrors existing route param behavior.
+- Created `packages/routing/src/Exceptions/InvalidRouteParameterException.php` with a `missingRequired()` factory method.
+- Added `isRequiredTypedScalar()` helper: returns true for non-nullable `int|float|bool|string` typed params.
+- For missing required typed scalar params, `resolveParameters()` throws `InvalidRouteParameterException`; the handler closure in `handle()` catches it and returns `new Response($e->getMessage(), 400)` — no TypeError propagation.
+- Untyped params and params with defaults keep existing behavior unchanged.
+- 7 new tests added to `packages/routing/tests/RouterTest.php`; all 23 RouterTest tests pass.

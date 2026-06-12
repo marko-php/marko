@@ -7,6 +7,7 @@ namespace Marko\Database\PgSql\Query;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\InvalidColumnException;
 use Marko\Database\Exceptions\UnionShapeMismatchException;
+use Marko\Database\PgSql\Exceptions\InsertReturningException;
 use Marko\Database\Query\IdentifierValidator;
 use Marko\Database\Query\JsonPathParser;
 use Marko\Database\Query\QueryBuilderInterface;
@@ -539,14 +540,16 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
     }
 
     /**
-     * @throws InvalidColumnException
+     * @throws InvalidColumnException|InsertReturningException
      */
     public function insert(
         array $data,
+        ?string $primaryKey = null,
     ): int {
         $this->bindings = [];
         $columns = array_keys($data);
         $values = array_values($data);
+        $pk = $primaryKey ?? 'id';
 
         foreach ($columns as $col) {
             IdentifierValidator::assertValidIdentifier($col);
@@ -568,12 +571,16 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
             $this->quoteIdentifier($this->table),
             implode(', ', $quotedColumns),
             implode(', ', $placeholders),
-            $this->quoteIdentifier('id'),
+            $this->quoteIdentifier($pk),
         );
 
         $result = $this->connection->query($sql, $this->bindings);
 
-        return (int) ($result[0]['id'] ?? 0);
+        if (!isset($result[0][$pk])) {
+            throw InsertReturningException::missingPrimaryKeyColumn($this->table, $pk);
+        }
+
+        return (int) $result[0][$pk];
     }
 
     /**

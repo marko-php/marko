@@ -14,9 +14,9 @@ use Throwable;
 
 class SimpleErrorHandler implements ErrorHandlerInterface
 {
-    private TextFormatter $textFormatter;
+    private readonly TextFormatter $textFormatter;
 
-    private BasicHtmlFormatter $htmlFormatter;
+    private readonly BasicHtmlFormatter $htmlFormatter;
 
     protected bool $registered = false;
 
@@ -27,7 +27,7 @@ class SimpleErrorHandler implements ErrorHandlerInterface
     protected bool $handledFatalError = false;
 
     public function __construct(
-        private Environment $environment,
+        private readonly Environment $environment,
         ?TextFormatter $textFormatter = null,
         ?BasicHtmlFormatter $htmlFormatter = null,
     ) {
@@ -87,15 +87,26 @@ class SimpleErrorHandler implements ErrorHandlerInterface
     protected function handleNonFatal(
         ErrorReport $report,
     ): void {
-        if (!$this->environment->isCli()) {
+        $label = $report->severity->label();
+        $entry = "[$label] $report->message in $report->file:$report->line";
+
+        if ($this->environment->isCli()) {
+            $color = $report->severity->color();
+            $reset = "\033[0m";
+
+            fwrite(STDERR, "$color$entry$reset\n");
+
             return;
         }
 
-        $color = "\033[35m";
-        $reset = "\033[0m";
-        $label = $report->severity->label();
+        // In web SAPI, report via error_log to avoid corrupting the in-progress response
+        $this->writeToErrorLog($entry);
+    }
 
-        fwrite(STDERR, "$color[$label]$reset $report->message in $report->file:$report->line\n");
+    protected function writeToErrorLog(
+        string $message,
+    ): void {
+        error_log($message);
     }
 
     public function handleError(
@@ -112,9 +123,9 @@ class SimpleErrorHandler implements ErrorHandlerInterface
         $exception = new ErrorException($message, 0, $level, $file, $line);
         $severity = Severity::fromErrorLevel($level);
 
-        // Non-fatal errors (deprecations, notices) are reported loudly to stderr
-        // but don't clear output buffers or halt execution.
-        if ($severity === Severity::Deprecated || $severity === Severity::Notice) {
+        // Non-fatal errors (deprecations, notices, warnings) are reported loudly
+        // but don't clear output buffers or replace the in-progress response.
+        if ($severity === Severity::Deprecated || $severity === Severity::Notice || $severity === Severity::Warning) {
             $report = ErrorReport::fromThrowable($exception, $severity);
             $this->handleNonFatal($report);
 

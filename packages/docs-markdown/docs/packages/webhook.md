@@ -220,21 +220,15 @@ public static function sign(string $payload, string $secret): string;
 ```php
 use Marko\Webhook\Jobs\DispatchWebhookJob;
 use Marko\Webhook\Value\WebhookPayload;
-use Marko\Webhook\Contracts\WebhookDispatcherInterface;
-use Marko\Webhook\Sending\WebhookDeliveryService;
-use Marko\Config\ConfigRepositoryInterface;
-use Marko\Queue\QueueInterface;
 
 public function __construct(
     WebhookPayload $payload,
-    WebhookDispatcherInterface $dispatcher,
-    WebhookDeliveryService $deliveryService,
-    ConfigRepositoryInterface $config,
-    QueueInterface $queue,
     int $attemptNumber = 1,
 );
 public function handle(): void;
 ```
+
+Implements `ContainerAwareJobInterface` from [`marko/queue`](/docs/packages/queue/). The job stores only the `WebhookPayload` value object and the attempt number; services (`WebhookDispatcherInterface`, `WebhookDeliveryService`, `QueueInterface`, config) are resolved from the container at `handle()` time by the queue `Worker`. Do not inject services via the constructor.
 
 ### WebhookDeliveryService
 

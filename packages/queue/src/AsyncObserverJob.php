@@ -8,7 +8,7 @@ use Marko\Core\Container\ContainerInterface;
 use Marko\Queue\Exceptions\SerializationException;
 use RuntimeException;
 
-class AsyncObserverJob extends Job
+class AsyncObserverJob extends Job implements ContainerAwareJobInterface
 {
     private ?ContainerInterface $container = null;
 

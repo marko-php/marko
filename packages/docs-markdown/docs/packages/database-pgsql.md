@@ -224,7 +224,7 @@ Implements `QueryBuilderInterface`. Fluent builder for PostgreSQL queries.
 | `offset(int $offset): static` | Set OFFSET |
 | `get(): array` | Execute SELECT and return all rows |
 | `first(): ?array` | Execute SELECT with LIMIT 1 and return the row or `null` |
-| `insert(array $data): int` | Insert a row and return the `id` via RETURNING |
+| `insert(array $data, ?string $primaryKey = null): int` | Insert a row and return the generated primary key via `RETURNING`. Defaults to `id`; pass the column name when the table uses a non-`id` primary key. Throws `InsertReturningException` if the `RETURNING` clause does not produce the expected column. |
 | `update(array $data): int` | Update matching rows and return affected count |
 | `delete(): int` | Delete matching rows and return affected count |
 | `count(?string $column = null): int` | Return the count of matching rows (`COUNT(*)` or `COUNT(column)`) |
@@ -281,6 +281,10 @@ Implements `SqlGeneratorInterface`. Generates PostgreSQL DDL for schema migratio
 | `generateDropIndex(string $table, string $indexName): string` | Generate a DROP INDEX statement |
 | `generateAddForeignKey(string $table, ForeignKey $foreignKey): string` | Generate an ADD CONSTRAINT FOREIGN KEY statement |
 | `generateDropForeignKey(string $table, string $keyName): string` | Generate a DROP CONSTRAINT statement |
+
+### InsertReturningException
+
+Thrown by `PgSqlQueryBuilder::insert()` when the `RETURNING` clause does not return the expected primary key column. This happens when the `$primaryKey` argument does not match an actual column in the table, or when the column is absent from the result set. The exception message includes the table name and the column that was expected.
 
 ### ConnectionException
 

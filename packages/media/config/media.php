@@ -7,5 +7,11 @@ return [
     'max_file_size' => 10485760,
     'allowed_mime_types' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     'allowed_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    'mime_extension_map' => [
+        'image/jpeg' => ['jpg', 'jpeg'],
+        'image/png' => ['png'],
+        'image/gif' => ['gif'],
+        'image/webp' => ['webp'],
+    ],
     'url_prefix' => '/storage',
 ];

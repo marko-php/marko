@@ -64,6 +64,12 @@ return [
         'gif',
         'webp',
     ],
+    'mime_extension_map' => [
+        'image/jpeg' => ['jpg', 'jpeg'],
+        'image/png'  => ['png'],
+        'image/gif'  => ['gif'],
+        'image/webp' => ['webp'],
+    ],
     'url_prefix'        => '/storage',
 ];
 ```
@@ -85,6 +91,7 @@ class MyService
         $maxSize = $this->mediaConfig->maxFileSize();
         $mimeTypes = $this->mediaConfig->allowedMimeTypes();
         $extensions = $this->mediaConfig->allowedExtensions();
+        $mimeExtensionMap = $this->mediaConfig->mimeExtensionMap(); // e.g. ['image/jpeg' => ['jpg', 'jpeg']]
         $prefix = $this->mediaConfig->urlPrefix();
     }
 }
@@ -127,7 +134,7 @@ class PostController
 }
 ```
 
-`upload()` validates size, MIME type, and extension against config, writes the file to the configured disk under a `YYYY/MM/<unique>.<ext>` path, and returns a persisted `Media` entity.
+`upload()` derives the MIME type from the file's actual binary content using `finfo` (not the client-supplied value), then validates it against `allowed_mime_types`. It also cross-checks the file extension against `mime_extension_map` to ensure the extension matches the detected MIME type. Finally it checks `allowed_extensions`, writes the file to the configured disk under a `YYYY/MM/<unique>.<ext>` path, and returns a persisted `Media` entity. All three checks throw `UploadException` on failure.
 
 ### Generating a Public URL
 
@@ -458,6 +465,7 @@ public function disk(): string;
 public function maxFileSize(): int;
 public function allowedMimeTypes(): array;
 public function allowedExtensions(): array;
+public function mimeExtensionMap(): array; // Returns array<string, array<string>> (MIME type → allowed extensions)
 public function urlPrefix(): string;
 ```
 
@@ -486,7 +494,7 @@ class Media extends Entity
 | Exception | Description |
 |-----------|-------------|
 | `MediaException` | Base exception for all media errors |
-| `UploadException` | Thrown by `MediaManager::upload()` for validation failures --- file too large, invalid MIME type, or invalid extension |
+| `UploadException` | Thrown by `MediaManager::upload()` for validation failures --- file too large, MIME type not in `allowed_mime_types`, extension/MIME mismatch against `mime_extension_map`, invalid extension, or `finfo` unavailable |
 | `FileNotFoundException` | Thrown when a stored file cannot be located on disk |
 
 ## Available Image Processing Drivers

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AuthenticationToken\Tests\Service;
 
+use DateTimeImmutable;
 use Marko\AuthenticationToken\Contracts\NewAccessToken;
 use Marko\AuthenticationToken\Contracts\TokenRepositoryInterface;
 use Marko\AuthenticationToken\Entity\PersonalAccessToken;
@@ -108,4 +109,27 @@ it('revokes all tokens for a user', function (): void {
 
     expect($repository->revokedForUser)->toHaveKey(FakeAuthenticatable::class)
         ->and($repository->revokedForUser[FakeAuthenticatable::class])->toContain(7);
+});
+
+it('stores the provided expiresAt on the created personal access token', function (): void {
+    $repository = new FakeTokenRepository();
+    $manager = new TokenManager($repository);
+    $user = new FakeAuthenticatable(id: 1);
+    $expiresAt = new DateTimeImmutable('+1 hour');
+
+    $manager->createToken($user, 'Expiring Token', expiresAt: $expiresAt);
+
+    expect($repository->created)->toHaveCount(1)
+        ->and($repository->created[0]->expiresAt)->toBe($expiresAt->format('Y-m-d H:i:s'));
+});
+
+it('leaves expiresAt null when no expiry is provided to createToken', function (): void {
+    $repository = new FakeTokenRepository();
+    $manager = new TokenManager($repository);
+    $user = new FakeAuthenticatable(id: 1);
+
+    $manager->createToken($user, 'Permanent Token');
+
+    expect($repository->created)->toHaveCount(1)
+        ->and($repository->created[0]->expiresAt)->toBeNull();
 });

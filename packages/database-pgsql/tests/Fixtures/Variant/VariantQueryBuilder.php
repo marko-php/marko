@@ -180,8 +180,10 @@ class VariantQueryBuilder implements QueryBuilderInterface
         return null;
     }
 
-    public function insert(array $data): int
-    {
+    public function insert(
+        array $data,
+        ?string $primaryKey = null,
+    ): int {
         return 0;
     }
 

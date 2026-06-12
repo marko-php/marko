@@ -7,17 +7,21 @@ namespace Marko\AdminPanel\Controller;
 use Marko\Admin\Config\AdminConfigInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Security\Contracts\CsrfTokenManagerInterface;
+use Marko\Security\Middleware\CsrfMiddleware;
 use Marko\View\ViewInterface;
 
-class LoginController
+readonly class LoginController
 {
     public function __construct(
-        private readonly ViewInterface $view,
-        private readonly GuardInterface $guard,
-        private readonly AdminConfigInterface $adminConfig,
+        private ViewInterface $view,
+        private GuardInterface $guard,
+        private AdminConfigInterface $adminConfig,
+        private CsrfTokenManagerInterface $csrfTokenManager,
     ) {}
 
     #[Get(path: '/admin/login')]
@@ -30,10 +34,12 @@ class LoginController
 
         return $this->view->render('admin-panel::auth/login', [
             'loginUrl' => $this->adminConfig->getRoutePrefix() . '/login',
+            'csrfToken' => $this->csrfTokenManager->get(),
         ]);
     }
 
     #[Post(path: '/admin/login')]
+    #[Middleware(CsrfMiddleware::class)]
     public function authenticate(
         Request $request,
     ): Response {
@@ -53,6 +59,7 @@ class LoginController
     }
 
     #[Post(path: '/admin/logout')]
+    #[Middleware(CsrfMiddleware::class)]
     public function logout(
         Request $request,
     ): Response {

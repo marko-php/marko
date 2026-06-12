@@ -37,4 +37,22 @@ describe('AmphpConfig', function (): void {
             ->and($configData)->toHaveKey('shutdown_timeout')
             ->and($configData['shutdown_timeout'])->toBeInt();
     });
+
+    it('reads channels from amphp.channels config key', function (): void {
+        $config = new FakeConfigRepository([
+            'amphp.channels' => ['orders', 'notifications'],
+        ]);
+
+        $amphpConfig = new AmphpConfig($config);
+
+        expect($amphpConfig->channels())->toBe(['orders', 'notifications']);
+    });
+
+    it('provides default config file with channels key', function (): void {
+        $configPath = dirname(__DIR__) . '/config/amphp.php';
+        $configData = require $configPath;
+
+        expect($configData)->toHaveKey('channels')
+            ->and($configData['channels'])->toBeArray();
+    });
 });

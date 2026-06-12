@@ -12,7 +12,7 @@ use Marko\Notification\Job\SendNotificationJob;
 use Marko\Queue\QueueInterface;
 use Throwable;
 
-class NotificationSender
+readonly class NotificationSender
 {
     public function __construct(
         private NotificationManager $manager,
@@ -62,7 +62,7 @@ class NotificationSender
             throw NotificationException::noQueueAvailable();
         }
 
-        $job = new SendNotificationJob($this, $notifiables, $notification);
+        $job = new SendNotificationJob($notifiables, $notification);
         $this->queue->push($job);
     }
 }

@@ -548,6 +548,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
      */
     public function insert(
         array $data,
+        ?string $primaryKey = null,
     ): int {
         $this->bindings = [];
 
@@ -1071,6 +1072,8 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 
         if ($this->limitValue !== null) {
             $sql .= ' LIMIT ' . $this->limitValue;
+        } elseif ($this->offsetValue !== null) {
+            $sql .= ' LIMIT 18446744073709551615';
         }
 
         if ($this->offsetValue !== null) {

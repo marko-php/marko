@@ -22,12 +22,6 @@ readonly class Between implements RuleInterface
             return true;
         }
 
-        if (is_string($value)) {
-            $length = mb_strlen($value);
-
-            return $length >= $this->minimum && $length <= $this->maximum;
-        }
-
         if (is_array($value)) {
             $count = count($value);
 
@@ -40,6 +34,12 @@ readonly class Between implements RuleInterface
             return $numeric >= $this->minimum && $numeric <= $this->maximum;
         }
 
+        if (is_string($value)) {
+            $length = mb_strlen($value);
+
+            return $length >= $this->minimum && $length <= $this->maximum;
+        }
+
         return false;
     }
 
@@ -47,12 +47,16 @@ readonly class Between implements RuleInterface
         string $field,
         mixed $value,
     ): string {
-        if (is_string($value)) {
-            return "The $field field must be between $this->minimum and $this->maximum characters.";
-        }
-
         if (is_array($value)) {
             return "The $field field must have between $this->minimum and $this->maximum items.";
+        }
+
+        if (is_numeric($value)) {
+            return "The $field field must be between $this->minimum and $this->maximum.";
+        }
+
+        if (is_string($value)) {
+            return "The $field field must be between $this->minimum and $this->maximum characters.";
         }
 
         return "The $field field must be between $this->minimum and $this->maximum.";

@@ -1,6 +1,6 @@
 # Task 014: devai CommandRunner drains stdout and stderr concurrently (no pipe deadlock)
 
-**Status**: pending
+**Status**: complete
 **Depends on**: [none]
 **Retry count**: 0
 
@@ -24,10 +24,10 @@ Confirmed against source: lines 25-28 drain stdout fully, `fclose`, then stderr 
 A genuine deadlock is hard to assert directly. Drive it with a tiny inline `sh`/`php` child that writes well over 64KB to stderr (and some bytes to stdout), invoked through `run()`, asserting the call returns (does not hang) with both streams captured and the exit code preserved. Wrap the hang-detection with a bounded timeout so a regression fails loudly rather than blocking the suite. If the child-script approach proves environment-fragile, mark the large-stderr case `->group('integration')` and keep the captured-output + exit-code assertions as plain unit tests against a small command.
 
 ## Requirements (Test Descriptions)
-- [ ] `it captures both stdout and stderr from a command`
-- [ ] `it preserves the child process exit code`
-- [ ] `it completes without hanging when the child writes more than 64KB to stderr`
-- [ ] `it returns the proc_open failure shape when the process cannot start`
+- [x] `it captures both stdout and stderr from a command`
+- [x] `it preserves the child process exit code`
+- [x] `it completes without hanging when the child writes more than 64KB to stderr`
+- [x] `it returns the proc_open failure shape when the process cannot start`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -35,4 +35,9 @@ A genuine deadlock is hard to assert directly. Drive it with a tiny inline `sh`/
 - No decrease in test coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Replaced sequential `stream_get_contents` drain with a non-blocking `stream_select` loop that drains both stdout and stderr pipes concurrently until both reach EOF.
+- Both pipes are set non-blocking via `stream_set_blocking($pipe, false)` before the loop.
+- The loop removes a pipe from the active set when `fread` returns empty string on EOF.
+- `fclose` and `proc_close` still happen after the loop; exit code still comes from `proc_close`.
+- The large-stderr test (>64KB) is marked `->group('integration')` per the plan; the smaller behavioral tests run as plain unit tests.
+- Test file: `packages/devai/tests/Unit/Process/CommandRunnerTest.php`

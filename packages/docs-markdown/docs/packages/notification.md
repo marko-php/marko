@@ -135,7 +135,7 @@ $this->notificationSender->queue(
 );
 ```
 
-If no queue implementation is available, calling `queue()` throws a `NotificationException` with a suggestion to install a queue driver.
+`queue()` pushes a `SendNotificationJob` onto the queue. The job implements `ContainerAwareJobInterface` and resolves `NotificationSender` from the container at handle-time, so no services are serialized into the payload. If no queue implementation is available, calling `queue()` throws a `NotificationException` with a suggestion to install a queue driver.
 
 ### Registering Custom Channels
 

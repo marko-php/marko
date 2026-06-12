@@ -86,8 +86,7 @@ function makeValidationQueryBuilder(): QueryBuilderInterface
         public function whereJsonContains(
             string $path,
             mixed $value,
-        ): static
-        {
+        ): static {
             return $this;
         }
 
@@ -209,8 +208,10 @@ function makeValidationQueryBuilder(): QueryBuilderInterface
             return null;
         }
 
-        public function insert(array $data): int
-        {
+        public function insert(
+            array $data,
+            ?string $primaryKey = null,
+        ): int {
             return 0;
         }
 
@@ -244,8 +245,7 @@ function makeValidationQueryBuilder(): QueryBuilderInterface
         public function having(
             string $expression,
             array $bindings = [],
-        ): static
-        {
+        ): static {
             return $this;
         }
 

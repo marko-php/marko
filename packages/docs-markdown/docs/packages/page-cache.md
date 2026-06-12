@@ -234,6 +234,8 @@ public static function normalizeQuery(string $rawQuery): string;
 public function hash(): string;
 ```
 
+`normalizeQuery()` is used by both store and purge operations. It parses the raw query string with `parse_str`, sorts keys, and re-encodes with RFC 3986 percent-encoding (`http_build_query(..., PHP_QUERY_RFC3986)`). This ensures that a URL stored with a space (`q=hello%20world`) and a URL purged with a `+` (`q=hello+world`) hash to the same cache key, so purge-by-URL never silently misses.
+
 ### CachePolicy
 
 ```php

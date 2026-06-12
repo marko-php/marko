@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace Marko\Cors\Middleware;
 
 use Marko\Cors\Config\CorsConfig;
+use Marko\Cors\Exceptions\CorsException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 
-class CorsMiddleware implements MiddlewareInterface
+readonly class CorsMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private CorsConfig $config,
     ) {}
 
+    /**
+     * @throws CorsException
+     */
     public function handle(
         Request $request,
         callable $next,
@@ -25,11 +29,16 @@ class CorsMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
+        if ($this->config->supportsCredentials() && in_array('*', $this->config->allowedOrigins(), true)) {
+            throw CorsException::wildcardWithCredentials();
+        }
+
         if ($request->method() === 'OPTIONS') {
             $preflightHeaders = [
                 'Access-Control-Allow-Origin' => $origin,
                 'Access-Control-Allow-Methods' => implode(', ', $this->config->allowedMethods()),
                 'Access-Control-Allow-Headers' => implode(', ', $this->config->allowedHeaders()),
+                'Vary' => 'Origin',
             ];
 
             if ($this->config->maxAge() > 0) {
@@ -44,7 +53,10 @@ class CorsMiddleware implements MiddlewareInterface
         }
 
         $response = $next($request);
-        $corsHeaders = ['Access-Control-Allow-Origin' => $origin];
+        $corsHeaders = [
+            'Access-Control-Allow-Origin' => $origin,
+            'Vary' => 'Origin',
+        ];
 
         if ($this->config->supportsCredentials()) {
             $corsHeaders['Access-Control-Allow-Credentials'] = 'true';

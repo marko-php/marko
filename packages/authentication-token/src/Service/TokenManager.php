@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\AuthenticationToken\Service;
 
+use DateTimeInterface;
 use Marko\Authentication\AuthenticatableInterface;
 use Marko\AuthenticationToken\Contracts\NewAccessToken;
 use Marko\AuthenticationToken\Contracts\TokenRepositoryInterface;
@@ -21,6 +22,7 @@ readonly class TokenManager
         AuthenticatableInterface $user,
         string $name,
         array $abilities = [],
+        ?DateTimeInterface $expiresAt = null,
     ): NewAccessToken {
         try {
             $rawToken = bin2hex(random_bytes(40));
@@ -32,6 +34,7 @@ readonly class TokenManager
             $token->name = $name;
             $token->tokenHash = $tokenHash;
             $token->abilities = json_encode($abilities);
+            $token->expiresAt = $expiresAt?->format('Y-m-d H:i:s');
 
             $saved = $this->repository->create($token);
 

@@ -59,7 +59,7 @@ class NotificationService
 
 ### Subscribing
 
-Inject `SubscriberInterface` and iterate the `Subscription`. Run the subscriber loop via the `pubsub:listen` command:
+Inject `SubscriberInterface` and iterate the `Subscription`. Pass multiple channel names to receive from all of them in a single subscription. Run the subscriber loop via the `pubsub:listen` command:
 
 ```php
 use Marko\PubSub\SubscriberInterface;
@@ -72,11 +72,23 @@ class NotificationListener
 
     public function listen(int $userId): void
     {
+        // Single channel
         $subscription = $this->subscriber->subscribe("user.$userId");
 
         foreach ($subscription as $message) {
             $data = json_decode($message->payload, true);
             // handle notification ...
+        }
+    }
+
+    public function listenAll(): void
+    {
+        // Multiple channels — delivers from all of them
+        $subscription = $this->subscriber->subscribe('orders', 'shipments', 'returns');
+
+        foreach ($subscription as $message) {
+            // $message->channel tells you which channel delivered the message
+            $data = json_decode($message->payload, true);
         }
     }
 }
@@ -176,9 +188,9 @@ return [
 
 | Method | Description |
 |---|---|
-| `__construct(AmphpRedisSubscription $amphpSubscription, string $prefix, ?string $channel, ?string $pattern)` | Wrap an amphp subscription with prefix stripping and message conversion |
-| `getIterator(): Generator` | Yield `Message` instances --- includes `pattern` and resolved `channel` for pattern subscriptions |
-| `cancel(): void` | Unsubscribe and stop iteration |
+| `__construct(AmphpRedisSubscription[] $amphpSubscriptions, string $prefix, string[] $channels, string[] $patterns)` | Wrap one or more amphp subscriptions with prefix stripping and message conversion. Pass channel names for channel subscriptions, pattern names for pattern subscriptions. |
+| `getIterator(): Generator` | Yield `Message` instances from all subscriptions --- includes `pattern` and resolved `channel` for pattern subscriptions |
+| `cancel(): void` | Unsubscribe from all channels/patterns and stop iteration |
 
 ### RedisPubSubConnection
 

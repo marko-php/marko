@@ -103,15 +103,18 @@ CORS_ALLOWED_ORIGINS=*
 
 When a wildcard is configured, all origins are permitted.
 
+> **Restriction:** A wildcard origin (`*`) cannot be combined with `CORS_SUPPORTS_CREDENTIALS=true`. Setting both throws `CorsException::wildcardWithCredentials()` loudly at request time. Either restrict `CORS_ALLOWED_ORIGINS` to explicit origins, or keep `CORS_SUPPORTS_CREDENTIALS=false`.
+
 ### Sending Cookies and Auth Headers
 
-To allow browsers to send credentials (cookies, `Authorization` headers):
+To allow browsers to send credentials (cookies, `Authorization` headers), restrict `CORS_ALLOWED_ORIGINS` to explicit origins first, then enable:
 
 ```bash
+CORS_ALLOWED_ORIGINS=https://app.example.com
 CORS_SUPPORTS_CREDENTIALS=true
 ```
 
-When enabled, `Access-Control-Allow-Credentials: true` is added to each response.
+When enabled, `Access-Control-Allow-Credentials: true` is added to each response. A `Vary: Origin` header is also always emitted on CORS responses so caches store separate entries per origin.
 
 ### Preflight Caching
 
@@ -156,8 +159,11 @@ Reads CORS configuration from the [config](/docs/packages/config/) repository un
 ### CorsException
 
 ```php
+use Marko\Cors\Exceptions\CorsException;
+
+public static function wildcardWithCredentials(): self;
 public function getContext(): string;
 public function getSuggestion(): string;
 ```
 
-Base exception for CORS-related errors. Extends [`MarkoException`](/docs/packages/core/) --- carries a `context` (where the error occurred) and a `suggestion` (how to fix it).
+Base exception for CORS-related errors. Extends [`MarkoException`](/docs/packages/core/) --- carries a `context` (where the error occurred) and a `suggestion` (how to fix it). `wildcardWithCredentials()` is thrown when `allowed_origins` contains `*` and `supports_credentials` is `true` simultaneously.

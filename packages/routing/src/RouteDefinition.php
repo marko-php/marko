@@ -39,7 +39,16 @@ readonly class RouteDefinition
     private function buildRegex(
         string $path,
     ): string {
-        $pattern = preg_replace('/\{([^}]+)\}/', '(?P<$1>[^/]+)', $path);
+        $parts = preg_split('/(\{[^}]+\})/', $path, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $pattern = '';
+
+        foreach ($parts as $part) {
+            if (preg_match('/^\{([^}]+)\}$/', $part, $matches)) {
+                $pattern .= '(?P<' . $matches[1] . '>[^/]+)';
+            } else {
+                $pattern .= preg_quote($part, '#');
+            }
+        }
 
         return '#^' . $pattern . '$#';
     }

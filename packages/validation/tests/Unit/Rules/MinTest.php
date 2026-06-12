@@ -93,3 +93,36 @@ it('returns correct message for number', function () {
 
     expect($rule->message('age', 5))->toBe('The age field must be at least 10.');
 });
+
+it('accepts a numeric string at or above the minimum for the integer min rule', function () {
+    $rule = new Min(18);
+
+    expect($rule->passes('age', '25', []))->toBeTrue()
+        ->and($rule->passes('age', '18', []))->toBeTrue();
+});
+
+it('rejects a numeric string below the minimum for the integer min rule', function () {
+    $rule = new Min(18);
+
+    expect($rule->passes('age', '5', []))->toBeFalse();
+});
+
+it('still measures string length for the min rule on a non-numeric string', function () {
+    $rule = new Min(3);
+
+    expect($rule->passes('name', 'abc', []))->toBeTrue()
+        ->and($rule->passes('name', 'ab', []))->toBeFalse();
+});
+
+it('counts array items for the min and between rules on an array value', function () {
+    $minRule = new Min(2);
+
+    expect($minRule->passes('items', ['a', 'b'], []))->toBeTrue()
+        ->and($minRule->passes('items', ['a'], []))->toBeFalse();
+});
+
+it('produces a value-oriented (not character-length) failure message for a numeric string failing min', function () {
+    $rule = new Min(18);
+
+    expect($rule->message('age', '5'))->toBe('The age field must be at least 18.');
+});

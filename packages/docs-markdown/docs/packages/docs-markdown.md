@@ -47,8 +47,10 @@ class DocsTool
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `listAllPages()` | `list<string>` | All page ids (relative paths without extension) |
-| `getRawMarkdown(string $id)` | `string` | Raw markdown for a page id |
+| `getRawMarkdown(string $id)` | `string` | Raw markdown for a page id. Throws `DocsMarkdownException` if the page is not found or if the resolved path falls outside the docs root (path-traversal attempt). |
 | `getDocsPath()` | `string` | Absolute path to the package's `docs/` root |
+
+`getRawMarkdown()` uses `realpath` containment to verify the resolved file path stays within the docs root before reading. Any page id that resolves outside the root (e.g. `../../etc/passwd`) throws `DocsMarkdownException::pathTraversal()` loudly.
 
 ## Related Packages
 

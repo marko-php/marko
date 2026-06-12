@@ -227,6 +227,7 @@ class Session implements SessionInterface
 
         $_SESSION = $this->data;
         session_write_close();
+        $this->started = false;
     }
 
     private function configure(): void
