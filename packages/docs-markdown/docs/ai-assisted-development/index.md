@@ -24,12 +24,28 @@ marko devai:install
 
 `devai:install` inspects your environment, detects which agents are present, and writes the necessary configuration files for each one. See the [Installation guide](./installation/) for the full walkthrough.
 
+## Editing generated files
+
+Every guideline file devai generates — `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `junie/guidelines.md`, `.cursor/rules/marko.mdc` — is **yours to edit**. devai only owns the content inside a marker block:
+
+```
+<!-- BEGIN marko:devai -->
+…devai-managed guidelines…
+<!-- END marko:devai -->
+```
+
+- A file that doesn't exist yet is **created** with the markers in place.
+- Re-running `marko devai:install` or `marko devai:update` rewrites **only the content between the markers** — anything you add above or below them is preserved verbatim.
+- **Remove the markers** (or hand-author a file that never had them) and devai **backs off entirely**: it stops managing that file and logs a notice. That's the full-ownership escape hatch — no lock-in.
+
+This behaves identically for every agent. (`.cursor/rules/marko.mdc` keeps its YAML frontmatter as the first line, with the marker block below it.)
+
 ## What each package provides
 
 ### marko/devai
 
 - Single `devai:install` command that auto-detects Claude Code, Codex, Cursor, Copilot, Gemini CLI, and Junie
-- Writes agent-specific configuration files (`CLAUDE.md`, `.cursor/rules/marko.mdc`, `.github/copilot-instructions.md`, `GEMINI.md`, `junie/guidelines.md`, etc.)
+- Writes agent-specific configuration files as editable marker blocks (`CLAUDE.md`, `.cursor/rules/marko.mdc`, `.github/copilot-instructions.md`, `GEMINI.md`, `junie/guidelines.md`, etc.) — see [Editing generated files](#editing-generated-files)
 - Registers the MCP server with each agent that supports it (via config file or CLI command depending on the agent)
 - Distributes per-package guidelines and skills from `resources/ai/` directories across your installed packages
 

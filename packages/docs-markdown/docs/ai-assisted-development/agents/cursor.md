@@ -17,14 +17,14 @@ Running `marko devai:install` with Cursor detected produces the following files:
 ```
 .cursor/rules/marko.mdc            # Project guidelines and conventions (alwaysApply: true)
 .cursor/mcp.json                   # MCP server registration (marko mcp:serve)
-AGENTS.md                          # Shared guidelines file (written if not already present)
+AGENTS.md                          # Shared guidelines file (devai-managed marker block)
 ```
 
 Cursor does not implement LSP registration and no skills are distributed for Cursor.
 
 ### .cursor/rules/marko.mdc
 
-The `.cursor/rules/marko.mdc` file is written with `alwaysApply: true` frontmatter so it is always included in Cursor's context. It contains merged Marko guidelines:
+The `.cursor/rules/marko.mdc` file is written with `alwaysApply: true` frontmatter so it is always included in Cursor's context. The YAML frontmatter stays the first line of the file; the devai-managed guidelines sit below it inside a `<!-- BEGIN/END marko:devai -->` marker block, so you can add your own rules outside the markers without losing them on re-run. It contains merged Marko guidelines:
 
 - Module structure and naming conventions
 - Available MCP tools and usage patterns
@@ -36,7 +36,7 @@ The `.cursor/mcp.json` file registers `marko mcp:serve` as an MCP server using t
 
 ### AGENTS.md
 
-If no `AGENTS.md` exists in the project root, `devai:install` creates one with the same guidelines content. If `AGENTS.md` already exists, it is left untouched.
+`devai:install` writes the shared `AGENTS.md` guidelines inside a `<!-- BEGIN/END marko:devai -->` marker block: created if absent, and on later runs only the marked region is refreshed, so content you add outside the markers is preserved. Remove the markers to take full ownership — devai then leaves the file alone. See [Editing generated files](../#editing-generated-files).
 
 ## Manual verification
 

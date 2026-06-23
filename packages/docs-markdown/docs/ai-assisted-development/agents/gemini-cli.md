@@ -18,14 +18,14 @@ Running `marko devai:install` with Gemini CLI detected produces the following:
 ```
 GEMINI.md                          # Project guidelines for Gemini CLI
 .gemini/skills/                    # Marko skill files distributed for Gemini CLI
-AGENTS.md                          # Shared guidelines file (written if not already present)
+AGENTS.md                          # Shared guidelines file (devai-managed marker block)
 ```
 
 MCP registration is performed via the Gemini CLI (`gemini mcp add`) rather than by writing a config file. Gemini CLI does not implement LSP registration.
 
 ### GEMINI.md
 
-The root `GEMINI.md` file receives Marko project guidelines:
+The root `GEMINI.md` file receives Marko project guidelines inside a `<!-- BEGIN/END marko:devai -->` marker block, so your own edits outside the markers survive re-runs (see [Editing generated files](../#editing-generated-files)):
 
 - Module structure and naming conventions
 - Available MCP tools and their usage patterns
@@ -41,7 +41,7 @@ Marko skill bundles are written to `.gemini/skills/` so Gemini CLI can reference
 
 ### AGENTS.md
 
-If no `AGENTS.md` exists in the project root, `devai:install` creates one with the same guidelines content. If `AGENTS.md` already exists, it is left untouched.
+`devai:install` writes the shared `AGENTS.md` guidelines inside a `<!-- BEGIN/END marko:devai -->` marker block: created if absent, and on later runs only the marked region is refreshed, so content you add outside the markers is preserved. Remove the markers to take full ownership — devai then leaves the file alone. See [Editing generated files](../#editing-generated-files).
 
 ## Manual verification
 
