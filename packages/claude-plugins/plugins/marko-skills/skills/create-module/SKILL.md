@@ -20,7 +20,9 @@ A Marko module is a Composer package that the framework auto-discovers via the `
 - Vendor package: standalone repo, resolves to `vendor/{vendor}/{name}/`
 - App-local module: `app/{Module}/` inside the host project
 
-The composer name is `{vendor}/{name}` (e.g. `marko/payment`, `acme/payment`). The PHP namespace is the StudlyCase form: `Marko\Payment`, `Acme\Payment`.
+The composer name is `{vendor}/{name}` and the PHP namespace is its StudlyCase form (e.g. `acme/payment` → `Acme\Payment`).
+
+**Choosing `{vendor}` — derive it from the host project, never hardcode it.** Use the project's root **directory name** as the vendor: a project in `~/Sites/acme` → vendor `acme`, namespace `Acme`. **Never suggest `marko` as the vendor for an application module.** The `marko` vendor is reserved for packages contributed to the Marko framework monorepo itself — only relevant when you are actually working inside that monorepo (its root contains `packages/core/`). Do **not** read the vendor from the project's `composer.json` `name`: a project scaffolded from `marko/skeleton` still carries `marko/skeleton` there, so the directory name is the reliable signal. When you offer the user a default, lead with the project-derived vendor (`{project-dir}/{name}`), not `marko/{name}`.
 
 ## Step 2 — Write composer.json
 
