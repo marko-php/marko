@@ -103,22 +103,35 @@ it('returns nav tree via listNav', function (): void {
         ->and($nav[0])->toBeInstanceOf(DocsNavEntry::class);
 });
 
-it('throws DocsException when the MATCH expression is malformed', function (): void {
-    expect(fn () => $this->search->search(new DocsQuery('"unbalanced')))->toThrow(DocsException::class);
+it('sanitizes stray quotes in the query instead of throwing', function (): void {
+    $results = $this->search->search(new DocsQuery('"unbalanced'));
+
+    expect($results)->toBeArray();
 });
 
-it('does not leak a PDOException from a malformed search query', function (): void {
+it('does not leak a PDOException for a query containing punctuation', function (): void {
     $thrown = null;
 
     try {
-        $this->search->search(new DocsQuery('"unbalanced'));
+        $this->search->search(new DocsQuery('Marko\'s "weird" query!'));
     } catch (Throwable $e) {
         $thrown = $e;
     }
 
-    expect($thrown)->not->toBeNull()
-        ->and($thrown)->not->toBeInstanceOf(PDOException::class)
-        ->and($thrown)->toBeInstanceOf(DocsException::class);
+    expect($thrown)->toBeNull();
+});
+
+it('matches a natural-language question via OR semantics', function (): void {
+    // Implicit-AND would require every word in one doc; OR + stop-word removal finds it.
+    $results = $this->search->search(new DocsQuery('How do I install the framework?'));
+
+    expect($results)->not->toBeEmpty();
+});
+
+it('does not throw on a query containing an apostrophe', function (): void {
+    $results = $this->search->search(new DocsQuery("Marko's installation guide"));
+
+    expect($results)->not->toBeEmpty();
 });
 
 it('returns results for a valid search query', function (): void {

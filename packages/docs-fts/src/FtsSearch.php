@@ -30,6 +30,13 @@ class FtsSearch implements DocsSearchInterface
      */
     public function search(DocsQuery $query): array
     {
+        $expression = FtsQueryBuilder::toMatchExpression($query->query);
+
+        // No usable search terms (e.g. punctuation-only input) — nothing to match.
+        if ($expression === '') {
+            return [];
+        }
+
         $pdo = $this->pdo();
         $stmt = $pdo->prepare("
             SELECT page_id, title,
@@ -40,7 +47,7 @@ class FtsSearch implements DocsSearchInterface
             ORDER BY bm25(docs_fts)
             LIMIT :limit
         ");
-        $stmt->bindValue(':q', $query->query, PDO::PARAM_STR);
+        $stmt->bindValue(':q', $expression, PDO::PARAM_STR);
         $stmt->bindValue(':limit', $query->limit, PDO::PARAM_INT);
 
         try {
