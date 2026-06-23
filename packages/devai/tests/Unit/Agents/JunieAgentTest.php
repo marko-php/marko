@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\DevAi\Agents\JunieAgent;
 use Marko\DevAi\Contract\AgentInterface;
 use Marko\DevAi\ValueObject\SkillBundle;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
 beforeEach(function (): void {
     $this->tempRoot = devaiTempDir();
@@ -36,24 +37,51 @@ it('implements AgentInterface', function (): void {
     expect(new JunieAgent($this->tempRoot))->toBeInstanceOf(AgentInterface::class);
 });
 
-it('writes the junie/ layout with Marko guidelines on install', function (): void {
+it('creates junie guidelines.md via the writer when it does not exist', function (): void {
     (new JunieAgent($this->tempRoot))->install(devaiContext('# Marko Guidelines'), $this->tempRoot);
 
+    $written = (string) file_get_contents($this->tempRoot . '/junie/guidelines.md');
     expect(is_dir($this->tempRoot . '/junie'))->toBeTrue()
-        ->and(file_get_contents($this->tempRoot . '/junie/guidelines.md'))->toBe('# Marko Guidelines');
+        ->and($written)->toContain('# Marko Guidelines')
+        ->and($written)->toContain(GuidelinesWriter::MARKER_BEGIN)
+        ->and($written)->toContain(GuidelinesWriter::MARKER_END);
 });
 
-it('ensures AGENTS.md is present and does not overwrite it on re-install', function (): void {
-    $agent = new JunieAgent($this->tempRoot);
-    $agent->install(devaiContext('# Marko Guidelines'), $this->tempRoot);
-    expect(file_get_contents($this->tempRoot . '/AGENTS.md'))->toBe('# Marko Guidelines');
+it('preserves user content outside the markers in an existing junie guidelines.md', function (): void {
+    $beginMarker = GuidelinesWriter::MARKER_BEGIN;
+    $endMarker = GuidelinesWriter::MARKER_END;
+    $existing = "# My Header\n\n$beginMarker\nOld content\n$endMarker\n\n## My Footer\n";
+    mkdir($this->tempRoot . '/junie', 0755, true);
+    file_put_contents($this->tempRoot . '/junie/guidelines.md', $existing);
 
-    file_put_contents($this->tempRoot . '/AGENTS.md', '# Custom');
-    $agent->install(devaiContext('# Marko Guidelines'), $this->tempRoot);
-    expect(file_get_contents($this->tempRoot . '/AGENTS.md'))->toBe('# Custom');
+    (new JunieAgent($this->tempRoot))->install(devaiContext('# New Guidelines'), $this->tempRoot);
+
+    $written = (string) file_get_contents($this->tempRoot . '/junie/guidelines.md');
+    expect($written)->toContain('# My Header')
+        ->and($written)->toContain('## My Footer')
+        ->and($written)->toContain('# New Guidelines');
 });
 
-it('distributes skills to the junie/skills directory on install', function (): void {
+it('creates AGENTS.md via the writer when it does not exist', function (): void {
+    (new JunieAgent($this->tempRoot))->install(devaiContext('# Marko Guidelines'), $this->tempRoot);
+
+    $written = (string) file_get_contents($this->tempRoot . '/AGENTS.md');
+    expect($written)->toContain('# Marko Guidelines')
+        ->and($written)->toContain(GuidelinesWriter::MARKER_BEGIN)
+        ->and($written)->toContain(GuidelinesWriter::MARKER_END);
+});
+
+it('leaves a marker-stripped junie guidelines.md untouched', function (): void {
+    $noMarkerContent = "# My junie guidelines\n\nSome user content without any markers.\n";
+    mkdir($this->tempRoot . '/junie', 0755, true);
+    file_put_contents($this->tempRoot . '/junie/guidelines.md', $noMarkerContent);
+
+    (new JunieAgent($this->tempRoot))->install(devaiContext('# New Guidelines'), $this->tempRoot);
+
+    expect((string) file_get_contents($this->tempRoot . '/junie/guidelines.md'))->toBe($noMarkerContent);
+});
+
+it('does not modify Junie skill distribution behavior', function (): void {
     $bundles = [
         new SkillBundle('marko-skills', [
             'plan-create.md' => '# Plan Create skill',
@@ -64,6 +92,6 @@ it('distributes skills to the junie/skills directory on install', function (): v
 
     expect(file_get_contents($this->tempRoot . '/junie/skills/plan-create.md'))->toBe('# Plan Create skill')
         ->and(file_get_contents($this->tempRoot . '/junie/skills/plan-orchestrate.md'))->toBe(
-            '# Plan Orchestrate skill'
+            '# Plan Orchestrate skill',
         );
 });

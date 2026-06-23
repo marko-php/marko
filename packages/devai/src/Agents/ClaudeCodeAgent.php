@@ -10,11 +10,12 @@ use Marko\DevAi\Installation\InstallationContext;
 use Marko\DevAi\Installation\IntelephenseEnsurerInterface;
 use Marko\DevAi\Process\CommandRunnerInterface;
 use Marko\DevAi\ValueObject\GuidelinesContent;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
-class ClaudeCodeAgent implements AgentInterface
+readonly class ClaudeCodeAgent implements AgentInterface
 {
     public function __construct(
-        private CommandRunnerInterface $runner,
+        private CommandRunnerInterface $commandRunner,
         private ?IntelephenseEnsurerInterface $intelephenseEnsurer = null,
     ) {}
 
@@ -30,7 +31,7 @@ class ClaudeCodeAgent implements AgentInterface
 
     public function isInstalled(): bool
     {
-        return $this->runner->isOnPath('claude');
+        return $this->commandRunner->isOnPath('claude');
     }
 
     /**
@@ -39,8 +40,7 @@ class ClaudeCodeAgent implements AgentInterface
     public function install(
         InstallationContext $ctx,
         string $projectRoot,
-    ): void
-    {
+    ): void {
         $this->writeGuidelines($ctx->guidelines, $projectRoot);
         $this->writeSettings($projectRoot, $ctx->force);
         $this->ensureLspDeps($ctx->skipLspDeps);
@@ -50,8 +50,8 @@ class ClaudeCodeAgent implements AgentInterface
         GuidelinesContent $content,
         string $projectRoot,
     ): void {
-        file_put_contents($projectRoot . '/AGENTS.md', $content->body);
-        file_put_contents($projectRoot . '/CLAUDE.md', $this->buildClaudeMd());
+        GuidelinesWriter::write($projectRoot . '/AGENTS.md', $content->body);
+        GuidelinesWriter::write($projectRoot . '/CLAUDE.md', $this->buildClaudeMd());
     }
 
     /**
@@ -63,8 +63,7 @@ class ClaudeCodeAgent implements AgentInterface
     private function writeSettings(
         string $projectRoot,
         bool $force,
-    ): void
-    {
+    ): void {
         $this->cleanupLegacyLspFile($projectRoot);
         $this->cleanupLegacyMcpServer();
 
@@ -156,8 +155,7 @@ CLAUDE;
         array $existing,
         string $projectRoot,
         bool $force,
-    ): void
-    {
+    ): void {
         if ($force) {
             return;
         }
@@ -199,8 +197,7 @@ CLAUDE;
     private function mergeSettings(
         array $existing,
         string $projectRoot,
-    ): array
-    {
+    ): array {
         $merged = $existing;
 
         // Marketplace
@@ -260,9 +257,9 @@ CLAUDE;
 
     private function cleanupLegacyMcpServer(): void
     {
-        $listResult = $this->runner->run('claude', ['mcp', 'list']);
+        $listResult = $this->commandRunner->run('claude', ['mcp', 'list']);
         if ($this->mcpListContainsServer($listResult['stdout'], 'marko-mcp')) {
-            $this->runner->run('claude', ['mcp', 'remove', 'marko-mcp']);
+            $this->commandRunner->run('claude', ['mcp', 'remove', 'marko-mcp']);
         }
     }
 
@@ -274,8 +271,7 @@ CLAUDE;
     private function mcpListContainsServer(
         string $listStdout,
         string $serverName,
-    ): bool
-    {
+    ): bool {
         $pattern = '/^' . preg_quote($serverName, '/') . '(?:\s|:|$)/m';
 
         return preg_match($pattern, $listStdout) === 1;

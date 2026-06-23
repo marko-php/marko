@@ -11,11 +11,12 @@ use Marko\DevAi\Skills\SkillsDistributor;
 use Marko\DevAi\ValueObject\GuidelinesContent;
 use Marko\DevAi\ValueObject\McpRegistration;
 use Marko\DevAi\ValueObject\SkillBundle;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
-class GeminiCliAgent implements AgentInterface
+readonly class GeminiCliAgent implements AgentInterface
 {
     public function __construct(
-        private CommandRunnerInterface $runner,
+        private CommandRunnerInterface $commandRunner,
     ) {}
 
     public function name(): string
@@ -30,14 +31,13 @@ class GeminiCliAgent implements AgentInterface
 
     public function isInstalled(): bool
     {
-        return $this->runner->isOnPath('gemini');
+        return $this->commandRunner->isOnPath('gemini');
     }
 
     public function install(
         InstallationContext $ctx,
         string $projectRoot,
-    ): void
-    {
+    ): void {
         $this->writeGuidelines($ctx->guidelines, $projectRoot);
         $this->registerMcpServer($ctx->mcpRegistration);
         $this->distributeSkills($ctx->skills, $projectRoot, $ctx->previouslyShipped);
@@ -47,17 +47,14 @@ class GeminiCliAgent implements AgentInterface
         GuidelinesContent $content,
         string $projectRoot,
     ): void {
-        file_put_contents($projectRoot . '/GEMINI.md', $content->body);
-        $agentsPath = $projectRoot . '/AGENTS.md';
-        if (!is_file($agentsPath)) {
-            file_put_contents($agentsPath, $content->body);
-        }
+        GuidelinesWriter::write($projectRoot . '/GEMINI.md', $content->body);
+        GuidelinesWriter::write($projectRoot . '/AGENTS.md', $content->body);
     }
 
     private function registerMcpServer(McpRegistration $registration): void
     {
         $args = ['mcp', 'add', '-s', 'project', '-t', $registration->transport, $registration->serverName, $registration->command, ...$registration->args];
-        $this->runner->run('gemini', $args);
+        $this->commandRunner->run('gemini', $args);
     }
 
     /**

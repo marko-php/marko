@@ -11,11 +11,12 @@ use Marko\DevAi\Skills\SkillsDistributor;
 use Marko\DevAi\ValueObject\GuidelinesContent;
 use Marko\DevAi\ValueObject\McpRegistration;
 use Marko\DevAi\ValueObject\SkillBundle;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
-class CodexAgent implements AgentInterface
+readonly class CodexAgent implements AgentInterface
 {
     public function __construct(
-        private CommandRunnerInterface $runner,
+        private CommandRunnerInterface $commandRunner,
     ) {}
 
     public function name(): string
@@ -30,14 +31,13 @@ class CodexAgent implements AgentInterface
 
     public function isInstalled(): bool
     {
-        return $this->runner->isOnPath('codex');
+        return $this->commandRunner->isOnPath('codex');
     }
 
     public function install(
         InstallationContext $ctx,
         string $projectRoot,
-    ): void
-    {
+    ): void {
         $this->writeGuidelines($ctx->guidelines, $projectRoot);
         $this->registerMcpServer($ctx->mcpRegistration);
         $this->distributeSkills($ctx->skills, $projectRoot, $ctx->previouslyShipped);
@@ -47,13 +47,13 @@ class CodexAgent implements AgentInterface
         GuidelinesContent $content,
         string $projectRoot,
     ): void {
-        file_put_contents($projectRoot . '/AGENTS.md', $content->body);
+        GuidelinesWriter::write($projectRoot . '/AGENTS.md', $content->body);
     }
 
     private function registerMcpServer(McpRegistration $registration): void
     {
         $args = ['mcp', 'add', $registration->serverName, '--', $registration->command, ...$registration->args];
-        $this->runner->run('codex', $args);
+        $this->commandRunner->run('codex', $args);
     }
 
     /**

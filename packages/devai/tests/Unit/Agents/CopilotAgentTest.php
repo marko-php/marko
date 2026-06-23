@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\DevAi\Agents\CopilotAgent;
 use Marko\DevAi\Contract\AgentInterface;
 use Marko\DevAi\ValueObject\McpRegistration;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
 beforeEach(function (): void {
     $this->tempRoot = devaiTempDir();
@@ -21,7 +22,9 @@ it('reports name as copilot', function (): void {
 it('detects a .github directory in the project', function (): void {
     $agent = new CopilotAgent($this->tempRoot);
     expect($agent->isInstalled())->toBeFalse();
+
     mkdir($this->tempRoot . '/.github', 0755, true);
+
     expect($agent->isInstalled())->toBeTrue();
 });
 
@@ -29,27 +32,60 @@ it('implements AgentInterface', function (): void {
     expect(new CopilotAgent($this->tempRoot))->toBeInstanceOf(AgentInterface::class);
 });
 
-it('writes .github/copilot-instructions.md with Marko guidelines on install', function (): void {
+it('creates copilot-instructions.md via the writer when it does not exist', function (): void {
     (new CopilotAgent($this->tempRoot))->install(devaiContext('# Marko Guidelines'), $this->tempRoot);
 
     $path = $this->tempRoot . '/.github/copilot-instructions.md';
     expect(file_exists($path))->toBeTrue()
-        ->and(file_get_contents($path))->toBe('# Marko Guidelines');
+        ->and(file_get_contents($path))->toContain('# Marko Guidelines')
+        ->and(file_get_contents($path))->toContain(GuidelinesWriter::MARKER_BEGIN)
+        ->and(file_get_contents($path))->toContain(GuidelinesWriter::MARKER_END);
 });
 
-it('writes AGENTS.md as a shared canonical source without overwriting on re-install', function (): void {
-    $agent = new CopilotAgent($this->tempRoot);
+it('preserves user content outside the markers in an existing copilot-instructions.md', function (): void {
+    $path = $this->tempRoot . '/.github/copilot-instructions.md';
+    mkdir(dirname($path), 0755, true);
+    $existing = "# My Custom Header\n\n"
+        . GuidelinesWriter::MARKER_BEGIN . "\n"
+        . "old generated content\n"
+        . GuidelinesWriter::MARKER_END . "\n"
+        . "\n# My Footer\n";
+    file_put_contents($path, $existing);
+
+    (new CopilotAgent($this->tempRoot))->install(devaiContext('# Marko Guidelines'), $this->tempRoot);
+
+    $content = (string) file_get_contents($path);
+    expect($content)->toContain('# My Custom Header')
+        ->and($content)->toContain('# My Footer')
+        ->and($content)->toContain('# Marko Guidelines')
+        ->and($content)->toContain(GuidelinesWriter::MARKER_BEGIN)
+        ->and($content)->toContain(GuidelinesWriter::MARKER_END);
+});
+
+it('creates AGENTS.md via the writer when it does not exist', function (): void {
     $agentsPath = $this->tempRoot . '/AGENTS.md';
     expect(file_exists($agentsPath))->toBeFalse();
 
-    $agent->install(devaiContext('# Marko Guidelines'), $this->tempRoot);
-    expect(file_get_contents($agentsPath))->toBe('# Marko Guidelines');
+    (new CopilotAgent($this->tempRoot))->install(devaiContext('# Marko Guidelines'), $this->tempRoot);
 
-    $agent->install(devaiContext('updated content'), $this->tempRoot);
-    expect(file_get_contents($agentsPath))->toBe('# Marko Guidelines');
+    expect(file_exists($agentsPath))->toBeTrue()
+        ->and(file_get_contents($agentsPath))->toContain('# Marko Guidelines')
+        ->and(file_get_contents($agentsPath))->toContain(GuidelinesWriter::MARKER_BEGIN)
+        ->and(file_get_contents($agentsPath))->toContain(GuidelinesWriter::MARKER_END);
 });
 
-it('writes a .vscode/mcp.json entry for marko-mcp on install', function (): void {
+it('leaves a marker-stripped copilot-instructions.md untouched', function (): void {
+    $path = $this->tempRoot . '/.github/copilot-instructions.md';
+    mkdir(dirname($path), 0755, true);
+    $markerlessContent = "# User-written guidelines, no markers here\n";
+    file_put_contents($path, $markerlessContent);
+
+    (new CopilotAgent($this->tempRoot))->install(devaiContext('# Marko Guidelines'), $this->tempRoot);
+
+    expect(file_get_contents($path))->toBe($markerlessContent);
+});
+
+it('does not modify Copilot MCP registration behavior', function (): void {
     $reg = new McpRegistration(
         serverName: 'marko-mcp',
         command: 'php',

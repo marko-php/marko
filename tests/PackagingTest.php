@@ -38,6 +38,12 @@ it('excludes .gitattributes itself from exports', function () use ($packagesRoot
 
 it('excludes .gitignore from exports if present', function () use ($packagesRoot, $packages): void {
     foreach ($packages as $package) {
+        // skeleton is the project template (type:project): it intentionally ships its
+        // .gitignore to generated projects and therefore must NOT export-ignore it.
+        if ($package === 'skeleton') {
+            continue;
+        }
+
         $path = $packagesRoot . '/' . $package . '/.gitattributes';
         $content = file_get_contents($path);
         expect($content)->toContain('/.gitignore')

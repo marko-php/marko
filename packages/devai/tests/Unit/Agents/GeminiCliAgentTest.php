@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Marko\DevAi\Agents\GeminiCliAgent;
 use Marko\DevAi\Contract\AgentInterface;
 use Marko\DevAi\ValueObject\McpRegistration;
+use Marko\DevAi\ValueObject\SkillBundle;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
 beforeEach(function (): void {
     $this->root = devaiTempDir();
@@ -27,23 +29,53 @@ it('implements AgentInterface', function (): void {
     expect(new GeminiCliAgent(devaiRunner()))->toBeInstanceOf(AgentInterface::class);
 });
 
-it('writes GEMINI.md with Marko guidelines on install', function (): void {
+it('creates GEMINI.md via the writer when it does not exist', function (): void {
     (new GeminiCliAgent(devaiRunner()))->install(devaiContext('# Marko Guidelines'), $this->root);
 
-    expect(file_get_contents($this->root . '/GEMINI.md'))->toBe('# Marko Guidelines');
+    $contents = (string) file_get_contents($this->root . '/GEMINI.md');
+    expect($contents)->toContain('# Marko Guidelines')
+        ->and($contents)->toContain(GuidelinesWriter::MARKER_BEGIN)
+        ->and($contents)->toContain(GuidelinesWriter::MARKER_END);
 });
 
-it('ensures AGENTS.md is present and does not overwrite it on re-install', function (): void {
-    $agent = new GeminiCliAgent(devaiRunner());
-    $agent->install(devaiContext('# Marko Guidelines'), $this->root);
-    expect(file_exists($this->root . '/AGENTS.md'))->toBeTrue();
+it('preserves user content outside the markers in an existing GEMINI.md', function (): void {
+    $geminiPath = $this->root . '/GEMINI.md';
+    $userHeader = "# My custom header\n\n";
+    file_put_contents(
+        $geminiPath,
+        $userHeader
+        . GuidelinesWriter::MARKER_BEGIN . "\nOld generated\n"
+        . GuidelinesWriter::MARKER_END . "\n",
+    );
 
-    file_put_contents($this->root . '/AGENTS.md', 'existing');
-    $agent->install(devaiContext('# New'), $this->root);
-    expect(file_get_contents($this->root . '/AGENTS.md'))->toBe('existing');
+    (new GeminiCliAgent(devaiRunner()))->install(devaiContext('# New Guidelines'), $this->root);
+
+    $contents = (string) file_get_contents($geminiPath);
+    expect($contents)->toContain('# New Guidelines')
+        ->and($contents)->toContain($userHeader)
+        ->and($contents)->not->toContain('Old generated');
 });
 
-it('registers marko-mcp via gemini mcp add command on install', function (): void {
+it('creates AGENTS.md via the writer when it does not exist', function (): void {
+    (new GeminiCliAgent(devaiRunner()))->install(devaiContext('# Marko Guidelines'), $this->root);
+
+    $contents = (string) file_get_contents($this->root . '/AGENTS.md');
+    expect($contents)->toContain('# Marko Guidelines')
+        ->and($contents)->toContain(GuidelinesWriter::MARKER_BEGIN)
+        ->and($contents)->toContain(GuidelinesWriter::MARKER_END);
+});
+
+it('leaves a marker-stripped GEMINI.md untouched', function (): void {
+    $geminiPath = $this->root . '/GEMINI.md';
+    $original = "# User content only — no markers here\n";
+    file_put_contents($geminiPath, $original);
+
+    (new GeminiCliAgent(devaiRunner()))->install(devaiContext('# New'), $this->root);
+
+    expect((string) file_get_contents($geminiPath))->toBe($original);
+});
+
+it('does not modify Gemini MCP registration or skill distribution behavior', function (): void {
     $runner = devaiRunner();
     $reg = new McpRegistration('marko-mcp', 'npx', ['-y', '@marko/mcp']);
     (new GeminiCliAgent($runner))->install(devaiContext(mcp: $reg), $this->root);
@@ -57,12 +89,12 @@ it('registers marko-mcp via gemini mcp add command on install', function (): voi
 
     expect($addCall)->not->toBeNull()
         ->and($addCall['args'])->toBe(
-            ['mcp', 'add', '-s', 'project', '-t', 'stdio', 'marko-mcp', 'npx', '-y', '@marko/mcp']
+            ['mcp', 'add', '-s', 'project', '-t', 'stdio', 'marko-mcp', 'npx', '-y', '@marko/mcp'],
         );
 });
 
 it('distributes skills to the .gemini/skills directory on install', function (): void {
-    $bundle = new Marko\DevAi\ValueObject\SkillBundle('marko', ['plan-create.md' => '# Plan Create']);
+    $bundle = new SkillBundle('marko', ['plan-create.md' => '# Plan Create']);
     (new GeminiCliAgent(devaiRunner()))->install(devaiContext(skills: [$bundle]), $this->root);
 
     expect(file_get_contents($this->root . '/.gemini/skills/plan-create.md'))->toBe('# Plan Create');

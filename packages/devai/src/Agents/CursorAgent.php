@@ -9,11 +9,12 @@ use Marko\DevAi\Installation\InstallationContext;
 use Marko\DevAi\Process\CommandRunnerInterface;
 use Marko\DevAi\ValueObject\GuidelinesContent;
 use Marko\DevAi\ValueObject\McpRegistration;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
-class CursorAgent implements AgentInterface
+readonly class CursorAgent implements AgentInterface
 {
     public function __construct(
-        private CommandRunnerInterface $runner,
+        private CommandRunnerInterface $commandRunner,
     ) {}
 
     public function name(): string
@@ -28,14 +29,13 @@ class CursorAgent implements AgentInterface
 
     public function isInstalled(): bool
     {
-        return $this->runner->isOnPath('cursor');
+        return $this->commandRunner->isOnPath('cursor');
     }
 
     public function install(
         InstallationContext $ctx,
         string $projectRoot,
-    ): void
-    {
+    ): void {
         $this->writeGuidelines($ctx->guidelines, $projectRoot);
         $this->registerMcpServer($ctx->mcpRegistration, $projectRoot);
     }
@@ -43,29 +43,37 @@ class CursorAgent implements AgentInterface
     private function writeGuidelines(
         GuidelinesContent $content,
         string $projectRoot,
-    ): void
-    {
+    ): void {
         $rulesDir = $projectRoot . '/.cursor/rules';
 
         if (!is_dir($rulesDir)) {
             mkdir($rulesDir, 0755, true);
         }
 
-        $mdc = "---\ndescription: Marko Framework guidelines\nalwaysApply: true\n---\n\n" . $content->body;
-        file_put_contents($rulesDir . '/marko.mdc', $mdc);
+        $mdcPath = $rulesDir . '/marko.mdc';
+        $frontmatter = "---\ndescription: Marko Framework guidelines\nalwaysApply: true\n---\n\n";
+
+        if (!is_file($mdcPath)) {
+            file_put_contents(
+                $mdcPath,
+                $frontmatter
+                . GuidelinesWriter::MARKER_BEGIN . "\n"
+                . $content->body . "\n"
+                . GuidelinesWriter::MARKER_END . "\n",
+            );
+        } else {
+            GuidelinesWriter::write($mdcPath, $content->body);
+        }
 
         $agentsPath = $projectRoot . '/AGENTS.md';
 
-        if (!is_file($agentsPath)) {
-            file_put_contents($agentsPath, $content->body);
-        }
+        GuidelinesWriter::write($agentsPath, $content->body);
     }
 
     private function registerMcpServer(
         McpRegistration $registration,
         string $projectRoot,
-    ): void
-    {
+    ): void {
         $cursorDir = $projectRoot . '/.cursor';
 
         if (!is_dir($cursorDir)) {

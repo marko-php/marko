@@ -13,8 +13,7 @@ use Marko\DevAi\Installation\IntelephenseEnsurerInterface;
 // ---------------------------------------------------------------------------
 
 it('reports name as claude-code', function (): void {
-    $agent = new ClaudeCodeAgent(devaiRunner());
-    expect($agent->name())->toBe('claude-code');
+    expect((new ClaudeCodeAgent(devaiRunner()))->name())->toBe('claude-code');
 });
 
 it('detects installation when claude binary is on PATH', function (): void {
@@ -44,7 +43,83 @@ describe('guidelines', function (): void {
         $this->agent->install(devaiContext('# Project Guidelines'), $this->root);
 
         expect(file_exists($this->root . '/AGENTS.md'))->toBeTrue()
-            ->and(file_get_contents($this->root . '/AGENTS.md'))->toBe('# Project Guidelines');
+            ->and(file_get_contents($this->root . '/AGENTS.md'))->toContain('# Project Guidelines');
+    });
+
+    it('creates AGENTS.md via the writer when it does not exist', function (): void {
+        $this->agent->install(devaiContext('# Project Guidelines'), $this->root);
+
+        $agentsMd = (string) file_get_contents($this->root . '/AGENTS.md');
+        expect($agentsMd)->toContain('# Project Guidelines')
+            ->and($agentsMd)->toContain('<!-- BEGIN marko:devai -->');
+    });
+
+    it('preserves user content outside the markers in an existing AGENTS.md', function (): void {
+        $beginMarker = '<!-- BEGIN marko:devai -->';
+        $endMarker = '<!-- END marko:devai -->';
+        $existing = "# My Custom Header\n\n$beginMarker\nOld generated content\n$endMarker\n\n## My Footer\n";
+        file_put_contents($this->root . '/AGENTS.md', $existing);
+
+        $this->agent->install(devaiContext('# New Guidelines'), $this->root);
+
+        $agentsMd = (string) file_get_contents($this->root . '/AGENTS.md');
+        expect($agentsMd)->toContain('# My Custom Header')
+            ->and($agentsMd)->toContain('## My Footer')
+            ->and($agentsMd)->toContain('# New Guidelines');
+    });
+
+    it('creates CLAUDE.md with the AGENTS.md import inside the marker region', function (): void {
+        $this->agent->install(devaiContext('body'), $this->root);
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        $beginPos = strpos($claudeMd, '<!-- BEGIN marko:devai -->');
+        $endPos = strpos($claudeMd, '<!-- END marko:devai -->');
+        $importPos = strpos($claudeMd, '@AGENTS.md');
+
+        expect($beginPos)->not->toBeFalse()
+            ->and($endPos)->not->toBeFalse()
+            ->and($importPos)->not->toBeFalse()
+            ->and($importPos > $beginPos)->toBeTrue()
+            ->and($importPos < $endPos)->toBeTrue();
+    });
+
+    it('wraps the Claude tooling block inside the marker region', function (): void {
+        $this->agent->install(devaiContext('body'), $this->root);
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        $beginPos = strpos($claudeMd, '<!-- BEGIN marko:devai -->');
+        $endPos = strpos($claudeMd, '<!-- END marko:devai -->');
+        $toolingPos = strpos($claudeMd, 'Marko AI tooling');
+
+        expect($beginPos)->not->toBeFalse()
+            ->and($endPos)->not->toBeFalse()
+            ->and($toolingPos)->not->toBeFalse()
+            ->and($toolingPos > $beginPos)->toBeTrue()
+            ->and($toolingPos < $endPos)->toBeTrue();
+    });
+
+    it('leaves a marker-stripped CLAUDE.md untouched', function (): void {
+        $noMarkerContent = "# My CLAUDE.md\n\nSome user content without any markers.\n";
+        file_put_contents($this->root . '/CLAUDE.md', $noMarkerContent);
+
+        $this->agent->install(devaiContext('body'), $this->root);
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        expect($claudeMd)->toBe($noMarkerContent);
+    });
+
+    it('does not modify MCP or settings behavior', function (): void {
+        $this->agent->install(devaiContext('body'), $this->root);
+
+        $settingsPath = $this->root . '/.claude/settings.json';
+        expect(file_exists($settingsPath))->toBeTrue();
+
+        $data = json_decode((string) file_get_contents($settingsPath), true);
+        expect($data)->toHaveKey('extraKnownMarketplaces')
+            ->and($data['extraKnownMarketplaces'])->toHaveKey('marko')
+            ->and($data['enabledPlugins']['marko-skills@marko'])->toBeTrue()
+            ->and($data['enabledPlugins']['marko-lsp@marko'])->toBeTrue()
+            ->and($data['enabledPlugins']['marko-mcp@marko'])->toBeTrue();
     });
 
     it('writes CLAUDE.md including the @AGENTS.md import directive', function (): void {
@@ -57,11 +132,11 @@ describe('guidelines', function (): void {
         'writes CLAUDE.md including the verbatim authority directive about skills as canonical spec',
         function (): void {
             $this->agent->install(devaiContext('body'), $this->root);
-    
+
             $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
             expect($claudeMd)->toContain('skill is the canonical specification')
                 ->and($claudeMd)->toContain('marko-skills:create-module');
-        }
+        },
     );
 
     it('writes CLAUDE.md including the LSP verification gate directive', function (): void {
@@ -85,7 +160,7 @@ describe('guidelines', function (): void {
         'writes CLAUDE.md instructing the agent to call search_docs first for documentation lookups',
         function (): void {
             $this->agent->install(devaiContext('body'), $this->root);
-    
+
             $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
             expect($claudeMd)->toContain('search_docs')
                 ->and($claudeMd)->toContain('Do NOT infer answers from `vendor/marko/*`')
@@ -95,7 +170,7 @@ describe('guidelines', function (): void {
                 ->and($claudeMd)->toContain('find_plugins_targeting')
                 ->and($claudeMd)->toContain('resolve_preference')
                 ->and($claudeMd)->toContain('check_config_key');
-        }
+        },
     );
 });
 
@@ -153,7 +228,7 @@ describe('settings', function (): void {
         file_put_contents(
             $this->root . '/.claude/settings.json',
             json_encode(
-                ['extraKnownMarketplaces' => ['marko' => ['source' => ['source' => 'github', 'repo' => 'marko-php/marko']]]]
+                ['extraKnownMarketplaces' => ['marko' => ['source' => ['source' => 'github', 'repo' => 'marko-php/marko']]]],
             ),
         );
 
@@ -221,7 +296,7 @@ describe('monorepo detection', function (): void {
 
             $source = json_decode(
                 (string) file_get_contents($root . '/.claude/settings.json'),
-                true
+                true,
             )['extraKnownMarketplaces']['marko']['source'];
             expect($source['source'])->toBe('github')
                 ->and($source['repo'])->toBe('marko-php/marko');
@@ -312,8 +387,12 @@ describe('lsp deps', function (): void {
 
     it('invokes IntelephenseEnsurer with skip=false during install', function (): void {
         $log = [];
-        $ensurer = new class ($log) implements IntelephenseEnsurerInterface {
-            public function __construct(private array &$log) {}
+        $ensurer = new class ($log) implements IntelephenseEnsurerInterface
+        {
+            public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+                private array &$log,
+            ) {}
 
             public function ensure(bool $skip = false): EnsureResult
             {
@@ -330,8 +409,12 @@ describe('lsp deps', function (): void {
 
     it('passes --skip-lsp-deps through to IntelephenseEnsurer when set', function (): void {
         $log = [];
-        $ensurer = new class ($log) implements IntelephenseEnsurerInterface {
-            public function __construct(private array &$log) {}
+        $ensurer = new class ($log) implements IntelephenseEnsurerInterface
+        {
+            public function __construct(
+                /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
+                private array &$log,
+            ) {}
 
             public function ensure(bool $skip = false): EnsureResult
             {
