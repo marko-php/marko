@@ -54,6 +54,26 @@ marko devai:update
 
 Each supported agent implements a single `AgentInterface::install()` method. The orchestrator renders the shared install data once (guidelines, skills, MCP registration) and hands it to every selected agent through an `InstallationContext` — so adding a new agent means implementing one method, with no capability-flag plumbing.
 
+## Override model
+
+Every guideline file devai writes --- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `junie/guidelines.md`, `.cursor/rules/marko.mdc` --- contains a single managed region delimited by HTML comments:
+
+```
+<!-- BEGIN marko:devai -->
+...generated content...
+<!-- END marko:devai -->
+```
+
+On `devai:update`, devai rewrites **only** the content between these markers. Everything outside the markers belongs to you and is never modified.
+
+### Taking full ownership of a file
+
+Remove the markers from any file to make devai stop managing that file entirely. On the next `devai:update`, devai detects the absent `<!-- BEGIN marko:devai -->` / `<!-- END marko:devai -->` pair, backs off, and surfaces a loud notice in the install log reminding you to either restore the markers or edit the file manually. This is the escape hatch for teams that want full ownership of a specific agent config.
+
+### Depth comes from the MCP server
+
+devai ships no static reference docs. Depth in the generated guidelines comes from the `search_docs` tool provided by the [`marko/mcp`](/docs/packages/mcp/) server, which is registered during install. Agents use `search_docs` at request time to retrieve accurate, up-to-date documentation from your installed packages.
+
 ## Dependencies
 
 `marko/devai` requires:

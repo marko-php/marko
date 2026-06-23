@@ -12,6 +12,7 @@ use Marko\DevAi\Rendering\AgentsMdRenderer;
 use Marko\DevAi\Skills\SkillsDistributor;
 use Marko\DevAi\ValueObject\McpRegistration;
 use Marko\DevAi\ValueObject\SkillBundle;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
 class InstallationOrchestrator
 {
@@ -65,6 +66,10 @@ class InstallationOrchestrator
 
             $agents[$agentName]->install($installCtx, $projectRoot);
             $this->log[] = "[$agentName] installed";
+        }
+
+        foreach (GuidelinesWriter::takeNotices() as $notice) {
+            $this->log[] = $notice;
         }
 
         $markerDir = $projectRoot . '/.marko';

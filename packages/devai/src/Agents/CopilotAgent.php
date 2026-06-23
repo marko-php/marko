@@ -8,8 +8,9 @@ use Marko\DevAi\Contract\AgentInterface;
 use Marko\DevAi\Installation\InstallationContext;
 use Marko\DevAi\ValueObject\GuidelinesContent;
 use Marko\DevAi\ValueObject\McpRegistration;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
-class CopilotAgent implements AgentInterface
+readonly class CopilotAgent implements AgentInterface
 {
     public function __construct(
         private string $projectRoot,
@@ -33,8 +34,7 @@ class CopilotAgent implements AgentInterface
     public function install(
         InstallationContext $ctx,
         string $projectRoot,
-    ): void
-    {
+    ): void {
         $this->writeGuidelines($ctx->guidelines, $projectRoot);
         $this->registerMcpServer($ctx->mcpRegistration, $projectRoot);
     }
@@ -42,28 +42,21 @@ class CopilotAgent implements AgentInterface
     private function writeGuidelines(
         GuidelinesContent $content,
         string $projectRoot,
-    ): void
-    {
+    ): void {
         $githubDir = $projectRoot . '/.github';
 
         if (!is_dir($githubDir)) {
             mkdir($githubDir, 0755, true);
         }
 
-        file_put_contents($githubDir . '/copilot-instructions.md', $content->body);
-
-        $agentsPath = $projectRoot . '/AGENTS.md';
-
-        if (!is_file($agentsPath)) {
-            file_put_contents($agentsPath, $content->body);
-        }
+        GuidelinesWriter::write($githubDir . '/copilot-instructions.md', $content->body);
+        GuidelinesWriter::write($projectRoot . '/AGENTS.md', $content->body);
     }
 
     private function registerMcpServer(
         McpRegistration $registration,
         string $projectRoot,
-    ): void
-    {
+    ): void {
         $vscodeDir = $projectRoot . '/.vscode';
 
         if (!is_dir($vscodeDir)) {

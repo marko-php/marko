@@ -40,8 +40,7 @@ function integExternalRunnerWithLsp(
         public function run(
             string $cmd,
             array $args = [],
-        ): array
-        {
+        ): array {
             $this->calls[] = [$cmd, $args];
             if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
@@ -107,8 +106,7 @@ function integExternalRunner(string $listOutput = ''): CommandRunnerInterface
         public function run(
             string $cmd,
             array $args = [],
-        ): array
-        {
+        ): array {
             $this->calls[] = [$cmd, $args];
             if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
@@ -191,9 +189,9 @@ describe('external-project fixture (no sibling packages/claude-plugins)', functi
         'running devai:install --agents=claude-code in a tempdir creates AGENTS.md at the project root',
         function (): void {
             integExternalRunInstall($this->root);
-    
+
             expect(file_exists($this->root . '/AGENTS.md'))->toBeTrue();
-        }
+        },
     );
 
     it('running devai:install --agents=claude-code creates CLAUDE.md at the project root', function (): void {
@@ -206,12 +204,12 @@ describe('external-project fixture (no sibling packages/claude-plugins)', functi
         'CLAUDE.md content includes the verbatim authority directive about skills as canonical spec',
         function (): void {
             integExternalRunInstall($this->root);
-    
+
             $content = (string) file_get_contents($this->root . '/CLAUDE.md');
             expect($content)
                 ->toContain('skill is the canonical specification')
                 ->and($content)->toContain('marko-skills:create-module');
-        }
+        },
     );
 
     it('CLAUDE.md content includes the LSP verification gate directive', function (): void {
@@ -233,11 +231,11 @@ describe('external-project fixture (no sibling packages/claude-plugins)', functi
         '.claude/settings.json contains extraKnownMarketplaces.marko entry with the expected source shape',
         function (): void {
             integExternalRunInstall($this->root);
-    
+
             $data = json_decode((string) file_get_contents($this->root . '/.claude/settings.json'), true);
             expect($data)->toHaveKey('extraKnownMarketplaces')
                 ->and($data['extraKnownMarketplaces'])->toHaveKey('marko');
-        }
+        },
     );
 
     it('.claude/settings.json contains enabledPlugins with all three plugin entries set to true', function (): void {
@@ -253,9 +251,9 @@ describe('external-project fixture (no sibling packages/claude-plugins)', functi
         'running devai:install --agents=claude-code does not create .claude/plugins/marko/.lsp.json (legacy broken path)',
         function (): void {
             integExternalRunInstall($this->root);
-    
+
             expect(file_exists($this->root . '/.claude/plugins/marko/.lsp.json'))->toBeFalse();
-        }
+        },
     );
 
     it(
@@ -263,44 +261,44 @@ describe('external-project fixture (no sibling packages/claude-plugins)', functi
         function (): void {
             $runner = integExternalRunner();
             integExternalRunInstall($this->root, runner: $runner);
-    
+
             $mcpAddCalls = array_filter(
                 $runner->calls,
                 fn ($call) => $call[0] === 'claude'
                     && ($call[1][0] ?? '') === 'mcp'
                     && ($call[1][1] ?? '') === 'add',
             );
-    
+
             expect($mcpAddCalls)->toBeEmpty();
-        }
+        },
     );
 
     it(
         'running devai:install --agents=claude-code creates the install marker .marko/devai.json with the new shape',
         function (): void {
             integExternalRunInstall($this->root);
-    
+
             $markerPath = $this->root . '/.marko/devai.json';
             expect(file_exists($markerPath))->toBeTrue();
-    
+
             $data = json_decode((string) file_get_contents($markerPath), true);
             expect($data)->toHaveKey('agents')
                 ->and($data)->toHaveKey('shippedSkills')
                 ->and($data)->toHaveKey('installedAt')
                 ->and($data['agents'])->toContain('claude-code');
-        }
+        },
     );
 
     it(
         'external-project fixture (no sibling packages/claude-plugins) produces settings.json with the github source shape',
         function (): void {
             integExternalRunInstall($this->root);
-    
+
             $data = json_decode((string) file_get_contents($this->root . '/.claude/settings.json'), true);
             $source = $data['extraKnownMarketplaces']['marko']['source'];
             expect($source['source'])->toBe('github')
                 ->and($source['repo'])->toBe('marko-php/marko');
-        }
+        },
     );
 });
 
@@ -321,38 +319,38 @@ describe('re-running devai:install on an external project', function (): void {
         're-running devai:install on a project that already has the legacy .lsp.json or a registered marko-mcp server cleans them up only when --force is passed (legacy artifact cleanup is gated by --force)',
         function (): void {
             // Seed legacy artifacts: .lsp.json file and a runner that reports marko-mcp in list
-        $legacyDir = $this->root . '/.claude/plugins/marko';
+            $legacyDir = $this->root . '/.claude/plugins/marko';
             mkdir($legacyDir, 0755, true);
             file_put_contents($legacyDir . '/.lsp.json', '{"old":"stuff"}');
-    
+
             $runner = integExternalRunner(listOutput: "marko-mcp: stdio - php marko mcp:serve\n");
-    
+
             // First install (force=false) — no prior extraKnownMarketplaces, so install runs
-        integExternalRunInstall($this->root, force: false, runner: $runner);
-    
+            integExternalRunInstall($this->root, force: false, runner: $runner);
+
             // Legacy .lsp.json must be cleaned up even on first install
-        expect(file_exists($legacyDir . '/.lsp.json'))->toBeFalse();
-    
+            expect(file_exists($legacyDir . '/.lsp.json'))->toBeFalse();
+
             // marko-mcp remove call must have been made (legacy cleanup)
-        $removeCalls = array_filter(
+            $removeCalls = array_filter(
                 $runner->calls,
                 fn ($call) => $call[0] === 'claude'
-                    && ($call[1][0] ?? '') === 'mcp'
-                    && ($call[1][1] ?? '') === 'remove',
+                        && ($call[1][0] ?? '') === 'mcp'
+                        && ($call[1][1] ?? '') === 'remove',
             );
             expect(array_values($removeCalls))->not->toBeEmpty();
-    
+
             // Re-seed legacy artifacts to test that --force triggers cleanup again
-        mkdir($legacyDir, 0755, true);
+            mkdir($legacyDir, 0755, true);
             file_put_contents($legacyDir . '/.lsp.json', '{"old":"stuff2"}');
-    
+
             $runner2 = integExternalRunner(listOutput: "marko-mcp: stdio - php marko mcp:serve\n");
-    
+
             // Re-run with --force — should clean up and overwrite
-        integExternalRunInstall($this->root, force: true, runner: $runner2);
-    
+            integExternalRunInstall($this->root, force: true, runner: $runner2);
+
             expect(file_exists($legacyDir . '/.lsp.json'))->toBeFalse();
-    
+
             $removeCalls2 = array_filter(
                 $runner2->calls,
                 fn ($call) => $call[0] === 'claude'
@@ -360,16 +358,16 @@ describe('re-running devai:install on an external project', function (): void {
                     && ($call[1][1] ?? '') === 'remove',
             );
             expect(array_values($removeCalls2))->not->toBeEmpty();
-        }
+        },
     );
 
     it(
         're-running devai:install on a project that already has extraKnownMarketplaces.marko in settings.json (without --force) exits with a loud Marko exception and a non-zero exit code',
         function (): void {
             // Pre-populate settings.json with the marketplace entry as a prior install would have done,
-        // but do NOT write the .marko/devai.json marker — that would cause the orchestrator's
-        // marker-file guard to short-circuit before reaching the settings-level idempotency check.
-        $claudeDir = $this->root . '/.claude';
+            // but do NOT write the .marko/devai.json marker — that would cause the orchestrator's
+            // marker-file guard to short-circuit before reaching the settings-level idempotency check.
+            $claudeDir = $this->root . '/.claude';
             mkdir($claudeDir, 0755, true);
             $settings = [
                 'extraKnownMarketplaces' => [
@@ -382,62 +380,196 @@ describe('re-running devai:install on an external project', function (): void {
                 ],
             ];
             file_put_contents($claudeDir . '/settings.json', json_encode($settings));
-    
+
             // Install without --force — must throw DevAiInstallException because
-        // extraKnownMarketplaces.marko is already present in settings.json
-        $runner = integExternalRunner();
+            // extraKnownMarketplaces.marko is already present in settings.json
+            $runner = integExternalRunner();
             $orchestrator = integExternalOrchestrator($runner);
             $ctx = new InstallationContext(selectedAgents: ['claude-code']);
-    
+
             expect(fn () => $orchestrator->install($ctx, $this->root))
                 ->toThrow(DevAiInstallException::class);
-        }
+        },
     );
 
     it(
         're-running devai:install --force on a project with prior extraKnownMarketplaces.marko succeeds and overwrites marko-related keys',
         function (): void {
             // First install sets github source
-        integExternalRunInstall($this->root, force: false);
-    
+            integExternalRunInstall($this->root, force: false);
+
             // Manually corrupt the marketplace entry to detect overwrite
-        $settingsPath = $this->root . '/.claude/settings.json';
+            $settingsPath = $this->root . '/.claude/settings.json';
             $data = json_decode((string) file_get_contents($settingsPath), true);
             $data['extraKnownMarketplaces']['marko']['source'] = ['source' => 'old-corrupted'];
             file_put_contents($settingsPath, json_encode($data));
-    
+
             // Re-run with --force — must succeed and restore proper shape
-        integExternalRunInstall($this->root, force: true);
-    
+            integExternalRunInstall($this->root, force: true);
+
             $after = json_decode((string) file_get_contents($settingsPath), true);
             expect($after['extraKnownMarketplaces']['marko']['source']['source'])->toBe('github');
-        }
+        },
     );
 
     it(
         're-running devai:install --force preserves unrelated user keys in the existing .claude/settings.json',
         function (): void {
             // First install
-        integExternalRunInstall($this->root, force: false);
-    
+            integExternalRunInstall($this->root, force: false);
+
             // Add unrelated user keys to settings
-        $settingsPath = $this->root . '/.claude/settings.json';
+            $settingsPath = $this->root . '/.claude/settings.json';
             $data = json_decode((string) file_get_contents($settingsPath), true);
             $data['theme'] = 'dark';
             $data['myCustomKey'] = 'preserved-value';
             $data['enabledPlugins']['unrelated-plugin@other'] = true;
             file_put_contents($settingsPath, json_encode($data));
-    
+
             // Re-run with --force
-        integExternalRunInstall($this->root, force: true);
-    
+            integExternalRunInstall($this->root, force: true);
+
             $after = json_decode((string) file_get_contents($settingsPath), true);
             expect($after['theme'])->toBe('dark')
                 ->and($after['myCustomKey'])->toBe('preserved-value')
                 ->and($after['enabledPlugins']['unrelated-plugin@other'])->toBeTrue()
                 ->and($after['enabledPlugins']['marko-skills@marko'])->toBeTrue();
-        }
+        },
     );
+});
+
+// ---------------------------------------------------------------------------
+// Override-behavior integration tests (external-project fixture)
+// ---------------------------------------------------------------------------
+
+describe('override behavior', function (): void {
+    beforeEach(function (): void {
+        $this->root = integExternalTempDir();
+    });
+
+    afterEach(function (): void {
+        integRemoveTempDir($this->root);
+    });
+
+    it('creates marker-wrapped guideline files on a fresh install', function (): void {
+        integExternalRunInstall($this->root);
+
+        $agentsMd = (string) file_get_contents($this->root . '/AGENTS.md');
+        expect($agentsMd)
+            ->toContain('<!-- BEGIN marko:devai -->')
+            ->and($agentsMd)->toContain('<!-- END marko:devai -->');
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        expect($claudeMd)
+            ->toContain('<!-- BEGIN marko:devai -->')
+            ->and($claudeMd)->toContain('<!-- END marko:devai -->');
+    });
+
+    it('preserves user edits outside markers when install is re-run with force', function (): void {
+        // Fresh install
+        integExternalRunInstall($this->root);
+
+        // User adds content AFTER the markers (outside managed region)
+        $agentsMdPath = $this->root . '/AGENTS.md';
+        $afterMarker = "\n\n## My custom section\nThis is my content.\n";
+        file_put_contents($agentsMdPath, file_get_contents($agentsMdPath) . $afterMarker);
+
+        // Re-run with force
+        integExternalRunInstall($this->root, force: true);
+
+        $content = (string) file_get_contents($agentsMdPath);
+        expect($content)
+            ->toContain('## My custom section')
+            ->and($content)->toContain('This is my content.');
+    });
+
+    it('leaves marker-stripped files untouched on re-run', function (): void {
+        // Fresh install
+        integExternalRunInstall($this->root);
+
+        // User strips markers from AGENTS.md (manual customization — no markers remain)
+        $agentsMdPath = $this->root . '/AGENTS.md';
+        $stripped = "# My fully custom AGENTS\n\nNo markers here.\n";
+        file_put_contents($agentsMdPath, $stripped);
+
+        // Re-run with force — writer must leave the stripped file untouched
+        integExternalRunInstall($this->root, force: true);
+
+        $content = (string) file_get_contents($agentsMdPath);
+        expect($content)
+            ->toBe($stripped);
+    });
+
+    it('surfaces a loud notice in the install log when a guideline file has its markers stripped', function (): void {
+        // Fresh install
+        integExternalRunInstall($this->root);
+
+        // User strips markers from AGENTS.md
+        $agentsMdPath = $this->root . '/AGENTS.md';
+        file_put_contents($agentsMdPath, "# My fully custom AGENTS\n\nNo markers here.\n");
+
+        // Re-run with force — the orchestrator must surface the writer's notice in its log
+        $result = integExternalRunInstall($this->root, force: true);
+
+        $log = implode("\n", $result['log'] ?? []);
+        expect($log)->toContain('does not contain marko:devai markers');
+    });
+
+    it('writes exactly one marker pair in AGENTS.md when multiple agents are installed', function (): void {
+        // Install both claude-code and codex in one run
+        $runner = integExternalRunner();
+        $orchestrator = integExternalOrchestrator($runner);
+        $ctx = new InstallationContext(selectedAgents: ['claude-code', 'codex']);
+        $orchestrator->install($ctx, $this->root);
+
+        $content = (string) file_get_contents($this->root . '/AGENTS.md');
+        $beginCount = substr_count($content, '<!-- BEGIN marko:devai -->');
+        $endCount = substr_count($content, '<!-- END marko:devai -->');
+
+        expect($beginCount)->toBe(1)
+            ->and($endCount)->toBe(1);
+    });
+
+    it('ships no dot-claude references in tool-agnostic generated files', function (): void {
+        integExternalRunInstall($this->root);
+
+        $agentsMd = (string) file_get_contents($this->root . '/AGENTS.md');
+        expect($agentsMd)->not->toContain('.claude/');
+    });
+
+    it('points generated guidelines at search_docs for deeper documentation', function (): void {
+        integExternalRunInstall($this->root);
+
+        $agentsMd = (string) file_get_contents($this->root . '/AGENTS.md');
+        expect($agentsMd)->toContain('search_docs');
+    });
+
+    it('keeps MCP and LSP registration behavior intact', function (): void {
+        integExternalRunInstall($this->root);
+
+        $data = json_decode((string) file_get_contents($this->root . '/.claude/settings.json'), true);
+
+        // MCP — registered via enabledPlugins (not subprocess mcp add)
+        expect($data['enabledPlugins']['marko-mcp@marko'])->toBeTrue();
+
+        // LSP — registered via enabledPlugins
+        expect($data['enabledPlugins']['marko-lsp@marko'])->toBeTrue();
+
+        // Marketplace entry present for the MCP server plugin registry
+        expect($data)->toHaveKey('extraKnownMarketplaces')
+            ->and($data['extraKnownMarketplaces'])->toHaveKey('marko');
+
+        // No legacy subprocess "mcp add" invocations
+        $runner = integExternalRunner();
+        integExternalRunInstall($this->root, force: true, runner: $runner);
+        $mcpAddCalls = array_filter(
+            $runner->calls,
+            fn ($call) => $call[0] === 'claude'
+                && ($call[1][0] ?? '') === 'mcp'
+                && ($call[1][1] ?? '') === 'add',
+        );
+        expect($mcpAddCalls)->toBeEmpty();
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -459,9 +591,9 @@ describe('--skip-lsp-deps integration (external project)', function (): void {
             $runner = integExternalRunnerWithLsp(intelephenseOnPath: false, npmOnPath: true);
             $orchestrator = integExternalOrchestrator($runner);
             $ctx = new InstallationContext(selectedAgents: ['claude-code'], skipLspDeps: false);
-    
+
             $orchestrator->install($ctx, $this->root);
-    
+
             $npmInstallCalls = array_filter(
                 $runner->calls,
                 fn ($call) => $call[0] === 'npm'
@@ -469,7 +601,7 @@ describe('--skip-lsp-deps integration (external project)', function (): void {
                     && in_array('intelephense', $call[1], true),
             );
             expect(array_values($npmInstallCalls))->not->toBeEmpty();
-        }
+        },
     );
 
     it('skips intelephense installation when --skip-lsp-deps is passed', function (): void {
@@ -493,17 +625,17 @@ describe('--skip-lsp-deps integration (external project)', function (): void {
             $runner = integExternalRunnerWithLsp(intelephenseOnPath: false, npmOnPath: true);
             $orchestrator = integExternalOrchestrator($runner);
             $ctx = new InstallationContext(selectedAgents: ['claude-code'], skipLspDeps: true);
-    
+
             $orchestrator->install($ctx, $this->root);
-    
+
             $settingsPath = $this->root . '/.claude/settings.json';
             expect(file_exists($settingsPath))->toBeTrue();
-    
+
             $data = json_decode((string) file_get_contents($settingsPath), true);
             expect($data['extraKnownMarketplaces'])->toHaveKey('marko')
                 ->and($data['enabledPlugins']['marko-skills@marko'])->toBeTrue()
                 ->and($data['enabledPlugins']['marko-lsp@marko'])->toBeTrue()
                 ->and($data['enabledPlugins']['marko-mcp@marko'])->toBeTrue();
-        }
+        },
     );
 });

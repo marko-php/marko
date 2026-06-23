@@ -26,7 +26,90 @@ it('writes canonical AGENTS.md with Marko guidelines on install', function (): v
     try {
         (new CodexAgent(devaiRunner()))->install(devaiContext('# Marko Guidelines'), $root);
 
-        expect(file_get_contents($root . '/AGENTS.md'))->toBe('# Marko Guidelines');
+        expect(file_get_contents($root . '/AGENTS.md'))->toContain('# Marko Guidelines')
+            ->and(file_get_contents($root . '/AGENTS.md'))->toContain('<!-- BEGIN marko:devai -->');
+    } finally {
+        devaiRemoveDir($root);
+    }
+});
+
+it('creates AGENTS.md via the writer when it does not exist', function (): void {
+    $root = devaiTempDir();
+
+    try {
+        (new CodexAgent(devaiRunner()))->install(devaiContext('# Marko Guidelines'), $root);
+
+        expect(file_exists($root . '/AGENTS.md'))->toBeTrue()
+            ->and(file_get_contents($root . '/AGENTS.md'))->toContain('# Marko Guidelines')
+            ->and(file_get_contents($root . '/AGENTS.md'))->toContain('<!-- BEGIN marko:devai -->');
+    } finally {
+        devaiRemoveDir($root);
+    }
+});
+
+it('preserves user content outside the markers in an existing AGENTS.md', function (): void {
+    $root = devaiTempDir();
+
+    try {
+        $agentsPath = $root . '/AGENTS.md';
+        file_put_contents(
+            $agentsPath,
+            "# My custom header\n\n<!-- BEGIN marko:devai -->\nold body\n<!-- END marko:devai -->\n\n## My custom footer\n",
+        );
+
+        (new CodexAgent(devaiRunner()))->install(devaiContext('# New Guidelines'), $root);
+
+        $content = (string) file_get_contents($agentsPath);
+        expect($content)->toContain('# My custom header')
+            ->and($content)->toContain('## My custom footer')
+            ->and($content)->toContain('# New Guidelines');
+    } finally {
+        devaiRemoveDir($root);
+    }
+});
+
+it('marker-merges the guideline body into AGENTS.md on update', function (): void {
+    $root = devaiTempDir();
+
+    try {
+        $agentsPath = $root . '/AGENTS.md';
+        file_put_contents(
+            $agentsPath,
+            "<!-- BEGIN marko:devai -->\nold body\n<!-- END marko:devai -->\n",
+        );
+
+        (new CodexAgent(devaiRunner()))->install(devaiContext('# Updated Guidelines'), $root);
+
+        $content = (string) file_get_contents($agentsPath);
+        expect($content)->toContain('# Updated Guidelines')
+            ->and($content)->not->toContain('old body')
+            ->and($content)->toContain('<!-- BEGIN marko:devai -->')
+            ->and($content)->toContain('<!-- END marko:devai -->');
+    } finally {
+        devaiRemoveDir($root);
+    }
+});
+
+it('does not modify MCP registration or skill distribution behavior', function (): void {
+    $root = devaiTempDir();
+
+    try {
+        $runner = devaiRunner();
+        $mcp = new McpRegistration('marko-mcp', 'php', ['marko', 'mcp:serve']);
+        $bundle = new SkillBundle('marko', ['skill.md' => '# Skill']);
+        (new CodexAgent($runner))->install(devaiContext(mcp: $mcp, skills: [$bundle]), $root);
+
+        $addCall = null;
+        foreach ($runner->calls as $call) {
+            if ($call['command'] === 'codex' && ($call['args'][0] ?? '') === 'mcp' && ($call['args'][1] ?? '') === 'add') {
+                $addCall = $call;
+            }
+        }
+
+        expect($addCall)->not->toBeNull()
+            ->and($addCall['args'][2])->toBe('marko-mcp')
+            ->and(is_dir($root . '/.agents/skills'))->toBeTrue()
+            ->and(file_get_contents($root . '/.agents/skills/skill.md'))->toBe('# Skill');
     } finally {
         devaiRemoveDir($root);
     }
@@ -67,7 +150,7 @@ it('distributes skills to the .agents/skills directory on install', function ():
     try {
         $bundle = new SkillBundle(
             'marko',
-            ['plan-create.md' => '# Plan Create', 'plan-orchestrate.md' => '# Plan Orchestrate']
+            ['plan-create.md' => '# Plan Create', 'plan-orchestrate.md' => '# Plan Orchestrate'],
         );
         (new CodexAgent(devaiRunner()))->install(devaiContext(skills: [$bundle]), $root);
 

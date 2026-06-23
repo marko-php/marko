@@ -9,8 +9,9 @@ use Marko\DevAi\Installation\InstallationContext;
 use Marko\DevAi\Skills\SkillsDistributor;
 use Marko\DevAi\ValueObject\GuidelinesContent;
 use Marko\DevAi\ValueObject\SkillBundle;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
-class JunieAgent implements AgentInterface
+readonly class JunieAgent implements AgentInterface
 {
     public function __construct(
         private string $projectRoot,
@@ -34,8 +35,7 @@ class JunieAgent implements AgentInterface
     public function install(
         InstallationContext $ctx,
         string $projectRoot,
-    ): void
-    {
+    ): void {
         $this->writeGuidelines($ctx->guidelines, $projectRoot);
         $this->distributeSkills($ctx->skills, $projectRoot, $ctx->previouslyShipped);
     }
@@ -50,13 +50,8 @@ class JunieAgent implements AgentInterface
             mkdir($junieDir, 0755, true);
         }
 
-        file_put_contents($junieDir . '/guidelines.md', $content->body);
-
-        $agentsPath = $projectRoot . '/AGENTS.md';
-
-        if (!is_file($agentsPath)) {
-            file_put_contents($agentsPath, $content->body);
-        }
+        GuidelinesWriter::write($junieDir . '/guidelines.md', $content->body);
+        GuidelinesWriter::write($projectRoot . '/AGENTS.md', $content->body);
     }
 
     /**

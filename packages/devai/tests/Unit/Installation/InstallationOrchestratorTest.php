@@ -10,13 +10,15 @@ use Marko\DevAi\Installation\InstallationOrchestrator;
 use Marko\DevAi\Process\CommandRunnerInterface;
 use Marko\DevAi\Rendering\AgentsMdRenderer;
 use Marko\DevAi\Skills\SkillsDistributor;
+use Marko\DevAi\Writing\GuidelinesWriter;
 
 /**
  * An AgentInterface spy: records the context and root it was installed with.
  */
 function makeInstallSpyAgent(bool $installed = false): AgentInterface
 {
-    return new class ($installed) implements AgentInterface {
+    return new class ($installed) implements AgentInterface
+    {
         public ?InstallationContext $installedCtx = null;
 
         public ?string $installedRoot = null;
@@ -43,8 +45,7 @@ function makeInstallSpyAgent(bool $installed = false): AgentInterface
         public function install(
             InstallationContext $ctx,
             string $projectRoot,
-        ): void
-        {
+        ): void {
             $this->installedCtx = $ctx;
             $this->installedRoot = $projectRoot;
             $this->installCount++;
@@ -55,7 +56,8 @@ function makeInstallSpyAgent(bool $installed = false): AgentInterface
 /** @param array<string, AgentInterface> $agents */
 function makeInstallRegistry(array $agents): AgentRegistry
 {
-    return new class (devaiRunner(), $agents) extends AgentRegistry {
+    return new class (devaiRunner(), $agents) extends AgentRegistry
+    {
         /** @param array<string, AgentInterface> $agentMap */
         public function __construct(
             CommandRunnerInterface $runner,
@@ -74,15 +76,15 @@ function makeInstallRegistry(array $agents): AgentRegistry
 /** A CommandRunner that records every call as [$command, $args]. */
 function makeRecordingRunner(): CommandRunnerInterface
 {
-    return new class () implements CommandRunnerInterface {
+    return new class () implements CommandRunnerInterface
+    {
         /** @var list<array{string, list<string>}> */
         public array $calls = [];
 
         public function run(
             string $command,
             array $args = [],
-        ): array
-        {
+        ): array {
             $this->calls[] = [$command, $args];
 
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
@@ -157,7 +159,7 @@ it('does not duplicate .gitignore entries on repeated installs', function (): vo
     $orchestrator->install(new InstallationContext(selectedAgents: [], updateGitignore: true), $this->tempRoot);
     $orchestrator->install(
         new InstallationContext(selectedAgents: [], force: true, updateGitignore: true),
-        $this->tempRoot
+        $this->tempRoot,
     );
 
     $contents = (string) file_get_contents($this->tempRoot . '/.gitignore');
@@ -209,7 +211,7 @@ it('treats first install as having no previously-shipped skills', function (): v
 
     $orchestrator->install(new InstallationContext(selectedAgents: ['test-agent']), $this->tempRoot);
 
-    expect($agent->installedCtx->previouslyShipped)->toBe([]);
+    expect($agent->installedCtx->previouslyShipped)->toBeEmpty();
 });
 
 it('supports a --force flag to re-run from scratch (overwrites all generated files)', function (): void {
@@ -223,7 +225,7 @@ it('supports a --force flag to re-run from scratch (overwrites all generated fil
 
     $result = $orchestrator->install(
         new InstallationContext(selectedAgents: ['claude-code'], force: true),
-        $this->tempRoot
+        $this->tempRoot,
     );
     expect($result['status'])->toBe('installed');
 
@@ -251,9 +253,8 @@ it('prints a per-agent install summary', function (): void {
 
     expect($result['status'])->toBe('installed')
         ->and($result['log'])->toBeArray()
-        ->and($result['log'])->not->toBeEmpty();
-
-    expect(implode("\n", $result['log']))->toContain('[test-agent] installed');
+        ->and($result['log'])->not->toBeEmpty()
+        ->and(implode("\n", $result['log']))->toContain('[test-agent] installed');
 });
 
 it('invokes install() once per selected agent', function (): void {
@@ -289,13 +290,10 @@ it('runs docs-fts:build during install when marko/docs-fts is in vendor', functi
 
     $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
 
-    $buildCall = null;
-    foreach ($runner->calls as $call) {
-        if (in_array('docs-fts:build', $call[1], true)) {
-            $buildCall = $call;
-            break;
-        }
-    }
+    $buildCall = array_find(
+        $runner->calls,
+        fn ($call) => in_array('docs-fts:build', $call[1], true),
+    );
 
     expect($buildCall)->not->toBeNull()
         ->and($buildCall[0])->toBe($this->tempRoot . '/vendor/bin/marko');
@@ -336,12 +334,12 @@ it('skips the docs index build when no driver is installed', function (): void {
 it('records a helpful log line when the docs index build fails', function (): void {
     mkdir($this->tempRoot . '/vendor/marko/docs-fts', 0755, true);
 
-    $runner = new class () implements CommandRunnerInterface {
+    $runner = new class () implements CommandRunnerInterface
+    {
         public function run(
             string $command,
             array $args = [],
-        ): array
-        {
+        ): array {
             return ['exitCode' => 1, 'stdout' => '', 'stderr' => 'permission denied writing index'];
         }
 
@@ -359,6 +357,48 @@ it('records a helpful log line when the docs index build fails', function (): vo
     expect($log)->toContain('docs-fts')
         ->and($log)->toContain('build failed')
         ->and($log)->toContain('permission denied');
+});
+
+it('surfaces a loud notice in the install log when a guideline file has its markers stripped', function (): void {
+    // Create a guideline file with markers stripped (no markers)
+    file_put_contents($this->tempRoot . '/AGENTS.md', "# My custom AGENTS\n\nNo markers here.\n");
+
+    $agent = makeInstallSpyAgent(installed: true);
+
+    // Use a spy agent that writes to AGENTS.md via the real GuidelinesWriter path
+    // We simulate the stripped-markers scenario by having a pre-existing file without markers
+    // and an agent that calls GuidelinesWriter::write() on it.
+    $writingAgent = new class ($this->tempRoot) implements AgentInterface
+    {
+        public function __construct(private string $root) {}
+
+        public function name(): string
+        {
+            return 'writing-agent';
+        }
+
+        public function displayName(): string
+        {
+            return 'Writing Agent';
+        }
+
+        public function isInstalled(): bool
+        {
+            return true;
+        }
+
+        public function install(InstallationContext $ctx, string $projectRoot): void
+        {
+            GuidelinesWriter::write($projectRoot . '/AGENTS.md', 'new content');
+        }
+    };
+
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry(['writing-agent' => $writingAgent]));
+
+    $result = $orchestrator->install(new InstallationContext(selectedAgents: ['writing-agent']), $this->tempRoot);
+
+    $log = implode("\n", $result['log'] ?? []);
+    expect($log)->toContain('does not contain marko:devai markers');
 });
 
 it('detects installed agents and filters out missing ones', function (): void {
