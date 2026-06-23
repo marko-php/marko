@@ -1,4 +1,9 @@
 /vendor/
+/node_modules/
 /.marko/
+/storage/*
+!/storage/.gitkeep
+/public/build
+/public/hot
+/public/storage
 .env
-composer.lock

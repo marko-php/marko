@@ -86,6 +86,52 @@ it('has a README.md file', function (): void {
     expect(file_exists($packagePath . '/README.md'))->toBeTrue();
 });
 
+it('ships a .gitignore to generated projects', function (): void {
+    $gitignorePath = __DIR__ . '/../.gitignore';
+
+    expect(file_exists($gitignorePath))->toBeTrue();
+
+    // The .gitignore must NOT be export-ignored, otherwise composer
+    // create-project strips it from the dist archive and generated
+    // projects ship without one (vendor/, .env, etc. left untracked).
+    $gitattributes = file_get_contents(__DIR__ . '/../.gitattributes');
+
+    expect($gitattributes)->not->toMatch('/^\s*\/?\.gitignore\s+export-ignore/m');
+});
+
+it('keeps composer.lock tracked in generated projects', function (): void {
+    // Application projects must commit composer.lock for reproducible,
+    // repeatable installs across the team. It must not be gitignored.
+    $gitignore = file_get_contents(__DIR__ . '/../.gitignore');
+
+    expect($gitignore)->not->toMatch('/^\s*composer\.lock\s*$/m');
+});
+
+it('ignores generated dependency and build directories', function (): void {
+    $gitignore = file_get_contents(__DIR__ . '/../.gitignore');
+
+    expect($gitignore)
+        ->toContain('/vendor/')        // composer install output
+        ->toContain('/node_modules/')  // npm/pnpm install output
+        ->toContain('/.marko/')        // framework runtime state
+        ->toContain('/public/build')   // vite production assets
+        ->toContain('/public/hot')     // vite dev-server HMR marker
+        ->toContain('/public/storage') // marko storage:link symlink
+        ->toContain('.env');           // secrets
+});
+
+it('ignores storage runtime contents but keeps the directory', function (): void {
+    // storage/ holds runtime output (cache, logs, debugbar) that must be
+    // ignored, while .gitkeep preserves the directory on a fresh clone.
+    $gitignore = file_get_contents(__DIR__ . '/../.gitignore');
+
+    expect($gitignore)
+        ->toMatch('/^\s*\/storage\/\*\s*$/m')
+        ->toMatch('/^\s*!\/storage\/\.gitkeep\s*$/m');
+
+    expect(file_exists(__DIR__ . '/../storage/.gitkeep'))->toBeTrue();
+});
+
 it('lists marko/view-twig in the skeleton composer suggest block', function (): void {
     $composer = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
 
