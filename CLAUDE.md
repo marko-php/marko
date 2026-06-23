@@ -74,5 +74,4 @@ Project configuration files are in `.claude/`:
 - `pr-review-process.md` — PR review workflow, checklist, and merge policy
 - `module-development.md` — Building new packages/modules
 - `sibling-modules.md` — Naming and conventions for driver packages
-- `pipeline.md` — Post-plan and post-implementation agent pipeline
 - `release-process.md` — Release workflow
