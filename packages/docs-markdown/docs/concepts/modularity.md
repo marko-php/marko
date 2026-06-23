@@ -3,11 +3,11 @@ title: Modularity
 description: How Marko's module system works — discovery, priority, and composition.
 ---
 
-Modularity is the foundation of Marko. Every feature — routing, caching, authentication, your business logic — is a module. Understanding how modules work unlocks the full power of the framework.
+Marko's **module system** is the foundation of the framework. Every feature — routing, caching, authentication, your business logic — is a module. Understanding how the module system works — how modules are discovered, prioritized, and composed — unlocks the full power of Marko.
 
 ## What Is a Module?
 
-A module is any Composer package that Marko recognizes. At minimum, it needs a `name`, PSR-4 `autoload` mapping, and the `extra.marko.module` flag set to `true`:
+The module system treats a module as any Composer package that Marko recognizes. At minimum, it needs a `name`, PSR-4 `autoload` mapping, and the `extra.marko.module` flag set to `true`:
 
 ```json title="composer.json"
 {

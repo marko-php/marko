@@ -58,7 +58,14 @@ Run `search_docs` for each greenfield query below and record: top-3 result title
 | define a route | `guides/routing.md` | ✅ |
 | loud error / exception | `guides/error-handling.md` | ✅ |
 
-**Verdict: YELLOW — proceed leaning on the MCP for Bucket-C depth.** Content is present, well-structured, and on-topic for every greenfield query, so the design's bet is sound on substance. The unvalidated risk is purely lexical *ranking*: e.g. "create a module" appears literally in 0 files though `custom-module.md` is exactly that — FTS5/BM25 may under-rank natural-language phrasings.
+**Verdict: ✅ RESOLVED — GREEN (live audit complete in ~/Sites/acta, 2026-06-23).** The ranking risk was real but is now fixed. End-to-end `claude -p` audit of the 8 informational queries via the live MCP went **3/8 → 6/8 → 8/8**:
+- **3/8 → 6/8:** a `docs-fts` driver bug (raw NL bound into `MATCH`, causing FTS5 syntax errors + implicit-AND zero-recall) — fixed by `FtsQueryBuilder` query sanitization in **PR #127**.
+- **6/8 → 8/8:** two genuine `docs-markdown` ranking gaps (`concepts/modularity`, `getting-started/configuration`) — fixed by the content tweaks in this PR.
+- `docs-vec` is **un-buildable / non-functional on stock PHP** (PDO can't `load_extension`) — tracked in **#128**; with `docs-fts` at 8/8 there's no need for it. `docs-fts` confirmed as the skeleton/devai default.
+
+Original YELLOW verdict retained below for history.
+
+**Verdict (original, YELLOW): proceed leaning on the MCP for Bucket-C depth.** Content is present, well-structured, and on-topic for every greenfield query, so the design's bet is sound on substance. The unvalidated risk is purely lexical *ranking*: e.g. "create a module" appears literally in 0 files though `custom-module.md` is exactly that — FTS5/BM25 may under-rank natural-language phrasings.
 
 **Follow-ups (out of this plan's scope):**
 1. Run the 8-query ranking matrix against the live `marko-mcp search_docs` once connected; confirm each expected doc lands in top-3.

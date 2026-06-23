@@ -3,7 +3,7 @@ title: Configuration
 description: Configure your Marko application with type-safe PHP config files.
 ---
 
-Marko uses **PHP files** for configuration — not YAML, not JSON, not .env directly. PHP config files give you type safety, IDE autocompletion, and a single source of truth.
+Marko uses **PHP files** for configuration — not YAML, not JSON, not .env directly. Config defaults go in each module's `config/` directory, and PHP config files give you type safety, IDE autocompletion, and a single source of truth.
 
 ## Config Files
 
@@ -86,9 +86,9 @@ $debug = $this->configRepository->getBool('app.debug');
 
 This keeps environment variables in one place and makes your application testable with config overrides.
 
-## Config Merge Priority
+## Where Config Defaults Go
 
-When multiple modules provide the same config key, higher-priority modules win:
+Config defaults go in each module's `config/` directory. When multiple modules provide the same config key, higher-priority modules win, so app-level config overrides the defaults that ship with a module:
 
 ```
 vendor/marko/cache/config/cache.php     → Base defaults
