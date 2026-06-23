@@ -84,9 +84,11 @@ Copy `assets/PluginClass.php.tmpl` verbatim. Substitute:
 
 | Placeholder       | Value                                  |
 |-------------------|----------------------------------------|
-| `{{Vendor}}`      | Composer vendor namespace (e.g., `App`) |
+| `{{Vendor}}`      | Host-project vendor in StudlyCase (e.g. project in `~/Sites/acme` → `Acme`) |
 | `{{Name}}`        | Module name (e.g., `Blog`)             |
 | `{{TargetClass}}` | Unqualified class name (e.g., `PostRepository`) |
+
+**Choosing `{{Vendor}}` — derive it from the host project, never hardcode it.** Use the project's root **directory name**, StudlyCased (a project in `~/Sites/acme` → `Acme`). **Never suggest `Marko` as the vendor for an application plugin** — the `Marko` vendor is reserved for code contributed to the Marko framework monorepo itself (only when you are working inside that monorepo). Do **not** read the vendor from the project's `composer.json` `name`: a skeleton-derived project still carries `marko/skeleton` there, so the directory name is the reliable signal.
 
 Place the file at `src/Plugins/{{TargetClass}}Plugin.php` inside the module.
 
