@@ -18,14 +18,14 @@ Running `marko devai:install` with Copilot detected produces the following files
 ```
 .github/copilot-instructions.md    # Workspace-level guidelines for Copilot Chat
 .vscode/mcp.json                   # MCP server registration (marko mcp:serve)
-AGENTS.md                          # Shared guidelines file (written if not already present)
+AGENTS.md                          # Shared guidelines file (devai-managed marker block)
 ```
 
 Copilot does not implement LSP registration and no skills are distributed for Copilot.
 
 ### copilot-instructions.md
 
-The `.github/copilot-instructions.md` file is read by Copilot Chat for every workspace session. The installer writes merged Marko guidelines:
+The `.github/copilot-instructions.md` file is read by Copilot Chat for every workspace session. The installer writes merged Marko guidelines inside a `<!-- BEGIN/END marko:devai -->` marker block, so your own edits outside the markers survive re-runs (see [Editing generated files](../#editing-generated-files)):
 
 - Module structure and naming conventions
 - Available MCP tools
@@ -37,7 +37,7 @@ The `.vscode/mcp.json` file registers `marko mcp:serve` as an MCP server using t
 
 ### AGENTS.md
 
-If no `AGENTS.md` exists in the project root, `devai:install` creates one with the same guidelines content. If `AGENTS.md` already exists, it is left untouched.
+`devai:install` writes the shared `AGENTS.md` guidelines inside a `<!-- BEGIN/END marko:devai -->` marker block: created if absent, and on later runs only the marked region is refreshed, so content you add outside the markers is preserved. Remove the markers to take full ownership — devai then leaves the file alone. See [Editing generated files](../#editing-generated-files).
 
 ## Manual verification
 

@@ -18,7 +18,7 @@ Running `marko devai:install` with Junie detected produces the following files:
 ```
 junie/guidelines.md                # Project guidelines read by Junie on each session
 junie/skills/                      # Marko skill files distributed for Junie
-AGENTS.md                          # Shared guidelines file (written if not already present)
+AGENTS.md                          # Shared guidelines file (devai-managed marker block)
 ```
 
 Junie does not implement MCP registration or LSP registration.
@@ -37,7 +37,7 @@ Marko skill bundles are written to `junie/skills/` so Junie can reference them d
 
 ### AGENTS.md
 
-If no `AGENTS.md` exists in the project root, `devai:install` creates one with the same guidelines content. If `AGENTS.md` already exists, it is left untouched.
+`devai:install` writes the shared `AGENTS.md` guidelines inside a `<!-- BEGIN/END marko:devai -->` marker block: created if absent, and on later runs only the marked region is refreshed, so content you add outside the markers is preserved. Remove the markers to take full ownership — devai then leaves the file alone. See [Editing generated files](../#editing-generated-files).
 
 ## Manual verification
 

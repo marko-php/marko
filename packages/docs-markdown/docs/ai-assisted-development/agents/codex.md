@@ -24,7 +24,7 @@ MCP registration is performed via the Codex CLI (`codex mcp add`) rather than by
 
 ### AGENTS.md
 
-The root `AGENTS.md` receives Marko project guidelines:
+The root `AGENTS.md` receives Marko project guidelines inside a `<!-- BEGIN/END marko:devai -->` marker block: created if absent, and on later runs only the marked region is refreshed, so anything you add outside the markers is preserved. Remove the markers to take full ownership — devai then leaves the file alone (see [Editing generated files](../#editing-generated-files)). It contains:
 
 - Marko module conventions and project structure overview
 - Available MCP tools and their descriptions

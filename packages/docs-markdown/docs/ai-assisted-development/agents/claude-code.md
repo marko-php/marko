@@ -31,6 +31,8 @@ CLAUDE.md                          # Includes @AGENTS.md and Claude-specific not
 
 The installer writes merged Marko guidelines to `AGENTS.md`. The `CLAUDE.md` file references it via `@AGENTS.md` and adds a short Marko tooling section that describes the three plugins and the skill authority directive (skills are canonical spec — do not infer from sibling code).
 
+Both files are written inside a `<!-- BEGIN/END marko:devai -->` marker block: each is created if absent, and on later runs only the marked region is refreshed — so anything you add outside the markers (your own project instructions in `CLAUDE.md`, extra guidelines in `AGENTS.md`) is preserved. Remove the markers to take full ownership and devai leaves the file alone. See [Editing generated files](../#editing-generated-files). This is separate from the `.marko/devai.json` install marker described below, which only tracks whether devai has run.
+
 ### .claude/settings.json
 
 `devai:install` writes (or merges into) `.claude/settings.json` with two keys:
