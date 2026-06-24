@@ -8,6 +8,35 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.8.1] - 2026-06-24
+
+### New Features
+* feat: tier 1 — close six critical/high security audit findings by @markshust in https://github.com/marko-php/marko/pull/116
+* feat: tier 2 — fix ten high-severity correctness defects by @markshust in https://github.com/marko-php/marko/pull/117
+* feat: tier 3 — fix twenty medium-severity defects by @markshust in https://github.com/marko-php/marko/pull/118
+* feat: tier 4 — eliminate N+1 query loops on hot paths by @markshust in https://github.com/marko-php/marko/pull/119
+* feat: tier 5 — harden twenty-four low-severity gaps by @markshust in https://github.com/marko-php/marko/pull/120
+* feat: compiled discovery cache (+ recovered tier2 tokenizer prerequisite) by @markshust in https://github.com/marko-php/marko/pull/121
+* feat: make devai guideline files marker-based and fully user-overridable by @markshust in https://github.com/marko-php/marko/pull/124
+### Bug Fixes
+* fix: ship a correct .gitignore to generated projects by @markshust in https://github.com/marko-php/marko/pull/123
+* fix(marko-skills): derive scaffold vendor from project dir, never marko by @markshust in https://github.com/marko-php/marko/pull/126
+* fix(docs-fts): sanitize natural-language queries into safe FTS5 expressions by @markshust in https://github.com/marko-php/marko/pull/127
+* fix(docs-vec): make the hybrid driver buildable and runnable on stock PHP by @markshust in https://github.com/marko-php/marko/pull/130
+### Documentation
+* docs: catalog 0.8.0 packages in main README by @markshust in https://github.com/marko-php/marko/pull/110
+* docs: document GitHub Actions version convention by @markshust in https://github.com/marko-php/marko/pull/113
+* docs: add audit remediation implementation plans by @markshust in https://github.com/marko-php/marko/pull/114
+* docs: fold remaining audit findings into remediation plans by @markshust in https://github.com/marko-php/marko/pull/115
+* docs: document devai marker-based override model in agent docs by @markshust in https://github.com/marko-php/marko/pull/125
+* docs: improve search_docs ranking for module-system and config queries by @markshust in https://github.com/marko-php/marko/pull/129
+### CI
+* ci: add README package catalog drift check by @markshust in https://github.com/marko-php/marko/pull/111
+* ci: bump actions/checkout to v6 in readme drift check by @markshust in https://github.com/marko-php/marko/pull/112
+### Maintenance
+* chore: migrate hcf pipeline to agent frontmatter and prune stray docs by @markshust in https://github.com/marko-php/marko/pull/122
+
+
 ## [0.8.0] - 2026-06-03
 
 ### New Features
