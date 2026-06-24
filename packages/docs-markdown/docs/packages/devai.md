@@ -80,7 +80,7 @@ devai ships no static reference docs. Depth in the generated guidelines comes fr
 
 - **[`marko/mcp`](/docs/packages/mcp/)** — the MCP server it registers with each agent, so agents can introspect the codebase (`search_docs`, `validate_module`, `find_event_observers`, …).
 - **[`marko/lsp`](/docs/packages/lsp/)** — the language server it wires up for real-time, Marko-aware editor diagnostics.
-- **[`marko/docs`](/docs/packages/docs/)** — the docs-search *contract*. devai depends on the interface, not a specific driver, so you choose between [`marko/docs-fts`](/docs/packages/docs-fts/) (recommended, lexical) and [`marko/docs-vec`](/docs/packages/docs-vec/) (semantic). Install exactly one; binding both raises a boot-time conflict. See the [docs driver comparison](/docs/ai-assisted-development/docs-drivers/).
+- **[`marko/docs`](/docs/packages/docs/)** — the docs-search *contract*. devai depends on the interface, not a specific driver; install [`marko/docs-fts`](/docs/packages/docs-fts/) (SQLite FTS5 lexical search) to bind it and enable `search_docs`.
 - **`marko/claude-plugins`** — the skills/plugins marketplace devai distributes into each agent (e.g. `/marko-skills:create-module`).
 
 `marko/cli` and `marko/core` are pulled in transitively as the command/runtime foundation.
@@ -90,4 +90,4 @@ devai ships no static reference docs. Depth in the generated guidelines comes fr
 - [`marko/mcp`](/docs/packages/mcp/) — codebase introspection over MCP
 - [`marko/lsp`](/docs/packages/lsp/) — Marko-aware language server
 - [`marko/docs`](/docs/packages/docs/) — docs search contract
-- [`marko/docs-fts`](/docs/packages/docs-fts/) / [`marko/docs-vec`](/docs/packages/docs-vec/) — docs search drivers
+- [`marko/docs-fts`](/docs/packages/docs-fts/) — docs search driver

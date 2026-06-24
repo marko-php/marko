@@ -76,7 +76,6 @@ body:
         - docs
         - docs-fts
         - docs-markdown
-        - docs-vec
         - encryption
         - encryption-openssl
         - env

@@ -3,9 +3,9 @@ title: marko/docs-fts
 description: Lightweight lexical documentation search driver backed by SQLite FTS5.
 ---
 
-Lightweight lexical search driver for Marko documentation, implementing [`DocsSearchInterface`](/docs/packages/docs/) with SQLite FTS5 (BM25 ranking). Zero model, zero external services — it builds a single SQLite file from the [`marko/docs-markdown`](/docs/packages/docs-markdown/) content and queries it. Choose this driver when you want fast keyword search with no machine-learning dependencies; choose [`marko/docs-vec`](/docs/packages/docs-vec/) if you want semantic (vector) ranking.
+Lightweight lexical search driver for Marko documentation, implementing [`DocsSearchInterface`](/docs/packages/docs/) with SQLite FTS5 (BM25 ranking). Zero model, zero external services — it builds a single SQLite file from the [`marko/docs-markdown`](/docs/packages/docs-markdown/) content and queries it. It's the recommended docs search driver: fast keyword search with no machine-learning dependencies.
 
-`docs-fts` and `docs-vec` are sibling drivers of the same `marko/docs` contract — install **one**. (Both binding `DocsSearchInterface` at once is a binding conflict, the same as installing two database drivers.)
+`docs-fts` is a driver for the `marko/docs` contract. Install one docs driver; binding two implementations of `DocsSearchInterface` at once is a binding conflict, the same as installing two database drivers.
 
 ## Installation
 
@@ -44,4 +44,3 @@ Implements the full `DocsSearchInterface`: `search()` (BM25-ranked `DocsResult` 
 
 - [`marko/docs`](/docs/packages/docs/) — the search contract
 - [`marko/docs-markdown`](/docs/packages/docs-markdown/) — the content it indexes
-- [`marko/docs-vec`](/docs/packages/docs-vec/) — the hybrid semantic alternative

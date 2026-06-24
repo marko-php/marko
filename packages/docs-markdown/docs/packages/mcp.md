@@ -54,7 +54,7 @@ Conditional tools (registered only when their dependency is present):
 | Tool | Requires | Notes |
 |------|----------|-------|
 | `query_database` | a `marko/database` driver | Read-only by default; rejects stacked statements (e.g. `SELECT 1; DELETE ...`); registered only when a DB connection is available |
-| `search_docs` | a docs driver (`marko/docs-fts` / `marko/docs-vec`) | Registered only when a `DocsSearchInterface` is bound |
+| `search_docs` | a docs driver (`marko/docs-fts`) | Registered only when a `DocsSearchInterface` is bound |
 
 > There is intentionally **no `last_error` tool** and no global error-capture plugin. "Most recent error" is `read_log_entries(level: 'error', limit: 1)` — one tool, no production-time side effects.
 
@@ -62,4 +62,4 @@ Conditional tools (registered only when their dependency is present):
 
 - [`marko/codeindexer`](/docs/packages/codeindexer/) — the cached index the tools read
 - [`marko/lsp`](/docs/packages/lsp/) — the editor-facing peer that reads the same index
-- [`marko/docs-fts`](/docs/packages/docs-fts/) / [`marko/docs-vec`](/docs/packages/docs-vec/) — enable `search_docs`
+- [`marko/docs-fts`](/docs/packages/docs-fts/) — enables `search_docs`

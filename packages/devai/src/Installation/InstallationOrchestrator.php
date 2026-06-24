@@ -95,22 +95,17 @@ class InstallationOrchestrator
      * Build the docs search index so search_docs is wired and queryable
      * by the time devai:install returns.
      *
-     * devai requires only the marko/docs contract — the search driver is the
-     * user's choice. marko/docs-fts and marko/docs-vec are independent siblings
-     * (both bind DocsSearchInterface), so exactly one should be installed at a
-     * time; installing both triggers a binding conflict at boot. We detect the
-     * installed driver and build its index, preferring docs-vec when present.
-     * When no driver is installed we skip gracefully and tell the user how to
-     * add one — a bare install is valid, just without docs search.
+     * devai requires only the marko/docs contract — the search driver is a
+     * separate package. marko/docs-fts binds DocsSearchInterface; when it is
+     * installed we build its index so search_docs works immediately. When no
+     * driver is installed we skip gracefully and tell the user how to add one —
+     * a bare install is valid, just without docs search.
      */
     private function buildDocsIndex(
         string $projectRoot,
         string $markoBin,
     ): void {
-        if (is_dir($projectRoot . '/vendor/marko/docs-vec')) {
-            $command = 'docs-vec:build';
-            $driver = 'docs-vec';
-        } elseif (is_dir($projectRoot . '/vendor/marko/docs-fts')) {
+        if (is_dir($projectRoot . '/vendor/marko/docs-fts')) {
             $command = 'docs-fts:build';
             $driver = 'docs-fts';
         } else {

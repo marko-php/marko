@@ -355,7 +355,6 @@ Marko ships as composable packages — require only what you need. Every package
 | [docs](packages/docs/README.md) | Documentation search contracts |
 | [docs-markdown](packages/docs-markdown/README.md) | Canonical Marko documentation content |
 | [docs-fts](packages/docs-fts/README.md) | FTS5 lexical search driver for documentation |
-| [docs-vec](packages/docs-vec/README.md) | Hybrid FTS5 + sqlite-vec semantic search driver |
 
 ### AI-Assisted Development
 

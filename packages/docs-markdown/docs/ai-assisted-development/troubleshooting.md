@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-description: Fix common install failures, ONNX download issues, and agent registration problems for Marko's AI tooling.
+description: Fix common install failures, MCP/LSP server problems, and agent registration problems for Marko's AI tooling.
 ---
 
 This page covers the most common issues encountered when setting up `marko/devai`, `marko/mcp`, and `marko/lsp`.
@@ -40,41 +40,6 @@ ls -la . | head -5
 
 If running inside a container or mounted volume, ensure the working directory is writable by the PHP process.
 
-## ONNX download issues (docs-vec driver)
-
-### Download hangs or times out
-
-The ONNX embedding model is downloaded by `marko docs-vec:download-model` and lives inside the `marko/docs-vec` package directory. If the download hangs:
-
-1. Check your network connection and proxy settings.
-2. Re-run the command — it skips files that already exist with a matching checksum, so a partial download can be resumed by deleting just the partial file.
-
-### "FFI not enabled" error with docs-vec
-
-The `docs-vec` driver requires PHP's FFI extension. Check if it is enabled:
-
-```bash
-php -m | grep -i ffi
-```
-
-If FFI is missing, either enable it in `php.ini`:
-
-```ini
-extension=ffi
-ffi.enable=true
-```
-
-Or switch to the `docs-fts` driver, which has no FFI requirement. The driver is selected by which package your app installs (`marko/docs-fts` vs `marko/docs-vec`); see [Docs driver comparison](./docs-drivers/).
-
-### "ONNX model checksum mismatch"
-
-If the downloaded model file is corrupted, delete it from the `marko/docs-vec` package's model directory and re-run:
-
-```bash
-marko docs-vec:download-model
-marko docs-vec:build
-```
-
 ## MCP server problems
 
 ### Agent reports "MCP server failed to start"
@@ -106,7 +71,7 @@ marko mcp:serve
 
 ### "Tool not found" when calling search_docs
 
-The `search_docs` tool is only registered when a `DocsSearchInterface` binding is present. This requires installing a docs driver package such as `marko/docs-fts` or `marko/docs-vec`. If neither is installed, the tool will not appear in the MCP tool list regardless of the index state.
+The `search_docs` tool is only registered when a `DocsSearchInterface` binding is present. This requires installing a docs driver package such as `marko/docs-fts`. If no driver is installed, the tool will not appear in the MCP tool list regardless of the index state.
 
 If the tool is listed but returns no results, the index may be stale. Trigger a rebuild:
 
