@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\DevAi\Contract\AgentInterface;
 use Marko\DevAi\Guidelines\GuidelinesAggregator;
 use Marko\DevAi\Installation\AgentRegistry;
+use Marko\DevAi\Installation\DocsDriverResolver;
 use Marko\DevAi\Installation\InstallationContext;
 use Marko\DevAi\Installation\InstallationOrchestrator;
 use Marko\DevAi\Process\CommandRunnerInterface;
@@ -25,7 +26,7 @@ function makeInstallSpyAgent(bool $installed = false): AgentInterface
 
         public int $installCount = 0;
 
-        public function __construct(private bool $installed) {}
+        public function __construct(private readonly bool $installed) {}
 
         public function name(): string
         {
@@ -61,7 +62,7 @@ function makeInstallRegistry(array $agents): AgentRegistry
         /** @param array<string, AgentInterface> $agentMap */
         public function __construct(
             CommandRunnerInterface $runner,
-            private array $agentMap,
+            private readonly array $agentMap,
         ) {
             parent::__construct($runner);
         }
@@ -110,6 +111,7 @@ function makeInstallOrchestrator(
         guidelinesAggregator: new GuidelinesAggregator($walker, $devaiRoot),
         skillsDistributor: new SkillsDistributor($walker, $devaiRoot),
         runner: $runner ?? makeRecordingRunner(),
+        docsDriverResolver: new DocsDriverResolver(),
     );
 }
 
@@ -284,6 +286,11 @@ it('builds the MCP registration using the absolute path to vendor/bin/marko', fu
 
 it('runs docs-fts:build during install when marko/docs-fts is in vendor', function (): void {
     mkdir($this->tempRoot . '/vendor/marko/docs-fts', 0755, true);
+    mkdir($this->tempRoot . '/vendor/marko/docs', 0755, true);
+    file_put_contents(
+        $this->tempRoot . '/vendor/marko/docs/known-drivers.php',
+        '<?php return [\'marko/docs-fts\' => \'FTS driver (recommended; fast full-text search)\'];',
+    );
 
     $runner = makeRecordingRunner();
     $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
@@ -307,14 +314,18 @@ it('skips the docs index build when no driver is installed', function (): void {
 
     $buildCommands = array_map(fn ($c) => $c[1][0] ?? null, $runner->calls);
 
-    expect($buildCommands)->not->toContain('docs-fts:build');
-
     // A bare install is valid — but it should tell the user how to enable search.
-    expect(implode("\n", $result['log'] ?? []))->toContain('no search driver installed');
+    expect($buildCommands)->not->toContain('docs-fts:build')
+        ->and(implode("\n", $result['log'] ?? []))->toContain('no search driver installed');
 });
 
 it('records a helpful log line when the docs index build fails', function (): void {
     mkdir($this->tempRoot . '/vendor/marko/docs-fts', 0755, true);
+    mkdir($this->tempRoot . '/vendor/marko/docs', 0755, true);
+    file_put_contents(
+        $this->tempRoot . '/vendor/marko/docs/known-drivers.php',
+        '<?php return [\'marko/docs-fts\' => \'FTS driver (recommended; fast full-text search)\'];',
+    );
 
     $runner = new class () implements CommandRunnerInterface
     {
@@ -350,7 +361,7 @@ it('surfaces a loud notice in the install log when a guideline file has its mark
     // Use a spy agent that writes to AGENTS.md via the real GuidelinesWriter path
     // We simulate the stripped-markers scenario by having a pre-existing file without markers
     // and an agent that calls GuidelinesWriter::write() on it.
-    $writingAgent = new class ($this->tempRoot) implements AgentInterface
+    $writingAgent = new readonly class ($this->tempRoot) implements AgentInterface
     {
         public function __construct(private string $root) {}
 
@@ -372,8 +383,7 @@ it('surfaces a loud notice in the install log when a guideline file has its mark
         public function install(
             InstallationContext $ctx,
             string $projectRoot,
-        ): void
-        {
+        ): void {
             GuidelinesWriter::write($projectRoot . '/AGENTS.md', 'new content');
         }
     };
@@ -395,4 +405,86 @@ it('detects installed agents and filters out missing ones', function (): void {
     $detected = array_keys(array_filter($registry->all($this->tempRoot), fn ($a) => $a->isInstalled()));
 
     expect($detected)->toBe(['installed-agent']);
+});
+
+it('builds the index for the installed docs driver resolved from the registry', function (): void {
+    mkdir($this->tempRoot . '/vendor/marko/docs-vec', 0755, true);
+    mkdir($this->tempRoot . '/vendor/marko/docs', 0755, true);
+    file_put_contents(
+        $this->tempRoot . '/vendor/marko/docs/known-drivers.php',
+        '<?php return [\'marko/docs-vec\' => \'Vector driver (recommended; semantic search)\'];',
+    );
+
+    $runner = makeRecordingRunner();
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    $buildCall = array_find(
+        $runner->calls,
+        fn ($call) => in_array('docs-vec:build', $call[1], true),
+    );
+
+    expect($buildCall)->not->toBeNull()
+        ->and($buildCall[0])->toBe($this->tempRoot . '/vendor/bin/marko');
+});
+
+it('logs the install hint when no docs driver is installed', function (): void {
+    $runner = makeRecordingRunner();
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $result = $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    expect(implode("\n", $result['log'] ?? []))->toContain('no search driver installed');
+});
+
+it('records a helpful log line when the docs index build fails for the resolved driver', function (): void {
+    mkdir($this->tempRoot . '/vendor/marko/docs-vec', 0755, true);
+    mkdir($this->tempRoot . '/vendor/marko/docs', 0755, true);
+    file_put_contents(
+        $this->tempRoot . '/vendor/marko/docs/known-drivers.php',
+        '<?php return [\'marko/docs-vec\' => \'Vector driver (recommended; semantic search)\'];',
+    );
+
+    $runner = new class () implements CommandRunnerInterface
+    {
+        public function run(
+            string $command,
+            array $args = [],
+        ): array {
+            return ['exitCode' => 1, 'stdout' => '', 'stderr' => 'disk full'];
+        }
+
+        public function isOnPath(string $binary): bool
+        {
+            return false;
+        }
+    };
+
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $result = $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    $log = implode("\n", $result['log'] ?? []);
+    expect($log)->toContain('docs-vec')
+        ->and($log)->toContain('build failed')
+        ->and($log)->toContain('disk full');
+});
+
+it('does not hardcode the docs-fts package when resolving the driver to build', function (): void {
+    mkdir($this->tempRoot . '/vendor/marko/docs-vec', 0755, true);
+    mkdir($this->tempRoot . '/vendor/marko/docs', 0755, true);
+    file_put_contents(
+        $this->tempRoot . '/vendor/marko/docs/known-drivers.php',
+        '<?php return [\'marko/docs-vec\' => \'Vector driver (recommended; semantic search)\'];',
+    );
+
+    $runner = makeRecordingRunner();
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    $allArgs = array_merge(...array_column($runner->calls, 1));
+    expect($allArgs)->not->toContain('docs-fts:build')
+        ->and($allArgs)->toContain('docs-vec:build');
 });

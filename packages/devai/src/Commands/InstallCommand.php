@@ -8,9 +8,13 @@ use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
+use Marko\DevAi\Exceptions\DevAiInstallException;
 use Marko\DevAi\Installation\AgentRegistry;
+use Marko\DevAi\Installation\DocsDriverResolver;
 use Marko\DevAi\Installation\InstallationContext;
 use Marko\DevAi\Installation\InstallationOrchestrator;
+use Marko\DevAi\Process\CommandRunnerInterface;
+use Marko\DevAi\Process\ConfirmationPrompterInterface;
 
 #[Command(name: 'devai:install', description: 'Install Marko AI development tooling for selected agents')]
 readonly class InstallCommand implements CommandInterface
@@ -18,8 +22,14 @@ readonly class InstallCommand implements CommandInterface
     public function __construct(
         private InstallationOrchestrator $orchestrator,
         private AgentRegistry $registry,
+        private DocsDriverResolver $docsDriverResolver,
+        private ConfirmationPrompterInterface $confirmationPrompter,
+        private CommandRunnerInterface $commandRunner,
     ) {}
 
+    /**
+     * @throws DevAiInstallException
+     */
     public function execute(
         Input $input,
         Output $output,
@@ -48,6 +58,8 @@ readonly class InstallCommand implements CommandInterface
             $context = $this->buildContextFromDetection($detected, $force, $gitignoreArg, $output);
         }
 
+        $this->maybeInstallDocsDriver($input, $output, $projectRoot);
+
         $result = $this->orchestrator->install($context, $projectRoot);
 
         if ($result['status'] === 'skipped') {
@@ -62,6 +74,54 @@ readonly class InstallCommand implements CommandInterface
         }
 
         return 0;
+    }
+
+    /**
+     * Offer to install the recommended docs search driver when none is present
+     * and the session is interactive. Does nothing (falls through gracefully) in
+     * non-interactive mode, CI, or when a driver is already installed.
+     */
+    private function maybeInstallDocsDriver(
+        Input $input,
+        Output $output,
+        string $projectRoot,
+    ): void {
+        if ($this->docsDriverResolver->installedDriver($projectRoot) !== null) {
+            return;
+        }
+
+        $pkg = $this->docsDriverResolver->recommendedUninstalled($projectRoot);
+
+        if ($pkg === null) {
+            return;
+        }
+
+        $noInteraction = $input->hasOption('no-interaction');
+
+        if ($noInteraction || !$this->confirmationPrompter->isInteractive()) {
+            return;
+        }
+
+        $question = "No docs search driver installed. Install $pkg to enable search_docs?";
+        $confirmed = $this->confirmationPrompter->confirm($question, default: true);
+
+        if (!$confirmed) {
+            return;
+        }
+
+        if (!$this->commandRunner->isOnPath('composer')) {
+            $output->writeLine("composer not found — run `composer require --dev $pkg` to enable search_docs.");
+
+            return;
+        }
+
+        $result = $this->commandRunner->run('composer', ['require', '--dev', $pkg]);
+
+        if ($result['exitCode'] !== 0) {
+            $stderr = trim($result['stderr']);
+            $hint = $stderr === '' ? '' : " ($stderr)";
+            $output->writeLine("composer require --dev $pkg failed$hint — run it manually to enable search_docs.");
+        }
     }
 
     /**
