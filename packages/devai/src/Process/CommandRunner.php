@@ -15,7 +15,15 @@ class CommandRunner implements CommandRunnerInterface
         array $args = [],
     ): array {
         $cmd = escapeshellcmd($command) . ' ' . implode(' ', array_map('escapeshellarg', $args));
-        $proc = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        // Detach stdin (read from /dev/null) so a child can never block waiting on
+        // terminal input. Without this the child inherits the parent's TTY and any
+        // unexpected prompt — e.g. composer's allow-plugins trust question — deadlocks
+        // forever, with the prompt hidden because we buffer the child's output.
+        $proc = proc_open(
+            $cmd,
+            [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+        );
 
         if (!is_resource($proc)) {
             return ['exitCode' => -1, 'stdout' => '', 'stderr' => 'proc_open failed'];

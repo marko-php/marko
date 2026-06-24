@@ -122,7 +122,10 @@ readonly class InstallCommand implements CommandInterface
         }
 
         $output->writeLine("Installing $pkg via composer (this may take a moment)…");
-        $result = $this->commandRunner->run('composer', ['require', '--dev', $pkg]);
+        $result = $this->commandRunner->run(
+            'composer',
+            ['require', '--dev', '--no-interaction', '--no-progress', $pkg]
+        );
 
         if ($result['exitCode'] !== 0) {
             $stderr = trim($result['stderr']);

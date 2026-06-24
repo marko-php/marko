@@ -37,7 +37,10 @@ function makeInstallCmdFakePrompter(bool $answer, bool $interactive = true): Con
             return $this->interactive;
         }
 
-        public function confirm(string $question, bool $default): bool
+        public function confirm(
+            string $question,
+            bool $default,
+        ): bool
         {
             return $this->answer;
         }
@@ -60,7 +63,10 @@ function makeInstallCmdRunner(bool $composerOnPath = true, int $requireExitCode 
             private readonly int $requireExitCode,
         ) {}
 
-        public function run(string $command, array $args = []): array
+        public function run(
+            string $command,
+            array $args = [],
+        ): array
         {
             $this->calls[] = [$command, $args];
 
@@ -209,7 +215,9 @@ it('offers to install the recommended driver and runs composer require on yes', 
     ['stream' => $stream, 'output' => $output] = makeInstallCmdOutput();
     $cmd->execute(new Input(['marko', 'devai:install']), $output);
 
-    expect($runner->calls)->toContain(['composer', ['require', '--dev', 'marko/docs-fts']]);
+    expect($runner->calls)->toContain(
+        ['composer', ['require', '--dev', '--no-interaction', '--no-progress', 'marko/docs-fts']]
+    );
 });
 
 it('does not install anything when the user answers no', function (): void {

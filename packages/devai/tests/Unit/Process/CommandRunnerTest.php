@@ -33,6 +33,19 @@ describe('CommandRunner', function (): void {
             ->and(strlen($result['stderr']))->toBeGreaterThan(65536);
     })->group('integration');
 
+    it('does not block when the child reads stdin (stdin detached to /dev/null)', function (): void {
+        $runner = new CommandRunner();
+        // A child that reads stdin would deadlock forever if it inherited the parent's
+        // TTY. With stdin detached to /dev/null it gets immediate EOF and returns.
+        $started = microtime(true);
+        $result = $runner->run('sh', ['-c', 'read line; echo "done"']);
+        $elapsed = microtime(true) - $started;
+
+        expect($elapsed)->toBeLessThan(10.0)
+            ->and($result['stdout'])->toContain('done')
+            ->and($result['exitCode'])->toBe(0);
+    });
+
     it('returns the proc_open failure shape when the process cannot start', function (): void {
         $runner = new CommandRunner();
         // Pass a command that proc_open will fail on by using a completely invalid path
