@@ -6,9 +6,18 @@ namespace Marko\Skeleton\Prompts;
 
 class PostCreateHook
 {
+    /** @var resource */
+    private $errorStream;
+
+    /**
+     * @param resource|null $errorStream stream for error output (defaults to STDERR)
+     */
     public function __construct(
         private DevAiPrompt $prompt,
-    ) {}
+        $errorStream = null,
+    ) {
+        $this->errorStream = $errorStream ?? STDERR;
+    }
 
     /**
      * Run the post-create hook for $projectRoot.
@@ -19,8 +28,7 @@ class PostCreateHook
     public function run(
         string $projectRoot,
         bool $interactive = true,
-    ): int
-    {
+    ): int {
         if ($this->prompt->alreadyAnswered($projectRoot)) {
             return 0;
         }
@@ -37,8 +45,11 @@ class PostCreateHook
 
         $installResult = $this->prompt->install($projectRoot);
         if ($installResult !== 0) {
-            fwrite(STDERR, "Failed to install marko/devai (exit code: $installResult)\n");
-            fwrite(STDERR, "marko/devai package was added to composer; you may try `marko devai:install` manually\n");
+            fwrite($this->errorStream, "Failed to install marko/devai (exit code: $installResult)\n");
+            fwrite(
+                $this->errorStream,
+                "marko/devai package was added to composer; you may try `marko devai:install` manually\n"
+            );
 
             return $installResult;
         }
@@ -46,8 +57,8 @@ class PostCreateHook
         $exitCode = $this->runDevaiInstall($projectRoot, $interactive);
 
         if ($exitCode !== 0) {
-            fwrite(STDERR, "marko devai:install failed (exit code: $exitCode)\n");
-            fwrite(STDERR, "marko/devai is installed. You can re-run `marko devai:install` manually.\n");
+            fwrite($this->errorStream, "marko devai:install failed (exit code: $exitCode)\n");
+            fwrite($this->errorStream, "marko/devai is installed. You can re-run `marko devai:install` manually.\n");
 
             return $exitCode;
         }
@@ -62,8 +73,7 @@ class PostCreateHook
     protected function runDevaiInstall(
         string $projectRoot,
         bool $interactive,
-    ): int
-    {
+    ): int {
         $cmd = $interactive
             ? sprintf('cd %s && php marko devai:install 2>&1', escapeshellarg($projectRoot))
             : sprintf('cd %s && php marko devai:install --agents=claude-code 2>&1', escapeshellarg($projectRoot));
