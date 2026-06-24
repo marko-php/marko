@@ -471,6 +471,168 @@ it('records a helpful log line when the docs index build fails for the resolved 
         ->and($log)->toContain('disk full');
 });
 
+it('runs discovery:cache during install', function (): void {
+    $runner = makeRecordingRunner();
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    $cacheCall = array_find(
+        $runner->calls,
+        fn ($call) => in_array('discovery:cache', $call[1], true),
+    );
+
+    expect($cacheCall)->not->toBeNull()
+        ->and($cacheCall[0])->toBe($this->tempRoot . '/vendor/bin/marko');
+});
+
+it('still returns installed status when indexer:rebuild is unavailable', function (): void {
+    $runner = new class () implements CommandRunnerInterface
+    {
+        public function run(
+            string $command,
+            array $args = [],
+        ): array {
+            if (in_array('indexer:rebuild', $args, true)) {
+                return ['exitCode' => 1, 'stdout' => '', 'stderr' => 'Unknown command: indexer:rebuild'];
+            }
+
+            return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
+        }
+
+        public function isOnPath(string $binary): bool
+        {
+            return false;
+        }
+    };
+
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $result = $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    $log = implode("\n", $result['log'] ?? []);
+    expect($result['status'])->toBe('installed')
+        ->and($log)->toContain('indexer:rebuild')
+        ->and($log)->toContain('failed');
+});
+
+it('still returns installed status when a warm-up command fails', function (): void {
+    $runner = new class () implements CommandRunnerInterface
+    {
+        public function run(
+            string $command,
+            array $args = [],
+        ): array {
+            return ['exitCode' => 1, 'stdout' => '', 'stderr' => 'something went wrong'];
+        }
+
+        public function isOnPath(string $binary): bool
+        {
+            return false;
+        }
+    };
+
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $result = $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    expect($result['status'])->toBe('installed');
+});
+
+it('records a helpful log line when a warm-up command fails', function (): void {
+    $runner = new class () implements CommandRunnerInterface
+    {
+        public function run(
+            string $command,
+            array $args = [],
+        ): array {
+            return ['exitCode' => 1, 'stdout' => '', 'stderr' => 'command not found: discovery'];
+        }
+
+        public function isOnPath(string $binary): bool
+        {
+            return false;
+        }
+    };
+
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $result = $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    $log = implode("\n", $result['log'] ?? []);
+    expect($log)->toContain('discovery:cache')
+        ->and($log)->toContain('failed')
+        ->and($log)->toContain('command not found: discovery');
+});
+
+it('records a success log line when a warm-up command succeeds', function (): void {
+    $runner = makeRecordingRunner();
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $result = $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    $log = implode("\n", $result['log'] ?? []);
+    expect($log)->toContain('[discovery]')
+        ->and($log)->toContain('[indexer]');
+});
+
+it('targets the project vendor/bin/marko for warm-up commands', function (): void {
+    $runner = makeRecordingRunner();
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    $warmUpCalls = array_filter(
+        $runner->calls,
+        fn ($call) => in_array($call[1][0] ?? null, ['discovery:cache', 'indexer:rebuild'], true),
+    );
+
+    expect($warmUpCalls)->not->toBeEmpty();
+    foreach ($warmUpCalls as $call) {
+        expect($call[0])->toBe($this->tempRoot . '/vendor/bin/marko');
+    }
+});
+
+it('runs discovery:cache before indexer:rebuild', function (): void {
+    mkdir($this->tempRoot . '/vendor/marko/docs-fts', 0755, true);
+    mkdir($this->tempRoot . '/vendor/marko/docs', 0755, true);
+    file_put_contents(
+        $this->tempRoot . '/vendor/marko/docs/known-drivers.php',
+        '<?php return [\'marko/docs-fts\' => \'FTS driver (recommended; fast full-text search)\'];',
+    );
+
+    $runner = makeRecordingRunner();
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    $commandSequence = array_map(fn ($call) => $call[1][0] ?? null, $runner->calls);
+    $discoveryPos = array_search('discovery:cache', $commandSequence, true);
+    $indexerPos = array_search('indexer:rebuild', $commandSequence, true);
+    $docsPos = array_search('docs-fts:build', $commandSequence, true);
+
+    expect($discoveryPos)->not->toBeFalse()
+        ->and($indexerPos)->not->toBeFalse()
+        ->and($docsPos)->not->toBeFalse()
+        ->and($discoveryPos)->toBeLessThan($indexerPos)
+        ->and($indexerPos)->toBeLessThan($docsPos);
+});
+
+it('runs indexer:rebuild during install', function (): void {
+    $runner = makeRecordingRunner();
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
+
+    $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
+
+    $rebuildCall = array_find(
+        $runner->calls,
+        fn ($call) => in_array('indexer:rebuild', $call[1], true),
+    );
+
+    expect($rebuildCall)->not->toBeNull()
+        ->and($rebuildCall[0])->toBe($this->tempRoot . '/vendor/bin/marko');
+});
+
 it('does not hardcode the docs-fts package when resolving the driver to build', function (): void {
     mkdir($this->tempRoot . '/vendor/marko/docs-vec', 0755, true);
     mkdir($this->tempRoot . '/vendor/marko/docs', 0755, true);

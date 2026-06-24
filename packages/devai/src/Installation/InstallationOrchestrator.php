@@ -87,9 +87,40 @@ class InstallationOrchestrator
             $this->updateGitignore($projectRoot);
         }
 
+        $this->warmFrameworkCaches($projectRoot, $markoBin);
         $this->buildDocsIndex($projectRoot, $markoBin);
 
         return ['status' => 'installed', 'log' => $this->log];
+    }
+
+    /**
+     * Compile discovery cache and rebuild the code index so the first
+     * `mcp:serve` handshake hits the fast path instead of lazily compiling.
+     *
+     * Failures are non-fatal: a missing command (e.g. marko/codeindexer is not
+     * installed) exits non-zero, which is logged as a helpful warning and
+     * does not abort the install.
+     */
+    private function warmFrameworkCaches(
+        string $projectRoot,
+        string $markoBin,
+    ): void {
+        $commands = [
+            'discovery:cache' => '[discovery] compiled discovery cache',
+            'indexer:rebuild' => '[indexer] rebuilt code index',
+        ];
+
+        foreach ($commands as $command => $successMessage) {
+            $result = $this->runner->run($markoBin, [$command]);
+
+            if (($result['exitCode'] ?? 1) === 0) {
+                $this->log[] = $successMessage;
+            } else {
+                $stderr = trim((string) ($result['stderr'] ?? ''));
+                $hint = $stderr === '' ? '' : " ($stderr)";
+                $this->log[] = "[cache] $command failed$hint — re-run `marko $command` manually";
+            }
+        }
     }
 
     /**

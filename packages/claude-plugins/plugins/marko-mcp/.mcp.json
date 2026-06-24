@@ -2,7 +2,8 @@
   "mcpServers": {
     "marko": {
       "command": "${CLAUDE_PLUGIN_ROOT}/bin/marko-mcp",
-      "args": []
+      "args": [],
+      "timeout": 60000
     }
   }
 }

@@ -12,11 +12,11 @@ describe('marko-mcp plugin', function (): void {
         'plugin.json declares name "marko-mcp" and a description matching the marketplace.json entry',
         function (): void {
             $manifest = json_decode(file_get_contents($this->pluginJsonPath), true);
-    
+
             expect(file_exists($this->pluginJsonPath))->toBeTrue()
                 ->and($manifest['name'])->toBe('marko-mcp')
                 ->and($manifest['description'])->toBe('Marko MCP server (codeindexer, docs-fts) for Claude Code.');
-        }
+        },
     );
 
     it('plugin.json includes author with name "Marko Framework"', function (): void {
@@ -38,14 +38,14 @@ describe('marko-mcp plugin', function (): void {
         function (): void {
             $mcpPath = $this->pluginRoot . '/.mcp.json';
             $mcp = json_decode(file_get_contents($mcpPath), true);
-    
+
             expect(file_exists($mcpPath))->toBeTrue()
                 ->and($mcp)->toHaveKey('mcpServers')
                 ->and($mcp['mcpServers'])->toBeArray()
                 ->and($mcp['mcpServers'])->toHaveKey('marko')
                 ->and($mcp['mcpServers'])->not->toHaveKey('marko-mcp')
                 ->and($mcp['mcpServers']['marko'])->toBeArray();
-        }
+        },
     );
 
     it('.mcp.json marko.command is "${CLAUDE_PLUGIN_ROOT}/bin/marko-mcp"', function (): void {
@@ -59,7 +59,33 @@ describe('marko-mcp plugin', function (): void {
 
         expect($mcp['mcpServers']['marko'])->toHaveKey('args')
             ->and($mcp['mcpServers']['marko']['args'])->toBeArray()
-            ->and($mcp['mcpServers']['marko']['args'])->toHaveCount(0);
+            ->and($mcp['mcpServers']['marko']['args'])->toBeEmpty();
+    });
+
+    it('declares a numeric marko.timeout field in .mcp.json', function (): void {
+        $mcp = json_decode(file_get_contents($this->pluginRoot . '/.mcp.json'), true);
+
+        expect($mcp['mcpServers']['marko'])->toHaveKey('timeout')
+            ->and($mcp['mcpServers']['marko']['timeout'])->toBeInt();
+    });
+
+    it('sets marko.timeout to 60000 milliseconds', function (): void {
+        $mcp = json_decode(file_get_contents($this->pluginRoot . '/.mcp.json'), true);
+
+        expect($mcp['mcpServers']['marko']['timeout'])->toBe(60000);
+    });
+
+    it('preserves the marko.command as ${CLAUDE_PLUGIN_ROOT}/bin/marko-mcp', function (): void {
+        $mcp = json_decode(file_get_contents($this->pluginRoot . '/.mcp.json'), true);
+
+        expect($mcp['mcpServers']['marko']['command'])->toBe('${CLAUDE_PLUGIN_ROOT}/bin/marko-mcp');
+    });
+
+    it('preserves marko.args as an empty array', function (): void {
+        $mcp = json_decode(file_get_contents($this->pluginRoot . '/.mcp.json'), true);
+
+        expect($mcp['mcpServers']['marko']['args'])->toBeArray()
+            ->and($mcp['mcpServers']['marko']['args'])->toBeEmpty();
     });
 
     it(
@@ -67,11 +93,11 @@ describe('marko-mcp plugin', function (): void {
         function (): void {
             $shimPath = $this->pluginRoot . '/bin/marko-mcp';
             $contents = file_exists($shimPath) ? file_get_contents($shimPath) : '';
-    
+
             expect(file_exists($shimPath))->toBeTrue()
                 ->and(str_starts_with($contents, '#!/bin/sh'))->toBeTrue()
                 ->and(is_executable($shimPath))->toBeTrue();
-        }
+        },
     );
 
     it('bin/marko-mcp searches for marko binary in order: ./vendor/bin/marko then marko on PATH', function (): void {
@@ -97,11 +123,11 @@ describe('marko-mcp plugin', function (): void {
         'bin/marko-mcp prints a loud error to stderr and exits 1 when no marko binary is found, suggesting "composer require marko/devai"',
         function (): void {
             $contents = file_get_contents($this->pluginRoot . '/bin/marko-mcp');
-    
+
             expect(str_contains($contents, '>&2'))->toBeTrue()
                 ->and(str_contains($contents, 'composer require marko/devai'))->toBeTrue()
                 ->and(str_contains($contents, 'exit 1'))->toBeTrue();
-        }
+        },
     );
 
     it(
@@ -109,7 +135,7 @@ describe('marko-mcp plugin', function (): void {
         function (): void {
             $readmePath = $this->pluginRoot . '/README.md';
             $contents = file_exists($readmePath) ? file_get_contents($readmePath) : '';
-    
+
             expect(file_exists($readmePath))->toBeTrue()
                 // What the plugin registers
             ->and(str_contains($contents, 'mcp:serve') || str_contains($contents, 'MCP server'))->toBeTrue()
@@ -117,6 +143,6 @@ describe('marko-mcp plugin', function (): void {
             ->and(str_contains($contents, '/plugin install marko-mcp@marko'))->toBeTrue()
                 // How to verify
             ->and(str_contains($contents, 'claude mcp list'))->toBeTrue();
-        }
+        },
     );
 });
