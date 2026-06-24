@@ -5,6 +5,8 @@ description: Define routes with PHP attributes, middleware, and route groups.
 
 Marko uses PHP attributes to define routes directly on controller methods. No separate route files, no registration boilerplate.
 
+Routes are always discovered live at boot and are never cached --- adding or changing a route takes effect on the next request in every environment, with no rebuild. (This is unlike `#[Plugin]`, `#[Observer]`, `#[Preference]`, and `#[Command]`, which the [discovery cache](/docs/packages/core/#discovery-cache) can compile for production.)
+
 ## Defining Routes
 
 ```php title="app/blog/Controller/PostController.php"
