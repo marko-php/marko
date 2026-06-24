@@ -13,15 +13,19 @@ Requires `marko/database` for the database connection.
 ## Quick Example
 
 ```php
-use Marko\Session\Contracts\SessionHandlerInterface;
-use Marko\Session\Database\Handler\DatabaseSessionHandler;
+use Marko\Session\Contracts\SessionInterface;
 
-return [
-    'bindings' => [
-        SessionHandlerInterface::class => DatabaseSessionHandler::class,
-    ],
-];
+public function __construct(
+    private readonly SessionInterface $session,
+) {}
+
+public function handle(): void
+{
+    $this->session->set('user_id', 42);
+}
 ```
+
+Installing this package automatically registers the database handler, binds `SessionInterface`, and adds `SessionMiddleware` globally. No manual configuration is needed.
 
 ## Documentation
 

@@ -1,0 +1,14 @@
+{
+    "name": "local/blog",
+    "type": "marko-module",
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Blog\\": "src/"
+        }
+    }
+}

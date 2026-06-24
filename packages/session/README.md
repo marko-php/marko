@@ -8,7 +8,7 @@ Session interfaces and infrastructure--defines session management, flash message
 composer require marko/session
 ```
 
-Note: You also need a driver package. See `marko/session-file` or `marko/session-database`.
+This package is inert on its own --- it defines contracts only. Session handling activates when you install a driver package (`marko/session-file` or `marko/session-database`), which registers the implementation and middleware automatically.
 
 ## Quick Example
 

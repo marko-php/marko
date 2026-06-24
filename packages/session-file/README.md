@@ -11,15 +11,19 @@ composer require marko/session-file
 ## Quick Example
 
 ```php
-use Marko\Session\Contracts\SessionHandlerInterface;
-use Marko\Session\File\Handler\FileSessionHandler;
+use Marko\Session\Contracts\SessionInterface;
 
-return [
-    'bindings' => [
-        SessionHandlerInterface::class => FileSessionHandler::class,
-    ],
-];
+public function __construct(
+    private readonly SessionInterface $session,
+) {}
+
+public function handle(): void
+{
+    $this->session->set('user_id', 42);
+}
 ```
+
+Installing this package automatically registers the file handler, binds `SessionInterface`, and adds `SessionMiddleware` globally. No manual configuration is needed.
 
 ## Documentation
 

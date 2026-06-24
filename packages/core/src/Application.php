@@ -34,6 +34,7 @@ use Marko\Core\Exceptions\PreferenceConflictException;
 use Marko\Core\Module\DependencyResolver;
 use Marko\Core\Module\GlobalMiddlewareResolver;
 use Marko\Core\Module\ManifestParser;
+use Marko\Core\Module\ModuleAutoloader;
 use Marko\Core\Module\ModuleDiscovery;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepository;
@@ -223,48 +224,19 @@ class Application
     /**
      * Register PSR-4 autoloaders for non-vendor modules.
      *
-     * Vendor modules are already autoloaded via Composer.
+     * Delegates to ModuleAutoloader so lightweight callers (e.g. TestCase)
+     * can reuse the same logic without booting the full Application.
+     *
+     * @throws ModuleException
      */
     private function registerAutoloaders(): void
     {
-        foreach ($this->modules as $module) {
-            // Skip vendor modules - they're already handled by Composer
-            if ($module->source === 'vendor') {
-                continue;
-            }
-
-            foreach ($module->autoload as $namespace => $path) {
-                $basePath = $module->path . '/' . rtrim($path, '/');
-                $this->registerPsr4Autoloader($namespace, $basePath);
-            }
-        }
-    }
-
-    /**
-     * Register a PSR-4 autoloader for a namespace prefix.
-     */
-    private function registerPsr4Autoloader(
-        string $namespace,
-        string $basePath,
-    ): void {
-        spl_autoload_register(function (
-            string $class,
-        ) use ($namespace, $basePath): void {
-            // Check if class uses the registered namespace
-            if (!str_starts_with($class, $namespace)) {
-                return;
-            }
-
-            // Get the relative class name
-            $relativeClass = substr($class, strlen($namespace));
-
-            // Convert namespace separators to directory separators
-            $file = $basePath . '/' . str_replace('\\', '/', $relativeClass) . '.php';
-
-            if (is_file($file)) {
-                require_once $file;
-            }
-        });
+        $autoloader = new ModuleAutoloader(
+            modulesPath: $this->modulesPath,
+            appPath: $this->appPath,
+            parser: new ManifestParser(),
+        );
+        $autoloader->register();
     }
 
     /**
@@ -398,7 +370,7 @@ class Application
     }
 
     /**
-     * @throws RouteException|RouteConflictException|ReflectionException
+     * @throws ModuleException|RouteException|RouteConflictException|ReflectionException
      */
     private function discoverRoutes(): void
     {

@@ -30,22 +30,9 @@ The `path` directory is created automatically if it does not exist.
 
 ## Usage
 
-### Binding the Driver
+Installing `marko/session-file` is all that is required to activate file-based sessions. The package registers `FileSessionHandler` as the `SessionHandlerInterface` implementation, binds `SessionInterface` to `Session` as a singleton, and adds `SessionMiddleware` globally --- no manual configuration is needed.
 
-Register the file handler in your module bindings:
-
-```php title="module.php"
-use Marko\Session\Contracts\SessionHandlerInterface;
-use Marko\Session\File\Handler\FileSessionHandler;
-
-return [
-    'bindings' => [
-        SessionHandlerInterface::class => FileSessionHandler::class,
-    ],
-];
-```
-
-Then use `SessionInterface` as usual --- the file driver handles storage:
+Use `SessionInterface` as usual --- the file driver handles storage:
 
 ```php
 use Marko\Session\Contracts\SessionInterface;

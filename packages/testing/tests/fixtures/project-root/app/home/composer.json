@@ -1,0 +1,14 @@
+{
+    "name": "app/home",
+    "type": "marko-module",
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\Home\\": "src/"
+        }
+    }
+}

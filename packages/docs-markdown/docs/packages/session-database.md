@@ -17,22 +17,9 @@ Requires [`marko/database`](/docs/packages/database/) for the database connectio
 
 ## Usage
 
-### Binding the Driver
+Installing `marko/session-database` is all that is required to activate database-backed sessions. The package registers `DatabaseSessionHandler` as the `SessionHandlerInterface` implementation, binds `SessionInterface` to `Session` as a singleton, and adds `SessionMiddleware` globally --- no manual configuration is needed.
 
-Register the database handler in your module bindings:
-
-```php title="module.php"
-use Marko\Session\Contracts\SessionHandlerInterface;
-use Marko\Session\Database\Handler\DatabaseSessionHandler;
-
-return [
-    'bindings' => [
-        SessionHandlerInterface::class => DatabaseSessionHandler::class,
-    ],
-];
-```
-
-Then use `SessionInterface` as usual:
+Use `SessionInterface` as usual:
 
 ```php
 use Marko\Session\Contracts\SessionInterface;
