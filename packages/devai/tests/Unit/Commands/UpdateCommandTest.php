@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\CodeIndexer\Module\ModuleWalker;
+use Marko\CodeIndexer\ValueObject\ModuleInfo;
 use Marko\Core\Attributes\Command;
 use Marko\Core\Command\CommandInterface;
 use Marko\Core\Command\Input;
@@ -19,6 +20,7 @@ use Marko\DevAi\Skills\SkillsDistributor;
 class UpdateCommandTestStubOrchestrator extends InstallationOrchestrator
 {
     public ?InstallationContext $capturedContext = null;
+
     public bool $installCalled = false;
 
     /** @var array{status: string, log?: list<string>} */
@@ -27,6 +29,7 @@ class UpdateCommandTestStubOrchestrator extends InstallationOrchestrator
     public function install(
         InstallationContext $ctx,
         string $projectRoot,
+        ?callable $onProgress = null,
     ): array {
         $this->capturedContext = $ctx;
         $this->installCalled = true;
@@ -50,8 +53,7 @@ class UpdateCommandTestNullRunner implements CommandRunnerInterface
     public function run(
         string $command,
         array $args = [],
-    ): array
-    {
+    ): array {
         return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
     }
 
@@ -190,10 +192,10 @@ it('detects and reports newly contributed guidelines from new packages', functio
 
         public function walk(): array
         {
-            return [new \Marko\CodeIndexer\ValueObject\ModuleInfo(
+            return [new ModuleInfo(
                 name: 'marko/authentication',
                 path: $this->authPath,
-                namespace: ''
+                namespace: '',
             )];
         }
     };

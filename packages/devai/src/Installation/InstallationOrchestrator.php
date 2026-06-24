@@ -35,7 +35,9 @@ class InstallationOrchestrator
     public function install(
         InstallationContext $ctx,
         string $projectRoot,
+        ?callable $onProgress = null,
     ): array {
+        $progress = $onProgress ?? static function (string $message): void {};
         $marker = $projectRoot . '/.marko/devai.json';
         if (is_file($marker) && !$ctx->force) {
             return [
@@ -65,8 +67,9 @@ class InstallationOrchestrator
                 continue;
             }
 
+            $progress('Configuring agent: ' . $agentName . '…');
             $agents[$agentName]->install($installCtx, $projectRoot);
-            $this->log[] = "[$agentName] installed";
+            $this->log[] = "[$agentName] configured";
         }
 
         foreach (GuidelinesWriter::takeNotices() as $notice) {
@@ -87,8 +90,8 @@ class InstallationOrchestrator
             $this->updateGitignore($projectRoot);
         }
 
-        $this->warmFrameworkCaches($projectRoot, $markoBin);
-        $this->buildDocsIndex($projectRoot, $markoBin);
+        $this->warmFrameworkCaches($projectRoot, $markoBin, $progress);
+        $this->buildDocsIndex($projectRoot, $markoBin, $progress);
 
         return ['status' => 'installed', 'log' => $this->log];
     }
@@ -104,6 +107,7 @@ class InstallationOrchestrator
     private function warmFrameworkCaches(
         string $projectRoot,
         string $markoBin,
+        callable $progress,
     ): void {
         $commands = [
             'discovery:cache' => '[discovery] compiled discovery cache',
@@ -111,6 +115,7 @@ class InstallationOrchestrator
         ];
 
         foreach ($commands as $command => $successMessage) {
+            $progress('Running marko ' . $command . '…');
             $result = $this->runner->run($markoBin, [$command]);
 
             if (($result['exitCode'] ?? 1) === 0) {
@@ -136,6 +141,7 @@ class InstallationOrchestrator
     private function buildDocsIndex(
         string $projectRoot,
         string $markoBin,
+        callable $progress,
     ): void {
         $package = $this->docsDriverResolver->installedDriver($projectRoot);
 
@@ -149,6 +155,7 @@ class InstallationOrchestrator
         $command = $this->docsDriverResolver->buildCommand($package);
         $driver = substr($package, (int) strpos($package, '/') + 1);
 
+        $progress("Building docs search index ($driver)…");
         $result = $this->runner->run($markoBin, [$command]);
 
         if (($result['exitCode'] ?? 1) === 0) {

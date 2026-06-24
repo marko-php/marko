@@ -28,8 +28,10 @@ function makeFakePrompter(bool $answer, bool $interactive = true): ConfirmationP
             return $this->interactive;
         }
 
-        public function confirm(string $question, bool $default): bool
-        {
+        public function confirm(
+            string $question,
+            bool $default,
+        ): bool {
             return $this->answer;
         }
     };
@@ -81,6 +83,26 @@ describe('StdinPrompter', function (): void {
         $prompter = new StdinPrompter($stream, noInteraction: true);
 
         expect($prompter->isInteractive())->toBeFalse();
+    });
+
+    it('writes the question and a Y/n hint to output before reading the answer', function (): void {
+        $output = fopen('php://memory', 'r+');
+        $prompter = new StdinPrompter(makeMemoryStream("y\n"), output: $output);
+
+        $prompter->confirm('Install the thing?', default: true);
+
+        rewind($output);
+        expect(stream_get_contents($output))->toBe('Install the thing? [Y/n] ');
+    });
+
+    it('reflects the default in the hint when the default is false', function (): void {
+        $output = fopen('php://memory', 'r+');
+        $prompter = new StdinPrompter(makeMemoryStream("\n"), output: $output);
+
+        $prompter->confirm('Proceed?', default: false);
+
+        rewind($output);
+        expect(stream_get_contents($output))->toBe('Proceed? [y/N] ');
     });
 });
 
