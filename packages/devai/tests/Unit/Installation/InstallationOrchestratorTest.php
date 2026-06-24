@@ -299,23 +299,6 @@ it('runs docs-fts:build during install when marko/docs-fts is in vendor', functi
         ->and($buildCall[0])->toBe($this->tempRoot . '/vendor/bin/marko');
 });
 
-it('runs docs-vec:build instead when the docs-vec driver is installed', function (): void {
-    // docs-fts and docs-vec are independent sibling drivers (the replace
-    // mechanism was removed). When docs-vec is the installed driver, the
-    // orchestrator must build the vec index, not fts.
-    mkdir($this->tempRoot . '/vendor/marko/docs-vec', 0755, true);
-
-    $runner = makeRecordingRunner();
-    $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
-
-    $orchestrator->install(new InstallationContext(selectedAgents: []), $this->tempRoot);
-
-    $buildCommands = array_map(fn ($c) => $c[1][0] ?? null, $runner->calls);
-
-    expect($buildCommands)->toContain('docs-vec:build')
-        ->and($buildCommands)->not->toContain('docs-fts:build');
-});
-
 it('skips the docs index build when no driver is installed', function (): void {
     $runner = makeRecordingRunner();
     $orchestrator = makeInstallOrchestrator(makeInstallRegistry([]), runner: $runner);
@@ -324,8 +307,7 @@ it('skips the docs index build when no driver is installed', function (): void {
 
     $buildCommands = array_map(fn ($c) => $c[1][0] ?? null, $runner->calls);
 
-    expect($buildCommands)->not->toContain('docs-fts:build')
-        ->and($buildCommands)->not->toContain('docs-vec:build');
+    expect($buildCommands)->not->toContain('docs-fts:build');
 
     // A bare install is valid — but it should tell the user how to enable search.
     expect(implode("\n", $result['log'] ?? []))->toContain('no search driver installed');
@@ -387,7 +369,10 @@ it('surfaces a loud notice in the install log when a guideline file has its mark
             return true;
         }
 
-        public function install(InstallationContext $ctx, string $projectRoot): void
+        public function install(
+            InstallationContext $ctx,
+            string $projectRoot,
+        ): void
         {
             GuidelinesWriter::write($projectRoot . '/AGENTS.md', 'new content');
         }

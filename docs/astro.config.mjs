@@ -159,7 +159,6 @@ export default defineConfig({
 						},
 						{ label: 'MCP Reference', slug: 'ai-assisted-development/mcp' },
 						{ label: 'LSP Reference', slug: 'ai-assisted-development/lsp' },
-						{ label: 'Docs Driver Comparison', slug: 'ai-assisted-development/docs-drivers' },
 						{ label: 'Verification Checklist', slug: 'ai-assisted-development/verification-checklist' },
 						{ label: 'Contributing', slug: 'ai-assisted-development/contributing' },
 						{ label: 'Troubleshooting', slug: 'ai-assisted-development/troubleshooting' },

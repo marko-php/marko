@@ -73,7 +73,7 @@ Three runtime tools are always registered: `app_info`, `read_log_entries`, and `
 **Conditional tools:**
 
 - `query_database` — registered when `marko/database` is bound in the container
-- `search_docs` — registered when a `DocsSearchInterface` binding is present (provided by `marko/docs-fts`, `marko/docs-vec`, or another docs driver package)
+- `search_docs` — registered when a `DocsSearchInterface` binding is present (provided by `marko/docs-fts` or another docs driver package)
 
 **Fetching the most recent error:** There is no dedicated error tool. Agents call `read_log_entries(level: 'error', limit: 1)`, which works against any `LogReaderInterface` implementation (the default `FileLogReader` parses `storage/logs/`).
 
@@ -128,7 +128,7 @@ See the [`marko/devai` README](https://github.com/markshust/marko/tree/develop/p
 
 1. Developer asks agent: "How does Marko handle events?"
 2. Agent calls `search_docs` tool via MCP
-3. MCP server delegates to the bound `DocsSearchInterface` driver (e.g., `docs-fts` or `docs-vec`)
+3. MCP server delegates to the bound `DocsSearchInterface` driver (e.g., `docs-fts`)
 4. Driver returns ranked chunks from Marko docs and package guidelines
 5. MCP returns chunks to agent
 6. Agent synthesizes an answer using the retrieved content

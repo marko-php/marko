@@ -4,7 +4,7 @@ Canonical Marko documentation as a Composer package — provides `MarkdownReposi
 
 ## Overview
 
-`marko/docs-markdown` ships the raw Markdown source of the Marko documentation tree. It is not a search package; it is a data package. The `MarkdownRepository` class exposes the doc files so that driver packages (`marko/docs-fts`, `marko/docs-vec`) can index them without bundling their own copy of the content. This ensures all drivers always index the same canonical documentation.
+`marko/docs-markdown` ships the raw Markdown source of the Marko documentation tree. It is not a search package; it is a data package. The `MarkdownRepository` class exposes the doc files so that a driver package (`marko/docs-fts`) can index them without bundling its own copy of the content. This ensures the search index always reflects the same canonical documentation.
 
 ## Installation
 
@@ -12,7 +12,7 @@ Canonical Marko documentation as a Composer package — provides `MarkdownReposi
 composer require marko/docs-markdown
 ```
 
-Docs search drivers (`marko/docs-fts`, `marko/docs-vec`) require this automatically — you typically do not need to install it directly.
+The docs search driver (`marko/docs-fts`) requires this automatically — you typically do not need to install it directly.
 
 ## Usage
 

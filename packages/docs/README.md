@@ -4,18 +4,14 @@ Documentation search contract for Marko — defines the interface for querying M
 
 ## Overview
 
-`marko/docs` is the contract package that defines how Marko documentation is searched. It ships no search implementation — install a driver instead: `marko/docs-fts` for lightweight lexical search (SQLite FTS5) or `marko/docs-vec` for hybrid semantic + lexical search (FTS5 + sqlite-vec). Both drivers implement the same `DocsSearchInterface`, so switching is a one-line dependency change.
+`marko/docs` is the contract package that defines how Marko documentation is searched. It ships no search implementation — install a driver instead: `marko/docs-fts` for lightweight lexical search (SQLite FTS5). A driver implements `DocsSearchInterface`, so apps depend on the contract and stay decoupled from the backend.
 
 ## Installation
 
 Install a driver (which pulls in this package automatically):
 
 ```bash
-# Lightweight lexical search
 composer require marko/docs-fts
-
-# Hybrid semantic + lexical search
-composer require marko/docs-vec
 ```
 
 Or install the contract alone if you are building a custom driver:

@@ -44,13 +44,16 @@ If `marko/database` is not installed, this tool does not appear in the MCP tool 
 
 ### search_docs
 
-Registered when a `DocsSearchInterface` binding is present in the container. This binding is provided by a docs driver package:
+Registered when a `DocsSearchInterface` binding is present in the container. That binding comes from a docs search driver — `marko/docs-fts` (SQLite FTS5 full-text search), or any other package that binds `DocsSearchInterface`.
 
-- `marko/docs-fts` — Full-text search via SQLite FTS5
-- `marko/docs-vec` — Semantic vector search via ONNX embeddings
-- Any package that binds `DocsSearchInterface`
+Install and build it so `search_docs` is wired up:
 
-If no docs driver is installed, this tool does not appear in the MCP tool list. See the [Docs driver comparison](./docs-drivers/) for how to choose and install a driver.
+```bash
+composer require --dev marko/docs-fts
+marko docs-fts:build
+```
+
+`marko devai:install` builds the index for you when a driver is installed. If no docs driver is installed, `search_docs` does not appear in the MCP tool list — the install still completes and logs how to add one.
 
 ## Fetching the most recent error
 

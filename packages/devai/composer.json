@@ -16,8 +16,7 @@
         "pestphp/pest": "^4.0"
     },
     "suggest": {
-        "marko/docs-fts": "Full-text docs search driver (recommended default — enables search_docs out of the box; run `marko docs-fts:build` after install)",
-        "marko/docs-vec": "Semantic vector docs search driver (alternative to docs-fts with richer relevance; requires a one-time model download)"
+        "marko/docs-fts": "Full-text docs search driver (recommended default — enables search_docs out of the box; run `marko docs-fts:build` after install)"
     },
     "autoload": {
         "psr-4": {

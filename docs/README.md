@@ -4,7 +4,7 @@ The [marko.build/docs](https://marko.build/docs/) documentation site, built with
 
 ## Content lives in `marko/docs-markdown`
 
-The documentation content is **not** stored in this directory. It lives in the `marko/docs-markdown` package so the docs are a first-class Composer module — the same content the AI search drivers (`marko/docs-fts`, `marko/docs-vec`) index is what this site renders. One source of truth, not a copy.
+The documentation content is **not** stored in this directory. It lives in the `marko/docs-markdown` package so the docs are a first-class Composer module — the same content the AI search driver (`marko/docs-fts`) indexes is what this site renders. One source of truth, not a copy.
 
 `src/content/docs` is a **symlink** into that package:
 
@@ -24,7 +24,7 @@ git config --global core.symlinks true
 
 You also need [Developer Mode](https://learn.microsoft.com/windows/apps/get-started/enable-your-device-for-development) enabled (or run git as administrator) so Windows permits symlink creation. With that set, `src/content/docs` resolves to the package content and the site builds normally.
 
-> This affects **only** local builds of this website on Windows. The AI tooling (`codeindexer`, `docs-fts`, `docs-vec`, `mcp`, `lsp`) reads the package's real `docs/` directory directly — never the symlink — so it works identically on every platform regardless of this setting.
+> This affects **only** local builds of this website on Windows. The AI tooling (`codeindexer`, `docs-fts`, `mcp`, `lsp`) reads the package's real `docs/` directory directly — never the symlink — so it works identically on every platform regardless of this setting.
 
 ## Commands
 

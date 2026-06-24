@@ -76,7 +76,7 @@ return [
                 $server->registerTool(QueryDatabaseTool::definition(
                     $c->get(MarkoQueryConnection::class),
                 ));
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // marko/database driver not installed — query_database tool unavailable
             }
 
@@ -84,8 +84,8 @@ return [
                 $server->registerTool(SearchDocsTool::definition(
                     $c->get(DocsSearchInterface::class),
                 ));
-            } catch (\Throwable) {
-                // No docs driver (docs-fts/docs-vec/etc.) installed — search_docs unavailable
+            } catch (Throwable) {
+                // No docs driver (docs-fts/etc.) installed — search_docs unavailable
             }
 
             return $server;

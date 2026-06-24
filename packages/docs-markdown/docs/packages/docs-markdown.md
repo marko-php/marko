@@ -7,7 +7,7 @@ The canonical Marko documentation content, shipped as an installable Composer pa
 
 Two consumers read this content:
 
-1. **The search drivers** (`marko/docs-fts`, `marko/docs-vec`) index the markdown to power documentation search.
+1. **The search driver** (`marko/docs-fts`) indexes the markdown to power documentation search.
 2. **The marko.build Astro site** renders it. The site's content directory (`docs/src/content/docs`) is a symlink to this package's `docs/` directory, so there is exactly one copy of every page.
 
 ## Installation
@@ -16,7 +16,7 @@ Two consumers read this content:
 composer require marko/docs-markdown
 ```
 
-Usually installed automatically as a dependency of a search driver (`marko/docs-fts` or `marko/docs-vec`).
+Usually installed automatically as a dependency of a search driver (`marko/docs-fts`).
 
 ## Usage
 
@@ -56,4 +56,3 @@ class DocsTool
 
 - [`marko/docs`](/docs/packages/docs/) — the search contract
 - [`marko/docs-fts`](/docs/packages/docs-fts/) — lexical search driver that indexes this content
-- [`marko/docs-vec`](/docs/packages/docs-vec/) — hybrid semantic search driver that indexes this content

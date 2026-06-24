@@ -57,7 +57,7 @@ Choose one agent and verify its guidelines file:
 Invoke the MCP server from your chosen agent:
 
 - [ ] Ask the agent: "What MCP tools are available?" — it should list at least `find_event_observers`, `validate_module`, `list_modules`, `list_routes`, `app_info`, `read_log_entries`, and `run_console_command`
-- [ ] `search_docs` appears in the list only if a docs driver (`marko/docs-fts` or `marko/docs-vec`) is installed
+- [ ] `search_docs` appears in the list only if a docs driver (`marko/docs-fts`) is installed
 - [ ] `query_database` appears in the list only if `marko/database` is installed
 - [ ] Ask the agent: "Search Marko docs for routing" — `search_docs` should return at least one result (requires a docs driver)
 
