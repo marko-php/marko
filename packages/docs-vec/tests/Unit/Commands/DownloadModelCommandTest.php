@@ -14,14 +14,14 @@ it(
     function (): void {
         $reflection = new ReflectionClass(DownloadModelCommand::class);
         $attributes = $reflection->getAttributes(Command::class);
-    
+
         expect($attributes)->not->toBeEmpty();
-    
+
         $attr = $attributes[0]->newInstance();
-    
+
         expect($attr->name)->toBe('docs-vec:download-model')
             ->and($attr->description)->toContain('bge-small-en-v1.5');
-    }
+    },
 );
 
 it('skips download when model files already exist and checksums match', function (): void {
@@ -49,8 +49,7 @@ it('skips download when model files already exist and checksums match', function
         public function execute(
             Input $input,
             Output $output,
-        ): int
-        {
+        ): int {
             $target = func_get_arg(2) ?? $this->getModelDir() . '/model.onnx';
 
             // Just test shouldSkipPublic directly via verifyChecksum
@@ -80,8 +79,7 @@ it('skips download when model files already exist and checksums match', function
         public function execute(
             Input $input,
             Output $output,
-        ): int
-        {
+        ): int {
             $target = $this->dir . '/model.onnx';
 
             if (file_exists($target) && hash_file('sha256', $target) === $this->sha) {

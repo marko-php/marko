@@ -59,16 +59,16 @@ it(
     'throws BindingConflictException if both docs-fts and docs-vec are installed without explicit replace',
     function (): void {
         // The Marko container's bind() silently overwrites — no exception is thrown at bind time.
-    // Conflict detection would happen at the module-loading layer (not implemented yet).
-    // This test documents the current container behaviour: last writer wins.
-    $container = new Container();
-    
+        // Conflict detection would happen at the module-loading layer (not implemented yet).
+        // This test documents the current container behaviour: last writer wins.
+        $container = new Container();
+
         $container->bind(DocsSearchInterface::class, FtsSearch::class);
         $container->bind(DocsSearchInterface::class, VecSearch::class);
-    
+
         // No exception — last binding wins silently.
-    expect(true)->toBeTrue();
-    }
+        expect(true)->toBeTrue();
+    },
 )->skip(
-    'Container does not enforce conflict at bind time — last writer wins; conflict detection belongs in the module-loading layer'
+    'Container does not enforce conflict at bind time — last writer wins; conflict detection belongs in the module-loading layer',
 );

@@ -11,6 +11,7 @@ use Marko\Docs\ValueObject\DocsPage;
 use Marko\Docs\ValueObject\DocsQuery;
 use Marko\Docs\ValueObject\DocsResult;
 use Marko\DocsMarkdown\MarkdownRepository;
+use Marko\DocsVec\Query\FtsQueryBuilder;
 use Marko\DocsVec\Query\QueryEmbedder;
 use Marko\DocsVec\Runtime\VecRuntime;
 use PDO;
@@ -50,12 +51,12 @@ class VecSearch implements DocsSearchInterface
 
         $vecResults = [];
 
-        if ($this->runtime->isModelAvailable()) {
+        if ($this->runtime->isVectorSearchAvailable()) {
             try {
                 $embedding = $this->embedder->embed($query->query);
                 $vecResults = $this->vectorSearch($pdo, $embedding, self::CANDIDATE_LIMIT);
             } catch (Throwable) {
-                // Fall back to FTS-only on embedding failure
+                // Fall back to FTS-only on embedding / vector-table failure
             }
         }
 
@@ -105,6 +106,15 @@ class VecSearch implements DocsSearchInterface
         string $query,
         int $limit,
     ): array {
+        // Raw NL input cannot go straight to FTS5 (apostrophes/quotes raise
+        // "fts5: syntax error"); the shared builder sanitizes it into a safe
+        // OR-of-quoted-terms MATCH expression.
+        $expression = FtsQueryBuilder::toMatchExpression($query);
+
+        if ($expression === '') {
+            return [];
+        }
+
         $stmt = $pdo->prepare("
             SELECT chunk_id, page_id, title,
                    snippet(docs_fts, 3, '<mark>', '</mark>', '...', 32) AS excerpt
@@ -113,7 +123,7 @@ class VecSearch implements DocsSearchInterface
             ORDER BY bm25(docs_fts)
             LIMIT :limit
         ");
-        $stmt->bindValue(':q', $query, PDO::PARAM_STR);
+        $stmt->bindValue(':q', $expression, PDO::PARAM_STR);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 
         try {
@@ -212,7 +222,12 @@ class VecSearch implements DocsSearchInterface
 
         try {
             if ($this->runtime->isSqliteVecAvailable()) {
-                $this->pdo = $this->runtime->openConnection($this->indexPath);
+                try {
+                    $this->pdo = $this->runtime->openConnection($this->indexPath);
+                } catch (Throwable) {
+                    // Extension present but unloadable at runtime — degrade to FTS5.
+                    $this->pdo = $this->runtime->openPlainConnection($this->indexPath);
+                }
             } else {
                 $this->pdo = $this->runtime->openPlainConnection($this->indexPath);
             }

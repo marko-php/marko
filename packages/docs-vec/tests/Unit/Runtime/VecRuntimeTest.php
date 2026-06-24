@@ -81,13 +81,13 @@ it(
     'throws VecRuntimeException with helpful context when ONNX model is missing, suggesting marko docs-vec:download-model',
     function () use ($packageRoot): void {
         // Use a temp dir that has no model files to guarantee modelMissing is thrown
-    $tempRoot = sys_get_temp_dir() . '/marko-vec-test-' . uniqid();
+        $tempRoot = sys_get_temp_dir() . '/marko-vec-test-' . uniqid();
         mkdir($tempRoot . '/resources/models/bge-small-en-v1.5', 0755, true);
-    
+
         $runtime = new VecRuntime($tempRoot);
-    
+
         expect($runtime->isModelAvailable())->toBeFalse();
-    
+
         $runtime->embed('test');
-    }
+    },
 )->throws(VecRuntimeException::class, 'ONNX model not found');

@@ -90,7 +90,7 @@ it('generates excerpt snippets from FTS5 highlighting', function (): void {
         ->and($results[0]->excerpt)->toContain('<mark>');
 })->skip(fn () => ! (new VecRuntime(dirname(__DIR__, 2)))->isSqliteVecAvailable(), 'sqlite-vec not available');
 
-it('returns empty list for a query with no matches', function (): void {
+it('returns no keyword matches for a gibberish query', function (): void {
     $runtime = new VecRuntime(dirname(__DIR__, 2));
 
     if (! $runtime->isSqliteVecAvailable()) {
@@ -101,7 +101,15 @@ it('returns empty list for a query with no matches', function (): void {
 
     $results = $search->search(new DocsQuery('xyzzyqqqqq12345'));
 
-    expect($results)->toBeEmpty();
+    // FTS5-only mode: a no-keyword-match query returns nothing. When the vector
+    // path is active, cosine nearest-neighbour search always returns the closest
+    // documents (there is no relevance threshold), so results may be non-empty —
+    // assert only that the search runs cleanly and returns a list.
+    if ($runtime->isVectorSearchAvailable()) {
+        expect($results)->toBeArray();
+    } else {
+        expect($results)->toBeEmpty();
+    }
 })->skip(fn () => ! (new VecRuntime(dirname(__DIR__, 2)))->isSqliteVecAvailable(), 'sqlite-vec not available');
 
 it(
@@ -179,26 +187,26 @@ it('returns an empty list for a valid query that matches no documents', function
 });
 
 it(
-    'throws DocsException not PDOException when the search text is a malformed FTS5 MATCH expression',
+    'sanitizes raw FTS5 operator syntax instead of throwing',
     function (): void {
         $runtime = new VecRuntime(dirname(__DIR__, 2));
         [$search] = buildFtsTestIndex($runtime);
 
-        // NEAR/ is a malformed FTS5 MATCH expression (syntax error)
-        expect(fn () => $search->search(new DocsQuery('NEAR/')))->toThrow(DocsException::class);
+        // "NEAR/" would be a malformed FTS5 MATCH expression if passed raw; the
+        // query builder neutralizes it, so search must NOT throw.
+        expect(fn () => $search->search(new DocsQuery('NEAR/')))->not->toThrow(DocsException::class);
+        expect($search->search(new DocsQuery('NEAR/')))->toBeArray();
     },
 );
 
-it('includes the underlying FTS5 parse reason in the DocsException message', function (): void {
+it('sanitizes apostrophes so natural-language questions still match', function (): void {
     $runtime = new VecRuntime(dirname(__DIR__, 2));
     [$search] = buildFtsTestIndex($runtime);
 
-    try {
-        $search->search(new DocsQuery('NEAR/'));
-        $this->fail('Expected DocsException to be thrown');
-    } catch (DocsException $e) {
-        expect($e->getMessage())->toContain('fts5');
-    }
+    // Raw "Marko's" used to raise "fts5: syntax error"; sanitized it matches docs.
+    $results = $search->search(new DocsQuery("how does Marko's installation work"));
+
+    expect($results)->toBeArray()->not->toBeEmpty();
 });
 
 // Helper: builds a real index in a temp dir using FTS-only (no model needed for basic search tests)
