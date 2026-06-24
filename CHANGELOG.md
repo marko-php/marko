@@ -8,6 +8,20 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.8.2] - 2026-06-24
+
+### New Features
+* feat(devai): offer to install a docs search driver during devai:install by @markshust in https://github.com/marko-php/marko/pull/133
+* feat: add marko/testing as a skeleton dev dependency by @markshust in https://github.com/marko-php/marko/pull/134
+* feat: warm caches on install and add MCP handshake timeout by @markshust in https://github.com/marko-php/marko/pull/135
+### Documentation
+* docs: clarify discovery cache vs code index and when a reindex is needed by @markshust in https://github.com/marko-php/marko/pull/136
+### CI
+* ci: retry split-repo pushes on concurrent ref-lock by @markshust in https://github.com/marko-php/marko/pull/131
+### Maintenance
+* chore: remove deprecated marko/docs-vec driver in favor of docs-fts by @markshust in https://github.com/marko-php/marko/pull/132
+
+
 ## [0.8.1] - 2026-06-24
 
 ### New Features
