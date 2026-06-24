@@ -256,7 +256,35 @@ it('prints a per-agent install summary', function (): void {
     expect($result['status'])->toBe('installed')
         ->and($result['log'])->toBeArray()
         ->and($result['log'])->not->toBeEmpty()
-        ->and(implode("\n", $result['log']))->toContain('[test-agent] installed');
+        ->and(implode("\n", $result['log']))->toContain('[test-agent] configured');
+});
+
+it('streams live progress messages to the supplied callback before each slow step runs', function (): void {
+    $agent = makeInstallSpyAgent(installed: true);
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry(['test-agent' => $agent]));
+
+    $messages = [];
+    $orchestrator->install(
+        new InstallationContext(selectedAgents: ['test-agent']),
+        $this->tempRoot,
+        function (string $message) use (&$messages): void {
+            $messages[] = $message;
+        },
+    );
+
+    $joined = implode("\n", $messages);
+    expect($joined)->toContain('Configuring agent: test-agent')
+        ->and($joined)->toContain('Running marko discovery:cache')
+        ->and($joined)->toContain('Running marko indexer:rebuild');
+});
+
+it('treats the progress callback as optional and installs without one', function (): void {
+    $agent = makeInstallSpyAgent(installed: true);
+    $orchestrator = makeInstallOrchestrator(makeInstallRegistry(['test-agent' => $agent]));
+
+    $result = $orchestrator->install(new InstallationContext(selectedAgents: ['test-agent']), $this->tempRoot);
+
+    expect($result['status'])->toBe('installed');
 });
 
 it('invokes install() once per selected agent', function (): void {

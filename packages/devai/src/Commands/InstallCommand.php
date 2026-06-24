@@ -60,7 +60,13 @@ readonly class InstallCommand implements CommandInterface
 
         $this->maybeInstallDocsDriver($input, $output, $projectRoot);
 
-        $result = $this->orchestrator->install($context, $projectRoot);
+        $result = $this->orchestrator->install(
+            $context,
+            $projectRoot,
+            static function (string $message) use ($output): void {
+                $output->writeLine($message);
+            },
+        );
 
         if ($result['status'] === 'skipped') {
             $output->writeLine($result['message'] ?? '');
@@ -115,6 +121,7 @@ readonly class InstallCommand implements CommandInterface
             return;
         }
 
+        $output->writeLine("Installing $pkg via composer (this may take a moment)…");
         $result = $this->commandRunner->run('composer', ['require', '--dev', $pkg]);
 
         if ($result['exitCode'] !== 0) {
