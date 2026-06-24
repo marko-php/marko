@@ -1,6 +1,6 @@
 # Task 003: Orchestrator builds the resolved installed driver
 
-**Status**: pending
+**Status**: complete
 **Depends on**: 002
 **Retry count**: 0
 
@@ -42,10 +42,10 @@ builds whichever known docs driver is installed and stays correct for any future
   null → hint), and that behavior is unchanged.
 
 ## Requirements (Test Descriptions)
-- [ ] `it builds the index for the installed docs driver resolved from the registry`
-- [ ] `it logs the install hint when no docs driver is installed`
-- [ ] `it records a helpful log line when the docs index build fails`
-- [ ] `it does not hardcode the docs-fts package when resolving the driver to build`
+- [x] `it builds the index for the installed docs driver resolved from the registry`
+- [x] `it logs the install hint when no docs driver is installed`
+- [x] `it records a helpful log line when the docs index build fails`
+- [x] `it does not hardcode the docs-fts package when resolving the driver to build`
 
 ## Acceptance Criteria
 - All requirements have passing tests; existing orchestrator tests still green
@@ -53,4 +53,7 @@ builds whichever known docs driver is installed and stays correct for any future
 - Code follows code standards
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Injected `DocsDriverResolver` as a promoted property with a default of `new DocsDriverResolver()` (PHP 8.1+ new-in-initializer) so the container continues to autowire it and existing `UpdateCommandTest` stubs that extend the orchestrator need no changes.
+- `buildDocsIndex()` now calls `$this->docsDriverResolver->installedDriver($projectRoot)` and uses `buildCommand($package)` for the command; the `$driver` name is extracted from the package for log messages.
+- Updated 2 existing tests (`runs docs-fts:build during install` and `records a helpful log line when the docs index build fails`) to write a stub `vendor/marko/docs/known-drivers.php` registry so the resolver resolves `marko/docs-fts`.
+- Added 4 new tests exercising `marko/docs-vec` as the installed driver to prove no `docs-fts` hardcoding remains in detection logic.

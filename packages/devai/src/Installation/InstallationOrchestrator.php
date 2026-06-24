@@ -25,6 +25,7 @@ class InstallationOrchestrator
         private GuidelinesAggregator $guidelinesAggregator,
         private SkillsDistributor $skillsDistributor,
         private CommandRunnerInterface $runner,
+        private DocsDriverResolver $docsDriverResolver = new DocsDriverResolver(),
     ) {}
 
     /**
@@ -96,24 +97,26 @@ class InstallationOrchestrator
      * by the time devai:install returns.
      *
      * devai requires only the marko/docs contract — the search driver is a
-     * separate package. marko/docs-fts binds DocsSearchInterface; when it is
-     * installed we build its index so search_docs works immediately. When no
-     * driver is installed we skip gracefully and tell the user how to add one —
-     * a bare install is valid, just without docs search.
+     * separate package. When a known driver is installed we build its index so
+     * search_docs works immediately. When no driver is installed we skip
+     * gracefully and tell the user how to add one — a bare install is valid,
+     * just without docs search.
      */
     private function buildDocsIndex(
         string $projectRoot,
         string $markoBin,
     ): void {
-        if (is_dir($projectRoot . '/vendor/marko/docs-fts')) {
-            $command = 'docs-fts:build';
-            $driver = 'docs-fts';
-        } else {
+        $package = $this->docsDriverResolver->installedDriver($projectRoot);
+
+        if ($package === null) {
             $this->log[] = '[docs] no search driver installed — run `composer require marko/docs-fts`'
                 . ' then `marko docs-fts:build` to enable search_docs';
 
             return;
         }
+
+        $command = $this->docsDriverResolver->buildCommand($package);
+        $driver = substr($package, (int) strpos($package, '/') + 1);
 
         $result = $this->runner->run($markoBin, [$command]);
 

@@ -1,6 +1,6 @@
 # Task 001: ConfirmationPrompterInterface + StdinPrompter + FakePrompter
 
-**Status**: pending
+**Status**: complete
 **Depends on**: none
 **Retry count**: 0
 
@@ -48,12 +48,12 @@ touching real STDIN.
   no `final`. Interface methods fully typed.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns true when the user answers yes` (StdinPrompter, in-memory stream)
-- [ ] `it returns false when the user answers no` (StdinPrompter, in-memory stream)
-- [ ] `it returns the default when the answer is empty` (StdinPrompter, in-memory stream)
-- [ ] `it parses answers case-insensitively and ignores surrounding whitespace` (StdinPrompter)
-- [ ] `it reports not interactive when constructed in no-interaction mode` (StdinPrompter)
-- [ ] `the fake prompter returns its scripted answer and configured interactivity`
+- [x] `it returns true when the user answers yes` (StdinPrompter, in-memory stream)
+- [x] `it returns false when the user answers no` (StdinPrompter, in-memory stream)
+- [x] `it returns the default when the answer is empty` (StdinPrompter, in-memory stream)
+- [x] `it parses answers case-insensitively and ignores surrounding whitespace` (StdinPrompter)
+- [x] `it reports not interactive when constructed in no-interaction mode` (StdinPrompter)
+- [x] `the fake prompter returns its scripted answer and configured interactivity`
 
 ## Acceptance Criteria
 - All requirements have passing tests (using `FakePrompter`, never real STDIN)
@@ -61,4 +61,8 @@ touching real STDIN.
 - Code follows code standards; no decrease in coverage
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Created `ConfirmationPrompterInterface` with `isInteractive(): bool` and `confirm(string $question, bool $default): bool`
+- Created `StdinPrompter` with injectable `$stream` resource (untyped, `@param resource` docblock) and `bool $noInteraction = false`. Uses `stream_isatty()` for `isInteractive()`, `fgets()` for `confirm()` with trim+lowercase parsing
+- `FakePrompter` implemented as inline anonymous class in `makeFakePrompter()` helper inside the test file, following the `makeRecordingRunner()` pattern
+- Bound `ConfirmationPrompterInterface::class => StdinPrompter::class` in `module.php` alongside `CommandRunnerInterface`
+- All 6 requirements have passing tests; 228 total package tests pass

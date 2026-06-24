@@ -1,6 +1,6 @@
 # Task 002: DocsDriverResolver (registry-driven driver detection)
 
-**Status**: pending
+**Status**: complete
 **Depends on**: none
 **Retry count**: 0
 
@@ -47,12 +47,12 @@ orchestrator and the install command stay driver-agnostic.
 - Standards: `declare(strict_types=1)`, promotion, type decls, no `final`.
 
 ## Requirements (Test Descriptions)
-- [ ] `it returns the installed driver when its vendor directory exists`
-- [ ] `it returns null for installed driver when no known driver is present`
-- [ ] `it lists known drivers that are not installed`
-- [ ] `it picks the recommended uninstalled driver by the description convention`
-- [ ] `it derives the build command from the package name`
-- [ ] `it treats the known set as empty when the contract registry file is absent`
+- [x] `it returns the installed driver when its vendor directory exists`
+- [x] `it returns null for installed driver when no known driver is present`
+- [x] `it lists known drivers that are not installed`
+- [x] `it picks the recommended uninstalled driver by the description convention`
+- [x] `it derives the build command from the package name`
+- [x] `it treats the known set as empty when the contract registry file is absent`
 
 ## Acceptance Criteria
 - All requirements have passing tests (use a temp project root with fake `vendor/marko/*` dirs and a stub `known-drivers.php`)
@@ -60,4 +60,7 @@ orchestrator and the install command stay driver-agnostic.
 - Code follows code standards
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- `DocsDriverResolver` has no constructor dependencies (stateless service); no `readonly class` needed since there are no properties.
+- Used `array_find()` (PHP 8.5) for the first-match lookups, keeping code concise and idiomatic.
+- `buildCommand` uses `strpos`+`substr` to strip any `<vendor>/` prefix, not just `marko/`, making it forward-compatible with other vendors.
+- `knownDrivers()` guards with `is_file()` before `require`; absent file → empty array, no throw/warning.

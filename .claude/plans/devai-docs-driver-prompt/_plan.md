@@ -4,7 +4,7 @@
 2026-06-24
 
 ## Status
-ready
+completed
 
 ## Objective
 When `marko devai:install` runs in an interactive terminal and no docs-search
@@ -66,10 +66,10 @@ none
 ## Task Overview
 | Task | Description | Depends On | Status |
 |------|-------------|------------|--------|
-| 001 | ConfirmationPrompterInterface + StdinPrompter + FakePrompter | - | pending |
-| 002 | DocsDriverResolver (registry-driven driver detection) | - | pending |
-| 003 | Orchestrator builds the resolved installed driver | 002 | pending |
-| 004 | Wire prompt + opt-in composer require into InstallCommand | 001, 002, 003 | pending |
+| 001 | ConfirmationPrompterInterface + StdinPrompter + FakePrompter | - | completed |
+| 002 | DocsDriverResolver (registry-driven driver detection) | - | completed |
+| 003 | Orchestrator builds the resolved installed driver | 002 | completed |
+| 004 | Wire prompt + opt-in composer require into InstallCommand | 001, 002, 003 | completed |
 
 ## Architecture Notes
 - Prompter binding goes in `packages/devai/module.php` (`ConfirmationPrompterInterface => StdinPrompter`), alongside the existing `CommandRunnerInterface` binding.

@@ -13,7 +13,13 @@ It is the one point at which "AI tooling is available in this project" becomes t
 composer require --dev marko/devai
 ```
 
-To enable docs search (`search_docs`), also install a docs driver — `marko/docs-fts` is the recommended default:
+To enable docs search (`search_docs`), a docs driver is required — `marko/docs-fts` is the recommended default. When you run `devai:install` in an interactive terminal and no driver is found, it offers to install one for you:
+
+```
+No docs search driver installed. Install marko/docs-fts to enable search_docs? [Y/n]
+```
+
+Answering yes runs `composer require --dev marko/docs-fts` and builds the index. In non-interactive mode, CI, or when `--no-interaction` is passed, the prompt is skipped. To install manually:
 
 ```bash
 composer require --dev marko/docs-fts

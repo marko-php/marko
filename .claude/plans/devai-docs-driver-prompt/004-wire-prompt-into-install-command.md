@@ -59,14 +59,14 @@ to the existing printed hint. Never blocks CI.
   (i.e. no concrete docs driver). This protects the modularity invariant.
 
 ## Requirements (Test Descriptions)
-- [ ] `it offers to install the recommended driver and runs composer require on yes`
-- [ ] `it does not install anything when the user answers no`
-- [ ] `it does not prompt or install when run with --no-interaction`
-- [ ] `it does not prompt or install when the session is not interactive (no TTY)`
-- [ ] `it does not prompt when a docs driver is already installed`
-- [ ] `it writes a helpful message when composer is not on PATH`
-- [ ] `it writes a helpful message and does not throw when composer require exits non-zero`
-- [ ] `it keeps devai dependent on the marko/docs contract only (no driver in require)`
+- [x] `it offers to install the recommended driver and runs composer require on yes`
+- [x] `it does not install anything when the user answers no`
+- [x] `it does not prompt or install when run with --no-interaction`
+- [x] `it does not prompt or install when the session is not interactive (no TTY)`
+- [x] `it does not prompt when a docs driver is already installed`
+- [x] `it writes a helpful message when composer is not on PATH`
+- [x] `it writes a helpful message and does not throw when composer require exits non-zero`
+- [x] `it keeps devai dependent on the marko/docs contract only (no driver in require)`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -78,4 +78,9 @@ to the existing printed hint. Never blocks CI.
 - Code follows code standards
 
 ## Implementation Notes
-(Left blank - filled in by programmer during implementation)
+- Added `DocsDriverResolver`, `ConfirmationPrompterInterface`, and `CommandRunnerInterface` as constructor deps to `InstallCommand` (kept `readonly class`).
+- Added `maybeInstallDocsDriver()` private method that runs BEFORE `$this->orchestrator->install(...)`.
+- Used `$input->hasOption('no-interaction')` to detect the flag (multi-char name matches `--no-interaction` per `Input::hasOption`).
+- Non-zero composer exit writes a helpful output line and returns (does NOT throw) — execute() still returns 0.
+- Tests use `chdir()` into the temp root in `beforeEach`/`afterEach` pattern and local helper functions defined at file top.
+- ContainerWiringTest passes because `DocsDriverResolver` has no constructor args (autowires), and both interface deps were already bound in `module.php` from prior tasks.
