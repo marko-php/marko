@@ -3,7 +3,10 @@
 declare(strict_types=1);
 
 use Marko\Session\Contracts\SessionHandlerInterface;
+use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Database\Handler\DatabaseSessionHandler;
+use Marko\Session\Middleware\SessionMiddleware;
+use Marko\Session\Session;
 
 test('it binds SessionHandlerInterface to DatabaseSessionHandler', function (): void {
     $modulePath = dirname(__DIR__) . '/module.php';
@@ -49,4 +52,17 @@ test('it has correct PSR-4 autoloading namespace', function (): void {
         ->and($composer['autoload'])->toHaveKey('psr-4')
         ->and($composer['autoload']['psr-4'])->toHaveKey('Marko\\Session\\Database\\')
         ->and($composer['autoload']['psr-4']['Marko\\Session\\Database\\'])->toBe('src/');
+});
+
+it('binds SessionInterface to Session when the database session driver is installed', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['singletons'])->toHaveKey(SessionInterface::class)
+        ->and($module['singletons'][SessionInterface::class])->toBe(Session::class);
+});
+
+it('registers the session global middleware when the database session driver is installed', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['globalMiddleware'])->toContain(SessionMiddleware::class);
 });

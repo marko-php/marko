@@ -26,11 +26,21 @@ The composer name is `{vendor}/{name}` and the PHP namespace is its StudlyCase f
 
 ## Step 2 — Write composer.json
 
-Copy `assets/composer.json.tmpl` (or `assets/composer.json.monorepo.tmpl` if working in the marko monorepo) to `<module-root>/composer.json` and substitute `{{vendor}}` and `{{name}}` (lowercase) and `{{Vendor}}` and `{{Name}}` (StudlyCase) placeholders.
+Copy the appropriate template to `<module-root>/composer.json` and substitute all placeholders.
 
 Required keys: `name`, `type: marko-module`, `require.marko/core`, psr-4 autoload, and `extra.marko.module: true` to flag it for the code indexer. **Never set a `version` field** — let Composer infer it from the branch.
 
-In the monorepo, use `assets/composer.json.monorepo.tmpl` which uses `self.version` for all `marko/*` requirements.
+### Deterministic constraint selection rule
+
+Resolve `{{marko_constraint}}` and choose the template using this ordered decision tree:
+
+1. **Inside the Marko monorepo** (root directory contains `packages/core/`) → use `assets/composer.json.monorepo.tmpl`. Set `{{marko_constraint}}` to `self.version`. This ensures all packages in the monorepo resolve against each other at the same version without manual pinning.
+
+2. **Otherwise (host project / standalone module)** → use `assets/composer.json.tmpl`. Determine `{{marko_constraint}}` by reading the host project's root `composer.json`:
+   - Find the first `marko/*` constraint that is already declared (e.g. `"marko/framework": "*"` → constraint is `*`; `"marko/framework": "dev-develop"` → constraint is `dev-develop`; `"marko/framework": "^1.2"` → constraint is `^1.2`).
+   - If no `marko/*` constraint is present in the host `composer.json`, default to `*`.
+
+   Using `*` (or matching the host's existing constraint) ensures the scaffolded module resolves against whatever version of Marko the host project is consuming — whether that is a tagged release, a `dev-develop` branch alias, or a Composer path symlink. **Never default to `^1.0`**: that constraint is incompatible with any host consuming `dev-develop` or `*`, which is the most common case during active development (e.g. `marko/skeleton` requires `marko/framework: *`).
 
 ## Step 3 — Create the directory layout
 

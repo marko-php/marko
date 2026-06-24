@@ -12,6 +12,20 @@ Testing utilities for Marko---reusable fakes with built-in assertions that elimi
 composer require marko/testing --dev
 ```
 
+## Pest Base Test Case
+
+`TestCase` registers PSR-4 autoloaders for `app/*` and `modules/*` before tests run, so module classes resolve without per-project Composer classmap configuration. No container or application boot is performed.
+
+Wire it as the global base in `tests/Pest.php`:
+
+```php title="tests/Pest.php"
+use Marko\Testing\TestCase;
+
+uses(TestCase::class)->in(__DIR__);
+```
+
+After that, every Pest test in the project can reference module and app classes directly---no additional Composer path repos or classmaps required.
+
 ## Available Fakes
 
 `FakeEventDispatcher`, `FakeMailer`, `FakeQueue`, `FakeSession`, `FakeCookieJar`, `FakeLogger`, `FakeConfigRepository`, `FakeAuthenticatable`, `FakeUserProvider`, `FakeGuard`
@@ -170,6 +184,12 @@ KnownDriversValidator::assertSkeletonSuggestContainsAll(
 ```
 
 ## API Reference
+
+### TestCase
+
+- `setUp(): void` — Calls `registerModuleAutoloaders()` before each test
+- `registerModuleAutoloaders(): void` — Registers PSR-4 autoloaders for `app/*` and `modules/*`; safe to call multiple times (skips already-registered roots)
+- `projectRoot(): string` — Walks up the directory tree from cwd to find the nearest ancestor containing `vendor/`
 
 ### FakeEventDispatcher
 

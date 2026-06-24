@@ -49,7 +49,7 @@ it('has PSR-4 autoloading configured for Marko\\Session namespace', function () 
         ->and($composer['autoload']['psr-4']['Marko\\Session\\'])->toBe('src/');
 });
 
-it('has module.php with enabled set to true', function () {
+it('has module.php that returns an array', function (): void {
     $modulePath = dirname(__DIR__) . '/module.php';
 
     expect(file_exists($modulePath))->toBeTrue();
@@ -57,14 +57,6 @@ it('has module.php with enabled set to true', function () {
     $config = require $modulePath;
 
     expect($config)->toBeArray();
-});
-
-it('has module.php with singletons array', function () {
-    $modulePath = dirname(__DIR__) . '/module.php';
-    $config = require $modulePath;
-
-    expect($config)->toHaveKey('singletons')
-        ->and($config['singletons'])->toBeArray();
 });
 
 it('has src directory for source code', function () {
@@ -98,15 +90,14 @@ it('has default session.php config file', function () {
         ->and($config)->toHaveKey('cookie');
 });
 
-it('module.php declares SessionMiddleware as globalMiddleware', function (): void {
+it('does not register any global middleware from the session interface package', function (): void {
     $module = require dirname(__DIR__) . '/module.php';
 
-    expect($module['globalMiddleware'] ?? [])
-        ->toContain('Marko\\Session\\Middleware\\SessionMiddleware');
+    expect($module['globalMiddleware'] ?? [])->toBeEmpty();
 });
 
-it('module.php declares marko/page-cache as a soft after dependency', function (): void {
+it('does not bind SessionInterface from the session interface package', function (): void {
     $module = require dirname(__DIR__) . '/module.php';
 
-    expect($module['sequence']['after'] ?? [])->toContain('marko/page-cache');
+    expect(array_keys($module['singletons'] ?? []))->not->toContain('Marko\\Session\\Contracts\\SessionInterface');
 });

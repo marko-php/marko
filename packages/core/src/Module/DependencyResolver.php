@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Marko\Core\Module;
 
 use Marko\Core\Exceptions\CircularDependencyException;
-use Marko\Core\Exceptions\ModuleException;
+use Marko\Core\Exceptions\MissingDependencyException;
 
 class DependencyResolver
 {
@@ -16,7 +16,7 @@ class DependencyResolver
      *
      * @param ModuleManifest[] $modules
      * @return ModuleManifest[]
-     * @throws ModuleException|CircularDependencyException
+     * @throws MissingDependencyException|CircularDependencyException
      */
     public function resolve(
         array $modules,
@@ -43,7 +43,7 @@ class DependencyResolver
             foreach (array_keys($module->require) as $dependency) {
                 // If the dependency exists as a module but is disabled, that's an error
                 if (isset($allModulesByName[$dependency]) && !$allModulesByName[$dependency]->enabled) {
-                    throw ModuleException::missingDependency($module->name, $dependency);
+                    throw MissingDependencyException::dependencyDisabled($module->name, $dependency);
                 }
             }
         }
@@ -51,11 +51,13 @@ class DependencyResolver
         // Build adjacency list and in-degree count
         // Edge from A -> B means A must be loaded before B
         $inDegree = [];
-        $dependents = []; // dependents[A] = [B, C] means B and C depend on A
+        $dependents = []; // dependents[A] = [B, C] means B and C depend on A (all edges)
+        $requireDependents = []; // only hard require edges — used for cycle detection
 
         foreach ($enabledModules as $module) {
             $inDegree[$module->name] ??= 0;
             $dependents[$module->name] ??= [];
+            $requireDependents[$module->name] ??= [];
 
             // Extract dependency names from require (associative array)
             $dependencies = array_keys($module->require);
@@ -65,6 +67,7 @@ class DependencyResolver
                 if (isset($modulesByName[$dependency])) {
                     $inDegree[$module->name]++;
                     $dependents[$dependency][] = $module->name;
+                    $requireDependents[$dependency][] = $module->name;
                 }
             }
 
@@ -111,8 +114,46 @@ class DependencyResolver
 
         // Detect circular dependency: if not all enabled modules are sorted
         if (count($sorted) !== count($enabledModules)) {
-            $cycle = $this->findCycle($enabledModules, $dependents);
-            throw CircularDependencyException::detected($cycle);
+            $cycle = $this->findCycle($enabledModules, $requireDependents);
+
+            if ($cycle !== []) {
+                throw CircularDependencyException::detected($cycle);
+            }
+
+            // No real cycle found — this is a soft-ordering (after/before) deadlock.
+            // Compute the unsorted modules and their unmet ordering constraints.
+            $sortedNames = array_map(fn (ModuleManifest $m) => $m->name, $sorted);
+            $unsortedConstraints = [];
+
+            foreach ($enabledModules as $module) {
+                if (in_array($module->name, $sortedNames, true)) {
+                    continue;
+                }
+
+                $unmet = [];
+
+                foreach ($module->after as $afterModule) {
+                    if (isset($modulesByName[$afterModule])) {
+                        $unmet[] = "after:$afterModule";
+                    }
+                }
+
+                foreach ($module->before as $beforeModule) {
+                    if (isset($modulesByName[$beforeModule])) {
+                        $unmet[] = "before:$beforeModule";
+                    }
+                }
+
+                foreach (array_keys($module->require) as $dependency) {
+                    if (isset($modulesByName[$dependency]) && !in_array($dependency, $sortedNames, true)) {
+                        $unmet[] = "require:$dependency";
+                    }
+                }
+
+                $unsortedConstraints[$module->name] = $unmet;
+            }
+
+            throw MissingDependencyException::orderingDeadlock($unsortedConstraints);
         }
 
         return $sorted;

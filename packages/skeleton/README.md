@@ -25,6 +25,12 @@ cd my-app
 3. Start the dev server: `marko up`
 4. Visit http://localhost:8000
 
+The skeleton ships a working Pest test harness out of the box. `tests/Pest.php` binds `Marko\Testing\TestCase` as the base, which registers PSR-4 autoloaders for `app/*` and `modules/*` automatically. Run tests with:
+
+```bash
+composer test
+```
+
 ## Next Steps
 
 Create your first controller inside `app/`:

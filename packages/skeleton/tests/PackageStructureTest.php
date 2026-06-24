@@ -143,9 +143,8 @@ it('ignores storage runtime contents but keeps the directory', function (): void
 
     expect($gitignore)
         ->toMatch('/^\s*\/storage\/\*\s*$/m')
-        ->toMatch('/^\s*!\/storage\/\.gitkeep\s*$/m');
-
-    expect(file_exists(__DIR__ . '/../storage/.gitkeep'))->toBeTrue();
+        ->toMatch('/^\s*!\/storage\/\.gitkeep\s*$/m')
+        ->and(file_exists(__DIR__ . '/../storage/.gitkeep'))->toBeTrue();
 });
 
 it('lists marko/view-twig in the skeleton composer suggest block', function (): void {
@@ -179,4 +178,76 @@ it('keeps the suggest entries valid JSON', function (): void {
 
     expect(json_last_error())->toBe(JSON_ERROR_NONE)
         ->and($composer['suggest'])->toBeArray();
+});
+
+it('ships a root phpunit.xml in the skeleton', function (): void {
+    $phpunitPath = __DIR__ . '/../phpunit.xml';
+
+    expect(file_exists($phpunitPath))->toBeTrue();
+});
+
+it('configures testsuites that discover app and modules test directories', function (): void {
+    $phpunitPath = __DIR__ . '/../phpunit.xml';
+    $xml = simplexml_load_string(file_get_contents($phpunitPath));
+
+    $directories = [];
+    foreach ($xml->testsuites->testsuite as $suite) {
+        foreach ($suite->directory as $dir) {
+            $directories[] = (string) $dir;
+        }
+    }
+
+    expect($directories)->toContain('app')
+        ->and($directories)->toContain('modules')
+        ->and($directories)->toContain('tests');
+});
+
+it('ships a root tests/Pest.php that references Marko\Testing\TestCase', function (): void {
+    $pestPath = __DIR__ . '/../tests/Pest.php';
+
+    expect(file_exists($pestPath))->toBeTrue();
+
+    $content = file_get_contents($pestPath);
+
+    expect($content)->toContain('Marko\Testing\TestCase');
+});
+
+it('ships placeholders so every directory the phpunit.xml testsuites reference exists (app, modules, tests)', function (): void {
+    $base = __DIR__ . '/..';
+
+    expect(is_dir($base . '/app'))->toBeTrue()
+        ->and(is_dir($base . '/modules'))->toBeTrue()
+        ->and(is_dir($base . '/tests'))->toBeTrue();
+});
+
+it('runs pest successfully on a freshly scaffolded skeleton with no added test files', function (): void {
+    // Simulate a fresh skeleton install: create a temporary directory with the
+    // same layout (app/.gitkeep, modules/.gitkeep, tests/Pest.php) and run
+    // pest against it. Zero tests should exit 0 (green), not an error.
+    $tmpDir = sys_get_temp_dir() . '/marko-skeleton-test-' . uniqid();
+    mkdir($tmpDir . '/app', 0755, true);
+    mkdir($tmpDir . '/modules', 0755, true);
+    mkdir($tmpDir . '/tests', 0755, true);
+    file_put_contents($tmpDir . '/app/.gitkeep', '');
+    file_put_contents($tmpDir . '/modules/.gitkeep', '');
+    file_put_contents($tmpDir . '/tests/Pest.php', file_get_contents(__DIR__ . '/Pest.php'));
+    file_put_contents($tmpDir . '/phpunit.xml', file_get_contents(__DIR__ . '/../phpunit.xml'));
+
+    $vendorPest = __DIR__ . '/../../../vendor/bin/pest';
+    $vendorAutoload = __DIR__ . '/../../../vendor/autoload.php';
+
+    $command = sprintf(
+        'cd %s && /opt/homebrew/Cellar/php/8.5.1_2/bin/php -d memory_limit=512M %s -c %s --bootstrap %s --no-coverage 2>&1',
+        escapeshellarg($tmpDir),
+        escapeshellarg($vendorPest),
+        escapeshellarg($tmpDir . '/phpunit.xml'),
+        escapeshellarg($vendorAutoload),
+    );
+
+    exec($command, $output, $exitCode);
+
+    // Clean up temporary directory recursively
+    exec('rm -rf ' . escapeshellarg($tmpDir));
+
+    expect($exitCode)->toBe(0);
 });

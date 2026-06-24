@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Core\Exceptions\CircularDependencyException;
-use Marko\Core\Exceptions\ModuleException;
+use Marko\Core\Exceptions\MissingDependencyException;
 use Marko\Core\Module\DependencyResolver;
 use Marko\Core\Module\ModuleManifest;
 
@@ -191,7 +191,7 @@ it('filters out disabled modules from load order', function (): void {
         ->not->toContain('vendor/module-b');
 });
 
-it('throws ModuleException when enabled module requires disabled module', function (): void {
+it('throws MissingDependencyException when enabled module requires disabled module', function (): void {
     // Module A (enabled) requires Module B (disabled)
     $moduleA = new ModuleManifest(
         name: 'vendor/module-a',
@@ -210,7 +210,7 @@ it('throws ModuleException when enabled module requires disabled module', functi
 
     try {
         $resolver->resolve([$moduleA, $moduleB]);
-    } catch (ModuleException $e) {
+    } catch (MissingDependencyException $e) {
         $exception = $e;
     }
 
@@ -315,4 +315,198 @@ it('returns ModuleManifest objects in final load order', function (): void {
         ->and($sorted[1]->path)->toBe('/path/to/module-b')
         ->and($sorted[1]->source)->toBe('modules')
         ->and($sorted[1]->bindings)->toBe(['SomeInterface' => 'SomeImplementation']);
+});
+
+it('states the dependency is present but disabled rather than not installed', function (): void {
+    $moduleA = new ModuleManifest(
+        name: 'vendor/module-a',
+        version: '1.0.0',
+        require: ['vendor/module-b' => '^1.0'],
+    );
+    $moduleB = new ModuleManifest(
+        name: 'vendor/module-b',
+        version: '1.0.0',
+        enabled: false,
+    );
+
+    $resolver = new DependencyResolver();
+
+    $exception = null;
+
+    try {
+        $resolver->resolve([$moduleA, $moduleB]);
+    } catch (MissingDependencyException $e) {
+        $exception = $e;
+    }
+
+    expect($exception)->not->toBeNull()
+        ->and($exception->getMessage())
+        ->toContain('present but disabled')
+        ->not->toContain('not installed');
+});
+
+it('throws a missing dependency error (not an empty-chain circular error) for a before-after soft-ordering deadlock', function (): void {
+    // Module A declares both after: [B] and before: [B] — an unsatisfiable ordering deadlock
+    $moduleA = new ModuleManifest(
+        name: 'vendor/module-a',
+        version: '1.0.0',
+        after: ['vendor/module-b'],
+        before: ['vendor/module-b'],
+    );
+    $moduleB = new ModuleManifest(
+        name: 'vendor/module-b',
+        version: '1.0.0',
+    );
+
+    $resolver = new DependencyResolver();
+
+    expect(fn () => $resolver->resolve([$moduleA, $moduleB]))
+        ->toThrow(MissingDependencyException::class);
+});
+
+it('names the unsorted modules and their unmet ordering constraints in the missing-dependency message', function (): void {
+    // Module A declares both after: [B] and before: [B] — unsatisfiable
+    $moduleA = new ModuleManifest(
+        name: 'vendor/module-a',
+        version: '1.0.0',
+        after: ['vendor/module-b'],
+        before: ['vendor/module-b'],
+    );
+    $moduleB = new ModuleManifest(
+        name: 'vendor/module-b',
+        version: '1.0.0',
+    );
+
+    $resolver = new DependencyResolver();
+
+    $exception = null;
+
+    try {
+        $resolver->resolve([$moduleA, $moduleB]);
+    } catch (MissingDependencyException $e) {
+        $exception = $e;
+    }
+
+    expect($exception)->not->toBeNull()
+        ->and($exception->getMessage())
+        ->toContain('vendor/module-a')
+        ->toContain('after:vendor/module-b')
+        ->toContain('before:vendor/module-b');
+});
+
+it('throws a circular dependency error with a populated chain for a real two-module require cycle', function (): void {
+    // A requires B, B requires A — a real cycle via require
+    $moduleA = new ModuleManifest(
+        name: 'vendor/module-a',
+        version: '1.0.0',
+        require: ['vendor/module-b' => '^1.0'],
+    );
+    $moduleB = new ModuleManifest(
+        name: 'vendor/module-b',
+        version: '1.0.0',
+        require: ['vendor/module-a' => '^1.0'],
+    );
+
+    $resolver = new DependencyResolver();
+
+    $exception = null;
+
+    try {
+        $resolver->resolve([$moduleA, $moduleB]);
+    } catch (CircularDependencyException $e) {
+        $exception = $e;
+    }
+
+    expect($exception)->not->toBeNull()
+        ->and($exception->getMessage())
+        ->toContain('vendor/module-a')
+        ->toContain('vendor/module-b')
+        ->toContain('->');
+});
+
+it('includes every node of the cycle in the chain for a real three-module require cycle', function (): void {
+    // A requires B, B requires C, C requires A
+    $moduleA = new ModuleManifest(
+        name: 'vendor/module-a',
+        version: '1.0.0',
+        require: ['vendor/module-b' => '^1.0'],
+    );
+    $moduleB = new ModuleManifest(
+        name: 'vendor/module-b',
+        version: '1.0.0',
+        require: ['vendor/module-c' => '^1.0'],
+    );
+    $moduleC = new ModuleManifest(
+        name: 'vendor/module-c',
+        version: '1.0.0',
+        require: ['vendor/module-a' => '^1.0'],
+    );
+
+    $resolver = new DependencyResolver();
+
+    $exception = null;
+
+    try {
+        $resolver->resolve([$moduleA, $moduleB, $moduleC]);
+    } catch (CircularDependencyException $e) {
+        $exception = $e;
+    }
+
+    expect($exception)->not->toBeNull()
+        ->and($exception->getMessage())
+        ->toContain('vendor/module-a')
+        ->toContain('vendor/module-b')
+        ->toContain('vendor/module-c')
+        ->toContain('->');
+});
+
+it('resolves successfully and throws nothing when every dependency is satisfied', function (): void {
+    $moduleA = new ModuleManifest(
+        name: 'vendor/module-a',
+        version: '1.0.0',
+    );
+    $moduleB = new ModuleManifest(
+        name: 'vendor/module-b',
+        version: '1.0.0',
+        require: ['vendor/module-a' => '^1.0'],
+    );
+
+    $resolver = new DependencyResolver();
+    $sorted = $resolver->resolve([$moduleB, $moduleA]);
+
+    $names = array_map(fn (ModuleManifest $m) => $m->name, $sorted);
+
+    expect($names)->toBe(['vendor/module-a', 'vendor/module-b']);
+});
+
+it('still resolves successfully when an enabled module requires a non-marko composer package (absent from the module list)', function (): void {
+    $moduleA = new ModuleManifest(
+        name: 'vendor/module-a',
+        version: '1.0.0',
+        require: ['psr/container' => '^2.0', 'symfony/http-foundation' => '^6.0'],
+    );
+
+    $resolver = new DependencyResolver();
+    $sorted = $resolver->resolve([$moduleA]);
+
+    expect($sorted)->toHaveCount(1)
+        ->and($sorted[0]->name)->toBe('vendor/module-a');
+});
+
+it('throws a missing dependency error naming a module that requires a disabled dependency', function (): void {
+    $moduleA = new ModuleManifest(
+        name: 'vendor/module-a',
+        version: '1.0.0',
+        require: ['vendor/module-b' => '^1.0'],
+    );
+    $moduleB = new ModuleManifest(
+        name: 'vendor/module-b',
+        version: '1.0.0',
+        enabled: false,
+    );
+
+    $resolver = new DependencyResolver();
+
+    expect(fn () => $resolver->resolve([$moduleA, $moduleB]))
+        ->toThrow(MissingDependencyException::class);
 });

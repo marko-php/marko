@@ -16,7 +16,7 @@ Session interfaces and infrastructure --- defines session management, flash mess
 composer require marko/session
 ```
 
-Note: You typically install a driver package (like `marko/session-file`) which requires this automatically.
+This package is inert on its own --- it defines contracts only and does not register `SessionMiddleware` or bind `SessionInterface`. Session handling activates when you install a driver package, which requires this package automatically.
 
 ## Configuration
 
@@ -128,13 +128,7 @@ $id = $this->session->getId();
 
 ### Session Middleware
 
-The `SessionMiddleware` automatically starts the session at the beginning of a request and saves it when the response completes:
-
-```php
-use Marko\Session\Middleware\SessionMiddleware;
-```
-
-Register it in your route or middleware stack --- it handles `start()` and `save()` so your controllers don't have to.
+The `SessionMiddleware` automatically starts the session at the beginning of a request and saves it when the response completes. It is registered globally by the session driver package (e.g., `marko/session-file`, `marko/session-database`) --- no manual registration is needed. Your controllers only need to inject `SessionInterface`; `start()` and `save()` are handled automatically.
 
 ### Garbage Collection
 
