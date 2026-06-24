@@ -8,6 +8,12 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.8.3] - 2026-06-24
+
+### Bug Fixes
+* fix: remove orphaned devai bootstrap shim from skeleton src by @markshust in https://github.com/marko-php/marko/pull/137
+
+
 ## [0.8.2] - 2026-06-24
 
 ### New Features
