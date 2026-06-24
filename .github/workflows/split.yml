@@ -59,13 +59,29 @@ jobs:
           REPO="https://x-access-token:${MARKO_BUILD_PAT}@github.com/${SPLIT_ORG}/marko-${{ matrix.package }}.git"
           SHA=$(splitsh-lite --prefix="packages/${{ matrix.package }}")
 
+          # During a release, release.sh pushes main, the tag, and develop in
+          # quick succession, so the main-run and tag-run race to push the same
+          # split repo's refs/heads/main and one loses the atomic ref-lock
+          # ("cannot lock ref ... expected <old>"). --force does not help: the
+          # collision is the ref-lock, not a fast-forward. Retry instead — the
+          # split SHA is deterministic, so a retry finds the ref already at the
+          # target SHA and succeeds ("Everything up-to-date").
+          push() {
+            for attempt in 1 2 3; do
+              git push --force "$REPO" "${SHA}:$1" && return 0
+              echo "push to $1 failed (attempt $attempt/3)"
+              [ "$attempt" -lt 3 ] && sleep "$attempt"
+            done
+            return 1
+          }
+
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
-            git push --force "$REPO" "${SHA}:refs/heads/main"
-            git push --force "$REPO" "${SHA}:refs/tags/${TAG}"
+            push "refs/heads/main"
+            push "refs/tags/${TAG}"
           else
             BRANCH="${GITHUB_REF#refs/heads/}"
-            git push --force "$REPO" "${SHA}:refs/heads/${BRANCH}"
+            push "refs/heads/${BRANCH}"
           fi
 
       - name: Notify Packagist
