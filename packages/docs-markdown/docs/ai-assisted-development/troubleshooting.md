@@ -42,6 +42,19 @@ If running inside a container or mounted volume, ensure the working directory is
 
 ## MCP server problems
 
+### MCP tools not available on the first session after install
+
+On a brand-new project, `mcp:serve` boots the framework for the first time during the agent's session-init handshake. If the discovery cache and code index have not been compiled yet, this cold-boot can exceed the agent's probe timeout and the MCP server appears unavailable.
+
+`devai:install` now pre-warms these caches automatically (runs `marko discovery:cache` and `marko indexer:rebuild`) so the first session starts on the fast path. If you still see missing tools on first launch, run the warm-up manually and restart the agent:
+
+```bash
+marko discovery:cache
+marko indexer:rebuild
+```
+
+Then reload the MCP connection (e.g., `/mcp` in Claude Code) or restart the agent session.
+
 ### Agent reports "MCP server failed to start"
 
 1. Confirm `marko mcp:serve` runs without error:

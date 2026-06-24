@@ -34,10 +34,13 @@ The installer does the following in order:
 2. **Writes agent files** — For each detected agent, writes the appropriate configuration files (guidelines, MCP registration, skill files).
 3. **Merges package guidelines** — Reads every installed package's `resources/ai/guidelines.md` and merges the content into the agent guidelines files.
 4. **Distributes skills** — Writes skill bundles from `resources/ai/skills/` to the agent-specific skills directory for agents that support it.
+5. **Warms framework caches** — Runs `marko discovery:cache` then `marko indexer:rebuild` so the MCP server's first session does not incur a cold-compile delay. Failures are non-fatal and logged.
+6. **Builds the docs search index** — If a docs driver (e.g., `marko/docs-fts`) is installed, runs its index-build command so `search_docs` is queryable immediately.
 
-The `IndexCache` used by `marko/mcp` and `marko/lsp` builds automatically on first read if no cache file exists, so an explicit `indexer:rebuild` step is not required. You can run it manually if you want to pre-warm the cache:
+If you need to warm the caches manually at any time:
 
 ```bash
+marko discovery:cache
 marko indexer:rebuild
 ```
 
