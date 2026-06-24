@@ -4,7 +4,7 @@ Hybrid FTS5 + sqlite-vec semantic documentation search driver for Marko — comb
 
 ## Overview
 
-`marko/docs-vec` implements `DocsSearchInterface` using both SQLite FTS5 (keyword) and `sqlite-vec` (vector embeddings) with ONNX Runtime for local inference via `codewithkyrian/transformers-php`. Results are ranked by a weighted combination of BM25 keyword score and cosine similarity, giving accurate answers even when the query wording differs from the documentation. When the model is not downloaded (or on a platform without ONNX support), it falls back to FTS5-only keyword search using its own built-in index. Use `marko/docs-fts` instead if you only want lightweight keyword search.
+`marko/docs-vec` implements `DocsSearchInterface` using both SQLite FTS5 (keyword) and `sqlite-vec` (vector embeddings) with ONNX Runtime for local inference via `codewithkyrian/transformers`. Results are fused (reciprocal-rank fusion) across BM25 keyword ranking and cosine similarity, giving accurate answers even when the query wording differs from the documentation. When the `sqlite-vec` extension, the model, or `transformers` is unavailable — or the PHP build can't load SQLite extensions — it falls back to FTS5-only keyword search using its own built-in index. Use `marko/docs-fts` instead if you only want lightweight keyword search.
 
 ## Installation
 
@@ -12,15 +12,36 @@ Hybrid FTS5 + sqlite-vec semantic documentation search driver for Marko — comb
 composer require marko/docs-vec
 ```
 
-For query-time embeddings, also install the ONNX runtime:
+That alone gives you working FTS5-only search. For full hybrid semantic search, add the
+ONNX runtime and fetch the native extension and model:
 
 ```bash
-composer require codewithkyrian/transformers-php
+composer require codewithkyrian/transformers   # ^0.6 with symfony 8 (^0.5 with symfony 6/7)
+marko docs-vec:download-extension              # sqlite-vec native binary for this platform
+marko docs-vec:download-model                  # bge-small-en-v1.5 ONNX model
+marko docs-vec:build                           # build the hybrid index
 ```
+
+> **Graceful fallback.** Every piece above is optional: if the extension, model, or
+> `transformers` is missing (or PHP can't load SQLite extensions), `build` and `search`
+> degrade to FTS5-only instead of failing. `marko docs-vec:build` reports which mode it used.
+
+## The sqlite-vec extension
+
+Vector search loads the native [`sqlite-vec`](https://github.com/asg017/sqlite-vec) extension
+via PHP's `Pdo\Sqlite::loadExtension()` (not a `SELECT load_extension(...)` SQL call, which
+SQLite blocks by default). Fetch a pinned, checksum-verified build for your platform:
+
+```bash
+marko docs-vec:download-extension
+```
+
+Ships `sqlite-vec` builds for macOS, Linux, and Windows (x86_64 / arm64), written to
+`resources/sqlite-vec/` (gitignored). Mirror/firewall override: `--base-url=<your-mirror>`.
 
 ## ONNX model
 
-This package uses the **bge-small-en-v1.5** model (~130MB across `model.onnx`, `tokenizer.json`, `config.json`) for semantic embeddings. The model is **not** committed to the repository — it is downloaded on demand and verified by SHA-256.
+This package uses the **bge-small-en-v1.5** model (~130MB across `onnx/model.onnx` plus `config.json`, `tokenizer.json`, `tokenizer_config.json`, and `special_tokens_map.json`) for semantic embeddings. The files use the HuggingFace layout transformers-php expects. The model is **not** committed to the repository — it is downloaded on demand and verified by SHA-256.
 
 ### Downloading the model
 
@@ -46,9 +67,12 @@ The ONNX runtime supports Linux (x64, ARM64), macOS (x64, ARM64), and Windows (x
 
 ## Usage
 
-After installing and downloading the model, `module.php` binds `DocsSearchInterface` to `VecSearch` automatically. Build the hybrid index, then search:
+`module.php` binds `DocsSearchInterface` to `VecSearch` automatically. After fetching the
+extension and model, build the index, then inject the contract and search:
 
 ```bash
+marko docs-vec:download-extension
+marko docs-vec:download-model
 marko docs-vec:build
 ```
 

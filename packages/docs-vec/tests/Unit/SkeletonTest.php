@@ -16,19 +16,25 @@ it('has composer.json with name marko/docs-vec and required dependencies', funct
     expect($composer['require']['marko/core'])->toBe('self.version');
     expect($composer['require']['marko/docs'])->toBe('self.version');
     expect($composer['require']['marko/docs-markdown'])->toBe('self.version');
-    expect($composer['suggest']['codewithkyrian/transformers-php'])->toContain('^0.5');
+    expect($composer['suggest']['codewithkyrian/transformers'])->toContain('^0.5');
 });
 
-it('has module.php binding DocsSearchInterface to VecSearch', function (): void {
+it('provides DocsSearchInterface via a singleton factory with empty bindings', function (): void {
     $path = dirname(__DIR__, 2) . '/module.php';
     expect(file_exists($path))->toBeTrue();
 
     $module = require $path;
 
     expect($module)->toBeArray();
-    expect($module['bindings'])->toBeArray();
-    expect(array_key_exists(DocsSearchInterface::class, $module['bindings']))->toBeTrue();
-    expect($module['bindings'][DocsSearchInterface::class])->toBe(VecSearch::class);
+
+    // bindings MUST stay empty: also declaring DocsSearchInterface here would
+    // register the same interface twice in one module → BindingConflictException.
+    expect($module['bindings'])->toBeArray()->toBeEmpty();
+
+    // The interface is provided by the singleton factory instead.
+    expect($module['singletons'])->toBeArray();
+    expect(array_key_exists(DocsSearchInterface::class, $module['singletons']))->toBeTrue();
+    expect($module['singletons'][DocsSearchInterface::class])->toBeInstanceOf(Closure::class);
 });
 
 it('has src tests/Unit tests/Feature directories with Pest bootstrap', function (): void {

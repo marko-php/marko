@@ -36,11 +36,15 @@ If you want semantic search instead of lexical, install `marko/docs-vec` *instea
 
 ```bash
 composer require --dev marko/docs-vec
-marko docs-vec:download-model
-marko docs-vec:build
+composer require --dev codewithkyrian/transformers   # query-time embeddings (^0.6 with symfony 8)
+marko docs-vec:download-extension                     # sqlite-vec native binary for this platform
+marko docs-vec:download-model                         # bge-small-en-v1.5 ONNX model
+marko docs-vec:build                                  # build the hybrid FTS5 + vector index
 ```
 
 Re-running `marko devai:install` then builds the vec index — the orchestrator detects which driver is in `vendor/` (preferring `docs-vec` when present) and builds that one.
+
+**Graceful fallback.** Semantic ranking needs three things: the `sqlite-vec` extension, the ONNX model, and `codewithkyrian/transformers`. If any is missing — or the PHP build can't load SQLite extensions — `docs-vec` automatically builds and serves an **FTS5-only** index instead of failing, and `marko docs-vec:build` reports which mode it used. So `composer require marko/docs-vec` alone already works lexically; the two `download-*` commands plus `transformers` upgrade it to full semantic search.
 
 ## Switching drivers
 
@@ -62,14 +66,14 @@ Then re-run `marko devai:install --force` (or the driver's `:build` command) to 
 
 | Feature | docs-fts | docs-vec |
 |---|---|---|
-| Search type | Lexical (exact terms) | Semantic (meaning-based) |
-| Setup | None — single `composer require` | Requires ONNX model download (~40 MB) |
-| Offline | Yes | Yes (after model download) |
-| Exact-query accuracy | Excellent | Good |
+| Search type | Lexical (exact terms) | Hybrid: FTS5 keyword + semantic vector (meaning-based) |
+| Setup | None — single `composer require` | `download-extension` + `download-model` (~130 MB) + `composer require codewithkyrian/transformers` |
+| Offline | Yes | Yes (after the one-time downloads) |
+| Exact-query accuracy | Excellent | Excellent (FTS5 half) |
 | Conceptual-query accuracy | Limited | Excellent |
-| Index build time | Fast (< 1s) | Slower (30–120s depending on corpus size) |
-| Index size | Small | Larger (embeddings per chunk) |
-| Required PHP extensions | `pdo_sqlite` (standard) | `pdo_sqlite` + `sqlite-vec` |
+| Index build time | Fast (< 1s) | Slower (~30–120s — one ONNX embedding per chunk) |
+| Index size | Small | Larger (a 384-d embedding per chunk) |
+| Required PHP extensions | `pdo_sqlite` (standard) | `pdo_sqlite` + the `sqlite-vec` loadable extension; PHP must permit extension loading (falls back to FTS5 otherwise) |
 
 ## Choosing fts
 
@@ -85,7 +89,9 @@ Most projects should stay on fts.
 Use **`docs-vec`** when:
 - Your agents ask vague or conceptual questions ("how does Marko handle dependencies?")
 - You want results ranked by meaning, not term overlap
-- You can install `sqlite-vec` and spare the one-time ~40 MB model download
+- You can spare the one-time downloads (`marko docs-vec:download-extension` fetches the platform `sqlite-vec` binary; `marko docs-vec:download-model` fetches the ~130 MB ONNX model) and your PHP build permits loading SQLite extensions
+
+`marko docs-vec:download-extension` ships pinned, checksum-verified `sqlite-vec` builds for macOS, Linux, and Windows (x86_64 / arm64). On an unsupported platform — or a PHP build with extension loading compiled out — `docs-vec` degrades to FTS5-only rather than failing.
 
 ## Package READMEs
 

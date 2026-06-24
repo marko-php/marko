@@ -22,8 +22,18 @@ class BuildIndexCommand implements CommandInterface
         Output $output,
     ): int {
         $outputPath = dirname(__DIR__, 2) . '/resources/docs.sqlite';
-        $this->builder->build($outputPath);
-        $output->writeLine('Hybrid index built at: ' . $outputPath);
+        $withVectors = $this->builder->build($outputPath);
+
+        if ($withVectors) {
+            $output->writeLine('Hybrid FTS5 + vector index built at: ' . $outputPath);
+        } else {
+            $output->writeLine('FTS5-only index built at: ' . $outputPath);
+            $output->writeLine(
+                'Note: sqlite-vec extension, ONNX model, or transformers-php unavailable — '
+                . 'semantic ranking is off. Run `marko docs-vec:download-extension` and '
+                . '`marko docs-vec:download-model` (plus `composer require codewithkyrian/transformers`) to enable it.',
+            );
+        }
 
         return 0;
     }
