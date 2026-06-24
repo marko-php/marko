@@ -49,13 +49,17 @@ class MyTool
 
 ### Rebuilding the index
 
-The index rebuilds automatically when stale, but you can force a rebuild from the CLI:
+The index rebuilds automatically when a **fresh** read finds it stale --- `load()` compares every tracked source file's mtime against the cache and falls back to a full `build()` when anything is newer. You can also force a rebuild from the CLI:
 
 ```bash
 marko indexer:rebuild
 ```
 
 This writes the cache to `.marko/index.cache` and reports the number of modules, observers, plugins, commands, routes, config keys, templates, and translations indexed.
+
+:::caution[Long-running servers hold the index in memory]
+The staleness check runs only on the first load into a process. A long-running MCP or LSP server keeps the index in memory for its whole lifetime and won't re-check staleness afterward --- so code that changes *underneath* a running server stays invisible to the tooling until you run `marko indexer:rebuild` and reload the connection. This matters for **external** changes the server didn't make and can't know about: a `git pull`, a branch switch, a dependency install, or edits from another process or editor. It does **not** apply to code the current agent just wrote --- the agent already has that in context, and the running application discovers it live on the next request regardless.
+:::
 
 ## API Reference
 

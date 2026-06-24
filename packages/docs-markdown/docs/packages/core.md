@@ -170,6 +170,8 @@ return [
 
 On every boot, Marko scans all module PHP files to discover `#[Preference]`, `#[Plugin]`, `#[Observer]`, and `#[Command]` attributes. In production this scan can be eliminated by compiling its results into a single PHP file --- the discovery cache.
 
+**Routes are deliberately not part of the discovery cache.** `Application::initialize()` always runs route discovery live on every boot, in every environment --- so adding or changing a `#[Get]`, `#[Post]`, or any other route attribute takes effect on the next request with no rebuild, ever. The cache covers only the four attribute types listed above.
+
 #### Compiling the cache
 
 ```bash
@@ -241,6 +243,17 @@ marko discovery:cache
 ```
 
 Serving stale discovery results in missing preferences, plugins, observers, or commands until the cache is recompiled.
+
+#### Not the same as the code index
+
+Marko has **two separate caches** that are easy to confuse --- different files, different commands, different consumers:
+
+| Cache | File | Built by | Consumed by | Rebuild when |
+|---|---|---|---|---|
+| **Discovery cache** | `storage/cache/discovery.php` | `marko discovery:cache` | the **running app** at boot | deploying to a non-`development` environment after plugins, observers, preferences, or commands changed |
+| **Code index** | `.marko/index.cache` | `marko indexer:rebuild` | **MCP / LSP tooling** ([`marko/codeindexer`](/docs/packages/codeindexer/)) | the AI tools show stale or missing symbols |
+
+The discovery cache makes the **app** boot faster in production. The code index lets **AI tooling** answer questions about your code. Rebuilding one has no effect on the other. Neither is required for routes or newly-added modules to work at runtime --- see [the routing note above](#discovery-cache) and the codeindexer page.
 
 ### Throwing Rich Exceptions
 
