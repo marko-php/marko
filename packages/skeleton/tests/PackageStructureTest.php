@@ -31,6 +31,22 @@ it('requires marko/devserver as a dev dependency', function (): void {
     expect($composer['require-dev'])->toHaveKey('marko/devserver');
 });
 
+it('requires marko/testing as a dev dependency', function (): void {
+    // The testing package (fakes + Pest expectations) is dev-only tooling and
+    // must live in require-dev of the skeleton (the generated app's root), not
+    // in require — a dependency's require-dev is never installed transitively,
+    // so it cannot be delivered via marko/framework. See require check below.
+    $composer = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
+
+    expect($composer['require-dev'])->toHaveKey('marko/testing');
+});
+
+it('does not add marko/testing to require (dev-only, must not ship to production)', function (): void {
+    $composer = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
+
+    expect($composer['require'])->not->toHaveKey('marko/testing');
+});
+
 it('has public/index.php using Application::boot() API', function (): void {
     $indexPath = __DIR__ . '/../public/index.php';
 

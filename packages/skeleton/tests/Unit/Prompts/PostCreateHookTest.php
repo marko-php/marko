@@ -41,7 +41,16 @@ it('runs marko devai:install after devai is added', function (): void {
         }
     };
 
-    $hook = new PostCreateHook($stubPrompt);
+    $hook = new class ($stubPrompt) extends PostCreateHook
+    {
+        protected function runDevaiInstall(
+            string $projectRoot,
+            bool $interactive,
+        ): int
+        {
+            return 0;
+        }
+    };
     ob_start();
     $hook->run($this->tempRoot, interactive: false);
     ob_end_clean();
@@ -55,27 +64,36 @@ it(
         $stubPrompt = new class () extends DevAiPrompt
         {
             public ?bool $askCalled = null;
-    
+
             public function ask(mixed $input = null): bool
             {
                 $this->askCalled = true;
-    
+
                 return true;
             }
-    
+
             public function install(string $projectRoot): int
             {
                 return 0;
             }
         };
-    
-        $hook = new PostCreateHook($stubPrompt);
+
+        $hook = new class ($stubPrompt) extends PostCreateHook
+        {
+            protected function runDevaiInstall(
+                string $projectRoot,
+                bool $interactive,
+            ): int
+            {
+                return 0;
+            }
+        };
         ob_start();
         $hook->run($this->tempRoot, interactive: false);
         ob_end_clean();
-    
+
         expect($stubPrompt->askCalled)->toBeNull();
-    }
+    },
 );
 
 it('aborts cleanly if devai:install fails without rolling back composer require', function (): void {
@@ -92,12 +110,18 @@ it('aborts cleanly if devai:install fails without rolling back composer require'
         }
     };
 
-    $hook = new PostCreateHook($stubPrompt);
+    $errorStream = fopen('php://memory', 'w+');
+    $hook = new PostCreateHook($stubPrompt, $errorStream);
     ob_start();
     $code = $hook->run($this->tempRoot, interactive: false);
     ob_end_clean();
 
-    expect($code)->not->toBe(0);
+    rewind($errorStream);
+    $errors = stream_get_contents($errorStream);
+    fclose($errorStream);
+
+    expect($code)->not->toBe(0)
+        ->and($errors)->toContain('Failed to install marko/devai (exit code: 1)');
 });
 
 it('prints a clear next-step message if the user skipped devai', function (): void {
