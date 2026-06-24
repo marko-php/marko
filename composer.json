@@ -596,7 +596,6 @@
             "Marko\\View\\Twig\\Tests\\": "packages/view-twig/tests/",
             "Marko\\Vite\\Tests\\": "packages/vite/tests/",
             "Marko\\Webhook\\Tests\\": "packages/webhook/tests/",
-            "Marko\\Skeleton\\": "packages/skeleton/src/",
             "Marko\\Skeleton\\Tests\\": "packages/skeleton/tests/"
         },
         "files": [
