@@ -8,6 +8,16 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.8.4] - 2026-06-24
+
+### New Features
+* feat: make a fresh skeleton work with zero bootstrapping by @markshust in https://github.com/marko-php/marko/pull/139
+* feat: self-refreshing mcp/lsp code index by @markshust in https://github.com/marko-php/marko/pull/141
+### Bug Fixes
+* fix: show devai:install prompt text and stream live progress by @markshust in https://github.com/marko-php/marko/pull/138
+* fix: prevent devai:install composer hang on invisible prompt by @markshust in https://github.com/marko-php/marko/pull/140
+
+
 ## [0.8.3] - 2026-06-24
 
 ### Bug Fixes
