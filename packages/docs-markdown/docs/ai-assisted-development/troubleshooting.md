@@ -92,7 +92,7 @@ If the tool is listed but returns no results, the index may be stale. Trigger a 
 marko indexer:rebuild
 ```
 
-The `IndexCache` also rebuilds automatically on next read if any tracked source file is newer than the cache.
+The running MCP/LSP server re-checks staleness on every read for `app/` and `modules/` — changes there are visible on the next tool call with no manual rebuild needed. Vendor and Composer changes are not covered by the on-read check; run `marko indexer:rebuild` after modifying `vendor/` or `composer.json`.
 
 ### "Tool not found" when calling query_database
 
@@ -117,7 +117,7 @@ marko lsp:serve
 
 ### Completions appear but are stale or incorrect
 
-The MCP and LSP servers lazy-load `.marko/index.cache` and rebuild it whenever a watched source file is newer than the cache, so completions usually self-heal. If they don't, force a clean rebuild:
+The running MCP and LSP servers re-check staleness on every read for `app/` and `modules/`, so completions for code in those directories self-heal without any manual step. If you recently changed `vendor/` or `composer.json`, or you want to force a clean rebuild for any other reason, run:
 
 ```bash
 marko indexer:rebuild

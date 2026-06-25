@@ -63,9 +63,10 @@ Invoke the MCP server from your chosen agent:
 
 ## 5. Code index
 
-The MCP/LSP servers lazy-load and auto-rebuild `.marko/index.cache` on first read,
-so explicit indexing is optional. To pre-warm or to force a rebuild after large
-codebase changes:
+The running MCP/LSP servers re-check staleness on every read for `app/` and `modules/`,
+so changes there are reflected on the next tool call with no manual step. Use
+`indexer:rebuild` to pre-warm a cold cache, force a clean rebuild, or refresh after
+`vendor/` or `composer.json` changes (which the on-read check does not cover):
 
 - [ ] `marko indexer:rebuild` completes without error and prints module/route/config-key counts
 - [ ] After indexing, asking the agent "List all Marko modules" (which calls the `list_modules` MCP tool) returns the expected modules

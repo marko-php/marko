@@ -68,6 +68,8 @@ class IndexCache implements IndexCacheInterface
             array_push($translationKeys, ...$this->translationScanner->scan($module));
         }
 
+        $trackedPaths = $this->collectTrackedPaths();
+
         $this->data = compact(
             'modules',
             'observers',
@@ -78,6 +80,7 @@ class IndexCache implements IndexCacheInterface
             'configKeys',
             'templates',
             'translationKeys',
+            'trackedPaths',
         );
 
         $this->save();
@@ -139,11 +142,19 @@ class IndexCache implements IndexCacheInterface
      * LSP server, etc.) don't have to remember to call load() at startup.
      * Falls back to a full build() when the cache is missing or stale.
      *
+     * On subsequent reads (when $this->data is already populated), re-evaluates
+     * staleness so long-lived singleton servers always reflect real changes to
+     * app/ and modules/ — without constructing a fresh instance.
+     *
      * @throws IndexCacheException
      */
     private function ensureLoaded(): void
     {
         if ($this->data !== null) {
+            if ($this->isStale()) {
+                $this->build();
+            }
+
             return;
         }
 
@@ -163,9 +174,16 @@ class IndexCache implements IndexCacheInterface
         }
 
         $cacheMtime = filemtime($cachePath);
+        $vendorPrefix = $this->rootPath . '/vendor/';
         $modules = $this->moduleWalker->walk();
 
         foreach ($modules as $module) {
+            // Vendor modules are excluded from the staleness re-check.
+            // New vendor packages surface on the next indexer:rebuild / cold-warm.
+            if (str_starts_with($module->path, $vendorPrefix)) {
+                continue;
+            }
+
             $composerJson = $module->path . '/composer.json';
 
             if (is_file($composerJson) && filemtime($composerJson) > $cacheMtime) {
@@ -191,7 +209,97 @@ class IndexCache implements IndexCacheInterface
             }
         }
 
-        return false;
+        // Check for deletions by comparing the current path-set against
+        // the previously-persisted set stored in the on-disk payload.
+        // We read the payload directly (not $this->data) to avoid the ordering
+        // trap: during load(), $this->data is null when isStale() is called.
+        $currentPaths = $this->collectTrackedPaths();
+        $persistedPaths = $this->loadTrackedPathsFromDisk($cachePath);
+
+        if ($persistedPaths === null) {
+            // Legacy payload without trackedPaths key — treat as stale
+            return true;
+        }
+
+        return $currentPaths !== $persistedPaths;
+    }
+
+    /**
+     * Collect the sorted list of tracked source-file paths under app/ and modules/.
+     * Vendor is intentionally excluded — only app/ and modules/ are re-checked at
+     * runtime. Used by build() to persist the set and by isStale() to compare.
+     *
+     * @return list<string>
+     */
+    private function collectTrackedPaths(): array
+    {
+        $paths = [];
+        $dirsToScan = [
+            $this->rootPath . '/app',
+            $this->rootPath . '/modules',
+        ];
+
+        foreach ($dirsToScan as $baseDir) {
+            if (!is_dir($baseDir)) {
+                continue;
+            }
+
+            $iter = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($baseDir, RecursiveDirectoryIterator::SKIP_DOTS),
+            );
+
+            foreach ($iter as $f) {
+                if ($f->isFile()) {
+                    $paths[] = $f->getPathname();
+                }
+            }
+        }
+
+        sort($paths);
+
+        return $paths;
+    }
+
+    /**
+     * Read only the `trackedPaths` key from the on-disk cache payload without
+     * deserializing the full object graph. Returns null when the key is absent
+     * (legacy payload) or when the file cannot be read.
+     *
+     * @return list<string>|null
+     */
+    private function loadTrackedPathsFromDisk(string $cachePath): ?array
+    {
+        $raw = @file_get_contents($cachePath);
+
+        if ($raw === false) {
+            return null;
+        }
+
+        $data = @unserialize($raw, [
+            'allowed_classes' => [
+                CommandEntry::class,
+                ConfigKeyEntry::class,
+                ModuleInfo::class,
+                ObserverEntry::class,
+                PluginEntry::class,
+                PreferenceEntry::class,
+                RouteEntry::class,
+                TemplateEntry::class,
+                TranslationEntry::class,
+            ],
+        ]);
+
+        if (!is_array($data) || !array_key_exists('trackedPaths', $data)) {
+            return null;
+        }
+
+        $tracked = $data['trackedPaths'];
+
+        if (!is_array($tracked)) {
+            return null;
+        }
+
+        return $tracked;
     }
 
     /**

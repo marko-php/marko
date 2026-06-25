@@ -73,15 +73,18 @@ Per `docs/DOCS-STANDARDS.md`, package READMEs are slim pointers — title, insta
 
 ## Step 6 — Verify the module is discovered
 
-After installing or registering the module, call the MCP tool `list_modules`. The new module should appear in the list. If not, check that:
+The module exists because you wrote it. The runtime discovers and autoloads it live on the next request — no `composer dump-autoload`, no index rebuild, no extra registration step. The MCP/LSP index self-refreshes (scoped to `app/` and `modules/`), so `list_modules` and `validate_module` will reflect freshly created code automatically.
+
+If you want to double-check structure, confirm:
 
 - `composer.json` has `extra.marko.module: true`
-- Composer has run (`composer dump-autoload` or `composer update`)
 - The module's psr-4 namespace resolves correctly
+
+You may call `list_modules` or `validate_module` as an optional cross-check, but these are not gates — the module is live as soon as the files are in place.
 
 ## Verification
 
-After writing files, expect LSP diagnostics from `marko-lsp` to surface in the same turn. Resolve all diagnostics before declaring the module complete — diagnostics are the verification gate, not optional warnings. Then call the `list_modules` MCP tool to confirm the module is discovered by the framework.
+After writing files, expect LSP diagnostics from `marko-lsp` to surface in the same turn. Resolve all diagnostics before declaring the module complete — diagnostics are the verification gate, not optional warnings. Calling `list_modules` is an optional cross-check to confirm the MCP index reflects the new module; it is not required for the module to be active.
 
 ## Conventions to enforce
 
