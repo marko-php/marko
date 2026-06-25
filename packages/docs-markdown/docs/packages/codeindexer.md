@@ -19,7 +19,7 @@ Most users do not install this directly — it arrives automatically as a depend
 
 ### Querying the index
 
-Inject the concrete `IndexCache` to use the high-level query API. The cache lazy-loads on first read and rebuilds itself if missing or stale:
+Inject the concrete `IndexCache` to use the high-level query API. The cache lazy-loads on first read and re-checks staleness on every subsequent read:
 
 ```php
 use Marko\CodeIndexer\Cache\IndexCache;
@@ -49,7 +49,7 @@ class MyTool
 
 ### Rebuilding the index
 
-The index rebuilds automatically when a **fresh** read finds it stale --- `load()` compares every tracked source file's mtime against the cache and falls back to a full `build()` when anything is newer. You can also force a rebuild from the CLI:
+The running MCP/LSP server re-checks staleness on **every read** — there is no TTL window. Any addition, edit, or deletion under `app/` or `modules/` is visible to tooling on the very next tool call, with no server restart or manual rebuild. You can also force a clean rebuild from the CLI:
 
 ```bash
 marko indexer:rebuild
@@ -57,8 +57,8 @@ marko indexer:rebuild
 
 This writes the cache to `.marko/index.cache` and reports the number of modules, observers, plugins, commands, routes, config keys, templates, and translations indexed.
 
-:::caution[Long-running servers hold the index in memory]
-The staleness check runs only on the first load into a process. A long-running MCP or LSP server keeps the index in memory for its whole lifetime and won't re-check staleness afterward --- so code that changes *underneath* a running server stays invisible to the tooling until you run `marko indexer:rebuild` and reload the connection. This matters for **external** changes the server didn't make and can't know about: a `git pull`, a branch switch, a dependency install, or edits from another process or editor. It does **not** apply to code the current agent just wrote --- the agent already has that in context, and the running application discovers it live on the next request regardless.
+:::note[On-read self-refresh covers `app/` and `modules/`; vendor needs an explicit rebuild]
+The running MCP/LSP server re-checks staleness on every read — there is no TTL window. Additions, edits, and deletions under `app/` and `modules/` are picked up automatically; the very next tool call sees the updated index. **Vendor is excluded** from the on-read check: new or removed packages installed via `composer require` / `composer update` are not detected until you run `marko indexer:rebuild`. Use `marko indexer:rebuild` for three scenarios: a forced clean rebuild, warming a cold cache (e.g. after a fresh clone or a `devai:install`), or picking up vendor changes. It is not needed for routine development under `app/` or `modules/`.
 :::
 
 ## API Reference

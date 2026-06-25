@@ -41,7 +41,7 @@ vendor/     → Composer packages (base defaults)
 
 Discovery is automatic. Drop a module in `app/` or `modules/`, and Marko picks it up on the next request.
 
-No rebuild step is needed for the **application** to see a new module --- discovery runs live on every request. If your AI tooling (the [MCP](/docs/packages/mcp/) or [LSP](/docs/packages/lsp/) server) doesn't yet list the new module, that's the separate [code index](/docs/packages/codeindexer/), not the app: run `marko indexer:rebuild` and reload the tooling connection to refresh it.
+No rebuild step is needed for the **application** to see a new module --- discovery runs live on every request. The [code index](/docs/packages/codeindexer/) used by AI tooling (the [MCP](/docs/packages/mcp/) or [LSP](/docs/packages/lsp/) server) is equally hands-free for `app/` and `modules/`: the running server re-checks staleness on every read, so a freshly created module appears in tooling on the very next tool call with no `indexer:rebuild` required. The only case still needing an explicit `marko indexer:rebuild` is a vendor change — a new or removed package installed via `composer require` or `composer update`.
 
 ## The `module.php` File
 

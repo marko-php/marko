@@ -117,6 +117,8 @@ When a Marko skill loads, **the skill is the canonical specification.** Do not i
 
 After writing or editing files, expect LSP diagnostics from `marko-lsp` to surface in the same turn. Resolve all reported diagnostics before declaring the task complete — diagnostics are the verification gate, not optional warnings.
 
+There is no build, compile, or reindex step. Routes, modules, observers, plugins, preferences, and config are discovered live from your source files on every request — add a controller with a `#[Route]` and it resolves on the next request, no command required. The `marko-mcp`/`marko-lsp` symbol index auto-rebuilds whenever it is stale, so you never need to run `indexer:rebuild` (or any "reindex") to make new code take effect. If you are reaching for a reindex after scaffolding, that is a Magento reflex Marko does not have — skip it.
+
 ## Working with Marko docs and MCP tools
 
 When the user asks about Marko framework concepts, package APIs, configuration options, or "how does X work" — call `search_docs` from `marko-mcp` first. The MCP returns authoritative content from the Marko docs index. Do NOT infer answers from `vendor/marko/*` source files when `search_docs` can answer.
@@ -131,6 +133,8 @@ Other `marko-mcp` tools to use proactively:
 - `check_config_key` — when verifying a config key exists before referencing it in code
 
 These tools answer faster and more accurately than `grep` over `vendor/`, and they reflect runtime resolution (preferences, plugin order) that grep cannot see.
+
+**Trust your own writes.** The module or route exists because you just wrote it — the runtime serves source files live, so it is available on the next request without any intermediate step. The introspection tools are for discovering pre-existing code, not for confirming code you just created. Do not call `list_modules` or `validate_module` to verify scaffolding you wrote in the same turn — call them when you need to understand what already exists in the project.
 CLAUDE;
     }
 

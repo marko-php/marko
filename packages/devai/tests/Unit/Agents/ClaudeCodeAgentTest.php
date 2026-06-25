@@ -147,6 +147,15 @@ describe('guidelines', function (): void {
             ->and($claudeMd)->toContain('verification gate');
     });
 
+    it('writes CLAUDE.md stating no reindex/build step is needed', function (): void {
+        $this->agent->install(devaiContext('body'), $this->root);
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        expect($claudeMd)->toContain('There is no build, compile, or reindex step')
+            ->and($claudeMd)->toContain('discovered live from your source files')
+            ->and($claudeMd)->toContain('Magento reflex Marko does not have');
+    });
+
     it('writes CLAUDE.md noting the plugin-namespaced skill invocation', function (): void {
         $this->agent->install(devaiContext('body'), $this->root);
 
@@ -172,6 +181,13 @@ describe('guidelines', function (): void {
                 ->and($claudeMd)->toContain('check_config_key');
         },
     );
+
+    it('writes CLAUDE.md instructing the agent to trust its own writes rather than using introspection tools to confirm scaffolding', function (): void {
+        $this->agent->install(devaiContext('body'), $this->root);
+
+        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+        expect($claudeMd)->toContain('introspection tools are for discovering pre-existing code');
+    });
 });
 
 // ---------------------------------------------------------------------------
