@@ -10,19 +10,36 @@ description: >
 
 # Create a Marko module
 
-A Marko module is a Composer package that the framework auto-discovers via the `extra.marko.module` flag. Modules can live anywhere — `packages/{name}/` in the monorepo, `vendor/{vendor}/{package}/` once installed from Packagist, or `app/{Module}/` inside a project. The layout is identical in every case.
+A Marko module is a Composer package that the framework auto-discovers via the `extra.marko.module` flag. Modules can live anywhere — `app/{name}/` for application code, `modules/{vendor}/{name}/` for a distributable package dropped into a host project, `packages/{name}/` in the framework monorepo, or `vendor/{vendor}/{name}/` once installed from Packagist. The layout is identical in every case. Directory and Composer-name segments are always lowercase; only the PHP namespace is StudlyCase.
 
 **This skill is the canonical specification for a Marko module. Do not inspect existing modules in this project to infer layout — siblings may have drifted from spec. Copy the templates from `assets/` verbatim, substitute placeholders, and stop.**
 
-## Step 1 — Pick a location and name
+## Step 1 — Confirm the name, then pick a location
 
-- Monorepo package: `packages/{name}/` (e.g. `packages/payment/`)
-- Vendor package: standalone repo, resolves to `vendor/{vendor}/{name}/`
-- App-local module: `app/{Module}/` inside the host project
+**If the user did not give the module a name, ask for one before scaffolding anything.** Do not invent a name, reuse a vendor as the name, or proceed with a placeholder.
 
-The composer name is `{vendor}/{name}` and the PHP namespace is its StudlyCase form (e.g. `acme/payment` → `Acme\Payment`).
+### Casing rule — read this before creating any directory
 
-**Choosing `{vendor}` — derive it from the host project, never hardcode it.** Use the project's root **directory name** as the vendor: a project in `~/Sites/acme` → vendor `acme`, namespace `Acme`. **Never suggest `marko` as the vendor for an application module.** The `marko` vendor is reserved for packages contributed to the Marko framework monorepo itself — only relevant when you are actually working inside that monorepo (its root contains `packages/core/`). Do **not** read the vendor from the project's `composer.json` `name`: a project scaffolded from `marko/skeleton` still carries `marko/skeleton` there, so the directory name is the reliable signal. When you offer the user a default, lead with the project-derived vendor (`{project-dir}/{name}`), not `marko/{name}`.
+A module's identity has two forms that must stay in sync:
+
+- **Directory and Composer name → always lowercase.** They are identical segment-for-segment, so a module can move between tiers (e.g. `modules/` → `vendor/`) or be symlinked with zero path rewrites.
+- **PHP namespace → always StudlyCase.** `blog` → `Blog`, `my-payment` → `MyPayment`.
+
+So the name `blog` yields directory `blog/`, Composer name `…/blog`, and namespace `…\Blog`. **Lowercase module directories are correct** — do not capitalize them. The casing only flips to StudlyCase in the PHP namespace and the psr-4 autoload key. (If you have seen "lowercase module names" before and assumed it was a bug, it was not: the directory is supposed to be lowercase; only the namespace is StudlyCase.)
+
+### Pick the tier by where the module lives
+
+| Tier | Directory | Composer name | Namespace | When |
+|---|---|---|---|---|
+| **App-local** | `app/{name}/` | `app/{name}` | `App\{Name}` | Application code, not distributed. The vendor segment is always the literal `app` — there is no project-derived vendor. |
+| **Distributable** | `modules/{vendor}/{name}/` | `{vendor}/{name}` | `{Vendor}\{Name}` | A package you intend to publish or share, dropped into a host project. Two-segment, vendor-scoped. |
+| **Framework monorepo** | `packages/{name}/` | `marko/{name}` | `Marko\{Name}` | Only when working inside the Marko monorepo itself (root contains `packages/core/`). |
+
+**Never author into `vendor/`** — it is ephemeral and populated by Composer. The `modules/` tier is the manual-install mirror of `vendor/`: same two-segment `{vendor}/{name}` shape, so a module can later move to `vendor/` (or be symlinked) without changes.
+
+**Default tier:** if the user does not specify, assume an **app-local** module (`app/{name}/`, namespace `App\{Name}`). Only use `modules/{vendor}/{name}/` when the user signals the module is meant to be distributed/shared.
+
+**Choosing `{vendor}` (distributable modules only — app-local modules have no vendor):** derive it from the host project's root **directory name** (a project in `~/Sites/acme` → vendor `acme`). Do **not** read it from the project's `composer.json` `name`: a project scaffolded from `marko/skeleton` still carries `marko/skeleton` there, so the directory name is the reliable signal. **Never use `marko` as the vendor** for an application or third-party module — that vendor is reserved for packages inside the framework monorepo.
 
 ## Step 2 — Write composer.json
 
