@@ -100,34 +100,38 @@ The `query_database` tool is only registered when `marko/database` is bound in t
 
 ### Multiple Claude Code instances disconnect MCP servers
 
-If you run several Claude Code instances at once (multiple terminals or windows) and notice MCP servers — `marko-mcp` included — repeatedly disconnecting and reconnecting, the cause is **not** Marko. Every Claude Code instance shares a single global `~/.claude.json`, and Claude Code rewrites that file constantly (history, tool-usage counters, session state). Concurrent writes to the one file make Claude Code tear down and reconnect its **entire** MCP fleet in lockstep, so all servers flap together. `marko-mcp` is often the one you notice because it boots a PHP process and is the slowest to re-handshake after each bounce.
+If you run several Claude Code instances at once (multiple terminals or windows) and notice MCP servers — `marko-mcp` included — repeatedly disconnecting and reconnecting, the cause is **not** Marko. Every Claude Code instance shares a single global `~/.claude.json`, and Claude Code rewrites that file constantly (history, tool-usage counters, session state). Concurrent writes to the one file make Claude Code tear down and reconnect its **entire** MCP fleet in lockstep, so all servers flap together (a known Claude Code issue — see [anthropics/claude-code#25768](https://github.com/anthropics/claude-code/issues/25768), [#28829](https://github.com/anthropics/claude-code/issues/28829)). `marko-mcp` is often the one you notice because it boots a PHP process and is the slowest to re-handshake after each bounce.
 
-This is a known Claude Code issue (see [anthropics/claude-code#25768](https://github.com/anthropics/claude-code/issues/25768), [#28829](https://github.com/anthropics/claude-code/issues/28829)), independent of Marko. There is no Marko setting that fixes it — the reliable workaround is to give each project its own Claude Code config via the `CLAUDE_CONFIG_DIR` environment variable so concurrent instances stop contending on one file.
+You cannot make Marko stop this — it is Claude Code behavior — but you can shrink the blast radius so a reload barely matters, and avoid making it worse.
 
-Add this `claude` wrapper to your shell profile (`~/.zshrc` shown; adapt for bash). It gives each project its own isolated `.claude.json` under `~/.claude-profiles/<project>/` while sharing plugins, skills, commands, hooks, and settings via symlinks. Credentials live in the macOS Keychain and are shared automatically — no re-login per project.
+**1. Scope every MCP server to the project that needs it (the important one).**
 
-```bash
-# Per-project Claude Code config profiles — stops concurrent instances from
-# contending on a single ~/.claude.json (which causes MCP servers to flap).
-claude() {
-  emulate -L zsh
-  local src="$HOME/.claude" globalcfg="$HOME/.claude.json" root profile item
-  root=$(git rev-parse --show-toplevel 2>/dev/null) || root="$PWD"
-  profile="$HOME/.claude-profiles/${root:t}"
-  mkdir -p "$profile"
-  for item in plugins skills commands hooks settings.json settings.local.json statusline-context.sh config ide; do
-    [[ -e "$src/$item" && ! -e "$profile/$item" ]] && ln -s "$src/$item" "$profile/$item"
-  done
-  # Seed the isolated config once from the real global ~/.claude.json so global
-  # MCP servers and plugin enablement carry over into the profile.
-  [[ ! -f "$profile/.claude.json" && -f "$globalcfg" ]] && cp "$globalcfg" "$profile/.claude.json"
-  CLAUDE_CONFIG_DIR="$profile" command claude "$@"
-}
-```
+The worst amplifier is loading MCP servers into *every* project. A server enabled globally is started — and bounced — in all your projects, including ones that can't even use it (where it just shows "✘ Failed to connect"). Keep each server scoped to where it belongs:
 
-Open a new terminal (or `source ~/.zshrc`) and confirm isolation with `claude mcp list` from inside a project — your MCP servers should connect, and `~/.claude.json` should no longer be touched by that instance.
+- **`marko-mcp` (and `marko-lsp`, `marko-skills`):** these are enabled **per project** by `marko devai:install`, which writes the marketplace registration and `enabledPlugins` into the project's `.claude/settings.json`. Do **not** also enable them in your global `~/.claude/settings.json` — that makes marko-mcp launch (and fail) in every non-Marko project. If an older global enablement is lurking, remove the `marko-*@marko` entries from `~/.claude/settings.json`; each Marko project still loads them from its own committed `.claude/settings.json`.
+- **Other project-specific servers** (a database tool, an internal API, an n8n instance, …): add them to a `.mcp.json` at that project's root so they load only there:
 
-> Note: `CLAUDE_CONFIG_DIR` is honored by the Claude Code CLI but ignored by the VS Code extension, which always uses `~/.claude/`.
+  ```json
+  {
+    "mcpServers": {
+      "n8n-mcp": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "n8n-mcp"],
+        "env": { "N8N_API_URL": "https://n8n.example.com", "N8N_API_KEY": "…" }
+      }
+    }
+  }
+  ```
+
+  Reserve **user (global) scope** (`claude mcp add --scope user`) for tools you genuinely want everywhere.
+
+**2. Reduce the write churn / contention.**
+
+- Run fewer concurrent Claude Code instances against the same global config when you can.
+- `export CLAUDE_CODE_SKIP_PROMPT_HISTORY=1` cuts how often `~/.claude.json` is rewritten, which lowers the contention that triggers fleet reloads. Zero downside for most workflows.
+
+**Advanced (rarely worth it): full config isolation.** You can give each project its own `~/.claude.json` via the `CLAUDE_CONFIG_DIR` environment variable, which eliminates the contention entirely. **The catch:** Claude Code stores its login in a way tied to the default config directory (the macOS Keychain item is not shared across `CLAUDE_CONFIG_DIR` values), so each isolated config requires its own `/login` — there is no clean way to share one session across them. Because of that re-login friction, prefer scoping (step 1) and churn reduction (step 2); only reach for `CLAUDE_CONFIG_DIR` isolation if fleet reloads are genuinely disrupting you and you accept logging in per project.
 
 ## LSP problems
 
