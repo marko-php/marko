@@ -98,6 +98,37 @@ The running MCP/LSP server re-checks staleness on every read for `app/` and `mod
 
 The `query_database` tool is only registered when `marko/database` is bound in the container. Install the database package and ensure it is configured before expecting this tool to appear.
 
+### Multiple Claude Code instances disconnect MCP servers
+
+If you run several Claude Code instances at once (multiple terminals or windows) and notice MCP servers — `marko-mcp` included — repeatedly disconnecting and reconnecting, the cause is **not** Marko. Every Claude Code instance shares a single global `~/.claude.json`, and Claude Code rewrites that file constantly (history, tool-usage counters, session state). Concurrent writes to the one file make Claude Code tear down and reconnect its **entire** MCP fleet in lockstep, so all servers flap together. `marko-mcp` is often the one you notice because it boots a PHP process and is the slowest to re-handshake after each bounce.
+
+This is a known Claude Code issue (see [anthropics/claude-code#25768](https://github.com/anthropics/claude-code/issues/25768), [#28829](https://github.com/anthropics/claude-code/issues/28829)), independent of Marko. There is no Marko setting that fixes it — the reliable workaround is to give each project its own Claude Code config via the `CLAUDE_CONFIG_DIR` environment variable so concurrent instances stop contending on one file.
+
+Add this `claude` wrapper to your shell profile (`~/.zshrc` shown; adapt for bash). It gives each project its own isolated `.claude.json` under `~/.claude-profiles/<project>/` while sharing plugins, skills, commands, hooks, and settings via symlinks. Credentials live in the macOS Keychain and are shared automatically — no re-login per project.
+
+```bash
+# Per-project Claude Code config profiles — stops concurrent instances from
+# contending on a single ~/.claude.json (which causes MCP servers to flap).
+claude() {
+  emulate -L zsh
+  local src="$HOME/.claude" globalcfg="$HOME/.claude.json" root profile item
+  root=$(git rev-parse --show-toplevel 2>/dev/null) || root="$PWD"
+  profile="$HOME/.claude-profiles/${root:t}"
+  mkdir -p "$profile"
+  for item in plugins skills commands hooks settings.json settings.local.json statusline-context.sh config ide; do
+    [[ -e "$src/$item" && ! -e "$profile/$item" ]] && ln -s "$src/$item" "$profile/$item"
+  done
+  # Seed the isolated config once from the real global ~/.claude.json so global
+  # MCP servers and plugin enablement carry over into the profile.
+  [[ ! -f "$profile/.claude.json" && -f "$globalcfg" ]] && cp "$globalcfg" "$profile/.claude.json"
+  CLAUDE_CONFIG_DIR="$profile" command claude "$@"
+}
+```
+
+Open a new terminal (or `source ~/.zshrc`) and confirm isolation with `claude mcp list` from inside a project — your MCP servers should connect, and `~/.claude.json` should no longer be touched by that instance.
+
+> Note: `CLAUDE_CONFIG_DIR` is honored by the Claude Code CLI but ignored by the VS Code extension, which always uses `~/.claude/`.
+
 ## LSP problems
 
 ### No completions appearing in the editor
