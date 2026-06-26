@@ -40,8 +40,7 @@ function makeInstallCmdFakePrompter(bool $answer, bool $interactive = true): Con
         public function confirm(
             string $question,
             bool $default,
-        ): bool
-        {
+        ): bool {
             return $this->answer;
         }
     };
@@ -66,8 +65,7 @@ function makeInstallCmdRunner(bool $composerOnPath = true, int $requireExitCode 
         public function run(
             string $command,
             array $args = [],
-        ): array
-        {
+        ): array {
             $this->calls[] = [$command, $args];
 
             if ($command === 'composer' && ($args[0] ?? '') === 'require') {
@@ -216,7 +214,7 @@ it('offers to install the recommended driver and runs composer require on yes', 
     $cmd->execute(new Input(['marko', 'devai:install']), $output);
 
     expect($runner->calls)->toContain(
-        ['composer', ['require', '--dev', '--no-interaction', '--no-progress', 'marko/docs-fts']]
+        ['composer', ['require', '--dev', '--no-interaction', '--no-progress', 'marko/docs-fts']],
     );
 });
 
@@ -343,6 +341,48 @@ it('writes a helpful message and does not throw when composer require exits non-
     $text = readInstallCmdOutput($stream);
     expect($exitCode)->toBe(0)
         ->and($text)->toContain('marko/docs-fts');
+});
+
+// ---------------------------------------------------------------------------
+// New tests: multi-instance config-isolation tip for Claude Code
+// ---------------------------------------------------------------------------
+
+it('prints a multi-instance config-isolation tip when Claude Code is installed', function (): void {
+    chdir($this->tempRoot);
+
+    $cmd = makeInstallCmd(
+        orchestrator: makeInstallCmdOrchestrator($this->tempRoot),
+        resolver: new DocsDriverResolver(),
+        prompter: makeInstallCmdFakePrompter(answer: false, interactive: false),
+        runner: makeInstallCmdRunner(composerOnPath: true),
+    );
+
+    ['stream' => $stream, 'output' => $output] = makeInstallCmdOutput();
+    $cmd->execute(
+        new Input(['marko', 'devai:install', '--agents=claude-code', '--no-interaction', '--skip-lsp-deps']),
+        $output,
+    );
+
+    $text = readInstallCmdOutput($stream);
+    expect($text)->toContain('multiple Claude Code instances')
+        ->and($text)->toContain('marko.build/docs/ai-assisted-development/troubleshooting');
+});
+
+it('does not print the Claude Code tip when only non-Claude agents are installed', function (): void {
+    chdir($this->tempRoot);
+
+    $cmd = makeInstallCmd(
+        orchestrator: makeInstallCmdOrchestrator($this->tempRoot),
+        resolver: new DocsDriverResolver(),
+        prompter: makeInstallCmdFakePrompter(answer: false, interactive: false),
+        runner: makeInstallCmdRunner(composerOnPath: true),
+    );
+
+    ['stream' => $stream, 'output' => $output] = makeInstallCmdOutput();
+    $cmd->execute(new Input(['marko', 'devai:install', '--agents=codex', '--no-interaction']), $output);
+
+    $text = readInstallCmdOutput($stream);
+    expect($text)->not->toContain('multiple Claude Code instances');
 });
 
 it('keeps devai dependent on the marko/docs contract only (no driver in require)', function (): void {

@@ -79,7 +79,37 @@ readonly class InstallCommand implements CommandInterface
             $output->writeLine("  - $line");
         }
 
+        $this->maybePrintClaudeMultiInstanceTip($context->selectedAgents, $output);
+
         return 0;
+    }
+
+    /**
+     * Surface the Claude Code multi-instance gotcha once Claude Code is among the
+     * installed agents. Running several Claude Code instances concurrently makes
+     * them contend on a single global ~/.claude.json, which Claude Code rewrites
+     * constantly — the contention causes every MCP server (marko-mcp included) to
+     * disconnect and reconnect in lockstep. This is a Claude Code behavior, not a
+     * Marko one, so we only point at the documented per-project config-isolation
+     * workaround rather than touching the user's shell.
+     *
+     * @param list<string> $selectedAgents
+     */
+    private function maybePrintClaudeMultiInstanceTip(
+        array $selectedAgents,
+        Output $output,
+    ): void {
+        if (!in_array('claude-code', $selectedAgents, true)) {
+            return;
+        }
+
+        $output->writeLine('');
+        $output->writeLine('Tip: if you run multiple Claude Code instances at once, they contend on a');
+        $output->writeLine('single ~/.claude.json and MCP servers (including marko-mcp) can disconnect and');
+        $output->writeLine('reconnect repeatedly. To isolate Claude Code config per project, see:');
+        $output->writeLine(
+            '  https://marko.build/docs/ai-assisted-development/troubleshooting/#multiple-claude-code-instances-disconnect-mcp-servers',
+        );
     }
 
     /**
@@ -124,7 +154,7 @@ readonly class InstallCommand implements CommandInterface
         $output->writeLine("Installing $pkg via composer (this may take a moment)…");
         $result = $this->commandRunner->run(
             'composer',
-            ['require', '--dev', '--no-interaction', '--no-progress', $pkg]
+            ['require', '--dev', '--no-interaction', '--no-progress', $pkg],
         );
 
         if ($result['exitCode'] !== 0) {
