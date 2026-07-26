@@ -113,13 +113,55 @@ semver guarantees. Compute from the latest tag.
   While in `0.x` there is no separate major channel, so breaking changes ride the minor.
 - **Major** (`1.0.0`) — never infer this. Only when the user says the API is stable.
 
-**The tiebreaker for a mixed batch is Composer reachability.** In `0.x`, Composer treats the
-*minor* as the breaking position: `^0.8.4` accepts `0.8.5` but refuses `0.9.0`. A patch
-reaches every downstream project on a plain `composer update`; a minor sits unnoticed until
-someone edits their constraint. So when the release exists to get a fix into users' hands,
-and the other merged work adds no API surface, prefer the patch. Do not use this as cover
-for hiding real new API or a breaking change in a patch — those earn the minor even if it
-means a slower rollout.
+### Labels do not decide the version
+
+Labels route a PR into a release-notes section. They say nothing about the bump. The
+`enhancement` label feeds a section titled "New Features" — that is a heading, not a minor
+version. **Judge every `enhancement` on its own merits; do not let one in the batch
+mechanically escalate a patch to a minor.**
+
+Classify each PR by what a consumer can observe after `composer update`:
+
+1. **Never leaves the monorepo** — `.claude/`, `bin/`, `.github/`, root `tests/`, repo docs.
+   Only `packages/*` is copied into split repos, so nothing here can reach anyone's
+   `vendor/`. **Irrelevant to the version, whatever its label.** Confirm mechanically:
+
+   ```bash
+   gh pr view <N> --json files -q '[.files[].path] | map(select(startswith("packages/"))) | length'
+   ```
+
+   A `0` means repo-internal tooling. This is the common case for maintainer-facing
+   `enhancement` PRs — a new skill, a CI tweak, a release script improvement.
+
+2. **Ships in a package but adds no callable surface** — CLI output or prompt wording, a
+   docs page, an internal refactor, a new fake in `marko/testing` used only by our own
+   suite. Nothing new for an app developer to call, extend, configure, or depend on.
+   **Patch.**
+
+3. **Adds or changes surface a consumer builds against** — a new interface, method,
+   attribute, config key, container binding, event, console command, or an entire package.
+   Also anything that changes existing behavior an app could already be relying on.
+   **Minor.**
+
+Only tier 3 forces the minor. A batch of tier-1 and tier-2 work plus a bug fix is a patch,
+even when several PRs carry `enhancement`.
+
+Calibration example — the batch that shipped as `0.8.5`, which carried two `enhancement`
+labels and was still correctly a patch:
+
+| PR | Label | Tier | Why |
+|----|-------|------|-----|
+| #142, #144 | documentation | 1 | repo docs and skills, nothing under `packages/` |
+| #143 | enhancement | 2 | a `devai:install` prompt tip — no new callable surface |
+| #146 | enhancement | 1 | maintainer-only `/release` skill under `.claude/` |
+| #145 | bug | 2 | unblocked `db:migrate` for `marko/media` consumers |
+
+**The tiebreaker for a genuinely mixed batch is Composer reachability.** In `0.x`, Composer
+treats the *minor* as the breaking position: `^0.8.4` accepts `0.8.5` but refuses `0.9.0`. A
+patch reaches every downstream project on a plain `composer update`; a minor sits unnoticed
+until someone edits their constraint. So when the release exists to get a fix into users'
+hands, and the rest of the batch is tier 1 or 2, prefer the patch. Do not use this as cover
+for hiding tier-3 work in a patch — that earns the minor even if it means a slower rollout.
 
 State the decision in one or two lines and cite the PRs driving it. Also check whether the
 bug being fixed makes a released version unusable — that is the difference between "worth
@@ -130,10 +172,13 @@ is.
 
 Show, concisely:
 
-1. **What is shipping** — a table of PRs since the last tag, with labels.
+1. **What is shipping** — a table of PRs since the last tag, with labels **and the tier you
+   assigned each one**. Showing the tiers is what makes the version recommendation
+   auditable: the user can disagree with one classification rather than the whole call.
 2. **Label fixes needed** — or explicitly "labels are clean".
 3. **Recommended version + rationale** — including whether this is urgent enough to ship
-   now.
+   now. If any `enhancement` in the batch did *not* escalate the bump, say so explicitly and
+   why, rather than leaving the user to wonder whether it was overlooked.
 4. **What will happen on approval** — merge `develop` into `main`, run the full suite
    *including* the `integration-destructive` group, generate `CHANGELOG.md`, commit, tag,
    push, create the GitHub Release, merge back to `develop`. Note that the script aborts
@@ -176,7 +221,8 @@ If the script aborted, relay its error verbatim and stop.
 - **Never narrow the test suite to get past a failure.** No `--exclude-group`, no skipping.
   A failing destructive-integration test means the release would ship a broken install.
 - Never invent a release-notes entry for something you did not find in a merged PR.
-- Never round the version up to make a release look bigger, and never bump minor merely
-  because several PRs landed.
+- Never round the version up to make a release look bigger. Never bump the minor merely
+  because several PRs landed, or because one of them is labeled `enhancement` — only tier-3
+  surface changes force it.
 - If nothing user-facing merged since the last tag, say so and ask whether to proceed
   instead of manufacturing a reason to tag.

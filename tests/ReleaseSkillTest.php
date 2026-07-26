@@ -44,6 +44,17 @@ it('documents 0.x version rules including Composer caret reachability', function
         ->toContain('composer update');
 });
 
+it('judges each enhancement on its merits instead of auto-escalating the bump', function () use ($skillPath): void {
+    $content = file_get_contents($skillPath);
+
+    expect($content)
+        ->toContain('### Labels do not decide the version')
+        ->toContain('Judge every `enhancement` on its own merits')
+        ->toContain('Never leaves the monorepo')
+        ->toContain('adds no callable surface')
+        ->toContain('Only tier 3 forces the minor');
+});
+
 it('audits labels against every category in .github/release.yml', function () use ($skillPath): void {
     $content = file_get_contents($skillPath);
     $releaseConfig = file_get_contents(dirname(__DIR__) . '/.github/release.yml');
