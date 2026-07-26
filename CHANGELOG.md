@@ -8,6 +8,23 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.8.5] - 2026-07-26
+
+### New Features
+* feat: surface Claude Code multi-instance config-isolation tip on devai:install by @markshust in https://github.com/marko-php/marko/pull/143
+* feat: add /release skill for version assessment and release execution by @markshust in https://github.com/marko-php/marko/pull/146
+### Bug Fixes
+* fix: support union-typed entity columns via explicit Column type by @TuVanDev in https://github.com/marko-php/marko/pull/145
+### Documentation
+* docs: correct module/plugin naming convention in skills by @markshust in https://github.com/marko-php/marko/pull/142
+* docs: correct multi-instance MCP guidance to lead with per-project scoping by @markshust in https://github.com/marko-php/marko/pull/144
+### CI
+* ci: gate every PR on tests, lint, and static analysis by @markshust in https://github.com/marko-php/marko/pull/147
+
+## New Contributors
+* @TuVanDev made their first contribution in https://github.com/marko-php/marko/pull/145
+
+
 ## [0.8.4] - 2026-06-24
 
 ### New Features
