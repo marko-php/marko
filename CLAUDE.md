@@ -75,3 +75,4 @@ Project configuration files are in `.claude/`:
 - `module-development.md` — Building new packages/modules
 - `sibling-modules.md` — Naming and conventions for driver packages
 - `release-process.md` — Release workflow
+- `skills/release/SKILL.md` — The `/release` skill: assess merged PRs, recommend a version, then cut the release

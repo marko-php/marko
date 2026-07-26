@@ -1,0 +1,113 @@
+<?php
+
+declare(strict_types=1);
+
+$skillPath = dirname(__DIR__) . '/.claude/skills/release/SKILL.md';
+
+it('creates .claude/skills/release/SKILL.md with discoverable frontmatter', function () use ($skillPath): void {
+    expect(file_exists($skillPath))->toBeTrue('.claude/skills/release/SKILL.md must exist');
+
+    $content = file_get_contents($skillPath);
+
+    expect($content)
+        ->toStartWith("---\n")
+        ->toContain('name: release')
+        ->toContain('description:');
+});
+
+it('takes no arguments and decides the version in conversation', function () use ($skillPath): void {
+    $content = file_get_contents($skillPath);
+
+    expect($content)
+        ->toContain('## Arguments')
+        ->toContain('None.')
+        ->toContain('/release');
+});
+
+it('stops at a single approval gate before tagging', function () use ($skillPath): void {
+    $content = file_get_contents($skillPath);
+
+    expect($content)
+        ->toContain('one approval gate')
+        ->toContain('Present the recommendation, then stop')
+        ->toContain('Never tag without explicit approval');
+});
+
+it('documents 0.x version rules including Composer caret reachability', function () use ($skillPath): void {
+    $content = file_get_contents($skillPath);
+
+    expect($content)
+        ->toContain('## Step 4 — Decide the version')
+        ->toContain('**Patch**')
+        ->toContain('**Minor**')
+        ->toContain('^0.8.4')
+        ->toContain('composer update');
+});
+
+it('judges each enhancement on its merits instead of auto-escalating the bump', function () use ($skillPath): void {
+    $content = file_get_contents($skillPath);
+
+    expect($content)
+        ->toContain('### Labels do not decide the version')
+        ->toContain('Judge every `enhancement` on its own merits')
+        ->toContain('Never leaves the monorepo')
+        ->toContain('adds no callable surface')
+        ->toContain('Only tier 3 forces the minor');
+});
+
+it('audits labels against every category in .github/release.yml', function () use ($skillPath): void {
+    $content = file_get_contents($skillPath);
+    $releaseConfig = file_get_contents(dirname(__DIR__) . '/.github/release.yml');
+    $categories = substr($releaseConfig, (int) strpos($releaseConfig, 'categories:'));
+
+    preg_match_all('/- title: (.+)/', $categories, $titles);
+    preg_match_all('/^\s+- (?!title: )(\S+)$/m', $categories, $labels);
+
+    expect($titles[1])->not->toBeEmpty()
+        ->and($labels[1])->not->toBeEmpty();
+
+    foreach ($titles[1] as $title) {
+        expect($content)->toContain(trim($title));
+    }
+
+    foreach ($labels[1] as $label) {
+        expect($content)->toContain("`$label`");
+    }
+});
+
+it('delegates mechanical work to bin/release.sh, never the changelog', function () use ($skillPath): void {
+    $content = file_get_contents($skillPath);
+
+    expect($content)
+        ->toContain('./bin/release.sh <version>')
+        ->toContain('Never hand-edit `CHANGELOG.md`')
+        ->toContain('integration-destructive');
+});
+
+it('describes the mid-run failure state accurately', function () use ($skillPath): void {
+    $content = file_get_contents($skillPath);
+    $script = file_get_contents(dirname(__DIR__) . '/bin/release.sh');
+
+    // The skill's claim only holds while release.sh merges into main before running tests.
+    expect(strpos($script, 'git merge develop'))->toBeLessThan(strpos($script, 'vendor/bin/pest'));
+
+    expect($content)
+        ->toContain('do not promise a clean abort')
+        ->toContain('checked out on `main` with the merge already made')
+        ->toContain('git checkout develop');
+});
+
+it('verifies preconditions before proposing a release', function () use ($skillPath): void {
+    $content = file_get_contents($skillPath);
+
+    expect($content)
+        ->toContain('## Step 1 — Verify preconditions')
+        ->toContain('PHP_BIN')
+        ->toContain('develop');
+});
+
+it('points at the skill from .claude/release-process.md', function (): void {
+    $content = file_get_contents(dirname(__DIR__) . '/.claude/release-process.md');
+
+    expect($content)->toContain('/release');
+});

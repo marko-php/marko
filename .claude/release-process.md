@@ -98,9 +98,13 @@ Version examples:
 - `0.2.1` → bug fix
 - `1.0.0` → stable, semver guarantees begin
 
+**Patch vs minor matters for reachability while in `0.x`.** Composer treats the minor as the breaking position below `1.0`, so a project requiring `^0.8.4` picks up `0.8.5` on a plain `composer update` but will not resolve `0.9.0` until someone edits the constraint. When a release exists to get a fix into users' hands, that argues for a patch — provided nothing in the batch adds public API surface or breaks anything, which earns the minor regardless of rollout speed.
+
 ---
 
 ## Cutting a Release
+
+**The `/release` skill (`.claude/skills/release/SKILL.md`) automates the pre-flight below.** It reads every PR merged since the last tag, audits their labels, recommends a version number with reasoning, waits for your confirmation or override, then runs `bin/release.sh`. Everything in this section still applies — the skill is a driver for it, not a replacement.
 
 Pre-flight (manual):
 
