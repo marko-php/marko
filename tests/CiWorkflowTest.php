@@ -70,6 +70,26 @@ it('exposes composer phpstan and composer ci scripts the workflow depends on', f
         ->and($composer['scripts']['ci'])->toContain('@phpstan');
 });
 
+it('excludes deliberately-unparseable fixtures from both linters', function (): void {
+    // php-cs-fixer lints before fixing and exits 4 on invalid PHP even with nothing to change;
+    // phpcs aborts on the file. Either would fail the Lint job forever.
+    $csFixer = file_get_contents(dirname(__DIR__) . '/.php-cs-fixer.php');
+    $phpcs = file_get_contents(dirname(__DIR__) . '/phpcs.xml');
+
+    $brokenFixtures = [
+        'packages/config/tests/Unit/fixtures/syntax-error.php',
+        'packages/codeindexer/tests/Fixtures/AttributeFixtures/src/Broken/SyntaxError.php',
+        'packages/codeindexer/tests/Fixtures/ConfigFixtures/module-d/config/broken.php',
+    ];
+
+    foreach ($brokenFixtures as $fixture) {
+        expect(file_exists(dirname(__DIR__) . '/' . $fixture))->toBeTrue("$fixture should still exist");
+        expect($csFixer)->toContain(str_replace('packages/', '', $fixture));
+    }
+
+    expect($phpcs)->toContain('src/Broken/');
+});
+
 it('adds phpstan to the PR review checklist that previously omitted it', function (): void {
     $process = file_get_contents(dirname(__DIR__) . '/.claude/pr-review-process.md');
 
