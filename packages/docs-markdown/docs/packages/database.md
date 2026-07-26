@@ -92,7 +92,21 @@ Marko infers database types from PHP types:
 | `DateTimeImmutable` | TIMESTAMP |
 | `BackedEnum` | ENUM with cases as values |
 | `array` or `?array` with `type: 'json'` | JSON (MySQL) / JSONB (PostgreSQL) |
+| Union type (e.g. `int\|string`) | No inference — requires an explicit `type:` |
 | Default values | From property initializers |
+
+### Union-Typed Columns
+
+A union type has no single PHP type to infer a column type from, so it must declare one explicitly. This is how polymorphic foreign keys are modeled — an attachment can point at entities whose primary keys are `int` or `string`:
+
+```php
+#[Column(type: 'varchar', length: 255)]
+public int|string $attachableId = 0;
+```
+
+Without an explicit `type:`, metadata parsing throws `EntityException` — Marko will not guess which side of the union wins.
+
+> A varchar-backed union always hydrates to a PHP `string`, even when the value was written as an `int`. Compare loosely or cast explicitly rather than strict-comparing against an integer primary key.
 
 ### String and UUID Primary Keys
 
