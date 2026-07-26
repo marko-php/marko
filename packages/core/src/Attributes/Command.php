@@ -9,6 +9,9 @@ use Attribute;
 #[Attribute(Attribute::TARGET_CLASS)]
 readonly class Command
 {
+    /**
+     * @param list<string> $aliases
+     */
     public function __construct(
         public string $name,
         public string $description = '',

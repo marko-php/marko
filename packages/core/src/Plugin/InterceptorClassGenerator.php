@@ -181,6 +181,8 @@ class InterceptorClassGenerator
     /**
      * Collect all methods from a reflected interface, including inherited ones.
      *
+     * @param ReflectionClass<object> $reflection
+     *
      * @return array<ReflectionMethod>
      */
     private function collectInterfaceMethods(ReflectionClass $reflection): array

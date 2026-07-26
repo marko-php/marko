@@ -22,7 +22,9 @@ readonly class ModuleManifest
      * @param array<string> $after Modules to load before this one (from module.php)
      * @param array<string> $before Modules to load after this one (from module.php)
      * @param array<string, string|Closure> $bindings Interface to implementation bindings (from module.php)
-     * @param array<string, string|Closure> $singletons Shared interface to implementation bindings (from module.php)
+     * @param array<int|string, string|Closure> $singletons Shared interface to implementation bindings (from module.php).
+     *   String keys bind interface => implementation; int keys are list-style entries naming a class to
+     *   autowire as a singleton, which BindingRegistry::registerModule() distinguishes via is_int().
      * @param string $path Absolute path to module directory
      * @param string $source Discovery source: vendor, modules, or app
      * @param array<string, string> $autoload PSR-4 autoload configuration from composer.json (namespace => path)

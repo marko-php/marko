@@ -27,11 +27,11 @@ readonly class Input
     /**
      * Returns arguments after the command name (index 0 = script, index 1 = command).
      *
-     * @return array<int, string>
+     * @return list<string>
      */
     public function getArguments(): array
     {
-        return array_values(array_slice($this->arguments, 2));
+        return array_slice($this->arguments, 2);
     }
 
     /**
