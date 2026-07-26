@@ -240,8 +240,9 @@ it('runs pest successfully on a freshly scaffolded skeleton with no added test f
     $vendorAutoload = __DIR__ . '/../../../vendor/autoload.php';
 
     $command = sprintf(
-        'cd %s && /opt/homebrew/Cellar/php/8.5.1_2/bin/php -d memory_limit=512M %s -c %s --bootstrap %s --no-coverage 2>&1',
+        'cd %s && %s -d memory_limit=512M %s -c %s --bootstrap %s --no-coverage 2>&1',
         escapeshellarg($tmpDir),
+        escapeshellarg(PHP_BINARY),
         escapeshellarg($vendorPest),
         escapeshellarg($tmpDir . '/phpunit.xml'),
         escapeshellarg($vendorAutoload),
