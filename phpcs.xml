@@ -8,6 +8,13 @@
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>*/.phpunit.cache/*</exclude-pattern>
 
+    <!--
+        Deliberately unparseable fixtures. codeindexer tests how the indexer behaves when it
+        meets a file with a syntax error, so this file cannot be valid PHP by construction and
+        phpcs aborts on it. Excluded rather than "fixed" — fixing it would delete the test case.
+    -->
+    <exclude-pattern>*/tests/Fixtures/*/src/Broken/*</exclude-pattern>
+
     <arg name="colors"/>
     <arg value="sp"/>
 

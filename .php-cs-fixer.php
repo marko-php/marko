@@ -17,6 +17,13 @@ $finder = Finder::create()
     ])
     ->exclude('vendor')
     ->exclude('.phpunit.cache')
+    // Fixtures that are invalid PHP on purpose. The config and codeindexer packages test how
+    // they behave when handed an unparseable file, so these cannot be made valid — that is the
+    // test case. php-cs-fixer lints before fixing and exits non-zero on them even when it has
+    // nothing to change, which would fail the Lint job on a permanently red herring.
+    ->notPath('config/tests/Unit/fixtures/syntax-error.php')
+    ->notPath('codeindexer/tests/Fixtures/AttributeFixtures/src/Broken/SyntaxError.php')
+    ->notPath('codeindexer/tests/Fixtures/ConfigFixtures/module-d/config/broken.php')
     ->name('*.php')
     ->ignoreDotFiles(true)
     ->ignoreVCS(true);

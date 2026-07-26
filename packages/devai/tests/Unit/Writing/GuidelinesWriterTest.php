@@ -127,25 +127,28 @@ it('wraps arbitrary generated content not just the guidelines body', function ()
     devaiRemoveDir($tmpDir);
 });
 
-it('returns skipped and leaves the file untouched when a begin marker exists but the end marker is missing', function (): void {
-    $tmpDir = devaiTempDir();
-    $path = $tmpDir . '/GUIDELINES.md';
+it(
+    'returns skipped and leaves the file untouched when a begin marker exists but the end marker is missing',
+    function (): void {
+        $tmpDir = devaiTempDir();
+        $path = $tmpDir . '/GUIDELINES.md';
 
-    $malformed = "# Header\n" . GuidelinesWriter::MARKER_BEGIN . "\nOrphaned content with no end marker.\n";
-    file_put_contents($path, $malformed);
+        $malformed = "# Header\n" . GuidelinesWriter::MARKER_BEGIN . "\nOrphaned content with no end marker.\n";
+        file_put_contents($path, $malformed);
 
-    // Drain any prior notices
-    GuidelinesWriter::takeNotices();
+        // Drain any prior notices
+        GuidelinesWriter::takeNotices();
 
-    $outcome = GuidelinesWriter::write($path, 'New content');
+        $outcome = GuidelinesWriter::write($path, 'New content');
 
-    $contents = (string) file_get_contents($path);
+        $contents = (string) file_get_contents($path);
 
-    expect($outcome)->toBe(WriteOutcome::SkippedNoMarkers)
-        ->and($contents)->toBe($malformed);
+        expect($outcome)->toBe(WriteOutcome::SkippedNoMarkers)
+            ->and($contents)->toBe($malformed);
 
-    devaiRemoveDir($tmpDir);
-});
+        devaiRemoveDir($tmpDir);
+    },
+);
 
 it('embeds the marko devai:update regenerate hint inside the wrapped region', function (): void {
     $tmpDir = devaiTempDir();
@@ -157,7 +160,11 @@ it('embeds the marko devai:update regenerate hint inside the wrapped region', fu
 
     $beginPos = strpos($contents, GuidelinesWriter::MARKER_BEGIN);
     $endPos = strpos($contents, GuidelinesWriter::MARKER_END);
-    $wrappedRegion = substr($contents, (int) $beginPos, (int) $endPos - (int) $beginPos + strlen(GuidelinesWriter::MARKER_END));
+    $wrappedRegion = substr(
+        $contents,
+        (int) $beginPos,
+        (int) $endPos - (int) $beginPos + strlen(GuidelinesWriter::MARKER_END),
+    );
 
     expect($wrappedRegion)->toContain('marko devai:update');
 

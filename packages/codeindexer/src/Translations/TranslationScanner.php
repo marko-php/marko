@@ -49,8 +49,7 @@ class TranslationScanner
         string $group,
         string $locale,
         string $moduleName,
-    ): array
-    {
+    ): array {
         $code = file_get_contents($file);
         if ($code === false) {
             return [];
@@ -89,8 +88,7 @@ class TranslationScanner
         string $locale,
         string $moduleName,
         string $file,
-    ): array
-    {
+    ): array {
         $entries = [];
 
         foreach ($array->items as $item) {
@@ -113,7 +111,7 @@ class TranslationScanner
                     $group,
                     $locale,
                     $moduleName,
-                    $file
+                    $file,
                 )];
             } else {
                 $entries[] = new TranslationEntry(

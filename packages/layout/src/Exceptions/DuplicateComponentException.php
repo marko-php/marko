@@ -10,8 +10,7 @@ class DuplicateComponentException extends LayoutException
         string $name,
         string $moduleA,
         string $moduleB,
-    ): self
-    {
+    ): self {
         return new self(
             message: "Component '$name' is registered in multiple modules.",
             context: "Component '$name' is registered in both '$moduleA' and '$moduleB'.",

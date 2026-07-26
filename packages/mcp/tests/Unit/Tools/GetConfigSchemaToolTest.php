@@ -30,7 +30,7 @@ it('registers get_config_schema returning all indexed ConfigKeyEntry records', f
             defaultValue: 'file',
             module: 'Marko_Cache',
             file: 'config/cache.php',
-            line: 5
+            line: 5,
         ),
         new ConfigKeyEntry(
             key: 'mail.host',
@@ -38,7 +38,7 @@ it('registers get_config_schema returning all indexed ConfigKeyEntry records', f
             defaultValue: 'localhost',
             module: 'Marko_Mail',
             file: 'config/mail.php',
-            line: 3
+            line: 3,
         ),
     ];
     $index = makeFakeIndexCache($entries);

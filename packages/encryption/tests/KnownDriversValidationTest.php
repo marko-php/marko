@@ -11,7 +11,7 @@ test(
     'skeleton suggest block contains all encryption drivers',
     function () use ($knownDriversPath, $skeletonComposerPath) {
         KnownDriversValidator::assertSkeletonSuggestContainsAll($knownDriversPath, $skeletonComposerPath);
-    }
+    },
 );
 
 test('every encryption driver follows marko slash prefix pattern', function () use ($knownDriversPath) {

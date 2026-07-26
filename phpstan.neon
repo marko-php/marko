@@ -4,4 +4,13 @@ parameters:
         - packages/core/src
     excludePaths:
         - packages/core/tests
+    ignoreErrors:
+        # Every runtime consumer of PluginInterception is an eval-generated interceptor class,
+        # so no source-visible `use` exists for PHPStan to find and it reports the trait as
+        # unused. The trait is genuinely used; this is a limitation of analysing generated code,
+        # not a defect. Tracked for removal in favour of a collaborator object — see the
+        # "No traits" note in the trait's own docblock.
+        -
+            identifier: trait.unused
+            path: packages/core/src/Plugin/PluginInterception.php
     tmpDir: .phpstan-cache

@@ -25,6 +25,7 @@ function makeTemplateIndex(array $entries): IndexCache
 function makeTemplateEntry(string $moduleName, string $templateName, string $absolutePath = '', string $extension = 'php'): TemplateEntry
 {
     $absolutePath = $absolutePath ?: "/modules/$moduleName/resources/views/$templateName.$extension";
+
     return new TemplateEntry($moduleName, $templateName, $absolutePath, $extension);
 }
 

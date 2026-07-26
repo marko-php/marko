@@ -492,6 +492,13 @@
             "php-cs-fixer fix --config=.php-cs-fixer.php",
             "phpcbf --standard=phpcs.xml || true"
         ],
+        "phpstan": "php -d memory_limit=2G vendor/bin/phpstan analyse",
+        "ci": [
+            "@test",
+            "@cs:check",
+            "php-cs-fixer fix --config=.php-cs-fixer.php --dry-run --diff",
+            "@phpstan"
+        ],
         "rector": "rector process"
     },
     "config": {

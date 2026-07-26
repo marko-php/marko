@@ -14,8 +14,7 @@ function makeDispatcher(array $result): MarkoConsoleDispatcher
         public function dispatch(
             string $command,
             array $args = [],
-        ): array
-        {
+        ): array {
             return $this->result;
         }
     };

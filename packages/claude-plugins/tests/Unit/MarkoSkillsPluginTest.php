@@ -19,12 +19,12 @@ describe('marko-skills plugin', function (): void {
         'plugin.json description states the plugin provides scaffolding skills for Marko modules and plugins',
         function (): void {
             $manifest = json_decode(file_get_contents($this->pluginJsonPath), true);
-    
+
             expect($manifest)->toHaveKey('description')
                 ->and($manifest['description'])->toBe(
-                    'Marko-specific skills (create-module, create-plugin) for Claude Code.'
+                    'Marko-specific skills (create-module, create-plugin) for Claude Code.',
                 );
-        }
+        },
     );
 
     it('plugin.json includes author with name "Marko Framework"', function (): void {
@@ -51,13 +51,13 @@ describe('marko-skills plugin', function (): void {
         function (): void {
             $readmePath = $this->pluginRoot . '/README.md';
             $content = file_exists($readmePath) ? file_get_contents($readmePath) : '';
-    
+
             expect(file_exists($readmePath))->toBeTrue()
                 ->and($content)->toContain('create-module')
                 ->and($content)->toContain('create-plugin')
                 ->and($content)->toContain('/marko-skills:create-module')
                 ->and($content)->toContain('/marko-skills:create-plugin')
                 ->and($content)->toContain('/plugin install marko-skills@marko');
-        }
+        },
     );
 });

@@ -11,14 +11,14 @@ describe('NoDriverException', function (): void {
         function (): void {
             $reflection = new ReflectionClass(NoDriverException::class);
             $constants = $reflection->getConstants();
-    
+
             expect($constants)->toHaveKey('DRIVER_PACKAGES')
                 ->and($constants['DRIVER_PACKAGES'])->toBe([
                     'marko/admin-api',
                     'marko/admin-auth',
                     'marko/admin-panel',
                 ]);
-        }
+        },
     );
 
     it('provides suggestion with composer require commands for all driver packages', function (): void {

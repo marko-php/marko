@@ -257,118 +257,118 @@ it(
     'CodexAgent installer reads skill source from packages/claude-plugins/plugins/marko-skills/skills/ (not the legacy path)',
     function (): void {
         $projectRoot = dirname(dirname(__DIR__, 3), 2);
-    
+
         $walker = makeWalker([]);
         $distributor = new SkillsDistributor($walker, $projectRoot);
         $bundles = $distributor->collect();
-    
+
         $allSkillKeys = [];
         foreach ($bundles as $bundle) {
             $allSkillKeys = array_merge($allSkillKeys, array_keys($bundle->skills));
         }
-    
+
         // Skills must come from the new canonical path, not resources/ai/skills
-    expect($allSkillKeys)->toContain('create-module/SKILL.md')
-            ->and($allSkillKeys)->not->toContain('marko-create-module/SKILL.md');
-    }
+        expect($allSkillKeys)->toContain('create-module/SKILL.md')
+                ->and($allSkillKeys)->not->toContain('marko-create-module/SKILL.md');
+    },
 );
 
 it(
     'CursorAgent installer reads skill source from packages/claude-plugins/plugins/marko-skills/skills/',
     function (): void {
         $projectRoot = dirname(dirname(__DIR__, 3), 2);
-    
+
         $walker = makeWalker([]);
         $distributor = new SkillsDistributor($walker, $projectRoot);
         $bundles = $distributor->collect();
-    
+
         $allSkillKeys = [];
         foreach ($bundles as $bundle) {
             $allSkillKeys = array_merge($allSkillKeys, array_keys($bundle->skills));
         }
-    
+
         expect($allSkillKeys)->toContain('create-module/SKILL.md')
             ->and($allSkillKeys)->toContain('create-plugin/SKILL.md');
-    }
+    },
 );
 
 it(
     'CopilotAgent installer reads skill source from packages/claude-plugins/plugins/marko-skills/skills/',
     function (): void {
         $projectRoot = dirname(dirname(__DIR__, 3), 2);
-    
+
         $walker = makeWalker([]);
         $distributor = new SkillsDistributor($walker, $projectRoot);
         $bundles = $distributor->collect();
-    
+
         $allSkillKeys = [];
         foreach ($bundles as $bundle) {
             $allSkillKeys = array_merge($allSkillKeys, array_keys($bundle->skills));
         }
-    
+
         expect($allSkillKeys)->toContain('create-module/SKILL.md')
             ->and($allSkillKeys)->toContain('create-plugin/SKILL.md');
-    }
+    },
 );
 
 it(
     'GeminiCliAgent installer reads skill source from packages/claude-plugins/plugins/marko-skills/skills/',
     function (): void {
         $projectRoot = dirname(dirname(__DIR__, 3), 2);
-    
+
         $walker = makeWalker([]);
         $distributor = new SkillsDistributor($walker, $projectRoot);
         $bundles = $distributor->collect();
-    
+
         $allSkillKeys = [];
         foreach ($bundles as $bundle) {
             $allSkillKeys = array_merge($allSkillKeys, array_keys($bundle->skills));
         }
-    
+
         expect($allSkillKeys)->toContain('create-module/SKILL.md')
             ->and($allSkillKeys)->toContain('create-plugin/SKILL.md');
-    }
+    },
 );
 
 it(
     'JunieAgent installer reads skill source from packages/claude-plugins/plugins/marko-skills/skills/',
     function (): void {
         $projectRoot = dirname(dirname(__DIR__, 3), 2);
-    
+
         $walker = makeWalker([]);
         $distributor = new SkillsDistributor($walker, $projectRoot);
         $bundles = $distributor->collect();
-    
+
         $allSkillKeys = [];
         foreach ($bundles as $bundle) {
             $allSkillKeys = array_merge($allSkillKeys, array_keys($bundle->skills));
         }
-    
+
         expect($allSkillKeys)->toContain('create-module/SKILL.md')
             ->and($allSkillKeys)->toContain('create-plugin/SKILL.md');
-    }
+    },
 );
 
 it(
     'each agent copies the entire skill directory (SKILL.md plus assets/ and references/) so template references resolve',
     function (): void {
         $projectRoot = dirname(dirname(__DIR__, 3), 2);
-    
+
         $walker = makeWalker([]);
         $distributor = new SkillsDistributor($walker, $projectRoot);
         $bundles = $distributor->collect();
-    
+
         $allSkillKeys = [];
         foreach ($bundles as $bundle) {
             $allSkillKeys = array_merge($allSkillKeys, array_keys($bundle->skills));
         }
-    
+
         // Assets from create-module are bundled
-    expect($allSkillKeys)->toContain('create-module/SKILL.md')
-            ->and($allSkillKeys)->toContain('create-module/assets/module.php.tmpl')
-            ->and($allSkillKeys)->toContain('create-plugin/SKILL.md')
-            ->and($allSkillKeys)->toContain('create-plugin/assets/PluginClass.php.tmpl');
-    }
+        expect($allSkillKeys)->toContain('create-module/SKILL.md')
+                ->and($allSkillKeys)->toContain('create-module/assets/module.php.tmpl')
+                ->and($allSkillKeys)->toContain('create-plugin/SKILL.md')
+                ->and($allSkillKeys)->toContain('create-plugin/assets/PluginClass.php.tmpl');
+    },
 );
 
 it(
@@ -376,9 +376,9 @@ it(
     function (): void {
         $devaiPackageRoot = dirname(__DIR__, 3);
         $legacySkillsDir = $devaiPackageRoot . '/resources/ai/skills';
-    
+
         expect(is_dir($legacySkillsDir))->toBeFalse();
-    }
+    },
 );
 
 it('no duplicate skill content exists across the codebase — grep verification', function (): void {
@@ -391,7 +391,7 @@ it(
     function (): void {
         $srcDir = dirname(__DIR__, 3) . '/src';
         $found = [];
-    
+
         $iter = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($srcDir, RecursiveDirectoryIterator::SKIP_DOTS),
         );
@@ -401,21 +401,21 @@ it(
             }
             $content = (string) file_get_contents($file->getPathname());
             // The only permitted occurrence is the MODULE_SKILLS_REL_PATH constant in SkillsDistributor
-        // (which scans third-party modules). Any other file having this string is a legacy reference.
-        $occurrences = substr_count($content, 'resources/ai/skills');
+            // (which scans third-party modules). Any other file having this string is a legacy reference.
+            $occurrences = substr_count($content, 'resources/ai/skills');
             if ($occurrences === 0) {
                 continue;
             }
             // SkillsDistributor is allowed exactly one occurrence (the MODULE_SKILLS_REL_PATH constant)
-        $basename = basename($file->getPathname());
+            $basename = basename($file->getPathname());
             if ($basename === 'SkillsDistributor.php' && $occurrences === 1) {
                 continue;
             }
             $found[] = $file->getPathname();
         }
-    
+
         expect($found)->toBe([]);
-    }
+    },
 );
 
 it('skips a skill directory missing SKILL.md and records a warning', function (): void {

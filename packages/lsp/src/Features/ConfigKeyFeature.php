@@ -20,8 +20,7 @@ readonly class ConfigKeyFeature
     public function detectContext(
         string $lineText,
         int $col,
-    ): ?string
-    {
+    ): ?string {
         $prefix = substr($lineText, 0, $col);
         $pattern = '/->\s*(' . implode('|', self::CONFIG_GETTER_METHODS) . ')\s*\(\s*[\'"]([^\'"]*)$/';
 
@@ -146,8 +145,7 @@ readonly class ConfigKeyFeature
     public function suggestSimilar(
         string $key,
         int $max = 3,
-    ): array
-    {
+    ): array {
         $candidates = array_map(fn (ConfigKeyEntry $e) => $e->key, $this->index->getConfigKeys());
         $scored = array_map(fn (string $c) => ['key' => $c, 'distance' => levenshtein($key, $c)], $candidates);
         usort($scored, fn (array $a, array $b) => $a['distance'] <=> $b['distance']);

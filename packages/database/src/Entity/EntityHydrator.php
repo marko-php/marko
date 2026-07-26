@@ -238,8 +238,7 @@ class EntityHydrator
     public function attachCompanion(
         Entity $entity,
         Entity $companion,
-    ): void
-    {
+    ): void {
         EntityCompanionStorage::instance()->attach($entity, $companion);
     }
 

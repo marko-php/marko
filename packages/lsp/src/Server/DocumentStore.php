@@ -12,16 +12,14 @@ class DocumentStore
     public function open(
         string $uri,
         string $text,
-    ): void
-    {
+    ): void {
         $this->documents[$uri] = $text;
     }
 
     public function update(
         string $uri,
         string $text,
-    ): void
-    {
+    ): void {
         $this->documents[$uri] = $text;
     }
 

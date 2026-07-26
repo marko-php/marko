@@ -27,8 +27,7 @@ readonly class ComponentCollector implements ComponentCollectorInterface
     public function collect(
         array $classNames,
         string $handle,
-    ): ComponentCollection
-    {
+    ): ComponentCollection {
         $collection = new ComponentCollection();
 
         foreach ($classNames as $className) {
@@ -142,8 +141,7 @@ readonly class ComponentCollector implements ComponentCollectorInterface
     private function resolveClassReferenceHandle(
         string $controllerClass,
         string $action,
-    ): ?string
-    {
+    ): ?string {
         foreach ($this->routeCollection->all() as $route) {
             if ($route->controller === $controllerClass && $route->action === $action) {
                 return $this->handleResolver->generate($route->path, $controllerClass, $action);

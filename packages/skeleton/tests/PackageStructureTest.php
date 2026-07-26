@@ -212,13 +212,16 @@ it('ships a root tests/Pest.php that references Marko\Testing\TestCase', functio
     expect($content)->toContain('Marko\Testing\TestCase');
 });
 
-it('ships placeholders so every directory the phpunit.xml testsuites reference exists (app, modules, tests)', function (): void {
-    $base = __DIR__ . '/..';
+it(
+    'ships placeholders so every directory the phpunit.xml testsuites reference exists (app, modules, tests)',
+    function (): void {
+        $base = __DIR__ . '/..';
 
-    expect(is_dir($base . '/app'))->toBeTrue()
-        ->and(is_dir($base . '/modules'))->toBeTrue()
-        ->and(is_dir($base . '/tests'))->toBeTrue();
-});
+        expect(is_dir($base . '/app'))->toBeTrue()
+            ->and(is_dir($base . '/modules'))->toBeTrue()
+            ->and(is_dir($base . '/tests'))->toBeTrue();
+    },
+);
 
 it('runs pest successfully on a freshly scaffolded skeleton with no added test files', function (): void {
     // Simulate a fresh skeleton install: create a temporary directory with the
@@ -237,8 +240,9 @@ it('runs pest successfully on a freshly scaffolded skeleton with no added test f
     $vendorAutoload = __DIR__ . '/../../../vendor/autoload.php';
 
     $command = sprintf(
-        'cd %s && /opt/homebrew/Cellar/php/8.5.1_2/bin/php -d memory_limit=512M %s -c %s --bootstrap %s --no-coverage 2>&1',
+        'cd %s && %s -d memory_limit=512M %s -c %s --bootstrap %s --no-coverage 2>&1',
         escapeshellarg($tmpDir),
+        escapeshellarg(PHP_BINARY),
         escapeshellarg($vendorPest),
         escapeshellarg($tmpDir . '/phpunit.xml'),
         escapeshellarg($vendorAutoload),

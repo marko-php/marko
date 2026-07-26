@@ -48,8 +48,7 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
             string $path,
             string $contents,
             array $options = [],
-        ): bool
-        {
+        ): bool {
             $this->written[$path] = $contents;
 
             return true;
@@ -59,16 +58,14 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
             string $path,
             mixed $resource,
             array $options = [],
-        ): bool
-        {
+        ): bool {
             return true;
         }
 
         public function append(
             string $path,
             string $contents,
-        ): bool
-        {
+        ): bool {
             return true;
         }
 
@@ -82,16 +79,14 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
         public function copy(
             string $source,
             string $destination,
-        ): bool
-        {
+        ): bool {
             return true;
         }
 
         public function move(
             string $source,
             string $destination,
-        ): bool
-        {
+        ): bool {
             return true;
         }
 
@@ -128,8 +123,7 @@ it('checks filesystem writability via FilesystemHealthCheck', function () {
         public function setVisibility(
             string $path,
             string $visibility,
-        ): bool
-        {
+        ): bool {
             return true;
         }
 
@@ -186,8 +180,7 @@ it('returns unhealthy status when filesystem write fails', function () {
             string $path,
             string $contents,
             array $options = [],
-        ): bool
-        {
+        ): bool {
             throw new RuntimeException('Filesystem not writable');
         }
 
@@ -195,16 +188,14 @@ it('returns unhealthy status when filesystem write fails', function () {
             string $path,
             mixed $resource,
             array $options = [],
-        ): bool
-        {
+        ): bool {
             return false;
         }
 
         public function append(
             string $path,
             string $contents,
-        ): bool
-        {
+        ): bool {
             return false;
         }
 
@@ -216,16 +207,14 @@ it('returns unhealthy status when filesystem write fails', function () {
         public function copy(
             string $source,
             string $destination,
-        ): bool
-        {
+        ): bool {
             return false;
         }
 
         public function move(
             string $source,
             string $destination,
-        ): bool
-        {
+        ): bool {
             return false;
         }
 
@@ -262,8 +251,7 @@ it('returns unhealthy status when filesystem write fails', function () {
         public function setVisibility(
             string $path,
             string $visibility,
-        ): bool
-        {
+        ): bool {
             return false;
         }
 

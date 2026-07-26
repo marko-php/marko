@@ -22,8 +22,7 @@ readonly class TranslationFeature
     public function detectContext(
         string $lineText,
         int $col,
-    ): ?string
-    {
+    ): ?string {
         $prefix = substr($lineText, 0, $col);
         $pattern = '/->\s*(' . implode('|', self::TRANSLATOR_METHODS) . ')\s*\(\s*[\'"]([^\'"]*)$/';
 
@@ -178,8 +177,7 @@ readonly class TranslationFeature
     public function suggestSimilar(
         string $key,
         int $max = 3,
-    ): array
-    {
+    ): array {
         $candidates = [];
 
         foreach ($this->index->getTranslationKeys() as $entry) {

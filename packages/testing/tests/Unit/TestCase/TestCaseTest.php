@@ -128,27 +128,33 @@ it('registers autoloaders only once across multiple test cases', function (): vo
     expect($after2)->toBe($after1);
 });
 
-it('does not error and resolves nothing when run from a package dir whose root has no app or modules modules', function (): void {
-    // Simulate running from within the marko monorepo where vendor/ exists but app/ and modules/ do not
-    $monoRepoRoot = dirname(__DIR__, 5); // packages/testing/tests/Unit/TestCase -> monorepo root
+it(
+    'does not error and resolves nothing when run from a package dir whose root has no app or modules modules',
+    function (): void {
+        // Simulate running from within the marko monorepo where vendor/ exists but app/ and modules/ do not
+        $monoRepoRoot = dirname(__DIR__, 5); // packages/testing/tests/Unit/TestCase -> monorepo root
 
-    $tc = new class ('test') extends TestCase
-    {
-        public static string $root = '';
-
-        protected function projectRoot(): string
+        $tc = new class ('test') extends TestCase
         {
-            return self::$root;
-        }
-    };
+            public static string $root = '';
 
-    $tc::$root = $monoRepoRoot;
+            protected function projectRoot(): string
+            {
+                return self::$root;
+            }
+        };
 
-    expect(fn () => $tc->setUp())->not->toThrow(Throwable::class);
-});
+        $tc::$root = $monoRepoRoot;
 
-it('has registered the autoloaders by the time the test body runs so an App class resolves inside the test closure', function (): void {
-    // HomeService was registered by the setUp() of an earlier test in this process.
-    // This closure body executes after setUp(), confirming registration timing is sufficient.
-    expect(class_exists('App\Home\HomeService'))->toBeTrue();
-});
+        expect(fn () => $tc->setUp())->not->toThrow(Throwable::class);
+    },
+);
+
+it(
+    'has registered the autoloaders by the time the test body runs so an App class resolves inside the test closure',
+    function (): void {
+        // HomeService was registered by the setUp() of an earlier test in this process.
+        // This closure body executes after setUp(), confirming registration timing is sufficient.
+        expect(class_exists('App\Home\HomeService'))->toBeTrue();
+    },
+);

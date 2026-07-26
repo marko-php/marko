@@ -10,8 +10,7 @@ readonly class HandleResolver
         string $path,
         string $controllerClass,
         string $action,
-    ): string
-    {
+    ): string {
         $segments = explode('/', trim($path, '/'));
         $routePart = $segments[0] !== '' ? $segments[0] : 'index';
 
@@ -24,8 +23,7 @@ readonly class HandleResolver
     public function matches(
         string $componentHandle,
         string $pageHandle,
-    ): bool
-    {
+    ): bool {
         if ($componentHandle === 'default') {
             return true;
         }

@@ -37,7 +37,7 @@ it('returns exists true with metadata for a valid key', function (): void {
             defaultValue: 'file',
             module: 'Marko_Cache',
             file: 'config/cache.php',
-            line: 5
+            line: 5,
         ),
     ];
     $index = makeFakeIndexCacheForCheck($entries);
@@ -62,7 +62,7 @@ it('returns exists false for unknown keys with closest-match suggestions', funct
             defaultValue: 'file',
             module: 'Marko_Cache',
             file: 'config/cache.php',
-            line: 5
+            line: 5,
         ),
         new ConfigKeyEntry(
             key: 'cache.store',
@@ -70,7 +70,7 @@ it('returns exists false for unknown keys with closest-match suggestions', funct
             defaultValue: 'default',
             module: 'Marko_Cache',
             file: 'config/cache.php',
-            line: 10
+            line: 10,
         ),
     ];
     $index = makeFakeIndexCacheForCheck($entries);
@@ -94,7 +94,7 @@ it('includes source file and line for known keys', function (): void {
             defaultValue: 'localhost',
             module: 'Marko_Mail',
             file: 'config/mail.php',
-            line: 12
+            line: 12,
         ),
     ];
     $index = makeFakeIndexCacheForCheck($entries);

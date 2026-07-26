@@ -19,8 +19,7 @@ readonly class RedisPublisher implements PublisherInterface
     public function publish(
         string $channel,
         Message $message,
-    ): void
-    {
+    ): void {
         $prefixed = $this->config->prefix() . $channel;
         $this->connection->client()->publish($prefixed, $message->payload);
     }

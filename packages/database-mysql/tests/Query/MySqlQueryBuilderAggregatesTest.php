@@ -176,7 +176,7 @@ describe('MySqlQueryBuilder aggregates', function (): void {
                 ->toThrow(InvalidColumnException::class)
                 ->and(fn () => $this->builder->table('scores')->avg('/*bad*/'))
                 ->toThrow(InvalidColumnException::class);
-        }
+        },
     );
 
     it(
@@ -186,7 +186,7 @@ describe('MySqlQueryBuilder aggregates', function (): void {
             $method = $reflection->getMethod('count');
             $returnType = $method->getReturnType();
             $params = $method->getParameters();
-    
+
             expect($returnType?->getName())->toBe('int')
                 ->and($returnType?->allowsNull())->toBeFalse()
                 ->and($params)->toHaveCount(1)
@@ -194,6 +194,6 @@ describe('MySqlQueryBuilder aggregates', function (): void {
                 ->and($params[0]->isOptional())->toBeTrue()
                 ->and($params[0]->allowsNull())->toBeTrue()
                 ->and($params[0]->getDefaultValue())->toBeNull();
-        }
+        },
     );
 });

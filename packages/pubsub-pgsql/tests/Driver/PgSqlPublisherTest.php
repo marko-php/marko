@@ -27,8 +27,7 @@ class PublisherStubPostgresConnection implements PostgresConnection
     public function notify(
         string $channel,
         string $payload = '',
-    ): PostgresResult
-    {
+    ): PostgresResult {
         $this->notifyCalls[] = ['channel' => $channel, 'payload' => $payload];
 
         return new PublisherStubPostgresResult();
@@ -57,8 +56,7 @@ class PublisherStubPostgresConnection implements PostgresConnection
     public function execute(
         string $sql,
         array $params = [],
-    ): PostgresResult
-    {
+    ): PostgresResult {
         throw new RuntimeException('Not implemented in stub');
     }
 

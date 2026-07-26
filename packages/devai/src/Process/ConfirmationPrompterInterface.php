@@ -8,5 +8,8 @@ interface ConfirmationPrompterInterface
 {
     public function isInteractive(): bool;
 
-    public function confirm(string $question, bool $default): bool;
+    public function confirm(
+        string $question,
+        bool $default,
+    ): bool;
 }

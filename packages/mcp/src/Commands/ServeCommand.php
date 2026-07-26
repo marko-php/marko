@@ -24,8 +24,7 @@ class ServeCommand implements CommandInterface
     public function execute(
         Input $input,
         Output $output,
-    ): int
-    {
+    ): int {
         fwrite(STDERR, "Marko MCP server starting on stdio...\n");
         $this->server->serve();
         fwrite(STDERR, "Marko MCP server shut down.\n");

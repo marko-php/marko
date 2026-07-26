@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\CodeIndexer\Module;
 
+use Closure;
 use FilesystemIterator;
 use Marko\CodeIndexer\ValueObject\ModuleInfo;
 use Marko\Core\Path\ProjectPaths;
@@ -163,7 +164,7 @@ class ModuleWalker
     private static function stripClosures(array $value): array
     {
         foreach ($value as $k => $v) {
-            if ($v instanceof \Closure) {
+            if ($v instanceof Closure) {
                 $value[$k] = '<closure>';
             } elseif (is_array($v)) {
                 $value[$k] = self::stripClosures($v);

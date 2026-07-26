@@ -9,12 +9,12 @@ it(
     function (): void {
         $composerPath = dirname(__DIR__, 2) . '/composer.json';
         $composer = json_decode((string) file_get_contents($composerPath), true);
-    
+
         expect(file_exists($composerPath))->toBeTrue()
             ->and($composer['name'])->toBe('marko/docs-fts')
             ->and($composer['require'])->toHaveKey('marko/docs')
             ->and($composer['require'])->toHaveKey('marko/docs-markdown');
-    }
+    },
 );
 
 it('declares ext-pdo_sqlite as a required PHP extension', function (): void {

@@ -17,8 +17,10 @@ readonly class AttributeFeature
      *
      * @return ?array{attribute: string, parameter: string, partial: string}
      */
-    public function detectContext(string $lineText, int $col): ?array
-    {
+    public function detectContext(
+        string $lineText,
+        int $col,
+    ): ?array {
         $prefix = substr($lineText, 0, $col);
 
         // Match: #[AttributeName(paramName: 'partial' or paramName: ClassName
@@ -41,8 +43,10 @@ readonly class AttributeFeature
      *
      * @return list<array{label: string, kind: int}>
      */
-    public function complete(string $lineText, int $col): array
-    {
+    public function complete(
+        string $lineText,
+        int $col,
+    ): array {
         $ctx = $this->detectContext($lineText, $col);
 
         if ($ctx === null) {
@@ -52,7 +56,9 @@ readonly class AttributeFeature
         return match ([$ctx['attribute'], $ctx['parameter']]) {
             ['Observer', 'event'] => $this->completeEventClasses($ctx['partial']),
             ['Plugin', 'target'] => $this->completeAllClasses($ctx['partial']),
-            ['Get', ''], ['Post', ''], ['Put', ''], ['Patch', ''], ['Delete', ''] => $this->completeRoutePaths($ctx['partial']),
+            ['Get', ''], ['Post', ''], ['Put', ''], ['Patch', ''], ['Delete', ''] => $this->completeRoutePaths(
+                $ctx['partial'],
+            ),
             ['Middleware', ''] => $this->completeMiddlewareClasses($ctx['partial']),
             default => [],
         };

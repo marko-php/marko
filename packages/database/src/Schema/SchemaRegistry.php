@@ -170,7 +170,7 @@ class SchemaRegistry
                     // Merge foreign keys (use parent table name for FK name generation)
                     foreach ($this->schemaBuilder->buildForeignKeysForTable(
                         $parentMetadata->tableName,
-                        $extenderMetadata->columns
+                        $extenderMetadata->columns,
                     ) as $fk) {
                         $table = $table->withForeignKey($fk);
                     }

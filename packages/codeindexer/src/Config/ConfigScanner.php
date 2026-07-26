@@ -56,8 +56,7 @@ class ConfigScanner
     private function scanFile(
         string $file,
         string $moduleName,
-    ): array
-    {
+    ): array {
         $code = file_get_contents($file);
         if ($code === false) {
             return [];
@@ -105,8 +104,7 @@ class ConfigScanner
         string $prefix,
         string $file,
         string $moduleName,
-    ): array
-    {
+    ): array {
         $entries = [];
 
         foreach ($array->items as $item) {

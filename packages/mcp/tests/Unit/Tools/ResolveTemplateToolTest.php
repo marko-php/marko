@@ -59,7 +59,7 @@ it('returns the absolute file path for a valid module::template', function (): v
     $result = $tool->handler->handle(['template' => 'App\Catalog::product/view']);
 
     expect($result['content'][0]['text'])->toContain(
-        '/var/www/modules/catalog/resources/views/product/view.blade.php'
+        '/var/www/modules/catalog/resources/views/product/view.blade.php',
     );
     expect($result)->not->toHaveKey('isError');
 });

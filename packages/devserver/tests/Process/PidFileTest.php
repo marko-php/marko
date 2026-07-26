@@ -131,6 +131,10 @@ it('removes the PID file via clear method', function (): void {
 });
 
 it('detects a process group as running when parent died but child lives', function (): void {
+    if (!function_exists('pcntl_fork') || !function_exists('posix_setsid')) {
+        test()->markTestSkipped('pcntl and posix are required to build a detached process group');
+    }
+
     $tmpDir = sys_get_temp_dir() . '/pid-file-test-' . uniqid();
     mkdir($tmpDir, 0755, true);
     $pidFile = new PidFile($tmpDir);
@@ -149,8 +153,11 @@ it('detects a process group as running when parent died but child lives', functi
         exit(0);
     PHP;
     $encoded = base64_encode($script);
+    // Array form execs directly. A string command goes through /bin/sh, so the reported pid
+    // would be the shell's rather than PHP's — macOS sh execs in place and hides that, dash
+    // does not, and posix_setsid() then builds the group under a pid the assertions never see.
     $proc = proc_open(
-        "$php -r 'eval(base64_decode(\"$encoded\"));'",
+        [$php, '-r', 'eval(base64_decode("' . $encoded . '"));'],
         [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
         $pipes,
     );

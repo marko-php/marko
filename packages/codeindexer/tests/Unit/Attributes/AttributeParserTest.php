@@ -70,9 +70,9 @@ it(
     'does not require target classes to be autoloadable (pure AST traversal, no class loading)',
     function () use ($fixtureBase): void {
         // Create a temporary module pointing to a file that references non-autoloadable classes
-    $tmpDir = sys_get_temp_dir() . '/marko-ast-test-' . uniqid();
+        $tmpDir = sys_get_temp_dir() . '/marko-ast-test-' . uniqid();
         mkdir($tmpDir . '/src', 0777, true);
-    
+
         file_put_contents($tmpDir . '/src/NonAutoloadableObserver.php', <<<'PHP'
         <?php
         declare(strict_types=1);
@@ -82,37 +82,37 @@ it(
         #[Observer(event: 'NonAutoloadable\Completely\FakeEvent\SomethingHappened', priority: 0)]
         class NonAutoloadableObserver {}
         PHP);
-    
+
         $module = new ModuleInfo(
             name: 'non/autoloadable',
             path: $tmpDir,
             namespace: 'NonAutoloadable\Module',
         );
-    
+
         // Parser should NOT throw — it uses AST, not class_exists / reflection
-    $parser = new AttributeParser();
-    
+        $parser = new AttributeParser();
+
         // The attribute FQN won't match Marko\Core\Attributes\Observer, so result is empty —
-    // but crucially, no exception is thrown even though the classes don't exist.
-    expect(fn () => $parser->observers($module))->not->toThrow(Throwable::class);
-    }
+        // but crucially, no exception is thrown even though the classes don't exist.
+        expect(fn () => $parser->observers($module))->not->toThrow(Throwable::class);
+    },
 );
 
 it(
     'resolves short attribute names via file use statements to fully qualified class names',
     function () use ($fixtureBase, $fixtureModule): void {
         // The fixture files use short names like `Observer`, `Plugin`, etc. via `use` statements.
-    // The NameResolver must expand them to FQNs for matching to work.
-    $parser = new AttributeParser();
-    
+        // The NameResolver must expand them to FQNs for matching to work.
+        $parser = new AttributeParser();
+
         // If NameResolver was NOT used, none of these would return results
-    // because the attribute names would remain unresolved short names.
-    expect($parser->observers($fixtureModule))->not->toBeEmpty()
-            ->and($parser->plugins($fixtureModule))->not->toBeEmpty()
-            ->and($parser->preferences($fixtureModule))->not->toBeEmpty()
-            ->and($parser->commands($fixtureModule))->not->toBeEmpty()
-            ->and($parser->routes($fixtureModule))->not->toBeEmpty();
-    }
+        // because the attribute names would remain unresolved short names.
+        expect($parser->observers($fixtureModule))->not->toBeEmpty()
+                ->and($parser->plugins($fixtureModule))->not->toBeEmpty()
+                ->and($parser->preferences($fixtureModule))->not->toBeEmpty()
+                ->and($parser->commands($fixtureModule))->not->toBeEmpty()
+                ->and($parser->routes($fixtureModule))->not->toBeEmpty();
+    },
 );
 
 it('returns empty entries for modules with no attributes', function (): void {
@@ -163,16 +163,16 @@ it(
     function () use ($fixtureModule): void {
         $parser = new AttributeParser();
         $routes = $parser->routes($fixtureModule);
-    
+
         $active = array_values(array_filter($routes, fn ($e) => $e->method !== 'DISABLED'));
-    
+
         expect($active)->toHaveCount(6);
-    
+
         $byAction = [];
         foreach ($active as $entry) {
             $byAction[$entry->action] = $entry;
         }
-    
+
         expect($byAction['index']->method)->toBe('GET')
             ->and($byAction['index']->path)->toBe('/posts')
             ->and($byAction['show']->method)->toBe('GET')
@@ -181,7 +181,7 @@ it(
             ->and($byAction['update']->method)->toBe('PUT')
             ->and($byAction['patch']->method)->toBe('PATCH')
             ->and($byAction['destroy']->method)->toBe('DELETE');
-    }
+    },
 );
 
 it('parses Command attributes from class-level declarations', function () use ($fixtureModule): void {
@@ -201,14 +201,14 @@ it(
     function () use ($fixtureModule): void {
         $parser = new AttributeParser();
         $preferences = $parser->preferences($fixtureModule);
-    
+
         expect($preferences)->toHaveCount(1);
-    
+
         $entry = $preferences[0];
         expect($entry->implementation)->toEndWith('CustomLoggerPreference')
             ->and($entry->interface)->toBe('Fixture\AttributeFixtures\Contracts\LoggerInterface')
             ->and($entry->module)->toBe('fixture/attributefixtures');
-    }
+    },
 );
 
 it('parses Plugin attributes and associates methods to target class', function () use ($fixtureModule): void {

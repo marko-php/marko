@@ -23,27 +23,27 @@ it(
     function () use ($fixtures): void {
         $scanner = new ConfigScanner();
         $module = new ModuleInfo('module-c', $fixtures . '/module-c', 'Marko\\ModuleC');
-    
+
         $entries = $scanner->scan($module);
         $diagnostics = $scanner->diagnostics();
-    
+
         $keys = array_map(fn (ConfigKeyEntry $e): string => $e->key, $entries);
         $byKey = [];
         foreach ($entries as $entry) {
             $byKey[$entry->key] = $entry;
         }
-    
+
         // dynamic.php returns a function call — no keys, but diagnostic recorded
-    $diagnosticFiles = array_map(fn (array $d): string => basename($d['file']), $diagnostics);
+        $diagnosticFiles = array_map(fn (array $d): string => basename($d['file']), $diagnostics);
         expect($diagnosticFiles)->toContain('dynamic.php');
-    
+
         // partial.php has a mix — known keys indexed, dynamic value recorded as type='dynamic'
-    expect($keys)->toContain('partial.driver')
-            ->and($keys)->toContain('partial.port')
-            ->and($keys)->toContain('partial.host')
-            ->and($byKey['partial.port']->type)->toBe('dynamic')
-            ->and($byKey['partial.port']->defaultValue)->toBeNull();
-    }
+        expect($keys)->toContain('partial.driver')
+                ->and($keys)->toContain('partial.port')
+                ->and($keys)->toContain('partial.host')
+                ->and($byKey['partial.port']->type)->toBe('dynamic')
+                ->and($byKey['partial.port']->defaultValue)->toBeNull();
+    },
 );
 
 it('does not include or eval config files — reads values via AST only', function (): void {

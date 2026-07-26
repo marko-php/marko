@@ -27,8 +27,7 @@ readonly class MarkoConsoleDispatcher
     public function dispatch(
         string $command,
         array $args = [],
-    ): array
-    {
+    ): array {
         $stdout = fopen('php://memory', 'r+');
         $stderr = fopen('php://memory', 'r+');
 

@@ -28,7 +28,7 @@ describe('README.md', function (): void {
                 ->and($this->contents)->toContain('marko-skills')
                 ->and($this->contents)->toContain('marko-lsp')
                 ->and($this->contents)->toContain('marko-mcp');
-        }
+        },
     );
 
     it('README.md includes the install command via marko devai:install', function (): void {
@@ -45,12 +45,12 @@ describe('README.md', function (): void {
         'README.md follows the slim-pointer convention from docs/DOCS-STANDARDS.md (no exhaustive feature lists, no inline code samples beyond a quick install example)',
         function (): void {
             expect($this->contents)->not->toBeNull();
-    
+
             // Slim-pointer: file should be short (under 80 lines)
-        $lines = substr_count($this->contents, "\n") + 1;
+            $lines = substr_count($this->contents, "\n") + 1;
             expect($lines)->toBeLessThan(80)
                 // Must have a Documentation section
             ->and($this->contents)->toContain('## Documentation');
-        }
+        },
     );
 });

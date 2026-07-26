@@ -14,12 +14,15 @@ it('points the docs build pipeline at packages/docs-markdown/docs/ as source', f
     expect(is_link($symlinkPath))->toBeTrue();
 });
 
-it('produces a clean build of marko.build/docs after the path change', function () use ($symlinkPath, $packageDocs): void {
-    $target = readlink($symlinkPath);
-    $resolvedTarget = realpath(dirname($symlinkPath) . '/' . $target);
+it(
+    'produces a clean build of marko.build/docs after the path change',
+    function () use ($symlinkPath, $packageDocs): void {
+        $target = readlink($symlinkPath);
+        $resolvedTarget = realpath(dirname($symlinkPath) . '/' . $target);
 
-    expect($resolvedTarget)->toBe(realpath($packageDocs));
-});
+        expect($resolvedTarget)->toBe(realpath($packageDocs));
+    },
+);
 
 it('renders the same pages count as before the migration', function () use ($symlinkPath): void {
     // Count .md and .mdx files reachable through the symlinked source.

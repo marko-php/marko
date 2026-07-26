@@ -24,8 +24,8 @@ it('removes repositories key from all 38 package composer.json files that have p
     expect($withRepos)->toBeEmpty(
         'These package composer.json files still contain a "repositories" key: ' . implode(
             ', ',
-            array_map('basename', array_map('dirname', $withRepos))
-        )
+            array_map('basename', array_map('dirname', $withRepos)),
+        ),
     );
 });
 
@@ -75,7 +75,7 @@ it('changes all internal marko/* require-dev constraints from @dev to self.versi
     }
 
     expect($violations)->toBeEmpty(
-        'These require-dev constraints are not self.version: ' . implode(', ', $violations)
+        'These require-dev constraints are not self.version: ' . implode(', ', $violations),
     );
 });
 
@@ -91,7 +91,7 @@ it('changes marko/devserver wildcard constraints to self.version', function (): 
     }
 
     expect($violations)->toBeEmpty(
-        'devserver has non-self.version marko/* constraints: ' . implode(', ', $violations)
+        'devserver has non-self.version marko/* constraints: ' . implode(', ', $violations),
     );
 });
 
@@ -136,7 +136,7 @@ it('preserves all non-marko dependency constraints unchanged (php, psr/*, ext-*,
     }
 
     expect($violations)->toBeEmpty(
-        'These non-marko dependencies incorrectly use self.version: ' . implode(', ', $violations)
+        'These non-marko dependencies incorrectly use self.version: ' . implode(', ', $violations),
     );
 });
 
@@ -172,6 +172,6 @@ it('preserves all other composer.json keys (autoload, extra, config, suggest, et
     }
 
     expect($violations)->toBeEmpty(
-        'Structural violations in package composer.json files: ' . implode(', ', $violations)
+        'Structural violations in package composer.json files: ' . implode(', ', $violations),
     );
 });

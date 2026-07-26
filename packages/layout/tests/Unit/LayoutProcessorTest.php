@@ -96,8 +96,7 @@ function stubCollector(ComponentCollection $collection): ComponentCollectorInter
         public function collect(
             array $classNames,
             string $handle,
-        ): ComponentCollection
-        {
+        ): ComponentCollection {
             return $this->stub;
         }
 
@@ -118,16 +117,14 @@ function stubView(callable $renderFn): ViewInterface
         public function render(
             string $template,
             array $data = [],
-        ): Response
-        {
+        ): Response {
             return Response::html(($this->renderFn)($template, $data));
         }
 
         public function renderToString(
             string $template,
             array $data = [],
-        ): string
-        {
+        ): string {
             return ($this->renderFn)($template, $data);
         }
     };

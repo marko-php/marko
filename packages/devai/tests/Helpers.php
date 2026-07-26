@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\CodeIndexer\Module\ModuleWalker;
+use Marko\CodeIndexer\ValueObject\ModuleInfo;
 use Marko\DevAi\Installation\InstallationContext;
 use Marko\DevAi\Process\CommandRunnerInterface;
 use Marko\DevAi\ValueObject\GuidelinesContent;
@@ -45,7 +46,8 @@ if (!function_exists('devaiTempDir')) {
      */
     function devaiRunner(bool $onPath = false, string $listOutput = ''): CommandRunnerInterface
     {
-        return new class ($onPath, $listOutput) implements CommandRunnerInterface {
+        return new class ($onPath, $listOutput) implements CommandRunnerInterface
+        {
             /** @var list<array{command: string, args: list<string>}> */
             public array $calls = [];
 
@@ -57,8 +59,7 @@ if (!function_exists('devaiTempDir')) {
             public function run(
                 string $command,
                 array $args = [],
-            ): array
-            {
+            ): array {
                 $this->calls[] = ['command' => $command, 'args' => $args];
                 if (($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
                     return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
@@ -106,12 +107,13 @@ if (!function_exists('devaiTempDir')) {
      * ModuleWalkerInterface was removed (#97); doubles now extend the concrete
      * ModuleWalker and override walk().
      *
-     * @param list<\Marko\CodeIndexer\ValueObject\ModuleInfo> $modules
+     * @param list<ModuleInfo> $modules
      */
     function devaiWalker(array $modules = []): ModuleWalker
     {
-        return new class ($modules) extends ModuleWalker {
-            /** @param list<\Marko\CodeIndexer\ValueObject\ModuleInfo> $modules */
+        return new class ($modules) extends ModuleWalker
+        {
+            /** @param list<ModuleInfo> $modules */
             public function __construct(private array $modules) {}
 
             public function walk(): array

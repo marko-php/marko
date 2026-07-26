@@ -266,8 +266,10 @@ class LspServer
      * Aggregate diagnostics from all features and publish a single
      * textDocument/publishDiagnostics notification for the given URI.
      */
-    private function publishDiagnosticsFor(string $uri, string $text): void
-    {
+    private function publishDiagnosticsFor(
+        string $uri,
+        string $text,
+    ): void {
         if ($this->notifier === null) {
             return;
         }

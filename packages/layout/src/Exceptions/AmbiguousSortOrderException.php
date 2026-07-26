@@ -13,8 +13,7 @@ class AmbiguousSortOrderException extends LayoutException
         string $slot,
         int $sortOrder,
         array $components,
-    ): self
-    {
+    ): self {
         $componentList = implode(', ', $components);
 
         return new self(

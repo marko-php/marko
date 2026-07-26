@@ -73,8 +73,8 @@ it('validates input requires query string with optional integer limit', function
     // Missing required 'query' field
     $protocol->handleMessage(
         json_encode(
-            ['jsonrpc' => '2.0', 'method' => 'tools/call', 'params' => ['name' => 'search_docs', 'arguments' => []], 'id' => 1]
-        )
+            ['jsonrpc' => '2.0', 'method' => 'tools/call', 'params' => ['name' => 'search_docs', 'arguments' => []], 'id' => 1],
+        ),
     );
     rewind($out);
     $response = json_decode((string) stream_get_contents($out), true);

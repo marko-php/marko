@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Marko\CodeIndexer\Cache\IndexCache;
 use Marko\CodeIndexer\Attributes\AttributeParser;
+use Marko\CodeIndexer\Cache\IndexCache;
 use Marko\CodeIndexer\Config\ConfigScanner;
 use Marko\CodeIndexer\Module\ModuleWalker;
-use Marko\CodeIndexer\Views\TemplateScanner;
 use Marko\CodeIndexer\Translations\TranslationScanner;
 use Marko\CodeIndexer\ValueObject\ConfigKeyEntry;
 use Marko\CodeIndexer\ValueObject\ModuleInfo;
+use Marko\CodeIndexer\Views\TemplateScanner;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Lsp\Features\AttributeFeature;
 use Marko\Lsp\Features\CodeLensFeature;

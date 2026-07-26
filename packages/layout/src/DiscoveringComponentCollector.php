@@ -30,8 +30,7 @@ readonly class DiscoveringComponentCollector implements ComponentCollectorInterf
     public function collect(
         array $classNames,
         string $handle,
-    ): ComponentCollection
-    {
+    ): ComponentCollection {
         $discovered = $this->discoverComponentClasses();
         $merged = array_values(array_unique(array_merge($discovered, $classNames)));
 

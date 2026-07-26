@@ -25,7 +25,7 @@ class RelUserEntity extends Entity
         RelRoleEntity::class,
         pivotClass: RelUserRoleEntity::class,
         foreignKey: 'user_id',
-        relatedKey: 'role_id'
+        relatedKey: 'role_id',
     )]
     public array $roles = [];
 }

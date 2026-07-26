@@ -35,7 +35,7 @@ class LpnFixtureRootComponent {}
     slot: 'content',
     handle: 'default',
     sortOrder: 10,
-    slots: ['tab.details', 'tab.reviews']
+    slots: ['tab.details', 'tab.reviews'],
 )]
 class LpnFixtureTabsComponent {}
 
@@ -64,7 +64,7 @@ class LpnFixtureNavComponent {}
     slot: 'main',
     handle: 'default',
     sortOrder: 10,
-    slots: ['body.sidebar', 'body.content']
+    slots: ['body.sidebar', 'body.content'],
 )]
 class LpnFixtureBodyComponent {}
 
@@ -80,7 +80,7 @@ class LpnFixtureMainContentComponent {}
     slot: 'content',
     handle: 'default',
     sortOrder: 10,
-    slots: ['tab.details']
+    slots: ['tab.details'],
 )]
 class LpnFixtureDeepTabsComponent {}
 
@@ -89,7 +89,7 @@ class LpnFixtureDeepTabsComponent {}
     slot: 'tab.details',
     handle: 'default',
     sortOrder: 10,
-    slots: ['detail.images', 'detail.description']
+    slots: ['detail.images', 'detail.description'],
 )]
 class LpnFixtureDeepDetailsComponent {}
 
@@ -100,7 +100,7 @@ class LpnFixtureDetailImagesComponent {}
     template: 'components/detail-description.html',
     slot: 'detail.description',
     handle: 'default',
-    sortOrder: 20
+    sortOrder: 20,
 )]
 class LpnFixtureDetailDescriptionComponent {}
 
@@ -114,7 +114,7 @@ class LpnFixtureDetailDescriptionComponent {}
     slot: 'content',
     handle: 'default',
     sortOrder: 10,
-    slots: ['cycle.y']
+    slots: ['cycle.y'],
 )]
 class LpnFixtureCycleXComponent {}
 
@@ -123,7 +123,7 @@ class LpnFixtureCycleXComponent {}
     slot: 'cycle.y',
     handle: 'default',
     sortOrder: 10,
-    slots: ['cycle.x']
+    slots: ['cycle.x'],
 )]
 class LpnFixtureCycleYComponent {}
 
@@ -141,8 +141,7 @@ function lpnStubCollector(ComponentCollection $collection): ComponentCollectorIn
         public function collect(
             array $classNames,
             string $handle,
-        ): ComponentCollection
-        {
+        ): ComponentCollection {
             return $this->stub;
         }
 
@@ -162,16 +161,14 @@ function lpnStubView(callable $renderFn): ViewInterface
         public function render(
             string $template,
             array $data = [],
-        ): Response
-        {
+        ): Response {
             return Response::html(($this->renderFn)($template, $data));
         }
 
         public function renderToString(
             string $template,
             array $data = [],
-        ): string
-        {
+        ): string {
             return ($this->renderFn)($template, $data);
         }
     };

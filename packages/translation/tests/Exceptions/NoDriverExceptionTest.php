@@ -67,7 +67,7 @@ describe('NoDriverException', function (): void {
         $exception = NoDriverException::noDriverInstalled();
 
         expect($exception->getContext())->toContain(
-            'Attempted to resolve a translation interface but no implementation is bound.'
+            'Attempted to resolve a translation interface but no implementation is bound.',
         );
     });
 

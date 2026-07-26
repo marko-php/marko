@@ -33,8 +33,7 @@ class MockPostgresListener implements PostgresListener, IteratorAggregate
     public function __construct(
         string $channel,
         array $notifications = [],
-    )
-    {
+    ) {
         $this->channel = $channel;
         $this->notifications = $notifications;
     }
@@ -88,8 +87,7 @@ class SubscriberStubPostgresConnection implements PostgresConnection
     public function notify(
         string $channel,
         string $payload = '',
-    ): PostgresResult
-    {
+    ): PostgresResult {
         throw new RuntimeException('Not implemented in stub');
     }
 
@@ -111,8 +109,7 @@ class SubscriberStubPostgresConnection implements PostgresConnection
     public function execute(
         string $sql,
         array $params = [],
-    ): PostgresResult
-    {
+    ): PostgresResult {
         throw new RuntimeException('Not implemented in stub');
     }
 

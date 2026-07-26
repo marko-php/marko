@@ -24,8 +24,7 @@ class JsonRpcProtocol
     public function registerMethod(
         string $method,
         callable $handler,
-    ): void
-    {
+    ): void {
         $this->handlers[$method] = $handler;
     }
 
@@ -61,17 +60,17 @@ class JsonRpcProtocol
             $request = json_decode($jsonLine, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             $this->writeResponse(
-                ['jsonrpc' => '2.0', 'error' => ['code' => -32700, 'message' => 'Parse error: ' . $e->getMessage()], 'id' => null]
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32700, 'message' => 'Parse error: ' . $e->getMessage()], 'id' => null],
             );
 
             return;
         }
 
         if (!is_array(
-            $request
+            $request,
         ) || !isset($request['jsonrpc']) || $request['jsonrpc'] !== '2.0' || !isset($request['method'])) {
             $this->writeResponse(
-                ['jsonrpc' => '2.0', 'error' => ['code' => -32600, 'message' => 'Invalid Request'], 'id' => $request['id'] ?? null]
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32600, 'message' => 'Invalid Request'], 'id' => $request['id'] ?? null],
             );
 
             return;
@@ -87,7 +86,7 @@ class JsonRpcProtocol
                 return;
             }
             $this->writeResponse(
-                ['jsonrpc' => '2.0', 'error' => ['code' => -32601, 'message' => "Method not found: $method"], 'id' => $id]
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32601, 'message' => "Method not found: $method"], 'id' => $id],
             );
 
             return;
@@ -104,14 +103,14 @@ class JsonRpcProtocol
                 return;
             }
             $this->writeResponse(
-                ['jsonrpc' => '2.0', 'error' => ['code' => $e->getJsonRpcCode(), 'message' => $e->getMessage()], 'id' => $id]
+                ['jsonrpc' => '2.0', 'error' => ['code' => $e->getJsonRpcCode(), 'message' => $e->getMessage()], 'id' => $id],
             );
         } catch (Throwable $e) {
             if ($isNotification) {
                 return;
             }
             $this->writeResponse(
-                ['jsonrpc' => '2.0', 'error' => ['code' => -32603, 'message' => 'Internal error: ' . $e->getMessage()], 'id' => $id]
+                ['jsonrpc' => '2.0', 'error' => ['code' => -32603, 'message' => 'Internal error: ' . $e->getMessage()], 'id' => $id],
             );
         }
     }

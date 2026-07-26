@@ -9,6 +9,9 @@ namespace Marko\Core\Command;
  */
 readonly class CommandDefinition
 {
+    /**
+     * @param list<string> $aliases
+     */
     public function __construct(
         public string $commandClass,
         public string $name,

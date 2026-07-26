@@ -9,9 +9,9 @@ $skeletonComposerPath = __DIR__ . '/../../skeleton/composer.json';
 
 test(
     'skeleton suggest block contains all page-cache drivers',
-    fn () => KnownDriversValidator::assertSkeletonSuggestContainsAll($knownDriversPath, $skeletonComposerPath)
+    fn () => KnownDriversValidator::assertSkeletonSuggestContainsAll($knownDriversPath, $skeletonComposerPath),
 );
 test(
     'every page-cache driver follows marko slash prefix pattern',
-    fn () => KnownDriversValidator::assertDocsUrlsResolveToValidPattern($knownDriversPath)
+    fn () => KnownDriversValidator::assertDocsUrlsResolveToValidPattern($knownDriversPath),
 );
