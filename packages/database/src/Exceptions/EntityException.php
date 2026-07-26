@@ -81,6 +81,21 @@ class EntityException extends MarkoException
     /**
      * @param class-string $entityClass
      */
+    public static function unionTypeRequiresColumnType(
+        string $entityClass,
+        string $property,
+    ): self {
+        return new self(
+            message: "Property '$property' in entity '$entityClass' has a union type "
+                . 'and must declare an explicit column type',
+            context: "Parsing column '$property' in entity '$entityClass'",
+            suggestion: "Add an explicit type to the #[Column] attribute (e.g., #[Column(type: 'varchar')])",
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
     public static function columnAndRelationshipConflict(
         string $entityClass,
         string $property,

@@ -311,6 +311,38 @@ it('throws EntityException for property without type declaration', function (): 
     $this->factory->parse($className);
 })->throws(EntityException::class, 'must have a type declaration');
 
+it('parses a union-typed property when an explicit column type is declared', function (): void {
+    $entity = new #[Table('attachments')] class () extends Entity
+    {
+        #[Column(primaryKey: true, autoIncrement: true)]
+        public ?int $id = null;
+
+        #[Column(type: 'varchar', length: 255)]
+        public int|string $attachableId = 0;
+    };
+
+    $metadata = $this->factory->parse($entity::class);
+
+    expect($metadata->properties['attachableId']->type)->toContain('int')
+        ->and($metadata->properties['attachableId']->type)->toContain('string')
+        ->and($metadata->properties['attachableId']->columnType)->toBe('varchar')
+        ->and($metadata->columns[1]->type)->toBe('varchar')
+        ->and($metadata->columns[1]->nullable)->toBeFalse();
+});
+
+it('throws EntityException for a union-typed property without an explicit column type', function (): void {
+    $entity = new #[Table('attachments')] class () extends Entity
+    {
+        #[Column(primaryKey: true, autoIncrement: true)]
+        public ?int $id = null;
+
+        #[Column(length: 255)]
+        public int|string $attachableId = 0;
+    };
+
+    $this->factory->parse($entity::class);
+})->throws(EntityException::class, 'must declare an explicit column type');
+
 it('handles leading uppercase sequences correctly (HTMLParser becomes html_parser)', function (): void {
     $entity = new #[Table('records')] class () extends Entity
     {

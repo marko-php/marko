@@ -20,6 +20,6 @@ class MediaAttachment extends Entity
     #[Column(length: 255)]
     public string $attachableType = '';
 
-    #[Column(length: 255)]
+    #[Column(type: 'varchar', length: 255)]
     public int|string $attachableId = 0;
 }

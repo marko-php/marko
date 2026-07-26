@@ -18,6 +18,7 @@ use ReflectionClass;
 use ReflectionException;
 use ReflectionNamedType;
 use ReflectionProperty;
+use ReflectionUnionType;
 
 /**
  * Parses entity classes and extracts metadata from attributes.
@@ -95,13 +96,24 @@ class EntityMetadataFactory
             $columnName = $columnAttr->name ?? $this->camelToSnakeCase($propertyName);
             $type = $property->getType();
 
-            if (!$type instanceof ReflectionNamedType) {
+            if ($type instanceof ReflectionNamedType) {
+                $phpType = $type->getName();
+                $dbType = $columnAttr->type ?? $this->inferDatabaseType($phpType);
+                $nullable = $type->allowsNull();
+            } elseif ($type instanceof ReflectionUnionType) {
+                // A union type (e.g. a polymorphic foreign key declared as `int|string`)
+                // has no single reflection type to infer a database column type from, so
+                // an explicit #[Column(type: ...)] is required to resolve the ambiguity.
+                if ($columnAttr->type === null) {
+                    throw EntityException::unionTypeRequiresColumnType($entityClass, $propertyName);
+                }
+
+                $phpType = (string) $type;
+                $dbType = $columnAttr->type;
+                $nullable = $type->allowsNull();
+            } else {
                 throw EntityException::missingTypeDeclaration($entityClass, $propertyName);
             }
-
-            $phpType = $type->getName();
-            $dbType = $columnAttr->type ?? $this->inferDatabaseType($phpType);
-            $nullable = $type->allowsNull();
             $default = $property->hasDefaultValue() ? $property->getDefaultValue() : null;
 
             // Convert BackedEnum default values to their backing value for database storage
