@@ -25,7 +25,7 @@ test('it asserts every template provider has a sibling for every registered engi
 
     if (!is_dir($packagesDir) || basename($packagesDir) !== 'packages') {
         $this->markTestSkipped(
-            'Not running inside the monorepo packages directory — skipping cross-engine parity check.'
+            'Not running inside the monorepo packages directory — skipping cross-engine parity check.',
         );
     }
 
@@ -64,7 +64,7 @@ test('it asserts every template provider has a sibling for every registered engi
             $description = $engineMeta['description'] ?? $engineName;
             $message = "Parent module '$parent' has template providers for [" . implode(
                 ', ',
-                array_keys($foundEngines)
+                array_keys($foundEngines),
             )
                 . "] but is missing a provider for engine '$engineName' ($description). "
                 . "Expected a package like 'marko/" . basename($parent) . "-$engineName' declaring "
@@ -174,16 +174,16 @@ test(
     'it ignores packages whose extracted suffix is not in known-engines (e.g., admin-panel-twig-extra produces suffix twig-extra and is skipped if not registered)',
     function () {
         $enginesPath = dirname(__DIR__, 2) . '/known-engines.php';
-    
+
         if (!file_exists($enginesPath)) {
             $this->markTestSkipped('known-engines.php not found — marko/view not installed standalone?');
         }
-    
+
         $engines = require $enginesPath;
-    
+
         $suffix = extractEngineSuffix('marko/admin-panel-twig-extra', 'marko/admin-panel');
-    
+
         expect($suffix)->toBe('twig-extra')
             ->and(isset($engines[$suffix]))->toBeFalse();
-    }
+    },
 );

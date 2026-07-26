@@ -31,7 +31,7 @@ it('LayoutTemplateTest.php has been removed from packages/admin-panel/tests/Unit
     $oldTestPath = dirname(__DIR__, 2) . '/admin-panel/tests/Unit/Template/LayoutTemplateTest.php';
 
     expect(file_exists($oldTestPath))->toBeFalse(
-        'LayoutTemplateTest.php should not exist in admin-panel/tests/Unit/Template/'
+        'LayoutTemplateTest.php should not exist in admin-panel/tests/Unit/Template/',
     );
 });
 

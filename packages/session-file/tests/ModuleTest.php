@@ -71,9 +71,12 @@ it('starts a session and sets a session cookie end-to-end with the file driver i
     }
 });
 
-it('orders the session middleware after page-cache when the file driver and page-cache are both installed', function (): void {
-    $module = require dirname(__DIR__) . '/module.php';
+it(
+    'orders the session middleware after page-cache when the file driver and page-cache are both installed',
+    function (): void {
+        $module = require dirname(__DIR__) . '/module.php';
 
-    expect($module['sequence'])->toHaveKey('after')
-        ->and($module['sequence']['after'])->toContain('marko/page-cache');
-});
+        expect($module['sequence'])->toHaveKey('after')
+            ->and($module['sequence']['after'])->toContain('marko/page-cache');
+    },
+);

@@ -147,14 +147,14 @@ it(
         $parent = new ParentEntity();
         $companionViaEntity = new CompanionEntity();
         $companionViaHydrator = new AnotherCompanionEntity();
-    
+
         // Attach one via Entity public API, one via hydrator internal API
-    $parent->attachCompanion($companionViaEntity);
+        $parent->attachCompanion($companionViaEntity);
         $hydrator->attachCompanion($parent, $companionViaHydrator);
-    
+
         // Both are visible through the same Entity::companions() call
-    expect($parent->companions())->toHaveCount(2)
-            ->and($parent->companion(CompanionEntity::class))->toBe($companionViaEntity)
-            ->and($parent->companion(AnotherCompanionEntity::class))->toBe($companionViaHydrator);
-    }
+        expect($parent->companions())->toHaveCount(2)
+                ->and($parent->companion(CompanionEntity::class))->toBe($companionViaEntity)
+                ->and($parent->companion(AnotherCompanionEntity::class))->toBe($companionViaHydrator);
+    },
 );

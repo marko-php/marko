@@ -55,14 +55,14 @@ it(
         );
         $index = makeFakeIndexCacheForPlugins([$plugin]);
         $tool = FindPluginsTargetingTool::definition($index);
-    
+
         $result = $tool->handler->handle(['target' => 'App\Services\OrderService']);
-    
+
         expect($result['content'][0]['text'])->toContain('App\Plugins\OrderPlugin');
         expect($result['content'][0]['text'])->toContain('beforePlace');
         expect($result['content'][0]['text'])->toContain('before');
         expect($result['content'][0]['text'])->toContain('10');
-    }
+    },
 );
 
 it('returns empty list for classes with no plugins', function (): void {

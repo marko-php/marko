@@ -19,8 +19,10 @@ class DiagnosticsNotifier
      *
      * @param list<array<string, mixed>> $diagnostics
      */
-    public function publish(string $uri, array $diagnostics): void
-    {
+    public function publish(
+        string $uri,
+        array $diagnostics,
+    ): void {
         $stamped = array_map(
             fn (array $diag) => array_merge($diag, ['source' => self::SOURCE]),
             $diagnostics,

@@ -21,7 +21,7 @@ class FtsIndexBuilder
 
         if ($pages === []) {
             throw DocsException::searchFailed(
-                'No pages found in MarkdownRepository — check docs-markdown is installed'
+                'No pages found in MarkdownRepository — check docs-markdown is installed',
             );
         }
 
@@ -55,7 +55,7 @@ class FtsIndexBuilder
 
         $insertFts = $pdo->prepare('INSERT INTO docs_fts (page_id, title, content) VALUES (:id, :title, :content)');
         $insertMeta = $pdo->prepare(
-            'INSERT INTO docs_meta (page_id, url, section, title, last_updated) VALUES (:id, :url, :section, :title, :ts)'
+            'INSERT INTO docs_meta (page_id, url, section, title, last_updated) VALUES (:id, :url, :section, :title, :ts)',
         );
 
         $pdo->beginTransaction();
@@ -82,8 +82,7 @@ class FtsIndexBuilder
     private function extractTitle(
         string $markdown,
         string $fallback,
-    ): string
-    {
+    ): string {
         if (preg_match('/^---\s*\n.*?title:\s*["\']?([^"\'\n]+)["\']?.*?\n---/s', $markdown, $m)) {
             return trim($m[1]);
         }

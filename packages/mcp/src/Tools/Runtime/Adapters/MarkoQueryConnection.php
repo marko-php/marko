@@ -23,8 +23,7 @@ readonly class MarkoQueryConnection
     public function query(
         string $sql,
         array $params = [],
-    ): array
-    {
+    ): array {
         return array_values($this->connection->query($sql, $params));
     }
 }

@@ -15,11 +15,11 @@ describe('marko-lsp plugin', function (): void {
         'plugin.json declares name "marko-lsp" and a description matching the marketplace.json entry',
         function (): void {
             $manifest = json_decode(file_get_contents($this->pluginJsonPath), true);
-    
+
             expect(file_exists($this->pluginJsonPath))->toBeTrue()
                 ->and($manifest['name'])->toBe('marko-lsp')
                 ->and($manifest['description'])->toBe('Marko LSP bundle (PHP intelephense) for Claude Code.');
-        }
+        },
     );
 
     it('plugin.json includes author with name "Marko Framework"', function (): void {
@@ -39,11 +39,11 @@ describe('marko-lsp plugin', function (): void {
         '.lsp.json top-level structure is an object keyed by server name (not wrapped in lspServers per Task 001 F1 verbatim)',
         function (): void {
             $lsp = json_decode(file_get_contents($this->lspJsonPath), true);
-    
+
             expect(file_exists($this->lspJsonPath))->toBeTrue()
                 ->and(array_key_exists('marko-lsp', $lsp))->toBeTrue()
                 ->and(array_key_exists('lspServers', $lsp))->toBeFalse();
-        }
+        },
     );
 
     it('.lsp.json marko-lsp.command is "${CLAUDE_PLUGIN_ROOT}/bin/marko-lsp"', function (): void {
@@ -64,13 +64,13 @@ describe('marko-lsp plugin', function (): void {
         function (): void {
             $lsp = json_decode(file_get_contents($this->lspJsonPath), true);
             $ext = $lsp['marko-lsp']['extensionToLanguage'];
-    
+
             expect($ext)->toBeArray()
                 ->and($ext)->toHaveCount(1)
                 ->and(array_key_exists('.php', $ext))->toBeTrue()
                 ->and($ext['.php'])->toBe('php')
                 ->and(array_key_exists('.latte', $ext))->toBeFalse();
-        }
+        },
     );
 
     it('.lsp.json each extensionToLanguage key starts with a leading dot', function (): void {
@@ -115,12 +115,12 @@ describe('marko-lsp plugin', function (): void {
         'README.md explains marko-lsp coexists with php-lsp (intelephense), what marko-lsp adds beyond it, the recommendation to uninstall php-lsp@claude-plugins-official to avoid duplication, and how to verify with claude plugin list',
         function (): void {
             $contents = file_exists($this->readmePath) ? file_get_contents($this->readmePath) : '';
-    
+
             expect(file_exists($this->readmePath))->toBeTrue()
                 ->and(str_contains($contents, 'intelephense'))->toBeTrue()
                 ->and(str_contains($contents, 'php-lsp@claude-plugins-official'))->toBeTrue()
                 ->and(str_contains($contents, 'uninstall'))->toBeTrue()
                 ->and(str_contains($contents, 'claude plugin list'))->toBeTrue();
-        }
+        },
     );
 });

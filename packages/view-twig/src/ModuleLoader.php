@@ -60,8 +60,7 @@ class ModuleLoader implements LoaderInterface
     public function isFresh(
         string $name,
         int $time,
-    ): bool
-    {
+    ): bool {
         $path = $this->resolvePath($name);
 
         return filemtime($path) <= $time;

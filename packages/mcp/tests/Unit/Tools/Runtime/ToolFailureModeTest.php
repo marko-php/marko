@@ -18,14 +18,13 @@ it('handles each tool\'s failure mode with a loud error content block', function
         public function dispatch(
             string $command,
             array $args = [],
-        ): array
-        {
+        ): array {
             throw new RuntimeException('Command not found: nonexistent');
         }
     };
 
     $consoleResult = RunConsoleCommandTool::definition($throwingDispatcher)->handler->handle(
-        ['command' => 'nonexistent']
+        ['command' => 'nonexistent'],
     );
     expect($consoleResult['content'][0]['text'])->toContain('ERROR')
         ->and($consoleResult['isError'] ?? false)->toBeTrue();
@@ -38,8 +37,7 @@ it('handles each tool\'s failure mode with a loud error content block', function
         public function query(
             string $sql,
             array $params = [],
-        ): array
-        {
+        ): array {
             return [];
         }
     })->handler->handle(['sql' => 'DROP TABLE users']);

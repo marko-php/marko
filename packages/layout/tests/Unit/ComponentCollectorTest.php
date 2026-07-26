@@ -28,7 +28,7 @@ class OtherPageComponent {}
 #[Component(
     template: 'multi/component.phtml',
     slot: 'content',
-    handle: ['catalog_product_show', 'catalog_category_view']
+    handle: ['catalog_product_show', 'catalog_category_view'],
 )]
 class MultiHandleComponent {}
 

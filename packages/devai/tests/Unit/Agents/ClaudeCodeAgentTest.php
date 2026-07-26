@@ -182,12 +182,15 @@ describe('guidelines', function (): void {
         },
     );
 
-    it('writes CLAUDE.md instructing the agent to trust its own writes rather than using introspection tools to confirm scaffolding', function (): void {
-        $this->agent->install(devaiContext('body'), $this->root);
+    it(
+        'writes CLAUDE.md instructing the agent to trust its own writes rather than using introspection tools to confirm scaffolding',
+        function (): void {
+            $this->agent->install(devaiContext('body'), $this->root);
 
-        $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
-        expect($claudeMd)->toContain('introspection tools are for discovering pre-existing code');
-    });
+            $claudeMd = (string) file_get_contents($this->root . '/CLAUDE.md');
+            expect($claudeMd)->toContain('introspection tools are for discovering pre-existing code');
+        },
+    );
 });
 
 // ---------------------------------------------------------------------------

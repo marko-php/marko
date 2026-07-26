@@ -413,8 +413,7 @@ readonly class RelationshipLoader
     private function collectPropertyValues(
         array $entities,
         string $propertyName,
-    ): array
-    {
+    ): array {
         return array_map(fn (Entity $entity) => $this->getPropertyValue($entity, $propertyName), $entities);
     }
 
@@ -424,8 +423,7 @@ readonly class RelationshipLoader
     private function getPropertyValue(
         Entity $entity,
         string $propertyName,
-    ): mixed
-    {
+    ): mixed {
         $reflection = new ReflectionClass($entity);
         $property = $reflection->getProperty($propertyName);
 
@@ -443,8 +441,7 @@ readonly class RelationshipLoader
         Entity $entity,
         string $propertyName,
         mixed $value,
-    ): void
-    {
+    ): void {
         $reflection = new ReflectionClass($entity);
         $property = $reflection->getProperty($propertyName);
 
@@ -468,8 +465,7 @@ readonly class RelationshipLoader
         array $entities,
         string $propertyName,
         mixed $value,
-    ): void
-    {
+    ): void {
         foreach ($entities as $entity) {
             $this->setProperty($entity, $propertyName, $value);
         }

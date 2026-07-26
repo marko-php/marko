@@ -17,8 +17,8 @@ it(
     'page-cache NoDriverException exposes a noDriverInstalled() factory (renamed from noBinding for consistency)',
     function (): void {
         $exception = NoDriverException::noDriverInstalled();
-    
+
         expect($exception)->toBeInstanceOf(NoDriverException::class)
             ->and($exception)->toBeInstanceOf(PageCacheException::class);
-    }
+    },
 );

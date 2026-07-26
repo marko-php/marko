@@ -11,8 +11,7 @@ class PubSubException extends MarkoException
     public static function connectionFailed(
         string $driver,
         string $reason,
-    ): self
-    {
+    ): self {
         return new self(
             message: "Failed to connect to pub/sub driver '$driver'.",
             context: "Connection attempt to driver '$driver' failed: $reason",
@@ -23,8 +22,7 @@ class PubSubException extends MarkoException
     public static function subscriptionFailed(
         string $channel,
         string $reason,
-    ): self
-    {
+    ): self {
         return new self(
             message: "Failed to subscribe to channel '$channel'.",
             context: "Subscription to channel '$channel' failed: $reason",
@@ -35,8 +33,7 @@ class PubSubException extends MarkoException
     public static function publishFailed(
         string $channel,
         string $reason,
-    ): self
-    {
+    ): self {
         return new self(
             message: "Failed to publish to channel '$channel'.",
             context: "Publish to channel '$channel' failed: $reason",

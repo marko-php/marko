@@ -53,8 +53,7 @@ class PIT_GreeterAfterPlugin
     public function greet(
         mixed $result,
         string $name,
-    ): mixed
-    {
+    ): mixed {
         self::$callLog[] = 'PIT_GreeterAfterPlugin::greet';
 
         return strtoupper((string) $result);
@@ -136,8 +135,7 @@ class PIT_ArgsService
     public function process(
         string $name,
         int $count,
-    ): string
-    {
+    ): string {
         self::$callLog[] = "PIT_ArgsService::process($name, $count)";
 
         return "processed: $name, $count";
@@ -151,8 +149,7 @@ class PIT_ArgsBeforePlugin
     public function process(
         string $name,
         int $count,
-    ): ?string
-    {
+    ): ?string {
         self::$receivedArgs = ['name' => $name, 'count' => $count];
         PIT_ArgsService::$callLog[] = "PIT_ArgsBeforePlugin::process($name, $count)";
 
@@ -165,8 +162,7 @@ class PIT_ArgsModifyingBeforePlugin
     public function process(
         string $name,
         int $count,
-    ): ?array
-    {
+    ): ?array {
         return ['modified-name', $count + 10];
     }
 }
@@ -179,8 +175,7 @@ class PIT_ArgsAfterPlugin
         mixed $result,
         string $name,
         int $count,
-    ): mixed
-    {
+    ): mixed {
         self::$receivedArgs = ['result' => $result, 'name' => $name, 'count' => $count];
 
         return $result;
@@ -264,8 +259,7 @@ class PIT_RequiredParamService
     public function create(
         string $name,
         int $age,
-    ): string
-    {
+    ): string {
         return "$name is $age";
     }
 }
@@ -275,8 +269,7 @@ class PIT_WrongCountBeforePlugin
     public function create(
         string $name,
         int $age,
-    ): ?array
-    {
+    ): ?array {
         return ['only-one'];
     }
 }
@@ -290,8 +283,7 @@ class PIT_ChainArgService
     public function transform(
         string $text,
         int $mult,
-    ): string
-    {
+    ): string {
         return "result: $text x$mult";
     }
 }
@@ -301,8 +293,7 @@ class PIT_ChainArgFirstPlugin
     public function transform(
         string $text,
         int $mult,
-    ): ?array
-    {
+    ): ?array {
         return ["$text-first", $mult + 1];
     }
 }
@@ -312,8 +303,7 @@ class PIT_ChainArgSecondPlugin
     public function transform(
         string $text,
         int $mult,
-    ): ?array
-    {
+    ): ?array {
         return ["$text-second", $mult + 1];
     }
 }
@@ -349,8 +339,7 @@ class PIT_CompleteFlowAfterPlugin
     public function process(
         mixed $result,
         string $input,
-    ): string
-    {
+    ): string {
         PIT_CompleteFlowService::$callLog[] = "PIT_CompleteFlowAfterPlugin::process($result, $input)";
 
         return "$result [modified]";
@@ -587,7 +576,7 @@ it('creates interceptor that passes instanceof check for target interface', func
     $proxy = $interceptor->createProxy(
         PIT_GreeterInterface::class,
         PIT_ConcreteGreeter::class,
-        new PIT_ConcreteGreeter()
+        new PIT_ConcreteGreeter(),
     );
 
     expect($proxy)->toBeInstanceOf(PIT_GreeterInterface::class);
@@ -653,7 +642,7 @@ it('short-circuits when before plugin returns non-null non-array value', functio
     $proxy = $interceptor->createProxy(
         PIT_ShortCircuitService::class,
         PIT_ShortCircuitService::class,
-        new PIT_ShortCircuitService()
+        new PIT_ShortCircuitService(),
     );
 
     $result = $proxy->fetch('mykey');
@@ -676,7 +665,7 @@ it('passes through to target method when before plugin returns null', function (
     $proxy = $interceptor->createProxy(
         PIT_ShortCircuitService::class,
         PIT_ShortCircuitService::class,
-        new PIT_ShortCircuitService()
+        new PIT_ShortCircuitService(),
     );
 
     $result = $proxy->fetch('mykey');
@@ -717,7 +706,7 @@ it('throws PluginArgumentCountException when before plugin returns array with wr
     $proxy = $interceptor->createProxy(
         PIT_RequiredParamService::class,
         PIT_RequiredParamService::class,
-        new PIT_RequiredParamService()
+        new PIT_RequiredParamService(),
     );
 
     expect(fn () => $proxy->create('Alice', 30))->toThrow(PluginArgumentCountException::class);
@@ -743,7 +732,7 @@ it('chains argument modifications through multiple before plugins', function ():
     $proxy = $interceptor->createProxy(
         PIT_ChainArgService::class,
         PIT_ChainArgService::class,
-        new PIT_ChainArgService()
+        new PIT_ChainArgService(),
     );
 
     $result = $proxy->transform('hello', 1);
@@ -793,7 +782,7 @@ it('passes result and arguments to after plugins', function (): void {
     $proxy->process('test', 42);
 
     expect(PIT_ArgsAfterPlugin::$receivedArgs)->toBe(
-        ['result' => 'processed: test, 42', 'name' => 'test', 'count' => 42]
+        ['result' => 'processed: test, 42', 'name' => 'test', 'count' => 42],
     );
 });
 
@@ -817,7 +806,7 @@ it('chains modified results through multiple after plugins', function (): void {
     $proxy = $interceptor->createProxy(
         PIT_ResultModService::class,
         PIT_ResultModService::class,
-        new PIT_ResultModService()
+        new PIT_ResultModService(),
     );
 
     $result = $proxy->getValue();
@@ -875,7 +864,7 @@ it('executes complete before-target-after flow', function (): void {
     $proxy = $interceptor->createProxy(
         PIT_CompleteFlowService::class,
         PIT_CompleteFlowService::class,
-        new PIT_CompleteFlowService()
+        new PIT_CompleteFlowService(),
     );
 
     $result = $proxy->process('test');
@@ -946,7 +935,7 @@ it('calls plugin method by name returned from registry', function (): void {
     $proxy = $interceptor->createProxy(
         PIT_MethodNameService::class,
         PIT_MethodNameService::class,
-        new PIT_MethodNameService()
+        new PIT_MethodNameService(),
     );
 
     $result = $proxy->save('hello');
@@ -970,7 +959,7 @@ it('executes plugins using explicit method param with different method names', f
     $proxy = $interceptor->createProxy(
         PIT_MethodNameService::class,
         PIT_MethodNameService::class,
-        new PIT_MethodNameService()
+        new PIT_MethodNameService(),
     );
 
     $result = $proxy->save('test data');
@@ -984,26 +973,26 @@ it(
     function (): void {
         $container = new Container();
         $registry = new PluginRegistry();
-    
+
         $registry->register(new PluginDefinition(
             pluginClass: PIT_HasherPlugin::class,
             targetClass: PIT_HasherInterface::class,
             beforeMethods: ['hash' => ['pluginMethod' => 'hash', 'sortOrder' => 10]],
         ));
-    
+
         $interceptor = makePluginInterceptor($container, $registry);
         $proxy = $interceptor->createProxy(
             PIT_HasherInterface::class,
             PIT_BcryptHasher::class,
-            new PIT_BcryptHasher()
+            new PIT_BcryptHasher(),
         );
-    
+
         $result = $proxy->hash('secret');
-    
+
         expect(PIT_HasherPlugin::$callLog)->toBe(['PIT_HasherPlugin::hash(secret)'])
             ->and(PIT_BcryptHasher::$callLog)->toBe(['PIT_BcryptHasher::hash(secret)'])
             ->and($result)->toBe('bcrypt:secret');
-    }
+    },
 );
 
 it('exposes original target via getPluginTarget', function (): void {
@@ -1040,8 +1029,8 @@ it('throws PluginException for readonly concrete class with direct plugins', fun
         fn () => $interceptor->createProxy(
             PIT_ReadonlyService::class,
             PIT_ReadonlyService::class,
-            new PIT_ReadonlyService()
-        )
+            new PIT_ReadonlyService(),
+        ),
     )
         ->toThrow(PluginException::class);
 });

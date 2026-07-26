@@ -27,7 +27,7 @@ test(
     'skeleton suggest block contains all errors drivers',
     function () use ($knownDriversPath, $skeletonComposerPath): void {
         KnownDriversValidator::assertSkeletonSuggestContainsAll($knownDriversPath, $skeletonComposerPath);
-    }
+    },
 );
 
 test('every errors driver follows marko slash prefix pattern', function () use ($knownDriversPath): void {

@@ -79,7 +79,7 @@ it(
     'defines the IndexCacheInterface contract (the one swappable seam — cache backend)',
     function (): void {
         expect(interface_exists(IndexCacheInterface::class))->toBeTrue();
-    }
+    },
 );
 
 it(
@@ -96,58 +96,58 @@ it(
             TemplateEntry::class,
             TranslationEntry::class,
         ];
-    
+
         foreach ($valueObjects as $class) {
             $reflection = new ReflectionClass($class);
             expect($reflection->isReadOnly())->toBeTrue("Expected $class to be readonly");
         }
-    
+
         $moduleInfo = new ModuleInfo('test', '/path', 'Ns');
         expect($moduleInfo->name)->toBe('test')
             ->and($moduleInfo->path)->toBe('/path')
             ->and($moduleInfo->namespace)->toBe('Ns');
-    
+
         $observerEntry = new ObserverEntry('Cls', 'evt', 'mth', 10);
         expect($observerEntry->class)->toBe('Cls')
             ->and($observerEntry->event)->toBe('evt')
             ->and($observerEntry->method)->toBe('mth')
             ->and($observerEntry->sortOrder)->toBe(10);
-    
+
         $pluginEntry = new PluginEntry('Cls', 'tgt', 'mth', 'before', 5);
         expect($pluginEntry->class)->toBe('Cls')
             ->and($pluginEntry->target)->toBe('tgt')
             ->and($pluginEntry->method)->toBe('mth')
             ->and($pluginEntry->type)->toBe('before')
             ->and($pluginEntry->sortOrder)->toBe(5);
-    
+
         $preferenceEntry = new PreferenceEntry('Iface', 'Impl', 'mod');
         expect($preferenceEntry->interface)->toBe('Iface')
             ->and($preferenceEntry->implementation)->toBe('Impl')
             ->and($preferenceEntry->module)->toBe('mod');
-    
+
         $commandEntry = new CommandEntry('cmd:name', 'CmdCls', 'desc');
         expect($commandEntry->name)->toBe('cmd:name')
             ->and($commandEntry->class)->toBe('CmdCls')
             ->and($commandEntry->description)->toBe('desc');
-    
+
         $routeEntry = new RouteEntry('GET', '/path', 'Ctrl', 'index');
         expect($routeEntry->method)->toBe('GET')
             ->and($routeEntry->path)->toBe('/path')
             ->and($routeEntry->class)->toBe('Ctrl')
             ->and($routeEntry->action)->toBe('index');
-    
+
         $configKeyEntry = new ConfigKeyEntry('app.name', 'string', 'Marko', 'core');
         expect($configKeyEntry->key)->toBe('app.name')
             ->and($configKeyEntry->type)->toBe('string')
             ->and($configKeyEntry->defaultValue)->toBe('Marko')
             ->and($configKeyEntry->module)->toBe('core');
-    
+
         $templateEntry = new TemplateEntry('mod', 'tmpl-1', '/tmpl.latte', 'latte');
         expect($templateEntry->moduleName)->toBe('mod')
             ->and($templateEntry->templateName)->toBe('tmpl-1')
             ->and($templateEntry->absolutePath)->toBe('/tmpl.latte')
             ->and($templateEntry->extension)->toBe('latte');
-    
+
         $translationEntry = new TranslationEntry(
             key: 'messages.hello',
             group: 'messages',
@@ -162,5 +162,5 @@ it(
             ->and($translationEntry->locale)->toBe('en')
             ->and($translationEntry->namespace)->toBe('mod')
             ->and($translationEntry->module)->toBe('mod');
-    }
+    },
 );

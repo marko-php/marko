@@ -85,38 +85,38 @@ it(
     'adds a require section entry for all 73 marko packages set to self.version',
     function () use ($rootComposer, $allPackages): void {
         expect($rootComposer)->toHaveKey('require');
-    
+
         foreach ($allPackages as $package) {
             expect($rootComposer['require'])->toHaveKey($package)
                 ->and($rootComposer['require'][$package])->toBe('self.version');
         }
-    }
+    },
 );
 
 it(
     'does not have a replace section (path repos install as symlinks without it)',
     function () use ($rootComposer): void {
         expect($rootComposer)->not->toHaveKey('replace');
-    }
+    },
 );
 
 it(
     'adds repositories section with path repos for all 73 packages',
     function () use ($rootComposer, $allPackages): void {
         expect($rootComposer)->toHaveKey('repositories');
-    
+
         $repoUrls = array_column($rootComposer['repositories'], 'url');
-    
+
         foreach ($allPackages as $package) {
             $packageName = str_replace('marko/', '', $package);
             expect(in_array("packages/$packageName", $repoUrls, true))->toBeTrue();
         }
-    
+
         foreach ($rootComposer['repositories'] as $repo) {
             expect($repo)->toHaveKey('type')
                 ->and($repo['type'])->toBe('path');
         }
-    }
+    },
 );
 
 it('removes all manual PSR-4 autoload entries for marko packages', function () use ($rootComposer): void {
@@ -135,18 +135,18 @@ it(
     'keeps autoload-dev entries for test namespaces (Composer does not merge autoload-dev from dependencies)',
     function () use ($rootComposer, $allPackages): void {
         // autoload-dev must remain in root: Composer only applies a package's autoload-dev
-    // when it is the root package, so test namespaces for all monorepo packages must
-    // be declared here to be discoverable when running the test suite.
-    expect($rootComposer)->toHaveKey('autoload-dev')
-            ->and($rootComposer['autoload-dev'])->toHaveKey('psr-4');
-    
+        // when it is the root package, so test namespaces for all monorepo packages must
+        // be declared here to be discoverable when running the test suite.
+        expect($rootComposer)->toHaveKey('autoload-dev')
+                ->and($rootComposer['autoload-dev'])->toHaveKey('psr-4');
+
         $devPsr4 = $rootComposer['autoload-dev']['psr-4'];
         $hasAtLeastOneTestNamespace = array_any(
             array_keys($devPsr4),
             fn (string $ns): bool => str_ends_with($ns, 'Tests\\'),
         );
         expect($hasAtLeastOneTestNamespace)->toBeTrue();
-    }
+    },
 );
 
 it('removes the autoload files entry for packages/env/src/functions.php', function () use ($rootComposer): void {
@@ -164,7 +164,7 @@ it(
             ->and($rootComposer['require'])->toHaveKey('ext-fileinfo')
             ->and($rootComposer['require'])->toHaveKey('ext-gd')
             ->and($rootComposer['require'])->toHaveKey('ext-imagick');
-    
+
         $expectedDevPackages = [
             'amphp/postgres',
             'amphp/redis',
@@ -178,11 +178,11 @@ it(
             'slevomat/coding-standard',
             'squizlabs/php_codesniffer',
         ];
-    
+
         foreach ($expectedDevPackages as $package) {
             expect($rootComposer['require-dev'])->toHaveKey($package);
         }
-    }
+    },
 );
 
 it('preserves scripts, config, and other root-level settings', function () use ($rootComposer): void {
@@ -202,7 +202,7 @@ it(
     function () use ($rootComposer): void {
         expect($rootComposer)->toHaveKey('minimum-stability')
             ->and($rootComposer['minimum-stability'])->toBe('stable');
-    }
+    },
 );
 
 it('keeps prefer-stable as true', function () use ($rootComposer): void {

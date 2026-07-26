@@ -13,12 +13,12 @@ describe('create-module skill', function (): void {
         'SKILL.md frontmatter has name "create-module" and a non-empty description with concrete trigger examples',
         function (): void {
             $content = file_exists($this->skillMd) ? file_get_contents($this->skillMd) : '';
-    
+
             // Parse YAML frontmatter between the two --- delimiters
-        preg_match('/^---\n(.*?)\n---/s', $content, $matches);
-    
+            preg_match('/^---\n(.*?)\n---/s', $content, $matches);
+
             $frontmatter = $matches[1] ?? '';
-    
+
             expect(file_exists($this->skillMd))->toBeTrue()
                 ->and($matches)->not->toBeEmpty()
                 ->and($frontmatter)->toContain('name: create-module')
@@ -26,7 +26,7 @@ describe('create-module skill', function (): void {
             ->and($frontmatter)->toContain('description:')
                 // Must contain concrete trigger examples (in the body — YAML block scalar or inline)
             ->and($content)->toContain('create a module named');
-        }
+        },
     );
 
     it('SKILL.md is under 500 lines', function (): void {
@@ -53,9 +53,9 @@ describe('create-module skill', function (): void {
         'SKILL.md instructs the agent to copy templates from assets/ rather than inlining file content',
         function (): void {
             $content = file_get_contents($this->skillMd);
-    
+
             expect($content)->toContain('assets/');
-        }
+        },
     );
 
     it(
@@ -63,15 +63,15 @@ describe('create-module skill', function (): void {
         function (): void {
             $tmplPath = $this->assetsDir . '/composer.json.tmpl';
             $content = file_exists($tmplPath) ? file_get_contents($tmplPath) : '';
-    
+
             // Substitute placeholders with literal strings and validate JSON
-        $substituted = str_replace(
+            $substituted = str_replace(
                 ['{{vendor}}', '{{name}}', '{{Vendor}}', '{{Name}}'],
                 ['acme', 'payment', 'Acme', 'Payment'],
                 $content,
             );
             $decoded = json_decode($substituted, true);
-    
+
             expect(file_exists($tmplPath))->toBeTrue()
                 ->and($content)->toContain('{{vendor}}')
                 ->and($content)->toContain('{{name}}')
@@ -82,7 +82,7 @@ describe('create-module skill', function (): void {
                 ->and($decoded)->toHaveKey('autoload')
                 ->and($decoded)->toHaveKey('extra')
                 ->and($decoded['extra']['marko']['module'])->toBeTrue();
-        }
+        },
     );
 
     it('composer.json.monorepo.tmpl uses self.version constraints for marko/* requirements', function (): void {
@@ -142,8 +142,8 @@ describe('create-module skill', function (): void {
         'the original SKILL.md at packages/devai/resources/ai/skills/marko-create-module/ is deleted',
         function (): void {
             $originalPath = dirname(__DIR__, 4) . '/devai/resources/ai/skills/marko-create-module/SKILL.md';
-    
+
             expect(file_exists($originalPath))->toBeFalse();
-        }
+        },
     );
 });

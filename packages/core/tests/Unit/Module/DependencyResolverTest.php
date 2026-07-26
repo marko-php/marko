@@ -345,54 +345,60 @@ it('states the dependency is present but disabled rather than not installed', fu
         ->not->toContain('not installed');
 });
 
-it('throws a missing dependency error (not an empty-chain circular error) for a before-after soft-ordering deadlock', function (): void {
-    // Module A declares both after: [B] and before: [B] — an unsatisfiable ordering deadlock
-    $moduleA = new ModuleManifest(
-        name: 'vendor/module-a',
-        version: '1.0.0',
-        after: ['vendor/module-b'],
-        before: ['vendor/module-b'],
-    );
-    $moduleB = new ModuleManifest(
-        name: 'vendor/module-b',
-        version: '1.0.0',
-    );
+it(
+    'throws a missing dependency error (not an empty-chain circular error) for a before-after soft-ordering deadlock',
+    function (): void {
+        // Module A declares both after: [B] and before: [B] — an unsatisfiable ordering deadlock
+        $moduleA = new ModuleManifest(
+            name: 'vendor/module-a',
+            version: '1.0.0',
+            after: ['vendor/module-b'],
+            before: ['vendor/module-b'],
+        );
+        $moduleB = new ModuleManifest(
+            name: 'vendor/module-b',
+            version: '1.0.0',
+        );
 
-    $resolver = new DependencyResolver();
+        $resolver = new DependencyResolver();
 
-    expect(fn () => $resolver->resolve([$moduleA, $moduleB]))
-        ->toThrow(MissingDependencyException::class);
-});
+        expect(fn () => $resolver->resolve([$moduleA, $moduleB]))
+            ->toThrow(MissingDependencyException::class);
+    },
+);
 
-it('names the unsorted modules and their unmet ordering constraints in the missing-dependency message', function (): void {
-    // Module A declares both after: [B] and before: [B] — unsatisfiable
-    $moduleA = new ModuleManifest(
-        name: 'vendor/module-a',
-        version: '1.0.0',
-        after: ['vendor/module-b'],
-        before: ['vendor/module-b'],
-    );
-    $moduleB = new ModuleManifest(
-        name: 'vendor/module-b',
-        version: '1.0.0',
-    );
+it(
+    'names the unsorted modules and their unmet ordering constraints in the missing-dependency message',
+    function (): void {
+        // Module A declares both after: [B] and before: [B] — unsatisfiable
+        $moduleA = new ModuleManifest(
+            name: 'vendor/module-a',
+            version: '1.0.0',
+            after: ['vendor/module-b'],
+            before: ['vendor/module-b'],
+        );
+        $moduleB = new ModuleManifest(
+            name: 'vendor/module-b',
+            version: '1.0.0',
+        );
 
-    $resolver = new DependencyResolver();
+        $resolver = new DependencyResolver();
 
-    $exception = null;
+        $exception = null;
 
-    try {
-        $resolver->resolve([$moduleA, $moduleB]);
-    } catch (MissingDependencyException $e) {
-        $exception = $e;
-    }
+        try {
+            $resolver->resolve([$moduleA, $moduleB]);
+        } catch (MissingDependencyException $e) {
+            $exception = $e;
+        }
 
-    expect($exception)->not->toBeNull()
-        ->and($exception->getMessage())
-        ->toContain('vendor/module-a')
-        ->toContain('after:vendor/module-b')
-        ->toContain('before:vendor/module-b');
-});
+        expect($exception)->not->toBeNull()
+            ->and($exception->getMessage())
+            ->toContain('vendor/module-a')
+            ->toContain('after:vendor/module-b')
+            ->toContain('before:vendor/module-b');
+    },
+);
 
 it('throws a circular dependency error with a populated chain for a real two-module require cycle', function (): void {
     // A requires B, B requires A — a real cycle via require
@@ -479,19 +485,22 @@ it('resolves successfully and throws nothing when every dependency is satisfied'
     expect($names)->toBe(['vendor/module-a', 'vendor/module-b']);
 });
 
-it('still resolves successfully when an enabled module requires a non-marko composer package (absent from the module list)', function (): void {
-    $moduleA = new ModuleManifest(
-        name: 'vendor/module-a',
-        version: '1.0.0',
-        require: ['psr/container' => '^2.0', 'symfony/http-foundation' => '^6.0'],
-    );
+it(
+    'still resolves successfully when an enabled module requires a non-marko composer package (absent from the module list)',
+    function (): void {
+        $moduleA = new ModuleManifest(
+            name: 'vendor/module-a',
+            version: '1.0.0',
+            require: ['psr/container' => '^2.0', 'symfony/http-foundation' => '^6.0'],
+        );
 
-    $resolver = new DependencyResolver();
-    $sorted = $resolver->resolve([$moduleA]);
+        $resolver = new DependencyResolver();
+        $sorted = $resolver->resolve([$moduleA]);
 
-    expect($sorted)->toHaveCount(1)
-        ->and($sorted[0]->name)->toBe('vendor/module-a');
-});
+        expect($sorted)->toHaveCount(1)
+            ->and($sorted[0]->name)->toBe('vendor/module-a');
+    },
+);
 
 it('throws a missing dependency error naming a module that requires a disabled dependency', function (): void {
     $moduleA = new ModuleManifest(

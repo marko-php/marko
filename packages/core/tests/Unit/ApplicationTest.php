@@ -1696,7 +1696,7 @@ it('throws RuntimeException with helpful message when routing package is not ins
     expect(fn () => $app->handleRequest())
         ->toThrow(
             RuntimeException::class,
-            'Cannot handle HTTP requests: marko/routing is not installed. Run: composer require marko/routing'
+            'Cannot handle HTTP requests: marko/routing is not installed. Run: composer require marko/routing',
         );
 });
 

@@ -31,8 +31,7 @@ function makeIntelephenseRunner(
         public function run(
             string $command,
             array $args = [],
-        ): array
-        {
+        ): array {
             $this->calls[] = [$command, $args];
 
             if ($command === 'npm') {

@@ -19,8 +19,7 @@ class ConnectionStubPostgresConnection implements PostgresConnection
     public function notify(
         string $channel,
         string $payload = '',
-    ): PostgresResult
-    {
+    ): PostgresResult {
         throw new RuntimeException('Not implemented in stub');
     }
 
@@ -47,8 +46,7 @@ class ConnectionStubPostgresConnection implements PostgresConnection
     public function execute(
         string $sql,
         array $params = [],
-    ): PostgresResult
-    {
+    ): PostgresResult {
         throw new RuntimeException('Not implemented in stub');
     }
 

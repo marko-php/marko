@@ -30,8 +30,7 @@ class StubRedisLink implements RedisLink
     public function execute(
         string $command,
         array $parameters,
-    ): RedisResponse
-    {
+    ): RedisResponse {
         $this->calls[] = ['command' => $command, 'parameters' => $parameters];
 
         return new StubRedisResponse();

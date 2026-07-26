@@ -161,7 +161,7 @@ describe('Filtering & Transformation', function (): void {
         $collection = new EntityCollection([makeEntity(1, 'Alice'), makeEntity(2, 'Bob')]);
 
         expect(
-            $collection->contains(fn (Entity $e): bool => $e->name === 'Charlie')
+            $collection->contains(fn (Entity $e): bool => $e->name === 'Charlie'),
         )->toBeFalse(); // @phpstan-ignore-line
     });
 });

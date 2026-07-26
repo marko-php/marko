@@ -21,8 +21,7 @@ readonly class ComponentDataResolver
         object $component,
         array $routeParams,
         Request $request,
-    ): array
-    {
+    ): array {
         if (!method_exists($component, 'data')) {
             return [];
         }
@@ -54,8 +53,7 @@ readonly class ComponentDataResolver
     private function castToType(
         mixed $value,
         ?ReflectionType $type,
-    ): mixed
-    {
+    ): mixed {
         if (!$type instanceof ReflectionNamedType) {
             return $value;
         }

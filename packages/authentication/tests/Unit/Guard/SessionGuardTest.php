@@ -319,24 +319,21 @@ test('it authenticates via remember token cookie', function (): void {
         public function validateCredentials(
             AuthenticatableInterface $user,
             array $credentials,
-        ): bool
-        {
+        ): bool {
             return false;
         }
 
         public function retrieveByRememberToken(
             int|string $identifier,
             string $token,
-        ): ?AuthenticatableInterface
-        {
+        ): ?AuthenticatableInterface {
             return $this->userByRememberToken;
         }
 
         public function updateRememberToken(
             AuthenticatableInterface $user,
             ?string $token,
-        ): void
-        {
+        ): void {
             $user->setRememberToken($token);
         }
     };
@@ -428,24 +425,21 @@ test('it regenerates remember token on each use', function (): void {
         public function validateCredentials(
             AuthenticatableInterface $user,
             array $credentials,
-        ): bool
-        {
+        ): bool {
             return false;
         }
 
         public function retrieveByRememberToken(
             int|string $identifier,
             string $token,
-        ): ?AuthenticatableInterface
-        {
+        ): ?AuthenticatableInterface {
             return $this->userByRememberToken;
         }
 
         public function updateRememberToken(
             AuthenticatableInterface $user,
             ?string $token,
-        ): void
-        {
+        ): void {
             $user->setRememberToken($token);
         }
     };

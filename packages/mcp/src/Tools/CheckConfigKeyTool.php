@@ -67,8 +67,7 @@ readonly class CheckConfigKeyTool implements ToolHandlerInterface
         string $needle,
         array $candidates,
         int $max,
-    ): array
-    {
+    ): array {
         $scored = array_map(fn ($c) => ['key' => $c, 'distance' => levenshtein($needle, $c)], $candidates);
         usort($scored, fn ($a, $b) => $a['distance'] <=> $b['distance']);
 

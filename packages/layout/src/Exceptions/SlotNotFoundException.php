@@ -9,8 +9,7 @@ class SlotNotFoundException extends LayoutException
     public static function forSlot(
         string $slot,
         string $layout,
-    ): self
-    {
+    ): self {
         return new self(
             message: "Slot '$slot' not found in layout '$layout'.",
             context: "Attempted to fill slot '$slot' in layout '$layout' but the slot is not defined.",

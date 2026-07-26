@@ -23,17 +23,17 @@ test(
     'it lists marko/queue-sync first as the recommended development default',
     function () use ($knownDriversPath): void {
         $drivers = require $knownDriversPath;
-    
+
         expect(array_key_first($drivers))->toBe('marko/queue-sync');
-    }
+    },
 );
 
 test(
     'skeleton suggest block contains all queue drivers',
-    fn () => KnownDriversValidator::assertSkeletonSuggestContainsAll($knownDriversPath, $skeletonComposerPath)
+    fn () => KnownDriversValidator::assertSkeletonSuggestContainsAll($knownDriversPath, $skeletonComposerPath),
 );
 
 test(
     'every queue driver follows marko slash prefix pattern',
-    fn () => KnownDriversValidator::assertDocsUrlsResolveToValidPattern($knownDriversPath)
+    fn () => KnownDriversValidator::assertDocsUrlsResolveToValidPattern($knownDriversPath),
 );

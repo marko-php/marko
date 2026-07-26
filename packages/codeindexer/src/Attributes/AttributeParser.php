@@ -342,8 +342,7 @@ class AttributeParser
     private function walkNodes(
         array $nodes,
         callable $callback,
-    ): void
-    {
+    ): void {
         foreach ($nodes as $node) {
             if (!$node instanceof Node) {
                 continue;
@@ -372,8 +371,7 @@ class AttributeParser
     private function classIsInNamespace(
         Class_ $class,
         ModuleInfo $module,
-    ): bool
-    {
+    ): bool {
         $className = $this->resolveClassName($class);
         $ns = rtrim($module->namespace, '\\') . '\\';
 
@@ -409,8 +407,7 @@ class AttributeParser
     private function attrNameMatches(
         Attribute $attr,
         string $fqn,
-    ): bool
-    {
+    ): bool {
         $name = $attr->name;
         if ($name instanceof Node\Name\FullyQualified || $name instanceof Node\Name) {
             return ltrim($name->toString(), '\\') === ltrim($fqn, '\\');
@@ -426,8 +423,7 @@ class AttributeParser
         array $args,
         string $namedKey,
         int $positionalIndex,
-    ): ?string
-    {
+    ): ?string {
         $value = $this->getArgValue($args, $namedKey, $positionalIndex);
         if ($value === null) {
             return null;
@@ -454,8 +450,7 @@ class AttributeParser
         array $args,
         string $namedKey,
         int $positionalIndex,
-    ): ?int
-    {
+    ): ?int {
         $value = $this->getArgValue($args, $namedKey, $positionalIndex);
         if ($value === null) {
             return null;
@@ -475,8 +470,7 @@ class AttributeParser
         array $args,
         string $namedKey,
         int $positionalIndex,
-    ): ?Node\Expr
-    {
+    ): ?Node\Expr {
         // Try named arg first
         foreach ($args as $arg) {
             if ($arg->name !== null && $arg->name->toString() === $namedKey) {

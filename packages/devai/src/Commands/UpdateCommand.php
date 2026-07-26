@@ -24,8 +24,7 @@ class UpdateCommand implements CommandInterface
     public function execute(
         Input $input,
         Output $output,
-    ): int
-    {
+    ): int {
         $projectRoot = (string) getcwd();
         $marker = $projectRoot . '/.marko/devai.json';
 

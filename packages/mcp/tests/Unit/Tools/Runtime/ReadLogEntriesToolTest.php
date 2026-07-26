@@ -26,24 +26,24 @@ it(
             '[2024-01-01 00:00:02] INFO: Request completed',
             '[2024-01-01 00:00:03] WARNING: High memory usage',
         ]);
-    
+
         $definition = ReadLogEntriesTool::definition($reader);
-    
+
         expect($definition->name)->toBe('read_log_entries');
-    
+
         // Default count
-    $result = $definition->handler->handle([]);
+        $result = $definition->handler->handle([]);
         $text = $result['content'][0]['text'];
-    
+
         expect($text)->toContain('ERROR: Something failed')
             ->and($text)->toContain('INFO: Request completed')
             ->and($text)->toContain('WARNING: High memory usage');
-    
+
         // Explicit count
-    $result2 = $definition->handler->handle(['count' => 1]);
+        $result2 = $definition->handler->handle(['count' => 1]);
         $text2 = $result2['content'][0]['text'];
-    
+
         expect($text2)->toContain('WARNING: High memory usage')
             ->and($text2)->not->toContain('ERROR: Something failed');
-    }
+    },
 );

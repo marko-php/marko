@@ -61,7 +61,7 @@ describe('NoDriverException', function (): void {
         $exception = NoDriverException::noDriverInstalled();
 
         expect($exception->getContext())->toBe(
-            'Attempted to resolve a mail interface but no implementation is bound.'
+            'Attempted to resolve a mail interface but no implementation is bound.',
         );
     });
 

@@ -32,8 +32,7 @@ function makeRecordingConnection(string &$lastSql, array &$lastBindings): MySqlC
         public function query(
             string $sql,
             array $bindings = [],
-        ): array
-        {
+        ): array {
             $this->lastSql = $sql;
             $this->lastBindings = $bindings;
 
@@ -43,8 +42,7 @@ function makeRecordingConnection(string &$lastSql, array &$lastBindings): MySqlC
         public function execute(
             string $sql,
             array $bindings = [],
-        ): int
-        {
+        ): int {
             return 0;
         }
 
@@ -169,7 +167,7 @@ describe('MySqlQueryBuilder GROUP BY / HAVING', function (): void {
             $sql = '';
             $bindings = [];
             $conn = makeRecordingConnection($sql, $bindings);
-    
+
             expect(
                 fn () => (new MySqlQueryBuilder($conn))
                 ->table('orders')
@@ -177,7 +175,7 @@ describe('MySqlQueryBuilder GROUP BY / HAVING', function (): void {
                 ->groupBy('status; DROP TABLE orders--')
                 ->get(),
             )->toThrow(InvalidColumnException::class);
-        }
+        },
     );
 
     it('rejects HAVING expressions containing semicolons or SQL comments', function (): void {
@@ -219,7 +217,7 @@ describe('MySqlQueryBuilder GROUP BY / HAVING', function (): void {
             $sql = '';
             $bindings = [];
             $conn = makeRecordingConnection($sql, $bindings);
-    
+
             (new MySqlQueryBuilder($conn))
                 ->table('orders')
                 ->select('status', 'country')
@@ -227,11 +225,11 @@ describe('MySqlQueryBuilder GROUP BY / HAVING', function (): void {
                 ->groupBy('status', 'country')
                 ->having('COUNT(*) BETWEEN ? AND ?', [3, 10])
                 ->get();
-    
+
             expect($sql)->toBe(
                 'SELECT `status`, `country` FROM `orders` WHERE `active` = ? GROUP BY `status`, `country` HAVING COUNT(*) BETWEEN ? AND ?',
             )
                 ->and($bindings)->toBe([1, 3, 10]);
-        }
+        },
     );
 });

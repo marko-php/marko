@@ -147,8 +147,7 @@ class McpServer
     private function validateArgs(
         array $args,
         array $schema,
-    ): void
-    {
+    ): void {
         $required = $schema['required'] ?? [];
         foreach ($required as $field) {
             if (!array_key_exists($field, $args)) {

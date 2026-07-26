@@ -50,7 +50,7 @@ readonly class ResolveTemplateTool implements ToolHandlerInterface
         return [
             'content' => [['type' => 'text', 'text' => "Template not found: $template\nAvailable in module '$module': " . implode(
                 ', ',
-                $names
+                $names,
             )]],
             'isError' => true,
         ];

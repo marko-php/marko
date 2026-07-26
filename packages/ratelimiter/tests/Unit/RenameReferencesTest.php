@@ -7,26 +7,26 @@ it(
     function (): void {
         $monorepoRoot = dirname(__DIR__, 4);
         $ratelimiterPackage = dirname(__DIR__, 2);
-    
+
         $composerFiles = glob($monorepoRoot . '/packages/*/composer.json') ?: [];
         $composerFiles[] = $monorepoRoot . '/composer.json';
-    
+
         $hits = [];
-    
+
         foreach ($composerFiles as $file) {
             // Skip files inside the ratelimiter package itself
-        if (str_starts_with(realpath($file), realpath($ratelimiterPackage))) {
+            if (str_starts_with(realpath($file), realpath($ratelimiterPackage))) {
                 continue;
             }
-    
+
             $contents = file_get_contents($file);
             if (str_contains($contents, 'marko/rate-limiting')) {
                 $hits[] = $file;
             }
         }
-    
+
         expect($hits)->toBe([], 'Found marko/rate-limiting references in: ' . implode(', ', $hits));
-    }
+    },
 );
 
 it('has zero grep hits for Marko\\RateLimiting namespace outside the ratelimiter package', function (): void {
@@ -91,7 +91,7 @@ it('runs composer dump-autoload without errors', function (): void {
 
     exec(
         '/opt/homebrew/Cellar/php/8.5.1_2/bin/php ' . escapeshellarg(
-            $composerBin
+            $composerBin,
         ) . ' dump-autoload --ignore-platform-reqs 2>&1',
         $output,
         $exitCode,

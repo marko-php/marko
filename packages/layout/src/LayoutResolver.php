@@ -26,8 +26,7 @@ readonly class LayoutResolver
     public function resolve(
         string $controllerClass,
         string $method,
-    ): array
-    {
+    ): array {
         $classReflection = new ReflectionClass($controllerClass);
         $methodReflection = new ReflectionMethod($controllerClass, $method);
 

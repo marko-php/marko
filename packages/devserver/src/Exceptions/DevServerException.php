@@ -11,8 +11,7 @@ class DevServerException extends MarkoException
     public static function processFailedToStart(
         string $name,
         string $command,
-    ): self
-    {
+    ): self {
         return new self(
             message: "Failed to start process '$name' with command: $command",
             context: 'While starting development services',

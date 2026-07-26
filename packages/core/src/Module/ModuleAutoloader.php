@@ -58,8 +58,10 @@ class ModuleAutoloader
         }
     }
 
-    private function registerPsr4(string $namespace, string $basePath): void
-    {
+    private function registerPsr4(
+        string $namespace,
+        string $basePath,
+    ): void {
         spl_autoload_register(function (string $class) use ($namespace, $basePath): void {
             if (!str_starts_with($class, $namespace)) {
                 return;

@@ -20,7 +20,7 @@ readonly class TemplateFeature
 
             if ($partial !== '' && !str_starts_with($fullName, $partial) && !str_starts_with(
                 $t->templateName,
-                $partial
+                $partial,
             )) {
                 continue;
             }
@@ -135,8 +135,7 @@ readonly class TemplateFeature
     public function suggestSimilar(
         string $template,
         int $max = 3,
-    ): array
-    {
+    ): array {
         $candidates = [];
 
         foreach ($this->index->getTemplates() as $t) {

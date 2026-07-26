@@ -72,8 +72,7 @@ function stubMatcher(?MatchedRoute $matched): RouteMatcherInterface
         public function match(
             string $method,
             string $path,
-        ): ?MatchedRoute
-        {
+        ): ?MatchedRoute {
             return $this->stub;
         }
     };

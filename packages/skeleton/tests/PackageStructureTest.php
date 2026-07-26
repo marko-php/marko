@@ -212,13 +212,16 @@ it('ships a root tests/Pest.php that references Marko\Testing\TestCase', functio
     expect($content)->toContain('Marko\Testing\TestCase');
 });
 
-it('ships placeholders so every directory the phpunit.xml testsuites reference exists (app, modules, tests)', function (): void {
-    $base = __DIR__ . '/..';
+it(
+    'ships placeholders so every directory the phpunit.xml testsuites reference exists (app, modules, tests)',
+    function (): void {
+        $base = __DIR__ . '/..';
 
-    expect(is_dir($base . '/app'))->toBeTrue()
-        ->and(is_dir($base . '/modules'))->toBeTrue()
-        ->and(is_dir($base . '/tests'))->toBeTrue();
-});
+        expect(is_dir($base . '/app'))->toBeTrue()
+            ->and(is_dir($base . '/modules'))->toBeTrue()
+            ->and(is_dir($base . '/tests'))->toBeTrue();
+    },
+);
 
 it('runs pest successfully on a freshly scaffolded skeleton with no added test files', function (): void {
     // Simulate a fresh skeleton install: create a temporary directory with the

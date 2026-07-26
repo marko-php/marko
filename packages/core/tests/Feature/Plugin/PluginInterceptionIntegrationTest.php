@@ -49,8 +49,7 @@ class PIIT_HasherAfterPlugin
     public function hash(
         mixed $result,
         string $value,
-    ): string
-    {
+    ): string {
         self::$log[] = "after:$result";
 
         return strtoupper((string) $result);
@@ -73,8 +72,7 @@ class PIIT_LoggingPlugin
     public function hashAfter(
         mixed $result,
         string $value,
-    ): string
-    {
+    ): string {
         self::$log[] = "after:$result";
 
         return (string) $result;
@@ -107,8 +105,7 @@ class PIIT_FirstAfterPlugin
     public function hash(
         mixed $result,
         string $value,
-    ): string
-    {
+    ): string {
         self::$log[] = "first-after:$result";
 
         return "[$result]";
@@ -123,8 +120,7 @@ class PIIT_SecondAfterPlugin
     public function hash(
         mixed $result,
         string $value,
-    ): string
-    {
+    ): string {
         self::$log[] = "second-after:$result";
 
         return "$result!";

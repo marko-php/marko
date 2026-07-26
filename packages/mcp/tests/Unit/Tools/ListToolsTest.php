@@ -71,12 +71,12 @@ it('registers list_commands tool returning all CommandEntry records with name, c
         new CommandEntry(
             name: 'cache:clear',
             class: 'Marko\\Cache\\Command\\ClearCommand',
-            description: 'Clears cache'
+            description: 'Clears cache',
         ),
         new CommandEntry(
             name: 'module:list',
             class: 'Marko\\Core\\Command\\ModuleListCommand',
-            description: 'Lists modules'
+            description: 'Lists modules',
         ),
     ]);
 
@@ -103,13 +103,13 @@ it('registers list_routes tool returning all RouteEntry records with method, pat
             method: 'GET',
             path: '/api/users',
             class: 'Marko\\Api\\Controller\\UserController',
-            action: 'index'
+            action: 'index',
         ),
         new RouteEntry(
             method: 'POST',
             path: '/api/users',
             class: 'Marko\\Api\\Controller\\UserController',
-            action: 'store'
+            action: 'store',
         ),
     ]);
 
@@ -142,12 +142,12 @@ it('supports optional substring filter on each tool', function (): void {
             new CommandEntry(
                 name: 'cache:clear',
                 class: 'Marko\\Cache\\Command\\ClearCommand',
-                description: 'Clears cache'
+                description: 'Clears cache',
             ),
             new CommandEntry(
                 name: 'module:list',
                 class: 'Marko\\Core\\Command\\ModuleListCommand',
-                description: 'Lists modules'
+                description: 'Lists modules',
             ),
         ],
         routes: [
@@ -155,13 +155,13 @@ it('supports optional substring filter on each tool', function (): void {
                 method: 'GET',
                 path: '/api/users',
                 class: 'Marko\\Api\\Controller\\UserController',
-                action: 'index'
+                action: 'index',
             ),
             new RouteEntry(
                 method: 'POST',
                 path: '/api/orders',
                 class: 'Marko\\Api\\Controller\\OrderController',
-                action: 'store'
+                action: 'store',
             ),
         ],
     );
@@ -202,19 +202,19 @@ it('returns empty arrays when filter matches nothing', function (): void {
                 method: 'GET',
                 path: '/api/users',
                 class: 'Marko\\Api\\Controller\\UserController',
-                action: 'index'
+                action: 'index',
             ),
         ],
     );
 
     $moduleText = ListModulesTool::definition($cache)->handler->handle(
-        ['filter' => 'nonexistent']
+        ['filter' => 'nonexistent'],
     )['content'][0]['text'];
     $cmdText = ListCommandsTool::definition($cache)->handler->handle(
-        ['filter' => 'nonexistent']
+        ['filter' => 'nonexistent'],
     )['content'][0]['text'];
     $routeText = ListRoutesTool::definition($cache)->handler->handle(
-        ['filter' => 'nonexistent']
+        ['filter' => 'nonexistent'],
     )['content'][0]['text'];
 
     expect($moduleText)->toBe('(no modules found)')
@@ -239,7 +239,7 @@ it('includes source file paths so the agent can open them', function (): void {
                 method: 'GET',
                 path: '/api/users',
                 class: 'Marko\\Api\\Controller\\UserController',
-                action: 'index'
+                action: 'index',
             ),
         ],
     );

@@ -44,16 +44,16 @@ it(
     'the section explains when NOT to use the pattern (application-specific modules)',
     function () use ($architecturePath) {
         $content = file_get_contents($architecturePath);
-    
+
         expect($content)->toContain('application-specific');
-    }
+    },
 );
 
 it(
     'the section mentions the CrossEngineTemplateParityTest as the enforcement mechanism',
     function () use ($architecturePath) {
         $content = file_get_contents($architecturePath);
-    
+
         expect($content)->toContain('CrossEngineTemplateParityTest');
-    }
+    },
 );

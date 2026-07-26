@@ -97,7 +97,7 @@ it('writes companion docs_meta table with page metadata', function (): void {
 
     $pdo = new PDO('sqlite:' . $dbPath);
     $row = $pdo->query("SELECT page_id, url, section, title FROM docs_meta WHERE page_id = 'guide/install'")->fetch(
-        PDO::FETCH_ASSOC
+        PDO::FETCH_ASSOC,
     );
 
     expect($row)->toBeArray()
@@ -122,7 +122,7 @@ it('produces queryable BM25-ranked results', function (): void {
 
     $pdo = new PDO('sqlite:' . $dbPath);
     $results = $pdo->query("SELECT page_id FROM docs_fts WHERE docs_fts MATCH 'install' ORDER BY rank")->fetchAll(
-        PDO::FETCH_COLUMN
+        PDO::FETCH_COLUMN,
     );
 
     expect($results)->not->toBeEmpty()
@@ -190,10 +190,10 @@ it(
     function (): void {
         $reflection = new ReflectionClass(BuildIndexCommand::class);
         $attributes = $reflection->getAttributes(Command::class);
-    
+
         expect($attributes)->toHaveCount(1)
             ->and($attributes[0]->newInstance()->name)->toBe('docs-fts:build');
-    
+
         expect($reflection->implementsInterface(CommandInterface::class))->toBeTrue();
-    }
+    },
 );

@@ -70,8 +70,7 @@ class EntityCompanionStorage
     public function attach(
         Entity $entity,
         Entity $companion,
-    ): void
-    {
+    ): void {
         $bag = $this->companions[$entity] ?? [];
         $bag[$companion::class] = $companion;
         $this->companions[$entity] = $bag;

@@ -41,7 +41,7 @@ test('it includes marko/database-readwrite as an optional add-on', function (): 
 
     expect($skeletonSuggest)->toHaveKey('marko/database-readwrite')
         ->and($skeletonSuggest['marko/database-readwrite'])->toBe(
-            'Read/write connection splitting decorator (optional — works alongside a base driver)'
+            'Read/write connection splitting decorator (optional — works alongside a base driver)',
         );
 });
 
@@ -53,7 +53,7 @@ test('it includes marko/page-cache-entity as an optional add-on', function (): v
 
     expect($skeletonSuggest)->toHaveKey('marko/page-cache-entity')
         ->and($skeletonSuggest['marko/page-cache-entity'])->toBe(
-            'Auto-purges page-cache tags on entity save/delete (optional add-on)'
+            'Auto-purges page-cache tags on entity save/delete (optional add-on)',
         );
 });
 

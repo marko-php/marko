@@ -144,8 +144,7 @@ function createFakeSession(
         public function get(
             string $key,
             mixed $default = null,
-        ): mixed
-        {
+        ): mixed {
             return $default;
         }
 

@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use Marko\CodeIndexer\Cache\IndexCache;
 use Marko\CodeIndexer\Attributes\AttributeParser;
+use Marko\CodeIndexer\Cache\IndexCache;
 use Marko\CodeIndexer\Config\ConfigScanner;
 use Marko\CodeIndexer\Module\ModuleWalker;
-use Marko\CodeIndexer\Views\TemplateScanner;
 use Marko\CodeIndexer\Translations\TranslationScanner;
+use Marko\CodeIndexer\ValueObject\ModuleInfo;
+use Marko\CodeIndexer\Views\TemplateScanner;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Lsp\Features\AttributeFeature;
 use Marko\Lsp\Features\CodeLensFeature;
@@ -20,7 +21,8 @@ use Marko\Lsp\Server\LspServer;
 
 function makeNullIndexCache(): IndexCache
 {
-    $emptyWalker = new class () extends ModuleWalker {
+    $emptyWalker = new class () extends ModuleWalker
+    {
         public function __construct() {}
 
         public function walk(): array
@@ -28,46 +30,50 @@ function makeNullIndexCache(): IndexCache
             return [];
         }
     };
-    $emptyAttributeParser = new class () extends AttributeParser {
-        public function observers(\Marko\CodeIndexer\ValueObject\ModuleInfo $m): array
+    $emptyAttributeParser = new class () extends AttributeParser
+    {
+        public function observers(ModuleInfo $m): array
         {
             return [];
         }
 
-        public function plugins(\Marko\CodeIndexer\ValueObject\ModuleInfo $m): array
+        public function plugins(ModuleInfo $m): array
         {
             return [];
         }
 
-        public function preferences(\Marko\CodeIndexer\ValueObject\ModuleInfo $m): array
+        public function preferences(ModuleInfo $m): array
         {
             return [];
         }
 
-        public function commands(\Marko\CodeIndexer\ValueObject\ModuleInfo $m): array
+        public function commands(ModuleInfo $m): array
         {
             return [];
         }
 
-        public function routes(\Marko\CodeIndexer\ValueObject\ModuleInfo $m): array
+        public function routes(ModuleInfo $m): array
         {
             return [];
         }
     };
-    $emptyConfigScanner = new class () extends ConfigScanner {
-        public function scan(\Marko\CodeIndexer\ValueObject\ModuleInfo $m): array
+    $emptyConfigScanner = new class () extends ConfigScanner
+    {
+        public function scan(ModuleInfo $m): array
         {
             return [];
         }
     };
-    $emptyTemplateScanner = new class () extends TemplateScanner {
-        public function scan(\Marko\CodeIndexer\ValueObject\ModuleInfo $m): array
+    $emptyTemplateScanner = new class () extends TemplateScanner
+    {
+        public function scan(ModuleInfo $m): array
         {
             return [];
         }
     };
-    $emptyTranslationScanner = new class () extends TranslationScanner {
-        public function scan(\Marko\CodeIndexer\ValueObject\ModuleInfo $m): array
+    $emptyTranslationScanner = new class () extends TranslationScanner
+    {
+        public function scan(ModuleInfo $m): array
         {
             return [];
         }
@@ -110,7 +116,7 @@ function readResponse($out): array
 
 it('responds to initialize with server capabilities', function () {
     $this->protocol->handleMessage(
-        json_encode(['jsonrpc' => '2.0', 'method' => 'initialize', 'params' => [], 'id' => 1])
+        json_encode(['jsonrpc' => '2.0', 'method' => 'initialize', 'params' => [], 'id' => 1]),
     );
     $response = readResponse($this->out);
     expect($response['result']['capabilities'])->toBeArray()

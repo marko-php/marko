@@ -13,12 +13,12 @@ it(
             context: 'some context',
             suggestion: 'some suggestion',
         );
-    
+
         expect($exception)->toBeInstanceOf(MarkoException::class)
             ->and($exception->getMessage())->toBe('Test assertion failed')
             ->and($exception->getContext())->toBe('some context')
             ->and($exception->getSuggestion())->toBe('some suggestion');
-    }
+    },
 );
 
 it('creates AssertionFailedException with static factory methods for common assertion failures', function (): void {

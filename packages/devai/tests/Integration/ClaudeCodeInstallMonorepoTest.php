@@ -35,8 +35,7 @@ function integMonorepoRunnerWithLsp(
         public function run(
             string $cmd,
             array $args = [],
-        ): array
-        {
+        ): array {
             $this->calls[] = [$cmd, $args];
             if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
@@ -99,8 +98,7 @@ function integMonorepoRunner(string $listOutput = ''): CommandRunnerInterface
         public function run(
             string $cmd,
             array $args = [],
-        ): array
-        {
+        ): array {
             $this->calls[] = [$cmd, $args];
             if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
@@ -184,12 +182,12 @@ describe('monorepo fixture (with stub packages/claude-plugins)', function (): vo
         'monorepo fixture (with stub packages/claude-plugins) produces settings.json with the path/local source shape per Task 001',
         function (): void {
             integMonorepoRunInstall($this->root);
-    
+
             $data = json_decode((string) file_get_contents($this->root . '/.claude/settings.json'), true);
             $source = $data['extraKnownMarketplaces']['marko']['source'];
             expect($source['source'])->toBe('local')
                 ->and($source['path'])->toBe('.');
-        }
+        },
     );
 
     it('monorepo install still creates AGENTS.md at the project root', function (): void {
@@ -258,7 +256,7 @@ it(
 
         try {
             integMonorepoRunInstall($externalRoot);
-    
+
             $data = json_decode((string) file_get_contents($externalRoot . '/.claude/settings.json'), true);
             $source = $data['extraKnownMarketplaces']['marko']['source'];
             expect($source['source'])->toBe('github')
@@ -266,7 +264,7 @@ it(
         } finally {
             integMonorepoRemoveTempDir($externalRoot);
         }
-    }
+    },
 );
 
 // ---------------------------------------------------------------------------
@@ -289,9 +287,9 @@ describe('--skip-lsp-deps integration (monorepo)', function (): void {
             $runner = integMonorepoRunnerWithLsp(intelephenseOnPath: false, npmOnPath: true);
             $orchestrator = integMonorepoOrchestrator($runner);
             $ctx = new InstallationContext(selectedAgents: ['claude-code'], skipLspDeps: false);
-    
+
             $orchestrator->install($ctx, $this->root);
-    
+
             $npmInstallCalls = array_filter(
                 $runner->calls,
                 fn ($call) => $call[0] === 'npm'
@@ -299,7 +297,7 @@ describe('--skip-lsp-deps integration (monorepo)', function (): void {
                     && in_array('intelephense', $call[1], true),
             );
             expect(array_values($npmInstallCalls))->not->toBeEmpty();
-        }
+        },
     );
 
     it('skips intelephense installation when --skip-lsp-deps is passed', function (): void {
@@ -323,17 +321,17 @@ describe('--skip-lsp-deps integration (monorepo)', function (): void {
             $runner = integMonorepoRunnerWithLsp(intelephenseOnPath: false, npmOnPath: true);
             $orchestrator = integMonorepoOrchestrator($runner);
             $ctx = new InstallationContext(selectedAgents: ['claude-code'], skipLspDeps: true);
-    
+
             $orchestrator->install($ctx, $this->root);
-    
+
             $settingsPath = $this->root . '/.claude/settings.json';
             expect(file_exists($settingsPath))->toBeTrue();
-    
+
             $data = json_decode((string) file_get_contents($settingsPath), true);
             expect($data['extraKnownMarketplaces'])->toHaveKey('marko')
                 ->and($data['enabledPlugins']['marko-skills@marko'])->toBeTrue()
                 ->and($data['enabledPlugins']['marko-lsp@marko'])->toBeTrue()
                 ->and($data['enabledPlugins']['marko-mcp@marko'])->toBeTrue();
-        }
+        },
     );
 });
