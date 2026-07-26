@@ -27,7 +27,15 @@ composer test:all
 
 # Lint (fix)
 ./vendor/bin/php-cs-fixer fix
+
+# Static analysis — NOT part of composer test; must be zero errors
+composer phpstan
+
+# Everything the CI gate runs (tests + lint + static analysis)
+composer ci
 ```
+
+Every PR is gated by the `CI` workflow on `Tests`, `Lint`, and `Static analysis`. A red check blocks the merge; `develop` never carries a failing test, lint error, or PHPStan error.
 
 ## Key Conventions
 

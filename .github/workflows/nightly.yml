@@ -1,0 +1,31 @@
+name: Nightly
+
+# The integration-destructive group deletes vendor/ and composer.lock, runs a full
+# `composer update`, and re-runs the suite in a subprocess. That is too slow and too
+# stateful for a per-PR gate, but it must not go unrun between releases — bin/release.sh
+# is otherwise the first thing to discover a broken install, at the worst moment.
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  destructive:
+    name: Full suite including destructive integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          ini-values: memory_limit=2G
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Run full test suite
+        run: composer test:all

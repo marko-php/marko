@@ -40,15 +40,19 @@ If there are conflicts, resolve them. If the rebase is clean, proceed.
 ## 4. Run the test suite and lint
 
 ```bash
+composer ci                                                # everything the CI gate runs
 composer test                                              # full suite (excludes integration-destructive)
 ./vendor/bin/pest packages/<name>/tests                    # package-specific tests
 ./vendor/bin/phpcs --standard=phpcs.xml packages/<name>/   # phpcs
 ./vendor/bin/php-cs-fixer fix packages/<name>/ --dry-run   # cs-fixer
+composer phpstan                                           # static analysis
 ```
 
-All tests must pass and lint must be clean. Fix ALL lint errors in touched files before merging, including pre-existing ones.
+All tests must pass, lint must be clean, and **PHPStan must report zero errors**. Fix ALL lint errors in touched files before merging, including pre-existing ones.
 
-**No PR CI workflow exists in this repo.** `gh pr checks <N>` will report no checks. The merge-readiness signal is local lint + tests passing plus `gh pr view <N> --json mergeStateStatus,mergeable` returning `CLEAN`/`MERGEABLE`. There is no async CI to wait for — do not write "will merge once CI is green" in PR comments.
+**PHPStan is not optional and is not covered by `composer test`.** It went unrun for months precisely because this checklist omitted it, and `packages/core` accumulated 12 errors through normal PR review — type-level drift that PHP tolerates at runtime, so no test could have caught it. `composer ci` runs the whole gate in one command; prefer it.
+
+**The `CI` workflow gates every PR.** `gh pr checks <N>` reports `Tests`, `Lint`, and `Static analysis`. A red check blocks the merge — `develop` is never allowed to carry a failing test, lint error, or PHPStan error. The `integration-destructive` group is excluded from the gate (it deletes `vendor/`, runs `composer update`, and re-runs the suite in a subprocess); it runs on the `Nightly` schedule and again inside `bin/release.sh` before any tag is cut.
 
 ## 5. Review the code
 
@@ -241,6 +245,8 @@ Before merging any package PR:
 - [ ] `composer test` passes
 - [ ] `./vendor/bin/phpcs` clean on touched files
 - [ ] `./vendor/bin/php-cs-fixer fix --dry-run` clean on touched files
+- [ ] `composer phpstan` reports zero errors
+- [ ] `gh pr checks <N>` green — `Tests`, `Lint`, `Static analysis` all passing
 - [ ] New code has corresponding tests
 - [ ] No hardcoded paths or environment-specific values
 - [ ] No `final` classes (including exceptions)

@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          ini-values: memory_limit=2G
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+
+      # Excludes integration-destructive: that group deletes vendor/ and composer.lock,
+      # runs `composer update`, and re-runs the whole suite in a subprocess. It verifies
+      # install integrity rather than application behaviour, so it runs on the nightly
+      # schedule below and is enforced again by bin/release.sh before any tag is cut.
+      - name: Run test suite
+        run: composer test
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: PHP_CodeSniffer
+        run: vendor/bin/phpcs --standard=phpcs.xml
+
+      - name: PHP CS Fixer
+        run: vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --dry-run --diff
+
+  static:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          ini-values: memory_limit=2G
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: PHPStan
+        run: composer phpstan
