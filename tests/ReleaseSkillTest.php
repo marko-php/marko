@@ -84,6 +84,19 @@ it('delegates mechanical work to bin/release.sh, never the changelog', function 
         ->toContain('integration-destructive');
 });
 
+it('describes the mid-run failure state accurately', function () use ($skillPath): void {
+    $content = file_get_contents($skillPath);
+    $script = file_get_contents(dirname(__DIR__) . '/bin/release.sh');
+
+    // The skill's claim only holds while release.sh merges into main before running tests.
+    expect(strpos($script, 'git merge develop'))->toBeLessThan(strpos($script, 'vendor/bin/pest'));
+
+    expect($content)
+        ->toContain('do not promise a clean abort')
+        ->toContain('checked out on `main` with the merge already made')
+        ->toContain('git checkout develop');
+});
+
 it('verifies preconditions before proposing a release', function () use ($skillPath): void {
     $content = file_get_contents($skillPath);
 

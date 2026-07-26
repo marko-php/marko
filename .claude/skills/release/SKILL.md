@@ -136,7 +136,9 @@ Classify each PR by what a consumer can observe after `composer update`:
 2. **Ships in a package but adds no callable surface** — CLI output or prompt wording, a
    docs page, an internal refactor, a new fake in `marko/testing` used only by our own
    suite. Nothing new for an app developer to call, extend, configure, or depend on.
-   **Patch.**
+   **Patch.** This includes internals added in service of a fix — a new exception factory,
+   for instance, is *thrown* at consumers rather than built against, so it does not make a
+   bug fix into a feature.
 
 3. **Adds or changes surface a consumer builds against** — a new interface, method,
    attribute, config key, container binding, event, console command, or an entire package.
@@ -154,7 +156,7 @@ labels and was still correctly a patch:
 | #142, #144 | documentation | 1 | repo docs and skills, nothing under `packages/` |
 | #143 | enhancement | 2 | a `devai:install` prompt tip — no new callable surface |
 | #146 | enhancement | 1 | maintainer-only `/release` skill under `.claude/` |
-| #145 | bug | 2 | unblocked `db:migrate` for `marko/media` consumers |
+| #145 | bug | 2 | unblocked `db:migrate`; its new exception factory is thrown, not built against |
 
 **The tiebreaker for a genuinely mixed batch is Composer reachability.** In `0.x`, Composer
 treats the *minor* as the breaking position: `^0.8.4` accepts `0.8.5` but refuses `0.9.0`. A
@@ -181,9 +183,15 @@ Show, concisely:
    why, rather than leaving the user to wonder whether it was overlooked.
 4. **What will happen on approval** — merge `develop` into `main`, run the full suite
    *including* the `integration-destructive` group, generate `CHANGELOG.md`, commit, tag,
-   push, create the GitHub Release, merge back to `develop`. Note that the script aborts
-   before touching the changelog or creating any tag if tests fail, so a failed run leaves
-   nothing to clean up.
+   push, create the GitHub Release, merge back to `develop`.
+
+**Be precise about the failure state — do not promise a clean abort.** `bin/release.sh`
+checks out `main` and merges `develop` *before* it runs the tests. A test failure therefore
+leaves the local repo checked out on `main` with the merge already made. Nothing is pushed,
+no tag exists, and `CHANGELOG.md` is untouched — but it is not a no-op. Recovery is
+`git checkout develop`, fix the failure, and re-run; the merge is idempotent. Mention this
+when describing what will happen, and note that re-running while still on `main` trips the
+Step 1 branch precondition.
 
 Then wait. If the user overrides the version, validate it before running: `X.Y.Z` with no
 `v` prefix and no pre-release suffix, strictly greater than the latest tag, and not an
@@ -199,7 +207,8 @@ From `develop`, with a clean tree:
 
 Expect this to run for several minutes — the destructive integration group builds real
 installs. Let it finish; do not run it in the background and do not re-run it after a
-partial failure without reading the error first.
+partial failure without reading the error first. If it failed in the test phase you are now
+on `main` — `git checkout develop` before retrying.
 
 ## Step 7 — Report
 
