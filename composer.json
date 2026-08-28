@@ -611,7 +611,8 @@
             "packages/devai/tests/Helpers.php",
             "packages/inertia/tests/Helpers.php",
             "packages/ratelimiter/tests/Helpers.php",
-            "packages/security/tests/Helpers.php"
+            "packages/security/tests/Helpers.php",
+            "packages/session/tests/SessionFunctionShim.php"
         ]
     }
 }
