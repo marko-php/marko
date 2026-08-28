@@ -45,11 +45,8 @@ it('pins PHP 8.5 in every job', function () use ($ci): void {
 it('pins actions to a major version rather than a floating ref', function () use ($ci, $nightly): void {
     preg_match_all('/uses: (\S+)/', $ci . $nightly, $matches);
 
-    expect($matches[1])->not->toBeEmpty();
-
-    foreach ($matches[1] as $action) {
-        expect($action)->toMatch('/@v\d+$/');
-    }
+    expect($matches[1])->not->toBeEmpty()
+        ->and($matches[1])->each->toMatch('/@v\d+$/');
 });
 
 it('runs the destructive group on a schedule instead of on every PR', function () use ($ci, $nightly): void {
@@ -59,6 +56,26 @@ it('runs the destructive group on a schedule instead of on every PR', function (
         ->toContain('composer test:all')
         ->and($ci)->toContain('composer test')
         ->and($ci)->not->toContain('test:all');
+});
+
+it('installs the roadrunner binary in the nightly workflow', function () use ($nightly): void {
+    // Without this, packages/roadrunner's end-to-end suite finds no `rr`
+    // binary on the nightly runner and every one of its security-critical
+    // isolation assertions silently skips, defeating the plan's own stated
+    // mitigation of running "locally and nightly" — this assertion exists
+    // so a future edit cannot quietly drop the step and reintroduce that.
+    $composer = json_decode(file_get_contents(dirname(__DIR__) . '/composer.json'), true);
+
+    $dependenciesInstalledAt = strpos($nightly, 'ramsey/composer-install');
+    $binaryInstalledAt = strpos($nightly, 'vendor/bin/rr get-binary');
+    $testsRunAt = strpos($nightly, 'composer test:all');
+
+    expect($composer['require-dev'])->toHaveKey('spiral/roadrunner-cli')
+        ->and($dependenciesInstalledAt)->not->toBeFalse()
+        ->and($binaryInstalledAt)->not->toBeFalse()
+        ->and($testsRunAt)->not->toBeFalse()
+        ->and($binaryInstalledAt)->toBeGreaterThan($dependenciesInstalledAt)
+        ->and($binaryInstalledAt)->toBeLessThan($testsRunAt);
 });
 
 it('exposes composer phpstan and composer ci scripts the workflow depends on', function (): void {
@@ -83,8 +100,9 @@ it('excludes deliberately-unparseable fixtures from both linters', function (): 
     ];
 
     foreach ($brokenFixtures as $fixture) {
-        expect(file_exists(dirname(__DIR__) . '/' . $fixture))->toBeTrue("$fixture should still exist");
-        expect($csFixer)->toContain(str_replace('packages/', '', $fixture));
+        expect(file_exists(dirname(__DIR__) . '/' . $fixture))
+            ->toBeTrue("$fixture should still exist")
+            ->and($csFixer)->toContain(str_replace('packages/', '', $fixture));
     }
 
     expect($phpcs)->toContain('src/Broken/');

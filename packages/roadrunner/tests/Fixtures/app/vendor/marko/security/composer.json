@@ -1,0 +1,16 @@
+{
+    "name": "marko/security",
+    "description": "Fixture stub for marko/security used by the in-process request harness and the RoadRunner end-to-end suite",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "marko/config": "self.version",
+        "marko/encryption": "self.version",
+        "marko/session": "self.version"
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

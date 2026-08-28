@@ -1,6 +1,6 @@
 # Task 010: Docs Page and Package README
 
-**Status**: pending
+**Status**: completed
 **Depends on**: 009
 **Retry count**: 0
 
@@ -19,18 +19,18 @@ Write the canonical docs page and the package README. This runs last so both des
   - The reset lifecycle: what gets reset between requests, in what order, and what that means for anyone writing a stateful singleton. Include the explicit rule — **request-scoped state in a singleton is a cross-user leak under this worker** — with the `Session` and `SessionGuard` fixes from #150 task 009 as the worked example
   - **Do not write to STDOUT.** `echo`, `var_dump`, `print_r` and `dd`-style debugging corrupt the RoadRunner pipes relay. The worker buffers and discards, but developers need to know why their output vanished
   - Link the task 005 spike findings page (`roadrunner-state-leaks.md`) as the record of what was investigated
-  - The known gap that PHPStan does not analyze this package
+  - **[CORRECTED]** Do NOT document a PHPStan gap. That decision was reversed: task 001 added `packages/roadrunner/src` to `phpstan.neon`, making this the only non-core package under level-6 analysis — deliberately, because it is the one place where a type error becomes a cross-user security bug. Mention that it IS analysed, if anything.
 - Update the Package Inventory in `.claude/architecture.md` — its own checklist requires this after creating a new package.
 
 ## Requirements (Test Descriptions)
-- [ ] `it ships a readme following the package readme standards`
-- [ ] `it ships a docs page for the roadrunner package`
-- [ ] `it documents the unsupported packages and the reason for each`
-- [ ] `it documents that file uploads are unsupported`
-- [ ] `it documents the session cookie caveat`
-- [ ] `it documents the stdout restriction`
-- [ ] `it documents the reset lifecycle and the stateful singleton rule`
-- [ ] `it lists the package in the architecture package inventory`
+- [x] `it ships a readme following the package readme standards`
+- [x] `it ships a docs page for the roadrunner package`
+- [x] `it documents the unsupported packages and the reason for each`
+- [x] `it documents that file uploads are unsupported`
+- [x] `it documents the session cookie caveat`
+- [x] `it documents the stdout restriction`
+- [x] `it documents the reset lifecycle and the stateful singleton rule`
+- [x] `it lists the package in the architecture package inventory`
 
 ## Acceptance Criteria
 - All requirements have passing tests
@@ -39,3 +39,9 @@ Write the canonical docs page and the package README. This runs last so both des
 - Code follows code standards
 
 ## Implementation Notes
+- Added `packages/roadrunner/README.md` (slim pointer per `docs/DOCS-STANDARDS.md`) and `packages/docs-markdown/docs/packages/roadrunner.md` (canonical reference page).
+- Test coverage lives in `packages/roadrunner/tests/DocsTest.php`. The docs page was written in full for requirement 2 (it covers installation, `.rr.yaml` defaults/rationale, STDOUT restriction, reset lifecycle + stateful-singleton rule with `Session`/`SessionGuard`/`Inertia::$shared` examples, the session-cookie caveat, unsupported packages, and API reference), so requirements 3-7 passed immediately once their tests were added — over-implementation relative to strict per-requirement TDD, but a natural consequence of writing one coherent prose document rather than fragmenting it into six unrelated edits.
+- Docs page cross-links `/docs/packages/database-readwrite/#long-running-processes` and `/docs/packages/roadrunner-state-leaks/`.
+- Root README catalog row (`packages/roadrunner/README.md`) already existed from task 001; `bin/check-readme-packages.sh` passes (92 modules aligned).
+- Added a new "Application Server" section to the Package Inventory in `.claude/architecture.md`, and corrected the stale "Current implementors" list under "Resettable Singletons and Long-Running Processes" to include `Inertia` (previously missing after #150 task 009 added it).
+- Verified `composer test`: 7086 passed (up from the 7078 baseline by the 8 new tests), no failures.

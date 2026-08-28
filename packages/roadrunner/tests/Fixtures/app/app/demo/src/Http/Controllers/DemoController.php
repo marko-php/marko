@@ -7,7 +7,11 @@ namespace Marko\Roadrunner\Tests\Fixtures\Demo\Http\Controllers;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Exceptions\AuthException;
 use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
+use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Response;
+use Marko\Security\Contracts\CsrfTokenManagerInterface;
+use Marko\Security\Middleware\CsrfMiddleware;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Exceptions\SessionNotStartedException;
 use Random\RandomException;
@@ -26,6 +30,7 @@ class DemoController
     public function __construct(
         private readonly SessionInterface $session,
         private readonly GuardInterface $guard,
+        private readonly CsrfTokenManagerInterface $csrfTokenManager,
     ) {}
 
     /**
@@ -65,6 +70,29 @@ class DemoController
         $this->session->set('visits', 999);
 
         throw new RuntimeException('Simulated failure after session write, before normal completion');
+    }
+
+    /**
+     * Issues a CSRF token tied to the caller's session, so the RoadRunner
+     * end-to-end suite can drive a real GET-token-then-POST-submit flow
+     * through one real rr worker process.
+     */
+    #[Get('/csrf/token')]
+    public function csrfToken(): Response
+    {
+        return new Response($this->csrfTokenManager->get());
+    }
+
+    /**
+     * Only reachable once CsrfMiddleware has validated the submitted token
+     * against the caller's session — an invalid or missing token never
+     * reaches this method.
+     */
+    #[Post('/csrf/submit')]
+    #[Middleware(CsrfMiddleware::class)]
+    public function csrfSubmit(): Response
+    {
+        return new Response('csrf-ok');
     }
 
     private function describeState(

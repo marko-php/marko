@@ -1,0 +1,14 @@
+{
+    "name": "marko/encryption",
+    "description": "Fixture stub for marko/encryption-openssl used by the RoadRunner end-to-end suite",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "marko/config": "self.version"
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

@@ -28,6 +28,7 @@ describe('WorkerRequestHandler', function (): void {
             requestBridge: new Psr7RequestBridge(),
             responseBridge: new Psr7ResponseBridge(),
             logger: new WorkerLogger(),
+            container: new NullContainer(),
         );
 
         $handler->run();
@@ -49,6 +50,7 @@ describe('WorkerRequestHandler', function (): void {
             requestBridge: new Psr7RequestBridge(),
             responseBridge: new Psr7ResponseBridge(),
             logger: new WorkerLogger(),
+            container: new NullContainer(),
         );
 
         $handler->run();
@@ -72,6 +74,7 @@ describe('WorkerRequestHandler', function (): void {
             requestBridge: new Psr7RequestBridge(),
             responseBridge: new Psr7ResponseBridge(),
             logger: new WorkerLogger(),
+            container: new NullContainer(),
         );
 
         $handler->run();
@@ -94,6 +97,7 @@ describe('WorkerRequestHandler', function (): void {
             requestBridge: new Psr7RequestBridge(),
             responseBridge: new Psr7ResponseBridge(),
             logger: new WorkerLogger(),
+            container: new NullContainer(),
             development: false,
         );
 
@@ -125,6 +129,7 @@ describe('WorkerRequestHandler', function (): void {
             requestBridge: new Psr7RequestBridge(),
             responseBridge: new Psr7ResponseBridge(),
             logger: new WorkerLogger(),
+            container: new NullContainer(),
         );
 
         $handler->run();
@@ -148,6 +153,7 @@ describe('WorkerRequestHandler', function (): void {
             requestBridge: new Psr7RequestBridge(),
             responseBridge: new Psr7ResponseBridge(),
             logger: new WorkerLogger(),
+            container: new NullContainer(),
         );
 
         $handler->run();
@@ -172,6 +178,7 @@ describe('WorkerRequestHandler', function (): void {
             requestBridge: new Psr7RequestBridge(),
             responseBridge: new Psr7ResponseBridge(),
             logger: new WorkerLogger(),
+            container: new NullContainer(),
         );
 
         $handler->run();
@@ -194,6 +201,7 @@ describe('WorkerRequestHandler', function (): void {
             requestBridge: new Psr7RequestBridge(),
             responseBridge: new Psr7ResponseBridge(),
             logger: new WorkerLogger(),
+            container: new NullContainer(),
         );
         $levelBefore = ob_get_level();
 

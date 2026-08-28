@@ -7,7 +7,16 @@ namespace Marko\Roadrunner\Tests;
 use Closure;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepositoryInterface;
+use Marko\Core\Path\ProjectPaths;
+use Marko\Roadrunner\Binary\BinaryLocator;
+use Marko\Roadrunner\Exceptions\RoadRunnerException;
+use Marko\Roadrunner\Tests\Support\RoadRunnerServerProcess;
+use Marko\Roadrunner\Tests\Support\SharedRoadRunnerServer;
 use Marko\Routing\Http\Request;
+use Nyholm\Psr7\ServerRequest;
+use Psr\Http\Message\ServerRequestInterface;
+use Random\RandomException;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -104,12 +113,91 @@ function inProcessHarnessRequest(
 }
 
 /**
+ * Build a PSR-7 ServerRequest against the fixture app's demo routes,
+ * carrying the given session cookie value under the fixture's configured
+ * cookie name — the PSR-7-level equivalent of inProcessHarnessRequest(),
+ * for driving WorkerRequestHandler (which only accepts PSR-7 requests)
+ * against the same fixture application.
+ */
+function inProcessHarnessPsr7Request(
+    string $method,
+    string $uri,
+    string $sessionId,
+): ServerRequestInterface {
+    return (new ServerRequest($method, 'https://example.test' . $uri))
+        ->withCookieParams([inProcessHarnessSessionCookieName() => $sessionId]);
+}
+
+/**
  * Absolute path to the monorepo root (four levels above this file:
  * tests/ -> roadrunner/ -> packages/ -> repo root).
  */
 function monorepoRootPath(): string
 {
     return dirname(__DIR__, 3);
+}
+
+/**
+ * Locates the real `rr` server binary the same way `rr:serve` does, rooted
+ * at the monorepo (not the fixture app — the binary is a project-wide dev
+ * tool, installed once at the repo root via `vendor/bin/rr get-binary`).
+ *
+ * `spiral/roadrunner-cli`'s own Composer bin stub is also named `rr` and
+ * also lives under `vendor/bin/`, one of {@see BinaryLocator}'s candidate
+ * paths — so once that package is required (as the nightly workflow does),
+ * a developer who has not yet run `get-binary` has an executable at
+ * `vendor/bin/rr` that is the *downloader*, not the server. Confirmed here
+ * by checking that `-v` reports the real server's own version banner
+ * ("rr version ..."), never roadrunner-cli's ("RoadRunner CLI ..."),
+ * before trusting the located path — otherwise every e2e test would try to
+ * "serve" through the wrong binary and time out instead of skipping.
+ */
+function locateRoadRunnerBinary(): ?string
+{
+    $binary = (new BinaryLocator(new ProjectPaths(monorepoRootPath())))->locate();
+
+    if ($binary === null) {
+        return null;
+    }
+
+    $version = trim((string) shell_exec(escapeshellarg($binary) . ' -v 2>&1'));
+
+    return str_starts_with($version, 'rr version') ? $binary : null;
+}
+
+/**
+ * The exact explanation `rr:serve` itself gives a developer when the binary
+ * is missing, reused here so the end-to-end suite's skip message and the
+ * command's own error message can never drift apart.
+ */
+function roadRunnerSkipReason(): string
+{
+    $exception = RoadRunnerException::binaryNotFound();
+
+    return $exception->getMessage() . ' ' . $exception->getSuggestion();
+}
+
+/**
+ * The one real `rr serve` process shared by every end-to-end test in the
+ * file that calls this — see {@see SharedRoadRunnerServer}. Every caller is
+ * expected to have already skipped when {@see locateRoadRunnerBinary}
+ * returns null, so reaching this function with no binary available is a
+ * test-authoring mistake rather than an expected runtime state.
+ *
+ * @throws RandomException|RuntimeException
+ */
+function sharedRoadRunnerServer(): RoadRunnerServerProcess
+{
+    $binary = locateRoadRunnerBinary();
+
+    if ($binary === null) {
+        throw new RuntimeException(
+            'sharedRoadRunnerServer() requires the RoadRunner binary; callers must skip when '
+                . 'locateRoadRunnerBinary() returns null instead of reaching this point.',
+        );
+    }
+
+    return SharedRoadRunnerServer::get($binary, inProcessHarnessFixturePath());
 }
 
 /**

@@ -248,6 +248,12 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/docs-fts` | Driver | Lexical search driver — SQLite FTS5/BM25; no model required |
 | `marko/docs-markdown` | Content | Canonical Marko docs content as a Composer module; the marko.build site symlinks to it and the search driver indexes it |
 
+### Application Server
+
+| Package | Type | Description |
+|---------|------|-------------|
+| `marko/roadrunner` | Driver | RoadRunner application server driver — serves the application from one long-running worker process instead of a new process per request; the only non-core package analysed by PHPStan (level 6) |
+
 ---
 
 ## Naming Conventions
@@ -695,7 +701,7 @@ interface ResettableInterface
 
 `reset()` must be non-destructive — it clears the instance's in-memory per-request tracking without destroying anything persisted (e.g. resetting a session service forgets which session it was serving, it does not delete the stored session). A long-running process discovers what to reset via `Container::resolvedInstances(ResettableInterface::class)`, which returns only instances the container has already built — never triggering resolution — instead of requiring a hardcoded list. `resolvedInstances()` lives on the concrete `Container` class, not on `ContainerInterface`.
 
-Current implementors: `Session`, `SessionGuard` (`marko/authentication`), and `ReadWriteConnection` (`marko/database-readwrite`).
+Current implementors: `Session`, `SessionGuard` (`marko/authentication`), `ReadWriteConnection` (`marko/database-readwrite`), and `Inertia` (`marko/inertia`).
 
 ### Preferences
 

@@ -489,6 +489,7 @@
         "predis/predis": "^2.0",
         "rector/rector": "^2.3",
         "slevomat/coding-standard": "^8.26",
+        "spiral/roadrunner-cli": "^2.7",
         "spiral/roadrunner-http": "^4.1",
         "squizlabs/php_codesniffer": "^4.0"
     },

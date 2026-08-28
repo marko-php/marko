@@ -92,6 +92,7 @@ $requestHandler = new WorkerRequestHandler(
     requestBridge: new Psr7RequestBridge(),
     responseBridge: new Psr7ResponseBridge(),
     logger: $workerLogger,
+    container: $app->container,
     development: $development,
 );
 

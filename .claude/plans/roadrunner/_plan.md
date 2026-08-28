@@ -4,7 +4,7 @@
 2026-08-28
 
 ## Status
-in_progress
+completed
 
 ## Objective
 Create a `marko/roadrunner` driver package that serves a Marko application under RoadRunner — booted once, serving many requests — with a per-request reset lifecycle proven by an empirical spike rather than guessed at, and loud guard rails against packages that are unsafe in worker mode.
@@ -98,9 +98,9 @@ Depends on #150 (plan `response-decoration`)
 | 008 | rr:serve command and .rr.yaml scaffolding | 001 | completed |
 | 004 | Worker accept loop | 002, 003 | completed |
 | 005 | State-leak discovery spike | 004a | completed |
-| 006 | Per-request reset lifecycle | 004, 005 | pending |
-| 009 | End-to-end integration test | 004, 006, 007, 008 | pending |
-| 010 | Docs page and package README | 009 | pending |
+| 006 | Per-request reset lifecycle | 004, 005 | completed |
+| 009 | End-to-end integration test | 004, 006, 007, 008 | completed |
+| 010 | Docs page and package README | 009 | completed |
 
 Batches: **(1)** 001 → **(2)** 002, 003, 004a, 007, 008 → **(3)** 004, 005 → **(4)** 006 → **(5)** 009 → **(6)** 010.
 
