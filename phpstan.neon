@@ -2,6 +2,7 @@ parameters:
     level: 6
     paths:
         - packages/core/src
+        - packages/roadrunner/src
     excludePaths:
         - packages/core/tests
     ignoreErrors:

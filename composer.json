@@ -302,6 +302,10 @@
         },
         {
             "type": "path",
+            "url": "packages/roadrunner"
+        },
+        {
+            "type": "path",
             "url": "packages/routing"
         },
         {
@@ -379,6 +383,7 @@
         "ext-gd": "*",
         "ext-imagick": "*",
         "ext-pdo": "*",
+        "ext-sockets": "*",
         "marko/admin": "self.version",
         "marko/admin-api": "self.version",
         "marko/admin-auth": "self.version",
@@ -452,6 +457,7 @@
         "marko/queue-rabbitmq": "self.version",
         "marko/queue-sync": "self.version",
         "marko/ratelimiter": "self.version",
+        "marko/roadrunner": "self.version",
         "marko/routing": "self.version",
         "marko/scheduler": "self.version",
         "marko/search": "self.version",
@@ -477,11 +483,13 @@
         "friendsofphp/php-cs-fixer": "^3.92",
         "guzzlehttp/guzzle": "^7.0",
         "marko/debugbar": "self.version",
+        "nyholm/psr7": "^1.8",
         "pestphp/pest": "^4.3",
         "php-amqplib/php-amqplib": "^3.0",
         "predis/predis": "^2.0",
         "rector/rector": "^2.3",
         "slevomat/coding-standard": "^8.26",
+        "spiral/roadrunner-http": "^4.1",
         "squizlabs/php_codesniffer": "^4.0"
     },
     "scripts": {
@@ -586,6 +594,7 @@
             "Marko\\Queue\\Rabbitmq\\Tests\\": "packages/queue-rabbitmq/tests/",
             "Marko\\Queue\\Sync\\Tests\\": "packages/queue-sync/tests/",
             "Marko\\RateLimiter\\Tests\\": "packages/ratelimiter/tests/",
+            "Marko\\Roadrunner\\Tests\\": "packages/roadrunner/tests/",
             "Marko\\Routing\\Tests\\": "packages/routing/tests/",
             "Marko\\Scheduler\\Tests\\": "packages/scheduler/tests/",
             "Marko\\Search\\Tests\\": "packages/search/tests/",
@@ -611,6 +620,7 @@
             "packages/devai/tests/Helpers.php",
             "packages/inertia/tests/Helpers.php",
             "packages/ratelimiter/tests/Helpers.php",
+            "packages/roadrunner/tests/Helpers.php",
             "packages/security/tests/Helpers.php",
             "packages/session/tests/SessionFunctionShim.php"
         ]

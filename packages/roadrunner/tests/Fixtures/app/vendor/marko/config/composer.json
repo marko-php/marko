@@ -1,0 +1,11 @@
+{
+    "name": "marko/config",
+    "description": "Fixture stub for marko/config used by the in-process request harness",
+    "type": "marko-module",
+    "license": "MIT",
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

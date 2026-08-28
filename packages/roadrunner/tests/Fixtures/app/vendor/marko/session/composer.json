@@ -1,0 +1,14 @@
+{
+    "name": "marko/session",
+    "description": "Fixture stub for marko/session used by the in-process request harness",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "marko/config": "self.version"
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

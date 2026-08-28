@@ -23,6 +23,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
+          extensions: sockets
           coverage: none
           ini-values: memory_limit=2G
 
@@ -47,6 +48,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
+          extensions: sockets
           coverage: none
 
       - name: Install dependencies
@@ -69,6 +71,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
+          extensions: sockets
           coverage: none
           ini-values: memory_limit=2G
 

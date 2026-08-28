@@ -1,0 +1,16 @@
+{
+    "name": "fixture/demo",
+    "description": "Fixture app module exercising session and authentication state for the in-process request harness",
+    "type": "marko-module",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Marko\\Roadrunner\\Tests\\Fixtures\\Demo\\": "src/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
