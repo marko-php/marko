@@ -26,4 +26,13 @@ interface ContainerInterface extends PsrContainerInterface
      * Invoke a callable with auto-resolved dependencies.
      */
     public function call(Closure $callable): mixed;
+
+    /**
+     * Instances already resolved, keyed by binding identifier. Never
+     * forces instantiation — returns only what has already been built.
+     * Pass an interface to return only instances implementing it.
+     *
+     * @return array<string, object>
+     */
+    public function resolvedInstances(?string $interface = null): array;
 }

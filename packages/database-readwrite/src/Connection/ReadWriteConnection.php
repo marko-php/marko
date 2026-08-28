@@ -137,10 +137,26 @@ class ReadWriteConnection implements ConnectionInterface, TransactionInterface, 
         $this->stickyWrite = false;
     }
 
+    /**
+     * Rolls back a transaction abandoned by a request that threw before
+     * commit()/rollback(), then clears the sticky-write flag.
+     *
+     * The rollback runs first (inside try) and the sticky-state reset
+     * runs in finally so it always happens, even if the rollback itself
+     * throws. The exception is intentionally not swallowed here: a
+     * failed rollback means the pooled connection may still be in an
+     * unknown transactional state, and the caller needs to know.
+     */
     #[Override]
     public function reset(): void
     {
-        $this->resetStickyState();
+        try {
+            if ($this->write->inTransaction()) {
+                $this->write->rollback();
+            }
+        } finally {
+            $this->resetStickyState();
+        }
     }
 
     /**

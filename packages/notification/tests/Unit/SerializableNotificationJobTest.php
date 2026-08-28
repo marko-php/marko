@@ -204,6 +204,11 @@ describe('SendNotificationJob serialization', function (): void {
                 {
                     return null;
                 }
+
+                public function resolvedInstances(?string $interface = null): array
+                {
+                    return [];
+                }
             };
 
             $unserialized->setContainer($container);
@@ -342,6 +347,11 @@ describe('SendNotificationJob serialization', function (): void {
                 public function call(Closure $callable): mixed
                 {
                     return null;
+                }
+
+                public function resolvedInstances(?string $interface = null): array
+                {
+                    return [];
                 }
             };
 

@@ -45,6 +45,11 @@ function createStubContainer(object $observer): ContainerInterface
         {
             return null;
         }
+
+        public function resolvedInstances(?string $interface = null): array
+        {
+            return [];
+        }
     };
 }
 
@@ -276,6 +281,11 @@ describe('AsyncObserverJob', function (): void {
             public function call(Closure $callable): mixed
             {
                 return null;
+            }
+
+            public function resolvedInstances(?string $interface = null): array
+            {
+                return [];
             }
         };
 

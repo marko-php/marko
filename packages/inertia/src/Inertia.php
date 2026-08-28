@@ -8,15 +8,17 @@ use Closure;
 use JsonException;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigException;
+use Marko\Core\Contracts\ResettableInterface;
 use Marko\Inertia\Exceptions\InertiaConfigurationException;
 use Marko\Inertia\Ssr\SsrClient;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Vite\Vite;
+use Override;
 use stdClass;
 
-class Inertia
+class Inertia implements ResettableInterface
 {
     /** @var array<string, mixed> */
     private array $shared = [];
@@ -46,6 +48,16 @@ class Inertia
         }
 
         $this->shared[$key] = $value;
+    }
+
+    /**
+     * Clear shared props so a long-running worker does not leak them
+     * into a subsequent request's Inertia response.
+     */
+    #[Override]
+    public function reset(): void
+    {
+        $this->shared = [];
     }
 
     /**

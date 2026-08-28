@@ -398,6 +398,11 @@ describe('AdvancedErrorHandler registration', function (): void {
                 {
                     return $callable($this);
                 }
+
+                public function resolvedInstances(?string $interface = null): array
+                {
+                    return [];
+                }
             };
 
             ($module['boot'])($container);

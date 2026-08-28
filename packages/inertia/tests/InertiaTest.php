@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Contracts\ResettableInterface;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Inertia\Exceptions\InertiaConfigurationException;
 use Marko\Inertia\Inertia;
@@ -132,6 +133,53 @@ test('inertia merges shared data with page props', function () {
     $data = json_decode($response->body(), true);
     expect($data['props']['flash']['message'])->toBe('Hello')
         ->and($data['props']['user']['name'])->toBe('Test');
+});
+
+test('it implements the resettable contract', function () {
+    $inertia = createInertia();
+
+    expect($inertia)->toBeInstanceOf(ResettableInterface::class);
+});
+
+test('it clears shared props when reset', function () {
+    $inertia = createInertia();
+    $inertia->share('user', ['name' => 'Alice']);
+
+    $inertia->reset();
+
+    $request = new Request(server: ['HTTP_X_INERTIA' => 'true']);
+    $response = $inertia->render($request, 'Dashboard');
+
+    $data = json_decode($response->body(), true);
+    expect($data['props'])->not->toHaveKey('user');
+});
+
+test('it does not carry shared props into a later render after reset', function () {
+    $inertia = createInertia();
+    $inertia->share('user', ['name' => 'Alice']);
+
+    $request = new Request(server: ['HTTP_X_INERTIA' => 'true']);
+    $firstResponse = $inertia->render($request, 'Dashboard');
+    $firstData = json_decode($firstResponse->body(), true);
+
+    $inertia->reset();
+
+    $secondResponse = $inertia->render($request, 'Dashboard');
+    $secondData = json_decode($secondResponse->body(), true);
+
+    expect($firstData['props']['user']['name'])->toBe('Alice')
+        ->and($secondData['props'])->not->toHaveKey('user');
+});
+
+test('it leaves shared props intact when not reset', function () {
+    $inertia = createInertia();
+    $inertia->share('user', ['name' => 'Alice']);
+
+    $request = new Request(server: ['HTTP_X_INERTIA' => 'true']);
+    $response = $inertia->render($request, 'Dashboard');
+
+    $data = json_decode($response->body(), true);
+    expect($data['props']['user']['name'])->toBe('Alice');
 });
 
 test('inertia location redirect returns x-inertia-location header', function () {

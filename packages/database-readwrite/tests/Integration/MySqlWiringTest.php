@@ -242,6 +242,14 @@ function makeMySqlContainer(ConfigRepositoryInterface $config, ConnectionFactory
         {
             return $callable($this);
         }
+
+        /**
+         * @return array<string, object>
+         */
+        public function resolvedInstances(?string $interface = null): array
+        {
+            return [];
+        }
     };
 }
 

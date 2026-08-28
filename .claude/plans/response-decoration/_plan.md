@@ -96,6 +96,9 @@ But `SessionMiddleware` is global middleware registered by the session drivers (
 | 006 | Session cookie travels on the Response | 002, 003, 006a | completed |
 | 007 | Architecture test forbidding the rebuild pattern | 004 | completed |
 | 009 | Request-scoped Session and auth guard | 006, 008 | completed |
+| 012 | Expose resolvedInstances on ContainerInterface | 011 | completed |
+| 013 | Inertia implements ResettableInterface | 008 | completed |
+| 014 | Roll back open transactions on reset | 010 | completed |
 
 Batches: **(1)** 001, 006a, 008, 011 → **(2)** 002, 010 → **(3)** 003, 004, 005 → **(4)** 006, 007 → **(5)** 009.
 

@@ -52,6 +52,11 @@ function createIntegrationNullContainer(): ContainerInterface
         {
             return null;
         }
+
+        public function resolvedInstances(?string $interface = null): array
+        {
+            return [];
+        }
     };
 }
 
@@ -372,6 +377,11 @@ describe('Integration Tests', function (): void {
             {
                 return null;
             }
+
+            public function resolvedInstances(?string $interface = null): array
+            {
+                return [];
+            }
         };
 
         $poppedJob->setContainer($container);
@@ -436,6 +446,11 @@ describe('Integration Tests', function (): void {
                 public function call(Closure $callable): mixed
                 {
                     return null;
+                }
+
+                public function resolvedInstances(?string $interface = null): array
+                {
+                    return [];
                 }
             };
 
@@ -509,6 +524,11 @@ describe('Integration Tests', function (): void {
                 public function call(Closure $callable): mixed
                 {
                     return null;
+                }
+
+                public function resolvedInstances(?string $interface = null): array
+                {
+                    return [];
                 }
             };
 

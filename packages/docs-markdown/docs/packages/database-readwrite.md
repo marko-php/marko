@@ -181,7 +181,9 @@ Sticky writes (via `execute()` or `beginTransaction()`) bypass all replicas enti
 
 In PHP-FPM the sticky flag is cleared automatically at the end of each request because each request is a new process. In a queue worker or other long-running process the sticky flag persists for the lifetime of the process. Call `resetStickyState()` between jobs to restore replica routing:
 
-`ReadWriteConnection` also implements `Marko\Core\Contracts\ResettableInterface`, so a worker that resets every registered `ResettableInterface` implementation between requests will clear the sticky flag automatically via `reset()`, which delegates to `resetStickyState()`. Calling `resetStickyState()` directly remains supported for callers that don't go through the contract.
+`ReadWriteConnection` also implements `Marko\Core\Contracts\ResettableInterface`, so a worker that resets every registered `ResettableInterface` implementation between requests will clear the sticky flag automatically via `reset()`. Calling `resetStickyState()` directly remains supported for callers that don't go through the contract.
+
+Beyond clearing the sticky flag, `reset()` also rolls back any transaction left open by a request that called `beginTransaction()` directly and then threw before `commit()`/`rollback()`. Without this, the underlying write connection stays mid-transaction on the pooled connection, and the next request's writes would silently land inside the previous request's abandoned transaction. The rollback only runs when a transaction is actually open; if the rollback itself throws, the sticky flag is still cleared before the exception propagates, so the connection is never left permanently sticky even when a reset only partially succeeds.
 
 ```php
 use Marko\Database\ReadWrite\Connection\ReadWriteConnection;
@@ -256,7 +258,7 @@ Implements `ConnectionInterface`, `TransactionInterface`, and `ResettableInterfa
 | `transaction(callable $callback): mixed` | Write (sets sticky temporarily) | Run a callback inside an auto-managed transaction; sticky flag is set for the callback duration and cleared on completion |
 | `driverName(): string` | Write (delegates) | Return the write connection's driver name (e.g. `'mysql'`, `'pgsql'`) |
 | `resetStickyState(): void` | — | Clear the sticky flag; subsequent reads route to replicas again |
-| `reset(): void` | — | `ResettableInterface` contract method; delegates to `resetStickyState()` |
+| `reset(): void` | — | `ResettableInterface` contract method; rolls back an open transaction (if any) and clears the sticky flag |
 
 ### ReadException
 
