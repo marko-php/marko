@@ -7,10 +7,13 @@ use Marko\RateLimiter\Contracts\RateLimiterInterface;
 use Marko\RateLimiter\Exceptions\ClientIpException;
 use Marko\RateLimiter\Middleware\RateLimitMiddleware;
 use Marko\RateLimiter\RateLimitResult;
+use Marko\RateLimiter\Tests\TaggedResponse;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Testing\Fake\FakeConfigRepository;
+
+use function Marko\RateLimiter\Tests\createTaggedResponse;
 
 function createMockLimiter(
     RateLimitResult $result,
@@ -71,7 +74,7 @@ describe('RateLimitMiddleware', function (): void {
 
         $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
         $request = new Request(server: ['REMOTE_ADDR' => '192.168.1.1']);
-        $next = fn (Request $r) => new Response('OK', 200);
+        $next = fn (Request $r): Response => new Response('OK', 200);
 
         $response = $middleware->handle($request, $next);
 
@@ -88,7 +91,7 @@ describe('RateLimitMiddleware', function (): void {
         $nextCalled = false;
         $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
         $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.1']);
-        $next = function (Request $r) use (&$nextCalled) {
+        $next = function (Request $r) use (&$nextCalled): Response {
             $nextCalled = true;
 
             return new Response('OK');
@@ -109,7 +112,7 @@ describe('RateLimitMiddleware', function (): void {
         $nextCalled = false;
         $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
         $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.1']);
-        $next = function (Request $r) use (&$nextCalled) {
+        $next = function (Request $r) use (&$nextCalled): Response {
             $nextCalled = true;
 
             return new Response('OK');
@@ -134,7 +137,7 @@ describe('RateLimitMiddleware', function (): void {
             maxAttempts: 100,
         );
         $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.1']);
-        $next = fn (Request $r) => new Response('OK');
+        $next = fn (Request $r): Response => new Response('OK');
 
         $response = $middleware->handle($request, $next);
 
@@ -155,7 +158,7 @@ describe('RateLimitMiddleware', function (): void {
 
         $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
         $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.1']);
-        $next = fn (Request $r) => new Response('OK');
+        $next = fn (Request $r): Response => new Response('OK');
 
         $response = $middleware->handle($request, $next);
 
@@ -202,7 +205,7 @@ describe('RateLimitMiddleware', function (): void {
 
         $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
         $request = new Request(server: ['REMOTE_ADDR' => '203.0.113.50']);
-        $next = fn (Request $r) => new Response('OK');
+        $next = fn (Request $r): Response => new Response('OK');
 
         $middleware->handle($request, $next);
 
@@ -246,7 +249,7 @@ describe('RateLimitMiddleware', function (): void {
 
         $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
         $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.99']);
-        $next = fn (Request $r) => new Response('OK');
+        $next = fn (Request $r): Response => new Response('OK');
 
         $middleware->handle($request, $next);
 
@@ -261,9 +264,28 @@ describe('RateLimitMiddleware', function (): void {
 
         $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
         $request = new Request();
-        $next = fn (Request $r) => new Response('OK');
+        $next = fn (Request $r): Response => new Response('OK');
 
-        expect(fn () => $middleware->handle($request, $next))
+        expect(fn (): Response => $middleware->handle($request, $next))
             ->toThrow(ClientIpException::class);
+    });
+
+    it('preserves the response subclass through rate limit middleware', function (): void {
+        $limiter = createMockLimiter(new RateLimitResult(
+            allowed: true,
+            remaining: 42,
+        ));
+
+        $middleware = new RateLimitMiddleware($limiter, createMiddlewareResolver());
+        $request = new Request(server: ['REMOTE_ADDR' => '10.0.0.1']);
+        $next = fn (Request $r): TaggedResponse => createTaggedResponse(tag: 'from-controller');
+
+        $response = $middleware->handle($request, $next);
+
+        /** @var TaggedResponse $response */
+        expect($response)
+            ->toBeInstanceOf(TaggedResponse::class)
+            ->and($response->tag)->toBe('from-controller')
+            ->and($response->headers())->toHaveKey('X-RateLimit-Limit');
     });
 });

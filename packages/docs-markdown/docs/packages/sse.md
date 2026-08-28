@@ -128,6 +128,8 @@ return new StreamingResponse($stream);
 
 **Reconnection:** When the browser reconnects after a disconnect, it sends a `Last-Event-ID` header containing the last event ID it received. Read it with `$request->header('Last-Event-ID')` and pass it to your data source to resume from where the stream left off.
 
+**Middleware compatibility:** Any middleware in front of an SSE route must [decorate the response rather than rebuild it](/docs/packages/routing/#decorating-responses) --- for example `$response->withHeader(...)` instead of `new Response($response->body(), ...)`. Rebuilding discards the concrete class, so a `StreamingResponse` would be silently downgraded to a plain `Response` and the stream would never send.
+
 ## API Reference
 
 ### SseEvent

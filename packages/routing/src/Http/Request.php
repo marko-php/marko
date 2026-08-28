@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Marko\Routing\Http;
 
+use NoDiscard;
+
 readonly class Request
 {
     /**
      * @param array<string, mixed> $server
      * @param array<string, mixed> $query
      * @param array<string, mixed> $post
+     * @param array<string, string> $cookies
      */
     public function __construct(
         private array $server = [],
@@ -18,6 +21,7 @@ readonly class Request
         private string $body = '',
         private ?string $controller = null,
         private ?string $action = null,
+        private array $cookies = [],
     ) {}
 
     public static function fromGlobals(): self
@@ -39,6 +43,7 @@ readonly class Request
             query: $_GET,
             post: $post,
             body: $body,
+            cookies: $_COOKIE,
         );
     }
 
@@ -83,6 +88,20 @@ readonly class Request
         return $this->post[$key] ?? $default;
     }
 
+    /**
+     * @return ($key is null ? array<string, string> : mixed)
+     */
+    public function cookie(
+        ?string $key = null,
+        mixed $default = null,
+    ): mixed {
+        if ($key === null) {
+            return $this->cookies;
+        }
+
+        return $this->cookies[$key] ?? $default;
+    }
+
     public function body(): string
     {
         return $this->body;
@@ -101,6 +120,7 @@ readonly class Request
         return $this->server('REMOTE_ADDR');
     }
 
+    #[NoDiscard]
     public function withRoute(
         string $controller,
         string $action,
@@ -112,6 +132,7 @@ readonly class Request
             body: $this->body,
             controller: $controller,
             action: $action,
+            cookies: $this->cookies,
         );
     }
 

@@ -166,6 +166,47 @@ return [
 ];
 ```
 
+### Resetting Request-Scoped State in Long-Running Processes
+
+PHP-FPM ends the process after every request, so any state a singleton accumulates disappears automatically. A long-running process --- a worker or event loop that reuses one PHP process across many requests --- has no such reset, so a singleton that caches per-request state (the current session, the authenticated user, a sticky database routing flag) leaks across requests once the process picks up a different user.
+
+Implement `ResettableInterface` on any singleton that holds this kind of state:
+
+```php
+use Marko\Core\Contracts\ResettableInterface;
+
+class RequestScopedCache implements ResettableInterface
+{
+    private array $entries = [];
+
+    public function remember(string $key, mixed $value): void
+    {
+        $this->entries[$key] = $value;
+    }
+
+    public function reset(): void
+    {
+        $this->entries = [];
+    }
+}
+```
+
+`reset()` must be non-destructive --- it clears the instance's in-memory tracking, not anything persisted. Resetting a session service forgets which session the instance was serving; it does not delete the stored session.
+
+A long-running process discovers what to reset via `Container::resolvedInstances()`, which returns only instances the container has already built --- never triggering resolution --- optionally filtered to those implementing an interface:
+
+```php
+use Marko\Core\Contracts\ResettableInterface;
+
+foreach ($container->resolvedInstances(ResettableInterface::class) as $resettable) {
+    $resettable->reset();
+}
+```
+
+`resolvedInstances()` is declared on the concrete `Container` class, not on `ContainerInterface` --- code that needs it must type-hint `Container` or check `instanceof Container` rather than relying on the interface.
+
+Current implementors: `Session` ([marko/session](/docs/packages/session/)), `SessionGuard` ([marko/authentication](/docs/packages/authentication/)), and `ReadWriteConnection` ([marko/database-readwrite](/docs/packages/database-readwrite/)).
+
 ### Discovery Cache
 
 On every boot, Marko scans all module PHP files to discover `#[Preference]`, `#[Plugin]`, `#[Observer]`, and `#[Command]` attributes. In production this scan can be eliminated by compiling its results into a single PHP file --- the discovery cache.
@@ -295,6 +336,19 @@ interface ContainerInterface extends PsrContainerInterface
     public function call(Closure $callable): mixed;
 }
 ```
+
+The concrete `Container` class additionally provides `resolvedInstances(?string $interface = null): array` --- not part of `ContainerInterface`. It returns only instances already built, optionally filtered to those implementing `$interface`, and never triggers resolution as a side effect. See [Resetting Request-Scoped State](#resetting-request-scoped-state-in-long-running-processes) above.
+
+### Contracts
+
+```php
+interface ResettableInterface
+{
+    public function reset(): void;
+}
+```
+
+Implemented by services that hold request-scoped state which must be cleared between requests in a long-running process. See [Resetting Request-Scoped State](#resetting-request-scoped-state-in-long-running-processes) above.
 
 ### Events
 

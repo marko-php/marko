@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Cors\Middleware;
 
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Cors\Config\CorsConfig;
 use Marko\Cors\Exceptions\CorsException;
 use Marko\Routing\Http\Request;
@@ -13,11 +14,11 @@ use Marko\Routing\Middleware\MiddlewareInterface;
 readonly class CorsMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private CorsConfig $config,
+        private CorsConfig $corsConfig,
     ) {}
 
     /**
-     * @throws CorsException
+     * @throws ConfigNotFoundException|CorsException
      */
     public function handle(
         Request $request,
@@ -29,20 +30,20 @@ readonly class CorsMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
-        if ($this->config->supportsCredentials() && in_array('*', $this->config->allowedOrigins(), true)) {
+        if ($this->corsConfig->supportsCredentials() && in_array('*', $this->corsConfig->allowedOrigins(), true)) {
             throw CorsException::wildcardWithCredentials();
         }
 
         if ($request->method() === 'OPTIONS') {
             $preflightHeaders = [
                 'Access-Control-Allow-Origin' => $origin,
-                'Access-Control-Allow-Methods' => implode(', ', $this->config->allowedMethods()),
-                'Access-Control-Allow-Headers' => implode(', ', $this->config->allowedHeaders()),
+                'Access-Control-Allow-Methods' => implode(', ', $this->corsConfig->allowedMethods()),
+                'Access-Control-Allow-Headers' => implode(', ', $this->corsConfig->allowedHeaders()),
                 'Vary' => 'Origin',
             ];
 
-            if ($this->config->maxAge() > 0) {
-                $preflightHeaders['Access-Control-Max-Age'] = (string) $this->config->maxAge();
+            if ($this->corsConfig->maxAge() > 0) {
+                $preflightHeaders['Access-Control-Max-Age'] = (string) $this->corsConfig->maxAge();
             }
 
             return new Response(
@@ -52,28 +53,26 @@ readonly class CorsMiddleware implements MiddlewareInterface
             );
         }
 
+        /** @var Response $response */
         $response = $next($request);
         $corsHeaders = [
             'Access-Control-Allow-Origin' => $origin,
             'Vary' => 'Origin',
         ];
 
-        if ($this->config->supportsCredentials()) {
+        if ($this->corsConfig->supportsCredentials()) {
             $corsHeaders['Access-Control-Allow-Credentials'] = 'true';
         }
 
-        $headers = array_merge($response->headers(), $corsHeaders);
-
-        return new Response(
-            body: $response->body(),
-            statusCode: $response->statusCode(),
-            headers: $headers,
-        );
+        return $response->withHeaders($corsHeaders);
     }
 
+    /**
+     * @throws ConfigNotFoundException
+     */
     private function isOriginAllowed(string $origin): bool
     {
-        $allowedOrigins = $this->config->allowedOrigins();
+        $allowedOrigins = $this->corsConfig->allowedOrigins();
 
         if (in_array('*', $allowedOrigins, true)) {
             return true;

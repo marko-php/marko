@@ -44,9 +44,9 @@ class ProductController
 
 `PageCacheMiddleware` is automatically registered as global middleware. On the first request the response is served from the controller and stored. Subsequent requests return the stored response without executing the controller.
 
-### Known Limitation
+### Cookies Are Never Cached
 
-Responses with a `Set-Cookie` header are never cached in v1. This includes responses that set analytics or session cookies --- if your response sets any cookie, it bypasses the cache entirely.
+Responses carrying any cookie --- whether attached via `Response::withCookie()` or set directly with a raw `Set-Cookie` header --- are never cached. This is a deliberate security boundary, not a limitation to work around: a cached `Set-Cookie` would be replayed to every later visitor, leaking one user's session (or any other cookie) to everybody else. This includes responses that set analytics or session cookies --- if your response carries any cookie, it bypasses the cache entirely.
 
 ### Extending Cacheability Rules
 

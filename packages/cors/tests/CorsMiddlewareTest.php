@@ -5,19 +5,14 @@ declare(strict_types=1);
 use Marko\Cors\Config\CorsConfig;
 use Marko\Cors\Exceptions\CorsException;
 use Marko\Cors\Middleware\CorsMiddleware;
+use Marko\Cors\Tests\Helpers;
+use Marko\Cors\Tests\TaggedResponse;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Testing\Fake\FakeConfigRepository;
 
 it('adds Access-Control-Allow-Origin header for allowed origins', function (): void {
-    $config = new CorsConfig(new FakeConfigRepository([
-        'cors.allowed_origins' => ['https://example.com'],
-        'cors.allowed_methods' => ['GET', 'POST'],
-        'cors.allowed_headers' => ['Content-Type'],
-        'cors.expose_headers' => [],
-        'cors.supports_credentials' => false,
-        'cors.max_age' => 0,
-    ]));
+    $config = Helpers::createCorsConfig();
 
     $middleware = new CorsMiddleware($config);
 
@@ -35,14 +30,7 @@ it('adds Access-Control-Allow-Origin header for allowed origins', function (): v
 });
 
 it('handles preflight OPTIONS requests with 204 No Content response', function (): void {
-    $config = new CorsConfig(new FakeConfigRepository([
-        'cors.allowed_origins' => ['https://example.com'],
-        'cors.allowed_methods' => ['GET', 'POST'],
-        'cors.allowed_headers' => ['Content-Type'],
-        'cors.expose_headers' => [],
-        'cors.supports_credentials' => false,
-        'cors.max_age' => 0,
-    ]));
+    $config = Helpers::createCorsConfig();
 
     $middleware = new CorsMiddleware($config);
 
@@ -70,14 +58,7 @@ it('handles preflight OPTIONS requests with 204 No Content response', function (
 });
 
 it('rejects requests from origins not in allowed list', function (): void {
-    $config = new CorsConfig(new FakeConfigRepository([
-        'cors.allowed_origins' => ['https://example.com'],
-        'cors.allowed_methods' => ['GET', 'POST'],
-        'cors.allowed_headers' => ['Content-Type'],
-        'cors.expose_headers' => [],
-        'cors.supports_credentials' => false,
-        'cors.max_age' => 0,
-    ]));
+    $config = Helpers::createCorsConfig();
 
     $middleware = new CorsMiddleware($config);
 
@@ -121,14 +102,7 @@ it('reads CORS configuration from config/cors.php via CorsConfig', function (): 
 });
 
 it('supports wildcard star origin matching', function (): void {
-    $config = new CorsConfig(new FakeConfigRepository([
-        'cors.allowed_origins' => ['*'],
-        'cors.allowed_methods' => ['GET', 'POST'],
-        'cors.allowed_headers' => ['Content-Type'],
-        'cors.expose_headers' => [],
-        'cors.supports_credentials' => false,
-        'cors.max_age' => 0,
-    ]));
+    $config = Helpers::createCorsConfig(allowedOrigins: ['*']);
 
     $middleware = new CorsMiddleware($config);
 
@@ -146,14 +120,7 @@ it('supports wildcard star origin matching', function (): void {
 });
 
 it('includes Access-Control-Allow-Credentials header when configured', function (): void {
-    $config = new CorsConfig(new FakeConfigRepository([
-        'cors.allowed_origins' => ['https://example.com'],
-        'cors.allowed_methods' => ['GET', 'POST'],
-        'cors.allowed_headers' => ['Content-Type'],
-        'cors.expose_headers' => [],
-        'cors.supports_credentials' => true,
-        'cors.max_age' => 0,
-    ]));
+    $config = Helpers::createCorsConfig(supportsCredentials: true);
 
     $middleware = new CorsMiddleware($config);
 
@@ -171,14 +138,7 @@ it('includes Access-Control-Allow-Credentials header when configured', function 
 });
 
 it('sets Access-Control-Max-Age header for preflight caching', function (): void {
-    $config = new CorsConfig(new FakeConfigRepository([
-        'cors.allowed_origins' => ['https://example.com'],
-        'cors.allowed_methods' => ['GET', 'POST'],
-        'cors.allowed_headers' => ['Content-Type'],
-        'cors.expose_headers' => [],
-        'cors.supports_credentials' => false,
-        'cors.max_age' => 3600,
-    ]));
+    $config = Helpers::createCorsConfig(maxAge: 3600);
 
     $middleware = new CorsMiddleware($config);
 
@@ -197,14 +157,7 @@ it('sets Access-Control-Max-Age header for preflight caching', function (): void
 });
 
 it('leaves the response unchanged and adds no CORS headers when the Origin is not allowed', function (): void {
-    $config = new CorsConfig(new FakeConfigRepository([
-        'cors.allowed_origins' => ['https://trusted.com'],
-        'cors.allowed_methods' => ['GET', 'POST'],
-        'cors.allowed_headers' => ['Content-Type'],
-        'cors.expose_headers' => [],
-        'cors.supports_credentials' => false,
-        'cors.max_age' => 0,
-    ]));
+    $config = Helpers::createCorsConfig(allowedOrigins: ['https://trusted.com']);
 
     $middleware = new CorsMiddleware($config);
 
@@ -223,14 +176,7 @@ it('leaves the response unchanged and adds no CORS headers when the Origin is no
 });
 
 it('adds a Vary: Origin header on the preflight OPTIONS response when the origin is allowed', function (): void {
-    $config = new CorsConfig(new FakeConfigRepository([
-        'cors.allowed_origins' => ['https://example.com'],
-        'cors.allowed_methods' => ['GET', 'POST'],
-        'cors.allowed_headers' => ['Content-Type'],
-        'cors.expose_headers' => [],
-        'cors.supports_credentials' => false,
-        'cors.max_age' => 0,
-    ]));
+    $config = Helpers::createCorsConfig();
 
     $middleware = new CorsMiddleware($config);
 
@@ -248,14 +194,7 @@ it('adds a Vary: Origin header on the preflight OPTIONS response when the origin
 });
 
 it('adds a Vary: Origin header when reflecting an allowed origin on a normal request', function (): void {
-    $config = new CorsConfig(new FakeConfigRepository([
-        'cors.allowed_origins' => ['https://example.com'],
-        'cors.allowed_methods' => ['GET', 'POST'],
-        'cors.allowed_headers' => ['Content-Type'],
-        'cors.expose_headers' => [],
-        'cors.supports_credentials' => false,
-        'cors.max_age' => 0,
-    ]));
+    $config = Helpers::createCorsConfig();
 
     $middleware = new CorsMiddleware($config);
 
@@ -275,14 +214,10 @@ it('adds a Vary: Origin header when reflecting an allowed origin on a normal req
 it(
     'reflects an explicitly allowed origin and emits Access-Control-Allow-Credentials true when credentials are supported',
     function (): void {
-        $config = new CorsConfig(new FakeConfigRepository([
-            'cors.allowed_origins' => ['https://trusted.com'],
-            'cors.allowed_methods' => ['GET', 'POST'],
-            'cors.allowed_headers' => ['Content-Type'],
-            'cors.expose_headers' => [],
-            'cors.supports_credentials' => true,
-            'cors.max_age' => 0,
-        ]));
+        $config = Helpers::createCorsConfig(
+            allowedOrigins: ['https://trusted.com'],
+            supportsCredentials: true,
+        );
 
         $middleware = new CorsMiddleware($config);
 
@@ -305,14 +240,7 @@ it(
 it(
     'never emits Access-Control-Allow-Credentials together with a wildcard Access-Control-Allow-Origin',
     function (): void {
-        $config = new CorsConfig(new FakeConfigRepository([
-            'cors.allowed_origins' => ['*'],
-            'cors.allowed_methods' => ['GET', 'POST'],
-            'cors.allowed_headers' => ['Content-Type'],
-            'cors.expose_headers' => [],
-            'cors.supports_credentials' => false,
-            'cors.max_age' => 0,
-        ]));
+        $config = Helpers::createCorsConfig(allowedOrigins: ['*']);
 
         $middleware = new CorsMiddleware($config);
 
@@ -332,14 +260,7 @@ it(
 );
 
 it('throws a CorsException when allowed origins contain a wildcard and credentials are supported', function (): void {
-    $config = new CorsConfig(new FakeConfigRepository([
-        'cors.allowed_origins' => ['*'],
-        'cors.allowed_methods' => ['GET', 'POST'],
-        'cors.allowed_headers' => ['Content-Type'],
-        'cors.expose_headers' => [],
-        'cors.supports_credentials' => true,
-        'cors.max_age' => 0,
-    ]));
+    $config = Helpers::createCorsConfig(allowedOrigins: ['*'], supportsCredentials: true);
 
     $middleware = new CorsMiddleware($config);
 
@@ -350,6 +271,27 @@ it('throws a CorsException when allowed origins contain a wildcard and credentia
 
     $next = fn (Request $req): Response => new Response(body: 'OK');
 
-    expect(fn () => $middleware->handle($request, $next))
+    expect(fn (): Response => $middleware->handle($request, $next))
         ->toThrow(CorsException::class);
+});
+
+it('preserves the response subclass through the cors package middleware', function (): void {
+    $config = Helpers::createCorsConfig();
+
+    $middleware = new CorsMiddleware($config);
+
+    $request = new Request(server: [
+        'REQUEST_METHOD' => 'GET',
+        'HTTP_ORIGIN' => 'https://example.com',
+    ]);
+
+    $next = fn (Request $req): TaggedResponse => Helpers::createTaggedResponse(tag: 'from-controller');
+
+    $response = $middleware->handle($request, $next);
+
+    /** @var TaggedResponse $response */
+    expect($response)
+        ->toBeInstanceOf(TaggedResponse::class)
+        ->and($response->tag)->toBe('from-controller')
+        ->and($response->headers()['Access-Control-Allow-Origin'])->toBe('https://example.com');
 });

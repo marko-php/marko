@@ -181,6 +181,8 @@ Sticky writes (via `execute()` or `beginTransaction()`) bypass all replicas enti
 
 In PHP-FPM the sticky flag is cleared automatically at the end of each request because each request is a new process. In a queue worker or other long-running process the sticky flag persists for the lifetime of the process. Call `resetStickyState()` between jobs to restore replica routing:
 
+`ReadWriteConnection` also implements `Marko\Core\Contracts\ResettableInterface`, so a worker that resets every registered `ResettableInterface` implementation between requests will clear the sticky flag automatically via `reset()`, which delegates to `resetStickyState()`. Calling `resetStickyState()` directly remains supported for callers that don't go through the contract.
+
 ```php
 use Marko\Database\ReadWrite\Connection\ReadWriteConnection;
 use Marko\Database\Connection\ConnectionInterface;
@@ -236,7 +238,7 @@ Your `CustomReadWriteConnection` must extend `ReadWriteConnection` (or independe
 
 ### ReadWriteConnection
 
-Implements `ConnectionInterface` and `TransactionInterface`. Routes reads to replicas and writes to the primary.
+Implements `ConnectionInterface`, `TransactionInterface`, and `ResettableInterface`. Routes reads to replicas and writes to the primary.
 
 | Method | Routes To | Description |
 |--------|-----------|-------------|
@@ -254,6 +256,7 @@ Implements `ConnectionInterface` and `TransactionInterface`. Routes reads to rep
 | `transaction(callable $callback): mixed` | Write (sets sticky temporarily) | Run a callback inside an auto-managed transaction; sticky flag is set for the callback duration and cleared on completion |
 | `driverName(): string` | Write (delegates) | Return the write connection's driver name (e.g. `'mysql'`, `'pgsql'`) |
 | `resetStickyState(): void` | — | Clear the sticky flag; subsequent reads route to replicas again |
+| `reset(): void` | — | `ResettableInterface` contract method; delegates to `resetStickyState()` |
 
 ### ReadException
 

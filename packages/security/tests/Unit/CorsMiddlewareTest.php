@@ -7,39 +7,24 @@ use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Security\Config\SecurityConfig;
 use Marko\Security\Middleware\CorsMiddleware;
+use Marko\Security\Tests\Helpers;
+use Marko\Security\Tests\TaggedResponse;
 use Marko\Testing\Fake\FakeConfigRepository;
-
-function createCorsConfig(
-    array $configData = [],
-): SecurityConfig {
-    return new SecurityConfig(new FakeConfigRepository($configData));
-}
-
-function defaultCorsConfig(
-    array $overrides = [],
-): array {
-    return array_merge([
-        'security.cors.allowed_origins' => ['https://example.com'],
-        'security.cors.allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        'security.cors.allowed_headers' => ['Content-Type', 'X-Requested-With', 'X-CSRF-TOKEN'],
-        'security.cors.max_age' => 86400,
-    ], $overrides);
-}
 
 describe('CorsMiddleware', function (): void {
     it('implements MiddlewareInterface', function (): void {
-        $config = createCorsConfig(defaultCorsConfig());
+        $config = Helpers::createSecurityConfig(Helpers::defaultCorsConfig());
         $middleware = new CorsMiddleware($config);
 
         expect($middleware)->toBeInstanceOf(MiddlewareInterface::class);
     });
 
     it('passes request through when no Origin header present', function (): void {
-        $config = createCorsConfig(defaultCorsConfig());
+        $config = Helpers::createSecurityConfig(Helpers::defaultCorsConfig());
         $middleware = new CorsMiddleware($config);
 
         $request = new Request(server: ['REQUEST_METHOD' => 'GET']);
-        $next = fn (Request $r) => new Response('OK', 200);
+        $next = fn (Request $r): Response => new Response('OK', 200);
 
         $response = $middleware->handle($request, $next);
 
@@ -49,14 +34,14 @@ describe('CorsMiddleware', function (): void {
     });
 
     it('adds CORS headers for allowed origin', function (): void {
-        $config = createCorsConfig(defaultCorsConfig());
+        $config = Helpers::createSecurityConfig(Helpers::defaultCorsConfig());
         $middleware = new CorsMiddleware($config);
 
         $request = new Request(server: [
             'REQUEST_METHOD' => 'GET',
             'HTTP_ORIGIN' => 'https://example.com',
         ]);
-        $next = fn (Request $r) => new Response('OK', 200);
+        $next = fn (Request $r): Response => new Response('OK', 200);
 
         $response = $middleware->handle($request, $next);
 
@@ -67,14 +52,14 @@ describe('CorsMiddleware', function (): void {
     });
 
     it('rejects request from disallowed origin', function (): void {
-        $config = createCorsConfig(defaultCorsConfig());
+        $config = Helpers::createSecurityConfig(Helpers::defaultCorsConfig());
         $middleware = new CorsMiddleware($config);
 
         $request = new Request(server: [
             'REQUEST_METHOD' => 'GET',
             'HTTP_ORIGIN' => 'https://evil.com',
         ]);
-        $next = fn (Request $r) => new Response('OK', 200);
+        $next = fn (Request $r): Response => new Response('OK', 200);
 
         $response = $middleware->handle($request, $next);
 
@@ -84,7 +69,7 @@ describe('CorsMiddleware', function (): void {
     });
 
     it('handles preflight OPTIONS request with 204 response', function (): void {
-        $config = createCorsConfig(defaultCorsConfig());
+        $config = Helpers::createSecurityConfig(Helpers::defaultCorsConfig());
         $middleware = new CorsMiddleware($config);
 
         $request = new Request(server: [
@@ -92,7 +77,7 @@ describe('CorsMiddleware', function (): void {
             'HTTP_ORIGIN' => 'https://example.com',
         ]);
         $nextCalled = false;
-        $next = function (Request $r) use (&$nextCalled) {
+        $next = function (Request $r) use (&$nextCalled): Response {
             $nextCalled = true;
 
             return new Response('OK', 200);
@@ -110,7 +95,7 @@ describe('CorsMiddleware', function (): void {
     });
 
     it('supports wildcard origin', function (): void {
-        $config = createCorsConfig(defaultCorsConfig([
+        $config = Helpers::createSecurityConfig(Helpers::defaultCorsConfig([
             'security.cors.allowed_origins' => ['*'],
         ]));
         $middleware = new CorsMiddleware($config);
@@ -119,7 +104,7 @@ describe('CorsMiddleware', function (): void {
             'REQUEST_METHOD' => 'GET',
             'HTTP_ORIGIN' => 'https://any-site.com',
         ]);
-        $next = fn (Request $r) => new Response('OK', 200);
+        $next = fn (Request $r): Response => new Response('OK', 200);
 
         $response = $middleware->handle($request, $next);
 
@@ -128,7 +113,7 @@ describe('CorsMiddleware', function (): void {
     });
 
     it('includes configured allowed methods and headers in preflight response', function (): void {
-        $config = createCorsConfig(defaultCorsConfig([
+        $config = Helpers::createSecurityConfig(Helpers::defaultCorsConfig([
             'security.cors.allowed_methods' => ['GET', 'POST'],
             'security.cors.allowed_headers' => ['Content-Type', 'Authorization'],
         ]));
@@ -138,7 +123,7 @@ describe('CorsMiddleware', function (): void {
             'REQUEST_METHOD' => 'OPTIONS',
             'HTTP_ORIGIN' => 'https://example.com',
         ]);
-        $next = fn (Request $r) => new Response('OK', 200);
+        $next = fn (Request $r): Response => new Response('OK', 200);
 
         $response = $middleware->handle($request, $next);
 
@@ -148,12 +133,31 @@ describe('CorsMiddleware', function (): void {
             ->and($response->headers()['Access-Control-Allow-Headers'])->toBe('Content-Type, Authorization');
     });
 
-    it('uses FakeConfigRepository instead of inline config stub in CorsMiddlewareTest', function (): void {
-        $repo = new FakeConfigRepository(defaultCorsConfig());
-        $config = new SecurityConfig($repo);
+    it('builds from a SecurityConfig backed by FakeConfigRepository', function (): void {
+        $repository = new FakeConfigRepository(Helpers::defaultCorsConfig());
+        $config = new SecurityConfig($repository);
         $middleware = new CorsMiddleware($config);
 
-        expect($repo)->toBeInstanceOf(FakeConfigRepository::class)
+        expect($repository)->toBeInstanceOf(FakeConfigRepository::class)
             ->and($middleware)->toBeInstanceOf(MiddlewareInterface::class);
+    });
+
+    it('preserves the response subclass through the security package cors middleware', function (): void {
+        $config = Helpers::createSecurityConfig(Helpers::defaultCorsConfig());
+        $middleware = new CorsMiddleware($config);
+
+        $request = new Request(server: [
+            'REQUEST_METHOD' => 'GET',
+            'HTTP_ORIGIN' => 'https://example.com',
+        ]);
+        $next = fn (Request $r): TaggedResponse => Helpers::createTaggedResponse(tag: 'from-controller');
+
+        $response = $middleware->handle($request, $next);
+
+        /** @var TaggedResponse $response */
+        expect($response)
+            ->toBeInstanceOf(TaggedResponse::class)
+            ->and($response->tag)->toBe('from-controller')
+            ->and($response->headers()['Access-Control-Allow-Origin'])->toBe('https://example.com');
     });
 });

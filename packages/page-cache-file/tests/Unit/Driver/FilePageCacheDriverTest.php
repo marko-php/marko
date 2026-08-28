@@ -228,6 +228,44 @@ it('still round-trips a legitimately stored page-cache entry', function (): void
         ->and($result->headers())->toBe(['X-Test' => 'value']);
 });
 
+it('hydrates a cached response with no cookies', function (): void {
+    $request = createTestRequest('GET', '/no-cookies');
+    $response = new Response(body: 'no cookies here', statusCode: 200);
+    $policy = new CachePolicy(ttl: 3600, tags: []);
+
+    $this->driver->store($request, $response, $policy);
+    $result = $this->driver->lookup($request);
+
+    expect($result)->toBeInstanceOf(Response::class)
+        ->and($result->cookies())->toBeEmpty();
+});
+
+it('hydrates a cache entry written before cookies existed without error', function (): void {
+    $request = createTestRequest('GET', '/legacy');
+    $key = CacheKey::fromRequest($request);
+    $pagesDir = $this->tmpDir . '/pages';
+
+    if (!is_dir($pagesDir)) {
+        mkdir($pagesDir, 0755, true);
+    }
+
+    $legacyPayload = serialize([
+        'status_code' => 200,
+        'body' => 'legacy body',
+        'headers' => ['X-Legacy' => 'yes'],
+        'expires_at' => time() + 9999,
+        'created_at' => time(),
+    ]);
+
+    file_put_contents($pagesDir . '/' . $key->hash() . '.cache', $legacyPayload);
+
+    $result = $this->driver->lookup($request);
+
+    expect($result)->toBeInstanceOf(Response::class)
+        ->and($result->body())->toBe('legacy body')
+        ->and($result->cookies())->toBeEmpty();
+});
+
 it('does not instantiate a disallowed class when decoding a tampered page-cache payload', function (): void {
     $request = createTestRequest('GET', '/tampered');
     $key = CacheKey::fromRequest($request);

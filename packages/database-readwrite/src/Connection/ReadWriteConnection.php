@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Marko\Database\ReadWrite\Connection;
 
+use Marko\Core\Contracts\ResettableInterface;
 use Marko\Core\Exceptions\MarkoException;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\ReadWrite\Exceptions\ReadException;
 use Marko\Database\ReadWrite\Replica\ReplicaSelectorInterface;
+use Override;
 use PDOException;
 
-class ReadWriteConnection implements ConnectionInterface, TransactionInterface
+class ReadWriteConnection implements ConnectionInterface, TransactionInterface, ResettableInterface
 {
     private bool $stickyWrite = false;
 
@@ -133,6 +135,12 @@ class ReadWriteConnection implements ConnectionInterface, TransactionInterface
     public function resetStickyState(): void
     {
         $this->stickyWrite = false;
+    }
+
+    #[Override]
+    public function reset(): void
+    {
+        $this->resetStickyState();
     }
 
     /**

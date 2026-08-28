@@ -75,4 +75,104 @@ describe('StreamingResponse', function (): void {
 
         expect($response->body())->toBe('');
     });
+
+    it('preserves the concrete subclass when decorating with a header', function (): void {
+        $response = new StreamingResponse(
+            stream: new SseStream(dataProvider: fn (): array => []),
+        );
+
+        $decorated = $response->withHeader('X-Custom-Header', 'custom-value');
+
+        expect($decorated)->toBeInstanceOf(StreamingResponse::class);
+    });
+
+    it('preserves the concrete subclass when decorating with a status', function (): void {
+        $response = new StreamingResponse(
+            stream: new SseStream(dataProvider: fn (): array => []),
+        );
+
+        $decorated = $response->withStatus(500);
+
+        expect($decorated)->toBeInstanceOf(StreamingResponse::class)
+            ->and($decorated->statusCode())->toBe(500);
+    });
+
+    it('preserves subclass state such as the streaming payload when decorating', function (): void {
+        $stream = new SseStream(dataProvider: fn (): array => []);
+        $response = new StreamingResponse(stream: $stream);
+
+        $decorated = $response->withHeader('X-Custom-Header', 'custom-value');
+
+        $property = new ReflectionProperty(StreamingResponse::class, 'stream');
+
+        expect($property->getValue($decorated))->toBe($stream);
+    });
+
+    it('still streams from a decorated streaming response', function (): void {
+        // send() forcibly closes every output buffer level before it echoes
+        // stream chunks, so ob_start()/ob_get_clean() cannot capture it in
+        // this process. Run it in a real subprocess and capture actual
+        // stdout instead.
+        $autoload = dirname(__DIR__, 3) . '/vendor/autoload.php';
+        $script = <<<PHP
+            <?php
+            require '$autoload';
+
+            use Marko\Sse\SseEvent;
+            use Marko\Sse\SseStream;
+            use Marko\Sse\StreamingResponse;
+
+            \$response = new StreamingResponse(
+                stream: new SseStream(dataProvider: fn (): array => [new SseEvent(data: 'payload')], timeout: 0),
+            );
+
+            \$response->withHeader('X-Custom-Header', 'custom-value')->send();
+            PHP;
+
+        $scriptPath = tempnam(sys_get_temp_dir(), 'streaming_response_test_') . '.php';
+        file_put_contents($scriptPath, $script);
+
+        $process = proc_open(
+            [PHP_BINARY, $scriptPath],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+        );
+
+        $output = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($process);
+        unlink($scriptPath);
+
+        expect($output)->toContain('data: payload');
+    });
+
+    it('does not clobber the sse headers when adding a header to a streaming response', function (): void {
+        $response = new StreamingResponse(
+            stream: new SseStream(dataProvider: fn (): array => []),
+        );
+
+        $decorated = $response->withHeader('X-Custom-Header', 'custom-value');
+
+        expect($decorated->headers())->toBe([
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+            'X-Custom-Header' => 'custom-value',
+        ]);
+    });
+
+    it('emits the same header lines for a streaming response subclass', function (): void {
+        $response = new StreamingResponse(
+            stream: new SseStream(dataProvider: fn (): array => []),
+        );
+
+        expect($response->headerLines())->toBe([
+            'Content-Type: text/event-stream',
+            'Cache-Control: no-cache',
+            'Connection: keep-alive',
+            'X-Accel-Buffering: no',
+        ]);
+    });
 });

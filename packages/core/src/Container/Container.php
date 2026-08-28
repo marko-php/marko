@@ -78,6 +78,25 @@ class Container implements ContainerInterface
     }
 
     /**
+     * Instances already resolved, keyed by binding identifier. Never
+     * triggers resolution — returns only what has already been built.
+     * Pass an interface to return only instances implementing it.
+     *
+     * @return array<string, object>
+     */
+    public function resolvedInstances(?string $interface = null): array
+    {
+        if ($interface === null) {
+            return $this->instances;
+        }
+
+        return array_filter(
+            $this->instances,
+            fn (object $instance): bool => $instance instanceof $interface,
+        );
+    }
+
+    /**
      * @throws BindingException|CircularDependencyException|ReflectionException|PluginException
      */
     public function call(Closure $callable): mixed

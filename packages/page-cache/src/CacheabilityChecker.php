@@ -37,6 +37,10 @@ readonly class CacheabilityChecker
             return false;
         }
 
+        if ($response->cookies() !== []) {
+            return false;
+        }
+
         if ($this->getHeader($response, 'set-cookie') !== null) {
             return false;
         }
@@ -93,12 +97,9 @@ readonly class CacheabilityChecker
     ): ?string {
         $name = strtolower($name);
 
-        foreach ($response->headers() as $key => $value) {
-            if (strtolower($key) === $name) {
-                return $value;
-            }
-        }
-
-        return null;
+        return array_find(
+            $response->headers(),
+            fn (string $value, string $key): bool => strtolower($key) === $name,
+        );
     }
 }

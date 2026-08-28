@@ -52,20 +52,12 @@ readonly class InertiaMiddleware implements MiddlewareInterface
                 $statusCode = 303;
             }
 
-            return new Response(
-                body: $response->body(),
-                statusCode: $statusCode,
-                headers: $headers,
-            );
+            return $response->withHeaders($headers)->withStatus($statusCode);
         }
 
         $headers['X-Inertia'] = 'true';
 
-        return new Response(
-            body: $response->body(),
-            statusCode: $response->statusCode(),
-            headers: $headers,
-        );
+        return $response->withHeaders($headers);
     }
 
     /**

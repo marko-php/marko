@@ -183,6 +183,18 @@ if ($guard->check()) {
 }
 ```
 
+`SessionGuard` also implements `Marko\Core\Contracts\ResettableInterface`. In a long-running worker (e.g. Swoole, RoadRunner), call `reset()` between requests to clear the guard's cached user so one request's authenticated user is never served to the next:
+
+```php
+use Marko\Core\Contracts\ResettableInterface;
+
+if ($guard instanceof ResettableInterface) {
+    $guard->reset();
+}
+```
+
+`reset()` only clears the cached user --- it does not call `logout()` or otherwise touch the session. The next call to `user()` re-reads the authenticated user from the session as normal.
+
 ### TokenGuard
 
 For API authentication via Bearer tokens in the `Authorization` header:

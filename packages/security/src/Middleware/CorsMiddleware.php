@@ -9,10 +9,10 @@ use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Security\Config\SecurityConfig;
 
-class CorsMiddleware implements MiddlewareInterface
+readonly class CorsMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly SecurityConfig $config,
+        private SecurityConfig $securityConfig,
     ) {}
 
     public function handle(
@@ -41,19 +41,13 @@ class CorsMiddleware implements MiddlewareInterface
         /** @var Response $response */
         $response = $next($request);
 
-        return new Response(
-            body: $response->body(),
-            statusCode: $response->statusCode(),
-            headers: array_merge($response->headers(), [
-                'Access-Control-Allow-Origin' => $origin,
-            ]),
-        );
+        return $response->withHeader('Access-Control-Allow-Origin', $origin);
     }
 
     private function isAllowedOrigin(
         string $origin,
     ): bool {
-        $allowedOrigins = $this->config->corsAllowedOrigins();
+        $allowedOrigins = $this->securityConfig->corsAllowedOrigins();
 
         if (in_array('*', $allowedOrigins, true)) {
             return true;
@@ -70,9 +64,9 @@ class CorsMiddleware implements MiddlewareInterface
     ): array {
         return [
             'Access-Control-Allow-Origin' => $origin,
-            'Access-Control-Allow-Methods' => implode(', ', $this->config->corsAllowedMethods()),
-            'Access-Control-Allow-Headers' => implode(', ', $this->config->corsAllowedHeaders()),
-            'Access-Control-Max-Age' => (string) $this->config->corsMaxAge(),
+            'Access-Control-Allow-Methods' => implode(', ', $this->securityConfig->corsAllowedMethods()),
+            'Access-Control-Allow-Headers' => implode(', ', $this->securityConfig->corsAllowedHeaders()),
+            'Access-Control-Max-Age' => (string) $this->securityConfig->corsMaxAge(),
         ];
     }
 }

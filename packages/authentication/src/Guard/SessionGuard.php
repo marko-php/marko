@@ -13,11 +13,13 @@ use Marko\Authentication\Event\LoginEvent;
 use Marko\Authentication\Event\LogoutEvent;
 use Marko\Authentication\Exceptions\AuthException;
 use Marko\Authentication\Token\RememberTokenManager;
+use Marko\Core\Contracts\ResettableInterface;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Session\Contracts\SessionInterface;
+use Override;
 use Random\RandomException;
 
-class SessionGuard implements GuardInterface
+class SessionGuard implements GuardInterface, ResettableInterface
 {
     private const int REMEMBER_COOKIE_MINUTES = 43200; // 30 days
 
@@ -126,6 +128,8 @@ class SessionGuard implements GuardInterface
     }
 
     /**
+     * @param array<string, mixed> $credentials
+     *
      * @throws AuthException|RandomException
      */
     public function attempt(
@@ -150,6 +154,9 @@ class SessionGuard implements GuardInterface
         return true;
     }
 
+    /**
+     * @param array<string, mixed> $credentials
+     */
     private function dispatchFailedLoginEvent(
         array $credentials,
     ): void {
@@ -281,5 +288,11 @@ class SessionGuard implements GuardInterface
     public function getName(): string
     {
         return $this->name;
+    }
+
+    #[Override]
+    public function reset(): void
+    {
+        $this->cachedUser = null;
     }
 }
