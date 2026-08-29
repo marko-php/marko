@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use Marko\Inertia\Exceptions\InertiaConfigurationException;
 use Marko\Inertia\Middleware\InertiaMiddleware;
+
+use function Marko\Inertia\Tests\createTaggedResponse;
+
 use Marko\Inertia\Tests\TaggedResponse;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
-use Marko\Testing\Fake\FakeConfigRepository;
 
-use function Marko\Inertia\Tests\createTaggedResponse;
+use Marko\Testing\Fake\FakeConfigRepository;
 
 beforeEach(function (): void {
     $this->middleware = new InertiaMiddleware(new FakeConfigRepository([

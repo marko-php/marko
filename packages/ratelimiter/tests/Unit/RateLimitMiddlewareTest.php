@@ -7,13 +7,15 @@ use Marko\RateLimiter\Contracts\RateLimiterInterface;
 use Marko\RateLimiter\Exceptions\ClientIpException;
 use Marko\RateLimiter\Middleware\RateLimitMiddleware;
 use Marko\RateLimiter\RateLimitResult;
+
+use function Marko\RateLimiter\Tests\createTaggedResponse;
+
 use Marko\RateLimiter\Tests\TaggedResponse;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
-use Marko\Testing\Fake\FakeConfigRepository;
 
-use function Marko\RateLimiter\Tests\createTaggedResponse;
+use Marko\Testing\Fake\FakeConfigRepository;
 
 function createMockLimiter(
     RateLimitResult $result,
