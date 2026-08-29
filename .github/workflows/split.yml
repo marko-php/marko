@@ -90,6 +90,57 @@ jobs:
           PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
         run: |
           PKG_URL="https://github.com/${SPLIT_ORG}/marko-${{ matrix.package }}"
+          RESP_FILE=/tmp/packagist_resp
+
+          # Every package in the matrix reaches this step within the same second,
+          # so a release fires ~92 update-package calls at Packagist at once and
+          # reliably trips its limits. On 0.8.5 that returned HTTP 500 for eight
+          # packages; the tags had already pushed, so the job failed loudly while
+          # the only real damage was a stale Packagist index — including
+          # marko/core, which everything else resolves against.
+          #
+          # Retry the transient classes and let the definitive ones fall through
+          # to the caller: 404 means "not registered" and drives the create-package
+          # self-heal below, and 401/403 mean a bad token, which no retry fixes.
+          # HTTP is global rather than echoed so the log lines below can't be
+          # captured as part of the status code.
+          HTTP=""
+          update_with_retry() {
+            local attempt delay
+            for attempt in 1 2 3 4 5; do
+              # curl leaves the response file untouched when it cannot connect,
+              # so clear it first — otherwise a transport failure reports the
+              # previous attempt's body as if it were this one's.
+              : > "$RESP_FILE"
+
+              # `|| true` keeps a transport failure from aborting the step under
+              # `bash -e` so it can be retried; the status is validated below.
+              HTTP=$(curl -s -o "$RESP_FILE" -w "%{http_code}" \
+                --connect-timeout 10 --max-time 60 \
+                -X POST https://packagist.org/api/update-package \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Bearer markshust:${PACKAGIST_TOKEN}" \
+                -d "{\"repository\":\"${PKG_URL}\"}") || true
+
+              case "$HTTP" in
+                000|429|5??) ;;      # transient — worth another attempt
+                *) return 0 ;;       # definitive — caller decides what it means
+              esac
+
+              echo "Packagist update returned HTTP ${HTTP} (attempt ${attempt}/5)"
+              head -c 500 "$RESP_FILE" 2>/dev/null || true
+              echo
+
+              # Jittered backoff. Without the jitter every job would have failed
+              # on the same second and would retry on the same second too.
+              if [[ "$attempt" -lt 5 ]]; then
+                delay=$(( 2 ** attempt + RANDOM % 5 ))
+                echo "Retrying in ${delay}s..."
+                sleep "$delay"
+              fi
+            done
+            return 0
+          }
 
           # Try to update first. If Packagist returns 404 the package isn't
           # registered yet — self-heal by calling create-package, then retry
@@ -97,11 +148,7 @@ jobs:
           # the manual `register-packagist.sh` step from the new-package
           # workflow: contributors can add `packages/foo/` via PR and the
           # first release tag will register + publish it automatically.
-          HTTP=$(curl -s -o /tmp/packagist_resp -w "%{http_code}" \
-            -X POST https://packagist.org/api/update-package \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer markshust:${PACKAGIST_TOKEN}" \
-            -d "{\"repository\":\"${PKG_URL}\"}")
+          update_with_retry
 
           if [[ "$HTTP" == "404" ]]; then
             echo "marko/${{ matrix.package }} not registered on Packagist — registering now..."
@@ -110,12 +157,22 @@ jobs:
               -H "Content-Type: application/json" \
               -d "{\"repository\":{\"url\":\"${PKG_URL}\"}}"
             echo "Registered. Re-running update so the tag gets indexed..."
-            curl -sf -X POST https://packagist.org/api/update-package \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer markshust:${PACKAGIST_TOKEN}" \
-              -d "{\"repository\":\"${PKG_URL}\"}"
-          elif [[ "$HTTP" -ge 400 ]]; then
-            echo "Packagist update failed with HTTP ${HTTP}:"
-            cat /tmp/packagist_resp
-            exit 1
+            update_with_retry
           fi
+
+          # Match on the success class rather than testing `-ge 400`. The curl
+          # above no longer aborts the step on a transport failure, so that case
+          # now reaches here as 000 — numerically zero, and therefore something
+          # a `-ge 400` test would wave through as success, leaving the package
+          # stale behind a green job.
+          case "$HTTP" in
+            2??)
+              echo "marko/${{ matrix.package }} updated on Packagist (HTTP ${HTTP})"
+              ;;
+            *)
+              echo "Packagist update failed with HTTP ${HTTP} after 5 attempts:"
+              cat "$RESP_FILE" 2>/dev/null || true
+              echo
+              exit 1
+              ;;
+          esac
