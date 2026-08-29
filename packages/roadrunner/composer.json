@@ -2,7 +2,7 @@
     "name": "marko/roadrunner",
     "description": "RoadRunner application server driver for Marko Framework",
     "license": "MIT",
-    "type": "library",
+    "type": "marko-module",
     "require": {
         "php": "^8.5",
         "marko/config": "self.version",
