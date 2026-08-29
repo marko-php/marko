@@ -12,12 +12,15 @@
 composer.lock
 vendor/
 
-# The RoadRunner test harness boots a real Marko application from a fixture
-# project tree, which must contain a directory literally named `vendor/` for
-# module discovery to find it. The unanchored `vendor/` rule above matches at
-# any depth, so without this negation the fixture's modules are never committed
-# and the harness silently finds zero modules on a fresh clone or in CI.
-!/packages/roadrunner/tests/Fixtures/app/vendor/
+# Test fixtures that model a real Marko project tree must contain a directory
+# literally named `vendor/`, because that is what module discovery looks for.
+# The unanchored `vendor/` rule above matches at any depth, so without this
+# negation those fixture modules are never committed: the tests pass locally
+# off untracked files and the fixture silently has zero modules on a fresh
+# clone or in CI. Applies to every package's fixtures, not one, so a new
+# fixture does not have to rediscover this. `tests/FixtureTrackingTest.php`
+# fails the build if any fixture file becomes unreachable this way.
+!/packages/*/tests/Fixtures/**/vendor/
 
 # `rr:serve` and `vendor/bin/rr get-binary` both write into the project root:
 # a downloaded platform-specific binary and a generated default config. Local

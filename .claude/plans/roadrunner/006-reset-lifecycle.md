@@ -73,7 +73,7 @@ warns that `marko/debugbar` does not belong in a worker-served environment. Do
 not add reset wiring for them.
 
 ## Requirements (Test Descriptions)
-- [x] `it resets every service identified by the spike between requests`
+- [x] `it resets both session and identity state across interleaved requests`
 - [x] `it isolates session state between two sequential requests`
 - [x] `it isolates the authenticated user between two sequential requests`
 - [x] `it resets a resolved resettable service between requests`
@@ -93,6 +93,14 @@ not add reset wiring for them.
 
 ## Implementation Notes
 
+**Requirement renamed.** This task was originally specified as `it resets every
+service identified by the spike between requests`. The post-implementation
+standards pass renamed it to `it resets both session and identity state across
+interleaved requests`, because "the spike" is a development artifact that does
+not exist anywhere in the repository — the old name described nothing to anyone
+reading the test later. The requirement text above was updated to match the
+test that actually ships, so the two cannot drift.
+
 `WorkerRequestHandler` (`packages/roadrunner/src/Worker/WorkerRequestHandler.php`)
 now takes a required `ContainerInterface $container` and, inside `handleOne()`,
 calls a private `resetResolvedServices()` **before** bridging/routing the
@@ -110,8 +118,8 @@ No `get()`/`call()` is ever invoked to build something just to reset it.
 cases were updated to pass `container: new NullContainer()` (already
 returns `[]` from `resolvedInstances()`, so their behavior is unchanged).
 
-One requirement — `it resets every service identified by the spike between
-requests` — legitimately required the full mechanism (container injection,
+One requirement — `it resets both session and identity state across
+interleaved requests` — legitimately required the full mechanism (container injection,
 pre-request reset placement, generic `ResettableInterface` filtering) to go
 RED→GREEN. The remaining nine requirements (isolation, resolved/unresolved
 discovery, no forced instantiation, before-not-after ordering, reset-after-
