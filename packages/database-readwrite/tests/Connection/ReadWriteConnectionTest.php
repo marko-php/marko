@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Contracts\ResettableInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionInterface;
@@ -84,6 +85,10 @@ function makeConnection(array $overrides = []): ConnectionInterface&TransactionI
         public function rollback(): void
         {
             $this->calls[] = 'rollback';
+
+            if (isset($this->overrides['rollback'])) {
+                throw $this->overrides['rollback'];
+            }
         }
 
         public function inTransaction(): bool
@@ -525,6 +530,116 @@ describe('ReadWriteConnection', function (): void {
             ->and($reflection->isPublic())->toBeTrue();
     });
 
+    it('implements the resettable contract', function (): void {
+        $write = makeConnection();
+        $replica = makeConnection();
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+
+        expect($conn)->toBeInstanceOf(ResettableInterface::class);
+    });
+
+    it('clears sticky write state when reset', function (): void {
+        $write = makeConnection(['query' => [['id' => 1]]]);
+        $replica = makeConnection(['query' => [['id' => 99]]]);
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+        $conn->execute('INSERT INTO foo VALUES (1)');
+        $conn->reset();
+        $result = $conn->query('SELECT 1');
+
+        expect($result)->toBe([['id' => 99]]);
+    });
+
+    it('routes reads to a replica again after reset', function (): void {
+        $write = makeConnection(['query' => [['id' => 1]]]);
+        $replica = makeConnection(['query' => [['id' => 99]]]);
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+        $conn->beginTransaction();
+        $conn->reset();
+        $result = $conn->query('SELECT 1');
+
+        expect($result)->toBe([['id' => 99]])
+            ->and($replica->calls)->toContain(['query', 'SELECT 1', []])
+            ->and($write->calls)->not->toContain(['query', 'SELECT 1', []]);
+    });
+
+    it('rolls back an open transaction when reset', function (): void {
+        $write = makeConnection(['inTransaction' => true]);
+        $replica = makeConnection();
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+        $conn->reset();
+
+        expect($write->calls)->toContain('rollback');
+    });
+
+    it('does not attempt a rollback when no transaction is open', function (): void {
+        $write = makeConnection(['inTransaction' => false]);
+        $replica = makeConnection();
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+        $conn->reset();
+
+        expect($write->calls)->not->toContain('rollback');
+    });
+
+    it('still clears sticky write state when reset', function (): void {
+        $write = makeConnection([
+            'inTransaction' => true,
+            'query' => [['id' => 99]],
+        ]);
+        $replica = makeConnection(['query' => [['id' => 99]]]);
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+        $conn->execute('INSERT INTO foo VALUES (1)');
+        $conn->reset();
+        $result = $conn->query('SELECT 1');
+
+        expect($result)->toBe([['id' => 99]])
+            ->and($replica->calls)->toContain(['query', 'SELECT 1', []]);
+    });
+
+    it('clears sticky write state even when the rollback fails', function (): void {
+        $write = makeConnection([
+            'inTransaction' => true,
+            'rollback' => new PDOException('rollback failed'),
+            'query' => [['id' => 1]],
+        ]);
+        $replica = makeConnection(['query' => [['id' => 99]]]);
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+        $conn->execute('INSERT INTO foo VALUES (1)');
+
+        expect(fn () => $conn->reset())->toThrow(PDOException::class, 'rollback failed');
+
+        $result = $conn->query('SELECT 1');
+
+        expect($result)->toBe([['id' => 99]])
+            ->and($replica->calls)->toContain(['query', 'SELECT 1', []]);
+    });
+
+    it('keeps the existing reset sticky state method available', function (): void {
+        $write = makeConnection(['query' => [['id' => 1]]]);
+        $replica = makeConnection(['query' => [['id' => 99]]]);
+        $selector = makeSelector($replica);
+
+        $conn = new ReadWriteConnection($write, [$replica], $selector);
+        $conn->execute('INSERT INTO foo VALUES (1)');
+        $conn->resetStickyState();
+        $result = $conn->query('SELECT 1');
+
+        expect($result)->toBe([['id' => 99]]);
+    });
+
     it('tries the next replica when first replica throws PDOException', function (): void {
         $write = makeConnection();
         $failing = makeThrowingConnection('replica1 down');
@@ -631,9 +746,8 @@ describe('ReadWriteConnection', function (): void {
         $conn = new ReadWriteConnection($write, [$badQuery, $good], $selector);
 
         expect(fn () => $conn->query('INVALID SQL'))
-            ->toThrow(InvalidArgumentException::class, 'SQL syntax error');
-
-        expect($badQuery->calls)->toContain(['query', 'INVALID SQL', []])
+            ->toThrow(InvalidArgumentException::class, 'SQL syntax error')
+            ->and($badQuery->calls)->toContain(['query', 'INVALID SQL', []])
             ->and($good->calls)->toBeEmpty();
     });
 

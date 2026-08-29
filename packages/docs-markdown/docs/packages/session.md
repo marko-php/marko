@@ -130,6 +130,25 @@ $id = $this->session->getId();
 
 The `SessionMiddleware` automatically starts the session at the beginning of a request and saves it when the response completes. It is registered globally by the session driver package (e.g., `marko/session-file`, `marko/session-database`) --- no manual registration is needed. Your controllers only need to inject `SessionInterface`; `start()` and `save()` are handled automatically.
 
+The session cookie is attached to the `Response` rather than emitted directly by PHP --- `Session::configure()` disables PHP's built-in cookie handling, so `SessionMiddleware` reads the inbound cookie off the `Request`, seeds the session ID before `start()`, and attaches an outbound cookie only when the session ID changed (a new session, a regenerated ID, or an expired cookie after `destroy()`). A repeat visitor whose session ID is unchanged gets no `Set-Cookie` header. An invalid or tampered inbound cookie is ignored --- the middleware falls through to a fresh session rather than raising an error.
+
+This matters for [`marko/page-cache`](/docs/packages/page-cache/): responses carrying any cookie are never cached, so attaching the session cookie unconditionally would silently disable page caching on every session-enabled route.
+
+### Long-Running Processes
+
+`Session` implements `Marko\Core\Contracts\ResettableInterface`. In a long-running worker (e.g. Swoole, RoadRunner), call `reset()` between requests to clear the cached session ID, data, and flash bag so one request's session state is never reused for the next:
+
+```php
+use Marko\Core\Contracts\ResettableInterface;
+use Marko\Session\Contracts\SessionInterface;
+
+if ($this->session instanceof ResettableInterface) {
+    $this->session->reset();
+}
+```
+
+`save()` does not clear session state on its own --- `SessionMiddleware` reads `getId()` after `save()` runs to decide whether to attach a cookie, so clearing happens explicitly via `reset()` instead.
+
 ### Garbage Collection
 
 Run expired session cleanup via CLI:

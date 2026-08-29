@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Marko\Database\ReadWrite\Connection;
 
+use Marko\Core\Contracts\ResettableInterface;
 use Marko\Core\Exceptions\MarkoException;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\ReadWrite\Exceptions\ReadException;
 use Marko\Database\ReadWrite\Replica\ReplicaSelectorInterface;
+use Override;
 use PDOException;
 
-class ReadWriteConnection implements ConnectionInterface, TransactionInterface
+class ReadWriteConnection implements ConnectionInterface, TransactionInterface, ResettableInterface
 {
     private bool $stickyWrite = false;
 
@@ -133,6 +135,28 @@ class ReadWriteConnection implements ConnectionInterface, TransactionInterface
     public function resetStickyState(): void
     {
         $this->stickyWrite = false;
+    }
+
+    /**
+     * Rolls back a transaction abandoned by a request that threw before
+     * commit()/rollback(), then clears the sticky-write flag.
+     *
+     * The rollback runs first (inside try) and the sticky-state reset
+     * runs in finally so it always happens, even if the rollback itself
+     * throws. The exception is intentionally not swallowed here: a
+     * failed rollback means the pooled connection may still be in an
+     * unknown transactional state, and the caller needs to know.
+     */
+    #[Override]
+    public function reset(): void
+    {
+        try {
+            if ($this->write->inTransaction()) {
+                $this->write->rollback();
+            }
+        } finally {
+            $this->resetStickyState();
+        }
     }
 
     /**

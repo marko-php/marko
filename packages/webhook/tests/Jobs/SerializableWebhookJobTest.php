@@ -166,6 +166,11 @@ final class SerializableWebhookJobTestHelpers
             {
                 return null;
             }
+
+            public function resolvedInstances(?string $interface = null): array
+            {
+                return [];
+            }
         };
     }
 }

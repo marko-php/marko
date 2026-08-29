@@ -228,6 +228,18 @@ function makeContainer(array $instances = []): ContainerInterface
         {
             return $callable();
         }
+
+        public function resolvedInstances(?string $interface = null): array
+        {
+            if ($interface === null) {
+                return $this->instances;
+            }
+
+            return array_filter(
+                $this->instances,
+                fn (object $instance): bool => $instance instanceof $interface,
+            );
+        }
     };
 }
 

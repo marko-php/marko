@@ -34,6 +34,11 @@ final class Helpers
             {
                 return $callable();
             }
+
+            public function resolvedInstances(?string $interface = null): array
+            {
+                return [];
+            }
         };
     }
 }

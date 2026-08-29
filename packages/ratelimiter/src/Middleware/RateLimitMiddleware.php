@@ -48,13 +48,9 @@ readonly class RateLimitMiddleware implements MiddlewareInterface
         /** @var Response $response */
         $response = $next($request);
 
-        return new Response(
-            body: $response->body(),
-            statusCode: $response->statusCode(),
-            headers: array_merge($response->headers(), [
-                'X-RateLimit-Limit' => (string) $this->maxAttempts,
-                'X-RateLimit-Remaining' => (string) $result->remaining(),
-            ]),
-        );
+        return $response->withHeaders([
+            'X-RateLimit-Limit' => (string) $this->maxAttempts,
+            'X-RateLimit-Remaining' => (string) $result->remaining(),
+        ]);
     }
 }

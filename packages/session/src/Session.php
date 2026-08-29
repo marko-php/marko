@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Session;
 
+use Marko\Core\Contracts\ResettableInterface;
 use Marko\Session\Config\SessionConfig;
 use Marko\Session\Contracts\SessionHandlerInterface;
 use Marko\Session\Contracts\SessionInterface;
@@ -11,14 +12,17 @@ use Marko\Session\Exceptions\InvalidSessionIdException;
 use Marko\Session\Exceptions\SessionException;
 use Marko\Session\Exceptions\SessionNotStartedException;
 use Marko\Session\Flash\FlashBag;
+use Override;
 
-class Session implements SessionInterface
+class Session implements SessionInterface, ResettableInterface
 {
     public private(set) bool $started = false;
 
     private string $id = '';
 
     private ?FlashBag $flashBag = null;
+
+    private bool $handlerRegistered = false;
 
     /**
      * @var array<string, mixed>
@@ -49,9 +53,12 @@ class Session implements SessionInterface
 
         $this->configure();
 
-        if ($this->id !== '') {
-            session_id($this->id);
-        }
+        // Always set the internal session id explicitly, even when $this->id is
+        // empty. PHP's session module keeps the last-used id in process memory
+        // after session_write_close(); without this call a subsequent start()
+        // in the same long-running process would silently resume the previous
+        // request's session instead of generating a fresh one.
+        session_id($this->id);
 
         if (!session_start()) {
             throw new SessionException(
@@ -125,6 +132,8 @@ class Session implements SessionInterface
     }
 
     /**
+     * @return array<string, mixed>
+     *
      * @throws SessionNotStartedException
      */
     public function all(): array
@@ -167,20 +176,6 @@ class Session implements SessionInterface
 
         $this->started = false;
         $this->id = '';
-
-        // Clear session cookie
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(
-                session_name(),
-                '',
-                time() - 42000,
-                $params['path'],
-                $params['domain'],
-                $params['secure'],
-                $params['httponly'],
-            );
-        }
     }
 
     public function getId(): string
@@ -230,6 +225,14 @@ class Session implements SessionInterface
         $this->started = false;
     }
 
+    #[Override]
+    public function reset(): void
+    {
+        $this->id = '';
+        $this->data = [];
+        $this->flashBag = null;
+    }
+
     private function configure(): void
     {
         // Note: session.save_handler is automatically set to 'user' by session_set_save_handler()
@@ -237,21 +240,20 @@ class Session implements SessionInterface
         ini_set('session.gc_probability', (string) $this->config->gcProbability());
         ini_set('session.gc_divisor', (string) $this->config->gcDivisor());
         ini_set('session.use_strict_mode', '1');
-        ini_set('session.use_cookies', '1');
+        ini_set('session.use_cookies', '0');
         ini_set('session.use_only_cookies', '1');
 
         session_name($this->config->cookieName());
 
-        session_set_cookie_params([
-            'lifetime' => $this->config->expireOnClose() ? 0 : $this->config->lifetime() * 60,
-            'path' => $this->config->cookiePath(),
-            'domain' => $this->config->cookieDomain() ?? '',
-            'secure' => $this->config->cookieSecure(),
-            'httponly' => $this->config->cookieHttpOnly(),
-            'samesite' => ucfirst($this->config->cookieSameSite()),
-        ]);
-
-        session_set_save_handler($this->handler, true);
+        // session_set_save_handler()'s $register_shutdown argument registers a
+        // register_shutdown_function() callback as a side effect. Registering
+        // it more than once per process would accumulate an unbounded number
+        // of shutdown callbacks in a long-running worker, so this must happen
+        // at most once, not on every start().
+        if (!$this->handlerRegistered) {
+            session_set_save_handler($this->handler, true);
+            $this->handlerRegistered = true;
+        }
     }
 
     /**

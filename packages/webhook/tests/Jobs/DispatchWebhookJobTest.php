@@ -136,6 +136,11 @@ describe('DispatchWebhookJob', function (): void {
             {
                 return null;
             }
+
+            public function resolvedInstances(?string $interface = null): array
+            {
+                return [];
+            }
         };
 
         $job = new DispatchWebhookJob($payload);

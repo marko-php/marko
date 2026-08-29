@@ -44,9 +44,10 @@ it('starts a session and sets a session cookie end-to-end with the file driver i
             'session.gc_divisor' => 100,
         ]);
 
-        $handler = new FileSessionHandler(new SessionConfig($config));
-        $session = new Session($handler, new SessionConfig($config));
-        $middleware = new SessionMiddleware($session);
+        $sessionConfig = new SessionConfig($config);
+        $handler = new FileSessionHandler($sessionConfig);
+        $session = new Session($handler, $sessionConfig);
+        $middleware = new SessionMiddleware($session, $sessionConfig);
 
         $request = new Request(server: [
             'REQUEST_METHOD' => 'GET',

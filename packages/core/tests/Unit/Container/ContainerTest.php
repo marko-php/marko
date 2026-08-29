@@ -13,6 +13,7 @@ use Marko\Core\Plugin\PluginInterceptor;
 use Marko\Core\Plugin\PluginRegistry;
 use Marko\TestFixture\Exceptions\NoDriverException;
 use Marko\TestFixture\SomeInterface;
+use Marko\TestFixtureNoDriver\SomeInterface as NoDriverSomeInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
@@ -383,7 +384,7 @@ it('throws NoDriverException when interface package has one and no binding exist
 it('throws generic BindingException when no NoDriverException class exists for the package', function (): void {
     $container = new Container();
 
-    expect(fn () => $container->get(Marko\TestFixtureNoDriver\SomeInterface::class))
+    expect(fn () => $container->get(NoDriverSomeInterface::class))
         ->toThrow(BindingException::class);
 });
 
@@ -747,5 +748,72 @@ describe('plugin interception - end to end', function (): void {
 
         expect($proxy1)->toBeInstanceOf(PluginInterceptedInterface::class)
             ->and($proxy1)->toBe($proxy2);
+    });
+});
+
+interface CountingServiceInterface {}
+
+class CountingService implements CountingServiceInterface {}
+
+class OtherResolvedService {}
+
+class InstantiationTrackingService
+{
+    public static int $constructedCount = 0;
+
+    public function __construct()
+    {
+        self::$constructedCount++;
+    }
+}
+
+describe('resolvedInstances', function (): void {
+    it('returns instances that have already been resolved', function (): void {
+        $container = new Container();
+        $container->singleton(SimpleClass::class);
+        $instance = $container->get(SimpleClass::class);
+
+        $resolved = $container->resolvedInstances();
+
+        expect($resolved)->toHaveKey(SimpleClass::class)
+            ->and($resolved[SimpleClass::class])->toBe($instance);
+    });
+
+    it('does not return bindings that have never been resolved', function (): void {
+        $container = new Container();
+        $container->singleton(SimpleClass::class);
+
+        $resolved = $container->resolvedInstances();
+
+        expect($resolved)->toBeEmpty();
+    });
+
+    it('does not instantiate anything when called', function (): void {
+        $container = new Container();
+        $container->singleton(InstantiationTrackingService::class);
+        InstantiationTrackingService::$constructedCount = 0;
+
+        $container->resolvedInstances();
+
+        expect(InstantiationTrackingService::$constructedCount)->toBe(0);
+    });
+
+    it('returns an empty result for a fresh container', function (): void {
+        $container = new Container();
+
+        expect($container->resolvedInstances())->toBeEmpty();
+    });
+
+    it('allows filtering resolved instances by implemented interface', function (): void {
+        $container = new Container();
+        $container->singleton(CountingService::class);
+        $container->singleton(OtherResolvedService::class);
+        $countingService = $container->get(CountingService::class);
+        $container->get(OtherResolvedService::class);
+
+        $filtered = $container->resolvedInstances(CountingServiceInterface::class);
+
+        expect($filtered)->toHaveCount(1)
+            ->and($filtered[CountingService::class])->toBe($countingService);
     });
 });

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-it('has a valid composer.json with correct package name marko/session', function () {
+it('has a valid composer.json with correct package name marko/session', function (): void {
     $composerPath = dirname(__DIR__) . '/composer.json';
 
     expect(file_exists($composerPath))->toBeTrue()
@@ -10,28 +10,28 @@ it('has a valid composer.json with correct package name marko/session', function
         ->and(json_decode(file_get_contents($composerPath), true)['name'])->toBe('marko/session');
 });
 
-it('has correct description in composer.json', function () {
+it('has correct description in composer.json', function (): void {
     $composerPath = dirname(__DIR__) . '/composer.json';
     $composer = json_decode(file_get_contents($composerPath), true);
 
     expect($composer['description'])->toBe('Session interfaces and infrastructure for Marko Framework');
 });
 
-it('has type marko-module in composer.json', function () {
+it('has type marko-module in composer.json', function (): void {
     $composerPath = dirname(__DIR__) . '/composer.json';
     $composer = json_decode(file_get_contents($composerPath), true);
 
     expect($composer['type'])->toBe('marko-module');
 });
 
-it('has MIT license in composer.json', function () {
+it('has MIT license in composer.json', function (): void {
     $composerPath = dirname(__DIR__) . '/composer.json';
     $composer = json_decode(file_get_contents($composerPath), true);
 
     expect($composer['license'])->toBe('MIT');
 });
 
-it('requires PHP 8.5 or higher', function () {
+it('requires PHP 8.5 or higher', function (): void {
     $composerPath = dirname(__DIR__) . '/composer.json';
     $composer = json_decode(file_get_contents($composerPath), true);
 
@@ -39,7 +39,7 @@ it('requires PHP 8.5 or higher', function () {
         ->and($composer['require']['php'])->toBe('^8.5');
 });
 
-it('has PSR-4 autoloading configured for Marko\\Session namespace', function () {
+it('has PSR-4 autoloading configured for Marko\\Session namespace', function (): void {
     $composerPath = dirname(__DIR__) . '/composer.json';
     $composer = json_decode(file_get_contents($composerPath), true);
 
@@ -59,25 +59,25 @@ it('has module.php that returns an array', function (): void {
     expect($config)->toBeArray();
 });
 
-it('has src directory for source code', function () {
+it('has src directory for source code', function (): void {
     $srcPath = dirname(__DIR__) . '/src';
 
     expect(is_dir($srcPath))->toBeTrue();
 });
 
-it('has tests directory for tests', function () {
+it('has tests directory for tests', function (): void {
     $testsPath = dirname(__DIR__) . '/tests';
 
     expect(is_dir($testsPath))->toBeTrue();
 });
 
-it('has config directory for default configuration', function () {
+it('has config directory for default configuration', function (): void {
     $configPath = dirname(__DIR__) . '/config';
 
     expect(is_dir($configPath))->toBeTrue();
 });
 
-it('has default session.php config file', function () {
+it('has default session.php config file', function (): void {
     $configPath = dirname(__DIR__) . '/config/session.php';
 
     expect(file_exists($configPath))->toBeTrue();
@@ -100,4 +100,24 @@ it('does not bind SessionInterface from the session interface package', function
     $module = require dirname(__DIR__) . '/module.php';
 
     expect(array_keys($module['singletons'] ?? []))->not->toContain('Marko\\Session\\Contracts\\SessionInterface');
+});
+
+it('does not call setcookie directly', function (): void {
+    $srcPath = dirname(__DIR__) . '/src';
+
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($srcPath, FilesystemIterator::SKIP_DOTS),
+    );
+
+    $phpFiles = array_filter(
+        iterator_to_array($files),
+        fn (SplFileInfo $file): bool => $file->getExtension() === 'php',
+    );
+
+    $callsSetcookie = array_any(
+        $phpFiles,
+        fn (SplFileInfo $file): bool => str_contains((string) file_get_contents($file->getPathname()), 'setcookie('),
+    );
+
+    expect($callsSetcookie)->toBeFalse();
 });

@@ -9,10 +9,10 @@ use Marko\Routing\Http\Response;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Security\Config\SecurityConfig;
 
-class SecurityHeadersMiddleware implements MiddlewareInterface
+readonly class SecurityHeadersMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly SecurityConfig $config,
+        private SecurityConfig $securityConfig,
     ) {}
 
     public function handle(
@@ -22,13 +22,7 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
         /** @var Response $response */
         $response = $next($request);
 
-        $securityHeaders = $this->buildSecurityHeaders();
-
-        return new Response(
-            body: $response->body(),
-            statusCode: $response->statusCode(),
-            headers: array_merge($response->headers(), $securityHeaders),
-        );
+        return $response->withHeaders($this->buildSecurityHeaders());
     }
 
     /**
@@ -37,12 +31,12 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
     private function buildSecurityHeaders(): array
     {
         $headerMap = [
-            'X-Content-Type-Options' => $this->config->headerXContentTypeOptions(),
-            'X-Frame-Options' => $this->config->headerXFrameOptions(),
-            'X-XSS-Protection' => $this->config->headerXXssProtection(),
-            'Strict-Transport-Security' => $this->config->headerStrictTransportSecurity(),
-            'Referrer-Policy' => $this->config->headerReferrerPolicy(),
-            'Content-Security-Policy' => $this->config->headerContentSecurityPolicy(),
+            'X-Content-Type-Options' => $this->securityConfig->headerXContentTypeOptions(),
+            'X-Frame-Options' => $this->securityConfig->headerXFrameOptions(),
+            'X-XSS-Protection' => $this->securityConfig->headerXXssProtection(),
+            'Strict-Transport-Security' => $this->securityConfig->headerStrictTransportSecurity(),
+            'Referrer-Policy' => $this->securityConfig->headerReferrerPolicy(),
+            'Content-Security-Policy' => $this->securityConfig->headerContentSecurityPolicy(),
         ];
 
         return array_filter($headerMap, static fn (string $value): bool => $value !== '');

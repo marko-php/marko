@@ -11,3 +11,9 @@
 **/.phpunit.cache/
 composer.lock
 vendor/
+
+# `rr:serve` and `vendor/bin/rr get-binary` both write into the project root:
+# a downloaded platform-specific binary and a generated default config. Local
+# dev conveniences, never committed.
+/rr
+/.rr.yaml

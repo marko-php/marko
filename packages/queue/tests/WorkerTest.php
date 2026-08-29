@@ -51,6 +51,11 @@ function createWorkerStubContainer(object $observer): ContainerInterface
         {
             return null;
         }
+
+        public function resolvedInstances(?string $interface = null): array
+        {
+            return [];
+        }
     };
 }
 
@@ -78,6 +83,11 @@ function createNullWorkerContainer(): ContainerInterface
         public function call(Closure $callable): mixed
         {
             return null;
+        }
+
+        public function resolvedInstances(?string $interface = null): array
+        {
+            return [];
         }
     };
 }

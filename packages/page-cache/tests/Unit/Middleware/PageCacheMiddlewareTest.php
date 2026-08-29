@@ -137,6 +137,11 @@ class FakeContainer implements ContainerInterface
     {
         return $callable();
     }
+
+    public function resolvedInstances(?string $interface = null): array
+    {
+        return $this->instances;
+    }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

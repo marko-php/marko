@@ -7,6 +7,7 @@ use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\PageCache\Attributes\Cacheable;
 use Marko\PageCache\CacheabilityChecker;
 use Marko\PageCache\Config\PageCacheConfig;
+use Marko\Routing\Http\Cookie;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\MatchedRoute;
@@ -229,6 +230,27 @@ it(
         expect($checker->isResponseCacheable($response))->toBeTrue();
     },
 );
+
+it('does not cache a response that carries cookies', function (): void {
+    $checker = makeChecker(makeNullMatcher());
+    $response = makeCacheCheckerResponse(200)->withCookie(new Cookie(name: 'session', value: 'abc123'));
+
+    expect($checker->isResponseCacheable($response))->toBeFalse();
+});
+
+it('still caches a response that carries no cookies', function (): void {
+    $checker = makeChecker(makeNullMatcher());
+    $response = makeCacheCheckerResponse(200);
+
+    expect($checker->isResponseCacheable($response))->toBeTrue();
+});
+
+it('still refuses to cache a response carrying a literal set-cookie header', function (): void {
+    $checker = makeChecker(makeNullMatcher());
+    $response = makeCacheCheckerResponse(200, ['Set-Cookie' => 'session=abc123']);
+
+    expect($checker->isResponseCacheable($response))->toBeFalse();
+});
 
 // ─── getRouteAttribute ────────────────────────────────────────────────────────
 

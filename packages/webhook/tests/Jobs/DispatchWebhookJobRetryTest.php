@@ -137,6 +137,11 @@ describe('DispatchWebhookJob retry', function (): void {
             {
                 return null;
             }
+
+            public function resolvedInstances(?string $interface = null): array
+            {
+                return [];
+            }
         };
 
         // Attempt 1: first failure should re-queue with delay = 60 * 2^1 = 120
@@ -269,6 +274,11 @@ describe('DispatchWebhookJob retry', function (): void {
             public function call(Closure $callable): mixed
             {
                 return null;
+            }
+
+            public function resolvedInstances(?string $interface = null): array
+            {
+                return [];
             }
         };
 

@@ -718,6 +718,85 @@ test('it isolates session state between two guards with different names', functi
         ->and($session->get('auth_admin_user_id'))->toBe(2);
 });
 
+test('it forgets the cached user without destroying the session', function (): void {
+    $session = new FakeSession();
+    $session->set('auth_web_user_id', 42);
+
+    $provider = new class () implements UserProviderInterface
+    {
+        public int $retrieveCalls = 0;
+
+        public function retrieveById(int|string $identifier): ?AuthenticatableInterface
+        {
+            $this->retrieveCalls++;
+
+            return new FakeAuthenticatable(id: (int) $identifier);
+        }
+
+        public function retrieveByCredentials(array $credentials): ?AuthenticatableInterface
+        {
+            return null;
+        }
+
+        public function validateCredentials(
+            AuthenticatableInterface $user,
+            array $credentials,
+        ): bool {
+            return false;
+        }
+
+        public function retrieveByRememberToken(
+            int|string $identifier,
+            string $token,
+        ): ?AuthenticatableInterface {
+            return null;
+        }
+
+        public function updateRememberToken(
+            AuthenticatableInterface $user,
+            ?string $token,
+        ): void {}
+    };
+
+    $guard = new SessionGuard(
+        session: $session,
+        provider: $provider,
+        name: 'web',
+    );
+
+    $firstUser = $guard->user();
+    $guard->reset();
+    $secondUser = $guard->user();
+
+    expect($secondUser)->not->toBe($firstUser)
+        ->and($provider->retrieveCalls)->toBe(2)
+        ->and($session->has('auth_web_user_id'))->toBeTrue();
+});
+
+test('it does not return the previous requests user to an anonymous request', function (): void {
+    $session = new FakeSession();
+    $session->set('auth_web_user_id', 42);
+    $user = new FakeAuthenticatable(id: 42);
+    $provider = new FakeUserProvider([42 => $user]);
+
+    $guard = new SessionGuard(
+        session: $session,
+        provider: $provider,
+        name: 'web',
+    );
+
+    // Request 1: an authenticated user is resolved and cached
+    expect($guard->user())->toBe($user);
+
+    // Between requests, a long-running worker resets state and the next
+    // request is an anonymous visitor with no session key present
+    $guard->reset();
+    $session->remove('auth_web_user_id');
+
+    // Request 2: the anonymous visitor must not receive the previous user
+    expect($guard->user())->toBeNull();
+});
+
 test('it defaults to auth_session_user_id when guard name is session', function (): void {
     $session = new FakeSession();
     $session->start();

@@ -8,7 +8,7 @@ use JsonException;
 use Marko\Routing\Http\Response;
 use Override;
 
-readonly class StreamingResponse extends Response
+class StreamingResponse extends Response
 {
     public function __construct(
         private SseStream $stream,
@@ -35,8 +35,8 @@ readonly class StreamingResponse extends Response
         if (!headers_sent()) {
             http_response_code($this->statusCode());
 
-            foreach ($this->headers() as $name => $value) {
-                header("$name: $value");
+            foreach ($this->headerLines() as $line) {
+                header($line);
             }
         }
 

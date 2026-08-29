@@ -606,8 +606,13 @@
             "Marko\\Skeleton\\Tests\\": "packages/skeleton/tests/"
         },
         "files": [
+            "packages/cors/tests/Helpers.php",
             "packages/database-mysql/tests/Connection/Helpers.php",
-            "packages/devai/tests/Helpers.php"
+            "packages/devai/tests/Helpers.php",
+            "packages/inertia/tests/Helpers.php",
+            "packages/ratelimiter/tests/Helpers.php",
+            "packages/security/tests/Helpers.php",
+            "packages/session/tests/SessionFunctionShim.php"
         ]
     }
 }

@@ -680,6 +680,23 @@ Why not use key-value for `GuardInterface`? Because key-value (`GuardInterface::
 
 **When singletons matter:** Any service that holds state across the request must be a singleton. For example, if a boot callback registers policies into a `PolicyRegistry`, that registry must be a singleton — otherwise boot writes to one instance and request handlers get a different, empty one.
 
+### Resettable Singletons and Long-Running Processes
+
+A singleton that caches per-request state (the current session, the authenticated user, a sticky read/write routing flag) is harmless under PHP-FPM, where the process ends after each request. Under a long-running process — a worker or event loop reusing one PHP process across many requests — the same state leaks across requests unless something clears it, which is a cross-user data leak (one user's session or identity bleeding into another user's request).
+
+Any singleton with this shape should implement `Marko\Core\Contracts\ResettableInterface`:
+
+```php
+interface ResettableInterface
+{
+    public function reset(): void;
+}
+```
+
+`reset()` must be non-destructive — it clears the instance's in-memory per-request tracking without destroying anything persisted (e.g. resetting a session service forgets which session it was serving, it does not delete the stored session). A long-running process discovers what to reset via `Container::resolvedInstances(ResettableInterface::class)`, which returns only instances the container has already built — never triggering resolution — instead of requiring a hardcoded list. `resolvedInstances()` lives on the concrete `Container` class, not on `ContainerInterface`.
+
+Current implementors: `Session`, `SessionGuard` (`marko/authentication`), and `ReadWriteConnection` (`marko/database-readwrite`).
+
 ### Preferences
 
 Preferences replace one concrete class with another globally. Unlike bindings (interface → implementation), preferences swap class → class.
