@@ -35,16 +35,23 @@ it('can be implemented by a class that clears its per request state', function (
         ->toBe('');
 });
 
+/*
+ * Asserts only on the two phrases that ARE the contract — an implementor
+ * reading nothing but this interface must not mistake reset() for a
+ * destructive teardown. Deliberately does not assert on incidental prose
+ * such as the example runtimes named in the docblock: those are free to be
+ * reworded, and pinning them would make this test fail on edits that change
+ * no behaviour and no contract.
+ */
 it('documents that reset is non destructive', function (): void {
-    $classDoc = (new ReflectionClass(ResettableInterface::class))->getDocComment();
-    $methodDoc = (new ReflectionClass(ResettableInterface::class))->getMethod('reset')->getDocComment();
+    $reflection = new ReflectionClass(ResettableInterface::class);
+    $classDoc = $reflection->getDocComment();
+    $methodDoc = $reflection->getMethod('reset')->getDocComment();
 
     expect($classDoc)
         ->not->toBeFalse()
         ->and($classDoc)
         ->toContain('non-destructive')
-        ->and($classDoc)
-        ->toContain('PHP-FPM')
         ->and($methodDoc)
         ->not->toBeFalse()
         ->and($methodDoc)
