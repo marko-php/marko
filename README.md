@@ -179,6 +179,7 @@ Marko ships as composable packages — require only what you need. Every package
 | [config](packages/config/README.md) | PHP-native configuration with dot-notation access |
 | [env](packages/env/README.md) | Environment variable loading |
 | [routing](packages/routing/README.md) | Attribute-based HTTP routing with conflict detection |
+| [roadrunner](packages/roadrunner/README.md) | RoadRunner application server driver |
 | [cli](packages/cli/README.md) | Console command system with attribute-driven discovery |
 | [framework](packages/framework/README.md) | Full-stack metapackage for rapid setup |
 

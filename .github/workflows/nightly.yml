@@ -21,11 +21,19 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
+          extensions: sockets
           coverage: none
           ini-values: memory_limit=2G
 
       - name: Install dependencies
         uses: ramsey/composer-install@v3
+
+      # Without this, packages/roadrunner's end-to-end suite finds no `rr`
+      # binary on this runner and every one of its security-critical
+      # isolation assertions silently skips — the exact failure mode
+      # tests/CiWorkflowTest.php guards against below.
+      - name: Install the RoadRunner binary
+        run: vendor/bin/rr get-binary --no-config --no-interaction
 
       - name: Run full test suite
         run: composer test:all

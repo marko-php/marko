@@ -115,6 +115,20 @@ $this->inertia->share([
 
 Shared props are merged after the built-in `errors` and `flash` props, then page props are merged last.
 
+### Long-Running Processes
+
+`Inertia` implements `Marko\Core\Contracts\ResettableInterface`. In a long-running worker (e.g. Swoole, RoadRunner), call `reset()` between requests to clear `$shared` so props shared by one request's middleware are never present in a later request's Inertia response:
+
+```php
+use Marko\Core\Contracts\ResettableInterface;
+
+if ($this->inertia instanceof ResettableInterface) {
+    $this->inertia->reset();
+}
+```
+
+See [`marko/roadrunner`'s reset lifecycle section](/docs/packages/roadrunner/#reset-lifecycle-and-the-stateful-singleton-rule) for how this runs automatically before each request under that driver.
+
 ### Lazy Props and Partial Reloads
 
 Props may be closures. They are evaluated for full loads and for partial reloads that include the prop:
@@ -214,12 +228,14 @@ SSR transport failures return `null` from the transport layer so the page can fa
 ```php
 namespace Marko\Inertia;
 
+use Marko\Core\Contracts\ResettableInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
-class Inertia
+class Inertia implements ResettableInterface
 {
     public function share(array|string $key, mixed $value = null): void;
+    public function reset(): void;
     public function flash(string $key, string|array $value): void;
     public function render(Request $request, string $component, array $props = [], ?string $assetEntry = null): Response;
     public function location(string $url): Response;

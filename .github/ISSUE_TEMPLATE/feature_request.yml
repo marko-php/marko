@@ -107,6 +107,7 @@ body:
         - queue-rabbitmq
         - queue-sync
         - ratelimiter
+        - roadrunner
         - routing
         - scheduler
         - search
