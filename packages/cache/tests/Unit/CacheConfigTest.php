@@ -3,7 +3,10 @@
 declare(strict_types=1);
 
 use Marko\Cache\Config\CacheConfig;
+use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Core\Container\Container;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Testing\Fake\FakeConfigRepository;
 
 it('reads driver from config without fallback', function (): void {
@@ -18,6 +21,35 @@ it('reads path from config without fallback', function (): void {
     $config = new CacheConfig(new FakeConfigRepository([
         'cache.path' => '/var/cache',
     ]));
+
+    expect($config->path())->toBe('/var/cache');
+});
+
+it('resolves a relative path against the project root, not the working directory', function (): void {
+    $config = new CacheConfig(
+        new FakeConfigRepository(['cache.path' => 'storage/cache']),
+        new ProjectPaths('/srv/app'),
+    );
+
+    expect($config->path())->toBe('/srv/app/storage/cache');
+});
+
+it('gets the project root from the container', function (): void {
+    $container = new Container();
+    $container->instance(
+        ConfigRepositoryInterface::class,
+        new FakeConfigRepository(['cache.path' => 'storage/cache']),
+    );
+    $container->instance(ProjectPaths::class, new ProjectPaths('/srv/app'));
+
+    expect($container->get(CacheConfig::class)->path())->toBe('/srv/app/storage/cache');
+});
+
+it('keeps an absolute path as configured', function (): void {
+    $config = new CacheConfig(
+        new FakeConfigRepository(['cache.path' => '/var/cache']),
+        new ProjectPaths('/srv/app'),
+    );
 
     expect($config->path())->toBe('/var/cache');
 });
