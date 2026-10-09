@@ -60,8 +60,8 @@ it(
         expect($ci)->toContain('name: Integration')
             ->and($job)
             ->toContain('services:')
-            ->toContain('image: postgres:17')
-            ->toContain('image: redis:7')
+            ->toContain('image: public.ecr.aws/docker/library/postgres:17')
+            ->toContain('image: public.ecr.aws/docker/library/redis:7')
             ->toContain('- 5432:5432')
             ->toContain('- 6379:6379')
             ->toContain('pdo_pgsql')
@@ -90,7 +90,7 @@ it('runs a mysql service with a health check in the integration job', function (
     $job = substr($ci, (int) strpos($ci, 'name: Integration'));
 
     expect($job)
-        ->toContain('image: mysql:8.4')
+        ->toContain('image: public.ecr.aws/docker/library/mysql:8.4')
         ->toContain('- 3306:3306')
         ->toContain('MYSQL_DATABASE: marko_test')
         ->toContain('--health-cmd "mysqladmin ping');
@@ -212,12 +212,26 @@ it(
     function () use ($ci, $nightly): void {
         $redisService = "    services:\n      # Redis integration suites (packages/cache-redis, packages/ratelimiter)\n"
             . "      # skip without a server; this keeps them running on every build.\n"
-            . "      redis:\n        image: redis:7-alpine\n        ports:\n          - 6379:6379\n";
+            . "      redis:\n        image: public.ecr.aws/docker/library/redis:7-alpine\n        ports:\n          - 6379:6379\n";
 
         expect($ci)->toContain("    name: Tests\n    runs-on: ubuntu-latest\n" . $redisService)
             ->and($nightly)->toContain($redisService);
     },
 );
+
+it('pulls service images from the ECR mirror, never rate-limited Docker Hub', function () use ($ci, $nightly): void {
+    // Anonymous Docker Hub pulls on shared runners hit `toomanyrequests` and fail
+    // jobs before a single test runs. public.ecr.aws mirrors the official images.
+    foreach (['ci.yml' => $ci, 'nightly.yml' => $nightly] as $workflow => $content) {
+        preg_match_all('/^\s+image: (\S+)$/m', $content, $matches);
+
+        expect($matches[1])->not->toBeEmpty("$workflow declares no service images");
+
+        foreach ($matches[1] as $image) {
+            expect($image)->toStartWith('public.ecr.aws/docker/library/', "$workflow pulls $image from Docker Hub");
+        }
+    }
+});
 
 it('installs the roadrunner binary in the nightly workflow', function () use ($nightly): void {
     // Without this, packages/roadrunner's end-to-end suite finds no `rr`
