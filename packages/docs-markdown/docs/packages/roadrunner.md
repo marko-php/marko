@@ -90,7 +90,12 @@ The reset runs **before** each request, not after: a request that throws, or a w
 
 This driver is the only place in the monorepo that runs `packages/*/src` code under PHPStan level 6 outside `marko/core` — deliberately, since a type error here is a plausible path to a cross-user security bug rather than an ordinary bug.
 
-For the full mechanical audit behind this section — every container singleton, boot-time binding, class static, superglobal reader, and process-global PHP setting in the monorepo, each given an explicit leak verdict — see [RoadRunner state-leak audit](/docs/packages/roadrunner-state-leaks/).
+Some state lives for the whole worker on purpose. Keep these in mind when extending the framework:
+
+- **Admin sections** (`marko/admin`) are built once and live as long as the worker. A section must not keep request or user data in its properties.
+- **Custom casts** — `CastResolver` caches one instance per `CastInterface` class for the worker's lifetime, so a custom cast must be stateless (the built-in casts are).
+- **Login throttle counts** (`marko/authentication`) live in the cache, keyed by login identifier and client, so they persist across requests by design.
+- **Database server detection** — `MySqlServer` caches whether it is talking to MySQL or MariaDB (and the version) for the worker's lifetime. Restart workers after moving the database to a different server type.
 
 ## The Session Cookie Caveat
 

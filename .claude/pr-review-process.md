@@ -68,6 +68,7 @@ Check each changed file against project standards:
 - **No unnecessary imports** (self-namespace, unused)
 - **No hardcoded paths or environment-specific values** — use `PHP_BINARY`, env vars, etc.
 - **Tests exist** for new classes, bindings, and behavior
+- **No tests read documentation** — reject any test that opens a docs page, README, `CLAUDE.md` or `.claude/` file (see `.claude/testing.md`)
 - **Module bindings** have corresponding tests in `ModuleBindingsTest.php`
 - **No `final` classes**, including exceptions (blocks Preferences extensibility — see CLAUDE.md)
 - **Type declarations** on all parameters, returns, properties
@@ -251,6 +252,7 @@ Before merging any package PR:
 - [ ] `composer phpstan` reports zero errors
 - [ ] `gh pr checks <N>` green — `Tests`, `Lint`, `Static analysis` all passing, and `Integration` too (not yet a required check, but still blocking)
 - [ ] New code has corresponding tests
+- [ ] No test reads documentation (docs pages, READMEs, `CLAUDE.md`, `.claude/`)
 - [ ] No hardcoded paths or environment-specific values
 - [ ] No `final` classes (including exceptions)
 - [ ] No defensive `instanceof` checks on container resolutions

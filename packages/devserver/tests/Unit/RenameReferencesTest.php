@@ -23,18 +23,6 @@ it('has zero grep hits for marko/dev-server in composer.json files outside the d
     expect($hits)->toBeEmpty('These files still reference marko/dev-server: ' . implode(', ', $hits));
 });
 
-it('updates .claude/architecture.md package inventory to reference marko/devserver', function (): void {
-    $monorepoRoot = dirname(__DIR__, 4);
-    $architectureFile = $monorepoRoot . '/.claude/architecture.md';
-
-    expect(file_exists($architectureFile))->toBeTrue();
-
-    $content = file_get_contents($architectureFile);
-
-    expect($content)->not->toContain('marko/dev-server')
-        ->and($content)->not->toContain('packages/dev-server');
-});
-
 it('runs the full test suite clean after the rename propagates', function (): void {
     $monorepoRoot = dirname(__DIR__, 4);
 

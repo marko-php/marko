@@ -72,14 +72,6 @@ describe('marketplace.json', function (): void {
             );
     });
 
-    it('architecture.md AI Development Tooling table includes a row for marko/claude-plugins', function (): void {
-        $archPath = dirname(__DIR__, 4) . '/.claude/architecture.md';
-        $contents = file_get_contents($archPath);
-
-        expect(str_contains($contents, 'marko/claude-plugins'))->toBeTrue()
-            ->and(str_contains($contents, 'AI Development Tooling'))->toBeTrue();
-    });
-
     it(
         'marketplace.json each plugin entry includes name, description, author, category fields per Task 001\'s required-fields finding',
         function (): void {

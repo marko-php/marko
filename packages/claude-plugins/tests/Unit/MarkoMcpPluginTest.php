@@ -129,20 +129,4 @@ describe('marko-mcp plugin', function (): void {
                 ->and(str_contains($contents, 'exit 1'))->toBeTrue();
         },
     );
-
-    it(
-        'README.md explains what the plugin registers, how to install via the marko marketplace, and how to verify with claude mcp list',
-        function (): void {
-            $readmePath = $this->pluginRoot . '/README.md';
-            $contents = file_exists($readmePath) ? file_get_contents($readmePath) : '';
-
-            expect(file_exists($readmePath))->toBeTrue()
-                // What the plugin registers
-            ->and(str_contains($contents, 'mcp:serve') || str_contains($contents, 'MCP server'))->toBeTrue()
-                // How to install via marketplace
-            ->and(str_contains($contents, '/plugin install marko-mcp@marko'))->toBeTrue()
-                // How to verify
-            ->and(str_contains($contents, 'claude mcp list'))->toBeTrue();
-        },
-    );
 });

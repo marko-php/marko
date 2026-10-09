@@ -128,14 +128,4 @@ describe('broadcasting-amphp module', function (): void {
             ->and($composer['autoload']['psr-4'])->toBe(['Marko\\Broadcasting\\Amphp\\' => 'src/'])
             ->and($composer['extra']['marko']['module'])->toBeTrue();
     });
-
-    it('has a README with installation, quick example and docs link', function (): void {
-        $readme = file_get_contents(dirname(__DIR__) . '/README.md');
-
-        expect($readme)->toStartWith("# marko/broadcasting-amphp\n")
-            ->toContain("## Installation\n")
-            ->toContain('composer require marko/broadcasting-amphp')
-            ->toContain("## Quick Example\n")
-            ->toContain('https://marko.build/docs/packages/broadcasting-amphp/');
-    });
 });

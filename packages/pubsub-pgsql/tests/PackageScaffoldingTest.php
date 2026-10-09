@@ -2,16 +2,6 @@
 
 declare(strict_types=1);
 
-it('creates README.md for marko/pubsub-pgsql with all required sections', function (): void {
-    $readme = file_get_contents(dirname(__DIR__) . '/README.md');
-
-    expect($readme)
-        ->toContain('## Overview')
-        ->and($readme)->toContain('## Installation')
-        ->and($readme)->toContain('## Usage')
-        ->and($readme)->toContain('## API Reference');
-});
-
 it(
     'has valid module.php for marko/pubsub-pgsql binding PublisherInterface and SubscriberInterface',
     function (): void {

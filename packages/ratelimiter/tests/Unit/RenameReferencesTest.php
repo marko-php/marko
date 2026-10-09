@@ -66,18 +66,6 @@ it('has zero grep hits for Marko\\RateLimiting namespace outside the ratelimiter
     expect($hits)->toBe([], 'Found Marko\\RateLimiting references in: ' . implode(', ', $hits));
 });
 
-it('updates .claude/architecture.md package inventory to reference marko/ratelimiter', function (): void {
-    $monorepoRoot = dirname(__DIR__, 4);
-    $architectureFile = $monorepoRoot . '/.claude/architecture.md';
-
-    expect(file_exists($architectureFile))->toBeTrue();
-
-    $contents = file_get_contents($architectureFile);
-
-    // Should not contain the old package name in the inventory
-    expect($contents)->not->toContain('marko/rate-limiting');
-});
-
 it('runs composer dump-autoload without errors', function (): void {
     $monorepoRoot = dirname(__DIR__, 4);
 

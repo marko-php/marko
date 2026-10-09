@@ -17,7 +17,7 @@ jobs:
       # Redis integration suites (packages/cache-redis, packages/ratelimiter)
       # skip without a server; this keeps them running on every build.
       redis:
-        image: redis:7-alpine
+        image: public.ecr.aws/docker/library/redis:7-alpine
         ports:
           - 6379:6379
         options: >-

@@ -2,16 +2,6 @@
 
 declare(strict_types=1);
 
-it('has a README with installation, quick example and docs link', function (): void {
-    $readme = file_get_contents(dirname(__DIR__) . '/README.md');
-
-    expect($readme)->toStartWith("# marko/pubsub-redis\n")
-        ->toContain("## Installation\n")
-        ->toContain('composer require marko/pubsub-redis')
-        ->toContain("## Quick Example\n")
-        ->toContain('https://marko.build/docs/packages/pubsub-redis/');
-});
-
 it(
     'has valid module.php for marko/pubsub-redis binding PublisherInterface and SubscriberInterface',
     function (): void {

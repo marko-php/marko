@@ -7,50 +7,54 @@ use Marko\Tests\Support\DocsClassReference\DocsClassReferenceScanner;
 require_once __DIR__ . '/Support/DocsClassReference/DocsClassReferenceScanner.php';
 
 /*
- * Guards every `Marko\...` class reference in fenced PHP code blocks of the
- * package READMEs and the docs site against classes that do not exist.
- *
- * Fictional example modules should use a non-Marko namespace (`App\`, `Acme\`).
- * If one genuinely has to live under `Marko\`, add its namespace prefix to
- * $allowedFictionalPrefixes below rather than weakening the scan.
+ * Tests the scanner behind `composer docs:lint` against fixtures. The real
+ * docs are checked by `composer docs:lint` in the CI Lint job, never here:
+ * tests do not read documentation.
  */
 
 $repositoryRoot = dirname(__DIR__);
 $packagesRoot = $repositoryRoot . '/packages';
 $fixturePackagesRoot = __DIR__ . '/Fixtures/DocsClassReference/packages';
 
-/** @var list<string> $allowedFictionalPrefixes */
-$allowedFictionalPrefixes = [];
-
 /**
- * @param list<array{file: string, line: int, class: string}> $references
- * @return list<string>
+ * @return array{exitCode: int, output: string}
  */
-function formatDocsClassReferences(array $references, string $root): array
+function runDocsLint(string ...$arguments): array
 {
-    return array_map(
-        fn (array $reference): string => sprintf(
-            '%s:%d references missing class %s',
-            str_replace($root . '/', '', $reference['file']),
-            $reference['line'],
-            $reference['class'],
-        ),
-        $references,
-    );
+    $command = array_merge([PHP_BINARY, dirname(__DIR__) . '/bin/docs-lint.php'], $arguments);
+    $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['redirect', 1]], $pipes);
+    $output = (string) stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+
+    return ['exitCode' => proc_close($process), 'output' => $output];
 }
 
-it('resolves every Marko class referenced in README and docs PHP snippets', function () use (
-    $packagesRoot,
-    $repositoryRoot,
-    $allowedFictionalPrefixes,
+it('fails docs:lint with file and line for every unresolved Marko class', function () use (
+    $fixturePackagesRoot,
 ): void {
-    $files = DocsClassReferenceScanner::discoverMarkdownFiles($packagesRoot);
-    $scanner = new DocsClassReferenceScanner($packagesRoot, $allowedFictionalPrefixes);
+    $result = runDocsLint('--docs-root=' . $fixturePackagesRoot);
 
-    $missing = formatDocsClassReferences($scanner->findUnresolved($files), $repositoryRoot);
+    expect($result['exitCode'])->toBe(1)
+        ->and($result['output'])
+        ->toContain('demo/README.md:7 references missing class Marko\\Nope\\Thing')
+        ->toContain('nested/section/page.md:13 references missing class Marko\\Missing\\Fqcn')
+        ->toContain('DocsClassReference/README.md:4 references missing class Marko\\Root\\Missing')
+        ->not->toContain('Marko\\Routing\\Http\\Response');
+});
 
-    expect($files)->not->toBeEmpty()
-        ->and($missing)->toBe([]);
+it('fails docs:lint loudly when it finds no Markdown to scan', function (): void {
+    $base = sys_get_temp_dir() . '/marko-docs-lint-empty-' . uniqid();
+    mkdir($base . '/packages', recursive: true);
+
+    try {
+        $result = runDocsLint('--docs-root=' . $base . '/packages');
+    } finally {
+        rmdir($base . '/packages');
+        rmdir($base);
+    }
+
+    expect($result['exitCode'])->toBe(1)
+        ->and($result['output'])->toContain('found no Markdown files');
 });
 
 it('discovers package READMEs and nested docs pages', function () use ($fixturePackagesRoot): void {

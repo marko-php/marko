@@ -96,36 +96,3 @@ it('suggests optional packages', function () {
         expect($composer['suggest'])->toHaveKey($package);
     }
 });
-
-it('README exists in package root', function () {
-    $readmePath = dirname(__DIR__) . '/README.md';
-
-    expect(file_exists($readmePath))->toBeTrue();
-});
-
-it('README documents included packages', function () {
-    $readmePath = dirname(__DIR__) . '/README.md';
-    $content = file_get_contents($readmePath);
-
-    $includedPackages = [
-        'marko/core',
-        'marko/routing',
-        'marko/cli',
-        'marko/errors',
-        'marko/errors-simple',
-        'marko/config',
-        'marko/hashing',
-        'marko/validation',
-    ];
-
-    foreach ($includedPackages as $package) {
-        expect($content)->toContain($package);
-    }
-});
-
-it('README shows installation examples', function () {
-    $readmePath = dirname(__DIR__) . '/README.md';
-    $content = file_get_contents($readmePath);
-
-    expect($content)->toContain('composer require marko/framework');
-});
