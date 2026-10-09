@@ -31,7 +31,10 @@ composer test:all
 # Static analysis — NOT part of composer test; must be zero errors
 composer phpstan
 
-# Everything the CI gate runs (tests + lint + static analysis)
+# Docs lint — fails on any Marko class in a README/docs PHP example that does not exist
+composer docs:lint
+
+# Everything the CI gate runs (tests + lint + static analysis + docs lint)
 composer ci
 
 # Real-service suite: fixture app + pgsql/mysql drivers + live Redis (needs the

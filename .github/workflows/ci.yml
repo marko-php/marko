@@ -72,6 +72,10 @@ jobs:
       - name: PHP CS Fixer
         run: vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --dry-run --diff
 
+      - name: Docs class references
+        if: ${{ !cancelled() }}
+        run: composer docs:lint
+
   static:
     name: Static analysis
     runs-on: ubuntu-latest

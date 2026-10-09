@@ -38,6 +38,20 @@ it('runs tests, lint, and static analysis as separate jobs', function () use ($c
         ->toContain('composer phpstan');
 });
 
+it('runs docs:lint in the required Lint job on every pull request', function () use ($ci): void {
+    $start = (int) strpos($ci, 'name: Lint');
+    $lintJob = substr($ci, $start, (int) strpos($ci, 'name: Static analysis') - $start);
+
+    expect($lintJob)->toContain('run: composer docs:lint');
+});
+
+it('includes docs:lint in composer ci', function (): void {
+    $composer = json_decode((string) file_get_contents(dirname(__DIR__) . '/composer.json'), true);
+
+    expect($composer['scripts']['docs:lint'])->toBe('php bin/docs-lint.php')
+        ->and($composer['scripts']['ci'])->toContain('@docs:lint');
+});
+
 it(
     'runs the integration-services group in its own job against postgres and redis services',
     function () use ($ci): void {

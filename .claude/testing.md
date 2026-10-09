@@ -251,7 +251,7 @@ No test may open, assert on, or depend on documentation: docs pages under `packa
 - Code that reads Markdown (e.g. `MarkdownRepository`) is tested against fixtures under `tests/Fixtures/`, never the real docs tree.
 - Files the code itself ships or emits (templates, generated config, installed skill files, exception messages that contain a docs URL) are product, not docs, and may be tested.
 
-Docs accuracy is the job of the `doc-updater` agent and PR review, not the test suite.
+Docs accuracy is checked outside the test suite: `composer docs:lint` (run by the CI `Lint` job on every PR) fails when a PHP example in a README or docs page references a `Marko\...` class that does not exist; the `doc-updater` agent and PR review cover the rest.
 
 ## Coverage Requirements
 - Minimum: 80%
