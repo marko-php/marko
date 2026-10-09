@@ -30,10 +30,3 @@ it('has PSR-4 autoloading for Marko\Clock', function () use ($composer): void {
 it('is marked as a marko module', function () use ($composer): void {
     expect($composer['extra']['marko']['module'])->toBeTrue();
 });
-
-it('ships a README pointing to the docs page', function (): void {
-    $readme = file_get_contents(dirname(__DIR__) . '/README.md');
-
-    expect($readme)->toContain('composer require marko/clock')
-        ->and($readme)->toContain('https://marko.build/docs/packages/clock/');
-});

@@ -12,9 +12,7 @@ use ReflectionProperty;
 /**
  * Task 005's discovery spike: drive many requests with interleaved
  * identities through one booted application and empirically confirm what
- * leaks between them. The findings document this suite verifies against is
- * task 006's sole source of truth for what to wire — see
- * packages/docs-markdown/docs/packages/roadrunner-state-leaks.md.
+ * leaks between them.
  */
 describe('State-leak discovery spike', function (): void {
     it('does not carry session data from one request into the next', function (): void {
@@ -173,94 +171,5 @@ describe('State-leak discovery spike', function (): void {
         // curve check, not a zero-growth check — some growth from opcache
         // warmup and PHP's own allocator behaviour is expected and fine.
         expect($growth)->toBeLessThan(25 * 1024 * 1024);
-    });
-
-    it('records every confirmed leak in the findings document', function (): void {
-        $doc = file_get_contents(
-            monorepoRootPath() . '/packages/docs-markdown/docs/packages/roadrunner-state-leaks.md',
-        );
-
-        expect($doc)
-            ->toContain('Session')
-            ->toContain('SessionGuard')
-            ->toContain('ReadWriteConnection')
-            ->toContain('Inertia')
-            ->toContain('Debugbar')
-            ->toContain('DatabaseConnectionPlugin')
-            ->toContain('ViewPlugin');
-    });
-
-    it('records investigated leads that turned out not to leak', function (): void {
-        $doc = file_get_contents(
-            monorepoRootPath() . '/packages/docs-markdown/docs/packages/roadrunner-state-leaks.md',
-        );
-
-        expect($doc)
-            ->toContain('EntityCompanionStorage')
-            ->toContain('RouteCollection')
-            ->toContain('PolicyRegistry')
-            ->toContain('IndexCache')
-            ->toContain('mt_srand')
-            ->toContain('date_default_timezone_set');
-    });
-
-    it('records a verdict for every singleton declared across the monorepo', function (): void {
-        $root = monorepoRootPath();
-        $doc = file_get_contents(
-            $root . '/packages/docs-markdown/docs/packages/roadrunner-state-leaks.md',
-        );
-
-        $moduleFiles = [
-            'admin' => $root . '/packages/admin/module.php',
-            'admin-auth' => $root . '/packages/admin-auth/module.php',
-            'authentication' => $root . '/packages/authentication/module.php',
-            'authorization' => $root . '/packages/authorization/module.php',
-            'codeindexer' => $root . '/packages/codeindexer/module.php',
-            'database' => $root . '/packages/database/module.php',
-            'database-mysql' => $root . '/packages/database-mysql/module.php',
-            'database-pgsql' => $root . '/packages/database-pgsql/module.php',
-            'debugbar' => $root . '/packages/debugbar/module.php',
-            'devai' => $root . '/packages/devai/module.php',
-            'docs-fts' => $root . '/packages/docs-fts/module.php',
-            'docs-markdown' => $root . '/packages/docs-markdown/module.php',
-            'docs' => $root . '/packages/docs/module.php',
-            'inertia' => $root . '/packages/inertia/module.php',
-            'layout' => $root . '/packages/layout/module.php',
-            'lsp' => $root . '/packages/lsp/module.php',
-            'mcp' => $root . '/packages/mcp/module.php',
-            'session-database' => $root . '/packages/session-database/module.php',
-            'session-file' => $root . '/packages/session-file/module.php',
-            'vite' => $root . '/packages/vite/module.php',
-            'codeindexer fixture' => $root
-                . '/packages/codeindexer/tests/Fixtures/MiniMonorepo/vendor/foo/bar/module.php',
-        ];
-
-        $lines = explode("\n", $doc);
-        $missingVerdicts = [];
-
-        foreach ($moduleFiles as $package => $moduleFile) {
-            $identifiers = moduleSingletonIdentifiers($moduleFile);
-
-            if ($identifiers === []) {
-                if (!str_contains($doc, $package)) {
-                    $missingVerdicts[] = $package . ' (no singletons declared)';
-                }
-
-                continue;
-            }
-
-            foreach ($identifiers as $identifier) {
-                $hasVerdictLine = array_any(
-                    $lines,
-                    fn (string $line): bool => str_contains($line, $identifier) && str_contains($line, 'Leaks:'),
-                );
-
-                if (!$hasVerdictLine) {
-                    $missingVerdicts[] = "$package: $identifier";
-                }
-            }
-        }
-
-        expect($missingVerdicts)->toBeEmpty();
     });
 });

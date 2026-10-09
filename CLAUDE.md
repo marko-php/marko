@@ -51,6 +51,7 @@ Every PR is gated by the `CI` workflow on `Tests`, `Lint`, and `Static analysis`
 - **No final classes** - blocks Preferences (extensibility)
 - **readonly** - use when appropriate for immutability, not as blanket rule
 - **Type declarations** - required on all parameters, returns, properties
+- **Tests never read documentation** - no test may open, assert on, or depend on a docs page, README, `CLAUDE.md`, `.claude/` file, or any other prose written for readers. Docs explain how things work; they are not a spec for the implementation. Test the code's behavior instead. Files the code itself ships or emits (templates, generated config, skill files a package installs) are product, not docs, and may be tested.
 
 ## Feature Development
 

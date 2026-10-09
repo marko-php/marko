@@ -11,37 +11,23 @@ it('has MarkdownRepository with listAllPages and getRawMarkdown id methods', fun
 });
 
 it('exposes absolute path to docs root via a dedicated accessor', function (): void {
-    $docsPath = dirname(__DIR__, 2) . '/docs';
+    $docsPath = dirname(__DIR__) . '/Fixtures/docs';
     $repo = new MarkdownRepository($docsPath);
 
     expect($repo->getDocsPath())->toBe($docsPath);
 });
 
-it('returns file content matching the docs files reachable via the Astro symlink', function (): void {
-    $docsPath = dirname(__DIR__, 2) . '/docs';
-    $repo = new MarkdownRepository($docsPath);
-
-    $content = $repo->getRawMarkdown('getting-started/installation');
-
-    // The Astro site reads the same files through the symlink at
-    // docs/src/content/docs → packages/docs-markdown/docs. Derive the path
-    // relative to the repo root (portable; no hardcoded absolute path).
-    $symlinkedPath = dirname(__DIR__, 4) . '/docs/src/content/docs/getting-started/installation.md';
-    expect($content)->toBe((string) file_get_contents($symlinkedPath));
-});
-
 it('reads markdown for a legitimate page id', function (): void {
-    $docsPath = dirname(__DIR__, 2) . '/docs';
+    $docsPath = dirname(__DIR__) . '/Fixtures/docs';
     $repo = new MarkdownRepository($docsPath);
 
     $content = $repo->getRawMarkdown('getting-started/installation');
 
-    expect($content)->toBeString()
-        ->and(strlen($content))->toBeGreaterThan(0);
+    expect($content)->toBe((string) file_get_contents($docsPath . '/getting-started/installation.md'));
 });
 
 it('throws DocsMarkdownException for an id containing path-traversal segments', function (): void {
-    $docsPath = dirname(__DIR__, 2) . '/docs';
+    $docsPath = dirname(__DIR__) . '/Fixtures/docs';
     $repo = new MarkdownRepository($docsPath);
 
     // Create a real .md file outside the docs root so traversal resolves to a real path
@@ -60,7 +46,7 @@ it('throws DocsMarkdownException for an id containing path-traversal segments', 
 });
 
 it('does not read a .md file outside the docs directory via a traversal id', function (): void {
-    $docsPath = dirname(__DIR__, 2) . '/docs';
+    $docsPath = dirname(__DIR__) . '/Fixtures/docs';
     $repo = new MarkdownRepository($docsPath);
 
     // Create a real .md file outside the docs root to confirm traversal is blocked
@@ -85,7 +71,7 @@ it('does not read a .md file outside the docs directory via a traversal id', fun
 });
 
 it('still throws pageNotFound for a clean id that does not exist', function (): void {
-    $docsPath = dirname(__DIR__, 2) . '/docs';
+    $docsPath = dirname(__DIR__) . '/Fixtures/docs';
     $repo = new MarkdownRepository($docsPath);
 
     expect(fn () => $repo->getRawMarkdown('nonexistent-page'))
@@ -93,7 +79,7 @@ it('still throws pageNotFound for a clean id that does not exist', function (): 
 });
 
 it('populates message, context, and suggestion on the traversal exception', function (): void {
-    $docsPath = dirname(__DIR__, 2) . '/docs';
+    $docsPath = dirname(__DIR__) . '/Fixtures/docs';
     $repo = new MarkdownRepository($docsPath);
 
     // Create a real .md file outside the docs root so traversal resolves to a real path

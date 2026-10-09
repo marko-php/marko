@@ -199,39 +199,3 @@ function sharedRoadRunnerServer(): RoadRunnerServerProcess
 
     return SharedRoadRunnerServer::get($binary, inProcessHarnessFixturePath());
 }
-
-/**
- * Parse a module.php file's `singletons` declaration into the short
- * (unqualified) identifiers it registers, used to mechanically cross-check
- * the state-leak findings document against every singleton actually
- * declared in the monorepo, rather than trusting a hand-maintained list.
- *
- * Handles both list form (`[Foo::class]`) and keyed form
- * (`[Interface::class => Concrete::class]` or `[Interface::class => Closure]`)
- * — the identifier is the string key when present, the string value
- * otherwise.
- *
- * @return list<string>
- */
-function moduleSingletonIdentifiers(
-    string $moduleFile,
-): array {
-    /** @var array{singletons?: array<int|string, mixed>} $config */
-    $config = require $moduleFile;
-    $singletons = $config['singletons'] ?? [];
-    $identifiers = [];
-
-    foreach ($singletons as $key => $value) {
-        $identifier = is_string($key) ? $key : $value;
-
-        if (!is_string($identifier)) {
-            continue;
-        }
-
-        $identifiers[] = str_contains($identifier, '\\')
-            ? substr($identifier, strrpos($identifier, '\\') + 1)
-            : $identifier;
-    }
-
-    return array_values(array_unique($identifiers));
-}

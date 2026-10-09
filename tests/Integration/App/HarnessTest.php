@@ -96,20 +96,6 @@ it('keeps no todo rows in the integration suite', function (): void {
         ->and(file_exists(__DIR__ . '/KnownGapsTest.php'))->toBeFalse();
 });
 
-it('documents how to run and extend the integration suite', function (): void {
-    $docs = (string) file_get_contents(dirname(__DIR__, 3) . '/.claude/testing.md');
-
-    expect($docs)
-        ->toContain('## Integration Tests (`integration-services` Group)')
-        ->toContain('docker compose -f tests/Integration/compose.yml up -d')
-        ->toContain('composer test:integration')
-        ->toContain('MARKO_INTEGRATION_REQUIRED')
-        ->toContain('setUpIntegrationTest($this)')
-        ->toContain('MARKO_TEST_PGSQL_HOST')
-        ->toContain('MARKO_TEST_MYSQL_HOST')
-        ->toContain('### Known gaps');
-});
-
 it('passes the script name and command ahead of the arguments to the command runner', function (): void {
     $input = integrationCommandInput('queue:retry', ['5', '--queue=default', '--once']);
 

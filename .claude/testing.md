@@ -242,6 +242,17 @@ packages/
 - **Feature tests** (`tests/Feature/`): Test integrated functionality, may touch multiple classes
 - **Browser tests** (`tests/Browser/`): End-to-end tests using Playwright (Pest 4)
 
+## Tests Never Read Documentation (Hard Rule)
+
+No test may open, assert on, or depend on documentation: docs pages under `packages/docs-markdown/docs/`, package `README.md` files, `CLAUDE.md`, anything in `.claude/`, or `docs/DOCS-STANDARDS.md`. Docs explain how things work for humans and AI; they are not a spec for the implementation, and a test that greps them turns every wording change into a red build.
+
+- Do not write `ReadmeTest`, `DocsTest`, "documents X" or "README has section Y" tests.
+- Do not check that a docs page or README exists, or that it links somewhere.
+- Code that reads Markdown (e.g. `MarkdownRepository`) is tested against fixtures under `tests/Fixtures/`, never the real docs tree.
+- Files the code itself ships or emits (templates, generated config, installed skill files, exception messages that contain a docs URL) are product, not docs, and may be tested.
+
+Docs accuracy is the job of the `doc-updater` agent and PR review, not the test suite.
+
 ## Coverage Requirements
 - Minimum: 80%
 - All new code must have tests

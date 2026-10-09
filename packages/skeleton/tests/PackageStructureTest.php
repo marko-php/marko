@@ -97,12 +97,6 @@ it('has empty storage/ directory with .gitkeep', function (): void {
     expect(file_exists($gitkeepPath))->toBeTrue();
 });
 
-it('has a README.md file', function (): void {
-    $packagePath = __DIR__ . '/..';
-
-    expect(file_exists($packagePath . '/README.md'))->toBeTrue();
-});
-
 it('ships a .gitignore to generated projects', function (): void {
     $gitignorePath = __DIR__ . '/../.gitignore';
 

@@ -2,16 +2,6 @@
 
 declare(strict_types=1);
 
-it('creates README.md for marko/amphp with all required sections', function (): void {
-    $readme = file_get_contents(dirname(__DIR__) . '/README.md');
-
-    expect($readme)
-        ->toContain('## Overview')
-        ->and($readme)->toContain('## Installation')
-        ->and($readme)->toContain('## Usage')
-        ->and($readme)->toContain('## API Reference');
-});
-
 describe('Package Scaffolding', function (): void {
     it('has valid module.php for marko/amphp with empty bindings', function (): void {
         $modulePath = dirname(__DIR__) . '/module.php';

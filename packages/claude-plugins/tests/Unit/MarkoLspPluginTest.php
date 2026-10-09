@@ -8,7 +8,6 @@ describe('marko-lsp plugin', function (): void {
         $this->pluginJsonPath = $this->pluginRoot . '/.claude-plugin/plugin.json';
         $this->lspJsonPath = $this->pluginRoot . '/.lsp.json';
         $this->shimPath = $this->pluginRoot . '/bin/marko-lsp';
-        $this->readmePath = $this->pluginRoot . '/README.md';
     });
 
     it(
@@ -110,17 +109,4 @@ describe('marko-lsp plugin', function (): void {
         expect(str_contains($contents, '>&2'))->toBeTrue()
             ->and(str_contains($contents, 'exit 1'))->toBeTrue();
     });
-
-    it(
-        'README.md explains marko-lsp coexists with php-lsp (intelephense), what marko-lsp adds beyond it, the recommendation to uninstall php-lsp@claude-plugins-official to avoid duplication, and how to verify with claude plugin list',
-        function (): void {
-            $contents = file_exists($this->readmePath) ? file_get_contents($this->readmePath) : '';
-
-            expect(file_exists($this->readmePath))->toBeTrue()
-                ->and(str_contains($contents, 'intelephense'))->toBeTrue()
-                ->and(str_contains($contents, 'php-lsp@claude-plugins-official'))->toBeTrue()
-                ->and(str_contains($contents, 'uninstall'))->toBeTrue()
-                ->and(str_contains($contents, 'claude plugin list'))->toBeTrue();
-        },
-    );
 });

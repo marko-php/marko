@@ -45,19 +45,4 @@ describe('marko-skills plugin', function (): void {
         expect(is_dir($this->pluginRoot . '/skills'))->toBeTrue()
             ->and(is_dir($this->pluginRoot . '/.claude-plugin/skills'))->toBeFalse();
     });
-
-    it(
-        'README.md lists the included skills (create-module, create-plugin), how they\'re invoked with the plugin namespace, and how to install via the marko marketplace',
-        function (): void {
-            $readmePath = $this->pluginRoot . '/README.md';
-            $content = file_exists($readmePath) ? file_get_contents($readmePath) : '';
-
-            expect(file_exists($readmePath))->toBeTrue()
-                ->and($content)->toContain('create-module')
-                ->and($content)->toContain('create-plugin')
-                ->and($content)->toContain('/marko-skills:create-module')
-                ->and($content)->toContain('/marko-skills:create-plugin')
-                ->and($content)->toContain('/plugin install marko-skills@marko');
-        },
-    );
 });

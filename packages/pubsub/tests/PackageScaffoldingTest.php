@@ -33,16 +33,6 @@ it('has valid module.php for marko/pubsub with empty bindings', function (): voi
         ->and($module['bindings'])->toBeEmpty();
 });
 
-it('creates README.md for marko/pubsub with all required sections', function (): void {
-    $readme = file_get_contents(dirname(__DIR__) . '/README.md');
-
-    expect($readme)
-        ->toContain('## Overview')
-        ->and($readme)->toContain('## Installation')
-        ->and($readme)->toContain('## Usage')
-        ->and($readme)->toContain('## API Reference');
-});
-
 it('has valid composer.json with name marko/pubsub and required fields', function (): void {
     $composerPath = dirname(__DIR__) . '/composer.json';
 

@@ -254,12 +254,3 @@ it('excludes deliberately-unparseable fixtures from both linters', function (): 
 
     expect($phpcs)->toContain('src/Broken/');
 });
-
-it('adds phpstan to the PR review checklist that previously omitted it', function (): void {
-    $process = file_get_contents(dirname(__DIR__) . '/.claude/pr-review-process.md');
-
-    expect($process)
-        ->toContain('composer phpstan')
-        ->toContain('PHPStan is not optional')
-        ->not->toContain('No PR CI workflow exists in this repo');
-});
