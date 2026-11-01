@@ -20,7 +20,13 @@ composer require marko/queue
 
 Note: You typically install a driver package (like `marko/queue-database`) which requires this automatically.
 
-`marko/queue` also requires [`marko/cache`](/docs/packages/cache/) for the `LockFactoryInterface` behind [unique jobs](#unique-jobs). Only unique jobs need a cache driver to provide the lock store.
+[Unique jobs](#unique-jobs) need [`marko/cache`](/docs/packages/cache/) (for `LockFactoryInterface`) plus a cache driver that provides the lock store. `marko/queue` only suggests it, so install it yourself if you use unique jobs:
+
+```bash
+composer require marko/cache marko/cache-redis
+```
+
+Without it, every other job works as usual, and pushing a unique job throws a `QueueException` telling you what to install.
 
 `marko/queue` requires [`marko/encryption`](/docs/packages/encryption/) and a non-empty `encryption.key` in your config. Job payloads are HMAC-signed when enqueued and verified before deserialization; if the key is empty or the signature does not match, a `SerializationException` is thrown loudly.
 
