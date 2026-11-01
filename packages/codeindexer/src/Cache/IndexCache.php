@@ -29,6 +29,18 @@ class IndexCache implements IndexCacheInterface
 {
     private const string CACHE_FILE = '.marko/index.cache';
 
+    /** Module name recorded on config keys that come from the project-root `config/` directory. */
+    public const string ROOT_CONFIG_MODULE = 'project';
+
+    /**
+     * Files Composer rewrites on every require/update/remove, in order of preference.
+     * The first one that exists is fingerprinted to detect vendor changes.
+     */
+    private const array COMPOSER_STATE_FILES = [
+        'vendor/composer/installed.json',
+        'composer.lock',
+    ];
+
     /** @var array<string, mixed>|null */
     private ?array $data = null;
 
@@ -69,7 +81,15 @@ class IndexCache implements IndexCacheInterface
             array_push($translationKeys, ...$this->translationScanner->scan($module));
         }
 
+        // The project-root config/ belongs to no module but defines app-level keys
+        // and overrides, so it is indexed as well.
+        array_push(
+            $configKeys,
+            ...$this->configScanner->scanDirectory($this->rootPath . '/config', self::ROOT_CONFIG_MODULE),
+        );
+
         $trackedPaths = $this->collectTrackedPaths();
+        $composerState = $this->composerStateFingerprint();
 
         $this->data = compact(
             'modules',
@@ -82,6 +102,7 @@ class IndexCache implements IndexCacheInterface
             'templates',
             'translationKeys',
             'trackedPaths',
+            'composerState',
         );
 
         $this->save();
@@ -147,7 +168,8 @@ class IndexCache implements IndexCacheInterface
      *
      * On subsequent reads (when $this->data is already populated), re-evaluates
      * staleness so long-lived singleton servers always reflect real changes to
-     * app/ and modules/ — without constructing a fresh instance.
+     * app/, modules/, the root config/ and Composer-installed packages — without
+     * constructing a fresh instance.
      *
      * @throws IndexCacheException
      */
@@ -172,17 +194,22 @@ class IndexCache implements IndexCacheInterface
     {
         $cachePath = $this->rootPath . '/' . self::CACHE_FILE;
 
+        // Long-lived servers stat the same files repeatedly; drop PHP's stat cache
+        // so changes made by other processes (editors, composer) are seen.
+        clearstatcache();
+
         if (!is_file($cachePath)) {
             return true;
         }
 
         $cacheMtime = filemtime($cachePath);
         $vendorPrefix = $this->rootPath . '/vendor/';
-        $modules = $this->moduleWalker->walk();
+        $dirsToCheck = [$this->rootPath . '/config'];
 
-        foreach ($modules as $module) {
-            // Vendor modules are excluded from the staleness re-check.
-            // New vendor packages surface on the next indexer:rebuild / cold-warm.
+        foreach ($this->moduleWalker->walk() as $module) {
+            // Vendor modules are not walked file by file: Composer rewrites
+            // vendor/composer/installed.json on every require/update/remove, so the
+            // composer-state fingerprint below covers them with one stat call.
             if (str_starts_with($module->path, $vendorPrefix)) {
                 continue;
             }
@@ -194,43 +221,79 @@ class IndexCache implements IndexCacheInterface
             }
 
             foreach (['src', 'config', 'resources/views', 'resources/translations'] as $sub) {
-                $dir = $module->path . '/' . $sub;
-
-                if (!is_dir($dir)) {
-                    continue;
-                }
-
-                $iter = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
-                );
-
-                foreach ($iter as $f) {
-                    if ($f->isFile() && $f->getMTime() > $cacheMtime) {
-                        return true;
-                    }
-                }
+                $dirsToCheck[] = $module->path . '/' . $sub;
             }
         }
 
-        // Check for deletions by comparing the current path-set against
-        // the previously-persisted set stored in the on-disk payload.
-        // We read the payload directly (not $this->data) to avoid the ordering
-        // trap: during load(), $this->data is null when isStale() is called.
-        $currentPaths = $this->collectTrackedPaths();
-        $persistedPaths = $this->loadTrackedPathsFromDisk($cachePath);
-
-        if ($persistedPaths === null) {
-            // Legacy payload without trackedPaths key — treat as stale
+        if (array_any($dirsToCheck, fn (string $dir): bool => $this->hasFileNewerThan($dir, $cacheMtime))) {
             return true;
         }
 
-        return $currentPaths !== $persistedPaths;
+        // Compare the current Composer state and tracked path-set (which catches
+        // added and deleted files) against the values persisted in the on-disk
+        // payload. We read the payload directly (not $this->data) to avoid the
+        // ordering trap: during load(), $this->data is null when isStale() is called.
+        $persisted = $this->loadPayloadFromDisk($cachePath);
+
+        if ($persisted === null
+            || !is_array($persisted['trackedPaths'] ?? null)
+            || !array_key_exists('composerState', $persisted)
+        ) {
+            // Unreadable or legacy payload without these keys — treat as stale
+            return true;
+        }
+
+        if ($persisted['composerState'] !== $this->composerStateFingerprint()) {
+            return true;
+        }
+
+        return $this->collectTrackedPaths() !== $persisted['trackedPaths'];
+    }
+
+    private function hasFileNewerThan(
+        string $dir,
+        int $mtime,
+    ): bool {
+        if (!is_dir($dir)) {
+            return false;
+        }
+
+        $iter = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+        );
+
+        foreach ($iter as $f) {
+            if ($f->isFile() && $f->getMTime() > $mtime) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
-     * Collect the sorted list of tracked source-file paths under app/ and modules/.
-     * Vendor is intentionally excluded — only app/ and modules/ are re-checked at
-     * runtime. Used by build() to persist the set and by isStale() to compare.
+     * Fingerprint of the Composer install state: the path, mtime and size of
+     * vendor/composer/installed.json, falling back to composer.lock. It changes on
+     * every composer require/update/remove. Null when neither file exists.
+     */
+    private function composerStateFingerprint(): ?string
+    {
+        foreach (self::COMPOSER_STATE_FILES as $relative) {
+            $file = $this->rootPath . '/' . $relative;
+
+            if (is_file($file)) {
+                return $relative . ':' . filemtime($file) . ':' . filesize($file);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Collect the sorted list of tracked source-file paths under app/, modules/
+     * and the project-root config/. Vendor is not listed file by file; the
+     * composer-state fingerprint covers it. Used by build() to persist the set
+     * and by isStale() to detect added or deleted files.
      *
      * @return list<string>
      */
@@ -240,6 +303,7 @@ class IndexCache implements IndexCacheInterface
         $dirsToScan = [
             $this->rootPath . '/app',
             $this->rootPath . '/modules',
+            $this->rootPath . '/config',
         ];
 
         foreach ($dirsToScan as $baseDir) {
@@ -264,13 +328,12 @@ class IndexCache implements IndexCacheInterface
     }
 
     /**
-     * Read only the `trackedPaths` key from the on-disk cache payload without
-     * deserializing the full object graph. Returns null when the key is absent
-     * (legacy payload) or when the file cannot be read.
+     * Read the on-disk cache payload for the staleness comparison. Returns null
+     * when the file cannot be read or does not deserialize to an array.
      *
-     * @return list<string>|null
+     * @return array<string, mixed>|null
      */
-    private function loadTrackedPathsFromDisk(string $cachePath): ?array
+    private function loadPayloadFromDisk(string $cachePath): ?array
     {
         $raw = ErrorCapture::run($reason, fn (): string|false => file_get_contents($cachePath));
 
@@ -280,17 +343,7 @@ class IndexCache implements IndexCacheInterface
 
         $data = $this->unserializeCache($raw);
 
-        if (!is_array($data) || !array_key_exists('trackedPaths', $data)) {
-            return null;
-        }
-
-        $tracked = $data['trackedPaths'];
-
-        if (!is_array($tracked)) {
-            return null;
-        }
-
-        return $tracked;
+        return is_array($data) ? $data : null;
     }
 
     /**
