@@ -15,15 +15,16 @@ use Marko\Core\Exceptions\DiscoveryCacheException;
  * reads it back on a cached boot).
  *
  * The section holds the merged config values and, for every environment
- * variable the config files read through Env, a hash of its value at build
- * time. Reading the section re-hashes just those variables, so a changed
+ * variable the config files read (through Env, or through the marko/core
+ * readers the shipped config/discovery.php uses), a hash of its value at
+ * build time. Reading the section re-hashes just those variables, so a changed
  * environment fails loudly instead of booting with stale config.
  */
 readonly class ConfigCacheSection
 {
     /**
      * @param array<mixed> $values Merged config, keyed by config file name
-     * @param list<string> $envNames Variables read through Env while the config files ran
+     * @param list<string> $envNames Variables read while the config files ran
      * @return array{values: array<mixed>, env: array<string, string>}
      *
      * @throws ConfigException

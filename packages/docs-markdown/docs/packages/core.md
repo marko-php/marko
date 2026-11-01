@@ -182,7 +182,7 @@ class ReportMailer
 }
 ```
 
-It reads `MARKO_ENV` first, then `APP_ENV`, from `$_ENV` with a `getenv()` fallback, so it works whether or not [marko/env](/docs/packages/env/) is installed and regardless of PHP's `variables_order` setting. Values are compared case-insensitively:
+It reads `MARKO_ENV` first, then `APP_ENV`, from `$_ENV` with a `getenv()` fallback (through [`EnvironmentVariables`](#environmentvariables)), so it works whether or not [marko/env](/docs/packages/env/) is installed and regardless of PHP's `variables_order` setting. Values are compared case-insensitively:
 
 | Method | Returns `true` for |
 |---|---|
@@ -477,7 +477,7 @@ composer install --no-dev --optimize-autoloader
 marko discovery:cache
 ```
 
-With [`marko/config`](/docs/packages/config/#config-caching) installed, this also compiles your config, so a cached boot reads no config files. Config values, including those read from environment variables through `Env`, are fixed when the cache is built: change an environment variable and boot throws `DiscoveryCacheException` naming it until you run `discovery:cache` again. `.env` is still loaded on every boot, because the boot gate reads `APP_ENV` and `DISCOVERY_CACHE_ENABLED` from it before the cache is loaded.
+With [`marko/config`](/docs/packages/config/#config-caching) installed, this also compiles your config, so a cached boot reads no config files. Config values, including those read from environment variables through `Env`, are fixed when the cache is built: change an environment variable and boot throws `DiscoveryCacheException` naming it until you run `discovery:cache` again. That includes the variables behind `config/discovery.php` (`MARKO_ENV`, `APP_ENV`, `DISCOVERY_CACHE_ENABLED`, `DISCOVERY_CACHE_PATH`), so a changed `APP_ENV` fails loudly instead of leaving `discovery.environment` stale. `.env` is still loaded on every boot, because the boot gate reads `APP_ENV` and `DISCOVERY_CACHE_ENABLED` from it before the cache is loaded.
 
 The cache file holds resolved config, including secrets, so `discovery:cache` writes it with mode `0600` (readable and writable by its owner only).
 
@@ -546,7 +546,7 @@ return [
 ];
 ```
 
-The core-owned `config/discovery.php` is shipped with `marko/core` and mirrors the boot gate by delegating to `DiscoveryEnvironment`, the single parser for these variables. `enabled` follows `DISCOVERY_CACHE_ENABLED` with the strict values above, `environment` follows `MARKO_ENV` then `APP_ENV` (lowercased, default `production`), and `cache_path` follows `DISCOVERY_CACHE_PATH`. An invalid `DISCOVERY_CACHE_ENABLED` value fails here the same way it fails at boot. The boot gate reads `DiscoveryEnvironment` directly and does not depend on `marko/config`.
+The core-owned `config/discovery.php` is shipped with `marko/core` and mirrors the boot gate by delegating to `DiscoveryEnvironment`, the single parser for these variables. `enabled` follows `DISCOVERY_CACHE_ENABLED` with the strict values above, `environment` follows `MARKO_ENV` then `APP_ENV` (lowercased, default `production`), and `cache_path` follows `DISCOVERY_CACHE_PATH`. An invalid `DISCOVERY_CACHE_ENABLED` value fails here the same way it fails at boot. The boot gate reads `DiscoveryEnvironment` directly and does not depend on `marko/config`. `DiscoveryEnvironment` reads through [`EnvironmentVariables`](#environmentvariables), so when `discovery:cache` compiles your config, the variables it read are recorded with the rest and changing one afterwards fails the next cached boot, naming the variable (never its value).
 
 #### Not the same as the code index
 
@@ -699,6 +699,24 @@ readonly class ProjectPaths
 
 `$base` defaults to `getcwd()`. See [Resolving Paths Against the Project Root](#resolving-paths-against-the-project-root) above.
 
+### EnvironmentVariables
+
+```php
+use Marko\Core\Environment\EnvironmentVariables;
+
+class EnvironmentVariables
+{
+    public static function read(string $name): ?string;
+    public static function record(string $name): void;
+    public static function startRecording(): void;
+    public static function stopRecording(): array;
+    public static function isRecording(): bool;
+    public static function valueHashes(array $names): array;
+}
+```
+
+The single raw reader for environment variables: `read()` returns the `$_ENV` value (when scalar), then the `getenv()` value, or `null` when the variable is unset. `AppEnvironment` and `DiscoveryEnvironment` read through it, and [`Env`](/docs/packages/config/#environment-variables) reports its reads with `record()`. Between `startRecording()` and `stopRecording()` every name read is recorded; `stopRecording()` returns them once each, in first-read order. Starting twice, or stopping without starting, throws `EnvironmentException`. `valueHashes()` returns a hash of each variable's current value keyed by name (an empty value hashes differently from an unset one) and is not recorded. The [config cache](/docs/packages/config/#config-caching) uses these to detect environment changes on a cached boot. The methods are static because the readers are created inside config files, before the container exists.
+
 ### Contracts
 
 ```php
@@ -790,3 +808,11 @@ Named constructors:
 | `DiscoveryCacheException::notWritable($path, $reason)` | Cache directory or file is not writable (thrown by `discovery:cache`); the context carries the operating system's reason, such as `Permission denied` |
 
 Fix for a bad cache file: `marko discovery:cache` (or `marko discovery:clear` to fall back to live discovery). Both commands boot without the cache, so they work while it is broken.
+
+### EnvironmentException
+
+```php
+use Marko\Core\Exceptions\EnvironmentException;
+```
+
+Thrown by [`EnvironmentVariables`](#environmentvariables): `EnvironmentException::alreadyRecording()` when `startRecording()` is called during a recording, and `EnvironmentException::notRecording()` when `stopRecording()` is called without one.

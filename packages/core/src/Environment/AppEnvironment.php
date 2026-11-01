@@ -7,9 +7,10 @@ namespace Marko\Core\Environment;
 /**
  * The single answer to "which environment is this application running in?".
  *
- * Reads MARKO_ENV, then APP_ENV, from $_ENV with a getenv() fallback. When
- * neither is set the environment is "production", so a misconfigured
- * deployment fails safe rather than exposing development behaviour.
+ * Reads MARKO_ENV, then APP_ENV, through EnvironmentVariables ($_ENV with a
+ * getenv() fallback). When neither is set the environment is "production",
+ * so a misconfigured deployment fails safe rather than exposing development
+ * behaviour.
  */
 class AppEnvironment
 {
@@ -71,12 +72,6 @@ class AppEnvironment
             return $this->variables[$name] ?? null;
         }
 
-        if (array_key_exists($name, $_ENV) && is_scalar($_ENV[$name])) {
-            return (string) $_ENV[$name];
-        }
-
-        $value = getenv($name);
-
-        return $value === false ? null : $value;
+        return EnvironmentVariables::read($name);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Config;
 
 use Marko\Config\Exceptions\ConfigException;
+use Marko\Core\Environment\EnvironmentVariables;
 
 /**
  * Typed reader for environment variables in config files.
@@ -28,11 +29,11 @@ class Env
 
     private const string ACCEPTED_BOOLS = 'true, false, 1, 0, yes, no, on, off';
 
-    /** @var array<string, true>|null Names read since startRecording(), or null when not recording */
-    private static ?array $recordedNames = null;
-
     /**
-     * Start recording the name of every variable read through Env.
+     * Start recording the name of every variable read through Env, or through
+     * the marko/core readers (AppEnvironment, DiscoveryEnvironment) that the
+     * shipped config/discovery.php uses. The recording lives in marko/core's
+     * EnvironmentVariables, so both kinds of read land in one list.
      *
      * Used while compiling the config section of the discovery cache, so a
      * cached boot can detect that one of those variables changed since.
@@ -41,7 +42,7 @@ class Env
      */
     public static function startRecording(): void
     {
-        if (self::$recordedNames !== null) {
+        if (EnvironmentVariables::isRecording()) {
             throw new ConfigException(
                 message: 'Env is already recording environment variable reads',
                 context: 'While starting to record environment variable reads',
@@ -49,7 +50,7 @@ class Env
             );
         }
 
-        self::$recordedNames = [];
+        EnvironmentVariables::startRecording();
     }
 
     /**
@@ -60,7 +61,7 @@ class Env
      */
     public static function stopRecording(): array
     {
-        if (self::$recordedNames === null) {
+        if (!EnvironmentVariables::isRecording()) {
             throw new ConfigException(
                 message: 'Env is not recording environment variable reads',
                 context: 'While stopping a recording of environment variable reads',
@@ -68,37 +69,27 @@ class Env
             );
         }
 
-        $names = array_map(strval(...), array_keys(self::$recordedNames));
-        self::$recordedNames = null;
-
-        return $names;
+        return EnvironmentVariables::stopRecording();
     }
 
     public static function isRecording(): bool
     {
-        return self::$recordedNames !== null;
+        return EnvironmentVariables::isRecording();
     }
 
     /**
-     * A hash of each variable's current value, keyed by name. An unset and an
-     * empty variable hash alike, because every reader treats both as unset.
-     * Reading values here is not recorded.
+     * A hash of each variable's current raw value, keyed by name. An empty
+     * variable hashes differently from an unset one: Env reads both as unset,
+     * but the core readers do not (an empty DISCOVERY_CACHE_ENABLED disables
+     * the cache, an unset one enables it). Reading values here is not recorded.
      *
      * @param list<string> $names
      * @return array<string, string>
-     * @throws ConfigException
      */
     public static function valueHashes(
         array $names,
     ): array {
-        $hashes = [];
-
-        foreach ($names as $name) {
-            $value = self::lookup($name);
-            $hashes[$name] = hash('xxh128', $value === null ? 'unset' : 'set:' . $value);
-        }
-
-        return $hashes;
+        return EnvironmentVariables::valueHashes($names);
     }
 
     /**
@@ -283,9 +274,7 @@ class Env
     private static function read(
         string $name,
     ): ?string {
-        if (self::$recordedNames !== null) {
-            self::$recordedNames[$name] = true;
-        }
+        EnvironmentVariables::record($name);
 
         return self::lookup($name);
     }
