@@ -9,6 +9,7 @@ use Marko\Core\Command\CommandRunner;
 use Marko\Core\Command\Output;
 use Marko\Scheduler\Exceptions\SchedulerException;
 use Marko\Scheduler\Mutex\TaskMutexInterface;
+use Marko\Scheduler\Mutex\TaskServerClaimInterface;
 use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
 use Throwable;
 
@@ -18,6 +19,8 @@ use Throwable;
  * A failing task is reported and counted but does not stop the remaining due tasks.
  * A due task whose when()/skip() conditions do not allow the run is skipped before its
  * overlap mutex is acquired; a condition that throws counts as a failure of that task.
+ * An onOneServer() task is then claimed for its due minute through TaskServerClaimInterface;
+ * when another server holds the claim, the task is skipped here.
  * Tasks marked withoutOverlapping() are skipped while their mutex is held.
  *
  * Command tasks run through the CommandRunner in this process; a non-zero exit code counts
@@ -32,16 +35,19 @@ readonly class ScheduleRunner
         private TaskMutexInterface $taskMutex,
         private CommandRunner $commandRunner,
         private BackgroundCommandLauncherInterface $backgroundCommandLauncher,
+        private TaskServerClaimInterface $taskServerClaim,
     ) {}
 
     /**
-     * @throws SchedulerException When an overlap-protected task has no description, or its mutex cannot be stored
+     * @throws SchedulerException When an overlap-protected or onOneServer() task has no description,
+     *     onOneServer() has no distributed lock store, or a mutex cannot be stored
      */
     public function run(
         DateTimeInterface $now,
         Output $output,
     ): ScheduleRunResult {
         $this->assertOverlapProtectedTasksHaveIdentity();
+        $this->assertOneServerTasksCanBeClaimed();
 
         $dueTasks = $this->schedule->dueTasksAt($now);
 
@@ -56,6 +62,7 @@ readonly class ScheduleRunner
         $failed = 0;
         $skipped = 0;
         $skippedByCondition = 0;
+        $skippedByServer = 0;
 
         foreach ($dueTasks as $index => $task) {
             $description = $task->getDescription() ?? 'Task ' . ($index + 1);
@@ -74,6 +81,24 @@ readonly class ScheduleRunner
                 $skippedByCondition++;
 
                 continue;
+            }
+
+            if ($task->runsOnOneServer()) {
+                try {
+                    $claimed = $this->taskServerClaim->claim($task, $now);
+                } catch (Throwable $e) {
+                    $output->writeLine("Failed: $description - " . $e->getMessage());
+                    $failed++;
+
+                    continue;
+                }
+
+                if (!$claimed) {
+                    $output->writeLine("Skipped (another server): $description");
+                    $skippedByServer++;
+
+                    continue;
+                }
             }
 
             $command = $task->getCommand();
@@ -144,6 +169,7 @@ readonly class ScheduleRunner
             skipped: $skipped,
             skippedByCondition: $skippedByCondition,
             launched: $launched,
+            skippedByServer: $skippedByServer,
         );
     }
 
@@ -173,6 +199,27 @@ readonly class ScheduleRunner
             if ($task->preventsOverlapping()) {
                 $task->mutexName();
             }
+        }
+    }
+
+    /**
+     * Validate every onOneServer() task up front, due or not: it needs a description to key
+     * the claim on, and a lock store that excludes every other server.
+     *
+     * @throws SchedulerException
+     */
+    private function assertOneServerTasksCanBeClaimed(): void
+    {
+        foreach ($this->schedule->tasks() as $task) {
+            if (!$task->runsOnOneServer()) {
+                continue;
+            }
+
+            if ($task->getDescription() === null) {
+                throw SchedulerException::oneServerRequiresDescription($task->getExpression());
+            }
+
+            $this->taskServerClaim->assertCanClaim($task);
         }
     }
 }

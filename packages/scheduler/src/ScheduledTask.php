@@ -29,6 +29,8 @@ class ScheduledTask
 
     private bool $runsInBackground = false;
 
+    private bool $runsOnOneServer = false;
+
     /**
      * @param Closure|ScheduledCommand $action The closure to call, or the console command to run
      */
@@ -335,6 +337,25 @@ class ScheduledTask
         }
 
         return 'schedule-' . sha1($this->expression . $description);
+    }
+
+    /**
+     * Run this task on only one server per due minute when several servers run schedule:run.
+     *
+     * The servers race for a claim through TaskServerClaimInterface (a marko/cache lock, which
+     * must be distributed, e.g. cache-redis); the others skip the task for that minute. The
+     * claim is keyed on the description, so a closure task must also have a description().
+     */
+    public function onOneServer(): self
+    {
+        $this->runsOnOneServer = true;
+
+        return $this;
+    }
+
+    public function runsOnOneServer(): bool
+    {
+        return $this->runsOnOneServer;
     }
 
     /**

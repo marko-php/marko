@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Scheduler\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
+use Throwable;
 
 class SchedulerException extends MarkoException
 {
@@ -250,6 +251,39 @@ class SchedulerException extends MarkoException
             message: "Scheduler mutex file '$path' could not be opened.",
             context: 'While acquiring a scheduled task overlap mutex',
             suggestion: 'Check the permissions of the mutex directory and file for the user running the scheduler.',
+        );
+    }
+
+    public static function oneServerRequiresDescription(
+        string $expression,
+    ): self {
+        return new self(
+            message: "A scheduled task with expression '$expression' uses onOneServer() but has no description.",
+            context: 'While validating the scheduled tasks before a run',
+            suggestion: "Closures have no stable identity, so the server claim is keyed on the task's description. Add ->description('Unique task name') to the task.",
+        );
+    }
+
+    public static function lockFactoryUnavailable(
+        string $requester,
+        ?Throwable $previous = null,
+    ): self {
+        return new self(
+            message: "$requester, but no cache lock store can be resolved.",
+            context: 'While resolving Marko\\Cache\\Contracts\\LockFactoryInterface for cross-server scheduling',
+            suggestion: 'Install marko/cache with a distributed lock store: composer require marko/cache marko/cache-redis. A file or array store only excludes one server.',
+            previous: $previous,
+        );
+    }
+
+    public static function lockStoreNotDistributed(
+        string $requester,
+        string $scope,
+    ): self {
+        return new self(
+            message: "$requester, but the bound cache lock store only excludes callers within one $scope.",
+            context: 'While checking the lock store scope for cross-server scheduling',
+            suggestion: 'A file or array lock store would run the task on every server. Install marko/cache-redis (composer require marko/cache-redis) and point every server at the same Redis.',
         );
     }
 }

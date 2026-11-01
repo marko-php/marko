@@ -12,8 +12,8 @@ use Marko\Scheduler\Exceptions\SchedulerException;
  * The mutex is keyed on the task's mutex name (ScheduledTask::mutexName()), so a background
  * child process can take it from the name and expiry on its command line alone.
  *
- * The default implementation is a local file lock. Multi-server deployments should
- * bind a distributed implementation (e.g. Redis-backed) via a Preference.
+ * The default implementation is a local file lock. Multi-server deployments should bind
+ * LockTaskMutex (a marko/cache lock on a distributed store such as cache-redis) instead.
  */
 interface TaskMutexInterface
 {

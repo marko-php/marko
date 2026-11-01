@@ -3,7 +3,7 @@ title: marko/scheduler
 description: Fluent task scheduler with cron expression support — define recurring tasks in PHP and run them with a single cron entry.
 ---
 
-Fluent task scheduler with cron expression support --- define recurring tasks in PHP and run them with a single cron entry. Register closures and console commands on the `Schedule` with human-readable frequency methods (`daily()`, `dailyAt('03:30')`, `everyFiveMinutes()`) or raw cron expressions, optionally in their own time zone and behind `when()`/`skip()` conditions. A single system cron entry runs `schedule:run` every minute, and the scheduler determines which tasks are due. No per-task crontab entries needed. Long-running tasks can be protected from overlapping runs, commands can run in the background so they never hold up the rest of the minute, and `schedule:work` runs the scheduler in the foreground where no cron daemon is available.
+Fluent task scheduler with cron expression support --- define recurring tasks in PHP and run them with a single cron entry. Register closures and console commands on the `Schedule` with human-readable frequency methods (`daily()`, `dailyAt('03:30')`, `everyFiveMinutes()`) or raw cron expressions, optionally in their own time zone and behind `when()`/`skip()` conditions. A single system cron entry runs `schedule:run` every minute, and the scheduler determines which tasks are due. No per-task crontab entries needed. Long-running tasks can be protected from overlapping runs, a task can run on only one of several servers, commands can run in the background so they never hold up the rest of the minute, and `schedule:work` runs the scheduler in the foreground where no cron daemon is available.
 
 ## Installation
 
@@ -212,7 +212,44 @@ $schedule->call($callback)->hourly()->description('Rebuild search index')->witho
 
 The mutex is keyed on the task's expression and description, because closures have no stable identity. A command task's description defaults to its command name and arguments. A closure task that uses `withoutOverlapping()` without a `description()` makes `schedule:run` and `schedule:work` throw `SchedulerException` before any task runs, whether or not that task is due. An expiry below 1 minute also throws `SchedulerException`.
 
-The default `FileTaskMutex` holds an exclusive `flock()` on `storage/framework/schedule-{hash}` under the project root while the task runs, and records the expiry time in that file. If the process crashes, the operating system releases the lock. A lock that is still held past its expiry is reclaimed by the next run. File locks only protect processes on the same server --- see [Customization](#customization) for multi-server setups.
+The default `FileTaskMutex` holds an exclusive `flock()` on `storage/framework/schedule-{hash}` under the project root while the task runs, and records the expiry time in that file. If the process crashes, the operating system releases the lock. A lock that is still held past its expiry is reclaimed by the next run. File locks only protect processes on the same server --- see [Running on Several Servers](#running-on-several-servers) for multi-server setups.
+
+### Running on Several Servers
+
+When several servers run `schedule:run` from their own cron entry, every due task runs on every server. Both "run this on one server per minute" and "don't overlap across servers" need a lock that every server shares, and the scheduler takes it from [`marko/cache`](/docs/packages/cache/)'s atomic locks. `marko/cache` is a suggested dependency: install it with the Redis driver and point every server at the same Redis:
+
+```bash
+composer require marko/cache marko/cache-redis
+```
+
+Call `onOneServer()` on a task that must run once per due minute across all servers:
+
+```php
+$schedule->call(function () {
+    // Send the daily digest...
+})->dailyAt('07:00')->description('Send daily digest')->onOneServer();
+```
+
+Each server claims the task's due minute through `TaskServerClaimInterface`, which `marko/scheduler` binds to `LockTaskServerClaim`. The claim is a lock named `{mutexName}:{due minute in UTC as YmdHi}`, so exactly one server gets it; the others print `Skipped (another server): Send daily digest`, count it in `ScheduleRunResult::$skippedByServer`, and exit `0`. The claim is never released --- it expires after an hour --- so a slower server cannot claim the same minute after the first one has finished. The next due minute has a new name and is claimed afresh.
+
+The claim is taken after the task's `when()`/`skip()` conditions pass and before its overlap mutex is acquired or, for a `runInBackground()` task, before the child process is launched. A claim that throws (Redis is down) counts as a failure of that task.
+
+Like `withoutOverlapping()`, the claim is keyed on the task's description, so a closure task must have one. Before any task runs, whether or not it is due, `schedule:run` and `schedule:work` throw `SchedulerException` when an `onOneServer()` task has no description, when no lock factory can be resolved (`marko/cache` or a driver is not installed), or when the bound lock store's scope is not `LockScope::Distributed`: a file (`Host`) or array (`Process`) store would silently run the task on every server.
+
+To keep a `withoutOverlapping()` task from overlapping across servers too, bind `LockTaskMutex` in place of the default `FileTaskMutex` from your application module, which takes priority over the vendor binding:
+
+```php title="app/scheduling/module.php"
+use Marko\Scheduler\Mutex\LockTaskMutex;
+use Marko\Scheduler\Mutex\TaskMutexInterface;
+
+return [
+    'bindings' => [
+        TaskMutexInterface::class => LockTaskMutex::class,
+    ],
+];
+```
+
+`LockTaskMutex` takes a lock named after the task's `mutexName()`, expiring after the `withoutOverlapping()` minutes, and keeps its owner token, so it only ever releases its own lock --- never one another server took after its own expired. It checks the lock store when it is built, so a missing or non-distributed store throws `SchedulerException` before any task runs. It also protects `runInBackground()` tasks, whose child process takes the mutex through the same binding.
 
 ### Running the Scheduler
 
@@ -226,7 +263,7 @@ The `schedule:run` command checks all registered tasks and executes those that a
 
 | Exit code | Meaning |
 |-----------|---------|
-| `0` | Every due task succeeded or was skipped (still running, or by a condition), or no tasks were due |
+| `0` | Every due task succeeded or was skipped (still running, by a condition, or claimed by another server), or no tasks were due |
 | `1` | At least one task or one of its conditions threw, a command task exited non-zero, or a background task could not be launched |
 
 The non-zero exit code makes failures visible to cron mail and monitoring tools.
@@ -294,6 +331,7 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Scheduler\Command\RunScheduleCommand;
 use Marko\Scheduler\Mutex\FileTaskMutex;
+use Marko\Scheduler\Mutex\TaskServerClaimInterface;
 use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
 use Marko\Scheduler\ScheduleRunner;
 use Marko\Testing\Fake\FakeClock;
@@ -305,6 +343,7 @@ it('sends the report on the first of the month', function (): void {
         new FileTaskMutex(sys_get_temp_dir() . '/mutex', $clock),
         $container->get(CommandRunner::class),
         $container->get(BackgroundCommandLauncherInterface::class),
+        $container->get(TaskServerClaimInterface::class),
     );
     $command = new RunScheduleCommand($runner, $clock);
 
@@ -322,20 +361,11 @@ it('sends the report on the first of the month', function (): void {
 
 ### Shared Mutex
 
-Overlap protection depends on `TaskMutexInterface`, which `marko/scheduler` binds to `FileTaskMutex`. To share the mutex across several servers, implement the interface on a shared store such as Redis and bind it from your application module, which takes priority over the vendor binding:
+Overlap protection depends on `TaskMutexInterface`, which `marko/scheduler` binds to `FileTaskMutex`. To share the mutex across several servers, bind the shipped `LockTaskMutex` (see [Running on Several Servers](#running-on-several-servers)). To use another store, implement the interface and bind your class the same way. The mutex is keyed on the task's `mutexName()`. `acquire()` must be atomic and non-blocking, and must treat a mutex older than `$expiresAfterSeconds` as free.
 
-```php title="app/scheduling/module.php"
-use App\Scheduling\RedisTaskMutex;
-use Marko\Scheduler\Mutex\TaskMutexInterface;
+### Server Claim
 
-return [
-    'bindings' => [
-        TaskMutexInterface::class => RedisTaskMutex::class,
-    ],
-];
-```
-
-The mutex is keyed on the task's `mutexName()`. `acquire()` must be atomic and non-blocking, and must treat a mutex older than `$expiresAfterSeconds` as free.
+`onOneServer()` tasks are claimed through `TaskServerClaimInterface`, which `marko/scheduler` binds to `LockTaskServerClaim`. To claim through something other than a `marko/cache` lock, implement the interface and bind it from your application module. `claim()` must return `true` for exactly one caller per task per due minute, across every server, and `assertCanClaim()` must throw `SchedulerException` when the deployment cannot guarantee that.
 
 ## API Reference
 
@@ -382,6 +412,8 @@ public function getOverlapExpiresAfterMinutes(): ?int;
 public function mutexName(): string;
 public function getDescription(): ?string;
 public function getExpression(): string;
+public function onOneServer(): self;
+public function runsOnOneServer(): bool;
 public function runInBackground(): self;
 public function runsInBackground(): bool;
 public function getCommand(): ?ScheduledCommand;
@@ -411,10 +443,11 @@ public function input(): Input;
 use Marko\Core\Command\CommandRunner;
 use Marko\Core\Command\Output;
 use Marko\Scheduler\Mutex\TaskMutexInterface;
+use Marko\Scheduler\Mutex\TaskServerClaimInterface;
 use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
 use Marko\Scheduler\ScheduleRunResult;
 
-public function __construct(Schedule $schedule, TaskMutexInterface $taskMutex, CommandRunner $commandRunner, BackgroundCommandLauncherInterface $backgroundCommandLauncher);
+public function __construct(Schedule $schedule, TaskMutexInterface $taskMutex, CommandRunner $commandRunner, BackgroundCommandLauncherInterface $backgroundCommandLauncher, TaskServerClaimInterface $taskServerClaim);
 public function run(DateTimeInterface $now, Output $output): ScheduleRunResult;
 ```
 
@@ -426,6 +459,7 @@ public int $failed;
 public int $skipped;            // skipped because a previous run still holds the mutex
 public int $skippedByCondition; // skipped by a when()/skip() condition
 public int $launched;           // runInBackground() tasks handed to the launcher
+public int $skippedByServer;    // onOneServer() tasks another server claimed for the minute
 public function hasFailures(): bool;
 ```
 
@@ -437,7 +471,18 @@ public function release(string $name): void;
 public function exists(string $name): bool;
 ```
 
-`$name` is the task's `mutexName()`. `FileTaskMutex` throws `SchedulerException` for a name that is not a safe file name (letters, digits, `.`, `-` and `_`).
+`$name` is the task's `mutexName()`. `FileTaskMutex` throws `SchedulerException` for a name that is not a safe file name (letters, digits, `.`, `-` and `_`). `LockTaskMutex` (constructed with a `DistributedLockResolver`) throws `SchedulerException` when it is built without a distributed `marko/cache` lock store.
+
+### TaskServerClaimInterface
+
+```php
+use Marko\Scheduler\ScheduledTask;
+
+public function claim(ScheduledTask $task, DateTimeInterface $dueAt): bool;
+public function assertCanClaim(ScheduledTask $task): void;
+```
+
+`LockTaskServerClaim` claims with a lock that expires after `LockTaskServerClaim::CLAIM_EXPIRES_AFTER_SECONDS` (3600) seconds and is never released. Both lock-backed classes resolve `Marko\Cache\Contracts\LockFactoryInterface` through `DistributedLockResolver` only when they are used, so an application without `marko/cache` can still run the scheduler.
 
 ### BackgroundCommandLauncherInterface
 
