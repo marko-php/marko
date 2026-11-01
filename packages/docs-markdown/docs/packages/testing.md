@@ -604,6 +604,25 @@ Response body: {"message":"Internal Server Error"}
 
 A body that is not valid JSON fails a JSON assertion with a clear message. The accessors `status()`, `body()`, `header($name)`, `json(?$path = null)` and `response()` (the wrapped `Response`) are available for anything else.
 
+### Streamed and file responses
+
+`TestClient` dispatches through the router and never calls `send()`, so a [streamed response](/docs/packages/routing/#file-and-streamed-responses) (`FileResponse`, `StreamedResponse`, an SSE `StreamingResponse`) has an empty `body()`. `streamedContent()` runs the response's `sendBody()` once under an output buffer and returns what it wrote (`''` for a HEAD request). It throws `AssertionFailedException` when the response is not streamed. `assertSee()`, `assertDontSee()`, `assertNoContent()`, `json()` and the JSON assertions read it automatically for streamed responses:
+
+```php
+it('serves the second kilobyte of the video', function (): void {
+    $response = $this->client->get('/videos/intro.mp4', headers: ['Range' => 'bytes=1024-2047']);
+
+    $response->assertStatus(206)->assertHeader('Accept-Ranges', 'bytes');
+    expect(strlen($response->streamedContent()))->toBe(1024);
+});
+
+it('exports orders as CSV', function (): void {
+    $this->client->get('/reports/orders.csv')->assertOk()->assertSee('id,total');
+});
+```
+
+The body is captured through `Marko\Testing\Http\BufferedOutputStreamer`, an `OutputStreamer` that leaves output buffers and the time limit alone. Pass it to `withOutputStreamer()` to capture a streamed response you built yourself.
+
 ## Database Tests
 
 Database tests need `marko/database` and a driver. `marko/testing` only suggests them:
@@ -1120,6 +1139,7 @@ public static function site(string $host): string;           // registrable doma
 public function response(): Response;
 public function status(): int;
 public function body(): string;
+public function streamedContent(): string; // the body a StreamedResponseInterface writes; throws for a plain Response
 public function header(string $name): ?string;
 public function json(?string $path = null): mixed;
 public function assertStatus(int $status): static;

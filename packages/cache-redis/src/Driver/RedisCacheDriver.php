@@ -11,8 +11,11 @@ use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\Cache\Exceptions\TamperedCacheValueException;
-use Marko\Cache\Redis\RedisConnection;
+use Marko\Cache\Redis\Config\RedisCacheConfig;
 use Marko\Cache\Signer\CacheValueSigner;
+use Marko\Redis\Exceptions\RedisConnectionException;
+use Marko\Redis\RedisConnectionFactoryInterface;
+use Marko\Redis\RedisConnectionInterface;
 use Psr\Clock\ClockInterface;
 
 readonly class RedisCacheDriver implements CacheInterface
@@ -40,13 +43,26 @@ readonly class RedisCacheDriver implements CacheInterface
      */
     private const int SCAN_COUNT = 1000;
 
+    private RedisConnectionInterface $connection;
+
+    private string $prefix;
+
+    /**
+     * Resolves the marko/redis connection named by cache-redis.connection.
+     *
+     * @throws RedisConnectionException when that connection is not configured
+     */
     public function __construct(
-        private RedisConnection $connection,
+        RedisConnectionFactoryInterface $redisConnectionFactory,
+        RedisCacheConfig $redisCacheConfig,
         private CacheConfig $config,
         private CacheValueSigner $cacheValueSigner,
         private ClockInterface $clock,
         private CacheOperations $operations,
-    ) {}
+    ) {
+        $this->connection = $redisConnectionFactory->connection($redisCacheConfig->connection());
+        $this->prefix = $redisCacheConfig->prefix();
+    }
 
     /**
      * @throws InvalidKeyException|TamperedCacheValueException
@@ -124,7 +140,7 @@ readonly class RedisCacheDriver implements CacheInterface
     public function clear(): bool
     {
         $client = $this->connection->client();
-        $pattern = $this->escapeGlob($this->connection->prefix) . '*';
+        $pattern = $this->escapeGlob($this->prefix) . '*';
         $cursor = '0';
 
         do {
@@ -357,7 +373,7 @@ readonly class RedisCacheDriver implements CacheInterface
     private function prefixKey(
         string $key,
     ): string {
-        return $this->connection->prefix . $key;
+        return $this->prefix . $key;
     }
 
     /**

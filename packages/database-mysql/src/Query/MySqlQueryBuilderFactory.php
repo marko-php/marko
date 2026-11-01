@@ -29,6 +29,7 @@ readonly class MySqlQueryBuilderFactory implements QueryBuilderFactoryInterface
         return new MySqlQueryBuilder(
             connection: $this->connection,
             server: $this->server,
+            queryBuilderFactory: $this,
         );
     }
 }

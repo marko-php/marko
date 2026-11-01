@@ -109,3 +109,27 @@ it('throws for a guard provider that is not a non-empty string', function (): vo
     expect(fn (): UserProviderInterface => $resolver->forGuard('admin', ['provider' => '']))
         ->toThrow(AuthException::class, "Guard 'admin' has an invalid provider");
 });
+
+it('resolves a provider by name through authentication.providers', function (): void {
+    $resolver = userProviderResolver([
+        'authentication.providers' => ['admins' => ['class' => ResolverAdminProvider::class]],
+    ]);
+
+    expect($resolver->forProvider('admins'))->toBeInstanceOf(ResolverAdminProvider::class)
+        ->and($resolver->forProvider('admins'))->toBe($resolver->forGuard('admin', ['provider' => 'admins']));
+});
+
+it('uses the UserProviderInterface binding for a named provider without a class', function (): void {
+    $bound = new FakeUserProvider();
+
+    expect(userProviderResolver(['authentication.providers' => ['users' => []]], $bound)->forProvider('users'))
+        ->toBe($bound)
+        ->and(userProviderResolver([], $bound)->forProvider('users'))->toBe($bound);
+});
+
+it('throws a helpful error when a named provider is missing from authentication.providers', function (): void {
+    $resolver = userProviderResolver(['authentication.providers' => ['users' => []]]);
+
+    expect(fn (): UserProviderInterface => $resolver->forProvider('admins'))
+        ->toThrow(AuthException::class, "User provider 'admins' is not defined in authentication.providers");
+});

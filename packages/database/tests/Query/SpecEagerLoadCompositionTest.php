@@ -111,8 +111,10 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
 
         public function __construct(private readonly array $rows) {}
 
-        public function table(string $table): static
-        {
+        public function table(
+            string $table,
+            ?string $alias = null,
+        ): static {
             return $this;
         }
 
@@ -166,6 +168,31 @@ function makeSpecStubBuilder(array $rows = []): QueryBuilderInterface
         }
 
         public function whereJsonMissing(string $path): static
+        {
+            return $this;
+        }
+
+        public function whereNotIn(
+            string $column,
+            array $values,
+        ): static {
+            return $this;
+        }
+
+        public function whereColumn(
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function whereExists(callable|QueryBuilderInterface $subquery): static
+        {
+            return $this;
+        }
+
+        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
         {
             return $this;
         }
@@ -375,8 +402,10 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
 
         public function __construct(private readonly array $rows) {}
 
-        public function table(string $table): static
-        {
+        public function table(
+            string $table,
+            ?string $alias = null,
+        ): static {
             return $this;
         }
 
@@ -430,6 +459,31 @@ function makeCountingBuilder(array $rows = []): QueryBuilderInterface
         }
 
         public function whereJsonMissing(string $path): static
+        {
+            return $this;
+        }
+
+        public function whereNotIn(
+            string $column,
+            array $values,
+        ): static {
+            return $this;
+        }
+
+        public function whereColumn(
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function whereExists(callable|QueryBuilderInterface $subquery): static
+        {
+            return $this;
+        }
+
+        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
         {
             return $this;
         }
@@ -751,8 +805,24 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
             return $this;
         }
 
-        public function table(string $table): static
-        {
+        public function whereHas(
+            string $relation,
+            ?callable $constraint = null,
+        ): static {
+            return $this;
+        }
+
+        public function whereDoesntHave(
+            string $relation,
+            ?callable $constraint = null,
+        ): static {
+            return $this;
+        }
+
+        public function table(
+            string $table,
+            ?string $alias = null,
+        ): static {
             return $this;
         }
 
@@ -804,6 +874,31 @@ it('lets a spec call $builder->with(\'relation\') inside apply() to declare eage
         }
 
         public function whereJsonMissing(string $path): static
+        {
+            return $this;
+        }
+
+        public function whereNotIn(
+            string $column,
+            array $values,
+        ): static {
+            return $this;
+        }
+
+        public function whereColumn(
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function whereExists(callable|QueryBuilderInterface $subquery): static
+        {
+            return $this;
+        }
+
+        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
         {
             return $this;
         }

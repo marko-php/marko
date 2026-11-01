@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Marko\Routing\Http\Cookie;
+use Marko\Routing\Http\OutputStreamer;
 use Marko\Routing\Http\Response;
+use Marko\Routing\Http\StreamedResponse;
 use Marko\Testing\Exceptions\AssertionFailedException;
 use Marko\Testing\Http\TestResponse;
 use PHPUnit\Framework\Assert;
@@ -283,4 +285,64 @@ describe('TestResponse failure messages', function (): void {
                 ->not->toContain(str_repeat('x', 501));
         }
     });
+});
+
+describe('TestResponse streamed content', function (): void {
+    it('runs sendBody() under an output buffer and returns what it wrote', function (): void {
+        $response = new TestResponse(new StreamedResponse(function (OutputStreamer $outputStreamer): void {
+            $outputStreamer->write('streamed ');
+            $outputStreamer->write('body');
+        }));
+
+        expect($response->body())->toBe('')
+            ->and($response->streamedContent())->toBe('streamed body');
+    });
+
+    it('runs sendBody() only once', function (): void {
+        $calls = 0;
+        $response = new TestResponse(
+            new StreamedResponse(function (OutputStreamer $outputStreamer) use (&$calls): void {
+                $calls++;
+                $outputStreamer->write('once');
+            }),
+        );
+
+        $response->streamedContent();
+        $response->assertSee('once');
+
+        expect($calls)->toBe(1);
+    });
+
+    it('uses the streamed content for assertSee and assertDontSee', function (): void {
+        $response = new TestResponse(new StreamedResponse(function (OutputStreamer $outputStreamer): void {
+            $outputStreamer->write('needle in a stream');
+        }));
+
+        expect($response->assertSee('needle')->assertDontSee('haystack'))->toBe($response)
+            ->and(fn () => $response->assertSee('haystack'))->toThrow(
+                AssertionFailedException::class,
+                'needle in a stream',
+            );
+    });
+
+    it('uses the streamed content for JSON assertions', function (): void {
+        $response = new TestResponse(new StreamedResponse(function (OutputStreamer $outputStreamer): void {
+            $outputStreamer->write('{"data":');
+            $outputStreamer->write('{"id":5}}');
+        }));
+
+        expect($response->assertJsonPath('data.id', 5))->toBe($response);
+    });
+
+    it('returns an empty string when the body was omitted', function (): void {
+        $response = new TestResponse(new StreamedResponse(function (OutputStreamer $outputStreamer): void {
+            $outputStreamer->write('never');
+        })->withoutBody());
+
+        expect($response->streamedContent())->toBe('');
+    });
+
+    it('throws for a response that is not streamed', function (): void {
+        new TestResponse(new Response('plain'))->streamedContent();
+    })->throws(AssertionFailedException::class, 'Expected a streamed response but got Marko\Routing\Http\Response.');
 });

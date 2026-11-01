@@ -6,23 +6,18 @@ namespace Marko\Roadrunner\Http;
 
 use Marko\Roadrunner\Exceptions\StreamingResponseException;
 use Marko\Routing\Http\Response;
+use Marko\Routing\Http\StreamedResponseInterface;
 use Nyholm\Psr7\Response as Psr7Response;
 use Psr\Http\Message\ResponseInterface;
 
 readonly class Psr7ResponseBridge
 {
-    private const string DEFAULT_STREAMING_RESPONSE_CLASS = 'Marko\Sse\StreamingResponse';
-
-    public function __construct(
-        private string $streamingResponseClass = self::DEFAULT_STREAMING_RESPONSE_CLASS,
-    ) {}
-
     /**
-     * @throws StreamingResponseException
+     * @throws StreamingResponseException When the response streams its body (StreamedResponseInterface)
      */
     public function bridge(Response $response): ResponseInterface
     {
-        if ($this->isStreamingResponse($response)) {
+        if ($response instanceof StreamedResponseInterface) {
             throw StreamingResponseException::unsupported($response::class);
         }
 
@@ -40,11 +35,5 @@ readonly class Psr7ResponseBridge
         }
 
         return $psr7Response;
-    }
-
-    private function isStreamingResponse(Response $response): bool
-    {
-        return class_exists($this->streamingResponseClass)
-            && is_a($response, $this->streamingResponseClass);
     }
 }

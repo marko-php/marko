@@ -10,8 +10,13 @@
         "marko/core": "self.version"
     },
     "require-dev": {
+        "marko/filesystem": "self.version",
+        "marko/filesystem-local": "self.version",
         "marko/testing": "self.version",
         "pestphp/pest": "^4.0"
+    },
+    "suggest": {
+        "marko/filesystem": "Serve files from a filesystem disk with FilesystemFileSource"
     },
     "autoload": {
         "psr-4": {

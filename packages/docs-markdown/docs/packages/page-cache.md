@@ -62,6 +62,10 @@ A negative TTL is always a mistake and fails loudly with a `PageCacheException`:
 
 Responses carrying any cookie --- whether attached via `Response::withCookie()` or set directly with a raw `Set-Cookie` header --- are never cached. This is a deliberate security boundary, not a limitation to work around: a cached `Set-Cookie` would be replayed to every later visitor, leaking one user's session (or any other cookie) to everybody else. This includes responses that set analytics or session cookies --- if your response carries any cookie, it bypasses the cache entirely.
 
+### Streamed Responses Are Never Cached
+
+A response that implements routing's [`StreamedResponseInterface`](/docs/packages/routing/#file-and-streamed-responses) (a `FileResponse`, a `StreamedResponse`, an SSE `StreamingResponse`) writes its body while it is sent and has an empty `body()`. `CacheabilityChecker::isResponseCacheable()` returns `false` for it, so a `#[Cacheable]` route that returns a file or a stream is served normally and never cached as an empty page.
+
 ### Cache Hits Skip Route Middleware
 
 `PageCacheMiddleware` is global middleware, so it runs **before any route middleware**. A cache hit is returned straight away: route-level middleware such as `AuthMiddleware` or `AuthorizationMiddleware` never runs for it. Only put `#[Cacheable]` on pages that are the same for every visitor.

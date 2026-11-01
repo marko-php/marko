@@ -12,10 +12,14 @@ use Marko\Database\Query\IdentifierValidator;
  */
 class InvalidColumnException extends MarkoException
 {
+    /**
+     * @param list<string> $allowedOperators The allowlist the operator was checked against
+     */
     public static function invalidOperator(
         string $operator,
+        array $allowedOperators = IdentifierValidator::OPERATORS,
     ): self {
-        $allowed = implode(', ', IdentifierValidator::OPERATORS);
+        $allowed = implode(', ', $allowedOperators);
 
         return new self(
             message: "Invalid operator '$operator': operator is not in the allowlist",
