@@ -116,6 +116,123 @@ class SchedulerException extends MarkoException
         );
     }
 
+    public static function unknownCommand(
+        string $command,
+    ): self {
+        return new self(
+            message: "Schedule::command() was given '$command', which is not a registered command.",
+            context: 'While registering a scheduled command task',
+            suggestion: 'Check the name against `marko list`. The command must be a #[Command] class in an installed module.',
+        );
+    }
+
+    public static function invalidCommandArgument(
+        string $command,
+        string $givenType,
+    ): self {
+        return new self(
+            message: "Scheduled command '$command' was given a $givenType argument; every argument must be a string.",
+            context: 'While registering a scheduled command task',
+            suggestion: "Pass the arguments as argv-style strings, the way you would type them after the command name, e.g. ->command('$command', ['--days=30', 'users']).",
+        );
+    }
+
+    public static function backgroundRequiresCommand(
+        string $taskLabel,
+    ): self {
+        return new self(
+            message: "Scheduled task $taskLabel is a closure and cannot runInBackground().",
+            context: 'While configuring a scheduled task to run in the background',
+            suggestion: 'A closure cannot be passed to another process. Move its body into a #[Command] class and schedule it with $schedule->command(\'your:command\')->runInBackground().',
+        );
+    }
+
+    public static function notAClosureTask(
+        string $method,
+        string $taskLabel,
+    ): self {
+        return new self(
+            message: "$method() was called on scheduled task $taskLabel, which runs a command, not a closure.",
+            context: 'While running a scheduled task',
+            suggestion: 'Command tasks are run by ScheduleRunner through the CommandRunner. Use getCommand() to read the command name and arguments.',
+        );
+    }
+
+    public static function commandFailed(
+        string $command,
+        int $exitCode,
+    ): self {
+        return new self(
+            message: "Command '$command' exited with code $exitCode.",
+            context: 'While running a scheduled command task',
+            suggestion: 'A non-zero exit code counts as a failure. Check the command output above for the cause.',
+        );
+    }
+
+    public static function markoBinaryNotFound(
+        string $path,
+    ): self {
+        return new self(
+            message: "The marko binary was not found at '$path', so a background scheduled command cannot be started.",
+            context: 'While launching a runInBackground() scheduled task',
+            suggestion: 'Install marko/cli in the project (composer require marko/cli) so vendor/bin/marko exists.',
+        );
+    }
+
+    public static function backgroundLaunchFailed(
+        string $command,
+        string $reason,
+    ): self {
+        return new self(
+            message: "Could not start scheduled command '$command' in the background: $reason.",
+            context: 'While launching a runInBackground() scheduled task',
+            suggestion: 'Check that the project directory exists, that proc_open() is not disabled (disable_functions), and that the process limit for the scheduler user is not reached.',
+        );
+    }
+
+    public static function backgroundMutexOptionMissing(
+        string $commandName,
+        string $option,
+    ): self {
+        return new self(
+            message: "$commandName requires --$option=<value>.",
+            context: "While running $commandName",
+            suggestion: "$commandName is started by the scheduler for runInBackground() tasks that use withoutOverlapping(); it is not meant to be run by hand.",
+        );
+    }
+
+    public static function backgroundCommandMissing(
+        string $commandName,
+    ): self {
+        return new self(
+            message: "$commandName was not given a command to run.",
+            context: "While running $commandName",
+            suggestion: "Pass the command and its arguments after --, e.g. marko $commandName --schedule-mutex=<name> -- app:prune --days=30.",
+        );
+    }
+
+    public static function invalidMutexName(
+        string $name,
+    ): self {
+        return new self(
+            message: "'$name' is not a valid scheduler mutex name.",
+            context: 'While locating a scheduled task overlap mutex',
+            suggestion: 'Mutex names are file names made of letters, digits, dots, dashes and underscores, as ScheduledTask::mutexName() returns them (schedule-{sha1}).',
+        );
+    }
+
+    public static function invalidMutexExpiry(
+        string $commandName,
+        string $option,
+        string $given,
+    ): self {
+        return new self(
+            message: "$commandName requires --$option=<seconds> with a whole number of seconds of at least 1, '$given' given.",
+            context: "While running $commandName",
+            suggestion: "$commandName is started by the scheduler for runInBackground() tasks that use withoutOverlapping(); it is not meant to be run by hand.",
+        );
+    }
+
     public static function mutexDirectoryNotWritable(
         string $directory,
     ): self {

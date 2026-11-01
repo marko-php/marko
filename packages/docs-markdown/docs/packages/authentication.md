@@ -69,6 +69,15 @@ return [
         'expire_seconds' => 3600,   // how long a reset token stays valid
         'throttle_seconds' => 60,   // at most one reset link per user in this window
     ],
+
+    'password_confirmation' => [
+        'timeout_seconds' => 10800,       // a confirmation stays valid for 3 hours
+        'route' => '/confirm-password',   // where unconfirmed browsers are redirected
+        'throttle' => [
+            'max_attempts' => 5,          // attempts per user within decay_seconds
+            'decay_seconds' => 60,
+        ],
+    ],
 ];
 ```
 
@@ -76,7 +85,7 @@ Each guard's `driver` picks how it is built. `session` is built in. The shipped 
 
 Each guard's `provider` names an entry in `providers`. See [User Providers](#user-providers).
 
-See [Remember Me](#remember-me) for what each `remember` option controls, [Login Throttling](#login-throttling) for `throttle`, and [Password Reset](#password-reset) for `password_reset`.
+See [Remember Me](#remember-me) for what each `remember` option controls, [Login Throttling](#login-throttling) for `throttle`, [Password Reset](#password-reset) for `password_reset`, and [Password Confirmation](#password-confirmation) for `password_confirmation`.
 
 ### Password Hashing
 
@@ -900,6 +909,92 @@ Resolving the persister happens on every request, before the user is looked up, 
 
 `expire_seconds` or `throttle_seconds` below `1` throws an `AuthException` when the broker reads it.
 
+## Password Confirmation
+
+Sensitive pages, such as two-factor setup or account deletion, can ask a signed-in user to re-enter their password when they haven't done so recently. Three interfaces make this up, each bound by default:
+
+- `PasswordVerifierInterface` (`PasswordVerifier`) is the framework's one password check. `verify(?AuthenticatableInterface $user, string $password): bool` compares the password with the user's hash through `PasswordHasherInterface` and does nothing else. With a `null` user it still runs `verifyDummy()` and returns `false`, so timing doesn't reveal whether the user exists. Use it for any "is this the user's password?" check instead of calling the hasher yourself.
+- `PasswordConfirmationInterface` (`PasswordConfirmation`) keeps the proof. `confirm($user, $password)` verifies the password and, only when it matches, stamps the session key `auth.password_confirmed_at` with the time from `ClockInterface`. `isRecentlyConfirmed()` is true while that stamp is younger than `timeout_seconds`. `markConfirmed()` sets the stamp without a password, for other proofs of presence such as a passkey.
+- `IntendedUrlInterface` (`IntendedUrl`) remembers where the user was going. `remember(Request $request)` stores the request's path and query string in the session; `pull(string $default)` returns it once, or `$default`.
+
+`confirm()` is throttled per user through [marko/ratelimiter](/docs/packages/ratelimiter/)'s `RateLimiterInterface`: after `throttle.max_attempts` attempts within `throttle.decay_seconds`, it throws `TooManyPasswordConfirmationAttemptsException` (429 with `Retry-After`). A correct password resets the count. The counters live in the cache, so a cache driver is required.
+
+The stamp is removed on every `LoginEvent` and `LogoutEvent`, so a confirmation never carries over to whoever signs in next on the same session.
+
+### Protecting Routes
+
+Add `RequirePasswordConfirmationMiddleware` after `AuthMiddleware`:
+
+```php title="app/web/Controller/AccountController.php"
+use Marko\Authentication\Middleware\AuthMiddleware;
+use Marko\Authentication\Middleware\RequirePasswordConfirmationMiddleware;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
+use Marko\Routing\Http\Response;
+
+class AccountController
+{
+    #[Get('/account/delete')]
+    #[Middleware([AuthMiddleware::class, RequirePasswordConfirmationMiddleware::class])]
+    public function confirmDeletion(): Response
+    {
+        // Only users who confirmed their password in the last timeout_seconds reach here
+    }
+}
+```
+
+When the session isn't recently confirmed:
+
+- a browser request is redirected to `password_confirmation.route`, with its URL remembered through `IntendedUrlInterface` (only GET and HEAD URLs are remembered, since a redirect can only revisit those);
+- a request that wants JSON gets a `423` `PasswordConfirmationRequiredException`: `{"message": "Password confirmation required."}`.
+
+`#[Middleware]` takes only class names, so the timeout and the route are global config, not per-route arguments.
+
+The middleware needs a session guard. When the default guard is stateless, such as the token guard, it throws an `AuthException` instead of letting the request through, because there is no session to hold the confirmation.
+
+### The Confirmation Page
+
+Your app serves `password_confirmation.route`. On a correct password, send the user back to the intended URL:
+
+```php title="app/web/Controller/ConfirmPasswordController.php"
+use Marko\Authentication\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\IntendedUrlInterface;
+use Marko\Authentication\Contracts\PasswordConfirmationInterface;
+use Marko\Authentication\Middleware\AuthMiddleware;
+use Marko\Routing\Attributes\Middleware;
+use Marko\Routing\Attributes\Post;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
+
+#[Middleware(AuthMiddleware::class)]
+class ConfirmPasswordController
+{
+    public function __construct(
+        private GuardInterface $guard,
+        private PasswordConfirmationInterface $passwordConfirmation,
+        private IntendedUrlInterface $intendedUrl,
+    ) {}
+
+    #[Post('/confirm-password')]
+    public function confirm(
+        Request $request,
+    ): Response {
+        $confirmed = $this->passwordConfirmation->confirm(
+            $this->guard->user(),
+            (string) $request->post('password'),
+        );
+
+        if (!$confirmed) {
+            return Response::redirect('/confirm-password?invalid=1');
+        }
+
+        return Response::redirect($this->intendedUrl->pull('/account'));
+    }
+}
+```
+
+`TooManyPasswordConfirmationAttemptsException` renders as a 429 wherever it is thrown; catch it to show your own message. `timeout_seconds`, `throttle.max_attempts` or `throttle.decay_seconds` below `1` throws an `AuthException` when it is read.
+
 ## Middleware
 
 ### AuthMiddleware
@@ -968,6 +1063,10 @@ class LoginController
 ```
 
 Authenticated users are redirected to a configured path (default: `/`).
+
+### RequirePasswordConfirmationMiddleware
+
+Asks for the password again before sensitive routes. See [Password Confirmation](#protecting-routes).
 
 ## Events
 
@@ -1227,6 +1326,41 @@ public function deleteExpired(DateTimeImmutable $before): int;
 
 ```php
 public function send(CanResetPasswordInterface $user, string $token): void;
+```
+
+### PasswordVerifierInterface
+
+```php
+public function verify(?AuthenticatableInterface $user, string $password): bool; // null user: verifyDummy(), false
+```
+
+### PasswordConfirmationInterface
+
+```php
+public const string SESSION_KEY = 'auth.password_confirmed_at';
+public function confirm(AuthenticatableInterface $user, string $password): bool; // throws TooManyPasswordConfirmationAttemptsException
+public function markConfirmed(): void;
+public function isRecentlyConfirmed(): bool;
+```
+
+### IntendedUrlInterface
+
+```php
+public function remember(Request $request): void; // GET/HEAD only; other methods forget the URL
+public function pull(string $default): string;
+```
+
+### PasswordConfirmationRequiredException
+
+Extends `HttpException` (423). Thrown by `RequirePasswordConfirmationMiddleware` for a request that wants JSON.
+
+### TooManyPasswordConfirmationAttemptsException
+
+Extends `AuthException` and implements `HttpExceptionInterface` (429, `Retry-After`).
+
+```php
+public static function lockedOut(int $retryAfter): self;
+public function getRetryAfter(): int;
 ```
 
 ### UserProviderInterface

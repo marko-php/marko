@@ -247,7 +247,7 @@ readonly class AuthConfig
      */
     public function passwordResetExpireSeconds(): int
     {
-        return $this->positivePasswordResetSetting('expire_seconds');
+        return $this->positiveInt('authentication.password_reset.expire_seconds');
     }
 
     /**
@@ -257,19 +257,59 @@ readonly class AuthConfig
      */
     public function passwordResetThrottleSeconds(): int
     {
-        return $this->positivePasswordResetSetting('throttle_seconds');
+        return $this->positiveInt('authentication.password_reset.throttle_seconds');
+    }
+
+    /**
+     * How long a password confirmation stays valid, in seconds.
+     *
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function passwordConfirmationTimeoutSeconds(): int
+    {
+        return $this->positiveInt('authentication.password_confirmation.timeout_seconds');
+    }
+
+    /**
+     * The URL path RequirePasswordConfirmationMiddleware redirects browsers to.
+     *
+     * @throws ConfigNotFoundException
+     */
+    public function passwordConfirmationRoute(): string
+    {
+        return $this->config->getString('authentication.password_confirmation.route');
+    }
+
+    /**
+     * Password confirmation attempts one user may make within the decay window.
+     *
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function passwordConfirmationThrottleMaxAttempts(): int
+    {
+        return $this->positiveInt('authentication.password_confirmation.throttle.max_attempts');
+    }
+
+    /**
+     * Seconds over which password confirmation attempts are counted.
+     *
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function passwordConfirmationThrottleDecaySeconds(): int
+    {
+        return $this->positiveInt('authentication.password_confirmation.throttle.decay_seconds');
     }
 
     /**
      * @throws AuthException|ConfigNotFoundException
      */
-    private function positivePasswordResetSetting(
-        string $name,
+    private function positiveInt(
+        string $key,
     ): int {
-        $value = $this->config->getInt("authentication.password_reset.$name");
+        $value = $this->config->getInt($key);
 
         if ($value < 1) {
-            throw AuthException::invalidPasswordResetSetting($name, $value);
+            throw AuthException::invalidPositiveSetting($key, $value);
         }
 
         return $value;

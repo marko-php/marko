@@ -27,8 +27,13 @@ class ScheduledTask
     /** @var array<Closure> */
     private array $skipConditions = [];
 
+    private bool $runsInBackground = false;
+
+    /**
+     * @param Closure|ScheduledCommand $action The closure to call, or the console command to run
+     */
     public function __construct(
-        private readonly Closure $callback,
+        private readonly Closure|ScheduledCommand $action,
     ) {}
 
     public function everyMinute(): self
@@ -272,15 +277,24 @@ class ScheduledTask
         return $this;
     }
 
+    /**
+     * The description set with description(). A command task without one is described by its
+     * command name and arguments, e.g. 'app:prune --days=30'.
+     */
     public function getDescription(): ?string
     {
+        if ($this->description === null && $this->action instanceof ScheduledCommand) {
+            return $this->action->description();
+        }
+
         return $this->description;
     }
 
     /**
      * Skip this task while a previous run is still in progress.
      *
-     * The task must also have a description(), which keys the mutex. A held mutex older than
+     * The mutex is keyed on the description, so a closure task must also have a description();
+     * a command task defaults to its command name and arguments. A held mutex older than
      * $expiresAfterMinutes is treated as stale (its holder hung or crashed) and is reclaimed.
      *
      * @throws SchedulerException When $expiresAfterMinutes is below 1
@@ -314,11 +328,44 @@ class ScheduledTask
      */
     public function mutexName(): string
     {
-        if ($this->description === null) {
+        $description = $this->getDescription();
+
+        if ($description === null) {
             throw SchedulerException::overlapRequiresDescription($this->expression);
         }
 
-        return 'schedule-' . sha1($this->expression . $this->description);
+        return 'schedule-' . sha1($this->expression . $description);
+    }
+
+    /**
+     * Run the command in a separate process, so the runner moves on to the next due task at once.
+     *
+     * Only command tasks can run in the background; a closure cannot be passed to another process.
+     *
+     * @throws SchedulerException When this is a closure task
+     */
+    public function runInBackground(): self
+    {
+        if (!$this->action instanceof ScheduledCommand) {
+            throw SchedulerException::backgroundRequiresCommand($this->label());
+        }
+
+        $this->runsInBackground = true;
+
+        return $this;
+    }
+
+    public function runsInBackground(): bool
+    {
+        return $this->runsInBackground;
+    }
+
+    /**
+     * The command this task runs, or null for a closure task.
+     */
+    public function getCommand(): ?ScheduledCommand
+    {
+        return $this->action instanceof ScheduledCommand ? $this->action : null;
     }
 
     public function getExpression(): string
@@ -326,9 +373,16 @@ class ScheduledTask
         return $this->expression;
     }
 
+    /**
+     * @throws SchedulerException When this is a command task
+     */
     public function getCallback(): Closure
     {
-        return $this->callback;
+        if (!$this->action instanceof Closure) {
+            throw SchedulerException::notAClosureTask('getCallback', $this->label());
+        }
+
+        return $this->action;
     }
 
     public function isDue(
@@ -341,9 +395,14 @@ class ScheduledTask
         return CronExpression::matches($this->expression, $now);
     }
 
+    /**
+     * Call the closure of a closure task. Command tasks are run by ScheduleRunner.
+     *
+     * @throws SchedulerException When this is a command task
+     */
     public function run(): mixed
     {
-        return ($this->callback)();
+        return ($this->getCallback())();
     }
 
     /**
@@ -403,13 +462,19 @@ class ScheduledTask
         $result = $condition();
 
         if (!is_bool($result)) {
-            $taskLabel = $this->description !== null
-                ? "'$this->description'"
-                : "with expression '$this->expression'";
-
-            throw SchedulerException::conditionMustReturnBool($method, $taskLabel, get_debug_type($result));
+            throw SchedulerException::conditionMustReturnBool($method, $this->label(), get_debug_type($result));
         }
 
         return $result;
+    }
+
+    /**
+     * How exception messages name this task: its description, or its expression when it has none.
+     */
+    private function label(): string
+    {
+        $description = $this->getDescription();
+
+        return $description !== null ? "'$description'" : "with expression '$this->expression'";
     }
 }

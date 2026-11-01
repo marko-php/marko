@@ -226,10 +226,10 @@ jobs:
         env:
           MARKO_TEST_MYSQL_PORT: 3307
           MARKO_TEST_MYSQL_SERVER: mariadb
-        run: php -d memory_limit=2G vendor/bin/pest -c phpunit.xml --group=integration-services packages/database-mysql/tests/Integration packages/admin-auth/tests/Integration/MySql packages/queue-database/tests/Integration/MySqlRoundTripTest.php packages/session-database/tests/Integration/MySql packages/search/tests/Integration/MySql tests/Integration/App/QueueSessionTablesMySqlTest.php
+        run: php -d memory_limit=2G vendor/bin/pest -c phpunit.xml --group=integration-services packages/database-mysql/tests/Integration packages/admin-auth/tests/Integration/MySql packages/queue-database/tests/Integration/MySqlRoundTripTest.php packages/session-database/tests/Integration/MySql packages/search/tests/Integration/MySql packages/validation-database/tests/Integration/MySql tests/Integration/App/QueueSessionTablesMySqlTest.php
 
       - name: Run MySQL integration suites against MariaDB 10.11
         env:
           MARKO_TEST_MYSQL_PORT: 3308
           MARKO_TEST_MYSQL_SERVER: mariadb
-        run: php -d memory_limit=2G vendor/bin/pest -c phpunit.xml --group=integration-services packages/database-mysql/tests/Integration packages/admin-auth/tests/Integration/MySql packages/queue-database/tests/Integration/MySqlRoundTripTest.php packages/session-database/tests/Integration/MySql packages/search/tests/Integration/MySql tests/Integration/App/QueueSessionTablesMySqlTest.php
+        run: php -d memory_limit=2G vendor/bin/pest -c phpunit.xml --group=integration-services packages/database-mysql/tests/Integration packages/admin-auth/tests/Integration/MySql packages/queue-database/tests/Integration/MySqlRoundTripTest.php packages/session-database/tests/Integration/MySql packages/search/tests/Integration/MySql packages/validation-database/tests/Integration/MySql tests/Integration/App/QueueSessionTablesMySqlTest.php

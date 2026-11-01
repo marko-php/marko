@@ -3,7 +3,7 @@ title: Task Scheduling
 description: Define recurring tasks in PHP and run them with a single cron entry.
 ---
 
-Marko's scheduler lets you define recurring tasks directly in PHP using a fluent API. Instead of managing individual crontab entries for each task, you register closures on a `Schedule` instance with human-readable frequency methods --- and a single system cron entry runs them all.
+Marko's scheduler lets you define recurring tasks directly in PHP using a fluent API. Instead of managing individual crontab entries for each task, you register closures and console commands on a `Schedule` instance with human-readable frequency methods --- and a single system cron entry runs them all.
 
 ## Setup
 
@@ -42,6 +42,29 @@ return [
 ```
 
 Each `call()` returns a `ScheduledTask` instance with a fluent interface for setting the frequency and description.
+
+## Scheduling Commands
+
+To schedule a console command, pass its name and argv-style arguments to `command()`:
+
+```php title="module.php"
+use Marko\Scheduler\Schedule;
+
+return [
+    'boot' => function (Schedule $schedule): void {
+        $schedule->command('app:poll-engine-calls')->everyMinute()->withoutOverlapping();
+
+        $schedule->command('app:prune', ['--days=30'])
+            ->dailyAt('03:30')
+            ->withoutOverlapping()
+            ->runInBackground();
+    },
+];
+```
+
+An unknown command name throws `SchedulerException` while the schedule is built, not when the task first comes due. The command runs in the scheduler process, its output goes to the scheduler's output, and a non-zero exit code counts as a failure. Without a `description()`, the command name and arguments describe the task (`app:prune --days=30`), so `withoutOverlapping()` works without one.
+
+`runInBackground()` starts the command in a separate process and moves on to the next due task at once, so a long command never delays the rest of the minute. Only command tasks can run in the background; to run a closure in the background, move its body into a `#[Command]` class. See the [package reference](/docs/packages/scheduler/#running-commands-in-the-background) for where the output goes and how overlap protection works in the background.
 
 ## Frequency Options
 
@@ -108,7 +131,7 @@ $schedule->call(function () {
 })->everyMinute()->description('Import product feed')->withoutOverlapping();
 ```
 
-The task must have a `description()`, which keys its mutex. A held mutex is considered stale after 24 hours by default; pass a number of minutes to change that, such as `withoutOverlapping(90)`. The default mutex is a local file lock, so it only protects processes on one server --- see the [package reference](/docs/packages/scheduler/#customization) for swapping in a shared mutex.
+A closure task must have a `description()`, which keys its mutex; a command task defaults to its command name and arguments. A held mutex is considered stale after 24 hours by default; pass a number of minutes to change that, such as `withoutOverlapping(90)`. The default mutex is a local file lock, so it only protects processes on one server --- see the [package reference](/docs/packages/scheduler/#customization) for swapping in a shared mutex.
 
 ## Querying Due Tasks
 
@@ -135,14 +158,15 @@ This returns an array of `ScheduledTask` instances whose cron expressions match 
 
 ## Testing
 
-Since `Schedule` is a plain class with no external dependencies, you can test scheduled tasks directly by creating an instance, registering tasks, and asserting against the results:
+`Schedule` only depends on the `CommandRegistry` it checks `command()` names against, so you can test scheduled tasks directly by creating an instance, registering tasks, and asserting against the results:
 
 ```php
+use Marko\Core\Command\CommandRegistry;
 use Marko\Scheduler\Schedule;
 use DateTimeImmutable;
 
 it('registers cleanup task as daily', function (): void {
-    $schedule = new Schedule();
+    $schedule = new Schedule(new CommandRegistry());
     $schedule->call(fn (): null => null)->daily()->description('Clean temp files');
 
     $tasks = $schedule->tasks();
@@ -153,7 +177,7 @@ it('registers cleanup task as daily', function (): void {
 });
 
 it('runs cleanup at midnight', function (): void {
-    $schedule = new Schedule();
+    $schedule = new Schedule(new CommandRegistry());
     $schedule->call(fn (): string => 'cleaned')->daily();
 
     $midnight = new DateTimeImmutable('2026-06-15 00:00:00');
@@ -167,10 +191,11 @@ it('runs cleanup at midnight', function (): void {
 You can also verify a task's callback runs correctly by calling `run()` on a `ScheduledTask`:
 
 ```php
+use Marko\Core\Command\CommandRegistry;
 use Marko\Scheduler\Schedule;
 
 it('executes the task callback', function (): void {
-    $schedule = new Schedule();
+    $schedule = new Schedule(new CommandRegistry());
     $schedule->call(fn (): string => 'done')->everyMinute();
 
     $tasks = $schedule->tasks();

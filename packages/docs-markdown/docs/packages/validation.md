@@ -144,6 +144,8 @@ $errors->count();             // total error count across all fields
 | List | `list` | An array whose keys are `0, 1, 2, ...` in order (`array_is_list`) |
 | Distinct | `distinct`, `distinct:strict`, `distinct:ignore_case` | No other value under the same wildcard key is equal (see [Distinct Values](#distinct-values)) |
 | Enum | `Enum::of(Status::class)` (no string form) | A case of a backed enum, or its backing value (see [Enums](#enums)) |
+| Exists | `RecordRules::exists(Channel::class)` (no string form) | A stored record of the entity has this value; needs [`marko/validation-database`](/docs/packages/validation-database/) (see [Exists and Unique](#exists-and-unique)) |
+| Unique | `RecordRules::unique(User::class, 'email')` (no string form) | No stored record of the entity has this value yet; needs [`marko/validation-database`](/docs/packages/validation-database/) |
 | File | `file` | Must be an uploaded file that arrived without an upload error |
 | Image | `image` | Must be a JPEG, PNG, GIF or WebP image, judged from its contents (never SVG) |
 | Mimes | `mimes:jpg,png,pdf` | The extension for the file's sniffed MIME type must be listed (`jpeg` and `jpg` are the same) |
@@ -153,7 +155,7 @@ $errors->count();             // total error count across all fields
 
 Rules that take a number (`size`, `digits`, `digits_between`, `max_size`, `min_size`) throw `InvalidArgumentException` when it is missing or not a number, as do `after`/`before` without a reference and `uuid` with a version outside 1--8.
 
-Not built in yet: presence rules such as `sometimes`, `present`, `prohibited`, `accepted` and the `required_if` family ([#562](https://github.com/marko-php/marko/issues/562)), the database rules `exists` and `unique` ([#563](https://github.com/marko-php/marko/issues/563)), and `current_password` and password strength rules ([#561](https://github.com/marko-php/marko/issues/561)). Until then, write a [custom rule](#custom-rules).
+Not built in yet: `current_password` and password strength rules ([#561](https://github.com/marko-php/marko/issues/561)). Until then, write a [custom rule](#custom-rules).
 
 ### Implicit and Presence Rules
 
@@ -268,6 +270,48 @@ $this->validator->validate($input, [
 ```
 
 `only()` and `except()` return a new rule and leave the original unchanged. `Enum::of()` throws `InvalidArgumentException` for a pure enum (its cases have no value to validate) or a class that is not an enum, and `only()`/`except()` throw for a case of another enum.
+
+### Exists and Unique
+
+`Exists` checks that a stored record has the value (a foreign-key id from a form), and `Unique` checks that none has it yet (an email, a slug). They name an entity class and a property --- never a table or a column --- and the lookup maps them through the entity's metadata. Build them with `RecordRules`, an injectable factory, and pass the rules in an array:
+
+```php
+use App\Blog\Entity\Channel;
+use App\Blog\Entity\User;
+use Marko\Validation\Contracts\ValidatorInterface;
+use Marko\Validation\Rules\RecordRules;
+
+public function __construct(
+    private readonly ValidatorInterface $validator,
+    private readonly RecordRules $recordRules,
+) {}
+
+public function update(User $user, array $input): void
+{
+    $this->validator->validateOrFail($input, [
+        'channel_id' => ['required', $this->recordRules->exists(Channel::class)->where('archived', false)],
+        'email' => [
+            'required',
+            'email',
+            $this->recordRules->unique(User::class, 'email')->caseInsensitive()->ignore($user->id),
+        ],
+    ]);
+}
+// "The selected channel_id is invalid."
+// "The email has already been taken."
+```
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `RecordRules::exists(string $entityClass, string $property = 'id')` | `Exists` | A record whose `$property` equals the value must exist |
+| `RecordRules::unique(string $entityClass, string $property)` | `Unique` | No record may already have the value in `$property` |
+| `where(string $property, mixed $value)` | a new rule | On either rule: the record must also have `$property` equal to `$value`; `null` matches `NULL` |
+| `Unique::ignore(mixed $id)` | a new rule | Leave out the record with this primary key (the one being updated) |
+| `Unique::caseInsensitive()` | a new rule | Compare with `LOWER()` on both sides, on every database |
+
+Every method returns a new rule and leaves the original unchanged. Like the other rules, both pass an empty value (add `required` to reject it), and both fail an array.
+
+`marko/validation` holds the rules and the `RecordLookupInterface` contract, but no lookup. Install [`marko/validation-database`](/docs/packages/validation-database/) for one: until a driver is installed, resolving `RecordRules` throws `NoDriverException` naming the package. There is no `exists:` or `unique:` rule string, because it would name a table and columns the entity already knows; the parser throws `InvalidArgumentException` pointing to `RecordRules`. See [`marko/validation-database`](/docs/packages/validation-database/) for case sensitivity per database, and for why `Unique` does not replace a unique index.
 
 ### Validating URLs
 
@@ -562,6 +606,36 @@ interface NumericAwareRuleInterface extends RuleInterface
 ```
 
 Implement it on a custom size rule whose meaning for a numeric string depends on the field's other rules. When a field's rules include `numeric` or `integer`, the parser replaces each such rule with the one `asNumeric()` returns. `Min`, `Max`, `Between`, and `Size` implement it (see [Numeric-Aware Rules](#numeric-aware-rules)).
+
+### RecordLookupInterface
+
+```php
+interface RecordLookupInterface
+{
+    public function exists(string $entityClass, string $property, mixed $value, array $where = []): bool;
+    public function isTaken(
+        string $entityClass,
+        string $property,
+        mixed $value,
+        mixed $ignoreId = null,
+        array $where = [],
+        bool $caseInsensitive = false,
+    ): bool;
+}
+```
+
+The contract behind `Exists` and `Unique`; `$where` maps property names to values. [`marko/validation-database`](/docs/packages/validation-database/) implements it. Bind your own implementation to look records up somewhere else.
+
+### RecordRules
+
+```php
+readonly class RecordRules
+{
+    public function __construct(RecordLookupInterface $lookup);
+    public function exists(string $entityClass, string $property = 'id'): Exists;
+    public function unique(string $entityClass, string $property): Unique;
+}
+```
 
 ### ValidationErrors
 

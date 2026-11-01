@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Marko\Scheduler;
 
 use DateTimeInterface;
+use Marko\Core\Command\CommandRunner;
 use Marko\Core\Command\Output;
 use Marko\Scheduler\Exceptions\SchedulerException;
 use Marko\Scheduler\Mutex\TaskMutexInterface;
+use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
 use Throwable;
 
 /**
@@ -17,12 +19,19 @@ use Throwable;
  * A due task whose when()/skip() conditions do not allow the run is skipped before its
  * overlap mutex is acquired; a condition that throws counts as a failure of that task.
  * Tasks marked withoutOverlapping() are skipped while their mutex is held.
+ *
+ * Command tasks run through the CommandRunner in this process; a non-zero exit code counts
+ * as a failure. runInBackground() command tasks are handed to the background launcher after
+ * their conditions pass, and the runner moves on without waiting. Their overlap mutex is
+ * taken by the child process, not here.
  */
 readonly class ScheduleRunner
 {
     public function __construct(
         private Schedule $schedule,
         private TaskMutexInterface $taskMutex,
+        private CommandRunner $commandRunner,
+        private BackgroundCommandLauncherInterface $backgroundCommandLauncher,
     ) {}
 
     /**
@@ -43,6 +52,7 @@ readonly class ScheduleRunner
         }
 
         $executed = 0;
+        $launched = 0;
         $failed = 0;
         $skipped = 0;
         $skippedByCondition = 0;
@@ -66,10 +76,30 @@ readonly class ScheduleRunner
                 continue;
             }
 
-            $preventsOverlapping = $task->preventsOverlapping();
+            $command = $task->getCommand();
 
-            if ($preventsOverlapping
-                && !$this->taskMutex->acquire($task, (int) $task->getOverlapExpiresAfterMinutes() * 60)
+            if ($command !== null && $task->runsInBackground()) {
+                try {
+                    $this->backgroundCommandLauncher->launch(
+                        $command->name,
+                        $command->arguments,
+                        $task->preventsOverlapping() ? $task->mutexName() : null,
+                        $task->preventsOverlapping() ? (int) $task->getOverlapExpiresAfterMinutes() * 60 : null,
+                    );
+                    $output->writeLine("Launched: $description");
+                    $launched++;
+                } catch (Throwable $e) {
+                    $output->writeLine("Failed: $description - " . $e->getMessage());
+                    $failed++;
+                }
+
+                continue;
+            }
+
+            $mutexName = $task->preventsOverlapping() ? $task->mutexName() : null;
+
+            if ($mutexName !== null
+                && !$this->taskMutex->acquire($mutexName, (int) $task->getOverlapExpiresAfterMinutes() * 60)
             ) {
                 $output->writeLine("Skipped (still running): $description");
                 $skipped++;
@@ -78,20 +108,30 @@ readonly class ScheduleRunner
             }
 
             try {
-                $task->run();
+                if ($command !== null) {
+                    $this->runCommand($command, $output);
+                } else {
+                    $task->run();
+                }
+
                 $output->writeLine("Executed: $description");
                 $executed++;
             } catch (Throwable $e) {
                 $output->writeLine("Failed: $description - " . $e->getMessage());
                 $failed++;
             } finally {
-                if ($preventsOverlapping) {
-                    $this->taskMutex->release($task);
+                if ($mutexName !== null) {
+                    $this->taskMutex->release($mutexName);
                 }
             }
         }
 
         $output->writeLine("Executed $executed scheduled tasks.");
+
+        if ($launched > 0) {
+            $noun = $launched === 1 ? 'task' : 'tasks';
+            $output->writeLine("Launched $launched background $noun.");
+        }
 
         if ($failed > 0) {
             $noun = $failed === 1 ? 'task' : 'tasks';
@@ -103,7 +143,22 @@ readonly class ScheduleRunner
             failed: $failed,
             skipped: $skipped,
             skippedByCondition: $skippedByCondition,
+            launched: $launched,
         );
+    }
+
+    /**
+     * @throws Throwable When the command throws or exits with a non-zero code
+     */
+    private function runCommand(
+        ScheduledCommand $command,
+        Output $output,
+    ): void {
+        $exitCode = $this->commandRunner->run($command->name, $command->input(), $output);
+
+        if ($exitCode !== 0) {
+            throw SchedulerException::commandFailed($command->name, $exitCode);
+        }
     }
 
     /**

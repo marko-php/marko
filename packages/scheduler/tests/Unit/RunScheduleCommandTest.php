@@ -9,7 +9,7 @@ use Marko\Core\Command\Output;
 use Marko\Scheduler\Command\RunScheduleCommand;
 use Marko\Scheduler\Mutex\FileTaskMutex;
 use Marko\Scheduler\Schedule;
-use Marko\Scheduler\ScheduleRunner;
+use Marko\Scheduler\Tests\Fixtures\SchedulerFactory;
 use Marko\Testing\Fake\FakeClock;
 
 /**
@@ -21,7 +21,7 @@ function createRunScheduleCommand(
     FakeClock $clock = new FakeClock('2026-10-05 12:00:00'),
 ): RunScheduleCommand {
     return new RunScheduleCommand(
-        new ScheduleRunner($schedule, new FileTaskMutex(sys_get_temp_dir() . '/marko-scheduler-unused', $clock)),
+        SchedulerFactory::runner($schedule, new FileTaskMutex(sys_get_temp_dir() . '/marko-scheduler-unused', $clock)),
         $clock,
     );
 }
@@ -84,7 +84,7 @@ it('creates RunScheduleCommand with schedule dependency', function (): void {
 
 it('executes due tasks', function (): void {
     $executed = false;
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(function () use (&$executed): void {
         $executed = true;
     })->everyMinute()->description('Test task');
@@ -100,7 +100,7 @@ it('executes due tasks', function (): void {
 
 it('skips tasks that are not due at the injected clock time', function (): void {
     $executed = false;
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(function () use (&$executed): void {
         $executed = true;
     })->cron('0 0 1 1 *')->description('New Year task');
@@ -114,7 +114,7 @@ it('skips tasks that are not due at the injected clock time', function (): void 
 
 it('runs the tasks due at the injected clock time', function (): void {
     $executed = false;
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(function () use (&$executed): void {
         $executed = true;
     })->cron('0 0 1 1 *')->description('New Year task');
@@ -127,7 +127,7 @@ it('runs the tasks due at the injected clock time', function (): void {
 });
 
 it('reports executed task count', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(fn (): null => null)->everyMinute()->description('Task A');
     $schedule->call(fn (): null => null)->everyMinute()->description('Task B');
 
@@ -141,7 +141,7 @@ it('reports executed task count', function (): void {
 
 it('exits with 1 when a task fails', function (): void {
     $ranAfterFailure = false;
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(function (): never {
         throw new RuntimeException('Something went wrong');
     })->everyMinute()->description('Failing task');
@@ -159,7 +159,7 @@ it('exits with 1 when a task fails', function (): void {
 });
 
 it('exits with 0 when every due task succeeds', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(fn (): null => null)->everyMinute()->description('Healthy task');
 
     $command = createRunScheduleCommand($schedule);

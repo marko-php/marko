@@ -602,7 +602,47 @@ Response body: {"message":"Internal Server Error"}
   - `assertJsonCount($count, ?$path = null)`: the root, or the array at the path, has `$count` items
   - `assertJsonMissingPath($path)`: the path does not exist
 
+- Downloads: `assertDownload(?string $filename = null)` checks for `Content-Disposition: attachment`, with the filename when given. Both `filename=` and the RFC 6266 `filename*=UTF-8''...` form are read (`filename*` wins), through `Marko\Routing\Http\ContentDisposition::fromHeader()`, so it works on a `FileResponse` and on any response that sets the header
+- JSON validation errors (the `{message, errors}` body a `ValidationException` renders with a 422):
+  - `assertJsonValidationErrors(array|string $fields)`: each field has at least one error. A `'field' => 'message'` entry also requires that exact message among the field's errors
+  - `assertJsonMissingValidationErrors(array|string $fields = [])`: none of the fields has an error; with no fields, the body has no errors at all. An empty body (a 204) passes
+
 A body that is not valid JSON fails a JSON assertion with a clear message. The accessors `status()`, `body()`, `header($name)`, `json(?$path = null)` and `response()` (the wrapped `Response`) are available for anything else.
+
+### Session and auth assertions
+
+The session assertions on `TestResponse` and the auth assertions on `TestClient` answer one question: what would the client's next request see? A `Marko\Testing\Http\SessionProbe` works it out without sending a request. It runs the same request-state reset a request runs (services passed to `withoutResetting()` are left alone), resumes the session from the client's session cookie the way `SessionMiddleware` does (the cookie named by `session.cookie.name` that a repeat of the last request would carry), reads it, and then discards it. A probe never writes the session. Without a session cookie, because none was set or the last response expired it, the session is empty and nobody is logged in.
+
+```php
+it('remembers the chosen plan and flashes a confirmation', function (): void {
+    $this->http->post('/plans', ['plan' => 'pro'])
+        ->assertRedirect('/billing')
+        ->assertSessionHas('plan', 'pro')
+        ->assertSessionHas('plan', fn (string $plan): bool => in_array($plan, ['pro', 'team'], true))
+        ->assertSessionMissing('trial')
+        ->assertSessionHasFlash('success', 'Plan updated.');
+});
+
+it('logs the user in and out', function (): void {
+    $this->http->post('/login', ['email' => 'ada@example.com', 'password' => 'secret']);
+    $this->http->assertAuthenticated()->assertAuthenticatedAs($ada);
+
+    $this->http->post('/logout');
+    $this->http->assertGuest();
+});
+```
+
+- `assertSessionHas($key, $value = null)`: the session has `$key`. With `$value`, the stored value must be identical (`===`). A `Closure` is called with the stored value instead and must return `true`. Other callables, such as the string `'date'`, are compared as values. Keys are exact top-level session keys, not dot paths
+- `assertSessionMissing($key)`
+- `assertSessionHasFlash($type, ?$message = null)`: the session holds a `FlashBag` message of `$type`, and `$message` among them when given. The raw session data is read, never through `FlashBag::get()`, so asserting doesn't consume the flash: the next request still sees it
+- `$client->assertAuthenticated(?string $guard = null)`, `$client->assertGuest(?string $guard = null)`: the real guard from `AuthManager::guard($guard)` (the default guard when `null`), with its cached user cleared, so it reads the session
+- `$client->assertAuthenticatedAs($user, ?string $guard = null)`: compares `getAuthIdentifier()`, not object identity, so a fresh instance of the same user passes
+
+Session assertions work only on the client's latest response. Once the client has sent another request, an earlier response is stale and its session assertions throw `TestClientException`, so they never quietly read newer state. A `TestResponse` you build yourself (`new TestResponse($response)`) has no session, and its session assertions throw `TestClientException` too.
+
+:::note
+After `actingAs()`, the guard is a `FakeGuard`, so the auth assertions report the `FakeGuard`'s user, not the session. A guard that implements `StatelessGuardInterface` (a token guard) keeps no state between requests, so the auth assertions throw `TestClientException` for it: assert on a response instead, e.g. `assertUnauthorized()`. The probe has no current request, so it never logs a user in from a remember-me cookie. Test remember-me flows with a real follow-up request.
+:::
 
 ### Streamed and file responses
 
@@ -796,6 +836,11 @@ expect($http)->toHaveSentRequest(fn (RecordedRequest $r) => $r->url === 'https:/
 // TestResponse
 expect($response)->toHaveStatus(201);
 expect($response)->toHaveJsonPath('data.status', 'live');
+expect($response)->toHaveSession('plan', 'pro');
+
+// FakeGuard, or a TestClient (through the session, like assertAuthenticated())
+expect($guard)->toBeAuthenticated();
+expect($client)->toBeAuthenticated('web');
 ```
 
 ## API Reference
@@ -1094,6 +1139,12 @@ public function withFile(string $field, string $path, ?string $clientFilename = 
 public function withFiles(string $field, array $paths): static;
 public function actingAs(AuthenticatableInterface $user, ?string $guard = null): static;
 public function withoutResetting(ResettableInterface ...$services): static;
+public function resetRequestState(): void;              // the reset run before each request
+public function requestCount(): int;                     // requests sent so far
+public function lastRequestCookie(string $name): ?string; // the jar cookie a repeat of the last request would carry
+public function assertAuthenticated(?string $guard = null): static;
+public function assertGuest(?string $guard = null): static;
+public function assertAuthenticatedAs(AuthenticatableInterface $user, ?string $guard = null): static;
 public function get(string $uri, array $query = [], array $headers = []): TestResponse;
 public function head(string $uri, array $query = [], array $headers = []): TestResponse;
 public function post(string $uri, array $data = [], array $headers = []): TestResponse;
@@ -1108,6 +1159,15 @@ public function patchJson(string $uri, array $data = [], array $headers = []): T
 public function deleteJson(string $uri, array $data = [], array $headers = []): TestResponse;
 public function json(string $method, string $uri, array $data = [], array $headers = []): TestResponse;
 public function call(string $method, string $uri, array $data = [], array $headers = [], ?string $body = null): TestResponse;
+```
+
+### SessionProbe
+
+```php
+public function __construct(TestClient $client);
+public function ensureLatest(int $requestSequence): void; // throws TestClientException for a stale response
+public function sessionData(): array;                     // raw session data the next request would see
+public function user(?string $guard = null): ?AuthenticatableInterface; // throws TestClientException for a stateless guard
 ```
 
 ### JarCookie
@@ -1162,6 +1222,12 @@ public function assertExactJson(array $data): static;
 public function assertJsonPath(string $path, mixed $expected): static;
 public function assertJsonCount(int $count, ?string $path = null): static;
 public function assertJsonMissingPath(string $path): static;
+public function assertJsonValidationErrors(array|string $fields): static;
+public function assertJsonMissingValidationErrors(array|string $fields = []): static;
+public function assertDownload(?string $filename = null): static;
+public function assertSessionHas(string $key, mixed $value = null): static;
+public function assertSessionMissing(string $key): static;
+public function assertSessionHasFlash(string $type, ?string $message = null): static;
 ```
 
 ### TestDatabase

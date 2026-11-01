@@ -51,7 +51,8 @@
         "marko/translation-file": "File-based translation driver (PHP array files per locale)",
         "marko/notification-database": "Database-backed notification driver",
         "marko/page-cache-file": "File-based page cache driver",
-        "marko/database-readwrite": "Read/write connection splitting decorator (optional — works alongside a base driver)",
+        "marko/validation-database": "Entity-backed Exists and Unique rules (looks records up through marko/database)",
+        "marko/database-readwrite":"Read/write connection splitting decorator (optional — works alongside a base driver)",
         "marko/page-cache-entity": "Auto-purges page-cache tags on entity save/delete (optional add-on)"
     },
     "config": {

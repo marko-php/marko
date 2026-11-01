@@ -22,6 +22,8 @@ return [
         $schedule->call(function () {
             // Import a feed that can outlast its interval...
         })->everyMinute()->description('Import feed')->withoutOverlapping();
+
+        $schedule->command('app:prune', ['--days=30'])->dailyAt('03:30')->runInBackground();
     },
 ];
 ```

@@ -42,3 +42,10 @@ describe('toHaveJsonPath', function (): void {
             ->toThrow(InvalidArgumentException::class, 'Expected TestResponse, got string');
     });
 });
+
+describe('toHaveSession', function (): void {
+    it('rejects a value that is not a TestResponse', function (): void {
+        expect(fn () => expect('plan')->toHaveSession('plan'))
+            ->toThrow(InvalidArgumentException::class, 'Expected TestResponse, got string');
+    });
+});

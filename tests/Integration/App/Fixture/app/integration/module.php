@@ -41,6 +41,15 @@ return [
             file_put_contents($paths->base . '/storage/exclusive-task.txt', 'exclusive task ran');
         })->everyMinute()->description('integration exclusive')->withoutOverlapping();
 
+        // A console command run in a separate process, holding its overlap mutex
+        // there (#565). Only due when a test opts in, since launching needs the
+        // project's vendor/bin/marko, which only that test creates.
+        $schedule->command('integration:record-background-run', ['--note=ran in the background'])
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->when(static fn (): bool => is_file($paths->base . '/storage/run-background-task'));
+
         $gate->define('view-admin', static fn (): bool => false);
     },
 ];

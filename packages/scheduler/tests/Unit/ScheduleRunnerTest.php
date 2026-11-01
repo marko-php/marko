@@ -6,18 +6,16 @@ use Marko\Core\Command\Output;
 use Marko\Scheduler\Exceptions\SchedulerException;
 use Marko\Scheduler\Mutex\FileTaskMutex;
 use Marko\Scheduler\Mutex\TaskMutexInterface;
-use Marko\Scheduler\Schedule;
-use Marko\Scheduler\ScheduledTask;
-use Marko\Scheduler\ScheduleRunner;
 use Marko\Scheduler\ScheduleRunResult;
+use Marko\Scheduler\Tests\Fixtures\SchedulerFactory;
 use Marko\Testing\Fake\FakeClock;
 
 beforeEach(function (): void {
     $this->mutexDirectory = sys_get_temp_dir() . '/marko-scheduler-runner-' . bin2hex(random_bytes(6));
-    $this->schedule = new Schedule();
+    $this->schedule = SchedulerFactory::schedule();
     $this->clock = new FakeClock('2026-10-05 12:00:00');
     $this->mutex = new FileTaskMutex($this->mutexDirectory, $this->clock);
-    $this->runner = new ScheduleRunner($this->schedule, $this->mutex);
+    $this->runner = SchedulerFactory::runner($this->schedule, $this->mutex);
     $this->stream = fopen('php://memory', 'r+');
     $this->output = new Output($this->stream);
     $this->now = new DateTimeImmutable('2026-10-05 12:00:00');
@@ -91,7 +89,7 @@ it('skips an overlapping task whose mutex is held', function (): void {
         $executed = true;
     })->everyMinute()->description('Long import')->withoutOverlapping();
     $otherProcess = new FileTaskMutex($this->mutexDirectory, $this->clock);
-    $otherProcess->acquire($task, 3600);
+    $otherProcess->acquire($task->mutexName(), 3600);
 
     $result = $this->runner->run($this->now, $this->output);
 
@@ -104,13 +102,13 @@ it('skips an overlapping task whose mutex is held', function (): void {
 it('holds the mutex while an overlapping task runs and releases it afterwards', function (): void {
     $heldDuringRun = null;
     $task = $this->schedule->call(function () use (&$heldDuringRun, &$task): void {
-        $heldDuringRun = new FileTaskMutex($this->mutexDirectory, $this->clock)->exists($task);
+        $heldDuringRun = new FileTaskMutex($this->mutexDirectory, $this->clock)->exists($task->mutexName());
     })->everyMinute()->description('Long import')->withoutOverlapping();
 
     $this->runner->run($this->now, $this->output);
 
     expect($heldDuringRun)->toBeTrue()
-        ->and($this->mutex->exists($task))->toBeFalse();
+        ->and($this->mutex->exists($task->mutexName()))->toBeFalse();
 });
 
 it('acquires the mutex with the configured expiry in seconds', function (): void {
@@ -126,7 +124,7 @@ it('acquires the mutex with the configured expiry in seconds', function (): void
         public int $released = 0;
 
         public function acquire(
-            ScheduledTask $task,
+            string $name,
             int $expiresAfterSeconds,
         ): bool {
             $this->acquired[] = $expiresAfterSeconds;
@@ -135,19 +133,19 @@ it('acquires the mutex with the configured expiry in seconds', function (): void
         }
 
         public function release(
-            ScheduledTask $task,
+            string $name,
         ): void {
             $this->released++;
         }
 
         public function exists(
-            ScheduledTask $task,
+            string $name,
         ): bool {
             return false;
         }
     };
 
-    new ScheduleRunner($this->schedule, $recordingMutex)->run($this->now, $this->output);
+    SchedulerFactory::runner($this->schedule, $recordingMutex)->run($this->now, $this->output);
 
     expect($recordingMutex->acquired)->toBe([300])
         ->and($recordingMutex->released)->toBe(1);
@@ -161,8 +159,8 @@ it('releases the mutex when the task throws', function (): void {
     $result = $this->runner->run($this->now, $this->output);
 
     expect($result->failed)->toBe(1)
-        ->and($this->mutex->exists($task))->toBeFalse()
-        ->and(new FileTaskMutex($this->mutexDirectory, $this->clock)->acquire($task, 60))->toBeTrue();
+        ->and($this->mutex->exists($task->mutexName()))->toBeFalse()
+        ->and(new FileTaskMutex($this->mutexDirectory, $this->clock)->acquire($task->mutexName(), 60))->toBeTrue();
 });
 
 it('throws before running anything when an overlapping task has no description', function (): void {
@@ -248,7 +246,7 @@ it('checks conditions before acquiring the overlap mutex', function (): void {
         public int $acquired = 0;
 
         public function acquire(
-            ScheduledTask $task,
+            string $name,
             int $expiresAfterSeconds,
         ): bool {
             $this->acquired++;
@@ -257,17 +255,17 @@ it('checks conditions before acquiring the overlap mutex', function (): void {
         }
 
         public function release(
-            ScheduledTask $task,
+            string $name,
         ): void {}
 
         public function exists(
-            ScheduledTask $task,
+            string $name,
         ): bool {
             return false;
         }
     };
 
-    $result = new ScheduleRunner($this->schedule, $recordingMutex)->run($this->now, $this->output);
+    $result = SchedulerFactory::runner($this->schedule, $recordingMutex)->run($this->now, $this->output);
 
     expect($recordingMutex->acquired)->toBe(0)
         ->and($result->skippedByCondition)->toBe(1);
@@ -294,7 +292,7 @@ it('counts a throwing condition as a failure and keeps running the next task', f
         ->and($result->skippedByCondition)->toBe(0)
         ->and($result->hasFailures())->toBeTrue()
         ->and(($this->outputContent)())->toContain('Failed: Broken condition - Config missing')
-        ->and($this->mutex->exists($broken))->toBeFalse();
+        ->and($this->mutex->exists($broken->mutexName()))->toBeFalse();
 });
 
 it('counts a condition returning a non-bool as a failure', function (): void {

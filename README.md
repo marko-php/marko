@@ -334,6 +334,7 @@ Marko ships as composable packages — require only what you need. Every package
 | [clock](packages/clock/README.md) | PSR-20 system clock |
 | [redis](packages/redis/README.md) | Shared Redis connections |
 | [validation](packages/validation/README.md) | Input validation |
+| [validation-database](packages/validation-database/README.md) | Entity-backed Exists and Unique rules |
 | [pagination](packages/pagination/README.md) | Query result pagination |
 | [notification](packages/notification/README.md) | Notification contracts |
 | [notification-database](packages/notification-database/README.md) | Database notification driver |
