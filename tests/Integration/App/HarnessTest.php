@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Composer\Autoload\ClassLoader;
 
 // The harness itself needs no services, so these run in every `composer test`.
 
@@ -57,7 +58,7 @@ it('builds a fixture project whose vendor modules link to the monorepo packages'
 
         expect(file_exists("$project/app/integration/composer.json"))->toBeTrue()
             ->and(file_exists("$project/config/database.php"))->toBeTrue()
-            ->and(require "$project/vendor/autoload.php")->toBeInstanceOf(Composer\Autoload\ClassLoader::class);
+            ->and(require "$project/vendor/autoload.php")->toBeInstanceOf(ClassLoader::class);
     } finally {
         removeIntegrationProject($project);
     }

@@ -10,6 +10,7 @@ use Marko\Notification\Exceptions\NotificationException;
 use Marko\Notification\Job\SendNotificationJob;
 use Marko\Notification\NotificationManager;
 use Marko\Notification\NotificationSender;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 
 test('it sends notification to single notifiable across declared channels', function (): void {
@@ -108,7 +109,7 @@ test('it queues notification via QueueInterface when available', function (): vo
     $queue->expects($this->once())
         ->method('push')
         ->with($this->isInstanceOf(SendNotificationJob::class))
-        ->willReturn('job-id-123');
+        ->willReturn(PushResult::pushed('job-id-123'));
 
     $manager = new NotificationManager();
     $sender = new NotificationSender($manager, $queue);

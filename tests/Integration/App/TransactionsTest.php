@@ -85,7 +85,7 @@ it('runs an after-commit callback only when the transaction commits', function (
         saveIntegrationAuthor($authors, 'Committed');
         $transaction->transaction(
             fn () => $transaction->afterCommit(
-                fn () => $log->append('committed at level ' . $transaction->transactionLevel())
+                fn () => $log->append('committed at level ' . $transaction->transactionLevel()),
             ),
         );
         $log->append('callback deferred');

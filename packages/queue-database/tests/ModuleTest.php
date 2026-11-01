@@ -72,7 +72,7 @@ test('module.php passes the container clock to DatabaseQueue', function (): void
     $container = queueDatabaseModuleContainer($connection);
     $container->instance(ClockInterface::class, new FakeClock('2026-10-05 12:00:00+00:00'));
 
-    $id = $container->get(QueueInterface::class)->later(30, new TestJob('clocked'));
+    $id = $container->get(QueueInterface::class)->later(30, new TestJob('clocked'))->id;
     $row = $connection->query('SELECT available_at FROM jobs WHERE id = :id', ['id' => $id])[0];
 
     expect($row['available_at'])->toBe('2026-10-05 12:00:30');
@@ -84,7 +84,7 @@ test('module.php writes queue timestamps in the container database timezone', fu
     $container->instance(ClockInterface::class, new FakeClock('2026-10-05 12:00:00+00:00'));
     $container->instance(DatabaseTimezoneConfig::class, DatabaseTimezoneConfig::fromName('Europe/Berlin'));
 
-    $id = $container->get(QueueInterface::class)->later(30, new TestJob('zoned'));
+    $id = $container->get(QueueInterface::class)->later(30, new TestJob('zoned'))->id;
     $row = $connection->query('SELECT available_at FROM jobs WHERE id = :id', ['id' => $id])[0];
 
     expect($row['available_at'])->toBe('2026-10-05 14:00:30');
@@ -113,7 +113,7 @@ test('module factory pushes to the configured queue.queue name', function (): vo
 test('module factory reclaims reservations after the configured queue.retry_after', function (): void {
     $connection = SqliteConnection::withQueueTables();
     $queue = queueDatabaseModuleContainer($connection, ['queue.retry_after' => 30])->get(QueueInterface::class);
-    $id = $queue->push(new TestJob());
+    $id = $queue->push(new TestJob())->id;
     $queue->pop();
 
     $reservedAt = fn (int $secondsAgo) => $connection->execute(
@@ -131,7 +131,7 @@ test('module factory reclaims reservations after the configured queue.retry_afte
 test('module factory fails crash-exhausted jobs at the configured queue.max_attempts', function (): void {
     $connection = SqliteConnection::withQueueTables();
     $queue = queueDatabaseModuleContainer($connection, ['queue.max_attempts' => 1])->get(QueueInterface::class);
-    $id = $queue->push(new TestJob());
+    $id = $queue->push(new TestJob())->id;
     $queue->pop();
     $connection->execute(
         'UPDATE jobs SET reserved_at = :reserved_at WHERE id = :id',

@@ -58,7 +58,7 @@ function queueSessionTableCases(): void
         $queue = $container->get(QueueInterface::class);
         $marker = "$this->project/storage/marker.txt";
         $queue->push(new MarkerJob($marker));
-        $failingId = $queue->push(new FailingJob());
+        $failingId = $queue->push(new FailingJob())->id;
 
         $first = runIntegrationCommand($this->app, 'queue:work', ['--once']);
         $second = runIntegrationCommand($this->app, 'queue:work', ['--once']);
@@ -97,7 +97,9 @@ function queueSessionTableCases(): void
         runIntegrationCommand($this->app, 'queue:work', ['--once']);
         $queue->push(new MarkerJob("$this->project/storage/never.txt"));
         $container->get(SessionHandlerInterface::class)->write(str_repeat('b', 40), 'payload');
-        $count = fn (string $table): int => (int) $connection->query("SELECT COUNT(*) AS total FROM $table")[0]['total'];
+        $count = fn (string $table): int => (int) $connection->query(
+            "SELECT COUNT(*) AS total FROM $table",
+        )[0]['total'];
         $before = array_map($count, QUEUE_SESSION_TABLES);
 
         $truncate = new TruncateDatabase(new TestDatabase($this->app));

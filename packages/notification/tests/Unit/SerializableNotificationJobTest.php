@@ -16,6 +16,8 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
+use Marko\Queue\JobRunner;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Worker;
@@ -274,16 +276,16 @@ describe('SendNotificationJob serialization', function (): void {
                 public function push(
                     JobInterface $job,
                     ?string $queue = null,
-                ): string {
-                    return 'notification-job-1';
+                ): PushResult {
+                    return PushResult::pushed('notification-job-1');
                 }
 
                 public function later(
                     int $delay,
                     JobInterface $job,
                     ?string $queue = null,
-                ): string {
-                    return 'notification-job-1';
+                ): PushResult {
+                    return PushResult::pushed('notification-job-1');
                 }
 
                 public function pop(?string $queue = null): ?JobInterface
@@ -312,7 +314,7 @@ describe('SendNotificationJob serialization', function (): void {
                 }
 
                 public function release(
-                    string $jobId,
+                    JobInterface $job,
                     int $delay = 0,
                 ): bool {
                     return true;
@@ -366,7 +368,7 @@ describe('SendNotificationJob serialization', function (): void {
                 $failedRepository,
                 $queueConfig,
                 $envelope,
-                $container,
+                new JobRunner($container, $envelope),
                 clock: new FakeClock(),
             );
             $worker->work(once: true);
@@ -396,16 +398,16 @@ class NotificationFinalFailureQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'unused';
+    ): PushResult {
+        return PushResult::pushed('unused');
     }
 
     public function later(
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'unused';
+    ): PushResult {
+        return PushResult::pushed('unused');
     }
 
     public function pop(?string $queue = null): ?JobInterface
@@ -431,7 +433,7 @@ class NotificationFinalFailureQueue implements QueueInterface
     }
 
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
         return true;
@@ -508,7 +510,7 @@ describe('SendNotificationJob final failure', function (): void {
                 $failedRepository,
                 createNotificationTestQueueConfig(),
                 createNotificationTestEnvelope(),
-                createUnserializableNotificationContainer(),
+                new JobRunner(createUnserializableNotificationContainer(), createNotificationTestEnvelope()),
                 clock: new FakeClock(),
             );
             $stopJob->worker = $worker;

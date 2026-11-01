@@ -287,7 +287,7 @@ test('it implements QueueInterface', function (): void {
     expect($queue)->toBeInstanceOf(QueueInterface::class);
 });
 
-test('it pushes job to RabbitMQ queue and returns job ID', function (): void {
+test('it pushes job to RabbitMQ queue and returns a pushed PushResult with the job ID', function (): void {
     $channel = createMockChannel();
     $connection = createTestableRabbitmqConnection($channel);
     $exchangeConfig = new ExchangeConfig(
@@ -298,9 +298,11 @@ test('it pushes job to RabbitMQ queue and returns job ID', function (): void {
     $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('push test');
 
-    $id = $queue->push($job);
+    $result = $queue->push($job);
+    $id = $result->id;
 
-    expect($id)->toBeString()
+    expect($result->pushed)->toBeTrue()
+        ->and($id)->toBeString()
         ->and($id)->toMatch('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/');
 
     $publishCalls = array_filter($channel->calls, fn (array $call) => $call['method'] === 'basic_publish');
@@ -318,7 +320,7 @@ test('it sets job ID on pushed job', function (): void {
     $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('id test');
 
-    $id = $queue->push($job);
+    $id = $queue->push($job)->id;
 
     expect($job->id)->toBe($id);
 });
@@ -365,7 +367,7 @@ test('it stores job ID in message header', function (): void {
     $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('header test');
 
-    $id = $queue->push($job);
+    $id = $queue->push($job)->id;
 
     $publishCalls = array_values(array_filter(
         $channel->calls,
@@ -675,7 +677,7 @@ test('it returns job ID for delayed job', function (): void {
     $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
     $job = new TestJob('id delayed test');
 
-    $id = $queue->later(10, $job);
+    $id = $queue->later(10, $job)->id;
 
     expect($id)->toBeString()
         ->and($id)->toMatch('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/')
@@ -714,9 +716,9 @@ test('it releases job back to queue immediately when no delay', function (): voi
     );
 
     $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
-    $queue->pop();
+    $popped = $queue->pop();
 
-    $result = $queue->release('release-job-id');
+    $result = $queue->release($popped);
 
     expect($result)->toBeTrue();
 
@@ -759,9 +761,9 @@ test('it releases job with delay via delay queue mechanism', function (): void {
     );
 
     $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
-    $queue->pop();
+    $popped = $queue->pop();
 
-    $result = $queue->release('delay-release-id', 45);
+    $result = $queue->release($popped, 45);
 
     expect($result)->toBeTrue();
 
@@ -815,8 +817,11 @@ test('it returns false when releasing unknown job ID', function (): void {
         type: ExchangeType::Direct,
     );
 
+    $unknownJob = new TestJob('never popped');
+    $unknownJob->setId('nonexistent-job-id');
+
     $queue = new RabbitmqQueue($connection, $exchangeConfig, createRabbitmqTestEnvelope());
-    $result = $queue->release('nonexistent-job-id');
+    $result = $queue->release($unknownJob);
 
     expect($result)->toBeFalse();
 
@@ -1117,7 +1122,7 @@ describe('poison messages', function (): void {
 
 describe('ack safety', function (): void {
     it(
-        'forgets the payload and queue name of a deleted job so a long-running worker does not leak memory',
+        'forgets the delivery tag and queue name of a deleted job so a long-running worker does not leak memory',
         function (): void {
             $channel = createMockChannel();
             $channel->basicGetMessages = [validRabbitmqMessage('done', 1)];
@@ -1126,11 +1131,9 @@ describe('ack safety', function (): void {
 
             $queue->delete('done');
 
-            $tracked = (fn (): array => [$this->deliveryTags, $this->messagePayloads, $this->queueNames])->call(
-                $queue,
-            );
+            $tracked = (fn (): array => [$this->deliveryTags, $this->queueNames])->call($queue);
 
-            expect($tracked)->toBe([[], [], []]);
+            expect($tracked)->toBe([[], []]);
         },
     );
 
@@ -1138,10 +1141,10 @@ describe('ack safety', function (): void {
         $channel = createMockChannel();
         $channel->basicGetMessages = [validRabbitmqMessage('retry', 21)];
         $queue = createPoisonTestQueue($channel);
-        $queue->pop();
+        $popped = $queue->pop();
         $channel->calls = [];
 
-        $queue->release('retry', $delay);
+        $queue->release($popped, $delay);
 
         $order = array_values(array_filter(
             array_column($channel->calls, 'method'),
@@ -1161,10 +1164,10 @@ describe('ack safety', function (): void {
         $channel->basicGetMessages = [validRabbitmqMessage('one', 1), validRabbitmqMessage('two', 2)];
         $queue = createPoisonTestQueue($channel);
 
-        $queue->pop();
-        $queue->release('one');
-        $queue->pop();
-        $queue->release('two');
+        $one = $queue->pop();
+        $queue->release($one);
+        $two = $queue->pop();
+        $queue->release($two);
 
         expect(callsTo($channel, 'confirm_select'))->toHaveCount(1)
             ->and(callsTo($channel, 'wait_for_pending_acks'))->toHaveCount(2);
@@ -1175,9 +1178,9 @@ describe('ack safety', function (): void {
         $channel->basicGetMessages = [validRabbitmqMessage('nacked', 33)];
         $channel->nackPublishes = true;
         $queue = createPoisonTestQueue($channel);
-        $queue->pop();
+        $popped = $queue->pop();
 
-        expect(fn () => $queue->release('nacked'))
+        expect(fn () => $queue->release($popped))
             ->toThrow(RabbitmqException::class, "RabbitMQ did not confirm the retry of job 'nacked'")
             ->and(callsTo($channel, 'basic_ack'))->toBeEmpty()
             ->and(callsTo($channel, 'basic_nack'))->toBe([
@@ -1189,17 +1192,17 @@ describe('ack safety', function (): void {
         $channel = createMockChannel();
         $channel->basicGetMessages = [validRabbitmqMessage('released', 1)];
         $queue = createPoisonTestQueue($channel);
-        $queue->pop();
+        $popped = $queue->pop();
 
-        $queue->release('released');
+        $queue->release($popped);
 
-        expect($queue->release('released'))->toBeFalse()
+        expect($queue->release($popped))->toBeFalse()
             ->and($queue->delete('released'))->toBeFalse();
     });
 });
 
 test(
-    'it republishes a released job with an incremented attempt count so a subsequent pop() observes attempts greater than the original',
+    'it republishes the released job with the attempt count the worker gave it, so a subsequent pop() observes it',
     function (): void {
         $envelope = createRabbitmqTestEnvelope();
         $job = new TestJob('attempt test');
@@ -1224,8 +1227,11 @@ test(
 
         expect($popped->attempts)->toBe(0);
 
+        // The worker's JobRunner counts the attempt on the job it hands back to release()
+        $popped->incrementAttempts();
+
         // Release with delay=1 to use the republish path
-        $queue->release('attempt-job-id', 1);
+        $queue->release($popped, 1);
 
         // The publish call should contain an incremented attempts count
         $publishCalls = array_values(array_filter(
@@ -1239,7 +1245,7 @@ test(
         $msg = $publishCalls[0]['msg'];
         $republishedJob = unserialize($envelope->verifyAndUnwrap($msg->getBody()));
 
-        expect($republishedJob->attempts)->toBeGreaterThan(0);
+        expect($republishedJob->attempts)->toBe(1);
     },
 );
 
@@ -1271,8 +1277,9 @@ test(
             );
 
             $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
-            $queue->pop();
-            $queue->release('terminate-job-id', 10);
+            $popped = $queue->pop();
+            $popped->incrementAttempts();
+            $queue->release($popped, 10);
 
             // Get the republished job to use in next iteration
             $publishCalls = array_values(array_filter(
@@ -1312,10 +1319,10 @@ test('it releases a job back to its originating queue, not the hardcoded default
 
     // Pop from a non-default queue
     $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
-    $queue->pop(queue: 'custom-queue');
+    $popped = $queue->pop(queue: 'custom-queue');
 
     // Release with delay=0 (immediate republish path)
-    $queue->release('origin-job-id', 0);
+    $queue->release($popped, 0);
 
     $publishCalls = array_values(array_filter(
         $channel->calls,
@@ -1347,10 +1354,10 @@ test('it derives the delay queue name from the originating queue when releasing 
 
     // Pop from a non-default queue
     $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
-    $queue->pop(queue: 'priority-queue');
+    $popped = $queue->pop(queue: 'priority-queue');
 
     // Release with delay — delay queue should be derived from originating queue
-    $queue->release('delay-origin-id', 30);
+    $queue->release($popped, 30);
 
     $delayQueueDeclareCalls = array_values(array_filter(
         $channel->calls,
@@ -1424,8 +1431,8 @@ test('it preserves the job id when republishing a released job', function (): vo
     );
 
     $queue = new RabbitmqQueue($connection, $exchangeConfig, $envelope);
-    $queue->pop();
-    $queue->release('preserve-id-job', 5);
+    $popped = $queue->pop();
+    $queue->release($popped, 5);
 
     $publishCalls = array_values(array_filter(
         $channel->calls,
@@ -1440,3 +1447,28 @@ test('it preserves the job id when republishing a released job', function (): vo
 
     expect($headers['job_id'])->toBe('preserve-id-job');
 });
+
+test(
+    'it republishes the given job, keeping its attempts, exceptions and retry deadline across the retry',
+    function (): void {
+        $envelope = createRabbitmqTestEnvelope();
+        $channel = createMockChannel();
+        $channel->basicGetMessages = [validRabbitmqMessage('stateful-job', 7)];
+        $queue = createPoisonTestQueue($channel);
+
+        $popped = $queue->pop();
+        $popped->incrementAttempts();
+        $popped->incrementExceptions();
+        $popped->setRetryDeadline(new DateTimeImmutable('2026-11-01T06:00:00Z'));
+        $queue->release($popped, 5);
+
+        /** @var AMQPMessage $msg */
+        $msg = callsTo($channel, 'basic_publish')[0]['msg'];
+        /** @var TestJob $republished */
+        $republished = unserialize($envelope->verifyAndUnwrap($msg->getBody()));
+
+        expect($republished->attempts)->toBe(1)
+            ->and($republished->exceptions)->toBe(1)
+            ->and($republished->retryDeadline?->format(DATE_ATOM))->toBe('2026-11-01T06:00:00+00:00');
+    },
+);

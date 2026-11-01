@@ -10,6 +10,7 @@ use Marko\Queue\Command\StatusCommand;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -70,16 +71,16 @@ function createStatusQueue(
         public function push(
             JobInterface $job,
             ?string $queue = null,
-        ): string {
-            return '';
+        ): PushResult {
+            return PushResult::pushed('');
         }
 
         public function later(
             int $delay,
             JobInterface $job,
             ?string $queue = null,
-        ): string {
-            return '';
+        ): PushResult {
+            return PushResult::pushed('');
         }
 
         public function pop(
@@ -107,7 +108,7 @@ function createStatusQueue(
         }
 
         public function release(
-            string $jobId,
+            JobInterface $job,
             int $delay = 0,
         ): bool {
             return false;

@@ -14,6 +14,7 @@ use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\Exceptions\JobFailedException;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobRunner;
 use Marko\Queue\QueueAsyncObserverDispatcher;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Sync\SyncQueue;
@@ -59,7 +60,7 @@ function dispatchThroughSyncQueue(
         new EncryptionConfig(new FakeConfigRepository(['encryption.key' => 'sync-async-key'])),
     );
     $container->instance(JobEnvelope::class, $jobEnvelope);
-    $container->instance(QueueInterface::class, new SyncQueue($container, $jobEnvelope));
+    $container->instance(QueueInterface::class, new SyncQueue(new JobRunner($container, $jobEnvelope)));
     $container->bind(AsyncObserverDispatcherInterface::class, QueueAsyncObserverDispatcher::class);
 
     $registry = new ObserverRegistry();

@@ -13,6 +13,7 @@ use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobRunner;
 use Marko\Queue\QueueAsyncObserverDispatcher;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
@@ -140,7 +141,16 @@ describe('async observer dispatch through marko/queue', function (): void {
             'queue.max_attempts' => 3,
         ]));
 
-        new Worker($inbox, $failedJobRepository, $config, $jobEnvelope, $container, new FakeClock())->work(once: true);
+        new Worker(
+            $inbox,
+            $failedJobRepository,
+            $config,
+            $jobEnvelope,
+            new JobRunner($container, $jobEnvelope),
+            new FakeClock(),
+        )->work(
+            once: true,
+        );
 
         expect(SendShippingEmail::$handled)->toHaveCount(1)
             ->and(SendShippingEmail::$handled[0])->toEqual($event)

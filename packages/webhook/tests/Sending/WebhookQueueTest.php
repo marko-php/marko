@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Webhook\Tests\Sending;
 
+use Marko\Queue\PushResult;
 use Marko\Testing\Fake\FakeQueue;
 use Marko\Webhook\Exceptions\InvalidWebhookSecretException;
 use Marko\Webhook\Jobs\DispatchWebhookJob;
@@ -30,6 +31,17 @@ describe('WebhookQueue', function (): void {
             ->and($job->payload->id)->toBe($payload->id)
             ->and($job->payload->url)->toBe('https://example.com/webhook')
             ->and($job->serialize())->not->toContain('whsec-subscriber-secret');
+    });
+
+    it("returns the queue's PushResult for the pushed job", function (): void {
+        $queue = new FakeQueue();
+        $payload = new WebhookPayload('https://example.com/webhook', 'order.created', [], 'whsec-subscriber-secret');
+
+        $result = new WebhookQueue($queue, new FakeEncryptor())->push($payload);
+
+        expect($result)->toBeInstanceOf(PushResult::class)
+            ->and($result->pushed)->toBeTrue()
+            ->and($result->id)->toBe($queue->pushed[0]['id']);
     });
 
     it('rejects a payload whose secret is too short before anything is queued', function (): void {

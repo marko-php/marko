@@ -6,6 +6,7 @@ namespace Marko\Webhook\Sending;
 
 use Marko\Encryption\Contracts\EncryptorInterface;
 use Marko\Encryption\Exceptions\EncryptionException;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 use Marko\Webhook\Exceptions\InvalidWebhookSecretException;
 use Marko\Webhook\Jobs\DispatchWebhookJob;
@@ -25,14 +26,14 @@ readonly class WebhookQueue
     ) {}
 
     /**
-     * Push a DispatchWebhookJob for $payload and return the queued job's ID.
+     * Push a DispatchWebhookJob for $payload and return the queue's PushResult (the queued job's id, or why it was skipped).
      *
      * @throws InvalidWebhookSecretException|EncryptionException
      */
     public function push(
         WebhookPayload $payload,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         return $this->queue->push(
             new DispatchWebhookJob(SealedWebhookPayload::seal($payload, $this->encryptor)),
             $queue,

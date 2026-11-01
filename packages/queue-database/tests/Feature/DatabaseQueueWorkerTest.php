@@ -103,7 +103,7 @@ describe('database queue worker regressions', function (): void {
     it('attempts an always-failing job exactly maxAttempts times then moves it to failed_jobs', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $container = workerTestContainer($connection);
-        $id = $container->get(QueueInterface::class)->push(new AlwaysFailingJob());
+        $id = $container->get(QueueInterface::class)->push(new AlwaysFailingJob())->id;
 
         drainWithWorker($container, $connection);
 
@@ -129,7 +129,7 @@ describe('database queue worker regressions', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $container = workerTestContainer($connection, ['queue.max_attempts' => 2]);
         $queue = $container->get(QueueInterface::class);
-        $id = $queue->push(new AlwaysFailingJob());
+        $id = $queue->push(new AlwaysFailingJob())->id;
 
         // A worker reserves the job and dies before completing or releasing it
         $queue->pop();

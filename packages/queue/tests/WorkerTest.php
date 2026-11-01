@@ -12,6 +12,9 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
+use Marko\Queue\JobRunner;
+use Marko\Queue\JobRunnerInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Worker;
@@ -193,16 +196,16 @@ class StopTestQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'job-1';
+    ): PushResult {
+        return PushResult::pushed('job-1');
     }
 
     public function later(
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'job-1';
+    ): PushResult {
+        return PushResult::pushed('job-1');
     }
 
     public function pop(
@@ -239,7 +242,7 @@ class StopTestQueue implements QueueInterface
     }
 
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
         return true;
@@ -273,16 +276,16 @@ describe('Worker', function (): void {
             public function push(
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function later(
                 int $delay,
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function pop(
@@ -317,7 +320,7 @@ describe('Worker', function (): void {
             }
 
             public function release(
-                string $jobId,
+                JobInterface $job,
                 int $delay = 0,
             ): bool {
                 return true;
@@ -332,7 +335,7 @@ describe('Worker', function (): void {
             $failedRepository,
             $config,
             createWorkerTestEnvelope(),
-            createNullWorkerContainer(),
+            new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
             new FakeClock(),
         );
 
@@ -371,16 +374,16 @@ describe('Worker', function (): void {
             public function push(
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function later(
                 int $delay,
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function pop(
@@ -415,7 +418,7 @@ describe('Worker', function (): void {
             }
 
             public function release(
-                string $jobId,
+                JobInterface $job,
                 int $delay = 0,
             ): bool {
                 $this->releasedDelay = $delay;
@@ -432,7 +435,7 @@ describe('Worker', function (): void {
             $failedRepository,
             $config,
             createWorkerTestEnvelope(),
-            createNullWorkerContainer(),
+            new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
             new FakeClock(),
         );
 
@@ -465,16 +468,16 @@ describe('Worker', function (): void {
             public function push(
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function later(
                 int $delay,
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function pop(
@@ -509,7 +512,7 @@ describe('Worker', function (): void {
             }
 
             public function release(
-                string $jobId,
+                JobInterface $job,
                 int $delay = 0,
             ): bool {
                 $this->released = true;
@@ -526,7 +529,7 @@ describe('Worker', function (): void {
             $failedRepository,
             $config,
             createWorkerTestEnvelope(),
-            createNullWorkerContainer(),
+            new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
             new FakeClock(),
         );
 
@@ -561,7 +564,7 @@ describe('Worker', function (): void {
             $failedRepository,
             $config,
             createWorkerTestEnvelope(),
-            createNullWorkerContainer(),
+            new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
             new FakeClock(),
         );
         StopTestHelper::$worker = $worker;
@@ -597,16 +600,16 @@ describe('Worker', function (): void {
             public function push(
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function later(
                 int $delay,
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function pop(
@@ -637,7 +640,7 @@ describe('Worker', function (): void {
             }
 
             public function release(
-                string $jobId,
+                JobInterface $job,
                 int $delay = 0,
             ): bool {
                 return true;
@@ -652,7 +655,7 @@ describe('Worker', function (): void {
             $failedRepository,
             $config,
             createWorkerTestEnvelope(),
-            createNullWorkerContainer(),
+            new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
             new FakeClock(),
         );
 
@@ -675,16 +678,16 @@ describe('Worker', function (): void {
             public function push(
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function later(
                 int $delay,
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function pop(
@@ -714,7 +717,7 @@ describe('Worker', function (): void {
             }
 
             public function release(
-                string $jobId,
+                JobInterface $job,
                 int $delay = 0,
             ): bool {
                 return true;
@@ -729,7 +732,7 @@ describe('Worker', function (): void {
             $failedRepository,
             $config,
             createWorkerTestEnvelope(),
-            createNullWorkerContainer(),
+            new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
             new FakeClock(),
         );
 
@@ -769,16 +772,16 @@ describe('Worker', function (): void {
             public function push(
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function later(
                 int $delay,
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'job-1';
+            ): PushResult {
+                return PushResult::pushed('job-1');
             }
 
             public function pop(
@@ -813,7 +816,7 @@ describe('Worker', function (): void {
             }
 
             public function release(
-                string $jobId,
+                JobInterface $job,
                 int $delay = 0,
             ): bool {
                 $this->capture->releasedDelays[] = $delay;
@@ -830,7 +833,7 @@ describe('Worker', function (): void {
             $failedRepository,
             $config,
             createWorkerTestEnvelope(),
-            createNullWorkerContainer(),
+            new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
             new FakeClock(),
         );
 
@@ -888,16 +891,16 @@ describe('Worker', function (): void {
                 public function push(
                     JobInterface $job,
                     ?string $queue = null,
-                ): string {
-                    return 'async-job-1';
+                ): PushResult {
+                    return PushResult::pushed('async-job-1');
                 }
 
                 public function later(
                     int $delay,
                     JobInterface $job,
                     ?string $queue = null,
-                ): string {
-                    return 'async-job-1';
+                ): PushResult {
+                    return PushResult::pushed('async-job-1');
                 }
 
                 public function pop(?string $queue = null): ?JobInterface
@@ -926,7 +929,7 @@ describe('Worker', function (): void {
                 }
 
                 public function release(
-                    string $jobId,
+                    JobInterface $job,
                     int $delay = 0,
                 ): bool {
                     return true;
@@ -936,7 +939,14 @@ describe('Worker', function (): void {
             $failedRepository = createTestFailedJobRepository();
             $config = createTestQueueConfig();
 
-            $worker = new Worker($queue, $failedRepository, $config, $envelope, $container, new FakeClock());
+            $worker = new Worker(
+                $queue,
+                $failedRepository,
+                $config,
+                $envelope,
+                new JobRunner($container, $envelope),
+                new FakeClock(),
+            );
             $worker->work(once: true);
 
             expect($capture->called)->toBeTrue()
@@ -960,6 +970,9 @@ class SingleJobRecordingQueue implements QueueInterface
     /** @var list<int> */
     public array $releasedWithDelays = [];
 
+    /** @var list<JobInterface> */
+    public array $releasedJobs = [];
+
     public bool $deleted = false;
 
     public function __construct(
@@ -969,16 +982,16 @@ class SingleJobRecordingQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'job-1';
+    ): PushResult {
+        return PushResult::pushed('job-1');
     }
 
     public function later(
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'job-1';
+    ): PushResult {
+        return PushResult::pushed('job-1');
     }
 
     public function pop(
@@ -1014,10 +1027,11 @@ class SingleJobRecordingQueue implements QueueInterface
     }
 
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
         $this->releasedWithDelays[] = $delay;
+        $this->releasedJobs[] = $job;
 
         return true;
     }
@@ -1048,7 +1062,7 @@ function runFailingJobOnce(
         $failedRepository,
         createTestQueueConfig(['queue.max_attempts' => $configMaxAttempts]),
         createWorkerTestEnvelope(),
-        createNullWorkerContainer(),
+        new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
         $clock,
     );
     $worker->work(once: true);
@@ -1128,7 +1142,7 @@ function createBackoffWorker(
         createTestFailedJobRepository(),
         createTestQueueConfig($configValues),
         createWorkerTestEnvelope(),
-        createNullWorkerContainer(),
+        new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
         new FakeClock(),
     );
 }
@@ -1242,18 +1256,18 @@ class MultiQueueRecordingQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         $this->jobs[$queue ?? 'default'][] = $job;
 
-        return 'pushed';
+        return PushResult::pushed('pushed');
     }
 
     public function later(
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'later';
+    ): PushResult {
+        return PushResult::pushed('later');
     }
 
     public function pop(
@@ -1288,7 +1302,7 @@ class MultiQueueRecordingQueue implements QueueInterface
     }
 
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
         return true;
@@ -1314,7 +1328,7 @@ class PauseRecordingWorker extends Worker
             $failedJobRepository,
             $config,
             createWorkerTestEnvelope(),
-            createNullWorkerContainer(),
+            new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
             new FakeClock(),
         );
     }
@@ -1503,16 +1517,16 @@ class SequenceRecordingQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'unused';
+    ): PushResult {
+        return PushResult::pushed('unused');
     }
 
     public function later(
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'unused';
+    ): PushResult {
+        return PushResult::pushed('unused');
     }
 
     public function pop(
@@ -1542,10 +1556,10 @@ class SequenceRecordingQueue implements QueueInterface
     }
 
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
-        $this->released[] = $jobId;
+        $this->released[] = $job->id;
 
         return true;
     }
@@ -1651,7 +1665,7 @@ function runJobsOnLastAttempt(
         $failedRepository,
         createTestQueueConfig(),
         createWorkerTestEnvelope(),
-        createNullWorkerContainer(),
+        new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
         new FakeClock(),
     );
     $stopJob->worker = $worker;
@@ -1768,7 +1782,7 @@ function runJobsOnFirstAttempt(
         $failedRepository,
         createTestQueueConfig($configValues),
         createWorkerTestEnvelope(),
-        createNullWorkerContainer(),
+        new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
         new FakeClock(),
     );
     $stopJob->worker = $worker;
@@ -1801,7 +1815,7 @@ class ClosureHoldingInvalidBackoffJob extends Job
 class FailingReleaseQueue extends SequenceRecordingQueue
 {
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
         throw new QueueException('Driver could not release the job.');
@@ -1983,5 +1997,74 @@ describe('Worker pop failures', function (): void {
         );
 
         expect(fn () => $worker->work(once: true))->toThrow(RuntimeException::class, 'Broker connection lost');
+    });
+});
+
+/**
+ * JobRunner double that records each job it runs and fails or succeeds as told.
+ */
+class RecordingJobRunner implements JobRunnerInterface
+{
+    /** @var list<JobInterface> */
+    public array $ran = [];
+
+    public function __construct(
+        private readonly bool $fails = false,
+    ) {}
+
+    public function run(JobInterface $job): void
+    {
+        $this->ran[] = $job;
+
+        if ($this->fails) {
+            throw new RuntimeException('runner failed the job');
+        }
+    }
+
+    public function withContainer(
+        JobInterface $job,
+        callable $callback,
+    ): mixed {
+        return $callback();
+    }
+}
+
+describe('Worker and JobRunner', function (): void {
+    it('runs each popped job through the JobRunner it is given', function (): void {
+        $job = new ConfigDefaultFailingJob();
+        $job->setId('job-1');
+        $queue = new SingleJobRecordingQueue($job);
+        $runner = new RecordingJobRunner();
+
+        new Worker(
+            $queue,
+            createTestFailedJobRepository(),
+            createTestQueueConfig(),
+            createWorkerTestEnvelope(),
+            $runner,
+            new FakeClock(),
+        )->work(once: true);
+
+        expect($runner->ran)->toBe([$job])
+            ->and($queue->deleted)->toBeTrue();
+    });
+
+    it('hands the in-memory job, with its counted attempt and exception, to release()', function (): void {
+        $job = new ConfigDefaultFailingJob();
+        $job->setId('job-1');
+        $queue = new SingleJobRecordingQueue($job);
+
+        new Worker(
+            $queue,
+            createTestFailedJobRepository(),
+            createTestQueueConfig(['queue.max_attempts' => 3]),
+            createWorkerTestEnvelope(),
+            new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope()),
+            new FakeClock(),
+        )->work(once: true);
+
+        expect($queue->releasedJobs)->toBe([$job])
+            ->and($queue->releasedJobs[0]->attempts)->toBe(1)
+            ->and($queue->releasedJobs[0]->exceptions)->toBe(1);
     });
 });

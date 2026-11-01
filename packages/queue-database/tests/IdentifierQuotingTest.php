@@ -46,10 +46,10 @@ describe('DatabaseQueue identifier quoting', function (): void {
     it('quotes a custom table name in every raw statement', function (): void {
         [$queue, $connection] = backtickQuotedQueue('order');
 
-        $first = $queue->push(new TestJob('first'));
+        $first = $queue->push(new TestJob('first'))->id;
         $queue->later(60, new TestJob('later'));
         $popped = $queue->pop();
-        $queue->release($first);
+        $queue->release($popped);
         $size = $queue->size();
         $queue->delete($first);
         $cleared = $queue->clear();
@@ -63,7 +63,7 @@ describe('DatabaseQueue identifier quoting', function (): void {
         expect($popped?->id)->toBe($first)
             ->and($size)->toBe(1)
             ->and($cleared)->toBe(1)
-            ->and($raw)->toHaveCount(8)
+            ->and($raw)->toHaveCount(7)
             ->and(array_filter($raw, fn (string $sql): bool => !str_contains($sql, '`order`')))->toBe([]);
     })->issue(338);
 

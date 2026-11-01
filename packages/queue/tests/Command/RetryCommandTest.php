@@ -15,6 +15,8 @@ use Marko\Queue\FailedJob;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
+use Marko\Queue\JobRunner;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Tests\Command\Helpers;
@@ -478,18 +480,18 @@ class RetryRoundTripQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         $job->setId('round-trip-job');
         $this->jobs[] = $job;
 
-        return 'round-trip-job';
+        return PushResult::pushed('round-trip-job');
     }
 
     public function later(
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         return $this->push($job, $queue);
     }
 
@@ -518,7 +520,7 @@ class RetryRoundTripQueue implements QueueInterface
     }
 
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
         return true;
@@ -574,7 +576,7 @@ function createRetryWorker(
             'queue.max_attempts' => 1,
         ])),
         createRetryCommandEnvelope(),
-        $container,
+        new JobRunner($container, createRetryCommandEnvelope()),
         new FakeClock(),
     );
 }

@@ -11,6 +11,10 @@ use Marko\Queue\ContainerAwareJobInterface;
 use Marko\Queue\Exceptions\JobFailedException;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobInterface;
+use Marko\Queue\JobRunner;
+use Marko\Queue\JobRunnerInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Sync\SyncQueue;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -27,10 +31,9 @@ function createSyncQueue(
     ?ContainerInterface $container = null,
     ?JobEnvelope $jobEnvelope = null,
 ): SyncQueue {
-    return new SyncQueue(
-        $container ?? new Container(),
-        $jobEnvelope ?? createSyncQueueJobEnvelope(),
-    );
+    $jobEnvelope ??= createSyncQueueJobEnvelope();
+
+    return new SyncQueue(new JobRunner($container ?? new Container(), $jobEnvelope));
 }
 
 class ContainerAwareCaptureJob extends Job implements ContainerAwareJobInterface
@@ -126,7 +129,7 @@ it('push executes job immediately', function (): void {
     expect($executed)->toBeTrue();
 });
 
-it('push returns job ID', function (): void {
+it('push returns a pushed PushResult with the job ID', function (): void {
     $queue = createSyncQueue();
 
     $job = new class () extends Job
@@ -134,11 +137,57 @@ it('push returns job ID', function (): void {
         public function handle(): void {}
     };
 
-    $id = $queue->push($job);
+    $result = $queue->push($job);
 
-    expect($id)->toBeString()
-        ->not->toBeEmpty()
-        ->and($job->id)->toBe($id);
+    expect($result)->toBeInstanceOf(PushResult::class)
+        ->and($result->pushed)->toBeTrue()
+        ->and($result->id)->toBeString()->not->toBeEmpty()
+        ->and($job->id)->toBe($result->id);
+});
+
+it('runs the job through the JobRunner it is given', function (): void {
+    $runner = new class () implements JobRunnerInterface
+    {
+        /** @var list<JobInterface> */
+        public array $ran = [];
+
+        public function run(JobInterface $job): void
+        {
+            $this->ran[] = $job;
+        }
+
+        public function withContainer(
+            JobInterface $job,
+            callable $callback,
+        ): mixed {
+            return $callback();
+        }
+    };
+    $job = new class () extends Job
+    {
+        public function handle(): void
+        {
+            throw new RuntimeException('handle() must not be called directly by SyncQueue');
+        }
+    };
+
+    new SyncQueue($runner)->push($job);
+
+    expect($runner->ran)->toBe([$job]);
+});
+
+it('counts the exception on a job that fails under SyncQueue', function (): void {
+    $job = new class () extends Job
+    {
+        public function handle(): void
+        {
+            throw new RuntimeException('fails');
+        }
+    };
+
+    expect(fn () => createSyncQueue()->push($job))->toThrow(JobFailedException::class)
+        ->and($job->exceptions)->toBe(1)
+        ->and($job->attempts)->toBe(1);
 });
 
 it('later executes job immediately', function (): void {
@@ -157,11 +206,12 @@ it('later executes job immediately', function (): void {
         }
     };
 
-    $id = $queue->later(60, $job);
+    $result = $queue->later(60, $job);
 
     expect($executed)->toBeTrue()
-        ->and($id)->toBeString()->not->toBeEmpty()
-        ->and($job->id)->toBe($id);
+        ->and($result->pushed)->toBeTrue()
+        ->and($result->id)->toBeString()->not->toBeEmpty()
+        ->and($job->id)->toBe($result->id);
 });
 
 it('pop returns null', function (): void {

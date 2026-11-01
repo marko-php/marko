@@ -350,9 +350,9 @@ public function __construct(
     EncryptorInterface $encryptor,
 );
 
-// Seals the payload and pushes a DispatchWebhookJob; returns the queued job's ID
+// Seals the payload and pushes a DispatchWebhookJob; returns the queue's PushResult (the job ID, or why it was skipped)
 // @throws InvalidWebhookSecretException|EncryptionException
-public function push(WebhookPayload $payload, ?string $queue = null): string;
+public function push(WebhookPayload $payload, ?string $queue = null): PushResult;
 ```
 
 ### WebhookResponse

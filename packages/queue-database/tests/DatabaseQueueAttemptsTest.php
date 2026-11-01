@@ -60,7 +60,7 @@ describe('DatabaseQueue attempt persistence', function (): void {
     it('increments the attempts column when reserving a job', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $queue = attemptsQueue($connection);
-        $id = $queue->push(new TestJob());
+        $id = $queue->push(new TestJob())->id;
 
         $queue->pop();
 
@@ -70,11 +70,11 @@ describe('DatabaseQueue attempt persistence', function (): void {
     it('rewrites the payload with the incremented attempt count on release', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $queue = attemptsQueue($connection);
-        $id = $queue->push(new TestJob());
+        $id = $queue->push(new TestJob())->id;
 
         $job = $queue->pop();
         $job->incrementAttempts();
-        $queue->release($id, 0);
+        $queue->release($job, 0);
 
         $row = jobsRow($connection, $id);
         $stored = unserialize(attemptsEnvelope()->verifyAndUnwrap($row['payload']));
@@ -85,10 +85,32 @@ describe('DatabaseQueue attempt persistence', function (): void {
             ->and($queue->pop()->attempts)->toBe(1);
     });
 
+    it(
+        'stores the released job state (exceptions, retry deadline, attempts) instead of the reserved payload',
+        function (): void {
+            $connection = SqliteConnection::withQueueTables();
+            $queue = attemptsQueue($connection);
+            $id = $queue->push(new TestJob())->id;
+
+            $job = $queue->pop();
+            $job->incrementAttempts();
+            $job->incrementExceptions();
+            $job->setRetryDeadline(new DateTimeImmutable('2026-11-01T06:00:00Z'));
+            $queue->release($job, 0);
+
+            $retried = $queue->pop();
+
+            expect($retried->id)->toBe($id)
+                ->and($retried->attempts)->toBe(1)
+                ->and($retried->exceptions)->toBe(1)
+                ->and($retried->retryDeadline?->format(DATE_ATOM))->toBe('2026-11-01T06:00:00+00:00');
+        },
+    );
+
     it('syncs the popped job attempts with reservations that were never released', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $queue = attemptsQueue($connection);
-        $id = $queue->push(new TestJob());
+        $id = $queue->push(new TestJob())->id;
 
         $queue->pop();
         expireReservation($connection, $id);
@@ -103,7 +125,7 @@ describe('DatabaseQueue attempt persistence', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $queue = attemptsQueue($connection, maxAttempts: 2);
         $failedJobRepository = new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC'));
-        $id = $queue->push(new TestJob('crashy'), 'emails');
+        $id = $queue->push(new TestJob('crashy'), 'emails')->id;
 
         $queue->pop('emails');
         expireReservation($connection, $id);
@@ -124,11 +146,11 @@ describe('DatabaseQueue attempt persistence', function (): void {
     it('returns the next available job after failing a crash-exhausted one', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $queue = attemptsQueue($connection, maxAttempts: 1);
-        $crashedId = $queue->push(new TestJob('crashy'));
+        $crashedId = $queue->push(new TestJob('crashy'))->id;
 
         $queue->pop();
         expireReservation($connection, $crashedId);
-        $healthyId = $queue->push(new TestJob('healthy'));
+        $healthyId = $queue->push(new TestJob('healthy'))->id;
 
         expect($queue->pop()?->id)->toBe($healthyId);
     });
@@ -136,7 +158,7 @@ describe('DatabaseQueue attempt persistence', function (): void {
     it('prefers the job maxAttempts over the queue default when failing crashed jobs', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $queue = attemptsQueue($connection, maxAttempts: 1);
-        $id = $queue->push(new AlwaysFailingJob(maxAttempts: 5));
+        $id = $queue->push(new AlwaysFailingJob(maxAttempts: 5))->id;
 
         $queue->pop();
         expireReservation($connection, $id);

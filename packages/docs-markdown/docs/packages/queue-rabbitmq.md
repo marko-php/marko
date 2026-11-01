@@ -116,13 +116,13 @@ readonly class OrderProcessor
 
 | Method | Description |
 |---|---|
-| `push(JobInterface $job, ?string $queue = null): string` | Publish a job as a persistent AMQP message, returning the job ID |
-| `later(int $delay, JobInterface $job, ?string $queue = null): string` | Publish a delayed job via a dead-letter exchange --- `$delay` is in seconds |
+| `push(JobInterface $job, ?string $queue = null): PushResult` | Publish a job as a persistent AMQP message, returning a pushed `PushResult` with the job ID |
+| `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Publish a delayed job via a dead-letter exchange --- `$delay` is in seconds |
 | `pop(?string $queue = null): ?JobInterface` | Consume the next valid message from the queue, or `null` if empty --- rejects messages it can't decode (see [Malformed Messages](#malformed-messages)) |
 | `size(?string $queue = null): int` | Return the number of messages in the queue |
 | `clear(?string $queue = null): int` | Purge all messages from the queue, returning the count removed |
 | `delete(string $jobId): bool` | Acknowledge a consumed message by job ID |
-| `release(string $jobId, int $delay = 0): bool` | Republish the job with its attempt count incremented (optionally delayed via dead-letter exchange), wait for the broker to confirm it, then acknowledge the original message |
+| `release(JobInterface $job, int $delay = 0): bool` | Republish the given job with its current state (attempts, exceptions, retry deadline), optionally delayed via dead-letter exchange, wait for the broker to confirm it, then acknowledge the original message. Returns `false` when the job was not popped by this queue |
 
 #### Malformed Messages
 

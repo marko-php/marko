@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Testing\Fake;
 
 use Marko\Queue\JobInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 use Marko\Testing\Exceptions\AssertionFailedException;
 
@@ -18,7 +19,7 @@ class FakeQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         $id = (string) $this->nextId++;
         $job->setId($id);
         $this->pushed[] = [
@@ -28,14 +29,14 @@ class FakeQueue implements QueueInterface
             'id' => $id,
         ];
 
-        return $id;
+        return PushResult::pushed($id);
     }
 
     public function later(
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         $id = (string) $this->nextId++;
         $job->setId($id);
         $this->pushed[] = [
@@ -45,7 +46,7 @@ class FakeQueue implements QueueInterface
             'id' => $id,
         ];
 
-        return $id;
+        return PushResult::pushed($id);
     }
 
     public function pop(
@@ -99,12 +100,16 @@ class FakeQueue implements QueueInterface
         return false;
     }
 
+    /**
+     * Store the given job, with its current state, in place of the pushed entry that has its id.
+     */
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
         foreach ($this->pushed as $index => $entry) {
-            if ($entry['id'] === $jobId) {
+            if ($entry['id'] === $job->id) {
+                $this->pushed[$index]['job'] = $job;
                 $this->pushed[$index]['delay'] = $delay;
 
                 return true;
