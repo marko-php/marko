@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace Marko\Core\Discovery;
 
 use Marko\Core\Environment\AppEnvironment;
+use Marko\Core\Environment\EnvironmentVariables;
 use Marko\Core\Exceptions\DiscoveryCacheException;
 
 /**
  * Boot-time reader for the discovery cache settings.
  *
- * Reads $_ENV with a getenv() fallback, so it works whether or not marko/env
- * is installed and regardless of PHP's variables_order setting.
+ * Reads through EnvironmentVariables ($_ENV with a getenv() fallback), so it
+ * works whether or not marko/env is installed and regardless of PHP's
+ * variables_order setting, and a recording of environment reads (the config
+ * section of the discovery cache) sees every variable it read.
  */
 class DiscoveryEnvironment
 {
@@ -29,7 +32,7 @@ class DiscoveryEnvironment
      */
     public function enabled(): bool
     {
-        $value = $this->read('DISCOVERY_CACHE_ENABLED');
+        $value = EnvironmentVariables::read('DISCOVERY_CACHE_ENABLED');
 
         if ($value === null) {
             return true;
@@ -60,18 +63,6 @@ class DiscoveryEnvironment
      */
     public function cachePath(): string
     {
-        return $this->read('DISCOVERY_CACHE_PATH') ?? 'storage/cache/discovery.php';
-    }
-
-    private function read(
-        string $name,
-    ): ?string {
-        if (array_key_exists($name, $_ENV) && is_scalar($_ENV[$name])) {
-            return (string) $_ENV[$name];
-        }
-
-        $value = getenv($name);
-
-        return $value === false ? null : $value;
+        return EnvironmentVariables::read('DISCOVERY_CACHE_PATH') ?? 'storage/cache/discovery.php';
     }
 }

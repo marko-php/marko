@@ -162,3 +162,93 @@ it('throws naming the variable when a variable read through Env changes after th
             ->and($exception->getSuggestion())->toContain('discovery:cache');
     });
 })->issue(556);
+
+describe('the discovery variables read by the shipped config/discovery.php', function (): void {
+    beforeEach(function (): void {
+        $this->originalEnv = $_ENV;
+        $this->originalGetenv = [];
+
+        foreach (['MARKO_ENV', 'APP_ENV', 'DISCOVERY_CACHE_ENABLED', 'DISCOVERY_CACHE_PATH'] as $name) {
+            $this->originalGetenv[$name] = getenv($name);
+            unset($_ENV[$name]);
+            putenv($name);
+        }
+
+        // The real marko/core module, so its shipped config/discovery.php is compiled
+        $this->modules[] = new ModuleManifest(
+            name: 'marko/core',
+            version: '1.0.0',
+            path: dirname(__DIR__, 4) . '/core',
+        );
+        $this->modulePaths = array_map(fn (ModuleManifest $module): string => $module->path, $this->modules);
+    });
+
+    afterEach(function (): void {
+        $_ENV = $this->originalEnv;
+
+        foreach ($this->originalGetenv as $name => $value) {
+            putenv($value === false ? $name : "$name=$value");
+        }
+    });
+
+    it('stores a hash of every discovery variable the shipped config/discovery.php reads', function (): void {
+        $section = $this->contributor->compile($this->modules);
+
+        expect(array_keys($section['env']))
+            ->toContain('MARKO_ENV', 'APP_ENV', 'DISCOVERY_CACHE_ENABLED', 'DISCOVERY_CACHE_PATH');
+    })->issue(618);
+
+    it(
+        'throws on the next cached boot naming the discovery variable that changed after the cache was built',
+        function (
+            string $name,
+            ?string $before,
+            ?string $after,
+        ): void {
+            if ($before !== null) {
+                $_ENV[$name] = $before;
+            }
+
+            $section = $this->contributor->compile($this->modules);
+            $provider = new ConfigServiceProvider(configCacheDiscovery());
+
+            if ($after === null) {
+                unset($_ENV[$name]);
+            } else {
+                $_ENV[$name] = $after;
+            }
+
+            expect(fn () => $provider->createRepository(
+                modulePaths: $this->modulePaths,
+                rootConfigPath: $this->base . '/config',
+                cachedDiscovery: new CachedDiscovery(['config' => $section], $this->base . '/storage/discovery.php'),
+            ))->toThrow(function (ConfigCacheException $exception) use ($name, $after): void {
+                expect($exception->getMessage())->toEndWith(': ' . $name);
+
+                if ($after !== null) {
+                    expect($exception->getMessage())->not->toContain($after);
+                }
+            });
+        },
+    )->with([
+        'MARKO_ENV set' => ['MARKO_ENV', null, 'staging'],
+        'APP_ENV changed' => ['APP_ENV', 'production', 'staging'],
+        'DISCOVERY_CACHE_ENABLED changed' => ['DISCOVERY_CACHE_ENABLED', 'false', 'true'],
+        'DISCOVERY_CACHE_ENABLED empty to unset' => ['DISCOVERY_CACHE_ENABLED', '', null],
+        'DISCOVERY_CACHE_PATH set' => ['DISCOVERY_CACHE_PATH', null, 'var/cache/discovery.php'],
+    ])->issue(618);
+
+    it('boots from the cache while the discovery variables are unchanged', function (): void {
+        $_ENV['APP_ENV'] = 'staging';
+        $section = $this->contributor->compile($this->modules);
+        $provider = new ConfigServiceProvider(configCacheDiscovery());
+
+        $repository = $provider->createRepository(
+            modulePaths: $this->modulePaths,
+            rootConfigPath: $this->base . '/config',
+            cachedDiscovery: new CachedDiscovery(['config' => $section], $this->base . '/storage/discovery.php'),
+        );
+
+        expect($repository->get('discovery.environment'))->toBe('staging');
+    })->issue(618);
+});
