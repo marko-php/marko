@@ -225,7 +225,7 @@ return new Response('Invalid credentials', 401);
 
 `cancelChallenge()` forgets the pending user (for a "cancel" link), and `logout()` clears a pending challenge too. Guards without `challenges` behave exactly as before.
 
-Calling `login()` or `loginById()` directly bypasses challenges by design: app code that calls them has already decided the user is authenticated (for example right after registration). Challenges only apply to `attempt()`. A guard built by a driver whose guards don't implement `ChallengeableGuardInterface` (such as the token guard) fails loudly if its config lists challenges.
+Calling `login()` or `loginById()` directly bypasses challenges by design: app code that calls them has already decided the user is authenticated (for example right after registration). Challenges only apply to `attempt()`. A passkey sign-in through [marko/authentication-passkey](/docs/packages/authentication-passkey/) is already multi-factor, so it logs in directly, skips the guard's challenges, and cancels a challenge left pending by an abandoned password login. A guard built by a driver whose guards don't implement `ChallengeableGuardInterface` (such as the token guard) fails loudly if its config lists challenges.
 
 ### Logging Out
 

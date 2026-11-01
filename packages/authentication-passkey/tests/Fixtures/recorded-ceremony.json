@@ -1,0 +1,39 @@
+{
+    "rp_id": "example.com",
+    "origin": "https://example.com",
+    "registration": {
+        "challenge": "5YeX-adyzIOsuWMpFsr8fwynlG6LaRTBqaJu-LkUNoU",
+        "credential": {
+            "id": "znb4glCGRX4O9MZF4cKJPQ",
+            "rawId": "znb4glCGRX4O9MZF4cKJPQ",
+            "type": "public-key",
+            "authenticatorAttachment": "platform",
+            "clientExtensionResults": [],
+            "response": {
+                "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiNVllWC1hZHl6SU9zdVdNcEZzcjhmd3lubEc2TGFSVEJxYUp1LUxrVU5vVSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+                "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViUo3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAEM52-IJQhkV-DvTGReHCiT2lAQIDJiABIVggRxzMTkYJqQaZBZPF9QNxuB19nhIHwdNNwAML_nXhEOMiWCCSWl8wHfbCk-Aa2wB95ICdjtoynFqi84zzlhHdW0VsKg",
+                "transports": [
+                    "internal",
+                    "hybrid"
+                ]
+            }
+        }
+    },
+    "assertion": {
+        "challenge": "8DjrWQFTm_C4-WSwd5PrWP6eqKKy5QhtYVsnyvDbnDg",
+        "sign_count": 1,
+        "credential": {
+            "id": "znb4glCGRX4O9MZF4cKJPQ",
+            "rawId": "znb4glCGRX4O9MZF4cKJPQ",
+            "type": "public-key",
+            "authenticatorAttachment": "platform",
+            "clientExtensionResults": [],
+            "response": {
+                "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiOERqcldRRlRtX0M0LVdTd2Q1UHJXUDZlcUtLeTVRaHRZVnNueXZEYm5EZyIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+                "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcFAAAAAQ",
+                "signature": "MEYCIQCgt7sGvrwkg_Qfq-adUZT1mqKdgq5fkcP7e0F_MfQB7AIhAMwVC039-yB0zLuOu_2ihzc-3qRcuYBjeohlPBy7rhm6",
+                "userHandle": "NFsxKmVgySUIE_9pF6_XXQRyslEWFckYztA4Ak5kyoU"
+            }
+        }
+    }
+}
