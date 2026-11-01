@@ -12,7 +12,6 @@ use Marko\Authentication\EmailVerification\VerificationStatus;
 use Marko\Authentication\Event\EmailVerifiedEvent;
 use Marko\Authentication\Exceptions\AuthException;
 use Marko\Authentication\Exceptions\UnauthenticatedException;
-use Marko\Authentication\Tests\Fixtures\RecordingUserPersister;
 use Marko\Authentication\Tests\Fixtures\RecordingVerificationNotifier;
 use Marko\Authentication\Tests\Fixtures\VerifiableUser;
 use Marko\Authentication\UserPersisterResolver;
@@ -33,6 +32,7 @@ use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeGuard;
+use Marko\Testing\Fake\FakeUserPersister;
 
 /**
  * An EmailVerifier wired to a real HMAC URL signer and in-memory collaborators.
@@ -45,7 +45,7 @@ class EmailVerifierHarness
 
     public RecordingVerificationNotifier $notifier;
 
-    public RecordingUserPersister $persister;
+    public FakeUserPersister $persister;
 
     public FakeEventDispatcher $events;
 
@@ -58,7 +58,7 @@ class EmailVerifierHarness
         $this->clock = new FakeClock('2026-10-31 12:00:00');
         $this->guard = new FakeGuard(name: 'session');
         $this->notifier = new RecordingVerificationNotifier();
-        $this->persister = new RecordingUserPersister();
+        $this->persister = new FakeUserPersister();
         $this->events = new FakeEventDispatcher();
         $this->user = new VerifiableUser(id: 7, email: 'ada@example.com');
 
@@ -175,7 +175,7 @@ it('verifies and persists the user from a valid link', function (): void {
     expect($status)->toBe(VerificationStatus::Verified)
         ->and($harness->user->hasVerifiedEmail())->toBeTrue()
         ->and($harness->user->emailVerifiedAt)->toEqual($harness->clock->now())
-        ->and($harness->persister->persisted)->toBe([$harness->user]);
+        ->and($harness->persister->persisted())->toBe([$harness->user]);
 });
 
 it('dispatches EmailVerifiedEvent with the user once verified', function (): void {
@@ -195,7 +195,7 @@ it('rejects a tampered link without verifying the user', function (): void {
     expect(fn () => $harness->verifier()->verify($harness->click($url)))
         ->toThrow(InvalidSignatureException::class, 'This link is invalid.')
         ->and($harness->user->hasVerifiedEmail())->toBeFalse()
-        ->and($harness->persister->persisted)->toBe([]);
+        ->and($harness->persister->persisted())->toBe([]);
 });
 
 it('rejects an expired link without verifying the user', function (): void {
@@ -206,7 +206,7 @@ it('rejects an expired link without verifying the user', function (): void {
     expect(fn () => $harness->verifier()->verify($harness->click($url)))
         ->toThrow(InvalidSignatureException::class, 'This link has expired.')
         ->and($harness->user->hasVerifiedEmail())->toBeFalse()
-        ->and($harness->persister->persisted)->toBe([]);
+        ->and($harness->persister->persisted())->toBe([]);
 });
 
 it('rejects a link once the user changed their email', function (): void {
@@ -217,7 +217,7 @@ it('rejects a link once the user changed their email', function (): void {
     expect(fn () => $harness->verifier()->verify($harness->click($url)))
         ->toThrow(InvalidSignatureException::class, 'This link is invalid.')
         ->and($harness->user->hasVerifiedEmail())->toBeFalse()
-        ->and($harness->persister->persisted)->toBe([]);
+        ->and($harness->persister->persisted())->toBe([]);
 });
 
 it('rejects a valid link sent to another user', function (): void {
@@ -245,7 +245,7 @@ it(
 
         expect($status)->toBe(VerificationStatus::AlreadyVerified)
             ->and($harness->user->emailVerifiedAt)->toBe($verifiedAt)
-            ->and($harness->persister->persisted)->toHaveCount(1)
+            ->and($harness->persister->persisted())->toHaveCount(1)
             ->and($harness->events->dispatched)->toHaveCount(1);
     },
 );

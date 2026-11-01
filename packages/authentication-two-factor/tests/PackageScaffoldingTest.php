@@ -9,7 +9,6 @@ use Marko\AuthenticationTwoFactor\Config\TwoFactorConfig;
 use Marko\AuthenticationTwoFactor\Contracts\TotpInterface;
 use Marko\AuthenticationTwoFactor\Contracts\TwoFactorManagerInterface;
 use Marko\AuthenticationTwoFactor\Exceptions\TwoFactorException;
-use Marko\AuthenticationTwoFactor\Tests\Fixtures\RecordingUserPersister;
 use Marko\AuthenticationTwoFactor\Totp\OtphpTotp;
 use Marko\AuthenticationTwoFactor\TwoFactorManager;
 use Marko\Config\ConfigRepositoryInterface;
@@ -19,6 +18,7 @@ use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeUserPersister;
 use Psr\Clock\ClockInterface;
 
 it('has a composer.json for marko/authentication-two-factor as a marko module', function (): void {
@@ -55,7 +55,7 @@ it('binds TotpInterface and TwoFactorManagerInterface to working implementations
     $container->instance(ContainerInterface::class, $container);
     $container->instance(ClockInterface::class, new FakeClock());
     $container->instance(EventDispatcherInterface::class, new FakeEventDispatcher());
-    $container->instance(UserPersisterInterface::class, new RecordingUserPersister());
+    $container->instance(UserPersisterInterface::class, new FakeUserPersister());
     // marko/authentication's module builds the real AuthManager; its wiring is tested there
     $container->instance(AuthManager::class, $this->createStub(AuthManager::class));
     $container->instance(ConfigRepositoryInterface::class, new FakeConfigRepository([

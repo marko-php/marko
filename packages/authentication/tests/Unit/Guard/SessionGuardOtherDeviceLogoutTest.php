@@ -11,7 +11,6 @@ use Marko\Authentication\Event\OtherDevicesLoggedOutEvent;
 use Marko\Authentication\Exceptions\AuthException;
 use Marko\Authentication\Guard\SessionGuard;
 use Marko\Authentication\Tests\Fixtures\InMemoryRememberTokenStorage;
-use Marko\Authentication\Tests\Fixtures\RecordingUserPersister;
 use Marko\Authentication\Tests\Fixtures\VersionedUser;
 use Marko\Authentication\Token\RememberTokenManager;
 use Marko\Authentication\UserPersisterResolver;
@@ -22,6 +21,7 @@ use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeCookieJar;
 use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeSession;
+use Marko\Testing\Fake\FakeUserPersister;
 use Marko\Testing\Fake\FakeUserProvider;
 
 /**
@@ -42,7 +42,7 @@ class OtherDeviceWorld
 
     public FakeUserProvider $provider;
 
-    public RecordingUserPersister $persister;
+    public FakeUserPersister $persister;
 
     public FakeEventDispatcher $events;
 
@@ -55,7 +55,7 @@ class OtherDeviceWorld
         $this->user = new VersionedUser(id: 42);
         $this->plainUser = new FakeAuthenticatable(id: 7);
         $this->provider = new FakeUserProvider([42 => $this->user, 7 => $this->plainUser]);
-        $this->persister = new RecordingUserPersister();
+        $this->persister = new FakeUserPersister();
         $this->events = new FakeEventDispatcher();
     }
 
@@ -128,7 +128,7 @@ it('stores a new session version on the user and saves it through the persister'
     $world->guardFor($laptop)->logoutOtherDevices($world->user);
 
     expect($world->user->getSessionVersion())->toMatch('/^[0-9a-f]{32}$/')
-        ->and($world->persister->persisted)->toBe([$world->user])
+        ->and($world->persister->persisted())->toBe([$world->user])
         ->and($laptop['session']->get('auth_web_session_version'))->toBe($world->user->getSessionVersion());
 });
 
@@ -263,7 +263,7 @@ it('only revokes remember-me devices for a user without a session version', func
     $world->guardFor($laptop, withPersister: false)->logoutOtherDevices($world->plainUser);
 
     expect($world->storage->tokensFor('web', 7))->toHaveCount(1)
-        ->and($world->persister->persisted)->toBe([])
+        ->and($world->persister->persisted())->toBe([])
         ->and($world->guardFor($phone)->user())->toBe($world->plainUser);
 });
 
