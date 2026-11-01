@@ -103,7 +103,7 @@ describe('DatabaseQueue attempt persistence', function (): void {
         'stores the released job state (exceptions, retry deadline, attempts) instead of the reserved payload',
         function (): void {
             $connection = SqliteConnection::withQueueTables();
-            $queue = attemptsQueue($connection);
+            $queue = attemptsQueue($connection, clock: new FakeClock('2026-10-31T12:00:00Z'));
             $id = $queue->push(new TestJob())->id;
 
             $job = $queue->pop();
