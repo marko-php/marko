@@ -20,6 +20,7 @@ use Marko\Authentication\Tests\Fixtures\RecordingUserPersister;
 use Marko\Authentication\Tests\Fixtures\ResettableUser;
 use Marko\Authentication\UserPersisterResolver;
 use Marko\Authentication\UserProviderResolver;
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\Core\Container\Container;
@@ -88,7 +89,7 @@ class PasswordResetHarness
             'cache.path' => sys_get_temp_dir(),
             'cache.default_ttl' => 3600,
             'cache.driver' => 'array',
-        ])), $this->clock);
+        ])), $this->clock, new CacheOperations());
 
         return new PasswordResetBroker(
             authConfig: $authConfig,
