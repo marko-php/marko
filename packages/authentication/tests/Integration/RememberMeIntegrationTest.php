@@ -34,6 +34,7 @@ use Marko\Core\Event\EventDispatcher;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Event\ObserverDefinition;
 use Marko\Core\Event\ObserverRegistry;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Routing\Http\Cookie;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
@@ -94,9 +95,12 @@ function bootAuthContainer(
 
     if ($withCacheDriver) {
         // A cache driver module's binding: the login throttle counts failures in the cache.
-        $container->instance(CacheInterface::class, new ArrayCacheDriver(new CacheConfig(new ConfigRepository([
-            'cache' => ['path' => sys_get_temp_dir(), 'default_ttl' => 3600, 'driver' => 'array'],
-        ])), $clock, new CacheOperations()));
+        $container->instance(CacheInterface::class, new ArrayCacheDriver(new CacheConfig(
+            new ConfigRepository([
+                'cache' => ['path' => sys_get_temp_dir(), 'default_ttl' => 3600, 'driver' => 'array'],
+            ]),
+            new ProjectPaths(),
+        ), $clock, new CacheOperations()));
     }
     $container->instance(UserProviderInterface::class, $userProvider);
     $container->instance(RecordingAuthObserver::class, $observer);

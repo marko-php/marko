@@ -8,17 +8,21 @@ use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 
 function createArrayCacheTestConfig(
     int $defaultTtl = 3600,
 ): CacheConfig {
-    return new CacheConfig(new FakeConfigRepository([
-        'cache.path' => '/tmp/cache',
-        'cache.default_ttl' => $defaultTtl,
-        'cache.driver' => 'array',
-    ]));
+    return new CacheConfig(
+        new FakeConfigRepository([
+            'cache.path' => '/tmp/cache',
+            'cache.default_ttl' => $defaultTtl,
+            'cache.driver' => 'array',
+        ]),
+        new ProjectPaths(),
+    );
 }
 
 beforeEach(function (): void {

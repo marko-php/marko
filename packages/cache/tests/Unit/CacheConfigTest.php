@@ -12,7 +12,7 @@ use Marko\Testing\Fake\FakeConfigRepository;
 it('reads driver from config without fallback', function (): void {
     $config = new CacheConfig(new FakeConfigRepository([
         'cache.driver' => 'redis',
-    ]));
+    ]), new ProjectPaths('/srv/app'));
 
     expect($config->driver())->toBe('redis');
 });
@@ -20,7 +20,7 @@ it('reads driver from config without fallback', function (): void {
 it('reads path from config without fallback', function (): void {
     $config = new CacheConfig(new FakeConfigRepository([
         'cache.path' => '/var/cache',
-    ]));
+    ]), new ProjectPaths('/srv/app'));
 
     expect($config->path())->toBe('/var/cache');
 });
@@ -45,6 +45,15 @@ it('gets the project root from the container', function (): void {
     expect($container->get(CacheConfig::class)->path())->toBe('/srv/app/storage/cache');
 });
 
+it('keeps a Windows absolute path as configured', function (): void {
+    $config = new CacheConfig(
+        new FakeConfigRepository(['cache.path' => 'C:\\app\\cache']),
+        new ProjectPaths('/srv/app'),
+    );
+
+    expect($config->path())->toBe('C:\\app\\cache');
+});
+
 it('keeps an absolute path as configured', function (): void {
     $config = new CacheConfig(
         new FakeConfigRepository(['cache.path' => '/var/cache']),
@@ -57,25 +66,25 @@ it('keeps an absolute path as configured', function (): void {
 it('reads default_ttl from config without fallback', function (): void {
     $config = new CacheConfig(new FakeConfigRepository([
         'cache.default_ttl' => 7200,
-    ]));
+    ]), new ProjectPaths('/srv/app'));
 
     expect($config->defaultTtl())->toBe(7200);
 });
 
 it('throws ConfigNotFoundException when driver is missing', function (): void {
-    $config = new CacheConfig(new FakeConfigRepository([]));
+    $config = new CacheConfig(new FakeConfigRepository([]), new ProjectPaths('/srv/app'));
 
     $config->driver();
 })->throws(ConfigNotFoundException::class);
 
 it('throws ConfigNotFoundException when path is missing', function (): void {
-    $config = new CacheConfig(new FakeConfigRepository([]));
+    $config = new CacheConfig(new FakeConfigRepository([]), new ProjectPaths('/srv/app'));
 
     $config->path();
 })->throws(ConfigNotFoundException::class);
 
 it('throws ConfigNotFoundException when default_ttl is missing', function (): void {
-    $config = new CacheConfig(new FakeConfigRepository([]));
+    $config = new CacheConfig(new FakeConfigRepository([]), new ProjectPaths('/srv/app'));
 
     $config->defaultTtl();
 })->throws(ConfigNotFoundException::class);

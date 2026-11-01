@@ -14,6 +14,7 @@ use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\File\Driver\FileCacheDriver;
 use Marko\Cache\Signer\CacheValueSigner;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -23,11 +24,14 @@ use Marko\Testing\Fake\FakeConfigRepository;
 require $autoload;
 
 $driver = new FileCacheDriver(
-    new CacheConfig(new FakeConfigRepository([
-        'cache.path' => $cachePath,
-        'cache.default_ttl' => 3600,
-        'cache.driver' => 'file',
-    ])),
+    new CacheConfig(
+        new FakeConfigRepository([
+            'cache.path' => $cachePath,
+            'cache.default_ttl' => 3600,
+            'cache.driver' => 'file',
+        ]),
+        new ProjectPaths(),
+    ),
     new FakeClock(),
     new CacheValueSigner(new EncryptionConfig(new FakeConfigRepository([
         'encryption.key' => $signingKey,

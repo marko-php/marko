@@ -12,6 +12,7 @@ use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\Core\Exceptions\HttpExceptionInterface;
+use Marko\Core\Path\ProjectPaths;
 use Marko\RateLimiter\Contracts\RateLimitKeyResolverInterface;
 use Marko\Routing\Http\Request;
 use Marko\Testing\Fake\FakeClock;
@@ -27,11 +28,14 @@ function createLoginThrottle(
     ?CurrentRequest $currentRequest = null,
     array $overrides = [],
 ): LoginThrottle {
-    $cache = new ArrayCacheDriver(new CacheConfig(new FakeConfigRepository([
-        'cache.path' => sys_get_temp_dir(),
-        'cache.default_ttl' => 3600,
-        'cache.driver' => 'array',
-    ])), $clock, new CacheOperations());
+    $cache = new ArrayCacheDriver(new CacheConfig(
+        new FakeConfigRepository([
+            'cache.path' => sys_get_temp_dir(),
+            'cache.default_ttl' => 3600,
+            'cache.driver' => 'array',
+        ]),
+        new ProjectPaths(),
+    ), $clock, new CacheOperations());
 
     return new LoginThrottle(...[
         'cache' => $cache,

@@ -11,7 +11,7 @@ readonly class CacheConfig
 {
     public function __construct(
         private ConfigRepositoryInterface $config,
-        private ?ProjectPaths $paths = null,
+        private ProjectPaths $paths,
     ) {}
 
     public function driver(): string
@@ -25,13 +25,7 @@ readonly class CacheConfig
      */
     public function path(): string
     {
-        $path = $this->config->getString('cache.path');
-
-        if ($this->paths === null || str_starts_with($path, '/')) {
-            return $path;
-        }
-
-        return $this->paths->base . '/' . $path;
+        return $this->paths->resolve($this->config->getString('cache.path'));
     }
 
     public function defaultTtl(): int

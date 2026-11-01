@@ -166,13 +166,14 @@ The bundled drivers ([`marko/cache-array`](/docs/packages/cache-array/), [`marko
 use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 
 it('expires a cached value after its ttl', function (): void {
     $clock = new FakeClock('2026-01-01 12:00:00 UTC');
     $cache = new ArrayCacheDriver(
-        new CacheConfig(new FakeConfigRepository(['cache.default_ttl' => 3600])),
+        new CacheConfig(new FakeConfigRepository(['cache.default_ttl' => 3600]), new ProjectPaths()),
         $clock,
         new CacheOperations(),
     );

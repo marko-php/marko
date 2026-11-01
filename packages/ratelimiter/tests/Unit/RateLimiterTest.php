@@ -7,6 +7,7 @@ use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Exceptions\CacheException;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
+use Marko\Core\Path\ProjectPaths;
 use Marko\RateLimiter\Contracts\RateLimiterInterface;
 use Marko\RateLimiter\RateLimiter;
 use Marko\RateLimiter\RateLimitResult;
@@ -23,7 +24,7 @@ function createRateLimitCacheConfig(
         'cache.driver' => 'array',
     ]);
 
-    return new CacheConfig($config);
+    return new CacheConfig($config, new ProjectPaths());
 }
 
 function createRateLimitTestCache(

@@ -15,6 +15,7 @@ use Marko\Authentication\Tests\Fixtures\StatelessFakeGuard;
 use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
+use Marko\Core\Path\ProjectPaths;
 use Marko\RateLimiter\RateLimiter;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
@@ -54,11 +55,14 @@ class PasswordConfirmationMiddlewareHarness
             'authentication.password_confirmation.throttle.max_attempts' => 5,
             'authentication.password_confirmation.throttle.decay_seconds' => 60,
         ]));
-        $cache = new ArrayCacheDriver(new CacheConfig(new FakeConfigRepository([
-            'cache.path' => sys_get_temp_dir(),
-            'cache.default_ttl' => 3600,
-            'cache.driver' => 'array',
-        ])), $this->clock, new CacheOperations());
+        $cache = new ArrayCacheDriver(new CacheConfig(
+            new FakeConfigRepository([
+                'cache.path' => sys_get_temp_dir(),
+                'cache.default_ttl' => 3600,
+                'cache.driver' => 'array',
+            ]),
+            new ProjectPaths(),
+        ), $this->clock, new CacheOperations());
         $this->confirmation = new PasswordConfirmation(
             passwordVerifier: new PasswordVerifier($hasher),
             session: $this->session,

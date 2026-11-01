@@ -24,6 +24,7 @@ use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\Core\Container\Container;
+use Marko\Core\Path\ProjectPaths;
 use Marko\RateLimiter\RateLimiter;
 use Marko\Testing\Fake\FakeAuthenticatable;
 use Marko\Testing\Fake\FakeClock;
@@ -85,11 +86,14 @@ class PasswordResetHarness
             'authentication.password_reset.throttle_seconds' => 60,
             ...$this->config,
         ]));
-        $cache = new ArrayCacheDriver(new CacheConfig(new FakeConfigRepository([
-            'cache.path' => sys_get_temp_dir(),
-            'cache.default_ttl' => 3600,
-            'cache.driver' => 'array',
-        ])), $this->clock, new CacheOperations());
+        $cache = new ArrayCacheDriver(new CacheConfig(
+            new FakeConfigRepository([
+                'cache.path' => sys_get_temp_dir(),
+                'cache.default_ttl' => 3600,
+                'cache.driver' => 'array',
+            ]),
+            new ProjectPaths(),
+        ), $this->clock, new CacheOperations());
 
         return new PasswordResetBroker(
             authConfig: $authConfig,

@@ -8,6 +8,7 @@ use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Sse\Exceptions\SseException;
 use Marko\Sse\SseConnectionLimiter;
 use Marko\Sse\Tests\Support\RecordingCache;
@@ -72,7 +73,7 @@ describe('SseConnectionLimiter', function (): void {
         expect(
             fn () => new SseConnectionLimiter(
                 cache: new ArrayCacheDriver(
-                    new CacheConfig(new FakeConfigRepository()),
+                    new CacheConfig(new FakeConfigRepository(), new ProjectPaths()),
                     new FakeClock(),
                     new CacheOperations(),
                 ),
@@ -86,7 +87,7 @@ describe('SseConnectionLimiter', function (): void {
     it('allows the array cache driver when the guard is disabled', function (): void {
         $limiter = new SseConnectionLimiter(
             cache: new ArrayCacheDriver(
-                new CacheConfig(new FakeConfigRepository()),
+                new CacheConfig(new FakeConfigRepository(), new ProjectPaths()),
                 new FakeClock(),
                 new CacheOperations(),
             ),

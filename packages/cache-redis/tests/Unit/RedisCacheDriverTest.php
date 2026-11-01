@@ -11,6 +11,7 @@ use Marko\Cache\Exceptions\TamperedCacheValueException;
 use Marko\Cache\Redis\Config\RedisCacheConfig;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
 use Marko\Cache\Signer\CacheValueSigner;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Redis\RedisConnectionFactoryInterface;
 use Marko\Redis\RedisConnectionInterface;
@@ -302,11 +303,14 @@ function createMockClient(): MockRedisClient
 function createCacheConfig(
     int $defaultTtl = 3600,
 ): CacheConfig {
-    return new CacheConfig(new FakeConfigRepository([
-        'cache.path' => '/tmp/cache',
-        'cache.default_ttl' => $defaultTtl,
-        'cache.driver' => 'redis',
-    ]));
+    return new CacheConfig(
+        new FakeConfigRepository([
+            'cache.path' => '/tmp/cache',
+            'cache.default_ttl' => $defaultTtl,
+            'cache.driver' => 'redis',
+        ]),
+        new ProjectPaths(),
+    );
 }
 
 function createSigner(
