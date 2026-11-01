@@ -85,7 +85,7 @@ marko queue:work
 
 The `jobs.attempts` column is the authoritative attempt count. Every reservation increments it, so it counts attempts that were *started*:
 
-- **A job that throws** is released by the worker. `release()` rewrites the stored payload with the current attempt count. The job is retried until it has been attempted `maxAttempts` times, then moved to `failed_jobs` and deleted from `jobs`.
+- **A job that throws** is released by the worker. `release()` stores the job the worker hands back in place of the payload it was reserved with, so its attempt count, exception count and retry deadline survive the retry. The job is retried until it has been attempted `maxAttempts` times, then moved to `failed_jobs` and deleted from `jobs`.
 - **A job whose worker dies** (fatal error, OOM, `SIGKILL`) is never released. Once its reservation is older than `queue.retry_after`, the next `pop()` reclaims it, and the lost run still counts as an attempt. If the reclaimed job has already used all its attempts, `pop()` moves it to `failed_jobs` with the message "exceeded max attempts after worker crash or timeout" and moves on to the next job. A job that always crashes its worker can't loop forever.
 
 `marko queue:retry` resets the attempt count, so a retried job gets its full `maxAttempts` again.
@@ -186,13 +186,13 @@ The module factory passes the container's bound clock and `DatabaseTimezoneConfi
 
 | Method | Description |
 |---|---|
-| `push(JobInterface $job, ?string $queue = null): string` | Insert a job for immediate processing. Returns the job ID. |
-| `later(int $delay, JobInterface $job, ?string $queue = null): string` | Insert a job with a delay in seconds. Returns the job ID. |
+| `push(JobInterface $job, ?string $queue = null): PushResult` | Insert a job for immediate processing. Returns a pushed `PushResult` with the job ID. |
+| `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Insert a job with a delay in seconds. Returns a pushed `PushResult` with the job ID. |
 | `pop(?string $queue = null): ?JobInterface` | Retrieve and reserve the next available job, or `null` if empty. Increments the `attempts` column, syncs the job's attempt count with earlier unreleased reservations, and moves crash-exhausted jobs to `failed_jobs`. Runs in a transaction (a savepoint inside a caller's transaction). Throws `LockException` on a connection without transactions. |
 | `size(?string $queue = null): int` | Count pending (unreserved, available) jobs. |
 | `clear(?string $queue = null): int` | Delete all jobs in a queue. Returns the number of deleted rows. |
 | `delete(string $jobId): bool` | Delete a specific job by ID. |
-| `release(string $jobId, int $delay = 0): bool` | Release a reserved job back to the queue with an optional delay. Rewrites the payload with the persisted attempt count. |
+| `release(JobInterface $job, int $delay = 0): bool` | Release a reserved job back to the queue with an optional delay. Stores the given job (attempts, exceptions, retry deadline) as the new payload and its attempts in the `attempts` column. Returns `false` when no row has the job's ID. |
 
 ### DatabaseFailedJobRepository
 

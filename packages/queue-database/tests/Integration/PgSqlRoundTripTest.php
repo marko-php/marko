@@ -20,6 +20,7 @@ use Marko\Queue\Database\Tests\Fixtures\PrivateStateJob;
 use Marko\Queue\Database\Tests\Fixtures\QueueTables;
 use Marko\Queue\FailedJob;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobRunner;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
@@ -99,6 +100,7 @@ function pgsqlEnvelope(): JobEnvelope
 function pgsqlQueue(
     PgSqlConnection $connection,
     FakeClock $clock = new FakeClock(),
+    int $maxAttempts = 1,
 ): DatabaseQueue {
     return new DatabaseQueue(
         connection: $connection,
@@ -107,7 +109,7 @@ function pgsqlQueue(
         queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
         clock: $clock,
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
-        maxAttempts: 1,
+        maxAttempts: $maxAttempts,
     );
 }
 
@@ -162,6 +164,36 @@ describe('database queue on PostgreSQL', function (): void {
         },
     );
 
+    it(
+        'keeps attempts, exceptions and the retry deadline of a released job across the retry on PostgreSQL',
+        function (): void {
+            ['connection' => $connection, 'skipReason' => $skipReason] = pgsqlQueueConnection();
+
+            if ($connection === null) {
+                $this->markTestSkipped($skipReason);
+            }
+
+            $queue = pgsqlQueue($connection, maxAttempts: 3);
+            $id = $queue->push(new PrivateStateJob('secret', 'shared'))->id;
+
+            $job = $queue->pop();
+            $job->incrementAttempts();
+            $job->incrementExceptions();
+            $job->setRetryDeadline(new DateTimeImmutable('2026-11-01T06:00:00Z'));
+            $released = $queue->release($job, 0);
+
+            /** @var PrivateStateJob $retried */
+            $retried = $queue->pop();
+
+            expect($released)->toBeTrue()
+                ->and($retried->id)->toBe($id)
+                ->and($retried->attempts)->toBe(1)
+                ->and($retried->exceptions)->toBe(1)
+                ->and($retried->retryDeadline?->format(DATE_ATOM))->toBe('2026-11-01T06:00:00+00:00')
+                ->and($retried->secret())->toBe('secret');
+        },
+    );
+
     it('round-trips a failed job through failed_jobs and queue:retry on PostgreSQL', function (): void {
         ['connection' => $connection, 'skipReason' => $skipReason] = pgsqlQueueConnection();
 
@@ -171,7 +203,7 @@ describe('database queue on PostgreSQL', function (): void {
 
         $queue = pgsqlQueue($connection);
         $failedJobRepository = new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC'));
-        $id = $queue->push(new PrivateStateJob('secret', 'shared', fail: true));
+        $id = $queue->push(new PrivateStateJob('secret', 'shared', fail: true))->id;
 
         $worker = new Worker(
             $queue,
@@ -181,7 +213,7 @@ describe('database queue on PostgreSQL', function (): void {
                 'queue.max_attempts' => 1,
             ])),
             pgsqlEnvelope(),
-            new Container(),
+            new JobRunner(new Container(), pgsqlEnvelope()),
             new FakeClock(),
         );
         $worker->work(once: true);
@@ -210,8 +242,8 @@ describe('database queue on PostgreSQL', function (): void {
         }
 
         ['connection' => $workerB] = pgsqlQueueConnection(migrate: false);
-        $first = pgsqlQueue($workerA)->push(new PrivateStateJob('first', 'shared'));
-        $second = pgsqlQueue($workerA)->push(new PrivateStateJob('second', 'shared'));
+        $first = pgsqlQueue($workerA)->push(new PrivateStateJob('first', 'shared'))->id;
+        $second = pgsqlQueue($workerA)->push(new PrivateStateJob('second', 'shared'))->id;
 
         // Worker B fails fast instead of hanging if the SELECT ever waits on A's lock again.
         $workerB->execute("SET lock_timeout = '2s'");
@@ -310,7 +342,7 @@ describe('database queue timestamps on PostgreSQL with a non-UTC PHP default tim
         }
 
         $id = pgsqlQueue($connection, pgsqlZonedClock('2026-03-14T16:00:00Z', 'America/New_York'))
-            ->later(3600, new PrivateStateJob('secret', 'shared'));
+            ->later(3600, new PrivateStateJob('secret', 'shared'))->id;
 
         $early = pgsqlQueue($connection, pgsqlZonedClock('2026-03-14T16:59:59Z', 'UTC'))->pop();
         $due = pgsqlQueue($connection, pgsqlZonedClock('2026-03-14T17:00:00Z', 'UTC'))->pop();

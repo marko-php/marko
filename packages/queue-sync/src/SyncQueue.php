@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Marko\Queue\Sync;
 
-use Marko\Core\Container\ContainerInterface;
-use Marko\Queue\ContainerAwareJobInterface;
 use Marko\Queue\Exceptions\JobFailedException;
-use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
+use Marko\Queue\JobRunnerInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 use Random\RandomException;
 use Throwable;
@@ -16,13 +15,12 @@ use Throwable;
 readonly class SyncQueue implements QueueInterface
 {
     public function __construct(
-        private ContainerInterface $container,
-        private JobEnvelope $jobEnvelope,
+        private JobRunnerInterface $jobRunner,
     ) {}
 
     /**
-     * Run the job immediately. Container-aware jobs (such as AsyncObserverJob)
-     * get the container and job envelope first, exactly as the Worker gives them,
+     * Run the job immediately through the shared JobRunner, exactly as a worker runs one attempt:
+     * container-aware jobs (such as AsyncObserverJob) get the container and job envelope first
      * and release them once handle() returns or throws.
      *
      * @throws JobFailedException|RandomException
@@ -30,27 +28,17 @@ readonly class SyncQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         $id = bin2hex(random_bytes(16));
         $job->setId($id);
-        $job->incrementAttempts();
-
-        if ($job instanceof ContainerAwareJobInterface) {
-            $job->setContainer($this->container);
-            $job->setJobEnvelope($this->jobEnvelope);
-        }
 
         try {
-            $job->handle();
+            $this->jobRunner->run($job);
         } catch (Throwable $e) {
             throw JobFailedException::fromException($job::class, $e);
-        } finally {
-            if ($job instanceof ContainerAwareJobInterface) {
-                $job->releaseContainer();
-            }
         }
 
-        return $id;
+        return PushResult::pushed($id);
     }
 
     /**
@@ -60,7 +48,7 @@ readonly class SyncQueue implements QueueInterface
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         return $this->push($job, $queue);
     }
 
@@ -89,7 +77,7 @@ readonly class SyncQueue implements QueueInterface
     }
 
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
         return true;

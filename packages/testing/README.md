@@ -278,7 +278,7 @@ KnownDriversValidator::assertSkeletonSuggestContainsAll(
 
 ### FakeQueue
 
-- `push($job): void` — Record a pushed job
+- `push($job): PushResult` — Record a pushed job and return a pushed `PushResult` with its ID
 - `assertPushed(string $class): void` — Assert a job was pushed
 - `assertNotPushed(string $class): void` — Assert a job was not pushed
 - `assertPushedCount(string $class, int $count): void` — Assert exact pushed count

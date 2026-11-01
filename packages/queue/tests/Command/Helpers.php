@@ -8,6 +8,7 @@ use Marko\Core\Command\Output;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 
 /**
@@ -82,18 +83,18 @@ class StubQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         $this->pushedJobs[] = ['job' => $job, 'queue' => $queue];
 
-        return 'new-job-id';
+        return PushResult::pushed('new-job-id');
     }
 
     public function later(
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'delayed-job-id';
+    ): PushResult {
+        return PushResult::pushed('delayed-job-id');
     }
 
     public function pop(
@@ -121,7 +122,7 @@ class StubQueue implements QueueInterface
     }
 
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
         return true;

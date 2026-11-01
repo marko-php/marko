@@ -8,6 +8,7 @@ use Exception;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Rabbitmq\Exceptions\RabbitmqException;
 use Marko\Queue\Rabbitmq\Exchange\ExchangeConfig;
@@ -33,9 +34,6 @@ class RabbitmqQueue implements QueueInterface
     private array $deliveryTags = [];
 
     /** @var array<string, string> */
-    private array $messagePayloads = [];
-
-    /** @var array<string, string> */
     private array $queueNames = [];
 
     private bool $confirmsEnabled = false;
@@ -55,7 +53,7 @@ class RabbitmqQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         $this->declare($queue);
 
         $id = $this->generateId();
@@ -77,7 +75,7 @@ class RabbitmqQueue implements QueueInterface
             $this->resolveRoutingKey($queueName),
         );
 
-        return $id;
+        return PushResult::pushed($id);
     }
 
     /**
@@ -87,7 +85,7 @@ class RabbitmqQueue implements QueueInterface
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         $this->declare($queue);
 
         $queueName = $queue ?? $this->defaultQueue;
@@ -118,7 +116,7 @@ class RabbitmqQueue implements QueueInterface
 
         $channel->basic_publish($message, '', $delayQueue);
 
-        return $id;
+        return PushResult::pushed($id);
     }
 
     /**
@@ -149,7 +147,6 @@ class RabbitmqQueue implements QueueInterface
             }
 
             $this->deliveryTags[$jobId] = $message->getDeliveryTag();
-            $this->messagePayloads[$jobId] = $message->getBody();
             $this->queueNames[$jobId] = $queueName;
 
             return $job;
@@ -206,7 +203,8 @@ class RabbitmqQueue implements QueueInterface
     }
 
     /**
-     * Republish the job with its attempt count incremented, then acknowledge the original message.
+     * Republish the given job (its attempts, exceptions and other state as the worker left them),
+     * then acknowledge the original message.
      *
      * The retry is published first and confirmed by the broker (publisher confirms) before the
      * original is acked, so a failed publish or a crash in between can duplicate the job but never
@@ -215,10 +213,12 @@ class RabbitmqQueue implements QueueInterface
      * @throws Exception
      */
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
-        if (!isset($this->deliveryTags[$jobId])) {
+        $jobId = $job->id;
+
+        if ($jobId === null || !isset($this->deliveryTags[$jobId])) {
             return false;
         }
 
@@ -226,9 +226,6 @@ class RabbitmqQueue implements QueueInterface
         $channel = $this->connection->channel();
         $queueName = $this->queueNames[$jobId];
 
-        /** @var JobInterface $job */
-        $job = unserialize($this->jobEnvelope->verifyAndUnwrap($this->messagePayloads[$jobId]));
-        $job->incrementAttempts();
         $updatedBody = $this->jobEnvelope->wrap($job->serialize());
 
         $this->enableConfirms($channel);
@@ -387,7 +384,7 @@ class RabbitmqQueue implements QueueInterface
     private function forget(
         string $jobId,
     ): void {
-        unset($this->deliveryTags[$jobId], $this->messagePayloads[$jobId], $this->queueNames[$jobId]);
+        unset($this->deliveryTags[$jobId], $this->queueNames[$jobId]);
     }
 
     /**

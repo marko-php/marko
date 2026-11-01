@@ -8,6 +8,7 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Queue\Command\QueueClearCommand;
 use Marko\Queue\JobInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 
 /**
@@ -29,16 +30,16 @@ function createQueueStub(
         public function push(
             JobInterface $job,
             ?string $queue = null,
-        ): string {
-            return 'job-id';
+        ): PushResult {
+            return PushResult::pushed('job-id');
         }
 
         public function later(
             int $delay,
             JobInterface $job,
             ?string $queue = null,
-        ): string {
-            return 'job-id';
+        ): PushResult {
+            return PushResult::pushed('job-id');
         }
 
         public function pop(
@@ -69,7 +70,7 @@ function createQueueStub(
         }
 
         public function release(
-            string $jobId,
+            JobInterface $job,
             int $delay = 0,
         ): bool {
             return true;

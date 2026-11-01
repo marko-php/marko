@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Queue\Job;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 use Marko\Testing\Exceptions\AssertionFailedException;
 use Marko\Testing\Fake\FakeQueue;
@@ -20,13 +21,15 @@ it('captures pushed jobs with queue name', function () {
         public function handle(): void {}
     };
 
-    $id = $queue->push($job, 'default');
+    $result = $queue->push($job, 'default');
 
-    expect($queue->pushed)->toHaveCount(1)
+    expect($result)->toBeInstanceOf(PushResult::class)
+        ->and($result->pushed)->toBeTrue()
+        ->and($queue->pushed)->toHaveCount(1)
         ->and($queue->pushed[0]['job'])->toBe($job)
         ->and($queue->pushed[0]['queue'])->toBe('default')
         ->and($queue->pushed[0]['delay'])->toBe(0)
-        ->and($queue->pushed[0]['id'])->toBe($id);
+        ->and($queue->pushed[0]['id'])->toBe($result->id);
 });
 
 it('captures delayed jobs with delay and queue name', function () {
@@ -36,13 +39,43 @@ it('captures delayed jobs with delay and queue name', function () {
         public function handle(): void {}
     };
 
-    $id = $queue->later(60, $job, 'deferred');
+    $result = $queue->later(60, $job, 'deferred');
 
-    expect($queue->pushed)->toHaveCount(1)
+    expect($result->pushed)->toBeTrue()
+        ->and($queue->pushed)->toHaveCount(1)
         ->and($queue->pushed[0]['job'])->toBe($job)
         ->and($queue->pushed[0]['queue'])->toBe('deferred')
         ->and($queue->pushed[0]['delay'])->toBe(60)
-        ->and($queue->pushed[0]['id'])->toBe($id);
+        ->and($queue->pushed[0]['id'])->toBe($result->id);
+});
+
+it('stores the released job with its current state and the new delay', function () {
+    $queue = new FakeQueue();
+    $job = new class () extends Job
+    {
+        public function handle(): void {}
+    };
+    $queue->push($job, 'default');
+    $job->incrementAttempts();
+    $job->incrementExceptions();
+
+    $released = $queue->release($job, 30);
+
+    expect($released)->toBeTrue()
+        ->and($queue->pushed[0]['job'])->toBe($job)
+        ->and($queue->pushed[0]['job']->attempts)->toBe(1)
+        ->and($queue->pushed[0]['job']->exceptions)->toBe(1)
+        ->and($queue->pushed[0]['delay'])->toBe(30);
+});
+
+it('returns false when releasing a job it does not hold', function () {
+    $job = new class () extends Job
+    {
+        public function handle(): void {}
+    };
+    $job->setId('unknown');
+
+    expect(new FakeQueue()->release($job))->toBeFalse();
 });
 
 it('pops jobs in FIFO order', function () {
@@ -131,7 +164,7 @@ it('deletes a specific job by ID', function () {
         public function handle(): void {}
     };
 
-    $id1 = $queue->push($job1, 'default');
+    $id1 = $queue->push($job1, 'default')->id;
     $queue->push($job2, 'default');
 
     $deleted = $queue->delete($id1);

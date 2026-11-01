@@ -128,6 +128,42 @@ describe('database queue tables on MySQL', function (): void {
     });
 })->group('integration-services');
 
+describe('database queue release on MySQL', function (): void {
+    it(
+        'keeps attempts, exceptions and the retry deadline of a released job across the retry on MySQL',
+        function (): void {
+            ['connection' => $connection, 'skipReason' => $skipReason] = mysqlQueueConnection();
+
+            if ($connection === null) {
+                $this->markTestSkipped($skipReason);
+            }
+
+            try {
+                $queue = mysqlQueue($connection, '2026-10-31T12:00:00Z', 'UTC');
+                $id = $queue->push(new PrivateStateJob('secret', 'shared'))->id;
+
+                $job = $queue->pop();
+                $job->incrementAttempts();
+                $job->incrementExceptions();
+                $job->setRetryDeadline(new DateTimeImmutable('2026-11-01T06:00:00Z'));
+                $released = $queue->release($job, 0);
+
+                /** @var PrivateStateJob $retried */
+                $retried = $queue->pop();
+            } finally {
+                $connection->disconnect();
+            }
+
+            expect($released)->toBeTrue()
+                ->and($retried->id)->toBe($id)
+                ->and($retried->attempts)->toBe(1)
+                ->and($retried->exceptions)->toBe(1)
+                ->and($retried->retryDeadline?->format(DATE_ATOM))->toBe('2026-11-01T06:00:00+00:00')
+                ->and($retried->secret())->toBe('secret');
+        },
+    );
+});
+
 describe('database queue timestamps on MySQL with a non-UTC PHP default timezone', function (): void {
     beforeEach(function (): void {
         $this->previousTimezone = date_default_timezone_get();
@@ -147,7 +183,7 @@ describe('database queue timestamps on MySQL with a non-UTC PHP default timezone
 
         try {
             $id = mysqlQueue($connection, '2026-03-14T16:00:00Z', 'America/New_York')
-                ->later(3600, new PrivateStateJob('secret', 'shared'));
+                ->later(3600, new PrivateStateJob('secret', 'shared'))->id;
 
             $early = mysqlQueue($connection, '2026-03-14T16:59:59Z', 'UTC')->pop();
             $due = mysqlQueue($connection, '2026-03-14T17:00:00Z', 'UTC')->pop();

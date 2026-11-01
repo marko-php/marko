@@ -73,4 +73,26 @@ class QueueException extends MarkoException
                 . ' (seconds per attempt; the last value repeats), or null (2^attempts * 10 seconds).',
         );
     }
+
+    public static function invalidReleaseDelay(
+        string $jobClass,
+        int $delaySeconds,
+    ): self {
+        return new self(
+            message: "Invalid release delay for job $jobClass.",
+            context: "release() was called with $delaySeconds seconds; the delay cannot be negative.",
+            suggestion: 'Pass 0 to release the job for an immediate retry, or a positive number of seconds.',
+        );
+    }
+
+    public static function invalidPushResult(
+        string $reason,
+    ): self {
+        return new self(
+            message: 'Invalid push result.',
+            context: $reason,
+            suggestion: 'Use PushResult::pushed($id) for a queued job or PushResult::skipped($reason)'
+                . ' for a job that was not queued.',
+        );
+    }
 }

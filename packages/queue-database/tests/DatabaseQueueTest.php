@@ -99,7 +99,7 @@ test('DatabaseQueue push returns job ID', function () {
     $job = new TestJob('test message');
 
     $queue = createTestQueue($connection);
-    $id = $queue->push($job);
+    $id = $queue->push($job)->id;
 
     expect($id)->toBeString()
         ->toMatch('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/')
@@ -126,7 +126,7 @@ test('DatabaseQueue later stores job with future available_at', function () {
     $job = new TestJob('delayed job');
 
     $queue = createTestQueue($connection, clock: new FakeClock('2026-10-05 12:00:00'));
-    $id = $queue->later(60, $job);
+    $id = $queue->later(60, $job)->id;
 
     expect($id)->toBeString()
         ->and($capturedBindings['available_at'])->toBe('2026-10-05 12:01:00')
@@ -277,10 +277,6 @@ test('DatabaseQueue delete returns false when job not found', function () {
 test('DatabaseQueue release updates job availability', function () {
     $connection = $this->createMock(ConnectionInterface::class);
 
-    $connection->method('query')->willReturn([
-        ['payload' => createTestEnvelope()->wrap(new TestJob()->serialize()), 'attempts' => 1],
-    ]);
-
     $capturedBindings = [];
     $connection->expects($this->once())
         ->method('execute')
@@ -298,8 +294,11 @@ test('DatabaseQueue release updates job availability', function () {
         )
         ->willReturn(1);
 
+    $job = new TestJob();
+    $job->setId('job-123');
+
     $queue = createTestQueue($connection, clock: new FakeClock('2026-10-05 12:00:00'));
-    $released = $queue->release('job-123', 30);
+    $released = $queue->release($job, 30);
 
     expect($released)->toBeTrue()
         ->and($capturedBindings['available_at'])->toBe('2026-10-05 12:00:30');
@@ -307,10 +306,6 @@ test('DatabaseQueue release updates job availability', function () {
 
 test('DatabaseQueue release with zero delay makes job immediately available', function () {
     $connection = $this->createMock(ConnectionInterface::class);
-
-    $connection->method('query')->willReturn([
-        ['payload' => createTestEnvelope()->wrap(new TestJob()->serialize()), 'attempts' => 1],
-    ]);
 
     $capturedBindings = [];
     $connection->expects($this->once())
@@ -325,8 +320,11 @@ test('DatabaseQueue release with zero delay makes job immediately available', fu
         )
         ->willReturn(1);
 
+    $job = new TestJob();
+    $job->setId('job-123');
+
     $queue = createTestQueue($connection, clock: new FakeClock('2026-10-05 12:00:00'));
-    $released = $queue->release('job-123');
+    $released = $queue->release($job);
 
     expect($released)->toBeTrue()
         ->and($capturedBindings['available_at'])->toBe('2026-10-05 12:00:00');
@@ -335,14 +333,28 @@ test('DatabaseQueue release with zero delay makes job immediately available', fu
 test('DatabaseQueue release returns false when job not found', function () {
     $connection = $this->createMock(ConnectionInterface::class);
 
-    $connection->method('query')->willReturn([]);
+    $connection->expects($this->once())
+        ->method('execute')
+        ->willReturn(0);
+
+    $job = new TestJob();
+    $job->setId('nonexistent-job');
+
+    $queue = createTestQueue($connection);
+    $released = $queue->release($job);
+
+    expect($released)->toBeFalse();
+});
+
+test('DatabaseQueue release returns false for a job that was never queued', function () {
+    $connection = $this->createMock(ConnectionInterface::class);
+
     $connection->expects($this->never())
         ->method('execute');
 
     $queue = createTestQueue($connection);
-    $released = $queue->release('nonexistent-job');
 
-    expect($released)->toBeFalse();
+    expect($queue->release(new TestJob()))->toBeFalse();
 });
 
 test('DatabaseQueue uses transactions for pop', function () {
@@ -670,7 +682,7 @@ it(
         $connection = SqliteConnection::withQueueTables();
         $clock = new FakeClock('2026-10-05 12:00:00');
         $queue = createTestQueue($connection, retryAfter: 90, clock: $clock);
-        $id = $queue->push(new TestJob('reclaim test'));
+        $id = $queue->push(new TestJob('reclaim test'))->id;
         $queue->pop();
         $clock->travel('+91 seconds');
 
@@ -774,7 +786,7 @@ test('it round-trips a legitimate job through DatabaseQueue push and pop', funct
     $queue = createTestQueue(SqliteConnection::withQueueTables());
 
     $job = new TestJob('round-trip message');
-    $pushedId = $queue->push($job);
+    $pushedId = $queue->push($job)->id;
 
     /** @var TestJob $poppedJob */
     $poppedJob = $queue->pop();
@@ -789,7 +801,7 @@ describe('DatabaseQueue clock', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $queue = createTestQueue($connection, clock: new FakeClock('2026-10-05 12:00:00'));
 
-        $id = $queue->later(120, new TestJob('timed'));
+        $id = $queue->later(120, new TestJob('timed'))->id;
         $row = $connection->query('SELECT available_at, created_at FROM jobs WHERE id = :id', ['id' => $id])[0];
 
         expect($row['available_at'])->toBe('2026-10-05 12:02:00')
@@ -800,7 +812,7 @@ describe('DatabaseQueue clock', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $clock = new FakeClock('2026-10-05 12:00:00');
         $queue = createTestQueue($connection, clock: $clock);
-        $id = $queue->later(60, new TestJob('delayed'));
+        $id = $queue->later(60, new TestJob('delayed'))->id;
 
         $clock->travel('+59 seconds');
         $beforeAvailable = $queue->pop();
@@ -815,7 +827,7 @@ describe('DatabaseQueue clock', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $clock = new FakeClock('2026-10-05 12:00:00');
         $queue = createTestQueue($connection, retryAfter: 30, clock: $clock);
-        $id = $queue->push(new TestJob('stuck'));
+        $id = $queue->push(new TestJob('stuck'))->id;
         $queue->pop();
 
         $clock->travel('+29 seconds');
@@ -845,11 +857,11 @@ describe('DatabaseQueue clock', function (): void {
         $connection = SqliteConnection::withQueueTables();
         $clock = new FakeClock('2026-10-05 12:00:00');
         $queue = createTestQueue($connection, clock: $clock);
-        $id = $queue->push(new TestJob('retry me'));
-        $queue->pop();
+        $id = $queue->push(new TestJob('retry me'))->id;
+        $job = $queue->pop();
         $clock->travel('+10 seconds');
 
-        $queue->release($id, 45);
+        $queue->release($job, 45);
         $row = $connection->query('SELECT available_at, reserved_at FROM jobs WHERE id = :id', ['id' => $id])[0];
 
         expect($row['available_at'])->toBe('2026-10-05 12:00:55')
@@ -867,7 +879,7 @@ describe('DatabaseQueue clock', function (): void {
             maxAttempts: 1,
             failedJobRepository: $failed,
         );
-        $id = $queue->push(new TestJob('crashes its worker'));
+        $id = $queue->push(new TestJob('crashes its worker'))->id;
         $queue->pop();
         $clock->travel('+31 seconds');
 

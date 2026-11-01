@@ -15,6 +15,7 @@ use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 use Psr\Clock\ClockInterface;
 use Random\RandomException;
@@ -30,8 +31,9 @@ use Random\RandomException;
  *
  * - pop() hands the worker a job whose attempts equal the reservations made
  *   before this one. The worker then increments it for the current run.
- * - release() rewrites the payload with the column value, so the count
- *   survives the round trip through the table.
+ * - release() stores the job the worker hands back, whose attempts the worker
+ *   has already incremented to the column value, so the count and every other
+ *   piece of per-job state (exceptions, retry deadline) survive the round trip.
  * - A popped job whose earlier reservations already reach its max attempts
  *   (job maxAttempts, or the queue default) is moved to the failed-job store
  *   instead of being returned, so a job that always crashes its worker cannot
@@ -72,8 +74,8 @@ readonly class DatabaseQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return $this->insertJob($job, $queue, 0);
+    ): PushResult {
+        return PushResult::pushed($this->insertJob($job, $queue, 0));
     }
 
     /**
@@ -83,8 +85,8 @@ readonly class DatabaseQueue implements QueueInterface
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return $this->insertJob($job, $queue, $delay);
+    ): PushResult {
+        return PushResult::pushed($this->insertJob($job, $queue, $delay));
     }
 
     /**
@@ -317,29 +319,20 @@ readonly class DatabaseQueue implements QueueInterface
     }
 
     /**
-     * Release a reserved job back to the queue, persisting its attempt count in the payload.
+     * Release a reserved job back to the queue, storing the given job (attempts, exceptions, retry deadline)
+     * in place of the payload it was reserved with.
      *
      * @throws SerializationException
      */
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
-        $rows = $this->connection->query(
-            "SELECT payload, attempts FROM {$this->table()} WHERE id = :id",
-            [
-                'id' => $jobId,
-            ],
-        );
-
-        if ($rows === []) {
+        if ($job->id === null) {
             return false;
         }
 
-        $job = $this->unwrapJob($rows[0]['payload'], (int) $rows[0]['attempts']);
-
-        $now = $this->clock->now();
-        $availableAt = $this->secondsAfter($now, $delay);
+        $availableAt = $this->secondsAfter($this->clock->now(), $delay);
 
         $affectedRows = $this->connection->execute(
             "UPDATE {$this->table()} SET payload = :payload, attempts = :attempts, reserved_at = :reserved_at, available_at = :available_at WHERE id = :id",
@@ -348,7 +341,7 @@ readonly class DatabaseQueue implements QueueInterface
                 'attempts' => $job->attempts,
                 'reserved_at' => null,
                 'available_at' => $this->databaseTimezoneConfig->format($availableAt),
-                'id' => $jobId,
+                'id' => $job->id,
             ],
         );
 

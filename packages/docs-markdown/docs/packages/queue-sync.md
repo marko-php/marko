@@ -48,7 +48,7 @@ public function process(): void
 
 ### Container-Aware Jobs and Async Observers
 
-`SyncQueue` is constructed with the container and the `JobEnvelope`, and the container autowires both. Before a job that implements `ContainerAwareJobInterface` runs, `SyncQueue` calls `setContainer()` and `setJobEnvelope()` on it, just as the worker does, and calls `releaseContainer()` once `handle()` returns or throws. This is how `#[Observer(async: true)]` observers run under the sync driver. The observer is queued as an `AsyncObserverJob`, and `push()` runs it straight away against a copy of the event unwrapped from the signed envelope. If the observer throws, `dispatch()` throws a `JobFailedException`.
+`SyncQueue` is constructed with the `JobRunnerInterface` from [`marko/queue`](/docs/packages/queue/#running-one-attempt), which the container autowires. It runs each job through that runner, exactly as the worker does: the attempt is counted, a job that implements `ContainerAwareJobInterface` gets `setContainer()` and `setJobEnvelope()` before it runs and `releaseContainer()` once `handle()` returns or throws, and an exception is counted on the job before `JobFailedException` wraps it. This is how `#[Observer(async: true)]` observers run under the sync driver. The observer is queued as an `AsyncObserverJob`, and `push()` runs it straight away against a copy of the event unwrapped from the signed envelope. If the observer throws, `dispatch()` throws a `JobFailedException`.
 
 ### Failed Job Repository
 
@@ -73,14 +73,14 @@ Implements all methods from `QueueInterface`. See [marko/queue](/docs/packages/q
 
 | Method | Description |
 |---|---|
-| `__construct(ContainerInterface $container, JobEnvelope $jobEnvelope)` | Autowired. Both are passed to container-aware jobs before they run. |
-| `push(JobInterface $job, ?string $queue = null): string` | Execute the job immediately and return its ID. Container-aware jobs get the container and job envelope first, and release them afterwards. Throws `JobFailedException` on failure. |
-| `later(int $delay, JobInterface $job, ?string $queue = null): string` | Ignores the delay and executes immediately via `push()`. |
+| `__construct(JobRunnerInterface $jobRunner)` | Autowired. Every job runs through the runner. |
+| `push(JobInterface $job, ?string $queue = null): PushResult` | Execute the job immediately through the `JobRunner` and return a pushed `PushResult` with its ID. Container-aware jobs get the container and job envelope first, and release them afterwards. Throws `JobFailedException` on failure. |
+| `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Ignores the delay and executes immediately via `push()`. |
 | `pop(?string $queue = null): ?JobInterface` | Always returns `null` --- no jobs are ever queued. |
 | `size(?string $queue = null): int` | Always returns `0`. |
 | `clear(?string $queue = null): int` | Always returns `0`. |
 | `delete(string $jobId): bool` | Always returns `true`. |
-| `release(string $jobId, int $delay = 0): bool` | Always returns `true`. |
+| `release(JobInterface $job, int $delay = 0): bool` | Always returns `true`. |
 
 `module.php` binds `QueueInterface` straight to `SyncQueue`; there is no factory.
 

@@ -105,7 +105,7 @@ describe('DatabaseQueue database timezone', function (): void {
             $connection = SqliteConnection::withQueueTables();
             $clock = zonedClock('2026-11-01T05:59:00Z', 'America/New_York');
             $queue = zonedQueue($connection, $clock);
-            $id = $queue->push(new TestJob());
+            $id = $queue->push(new TestJob())->id;
 
             // Reserved at 01:59:00 EDT; the worker then crashes.
             $queue->pop();
@@ -142,11 +142,11 @@ describe('DatabaseQueue database timezone', function (): void {
         $queue = zonedQueue($connection, $clock);
 
         // 01:55 EDT, then 01:05 EST (seventy minutes later).
-        $first = $queue->push(new TestJob());
+        $first = $queue->push(new TestJob())->id;
         $clock->setNow(
             new DateTimeImmutable('2026-11-01T06:05:00Z')->setTimezone(new DateTimeZone('America/New_York')),
         );
-        $second = $queue->push(new TestJob());
+        $second = $queue->push(new TestJob())->id;
 
         expect($queue->pop()?->id)->toBe($first)
             ->and($queue->pop()?->id)->toBe($second);

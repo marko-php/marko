@@ -15,6 +15,8 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
+use Marko\Queue\JobRunner;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Worker;
@@ -251,16 +253,16 @@ final class SerializableWebhookJobTestHelpers
             public function push(
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'unused';
+            ): PushResult {
+                return PushResult::pushed('unused');
             }
 
             public function later(
                 int $delay,
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'unused';
+            ): PushResult {
+                return PushResult::pushed('unused');
             }
 
             public function pop(
@@ -290,7 +292,7 @@ final class SerializableWebhookJobTestHelpers
             }
 
             public function release(
-                string $jobId,
+                JobInterface $job,
                 int $delay = 0,
             ): bool {
                 return true;
@@ -330,7 +332,10 @@ describe('DispatchWebhookJob final failure', function (): void {
                 $failedRepository,
                 SerializableWebhookJobTestHelpers::queueConfig(),
                 SerializableWebhookJobTestHelpers::envelope(),
-                SerializableWebhookJobTestHelpers::unserializableFailingContainer(),
+                new JobRunner(
+                    SerializableWebhookJobTestHelpers::unserializableFailingContainer(),
+                    SerializableWebhookJobTestHelpers::envelope(),
+                ),
                 clock: new FakeClock(),
             );
             $stopJob->worker = $worker;
@@ -536,16 +541,16 @@ describe('DispatchWebhookJob serialization', function (): void {
                 public function push(
                     JobInterface $job,
                     ?string $queue = null,
-                ): string {
-                    return 'webhook-job-1';
+                ): PushResult {
+                    return PushResult::pushed('webhook-job-1');
                 }
 
                 public function later(
                     int $delay,
                     JobInterface $job,
                     ?string $queue = null,
-                ): string {
-                    return 'webhook-job-1';
+                ): PushResult {
+                    return PushResult::pushed('webhook-job-1');
                 }
 
                 public function pop(
@@ -578,7 +583,7 @@ describe('DispatchWebhookJob serialization', function (): void {
                 }
 
                 public function release(
-                    string $jobId,
+                    JobInterface $job,
                     int $delay = 0,
                 ): bool {
                     return true;
@@ -602,7 +607,7 @@ describe('DispatchWebhookJob serialization', function (): void {
                 $failedRepository,
                 $queueConfig,
                 $envelope,
-                $container,
+                new JobRunner($container, $envelope),
                 clock: new FakeClock(),
             );
             $worker->work(once: true);
@@ -640,16 +645,16 @@ describe('DispatchWebhookJob serialization', function (): void {
             public function push(
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'webhook-retry-job-1';
+            ): PushResult {
+                return PushResult::pushed('webhook-retry-job-1');
             }
 
             public function later(
                 int $delay,
                 JobInterface $job,
                 ?string $queue = null,
-            ): string {
-                return 'webhook-retry-job-1';
+            ): PushResult {
+                return PushResult::pushed('webhook-retry-job-1');
             }
 
             public function pop(
@@ -682,7 +687,7 @@ describe('DispatchWebhookJob serialization', function (): void {
             }
 
             public function release(
-                string $jobId,
+                JobInterface $job,
                 int $delay = 0,
             ): bool {
                 return true;
@@ -706,7 +711,7 @@ describe('DispatchWebhookJob serialization', function (): void {
             $failedRepository,
             $queueConfig,
             $envelope,
-            $container,
+            new JobRunner($container, $envelope),
             clock: new FakeClock(),
         );
         $worker->work(once: true);

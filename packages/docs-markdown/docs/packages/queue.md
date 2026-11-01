@@ -45,6 +45,16 @@ Releases before HKDF subkeys signed envelopes with the raw `encryption.key`, and
 
 Failed jobs stored by the old release also no longer verify, so `queue:retry` can't replay them. Retry or clear them before upgrading.
 
+#### Upgrading: per-job state, `PushResult` and `release(JobInterface)`
+
+This release changes the queue contracts once for the per-job features built on them:
+
+1. **Code that reads the return value of `push()` or `later()`** gets a [`PushResult`](#pushresult) instead of a string. Replace `$id = $queue->push($job);` with `$id = $queue->push($job)->id;`, and check `$result->pushed` where a skipped push matters. `WebhookQueue::push()` returns the `PushResult` too.
+2. **Code that calls `QueueInterface::release()`** passes the job instead of its ID: `$queue->release($job, $delay)`. The driver stores that job as it is, so pass the job you popped and ran, not a fresh copy.
+3. **Custom `QueueInterface` implementations** (drivers and test doubles) change `push()` and `later()` to return `PushResult` (`PushResult::pushed($id)`) and `release()` to take `JobInterface $job` and store it.
+4. **Jobs that implement `JobInterface` directly**, without extending `Job`, add the [per-job state](#per-job-state) properties and methods. Jobs that extend `Job` need no change, and jobs already queued by the old release unserialize with the new fields at their defaults.
+5. **Code that constructs `Worker` or `SyncQueue` by hand** passes a `JobRunnerInterface` in place of the container: `new Worker($queue, $failedJobs, $config, $envelope, new JobRunner($container, $envelope), $clock)` and `new SyncQueue(new JobRunner($container, $envelope))`. Containers that autowire them need no change.
+
 ## Usage
 
 ### Creating Jobs
@@ -85,7 +95,7 @@ class ImportProducts extends Job
 
 When a job fails and has remaining attempts, the worker releases it back to the queue after a backoff delay (see [Retry Backoff](#retry-backoff)). Once all attempts are exhausted, the job is stored in the failed job repository and removed from the queue.
 
-Attempts persist across releases: the driver stores the updated count with the job, so a job that always throws is attempted exactly `maxAttempts` times. Drivers that track reservations (such as [`marko/queue-database`](/docs/packages/queue-database/)) also count an attempt whose worker died mid-run, so a job that crashes its worker cannot be retried forever.
+Attempts persist across releases: the worker hands the job it ran back to `release()`, and the driver stores that job, not the payload it was popped from. Its attempt count, exception count, retry deadline and any other state the job holds survive the retry, so a job that always throws is attempted exactly `maxAttempts` times. Drivers that track reservations (such as [`marko/queue-database`](/docs/packages/queue-database/)) also count an attempt whose worker died mid-run, so a job that crashes its worker cannot be retried forever.
 
 ### Retry Backoff
 
@@ -126,6 +136,92 @@ A negative delay, an empty or keyed array, or a list with a negative or non-int 
 The failed job's payload keeps the `backoff` value it was dispatched with. `marko queue:retry <id>` runs it again with that same value: fine if it succeeds, but if it throws again it goes straight back to the failed jobs. After fixing the property, dispatch the job again so the new value applies.
 
 On a job's last attempt the backoff isn't read, so an invalid value there doesn't add a backoff error to the failed job. `Worker::backoffFor()` itself still throws `QueueException` for an invalid value.
+
+### Per-Job State
+
+Besides `maxAttempts` and `backoff`, every job carries this state. `Job` gives each one a default, so a job that extends it only overrides what it needs:
+
+| Member | Default on `Job` | Meaning |
+|--------|------------------|---------|
+| `?int $timeout` | `null` | Seconds one attempt of this job may run, or `null` for the worker's timeout. Override with `public protected(set) ?int $timeout = 120;` |
+| `?int $maxExceptions` | `null` | Attempts that may end in an exception before the job fails, or `null` for no exception limit. Override with `public protected(set) ?int $maxExceptions = 1;` |
+| `int $exceptions` | `0` | Attempts that ended in an exception, counted by `incrementExceptions()` |
+| `?DateTimeImmutable $retryDeadline` | `null` | The retry deadline captured when the job is dispatched, stored with `setRetryDeadline()`. It is not re-evaluated on later attempts |
+| `?int $releaseDelay` | `null` | Seconds to wait before running again, set when `handle()` calls `release()`. `clearRelease()` resets it to `null` |
+
+`release(int $delaySeconds = 0)` records a release request without throwing; a negative delay throws `QueueException`. `JobRunner` counts exceptions and clears a leftover release request at the start of each attempt. The worker does not act on `timeout`, `maxExceptions`, `retryDeadline` or `releaseDelay` yet: they are part of the contract so that drivers keep them across retries, ready for the queue features that read them.
+
+#### Implementing `JobInterface` Directly
+
+Extending `Job` is the recommended way to write a job. A class that implements `JobInterface` itself must declare every property and method of the interface (see [JobInterface](#jobinterface)), including the per-job state above:
+
+```php
+use DateTimeImmutable;
+use Marko\Queue\JobInterface;
+
+class CustomJob implements JobInterface
+{
+    public private(set) ?string $id = null;
+    public private(set) int $attempts = 0;
+    public private(set) ?int $maxAttempts = null;
+    public private(set) array|int|null $backoff = null;
+    public private(set) ?int $timeout = null;
+    public private(set) ?int $maxExceptions = null;
+    public private(set) int $exceptions = 0;
+    public private(set) ?DateTimeImmutable $retryDeadline = null;
+    public private(set) ?int $releaseDelay = null;
+
+    public function handle(): void
+    {
+        // ...
+    }
+
+    public function setId(string $id): void
+    {
+        $this->id = $id;
+    }
+
+    public function incrementAttempts(): void
+    {
+        $this->attempts++;
+    }
+
+    public function resetAttempts(): void
+    {
+        $this->attempts = 0;
+    }
+
+    public function incrementExceptions(): void
+    {
+        $this->exceptions++;
+    }
+
+    public function setRetryDeadline(DateTimeImmutable $deadline): void
+    {
+        $this->retryDeadline = $deadline;
+    }
+
+    public function release(int $delaySeconds = 0): void
+    {
+        $this->releaseDelay = $delaySeconds;
+    }
+
+    public function clearRelease(): void
+    {
+        $this->releaseDelay = null;
+    }
+
+    public function serialize(): string
+    {
+        return serialize($this);
+    }
+
+    public static function unserialize(string $data): static
+    {
+        return unserialize($data);
+    }
+}
+```
 
 ### Jobs That Need Container Services
 
@@ -168,7 +264,7 @@ class SendOrderEmail extends Job implements ContainerAwareJobInterface
 
 Store only scalar values (IDs, strings) in the job's constructor — resolve heavy services from the container in `handle()`. This avoids serializing objects that may not survive across queue backends.
 
-`releaseContainer()` must drop everything `setContainer()` and `setJobEnvelope()` stored, so the job holds only serializable data again. The worker calls it in a `finally` block around `handle()`, so it runs when the job succeeds and when it throws. That matters on the job's last attempt: the worker serializes the failed job into the failed-job store, and the container holds closures that cannot be serialized. Make `releaseContainer()` safe to call more than once, and before anything was injected.
+`releaseContainer()` must drop everything `setContainer()` and `setJobEnvelope()` stored, so the job holds only serializable data again. `JobRunner` (see [Running One Attempt](#running-one-attempt)) calls it in a `finally` block around `handle()`, so it runs when the job succeeds and when it throws. That matters on the job's last attempt: the worker serializes the failed job into the failed-job store, and the container holds closures that cannot be serialized. Make `releaseContainer()` safe to call more than once, and before anything was injected.
 
 ### When a Failed Job Cannot Be Serialized
 
@@ -179,6 +275,17 @@ If a job that has used up its attempts still can't be serialized (for example, i
 - The job is deleted from the queue, so the next worker doesn't pick it up again.
 
 `queue:retry` refuses a placeholder (and any payload that isn't a queue job): it prints why, leaves the row in the failed-job store, and returns exit code 1. Fix the job so it holds only serializable data, then dispatch it again.
+
+### Running One Attempt
+
+`JobRunnerInterface` (bound to `JobRunner`) runs one attempt of a job. The worker and the [sync driver](/docs/packages/queue-sync/) both run jobs through it, so the attempt lifecycle is written once:
+
+1. A `ContainerAwareJobInterface` job gets the container and the `JobEnvelope`.
+2. Any release request left over from an earlier attempt is cleared, and `attempts` is incremented.
+3. `handle()` runs. If it throws, `incrementExceptions()` is called and the exception is rethrown.
+4. A container-aware job's `releaseContainer()` runs, whether `handle()` returned or threw.
+
+`withContainer(JobInterface $job, callable $callback): mixed` does steps 1 and 4 around any callback and returns its result. Use it to call something else on a container-aware job with the container in place.
 
 ### Dispatching Jobs
 
@@ -204,6 +311,16 @@ readonly class RegistrationService
             new SendWelcomeEmail('user@example.com'),
         );
     }
+}
+```
+
+`push()` and `later()` return a `PushResult`. When the job was queued, `$result->pushed` is `true` and `$result->id` holds the job ID. When it was not, `$result->pushed` is `false`, `$result->id` is `null`, and `$result->skipReason` says why. The built-in drivers always queue the job. A `#[Before]` plugin on `push()` can return `PushResult::skipped('...')` to stop it:
+
+```php
+$result = $this->queue->push(new SendWelcomeEmail('user@example.com'));
+
+if ($result->pushed) {
+    $this->logger->info("Queued job $result->id");
 }
 ```
 
@@ -328,12 +445,13 @@ When an async observer fires, `QueueAsyncObserverDispatcher` serializes the even
 The worker reads the current time from the injected `Psr\Clock\ClockInterface` ([`marko/clock`](/docs/packages/clock/)) and stamps `FailedJob::$failedAt` with it, rather than calling `new DateTimeImmutable()`. In a test, pass a [`FakeClock`](/docs/packages/testing/#fakeclock) to freeze that time:
 
 ```php
+use Marko\Queue\JobRunner;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 
 it('records when a job failed', function (): void {
     $clock = new FakeClock('2026-03-01 09:15:00 UTC');
-    $worker = new Worker($queue, $failedJobs, $config, $envelope, $container, $clock);
+    $worker = new Worker($queue, $failedJobs, $config, $envelope, new JobRunner($container, $envelope), $clock);
 
     $worker->work(once: true);
 
@@ -399,15 +517,30 @@ class MyService
 ```php
 use Marko\Queue\QueueInterface;
 use Marko\Queue\JobInterface;
+use Marko\Queue\PushResult;
 
-public function push(JobInterface $job, ?string $queue = null): string;
-public function later(int $delay, JobInterface $job, ?string $queue = null): string;
+public function push(JobInterface $job, ?string $queue = null): PushResult;
+public function later(int $delay, JobInterface $job, ?string $queue = null): PushResult;
 public function pop(?string $queue = null): ?JobInterface;
 public function size(?string $queue = null): int;
 public function clear(?string $queue = null): int;
 public function delete(string $jobId): bool;
-public function release(string $jobId, int $delay = 0): bool;
+public function release(JobInterface $job, int $delay = 0): bool; // stores the given job; false when no reserved job has its id
 ```
+
+### PushResult
+
+```php
+use Marko\Queue\PushResult;
+
+public ?string $id;          // the job ID when pushed, null when skipped
+public bool $pushed;
+public ?string $skipReason;  // why the job was not queued, null when pushed
+public static function pushed(string $id): PushResult;
+public static function skipped(string $reason): PushResult;
+```
+
+A readonly value object. The constructor throws `QueueException` when the fields contradict each other (pushed without an ID, or skipped without a reason).
 
 ### JobInterface
 
@@ -418,13 +551,34 @@ public ?string $id { get; }
 public int $attempts { get; }
 public ?int $maxAttempts { get; } // null = use queue.max_attempts
 public array|int|null $backoff { get; } // int, list<int>, or null = use queue.backoff
+public ?int $timeout { get; } // null = use the worker's timeout
+public ?int $maxExceptions { get; } // null = no exception limit
+public int $exceptions { get; }
+public ?DateTimeImmutable $retryDeadline { get; }
+public ?int $releaseDelay { get; } // set by release(), null when no release was requested
 public function handle(): void;
 public function setId(string $id): void;
 public function incrementAttempts(): void;
 public function resetAttempts(): void;
+public function incrementExceptions(): void;
+public function setRetryDeadline(DateTimeImmutable $deadline): void;
+public function release(int $delaySeconds = 0): void;
+public function clearRelease(): void;
 public function serialize(): string;
 public static function unserialize(string $data): static;
 ```
+
+### JobRunnerInterface
+
+```php
+use Marko\Queue\JobRunnerInterface;
+use Marko\Queue\JobInterface;
+
+public function run(JobInterface $job): void; // rethrows whatever handle() throws
+public function withContainer(JobInterface $job, callable $callback): mixed;
+```
+
+Bound to `JobRunner`, which is constructed with the container and the `JobEnvelope`. See [Running One Attempt](#running-one-attempt).
 
 ### WorkerInterface
 
@@ -483,7 +637,7 @@ public function setJobEnvelope(JobEnvelope $jobEnvelope): void;
 public function releaseContainer(): void;
 ```
 
-Implement this interface on any job class that needs to resolve services from the container when `handle()` runs. The `Worker` detects the interface, calls both setters before invoking `handle()`, and calls `releaseContainer()` once `handle()` returns or throws. The [sync driver](/docs/packages/queue-sync/) does the same when it runs a job on `push()`. Keep job constructor arguments to scalars and IDs only --- resolve services inside `handle()`.
+Implement this interface on any job class that needs to resolve services from the container when `handle()` runs. `JobRunner`, which the `Worker` and the [sync driver](/docs/packages/queue-sync/) both run jobs through, detects the interface, calls both setters before invoking `handle()`, and calls `releaseContainer()` once `handle()` returns or throws. Keep job constructor arguments to scalars and IDs only --- resolve services inside `handle()`.
 
 `releaseContainer()` is part of the contract: a job written before it existed must add it. It must drop the container, the envelope and anything else the setters stored. See [Jobs That Need Container Services](#jobs-that-need-container-services).
 

@@ -857,13 +857,13 @@ Filters receive `(NotificationInterface $notification, array $channels)` and ret
 ### FakeQueue
 
 ```php
-public function push(JobInterface $job, ?string $queue = null): string;
-public function later(int $delay, JobInterface $job, ?string $queue = null): string;
+public function push(JobInterface $job, ?string $queue = null): PushResult;
+public function later(int $delay, JobInterface $job, ?string $queue = null): PushResult;
 public function pop(?string $queue = null): ?JobInterface;
 public function size(?string $queue = null): int;
 public function clear(?string $queue = null): int;
 public function delete(string $jobId): bool;
-public function release(string $jobId, int $delay = 0): bool;
+public function release(JobInterface $job, int $delay = 0): bool; // stores the given job and delay on its pushed entry
 public function assertPushed(string $jobClass, ?callable $callback = null): void;
 public function assertNotPushed(string $jobClass): void;
 public function assertPushedCount(int $expected): void;

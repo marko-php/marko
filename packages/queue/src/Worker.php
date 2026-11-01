@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\Queue;
 
-use Marko\Core\Container\ContainerInterface;
 use Marko\Queue\Exceptions\JobTimedOutException;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
@@ -25,7 +24,7 @@ class Worker implements WorkerInterface
         private readonly FailedJobRepositoryInterface $failedJobRepository,
         private readonly QueueConfig $config,
         private readonly JobEnvelope $jobEnvelope,
-        private readonly ContainerInterface $container,
+        private readonly JobRunnerInterface $jobRunner,
         private readonly ClockInterface $clock,
         private readonly BackoffValidator $backoffValidator = new BackoffValidator(),
         private readonly ProcessControlInterface $processControl = new PcntlProcessControl(),
@@ -115,7 +114,7 @@ class Worker implements WorkerInterface
         }
 
         try {
-            $this->runJob($job);
+            $this->jobRunner->run($job);
         } catch (Throwable $e) {
             $error = $e;
         } finally {
@@ -192,35 +191,6 @@ class Worker implements WorkerInterface
 
         return $options->memory > 0
             && $this->processControl->memoryUsage() >= $options->memory * 1024 * 1024;
-    }
-
-    /**
-     * Handle one attempt of the job.
-     *
-     * A container-aware job gets the container and envelope first, and releases them
-     * afterwards whether handle() returns or throws: a job that fails for the last time
-     * is serialized into failed_jobs, and the container cannot be serialized.
-     *
-     * @throws Throwable
-     */
-    private function runJob(
-        JobInterface $job,
-    ): void {
-        if (!$job instanceof ContainerAwareJobInterface) {
-            $job->incrementAttempts();
-            $job->handle();
-
-            return;
-        }
-
-        try {
-            $job->setContainer($this->container);
-            $job->setJobEnvelope($this->jobEnvelope);
-            $job->incrementAttempts();
-            $job->handle();
-        } finally {
-            $job->releaseContainer();
-        }
     }
 
     /**
@@ -360,7 +330,7 @@ class Worker implements WorkerInterface
             return;
         }
 
-        $this->queue->release($job->id, $delay);
+        $this->queue->release($job, $delay);
     }
 
     /**

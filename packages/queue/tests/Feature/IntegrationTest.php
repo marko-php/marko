@@ -13,6 +13,8 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
+use Marko\Queue\JobRunner;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Sync\NullFailedJobRepository;
@@ -150,7 +152,7 @@ function createInMemoryQueue(): QueueInterface
         public function push(
             JobInterface $job,
             ?string $queue = null,
-        ): string {
+        ): PushResult {
             $id = bin2hex(random_bytes(16));
             $job->setId($id);
 
@@ -160,14 +162,14 @@ function createInMemoryQueue(): QueueInterface
                 'availableAt' => time(),
             ];
 
-            return $id;
+            return PushResult::pushed($id);
         }
 
         public function later(
             int $delay,
             JobInterface $job,
             ?string $queue = null,
-        ): string {
+        ): PushResult {
             $id = bin2hex(random_bytes(16));
             $job->setId($id);
 
@@ -177,7 +179,7 @@ function createInMemoryQueue(): QueueInterface
                 'availableAt' => time() + $delay,
             ];
 
-            return $id;
+            return PushResult::pushed($id);
         }
 
         public function pop(
@@ -242,7 +244,7 @@ function createInMemoryQueue(): QueueInterface
         }
 
         public function release(
-            string $jobId,
+            JobInterface $job,
             int $delay = 0,
         ): bool {
             // For released jobs, we need to find them in our storage
@@ -281,12 +283,12 @@ describe('Integration Tests', function (): void {
             $failedRepository,
             $config,
             createIntegrationJobEnvelope(),
-            createIntegrationNullContainer(),
+            new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope()),
             new FakeClock(),
         );
 
         // 1. Push the job to the queue
-        $jobId = $queue->push($job);
+        $jobId = $queue->push($job)->id;
 
         expect($jobId)->toBeString()
             ->and($job->id)->toBe($jobId)
@@ -341,7 +343,7 @@ describe('Integration Tests', function (): void {
         // Create queue and push the job
         $queue = createInMemoryQueue();
 
-        $jobId = $queue->push($job);
+        $jobId = $queue->push($job)->id;
 
         expect($jobId)->toBeString()
             ->and($queue->size())->toBe(1);
@@ -470,7 +472,14 @@ describe('Integration Tests', function (): void {
             $config = createIntegrationQueueConfig();
 
             // Worker holds envelope + container; injects both into popped AsyncObserverJob
-            $worker = new Worker($queue, $failedRepository, $config, $envelope, $container, new FakeClock());
+            $worker = new Worker(
+                $queue,
+                $failedRepository,
+                $config,
+                $envelope,
+                new JobRunner($container, $envelope),
+                new FakeClock(),
+            );
             $worker->work(once: true);
 
             expect($capture->callCount)->toBe(1)
@@ -546,7 +555,14 @@ describe('Integration Tests', function (): void {
             $failedRepository = createIntegrationFailedJobRepository();
             $config = createIntegrationQueueConfig();
 
-            $worker = new Worker($queue, $failedRepository, $config, $envelope, $container, new FakeClock());
+            $worker = new Worker(
+                $queue,
+                $failedRepository,
+                $config,
+                $envelope,
+                new JobRunner($container, $envelope),
+                new FakeClock(),
+            );
             $worker->work(once: true);
 
             expect($capture->event)->not->toBeNull()
@@ -582,7 +598,7 @@ describe('Integration Tests', function (): void {
             $failedRepository,
             $config,
             createIntegrationJobEnvelope(),
-            createIntegrationNullContainer(),
+            new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope()),
             new FakeClock(),
             processControl: $processControl,
         );
@@ -637,7 +653,7 @@ describe('Integration Tests', function (): void {
             ->and($queueConfig->queue())->toBe('default');
 
         // Verify SyncQueue implements QueueInterface
-        $syncQueue = new SyncQueue(createIntegrationNullContainer(), createIntegrationJobEnvelope());
+        $syncQueue = new SyncQueue(new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope()));
 
         expect($syncQueue)->toBeInstanceOf(QueueInterface::class);
 
@@ -652,7 +668,7 @@ describe('Integration Tests', function (): void {
             $nullRepository,
             $queueConfig,
             createIntegrationJobEnvelope(),
-            createIntegrationNullContainer(),
+            new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope()),
             new FakeClock(),
         );
 
@@ -674,9 +690,9 @@ describe('Integration Tests', function (): void {
         };
 
         // Push job through SyncQueue (executes immediately)
-        $jobId = $syncQueue->push($job);
+        $result = $syncQueue->push($job);
 
-        expect($jobId)->toBeString()
+        expect($result->id)->toBeString()
             ->and($capture->handled)->toBeTrue(); // SyncQueue executes immediately
     });
 });

@@ -8,6 +8,8 @@ use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
+use Marko\Queue\JobRunner;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Tests\Command\Helpers;
@@ -38,18 +40,18 @@ class LimitsRecordingQueue implements QueueInterface
     public function push(
         JobInterface $job,
         ?string $queue = null,
-    ): string {
+    ): PushResult {
         $this->jobs[] = $job;
 
-        return $job->id ?? 'pushed';
+        return PushResult::pushed($job->id ?? 'pushed');
     }
 
     public function later(
         int $delay,
         JobInterface $job,
         ?string $queue = null,
-    ): string {
-        return 'later';
+    ): PushResult {
+        return PushResult::pushed('later');
     }
 
     public function pop(
@@ -86,10 +88,10 @@ class LimitsRecordingQueue implements QueueInterface
     }
 
     public function release(
-        string $jobId,
+        JobInterface $job,
         int $delay = 0,
     ): bool {
-        $this->log[] = "release:$jobId:$delay";
+        $this->log[] = "release:$job->id:$delay";
 
         return true;
     }
@@ -170,6 +172,9 @@ function createLimitsWorker(
 ): array {
     $failed = Helpers::createStubFailedJobRepository();
 
+    $envelope = new JobEnvelope(
+        new EncryptionConfig(new FakeConfigRepository(['encryption.key' => 'worker-limits-key'])),
+    );
     $worker = new LimitsTestWorker(
         $queue,
         $failed,
@@ -177,8 +182,8 @@ function createLimitsWorker(
             'queue.queue' => 'default',
             'queue.max_attempts' => 3,
         ])),
-        new JobEnvelope(new EncryptionConfig(new FakeConfigRepository(['encryption.key' => 'worker-limits-key']))),
-        new Container(),
+        $envelope,
+        new JobRunner(new Container(), $envelope),
         new FakeClock(),
         processControl: $processControl,
     );

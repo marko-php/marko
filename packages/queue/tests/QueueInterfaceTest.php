@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Queue\JobInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 
 describe('QueueInterface', function (): void {
@@ -15,7 +16,7 @@ describe('QueueInterface', function (): void {
         $method = $reflection->getMethod('push');
 
         expect($method->isPublic())->toBeTrue()
-            ->and($method->getReturnType()?->getName())->toBe('string')
+            ->and($method->getReturnType()?->getName())->toBe(PushResult::class)
             ->and($method->getParameters())->toHaveCount(2);
 
         $jobParam = $method->getParameters()[0];
@@ -40,7 +41,7 @@ describe('QueueInterface', function (): void {
         $method = $reflection->getMethod('later');
 
         expect($method->isPublic())->toBeTrue()
-            ->and($method->getReturnType()?->getName())->toBe('string')
+            ->and($method->getReturnType()?->getName())->toBe(PushResult::class)
             ->and($method->getParameters())->toHaveCount(3);
 
         $delayParam = $method->getParameters()[0];
@@ -151,10 +152,10 @@ describe('QueueInterface', function (): void {
             ->and($method->getReturnType()?->getName())->toBe('bool')
             ->and($method->getParameters())->toHaveCount(2);
 
-        $jobIdParam = $method->getParameters()[0];
+        $jobParam = $method->getParameters()[0];
 
-        expect($jobIdParam->getName())->toBe('jobId')
-            ->and($jobIdParam->getType()?->getName())->toBe('string');
+        expect($jobParam->getName())->toBe('job')
+            ->and($jobParam->getType()?->getName())->toBe(JobInterface::class);
 
         $delayParam = $method->getParameters()[1];
 
