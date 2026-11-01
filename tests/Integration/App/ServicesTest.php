@@ -2,10 +2,15 @@
 
 declare(strict_types=1);
 
+use Marko\Authorization\Contracts\GateHookInterface;
+use Marko\Authorization\Contracts\GateInterface;
+use Marko\Authorization\Gate;
+use Marko\Authorization\GateHookRegistry;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Redis\RedisConnection;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
+use Marko\Integration\Fixture\Auth\IntegrationGateHook;
 use Marko\Integration\Fixture\Entity\Author;
 use Marko\Integration\Fixture\Event\BookPublished;
 use Marko\Integration\Fixture\Job\RecordingJob;
@@ -197,6 +202,16 @@ it('returns 403 when a controller calls Gate::authorize() for a denied ability',
         ->and($response->body())->not->toContain('view-admin')
         ->not->toContain('admin report');
 })->issue(222);
+
+it('discovers a #[GateHook] in a live boot and wires it into the gate', function (): void {
+    // Asked through the registry: a Gate check needs a request's session for the session guard
+    $hooks = $this->app->container->get(GateHookRegistry::class)->hooks();
+
+    expect(array_map(fn (GateHookInterface $hook): string => $hook::class, $hooks))
+        ->toBe([IntegrationGateHook::class])
+        ->and($hooks[0]->before(null, 'integration-hook', []))->toBeTrue()
+        ->and($this->app->container->get(GateInterface::class))->toBeInstanceOf(Gate::class);
+})->issue(550);
 
 it('answers an OPTIONS preflight through the CORS middleware', function (): void {
     $response = $this->app->router->handle(integrationRequest('OPTIONS', '/health', server: [

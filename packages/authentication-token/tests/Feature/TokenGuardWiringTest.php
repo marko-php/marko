@@ -23,6 +23,8 @@ use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Module\DependencyResolver;
 use Marko\Core\Module\GlobalMiddlewareResolver;
 use Marko\Core\Module\ModuleManifest;
+use Marko\Core\Module\ModuleRepository;
+use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
@@ -116,6 +118,8 @@ function bootTokenContainer(
     $container->instance(ClockInterface::class, new FakeClock($now));
     $container->instance(DatabaseTimezoneConfig::class, DatabaseTimezoneConfig::fromName($databaseTimezone));
     $container->instance(TokenRepositoryInterface::class, $tokenRepository);
+    // No modules to scan: the authorization Gate runs no gate hooks.
+    $container->instance(ModuleRepositoryInterface::class, new ModuleRepository([]));
 
     registerModule($container, require "$packages/authentication/module.php");
     registerModule($container, tokenModule());
