@@ -134,7 +134,7 @@ MARKO_TEST_MYSQL_HOST=127.0.0.1 MARKO_TEST_MYSQL_PASSWORD=marko \
 REDIS_HOST=127.0.0.1 ./vendor/bin/pest -c phpunit.xml --group=integration-services packages/pubsub-redis packages/broadcasting-amphp
 ```
 
-The `database-mysql` driver tests also run against MariaDB, together with the other MySQL suites: `packages/admin-auth/tests/Integration/MySql`, `packages/queue-database/tests/Integration/MySqlRoundTripTest.php`, `packages/session-database/tests/Integration/MySql`, `packages/search/tests/Integration/MySql` and `tests/Integration/App/QueueSessionTablesMySqlTest.php`. CI runs them again against MariaDB 11.8 on port 3307 and MariaDB 10.11 on port 3308, with `MARKO_TEST_MYSQL_SERVER=mariadb`; tests whose expectations differ between the servers branch on `IntegrationDatabase::isMariaDb()`, and the MariaDB-only `1020` snapshot-conflict tests skip on MySQL. Locally (port 3308 for 10.11):
+The `database-mysql` driver tests also run against MariaDB, together with the other MySQL suites: `packages/admin-auth/tests/Integration/MySql`, `packages/queue-database/tests/Integration/MySqlRoundTripTest.php`, `packages/session-database/tests/Integration/MySql`, `packages/search/tests/Integration/MySql`, `packages/validation-database/tests/Integration/MySql` and `tests/Integration/App/QueueSessionTablesMySqlTest.php`. CI runs them again against MariaDB 11.8 on port 3307 and MariaDB 10.11 on port 3308, with `MARKO_TEST_MYSQL_SERVER=mariadb`; tests whose expectations differ between the servers branch on `IntegrationDatabase::isMariaDb()`, and the MariaDB-only `1020` snapshot-conflict tests skip on MySQL. Locally (port 3308 for 10.11):
 
 ```bash
 docker compose -f tests/Integration/compose.yml --profile mariadb up -d --wait
