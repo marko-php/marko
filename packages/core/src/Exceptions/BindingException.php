@@ -18,6 +18,28 @@ class BindingException extends MarkoException implements ContainerExceptionInter
         );
     }
 
+    /**
+     * The id names no class or interface the autoloader can find, usually because the
+     * package that provides it (often an optional, suggested one) is not installed.
+     */
+    public static function classNotFound(
+        string $class,
+        ?string $requiredBy = null,
+    ): self {
+        $package = self::inferBasePackageName($class);
+
+        return new self(
+            message: "Cannot resolve '$class': no class or interface with that name exists",
+            context: $requiredBy !== null
+                ? "While resolving the constructor dependencies of '$requiredBy'"
+                : "Attempted to resolve '$class' from the container",
+            suggestion: $package !== null
+                ? "'$class' belongs to $package (or one of its drivers), which is not installed."
+                    . " Run `composer require $package`, or check the class name for typos"
+                : 'Check the class name for typos, or install the package that provides it',
+        );
+    }
+
     public static function unresolvableParameter(
         string $parameter,
         string $class,

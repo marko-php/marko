@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Acme\Missing\Widget;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\PreferenceRegistry;
 use Marko\Core\Exceptions\BindingException;
@@ -11,6 +12,7 @@ use Marko\Core\Plugin\PluginDefinition;
 use Marko\Core\Plugin\PluginInterceptedInterface;
 use Marko\Core\Plugin\PluginInterceptor;
 use Marko\Core\Plugin\PluginRegistry;
+use Marko\NotInstalledPackage\Contracts\WidgetInterface;
 use Marko\TestFixture\Exceptions\NoDriverException;
 use Marko\TestFixture\SomeInterface;
 use Marko\TestFixtureAware\Exceptions\NoDriverException as AwareNoDriverException;
@@ -38,6 +40,20 @@ readonly class ClassWithDependency
 }
 
 class DeepDependency {}
+
+readonly class ClassNeedingUninstalledMarkoPackage
+{
+    public function __construct(
+        public WidgetInterface $widget,
+    ) {}
+}
+
+readonly class ClassNeedingMissingVendorClass
+{
+    public function __construct(
+        public Widget $widget,
+    ) {}
+}
 
 readonly class MiddleDependency
 {
@@ -213,6 +229,44 @@ it('throws BindingException when dependency cannot be resolved', function (): vo
 
     expect(fn () => $container->get(ClassWithInterfaceDependency::class))
         ->toThrow(BindingException::class);
+});
+
+it(
+    'throws BindingException naming the Marko package to install when a dependency type does not exist',
+    function (): void {
+        $container = new Container();
+
+        try {
+            $container->get(ClassNeedingUninstalledMarkoPackage::class);
+            $this->fail('Expected BindingException');
+        } catch (BindingException $e) {
+            expect($e->getMessage())->toContain('Marko\\NotInstalledPackage\\Contracts\\WidgetInterface')
+                ->and($e->getContext())->toContain(ClassNeedingUninstalledMarkoPackage::class)
+                ->and($e->getSuggestion())->toContain('composer require marko/not-installed-package');
+        }
+    },
+);
+
+it(
+    'throws BindingException instead of ReflectionException for a non-Marko type that does not exist',
+    function (): void {
+        $container = new Container();
+
+        try {
+            $container->get(ClassNeedingMissingVendorClass::class);
+            $this->fail('Expected BindingException');
+        } catch (BindingException $e) {
+            expect($e->getMessage())->toContain('Acme\\Missing\\Widget')
+                ->and($e->getSuggestion())->not->toContain('composer require marko/');
+        }
+    },
+);
+
+it('throws BindingException when getting a class that does not exist directly', function (): void {
+    $container = new Container();
+
+    expect(fn () => $container->get('Marko\\NotInstalledPackage\\Widget'))
+        ->toThrow(BindingException::class, "Cannot resolve 'Marko\\NotInstalledPackage\\Widget'");
 });
 
 it('returns same instance for shared bindings (singleton behavior)', function (): void {

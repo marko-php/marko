@@ -88,7 +88,19 @@ The response is served to whoever can reach the endpoint, so check messages are 
 
 ### Built-in Checks
 
-Register built-in checks in your `module.php` bindings. Each check requires its corresponding interface:
+Each built-in check needs a package that `marko/health` only suggests, so install the ones you use, plus a driver for each:
+
+| Check | Needs |
+|---|---|
+| `DatabaseHealthCheck` | [`marko/database`](/docs/packages/database/) (`ConnectionInterface`) |
+| `CacheHealthCheck` | [`marko/cache`](/docs/packages/cache/) (`CacheInterface`) |
+| `FilesystemHealthCheck` | [`marko/filesystem`](/docs/packages/filesystem/) (`FilesystemInterface`) |
+
+```bash
+composer require marko/cache marko/cache-redis
+```
+
+Resolving a check whose package is missing throws a `BindingException` from the container that names the missing interface and the `composer require` command to fix it. Register the checks you want from your module's `boot` callback:
 
 ```php
 use Marko\Health\Checks\CacheHealthCheck;

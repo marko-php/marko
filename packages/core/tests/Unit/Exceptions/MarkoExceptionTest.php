@@ -4,6 +4,24 @@ declare(strict_types=1);
 
 use Marko\Core\Exceptions\MarkoException;
 
+describe('inferBasePackageName', function (): void {
+    it('maps any Marko class to the base package that owns its top-level namespace', function (): void {
+        expect(MarkoException::inferBasePackageName('Marko\Database\Connection\ConnectionInterface'))
+            ->toBe('marko/database')
+            ->and(MarkoException::inferBasePackageName('Marko\Cache\Contracts\CacheInterface'))
+            ->toBe('marko/cache')
+            ->and(MarkoException::inferBasePackageName('Marko\Cache\Redis\RedisCacheDriver'))
+            ->toBe('marko/cache')
+            ->and(MarkoException::inferBasePackageName('\Marko\PageCache\PageCacheInterface'))
+            ->toBe('marko/page-cache');
+    });
+
+    it('returns null for non-Marko or too-short class names', function (): void {
+        expect(MarkoException::inferBasePackageName('Acme\Widget\Widget'))->toBeNull()
+            ->and(MarkoException::inferBasePackageName('Marko'))->toBeNull();
+    });
+});
+
 describe('inferPackageName', function (): void {
     it('maps simple Marko namespaces to package names', function (): void {
         expect(MarkoException::inferPackageName('Marko\Core\Exceptions\MarkoException'))

@@ -751,8 +751,22 @@ class MarkoException extends Exception
 
     public function getContext(): string;
     public function getSuggestion(): string;
+
+    // Install hints: the package a Marko class name most likely comes from
+    public static function inferPackageName(string $className): ?string;     // Marko\Cache\Redis\Driver\RedisCacheDriver → marko/cache-redis
+    public static function inferBasePackageName(string $className): ?string; // Marko\Cache\Redis\Driver\RedisCacheDriver → marko/cache
 }
 ```
+
+### BindingException
+
+```php
+use Marko\Core\Exceptions\BindingException;
+```
+
+Thrown by the container when it can't build what you asked for: an interface with no binding, a constructor parameter it can't autowire, or a type that doesn't exist at all. The last case usually means an optional package isn't installed. For example, resolving a class whose constructor takes `Marko\Cache\Contracts\CacheInterface` without `marko/cache` installed throws `Cannot resolve 'Marko\Cache\Contracts\CacheInterface': no class or interface with that name exists`, naming the class that needed it and suggesting `composer require marko/cache`. You never get a bare `ReflectionException`.
+
+Implements `Psr\Container\ContainerExceptionInterface`.
 
 ### CircularDependencyException
 

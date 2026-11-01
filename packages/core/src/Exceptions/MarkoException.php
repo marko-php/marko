@@ -35,6 +35,28 @@ class MarkoException extends Exception
     }
 
     /**
+     * Infer the base package that owns a Marko class's top-level namespace.
+     *
+     * Unlike inferPackageName(), this never guesses a sibling driver package, because
+     * a third namespace segment can be a driver (Marko\Cache\Redis) or just a directory
+     * of the base package (Marko\Database\Connection). Use it for install hints about a
+     * missing dependency, which code type-hints on the base package's contracts:
+     *   Marko\Database\Connection\ConnectionInterface → marko/database
+     *   Marko\Cache\Redis\RedisCacheDriver            → marko/cache
+     */
+    public static function inferBasePackageName(
+        string $className,
+    ): ?string {
+        $parts = explode('\\', ltrim($className, '\\'));
+
+        if (count($parts) < 2 || $parts[0] !== 'Marko') {
+            return null;
+        }
+
+        return 'marko/' . self::camelToKebab($parts[1]);
+    }
+
+    /**
      * Infer a Composer package name from a fully-qualified class name.
      *
      * Maps Marko namespaces to package names:
