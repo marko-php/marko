@@ -14,6 +14,9 @@ readonly class ConfigDiscovery
     ) {}
 
     /**
+     * Load and merge every config file, in the order files() returns them.
+     *
+     * @param array<string> $modulePaths Paths to modules (containing config/ subdirectories)
      * @throws ConfigLoadException
      */
     public function discover(
@@ -22,34 +25,7 @@ readonly class ConfigDiscovery
     ): array {
         $result = [];
 
-        foreach ($modulePaths as $modulePath) {
-            $result = $this->mergeConfigFromDirectory(
-                result: $result,
-                directory: $modulePath . '/config',
-            );
-        }
-
-        // Merge root config (highest priority)
-        return $this->mergeConfigFromDirectory(
-            result: $result,
-            directory: $rootConfigPath,
-        );
-    }
-
-    /**
-     * @throws ConfigLoadException
-     */
-    private function mergeConfigFromDirectory(
-        array $result,
-        string $directory,
-    ): array {
-        if (!is_dir($directory)) {
-            return $result;
-        }
-
-        $files = glob($directory . '/*.php');
-
-        foreach ($files as $file) {
+        foreach ($this->files($modulePaths, $rootConfigPath) as $file) {
             $key = pathinfo($file, PATHINFO_FILENAME);
             $config = $this->loader->load($file);
             $result[$key] = isset($result[$key])
@@ -58,5 +34,30 @@ readonly class ConfigDiscovery
         }
 
         return $result;
+    }
+
+    /**
+     * Every config file in merge order: each module's config/*.php in module
+     * load order, then the root config directory (highest priority). A later
+     * file overrides an earlier file with the same name.
+     *
+     * @param array<string> $modulePaths Paths to modules (containing config/ subdirectories)
+     * @return list<string>
+     */
+    public function files(
+        array $modulePaths,
+        string $rootConfigPath,
+    ): array {
+        $directories = array_map(fn (string $path): string => $path . '/config', $modulePaths);
+        $directories[] = $rootConfigPath;
+        $files = [];
+
+        foreach ($directories as $directory) {
+            if (is_dir($directory)) {
+                array_push($files, ...(glob($directory . '/*.php') ?: []));
+            }
+        }
+
+        return $files;
     }
 }

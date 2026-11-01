@@ -6,8 +6,8 @@ namespace Marko\Media\Tests\Service;
 
 use Marko\Filesystem\Contracts\DirectoryListingInterface;
 use Marko\Filesystem\Contracts\FilesystemInterface;
+use Marko\Filesystem\Contracts\FilesystemManagerInterface;
 use Marko\Filesystem\Exceptions\FilesystemException;
-use Marko\Filesystem\Manager\FilesystemManager;
 use Marko\Filesystem\Values\DirectoryListing;
 use Marko\Filesystem\Values\FileInfo;
 use Marko\Media\Config\MediaConfig;
@@ -249,8 +249,8 @@ function makeFilesystem(): FilesystemInterface
  */
 function makeFilesystemManager(
     array $disks,
-): FilesystemManager {
-    return new class ($disks) extends FilesystemManager
+): FilesystemManagerInterface {
+    return new class ($disks) implements FilesystemManagerInterface
     {
         /** @var array<string> */
         public array $requested = [];
@@ -259,8 +259,15 @@ function makeFilesystemManager(
          * @param array<string, FilesystemInterface> $fakeDisks
          */
         public function __construct(
-            private readonly array $fakeDisks,
+            private array $fakeDisks,
         ) {}
+
+        public function useDisk(
+            ?string $name,
+            FilesystemInterface $disk,
+        ): void {
+            $this->fakeDisks[(string) $name] = $disk;
+        }
 
         public function disk(
             ?string $name = null,

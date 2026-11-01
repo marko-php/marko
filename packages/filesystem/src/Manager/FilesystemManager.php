@@ -8,12 +8,13 @@ use JsonException;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Filesystem\Config\FilesystemConfig;
 use Marko\Filesystem\Contracts\FilesystemInterface;
+use Marko\Filesystem\Contracts\FilesystemManagerInterface;
 use Marko\Filesystem\Discovery\DriverRegistry;
 use Marko\Filesystem\Exceptions\FilesystemException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
-class FilesystemManager
+class FilesystemManager implements FilesystemManagerInterface
 {
     /**
      * @var array<string, FilesystemInterface>
@@ -40,6 +41,20 @@ class FilesystemManager
         }
 
         return $this->disks[$name];
+    }
+
+    /**
+     * Put a disk instance in place for a disk name (the default disk when null), replacing any
+     * disk already built for it. disk($name) returns this instance from now on.
+     *
+     * The default disk is stored under its configured name, so useDisk(null, ...) and
+     * useDisk('<default name>', ...) replace the same entry.
+     */
+    public function useDisk(
+        ?string $name,
+        FilesystemInterface $disk,
+    ): void {
+        $this->disks[$name ?? $this->config->defaultDisk()] = $disk;
     }
 
     /**

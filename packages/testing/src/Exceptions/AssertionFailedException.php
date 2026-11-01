@@ -142,6 +142,64 @@ class AssertionFailedException extends MarkoException
         );
     }
 
+    public static function expectedPathExists(
+        string $path,
+    ): self {
+        return new self(
+            message: "Expected '$path' to exist on the fake filesystem but it does not.",
+            context: "Path: $path",
+            suggestion: 'Ensure the code under test writes to this path on the disk the fake replaces.',
+        );
+    }
+
+    public static function unexpectedPathExists(
+        string $path,
+    ): self {
+        return new self(
+            message: "Expected '$path' to be missing from the fake filesystem but it exists.",
+            context: "Path: $path",
+            suggestion: 'Remove the write or update your test expectation.',
+        );
+    }
+
+    public static function unexpectedContent(
+        string $path,
+        string $expected,
+        string $actual,
+    ): self {
+        return new self(
+            message: "Expected '$path' to contain the expected contents but they differ.",
+            context: 'Expected: ' . self::bodyExcerpt($expected) . "\nActual: " . self::bodyExcerpt($actual),
+            suggestion: 'Check what the code under test writes to this path.',
+        );
+    }
+
+    public static function expectedDirectoryExists(
+        string $path,
+    ): self {
+        return new self(
+            message: "Expected directory '$path' to exist on the fake filesystem but it does not.",
+            context: "Path: $path",
+            suggestion: 'Create the directory, or write a file inside it, before asserting.',
+        );
+    }
+
+    /**
+     * @param list<string> $entries
+     */
+    public static function expectedDirectoryEmpty(
+        string $path,
+        array $entries,
+    ): self {
+        $list = implode(', ', $entries);
+
+        return new self(
+            message: "Expected directory '$path' to be empty but it contains: $list",
+            context: 'Entries: ' . count($entries),
+            suggestion: 'Ensure the code under test removes these entries, or update your test expectation.',
+        );
+    }
+
     private static function bodyExcerpt(
         string $body,
     ): string {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Aws\Result;
 use Marko\Filesystem\Exceptions\FilesystemException;
+use Marko\Filesystem\Exceptions\PathException;
 use Marko\Filesystem\S3\Filesystem\S3Filesystem;
 use Marko\Filesystem\S3\Tests\Support\MockS3Client;
 
@@ -35,18 +36,18 @@ it('lists entries at the prefixed root without a double-slash prefix', function 
         ->and($capturedArgs[0]['Prefix'])->toBe('uploads/');
 });
 
-it('returns true and makes no delete call when the directory prefix is empty', function () {
+it('refuses to delete the disk root and makes no S3 call', function (string $prefix): void {
     $client = MockS3Client::create([]);
 
-    $filesystem = new S3Filesystem($client, MockS3Client::createConfig());
-    $result = $filesystem->deleteDirectory('/');
+    $filesystem = new S3Filesystem($client, MockS3Client::createConfig($prefix));
 
-    $methods = array_column($client->calls, 'method');
-
-    expect($result)->toBeTrue()
-        ->and($methods)->not->toContain('deleteObjects')
-        ->and($methods)->not->toContain('listObjectsV2');
-});
+    expect(fn () => $filesystem->deleteDirectory('/'))
+        ->toThrow(PathException::class, 'Refusing to delete the disk root')
+        ->and($client->calls)->toBe([]);
+})->with([
+    'no prefix' => '',
+    'prefixed disk' => 'uploads',
+]);
 
 it('throws a loud FilesystemException naming the keys when deleteObjects reports per-key errors', function () {
     $client = MockS3Client::create([

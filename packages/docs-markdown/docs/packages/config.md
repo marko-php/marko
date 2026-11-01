@@ -356,6 +356,40 @@ return [
 ];
 ```
 
+## Config Caching
+
+In production, `marko discovery:cache` also compiles your config. `marko/config` declares `Marko\Config\Discovery\ConfigCacheContributor` under the `discovery` key of its `module.php`, so the [discovery cache](/docs/packages/core/#discovery-cache) gets a `config` section holding the merged result of every config file. On a cached boot, `ConfigRepositoryInterface` is built from that section: no config directory is scanned, no config file is `require`d and nothing is merged. `ConfigRepository` behaves the same either way.
+
+There's no separate `config:cache` command. Run `discovery:cache` on every deploy (see [Deploying to production](/docs/packages/core/#deploying-to-production)), and `marko discovery:clear` to go back to loading config live. In a development environment the discovery cache is always bypassed, so config edits take effect on the next request.
+
+### Config values must be plain data
+
+The cache is written with `var_export()`, so config values may only be strings, numbers, booleans, `null` and arrays. A closure or object anywhere in the merged config makes `discovery:cache` fail with a `ConfigCacheException` naming the config key and the file it came from:
+
+```text
+Config value 'payments.resolver' in /app/config/payments.php is a Closure and cannot be stored in the discovery cache
+```
+
+Store a class name instead and resolve it through the container where you use it. A closure in a module's config file is fine when a later file (your app config, say) replaces it with a plain value.
+
+### Environment variables are fixed when the cache is built
+
+Config files run once, during `discovery:cache`, so every value they read from the environment is fixed at that moment. To keep that from going unnoticed, `Env` records every variable a config file reads while the cache is compiled, and the `config` section stores those names with a hash of their values. On a cached boot the hashes are recomputed from the current environment (no file reads). If any differ, boot throws `ConfigCacheException`, a `DiscoveryCacheException`, naming the changed variables:
+
+```text
+Environment variables changed since the discovery cache was built: DB_PASSWORD, MAIL_HOST
+```
+
+Run `marko discovery:cache` again after changing an environment variable. Config is never rebuilt silently and stale values are never used.
+
+- `.env` is still loaded on a cached boot: the boot gate reads `APP_ENV` and `DISCOVERY_CACHE_ENABLED` before the cache is loaded. What a cached boot skips is evaluating config files.
+- Only reads through `Env` are tracked. A config file that reads `$_ENV[...]` or `getenv()` directly has its value fixed without any check, which is one more reason to [read environment variables with `Env`](#environment-variables).
+- The cache file holds resolved values, including secrets such as database passwords and app keys. `discovery:cache` writes it with mode `0600` (readable and writable by its owner only). Keep it out of version control and build artifacts you share.
+
+### What marks the cache as stale
+
+Editing, adding or removing a file in the root `config/` directory makes boot throw a stale `DiscoveryCacheException`. Config files in vendor packages change only through Composer, which the cache already detects. Config files inside `modules/` and `app/` modules aren't tracked, the same as code in those modules, so recompile the cache on every deploy.
+
 ## Customization via Preferences
 
 Replace the default `ConfigRepository` implementation using Marko's [Preference system](/docs/packages/core/).
@@ -423,6 +457,17 @@ public static function list(string $name, array $default): array
 
 `Env::TRUE_VALUES` and `Env::FALSE_VALUES` hold the accepted boolean tokens. Every method throws `ConfigException` for a value it can't parse or one outside `min`/`max`.
 
+The [config cache](#config-caching) uses these to track which variables the config files read:
+
+```php
+public static function startRecording(): void
+public static function stopRecording(): array
+public static function isRecording(): bool
+public static function valueHashes(array $names): array
+```
+
+`startRecording()` throws `ConfigException` when already recording, and `stopRecording()` when not recording. `stopRecording()` returns the names read since `startRecording()`, once each, in first-read order. `valueHashes()` returns a hash of each variable's current value keyed by name. An unset and an empty variable hash alike, because every reader treats both as unset.
+
 ### ConfigLoader
 
 ```php
@@ -443,16 +488,26 @@ public function mergeAll(array ...$configs): array
 
 ```php
 public function discover(array $modulePaths, string $rootConfigPath): array
+public function files(array $modulePaths, string $rootConfigPath): array
 ```
+
+`files()` lists every config file in merge order: each module's `config/*.php` in module load order, then the root config directory. `discover()` loads and merges them in that order.
 
 ### ConfigServiceProvider
 
 ```php
-public function createRepository(array $modulePaths, string $rootConfigPath): ConfigRepositoryInterface
+public function createRepository(array $modulePaths, string $rootConfigPath, ?CachedDiscovery $cachedDiscovery = null): ConfigRepositoryInterface
 ```
+
+When `$cachedDiscovery` comes from a boot that used the discovery cache, the repository is built from its `config` section. Otherwise config files are discovered and merged live.
+
+### ConfigCacheContributor
+
+`Marko\Config\Discovery\ConfigCacheContributor` implements `Marko\Core\Discovery\DiscoveryCacheContributorInterface` with the key `config` (`ConfigCacheContributor::KEY`). `compile()` runs `ConfigDiscovery::discover()` over the enabled modules and the root config directory while `Env` records the variables read. `Marko\Config\Discovery\ConfigCacheSection` builds the section from the result and reads it back on a cached boot, checking the recorded variables against the current environment.
 
 ### Exceptions
 
 - `ConfigException` — Base exception for configuration errors
 - `ConfigNotFoundException` — Thrown when a required key is not found
 - `ConfigLoadException` — Thrown when a config file cannot be loaded
+- `ConfigCacheException` — A `DiscoveryCacheException` thrown when a config value can't be cached (a closure or object) or when an environment variable read through `Env` changed after the cache was built

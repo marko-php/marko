@@ -142,7 +142,7 @@ Implements all methods from `FilesystemInterface`. See [`marko/filesystem`](/doc
 ### Storage Details
 
 - Writes use a temp file with `LOCK_EX` followed by an atomic `rename()` to prevent corruption.
-- Paths containing `../` are rejected with a `PathException` to prevent directory traversal.
+- Paths follow the shared [path rules](/docs/packages/filesystem/#path-rules): backslashes are translated into `/`, empty and `.` segments are dropped, and a `..` segment or a NUL byte is rejected with a `PathException`.
 - Paths that resolve through a symbolic link to a location outside the disk root are rejected with a `PathException`. Paths that do not exist yet are checked against the deepest directory that does.
 - `deleteDirectory()` refuses any path that resolves to the disk root (`''`, `'/'`, `'.'`) with a `PathException`, and removes symbolic links it encounters without recursing into their targets.
 - Missing parent directories are created automatically on write, copy, and move operations.

@@ -6,6 +6,7 @@ namespace Marko\Validation\Rules;
 
 use DateTimeInterface;
 use Marko\Validation\Contracts\RuleInterface;
+use Marko\Validation\Validation\DateValue;
 
 readonly class Date implements RuleInterface
 {
@@ -22,6 +23,10 @@ readonly class Date implements RuleInterface
             return true;
         }
 
+        if ($this->format === null) {
+            return DateValue::timestamp($value) !== null;
+        }
+
         if ($value instanceof DateTimeInterface) {
             return true;
         }
@@ -30,13 +35,9 @@ readonly class Date implements RuleInterface
             return false;
         }
 
-        if ($this->format !== null) {
-            $date = date_create_from_format($this->format, $value);
+        $date = date_create_from_format($this->format, $value);
 
-            return $date !== false && $date->format($this->format) === $value;
-        }
-
-        return strtotime($value) !== false;
+        return $date !== false && $date->format($this->format) === $value;
     }
 
     public function message(
