@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Queue\JobIdGenerator;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Redis\RedisFailedJobRepository;
@@ -59,6 +60,7 @@ function uniqueRedisQueue(
         ),
         retryPolicy: new RetryPolicy($queueConfig, $stack->clock),
         clock: $stack->clock,
+        jobIdGenerator: new JobIdGenerator(),
     ));
 }
 

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Composer\Autoload\ClassLoader;
+use Marko\Queue\JobIdGenerator;
 use Marko\Queue\Redis\Tests\Fixtures\IntegrationRedis;
 use Marko\Queue\Redis\Tests\Fixtures\QueueHarness;
 use Marko\Queue\Redis\Tests\Fixtures\TestJob;
@@ -86,6 +87,20 @@ describe('RedisQueue push and pop', function (): void {
             ->and($job->message)->toBe('hello')
             ->and($job->attempts)->toBe(0)
             ->and($queue->pop())->toBeNull();
+    });
+
+    it('gives a pushed job the id from the bound JobIdGenerator', function (): void {
+        $harness = ($this->harness)();
+        $harness->container->instance(JobIdGenerator::class, new class () extends JobIdGenerator
+        {
+            public function generate(): string
+            {
+                return 'fixed-job-id';
+            }
+        });
+
+        expect($harness->queue()->push(new TestJob())->id)->toBe('fixed-job-id')
+            ->and($harness->queue()->pop()?->id)->toBe('fixed-job-id');
     });
 
     it('pops jobs in the order they were pushed', function (): void {

@@ -7,6 +7,7 @@ namespace Marko\Queue\Redis;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobIdGenerator;
 use Marko\Queue\JobInterface;
 use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
@@ -48,6 +49,7 @@ class RedisQueue implements QueueInterface
         private readonly FailedJobHandlerInterface $failedJobHandler,
         private readonly RetryPolicy $retryPolicy,
         private readonly ClockInterface $clock,
+        private readonly JobIdGenerator $jobIdGenerator,
     ) {}
 
     /**
@@ -211,7 +213,7 @@ class RedisQueue implements QueueInterface
         ?string $queue,
         int $delay,
     ): string {
-        $id = $this->generateId();
+        $id = $this->jobIdGenerator->generate();
         $job->setId($id);
         $queueName = $queue ?? $this->queueConfig->queue();
 
@@ -312,23 +314,5 @@ class RedisQueue implements QueueInterface
     private function client(): ClientInterface
     {
         return $this->connectionFactory->connection($this->redisQueueConfig->connection())->client();
-    }
-
-    /**
-     * @throws RandomException
-     */
-    private function generateId(): string
-    {
-        return sprintf(
-            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0x0fff) | 0x4000,
-            random_int(0, 0x3fff) | 0x8000,
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-        );
     }
 }

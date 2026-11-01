@@ -932,6 +932,16 @@ use Marko\Queue\RetryUntilInterface;
 public function retryUntil(): DateTimeImmutable; // called once, when the job is pushed
 ```
 
+### JobIdGenerator
+
+```php
+use Marko\Queue\JobIdGenerator;
+
+public function generate(): string; // a random RFC 4122 version 4 UUID
+```
+
+The one id generator the database, Redis and RabbitMQ drivers inject to give each pushed job its id. Replace it with a Preference to change the id format for every driver.
+
 ### RetryPolicy
 
 ```php

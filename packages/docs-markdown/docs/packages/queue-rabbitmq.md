@@ -114,6 +114,8 @@ readonly class OrderProcessor
 
 ### RabbitmqQueue
 
+Job ids come from the injected [`JobIdGenerator`](/docs/packages/queue/#jobidgenerator) (an optional last constructor argument; the module passes the container's).
+
 | Method | Description |
 |---|---|
 | `push(JobInterface $job, ?string $queue = null): PushResult` | Publish a job as a persistent AMQP message, returning a pushed `PushResult` with the job ID |

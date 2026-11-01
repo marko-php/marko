@@ -165,7 +165,7 @@ expect($queue->pop())->toBeInstanceOf(SendReport::class);
 
 ### RedisQueue
 
-Implements `QueueInterface`. Constructed with a `RedisConnectionFactoryInterface`, `RedisQueueConfig`, `QueueConfig`, `JobEnvelope`, `FailedJobHandlerInterface`, `RetryPolicy` and `Psr\Clock\ClockInterface`; the module binds it, so you don't build it yourself.
+Implements `QueueInterface`. Constructed with a `RedisConnectionFactoryInterface`, `RedisQueueConfig`, `QueueConfig`, `JobEnvelope`, `FailedJobHandlerInterface`, `RetryPolicy`, `Psr\Clock\ClockInterface` and [`JobIdGenerator`](/docs/packages/queue/#jobidgenerator) (job ids); the module binds it, so you don't build it yourself.
 
 | Method | Description |
 |---|---|

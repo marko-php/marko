@@ -14,6 +14,7 @@ use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobIdGenerator;
 use Marko\Queue\JobInterface;
 use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
@@ -72,6 +73,7 @@ readonly class DatabaseQueue implements QueueInterface
         private string $table = 'jobs',
         private string $defaultQueue = 'default',
         private int $retryAfter = 90,
+        private JobIdGenerator $jobIdGenerator = new JobIdGenerator(),
     ) {}
 
     /**
@@ -103,7 +105,7 @@ readonly class DatabaseQueue implements QueueInterface
         ?string $queue,
         int $delay,
     ): string {
-        $id = $this->generateId();
+        $id = $this->jobIdGenerator->generate();
         $job->setId($id);
 
         $now = $this->clock->now();
@@ -145,24 +147,6 @@ readonly class DatabaseQueue implements QueueInterface
     private function table(): string
     {
         return $this->connection->quoteIdentifier($this->table);
-    }
-
-    /**
-     * @throws RandomException
-     */
-    private function generateId(): string
-    {
-        return sprintf(
-            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0x0fff) | 0x4000,
-            random_int(0, 0x3fff) | 0x8000,
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-        );
     }
 
     /**
