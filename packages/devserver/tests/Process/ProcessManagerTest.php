@@ -500,6 +500,21 @@ it('starts a detached process that keeps running after startDetached returns', f
     }
 });
 
+it('returns a detached PID that already leads its process group, even with a zero probe window', function (): void {
+    $output = new Output(fopen('php://memory', 'r+'));
+    // With no probe window, only waiting for the supervisor's posix_setsid() makes the group exist on return
+    $manager = new ProcessManager($output, startProbeSeconds: 0.0);
+
+    $pid = $manager->startDetached('sleep', 'sleep 30');
+
+    try {
+        expect(posix_getpgid($pid))->toBe($pid)
+            ->and(devserverProcessGroupAlive($pid))->toBeTrue();
+    } finally {
+        devserverStopDetached($pid);
+    }
+});
+
 it('makes the detached PID the leader of a process group containing the command', function (): void {
     $output = new Output(fopen('php://memory', 'r+'));
     $manager = new ProcessManager($output, startProbeSeconds: 0.2);
