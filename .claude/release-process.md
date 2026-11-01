@@ -60,7 +60,8 @@ gh auth login
 
 5. Register all packages on Packagist:
    ```bash
-   PACKAGIST_USERNAME=xxx PACKAGIST_TOKEN=xxx GITHUB_ORG=marko-php ./bin/register-packagist.sh
+   PACKAGIST_USERNAME=xxx PACKAGIST_TOKEN=xxx GITHUB_ORG=marko-php ./bin/register-packagist.sh            # all packages
+   PACKAGIST_USERNAME=xxx PACKAGIST_TOKEN=xxx ./bin/register-packagist.sh redis forms                     # only these
    ```
    Get `PACKAGIST_TOKEN` from: https://packagist.org/profile/ → API Token
 
