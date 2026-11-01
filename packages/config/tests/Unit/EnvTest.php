@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Marko\Config\Env;
 use Marko\Config\Exceptions\ConfigException;
+use Marko\Core\Discovery\DiscoveryEnvironment;
+use Marko\Core\Environment\EnvironmentVariables;
 
 const ENV_TEST_VARIABLE = 'MARKO_ENV_READER_TEST';
 
@@ -336,10 +338,20 @@ describe('recording reads', function (): void {
         expect(Env::valueHashes([ENV_TEST_VARIABLE])[ENV_TEST_VARIABLE])->not->toBe($before[ENV_TEST_VARIABLE]);
     })->issue(556);
 
-    it('hashes an unset and an empty variable alike, because Env reads both as unset', function (): void {
+    it('hashes an empty variable differently from an unset one, as core readers tell them apart', function (): void {
         $unset = Env::valueHashes([ENV_TEST_VARIABLE]);
         $_ENV[ENV_TEST_VARIABLE] = '';
 
-        expect(Env::valueHashes([ENV_TEST_VARIABLE]))->toBe($unset);
-    })->issue(556);
+        expect(Env::valueHashes([ENV_TEST_VARIABLE]))->not->toBe($unset);
+    })->issue(618);
+
+    it('also records the variables read through the core environment readers while recording', function (): void {
+        Env::startRecording();
+        Env::string(ENV_TEST_VARIABLE, 'x');
+        new DiscoveryEnvironment()->cachePath();
+        $names = Env::stopRecording();
+
+        expect($names)->toBe([ENV_TEST_VARIABLE, 'DISCOVERY_CACHE_PATH'])
+            ->and(EnvironmentVariables::isRecording())->toBeFalse();
+    })->issue(618);
 });

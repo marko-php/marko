@@ -54,6 +54,7 @@ body:
         - amphp
         - api
         - authentication
+        - authentication-database
         - authentication-passkey
         - authentication-token
         - authentication-two-factor
