@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Core\Event\Event;
 use Marko\Mail\Message;
 use Marko\Queue\Job;
+use Marko\Testing\Fake\FakeAuthenticatable;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeFilesystem;
@@ -13,6 +14,7 @@ use Marko\Testing\Fake\FakeLogger;
 use Marko\Testing\Fake\FakeMailer;
 use Marko\Testing\Fake\FakeNotificationSender;
 use Marko\Testing\Fake\FakeQueue;
+use Marko\Testing\Fake\FakeUserPersister;
 use Marko\Testing\Fake\Http\RecordedRequest;
 use Marko\Testing\Tests\Unit\Fake\NotificationFixtures\FixtureNotifiable;
 use Marko\Testing\Tests\Unit\Fake\NotificationFixtures\FixtureOrderShipped;
@@ -173,4 +175,28 @@ it('fails toHaveNotified when the notification was only queued', function () {
 it('throws clear error when toHaveNotified is used on wrong type', function () {
     expect(fn () => expect(new stdClass())->toHaveNotified(new FixtureNotifiable(1), FixtureOrderShipped::class))
         ->toThrow(InvalidArgumentException::class, 'Expected FakeNotificationSender');
+});
+
+it('registers toHavePersisted expectation for FakeUserPersister', function () {
+    $persister = new FakeUserPersister();
+
+    expect($persister)->not->toHavePersisted();
+
+    $persister->persist(new FakeAuthenticatable(id: 1));
+
+    expect($persister)->toHavePersisted()
+        ->toHavePersisted(new FakeAuthenticatable(id: 1))
+        ->not->toHavePersisted(new FakeAuthenticatable(id: 2));
+});
+
+it('fails toHavePersisted with the missing user in the message', function () {
+    $persister = new FakeUserPersister();
+
+    expect(fn () => expect($persister)->toHavePersisted(new FakeAuthenticatable(id: 3)))
+        ->toThrow(ExpectationFailedException::class, FakeAuthenticatable::class . '#3] to be persisted');
+});
+
+it('throws clear error when toHavePersisted is used on wrong type', function () {
+    expect(fn () => expect(new stdClass())->toHavePersisted())
+        ->toThrow(InvalidArgumentException::class, 'Expected FakeUserPersister');
 });

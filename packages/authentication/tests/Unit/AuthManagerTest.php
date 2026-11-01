@@ -12,7 +12,6 @@ use Marko\Authentication\Exceptions\AuthException;
 use Marko\Authentication\Guard\GuardDriverRegistry;
 use Marko\Authentication\Guard\SessionGuard;
 use Marko\Authentication\Tests\Fixtures\BoundProviderResolver;
-use Marko\Authentication\Tests\Fixtures\RecordingUserPersister;
 use Marko\Authentication\Tests\Fixtures\StatelessFakeGuard;
 use Marko\Authentication\Tests\Fixtures\VersionedUser;
 use Marko\Authentication\Token\RememberTokenManager;
@@ -27,11 +26,12 @@ use Marko\Testing\Fake\FakeCookieJar;
 use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeGuard;
 use Marko\Testing\Fake\FakeSession;
+use Marko\Testing\Fake\FakeUserPersister;
 use Marko\Testing\Fake\FakeUserProvider;
 
 class PerGuardAdminProvider extends FakeUserProvider {}
 
-class ManagerAdminPersister extends RecordingUserPersister {}
+class ManagerAdminPersister extends FakeUserPersister {}
 
 test('auth manager exists', function (): void {
     expect(class_exists(AuthManager::class))->toBeTrue();
@@ -787,7 +787,7 @@ describe('logoutOtherDevices', function (): void {
         $this->user = new VersionedUser(id: 42);
         $this->session = new FakeSession();
         $this->session->start();
-        $this->boundPersister = new RecordingUserPersister();
+        $this->boundPersister = new FakeUserPersister();
         $this->adminPersister = new ManagerAdminPersister();
         $config = new AuthConfig(new FakeConfigRepository([
             'authentication.remember.cookie.prefix' => 'remember_',
@@ -820,7 +820,7 @@ describe('logoutOtherDevices', function (): void {
 
         $this->manager->logoutOtherDevices($this->user);
 
-        expect($this->boundPersister->persisted)->toBe([$this->user])
+        expect($this->boundPersister->persisted())->toBe([$this->user])
             ->and($this->session->get('auth_web_session_version'))->toBe($this->user->getSessionVersion())
             ->and($this->manager->guard()->user())->toBe($this->user);
     });
@@ -828,8 +828,8 @@ describe('logoutOtherDevices', function (): void {
     it("saves through the persister of the named guard's provider", function (): void {
         $this->manager->logoutOtherDevices($this->user, 'admin');
 
-        expect($this->adminPersister->persisted)->toBe([$this->user])
-            ->and($this->boundPersister->persisted)->toBe([]);
+        expect($this->adminPersister->persisted())->toBe([$this->user])
+            ->and($this->boundPersister->persisted())->toBe([]);
     });
 
     it('throws for a guard that cannot log out other devices', function (): void {

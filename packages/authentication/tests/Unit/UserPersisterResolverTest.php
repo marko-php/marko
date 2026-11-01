@@ -6,14 +6,14 @@ use Marko\Authentication\CanResetPasswordInterface;
 use Marko\Authentication\Config\AuthConfig;
 use Marko\Authentication\Contracts\UserPersisterInterface;
 use Marko\Authentication\Exceptions\UserPersisterException;
-use Marko\Authentication\Tests\Fixtures\RecordingUserPersister;
 use Marko\Authentication\Tests\Fixtures\ResettableUser;
 use Marko\Authentication\UserPersisterResolver;
 use Marko\Core\Container\Container;
 use Marko\Testing\Fake\FakeAuthenticatable;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeUserPersister;
 
-class ResolverAdminPersister extends RecordingUserPersister {}
+class ResolverAdminPersister extends FakeUserPersister {}
 
 /**
  * @param array<string, mixed> $config
@@ -34,7 +34,7 @@ function userPersisterResolver(
 it('resolves the persister class a provider names with its persister key', function (): void {
     $resolver = userPersisterResolver(
         ['authentication.providers' => ['admins' => ['persister' => ResolverAdminPersister::class]]],
-        new RecordingUserPersister(),
+        new FakeUserPersister(),
     );
 
     expect($resolver->forProvider('admins'))->toBeInstanceOf(ResolverAdminPersister::class);
@@ -49,7 +49,7 @@ it('shares one persister instance per provider name', function (): void {
 });
 
 it('uses the UserPersisterInterface binding when the provider names no persister', function (): void {
-    $bound = new RecordingUserPersister();
+    $bound = new FakeUserPersister();
 
     $resolver = userPersisterResolver(['authentication.providers' => ['users' => []]], $bound);
 
@@ -57,7 +57,7 @@ it('uses the UserPersisterInterface binding when the provider names no persister
 });
 
 it('uses the UserPersisterInterface binding when no authentication.providers config exists', function (): void {
-    $bound = new RecordingUserPersister();
+    $bound = new FakeUserPersister();
 
     expect(userPersisterResolver([], $bound)->forProvider('users'))->toBe($bound);
 });
@@ -79,7 +79,7 @@ it('throws naming the provider when its persister class does not implement UserP
 });
 
 it('throws when the provider is not defined in authentication.providers', function (): void {
-    $resolver = userPersisterResolver(['authentication.providers' => ['users' => []]], new RecordingUserPersister());
+    $resolver = userPersisterResolver(['authentication.providers' => ['users' => []]], new FakeUserPersister());
 
     expect(fn () => $resolver->forProvider('admins'))
         ->toThrow(UserPersisterException::class, "User provider 'admins' is not defined in authentication.providers");
@@ -88,14 +88,14 @@ it('throws when the provider is not defined in authentication.providers', functi
 it('resolves a guard provider by name like forProvider', function (): void {
     $resolver = userPersisterResolver(
         ['authentication.providers' => ['admins' => ['persister' => ResolverAdminPersister::class]]],
-        new RecordingUserPersister(),
+        new FakeUserPersister(),
     );
 
     expect($resolver->forGuardProvider('admin', 'admins'))->toBe($resolver->forProvider('admins'));
 });
 
 it('uses the UserPersisterInterface binding for a guard that names no provider', function (): void {
-    $bound = new RecordingUserPersister();
+    $bound = new FakeUserPersister();
 
     $resolver = userPersisterResolver(['authentication.providers' => ['admins' => []]], $bound);
 
