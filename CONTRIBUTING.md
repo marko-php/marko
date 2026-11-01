@@ -78,8 +78,8 @@ The script handles everything: merges develop into main, runs tests, tags, pushe
 
 When adding or editing workflows under `.github/workflows/`:
 
-- **Pin third-party actions to the latest stable major.** Currently that means `actions/checkout@v6`, etc. Older majors (`@v4`, `@v5`) emit Node deprecation warnings as GitHub rolls runners forward.
-- **Stay consistent with the rest of the repo.** Before introducing a new action version, grep the existing workflows — if `actions/checkout@v6` is already in use, match it rather than picking a different major.
+- **Pin third-party actions to the latest stable major.** Currently that means `actions/checkout@v7`, `actions/setup-node@v7`, `ramsey/composer-install@v4` and `shivammathur/setup-php@v2`. Older majors emit Node deprecation warnings as GitHub rolls runners forward.
+- **Stay consistent with the rest of the repo.** Before introducing a new action version, grep the existing workflows — if `actions/checkout@v7` is already in use, match it rather than picking a different major.
 - **Don't pin to floating refs** (`@main`, `@master`). Majors are stable enough; floating refs are not.
 
 A quick check:

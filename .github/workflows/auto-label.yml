@@ -13,7 +13,7 @@ jobs:
     steps:
       # pull_request_target runs the base branch's workflow; check out the base branch (never the
       # PR head) so the detector script below is the reviewed copy, not one a PR could modify.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           sparse-checkout: .github/scripts
 
