@@ -111,6 +111,14 @@ RoadRunner writes each upload to its own temporary file and hands the worker a s
 
 An upload RoadRunner rejected (for example, larger than its `http.uploads` limits) arrives as an `UploadedFile` whose `isValid()` is `false`, with the PSR-7 error code in `error()`.
 
+## File Downloads and Streamed Responses
+
+`FileResponse` and `StreamedResponse` (routing's [`StreamedResponseInterface`](/docs/packages/routing/#file-and-streamed-responses)) work under RoadRunner. Their `body()` is empty, so `Marko\Roadrunner\Http\Psr7ResponseBridge` runs `sendBody()` against a `Psr7StreamOutputStreamer`, which writes each chunk into the PSR-7 body stream instead of echoing it. A `FileResponse` keeps the status and headers it computed from the request, so ranged requests get `206 Partial Content` with `Content-Range` and only the requested bytes, conditional requests get `304 Not Modified` with no body, and `HEAD` requests never run the body at all.
+
+The worker answers only once the whole body is collected: it goes into a `php://temp` stream (in memory up to 2 MB, then a temporary file), and the client receives nothing until the callback or file read finishes. That suits downloads and generated exports of moderate size. For very large media, put a web server in front and use [`X-Sendfile`/`X-Accel-Redirect` offload](/docs/packages/routing/#offloading-files-to-the-web-server); the offload header passes through the bridge unchanged.
+
+Server-sent events need a connection that stays open, which a buffered worker cannot give. The bridge throws `StreamingResponseException` for any response whose `Content-Type` is `text/event-stream` (see `marko/sse` under [What Is Not Supported](#what-is-not-supported)).
+
 ## What Is Not Supported
 
 ### `marko/sse`
@@ -123,11 +131,7 @@ return [
 ];
 ```
 
-Acknowledging the package downgrades the boot-time refusal to a warning on STDERR — it does **not** make SSE work. `Marko\Roadrunner\Http\Psr7ResponseBridge` still throws `StreamingResponseException` per request whenever a streamed response reaches it, so an acknowledged install still fails loudly on every SSE route rather than silently truncating the stream. Only acknowledge `marko/sse` if it is installed for a reason unrelated to this worker (e.g. served by a separate FPM pool, a transitive dependency, or a retired endpoint) — not to make SSE routes work under RoadRunner.
-
-### Streamed and file responses
-
-The PSR-7 bridge only sends a buffered body. Any response that implements routing's [`StreamedResponseInterface`](/docs/packages/routing/#file-and-streamed-responses) --- an SSE `StreamingResponse`, a `StreamedResponse` or a `FileResponse` --- has an empty `body()`, so `Psr7ResponseBridge` throws `StreamingResponseException` for it instead of sending an empty `200`. Serve file downloads, media and generated exports through PHP-FPM (optionally with [`X-Sendfile`/`X-Accel-Redirect` offload](/docs/packages/routing/#offloading-files-to-the-web-server)), or return a plain `Response` with the whole body. Streaming files through RoadRunner via a PSR-7 stream is not supported yet.
+Acknowledging the package downgrades the boot-time refusal to a warning on STDERR — it does **not** make SSE work. `Marko\Roadrunner\Http\Psr7ResponseBridge` still throws `StreamingResponseException` per request whenever a `text/event-stream` response reaches it, so an acknowledged install still fails loudly on every SSE route rather than silently truncating the stream. Only acknowledge `marko/sse` if it is installed for a reason unrelated to this worker (e.g. served by a separate FPM pool, a transitive dependency, or a retired endpoint) — not to make SSE routes work under RoadRunner.
 
 ### `marko/debugbar`
 
@@ -145,7 +149,7 @@ Resolves the project's base path for the packaged `worker.php`, in order: the `M
 
 ### `Marko\Roadrunner\Http\Psr7RequestBridge` / `Psr7ResponseBridge`
 
-Convert between PSR-7 messages and `Marko\Routing\Http\Request`/`Response`. `Psr7RequestBridge` maps PSR-7 uploaded files to `Marko\Routing\Http\UploadedFile`; `removeTemporaryFiles()` deletes any temporary upload files it had to write. When building `$_SERVER`, it drops any request header whose name contains an underscore (e.g. `X_Forwarded_For`), matching nginx's default `underscores_in_headers off` behaviour in front of PHP-FPM. Without this, `X_Forwarded_For` and `X-Forwarded-For` would both map to `HTTP_X_FORWARDED_FOR`, letting a client override a proxy-set header and spoof the client IP or scheme. Send custom headers with dashes, not underscores. `Psr7ResponseBridge` consumes `Response::headerLines()` and uses `withAddedHeader()` for `Set-Cookie` so multiple cookies on one response are preserved rather than overwritten. It takes no constructor arguments and throws `StreamingResponseException` for any `StreamedResponseInterface` (see [Streamed and file responses](#streamed-and-file-responses)).
+Convert between PSR-7 messages and `Marko\Routing\Http\Request`/`Response`. `Psr7RequestBridge` maps PSR-7 uploaded files to `Marko\Routing\Http\UploadedFile`; `removeTemporaryFiles()` deletes any temporary upload files it had to write. When building `$_SERVER`, it drops any request header whose name contains an underscore (e.g. `X_Forwarded_For`), matching nginx's default `underscores_in_headers off` behaviour in front of PHP-FPM. Without this, `X_Forwarded_For` and `X-Forwarded-For` would both map to `HTTP_X_FORWARDED_FOR`, letting a client override a proxy-set header and spoof the client IP or scheme. Send custom headers with dashes, not underscores. `Psr7ResponseBridge` consumes `Response::headerLines()` and uses `withAddedHeader()` for `Set-Cookie` so multiple cookies on one response are preserved rather than overwritten. It takes no constructor arguments. It collects the body of any `StreamedResponseInterface` (`FileResponse`, `StreamedResponse`) into a PSR-7 stream through `Psr7StreamOutputStreamer`, and throws `StreamingResponseException` for a server-sent events response (see [File Downloads and Streamed Responses](#file-downloads-and-streamed-responses)).
 
 ### `Marko\Roadrunner\GuardRails\UnsafePackageChecker`
 
