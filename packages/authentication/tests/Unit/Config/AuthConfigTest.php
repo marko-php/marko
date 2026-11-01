@@ -3,7 +3,44 @@
 declare(strict_types=1);
 
 use Marko\Authentication\Config\AuthConfig;
+use Marko\Authentication\Exceptions\AuthException;
 use Marko\Testing\Fake\FakeConfigRepository;
+
+describe('password reset', function (): void {
+    it('loads the password reset provider, expiry and throttle', function (): void {
+        $config = new AuthConfig(new FakeConfigRepository([
+            'authentication.password_reset.provider' => 'customers',
+            'authentication.password_reset.expire_seconds' => 900,
+            'authentication.password_reset.throttle_seconds' => 30,
+        ]));
+
+        expect($config->passwordResetProvider())->toBe('customers')
+            ->and($config->passwordResetExpireSeconds())->toBe(900)
+            ->and($config->passwordResetThrottleSeconds())->toBe(30);
+    });
+
+    it('rejects a password reset expiry or throttle below one second', function (string $key, string $method): void {
+        $config = new AuthConfig(new FakeConfigRepository([
+            "authentication.password_reset.$key" => 0,
+        ]));
+
+        expect(fn () => $config->$method())
+            ->toThrow(AuthException::class, "authentication.password_reset.$key must be a positive integer, got 0");
+    })->with([
+        ['expire_seconds', 'passwordResetExpireSeconds'],
+        ['throttle_seconds', 'passwordResetThrottleSeconds'],
+    ]);
+
+    it('ships password reset defaults in the package config file', function (): void {
+        $defaults = require dirname(__DIR__, 3) . '/config/authentication.php';
+
+        expect($defaults['password_reset'])->toBe([
+            'provider' => 'users',
+            'expire_seconds' => 3600,
+            'throttle_seconds' => 60,
+        ]);
+    });
+});
 
 it('creates AuthConfig class', function () {
     $config = new AuthConfig(new FakeConfigRepository());

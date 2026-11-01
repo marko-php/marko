@@ -48,6 +48,11 @@ return [
     | implementation, resolved from the container. A provider without a
     | 'class' uses the app's UserProviderInterface binding.
     |
+    | 'persister' names a UserPersisterInterface implementation that saves
+    | this provider's users after a feature such as password reset changes
+    | them. A provider without a 'persister' uses the app's
+    | UserPersisterInterface binding.
+    |
     */
     'providers' => [
         'users' => [],
@@ -111,5 +116,21 @@ return [
         'decay_seconds' => 60,
         'lockout_seconds' => 60,
         'max_lockout_seconds' => 3600,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password Reset
+    |--------------------------------------------------------------------------
+    |
+    | PasswordResetBroker looks users up in 'provider'. A reset token is
+    | valid for expire_seconds after it is issued, and one user can request
+    | at most one reset link every throttle_seconds. Both must be 1 or more.
+    |
+    */
+    'password_reset' => [
+        'provider' => 'users',
+        'expire_seconds' => 3600,
+        'throttle_seconds' => 60,
     ],
 ];

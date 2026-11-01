@@ -9,18 +9,17 @@
         "marko/cache": "self.version",
         "marko/clock": "self.version",
         "marko/config": "self.version",
+        "marko/ratelimiter": "self.version",
         "marko/routing": "self.version",
         "marko/session": "self.version"
     },
     "require-dev": {
         "marko/cache-array": "self.version",
         "marko/hashing": "self.version",
-        "marko/ratelimiter": "self.version",
         "marko/testing": "self.version"
     },
     "suggest": {
-        "marko/hashing": "Hash login passwords with its configured driver (HASH_DRIVER, e.g. argon2id) instead of the built-in bcrypt hasher",
-        "marko/ratelimiter": "Keys login throttling by the real client IP behind trusted proxies, with IPv6 /64 bucketing"
+        "marko/hashing": "Hash login passwords with its configured driver (HASH_DRIVER, e.g. argon2id) instead of the built-in bcrypt hasher"
     },
     "autoload": {
         "psr-4": {

@@ -68,15 +68,15 @@ The factory builds an `S3Config` value object from your disk configuration. The 
 
 ## Usage
 
-Use `FilesystemManager` to access the S3 disk:
+Use `FilesystemManagerInterface` to access the S3 disk:
 
 ```php
-use Marko\Filesystem\Manager\FilesystemManager;
+use Marko\Filesystem\Contracts\FilesystemManagerInterface;
 
 class MediaService
 {
     public function __construct(
-        private FilesystemManager $filesystemManager,
+        private FilesystemManagerInterface $filesystemManager,
     ) {}
 
     public function upload(
@@ -133,10 +133,11 @@ All keys are automatically prefixed when a `prefix` is configured, keeping your 
 // S3 key: 'uploads/images/photo.jpg'
 ```
 
-A leading `/` is stripped, so `/images/photo.jpg` maps to the same key. To keep every operation inside the prefix---including on S3-compatible gateways and proxies that resolve dot-segments---paths are validated before any request is made:
+Paths follow the shared [path rules](/docs/packages/filesystem/#path-rules): a leading `/`, empty and `.` segments are dropped, so `/images/photo.jpg` and `images//./photo.jpg` map to the same key. A trailing `/` is kept, since `dir/` is the directory marker object. To keep every operation inside the prefix---including on S3-compatible gateways and proxies that resolve dot-segments---paths are validated before any request is made:
 
 - A `..` segment (e.g. `../other-tenant/file.txt`) throws `PathException::traversalAttempt()`.
 - A NUL byte or a backslash throws `PathException::invalidPath()`.
+- `deleteDirectory()` on the disk root (`''`, `/`, `.`) throws `PathException::rootDeletion()` instead of deleting everything under the prefix.
 
 `..` inside a name (e.g. `notes..txt`) is allowed. When copying, the source key is URL-encoded per segment, so characters such as `?`, `#`, `+` and spaces are treated as part of the key.
 

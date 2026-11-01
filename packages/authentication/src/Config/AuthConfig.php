@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Authentication\Config;
 
+use Marko\Authentication\Exceptions\AuthException;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigNotFoundException;
 
@@ -200,5 +201,50 @@ readonly class AuthConfig
     public function throttleMaxLockoutSeconds(): int
     {
         return $this->config->getInt('authentication.throttle.max_lockout_seconds');
+    }
+
+    /**
+     * The user provider password reset looks users up in.
+     *
+     * @throws ConfigNotFoundException
+     */
+    public function passwordResetProvider(): string
+    {
+        return $this->config->getString('authentication.password_reset.provider');
+    }
+
+    /**
+     * How long a password reset token stays valid, in seconds.
+     *
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function passwordResetExpireSeconds(): int
+    {
+        return $this->positivePasswordResetSetting('expire_seconds');
+    }
+
+    /**
+     * The minimum time between two reset link requests for one user, in seconds.
+     *
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function passwordResetThrottleSeconds(): int
+    {
+        return $this->positivePasswordResetSetting('throttle_seconds');
+    }
+
+    /**
+     * @throws AuthException|ConfigNotFoundException
+     */
+    private function positivePasswordResetSetting(
+        string $name,
+    ): int {
+        $value = $this->config->getInt("authentication.password_reset.$name");
+
+        if ($value < 1) {
+            throw AuthException::invalidPasswordResetSetting($name, $value);
+        }
+
+        return $value;
     }
 }

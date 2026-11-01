@@ -60,10 +60,22 @@ class UserProviderResolver
     }
 
     /**
+     * The provider named $providerName in authentication.providers, for features
+     * that name a provider directly rather than through a guard (e.g. password reset).
+     *
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function forProvider(
+        string $providerName,
+    ): UserProviderInterface {
+        return $this->providers[$providerName] ??= $this->resolve(null, $providerName);
+    }
+
+    /**
      * @throws AuthException|ConfigNotFoundException
      */
     private function resolve(
-        string $guard,
+        ?string $guard,
         string $providerName,
     ): UserProviderInterface {
         $providersConfig = $this->config->providersOrNull();
@@ -73,11 +85,11 @@ class UserProviderResolver
         }
 
         if (!array_key_exists($providerName, $providersConfig)) {
-            throw AuthException::undefinedProvider(
-                $guard,
-                $providerName,
-                array_map(strval(...), array_keys($providersConfig)),
-            );
+            $configured = array_map(strval(...), array_keys($providersConfig));
+
+            throw $guard === null
+                ? AuthException::undefinedNamedProvider($providerName, $configured)
+                : AuthException::undefinedProvider($guard, $providerName, $configured);
         }
 
         $providerConfig = $providersConfig[$providerName];

@@ -63,6 +63,12 @@ return [
         'lockout_seconds' => 60,       // first lockout; each further one doubles
         'max_lockout_seconds' => 3600,
     ],
+
+    'password_reset' => [
+        'provider' => 'users',      // the provider reset requests look users up in
+        'expire_seconds' => 3600,   // how long a reset token stays valid
+        'throttle_seconds' => 60,   // at most one reset link per user in this window
+    ],
 ];
 ```
 
@@ -70,7 +76,7 @@ Each guard's `driver` picks how it is built. `session` is built in. The shipped 
 
 Each guard's `provider` names an entry in `providers`. See [User Providers](#user-providers).
 
-See [Remember Me](#remember-me) for what each `remember` option controls, and [Login Throttling](#login-throttling) for `throttle`.
+See [Remember Me](#remember-me) for what each `remember` option controls, [Login Throttling](#login-throttling) for `throttle`, and [Password Reset](#password-reset) for `password_reset`.
 
 ### Password Hashing
 
@@ -454,6 +460,53 @@ Each provider is built once and shared by every guard that names it. A guard nam
 
 Every session guard keeps its user in its own session key, `auth_{guard}_user_id`, and its own remember-me cookie, `remember_{guard}`. Logging in on one guard never authenticates another. [marko/admin-auth](/docs/packages/admin-auth/#the-admin-guard) uses this to ship a separate `admin` guard backed by `AdminUserProvider`.
 
+### Saving Changed Users
+
+Features that change a user, such as [password reset](#password-reset), save it through `UserPersisterInterface`. The user provider only reads users; the persister writes them:
+
+```php title="app/web/Auth/UserPersister.php"
+use App\Web\Entity\User;
+use App\Web\Repository\UserRepository;
+use Marko\Authentication\AuthenticatableInterface;
+use Marko\Authentication\Contracts\UserPersisterInterface;
+
+class UserPersister implements UserPersisterInterface
+{
+    public function __construct(
+        private UserRepository $userRepository,
+    ) {}
+
+    public function persist(
+        AuthenticatableInterface $user,
+    ): void {
+        /** @var User $user */
+        $this->userRepository->save($user);
+    }
+}
+```
+
+Bind it once for every provider, or give one provider its own with a `persister` key, the same way `class` picks the provider:
+
+```php title="config/authentication.php"
+return [
+    'providers' => [
+        'users' => [], // the app's UserPersisterInterface binding
+        'partners' => [
+            'class' => App\Partner\Auth\PartnerProvider::class,
+            'persister' => App\Partner\Auth\PartnerPersister::class,
+        ],
+    ],
+];
+```
+
+`UserPersisterResolver::forProvider()` picks it. With no `persister` key and no `UserPersisterInterface` binding, it throws a `UserPersisterException` naming the provider instead of dropping the change:
+
+```php
+// UserPersisterException: No user persister is configured for user provider 'users'
+```
+
+A feature changes the user through a small interface the entity implements, such as `CanResetPasswordInterface`. `UserPersisterResolver::assertUserSupports()` throws a `UserPersisterException` naming the provider, the user class and the missing interface when the entity doesn't implement it.
+
 ## Remember Me
 
 Pass `remember: true` when logging a user in to keep them signed in after their session expires:
@@ -594,6 +647,217 @@ $manager->hasExpired($expiresAt); // false
 $clock->travel('+1 minute');
 $manager->hasExpired($expiresAt); // true
 ```
+
+## Password Reset
+
+`PasswordResetBrokerInterface` runs the security-sensitive half of "forgot password": it issues, stores, checks and expires reset tokens. Your app supplies the routes, the forms, the email, and the code that saves a user.
+
+The broker:
+
+- creates a token from 64 random bytes, sends it to the user in hex, and stores only its SHA-256 hash with the time it was created;
+- checks a submitted token with `hash_equals()`, rejects it once it is `expire_seconds` old, and deletes it when it is used, so each token works once;
+- returns `ResetLinkStatus::Sent` whether or not the email is registered, and never calls the notifier for an unknown email;
+- throttles link requests to one per `throttle_seconds` through [marko/ratelimiter](/docs/packages/ratelimiter/)'s `RateLimiterInterface`. A request for a known user is throttled per user, one for an unknown email per credentials, so `Throttled` doesn't reveal which emails exist either;
+- hashes the new password with `PasswordHasherInterface`, saves the user through [`UserPersisterInterface`](#saving-changed-users), and dispatches [`PasswordResetEvent`](#passwordresetevent).
+
+Tokens are keyed by the user's auth identifier, not their email, so changing an email can't orphan or redirect a token.
+
+### Setting Up Password Reset
+
+1. Implement `CanResetPasswordInterface` on your user entity. It extends `AuthenticatableInterface` with `setAuthPassword()` and `getEmailForPasswordReset()`.
+2. Bind a [`UserPersisterInterface`](#saving-changed-users) that saves the entity.
+3. Bind a `ResetLinkNotifierInterface` that delivers the link.
+4. Install a persistent cache driver, such as [marko/cache-file](/docs/packages/cache-file/) or [marko/cache-redis](/docs/packages/cache-redis/). Both the default token repository, `CachePasswordResetTokenRepository`, and the throttle keep their data in the cache.
+
+```php title="app/web/Entity/User.php"
+use Marko\Authentication\CanResetPasswordInterface;
+use Marko\Notification\Contracts\NotifiableInterface;
+
+class User implements CanResetPasswordInterface, NotifiableInterface
+{
+    // ...the AuthenticatableInterface methods (see Making Users Authenticatable)
+
+    public function setAuthPassword(
+        string $hash,
+    ): void {
+        $this->password = $hash;
+    }
+
+    public function getEmailForPasswordReset(): string
+    {
+        return $this->email;
+    }
+
+    public function routeNotificationFor(
+        string $channel,
+    ): mixed {
+        return $this->email;
+    }
+
+    public function getNotifiableId(): string|int
+    {
+        return $this->id;
+    }
+
+    public function getNotifiableType(): string
+    {
+        return self::class;
+    }
+}
+```
+
+### Sending the Reset Link
+
+The broker never sends email itself. It hands the user and the plain token to your `ResetLinkNotifierInterface`, so you own the message and the URL. This one uses [marko/notification](/docs/packages/notification/) and queues the email: an unknown email returns at once, so sending inline would let the response time reveal which emails are registered.
+
+```php title="app/web/Auth/ResetPasswordNotification.php"
+use Marko\Mail\Message;
+use Marko\Notification\Contracts\NotifiableInterface;
+use Marko\Notification\Contracts\NotificationInterface;
+
+class ResetPasswordNotification implements NotificationInterface
+{
+    public function __construct(
+        private string $url,
+    ) {}
+
+    public function channels(
+        NotifiableInterface $notifiable,
+    ): array {
+        return ['mail'];
+    }
+
+    public function toMail(
+        NotifiableInterface $notifiable,
+    ): Message {
+        return Message::create()
+            ->subject('Reset your password')
+            ->html("<p><a href=\"$this->url\">Choose a new password</a>. The link expires in an hour.</p>");
+    }
+
+    public function toDatabase(
+        NotifiableInterface $notifiable,
+    ): array {
+        return [];
+    }
+}
+```
+
+```php title="app/web/Auth/QueuedResetLinkNotifier.php"
+use App\Web\Entity\User;
+use Marko\Authentication\CanResetPasswordInterface;
+use Marko\Authentication\Contracts\ResetLinkNotifierInterface;
+use Marko\Notification\Contracts\NotificationSenderInterface;
+
+class QueuedResetLinkNotifier implements ResetLinkNotifierInterface
+{
+    public function __construct(
+        private NotificationSenderInterface $notificationSender,
+    ) {}
+
+    public function send(
+        CanResetPasswordInterface $user,
+        string $token,
+    ): void {
+        $url = 'https://example.com/reset-password?' . http_build_query([
+            'token' => $token,
+            'email' => $user->getEmailForPasswordReset(),
+        ]);
+
+        /** @var User $user */
+        $this->notificationSender->queue($user, new ResetPasswordNotification($url));
+    }
+}
+```
+
+```php title="app/web/module.php"
+use App\Web\Auth\QueuedResetLinkNotifier;
+use App\Web\Auth\UserPersister;
+use Marko\Authentication\Contracts\ResetLinkNotifierInterface;
+use Marko\Authentication\Contracts\UserPersisterInterface;
+
+return [
+    'bindings' => [
+        UserPersisterInterface::class => UserPersister::class,
+        ResetLinkNotifierInterface::class => QueuedResetLinkNotifier::class,
+    ],
+];
+```
+
+### Handling the Requests
+
+```php title="app/web/Controller/PasswordResetController.php"
+use Marko\Authentication\Contracts\PasswordResetBrokerInterface;
+use Marko\Authentication\Middleware\GuestMiddleware;
+use Marko\Authentication\PasswordReset\ResetLinkStatus;
+use Marko\Authentication\PasswordReset\ResetStatus;
+use Marko\Routing\Attributes\Middleware;
+use Marko\Routing\Attributes\Post;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
+
+#[Middleware(GuestMiddleware::class)]
+class PasswordResetController
+{
+    public function __construct(
+        private PasswordResetBrokerInterface $passwordResetBroker,
+    ) {}
+
+    #[Post('/forgot-password')]
+    public function sendLink(
+        Request $request,
+    ): Response {
+        $status = $this->passwordResetBroker->sendResetLink([
+            'email' => (string) $request->post('email'),
+        ]);
+
+        return match ($status) {
+            ResetLinkStatus::Sent => Response::redirect('/forgot-password?sent=1'),
+            ResetLinkStatus::Throttled => Response::redirect('/forgot-password?throttled=1'),
+        };
+    }
+
+    #[Post('/reset-password')]
+    public function reset(
+        Request $request,
+    ): Response {
+        // Validate the new password (length, confirmation) before calling the broker.
+        $status = $this->passwordResetBroker->reset(
+            ['email' => (string) $request->post('email')],
+            (string) $request->post('token'),
+            (string) $request->post('password'),
+        );
+
+        return match ($status) {
+            ResetStatus::PasswordReset => Response::redirect('/login?reset=1'),
+            ResetStatus::InvalidToken, ResetStatus::InvalidUser => Response::redirect('/forgot-password?invalid=1'),
+        };
+    }
+}
+```
+
+The credentials array goes straight to `UserProviderInterface::retrieveByCredentials()` on the provider named by `password_reset.provider`, so use whatever keys your provider looks users up by.
+
+### Clearing Expired Reset Tokens
+
+`CachePasswordResetTokenRepository` stores each token with `expire_seconds` as its cache lifetime, so the cache drops expired tokens by itself. A repository that keeps tokens elsewhere, such as a database table, needs the cleanup command run on a schedule:
+
+```bash
+marko auth:clear-reset-tokens
+```
+
+It calls `PasswordResetTokenRepositoryInterface::deleteExpired()` with the current time minus `expire_seconds`. To store tokens elsewhere, bind your own `PasswordResetTokenRepositoryInterface`. It only stores data: expiry, hash comparison and single use stay in the broker, so every storage behaves the same.
+
+### Misconfiguration
+
+Resolving the persister happens on every request, before the user is looked up, so a missing one fails the same way for registered and unknown emails:
+
+```php
+// UserPersisterException: No user persister is configured for user provider 'users'
+// UserPersisterException: User class 'App\Web\Entity\User' from user provider 'users' does not implement Marko\Authentication\CanResetPasswordInterface
+```
+
+`expire_seconds` or `throttle_seconds` below `1` throws an `AuthException` when the broker reads it.
 
 ## Middleware
 
@@ -743,7 +1007,7 @@ Before the credentials are stored on the event, every key matching `FailedLoginE
 
 ### PasswordResetEvent
 
-Dispatched when a user's password is reset:
+Dispatched by `PasswordResetBroker::reset()` after the new password is saved (see [Password Reset](#password-reset)):
 
 ```php title="NotifyPasswordResetObserver.php"
 use Marko\Authentication\Event\PasswordResetEvent;
@@ -836,6 +1100,51 @@ public function getRememberTokenName(): string;
 
 ```php
 public function forGuard(string $guard, array $guardConfig): UserProviderInterface;
+public function forProvider(string $providerName): UserProviderInterface;
+```
+
+### UserPersisterInterface
+
+```php
+public function persist(AuthenticatableInterface $user): void;
+```
+
+### UserPersisterResolver
+
+```php
+public function forProvider(string $providerName): UserPersisterInterface;
+public function assertUserSupports(AuthenticatableInterface $user, string $interface, string $providerName): void;
+```
+
+### CanResetPasswordInterface
+
+Extends `AuthenticatableInterface`:
+
+```php
+public function setAuthPassword(string $hash): void;
+public function getEmailForPasswordReset(): string;
+```
+
+### PasswordResetBrokerInterface
+
+```php
+public function sendResetLink(array $credentials): ResetLinkStatus; // Sent | Throttled
+public function reset(array $credentials, string $token, string $newPassword): ResetStatus; // PasswordReset | InvalidToken | InvalidUser
+```
+
+### PasswordResetTokenRepositoryInterface
+
+```php
+public function store(int|string $userId, string $tokenHash, DateTimeImmutable $createdAt): void;
+public function find(int|string $userId): ?PasswordResetTokenRecord; // ->tokenHash, ->createdAt
+public function delete(int|string $userId): void;
+public function deleteExpired(DateTimeImmutable $before): int;
+```
+
+### ResetLinkNotifierInterface
+
+```php
+public function send(CanResetPasswordInterface $user, string $token): void;
 ```
 
 ### UserProviderInterface

@@ -10,6 +10,7 @@
         "marko/broadcasting": "self.version",
         "marko/config": "self.version",
         "marko/encryption": "self.version",
+        "marko/filesystem": "self.version",
         "marko/mail": "self.version",
         "marko/notification": "self.version",
         "marko/queue": "self.version",
@@ -18,10 +19,12 @@
         "marko/authentication": "self.version",
         "marko/http": "self.version",
         "marko/routing": "self.version",
-        "psr/clock": "^1.0"
+        "psr/clock": "^1.0",
+        "ext-fileinfo": "*"
     },
     "require-dev": {
         "marko/database": "self.version",
+        "marko/filesystem-local": "self.version",
         "marko/validation": "self.version",
         "pestphp/pest": "^4.0"
     },
