@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace Marko\Testing\Http;
 
+use Closure;
 use JsonException;
+use Marko\Routing\Exceptions\ContentDispositionException;
+use Marko\Routing\Http\ContentDisposition;
 use Marko\Routing\Http\Cookie;
+use Marko\Routing\Http\DispositionType;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Http\StreamedResponseInterface;
+use Marko\Session\Flash\FlashBag;
 use Marko\Testing\Exceptions\AssertionFailedException;
-use PHPUnit\Framework\Assert;
+use Marko\Testing\Exceptions\TestClientException;
+use Psr\Container\ContainerExceptionInterface;
 
 /**
  * The response to a {@see TestClient} request, with assertions.
@@ -17,13 +23,23 @@ use PHPUnit\Framework\Assert;
  * Every assertion returns $this so they chain, and throws
  * AssertionFailedException on failure with the response status and the start
  * of the body in the message.
+ *
+ * The session assertions read the session the client's next request would see,
+ * through the client's {@see SessionProbe}. They work only on the latest
+ * response a TestClient returned: a response built by hand has no session, and
+ * an older one is stale. Both throw TestClientException.
  */
 class TestResponse
 {
     private ?string $streamedContent = null;
 
+    /**
+     * @param int $requestSequence which of the client's requests produced this response (1 for the first)
+     */
     public function __construct(
         private readonly Response $response,
+        private readonly ?SessionProbe $sessionProbe = null,
+        private readonly int $requestSequence = 0,
     ) {}
 
     public function response(): Response
@@ -428,15 +444,222 @@ class TestResponse
     }
 
     /**
-     * Count a passed assertion with PHPUnit when it is loaded, so a test whose only
-     * checks are TestResponse assertions is not reported as risky ("did not perform
-     * any assertions"). Without PHPUnit this is a no-op.
+     * Asserts the response is a download: Content-Disposition is `attachment`, with the
+     * filename $filename when one is given (read from `filename*` when sent, else `filename`).
+     *
+     * @throws AssertionFailedException
      */
+    public function assertDownload(
+        ?string $filename = null,
+    ): static {
+        $header = $this->header('Content-Disposition');
+
+        if ($header === null) {
+            $this->fail('Expected a download but the response has no Content-Disposition header.');
+        }
+
+        try {
+            $disposition = ContentDisposition::fromHeader($header);
+        } catch (ContentDispositionException $e) {
+            $this->fail(
+                "Expected a download but the Content-Disposition header [$header] is malformed: {$e->getMessage()}",
+            );
+        }
+
+        if ($disposition->type() !== DispositionType::Attachment) {
+            $this->fail("Expected a download (Content-Disposition: attachment) but it is [$header].");
+        }
+
+        if ($filename === null) {
+            return $this->passed();
+        }
+
+        $actual = $disposition->filename();
+
+        if ($actual === null) {
+            $this->fail("Expected a download named [$filename] but it has no filename.");
+        }
+
+        if ($actual !== $filename) {
+            $this->fail("Expected a download named [$filename] but it is named [$actual].");
+        }
+
+        return $this->passed();
+    }
+
+    /**
+     * Asserts the JSON body's `errors` object (the shape ValidationException renders with
+     * a 422) has an error for each field. A list entry names a field; a `field => message`
+     * entry also requires that exact message among the field's errors.
+     *
+     * @param array<int|string, string>|string $fields
+     * @throws AssertionFailedException
+     */
+    public function assertJsonValidationErrors(
+        array|string $fields,
+    ): static {
+        $errors = $this->jsonValidationErrors();
+
+        foreach ((array) $fields as $key => $value) {
+            $field = is_int($key) ? $value : $key;
+            $messages = $errors[$field] ?? [];
+
+            if (!is_array($messages) || $messages === []) {
+                $this->fail("Expected a JSON validation error for [$field] but there was none.");
+            }
+
+            if (is_string($key) && !in_array($value, $messages, true)) {
+                $this->fail(
+                    "Expected JSON validation error [$value] for [$field] but its errors were "
+                    . $this->export($messages) . '.',
+                );
+            }
+        }
+
+        return $this->passed();
+    }
+
+    /**
+     * Asserts the JSON body has no validation error for any of $fields, or none at all when
+     * no fields are given. An empty body (e.g. a 204) has none.
+     *
+     * @param list<string>|string $fields
+     * @throws AssertionFailedException
+     */
+    public function assertJsonMissingValidationErrors(
+        array|string $fields = [],
+    ): static {
+        if ($this->content() === '') {
+            return $this->passed();
+        }
+
+        $errors = $this->jsonValidationErrors();
+        $fields = (array) $fields;
+
+        if ($fields === [] && $errors !== []) {
+            $this->fail('Expected no JSON validation errors but there were: ' . $this->export($errors));
+        }
+
+        foreach ($fields as $field) {
+            if (isset($errors[$field]) && $errors[$field] !== []) {
+                $this->fail(
+                    "Expected no JSON validation error for [$field] but it has {$this->export($errors[$field])}.",
+                );
+            }
+        }
+
+        return $this->passed();
+    }
+
+    /**
+     * Asserts the session the next request would see has $key. With $value, the stored
+     * value must be identical (===) to it; a Closure is called with the stored value
+     * instead and must return true.
+     *
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface
+     */
+    public function assertSessionHas(
+        string $key,
+        mixed $value = null,
+    ): static {
+        $data = $this->sessionData();
+
+        if (!array_key_exists($key, $data)) {
+            $this->fail("Expected the session to have [$key] but it does not.");
+        }
+
+        if ($value instanceof Closure) {
+            if ($value($data[$key]) !== true) {
+                $this->fail("Expected session [$key] to pass the callback but it was {$this->export($data[$key])}.");
+            }
+
+            return $this->passed();
+        }
+
+        if ($value !== null && $data[$key] !== $value) {
+            $this->fail(
+                "Expected session [$key] to be {$this->export($value)} but it was {$this->export($data[$key])}.",
+            );
+        }
+
+        return $this->passed();
+    }
+
+    /**
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface
+     */
+    public function assertSessionMissing(
+        string $key,
+    ): static {
+        $data = $this->sessionData();
+
+        if (array_key_exists($key, $data)) {
+            $this->fail("Expected the session not to have [$key] but it was {$this->export($data[$key])}.");
+        }
+
+        return $this->passed();
+    }
+
+    /**
+     * Asserts the session holds a FlashBag message of $type, and the message $message
+     * when one is given. The flash data is read, not consumed.
+     *
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface
+     */
+    public function assertSessionHasFlash(
+        string $type,
+        ?string $message = null,
+    ): static {
+        $data = $this->sessionData();
+        $messages = new FlashBag($data)->peek($type);
+
+        if ($messages === []) {
+            $this->fail("Expected a [$type] flash message but there was none.");
+        }
+
+        if ($message !== null && !in_array($message, $messages, true)) {
+            $this->fail(
+                "Expected a [$type] flash message [$message] but the [$type] messages were {$this->export($messages)}.",
+            );
+        }
+
+        return $this->passed();
+    }
+
+    /**
+     * The raw session data the client's next request would see.
+     *
+     * @return array<string, mixed>
+     * @throws TestClientException|ContainerExceptionInterface
+     */
+    private function sessionData(): array
+    {
+        if ($this->sessionProbe === null) {
+            throw TestClientException::responseWithoutClient();
+        }
+
+        $this->sessionProbe->ensureLatest($this->requestSequence);
+
+        return $this->sessionProbe->sessionData();
+    }
+
+    /**
+     * The `errors` object of the JSON body; empty when the body has none.
+     *
+     * @return array<mixed>
+     * @throws AssertionFailedException
+     */
+    private function jsonValidationErrors(): array
+    {
+        $data = $this->decodedJson();
+        $errors = is_array($data) ? ($data['errors'] ?? []) : [];
+
+        return is_array($errors) ? $errors : [];
+    }
+
     private function passed(): static
     {
-        if (class_exists(Assert::class)) {
-            Assert::assertTrue(true);
-        }
+        AssertionCounter::passed();
 
         return $this;
     }

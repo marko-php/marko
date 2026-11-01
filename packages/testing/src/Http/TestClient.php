@@ -31,6 +31,7 @@ use Marko\Routing\Http\Cookie;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Http\UploadedFile;
+use Marko\Testing\Exceptions\AssertionFailedException;
 use Marko\Testing\Exceptions\TestClientException;
 use Marko\Testing\Fake\FakeGuard;
 use Psr\Clock\ClockInterface;
@@ -87,10 +88,17 @@ class TestClient
     /** @var list<ResettableInterface> */
     private array $preserved = [];
 
+    private readonly SessionProbe $sessionProbe;
+
+    private int $requestCount = 0;
+
+    private ?Request $lastRequest = null;
+
     public function __construct(
         private readonly Application $application,
     ) {
         $this->resetter = new RequestStateResetter($application->container);
+        $this->sessionProbe = new SessionProbe($this);
     }
 
     /**
@@ -255,6 +263,136 @@ class TestClient
     }
 
     /**
+     * Reset request-scoped state the way the client does before each request: every
+     * resolved ResettableInterface service except those passed to withoutResetting().
+     *
+     * @throws ContainerExceptionInterface
+     */
+    public function resetRequestState(): void
+    {
+        $this->resetter->reset(...$this->preserved);
+    }
+
+    /**
+     * How many requests the client has sent.
+     */
+    public function requestCount(): int
+    {
+        return $this->requestCount;
+    }
+
+    /**
+     * The value of the jar's cookie $name that a repeat of the last request would carry
+     * (same host, path and scheme, same-site); before any request, what a request to
+     * https://localhost/ would carry. Null when the jar has no such cookie.
+     *
+     * @throws ContainerExceptionInterface
+     */
+    public function lastRequestCookie(
+        string $name,
+    ): ?string {
+        $request = $this->lastRequest;
+        $server = $request === null ? ['HTTP_HOST' => 'localhost', 'HTTPS' => 'on'] : [
+            'HTTP_HOST' => $request->server('HTTP_HOST') ?? 'localhost',
+            'HTTPS' => $request->server('HTTPS') ?? '',
+        ];
+
+        $this->evictExpiredCookies();
+        $cookie = array_find(
+            $this->cookiesFor(
+                self::requestHost($server),
+                $request?->path() ?? '/',
+                self::isSecureRequest($server),
+                null,
+            ),
+            static fn (JarCookie $cookie): bool => $cookie->name === $name,
+        );
+
+        return $cookie?->value;
+    }
+
+    /**
+     * Asserts the guard named $guard (the default guard when null) would see a logged-in
+     * user on the next request. The real guard reads the session the client's session
+     * cookie points to; after actingAs() the FakeGuard's user is reported. A stateless
+     * guard throws TestClientException: assert on a response instead.
+     *
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface|ConfigNotFoundException
+     */
+    public function assertAuthenticated(
+        ?string $guard = null,
+    ): static {
+        $name = $this->guardName($guard);
+
+        if ($this->sessionProbe->user($guard) === null) {
+            throw AssertionFailedException::guardAssertion(
+                "Expected a user to be authenticated on guard [$name] but there is none.",
+                $name,
+            );
+        }
+
+        AssertionCounter::passed();
+
+        return $this;
+    }
+
+    /**
+     * Asserts the guard named $guard (the default guard when null) would see no user on the next request.
+     *
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface|ConfigNotFoundException
+     */
+    public function assertGuest(
+        ?string $guard = null,
+    ): static {
+        $name = $this->guardName($guard);
+        $user = $this->sessionProbe->user($guard);
+
+        if ($user !== null) {
+            throw AssertionFailedException::guardAssertion(
+                "Expected a guest on guard [$name] but user [{$user->getAuthIdentifier()}] is authenticated.",
+                $name,
+            );
+        }
+
+        AssertionCounter::passed();
+
+        return $this;
+    }
+
+    /**
+     * Asserts the guard named $guard (the default guard when null) would see $user on the next
+     * request, compared by getAuthIdentifier(), not by object identity.
+     *
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface|ConfigNotFoundException
+     */
+    public function assertAuthenticatedAs(
+        AuthenticatableInterface $user,
+        ?string $guard = null,
+    ): static {
+        $name = $this->guardName($guard);
+        $expected = $user->getAuthIdentifier();
+        $actual = $this->sessionProbe->user($guard);
+
+        if ($actual === null) {
+            throw AssertionFailedException::guardAssertion(
+                "Expected user [$expected] to be authenticated on guard [$name] but there is none.",
+                $name,
+            );
+        }
+
+        if ($actual->getAuthIdentifier() !== $expected) {
+            throw AssertionFailedException::guardAssertion(
+                "Expected user [$expected] to be authenticated on guard [$name] but user [{$actual->getAuthIdentifier()}] is.",
+                $name,
+            );
+        }
+
+        AssertionCounter::passed();
+
+        return $this;
+    }
+
+    /**
      * Upload a file with the next request, as the form field $field. The file is copied
      * first, so the controller can move the upload without touching the original.
      *
@@ -333,7 +471,7 @@ class TestClient
     ): static {
         $container = $this->application->container;
         $authManager = $container->get(AuthManager::class);
-        $defaultGuard = $container->get(AuthConfig::class)->defaultGuard();
+        $defaultGuard = $this->guardName(null);
         $name = $guard ?? $defaultGuard;
 
         $fakeGuard = new FakeGuard(name: $name);
@@ -545,11 +683,13 @@ class TestClient
         $request = $this->buildRequest($method, $uri, $data, $headers, $body);
         $files = $this->files;
         $this->files = [];
+        $this->requestCount++;
+        $this->lastRequest = $request;
 
         try {
             // Reset before, not after, like the RoadRunner worker: state left by a
             // request that threw must not reach the next one.
-            $this->resetter->reset(...$this->preserved);
+            $this->resetRequestState();
             $response = $this->application->router->handle($request);
         } finally {
             array_walk_recursive($files, static function (mixed $file): void {
@@ -561,7 +701,18 @@ class TestClient
 
         $this->storeCookies($response, $request);
 
-        return new TestResponse($response);
+        return new TestResponse($response, $this->sessionProbe, $this->requestCount);
+    }
+
+    /**
+     * $guard, or the configured default guard's name when null.
+     *
+     * @throws ContainerExceptionInterface|ConfigNotFoundException
+     */
+    private function guardName(
+        ?string $guard,
+    ): string {
+        return $guard ?? $this->application->container->get(AuthConfig::class)->defaultGuard();
     }
 
     /**

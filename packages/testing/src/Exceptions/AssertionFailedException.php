@@ -121,6 +121,22 @@ class AssertionFailedException extends MarkoException
         );
     }
 
+    /**
+     * A TestClient auth assertion failed: the guard, as the next request would see it,
+     * does not hold the expected user.
+     */
+    public static function guardAssertion(
+        string $expectation,
+        string $guard,
+    ): self {
+        return new self(
+            message: $expectation,
+            context: "Guard [$guard], read from the session the client's next request would carry.",
+            suggestion: 'Check that the login or logout request succeeded and that the client kept the session cookie '
+                . 'it was sent (see cookieJar()).',
+        );
+    }
+
     public static function invalidJsonResponse(
         int $status,
         string $body,

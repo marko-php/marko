@@ -7,6 +7,7 @@ use Marko\Routing\Http\OutputStreamer;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Http\StreamedResponse;
 use Marko\Testing\Exceptions\AssertionFailedException;
+use Marko\Testing\Exceptions\TestClientException;
 use Marko\Testing\Http\TestResponse;
 use PHPUnit\Framework\Assert;
 
@@ -345,4 +346,111 @@ describe('TestResponse streamed content', function (): void {
     it('throws for a response that is not streamed', function (): void {
         new TestResponse(new Response('plain'))->streamedContent();
     })->throws(AssertionFailedException::class, 'Expected a streamed response but got Marko\Routing\Http\Response.');
+});
+
+describe('TestResponse assertDownload', function (): void {
+    it('passes for an attachment, with and without a filename', function (): void {
+        $response = new TestResponse(new Response('a,b', headers: [
+            'Content-Disposition' => 'attachment; filename="report.csv"',
+        ]));
+
+        expect($response->assertDownload())->toBe($response)
+            ->and($response->assertDownload('report.csv'))->toBe($response);
+    });
+
+    it('matches a non-ASCII filename sent as filename*', function (): void {
+        $response = new TestResponse(new Response('', headers: [
+            'Content-Disposition' => "attachment; filename=\"r_sum_.pdf\"; filename*=UTF-8''r%C3%A9sum%C3%A9.pdf",
+        ]));
+
+        expect($response->assertDownload('résumé.pdf'))->toBe($response);
+    });
+
+    it('fails without a Content-Disposition header', function (): void {
+        new TestResponse(new Response('body'))->assertDownload();
+    })->throws(
+        AssertionFailedException::class,
+        'Expected a download but the response has no Content-Disposition header.',
+    );
+
+    it('fails for an inline disposition', function (): void {
+        new TestResponse(new Response('', headers: ['Content-Disposition' => 'inline; filename="a.pdf"']))
+            ->assertDownload();
+    })->throws(
+        AssertionFailedException::class,
+        'Expected a download (Content-Disposition: attachment) but it is [inline; filename="a.pdf"].',
+    );
+
+    it('fails for a different filename', function (): void {
+        new TestResponse(new Response('', headers: ['Content-Disposition' => 'attachment; filename="a.pdf"']))
+            ->assertDownload('b.pdf');
+    })->throws(AssertionFailedException::class, 'Expected a download named [b.pdf] but it is named [a.pdf].');
+
+    it('fails when a filename is expected and none is sent', function (): void {
+        new TestResponse(new Response('', headers: ['Content-Disposition' => 'attachment']))
+            ->assertDownload('b.pdf');
+    })->throws(AssertionFailedException::class, 'Expected a download named [b.pdf] but it has no filename.');
+
+    it('fails for a malformed header', function (): void {
+        new TestResponse(new Response('', headers: ['Content-Disposition' => 'form-data; name="x"']))
+            ->assertDownload();
+    })->throws(
+        AssertionFailedException::class,
+        'Expected a download but the Content-Disposition header [form-data; name="x"] is malformed',
+    );
+});
+
+describe('TestResponse JSON validation error assertions', function (): void {
+    it('passes for fields with errors, by name or with a message', function (): void {
+        $response = jsonTestResponse(['message' => 'Invalid', 'errors' => [
+            'name' => ['The name field is required.'],
+            'items.0.sku' => ['The items.0.sku field is required.'],
+        ]], 422);
+
+        expect($response->assertJsonValidationErrors('name'))->toBe($response)
+            ->and($response->assertJsonValidationErrors(['name', 'items.0.sku']))->toBe($response)
+            ->and($response->assertJsonValidationErrors(['name' => 'The name field is required.']))->toBe($response);
+    });
+
+    it('fails for a message the field does not have', function (): void {
+        jsonTestResponse(['errors' => ['name' => ['The name field is required.']]], 422)
+            ->assertJsonValidationErrors(['name' => 'Too long.']);
+    })->throws(
+        AssertionFailedException::class,
+        'Expected JSON validation error [Too long.] for [name] but its errors were ["The name field is required."].',
+    );
+
+    it('fails when the body has no errors object', function (): void {
+        jsonTestResponse(['message' => 'Server Error'], 500)->assertJsonValidationErrors('name');
+    })->throws(AssertionFailedException::class, 'Expected a JSON validation error for [name] but there was none.');
+
+    it('passes assertJsonMissingValidationErrors for other fields and fails for a listed one', function (): void {
+        $response = jsonTestResponse(['errors' => ['name' => ['Required.']]], 422);
+
+        expect($response->assertJsonMissingValidationErrors(['email', 'phone']))->toBe($response)
+            ->and(fn () => $response->assertJsonMissingValidationErrors('name'))
+            ->toThrow(
+                AssertionFailedException::class,
+                'Expected no JSON validation error for [name] but it has ["Required."].',
+            );
+    });
+
+    it('fails assertJsonMissingValidationErrors without fields when any error exists', function (): void {
+        jsonTestResponse(['errors' => ['name' => ['Required.']]], 422)->assertJsonMissingValidationErrors();
+    })->throws(
+        AssertionFailedException::class,
+        'Expected no JSON validation errors but there were: {"name":["Required."]}',
+    );
+
+    it('passes assertJsonMissingValidationErrors for an empty body', function (): void {
+        $response = new TestResponse(new Response('', 204));
+
+        expect($response->assertJsonMissingValidationErrors())->toBe($response);
+    });
+});
+
+describe('TestResponse session assertions without a TestClient', function (): void {
+    it('throws when the response was not made by a TestClient', function (): void {
+        new TestResponse(new Response('ok'))->assertSessionHas('plan');
+    })->throws(TestClientException::class, 'This TestResponse has no session to assert on');
 });
