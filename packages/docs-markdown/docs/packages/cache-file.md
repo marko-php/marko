@@ -75,6 +75,12 @@ class SettingsService
 
 For multi-server deployments or high-throughput caching, use `marko/cache-redis`.
 
+### Atomic Locks
+
+The package also binds `LockStoreInterface` to `Marko\Cache\File\Lock\FileLockStore`, so [atomic locks](/docs/packages/cache/#atomic-locks) work through `LockFactoryInterface` with no extra setup. Its scope is `LockScope::Host`: it excludes processes **on the same host only**. Workers on two servers each get the same lock, so use `marko/cache-redis` when workers run on more than one host.
+
+A lock is a signed record (owner and expiry) in the cache directory, claimed and freed under the same brief `flock()` that `increment()` and `add()` use. The `flock()` is never held for the lock's lifetime, so a lock outlives the request that took it and `restore()` plus `release()` work from any process on the host. Lock records expire on whole seconds, like cache entries, and `marko cache:clear` removes them along with the cache.
+
 ## API Reference
 
 Implements all methods from `CacheInterface`. See `marko/cache` for the full contract.
@@ -105,7 +111,7 @@ Implements all methods from `CacheInterface`. See `marko/cache` for the full con
 - The HMAC is bound to the cache key, so a file copied over another key's file does not verify.
 - A file that is unsigned, malformed, tampered with, copied from another key, or signed with a different key is treated as a miss and deleted; `increment()` restarts such a counter at `1`. Entries signed by an older release (before signing, or before HKDF subkeys and key binding) don't verify, so upgrading (or rotating `encryption.key`) empties the file cache.
 - Writes use a temp file with `LOCK_EX` followed by an atomic `rename()` to prevent corruption.
-- `increment()` and `add()` share one read-modify-write path: they hold an exclusive `flock()` on the entry's file from the read to the write, so concurrent processes run one after another and exactly one `add()` for a key succeeds. If the file was deleted or replaced while a process waited for the lock, it reopens the new file and locks again, so a write never lands in an unlinked file.
+- `increment()`, `add()` and `FileLockStore` share one read-modify-write path (`Marko\Cache\File\Storage\FileEntryStorage::mutateLocked()`): they hold an exclusive `flock()` on the entry's file from the read to the write, so concurrent processes run one after another and exactly one `add()` for a key succeeds. If the file was deleted or replaced while a process waited for the lock, it reopens the new file and locks again, so a write never lands in an unlinked file.
 - The cache directory is created on the first write. Later writes check `is_dir()` and never call `mkdir()` again.
 - A `null` TTL falls back to `default_ttl` from config. A TTL of `0` or less means the entry never expires.
 - Expired entries are deleted lazily --- on the next `get()`, `has()`, or `getItem()` call for that key.
@@ -118,8 +124,9 @@ Implements all methods from `CacheInterface`. See `marko/cache` for the full con
 | Method | When thrown |
 |---|---|
 | `FileCacheException::directoryNotCreatable($path, $reason)` | The configured `cache.path` doesn't exist and can't be created |
-| `FileCacheException::writeFailed($path, $reason)` | The temp file can't be written or can't be renamed onto the cache entry (the temp file is removed), or `increment()` / `add()` can't write the new entry |
-| `FileCacheException::openFailed($path, $reason)` | `increment()` or `add()` can't open the entry's file |
-| `FileCacheException::lockFailed($path, $reason)` | `increment()` or `add()` can't take an exclusive `flock()` on the entry's file |
+| `FileCacheException::writeFailed($path, $reason)` | The temp file can't be written or can't be renamed onto the cache entry (the temp file is removed), or `increment()`, `add()` or a lock acquire can't write the new entry |
+| `FileCacheException::openFailed($path, $reason)` | `increment()`, `add()` or a `FileLockStore` call can't open the entry's file |
+| `FileCacheException::lockFailed($path, $reason)` | `increment()`, `add()` or a `FileLockStore` call can't take an exclusive `flock()` on the entry's file |
+| `FileCacheException::deleteFailed($path, $reason)` | A lock release can't delete the lock's file |
 
 Every read and write path (`get()`, `has()`, `getItem()`, `getMultiple()`, `set()`, `setMultiple()`, `increment()`, `add()`) throws `Marko\Cache\Exceptions\TamperedCacheValueException::emptySigningKey()` when `encryption.key` is empty. A tampered entry never throws: it is a miss.

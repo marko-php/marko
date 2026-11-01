@@ -127,6 +127,14 @@ class SessionStore
 
 All keys are automatically prefixed (default: `marko:cache:`) to prevent collisions with other Redis data. Change it with the `prefix` key in `config/cache-redis.php` (or `CACHE_PREFIX`).
 
+### Atomic Locks
+
+The package also binds `LockStoreInterface` to `Marko\Cache\Redis\Lock\RedisLockStore`, so [atomic locks](/docs/packages/cache/#atomic-locks) work through `LockFactoryInterface` with no extra setup. Its scope is `LockScope::Distributed`. **It is the only bundled lock store that excludes processes across hosts**: every worker that shares the Redis server sees the same lock.
+
+- `acquire()` sends one `SET key owner NX PX ms`, so of any number of clients exactly one gets the lock, and Redis expires it on time.
+- `release()` runs a Lua compare-and-delete (`EVAL`): the key is deleted only when it still holds this owner's token, so a holder whose lock expired can't free the next owner's lock.
+- Lock keys are the cache `prefix` plus `lock:` (for example `marko:cache:lock:video-pipeline:42`), on the connection named by `cache-redis.connection`. They never collide with cache entries. `clear()` removes them along with the cache, because they share the prefix.
+
 ## API Reference
 
 Implements all methods from `CacheInterface`. See [`marko/cache`](/docs/packages/cache/) for the full contract.
@@ -157,7 +165,7 @@ Implements all methods from `CacheInterface`. See [`marko/cache`](/docs/packages
 | `connection(): string` | The `marko/redis` connection name from `cache-redis.connection` |
 | `prefix(): string` | The key prefix from `cache-redis.prefix` |
 
-`RedisCacheDriver` resolves the connection once, in its constructor, through `RedisConnectionFactoryInterface::connection()`. For the connection API see [`marko/redis`](/docs/packages/redis/#api-reference).
+`RedisCacheDriver` and `RedisLockStore` each resolve the connection once, in their constructors, through `RedisConnectionFactoryInterface::connection()`. For the connection API see [`marko/redis`](/docs/packages/redis/#api-reference).
 
 ### Storage Details
 
