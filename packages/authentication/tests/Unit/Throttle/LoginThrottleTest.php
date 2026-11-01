@@ -8,6 +8,7 @@ use Marko\Authentication\Exceptions\TooManyLoginAttemptsException;
 use Marko\Authentication\Http\CurrentRequest;
 use Marko\Authentication\Throttle\LoginThrottle;
 use Marko\Authentication\Throttle\NullLoginThrottle;
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\Core\Exceptions\HttpExceptionInterface;
@@ -30,7 +31,7 @@ function createLoginThrottle(
         'cache.path' => sys_get_temp_dir(),
         'cache.default_ttl' => 3600,
         'cache.driver' => 'array',
-    ])), $clock);
+    ])), $clock, new CacheOperations());
 
     return new LoginThrottle(...[
         'cache' => $cache,

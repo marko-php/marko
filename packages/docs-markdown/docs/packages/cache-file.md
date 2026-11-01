@@ -93,6 +93,10 @@ Implements all methods from `CacheInterface`. See `marko/cache` for the full con
 | `setMultiple(array $values, ?int $ttl = null): bool` | Store multiple key-value pairs at once |
 | `deleteMultiple(array $keys): bool` | Remove multiple entries at once |
 | `increment(string $key, int $ttl): int` | Atomically increment an integer counter; TTL applied only on first increment |
+| `add(string $key, mixed $value, ?int $ttl = null): bool` | Atomically store a value only if the key is absent or expired; `false` when an unexpired value exists |
+| `remember(string $key, ?int $ttl, callable $callback): mixed` | Return the cached value, or compute and store it on a miss (delegates to [`CacheOperations`](/docs/packages/cache/#cacheoperations)) |
+| `pull(string $key, mixed $default = null): mixed` | Get a value and delete it (delegates to `CacheOperations`) |
+| `forever(string $key, mixed $value): bool` | Store a value with no expiry (delegates to `CacheOperations`) |
 
 ### Storage Details
 
@@ -101,6 +105,7 @@ Implements all methods from `CacheInterface`. See `marko/cache` for the full con
 - The HMAC is bound to the cache key, so a file copied over another key's file does not verify.
 - A file that is unsigned, malformed, tampered with, copied from another key, or signed with a different key is treated as a miss and deleted; `increment()` restarts such a counter at `1`. Entries signed by an older release (before signing, or before HKDF subkeys and key binding) don't verify, so upgrading (or rotating `encryption.key`) empties the file cache.
 - Writes use a temp file with `LOCK_EX` followed by an atomic `rename()` to prevent corruption.
+- `increment()` and `add()` share one read-modify-write path: they hold an exclusive `flock()` on the entry's file from the read to the write, so concurrent processes run one after another and exactly one `add()` for a key succeeds. If the file was deleted or replaced while a process waited for the lock, it reopens the new file and locks again, so a write never lands in an unlinked file.
 - The cache directory is created on the first write. Later writes check `is_dir()` and never call `mkdir()` again.
 - A `null` TTL falls back to `default_ttl` from config. A TTL of `0` or less means the entry never expires.
 - Expired entries are deleted lazily --- on the next `get()`, `has()`, or `getItem()` call for that key.
@@ -108,13 +113,13 @@ Implements all methods from `CacheInterface`. See `marko/cache` for the full con
 
 ### Errors
 
-`set()`, `setMultiple()` and `increment()` throw `Marko\Cache\File\Exceptions\FileCacheException` (a `CacheException`) when the disk refuses the write. They don't return `false`, and `increment()` never fails open by returning `1`: a rate limiter on a full or unwritable cache directory rejects requests loudly instead of allowing all of them. The exception context includes the operating system's reason, such as `Permission denied`, `No space left on device` or `Not a directory`.
+`set()`, `setMultiple()`, `increment()` and `add()` throw `Marko\Cache\File\Exceptions\FileCacheException` (a `CacheException`) when the disk refuses the write. They don't return `false`, and `increment()` never fails open by returning `1`: a rate limiter on a full or unwritable cache directory rejects requests loudly instead of allowing all of them. The exception context includes the operating system's reason, such as `Permission denied`, `No space left on device` or `Not a directory`.
 
 | Method | When thrown |
 |---|---|
 | `FileCacheException::directoryNotCreatable($path, $reason)` | The configured `cache.path` doesn't exist and can't be created |
-| `FileCacheException::writeFailed($path, $reason)` | The temp file can't be written or can't be renamed onto the cache entry (the temp file is removed), or `increment()` can't write the new counter value |
-| `FileCacheException::openFailed($path, $reason)` | `increment()` can't open the counter file |
-| `FileCacheException::lockFailed($path, $reason)` | `increment()` can't take an exclusive `flock()` on the counter file |
+| `FileCacheException::writeFailed($path, $reason)` | The temp file can't be written or can't be renamed onto the cache entry (the temp file is removed), or `increment()` / `add()` can't write the new entry |
+| `FileCacheException::openFailed($path, $reason)` | `increment()` or `add()` can't open the entry's file |
+| `FileCacheException::lockFailed($path, $reason)` | `increment()` or `add()` can't take an exclusive `flock()` on the entry's file |
 
-Every read and write path (`get()`, `has()`, `getItem()`, `getMultiple()`, `set()`, `setMultiple()`, `increment()`) throws `Marko\Cache\Exceptions\TamperedCacheValueException::emptySigningKey()` when `encryption.key` is empty. A tampered entry never throws: it is a miss.
+Every read and write path (`get()`, `has()`, `getItem()`, `getMultiple()`, `set()`, `setMultiple()`, `increment()`, `add()`) throws `Marko\Cache\Exceptions\TamperedCacheValueException::emptySigningKey()` when `encryption.key` is empty. A tampered entry never throws: it is a miss.

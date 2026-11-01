@@ -116,4 +116,38 @@ class RecordingCache implements CacheInterface
 
         return true;
     }
+
+    #[Override]
+    public function add(
+        string $key,
+        mixed $value,
+        ?int $ttl = null,
+    ): never {
+        throw new RuntimeException('add() is not supported by RecordingCache');
+    }
+
+    #[Override]
+    public function remember(
+        string $key,
+        ?int $ttl,
+        callable $callback,
+    ): never {
+        throw new RuntimeException('remember() is not supported by RecordingCache');
+    }
+
+    #[Override]
+    public function pull(
+        string $key,
+        mixed $default = null,
+    ): never {
+        throw new RuntimeException('pull() is not supported by RecordingCache');
+    }
+
+    #[Override]
+    public function forever(
+        string $key,
+        mixed $value,
+    ): never {
+        throw new RuntimeException('forever() is not supported by RecordingCache');
+    }
 }
