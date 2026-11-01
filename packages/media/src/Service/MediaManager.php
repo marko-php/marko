@@ -6,8 +6,8 @@ namespace Marko\Media\Service;
 
 use JsonException;
 use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Filesystem\Contracts\FilesystemManagerInterface;
 use Marko\Filesystem\Exceptions\FilesystemException;
-use Marko\Filesystem\Manager\FilesystemManager;
 use Marko\Media\Config\MediaConfig;
 use Marko\Media\Contracts\MediaManagerInterface;
 use Marko\Media\Contracts\MediaRepositoryInterface;
@@ -20,7 +20,7 @@ use Psr\Clock\ClockInterface;
 readonly class MediaManager implements MediaManagerInterface
 {
     public function __construct(
-        private FilesystemManager $filesystemManager,
+        private FilesystemManagerInterface $filesystemManager,
         private MediaConfig $config,
         private MediaRepositoryInterface $repository,
         private ClockInterface $clock,

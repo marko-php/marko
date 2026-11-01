@@ -48,6 +48,15 @@ it('requires marko/http as a dependency', function () {
     expect($composer['require'])->toHaveKey('marko/http');
 });
 
+it('requires marko/filesystem for FakeFilesystem and keeps marko/filesystem-local dev-only', function () {
+    $composer = json_decode(file_get_contents(dirname(__DIR__) . '/composer.json'), true);
+
+    expect($composer['require'])->toHaveKey('marko/filesystem')
+        ->and($composer['require'])->toHaveKey('ext-fileinfo')
+        ->and($composer['require'])->not->toHaveKey('marko/filesystem-local')
+        ->and($composer['require-dev'])->toHaveKey('marko/filesystem-local');
+});
+
 it('requires marko/routing for the HTTP test client', function () {
     $composer = json_decode(file_get_contents(dirname(__DIR__) . '/composer.json'), true);
 

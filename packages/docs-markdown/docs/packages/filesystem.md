@@ -3,7 +3,7 @@ title: marko/filesystem
 description: Interfaces for file storage — defines how files are read, written, and organized across any storage backend.
 ---
 
-Interfaces for file storage --- defines how files are read, written, and organized across any storage backend. Filesystem provides the contracts and infrastructure for Marko's file storage system. Type-hint against `FilesystemInterface` for single-disk usage, or use `FilesystemManager` to work with multiple disks (local, S3, etc.) simultaneously. Includes driver discovery via the `#[FilesystemDriver]` attribute, a `storage:link` CLI command, and value objects for file metadata.
+Interfaces for file storage --- defines how files are read, written, and organized across any storage backend. Filesystem provides the contracts and infrastructure for Marko's file storage system. Type-hint against `FilesystemInterface` for single-disk usage, or `FilesystemManagerInterface` to work with multiple disks (local, S3, etc.) simultaneously. Includes the path rules every driver shares (`PathNormalizer`), driver discovery via the `#[FilesystemDriver]` attribute, a `storage:link` CLI command, and value objects for file metadata.
 
 **This package defines contracts only.** Install a driver for implementation:
 
@@ -50,15 +50,15 @@ class DocumentService
 
 ### Working with Multiple Disks
 
-Use `FilesystemManager` to access different storage backends:
+Inject `FilesystemManagerInterface` to access different storage backends. It is bound to `FilesystemManager`:
 
 ```php
-use Marko\Filesystem\Manager\FilesystemManager;
+use Marko\Filesystem\Contracts\FilesystemManagerInterface;
 
 class MediaService
 {
     public function __construct(
-        private FilesystemManager $filesystemManager,
+        private FilesystemManagerInterface $filesystemManager,
     ) {}
 
     public function upload(
@@ -76,6 +76,47 @@ class MediaService
         return $this->filesystemManager->disk('local')->read($path);
     }
 }
+```
+
+Calling `disk()` with no argument returns the default disk. The default disk is built once and cached under its configured name, so `disk()` and `disk('local')` return the same instance when `local` is the default.
+
+### Replacing a Disk
+
+`useDisk()` puts a disk instance in place for a disk name for the rest of the process, whether or not that disk was already built. Pass `null` to replace the default disk; `FilesystemInterface` forwards to the default disk, so it then resolves to the replacement too:
+
+```php
+use Marko\Filesystem\Contracts\FilesystemManagerInterface;
+use Marko\Testing\Fake\FakeClock;
+use Marko\Testing\Fake\FakeFilesystem;
+
+$fake = new FakeFilesystem(clock: new FakeClock(), public: false);
+
+$container->get(FilesystemManagerInterface::class)->useDisk('s3', $fake);
+```
+
+This is how tests put [`FakeFilesystem`](/docs/packages/testing/#fakefilesystem) in front of code that writes to a named disk. `useDisk(null, ...)` and `useDisk('<default disk name>', ...)` replace the same entry.
+
+### Path Rules
+
+Every driver normalizes paths with the same `PathNormalizer`:
+
+- Paths are relative to the disk root. Empty and `.` segments are dropped, so `/docs//a.txt` and `./docs/a.txt` both mean `docs/a.txt`, and `''`, `/` and `.` mean the root.
+- A `..` segment throws `PathException::traversalAttempt()`. `..` inside a name (`notes..txt`) is allowed.
+- A NUL byte throws `PathException::invalidPath()`.
+- Backslashes follow the driver's `BackslashPolicy`: the local driver translates them into `/` (`BackslashPolicy::Translate`), the S3 driver rejects them (`BackslashPolicy::Reject`).
+- `deleteDirectory()` refuses the disk root with `PathException::rootDeletion()` (`normalizeForDeletion()`).
+
+A custom driver builds the normalizer with the policy it needs and calls it on every path:
+
+```php
+use Marko\Filesystem\Path\BackslashPolicy;
+use Marko\Filesystem\Path\PathNormalizer;
+
+$normalizer = new PathNormalizer(BackslashPolicy::Reject);
+
+$normalizer->normalize('/docs/./a.txt');      // 'docs/a.txt'
+$normalizer->normalizeForDeletion('uploads'); // 'uploads'
+$normalizer->normalizeForDeletion('/');       // throws PathException
 ```
 
 ### Configuration
@@ -209,14 +250,30 @@ public function setVisibility(string $path, string $visibility): bool;
 public function visibility(string $path): string;
 ```
 
-### FilesystemManager
+### FilesystemManagerInterface
+
+Bound to `FilesystemManager`.
 
 ```php
-use Marko\Filesystem\Manager\FilesystemManager;
+use Marko\Filesystem\Contracts\FilesystemManagerInterface;
 use Marko\Filesystem\Contracts\FilesystemInterface;
 
 public function disk(?string $name = null): FilesystemInterface;
+public function useDisk(?string $name, FilesystemInterface $disk): void;
 ```
+
+### PathNormalizer
+
+```php
+use Marko\Filesystem\Path\BackslashPolicy;
+use Marko\Filesystem\Path\PathNormalizer;
+
+public function __construct(BackslashPolicy $backslashes);
+public function normalize(string $path): string;
+public function normalizeForDeletion(string $path): string;
+```
+
+`BackslashPolicy` has two cases: `Translate` and `Reject`.
 
 ### FilesystemDriverFactoryInterface
 

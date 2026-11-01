@@ -10,6 +10,8 @@ use Marko\Filesystem\Exceptions\FileNotFoundException;
 use Marko\Filesystem\Exceptions\FilesystemException;
 use Marko\Filesystem\Exceptions\PathException;
 use Marko\Filesystem\Exceptions\PermissionException;
+use Marko\Filesystem\Path\BackslashPolicy;
+use Marko\Filesystem\Path\PathNormalizer;
 use Marko\Filesystem\Values\DirectoryEntry;
 use Marko\Filesystem\Values\DirectoryListing;
 use Marko\Filesystem\Values\FileInfo;
@@ -17,10 +19,14 @@ use Throwable;
 
 readonly class LocalFilesystem implements FilesystemInterface
 {
+    private PathNormalizer $pathNormalizer;
+
     public function __construct(
         private string $basePath,
         private bool $isPublic = false,
-    ) {}
+    ) {
+        $this->pathNormalizer = new PathNormalizer(BackslashPolicy::Translate);
+    }
 
     /**
      * @throws PathException
@@ -391,9 +397,7 @@ readonly class LocalFilesystem implements FilesystemInterface
     public function deleteDirectory(
         string $path,
     ): bool {
-        if ($this->validatePath($path) === '') {
-            throw PathException::rootDeletion($path);
-        }
+        $this->pathNormalizer->normalizeForDeletion($path);
 
         $fullPath = $this->fullPath($path);
 
@@ -444,39 +448,12 @@ readonly class LocalFilesystem implements FilesystemInterface
     }
 
     /**
-     * Normalize a disk-relative path, dropping empty and '.' segments.
-     *
-     * Returns '' when the path refers to the disk root.
-     *
-     * @throws PathException
-     */
-    private function validatePath(
-        string $path,
-    ): string {
-        $segments = [];
-
-        foreach (explode('/', str_replace('\\', '/', $path)) as $segment) {
-            if ($segment === '' || $segment === '.') {
-                continue;
-            }
-
-            if ($segment === '..') {
-                throw PathException::traversalAttempt($path);
-            }
-
-            $segments[] = $segment;
-        }
-
-        return implode('/', $segments);
-    }
-
-    /**
      * @throws PathException
      */
     private function fullPath(
         string $path,
     ): string {
-        $normalized = $this->validatePath($path);
+        $normalized = $this->pathNormalizer->normalize($path);
         $fullPath = $normalized === '' ? $this->basePath : $this->basePath . '/' . $normalized;
 
         $this->assertWithinRoot($fullPath, $path);
