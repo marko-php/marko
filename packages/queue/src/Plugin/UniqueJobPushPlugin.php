@@ -24,6 +24,12 @@ use Marko\Queue\UniqueJobLocks;
 #[Plugin(target: QueueInterface::class)]
 readonly class UniqueJobPushPlugin
 {
+    /**
+     * Runs after the other push plugins (RetryDeadlinePlugin is 0): the lock is taken last, right
+     * before the driver stores the job, so an earlier plugin that throws never leaves it held.
+     */
+    public const int SORT_ORDER = 100;
+
     public function __construct(
         private UniqueJobLocks $uniqueJobLocks,
     ) {}
@@ -31,7 +37,7 @@ readonly class UniqueJobPushPlugin
     /**
      * @throws QueueException|LockException
      */
-    #[Before(method: 'push')]
+    #[Before(sortOrder: self::SORT_ORDER, method: 'push')]
     public function beforePush(
         JobInterface $job,
         ?string $queue = null,
@@ -42,7 +48,7 @@ readonly class UniqueJobPushPlugin
     /**
      * @throws QueueException|LockException
      */
-    #[Before(method: 'later')]
+    #[Before(sortOrder: self::SORT_ORDER, method: 'later')]
     public function beforeLater(
         int $delay,
         JobInterface $job,

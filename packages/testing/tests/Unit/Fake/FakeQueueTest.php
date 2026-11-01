@@ -281,7 +281,7 @@ function fakeQueueWithArrayLocks(): FakeQueue
 {
     $clock = new FakeClock();
 
-    return new FakeQueue(new LockFactory(new ArrayLockStore($clock), $clock, new UsleepSleeper()));
+    return FakeQueue::withLockFactory(new LockFactory(new ArrayLockStore($clock), $clock, new UsleepSleeper()));
 }
 
 it('skips a duplicate unique job through the unique-job push plugin', function () {

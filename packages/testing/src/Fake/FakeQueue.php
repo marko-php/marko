@@ -20,7 +20,7 @@ use Marko\Testing\Exceptions\AssertionFailedException;
  *
  * Pushes go through the same UniqueJobPushPlugin the container puts on every QueueInterface,
  * so a duplicate UniqueJobInterface job is skipped (and recorded in $skipped) as in production.
- * Pass a LockFactoryInterface (for example LockFactory over marko/cache-array's ArrayLockStore)
+ * Build it with withLockFactory() (for example LockFactory over marko/cache-array's ArrayLockStore)
  * to push unique jobs; without one, pushing a unique job throws, as it does in an app with no
  * lock driver. Jobs that are not unique never need it.
  */
@@ -34,18 +34,29 @@ class FakeQueue implements QueueInterface
 
     private int $nextId = 1;
 
+    private readonly Container $lockContainer;
+
     private readonly UniqueJobPushPlugin $uniqueJobPushPlugin;
 
-    public function __construct(
-        ?LockFactoryInterface $lockFactory = null,
-    ) {
-        $container = new Container();
+    /**
+     * No constructor arguments, so a container can autowire the fake without resolving a lock driver.
+     */
+    public function __construct()
+    {
+        $this->lockContainer = new Container();
+        $this->uniqueJobPushPlugin = new UniqueJobPushPlugin(new UniqueJobLocks($this->lockContainer));
+    }
 
-        if ($lockFactory !== null) {
-            $container->instance(LockFactoryInterface::class, $lockFactory);
-        }
+    /**
+     * A fake queue that takes unique-job locks from the given factory.
+     */
+    public static function withLockFactory(
+        LockFactoryInterface $lockFactory,
+    ): self {
+        $queue = new self();
+        $queue->lockContainer->instance(LockFactoryInterface::class, $lockFactory);
 
-        $this->uniqueJobPushPlugin = new UniqueJobPushPlugin(new UniqueJobLocks($container));
+        return $queue;
     }
 
     /**

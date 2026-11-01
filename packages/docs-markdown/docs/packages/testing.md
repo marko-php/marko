@@ -105,7 +105,7 @@ $queue->assertNothingPushed();
 $queue->assertNotPushed(ProcessPaymentJob::class);
 ```
 
-`FakeQueue` runs every push through the same [unique-job plugin](/docs/packages/queue/#unique-jobs) the container puts on `QueueInterface`, so a duplicate `UniqueJobInterface` job is skipped and recorded in `$skipped`. Pass a `LockFactoryInterface` to push unique jobs; [`marko/cache-array`](/docs/packages/cache-array/)'s `ArrayLockStore` keeps the locks in memory. Without one, pushing a unique job throws a `QueueException`, as it does in an app with no lock driver. Jobs that aren't unique never need it:
+`FakeQueue` runs every push through the same [unique-job plugin](/docs/packages/queue/#unique-jobs) the container puts on `QueueInterface`, so a duplicate `UniqueJobInterface` job is skipped and recorded in `$skipped`. Build it with `FakeQueue::withLockFactory()` to push unique jobs; [`marko/cache-array`](/docs/packages/cache-array/)'s `ArrayLockStore` keeps the locks in memory. Without one, pushing a unique job throws a `QueueException`, as it does in an app with no lock driver. Jobs that aren't unique never need it:
 
 ```php
 use Marko\Cache\Lock\LockFactory;
@@ -115,7 +115,7 @@ use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeQueue;
 
 $clock = new FakeClock();
-$queue = new FakeQueue(new LockFactory(new ArrayLockStore($clock), $clock, new UsleepSleeper()));
+$queue = FakeQueue::withLockFactory(new LockFactory(new ArrayLockStore($clock), $clock, new UsleepSleeper()));
 
 $queue->push(new ProposeStyleJob(studioId: 42));
 $queue->push(new ProposeStyleJob(studioId: 42)); // skipped: the lock is held
@@ -962,7 +962,7 @@ public function size(?string $queue = null): int;
 public function clear(?string $queue = null): int;
 public function delete(string $jobId): bool;
 public function release(JobInterface $job, int $delay = 0): bool; // stores the given job and delay on its pushed entry
-public function __construct(?LockFactoryInterface $lockFactory = null); // needed only to push unique jobs
+public static function withLockFactory(LockFactoryInterface $lockFactory): FakeQueue; // needed only to push unique jobs
 public function assertPushed(string $jobClass, ?callable $callback = null): void;
 public function assertPushedOnce(string $jobClass): void; // exactly one pushed; skipped duplicates don't count
 public function assertSkipped(string $jobClass, ?callable $callback = null): void;

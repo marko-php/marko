@@ -7,6 +7,8 @@ use Marko\Cache\Exceptions\NoDriverException;
 use Marko\Core\Attributes\Before;
 use Marko\Core\Attributes\Observer;
 use Marko\Core\Attributes\Plugin;
+use Marko\Core\Plugin\PluginDiscovery;
+use Marko\Core\Plugin\PluginRegistry;
 use Marko\Queue\Event\JobFailedEvent;
 use Marko\Queue\Event\JobProcessedEvent;
 use Marko\Queue\Event\JobProcessingEvent;
@@ -16,10 +18,12 @@ use Marko\Queue\JobInterface;
 use Marko\Queue\Observer\ReleaseUniqueJobLockOnFailure;
 use Marko\Queue\Observer\ReleaseUniqueJobLockOnProcessed;
 use Marko\Queue\Observer\ReleaseUniqueJobLockOnProcessing;
+use Marko\Queue\Plugin\RetryDeadlinePlugin;
 use Marko\Queue\Plugin\UniqueJobPushPlugin;
 use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\RetryPolicy;
 use Marko\Queue\Tests\Command\Helpers;
 use Marko\Queue\Tests\Fixtures\FakeProcessControl;
 use Marko\Queue\Tests\Fixtures\InMemoryQueue;
@@ -73,14 +77,17 @@ function uniqueWorker(
     QueueInterface $queue,
     FakeProcessControl $processControl = new FakeProcessControl(),
 ): UniqueTestWorker {
+    $config = new QueueConfig(new FakeConfigRepository([
+        'queue.queue' => 'default',
+        'queue.max_attempts' => 3,
+    ]));
+
     return new UniqueTestWorker(
         $queue,
         $stack->failedJobHandler(Helpers::createStubFailedJobRepository()),
-        new QueueConfig(new FakeConfigRepository([
-            'queue.queue' => 'default',
-            'queue.max_attempts' => 3,
-        ])),
+        $config,
         $stack->jobRunner(),
+        new RetryPolicy($config, $stack->clock),
         processControl: $processControl,
     );
 }
@@ -122,6 +129,19 @@ describe('UniqueJobInterface', function (): void {
         expect($plugin->target)->toBe(QueueInterface::class)
             ->and($push->method)->toBe('push')
             ->and($later->method)->toBe('later');
+    });
+
+    it('runs after RetryDeadlinePlugin on push() and later() without a sort-order conflict', function (): void {
+        $registry = new PluginRegistry();
+        $discovery = new PluginDiscovery();
+        $registry->register($discovery->parsePluginClass(RetryDeadlinePlugin::class));
+        $registry->register($discovery->parsePluginClass(UniqueJobPushPlugin::class));
+
+        foreach (['push', 'later'] as $method) {
+            $order = array_column($registry->getBeforeMethodsFor(QueueInterface::class, $method), 'pluginClass');
+
+            expect($order)->toBe([RetryDeadlinePlugin::class, UniqueJobPushPlugin::class]);
+        }
     });
 
     it(
