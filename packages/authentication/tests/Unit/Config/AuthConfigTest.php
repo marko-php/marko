@@ -87,6 +87,45 @@ describe('password confirmation', function (): void {
     });
 });
 
+describe('email verification', function (): void {
+    it('loads the verification routes, expiry and throttle', function (): void {
+        $config = new AuthConfig(new FakeConfigRepository([
+            'authentication.verification.verify_route' => 'account.verify',
+            'authentication.verification.notice_route' => '/account/verify',
+            'authentication.verification.expire_seconds' => 900,
+            'authentication.verification.throttle_seconds' => 30,
+        ]));
+
+        expect($config->verificationVerifyRoute())->toBe('account.verify')
+            ->and($config->verificationNoticeRoute())->toBe('/account/verify')
+            ->and($config->verificationExpireSeconds())->toBe(900)
+            ->and($config->verificationThrottleSeconds())->toBe(30);
+    });
+
+    it('rejects a verification expiry or throttle below one second', function (string $key, string $method): void {
+        $config = new AuthConfig(new FakeConfigRepository([
+            "authentication.verification.$key" => 0,
+        ]));
+
+        expect(fn () => $config->$method())
+            ->toThrow(AuthException::class, "authentication.verification.$key must be a positive integer, got 0");
+    })->with([
+        ['expire_seconds', 'verificationExpireSeconds'],
+        ['throttle_seconds', 'verificationThrottleSeconds'],
+    ]);
+
+    it('ships email verification defaults in the package config file', function (): void {
+        $defaults = require dirname(__DIR__, 3) . '/config/authentication.php';
+
+        expect($defaults['verification'])->toBe([
+            'verify_route' => 'verification.verify',
+            'notice_route' => '/email/verify',
+            'expire_seconds' => 3600,
+            'throttle_seconds' => 60,
+        ]);
+    });
+});
+
 it('creates AuthConfig class', function () {
     $config = new AuthConfig(new FakeConfigRepository());
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
 use Marko\Authentication\Contracts\CookieJarInterface;
+use Marko\Authentication\Contracts\EmailVerifierInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\IntendedUrlInterface;
 use Marko\Authentication\Contracts\LoginThrottleInterface;
@@ -15,6 +16,7 @@ use Marko\Authentication\Contracts\PasswordResetTokenRepositoryInterface;
 use Marko\Authentication\Contracts\PasswordVerifierInterface;
 use Marko\Authentication\Contracts\RememberTokenStorageInterface;
 use Marko\Authentication\Cookie\RequestCookieJar;
+use Marko\Authentication\EmailVerification\EmailVerifier;
 use Marko\Authentication\Guard\GuardDriverRegistry;
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
 use Marko\Authentication\Hashing\HashManagerPasswordHasher;
@@ -95,8 +97,9 @@ return [
                 loginChallengeResolver: $container->get(LoginChallengeResolver::class),
             );
         },
-        // Apps bind UserPersisterInterface and ResetLinkNotifierInterface themselves:
-        // only they know how to save their user entity and what the reset email says.
+        // Apps bind UserPersisterInterface, ResetLinkNotifierInterface and VerificationNotifierInterface themselves:
+        // only they know how to save their user entity and what the emails say.
+        EmailVerifierInterface::class => EmailVerifier::class,
         PasswordResetBrokerInterface::class => PasswordResetBroker::class,
         PasswordResetTokenRepositoryInterface::class => CachePasswordResetTokenRepository::class,
         PasswordVerifierInterface::class => PasswordVerifier::class,
