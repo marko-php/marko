@@ -108,6 +108,35 @@ describe('DiscoveryFingerprint', function (): void {
         expect($fingerprint->compute($this->paths))->toBe($before);
     });
 
+    it('changes when a root config file is edited, added or removed', function (): void {
+        mkdir($this->base . '/config');
+        file_put_contents($this->base . '/config/app.php', "<?php return ['name' => 'a'];");
+        $fingerprint = new DiscoveryFingerprint();
+        $before = $fingerprint->compute($this->paths);
+
+        file_put_contents($this->base . '/config/app.php', "<?php return ['name' => 'b'];");
+        $afterEdit = $fingerprint->compute($this->paths);
+
+        file_put_contents($this->base . '/config/mail.php', '<?php return [];');
+        $afterAdd = $fingerprint->compute($this->paths);
+
+        unlink($this->base . '/config/mail.php');
+
+        expect($afterEdit)->not->toBe($before)
+            ->and($afterAdd)->not->toBe($afterEdit)
+            ->and($fingerprint->compute($this->paths))->toBe($afterEdit);
+    })->issue(556);
+
+    it('ignores files in the root config directory that are not PHP files', function (): void {
+        mkdir($this->base . '/config');
+        $fingerprint = new DiscoveryFingerprint();
+        $before = $fingerprint->compute($this->paths);
+
+        file_put_contents($this->base . '/config/notes.txt', 'not config');
+
+        expect($fingerprint->compute($this->paths))->toBe($before);
+    })->issue(556);
+
     it('computes a fingerprint for a project without installed.json, app or modules', function (): void {
         $paths = new ProjectPaths(sys_get_temp_dir() . '/marko-fingerprint-missing-' . bin2hex(random_bytes(6)));
 

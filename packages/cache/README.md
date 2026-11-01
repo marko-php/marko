@@ -23,16 +23,11 @@ class ProductService
 
     public function getProduct(int $id): Product
     {
-        $key = "product.$id";
-
-        if ($this->cache->has($key)) {
-            return $this->cache->get($key);
-        }
-
-        $product = $this->repository->find($id);
-        $this->cache->set($key, $product, ttl: 3600);
-
-        return $product;
+        return $this->cache->remember(
+            "product.$id",
+            3600,
+            fn (): Product => $this->repository->find($id),
+        );
     }
 }
 ```

@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Discovery\ConfigCacheContributor;
 use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Discovery\CachedDiscovery;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepository;
 use Marko\Core\Module\ModuleRepositoryInterface;
@@ -83,3 +85,27 @@ it('loads config files only once across resolves', function (): void {
 
     expect($GLOBALS['marko_config_counter_loads'])->toBe(1);
 });
+
+it('declares the config discovery cache contributor', function (): void {
+    $moduleConfig = require __DIR__ . '/../../module.php';
+
+    expect($moduleConfig['discovery'] ?? [])->toBe([ConfigCacheContributor::class]);
+})->issue(556);
+
+it('builds the repository from the cached config section without loading any config file', function (): void {
+    $container = configModuleContainer($this->basePath);
+    $container->instance(CachedDiscovery::class, new CachedDiscovery([
+        ConfigCacheContributor::KEY => ['values' => ['counter' => ['value' => 'cached']], 'env' => []],
+    ], $this->basePath . '/storage/cache/discovery.php'));
+
+    expect($container->get(ConfigRepositoryInterface::class)->get('counter.value'))->toBe('cached')
+        ->and($GLOBALS['marko_config_counter_loads'])->toBe(0);
+})->issue(556);
+
+it('loads config files live when the boot did not use the discovery cache', function (): void {
+    $container = configModuleContainer($this->basePath);
+    $container->instance(CachedDiscovery::class, new CachedDiscovery());
+
+    expect($container->get(ConfigRepositoryInterface::class)->get('counter.value'))->toBe('loaded')
+        ->and($GLOBALS['marko_config_counter_loads'])->toBe(1);
+})->issue(556);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Cache\File\Driver;
 
 use Marko\Cache\CacheItem;
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
@@ -21,6 +22,7 @@ readonly class FileCacheDriver implements CacheInterface
         private CacheConfig $config,
         private ClockInterface $clock,
         private CacheValueSigner $cacheValueSigner,
+        private CacheOperations $operations,
     ) {}
 
     /**
@@ -58,16 +60,7 @@ readonly class FileCacheDriver implements CacheInterface
         $this->validateKey($key);
         $this->ensureDirectoryExists();
 
-        $ttl ??= $this->config->defaultTtl();
-        $now = $this->clock->now()->getTimestamp();
-
-        $data = [
-            'value' => $value,
-            'expires_at' => $ttl > 0 ? $now + $ttl : null,
-            'created_at' => $now,
-        ];
-
-        $this->write($key, $data);
+        $this->write($key, $this->newEntry($value, $ttl ?? $this->config->defaultTtl()));
 
         return true;
     }
@@ -227,64 +220,73 @@ readonly class FileCacheDriver implements CacheInterface
         int $ttl,
     ): int {
         $this->validateKey($key);
-        $this->ensureDirectoryExists();
 
-        $filePath = $this->getFilePath($key);
         // Never fail open: a counter that silently restarts at 1 on every call
-        // would let a rate limiter allow every request.
-        $fh = ErrorCapture::run($reason, fn (): mixed => fopen($filePath, 'c+'));
-
-        if (!is_resource($fh)) {
-            throw FileCacheException::openFailed($filePath, $reason);
-        }
-
-        if (!ErrorCapture::run($reason, fn (): bool => flock($fh, LOCK_EX))) {
-            fclose($fh);
-
-            throw FileCacheException::lockFailed($filePath, $reason);
-        }
-
-        try {
-            $content = stream_get_contents($fh);
-            // An unsigned or tampered entry is never unserialized; the counter restarts.
-            $serialized = $content !== '' && $content !== false
-                ? $this->cacheValueSigner->unwrap($content, $key)
-                : null;
-            $data = $serialized !== null ? unserialize($serialized) : null;
-            $now = $this->clock->now()->getTimestamp();
-
-            if (!is_array($data)
-                || !array_key_exists('value', $data)
-                || !isset($data['created_at'])
-                || ($data['expires_at'] !== null && $now > $data['expires_at'])
-            ) {
-                $newValue = 1;
-                $data = [
-                    'value' => $newValue,
-                    'expires_at' => $ttl > 0 ? $now + $ttl : null,
-                    'created_at' => $now,
-                ];
-            } else {
-                $newValue = (int) $data['value'] + 1;
-                $data['value'] = $newValue;
+        // would let a rate limiter allow every request. mutateLocked() throws
+        // when the entry cannot be opened, locked or written.
+        return $this->mutateLocked($key, function (?array $data) use ($ttl): array {
+            if ($data === null) {
+                return [$this->newEntry(1, $ttl), 1];
             }
 
-            $envelope = $this->cacheValueSigner->wrap(serialize($data), $key);
+            $data['value'] = (int) $data['value'] + 1;
 
-            $written = ErrorCapture::run(
-                $reason,
-                fn (): int|false => ftruncate($fh, 0) && rewind($fh) ? fwrite($fh, $envelope) : false,
-            );
+            return [$data, $data['value']];
+        });
+    }
 
-            if ($written !== strlen($envelope)) {
-                throw FileCacheException::writeFailed($filePath, $reason);
-            }
-        } finally {
-            flock($fh, LOCK_UN);
-            fclose($fh);
-        }
+    /**
+     * Set-if-absent under the same exclusive file lock increment() uses, so of
+     * any number of concurrent processes exactly one stores its value.
+     *
+     * @throws InvalidKeyException|FileCacheException|TamperedCacheValueException
+     */
+    public function add(
+        string $key,
+        mixed $value,
+        ?int $ttl = null,
+    ): bool {
+        $this->validateKey($key);
 
-        return $newValue;
+        $ttl ??= $this->config->defaultTtl();
+
+        return $this->mutateLocked(
+            $key,
+            fn (?array $data): array => $data === null
+                ? [$this->newEntry($value, $ttl), true]
+                : [null, false],
+        );
+    }
+
+    /**
+     * @throws InvalidKeyException|FileCacheException|TamperedCacheValueException
+     */
+    public function remember(
+        string $key,
+        ?int $ttl,
+        callable $callback,
+    ): mixed {
+        return $this->operations->remember($this, $key, $ttl, $callback);
+    }
+
+    /**
+     * @throws InvalidKeyException|TamperedCacheValueException
+     */
+    public function pull(
+        string $key,
+        mixed $default = null,
+    ): mixed {
+        return $this->operations->pull($this, $key, $default);
+    }
+
+    /**
+     * @throws InvalidKeyException|FileCacheException|TamperedCacheValueException
+     */
+    public function forever(
+        string $key,
+        mixed $value,
+    ): bool {
+        return $this->operations->forever($this, $key, $value);
     }
 
     /**
@@ -381,6 +383,124 @@ readonly class FileCacheDriver implements CacheInterface
 
             throw FileCacheException::writeFailed($filePath, $reason);
         }
+    }
+
+    /**
+     * Atomic read-modify-write of one entry under an exclusive lock on its file.
+     *
+     * $mutate receives the current entry, or null when the entry is missing,
+     * expired, unsigned or tampered (such an entry is never unserialized). It
+     * returns the entry to write (null leaves the file untouched) and the result
+     * to return. The lock is held from the read to the write, so concurrent
+     * callers in other processes run one after another.
+     *
+     * @template TResult
+     *
+     * @param callable(array{value: mixed, expires_at: ?int, created_at: int}|null): array{0: array{value: mixed, expires_at: ?int, created_at: int}|null, 1: TResult} $mutate
+     *
+     * @throws FileCacheException|TamperedCacheValueException
+     *
+     * @return TResult
+     */
+    private function mutateLocked(
+        string $key,
+        callable $mutate,
+    ): mixed {
+        $this->ensureDirectoryExists();
+
+        $filePath = $this->getFilePath($key);
+        $fh = $this->openLocked($filePath);
+
+        try {
+            $content = stream_get_contents($fh);
+            $serialized = $content !== '' && $content !== false
+                ? $this->cacheValueSigner->unwrap($content, $key)
+                : null;
+            $data = $serialized !== null ? unserialize($serialized) : null;
+
+            if (!is_array($data)
+                || !array_key_exists('value', $data)
+                || !isset($data['created_at'])
+                || $this->isExpired($data)
+            ) {
+                $data = null;
+            }
+
+            [$newData, $result] = $mutate($data);
+
+            if ($newData !== null) {
+                $envelope = $this->cacheValueSigner->wrap(serialize($newData), $key);
+
+                $written = ErrorCapture::run(
+                    $reason,
+                    fn (): int|false => ftruncate($fh, 0) && rewind($fh) ? fwrite($fh, $envelope) : false,
+                );
+
+                if ($written !== strlen($envelope)) {
+                    throw FileCacheException::writeFailed($filePath, $reason);
+                }
+            }
+        } finally {
+            flock($fh, LOCK_UN);
+            fclose($fh);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Open the entry's file and take an exclusive lock on it.
+     *
+     * A file that was unlinked or replaced while this process waited for the
+     * lock (by delete(), an expired-entry cleanup or set()) is no longer the
+     * entry, and a write to it would be lost, so the open and lock are retried
+     * on the file now at the path.
+     *
+     * @throws FileCacheException
+     *
+     * @return resource
+     */
+    private function openLocked(
+        string $filePath,
+    ): mixed {
+        while (true) {
+            $fh = ErrorCapture::run($reason, fn (): mixed => fopen($filePath, 'c+'));
+
+            if (!is_resource($fh)) {
+                throw FileCacheException::openFailed($filePath, $reason);
+            }
+
+            if (!ErrorCapture::run($reason, fn (): bool => flock($fh, LOCK_EX))) {
+                fclose($fh);
+
+                throw FileCacheException::lockFailed($filePath, $reason);
+            }
+
+            $stat = fstat($fh);
+
+            if ($stat !== false && $stat['nlink'] > 0) {
+                return $fh;
+            }
+
+            flock($fh, LOCK_UN);
+            fclose($fh);
+        }
+    }
+
+    /**
+     * @return array{value: mixed, expires_at: ?int, created_at: int}
+     */
+    private function newEntry(
+        mixed $value,
+        int $ttl,
+    ): array {
+        $now = $this->clock->now()->getTimestamp();
+
+        return [
+            'value' => $value,
+            'expires_at' => $ttl > 0 ? $now + $ttl : null,
+            'created_at' => $now,
+        ];
     }
 
     /**

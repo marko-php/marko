@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Exceptions\CacheException;
@@ -28,7 +29,7 @@ function createRateLimitCacheConfig(
 function createRateLimitTestCache(
     ClockInterface $clock,
 ): CacheInterface {
-    return new ArrayCacheDriver(createRateLimitCacheConfig(), $clock);
+    return new ArrayCacheDriver(createRateLimitCacheConfig(), $clock, new CacheOperations());
 }
 
 describe('RateLimiter', function (): void {
@@ -221,7 +222,7 @@ describe('RateLimiter', function (): void {
                 private ?string &$incrementKey,
                 ClockInterface $clock,
             ) {
-                parent::__construct(createRateLimitCacheConfig(), $clock);
+                parent::__construct(createRateLimitCacheConfig(), $clock, new CacheOperations());
             }
 
             public function increment(

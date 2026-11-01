@@ -288,3 +288,58 @@ describe('errors', function (): void {
             ->and($exception->getSuggestion())->toContain('0 or greater');
     });
 });
+
+describe('recording reads', function (): void {
+    afterEach(function (): void {
+        unset($_ENV['MARKO_ENV_RECORD_OTHER']);
+
+        if (Env::isRecording()) {
+            Env::stopRecording();
+        }
+    });
+
+    it('records the name of every variable read through Env while recording, once each', function (): void {
+        $_ENV[ENV_TEST_VARIABLE] = '5';
+
+        Env::string('MARKO_ENV_READ_BEFORE_RECORDING', 'x');
+        Env::startRecording();
+        Env::int(ENV_TEST_VARIABLE, 1);
+        Env::string(ENV_TEST_VARIABLE, 'x');
+        Env::bool('MARKO_ENV_RECORD_OTHER', false);
+        $names = Env::stopRecording();
+        Env::string('MARKO_ENV_READ_AFTER_RECORDING', 'x');
+
+        expect($names)->toBe([ENV_TEST_VARIABLE, 'MARKO_ENV_RECORD_OTHER'])
+            ->and(Env::isRecording())->toBeFalse();
+    })->issue(556);
+
+    it('throws when recording is started twice or stopped without being started', function (): void {
+        Env::startRecording();
+
+        expect(fn () => Env::startRecording())->toThrow(ConfigException::class, 'already recording');
+
+        Env::stopRecording();
+
+        expect(fn () => Env::stopRecording())->toThrow(ConfigException::class, 'not recording');
+    })->issue(556);
+
+    it('hashes the current value of each named variable', function (): void {
+        $_ENV[ENV_TEST_VARIABLE] = 'secret';
+        $before = Env::valueHashes([ENV_TEST_VARIABLE, 'MARKO_ENV_RECORD_OTHER']);
+
+        expect(array_keys($before))->toBe([ENV_TEST_VARIABLE, 'MARKO_ENV_RECORD_OTHER'])
+            ->and($before[ENV_TEST_VARIABLE])->not->toContain('secret')
+            ->and(Env::valueHashes([ENV_TEST_VARIABLE]))->toBe([ENV_TEST_VARIABLE => $before[ENV_TEST_VARIABLE]]);
+
+        $_ENV[ENV_TEST_VARIABLE] = 'rotated';
+
+        expect(Env::valueHashes([ENV_TEST_VARIABLE])[ENV_TEST_VARIABLE])->not->toBe($before[ENV_TEST_VARIABLE]);
+    })->issue(556);
+
+    it('hashes an unset and an empty variable alike, because Env reads both as unset', function (): void {
+        $unset = Env::valueHashes([ENV_TEST_VARIABLE]);
+        $_ENV[ENV_TEST_VARIABLE] = '';
+
+        expect(Env::valueHashes([ENV_TEST_VARIABLE]))->toBe($unset);
+    })->issue(556);
+});

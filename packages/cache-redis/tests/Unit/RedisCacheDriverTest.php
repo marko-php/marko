@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
@@ -80,12 +81,32 @@ class MockRedisClient extends Client
         return $this->storage[$key] ?? null;
     }
 
+    /** @var list<list<mixed>> */
+    public array $setArgs = [];
+
+    /**
+     * Emulates SET with the EX and NX options: NX refuses an existing key
+     * (Redis replies nil) and EX records the TTL.
+     */
     public function set(
         $key,
         $value,
         ...$args,
     ): mixed {
+        $this->setArgs[] = $args;
+        $options = array_map(fn ($arg) => is_string($arg) ? strtoupper($arg) : $arg, $args);
+
+        if (in_array('NX', $options, true) && isset($this->storage[$key])) {
+            return null;
+        }
+
         $this->storage[$key] = $value;
+        unset($this->ttls[$key]);
+        $exIndex = array_search('EX', $options, true);
+
+        if ($exIndex !== false) {
+            $this->ttls[$key] = (int) $args[$exIndex + 1];
+        }
 
         return 'OK';
     }
@@ -300,6 +321,7 @@ function createDriver(
     string $signingKey = 'test-signing-key',
     ?FakeClock $clock = null,
     string $prefix = 'marko:cache:',
+    ?CacheOperations $operations = null,
 ): RedisCacheDriver {
     $mockClient ??= createMockClient();
     $connection = new class ($mockClient, $prefix) extends RedisConnection
@@ -318,7 +340,13 @@ function createDriver(
     };
     $config = createCacheConfig($defaultTtl);
 
-    return new RedisCacheDriver($connection, $config, createSigner($signingKey), $clock ?? new FakeClock());
+    return new RedisCacheDriver(
+        $connection,
+        $config,
+        createSigner($signingKey),
+        $clock ?? new FakeClock(),
+        $operations ?? new CacheOperations(),
+    );
 }
 
 describe('RedisCacheDriver', function (): void {
@@ -956,5 +984,93 @@ describe('RedisCacheDriver', function (): void {
 
             expect($this->mockClient->ttls)->not->toHaveKey('marko:cache:counter');
         });
+    });
+
+    it('stores a value with add when the key is absent (redis driver)', function (): void {
+        expect($this->driver->add('key', 'value', 60))->toBeTrue()
+            ->and($this->driver->get('key'))->toBe('value')
+            ->and($this->mockClient->setArgs)->toBe([['EX', 60, 'NX']]);
+    });
+
+    it('returns false from add and keeps the value when the key exists (redis driver)', function (): void {
+        $this->driver->set('key', 'original', 60);
+
+        expect($this->driver->add('key', 'new', 60))->toBeFalse()
+            ->and($this->driver->get('key'))->toBe('original');
+    });
+
+    it('applies the default ttl when add is given a null ttl (redis driver)', function (): void {
+        $this->driver->add('key', 'value');
+
+        expect($this->mockClient->ttls['marko:cache:key'])->toBe(3600);
+    });
+
+    it('stores the value with no expiry when add is given a ttl of 0 (redis driver)', function (): void {
+        $this->driver->add('key', 'value', 0);
+
+        expect($this->mockClient->setArgs)->toBe([['NX']])
+            ->and($this->mockClient->ttls)->not->toHaveKey('marko:cache:key')
+            ->and($this->driver->get('key'))->toBe('value');
+    });
+
+    it('writes a signed envelope bound to the prefixed key from add (redis driver)', function (): void {
+        $this->driver->add('key', ['a' => 1], 60);
+
+        expect(createSigner()->verifyAndUnwrap($this->mockClient->storage['marko:cache:key'], 'marko:cache:key'))
+            ->toBe(serialize(['a' => 1]));
+    });
+
+    it('validates the key on add (redis driver)', function (): void {
+        expect(fn (): bool => $this->driver->add('', 'value'))->toThrow(InvalidKeyException::class);
+    });
+
+    it('delegates remember, pull and forever to CacheOperations (redis driver)', function (): void {
+        $operations = new class () extends CacheOperations
+        {
+            /** @var list<list<mixed>> */
+            public array $calls = [];
+
+            public function remember(
+                CacheInterface $cache,
+                string $key,
+                ?int $ttl,
+                callable $callback,
+            ): mixed {
+                $this->calls[] = ['remember', $cache, $key, $ttl];
+
+                return null;
+            }
+
+            public function pull(
+                CacheInterface $cache,
+                string $key,
+                mixed $default,
+            ): mixed {
+                $this->calls[] = ['pull', $cache, $key, $default];
+
+                return null;
+            }
+
+            public function forever(
+                CacheInterface $cache,
+                string $key,
+                mixed $value,
+            ): bool {
+                $this->calls[] = ['forever', $cache, $key, $value];
+
+                return true;
+            }
+        };
+        $driver = createDriver($this->mockClient, operations: $operations);
+
+        $driver->remember('a', 60, fn (): string => 'computed');
+        $driver->pull('a', 'default');
+        $driver->forever('b', 'value');
+
+        expect($operations->calls)->toBe([
+            ['remember', $driver, 'a', 60],
+            ['pull', $driver, 'a', 'default'],
+            ['forever', $driver, 'b', 'value'],
+        ]);
     });
 });

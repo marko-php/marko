@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
 use Marko\Cache\Redis\RedisConnection;
@@ -92,6 +93,7 @@ function createRateLimiterRedisCache(
             'encryption.key' => 'integration-signing-key',
         ]))),
         $clock,
+        new CacheOperations(),
     );
 }
 

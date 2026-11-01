@@ -20,6 +20,7 @@ use Marko\Authentication\Http\CurrentRequest;
 use Marko\Authentication\Middleware\QueuedCookiesMiddleware;
 use Marko\Authentication\Tests\Fixtures\InMemoryRememberTokenStorage;
 use Marko\Authentication\Token\RememberTokenManager;
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
@@ -95,7 +96,7 @@ function bootAuthContainer(
         // A cache driver module's binding: the login throttle counts failures in the cache.
         $container->instance(CacheInterface::class, new ArrayCacheDriver(new CacheConfig(new ConfigRepository([
             'cache' => ['path' => sys_get_temp_dir(), 'default_ttl' => 3600, 'driver' => 'array'],
-        ])), $clock));
+        ])), $clock, new CacheOperations()));
     }
     $container->instance(UserProviderInterface::class, $userProvider);
     $container->instance(RecordingAuthObserver::class, $observer);

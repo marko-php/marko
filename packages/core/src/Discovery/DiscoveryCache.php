@@ -101,6 +101,8 @@ class DiscoveryCache
      * Serializes the discovery payload to a PHP return-array file using var_export.
      *
      * Writes atomically via a temp file in the same directory, then rename().
+ * The file is made readable and writable by its owner only (0600), because
+ * contributor sections can hold resolved secrets.
      *
      * The fingerprint of the current project is computed and stored with the payload.
      *
@@ -178,6 +180,13 @@ class DiscoveryCache
             throw DiscoveryCacheException::notWritable($path, $reason);
         }
 
+        // Sections can hold resolved secrets (the config section holds database passwords and app keys)
+        if (!ErrorCapture::run($reason, fn (): bool => chmod($tmp, 0600))) {
+            @unlink($tmp);
+
+            throw DiscoveryCacheException::notWritable($path, $reason);
+        }
+
         if (!ErrorCapture::run($reason, fn (): bool => rename($tmp, $path))) {
             @unlink($tmp);
 
@@ -245,7 +254,7 @@ class DiscoveryCache
         if ($data['fingerprint'] !== $this->discoveryFingerprint->compute($this->projectPaths)) {
             throw DiscoveryCacheException::stale(
                 $path,
-                'installed packages (vendor/composer/installed.json) or the module directories under modules/ and app/ changed since it was compiled',
+                'installed packages (vendor/composer/installed.json), the module directories under modules/ and app/, or the root config/*.php files changed since it was compiled',
             );
         }
 
