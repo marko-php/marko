@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Queue\CacheRestartSignal;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\RestartSignalInterface;
@@ -17,7 +18,7 @@ function createArrayRestartCache(): ArrayCacheDriver
         'cache.path' => sys_get_temp_dir(),
         'cache.default_ttl' => 60,
         'cache.driver' => 'array',
-    ])), new FakeClock(), new CacheOperations());
+    ]), new ProjectPaths(sys_get_temp_dir())), new FakeClock(), new CacheOperations());
 }
 
 describe('CacheRestartSignal', function (): void {
@@ -56,7 +57,7 @@ describe('CacheRestartSignal', function (): void {
             'cache.path' => sys_get_temp_dir(),
             'cache.default_ttl' => 60,
             'cache.driver' => 'array',
-        ])), $clock, new CacheOperations());
+        ]), new ProjectPaths(sys_get_temp_dir())), $clock, new CacheOperations());
         $signal = new CacheRestartSignal($cache);
 
         $signal->request();
@@ -72,7 +73,7 @@ describe('CacheRestartSignal', function (): void {
             'cache.path' => sys_get_temp_dir(),
             'cache.default_ttl' => 60,
             'cache.driver' => 'array',
-        ])), new FakeClock(), new CacheOperations()) extends ArrayCacheDriver
+        ]), new ProjectPaths(sys_get_temp_dir())), new FakeClock(), new CacheOperations()) extends ArrayCacheDriver
         {
             public function forever(
                 string $key,

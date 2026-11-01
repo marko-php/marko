@@ -37,7 +37,7 @@ function createRestartSignalContainer(
             'cache.path' => sys_get_temp_dir(),
             'cache.default_ttl' => 60,
             'cache.driver' => 'array',
-        ])), new FakeClock(), new CacheOperations()));
+        ]), new ProjectPaths(sys_get_temp_dir())), new FakeClock(), new CacheOperations()));
     }
 
     return $container;

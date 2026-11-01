@@ -8,6 +8,7 @@ use Marko\Cache\Redis\Config\RedisCacheConfig;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
 use Marko\Cache\Signer\CacheValueSigner;
 use Marko\Clock\SystemClock;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\CacheRestartSignal;
 use Marko\Queue\Tests\Fixtures\IntegrationRedis;
@@ -33,7 +34,7 @@ function createRestartSignalRedisDriver(
             'cache.path' => sys_get_temp_dir(),
             'cache.default_ttl' => 60,
             'cache.driver' => 'redis',
-        ])),
+        ]), new ProjectPaths(sys_get_temp_dir())),
         new CacheValueSigner(new EncryptionConfig(new FakeConfigRepository([
             'encryption.key' => 'integration-signing-key',
         ]))),
