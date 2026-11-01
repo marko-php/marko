@@ -58,7 +58,7 @@ it('implements BackgroundCommandLauncherInterface', function (): void {
 
 it('starts the command in the background and returns without waiting for it', function (): void {
     $started = microtime(true);
-    $this->launcher->launch('app:prune', ['--days=30', "it's \"quoted\" \$HOME"], null);
+    $this->launcher->launch('app:prune', ['--days=30', "it's \"quoted\" \$HOME"], null, null);
     $elapsed = microtime(true) - $started;
 
     // The fake binary sleeps 0.5s before it records anything.
@@ -72,19 +72,23 @@ it('starts the command in the background and returns without waiting for it', fu
         ->and(realpath($record['cwd']))->toBe(realpath($this->directory));
 });
 
-it('runs the command through schedule:run-background with the mutex name when one is given', function (): void {
-    $this->launcher->launch('app:prune', ['--days=30'], 'schedule-abc123');
+it(
+    'runs the command through schedule:run-background with the mutex name and expiry when one is given',
+    function (): void {
+        $this->launcher->launch('app:prune', ['--days=30'], 'schedule-abc123', 5400);
 
-    expect(waitForLauncherFile($this->record))->toBeTrue();
+        expect(waitForLauncherFile($this->record))->toBeTrue();
 
-    expect(json_decode(file_get_contents($this->record), true)['argv'])->toBe([
-        'schedule:run-background',
-        '--schedule-mutex=schedule-abc123',
-        '--',
-        'app:prune',
-        '--days=30',
-    ]);
-});
+        expect(json_decode(file_get_contents($this->record), true)['argv'])->toBe([
+            'schedule:run-background',
+            '--schedule-mutex=schedule-abc123',
+            '--schedule-mutex-expires=5400',
+            '--',
+            'app:prune',
+            '--days=30',
+        ]);
+    },
+);
 
 it('throws when the marko binary does not exist', function (): void {
     $launcher = new ProcOpenBackgroundCommandLauncher(
@@ -93,7 +97,7 @@ it('throws when the marko binary does not exist', function (): void {
         workingDirectory: $this->directory,
     );
 
-    expect(fn () => $launcher->launch('app:prune', [], null))
+    expect(fn () => $launcher->launch('app:prune', [], null, null))
         ->toThrow(SchedulerException::class, "The marko binary was not found at '$this->directory/missing/marko'");
 
     // Nothing was launched, so the afterEach has nothing to wait for.
@@ -107,7 +111,7 @@ it('throws when the process cannot be started', function (): void {
         workingDirectory: $this->directory . '/does-not-exist',
     );
 
-    expect(fn () => $launcher->launch('app:prune', [], null))
+    expect(fn () => $launcher->launch('app:prune', [], null, null))
         ->toThrow(SchedulerException::class, "Could not start scheduled command 'app:prune' in the background");
 
     touch($this->record);

@@ -40,12 +40,12 @@ it('skips a scheduled task whose previous run is still in progress', function ()
     );
 
     expect($tasks)->toHaveCount(1)
-        ->and($previousRun->acquire($tasks[0], 3600))->toBeTrue();
+        ->and($previousRun->acquire($tasks[0]->mutexName(), 3600))->toBeTrue();
 
     try {
         $result = runIntegrationCommand($this->app, 'schedule:run');
     } finally {
-        $previousRun->release($tasks[0]);
+        $previousRun->release($tasks[0]->mutexName());
     }
 
     expect($result['exitCode'])->toBe(0, $result['output'])
@@ -90,12 +90,12 @@ it('runs a runInBackground() command to completion in a separate process', funct
     // The child took the mutex (its file exists) and released it when the command ended.
     $deadline = microtime(true) + 10;
 
-    while ($mutex->exists($tasks[0]) && microtime(true) < $deadline) {
+    while ($mutex->exists($tasks[0]->mutexName()) && microtime(true) < $deadline) {
         usleep(50_000);
     }
 
     expect($written['note'])->toBe('ran in the background')
         ->and($written['pid'])->not->toBe(getmypid())
         ->and(is_file($this->project . '/storage/framework/' . $tasks[0]->mutexName()))->toBeTrue()
-        ->and($mutex->exists($tasks[0]))->toBeFalse();
+        ->and($mutex->exists($tasks[0]->mutexName()))->toBeFalse();
 })->issue(565);

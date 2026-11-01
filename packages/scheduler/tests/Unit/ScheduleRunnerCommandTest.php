@@ -89,7 +89,7 @@ it('releases the overlap mutex of a foreground command task when it finishes', f
     $this->runner->run($this->now, $this->output);
 
     expect($this->ran)->toHaveCount(1)
-        ->and($this->mutex->exists($task))->toBeFalse();
+        ->and($this->mutex->exists($task->mutexName()))->toBeFalse();
 });
 
 it('hands a background task to the launcher without waiting for it', function (): void {
@@ -98,7 +98,7 @@ it('hands a background task to the launcher without waiting for it', function ()
     $result = $this->runner->run($this->now, $this->output);
 
     expect($this->launcher->launches)->toBe([
-        ['command' => 'app:prune', 'arguments' => ['--days=30'], 'mutexName' => null],
+        ['command' => 'app:prune', 'arguments' => ['--days=30'], 'mutexName' => null, 'mutexExpiresAfterSeconds' => null],
     ])
         ->and($this->ran)->toBe([])
         ->and($result->launched)->toBe(1)
@@ -108,24 +108,25 @@ it('hands a background task to the launcher without waiting for it', function ()
         ->and(($this->outputContent)())->not->toContain('Executed: app:prune');
 });
 
-it('passes the overlap mutex name to the child instead of taking the mutex itself', function (): void {
-    $task = $this->schedule->command('app:prune')->everyMinute()->withoutOverlapping()->runInBackground();
+it('passes the overlap mutex name and expiry to the child instead of taking the mutex itself', function (): void {
+    $task = $this->schedule->command('app:prune')->everyMinute()->withoutOverlapping(90)->runInBackground();
 
     $this->runner->run($this->now, $this->output);
 
     expect($this->launcher->launches[0]['mutexName'])->toBe($task->mutexName())
-        ->and($this->mutex->exists($task))->toBeFalse();
+        ->and($this->launcher->launches[0]['mutexExpiresAfterSeconds'])->toBe(5400)
+        ->and($this->mutex->exists($task->mutexName()))->toBeFalse();
 });
 
 it('launches a background task while an earlier run holds its mutex, so the child decides to skip', function (): void {
     $task = $this->schedule->command('app:prune')->everyMinute()->withoutOverlapping()->runInBackground();
     $earlierRun = new FileTaskMutex($this->mutexDirectory, $this->clock);
-    $earlierRun->acquire($task, 3600);
+    $earlierRun->acquire($task->mutexName(), 3600);
 
     try {
         $this->runner->run($this->now, $this->output);
     } finally {
-        $earlierRun->release($task);
+        $earlierRun->release($task->mutexName());
     }
 
     expect($this->launcher->launches)->toHaveCount(1);

@@ -12,19 +12,17 @@ use Marko\Core\Command\Output;
 use Marko\Core\Exceptions\CommandException;
 use Marko\Scheduler\Exceptions\SchedulerException;
 use Marko\Scheduler\Mutex\TaskMutexInterface;
-use Marko\Scheduler\Schedule;
 use Marko\Scheduler\ScheduledCommand;
-use Marko\Scheduler\ScheduledTask;
 
 /**
  * Internal: the child process of a runInBackground() task that uses withoutOverlapping().
  *
  * Started by the background launcher as
- * `marko schedule:run-background --schedule-mutex=<name> -- <command> <args>`. It takes the
- * task's overlap mutex, runs the command, and releases the mutex when the command ends. While
- * the mutex is held by an earlier run it prints "Skipped (still running)" and exits 0. If this
- * process crashes, the operating system drops FileTaskMutex's flock(), so the mutex is never
- * held past the work.
+ * `marko schedule:run-background --schedule-mutex=<name> --schedule-mutex-expires=<seconds> -- <command> <args>`.
+ * Everything it needs is on that command line: it does not read the schedule. It takes the named
+ * mutex, runs the command, and releases the mutex when the command ends. While the mutex is held
+ * by an earlier run it prints "Skipped (still running)" and exits 0. If this process crashes, the
+ * operating system drops FileTaskMutex's flock(), so the mutex is never held past the work.
  *
  * @noinspection PhpUnused
  */
@@ -38,8 +36,9 @@ readonly class RunBackgroundCommand implements CommandInterface
 
     public const string MUTEX_OPTION = 'schedule-mutex';
 
+    public const string EXPIRY_OPTION = 'schedule-mutex-expires';
+
     public function __construct(
-        private Schedule $schedule,
         private TaskMutexInterface $taskMutex,
         private CommandRunner $commandRunner,
     ) {}
@@ -58,6 +57,7 @@ readonly class RunBackgroundCommand implements CommandInterface
             throw SchedulerException::backgroundMutexOptionMissing(self::NAME, self::MUTEX_OPTION);
         }
 
+        $expiresAfterSeconds = $this->expiresAfterSeconds($input);
         $arguments = $input->getArguments();
 
         if ($arguments === []) {
@@ -65,10 +65,9 @@ readonly class RunBackgroundCommand implements CommandInterface
         }
 
         $command = new ScheduledCommand(array_shift($arguments), $arguments);
-        $task = $this->findTask($mutexName);
 
-        if (!$this->taskMutex->acquire($task, (int) $task->getOverlapExpiresAfterMinutes() * 60)) {
-            $output->writeLine('Skipped (still running): ' . $task->getDescription());
+        if (!$this->taskMutex->acquire($mutexName, $expiresAfterSeconds)) {
+            $output->writeLine('Skipped (still running): ' . $command->description());
 
             return 0;
         }
@@ -76,22 +75,22 @@ readonly class RunBackgroundCommand implements CommandInterface
         try {
             return $this->commandRunner->run($command->name, $command->input(), $output);
         } finally {
-            $this->taskMutex->release($task);
+            $this->taskMutex->release($mutexName);
         }
     }
 
     /**
-     * @throws SchedulerException When no overlap-protected task has this mutex name
+     * @throws SchedulerException When the expiry option is missing or not a whole number of seconds of at least 1
      */
-    private function findTask(
-        string $mutexName,
-    ): ScheduledTask {
-        foreach ($this->schedule->tasks() as $task) {
-            if ($task->preventsOverlapping() && $task->mutexName() === $mutexName) {
-                return $task;
-            }
+    private function expiresAfterSeconds(
+        Input $input,
+    ): int {
+        $value = $input->getOption(self::EXPIRY_OPTION) ?? '';
+
+        if (!ctype_digit($value) || (int) $value < 1) {
+            throw SchedulerException::invalidMutexExpiry(self::NAME, self::EXPIRY_OPTION, $value);
         }
 
-        throw SchedulerException::unknownBackgroundMutex($mutexName);
+        return (int) $value;
     }
 }

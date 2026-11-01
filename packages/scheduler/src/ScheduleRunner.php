@@ -84,6 +84,7 @@ readonly class ScheduleRunner
                         $command->name,
                         $command->arguments,
                         $task->preventsOverlapping() ? $task->mutexName() : null,
+                        $task->preventsOverlapping() ? (int) $task->getOverlapExpiresAfterMinutes() * 60 : null,
                     );
                     $output->writeLine("Launched: $description");
                     $launched++;
@@ -95,10 +96,10 @@ readonly class ScheduleRunner
                 continue;
             }
 
-            $preventsOverlapping = $task->preventsOverlapping();
+            $mutexName = $task->preventsOverlapping() ? $task->mutexName() : null;
 
-            if ($preventsOverlapping
-                && !$this->taskMutex->acquire($task, (int) $task->getOverlapExpiresAfterMinutes() * 60)
+            if ($mutexName !== null
+                && !$this->taskMutex->acquire($mutexName, (int) $task->getOverlapExpiresAfterMinutes() * 60)
             ) {
                 $output->writeLine("Skipped (still running): $description");
                 $skipped++;
@@ -119,8 +120,8 @@ readonly class ScheduleRunner
                 $output->writeLine("Failed: $description - " . $e->getMessage());
                 $failed++;
             } finally {
-                if ($preventsOverlapping) {
-                    $this->taskMutex->release($task);
+                if ($mutexName !== null) {
+                    $this->taskMutex->release($mutexName);
                 }
             }
         }

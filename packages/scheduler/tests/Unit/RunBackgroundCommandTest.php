@@ -7,6 +7,7 @@ use Marko\Core\Command\Output;
 use Marko\Scheduler\Command\RunBackgroundCommand;
 use Marko\Scheduler\Exceptions\SchedulerException;
 use Marko\Scheduler\Mutex\FileTaskMutex;
+use Marko\Scheduler\Mutex\TaskMutexInterface;
 use Marko\Scheduler\Tests\Fixtures\SchedulerFactory;
 use Marko\Testing\Fake\FakeClock;
 
@@ -20,15 +21,16 @@ beforeEach(function (): void {
 
         return stream_get_contents($this->stream);
     };
+    $this->mutexName = 'schedule-' . sha1('* * * * *app:prune --days=30');
     // Another process's view of the same mutex directory.
     $this->otherProcess = new FileTaskMutex($this->mutexDirectory, $this->clock);
     $this->ran = [];
     $this->heldDuringRun = null;
     $this->exitCode = 0;
-    [$registry, $commandRunner] = SchedulerFactory::commands([
+    [, $this->commandRunner] = SchedulerFactory::commands([
         'app:prune' => function (Input $input, Output $output): int {
             $this->ran[] = [$input->getOption('days'), $input->getArguments()];
-            $this->heldDuringRun = $this->otherProcess->exists($this->task);
+            $this->heldDuringRun = $this->otherProcess->exists($this->mutexName);
             $output->writeLine('Pruned 3 rows.');
 
             return $this->exitCode;
@@ -37,12 +39,9 @@ beforeEach(function (): void {
             throw new RuntimeException('Engine unreachable');
         },
     ]);
-    $this->schedule = SchedulerFactory::schedule($registry);
-    $this->task = $this->schedule->command('app:prune', ['--days=30'])->everyMinute()->withoutOverlapping(30);
     $this->command = new RunBackgroundCommand(
-        $this->schedule,
         new FileTaskMutex($this->mutexDirectory, $this->clock),
-        $commandRunner,
+        $this->commandRunner,
     );
     $this->execute = fn (array $tokens): int => $this->command->execute(
         new Input(['marko', RunBackgroundCommand::NAME, ...$tokens]),
@@ -57,22 +56,78 @@ afterEach(function (): void {
 });
 
 it('holds the overlap mutex while the command runs and releases it when the command ends', function (): void {
-    $exitCode = ($this->execute)(['--schedule-mutex=' . $this->task->mutexName(), '--', 'app:prune', '--days=30', 'users']);
+    $exitCode = ($this->execute)([
+        "--schedule-mutex=$this->mutexName",
+        '--schedule-mutex-expires=1800',
+        '--',
+        'app:prune',
+        '--days=30',
+        'users',
+    ]);
 
     expect($exitCode)->toBe(0)
         ->and($this->ran)->toBe([['30', ['users']]])
         ->and($this->heldDuringRun)->toBeTrue()
-        ->and($this->otherProcess->exists($this->task))->toBeFalse()
+        ->and($this->otherProcess->exists($this->mutexName))->toBeFalse()
         ->and(($this->outputContent)())->toBe("Pruned 3 rows.\n");
 });
 
+it('takes the mutex by the name and expiry on its command line', function (): void {
+    $mutex = new class () implements TaskMutexInterface
+    {
+        /** @var list<array{string, int}> */
+        public array $acquired = [];
+
+        /** @var list<string> */
+        public array $released = [];
+
+        public function acquire(
+            string $name,
+            int $expiresAfterSeconds,
+        ): bool {
+            $this->acquired[] = [$name, $expiresAfterSeconds];
+
+            return true;
+        }
+
+        public function release(
+            string $name,
+        ): void {
+            $this->released[] = $name;
+        }
+
+        public function exists(
+            string $name,
+        ): bool {
+            return false;
+        }
+    };
+
+    $exitCode = new RunBackgroundCommand($mutex, $this->commandRunner)->execute(
+        new Input(
+            ['marko', RunBackgroundCommand::NAME, '--schedule-mutex=schedule-abc', '--schedule-mutex-expires=5400', '--', 'app:prune'],
+        ),
+        $this->output,
+    );
+
+    expect($exitCode)->toBe(0)
+        ->and($mutex->acquired)->toBe([['schedule-abc', 5400]])
+        ->and($mutex->released)->toBe(['schedule-abc']);
+});
+
 it('skips the command while another process holds the mutex', function (): void {
-    expect($this->otherProcess->acquire($this->task, 3600))->toBeTrue();
+    expect($this->otherProcess->acquire($this->mutexName, 3600))->toBeTrue();
 
     try {
-        $exitCode = ($this->execute)(['--schedule-mutex=' . $this->task->mutexName(), '--', 'app:prune', '--days=30']);
+        $exitCode = ($this->execute)([
+            "--schedule-mutex=$this->mutexName",
+            '--schedule-mutex-expires=1800',
+            '--',
+            'app:prune',
+            '--days=30',
+        ]);
     } finally {
-        $this->otherProcess->release($this->task);
+        $this->otherProcess->release($this->mutexName);
     }
 
     expect($exitCode)->toBe(0)
@@ -83,34 +138,48 @@ it('skips the command while another process holds the mutex', function (): void 
 it('returns the exit code of the command', function (): void {
     $this->exitCode = 3;
 
-    expect(($this->execute)(['--schedule-mutex=' . $this->task->mutexName(), '--', 'app:prune']))->toBe(3)
-        ->and($this->otherProcess->exists($this->task))->toBeFalse();
+    expect(($this->execute)(["--schedule-mutex=$this->mutexName", '--schedule-mutex-expires=60', '--', 'app:prune']))
+        ->toBe(3)
+        ->and($this->otherProcess->exists($this->mutexName))->toBeFalse();
 });
 
 it('releases the mutex when the command throws', function (): void {
-    $task = $this->schedule->command('app:throws')->everyMinute()->withoutOverlapping();
-
-    expect(fn () => ($this->execute)(['--schedule-mutex=' . $task->mutexName(), '--', 'app:throws']))
+    expect(
+        fn () => ($this->execute)(["--schedule-mutex=$this->mutexName", '--schedule-mutex-expires=60', '--', 'app:throws']),
+    )
         ->toThrow(RuntimeException::class, 'Engine unreachable')
-        ->and($this->otherProcess->exists($task))->toBeFalse();
+        ->and($this->otherProcess->exists($this->mutexName))->toBeFalse();
 });
 
 it('throws when the mutex option is missing', function (): void {
-    expect(fn () => ($this->execute)(['--', 'app:prune']))
-        ->toThrow(SchedulerException::class, 'schedule:run-background requires --schedule-mutex=<name>.');
+    expect(fn () => ($this->execute)(['--schedule-mutex-expires=60', '--', 'app:prune']))
+        ->toThrow(SchedulerException::class, 'schedule:run-background requires --schedule-mutex=<value>.');
 });
 
+it('throws when the mutex expiry is missing or invalid', function (array $tokens, string $given): void {
+    expect(fn () => ($this->execute)(["--schedule-mutex=$this->mutexName", ...$tokens, '--', 'app:prune']))
+        ->toThrow(
+            SchedulerException::class,
+            "schedule:run-background requires --schedule-mutex-expires=<seconds> with a whole number of seconds of at least 1, '$given' given.",
+        );
+
+    expect($this->ran)->toBe([]);
+})->with([
+    'missing' => [[], ''],
+    'zero' => [['--schedule-mutex-expires=0'], '0'],
+    'not a number' => [['--schedule-mutex-expires=soon'], 'soon'],
+]);
+
 it('throws when no command is given', function (): void {
-    expect(fn () => ($this->execute)(['--schedule-mutex=' . $this->task->mutexName(), '--']))
+    expect(fn () => ($this->execute)(["--schedule-mutex=$this->mutexName", '--schedule-mutex-expires=60', '--']))
         ->toThrow(SchedulerException::class, 'schedule:run-background was not given a command to run.');
 });
 
-it('throws when no overlap-protected task has the mutex name', function (): void {
-    expect(fn () => ($this->execute)(['--schedule-mutex=schedule-unknown', '--', 'app:prune']))
-        ->toThrow(
-            SchedulerException::class,
-            "No overlap-protected scheduled task has the mutex name 'schedule-unknown'.",
-        );
+it('refuses a mutex name that is not a safe file name', function (): void {
+    expect(
+        fn () => ($this->execute)(['--schedule-mutex=../../etc/passwd', '--schedule-mutex-expires=60', '--', 'app:prune']),
+    )
+        ->toThrow(SchedulerException::class, "'../../etc/passwd' is not a valid scheduler mutex name.");
 
     expect($this->ran)->toBe([]);
 });

@@ -195,7 +195,7 @@ class SchedulerException extends MarkoException
         string $option,
     ): self {
         return new self(
-            message: "$commandName requires --$option=<name>.",
+            message: "$commandName requires --$option=<value>.",
             context: "While running $commandName",
             suggestion: "$commandName is started by the scheduler for runInBackground() tasks that use withoutOverlapping(); it is not meant to be run by hand.",
         );
@@ -211,13 +211,25 @@ class SchedulerException extends MarkoException
         );
     }
 
-    public static function unknownBackgroundMutex(
-        string $mutexName,
+    public static function invalidMutexName(
+        string $name,
     ): self {
         return new self(
-            message: "No overlap-protected scheduled task has the mutex name '$mutexName'.",
-            context: 'While taking the overlap mutex for a background scheduled command',
-            suggestion: 'The background process rebuilds the schedule from your module boot callbacks and looks the task up by its mutex name. Register the task unconditionally, with the same expression and description, so the parent and child see the same schedule.',
+            message: "'$name' is not a valid scheduler mutex name.",
+            context: 'While locating a scheduled task overlap mutex',
+            suggestion: 'Mutex names are file names made of letters, digits, dots, dashes and underscores, as ScheduledTask::mutexName() returns them (schedule-{sha1}).',
+        );
+    }
+
+    public static function invalidMutexExpiry(
+        string $commandName,
+        string $option,
+        string $given,
+    ): self {
+        return new self(
+            message: "$commandName requires --$option=<seconds> with a whole number of seconds of at least 1, '$given' given.",
+            context: "While running $commandName",
+            suggestion: "$commandName is started by the scheduler for runInBackground() tasks that use withoutOverlapping(); it is not meant to be run by hand.",
         );
     }
 

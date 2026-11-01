@@ -96,7 +96,7 @@ Then replace `$schedule->call(...)` with `$schedule->command('app:prune')->runIn
 
 **Where the output goes.** The background process runs `php vendor/bin/marko {command} {arguments}` from the project root, detached, with every argument shell-escaped. It inherits the scheduler's stdout and stderr, so whatever captures the scheduler's output (cron mail, the systemd journal, a container log) also captures the command's output and errors. Redirect the cron entry's output (`marko schedule:run >> storage/logs/schedule.log 2>&1`) to keep it in a file. The project must have `vendor/bin/marko` (installed by `marko/cli`); without it the launch fails.
 
-**How overlap protection works in the background.** The parent does not take the mutex of a background task. When the task uses `withoutOverlapping()`, the child process is started as `marko schedule:run-background --schedule-mutex={name} -- {command} {arguments}`. That internal command rebuilds the schedule from your boot callbacks, finds the task by its mutex name, takes the mutex, runs the command, and releases the mutex when the command ends. If the mutex is still held by an earlier run, the child prints `Skipped (still running): {description}` and exits `0`. If the child crashes, the operating system drops `FileTaskMutex`'s lock, so the mutex is never held past the work. Because the child looks the task up by its mutex name, register background tasks unconditionally in a boot callback (use `when()`/`skip()` for run-time decisions); if the child cannot find the task it fails loudly.
+**How overlap protection works in the background.** The parent does not take the mutex of a background task. When the task uses `withoutOverlapping()`, the child process is started as `marko schedule:run-background --schedule-mutex={name} --schedule-mutex-expires={seconds} -- {command} {arguments}`. Everything the child needs is on that command line; it does not read the schedule. The internal command takes the named mutex through `TaskMutexInterface` (stale after the given number of seconds, from `withoutOverlapping()`), runs the command through the `CommandRunner`, and releases the mutex when the command ends, including when it throws. If the mutex is still held by an earlier run, the child prints `Skipped (still running): {command} {arguments}` and exits `0`. If the child crashes, the operating system drops `FileTaskMutex`'s lock, so the mutex is never held past the work.
 
 **What runs in the parent.** The `when()`/`skip()` conditions are evaluated in the scheduler process before launching, so a condition-skipped task never starts a process. A launch failure (for example when `proc_open()` is disabled or the process limit is reached) prints `Failed: {description} - {message}`, counts as a failure, and the remaining due tasks still run.
 
@@ -318,7 +318,7 @@ it('sends the report on the first of the month', function (): void {
 
 ### Background Launcher
 
-`runInBackground()` tasks are started through `BackgroundCommandLauncherInterface`, which `marko/scheduler` binds to `ProcOpenBackgroundCommandLauncher`. To start them another way (a job runner, a container API), implement the interface and bind it from your application module. `launch()` must return without waiting for the command, and when it is given a mutex name the child must hold that mutex while the command runs, as `schedule:run-background` does.
+`runInBackground()` tasks are started through `BackgroundCommandLauncherInterface`, which `marko/scheduler` binds to `ProcOpenBackgroundCommandLauncher`. To start them another way (a job runner, a container API), implement the interface and bind it from your application module. `launch()` must return without waiting for the command, and when it is given a mutex name and expiry the child must hold that mutex while the command runs, as `schedule:run-background` does.
 
 ### Shared Mutex
 
@@ -335,7 +335,7 @@ return [
 ];
 ```
 
-`acquire()` must be atomic and non-blocking, and must treat a mutex older than `$expiresAfterSeconds` as free.
+The mutex is keyed on the task's `mutexName()`. `acquire()` must be atomic and non-blocking, and must treat a mutex older than `$expiresAfterSeconds` as free.
 
 ## API Reference
 
@@ -432,17 +432,17 @@ public function hasFailures(): bool;
 ### TaskMutexInterface
 
 ```php
-use Marko\Scheduler\ScheduledTask;
-
-public function acquire(ScheduledTask $task, int $expiresAfterSeconds): bool;
-public function release(ScheduledTask $task): void;
-public function exists(ScheduledTask $task): bool;
+public function acquire(string $name, int $expiresAfterSeconds): bool;
+public function release(string $name): void;
+public function exists(string $name): bool;
 ```
+
+`$name` is the task's `mutexName()`. `FileTaskMutex` throws `SchedulerException` for a name that is not a safe file name (letters, digits, `.`, `-` and `_`).
 
 ### BackgroundCommandLauncherInterface
 
 ```php
-public function launch(string $command, array $arguments, ?string $mutexName): void;
+public function launch(string $command, array $arguments, ?string $mutexName, ?int $mutexExpiresAfterSeconds): void;
 ```
 
 `ProcOpenBackgroundCommandLauncher` throws `SchedulerException` when `vendor/bin/marko` is missing or the process cannot be started.

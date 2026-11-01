@@ -12,7 +12,7 @@ use Throwable;
  */
 class RecordingBackgroundCommandLauncher implements BackgroundCommandLauncherInterface
 {
-    /** @var list<array{command: string, arguments: list<string>, mutexName: ?string}> */
+    /** @var list<array{command: string, arguments: list<string>, mutexName: ?string, mutexExpiresAfterSeconds: ?int}> */
     public array $launches = [];
 
     /**
@@ -30,11 +30,17 @@ class RecordingBackgroundCommandLauncher implements BackgroundCommandLauncherInt
         string $command,
         array $arguments,
         ?string $mutexName,
+        ?int $mutexExpiresAfterSeconds,
     ): void {
         if ($this->failWith !== null && in_array($command, $this->failFor, true)) {
             throw $this->failWith;
         }
 
-        $this->launches[] = ['command' => $command, 'arguments' => $arguments, 'mutexName' => $mutexName];
+        $this->launches[] = [
+            'command' => $command,
+            'arguments' => $arguments,
+            'mutexName' => $mutexName,
+            'mutexExpiresAfterSeconds' => $mutexExpiresAfterSeconds,
+        ];
     }
 }

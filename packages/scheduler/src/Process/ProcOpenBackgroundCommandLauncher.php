@@ -17,7 +17,8 @@ use Marko\Scheduler\Exceptions\SchedulerException;
  * The child inherits the parent's stdout and stderr, so whatever captures the scheduler's output
  * (cron mail, systemd's journal, a container log) also captures the command's output and errors.
  *
- * With a mutex name, the child runs `schedule:run-background --schedule-mutex=<name> -- <command> <args>`,
+ * With a mutex name, the child runs
+ * `schedule:run-background --schedule-mutex=<name> --schedule-mutex-expires=<seconds> -- <command> <args>`,
  * which holds the overlap mutex for as long as the command runs.
  */
 readonly class ProcOpenBackgroundCommandLauncher implements BackgroundCommandLauncherInterface
@@ -36,6 +37,7 @@ readonly class ProcOpenBackgroundCommandLauncher implements BackgroundCommandLau
         string $command,
         array $arguments,
         ?string $mutexName,
+        ?int $mutexExpiresAfterSeconds,
     ): void {
         if (!is_file($this->markoBinary)) {
             throw SchedulerException::markoBinaryNotFound($this->markoBinary);
@@ -48,6 +50,7 @@ readonly class ProcOpenBackgroundCommandLauncher implements BackgroundCommandLau
                 $argv,
                 RunBackgroundCommand::NAME,
                 '--' . RunBackgroundCommand::MUTEX_OPTION . '=' . $mutexName,
+                '--' . RunBackgroundCommand::EXPIRY_OPTION . '=' . $mutexExpiresAfterSeconds,
                 '--',
             );
         }
