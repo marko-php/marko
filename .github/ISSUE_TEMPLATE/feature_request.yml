@@ -80,6 +80,7 @@ body:
         - filesystem
         - filesystem-local
         - filesystem-s3
+        - forms
         - framework
         - hashing
         - health

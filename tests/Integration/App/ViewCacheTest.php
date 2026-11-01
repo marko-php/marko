@@ -30,7 +30,7 @@ function bootViewCacheApp(
 ): Application {
     $test->project = buildIntegrationProject(
         __DIR__ . '/ViewFixture',
-        ['config', 'core', 'routing', 'view', $engine],
+        ['clock', 'config', 'core', 'routing', 'view', $engine],
     );
 
     return Application::boot($test->project);

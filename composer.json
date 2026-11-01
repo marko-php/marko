@@ -194,6 +194,10 @@
         },
         {
             "type": "path",
+            "url": "packages/forms"
+        },
+        {
+            "type": "path",
             "url": "packages/framework"
         },
         {
@@ -470,6 +474,7 @@
         "marko/filesystem": "self.version",
         "marko/filesystem-local": "self.version",
         "marko/filesystem-s3": "self.version",
+        "marko/forms": "self.version",
         "marko/framework": "self.version",
         "marko/hashing": "self.version",
         "marko/health": "self.version",
@@ -622,6 +627,7 @@
             "Marko\\Filesystem\\Tests\\": "packages/filesystem/tests/",
             "Marko\\Filesystem\\Local\\Tests\\": "packages/filesystem-local/tests/",
             "Marko\\Filesystem\\S3\\Tests\\": "packages/filesystem-s3/tests/",
+            "Marko\\Forms\\Tests\\": "packages/forms/tests/",
             "Marko\\Framework\\Tests\\": "packages/framework/tests/",
             "Marko\\Hashing\\Tests\\": "packages/hashing/tests/",
             "Marko\\Health\\Tests\\": "packages/health/tests/",

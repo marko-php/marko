@@ -4,7 +4,27 @@ declare(strict_types=1);
 
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Flash\FlashBag;
+use Marko\Session\Flash\SessionFlashData;
 use Marko\Testing\Fake\FakeSession;
+
+it('FakeSession ages next-request flash data on every start like Session', function (): void {
+    $session = new FakeSession();
+    $flash = new SessionFlashData($session);
+
+    $session->start();
+    $flash->put('notice', 'Saved');
+    $session->save();
+
+    $session->start();
+    $visibleOnNextRequest = $flash->get('notice');
+    $session->save();
+
+    $session->start();
+
+    expect($visibleOnNextRequest)->toBe('Saved')
+        ->and($flash->has('notice'))->toBeFalse()
+        ->and($session->has(SessionFlashData::SESSION_KEY))->toBeFalse();
+});
 
 it('FakeSession implements SessionInterface', function (): void {
     $session = new FakeSession();

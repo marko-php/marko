@@ -8,9 +8,11 @@ use Marko\Inertia\Exceptions\InertiaConfigurationException;
 use Marko\Inertia\Inertia;
 use Marko\Inertia\Ssr\SsrClient;
 use Marko\Inertia\Ssr\SsrTransportInterface;
+use Marko\Inertia\Tests\FlashedErrors;
 use Marko\Routing\Http\Request;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeSession;
+use Marko\Validation\Contracts\FlashedFormStateInterface;
 use Marko\Vite\Vite;
 
 beforeEach(function () {
@@ -18,7 +20,7 @@ beforeEach(function () {
     $this->paths = new ProjectPaths($this->basePath);
 });
 
-function createInertia(array $config = [], array $viteConfig = []): Inertia
+function createInertia(array $config = [], array $viteConfig = [], ?FlashedFormStateInterface $formState = null): Inertia
 {
     $mergedConfig = new FakeConfigRepository(array_merge([
         'inertia.version' => '1.0',
@@ -40,7 +42,7 @@ function createInertia(array $config = [], array $viteConfig = []): Inertia
     $vite = new Vite($mergedConfig, $paths);
     $ssrClient = new SsrClient($mergedConfig, new NullSsrTransport());
 
-    return new Inertia($mergedConfig, $vite, $ssrClient, new FakeSession());
+    return new Inertia($mergedConfig, $vite, $ssrClient, new FakeSession(), $formState);
 }
 
 test('inertia returns json for inertia requests', function () {
@@ -264,6 +266,46 @@ test('inertia applies partial except headers with precedence over partial data',
     expect($data['props'])->toHaveKey('user')
         ->toHaveKey('notifications')
         ->not->toHaveKey('stats');
+});
+
+test('inertia fills the errors prop from flashed validation errors', function () {
+    $inertia = createInertia(formState: new FlashedErrors([
+        'email' => ['The email field is required.'],
+        'name' => ['Too short.', 'Not a name.'],
+    ]));
+
+    $response = $inertia->render(new Request(server: ['HTTP_X_INERTIA' => 'true']), 'Register');
+
+    expect(json_decode($response->body(), true)['props']['errors'])->toBe([
+        'email' => ['The email field is required.'],
+        'name' => ['Too short.', 'Not a name.'],
+    ]);
+});
+
+test('inertia keeps flashed errors during partial reloads', function () {
+    $inertia = createInertia(formState: new FlashedErrors(['email' => ['Required.']]));
+    $request = new Request(server: [
+        'HTTP_X_INERTIA' => 'true',
+        'HTTP_X_INERTIA_PARTIAL_COMPONENT' => 'Register',
+        'HTTP_X_INERTIA_PARTIAL_DATA' => 'form',
+    ]);
+
+    $response = $inertia->render($request, 'Register', ['form' => [], 'other' => 1]);
+
+    expect(json_decode($response->body(), true)['props']['errors'])->toBe(['email' => ['Required.']]);
+});
+
+test('inertia shares an empty errors object when nothing was flashed', function () {
+    $response = createInertia(formState: new FlashedErrors())
+        ->render(new Request(server: ['HTTP_X_INERTIA' => 'true']), 'Register');
+
+    expect($response->body())->toContain('"errors":{}');
+});
+
+test('inertia shares an empty errors object without a flashed form state reader', function () {
+    $response = createInertia()->render(new Request(server: ['HTTP_X_INERTIA' => 'true']), 'Register');
+
+    expect($response->body())->toContain('"errors":{}');
 });
 
 test('inertia keeps errors available during partial reloads', function () {

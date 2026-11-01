@@ -6,6 +6,7 @@ namespace Marko\Testing\Fake;
 
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Flash\FlashBag;
+use Marko\Session\Flash\SessionFlashData;
 use Random\RandomException;
 
 class FakeSession implements SessionInterface
@@ -35,10 +36,15 @@ class FakeSession implements SessionInterface
 
     private ?FlashBag $flashBag = null;
 
+    /**
+     * Each start() stands for a new request loading the session, so it ages
+     * next-request flash data exactly as Session::start() does.
+     */
     public function start(): void
     {
         $this->started = true;
         $this->startedData = $this->data;
+        $this->data = SessionFlashData::age($this->data);
     }
 
     public function arm(): void

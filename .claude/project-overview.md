@@ -48,7 +48,7 @@ docs/           # Documentation site content
 - **Core**: core, config, env, routing, cli
 - **Database**: database (interface), database-mysql, database-pgsql
 - **Cache**: cache (interface), cache-file, cache-array, cache-redis
-- **View**: view (interface), view-latte
+- **View**: view (interface), view-latte, view-twig, forms
 - **Mail**: mail (interface), mail-smtp, mail-log
 - **Queue**: queue (interface), queue-sync, queue-database, queue-rabbitmq
 - **Session**: session (interface), session-file, session-database

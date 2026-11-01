@@ -161,6 +161,20 @@ $this->inertia->flash('notice', [
 ]);
 ```
 
+### Validation Errors
+
+The `errors` prop carries the validation errors a failed form submission flashed, read through [`FlashedFormStateInterface`](/docs/packages/validation/#flashedformstateinterface). Install [marko/forms](/docs/packages/forms/) and add its `RedirectBackOnValidationError` middleware to the route that handles the form: a failed submission is redirected back with `303`, and the page it lands on gets the errors:
+
+```json
+{
+    "errors": {
+        "email": ["The email field is required."]
+    }
+}
+```
+
+Each field maps to its list of messages, so the first one is `errors.email[0]` on the client. Without marko/forms, or when nothing was flashed, `errors` is an empty object (`{}`).
+
 ### Redirects
 
 Use `location()` for external or non-Inertia redirects:
@@ -259,6 +273,8 @@ interface SsrTransportInterface
 
 - [`marko/vite`](/docs/packages/vite/) - renders frontend asset tags for the Inertia HTML shell
 - [`marko/session`](/docs/packages/session/) - stores flash messages
+- [`marko/forms`](/docs/packages/forms/) - flashes validation errors on redirect back, which fill the `errors` prop
+- [`marko/validation`](/docs/packages/validation/) - defines `FlashedFormStateInterface`, the reader behind the `errors` prop
 - [`marko/routing`](/docs/packages/routing/) - provides requests, responses, and middleware
 - [`marko/config`](/docs/packages/config/) - provides the configuration repository
 - [`marko/env`](/docs/packages/env/) - loads a `.env` file into the environment that `config/inertia.php` reads with [`Env`](/docs/packages/config/#environment-variables). Installed by the [skeleton](/docs/packages/skeleton/), not by this package

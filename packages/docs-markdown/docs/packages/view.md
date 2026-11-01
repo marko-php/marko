@@ -193,6 +193,7 @@ readonly class MoneyFunctionProvider implements TemplateFunctionProviderInterfac
 - Names must start with a letter and contain only letters, digits and `_`; anything else throws `ViewProviderException`.
 - Two providers registering the same name throw `ViewProviderException` naming both classes. To change a function, replace its provider with a [Preference](/docs/packages/core/) instead of registering the name again.
 - Providers are resolved through the container, so they can inject any service. `route()` is served this way by `RouteFunctionProvider`, and `signedRoute()` by `SignedRouteFunctionProvider` (see [Signed URLs](/docs/packages/routing/#signed-urls)).
+- [marko/forms](/docs/packages/forms/) adds `csrf_field()`, `csrf_token()`, `old()` and `errors()` the same way.
 
 ### Shared View Data
 
@@ -215,6 +216,8 @@ readonly class SiteViewData implements ViewDataProviderInterface
 ```
 
 Every driver passes the render data through `ViewDataMerger` before rendering, so `{$siteName}` (Latte) or `{{ siteName }}` (Twig) works in any template. `data()` runs on every render, so it may return per-request values. Data passed to `render()` or `renderToString()` wins over provider data with the same key. Two providers supplying the same key throw `ViewProviderException` naming both classes.
+
+[marko/forms](/docs/packages/forms/) shares `$errors` and `$old` this way, so every form template can show a failed submission's errors and refill its fields.
 
 Both provider types are found by scanning each module's `src/` directory for the attributes. `marko discovery:cache` stores the provider class names (the `view_providers` section), so a cached boot does not scan.
 
@@ -404,3 +407,4 @@ Returns the resolved absolute path. Throws `InsecureCacheDirectoryException` whe
 
 - [`marko/view-latte`](/docs/packages/view-latte/) --- Latte templating driver
 - [`marko/view-twig`](/docs/packages/view-twig/) --- Twig templating driver
+- [`marko/forms`](/docs/packages/forms/) --- form helpers (`csrf_field()`, `old()`, `errors()`, `$errors`, `$old`) built on these providers
