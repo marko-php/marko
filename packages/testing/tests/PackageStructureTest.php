@@ -36,6 +36,12 @@ it(
     },
 );
 
+it('requires marko/notification for FakeNotificationSender', function () {
+    $composer = json_decode(file_get_contents(dirname(__DIR__) . '/composer.json'), true);
+
+    expect($composer['require'])->toHaveKey('marko/notification');
+});
+
 it('requires marko/http as a dependency', function () {
     $composer = json_decode(file_get_contents(dirname(__DIR__) . '/composer.json'), true);
 

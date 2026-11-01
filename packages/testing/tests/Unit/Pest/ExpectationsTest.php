@@ -9,8 +9,11 @@ use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeHttpClient;
 use Marko\Testing\Fake\FakeLogger;
 use Marko\Testing\Fake\FakeMailer;
+use Marko\Testing\Fake\FakeNotificationSender;
 use Marko\Testing\Fake\FakeQueue;
 use Marko\Testing\Fake\Http\RecordedRequest;
+use Marko\Testing\Tests\Unit\Fake\NotificationFixtures\FixtureNotifiable;
+use Marko\Testing\Tests\Unit\Fake\NotificationFixtures\FixtureOrderShipped;
 use PHPUnit\Framework\ExpectationFailedException;
 
 it('registers toHaveDispatched expectation for FakeEventDispatcher', function () {
@@ -106,4 +109,31 @@ it('throws clear error when expectation used on wrong type', function () {
 
     expect(fn () => expect($notADispatcher)->toHaveDispatched('SomeEvent'))
         ->toThrow(InvalidArgumentException::class, 'Expected FakeEventDispatcher');
+});
+
+it('registers toHaveNotified expectation for FakeNotificationSender', function () {
+    $sender = new FakeNotificationSender();
+    $sender->send(new FixtureNotifiable(1), new FixtureOrderShipped('TRK-9'));
+
+    expect($sender)->toHaveNotified(new FixtureNotifiable(1), FixtureOrderShipped::class)
+        ->toHaveNotified(
+            new FixtureNotifiable(1),
+            FixtureOrderShipped::class,
+            fn (FixtureOrderShipped $sent, array $channels) => $sent->trackingNumber === 'TRK-9'
+                && $channels === ['mail', 'database'],
+        )
+        ->not->toHaveNotified(new FixtureNotifiable(2), FixtureOrderShipped::class);
+});
+
+it('fails toHaveNotified when the notification was only queued', function () {
+    $sender = new FakeNotificationSender();
+    $sender->queue(new FixtureNotifiable(1), new FixtureOrderShipped());
+
+    expect(fn () => expect($sender)->toHaveNotified(new FixtureNotifiable(1), FixtureOrderShipped::class))
+        ->toThrow(ExpectationFailedException::class, 'to be sent to App\\User#1');
+});
+
+it('throws clear error when toHaveNotified is used on wrong type', function () {
+    expect(fn () => expect(new stdClass())->toHaveNotified(new FixtureNotifiable(1), FixtureOrderShipped::class))
+        ->toThrow(InvalidArgumentException::class, 'Expected FakeNotificationSender');
 });

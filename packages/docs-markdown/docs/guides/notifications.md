@@ -102,15 +102,15 @@ The `routeNotificationFor()` method returns routing information for each channel
 
 ## Sending Notifications
 
-Inject `NotificationSender` and call `send()`:
+Inject `NotificationSenderInterface` and call `send()`:
 
 ```php
-use Marko\Notification\NotificationSender;
+use Marko\Notification\Contracts\NotificationSenderInterface;
 
 class OrderService
 {
     public function __construct(
-        private NotificationSender $notificationSender,
+        private NotificationSenderInterface $notificationSender,
     ) {}
 
     public function shipOrder(
@@ -263,7 +263,27 @@ Then reference `'sms'` in any notification's `channels()` method.
 
 ## Testing
 
-Since the notification system is built on interfaces, test notification delivery by mocking `ChannelInterface` and wiring a real `NotificationManager`:
+To check which notifications your code sends without delivering them, bind `FakeNotificationSender` from [marko/testing](/docs/packages/testing/) to `NotificationSenderInterface`. It records the channels a real send would use, keeps sent and queued apart, and matches notifiables by type and id:
+
+```php
+use Marko\Notification\Contracts\NotificationSenderInterface;
+use Marko\Testing\Fake\FakeNotificationSender;
+
+test('it notifies the customer when an order ships', function (): void {
+    $notifications = new FakeNotificationSender();
+    $container->instance(NotificationSenderInterface::class, $notifications);
+
+    $container->get(OrderService::class)->shipOrder($user, 'TRACK-123');
+
+    $notifications->assertSentTo(
+        $user,
+        OrderShippedNotification::class,
+        fn (OrderShippedNotification $n, array $channels) => in_array('mail', $channels, true),
+    );
+});
+```
+
+To test the delivery itself, mock `ChannelInterface` and wire a real `NotificationManager`:
 
 ```php
 use Marko\Notification\Contracts\ChannelInterface;

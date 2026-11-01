@@ -11,9 +11,9 @@ composer require marko/notification
 ## Quick Example
 
 ```php
-use Marko\Notification\NotificationSender;
+use Marko\Notification\Contracts\NotificationSenderInterface;
 
-// Inject the sender and dispatch a notification
+// Inject NotificationSenderInterface and dispatch a notification
 $notificationSender->send($user, new OrderShippedNotification($trackingNumber));
 
 // Or queue for background delivery
