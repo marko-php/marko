@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Queue;
 
+use Marko\Queue\Exceptions\FailedJobNotStoredException;
 use Marko\Queue\Exceptions\SerializationException;
 use Throwable;
 
@@ -20,8 +21,11 @@ interface FailedJobHandlerInterface
      * Store the job as failed, call failed() on a FailableJobInterface job, then dispatch
      * JobFailedEvent.
      *
+     * When the job cannot be stored, it throws without calling failed() or dispatching the event. The
+     * caller must not delete the job then: it stays in its queue and is failed again later.
+     *
      * @param string $note Extra text appended to the stored exception
-     * @throws SerializationException When the failed job's payload cannot be signed
+     * @throws FailedJobNotStoredException|SerializationException
      */
     public function handle(
         JobInterface $job,

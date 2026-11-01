@@ -10,6 +10,7 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Exceptions\LockException;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
+use Marko\Queue\Exceptions\FailedJobNotStoredException;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\FailedJobHandlerInterface;
@@ -44,7 +45,9 @@ use Random\RandomException;
  *   crashes its worker cannot be retried forever. A job with a retry deadline
  *   is not limited by attempts, so a polling job that releases itself many
  *   times is not failed here. This happens after the reserving transaction
- *   commits, so failed() never runs inside it.
+ *   commits, so failed() never runs inside it. When the failed job cannot be
+ *   stored, pop() throws the handler's FailedJobNotStoredException and leaves
+ *   the row reserved, so it is failed again once the reservation expires.
  *
  * Reservation: pop() selects the next job with the query builder's
  * lockForUpdate()->skipLocked() inside a transaction, so concurrent workers
@@ -150,7 +153,7 @@ readonly class DatabaseQueue implements QueueInterface
     }
 
     /**
-     * @throws LockException|SerializationException
+     * @throws FailedJobNotStoredException|LockException|SerializationException
      */
     public function pop(
         ?string $queue = null,
@@ -229,9 +232,10 @@ readonly class DatabaseQueue implements QueueInterface
     /**
      * Fail a popped job that reached a RetryPolicy limit before this attempt started, then delete it.
      *
-     * The row is still reserved, so no other worker picks it up while it is being failed.
+     * The row is still reserved, so no other worker picks it up while it is being failed. A job that
+     * cannot be stored is not deleted: the handler throws first.
      *
-     * @throws SerializationException
+     * @throws FailedJobNotStoredException|SerializationException
      */
     private function failExhaustedJob(
         JobInterface $job,

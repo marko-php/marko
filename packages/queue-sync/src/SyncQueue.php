@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Queue\Sync;
 
+use Marko\Queue\Exceptions\FailedJobNotStoredException;
 use Marko\Queue\Exceptions\JobFailedException;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\FailedJobHandlerInterface;
@@ -30,8 +31,10 @@ readonly class SyncQueue implements QueueInterface
      *
      * A job that throws has no further attempts, so it goes through the failed-job handler
      * (its failed() hook runs and JobFailedEvent is dispatched) before JobFailedException is thrown.
+     * When a bound failed-job repository cannot store it, the handler's FailedJobNotStoredException is
+     * thrown instead, and failed() and the event do not run.
      *
-     * @throws JobFailedException|RandomException|SerializationException
+     * @throws FailedJobNotStoredException|JobFailedException|RandomException|SerializationException
      */
     public function push(
         JobInterface $job,
@@ -52,7 +55,7 @@ readonly class SyncQueue implements QueueInterface
     }
 
     /**
-     * @throws JobFailedException|RandomException|SerializationException
+     * @throws FailedJobNotStoredException|JobFailedException|RandomException|SerializationException
      */
     public function later(
         int $delay,
