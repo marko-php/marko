@@ -240,6 +240,7 @@ Marko ships as composable packages — require only what you need. Every package
 |---------|-------------|
 | [log](packages/log/README.md) | PSR-3 logging contracts |
 | [log-file](packages/log-file/README.md) | File-based log driver |
+| [log-stream](packages/log-stream/README.md) | Stream log driver (stdout/stderr) |
 
 ### Views, Templates & Layout
 

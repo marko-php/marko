@@ -6,10 +6,13 @@ use Marko\Authentication\AuthManager;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authorization\Config\AuthorizationConfig;
 use Marko\Authorization\Contracts\GateInterface;
+use Marko\Authorization\Discovery\GateHookCacheContributor;
 use Marko\Authorization\Gate;
+use Marko\Authorization\GateHookRegistry;
 use Marko\Authorization\Middleware\AuthorizationMiddleware;
 use Marko\Authorization\PolicyRegistry;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Event\EventDispatcherInterface;
 
 return [
     // SessionMiddleware is registered globally by the session drivers; it must run first.
@@ -25,6 +28,8 @@ return [
             return new Gate(
                 guard: $authManager->guard($defaultGuard),
                 policyRegistry: $container->get(PolicyRegistry::class),
+                gateHookRegistry: $container->get(GateHookRegistry::class),
+                eventDispatcher: $container->get(EventDispatcherInterface::class),
             );
         },
         // Lazy: the Gate and guard are built only when a route with #[Can] is matched.
@@ -40,8 +45,13 @@ return [
     ],
     'singletons' => [
         PolicyRegistry::class,
+        // Shared: hooks are discovered (or read from the cache) and built once per process.
+        GateHookRegistry::class,
         GateInterface::class,
         AuthorizationMiddleware::class,
+    ],
+    'discovery' => [
+        GateHookCacheContributor::class,
     ],
     'globalMiddleware' => [
         AuthorizationMiddleware::class,

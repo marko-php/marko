@@ -12,6 +12,7 @@ use Marko\Authorization\Contracts\GateInterface;
 use Marko\Authorization\Gate;
 use Marko\Authorization\Middleware\AuthorizationMiddleware;
 use Marko\Authorization\PolicyRegistry;
+use Marko\Authorization\Tests\Support\GateHooks;
 use Marko\Core\Container\Container;
 use Marko\Core\Exceptions\BindingException;
 use Marko\Routing\Http\Request;
@@ -20,6 +21,7 @@ use Marko\Routing\RouteCollection;
 use Marko\Routing\RouteDefinition;
 use Marko\Routing\RouteMatcher;
 use Marko\Routing\Router;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeGuard;
 
 class RouterPostController
@@ -157,6 +159,8 @@ function createAuthorizedContainer(
     $gate = new Gate(
         guard: $guard,
         policyRegistry: new PolicyRegistry(),
+        gateHookRegistry: GateHooks::registry(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 
     foreach ($abilities as $ability => $allowed) {

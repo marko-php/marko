@@ -102,6 +102,7 @@ body:
         - layout
         - log
         - log-file
+        - log-stream
         - lsp
         - mail
         - mail-log

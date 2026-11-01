@@ -15,9 +15,11 @@ use Marko\Authorization\Exceptions\AuthorizationException;
 use Marko\Authorization\Gate;
 use Marko\Authorization\Middleware\AuthorizationMiddleware;
 use Marko\Authorization\PolicyRegistry;
+use Marko\Authorization\Tests\Support\GateHooks;
 use Marko\Routing\Exceptions\HttpException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeGuard;
 use RuntimeException;
 
@@ -113,6 +115,8 @@ function createMiddlewareGate(
     return new Gate(
         guard: $guard ?? new FakeGuard(name: 'middleware-test', attemptResult: false),
         policyRegistry: new PolicyRegistry(),
+        gateHookRegistry: GateHooks::registry(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 }
 

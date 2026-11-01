@@ -11,6 +11,8 @@ use Marko\Authorization\Contracts\GateInterface;
 use Marko\Authorization\Exceptions\AuthorizationException;
 use Marko\Authorization\Gate;
 use Marko\Authorization\PolicyRegistry;
+use Marko\Authorization\Tests\Support\GateHooks;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeGuard;
 
 // Stub AuthorizableInterface user
@@ -112,6 +114,8 @@ function createGate(
     return new Gate(
         guard: $stubGuard,
         policyRegistry: new PolicyRegistry(),
+        gateHookRegistry: GateHooks::registry(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 }
 

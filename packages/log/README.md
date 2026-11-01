@@ -1,6 +1,6 @@
 # marko/log
 
-Logging contracts and formatters -- define how your application logs messages without coupling to a storage backend.
+Logging contracts, the shared logger and formatters -- define how your application logs messages without coupling to a storage backend.
 
 ## Installation
 
@@ -8,7 +8,7 @@ Logging contracts and formatters -- define how your application logs messages wi
 composer require marko/log
 ```
 
-Note: You also need an implementation package such as `marko/log-file`.
+Note: You also need a handler package such as `marko/log-file` or `marko/log-stream`.
 
 ## Quick Example
 

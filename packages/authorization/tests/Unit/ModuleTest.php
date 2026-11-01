@@ -5,7 +5,16 @@ declare(strict_types=1);
 namespace Marko\Authorization\Tests\Unit;
 
 use Marko\Authorization\Contracts\GateInterface;
+use Marko\Authorization\Discovery\GateHookCacheContributor;
+use Marko\Authorization\GateHookRegistry;
 use Marko\Authorization\PolicyRegistry;
+
+it('registers GateHookRegistry as a singleton and contributes gate hooks to the discovery cache', function (): void {
+    $module = require dirname(__DIR__, 2) . '/module.php';
+
+    expect($module['singletons'])->toContain(GateHookRegistry::class)
+        ->and($module['discovery'])->toBe([GateHookCacheContributor::class]);
+});
 
 it('creates module.php with Gate binding', function (): void {
     $modulePath = dirname(__DIR__, 2) . '/module.php';

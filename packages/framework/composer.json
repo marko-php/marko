@@ -25,6 +25,7 @@
         "marko/authentication": "Authentication abstraction layer",
         "marko/log": "Logging abstraction layer",
         "marko/log-file": "File-based logging driver",
+        "marko/log-stream": "Stream logging driver (stdout/stderr)",
         "marko/filesystem": "Filesystem abstraction layer",
         "marko/filesystem-local": "Local filesystem driver",
         "marko/errors-advanced": "Advanced error handling with detailed debugging"

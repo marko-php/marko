@@ -9,16 +9,9 @@ use Marko\Log\LogRecord;
 
 readonly class LineFormatter implements LogFormatterInterface
 {
-    public const string REDACTED = '[redacted]';
+    public const string REDACTED = ContextRedactor::REDACTED;
 
-    public const array DEFAULT_REDACT_KEYS = [
-        'password',
-        'password_confirmation',
-        'token',
-        'secret',
-        'api_key',
-        'authorization',
-    ];
+    public const array DEFAULT_REDACT_KEYS = ContextRedactor::DEFAULT_KEYS;
 
     /**
      * C0 controls, DEL, C1 controls and the U+2028/U+2029 line terminators in valid UTF-8.
@@ -35,8 +28,7 @@ readonly class LineFormatter implements LogFormatterInterface
      */
     private const string UNSAFE_JSON_PATTERN = '/[\x7f\x{80}-\x{9f}\x{2028}\x{2029}]/u';
 
-    /** @var array<string, true> */
-    private array $redactKeys;
+    private ContextRedactor $redactor;
 
     /**
      * @param list<string> $redactKeys Context keys (case-insensitive, at any depth) whose values are replaced with [redacted]
@@ -47,13 +39,7 @@ readonly class LineFormatter implements LogFormatterInterface
         private bool $escapeNewlines = true,
         array $redactKeys = self::DEFAULT_REDACT_KEYS,
     ) {
-        $normalized = [];
-
-        foreach ($redactKeys as $key) {
-            $normalized[strtolower($key)] = true;
-        }
-
-        $this->redactKeys = $normalized;
+        $this->redactor = new ContextRedactor($redactKeys);
     }
 
     public function format(
@@ -61,7 +47,7 @@ readonly class LineFormatter implements LogFormatterInterface
     ): string {
         $output = $this->format;
 
-        $record = $this->redact($record);
+        $record = $this->redactor->redact($record);
         $message = $this->escapeMessage($record->interpolatedMessage());
         $context = $this->escapeContext($record->contextAsJson());
 
@@ -73,43 +59,6 @@ readonly class LineFormatter implements LogFormatterInterface
 
         // Trim trailing whitespace from empty context
         return rtrim($output) . "\n";
-    }
-
-    /**
-     * Redaction runs before interpolation, so a redacted key used as a {placeholder} is masked too.
-     */
-    private function redact(
-        LogRecord $record,
-    ): LogRecord {
-        if ($this->redactKeys === [] || $record->context === []) {
-            return $record;
-        }
-
-        return new LogRecord(
-            level: $record->level,
-            message: $record->message,
-            context: $this->redactArray($record->context),
-            datetime: $record->datetime,
-            channel: $record->channel,
-        );
-    }
-
-    /**
-     * @param array<array-key, mixed> $values
-     * @return array<array-key, mixed>
-     */
-    private function redactArray(
-        array $values,
-    ): array {
-        foreach ($values as $key => $value) {
-            if (is_string($key) && isset($this->redactKeys[strtolower($key)])) {
-                $values[$key] = self::REDACTED;
-            } elseif (is_array($value)) {
-                $values[$key] = $this->redactArray($value);
-            }
-        }
-
-        return $values;
     }
 
     /**
