@@ -12,6 +12,8 @@ use Marko\Core\Event\Event;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Path\ProjectPaths;
+use Marko\Core\Sleep\SleeperInterface;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Database\Config\DatabaseConfig;
 use Psr\Clock\ClockInterface;
 
@@ -34,6 +36,8 @@ class SharedConnectionContainer
         $container->instance(Container::class, $container);
         $container->instance(DatabaseConfig::class, $config);
         $container->instance(ClockInterface::class, new SystemClock());
+        // marko/core binds the default sleeper in a real application.
+        $container->bind(SleeperInterface::class, UsleepSleeper::class);
         // marko/core binds the dispatcher in a real application.
         $container->instance(EventDispatcherInterface::class, new class () implements EventDispatcherInterface
         {

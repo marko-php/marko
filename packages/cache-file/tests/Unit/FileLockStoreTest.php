@@ -19,6 +19,8 @@ use Marko\Cache\Tests\Support\LockStoreHarness;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
 use Marko\Core\Path\ProjectPaths;
+use Marko\Core\Sleep\SleeperInterface;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -253,6 +255,8 @@ describe('FileLockStore', function (): void {
             new FakeConfigRepository(fileLockTestConfig($this->path)),
         );
         $container->instance(ClockInterface::class, $this->clock);
+        // marko/core binds the default sleeper in a real application.
+        $container->bind(SleeperInterface::class, UsleepSleeper::class);
 
         foreach ([dirname(__DIR__, 3) . '/cache/module.php', dirname(__DIR__, 2) . '/module.php'] as $modulePath) {
             $module = require $modulePath;

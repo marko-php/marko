@@ -355,7 +355,7 @@ public function owner(): string;
 public function name(): string;
 ```
 
-`block()` sleeps `Lock::RETRY_INTERVAL_MILLISECONDS` (250) between attempts through `Marko\Cache\Lock\SleeperInterface`, bound to `UsleepSleeper`. Bind your own sleeper in tests so `block()` doesn't really wait.
+`block()` sleeps `Lock::RETRY_INTERVAL_MILLISECONDS` (250) between attempts through `Marko\Core\Sleep\SleeperInterface`, which `marko/core` binds to `Marko\Core\Sleep\UsleepSleeper`. Bind your own sleeper (or pass `FakeSleeper` from `marko/testing` to `LockFactory`) in tests so `block()` doesn't really wait.
 
 ### LockStoreInterface
 

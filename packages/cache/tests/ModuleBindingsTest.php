@@ -6,10 +6,10 @@ use Marko\Cache\Contracts\LockFactoryInterface;
 use Marko\Cache\Contracts\LockStoreInterface;
 use Marko\Cache\Exceptions\NoDriverException;
 use Marko\Cache\Lock\LockFactory;
-use Marko\Cache\Lock\SleeperInterface;
-use Marko\Cache\Lock\UsleepSleeper;
 use Marko\Cache\Tests\Support\RecordingLockStore;
 use Marko\Core\Container\Container;
+use Marko\Core\Sleep\SleeperInterface;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Testing\Fake\FakeClock;
 use Psr\Clock\ClockInterface;
 
@@ -17,6 +17,8 @@ function cacheModuleContainer(): Container
 {
     $container = new Container();
     $container->instance(ClockInterface::class, new FakeClock());
+    // marko/core's default binding
+    $container->bind(SleeperInterface::class, UsleepSleeper::class);
     $module = require dirname(__DIR__) . '/module.php';
 
     foreach ($module['bindings'] as $id => $implementation) {
@@ -34,8 +36,10 @@ describe('cache module bindings', function (): void {
         expect($container->get(LockFactoryInterface::class))->toBeInstanceOf(LockFactory::class);
     });
 
-    it('binds the block() sleeper to UsleepSleeper', function (): void {
-        expect(cacheModuleContainer()->get(SleeperInterface::class))->toBeInstanceOf(UsleepSleeper::class);
+    it('leaves the block() sleeper binding to marko/core', function (): void {
+        $module = require dirname(__DIR__) . '/module.php';
+
+        expect($module['bindings'])->not->toHaveKey(SleeperInterface::class);
     });
 
     it('throws NoDriverException naming the driver packages when no lock store is bound', function (): void {

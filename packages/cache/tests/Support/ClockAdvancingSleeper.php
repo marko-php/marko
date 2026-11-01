@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Marko\Cache\Tests\Support;
 
 use Closure;
-use Marko\Cache\Lock\SleeperInterface;
+use Marko\Core\Sleep\SleeperInterface;
 use Marko\Testing\Fake\FakeClock;
 
 /**

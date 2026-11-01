@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Marko\Database\Connection;
+namespace Marko\Core\Sleep;
 
 /**
  * Sleeps with usleep(), blocking the current process.

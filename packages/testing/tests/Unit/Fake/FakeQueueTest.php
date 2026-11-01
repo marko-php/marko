@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use Marko\Cache\Lock\LockFactory;
-use Marko\Cache\Lock\UsleepSleeper;
 use Marko\Cache\Memory\Lock\ArrayLockStore;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Job;
 use Marko\Queue\PushResult;

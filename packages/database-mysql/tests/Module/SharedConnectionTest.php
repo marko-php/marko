@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Marko\Database\MySql\Tests\Module;
 
+use Marko\Core\Sleep\SleeperInterface;
 use Marko\Database\Connection\ConnectionFactoryInterface;
 use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Connection\SleeperInterface;
 use Marko\Database\Connection\StatementInterface;
 use Marko\Database\Connection\TransactionBackoff;
 use Marko\Database\Connection\TransactionInterface;

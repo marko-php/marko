@@ -7,13 +7,13 @@ use Marko\Cache\Contracts\LockFactoryInterface;
 use Marko\Cache\Contracts\LockStoreInterface;
 use Marko\Cache\Lock\LockFactory;
 use Marko\Cache\Lock\LockScope;
-use Marko\Cache\Lock\UsleepSleeper;
 use Marko\Cache\Redis\Config\RedisCacheConfig;
 use Marko\Cache\Redis\Lock\RedisLockStore;
 use Marko\Cache\Redis\Tests\Fixtures\IntegrationRedis;
 use Marko\Cache\Tests\Support\LockStoreContract;
 use Marko\Cache\Tests\Support\LockStoreHarness;
 use Marko\Clock\SystemClock;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Redis\RedisConnectionInterface;
 use Marko\Testing\Fake\FakeConfigRepository;
 

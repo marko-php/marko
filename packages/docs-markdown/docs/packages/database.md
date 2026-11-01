@@ -1532,7 +1532,7 @@ $this->transaction->transaction(
 );
 ```
 
-The wait blocks the current process: the connection sleeps through `Marko\Database\Connection\SleeperInterface`, bound to `UsleepSleeper` in `marko/database`. Bind your own implementation to change how it waits. In tests, give the connection a `TransactionBackoff` built with `FakeSleeper` from `marko/testing` to assert the delays without sleeping:
+The wait blocks the current process: the connection sleeps through `Marko\Core\Sleep\SleeperInterface`, which `marko/core` binds to `Marko\Core\Sleep\UsleepSleeper`. Bind your own implementation to change how it waits. In tests, give the connection a `TransactionBackoff` built with `FakeSleeper` from `marko/testing` to assert the delays without sleeping:
 
 ```php title="tests/Unit/StockServiceTest.php"
 use Marko\Database\Connection\TransactionBackoff;

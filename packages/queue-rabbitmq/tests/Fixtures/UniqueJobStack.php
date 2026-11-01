@@ -6,7 +6,6 @@ namespace Marko\Queue\Rabbitmq\Tests\Fixtures;
 
 use Marko\Cache\Contracts\LockFactoryInterface;
 use Marko\Cache\Lock\LockFactory;
-use Marko\Cache\Lock\UsleepSleeper;
 use Marko\Cache\Memory\Lock\ArrayLockStore;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
@@ -17,6 +16,7 @@ use Marko\Core\Plugin\InterceptorClassGenerator;
 use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginInterceptor;
 use Marko\Core\Plugin\PluginRegistry;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Event\JobFailedEvent;
 use Marko\Queue\Event\JobProcessedEvent;

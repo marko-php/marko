@@ -13,6 +13,8 @@ use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Exceptions\CircularDependencyException;
 use Marko\Core\Plugin\PluginInterceptor;
+use Marko\Core\Sleep\SleeperInterface;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
@@ -1577,6 +1579,58 @@ it('lets a module binding replace the default confirmation prompter', function (
     $app->initialize();
 
     expect($app->container->get(ConfirmationPrompterInterface::class))->toBeInstanceOf($prompter::class);
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('binds SleeperInterface to UsleepSleeper by default', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
+    $vendorDir = $baseDir . '/vendor';
+
+    appTestCreateModule($vendorDir . '/acme/core', 'acme/core');
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->initialize();
+
+    expect($app->container->get(SleeperInterface::class))->toBeInstanceOf(UsleepSleeper::class);
+
+    appTestCleanupDirectory($baseDir);
+});
+
+it('lets a module binding replace the default sleeper', function (): void {
+    $baseDir = sys_get_temp_dir() . '/marko-test-' . bin2hex(random_bytes(8));
+    $vendorDir = $baseDir . '/vendor';
+    $sleeper = new class () implements SleeperInterface
+    {
+        public function sleep(
+            int $milliseconds,
+        ): void {}
+    };
+
+    appTestCreateModule(
+        $vendorDir . '/acme/core',
+        'acme/core',
+        modulePhp: [
+            'bindings' => [
+                SleeperInterface::class => $sleeper::class,
+            ],
+        ],
+    );
+
+    $app = new Application(
+        vendorPath: $vendorDir,
+        modulesPath: '',
+        appPath: '',
+    );
+
+    $app->initialize();
+
+    expect($app->container->get(SleeperInterface::class))->toBeInstanceOf($sleeper::class);
 
     appTestCleanupDirectory($baseDir);
 });

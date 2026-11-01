@@ -32,7 +32,7 @@
         "pestphp/pest": "^4.0"
     },
     "suggest": {
-        "marko/database": "Required for TestDatabase, RefreshDatabase, TruncateDatabase and FakeSleeper (install a driver such as marko/database-pgsql)",
+        "marko/database": "Required for TestDatabase, RefreshDatabase and TruncateDatabase (install a driver such as marko/database-pgsql)",
         "marko/forms": "Required for the flashed form state assertions (assertSessionHasErrors, assertSessionHasInput, ...)",
         "pestphp/pest": "Required for the Pest expectations (toHavePushed, toHaveSent, ...); the fakes and their assert*() methods work without it"
     },
