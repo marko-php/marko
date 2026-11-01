@@ -33,9 +33,7 @@ class LatteTemplatePrecompiler implements TemplatePrecompilerInterface
         LatteEngineFactory $engineFactory,
         private TemplateResolverInterface $resolver,
     ) {
-        $this->engine = $engineFactory->create();
-        $this->engine->setAutoRefresh(true);
-        $this->engine->setLoader(new ModuleLoader($resolver));
+        $this->engine = $engineFactory->createWithAutoRefresh();
     }
 
     /**

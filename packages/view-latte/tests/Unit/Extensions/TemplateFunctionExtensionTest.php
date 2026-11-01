@@ -18,6 +18,7 @@ use Marko\View\Latte\Extensions\TemplateFunctionExtension;
 use Marko\View\Latte\LatteEngineFactory;
 use Marko\View\Latte\LatteViewConfig;
 use Marko\View\Latte\Tests\Fixtures\MarkupFunctionProvider;
+use Marko\View\Latte\Tests\Fixtures\PathTemplateResolver;
 use Marko\View\Latte\Tests\Fixtures\ViewProviders;
 use Marko\View\ViewConfig;
 
@@ -115,6 +116,7 @@ describe('TemplateFunctionExtension', function (): void {
             $latteViewConfig,
             latteRouteExtension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         )->create();
         $engine->setLoader(new StringLoader(['main' => '{route("shows.show", [id: 9])}']));
         $html = $engine->renderToString('main');

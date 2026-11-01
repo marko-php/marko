@@ -9,7 +9,10 @@ use Marko\View\CacheDirectoryGuard;
 use Marko\View\Exceptions\InsecureCacheDirectoryException;
 use Marko\View\Latte\LatteEngineFactory;
 use Marko\View\Latte\LatteViewConfig;
+use Marko\View\Latte\ModuleLoader;
+use Marko\View\Latte\Tests\Fixtures\PathTemplateResolver;
 use Marko\View\Latte\Tests\Fixtures\ViewProviders;
+use Marko\View\TemplateResolverInterface;
 use Marko\View\ViewConfig;
 
 describe('LatteEngineFactory', function (): void {
@@ -26,6 +29,7 @@ describe('LatteEngineFactory', function (): void {
             $latteViewConfig,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $engine = $factory->create();
 
@@ -45,6 +49,7 @@ describe('LatteEngineFactory', function (): void {
             $latteViewConfig,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $engine = $factory->create();
 
@@ -68,6 +73,7 @@ describe('LatteEngineFactory', function (): void {
             $latteViewConfigTrue,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $engine = $factory->create();
 
@@ -80,6 +86,7 @@ describe('LatteEngineFactory', function (): void {
             $latteViewConfigFalse,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $engine2 = $factory2->create();
 
@@ -107,6 +114,7 @@ describe('LatteEngineFactory', function (): void {
             $latteViewConfig,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $engine = $factory->create();
 
@@ -141,6 +149,7 @@ describe('LatteEngineFactory', function (): void {
             $latteViewConfig,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $engine = $factory->create();
 
@@ -176,6 +185,7 @@ describe('LatteEngineFactory', function (): void {
             $latteViewConfig,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $engine = $factory->create();
 
@@ -197,6 +207,7 @@ describe('LatteEngineFactory', function (): void {
             $latteViewConfig2,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $engine2 = $factory2->create();
 
@@ -234,6 +245,7 @@ describe('LatteEngineFactory cache directory hardening', function (): void {
             $this->createStub(LatteViewConfig::class),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths($this->base)),
+            new PathTemplateResolver(),
         );
 
         expect($factory->create()->getCacheFile('main'))->toStartWith($this->base . '/storage/views/')
@@ -254,9 +266,58 @@ describe('LatteEngineFactory cache directory hardening', function (): void {
             $this->createStub(LatteViewConfig::class),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths($this->base)),
+            new PathTemplateResolver(),
         );
 
         expect(fn (): Engine => $factory->create())
             ->toThrow(InsecureCacheDirectoryException::class, 'world-writable');
+    });
+});
+
+describe('LatteEngineFactory template loading', function (): void {
+    beforeEach(function (): void {
+        $this->root = sys_get_temp_dir() . '/latte-loader-' . bin2hex(random_bytes(8));
+        mkdir($this->root . '/cache', 0o700, true);
+        file_put_contents($this->root . '/show.latte', '<h1>{$title}</h1>');
+
+        $this->resolver = $this->createStub(TemplateResolverInterface::class);
+        $this->resolver->method('resolve')->willReturnMap([['blog::post/show', $this->root . '/show.latte']]);
+
+        $this->factoryFor = function (bool $autoRefresh): LatteEngineFactory {
+            $viewConfig = $this->createStub(ViewConfig::class);
+            $viewConfig->method('cacheDirectory')->willReturn($this->root . '/cache');
+            $viewConfig->method('autoRefresh')->willReturn($autoRefresh);
+
+            return new LatteEngineFactory(
+                $viewConfig,
+                $this->createStub(LatteViewConfig::class),
+                ViewProviders::extension(),
+                new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+                $this->resolver,
+            );
+        };
+    });
+
+    afterEach(function (): void {
+        array_map(unlink(...), glob($this->root . '/cache/*'));
+        rmdir($this->root . '/cache');
+        unlink($this->root . '/show.latte');
+        rmdir($this->root);
+    });
+
+    test('it loads module-namespaced templates through a ModuleLoader on the template resolver', function (): void {
+        $engine = ($this->factoryFor)(true)->create();
+
+        expect($engine->getLoader())->toBeInstanceOf(ModuleLoader::class)
+            ->and($engine->renderToString('blog::post/show', ['title' => 'Hello']))->toBe('<h1>Hello</h1>');
+    });
+
+    test('it builds an auto-refreshing engine even when view.auto_refresh is off', function (): void {
+        $engine = ($this->factoryFor)(false)->createWithAutoRefresh();
+        $cache = new ReflectionProperty($engine, 'cache')->getValue($engine);
+
+        expect($cache->autoRefresh)->toBeTrue()
+            ->and($engine->getLoader())->toBeInstanceOf(ModuleLoader::class)
+            ->and($engine->renderToString('blog::post/show', ['title' => 'Hello']))->toBe('<h1>Hello</h1>');
     });
 });

@@ -11,7 +11,6 @@ use Marko\View\CacheDirectoryGuard;
 use Marko\View\Exceptions\TemplatePrecompileException;
 use Marko\View\ModuleTemplateResolver;
 use Marko\View\TemplatePrecompilerInterface;
-use Marko\View\Twig\ModuleLoader;
 use Marko\View\Twig\Tests\Fixtures\ViewProviders;
 use Marko\View\Twig\TwigEngineFactory;
 use Marko\View\Twig\TwigTemplatePrecompiler;
@@ -61,9 +60,11 @@ function twigPrecompileProject(
         ],
     ]));
 
+    $resolver = new ModuleTemplateResolver(new ModuleRepository($manifests), $viewConfig);
+
     return [
         'root' => $root,
-        'resolver' => new ModuleTemplateResolver(new ModuleRepository($manifests), $viewConfig),
+        'resolver' => $resolver,
         'factory' => fn (bool $autoRefresh): TwigEngineFactory => new TwigEngineFactory(
             new TwigViewConfig(new FakeConfigRepository([
                 'view.cache_directory' => "$root/cache",
@@ -75,6 +76,7 @@ function twigPrecompileProject(
             ])),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            $resolver,
         ),
     ];
 }
@@ -137,7 +139,7 @@ describe('TwigTemplatePrecompiler', function (): void {
                 $project['root'] . '/vendor/resources/views/post/show.twig',
                 '<h1>Edited {{ title }}</h1>',
             );
-            $view = new TwigView($project['factory'](false)->create(), $project['resolver'], ViewProviders::merger());
+            $view = new TwigView($project['factory'](false)->create(), ViewProviders::merger());
 
             expect($view->renderToString('blog::post/show', ['title' => 'Hello']))->toBe('<h1>Compiled Hello</h1>');
 
@@ -152,7 +154,6 @@ describe('TwigTemplatePrecompiler', function (): void {
         // An earlier deploy at the same path left a compiled file behind. It is
         // written without loading its class, as a separate process would have.
         $earlier = $project['factory'](false)->create();
-        $earlier->setLoader(new ModuleLoader($project['resolver']));
         $cache = $earlier->getCache(false);
         $key = $cache->generateKey('blog::post/show', $earlier->getTemplateClass('blog::post/show'));
         $cache->write($key, $earlier->compileSource($earlier->getLoader()->getSourceContext('blog::post/show')));

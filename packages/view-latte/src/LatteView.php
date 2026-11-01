@@ -6,20 +6,19 @@ namespace Marko\View\Latte;
 
 use Latte\Engine;
 use Marko\Routing\Http\Response;
-use Marko\View\TemplateResolverInterface;
 use Marko\View\ViewDataMerger;
 use Marko\View\ViewInterface;
 
+/**
+ * Renders templates with an engine built by LatteEngineFactory, which already
+ * loads templates through the ModuleLoader.
+ */
 class LatteView implements ViewInterface
 {
     public function __construct(
         private Engine $engine,
-        private TemplateResolverInterface $resolver,
         private ViewDataMerger $viewDataMerger,
-    ) {
-        // Set our custom loader so includes use the same module resolution
-        $this->engine->setLoader(new ModuleLoader($resolver));
-    }
+    ) {}
 
     public function render(
         string $template,
