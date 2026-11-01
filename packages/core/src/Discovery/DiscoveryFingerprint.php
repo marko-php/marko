@@ -13,8 +13,9 @@ use Marko\Core\Path\ProjectPaths;
  * Covers the contents of vendor/composer/installed.json (any Composer
  * install, update or removal) and each directory holding a composer.json
  * under modules/ (recursive, stopping at a module) and app/ (one level),
- * together with a hash of that composer.json. Files are hashed, never
- * decoded, and vendor/ is never scanned.
+ * together with a hash of that composer.json, plus every root config/*.php
+ * file (the cache holds the merged config). Files are hashed, never decoded
+ * or included, and vendor/ is never scanned.
  */
 class DiscoveryFingerprint
 {
@@ -35,6 +36,10 @@ class DiscoveryFingerprint
         foreach ($directories as $directory) {
             $relative = str_starts_with($directory, $prefix) ? substr($directory, strlen($prefix)) : $directory;
             $parts[] = $relative . ':' . hash_file('xxh128', $directory . '/composer.json');
+        }
+
+        foreach ($this->rootConfigFiles($projectPaths->config) as $file) {
+            $parts[] = 'config/' . basename($file) . ':' . hash_file('xxh128', $file);
         }
 
         return hash('xxh128', implode("\n", $parts));
@@ -65,6 +70,22 @@ class DiscoveryFingerprint
         }
 
         return $found;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function rootConfigFiles(
+        string $directory,
+    ): array {
+        if (!is_dir($directory)) {
+            return [];
+        }
+
+        $files = glob($directory . '/*.php') ?: [];
+        sort($files);
+
+        return $files;
     }
 
     /**

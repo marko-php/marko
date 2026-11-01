@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Discovery\ConfigCacheContributor;
 use Marko\Core\Application;
 use Marko\Core\Discovery\CachedDiscovery;
 use Marko\Core\Module\ModuleManifest;
@@ -115,3 +117,34 @@ it('routes identically with the discovery cache warm and cold', function (): voi
         ->and($cachedDiscovery->section(EntityCacheContributor::KEY))->toContain(Author::class)
         ->and(discoveryCacheResponses($warm))->toBe($coldResponses);
 })->issue(173);
+
+it('loads config from the discovery cache on a warm boot and live again after discovery:clear', function (): void {
+    $cold = $this->app;
+    $coldConfig = $cold->container->get(ConfigRepositoryInterface::class)->all();
+
+    $result = runIntegrationCommand($cold, 'discovery:cache');
+    expect($result['exitCode'])->toBe(0, $result['output']);
+
+    $bootProduction = fn (): Application => withIntegrationAppEnv('production', function (): Application {
+        $app = Application::boot($this->project);
+        restore_error_handler();
+        restore_exception_handler();
+
+        return $app;
+    });
+
+    $warm = $bootProduction();
+    $warmCachedDiscovery = $warm->container->get(CachedDiscovery::class);
+
+    expect($warmCachedDiscovery->isCached())->toBeTrue()
+        ->and($warmCachedDiscovery->section(ConfigCacheContributor::KEY)['values'])->toBe($coldConfig)
+        ->and($warm->container->get(ConfigRepositoryInterface::class)->all())->toBe($coldConfig);
+
+    $result = runIntegrationCommand($warm, 'discovery:clear');
+    expect($result['exitCode'])->toBe(0, $result['output']);
+
+    $live = $bootProduction();
+
+    expect($live->container->get(CachedDiscovery::class)->isCached())->toBeFalse()
+        ->and($live->container->get(ConfigRepositoryInterface::class)->all())->toBe($coldConfig);
+})->issue(556);

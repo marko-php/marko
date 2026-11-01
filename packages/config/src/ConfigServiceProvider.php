@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 namespace Marko\Config;
 
+use Marko\Config\Discovery\ConfigCacheContributor;
+use Marko\Config\Discovery\ConfigCacheSection;
+use Marko\Config\Exceptions\ConfigCacheException;
+use Marko\Config\Exceptions\ConfigException;
 use Marko\Config\Exceptions\ConfigLoadException;
+use Marko\Core\Discovery\CachedDiscovery;
+use Marko\Core\Exceptions\DiscoveryCacheException;
 
 /**
  * Service provider for configuration management.
@@ -41,6 +47,7 @@ readonly class ConfigServiceProvider
 {
     public function __construct(
         private ConfigDiscovery $discovery,
+        private ConfigCacheSection $cacheSection = new ConfigCacheSection(),
     ) {}
 
     /**
@@ -52,14 +59,25 @@ readonly class ConfigServiceProvider
      *
      * Later modules override earlier modules. App config overrides all modules.
      *
+     * When this boot used the discovery cache, the repository is built from its
+     * config section instead and no config file is found, required or merged.
+     *
      * @param array<string> $modulePaths Paths to modules (containing config/ subdirectories)
      * @param string $rootConfigPath Path to the root/app config directory
-     * @throws ConfigLoadException
+     * @param CachedDiscovery|null $cachedDiscovery This boot's discovery cache sections; null loads config live
+     * @throws ConfigLoadException|ConfigCacheException|ConfigException|DiscoveryCacheException
      */
     public function createRepository(
         array $modulePaths,
         string $rootConfigPath,
+        ?CachedDiscovery $cachedDiscovery = null,
     ): ConfigRepositoryInterface {
+        $section = $cachedDiscovery?->section(ConfigCacheContributor::KEY);
+
+        if ($section !== null) {
+            return new ConfigRepository($this->cacheSection->values($section));
+        }
+
         $config = $this->discovery->discover(
             modulePaths: $modulePaths,
             rootConfigPath: $rootConfigPath,

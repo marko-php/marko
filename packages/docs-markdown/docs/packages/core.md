@@ -376,8 +376,8 @@ The cache holds:
 - the resolved module list, in load order (the `composer.json` fields only --- each `module.php` is still loaded, so its bindings and `boot` closures stay live)
 - preferences, plugins, observers and commands
 - the global middleware order
-- one section per [discovery contributor](#adding-a-section-to-the-discovery-cache): routes from [`marko/routing`](/docs/packages/routing/#route-cache), entities from [`marko/database`](/docs/packages/database/#entity-discovery-cache)
-- a fingerprint of the installed packages and module directories, so a stale cache fails loudly
+- one section per [discovery contributor](#adding-a-section-to-the-discovery-cache): routes from [`marko/routing`](/docs/packages/routing/#route-cache), entities from [`marko/database`](/docs/packages/database/#entity-discovery-cache), the merged config from [`marko/config`](/docs/packages/config/#config-caching)
+- a fingerprint of the installed packages, module directories and root config files, so a stale cache fails loudly
 
 On a cached boot no `vendor/` directory is scanned, no `composer.json` is parsed and no PHP file is tokenized. Controllers and other classes load only when a request needs them.
 
@@ -462,10 +462,11 @@ The cache stores a fingerprint of:
 
 - the contents of `vendor/composer/installed.json` --- any `composer install`, `update`, `require` or `remove` changes it
 - every directory holding a `composer.json` under `modules/` (recursively, stopping at a module) and `app/` (one level), with a hash of that `composer.json`
+- every `config/*.php` file in the project root, with a hash of its contents
 
-Each boot recomputes the fingerprint (one file hash plus a directory listing of `modules/` and `app/`) and throws a stale `DiscoveryCacheException` when it differs. Each module's `module.php` is loaded on every boot anyway, so a module whose `module.php` now disables it, or changes its `sequence` or `globalMiddleware`, is also reported as stale.
+Each boot recomputes the fingerprint (file hashes plus a directory listing of `modules/`, `app/` and `config/`) and throws a stale `DiscoveryCacheException` when it differs. Each module's `module.php` is loaded on every boot anyway, so a module whose `module.php` now disables it, or changes its `sequence` or `globalMiddleware`, is also reported as stale.
 
-The fingerprint does not cover the PHP files inside a module: a new route, plugin, observer, preference, command or entity in an existing module is only picked up by recompiling. Enabling a module that was disabled when the cache was compiled is not detected either.
+The fingerprint does not cover the PHP files inside a module: a new route, plugin, observer, preference, command, entity or config file in an existing module under `modules/` or `app/` is only picked up by recompiling. Enabling a module that was disabled when the cache was compiled is not detected either.
 
 #### Deploying to production
 
@@ -475,6 +476,10 @@ The fingerprint does not cover the PHP files inside a module: a new route, plugi
 composer install --no-dev --optimize-autoloader
 marko discovery:cache
 ```
+
+With [`marko/config`](/docs/packages/config/#config-caching) installed, this also compiles your config, so a cached boot reads no config files. Config values, including those read from environment variables through `Env`, are fixed when the cache is built: change an environment variable and boot throws `DiscoveryCacheException` naming it until you run `discovery:cache` again. `.env` is still loaded on every boot, because the boot gate reads `APP_ENV` and `DISCOVERY_CACHE_ENABLED` from it before the cache is loaded.
+
+The cache file holds resolved config, including secrets, so `discovery:cache` writes it with mode `0600` (readable and writable by its owner only).
 
 Recompiling on every deploy covers new code in existing modules (which the fingerprint cannot see) and framework upgrades that change the cache format: a cache written by an older version fails boot with a version-mismatch `DiscoveryCacheException` rather than loading incomplete data. Module paths are stored relative to the project root, so a cache compiled during a build step stays valid when the build is moved to its final location.
 

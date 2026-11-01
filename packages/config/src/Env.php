@@ -28,6 +28,79 @@ class Env
 
     private const string ACCEPTED_BOOLS = 'true, false, 1, 0, yes, no, on, off';
 
+    /** @var array<string, true>|null Names read since startRecording(), or null when not recording */
+    private static ?array $recordedNames = null;
+
+    /**
+     * Start recording the name of every variable read through Env.
+     *
+     * Used while compiling the config section of the discovery cache, so a
+     * cached boot can detect that one of those variables changed since.
+     *
+     * @throws ConfigException When already recording
+     */
+    public static function startRecording(): void
+    {
+        if (self::$recordedNames !== null) {
+            throw new ConfigException(
+                message: 'Env is already recording environment variable reads',
+                context: 'While starting to record environment variable reads',
+                suggestion: 'Call Env::stopRecording() before starting a new recording.',
+            );
+        }
+
+        self::$recordedNames = [];
+    }
+
+    /**
+     * Stop recording and return the names read since startRecording(), in first-read order.
+     *
+     * @return list<string>
+     * @throws ConfigException When not recording
+     */
+    public static function stopRecording(): array
+    {
+        if (self::$recordedNames === null) {
+            throw new ConfigException(
+                message: 'Env is not recording environment variable reads',
+                context: 'While stopping a recording of environment variable reads',
+                suggestion: 'Call Env::startRecording() first.',
+            );
+        }
+
+        $names = array_map(strval(...), array_keys(self::$recordedNames));
+        self::$recordedNames = null;
+
+        return $names;
+    }
+
+    public static function isRecording(): bool
+    {
+        return self::$recordedNames !== null;
+    }
+
+    /**
+     * A hash of each variable's current value, keyed by name. An unset and an
+     * empty variable hash alike, because every reader treats both as unset.
+     * Reading values here is not recorded.
+     *
+     * @param list<string> $names
+     * @return array<string, string>
+     * @throws ConfigException
+     */
+    public static function valueHashes(
+        array $names,
+    ): array {
+        $hashes = [];
+
+        foreach ($names as $name) {
+            $value = self::lookup($name);
+            $hashes[$name] = hash('xxh128', $value === null ? 'unset' : 'set:' . $value);
+        }
+
+        return $hashes;
+    }
+
     /**
      * @throws ConfigException
      */
@@ -203,10 +276,24 @@ class Env
 
     /**
      * The raw value, or null when the variable is unset or an empty string.
+     * Every reader goes through here, so this is where reads are recorded.
      *
      * @throws ConfigException
      */
     private static function read(
+        string $name,
+    ): ?string {
+        if (self::$recordedNames !== null) {
+            self::$recordedNames[$name] = true;
+        }
+
+        return self::lookup($name);
+    }
+
+    /**
+     * @throws ConfigException
+     */
+    private static function lookup(
         string $name,
     ): ?string {
         if (array_key_exists($name, $_ENV) && $_ENV[$name] !== null) {

@@ -429,6 +429,24 @@ describe('DiscoveryCache', function (): void {
         },
     );
 
+    it(
+        'writes the cache file readable and writable by its owner only, because it holds resolved secrets',
+        function (): void {
+            $setup = makeCacheSetup($this->tmpDir);
+            $previousUmask = umask(0022);
+
+            try {
+                $setup['cache']->write(emptyPayload());
+            } finally {
+                umask($previousUmask);
+            }
+
+            clearstatcache(true, $setup['path']);
+
+            expect(fileperms($setup['path']) & 0777)->toBe(0600);
+        },
+    )->issue(556);
+
     it('includes the reason in the notWritable context when one is given', function (): void {
         $exception = DiscoveryCacheException::notWritable('/x/discovery.php', 'Permission denied');
 
