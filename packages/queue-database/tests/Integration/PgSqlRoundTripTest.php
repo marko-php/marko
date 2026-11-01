@@ -182,7 +182,7 @@ describe('database queue on PostgreSQL', function (): void {
                 $this->markTestSkipped($skipReason);
             }
 
-            $queue = pgsqlQueue($connection, maxAttempts: 3);
+            $queue = pgsqlQueue($connection, new FakeClock('2026-10-31T12:00:00Z'), maxAttempts: 3);
             $id = $queue->push(new PrivateStateJob('secret', 'shared'))->id;
 
             $job = $queue->pop();

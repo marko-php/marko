@@ -121,6 +121,80 @@ it('makes all scripts executable', function () use ($binDir): void {
     ];
 
     foreach ($scripts as $script) {
-        expect(is_executable($script))->toBeTrue("Script not executable: {$script}");
+        expect(is_executable($script))->toBeTrue("Script not executable: $script");
     }
+});
+
+/**
+ * Runs bin/register-packagist.sh with a stub curl on PATH that records each repository URL
+ * it is asked to register, so no request reaches Packagist.
+ *
+ * @param list<string> $arguments
+ * @return array{exitCode: int, output: string, registered: list<string>}
+ */
+function runRegisterPackagist(string $binDir, array $arguments): array
+{
+    $stubDir = sys_get_temp_dir() . '/marko-register-packagist-' . bin2hex(random_bytes(6));
+    mkdir($stubDir);
+    $log = $stubDir . '/registered.log';
+    file_put_contents(
+        $stubDir . '/curl',
+        "#!/usr/bin/env bash\n"
+        . "while [[ \$# -gt 0 ]]; do\n"
+        . '  if [[ "$1" == "-d" ]]; then echo "$2" >> ' . escapeshellarg($log) . "; fi\n"
+        . "  shift\n"
+        . "done\n"
+        . "cat > /dev/null\n"
+        . "printf '201'\n",
+    );
+    chmod($stubDir . '/curl', 0755);
+
+    $command = 'PATH=' . escapeshellarg($stubDir . ':' . getenv('PATH'))
+        . ' PACKAGIST_USERNAME=tester PACKAGIST_TOKEN=secret '
+        . escapeshellarg($binDir . '/register-packagist.sh')
+        . ($arguments === [] ? '' : ' ' . implode(' ', array_map('escapeshellarg', $arguments)))
+        . ' 2>&1';
+
+    exec($command, $outputLines, $exitCode);
+
+    $registered = [];
+
+    if (file_exists($log)) {
+        foreach (file($log, FILE_IGNORE_NEW_LINES) ?: [] as $payload) {
+            $registered[] = json_decode($payload, true)['repository']['url'];
+        }
+        unlink($log);
+    }
+
+    unlink($stubDir . '/curl');
+    rmdir($stubDir);
+
+    return ['exitCode' => $exitCode, 'output' => implode("\n", $outputLines), 'registered' => $registered];
+}
+
+it('registers only the packages named as arguments', function () use ($binDir): void {
+    $result = runRegisterPackagist($binDir, ['cache', 'queue']);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($result['registered'])->toBe([
+            'https://github.com/marko-php/marko-cache',
+            'https://github.com/marko-php/marko-queue',
+        ]);
+});
+
+it('registers every package when no arguments are given', function () use ($binDir): void {
+    $result = runRegisterPackagist($binDir, []);
+
+    $packageCount = count(glob(dirname(__DIR__) . '/packages/*/composer.json') ?: []);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($result['registered'])->toHaveCount($packageCount);
+});
+
+it('rejects an unknown package name before registering anything', function () use ($binDir): void {
+    $result = runRegisterPackagist($binDir, ['cache', 'no-such-package']);
+
+    expect($result['exitCode'])->not->toBe(0)
+        ->and($result['output'])->toContain('packages/no-such-package/')
+        ->and($result['registered'])->toBe([]);
 });
