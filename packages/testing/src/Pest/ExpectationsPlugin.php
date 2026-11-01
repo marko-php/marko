@@ -7,6 +7,7 @@ namespace Marko\Testing\Pest;
 use InvalidArgumentException;
 use Marko\Broadcasting\Channel;
 use Marko\Log\LogLevel;
+use Marko\Notification\Contracts\NotifiableInterface;
 use Marko\Testing\Exceptions\AssertionFailedException;
 use Marko\Testing\Fake\FakeBroadcaster;
 use Marko\Testing\Fake\FakeEventDispatcher;
@@ -14,6 +15,7 @@ use Marko\Testing\Fake\FakeGuard;
 use Marko\Testing\Fake\FakeHttpClient;
 use Marko\Testing\Fake\FakeLogger;
 use Marko\Testing\Fake\FakeMailer;
+use Marko\Testing\Fake\FakeNotificationSender;
 use Marko\Testing\Fake\FakeQueue;
 use Marko\Testing\Fake\Http\RecordedRequest;
 use Marko\Testing\Http\TestResponse;
@@ -88,6 +90,29 @@ class ExpectationsPlugin implements Bootable
                     'Expected a message matching the callback to be sent but none matched.',
                 );
             }
+
+            return $this;
+        });
+
+        expect()->extend('toHaveNotified', function (
+            NotifiableInterface $notifiable,
+            string $notificationClass,
+            ?callable $filter = null,
+        ): Expectation {
+            $fake = $this->value;
+
+            if (! $fake instanceof FakeNotificationSender) {
+                throw new InvalidArgumentException(
+                    'Expected FakeNotificationSender, got ' . get_debug_type($fake),
+                );
+            }
+
+            $type = $notifiable->getNotifiableType();
+            $id = $notifiable->getNotifiableId();
+            Assert::assertNotEmpty(
+                $fake->sentTo($notifiable, $notificationClass, $filter),
+                "Expected $notificationClass to be sent to $type#$id but it was not.",
+            );
 
             return $this;
         });

@@ -7,17 +7,19 @@ namespace Marko\Notification;
 use Marko\Notification\Contracts\BatchChannelInterface;
 use Marko\Notification\Contracts\NotifiableInterface;
 use Marko\Notification\Contracts\NotificationInterface;
+use Marko\Notification\Contracts\NotificationSenderInterface;
 use Marko\Notification\Exceptions\ChannelException;
 use Marko\Notification\Exceptions\NotificationException;
 use Marko\Notification\Job\SendNotificationJob;
 use Marko\Queue\QueueInterface;
 use Throwable;
 
-readonly class NotificationSender
+readonly class NotificationSender implements NotificationSenderInterface
 {
     public function __construct(
         private NotificationManager $manager,
         private ?QueueInterface $queue = null,
+        private ChannelResolver $channelResolver = new ChannelResolver(),
     ) {}
 
     /**
@@ -32,17 +34,7 @@ readonly class NotificationSender
     ): void {
         $notifiables = is_array($notifiables) ? $notifiables : [$notifiables];
 
-        // Build a map of channel-name => list of recipients that declared that channel.
-        /** @var array<string, array<NotifiableInterface>> $channelRecipients */
-        $channelRecipients = [];
-
-        foreach ($notifiables as $notifiable) {
-            $channels = $notification->channels($notifiable);
-
-            foreach ($channels as $channelName) {
-                $channelRecipients[$channelName][] = $notifiable;
-            }
-        }
+        $channelRecipients = $this->channelResolver->resolve($notifiables, $notification);
 
         // For each channel, use batch path when supported and multiple recipients; otherwise per-recipient.
         foreach ($channelRecipients as $channelName => $recipients) {

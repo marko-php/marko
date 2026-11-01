@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Marko\Notification\Contracts\NotificationSenderInterface;
+use Marko\Notification\NotificationSender;
+
 describe('Package Scaffolding', function (): void {
     it('has marko module flag in composer.json', function (): void {
         $composerPath = dirname(__DIR__) . '/composer.json';
@@ -46,6 +49,15 @@ describe('Package Scaffolding', function (): void {
         expect($drivers)->toBeArray()
             ->and($drivers)->toHaveKey('marko/notification-database')
             ->and($drivers['marko/notification-database'])->toBe('Database-backed notification driver');
+    });
+
+    it('binds NotificationSenderInterface to NotificationSender and keeps the concrete binding', function (): void {
+        $module = require dirname(__DIR__) . '/module.php';
+
+        expect($module['bindings'])->toHaveKey(NotificationSenderInterface::class)
+            ->and($module['bindings'][NotificationSenderInterface::class])->toBe(NotificationSender::class)
+            ->and($module['bindings'][NotificationSender::class])->toBe(NotificationSender::class)
+            ->and(is_subclass_of(NotificationSender::class, NotificationSenderInterface::class))->toBeTrue();
     });
 
     it('returns valid module configuration array with bindings', function (): void {

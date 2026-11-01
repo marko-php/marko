@@ -90,15 +90,15 @@ class User implements NotifiableInterface
 
 ### Sending Notifications
 
-Inject `NotificationSender` and dispatch:
+Inject `NotificationSenderInterface` and dispatch:
 
 ```php
-use Marko\Notification\NotificationSender;
+use Marko\Notification\Contracts\NotificationSenderInterface;
 
 class OrderService
 {
     public function __construct(
-        private NotificationSender $notificationSender,
+        private NotificationSenderInterface $notificationSender,
     ) {}
 
     public function shipOrder(
@@ -112,6 +112,8 @@ class OrderService
     }
 }
 ```
+
+Type against the interface, not the concrete `NotificationSender`: the module binds `NotificationSenderInterface` to `NotificationSender`, and only code typed against the interface can be swapped for [`FakeNotificationSender`](/docs/packages/testing/) in tests. Code typed against the concrete class still works but always gets the real sender.
 
 ### Sending to Multiple Recipients
 
@@ -135,7 +137,18 @@ $this->notificationSender->queue(
 );
 ```
 
-`queue()` pushes a `SendNotificationJob` onto the queue. The job implements `ContainerAwareJobInterface` and resolves `NotificationSender` from the container at handle-time, so no services are serialized into the payload. The worker releases the container once `handle()` returns or throws, so a job that fails for the last time is still recorded in the failed-job store. If no queue implementation is available, calling `queue()` throws a `NotificationException` with a suggestion to install a queue driver.
+`queue()` pushes a `SendNotificationJob` onto the queue. The job implements `ContainerAwareJobInterface` and resolves the concrete `NotificationSender` (never whatever is bound to `NotificationSenderInterface`) from the container at handle-time, so a queued notification is always delivered for real and no services are serialized into the payload. The worker releases the container once `handle()` returns or throws, so a job that fails for the last time is still recorded in the failed-job store. If no queue implementation is available, calling `queue()` throws a `NotificationException` with a suggestion to install a queue driver.
+
+### Channel Resolution
+
+`ChannelResolver::resolve()` maps each channel name to the notifiables whose `channels()` declared it. `NotificationSender` uses it to deliver; `FakeNotificationSender` uses it to record the channels a real send would use. Use it yourself when you need the same mapping:
+
+```php
+use Marko\Notification\ChannelResolver;
+
+$byChannel = new ChannelResolver()->resolve([$user1, $user2], $notification);
+// ['mail' => [$user1], 'database' => [$user1, $user2]]
+```
 
 ### Registering Custom Channels
 
@@ -149,7 +162,7 @@ $notificationManager->register('sms', new SmsChannel($smsClient));
 
 ## Customization
 
-Replace `NotificationSender` via [Preference](/docs/packages/core/) to add custom behavior like logging or rate limiting:
+Bind your own `NotificationSenderInterface` implementation, or replace `NotificationSender` via [Preference](/docs/packages/core/) to add custom behavior like logging or rate limiting:
 
 ```php
 use Marko\Core\Attributes\Preference;
@@ -172,15 +185,29 @@ class LoggingNotificationSender extends NotificationSender
 
 ## API Reference
 
-### NotificationSender
+### NotificationSenderInterface
+
+Implemented by `NotificationSender` (the real sender) and `Marko\Testing\Fake\FakeNotificationSender`.
 
 ```php
-use Marko\Notification\NotificationSender;
+use Marko\Notification\Contracts\NotificationSenderInterface;
 use Marko\Notification\Contracts\NotifiableInterface;
 use Marko\Notification\Contracts\NotificationInterface;
 
-public function send(NotifiableInterface|array $notifiables, NotificationInterface $notification): void;
-public function queue(NotifiableInterface|array $notifiables, NotificationInterface $notification): void;
+interface NotificationSenderInterface
+{
+    public function send(NotifiableInterface|array $notifiables, NotificationInterface $notification): void;
+    public function queue(NotifiableInterface|array $notifiables, NotificationInterface $notification): void;
+}
+```
+
+### ChannelResolver
+
+```php
+use Marko\Notification\ChannelResolver;
+use Marko\Notification\Contracts\NotificationInterface;
+
+public function resolve(array $notifiables, NotificationInterface $notification): array; // array<string, list<NotifiableInterface>>
 ```
 
 ### NotificationManager

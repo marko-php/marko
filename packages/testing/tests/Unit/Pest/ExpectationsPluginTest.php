@@ -11,6 +11,7 @@ const MARKO_TESTING_EXPECTATIONS = [
     'toHaveBroadcast',
     'toHaveSent',
     'toHaveSentRequest',
+    'toHaveNotified',
     'toHavePushed',
     'toHaveLogged',
     'toHaveAttempted',

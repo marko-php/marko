@@ -3,9 +3,9 @@ title: marko/testing
 description: Reusable fakes with built-in assertions that eliminate test boilerplate.
 ---
 
-Testing utilities for Marko — reusable fakes with built-in assertions that eliminate test boilerplate. This package provides in-memory fakes for the core Marko contracts: events, broadcasting, mail, queues, sessions, cookies, logging, config, authentication, guards, HTTP clients, encryption, the clock, and console confirmations. Each fake records interactions and exposes assertion methods so your tests stay focused on behavior rather than mock setup. An in-process HTTP test client (`TestClient`) sends requests through your real routes, middleware and controllers for feature tests. Pest expectation extensions (`toHaveDispatched`, `toHaveBroadcast`, `toHaveSent`, `toHavePushed`, `toHaveLogged`, `toHaveAttempted`, `toBeAuthenticated`, `toHaveStatus`, `toHaveJsonPath`) are included for fluent assertions.
+Testing utilities for Marko — reusable fakes with built-in assertions that eliminate test boilerplate. This package provides in-memory fakes for the core Marko contracts: events, broadcasting, mail, notifications, queues, sessions, cookies, logging, config, authentication, guards, HTTP clients, encryption, the clock, and console confirmations. Each fake records interactions and exposes assertion methods so your tests stay focused on behavior rather than mock setup. An in-process HTTP test client (`TestClient`) sends requests through your real routes, middleware and controllers for feature tests. Pest expectation extensions (`toHaveDispatched`, `toHaveBroadcast`, `toHaveSent`, `toHaveNotified`, `toHavePushed`, `toHaveLogged`, `toHaveAttempted`, `toBeAuthenticated`, `toHaveStatus`, `toHaveJsonPath`) are included for fluent assertions.
 
-Available fakes: `FakeEventDispatcher`, `FakeBroadcaster`, `FakeMailer`, `FakeQueue`, `FakeSession`, `FakeCookieJar`, `FakeLogger`, `FakeConfigRepository`, `FakeAuthenticatable`, `FakeUserProvider`, `FakeGuard`, `FakeHttpClient`, `FakeEncryptor`, `FakeClock`, `FakeSleeper`, `FakeConfirmationPrompter`.
+Available fakes: `FakeEventDispatcher`, `FakeBroadcaster`, `FakeMailer`, `FakeNotificationSender`, `FakeQueue`, `FakeSession`, `FakeCookieJar`, `FakeLogger`, `FakeConfigRepository`, `FakeAuthenticatable`, `FakeUserProvider`, `FakeGuard`, `FakeHttpClient`, `FakeEncryptor`, `FakeClock`, `FakeSleeper`, `FakeConfirmationPrompter`.
 
 ## Installation
 
@@ -58,6 +58,37 @@ $mailer->assertSent(fn (Message $m) => $m->subject === 'Welcome');
 $mailer->assertSentCount(1);
 $mailer->assertNothingSent();
 ```
+
+### FakeNotificationSender
+
+Implements `NotificationSenderInterface` from [marko/notification](/docs/packages/notification/). Bind it in place of the real sender; code typed against the concrete `NotificationSender` is not faked.
+
+```php
+use Marko\Notification\Contracts\NotificationSenderInterface;
+use Marko\Testing\Fake\FakeNotificationSender;
+
+$notifications = new FakeNotificationSender();
+$container->instance(NotificationSenderInterface::class, $notifications);
+
+// ... run the code under test ...
+
+$notifications->assertSentTo($user, OrderShippedNotification::class);
+$notifications->assertSentTo(
+    $user,
+    OrderShippedNotification::class,
+    fn (OrderShippedNotification $n, array $channels) => $n->trackingNumber === 'TRK-1' && in_array('mail', $channels, true),
+);
+$notifications->assertQueuedTo($admin, OrderShippedNotification::class);
+$notifications->assertNotSentTo($guest, OrderShippedNotification::class);
+$notifications->assertSentTimes(OrderShippedNotification::class, 1);
+$notifications->assertNothingSent();
+```
+
+Each notifiable gets one record in the public `$notifications` property: the `notifiable`, the `notification`, the `channels` a real send would use (resolved by the same `ChannelResolver` as `NotificationSender`) and `queued`. Notifiables match by `getNotifiableType()` + `getNotifiableId()` (ids compared as strings), so a reloaded entity still matches.
+
+Sent and queued are kept apart: `assertSentTo()` and `assertSentTimes()` see only `send()`, `assertQueuedTo()` only `queue()`. `assertNotSentTo()` and `assertNothingSent()` fail on either, because a queued notification is still delivered.
+
+A queued `SendNotificationJob` always resolves the concrete `NotificationSender`, so running the queue in a test delivers for real even with the fake bound.
 
 ### FakeQueue
 
@@ -699,6 +730,8 @@ expect($dispatcher)->toHaveDispatched(OrderPlaced::class);
 expect($broadcaster)->toHaveBroadcast('orders.7', 'order.shipped');
 expect($mailer)->toHaveSent();
 expect($mailer)->toHaveSent(fn (Message $m) => $m->to === 'user@example.com');
+expect($notifications)->toHaveNotified($user, OrderShippedNotification::class);
+expect($notifications)->toHaveNotified($user, OrderShippedNotification::class, fn ($n, array $channels) => $channels === ['mail']);
 expect($queue)->toHavePushed(SendEmailJob::class);
 expect($logger)->toHaveLogged('Payment failed');
 expect($logger)->toHaveLogged('Payment failed', LogLevel::Error);
@@ -748,6 +781,23 @@ public function assertNothingSent(): void;
 public function assertSentCount(int $expected): void;
 public function clear(): void;
 ```
+
+### FakeNotificationSender
+
+```php
+public function send(NotifiableInterface|array $notifiables, NotificationInterface $notification): void;
+public function queue(NotifiableInterface|array $notifiables, NotificationInterface $notification): void;
+public function sentTo(NotifiableInterface $notifiable, string $notificationClass, ?callable $filter = null): array;
+public function queuedTo(NotifiableInterface $notifiable, string $notificationClass, ?callable $filter = null): array;
+public function assertSentTo(NotifiableInterface $notifiable, string $notificationClass, ?callable $filter = null): void;
+public function assertNotSentTo(NotifiableInterface $notifiable, string $notificationClass, ?callable $filter = null): void;
+public function assertQueuedTo(NotifiableInterface $notifiable, string $notificationClass, ?callable $filter = null): void;
+public function assertNothingSent(): void;
+public function assertSentTimes(string $notificationClass, int $expected): void;
+public function clear(): void;
+```
+
+Filters receive `(NotificationInterface $notification, array $channels)` and return `bool`.
 
 ### FakeQueue
 

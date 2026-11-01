@@ -8,6 +8,7 @@ use Marko\Mail\Contracts\MailerInterface;
 use Marko\Notification\Channel\DatabaseChannel;
 use Marko\Notification\Channel\MailChannel;
 use Marko\Notification\Config\NotificationConfig;
+use Marko\Notification\Contracts\NotificationSenderInterface;
 use Marko\Notification\NotificationManager;
 use Marko\Notification\NotificationSender;
 
@@ -17,6 +18,7 @@ return [
         NotificationConfig::class => NotificationConfig::class,
         NotificationManager::class => NotificationManager::class,
         NotificationSender::class => NotificationSender::class,
+        NotificationSenderInterface::class => NotificationSender::class,
     ],
     'boot' => function (ContainerInterface $container) {
         $manager = $container->get(NotificationManager::class);
