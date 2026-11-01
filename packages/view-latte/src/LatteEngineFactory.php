@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace Marko\View\Latte;
 
 use Latte\Engine;
-use Marko\Routing\UrlGeneratorInterface;
 use Marko\View\CacheDirectoryGuard;
 use Marko\View\Exceptions\InsecureCacheDirectoryException;
-use Marko\View\Latte\Extensions\RouteExtension;
 use Marko\View\Latte\Extensions\SlotExtension;
+use Marko\View\Latte\Extensions\TemplateFunctionExtension;
 use Marko\View\ViewConfig;
 
 readonly class LatteEngineFactory
@@ -17,7 +16,7 @@ readonly class LatteEngineFactory
     public function __construct(
         private ViewConfig $viewConfig,
         private LatteViewConfig $latteViewConfig,
-        private UrlGeneratorInterface $urlGenerator,
+        private TemplateFunctionExtension $templateFunctionExtension,
         private CacheDirectoryGuard $cacheDirectoryGuard,
     ) {}
 
@@ -31,7 +30,7 @@ readonly class LatteEngineFactory
         $engine->setAutoRefresh($this->viewConfig->autoRefresh());
         $engine->setStrictTypes($this->latteViewConfig->strictTypes());
         $engine->addExtension(new SlotExtension());
-        $engine->addExtension(new RouteExtension($this->urlGenerator));
+        $engine->addExtension($this->templateFunctionExtension);
 
         return $engine;
     }

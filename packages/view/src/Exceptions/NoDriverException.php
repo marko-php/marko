@@ -4,12 +4,27 @@ declare(strict_types=1);
 
 namespace Marko\View\Exceptions;
 
+use Marko\View\TemplatePrecompilerInterface;
+
 class NoDriverException extends ViewException
 {
-    public static function noDriverInstalled(): self
-    {
+    /**
+     * @param string|null $interface The view interface that has no binding, when the container knows it
+     */
+    public static function noDriverInstalled(
+        ?string $interface = null,
+    ): self {
         $drivers = require __DIR__ . '/../../known-drivers.php';
         $packageList = self::formatDriverList($drivers);
+
+        if ($interface === TemplatePrecompilerInterface::class) {
+            return new self(
+                message: 'No template precompiler is bound.',
+                context: "Attempted to resolve $interface but no implementation is bound. "
+                    . 'view:cache needs the installed view driver to compile templates ahead of time.',
+                suggestion: "Install or update a view driver that provides a template precompiler:\n$packageList",
+            );
+        }
 
         return new self(
             message: 'No view driver installed.',

@@ -7,6 +7,7 @@ namespace Marko\View\Latte;
 use Latte\Engine;
 use Marko\Routing\Http\Response;
 use Marko\View\TemplateResolverInterface;
+use Marko\View\ViewDataMerger;
 use Marko\View\ViewInterface;
 
 class LatteView implements ViewInterface
@@ -14,6 +15,7 @@ class LatteView implements ViewInterface
     public function __construct(
         private Engine $engine,
         private TemplateResolverInterface $resolver,
+        private ViewDataMerger $viewDataMerger,
     ) {
         // Set our custom loader so includes use the same module resolution
         $this->engine->setLoader(new ModuleLoader($resolver));
@@ -23,15 +25,13 @@ class LatteView implements ViewInterface
         string $template,
         array $data = [],
     ): Response {
-        $html = $this->engine->renderToString($template, $data);
-
-        return Response::html($html);
+        return Response::html($this->renderToString($template, $data));
     }
 
     public function renderToString(
         string $template,
         array $data = [],
     ): string {
-        return $this->engine->renderToString($template, $data);
+        return $this->engine->renderToString($template, $this->viewDataMerger->merge($data));
     }
 }

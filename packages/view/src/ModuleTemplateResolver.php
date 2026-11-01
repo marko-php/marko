@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Marko\View;
 
+use FilesystemIterator;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\View\Exceptions\InvalidTemplateException;
 use Marko\View\Exceptions\TemplateNotFoundException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 
 readonly class ModuleTemplateResolver implements TemplateResolverInterface
 {
@@ -51,6 +55,96 @@ readonly class ModuleTemplateResolver implements TemplateResolverInterface
         string $template,
     ): array {
         return array_column($this->getCandidates($template), 1);
+    }
+
+    /**
+     * List every template name that resolve() accepts, module by module.
+     *
+     * A template is named after its module's short name (the part after the
+     * vendor), or after the short name of the module it supplies templates for
+     * (templates_for). Files whose path is not a valid template name are left
+     * out, since resolve() would reject them.
+     *
+     * @return list<string>
+     */
+    public function all(): array
+    {
+        $extension = $this->viewConfig->extension();
+        $names = [];
+
+        foreach ($this->moduleRepository->all() as $module) {
+            $viewsDirectory = $module->path . self::VIEWS_DIRECTORY;
+
+            if (!is_dir($viewsDirectory)) {
+                continue;
+            }
+
+            $moduleName = $this->shortModuleName($module);
+
+            foreach ($this->templatePaths($viewsDirectory, $extension) as $templatePath) {
+                if ($this->isValidTemplatePath($templatePath)) {
+                    $names[$moduleName . '::' . $templatePath] = true;
+                }
+            }
+        }
+
+        return array_keys($names);
+    }
+
+    /**
+     * Template paths (relative to the views directory, extension stripped), sorted.
+     *
+     * @return list<string>
+     */
+    private function templatePaths(
+        string $viewsDirectory,
+        string $extension,
+    ): array {
+        $paths = [];
+
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($viewsDirectory, FilesystemIterator::SKIP_DOTS),
+        );
+
+        /** @var SplFileInfo $file */
+        foreach ($files as $file) {
+            $relativePath = substr($file->getPathname(), strlen($viewsDirectory));
+
+            if (!$file->isFile() || !str_ends_with($relativePath, $extension)) {
+                continue;
+            }
+
+            $paths[] = substr($relativePath, 0, -strlen($extension));
+        }
+
+        sort($paths);
+
+        return $paths;
+    }
+
+    /**
+     * The module name templates of this module are addressed by: the short name
+     * of its templates_for target, or else its own short name.
+     */
+    private function shortModuleName(
+        ModuleManifest $module,
+    ): string {
+        $templatesFor = $module->extra['marko']['templates_for'] ?? null;
+        $parts = explode('/', is_string($templatesFor) ? $templatesFor : $module->name);
+
+        return end($parts);
+    }
+
+    private function isValidTemplatePath(
+        string $templatePath,
+    ): bool {
+        try {
+            $this->validateTemplatePath($templatePath, $templatePath);
+        } catch (InvalidTemplateException) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

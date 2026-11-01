@@ -5,11 +5,11 @@ declare(strict_types=1);
 use Latte\Engine;
 use Latte\Feature;
 use Marko\Core\Path\ProjectPaths;
-use Marko\Routing\UrlGeneratorInterface;
 use Marko\View\CacheDirectoryGuard;
 use Marko\View\Exceptions\InsecureCacheDirectoryException;
 use Marko\View\Latte\LatteEngineFactory;
 use Marko\View\Latte\LatteViewConfig;
+use Marko\View\Latte\Tests\Fixtures\ViewProviders;
 use Marko\View\ViewConfig;
 
 describe('LatteEngineFactory', function (): void {
@@ -24,7 +24,7 @@ describe('LatteEngineFactory', function (): void {
         $factory = new LatteEngineFactory(
             $viewConfig,
             $latteViewConfig,
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
         );
         $engine = $factory->create();
@@ -43,7 +43,7 @@ describe('LatteEngineFactory', function (): void {
         $factory = new LatteEngineFactory(
             $viewConfig,
             $latteViewConfig,
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
         );
         $engine = $factory->create();
@@ -66,7 +66,7 @@ describe('LatteEngineFactory', function (): void {
         $factory = new LatteEngineFactory(
             $viewConfig,
             $latteViewConfigTrue,
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
         );
         $engine = $factory->create();
@@ -78,7 +78,7 @@ describe('LatteEngineFactory', function (): void {
         $factory2 = new LatteEngineFactory(
             $viewConfig,
             $latteViewConfigFalse,
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
         );
         $engine2 = $factory2->create();
@@ -105,7 +105,7 @@ describe('LatteEngineFactory', function (): void {
         $factory = new LatteEngineFactory(
             $viewConfig,
             $latteViewConfig,
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
         );
         $engine = $factory->create();
@@ -139,7 +139,7 @@ describe('LatteEngineFactory', function (): void {
         $factory = new LatteEngineFactory(
             $viewConfig,
             $latteViewConfig,
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
         );
         $engine = $factory->create();
@@ -174,7 +174,7 @@ describe('LatteEngineFactory', function (): void {
         $factory = new LatteEngineFactory(
             $viewConfig,
             $latteViewConfig,
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
         );
         $engine = $factory->create();
@@ -195,7 +195,7 @@ describe('LatteEngineFactory', function (): void {
         $factory2 = new LatteEngineFactory(
             $viewConfig2,
             $latteViewConfig2,
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
         );
         $engine2 = $factory2->create();
@@ -232,7 +232,7 @@ describe('LatteEngineFactory cache directory hardening', function (): void {
         $factory = new LatteEngineFactory(
             $viewConfig,
             $this->createStub(LatteViewConfig::class),
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths($this->base)),
         );
 
@@ -252,7 +252,7 @@ describe('LatteEngineFactory cache directory hardening', function (): void {
         $factory = new LatteEngineFactory(
             $viewConfig,
             $this->createStub(LatteViewConfig::class),
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths($this->base)),
         );
 
