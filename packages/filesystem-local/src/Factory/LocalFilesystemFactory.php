@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Filesystem\Local\Factory;
 
 use JsonException;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Filesystem\Attributes\FilesystemDriver;
 use Marko\Filesystem\Contracts\FilesystemDriverFactoryInterface;
 use Marko\Filesystem\Contracts\FilesystemInterface;
@@ -14,7 +15,14 @@ use Marko\Filesystem\Local\Filesystem\LocalFilesystem;
 #[FilesystemDriver('local')]
 class LocalFilesystemFactory implements FilesystemDriverFactoryInterface
 {
+    public function __construct(
+        private ProjectPaths $paths,
+    ) {}
+
     /**
+     * Relative disk paths resolve against the project root, never the working
+     * directory (FPM, CGI and mod_php run from public/).
+     *
      * @param array<string, mixed> $config
      * @throws JsonException|FilesystemException
      */
@@ -27,9 +35,7 @@ class LocalFilesystemFactory implements FilesystemDriverFactoryInterface
             suggestion: 'Add a "path" key to your disk configuration',
         );
 
-        if (!str_starts_with($path, '/')) {
-            $path = getcwd() . '/' . $path;
-        }
+        $path = $this->paths->resolve($path);
 
         $isPublic = $config['public'] ?? false;
 
