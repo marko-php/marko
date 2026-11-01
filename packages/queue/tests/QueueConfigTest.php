@@ -73,6 +73,18 @@ describe('QueueConfig', function (): void {
         expect($defaults['restart_signal'])->toBe('storage/queue/restart');
     });
 
+    it('loads the restart_signal_driver setting', function (): void {
+        $queueConfig = new QueueConfig(new FakeConfigRepository(['queue.restart_signal_driver' => 'cache']));
+
+        expect($queueConfig->restartSignalDriver())->toBe('cache');
+    });
+
+    it('ships the file restart signal driver as the default', function (): void {
+        $defaults = require dirname(__DIR__) . '/config/queue.php';
+
+        expect($defaults['restart_signal_driver'])->toBe('file');
+    });
+
     it('loads max_attempts setting', function (): void {
         $config = new FakeConfigRepository([
             'queue.max_attempts' => 5,
