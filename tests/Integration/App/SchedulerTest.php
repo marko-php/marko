@@ -53,3 +53,49 @@ it('skips a scheduled task whose previous run is still in progress', function ()
         ->and($result['output'])->toContain('Executed: integration heartbeat')
         ->and(file_exists($this->project . '/storage/exclusive-task.txt'))->toBeFalse();
 })->issue(164);
+
+it('runs a runInBackground() command to completion in a separate process', function (): void {
+    // A real install has Composer's vendor/bin/marko; the fixture links it to the CLI package.
+    mkdir($this->project . '/vendor/bin', 0777, true);
+    symlink($this->project . '/vendor/marko/cli/bin/marko', $this->project . '/vendor/bin/marko');
+    touch($this->project . '/storage/run-background-task');
+
+    $result = runIntegrationCommand($this->app, 'schedule:run');
+
+    expect($result['exitCode'])->toBe(0, $result['output'])
+        ->and($result['output'])->toContain(
+            'Launched: integration:record-background-run --note=ran in the background',
+        );
+
+    $record = $this->project . '/storage/background-command.txt';
+    $deadline = microtime(true) + 30;
+
+    while (!is_file($record) && microtime(true) < $deadline) {
+        usleep(50_000);
+        clearstatcache(true, $record);
+    }
+
+    expect(is_file($record))->toBeTrue('The background command did not finish within 30 seconds.');
+
+    $written = json_decode((string) file_get_contents($record), true);
+    $tasks = array_values(array_filter(
+        $this->app->container->get(Schedule::class)->tasks(),
+        fn (ScheduledTask $task): bool => $task->runsInBackground(),
+    ));
+    $mutex = new FileTaskMutex(
+        directory: $this->project . '/storage/framework',
+        clock: $this->app->container->get(ClockInterface::class),
+    );
+
+    // The child took the mutex (its file exists) and released it when the command ended.
+    $deadline = microtime(true) + 10;
+
+    while ($mutex->exists($tasks[0]) && microtime(true) < $deadline) {
+        usleep(50_000);
+    }
+
+    expect($written['note'])->toBe('ran in the background')
+        ->and($written['pid'])->not->toBe(getmypid())
+        ->and(is_file($this->project . '/storage/framework/' . $tasks[0]->mutexName()))->toBeTrue()
+        ->and($mutex->exists($tasks[0]))->toBeFalse();
+})->issue(565);

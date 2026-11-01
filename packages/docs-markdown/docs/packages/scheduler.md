@@ -3,7 +3,7 @@ title: marko/scheduler
 description: Fluent task scheduler with cron expression support — define recurring tasks in PHP and run them with a single cron entry.
 ---
 
-Fluent task scheduler with cron expression support --- define recurring tasks in PHP and run them with a single cron entry. Register closures on the `Schedule` with human-readable frequency methods (`daily()`, `dailyAt('03:30')`, `everyFiveMinutes()`) or raw cron expressions, optionally in their own time zone and behind `when()`/`skip()` conditions. A single system cron entry runs `schedule:run` every minute, and the scheduler determines which tasks are due. No per-task crontab entries needed. Long-running tasks can be protected from overlapping runs, and `schedule:work` runs the scheduler in the foreground where no cron daemon is available.
+Fluent task scheduler with cron expression support --- define recurring tasks in PHP and run them with a single cron entry. Register closures and console commands on the `Schedule` with human-readable frequency methods (`daily()`, `dailyAt('03:30')`, `everyFiveMinutes()`) or raw cron expressions, optionally in their own time zone and behind `when()`/`skip()` conditions. A single system cron entry runs `schedule:run` every minute, and the scheduler determines which tasks are due. No per-task crontab entries needed. Long-running tasks can be protected from overlapping runs, commands can run in the background so they never hold up the rest of the minute, and `schedule:work` runs the scheduler in the foreground where no cron daemon is available.
 
 ## Installation
 
@@ -35,7 +35,70 @@ return [
 
 `Schedule` is registered as a singleton by `marko/scheduler`, so the instance your boot callback fills is the same one `schedule:run` and `schedule:work` read from. Boot callbacks run at the end of application initialization, before any command executes.
 
-Give every task a `description()`. It labels the task in command output and is required for overlap protection (see below).
+Give every closure task a `description()`. It labels the task in command output and is required for overlap protection (see below).
+
+### Scheduling Commands
+
+`command()` schedules a registered console command by name, with argv-style arguments written the way you would type them after the command name:
+
+```php title="module.php"
+use Marko\Scheduler\Schedule;
+
+return [
+    'boot' => function (Schedule $schedule): void {
+        $schedule->command('app:poll-engine-calls')->everyMinute()->withoutOverlapping();
+
+        $schedule->command('app:prune', ['--days=30', 'sessions'])->dailyAt('03:30');
+    },
+];
+```
+
+- **Unknown commands fail at registration.** The name (or an alias) is checked against core's `CommandRegistry` when the schedule is built. An unknown name throws `SchedulerException` naming it, so a typo surfaces on the next boot, not when the task first comes due. An argument that is not a string also throws.
+- **Commands run in the scheduler process.** A due command task goes through core's `CommandRunner`, with no subprocess. Its output is written to the scheduler's output, and its exit code decides the result: `0` prints `Executed: {description}`, anything else prints `Failed: {description} - Command '{name}' exited with code {code}.` and counts as a failure. A command that throws is a failure too.
+- **The command is the default description.** Without a `description()`, a command task is described by its name and arguments (`app:prune --days=30 sessions`), so `withoutOverlapping()` works without one. An explicit `description()` still wins.
+
+Closure tasks registered with `call()` behave exactly as before.
+
+### Running Commands in the Background
+
+By default, due tasks run one after another, so a long task (a nightly prune, say) delays every task after it in the same minute, and under `schedule:work` it can push the next minute back too. `runInBackground()` starts a command task in a separate process and moves on at once:
+
+```php
+$schedule->command('app:prune', ['--days=30'])
+    ->dailyAt('03:30')
+    ->withoutOverlapping()
+    ->runInBackground();
+```
+
+The run prints `Launched: {description}` instead of `Executed`, counts it in `ScheduleRunResult::$launched`, and ends with `Launched {n} background task(s).` The launch is all the parent sees: the command's own exit code does not affect the `schedule:run` exit code.
+
+**Only commands can run in the background.** A closure cannot be handed to another process, so calling `runInBackground()` on a `call()` task throws `SchedulerException` as soon as the schedule is built. To run closure work in the background, move it into a command:
+
+```php title="app/maintenance/src/Command/PruneCommand.php"
+use Marko\Core\Attributes\Command;
+use Marko\Core\Command\CommandInterface;
+use Marko\Core\Command\Input;
+use Marko\Core\Command\Output;
+
+#[Command(name: 'app:prune', description: 'Prune old records')]
+readonly class PruneCommand implements CommandInterface
+{
+    public function execute(Input $input, Output $output): int
+    {
+        // The body of the old closure...
+
+        return 0;
+    }
+}
+```
+
+Then replace `$schedule->call(...)` with `$schedule->command('app:prune')->runInBackground()`.
+
+**Where the output goes.** The background process runs `php vendor/bin/marko {command} {arguments}` from the project root, detached, with every argument shell-escaped. It inherits the scheduler's stdout and stderr, so whatever captures the scheduler's output (cron mail, the systemd journal, a container log) also captures the command's output and errors. Redirect the cron entry's output (`marko schedule:run >> storage/logs/schedule.log 2>&1`) to keep it in a file. The project must have `vendor/bin/marko` (installed by `marko/cli`); without it the launch fails.
+
+**How overlap protection works in the background.** The parent does not take the mutex of a background task. When the task uses `withoutOverlapping()`, the child process is started as `marko schedule:run-background --schedule-mutex={name} -- {command} {arguments}`. That internal command rebuilds the schedule from your boot callbacks, finds the task by its mutex name, takes the mutex, runs the command, and releases the mutex when the command ends. If the mutex is still held by an earlier run, the child prints `Skipped (still running): {description}` and exits `0`. If the child crashes, the operating system drops `FileTaskMutex`'s lock, so the mutex is never held past the work. Because the child looks the task up by its mutex name, register background tasks unconditionally in a boot callback (use `when()`/`skip()` for run-time decisions); if the child cannot find the task it fails loudly.
+
+**What runs in the parent.** The `when()`/`skip()` conditions are evaluated in the scheduler process before launching, so a condition-skipped task never starts a process. A launch failure (for example when `proc_open()` is disabled or the process limit is reached) prints `Failed: {description} - {message}`, counts as a failure, and the remaining due tasks still run.
 
 ### Frequency Methods
 
@@ -139,7 +202,7 @@ $schedule->call(function () {
 })->everyMinute()->description('Import product feed')->withoutOverlapping();
 ```
 
-While the mutex is held, the run prints `Skipped (still running): Import product feed` and moves on. The mutex is released when the task finishes, including when it throws.
+While the mutex is held, the run prints `Skipped (still running): Import product feed` and moves on. The mutex is released when the task finishes, including when it throws. For a `runInBackground()` task the child process holds the mutex instead (see [Running Commands in the Background](#running-commands-in-the-background)).
 
 `withoutOverlapping()` takes the number of minutes after which a held mutex is considered stale, for when its holder hung. It defaults to `1440` (24 hours):
 
@@ -147,7 +210,7 @@ While the mutex is held, the run prints `Skipped (still running): Import product
 $schedule->call($callback)->hourly()->description('Rebuild search index')->withoutOverlapping(90);
 ```
 
-The mutex is keyed on the task's expression and description, because closures have no stable identity. A task that uses `withoutOverlapping()` without a `description()` makes `schedule:run` and `schedule:work` throw `SchedulerException` before any task runs, whether or not that task is due. An expiry below 1 minute also throws `SchedulerException`.
+The mutex is keyed on the task's expression and description, because closures have no stable identity. A command task's description defaults to its command name and arguments. A closure task that uses `withoutOverlapping()` without a `description()` makes `schedule:run` and `schedule:work` throw `SchedulerException` before any task runs, whether or not that task is due. An expiry below 1 minute also throws `SchedulerException`.
 
 The default `FileTaskMutex` holds an exclusive `flock()` on `storage/framework/schedule-{hash}` under the project root while the task runs, and records the expiry time in that file. If the process crashes, the operating system releases the lock. A lock that is still held past its expiry is reclaimed by the next run. File locks only protect processes on the same server --- see [Customization](#customization) for multi-server setups.
 
@@ -159,12 +222,12 @@ Add a single cron entry to your system:
 * * * * * cd /path/to/project && marko schedule:run
 ```
 
-The `schedule:run` command checks all registered tasks and executes those that are due. A task that throws is reported as `Failed: {description} - {message}` and the remaining due tasks still run.
+The `schedule:run` command checks all registered tasks and executes those that are due. A task that throws, or a command task that exits non-zero, is reported as `Failed: {description} - {message}` and the remaining due tasks still run.
 
 | Exit code | Meaning |
 |-----------|---------|
 | `0` | Every due task succeeded or was skipped (still running, or by a condition), or no tasks were due |
-| `1` | At least one task, or one of its conditions, threw an exception |
+| `1` | At least one task or one of its conditions threw, a command task exited non-zero, or a background task could not be launched |
 
 The non-zero exit code makes failures visible to cron mail and monitoring tools.
 
@@ -176,7 +239,7 @@ For local development, or containers without a cron daemon, run the scheduler as
 marko schedule:work
 ```
 
-`schedule:work` sleeps until the top of each minute, then runs the tasks due at that minute, using the same logic as `schedule:run`. A failing task is reported and the loop keeps going. Tasks run sequentially in the same process, so if a run takes longer than a minute, the scheduler waits for the next minute boundary rather than catching up on the minutes it missed.
+`schedule:work` sleeps until the top of each minute, then runs the tasks due at that minute, using the same logic as `schedule:run`. A failing task is reported and the loop keeps going. Tasks run sequentially in the same process (except `runInBackground()` commands), so if a run takes longer than a minute, the scheduler waits for the next minute boundary rather than catching up on the minutes it missed.
 
 Stop it with `Ctrl+C` (SIGINT) or SIGTERM. With the `pcntl` extension installed, the signal is handled gracefully: the current task finishes, the command prints `Scheduler stopped.` and exits `0`. Without `pcntl`, the signal terminates the process immediately.
 
@@ -226,16 +289,23 @@ public function runNow(Output $output): bool
 `schedule:run`, `schedule:work` and `FileTaskMutex` read the current time from the injected `Psr\Clock\ClockInterface` ([`marko/clock`](/docs/packages/clock/)): `schedule:run` runs the tasks due at the clock's time, `schedule:work` sleeps until the clock reaches the next minute, and the mutex writes and checks its expiry against the clock. To test a schedule at a given time, construct the command with a [`FakeClock`](/docs/packages/testing/#fakeclock):
 
 ```php
+use Marko\Core\Command\CommandRunner;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Scheduler\Command\RunScheduleCommand;
 use Marko\Scheduler\Mutex\FileTaskMutex;
+use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
 use Marko\Scheduler\ScheduleRunner;
 use Marko\Testing\Fake\FakeClock;
 
 it('sends the report on the first of the month', function (): void {
     $clock = new FakeClock('2026-11-01 08:00:00');
-    $runner = new ScheduleRunner($schedule, new FileTaskMutex(sys_get_temp_dir() . '/mutex', $clock));
+    $runner = new ScheduleRunner(
+        $schedule,
+        new FileTaskMutex(sys_get_temp_dir() . '/mutex', $clock),
+        $container->get(CommandRunner::class),
+        $container->get(BackgroundCommandLauncherInterface::class),
+    );
     $command = new RunScheduleCommand($runner, $clock);
 
     $command->execute(new Input(['marko', 'schedule:run']), new Output(fopen('php://memory', 'r+')));
@@ -245,6 +315,12 @@ it('sends the report on the first of the month', function (): void {
 ```
 
 ## Customization
+
+### Background Launcher
+
+`runInBackground()` tasks are started through `BackgroundCommandLauncherInterface`, which `marko/scheduler` binds to `ProcOpenBackgroundCommandLauncher`. To start them another way (a job runner, a container API), implement the interface and bind it from your application module. `launch()` must return without waiting for the command, and when it is given a mutex name the child must hold that mutex while the command runs, as `schedule:run-background` does.
+
+### Shared Mutex
 
 Overlap protection depends on `TaskMutexInterface`, which `marko/scheduler` binds to `FileTaskMutex`. To share the mutex across several servers, implement the interface on a shared store such as Redis and bind it from your application module, which takes priority over the vendor binding:
 
@@ -266,14 +342,19 @@ return [
 ### Schedule
 
 ```php
+public function __construct(CommandRegistry $commandRegistry);
 public function call(Closure $callback): ScheduledTask;
+public function command(string $name, array $arguments = []): ScheduledTask;
 public function tasks(): array;
 public function dueTasksAt(DateTimeInterface $time): array;
 ```
 
+`command()` throws `SchedulerException` when the command is not registered or an argument is not a string.
+
 ### ScheduledTask
 
 ```php
+public function __construct(Closure|ScheduledCommand $action);
 public function everyMinute(): self;
 public function everyFiveMinutes(): self;
 public function everyTenMinutes(): self;
@@ -301,19 +382,39 @@ public function getOverlapExpiresAfterMinutes(): ?int;
 public function mutexName(): string;
 public function getDescription(): ?string;
 public function getExpression(): string;
+public function runInBackground(): self;
+public function runsInBackground(): bool;
+public function getCommand(): ?ScheduledCommand;
 public function getCallback(): Closure;
 public function isDue(DateTimeInterface $now): bool;
 public function run(): mixed;
 ```
 
-`mutexName()` throws `SchedulerException` when the task has no description. `withoutOverlapping()` throws `SchedulerException` when the expiry is below 1 minute. The time helpers throw `SchedulerException` for an invalid time, day or hour, `timezone()` for an unknown zone name, and `passesConditions()` when a condition returns something other than a `bool` (an exception thrown by a condition propagates as is).
+`getDescription()` returns the command name and arguments for a command task without a description. `runInBackground()` throws `SchedulerException` on a closure task. `getCallback()` and `run()` throw `SchedulerException` on a command task, which `ScheduleRunner` runs through the `CommandRunner`.
+
+`mutexName()` throws `SchedulerException` when a closure task has no description. `withoutOverlapping()` throws `SchedulerException` when the expiry is below 1 minute. The time helpers throw `SchedulerException` for an invalid time, day or hour, `timezone()` for an unknown zone name, and `passesConditions()` when a condition returns something other than a `bool` (an exception thrown by a condition propagates as is).
+
+### ScheduledCommand
+
+```php
+use Marko\Core\Command\Input;
+
+public string $name;
+public array $arguments;
+public function description(): string;
+public function input(): Input;
+```
 
 ### ScheduleRunner
 
 ```php
+use Marko\Core\Command\CommandRunner;
 use Marko\Core\Command\Output;
+use Marko\Scheduler\Mutex\TaskMutexInterface;
+use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
 use Marko\Scheduler\ScheduleRunResult;
 
+public function __construct(Schedule $schedule, TaskMutexInterface $taskMutex, CommandRunner $commandRunner, BackgroundCommandLauncherInterface $backgroundCommandLauncher);
 public function run(DateTimeInterface $now, Output $output): ScheduleRunResult;
 ```
 
@@ -324,6 +425,7 @@ public int $executed;
 public int $failed;
 public int $skipped;            // skipped because a previous run still holds the mutex
 public int $skippedByCondition; // skipped by a when()/skip() condition
+public int $launched;           // runInBackground() tasks handed to the launcher
 public function hasFailures(): bool;
 ```
 
@@ -336,6 +438,14 @@ public function acquire(ScheduledTask $task, int $expiresAfterSeconds): bool;
 public function release(ScheduledTask $task): void;
 public function exists(ScheduledTask $task): bool;
 ```
+
+### BackgroundCommandLauncherInterface
+
+```php
+public function launch(string $command, array $arguments, ?string $mutexName): void;
+```
+
+`ProcOpenBackgroundCommandLauncher` throws `SchedulerException` when `vendor/bin/marko` is missing or the process cannot be started.
 
 ### CronExpression
 
@@ -354,3 +464,4 @@ Throws `InvalidCronExpressionException` if the expression does not have exactly 
 |---------|-------------|
 | `marko schedule:run` | Run the tasks due this minute; exits `1` if any task failed |
 | `marko schedule:work` | Run due tasks at the top of every minute in the foreground until stopped |
+| `marko schedule:run-background` | Internal: the child process of a `runInBackground()` task that uses `withoutOverlapping()` |

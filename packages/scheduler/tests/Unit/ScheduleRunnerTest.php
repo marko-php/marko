@@ -6,18 +6,17 @@ use Marko\Core\Command\Output;
 use Marko\Scheduler\Exceptions\SchedulerException;
 use Marko\Scheduler\Mutex\FileTaskMutex;
 use Marko\Scheduler\Mutex\TaskMutexInterface;
-use Marko\Scheduler\Schedule;
 use Marko\Scheduler\ScheduledTask;
-use Marko\Scheduler\ScheduleRunner;
 use Marko\Scheduler\ScheduleRunResult;
+use Marko\Scheduler\Tests\Fixtures\SchedulerFactory;
 use Marko\Testing\Fake\FakeClock;
 
 beforeEach(function (): void {
     $this->mutexDirectory = sys_get_temp_dir() . '/marko-scheduler-runner-' . bin2hex(random_bytes(6));
-    $this->schedule = new Schedule();
+    $this->schedule = SchedulerFactory::schedule();
     $this->clock = new FakeClock('2026-10-05 12:00:00');
     $this->mutex = new FileTaskMutex($this->mutexDirectory, $this->clock);
-    $this->runner = new ScheduleRunner($this->schedule, $this->mutex);
+    $this->runner = SchedulerFactory::runner($this->schedule, $this->mutex);
     $this->stream = fopen('php://memory', 'r+');
     $this->output = new Output($this->stream);
     $this->now = new DateTimeImmutable('2026-10-05 12:00:00');
@@ -147,7 +146,7 @@ it('acquires the mutex with the configured expiry in seconds', function (): void
         }
     };
 
-    new ScheduleRunner($this->schedule, $recordingMutex)->run($this->now, $this->output);
+    SchedulerFactory::runner($this->schedule, $recordingMutex)->run($this->now, $this->output);
 
     expect($recordingMutex->acquired)->toBe([300])
         ->and($recordingMutex->released)->toBe(1);
@@ -267,7 +266,7 @@ it('checks conditions before acquiring the overlap mutex', function (): void {
         }
     };
 
-    $result = new ScheduleRunner($this->schedule, $recordingMutex)->run($this->now, $this->output);
+    $result = SchedulerFactory::runner($this->schedule, $recordingMutex)->run($this->now, $this->output);
 
     expect($recordingMutex->acquired)->toBe(0)
         ->and($result->skippedByCondition)->toBe(1);
