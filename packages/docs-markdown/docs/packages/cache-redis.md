@@ -3,7 +3,7 @@ title: marko/cache-redis
 description: Redis cache driver — fast, persistent caching backed by Redis for production workloads.
 ---
 
-Redis cache driver --- fast, persistent caching backed by Redis for production workloads. Stores HMAC-signed, serialized data in Redis with automatic TTL expiration. Values are tamper-evident: reads verify the signature before deserializing, so modified entries are rejected loudly. Supports key prefixing to isolate cache namespaces, configurable host/port/database, and optional authentication. Uses Predis as the Redis client library.
+Redis cache driver --- fast, persistent caching backed by Redis for production workloads. Stores HMAC-signed, serialized data in Redis with automatic TTL expiration. Values are tamper-evident: reads verify the signature before deserializing, so modified entries are rejected loudly. Supports key prefixing to isolate cache namespaces. The Redis connection itself (host, port, database, password, TLS) comes from [`marko/redis`](/docs/packages/redis/), so the cache can share a server with other Redis-backed packages or get a connection of its own.
 
 Implements `CacheInterface` from [`marko/cache`](/docs/packages/cache/).
 
@@ -13,7 +13,7 @@ Implements `CacheInterface` from [`marko/cache`](/docs/packages/cache/).
 composer require marko/cache-redis
 ```
 
-This automatically installs `marko/cache`, `predis/predis`, and [`marko/encryption`](/docs/packages/encryption/). A non-empty `encryption.key` is required; reads and writes throw `Marko\Cache\Exceptions\TamperedCacheValueException` if the key is empty or a stored value's HMAC does not verify. Values are signed by the shared [`CacheValueSigner`](/docs/packages/cache/#cachevaluesigner) from `marko/cache`.
+This automatically installs `marko/cache`, [`marko/redis`](/docs/packages/redis/) (which brings `predis/predis`), and [`marko/encryption`](/docs/packages/encryption/). A non-empty `encryption.key` is required; reads and writes throw `Marko\Cache\Exceptions\TamperedCacheValueException` if the key is empty or a stored value's HMAC does not verify. Values are signed by the shared [`CacheValueSigner`](/docs/packages/cache/#cachevaluesigner) from `marko/cache`.
 
 ```php title="config/encryption.php"
 use Marko\Config\Env;
@@ -35,33 +35,58 @@ return [
 ];
 ```
 
-The package ships `config/cache-redis.php`, and its module binding builds a single shared `RedisConnection` from it. No hand-written binding is needed. Set the environment variables, or override the file in your app:
+The package ships `config/cache-redis.php`. It names the [`marko/redis`](/docs/packages/redis/) connection to use and the key prefix; the connection settings themselves live in `config/redis.php`. No hand-written binding is needed:
 
 ```php title="config/cache-redis.php"
 use Marko\Config\Env;
 
 return [
-    'host' => Env::string('REDIS_HOST', '127.0.0.1'),
-    'port' => Env::int('REDIS_PORT', 6379, min: 1, max: 65535),
-    'password' => Env::nullableString('REDIS_PASSWORD'),
-    'database' => Env::int('REDIS_CACHE_DATABASE', 0, min: 0),
+    'connection' => 'default',
     'prefix' => Env::string('CACHE_PREFIX', 'marko:cache:'),
-    'scheme' => Env::string('REDIS_SCHEME', 'tcp'),
 ];
 ```
 
 | Key | Env var | Default | Description |
 |---|---|---|---|
-| `host` | `REDIS_HOST` | `127.0.0.1` | Redis server host |
-| `port` | `REDIS_PORT` | `6379` | Redis server port (1-65535) |
-| `password` | `REDIS_PASSWORD` | `null` | Password for `AUTH`; `null` or empty means no authentication |
-| `database` | `REDIS_CACHE_DATABASE` | `0` | Redis database index (0 or higher) |
+| `connection` | --- | `default` | A connection name from `redis.connections` in `config/redis.php`. A name that is not configured throws `Marko\Redis\Exceptions\RedisConnectionException` listing the configured names |
 | `prefix` | `CACHE_PREFIX` | `marko:cache:` | Prefix added to every cache key |
-| `scheme` | `REDIS_SCHEME` | `tcp` | `tcp` for plain text, or `tls` to encrypt the connection and verify the server certificate against `host`. Any other value throws `RedisConnectionException` |
 
-The connection opens on first use. If Redis refuses it, a `RedisConnectionException` names the host and port and points back to this config file.
+Set `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DATABASE` and `REDIS_SCHEME` to configure the `default` connection. See [`marko/redis`](/docs/packages/redis/#configuration) for every connection key and for TLS.
 
-Use `tls` for any Redis reached over a network you do not control (managed Redis services usually require it). With `tcp`, the `AUTH` password and every cached value cross the network in plain text. With `tls`, the server certificate must be valid for `host` and signed by a CA in the system trust store.
+### A Separate Cache Database
+
+To keep the cache on its own database (what `REDIS_CACHE_DATABASE` used to do), add a `cache` connection and point the cache at it:
+
+```php title="config/redis.php"
+use Marko\Config\Env;
+
+return [
+    'connections' => [
+        'cache' => [
+            'host' => Env::string('REDIS_HOST', '127.0.0.1'),
+            'port' => Env::int('REDIS_PORT', 6379, min: 1, max: 65535),
+            'password' => Env::nullableString('REDIS_PASSWORD'),
+            'database' => Env::int('REDIS_CACHE_DATABASE', 1, min: 0),
+            'scheme' => Env::string('REDIS_SCHEME', 'tcp'),
+        ],
+    ],
+];
+```
+
+```php title="config/cache-redis.php"
+use Marko\Config\Env;
+
+return [
+    'connection' => 'cache',
+    'prefix' => Env::string('CACHE_PREFIX', 'marko:cache:'),
+];
+```
+
+The connection opens on first use. If Redis refuses it, a `RedisConnectionException` names the host and port and points to `config/redis.php`.
+
+### Upgrading from 0.11
+
+`Marko\Cache\Redis\RedisConnection` and `Marko\Cache\Redis\Exceptions\RedisConnectionException` are gone; use `Marko\Redis\RedisConnectionFactoryInterface` and `Marko\Redis\Exceptions\RedisConnectionException` from `marko/redis`. The `host`, `port`, `password`, `database` and `scheme` keys moved from `config/cache-redis.php` to `redis.connections.{name}` in `config/redis.php`, and `REDIS_CACHE_DATABASE` is no longer read: the `default` connection uses `REDIS_DATABASE`. Use a `cache` connection, as above, to keep a separate database. `RedisCacheDriver`'s constructor now takes a `RedisConnectionFactoryInterface` and a `RedisCacheConfig` instead of a `RedisConnection`.
 
 ## Usage
 
@@ -125,15 +150,14 @@ Implements all methods from `CacheInterface`. See [`marko/cache`](/docs/packages
 | `pull(string $key, mixed $default = null): mixed` | Get a value and delete it (delegates to `CacheOperations`) |
 | `forever(string $key, mixed $value): bool` | Store a value with no expiry (delegates to `CacheOperations`) |
 
-### RedisConnection
+### RedisCacheConfig
 
 | Method | Description |
 |---|---|
-| `__construct(string $host, int $port, ?string $password, int $database, string $prefix, string $scheme)` | Create a connection with host (`127.0.0.1`), port (`6379`), optional password, database index (`0`), key prefix (`marko:cache:`) and scheme (`tcp` or `tls`, default `tcp`). Throws `RedisConnectionException` for an unknown scheme |
-| `connectionParameters(): array` | The Predis connection parameters; with `tls` they include `ssl` context options that verify the peer certificate and host name |
-| `client(): ClientInterface` | Get the Predis client instance --- connected on first call; throws `RedisConnectionException` if the connection is refused |
-| `disconnect(): void` | Disconnect and release the client instance |
-| `isConnected(): bool` | Check whether a client instance is currently active |
+| `connection(): string` | The `marko/redis` connection name from `cache-redis.connection` |
+| `prefix(): string` | The key prefix from `cache-redis.prefix` |
+
+`RedisCacheDriver` resolves the connection once, in its constructor, through `RedisConnectionFactoryInterface::connection()`. For the connection API see [`marko/redis`](/docs/packages/redis/#api-reference).
 
 ### Storage Details
 
@@ -145,3 +169,8 @@ Implements all methods from `CacheInterface`. See [`marko/cache`](/docs/packages
 - Counters are plain integers, not signed envelopes, because Redis writes them itself. `get()`, `getItem()` and `getMultiple()` return them as `int`, which is what [`marko/ratelimiter`](/docs/packages/ratelimiter/) relies on. Only values that are entirely an optional `-` followed by digits are read this way. They are never passed to `unserialize()`, and every other value must still carry a valid HMAC.
 - `clear()` removes only keys matching the configured prefix --- other Redis data is not affected. It walks the keyspace with `SCAN` in batches rather than `KEYS`, so clearing a large database does not block Redis. Glob characters in the prefix are escaped, so the prefix always matches literally.
 - `getItem()` reports `expiresAt()` as the current time from the PSR-20 `ClockInterface` ([`marko/clock`](/docs/packages/clock/)) plus the key's remaining Redis TTL. Redis enforces the expiry itself, so moving a [`FakeClock`](/docs/packages/testing/#fakeclock) changes the reported time but never expires a key. Use [`marko/cache-array`](/docs/packages/cache-array/) to test expiry with a fake clock.
+
+## Related Packages
+
+- [`marko/redis`](/docs/packages/redis/) --- the shared Redis connections this driver uses
+- [`marko/cache`](/docs/packages/cache/) --- the cache contracts this driver implements

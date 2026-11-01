@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Cache\Contracts\CacheInterface;
-use Marko\Cache\Redis\RedisConnection;
+use Marko\Cache\Redis\Config\RedisCacheConfig;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Integration\Fixture\Entity\Author;
@@ -14,6 +14,8 @@ use Marko\Integration\Fixture\Repository\BookRepository;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Worker;
 use Marko\Queue\WorkerInterface;
+use Marko\Redis\RedisConnection;
+use Marko\Redis\RedisConnectionFactoryInterface;
 use Predis\Client;
 
 /*
@@ -139,13 +141,15 @@ it('resolves WorkerInterface from the shipped queue wiring', function (): void {
     expect($this->app->container->get(WorkerInterface::class))->toBeInstanceOf(Worker::class);
 })->issue(161);
 
-it('connects cache-redis to the host, port and database from config', function (): void {
+it('connects cache-redis to the host, port and database of its named redis connection', function (): void {
     $env = getenv();
-    $connection = $this->app->container->get(RedisConnection::class);
+    $connection = $this->app->container->get(RedisConnectionFactoryInterface::class)->connection('cache');
     $cache = $this->app->container->get(CacheInterface::class);
+    $prefix = $this->app->container->get(RedisCacheConfig::class)->prefix();
     $key = 'integration.' . bin2hex(random_bytes(8));
 
-    // Fixture/config/cache-redis.php selects database 2; probe it directly.
+    // Fixture/config/cache-redis.php selects the 'cache' connection, which
+    // Fixture/config/redis.php puts on database 2; probe it directly.
     $probe = new Client(array_filter([
         'host' => $env['REDIS_HOST'],
         'port' => (int) ($env['REDIS_PORT'] ?? 6379),
@@ -156,10 +160,11 @@ it('connects cache-redis to the host, port and database from config', function (
     try {
         $cache->set($key, 'stored', 60);
 
-        expect($connection->host)->toBe($env['REDIS_HOST'])
+        expect($connection)->toBeInstanceOf(RedisConnection::class)
+            ->and($connection->host)->toBe($env['REDIS_HOST'])
             ->and($connection->port)->toBe((int) ($env['REDIS_PORT'] ?? 6379))
             ->and($connection->database)->toBe(2)
-            ->and($probe->exists($connection->prefix . $key))->toBe(1);
+            ->and($probe->exists($prefix . $key))->toBe(1);
     } finally {
         $cache->delete($key);
         $probe->disconnect();

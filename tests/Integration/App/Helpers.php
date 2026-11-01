@@ -49,6 +49,7 @@ const INTEGRATION_MODULES = [
     'queue',
     'queue-database',
     'ratelimiter',
+    'redis',
     'routing',
     'scheduler',
     'security',
