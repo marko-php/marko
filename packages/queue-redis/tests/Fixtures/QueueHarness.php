@@ -8,12 +8,14 @@ use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
+use Marko\Log\Contracts\LoggerInterface;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\QueueInterface;
 use Marko\Redis\RedisConnectionFactoryInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 use Predis\ClientInterface;
 use Psr\Clock\ClockInterface;
 
@@ -45,6 +47,7 @@ class QueueHarness
         $this->container->instance(ContainerInterface::class, $this->container);
         $this->container->instance(EventDispatcherInterface::class, new FakeEventDispatcher());
         $this->container->instance(ClockInterface::class, $this->clock);
+        $this->container->instance(LoggerInterface::class, new FakeLogger());
         $this->container->instance(RedisConnectionFactoryInterface::class, IntegrationRedis::connectionFactory());
         $this->container->instance(ConfigRepositoryInterface::class, new FakeConfigRepository([
             'encryption.key' => self::ENCRYPTION_KEY,
