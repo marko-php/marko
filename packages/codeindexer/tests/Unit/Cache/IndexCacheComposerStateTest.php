@@ -103,20 +103,20 @@ it(
     function () use (&$composerStateRoots): void {
         $root = composerStateProject();
         $composerStateRoots[] = $root;
-    
+
         $cache = composerStateCache($root);
         $cache->build();
-    
+
         expect($cache->isStale())->toBeFalse()
             ->and(composerStateKeys($cache))->not->toContain('new.endpoint');
-    
+
         composerStateVendorPackage($root, 'acme/new', 'new');
         composerStateTouchAfterCache($root, $root . '/vendor/composer/installed.json');
-    
+
         expect($cache->isStale())->toBeTrue()
             ->and(composerStateKeys($cache))->toContain('new.endpoint')
             ->and($cache->isStale())->toBeFalse();
-    }
+    },
 );
 
 it(
@@ -125,19 +125,19 @@ it(
         $root = composerStateProject();
         $composerStateRoots[] = $root;
         $packagePath = composerStateVendorPackage($root, 'acme/old', 'old');
-    
+
         $cache = composerStateCache($root);
         $cache->build();
-    
+
         expect(composerStateKeys($cache))->toContain('old.endpoint')
             ->and($cache->isStale())->toBeFalse();
-    
+
         composerStateRemoveDir($packagePath);
         composerStateTouchAfterCache($root, $root . '/vendor/composer/installed.json');
-    
+
         expect($cache->isStale())->toBeTrue()
             ->and(composerStateKeys($cache))->not->toContain('old.endpoint');
-    }
+    },
 );
 
 it(
@@ -147,16 +147,16 @@ it(
         $composerStateRoots[] = $root;
         unlink($root . '/vendor/composer/installed.json');
         file_put_contents($root . '/composer.lock', '{"packages":[]}');
-    
+
         $cache = composerStateCache($root);
         $cache->build();
-    
+
         expect($cache->isStale())->toBeFalse();
-    
+
         composerStateTouchAfterCache($root, $root . '/composer.lock');
-    
+
         expect($cache->isStale())->toBeTrue();
-    }
+    },
 );
 
 it('does not reload a fresh cache from disk after a composer change', function () use (&$composerStateRoots): void {
