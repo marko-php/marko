@@ -13,12 +13,17 @@ use Marko\Core\Event\ObserverRegistry;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\Exceptions\JobFailedException;
+use Marko\Queue\FailedJobHandler;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobRunner;
 use Marko\Queue\QueueAsyncObserverDispatcher;
+use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\Sync\NullFailedJobRepository;
 use Marko\Queue\Sync\SyncQueue;
+use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use RuntimeException;
 
 class InvoicePaid extends Event
@@ -60,7 +65,18 @@ function dispatchThroughSyncQueue(
         new EncryptionConfig(new FakeConfigRepository(['encryption.key' => 'sync-async-key'])),
     );
     $container->instance(JobEnvelope::class, $jobEnvelope);
-    $container->instance(QueueInterface::class, new SyncQueue(new JobRunner($container, $jobEnvelope)));
+    $runner = new JobRunner($container, $jobEnvelope, new FakeEventDispatcher());
+    $container->instance(QueueInterface::class, new SyncQueue(
+        $runner,
+        new FailedJobHandler(
+            new NullFailedJobRepository(),
+            $jobEnvelope,
+            $runner,
+            new FakeEventDispatcher(),
+            new FakeClock(),
+        ),
+        new QueueConfig(new FakeConfigRepository(['queue.queue' => 'default'])),
+    ));
     $container->bind(AsyncObserverDispatcherInterface::class, QueueAsyncObserverDispatcher::class);
 
     $registry = new ObserverRegistry();

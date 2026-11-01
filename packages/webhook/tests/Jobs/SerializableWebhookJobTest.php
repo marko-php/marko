@@ -11,6 +11,7 @@ use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Encryption\Contracts\EncryptorInterface;
 use Marko\Queue\FailedJob;
+use Marko\Queue\FailedJobHandler;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
@@ -22,6 +23,7 @@ use Marko\Queue\QueueInterface;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeQueue;
 use Marko\Webhook\Contracts\WebhookAttemptRepositoryInterface;
 use Marko\Webhook\Contracts\WebhookDispatcherInterface;
@@ -329,14 +331,23 @@ describe('DispatchWebhookJob final failure', function (): void {
 
             $worker = new Worker(
                 $queue,
-                $failedRepository,
+                new FailedJobHandler(
+                    $failedRepository,
+                    SerializableWebhookJobTestHelpers::envelope(),
+                    new JobRunner(
+                        SerializableWebhookJobTestHelpers::unserializableFailingContainer(),
+                        SerializableWebhookJobTestHelpers::envelope(),
+                        new FakeEventDispatcher(),
+                    ),
+                    new FakeEventDispatcher(),
+                    new FakeClock(),
+                ),
                 SerializableWebhookJobTestHelpers::queueConfig(),
-                SerializableWebhookJobTestHelpers::envelope(),
                 new JobRunner(
                     SerializableWebhookJobTestHelpers::unserializableFailingContainer(),
                     SerializableWebhookJobTestHelpers::envelope(),
+                    new FakeEventDispatcher(),
                 ),
-                clock: new FakeClock(),
             );
             $stopJob->worker = $worker;
 
@@ -604,11 +615,15 @@ describe('DispatchWebhookJob serialization', function (): void {
             // Drive through Worker::work() — NOT a manual setContainer() call
             $worker = new Worker(
                 $workerQueue,
-                $failedRepository,
+                new FailedJobHandler(
+                    $failedRepository,
+                    $envelope,
+                    new JobRunner($container, $envelope, new FakeEventDispatcher()),
+                    new FakeEventDispatcher(),
+                    new FakeClock(),
+                ),
                 $queueConfig,
-                $envelope,
-                new JobRunner($container, $envelope),
-                clock: new FakeClock(),
+                new JobRunner($container, $envelope, new FakeEventDispatcher()),
             );
             $worker->work(once: true);
 
@@ -708,11 +723,15 @@ describe('DispatchWebhookJob serialization', function (): void {
         // Drive through Worker::work() so the container is injected via ContainerAwareJobInterface gate
         $worker = new Worker(
             $workerQueue,
-            $failedRepository,
+            new FailedJobHandler(
+                $failedRepository,
+                $envelope,
+                new JobRunner($container, $envelope, new FakeEventDispatcher()),
+                new FakeEventDispatcher(),
+                new FakeClock(),
+            ),
             $queueConfig,
-            $envelope,
-            new JobRunner($container, $envelope),
-            clock: new FakeClock(),
+            new JobRunner($container, $envelope, new FakeEventDispatcher()),
         );
         $worker->work(once: true);
 

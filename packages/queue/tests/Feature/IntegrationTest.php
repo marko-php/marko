@@ -9,6 +9,7 @@ use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\Command\WorkCommand;
 use Marko\Queue\FailedJob;
+use Marko\Queue\FailedJobHandler;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
@@ -24,6 +25,7 @@ use Marko\Queue\Worker;
 use Marko\Queue\WorkerInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 
 function createIntegrationJobEnvelope(
     string $key = 'test-key-for-integration',
@@ -280,11 +282,19 @@ describe('Integration Tests', function (): void {
         $config = createIntegrationQueueConfig();
         $worker = new Worker(
             $queue,
-            $failedRepository,
+            new FailedJobHandler(
+                $failedRepository,
+                createIntegrationJobEnvelope(),
+                new JobRunner(
+                    createIntegrationNullContainer(),
+                    createIntegrationJobEnvelope(),
+                    new FakeEventDispatcher(),
+                ),
+                new FakeEventDispatcher(),
+                new FakeClock(),
+            ),
             $config,
-            createIntegrationJobEnvelope(),
-            new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope()),
-            new FakeClock(),
+            new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
         );
 
         // 1. Push the job to the queue
@@ -474,11 +484,15 @@ describe('Integration Tests', function (): void {
             // Worker holds envelope + container; injects both into popped AsyncObserverJob
             $worker = new Worker(
                 $queue,
-                $failedRepository,
+                new FailedJobHandler(
+                    $failedRepository,
+                    $envelope,
+                    new JobRunner($container, $envelope, new FakeEventDispatcher()),
+                    new FakeEventDispatcher(),
+                    new FakeClock(),
+                ),
                 $config,
-                $envelope,
-                new JobRunner($container, $envelope),
-                new FakeClock(),
+                new JobRunner($container, $envelope, new FakeEventDispatcher()),
             );
             $worker->work(once: true);
 
@@ -557,11 +571,15 @@ describe('Integration Tests', function (): void {
 
             $worker = new Worker(
                 $queue,
-                $failedRepository,
+                new FailedJobHandler(
+                    $failedRepository,
+                    $envelope,
+                    new JobRunner($container, $envelope, new FakeEventDispatcher()),
+                    new FakeEventDispatcher(),
+                    new FakeClock(),
+                ),
                 $config,
-                $envelope,
-                new JobRunner($container, $envelope),
-                new FakeClock(),
+                new JobRunner($container, $envelope, new FakeEventDispatcher()),
             );
             $worker->work(once: true);
 
@@ -595,11 +613,19 @@ describe('Integration Tests', function (): void {
         $processControl = new FakeProcessControl();
         $worker = new Worker(
             $queue,
-            $failedRepository,
+            new FailedJobHandler(
+                $failedRepository,
+                createIntegrationJobEnvelope(),
+                new JobRunner(
+                    createIntegrationNullContainer(),
+                    createIntegrationJobEnvelope(),
+                    new FakeEventDispatcher(),
+                ),
+                new FakeEventDispatcher(),
+                new FakeClock(),
+            ),
             $config,
-            createIntegrationJobEnvelope(),
-            new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope()),
-            new FakeClock(),
+            new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
             processControl: $processControl,
         );
 
@@ -653,7 +679,22 @@ describe('Integration Tests', function (): void {
             ->and($queueConfig->queue())->toBe('default');
 
         // Verify SyncQueue implements QueueInterface
-        $syncQueue = new SyncQueue(new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope()));
+        $syncRunner = new JobRunner(
+            createIntegrationNullContainer(),
+            createIntegrationJobEnvelope(),
+            new FakeEventDispatcher(),
+        );
+        $syncQueue = new SyncQueue(
+            $syncRunner,
+            new FailedJobHandler(
+                new NullFailedJobRepository(),
+                createIntegrationJobEnvelope(),
+                $syncRunner,
+                new FakeEventDispatcher(),
+                new FakeClock(),
+            ),
+            createIntegrationQueueConfig(),
+        );
 
         expect($syncQueue)->toBeInstanceOf(QueueInterface::class);
 
@@ -665,11 +706,19 @@ describe('Integration Tests', function (): void {
         // Verify Worker implements WorkerInterface
         $worker = new Worker(
             $syncQueue,
-            $nullRepository,
+            new FailedJobHandler(
+                $nullRepository,
+                createIntegrationJobEnvelope(),
+                new JobRunner(
+                    createIntegrationNullContainer(),
+                    createIntegrationJobEnvelope(),
+                    new FakeEventDispatcher(),
+                ),
+                new FakeEventDispatcher(),
+                new FakeClock(),
+            ),
             $queueConfig,
-            createIntegrationJobEnvelope(),
-            new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope()),
-            new FakeClock(),
+            new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
         );
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);

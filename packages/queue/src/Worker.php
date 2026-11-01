@@ -7,7 +7,6 @@ namespace Marko\Queue;
 use Marko\Queue\Exceptions\JobTimedOutException;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
-use Psr\Clock\ClockInterface;
 use Throwable;
 
 class Worker implements WorkerInterface
@@ -21,11 +20,9 @@ class Worker implements WorkerInterface
 
     public function __construct(
         private readonly QueueInterface $queue,
-        private readonly FailedJobRepositoryInterface $failedJobRepository,
+        private readonly FailedJobHandlerInterface $failedJobHandler,
         private readonly QueueConfig $config,
-        private readonly JobEnvelope $jobEnvelope,
         private readonly JobRunnerInterface $jobRunner,
-        private readonly ClockInterface $clock,
         private readonly BackoffValidator $backoffValidator = new BackoffValidator(),
         private readonly ProcessControlInterface $processControl = new PcntlProcessControl(),
     ) {}
@@ -140,8 +137,9 @@ class Worker implements WorkerInterface
     /**
      * Fail the running job with a JobTimedOutException, then end the worker process.
      *
-     * The job is released for another attempt, or recorded in failed_jobs on its last attempt,
-     * like a job that threw. The process then exits with EXIT_TIMED_OUT so its supervisor
+     * The job is released for another attempt, or failed on its last attempt, like a job that
+     * threw. This runs inside the pcntl alarm handler, so a FailableJobInterface job's failed()
+     * runs in signal context too. The process then exits with EXIT_TIMED_OUT so its supervisor
      * starts a fresh worker.
      */
     private function handleTimeout(
@@ -296,9 +294,9 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * Release a failed job for another attempt, or record it in failed_jobs on its last attempt.
+     * Release a failed job for another attempt, or fail it for good on its last attempt.
      *
-     * A job whose backoff is invalid cannot be released, so it is recorded in failed_jobs with
+     * A job whose backoff is invalid cannot be released, so it is failed for good with
      * both its own error and the backoff error, and the worker keeps running: one bad job class
      * must not stop every worker. Fix the backoff, then queue:retry the job.
      *
@@ -312,7 +310,7 @@ class Worker implements WorkerInterface
         $maxAttempts = $job->maxAttempts ?? $this->config->maxAttempts();
 
         if ($job->attempts >= $maxAttempts) {
-            $this->storeFailedJob($job, $e, $queue);
+            $this->failJob($job, $e, $queue);
 
             return;
         }
@@ -320,7 +318,7 @@ class Worker implements WorkerInterface
         try {
             $delay = $this->backoffFor($job);
         } catch (QueueException $backoffError) {
-            $this->storeFailedJob(
+            $this->failJob(
                 $job,
                 $e,
                 $queue,
@@ -334,70 +332,18 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * Store the job in failed_jobs and delete it from the queue.
-     *
-     * A job whose payload cannot be serialized (for example one holding a closure) is still
-     * recorded, with a placeholder payload of its class and the serialization error, and
-     * deleted from the queue, so the worker keeps running. queue:retry refuses that row.
+     * Hand the job to the failed-job handler (store it, call failed(), dispatch JobFailedEvent),
+     * then delete it from the queue.
      *
      * @throws SerializationException
      */
-    private function storeFailedJob(
+    private function failJob(
         JobInterface $job,
         Throwable $e,
         string $queue,
         string $note = '',
     ): void {
-        $exception = $e->getMessage() . "\n" . $this->traceWithoutArguments($e) . $note;
-
-        try {
-            $serialized = $job->serialize();
-        } catch (Throwable $serializationError) {
-            $serialized = serialize([
-                'class' => $job::class,
-                'serialization_error' => $serializationError->getMessage(),
-            ]);
-            $exception .= "\n\nJob payload could not be serialized, so this failed job cannot be retried. "
-                . 'Job class ' . $job::class . ': ' . $serializationError->getMessage();
-        }
-
-        $this->failedJobRepository->store(new FailedJob(
-            id: $job->id,
-            queue: $queue,
-            payload: $this->jobEnvelope->wrap($serialized),
-            exception: $exception,
-            failedAt: $this->clock->now(),
-        ));
+        $this->failedJobHandler->handle($job, $queue, $e, $note);
         $this->queue->delete($job->id);
-    }
-
-    /**
-     * The exception's stack trace in getTraceAsString() format, without call arguments.
-     *
-     * getTraceAsString() includes arguments unless zend.exception_ignore_args is on, and they
-     * can hold passwords or tokens that must not be stored in failed_jobs.
-     */
-    private function traceWithoutArguments(
-        Throwable $e,
-    ): string {
-        $lines = [];
-
-        foreach ($e->getTrace() as $index => $frame) {
-            $location = isset($frame['file'])
-                ? $frame['file'] . '(' . ($frame['line'] ?? 0) . ')'
-                : '[internal function]';
-            $lines[] = sprintf(
-                '#%d %s: %s%s%s()',
-                $index,
-                $location,
-                $frame['class'] ?? '',
-                $frame['type'] ?? '',
-                $frame['function'],
-            );
-        }
-
-        $lines[] = '#' . count($lines) . ' {main}';
-
-        return implode("\n", $lines);
     }
 }

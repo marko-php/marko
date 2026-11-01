@@ -12,6 +12,7 @@ use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\InMemoryFailedJobRepository;
 use Marko\Queue\Database\Tests\Fixtures\SqliteConnection;
+use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
 use Marko\Queue\Database\Tests\Fixtures\TestJob;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\JobEnvelope;
@@ -33,7 +34,11 @@ function createTestQueue(
         connection: $connection,
         queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
         jobEnvelope: $envelope ?? createTestEnvelope(),
-        failedJobRepository: $failedJobRepository ?? new InMemoryFailedJobRepository(),
+        failedJobHandler: TestFailedJobHandler::create(
+            $failedJobRepository ?? new InMemoryFailedJobRepository(),
+            $envelope ?? createTestEnvelope(),
+            $clock,
+        ),
         clock: $clock,
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
         retryAfter: $retryAfter,

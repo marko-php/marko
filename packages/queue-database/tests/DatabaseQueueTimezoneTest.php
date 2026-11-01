@@ -8,6 +8,7 @@ use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Database\DatabaseFailedJobRepository;
 use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\SqliteConnection;
+use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
 use Marko\Queue\Database\Tests\Fixtures\TestJob;
 use Marko\Queue\JobEnvelope;
 use Marko\Testing\Fake\FakeClock;
@@ -34,9 +35,15 @@ function zonedQueue(
         jobEnvelope: new JobEnvelope(new EncryptionConfig(new FakeConfigRepository([
             'encryption.key' => 'timezone-test-key',
         ]))),
-        failedJobRepository: new DatabaseFailedJobRepository(
-            $connection,
-            DatabaseTimezoneConfig::fromName($databaseTimezone),
+        failedJobHandler: TestFailedJobHandler::create(
+            new DatabaseFailedJobRepository(
+                $connection,
+                DatabaseTimezoneConfig::fromName($databaseTimezone),
+            ),
+            new JobEnvelope(new EncryptionConfig(new FakeConfigRepository([
+                'encryption.key' => 'timezone-test-key',
+            ]))),
+            $clock,
         ),
         queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
         clock: $clock,

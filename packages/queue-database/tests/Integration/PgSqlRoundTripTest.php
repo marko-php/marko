@@ -18,13 +18,16 @@ use Marko\Queue\Database\DatabaseFailedJobRepository;
 use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\PrivateStateJob;
 use Marko\Queue\Database\Tests\Fixtures\QueueTables;
+use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
 use Marko\Queue\FailedJob;
+use Marko\Queue\FailedJobHandler;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobRunner;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 
 /*
  * These tests run against a real PostgreSQL server. They are skipped (with the reason)
@@ -105,7 +108,11 @@ function pgsqlQueue(
     return new DatabaseQueue(
         connection: $connection,
         jobEnvelope: pgsqlEnvelope(),
-        failedJobRepository: new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC')),
+        failedJobHandler: TestFailedJobHandler::create(
+            new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC')),
+            pgsqlEnvelope(),
+            $clock,
+        ),
         queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
         clock: $clock,
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
@@ -207,14 +214,18 @@ describe('database queue on PostgreSQL', function (): void {
 
         $worker = new Worker(
             $queue,
-            $failedJobRepository,
+            new FailedJobHandler(
+                $failedJobRepository,
+                pgsqlEnvelope(),
+                new JobRunner(new Container(), pgsqlEnvelope(), new FakeEventDispatcher()),
+                new FakeEventDispatcher(),
+                new FakeClock(),
+            ),
             new QueueConfig(new FakeConfigRepository([
                 'queue.queue' => 'default',
                 'queue.max_attempts' => 1,
             ])),
-            pgsqlEnvelope(),
-            new JobRunner(new Container(), pgsqlEnvelope()),
-            new FakeClock(),
+            new JobRunner(new Container(), pgsqlEnvelope(), new FakeEventDispatcher()),
         );
         $worker->work(once: true);
 

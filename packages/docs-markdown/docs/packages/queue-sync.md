@@ -48,11 +48,13 @@ public function process(): void
 
 ### Container-Aware Jobs and Async Observers
 
-`SyncQueue` is constructed with the `JobRunnerInterface` from [`marko/queue`](/docs/packages/queue/#running-one-attempt), which the container autowires. It runs each job through that runner, exactly as the worker does: the attempt is counted, a job that implements `ContainerAwareJobInterface` gets `setContainer()` and `setJobEnvelope()` before it runs and `releaseContainer()` once `handle()` returns or throws, and an exception is counted on the job before `JobFailedException` wraps it. This is how `#[Observer(async: true)]` observers run under the sync driver. The observer is queued as an `AsyncObserverJob`, and `push()` runs it straight away against a copy of the event unwrapped from the signed envelope. If the observer throws, `dispatch()` throws a `JobFailedException`.
+`SyncQueue` is constructed with the `JobRunnerInterface` from [`marko/queue`](/docs/packages/queue/#running-one-attempt), which the container autowires. It runs each job through that runner, exactly as the worker does: the attempt is counted, a job that implements `ContainerAwareJobInterface` gets `setContainer()` and `setJobEnvelope()` before it runs and `releaseContainer()` once `handle()` returns or throws, and an exception is counted on the job before `JobFailedException` wraps it. `JobProcessingEvent` and `JobProcessedEvent` are dispatched around `handle()` as they are under the worker.
+
+A job that throws has no further attempts, so `SyncQueue` hands it to the [failed-job handler](/docs/packages/queue/#when-a-job-fails-for-good) before throwing `JobFailedException`: the job's `failed()` hook runs (if it implements `FailableJobInterface`) and `JobFailedEvent` is dispatched with the queue passed to `push()`, or `queue.queue` when none was given. This is how `#[Observer(async: true)]` observers run under the sync driver. The observer is queued as an `AsyncObserverJob`, and `push()` runs it straight away against a copy of the event unwrapped from the signed envelope. If the observer throws, `dispatch()` throws a `JobFailedException`.
 
 ### Failed Job Repository
 
-The sync driver includes `NullFailedJobRepository` since jobs either succeed or throw immediately:
+The sync driver includes `NullFailedJobRepository` since jobs either succeed or throw immediately. The failed-job handler still calls `failed()` and dispatches `JobFailedEvent`; only the storing step does nothing:
 
 ```php title="module.php"
 use Marko\Queue\FailedJobRepositoryInterface;
@@ -73,8 +75,8 @@ Implements all methods from `QueueInterface`. See [marko/queue](/docs/packages/q
 
 | Method | Description |
 |---|---|
-| `__construct(JobRunnerInterface $jobRunner)` | Autowired. Every job runs through the runner. |
-| `push(JobInterface $job, ?string $queue = null): PushResult` | Execute the job immediately through the `JobRunner` and return a pushed `PushResult` with its ID. Container-aware jobs get the container and job envelope first, and release them afterwards. Throws `JobFailedException` on failure. |
+| `__construct(JobRunnerInterface $jobRunner, FailedJobHandlerInterface $failedJobHandler, QueueConfig $config)` | Autowired. Every job runs through the runner, and a job that throws goes through the failed-job handler. |
+| `push(JobInterface $job, ?string $queue = null): PushResult` | Execute the job immediately through the `JobRunner` and return a pushed `PushResult` with its ID. Container-aware jobs get the container and job envelope first, and release them afterwards. On failure, hands the job to the failed-job handler, then throws `JobFailedException`. |
 | `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Ignores the delay and executes immediately via `push()`. |
 | `pop(?string $queue = null): ?JobInterface` | Always returns `null` --- no jobs are ever queued. |
 | `size(?string $queue = null): int` | Always returns `0`. |

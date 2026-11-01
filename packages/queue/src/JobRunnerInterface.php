@@ -14,7 +14,8 @@ interface JobRunnerInterface
 {
     /**
      * Run one attempt of the job: count the attempt, call handle(), and count an exception
-     * before rethrowing it. A container-aware job holds the container only while it runs.
+     * before rethrowing it. JobProcessingEvent is dispatched before handle() and JobProcessedEvent
+     * after it returns. A container-aware job holds the container only while it runs.
      *
      * @throws Throwable Whatever handle() throws
      */

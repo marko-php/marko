@@ -7,6 +7,7 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilderFactory;
@@ -21,6 +22,7 @@ use Marko\Queue\QueueInterface;
 use Marko\Queue\WorkerInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -33,6 +35,7 @@ function workerTestContainer(
 ): Container {
     $container = new Container();
     $container->instance(ContainerInterface::class, $container);
+    $container->instance(EventDispatcherInterface::class, new FakeEventDispatcher());
     $container->instance(ConnectionInterface::class, $connection);
     $container->instance(QueryBuilderFactoryInterface::class, new PgSqlQueryBuilderFactory($connection));
     $container->instance(ClockInterface::class, new FakeClock());

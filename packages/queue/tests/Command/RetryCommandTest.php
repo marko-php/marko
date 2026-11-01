@@ -11,7 +11,9 @@ use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Command\RetryCommand;
 use Marko\Queue\ContainerAwareJobInterface;
 use Marko\Queue\Exceptions\SerializationException;
+use Marko\Queue\FailableJobInterface;
 use Marko\Queue\FailedJob;
+use Marko\Queue\FailedJobHandler;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
@@ -24,6 +26,7 @@ use Marko\Queue\Tests\Command\StubFailedJobRepository;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 
 /**
  * A simple test job for retry testing.
@@ -230,6 +233,41 @@ it('resets a retried job\'s attempts to zero before re-queuing', function (): vo
 
     expect($pushedJob->attempts)->toBe(0);
 });
+
+class RetryFailableJob extends Job implements FailableJobInterface
+{
+    public int $failedCalls = 0;
+
+    public function handle(): void {}
+
+    public function failed(Throwable $exception): void
+    {
+        $this->failedCalls++;
+    }
+}
+
+it('does not call failed() on a job it retries', function (string $mode): void {
+    $envelope = createRetryCommandEnvelope();
+    $failedJob = new FailedJob(
+        id: 'failable-001',
+        queue: 'default',
+        payload: $envelope->wrap(new RetryFailableJob()->serialize()),
+        exception: 'Test exception',
+        failedAt: new DateTimeImmutable('2024-01-01 12:00:00'),
+    );
+    $queue = Helpers::createStubQueue();
+    $command = new RetryCommand(Helpers::createStubFailedJobRepository([$failedJob]), $queue, $envelope);
+    ['output' => $output] = Helpers::createOutputStream();
+    $argv = $mode === 'all' ? ['marko', 'queue:retry', '--all'] : ['marko', 'queue:retry', 'failable-001'];
+
+    $command->execute(new Input($argv), $output);
+
+    /** @var RetryFailableJob $pushedJob */
+    $pushedJob = $queue->pushedJobs[0]['job'];
+
+    expect($pushedJob)->toBeInstanceOf(RetryFailableJob::class)
+        ->and($pushedJob->failedCalls)->toBe(0);
+})->with(['single', 'all']);
 
 it('resets attempts when retrying all failed jobs', function (): void {
     $envelope = createRetryCommandEnvelope();
@@ -570,14 +608,18 @@ function createRetryWorker(
 ): Worker {
     return new Worker(
         $queue,
-        $failedJobRepository,
+        new FailedJobHandler(
+            $failedJobRepository,
+            createRetryCommandEnvelope(),
+            new JobRunner($container, createRetryCommandEnvelope(), new FakeEventDispatcher()),
+            new FakeEventDispatcher(),
+            new FakeClock(),
+        ),
         new QueueConfig(new FakeConfigRepository([
             'queue.queue' => 'default',
             'queue.max_attempts' => 1,
         ])),
-        createRetryCommandEnvelope(),
-        new JobRunner($container, createRetryCommandEnvelope()),
-        new FakeClock(),
+        new JobRunner($container, createRetryCommandEnvelope(), new FakeEventDispatcher()),
     );
 }
 

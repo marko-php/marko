@@ -86,7 +86,7 @@ marko queue:work
 The `jobs.attempts` column is the authoritative attempt count. Every reservation increments it, so it counts attempts that were *started*:
 
 - **A job that throws** is released by the worker. `release()` stores the job the worker hands back in place of the payload it was reserved with, so its attempt count, exception count and retry deadline survive the retry. The job is retried until it has been attempted `maxAttempts` times, then moved to `failed_jobs` and deleted from `jobs`.
-- **A job whose worker dies** (fatal error, OOM, `SIGKILL`) is never released. Once its reservation is older than `queue.retry_after`, the next `pop()` reclaims it, and the lost run still counts as an attempt. If the reclaimed job has already used all its attempts, `pop()` moves it to `failed_jobs` with the message "exceeded max attempts after worker crash or timeout" and moves on to the next job. A job that always crashes its worker can't loop forever.
+- **A job whose worker dies** (fatal error, OOM, `SIGKILL`) is never released. Once its reservation is older than `queue.retry_after`, the next `pop()` reclaims it, and the lost run still counts as an attempt. If the reclaimed job has already used all its attempts, `pop()` hands it to the [failed-job handler](/docs/packages/queue/#when-a-job-fails-for-good) with a `JobAttemptsExhaustedException` ("exceeded max attempts after worker crash or timeout"), so it is stored in `failed_jobs`, its `failed()` hook runs and `JobFailedEvent` is dispatched. Then `pop()` deletes it and moves on to the next job. This happens after the reserving transaction commits, so `failed()` never runs inside it. A job that always crashes its worker can't loop forever.
 
 `marko queue:retry` resets the attempt count, so a retried job gets its full `maxAttempts` again.
 
@@ -111,7 +111,7 @@ use Marko\Testing\Fake\FakeClock;
 
 it('holds a delayed job until it is due', function (): void {
     $clock = new FakeClock('2026-10-05 12:00:00');
-    $queue = new DatabaseQueue($connection, $envelope, $failedJobs, $queryBuilderFactory, $clock, DatabaseTimezoneConfig::fromName('UTC'));
+    $queue = new DatabaseQueue($connection, $envelope, $failedJobHandler, $queryBuilderFactory, $clock, DatabaseTimezoneConfig::fromName('UTC'));
     $queue->later(60, new SendReport());
 
     $clock->travel('+59 seconds');
@@ -171,7 +171,7 @@ Implements `QueueInterface`. The constructor accepts:
 
 - a `ConnectionInterface` connection
 - a `JobEnvelope`
-- a `FailedJobRepositoryInterface`, used to fail jobs that exhaust their attempts through crashed reservations
+- a `FailedJobHandlerInterface`, used to fail jobs that exhaust their attempts through crashed reservations
 - a `QueryBuilderFactoryInterface`, used to build the locking reservation query. Its builders must use the same connection as the queue, so the lock is taken inside the queue's transaction. The driver bindings already do this.
 - a `Psr\Clock\ClockInterface`, the source of every timestamp the queue reads or writes
 - a `DatabaseTimezoneConfig` (`database.timezone`), the zone every stored time and cutoff is converted to before it is formatted
@@ -188,7 +188,7 @@ The module factory passes the container's bound clock and `DatabaseTimezoneConfi
 |---|---|
 | `push(JobInterface $job, ?string $queue = null): PushResult` | Insert a job for immediate processing. Returns a pushed `PushResult` with the job ID. |
 | `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Insert a job with a delay in seconds. Returns a pushed `PushResult` with the job ID. |
-| `pop(?string $queue = null): ?JobInterface` | Retrieve and reserve the next available job, or `null` if empty. Increments the `attempts` column, syncs the job's attempt count with earlier unreleased reservations, and moves crash-exhausted jobs to `failed_jobs`. Runs in a transaction (a savepoint inside a caller's transaction). Throws `LockException` on a connection without transactions. |
+| `pop(?string $queue = null): ?JobInterface` | Retrieve and reserve the next available job, or `null` if empty. Increments the `attempts` column, syncs the job's attempt count with earlier unreleased reservations, and fails crash-exhausted jobs through the failed-job handler. Runs in a transaction (a savepoint inside a caller's transaction). Throws `LockException` on a connection without transactions. |
 | `size(?string $queue = null): int` | Count pending (unreserved, available) jobs. |
 | `clear(?string $queue = null): int` | Delete all jobs in a queue. Returns the number of deleted rows. |
 | `delete(string $jobId): bool` | Delete a specific job by ID. |

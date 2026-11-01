@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Marko\Queue\Sync;
 
 use Marko\Queue\Exceptions\JobFailedException;
+use Marko\Queue\Exceptions\SerializationException;
+use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\JobInterface;
 use Marko\Queue\JobRunnerInterface;
 use Marko\Queue\PushResult;
+use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Random\RandomException;
 use Throwable;
@@ -16,6 +19,8 @@ readonly class SyncQueue implements QueueInterface
 {
     public function __construct(
         private JobRunnerInterface $jobRunner,
+        private FailedJobHandlerInterface $failedJobHandler,
+        private QueueConfig $config,
     ) {}
 
     /**
@@ -23,7 +28,10 @@ readonly class SyncQueue implements QueueInterface
      * container-aware jobs (such as AsyncObserverJob) get the container and job envelope first
      * and release them once handle() returns or throws.
      *
-     * @throws JobFailedException|RandomException
+     * A job that throws has no further attempts, so it goes through the failed-job handler
+     * (its failed() hook runs and JobFailedEvent is dispatched) before JobFailedException is thrown.
+     *
+     * @throws JobFailedException|RandomException|SerializationException
      */
     public function push(
         JobInterface $job,
@@ -35,6 +43,8 @@ readonly class SyncQueue implements QueueInterface
         try {
             $this->jobRunner->run($job);
         } catch (Throwable $e) {
+            $this->failedJobHandler->handle($job, $queue ?? $this->config->queue(), $e);
+
             throw JobFailedException::fromException($job::class, $e);
         }
 
@@ -42,7 +52,7 @@ readonly class SyncQueue implements QueueInterface
     }
 
     /**
-     * @throws JobFailedException|RandomException
+     * @throws JobFailedException|RandomException|SerializationException
      */
     public function later(
         int $delay,
