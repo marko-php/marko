@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Marko\Validation\Validation;
 
 use InvalidArgumentException;
+use Marko\Validation\Contracts\ImplicitRuleInterface;
 use Marko\Validation\Contracts\RuleInterface;
 use Marko\Validation\Contracts\ValidatorInterface;
 use Marko\Validation\Contracts\WildcardAwareRuleInterface;
 use Marko\Validation\Exceptions\ValidationException;
 use Marko\Validation\Rules\Nullable;
-use Marko\Validation\Rules\Required;
+use Marko\Validation\Rules\Sometimes;
 
 readonly class Validator implements ValidatorInterface
 {
@@ -96,24 +97,34 @@ readonly class Validator implements ValidatorInterface
                 : $rule,
             $parsedRules,
         );
+
+        // A field marked sometimes is validated only when its key is present
+        if ($this->hasRule($parsedRules, Sometimes::class) && !DataPath::has($data, $field)) {
+            return;
+        }
+
         $value = DataPath::get($data, $field);
+        $isEmpty = EmptyValue::is($value);
 
-        $isNullable = $this->hasNullableRule($parsedRules);
-        $isRequired = $this->hasRequiredRule($parsedRules);
-
-        // If nullable and value is null/empty, skip other rules
-        if ($isNullable && $this->isEmpty($value)) {
+        // If nullable and value is null/empty, skip every rule
+        if ($isEmpty && $this->hasRule($parsedRules, Nullable::class)) {
             return;
         }
 
-        // If not required and value is empty, skip other rules
-        if (!$isRequired && $this->isEmpty($value)) {
-            return;
-        }
+        // An empty value runs only the implicit rules, unless one of them requires a value
+        $runsAllRules = !$isEmpty || array_any(
+            $parsedRules,
+            static fn (RuleInterface $rule): bool => $rule instanceof ImplicitRuleInterface
+                && $rule->requiresValue($field, $data),
+        );
 
         foreach ($parsedRules as $rule) {
-            // Skip nullable rule as it's a meta rule
-            if ($rule instanceof Nullable) {
+            // Skip the meta rules
+            if ($rule instanceof Nullable || $rule instanceof Sometimes) {
+                continue;
+            }
+
+            if (!$runsAllRules && !$rule instanceof ImplicitRuleInterface) {
                 continue;
             }
 
@@ -155,7 +166,7 @@ readonly class Validator implements ValidatorInterface
             return $this->expand($key, $segments, $next, $this->join($prefix, $segment), $indexes, $errors);
         }
 
-        if ($this->isEmpty($value)) {
+        if (EmptyValue::is($value)) {
             return [];
         }
 
@@ -215,37 +226,12 @@ readonly class Validator implements ValidatorInterface
 
     /**
      * @param array<RuleInterface> $rules
+     * @param class-string<RuleInterface> $class
      */
-    private function hasNullableRule(
+    private function hasRule(
         array $rules,
+        string $class,
     ): bool {
-        return array_any($rules, fn ($rule) => $rule instanceof Nullable);
-    }
-
-    /**
-     * @param array<RuleInterface> $rules
-     */
-    private function hasRequiredRule(
-        array $rules,
-    ): bool {
-        return array_any($rules, fn ($rule) => $rule instanceof Required);
-    }
-
-    private function isEmpty(
-        mixed $value,
-    ): bool {
-        if ($value === null) {
-            return true;
-        }
-
-        if (is_string($value) && trim($value) === '') {
-            return true;
-        }
-
-        if ($value === []) {
-            return true;
-        }
-
-        return false;
+        return array_any($rules, static fn (RuleInterface $rule): bool => $rule instanceof $class);
     }
 }

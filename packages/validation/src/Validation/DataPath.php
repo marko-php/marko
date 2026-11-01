@@ -12,23 +12,50 @@ namespace Marko\Validation\Validation;
 class DataPath
 {
     /**
+     * The value at $path, or null when the key is absent. Use has() to tell an absent key
+     * from one holding null.
+     *
      * @param array<mixed> $data
      */
     public static function get(
         array $data,
         string $path,
     ): mixed {
+        return self::resolve($data, $path)[1];
+    }
+
+    /**
+     * Whether $path names a key present in the data, even one holding null.
+     *
+     * @param array<mixed> $data
+     */
+    public static function has(
+        array $data,
+        string $path,
+    ): bool {
+        return self::resolve($data, $path)[0];
+    }
+
+    /**
+     * @param array<mixed> $data
+     *
+     * @return array{bool, mixed} Whether the key is present, and its value (null when absent)
+     */
+    private static function resolve(
+        array $data,
+        string $path,
+    ): array {
         $value = $data;
 
         foreach (explode('.', $path) as $segment) {
             if (!is_array($value) || !array_key_exists($segment, $value)) {
-                return null;
+                return [false, null];
             }
 
             $value = $value[$segment];
         }
 
-        return $value;
+        return [true, $value];
     }
 
     /**
