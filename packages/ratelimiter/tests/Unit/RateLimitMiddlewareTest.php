@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\RateLimiter\ClientIpKeyResolver;
@@ -99,7 +100,7 @@ function createRealRateLimiter(): RateLimiter
         'cache.path' => '/tmp/cache',
         'cache.default_ttl' => 3600,
         'cache.driver' => 'array',
-    ])), $clock), $clock);
+    ])), $clock, new CacheOperations()), $clock);
 }
 
 function createRoutedRequest(

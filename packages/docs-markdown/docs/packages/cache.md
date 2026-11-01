@@ -37,18 +37,48 @@ class ProductService
     public function getProduct(
         int $id,
     ): Product {
-        $key = "product.$id";
-
-        if ($this->cache->has($key)) {
-            return $this->cache->get($key);
-        }
-
-        $product = $this->repository->find($id);
-        $this->cache->set($key, $product, ttl: 3600);
-
-        return $product;
+        return $this->cache->remember(
+            "product.$id",
+            3600,
+            fn (): Product => $this->repository->find($id),
+        );
     }
 }
+```
+
+### TTLs
+
+Every method that stores a value takes a TTL in seconds. `null` means the configured `default_ttl`, and `0` means the value never expires. `forever($key, $value)` is shorthand for `set($key, $value, 0)`.
+
+### Remember, Add, Pull and Forever
+
+`remember()` returns the cached value, or calls the callback on a miss and stores what it returns. A hit is decided by `getItem()->isHit()`, so a cached `null` counts as a hit and the callback isn't called again:
+
+```php
+use Marko\Cache\Contracts\CacheInterface;
+
+$report = $this->cache->remember('report.daily', 300, fn (): array => $this->buildReport());
+```
+
+`remember()` is not a lock. Two requests that miss at the same moment both run the callback, and the last write wins. If the callback is expensive enough that this matters, guard it with a lock ([#532](https://github.com/marko-php/marko/issues/532) tracks single-flight locks).
+
+`add()` stores a value only when the key holds no unexpired value, and returns `false` otherwise. The check and the write are one atomic step in every bundled driver, so of any number of concurrent callers exactly one gets `true`. Use it to make an action run once, instead of `has()` followed by `set()`, which races:
+
+```php
+use Marko\Cache\Contracts\CacheInterface;
+
+if ($this->cache->add("welcome-mail.$userId", true, ttl: 86400)) {
+    $this->mailer->send($welcomeMail);
+}
+```
+
+`pull()` returns a value and deletes it, or returns the default on a miss. It is **not atomic**: two concurrent `pull()` calls can both read the value. Use `add()` or `increment()` when exactly one caller must win.
+
+```php
+use Marko\Cache\Contracts\CacheInterface;
+
+$flash = $this->cache->pull("flash.$sessionId", default: []);
+$this->cache->forever('feature.flags', $flags);
 ```
 
 ### Cache Item Metadata
@@ -133,6 +163,7 @@ class MyService
 The bundled drivers ([`marko/cache-array`](/docs/packages/cache-array/), [`marko/cache-file`](/docs/packages/cache-file/) and [`marko/cache-redis`](/docs/packages/cache-redis/)) read the current time through the PSR-20 `ClockInterface` from [`marko/clock`](/docs/packages/clock/) instead of calling `time()`. TTLs, expiry checks and `expiresAt()` all follow that clock. To test expiry without `sleep()`, construct a driver with a [`FakeClock`](/docs/packages/testing/#fakeclock) and move it:
 
 ```php
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\Testing\Fake\FakeClock;
@@ -143,6 +174,7 @@ it('expires a cached value after its ttl', function (): void {
     $cache = new ArrayCacheDriver(
         new CacheConfig(new FakeConfigRepository(['cache.default_ttl' => 3600])),
         $clock,
+        new CacheOperations(),
     );
     $cache->set('product.42', 'cached', ttl: 60);
 
@@ -181,11 +213,32 @@ public function getMultiple(array $keys, mixed $default = null): iterable;
 public function setMultiple(array $values, ?int $ttl = null): bool;
 public function deleteMultiple(array $keys): bool;
 public function increment(string $key, int $ttl): int;
+public function add(string $key, mixed $value, ?int $ttl = null): bool;
+public function remember(string $key, ?int $ttl, callable $callback): mixed;
+public function pull(string $key, mixed $default = null): mixed;
+public function forever(string $key, mixed $value): bool;
 ```
 
-All methods that accept keys throw `InvalidKeyException` for empty or invalid keys.
+All methods that accept keys throw `InvalidKeyException` for empty or invalid keys. For every `$ttl` that stores a value (`set()`, `setMultiple()`, `add()`, `remember()`), `null` means the default TTL and `0` means no expiry.
 
 `increment()` atomically increments the integer stored at `$key` and returns the new value. If the key does not exist it is created with value `1` and the TTL is applied at that moment. On subsequent increments the TTL is **not** reset --- resetting on every call would turn a fixed rate-limit window into a never-closing window. The counter is a plain integer: on every driver, `get()`, `getItem()` and `getMultiple()` return an incremented key as an `int`.
+
+`add()` is an atomic set-if-absent: it returns `false` when an unexpired value already exists. `remember()` computes and stores a value on a miss and returns a cached `null` without calling the callback; it isn't single-flight. `pull()` is get-then-delete and isn't atomic. `forever()` is `set($key, $value, 0)`. See [Remember, Add, Pull and Forever](#remember-add-pull-and-forever).
+
+### CacheOperations
+
+`Marko\Cache\CacheOperations` holds the one implementation of `remember()`, `pull()` and `forever()`, built on the `CacheInterface` primitives (`getItem()`, `set()`, `delete()`). It is stateless and takes the cache as its first argument. Every bundled driver receives it through its constructor and delegates to it, so `add()` is the only operation a driver implements itself. Register a [Preference](/docs/concepts/preferences/) for `CacheOperations` to change these operations for every driver at once.
+
+```php
+use Marko\Cache\CacheOperations;
+use Marko\Cache\Contracts\CacheInterface;
+
+public function remember(CacheInterface $cache, string $key, ?int $ttl, callable $callback): mixed;
+public function pull(CacheInterface $cache, string $key, mixed $default): mixed;
+public function forever(CacheInterface $cache, string $key, mixed $value): bool;
+```
+
+A custom driver that implements `CacheInterface` does the same: inject `CacheOperations` and delegate each method in one line, for example `return $this->operations->remember($this, $key, $ttl, $callback);`.
 
 ### CacheItemInterface
 

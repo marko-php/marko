@@ -22,7 +22,7 @@ interface CacheInterface
     /**
      * Store a value in the cache.
      *
-     * @param int|null $ttl Time to live in seconds, null for default TTL
+     * @param int|null $ttl Time to live in seconds, null for the default TTL, 0 for no expiry
      *
      * @throws InvalidKeyException
      */
@@ -82,7 +82,7 @@ interface CacheInterface
      * Store multiple values in the cache.
      *
      * @param array<string, mixed> $values
-     * @param int|null             $ttl    Time to live in seconds
+     * @param int|null             $ttl    Time to live in seconds, null for the default TTL, 0 for no expiry
      *
      * @throws InvalidKeyException
      */
@@ -123,4 +123,65 @@ interface CacheInterface
         string $key,
         int $ttl,
     ): int;
+
+    /**
+     * Store a value only if the key holds no unexpired value, atomically.
+     *
+     * The check and the write are a single atomic step in every driver, so of
+     * any number of concurrent callers exactly one gets `true`. Use it to make
+     * an action run once, instead of has() followed by set(), which races.
+     *
+     * @param int|null $ttl Time to live in seconds, null for the default TTL, 0 for no expiry
+     *
+     * @throws InvalidKeyException|CacheException
+     *
+     * @return bool true when the value was stored, false when an unexpired value already exists
+     */
+    public function add(
+        string $key,
+        mixed $value,
+        ?int $ttl = null,
+    ): bool;
+
+    /**
+     * Return the cached value, or compute it with $callback on a miss and store it.
+     *
+     * A hit is decided by getItem()->isHit(), so a cached `null` is returned
+     * without calling $callback, and a `null` returned by $callback is cached.
+     *
+     * This is not a lock: two callers that miss at the same moment both run
+     * $callback, and the last write wins.
+     *
+     * @param int|null $ttl Time to live in seconds, null for the default TTL, 0 for no expiry
+     *
+     * @throws InvalidKeyException
+     */
+    public function remember(
+        string $key,
+        ?int $ttl,
+        callable $callback,
+    ): mixed;
+
+    /**
+     * Get a value from the cache and delete it.
+     *
+     * Not atomic: two concurrent pull() calls can both read the value. Use
+     * add() or increment() when exactly one caller must win.
+     *
+     * @throws InvalidKeyException
+     */
+    public function pull(
+        string $key,
+        mixed $default = null,
+    ): mixed;
+
+    /**
+     * Store a value with no expiry; the same as set($key, $value, 0).
+     *
+     * @throws InvalidKeyException
+     */
+    public function forever(
+        string $key,
+        mixed $value,
+    ): bool;
 }

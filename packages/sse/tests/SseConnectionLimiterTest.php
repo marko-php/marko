@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
@@ -70,7 +71,11 @@ describe('SseConnectionLimiter', function (): void {
     it('refuses the process-local array cache driver', function (): void {
         expect(
             fn () => new SseConnectionLimiter(
-                cache: new ArrayCacheDriver(new CacheConfig(new FakeConfigRepository()), new FakeClock()),
+                cache: new ArrayCacheDriver(
+                    new CacheConfig(new FakeConfigRepository()),
+                    new FakeClock(),
+                    new CacheOperations(),
+                ),
                 maxConnections: 10,
                 retryAfter: 5,
             ),
@@ -80,7 +85,11 @@ describe('SseConnectionLimiter', function (): void {
 
     it('allows the array cache driver when the guard is disabled', function (): void {
         $limiter = new SseConnectionLimiter(
-            cache: new ArrayCacheDriver(new CacheConfig(new FakeConfigRepository()), new FakeClock()),
+            cache: new ArrayCacheDriver(
+                new CacheConfig(new FakeConfigRepository()),
+                new FakeClock(),
+                new CacheOperations(),
+            ),
             maxConnections: null,
             retryAfter: 5,
         );

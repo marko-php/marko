@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Exceptions\TamperedCacheValueException;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
@@ -71,13 +72,14 @@ function redisDriverIntegrationUnavailable(): bool
     return redisDriverIntegrationUnreachableReason() !== null;
 }
 
-function createIntegrationRedisConnection(): RedisConnection
-{
+function createIntegrationRedisConnection(
+    ?string $prefix = null,
+): RedisConnection {
     return new RedisConnection(
         host: redisDriverIntegrationHost(),
         port: redisDriverIntegrationPort(),
         database: 15,
-        prefix: 'marko:test:' . bin2hex(random_bytes(6)) . ':',
+        prefix: $prefix ?? 'marko:test:' . bin2hex(random_bytes(6)) . ':',
     );
 }
 
@@ -95,6 +97,7 @@ function createIntegrationRedisDriver(
             'encryption.key' => 'integration-signing-key',
         ]))),
         new SystemClock(),
+        new CacheOperations(),
     );
 }
 
@@ -200,5 +203,34 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
             ->and($this->driver->has('key2500'))->toBeFalse()
             ->and($remaining[1])->toBe([])
             ->and($outsideValue)->toBe('keep');
+    })->skip(fn (): bool => redisDriverIntegrationUnavailable(), redisDriverIntegrationSkipReason());
+
+    it('lets exactly one of two redis clients add the same key', function (): void {
+        $other = createIntegrationRedisDriver(createIntegrationRedisConnection($this->connection->prefix));
+
+        expect($this->driver->add('once', 'first', 60))->toBeTrue()
+            ->and($other->add('once', 'second', 60))->toBeFalse()
+            ->and($other->get('once'))->toBe('first');
+    })->skip(fn (): bool => redisDriverIntegrationUnavailable(), redisDriverIntegrationSkipReason());
+
+    it('returns true from add once the existing key has expired in redis', function (): void {
+        $this->driver->set('key', 'original', 60);
+        $this->connection->client()->pexpire($this->connection->prefix . 'key', 1);
+        usleep(20_000);
+
+        expect($this->driver->add('key', 'new', 60))->toBeTrue()
+            ->and($this->driver->get('key'))->toBe('new');
+    })->skip(fn (): bool => redisDriverIntegrationUnavailable(), redisDriverIntegrationSkipReason());
+
+    it('applies the default ttl for a null add ttl and no expiry for 0 in redis', function (): void {
+        $client = $this->connection->client();
+
+        $this->driver->add('default-ttl', 'value');
+        $this->driver->add('no-expiry', 'value', 0);
+
+        expect($client->ttl($this->connection->prefix . 'default-ttl'))->toBeGreaterThan(3500)
+            ->toBeLessThanOrEqual(3600)
+            ->and($client->ttl($this->connection->prefix . 'no-expiry'))->toBe(-1)
+            ->and($this->driver->get('no-expiry'))->toBe('value');
     })->skip(fn (): bool => redisDriverIntegrationUnavailable(), redisDriverIntegrationSkipReason());
 });
