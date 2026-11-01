@@ -88,6 +88,7 @@ function uniqueWorker(
         $config,
         $stack->jobRunner(),
         new RetryPolicy($config, $stack->clock),
+        $stack->clock,
         processControl: $processControl,
     );
 }

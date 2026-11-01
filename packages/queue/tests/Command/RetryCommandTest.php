@@ -658,6 +658,7 @@ function createRetryWorker(
             'queue.queue' => 'default',
             'queue.max_attempts' => 1,
         ])), new FakeClock()),
+        clock: new FakeClock(),
     );
 }
 

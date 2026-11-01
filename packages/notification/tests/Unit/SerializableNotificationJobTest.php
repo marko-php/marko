@@ -378,6 +378,7 @@ describe('SendNotificationJob serialization', function (): void {
                 $queueConfig,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new RetryPolicy($queueConfig, new FakeClock()),
+                clock: new FakeClock(),
             );
             $worker->work(once: true);
 
@@ -533,6 +534,7 @@ describe('SendNotificationJob final failure', function (): void {
                     new FakeEventDispatcher(),
                 ),
                 new RetryPolicy(createNotificationTestQueueConfig(), new FakeClock()),
+                clock: new FakeClock(),
             );
             $stopJob->worker = $worker;
 

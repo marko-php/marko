@@ -156,6 +156,7 @@ describe('async observer dispatch through marko/queue', function (): void {
             $config,
             new JobRunner($container, $jobEnvelope, new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
+            clock: new FakeClock(),
         )->work(
             once: true,
         );

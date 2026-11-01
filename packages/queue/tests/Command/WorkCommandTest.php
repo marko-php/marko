@@ -12,6 +12,7 @@ use Marko\Queue\Tests\Command\Helpers;
 use Marko\Queue\Tests\Fixtures\FakeProcessControl;
 use Marko\Queue\WorkerInterface;
 use Marko\Queue\WorkerOptions;
+use Marko\Queue\WorkerStopReason;
 use Marko\Testing\Fake\FakeConfigRepository;
 
 /**
@@ -30,17 +31,23 @@ class CapturingWorker implements WorkerInterface
 
     public ?WorkerOptions $options = null;
 
+    public function __construct(
+        private readonly WorkerStopReason $reason = WorkerStopReason::Signal,
+    ) {}
+
     public function work(
         ?array $queues = null,
         bool $once = false,
         int $sleep = 3,
         WorkerOptions $options = new WorkerOptions(),
-    ): void {
+    ): WorkerStopReason {
         $this->called = true;
         $this->queues = $queues;
         $this->once = $once;
         $this->sleep = $sleep;
         $this->options = $options;
+
+        return $this->reason;
     }
 
     public function stop(): void {}
@@ -120,11 +127,13 @@ it('processes jobs continuously', function (): void {
             bool $once = false,
             int $sleep = 3,
             WorkerOptions $options = new WorkerOptions(),
-        ): void {
+        ): WorkerStopReason {
             // Simulate processing multiple jobs
             while ($this->processed < $this->max) {
                 $this->processed++;
             }
+
+            return WorkerStopReason::MaxJobs;
         }
 
         public function stop(): void {}
@@ -287,6 +296,24 @@ it('starts the worker when queue.backoff is valid', function (): void {
         ->and($worker->called)->toBeTrue();
 });
 
+describe('queue:work exit code', function (): void {
+    it('returns the exit code of the reason the worker stopped', function (WorkerStopReason $reason): void {
+        ['exitCode' => $exitCode] = executeWorkCommand(
+            createWorkCommand(new CapturingWorker($reason), createWorkCommandConfig()),
+        );
+
+        expect($exitCode)->toBe($reason->exitCode());
+    })->with(array_map(fn (WorkerStopReason $reason): array => [$reason], WorkerStopReason::cases()));
+
+    it('returns 1 when the worker stopped because a job timed out', function (): void {
+        ['exitCode' => $exitCode] = executeWorkCommand(
+            createWorkCommand(new CapturingWorker(WorkerStopReason::TimedOut), createWorkCommandConfig()),
+        );
+
+        expect($exitCode)->toBe(1);
+    });
+});
+
 describe('queue:work limits', function (): void {
     it('uses queue.timeout as the default job timeout, with memory and max-jobs off', function (): void {
         $worker = new CapturingWorker();
@@ -337,7 +364,23 @@ describe('queue:work limits', function (): void {
         'text timeout' => ['--timeout=soon', "--timeout must be a whole number of zero or more; got 'soon'."],
         'negative memory' => ['--memory=-5', "--memory must be a whole number of zero or more; got '-5'."],
         'fractional max-jobs' => ['--max-jobs=1.5', "--max-jobs must be a whole number of zero or more; got '1.5'."],
+        'negative max-time' => ['--max-time=-1', "--max-time must be a whole number of zero or more; got '-1'."],
+        'text max-time' => ['--max-time=hour', "--max-time must be a whole number of zero or more; got 'hour'."],
     ]);
+
+    it('passes --max-time to the worker, off by default', function (): void {
+        $default = new CapturingWorker();
+        $limited = new CapturingWorker();
+
+        executeWorkCommand(createWorkCommand($default, createWorkCommandConfig()));
+        executeWorkCommand(
+            createWorkCommand($limited, createWorkCommandConfig()),
+            ['marko', 'queue:work', '--max-time=3600'],
+        );
+
+        expect($default->options?->maxTime)->toBe(0)
+            ->and($limited->options?->maxTime)->toBe(3600);
+    });
 
     it('refuses a timeout that is not below queue.retry_after, so a job cannot run twice', function (): void {
         $worker = new CapturingWorker();

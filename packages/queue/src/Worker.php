@@ -7,6 +7,7 @@ namespace Marko\Queue;
 use Marko\Queue\Exceptions\JobTimedOutException;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
+use Psr\Clock\ClockInterface;
 use Throwable;
 
 class Worker implements WorkerInterface
@@ -24,6 +25,7 @@ class Worker implements WorkerInterface
         private readonly QueueConfig $config,
         private readonly JobRunnerInterface $jobRunner,
         private readonly RetryPolicy $retryPolicy,
+        private readonly ClockInterface $clock,
         private readonly ProcessControlInterface $processControl = new PcntlProcessControl(),
     ) {}
 
@@ -36,16 +38,18 @@ class Worker implements WorkerInterface
         bool $once = false,
         int $sleep = 3,
         WorkerOptions $options = new WorkerOptions(),
-    ): void {
+    ): WorkerStopReason {
         $queueNames = $this->resolveQueueNames($queues);
         $this->running = true;
+        $startedAt = $this->clock->now();
+        $conditions = $options->buildStopConditions($this->clock);
         $jobsProcessed = 0;
 
         // SIGTERM/SIGINT only stop the loop, so the current job finishes before the worker exits
         $this->processControl->listenForTermination($this->stop(...));
 
         try {
-            while ($this->running) {
+            while (true) {
                 try {
                     [$job, $queue] = $this->popNextJob($queueNames);
                 } catch (Throwable $e) {
@@ -56,25 +60,36 @@ class Worker implements WorkerInterface
                     }
 
                     $this->reportPopFailure($e);
-                    $this->pause($sleep);
-
-                    continue;
+                    $job = null;
                 }
 
                 if ($job === null) {
                     if ($once) {
-                        return;
+                        return $this->stopWith(WorkerStopReason::Once);
                     }
-                    $this->pause($sleep);
 
-                    continue;
+                    $this->pause($sleep);
+                } else {
+                    $this->process($job, $queue ?? $this->config->queue(), $options->timeout);
+                    $jobsProcessed++;
+
+                    // The timeout handler has already logged the stop and ended the process
+                    if ($this->timedOut) {
+                        return WorkerStopReason::TimedOut;
+                    }
+
+                    if ($once) {
+                        return $this->stopWith(WorkerStopReason::Once);
+                    }
                 }
 
-                $this->process($job, $queue ?? $this->config->queue(), $options->timeout);
-                $jobsProcessed++;
+                $reason = $this->checkStopConditions(
+                    $conditions,
+                    new WorkerRunState($startedAt, $jobsProcessed, $this->processControl->memoryUsage()),
+                );
 
-                if ($once || $this->timedOut || $this->limitReached($options, $jobsProcessed)) {
-                    return;
+                if ($reason !== null) {
+                    return $this->stopWith($reason);
                 }
             }
         } finally {
@@ -90,18 +105,24 @@ class Worker implements WorkerInterface
     /**
      * Run one attempt of the job, then delete it, or release or fail it if it threw or asked to be released.
      *
-     * With a timeout, a timer fails the job once it runs too long and ends the worker process:
-     * a job stuck in a blocking call cannot be stopped safely from inside the process.
+     * The job's own $timeout replaces the worker's. With a timeout, a timer fails the job once it runs
+     * too long and ends the worker process: a job stuck in a blocking call cannot be stopped safely
+     * from inside the process.
      *
      * @throws QueueException|SerializationException
      */
     private function process(
         JobInterface $job,
         string $queue,
-        int $timeout,
+        int $workerTimeout,
     ): void {
         $this->timedOut = false;
         $error = null;
+        $timeout = $job->timeout ?? $workerTimeout;
+
+        if ($job->timeout !== null && $job->timeout > 0 && !$this->guardJobTimeout($job, $job->timeout, $queue)) {
+            return;
+        }
 
         if ($timeout > 0) {
             $this->processControl->startTimer(
@@ -175,28 +196,85 @@ class Worker implements WorkerInterface
             ));
         }
 
-        error_log(sprintf(
-            '[marko/queue] %s The worker is exiting with status %d so its supervisor can restart it.',
-            $exception->getMessage(),
-            self::EXIT_TIMED_OUT,
-        ));
+        error_log('[marko/queue] ' . $exception->getMessage());
 
-        $this->processControl->terminate(self::EXIT_TIMED_OUT);
+        // terminate() does not return, so the stop is logged here rather than when work() returns
+        $this->stopWith(WorkerStopReason::TimedOut);
+        $this->processControl->terminate(WorkerStopReason::TimedOut->exitCode());
     }
 
     /**
-     * Whether the worker has reached its max-jobs or memory limit and should exit.
+     * Check a job's own timeout before it runs. Returns false when the job was failed instead of run.
+     *
+     * The worker's timeout is checked against queue.retry_after when queue:work starts, but a job's own
+     * timeout is only known now. A job that may run past retry_after would be reclaimed and run twice at
+     * once, so it is failed for good with an error that says to raise retry_after. A timeout that cannot
+     * be enforced because ext-pcntl is missing is logged as a warning, and the job runs unprotected.
+     *
+     * @throws SerializationException
      */
-    private function limitReached(
-        WorkerOptions $options,
-        int $jobsProcessed,
+    private function guardJobTimeout(
+        JobInterface $job,
+        int $timeout,
+        string $queue,
     ): bool {
-        if ($options->maxJobs > 0 && $jobsProcessed >= $options->maxJobs) {
-            return true;
+        $retryAfter = $this->config->retryAfter();
+
+        if ($timeout >= $retryAfter) {
+            $this->failJob(
+                $job,
+                QueueException::jobTimeoutNotBelowRetryAfter($job::class, $timeout, $retryAfter),
+                $queue,
+            );
+
+            return false;
         }
 
-        return $options->memory > 0
-            && $this->processControl->memoryUsage() >= $options->memory * 1024 * 1024;
+        if (!$this->processControl->isSupported()) {
+            error_log(sprintf(
+                "[marko/queue] Job '%s' sets a %d-second timeout, but ext-pcntl is not loaded,"
+                    . ' so the timeout is not enforced. Install ext-pcntl to enforce job timeouts.',
+                $job::class,
+                $timeout,
+            ));
+        }
+
+        return true;
+    }
+
+    /**
+     * The first reason to stop: a stop signal, then each condition in order. Null keeps the worker going.
+     *
+     * @param list<WorkerStopConditionInterface> $conditions
+     */
+    private function checkStopConditions(
+        array $conditions,
+        WorkerRunState $state,
+    ): ?WorkerStopReason {
+        if (!$this->running) {
+            return WorkerStopReason::Signal;
+        }
+
+        foreach ($conditions as $condition) {
+            $reason = $condition->check($state);
+
+            if ($reason !== null) {
+                return $reason;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Log why the worker is stopping, as one line in PHP's error log (STDERR for a CLI worker).
+     */
+    private function stopWith(
+        WorkerStopReason $reason,
+    ): WorkerStopReason {
+        error_log('[marko/queue] Worker stopping: ' . $reason->message());
+
+        return $reason;
     }
 
     /**

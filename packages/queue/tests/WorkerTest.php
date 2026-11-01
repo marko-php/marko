@@ -347,6 +347,7 @@ describe('Worker', function (): void {
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
+            clock: new FakeClock(),
         );
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);
@@ -452,6 +453,7 @@ describe('Worker', function (): void {
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
+            clock: new FakeClock(),
         );
 
         $worker->work(once: true);
@@ -551,6 +553,7 @@ describe('Worker', function (): void {
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
+            clock: new FakeClock(),
         );
 
         $worker->work(once: true);
@@ -591,6 +594,7 @@ describe('Worker', function (): void {
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
+            clock: new FakeClock(),
         );
         StopTestHelper::$worker = $worker;
 
@@ -687,6 +691,7 @@ describe('Worker', function (): void {
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
+            clock: new FakeClock(),
         );
 
         // With once=true, worker should process exactly one job and return
@@ -769,6 +774,7 @@ describe('Worker', function (): void {
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
+            clock: new FakeClock(),
         );
 
         // With once=true and no jobs, worker should return immediately
@@ -875,6 +881,7 @@ describe('Worker', function (): void {
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
+            clock: new FakeClock(),
         );
 
         // Process jobs (once each)
@@ -991,6 +998,7 @@ describe('Worker', function (): void {
                 $config,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new RetryPolicy($config, new FakeClock()),
+                clock: new FakeClock(),
             );
             $worker->work(once: true);
 
@@ -1114,6 +1122,7 @@ function runFailingJobOnce(
         createTestQueueConfig(['queue.max_attempts' => $configMaxAttempts]),
         new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
         new RetryPolicy(createTestQueueConfig(['queue.max_attempts' => $configMaxAttempts]), new FakeClock()),
+        clock: new FakeClock(),
     );
     $worker->work(once: true);
 
@@ -1380,6 +1389,7 @@ class PauseRecordingWorker extends Worker
             $config,
             $runner,
             new RetryPolicy($config, new FakeClock()),
+            clock: new FakeClock(),
         );
     }
 
@@ -1722,6 +1732,7 @@ function runJobsOnLastAttempt(
         createTestQueueConfig(),
         new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
         new RetryPolicy(createTestQueueConfig(), new FakeClock()),
+        clock: new FakeClock(),
     );
     $stopJob->worker = $worker;
 
@@ -1844,6 +1855,7 @@ function runJobsOnFirstAttempt(
         createTestQueueConfig($configValues),
         new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
         new RetryPolicy(createTestQueueConfig($configValues), new FakeClock()),
+        clock: new FakeClock(),
     );
     $stopJob->worker = $worker;
 
@@ -2108,6 +2120,7 @@ describe('Worker and JobRunner', function (): void {
             createTestQueueConfig(),
             $runner,
             new RetryPolicy(createTestQueueConfig(), new FakeClock()),
+            clock: new FakeClock(),
         )->work(once: true);
 
         expect($runner->ran)->toBe([$job])
@@ -2131,6 +2144,7 @@ describe('Worker and JobRunner', function (): void {
             createTestQueueConfig(['queue.max_attempts' => 3]),
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy(createTestQueueConfig(['queue.max_attempts' => 3]), new FakeClock()),
+            clock: new FakeClock(),
         )->work(once: true);
 
         expect($queue->releasedJobs)->toBe([$job])
@@ -2201,6 +2215,7 @@ function runFailableJobs(
         createTestQueueConfig(['queue.max_attempts' => $maxAttempts]),
         $runner,
         new RetryPolicy(createTestQueueConfig(['queue.max_attempts' => $maxAttempts]), new FakeClock()),
+        clock: new FakeClock(),
     );
     $stopJob->worker = $worker;
 

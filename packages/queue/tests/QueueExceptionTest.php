@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Marko\Queue\Exceptions\JobFailedException;
+use Marko\Queue\Exceptions\JobTimedOutException;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
 
@@ -85,4 +86,15 @@ it('Exception factories include proper context', function (): void {
     expect($serializationClosure->getMessage())->not->toBeEmpty()
         ->and($serializationClosure->getContext())->toContain('App\Jobs\ClosureJob')
         ->and($serializationClosure->getSuggestion())->not->toBeEmpty();
+});
+
+describe('JobTimedOutException', function (): void {
+    it("suggests raising the job's own \$timeout as well as the worker timeout", function (): void {
+        $exception = JobTimedOutException::exceeded('App\Jobs\RenderVideo', 30);
+
+        expect($exception->getMessage())->toBe("Job 'App\Jobs\RenderVideo' exceeded the 30-second timeout.")
+            ->and($exception->getSuggestion())->toContain("the job's \$timeout property")
+            ->and($exception->getSuggestion())->toContain('queue.timeout / --timeout')
+            ->and($exception->getSuggestion())->toContain('below queue.retry_after');
+    });
 });

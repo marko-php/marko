@@ -59,6 +59,12 @@ This release changes the queue contracts once for the per-job features built on 
 6. **Code that called `Worker::backoffFor()`** calls `RetryPolicy::backoffFor()` instead. It takes the same job and returns the same delay.
 7. **A job that calls `release()` inside `handle()`** is now released by the worker after the delay it asked for instead of being deleted. See [Retry Deadlines, Exception Limits and Self-Release](#retry-deadlines-exception-limits-and-self-release).
 
+#### Upgrading: worker stop reasons and per-job timeouts
+
+1. **Custom `WorkerInterface` implementations** (and test doubles) return a [`WorkerStopReason`](#stop-reasons-and-exit-codes) from `work()` instead of `void`. `queue:work` exits with that reason's `exitCode()`.
+2. **Code that constructs `Worker` by hand** passes a PSR-20 `ClockInterface` after the `RetryPolicy`: `new Worker($queue, $failedJobHandler, $config, $jobRunner, $retryPolicy, $clock)`. The worker reads `--max-time` and the start time for stop conditions from it. Containers that autowire the worker need no change.
+3. **Jobs that set `$timeout`** now get it: the worker uses the job's `$timeout` instead of `--timeout` / `queue.timeout`, whether it is shorter or longer. A job whose `$timeout` is not below `queue.retry_after` is failed without running. Raise `retry_after` before deploying if any job needs a longer timeout. See [Per-Job Timeouts](#per-job-timeouts).
+
 ## Usage
 
 ### Creating Jobs
@@ -153,7 +159,7 @@ Besides `maxAttempts` and `backoff`, every job carries this state. `Job` gives e
 | `?DateTimeImmutable $retryDeadline` | `null` | The retry deadline captured when the job is dispatched, stored with `setRetryDeadline()`. It is not re-evaluated on later attempts. `clearRetryDeadline()` removes it |
 | `?int $releaseDelay` | `null` | Seconds to wait before running again, set when `handle()` calls `release()`. `clearRelease()` resets it to `null` |
 
-`release(int $delaySeconds = 0)` records a release request without throwing; a negative delay throws `QueueException`. `JobRunner` counts exceptions and clears a leftover release request at the start of each attempt. The worker acts on `maxExceptions`, `retryDeadline` and `releaseDelay` as described in the next section. It does not act on `timeout` yet: that field is part of the contract so that drivers keep it across retries, ready for the per-job timeout feature.
+`release(int $delaySeconds = 0)` records a release request without throwing; a negative delay throws `QueueException`. `JobRunner` counts exceptions and clears a leftover release request at the start of each attempt. The worker acts on `maxExceptions`, `retryDeadline` and `releaseDelay` as described in the next section, and on `timeout` as described in [Per-Job Timeouts](#per-job-timeouts).
 
 ### Retry Deadlines, Exception Limits and Self-Release
 
@@ -540,9 +546,10 @@ marko queue:work --queue=high,default,low --sleep=1
 | `--queue` | Queue names to work, in priority order, separated by commas. Defaults to the `queue.queue` config value |
 | `--sleep` | Seconds to wait when every queue is empty (default `3`) |
 | `--once` | Process at most one job, then exit |
-| `--timeout` | Seconds one job may run before it is failed and the worker exits. Defaults to the `queue.timeout` config value (`60`); `0` turns it off. Needs `ext-pcntl` |
+| `--timeout` | Seconds one job may run before it is failed and the worker exits. Defaults to the `queue.timeout` config value (`60`); `0` turns it off. A job's own `$timeout` replaces it. Needs `ext-pcntl` |
 | `--memory` | Exit after the current job once the worker uses this many megabytes (default `0`, no limit) |
 | `--max-jobs` | Exit after processing this many jobs (default `0`, no limit) |
+| `--max-time` | Exit after the current job once the worker has run this many seconds (default `0`, no limit) |
 
 If popping a job throws (for example, the broker is unreachable), the worker writes the error to PHP's error log (STDERR for `queue:work`), sleeps for `--sleep` seconds and polls again, so a pop failure doesn't stop the worker. With `--once` the error is thrown instead.
 
@@ -551,23 +558,84 @@ If popping a job throws (for example, the broker is unreachable), the worker wri
 Run `queue:work` under a process supervisor (systemd, Supervisor, a container restart policy) and let it recycle workers:
 
 ```bash
-marko queue:work --timeout=60 --memory=128 --max-jobs=1000
+marko queue:work --timeout=60 --memory=128 --max-jobs=1000 --max-time=3600
 ```
 
-- **Timeout** --- when a job runs longer than `--timeout` seconds, the worker fails that attempt with a `JobTimedOutException` (`Job '...' exceeded the 60-second timeout.`). The job is released for another attempt with its backoff, or [failed for good](#when-a-job-fails-for-good) on its last attempt, like a job that threw. The worker then logs the timeout and exits with status `1` (`Worker::EXIT_TIMED_OUT`): a job stuck in a blocking call can't be stopped safely inside the process, so the supervisor starts a fresh one.
-- **Memory and job count** --- with `--memory` or `--max-jobs`, the worker finishes the current job, then returns and `queue:work` exits with status `0`, so leaks never build up to an out-of-memory crash.
+- **Timeout** --- when a job runs longer than its timeout (the job's own `$timeout`, or `--timeout`), the worker fails that attempt with a `JobTimedOutException` (`Job '...' exceeded the 60-second timeout.`). The job is released for another attempt with its backoff, or [failed for good](#when-a-job-fails-for-good) on its last attempt, like a job that threw. The worker then logs the timeout and exits with status `1` (`Worker::EXIT_TIMED_OUT`): a job stuck in a blocking call can't be stopped safely inside the process, so the supervisor starts a fresh one.
+- **Memory, job count and run time** --- with `--memory`, `--max-jobs` or `--max-time`, the worker finishes the current job, then returns and `queue:work` exits with status `0`, so leaks never build up to an out-of-memory crash and every worker is recycled regularly. These limits are checked after every job and after every idle pause, so an idle worker also exits once `--max-time` has passed.
 - **SIGTERM / SIGINT** --- the worker finishes the job it is running, then exits, so a deploy or `docker stop` doesn't cut a job off halfway.
 
 The timeout must be shorter than `queue.retry_after`. Otherwise a job still running when its reservation expires is handed to a second worker and runs twice, so `queue:work` refuses to start and exits with code `1` when `--timeout` (or `queue.timeout`) is not below `retry_after`. Leave a few seconds of margin.
 
-The timeout and graceful shutdown need the `pcntl` extension. Without it, `queue:work` prints a warning and runs with **no** per-job timeout, and SIGTERM/SIGINT stop the worker immediately, mid-job. `--memory` and `--max-jobs` work without `pcntl`.
+The timeout and graceful shutdown need the `pcntl` extension. Without it, `queue:work` prints a warning and runs with **no** per-job timeout, and SIGTERM/SIGINT stop the worker immediately, mid-job. `--memory`, `--max-jobs` and `--max-time` work without `pcntl`.
 
 From code, pass the limits as `WorkerOptions` (every limit defaults to `0`, meaning off):
 
 ```php
 use Marko\Queue\WorkerOptions;
 
-$worker->work(queues: ['default'], options: new WorkerOptions(timeout: 60, memory: 128, maxJobs: 1000));
+$reason = $worker->work(
+    queues: ['default'],
+    options: new WorkerOptions(timeout: 60, memory: 128, maxJobs: 1000, maxTime: 3600),
+);
+```
+
+#### Per-Job Timeouts
+
+A job that needs a different timeout from the rest sets `$timeout`. The worker uses it instead of `--timeout` / `queue.timeout`, whether it is shorter or longer; `0` turns the timeout off for that job, and `null` (the default) uses the worker's value:
+
+```php
+use Marko\Queue\Job;
+
+class RenderVideo extends Job
+{
+    public protected(set) ?int $timeout = 1800;
+
+    public function handle(): void
+    {
+        // ...
+    }
+}
+```
+
+A job's timeout must also stay below `queue.retry_after`, for the same reason as the worker's: a job still running when its reservation expires is handed to a second worker. `queue:work` only knows the worker's timeout when it starts, so the worker checks each job's own `$timeout` when it pops the job. A job whose `$timeout` is not below `retry_after` is [failed for good](#when-a-job-fails-for-good) without running, with a `QueueException` that says to raise `queue.retry_after`. Raise `retry_after` above your longest job timeout (with a few seconds of margin), then `queue:retry` the job.
+
+Without `ext-pcntl`, a job that sets a timeout still runs, but the worker writes a warning to PHP's error log each time, because the timeout can't be enforced.
+
+#### Stop Reasons and Exit Codes
+
+Every way the worker stops goes through one mechanism. `work()` returns a `WorkerStopReason`, the worker writes one line to PHP's error log (STDERR for `queue:work`), such as `[marko/queue] Worker stopping: ran for the --max-time limit.`, and `queue:work` exits with the reason's `exitCode()`:
+
+| Reason | When | Exit code |
+|--------|------|-----------|
+| `Once` | `--once` processed one job, or found every queue empty | `0` |
+| `MaxJobs` | The worker processed `--max-jobs` jobs | `0` |
+| `Memory` | Memory reached `--memory` megabytes | `0` |
+| `MaxTime` | The worker ran for `--max-time` seconds | `0` |
+| `RestartRequested` | A restart of every worker was requested | `0` |
+| `Signal` | SIGTERM or SIGINT arrived (or `stop()` was called) | `0` |
+| `TimedOut` | A job exceeded its timeout | `1` (`Worker::EXIT_TIMED_OUT`) |
+
+The memory, job-count and run-time limits are stop conditions: classes that implement `WorkerStopConditionInterface`. `WorkerOptions::buildStopConditions()` builds `MaxJobsStopCondition`, `MemoryStopCondition` and `MaxTimeStopCondition` from the limits that are on. The worker checks every condition after each job and after each idle pause, with a `WorkerRunState` (when the worker started, the jobs processed so far and the memory in use), and stops with the first reason a condition returns.
+
+To stop on something else, implement the interface and pass it through `stopConditions`. Conditions run in order after the built-in ones:
+
+```php
+use Marko\Queue\WorkerOptions;
+use Marko\Queue\WorkerRunState;
+use Marko\Queue\WorkerStopConditionInterface;
+use Marko\Queue\WorkerStopReason;
+
+class MaintenanceStopCondition implements WorkerStopConditionInterface
+{
+    public function check(
+        WorkerRunState $state,
+    ): ?WorkerStopReason {
+        return file_exists('/var/run/app-maintenance') ? WorkerStopReason::RestartRequested : null;
+    }
+}
+
+$worker->work(options: new WorkerOptions(stopConditions: [new MaintenanceStopCondition()]));
 ```
 
 The worker reaches signals, the timer, memory usage and process exit through `ProcessControlInterface`, bound to `PcntlProcessControl`. Bind your own implementation to change how the worker handles them.
@@ -862,10 +930,38 @@ public function work(
     ?array $queues = null,
     bool $once = false,
     int $sleep = 3,
-    WorkerOptions $options = new WorkerOptions(), // timeout, memory (MB), maxJobs; 0 = off
-): void;
+    WorkerOptions $options = new WorkerOptions(), // timeout, memory (MB), maxJobs, maxTime; 0 = off
+): WorkerStopReason;
 public function stop(): void;
 ```
+
+### WorkerOptions
+
+```php
+use Marko\Queue\WorkerOptions;
+
+public function __construct(
+    int $timeout = 0,           // default job timeout in seconds; a job's own $timeout replaces it
+    int $memory = 0,            // megabytes
+    int $maxJobs = 0,
+    int $maxTime = 0,           // seconds
+    array $stopConditions = [], // list<WorkerStopConditionInterface>, checked after the built-in limits
+);
+/** @return list<WorkerStopConditionInterface> */
+public function buildStopConditions(ClockInterface $clock): array;
+```
+
+A negative limit, or a stop condition that doesn't implement `WorkerStopConditionInterface`, throws `QueueException`.
+
+### WorkerStopConditionInterface
+
+```php
+use Marko\Queue\WorkerStopConditionInterface;
+
+public function check(WorkerRunState $state): ?WorkerStopReason; // null = keep working
+```
+
+`WorkerRunState` is a readonly snapshot with `DateTimeImmutable $startedAt`, `int $jobsProcessed` and `int $memoryBytes`. `WorkerStopReason` is an enum with `message(): string` and `exitCode(): int`. See [Stop Reasons and Exit Codes](#stop-reasons-and-exit-codes).
 
 The built-in `Worker` asks [`RetryPolicy`](#retrypolicy) whether a job that threw or released itself runs again, and after what delay.
 
@@ -933,6 +1029,6 @@ Implements `Marko\Core\Event\AsyncObserverDispatcherInterface` and is bound to i
 | `JobAttemptsExhaustedException` | The reason a job without a retry deadline was not retried once it used its `maxAttempts`. Passed to `failed()` and `JobFailedEvent` for a job that released itself on its last attempt, and when the database driver fails a job whose attempts were all reserved by workers that crashed or timed out |
 | `JobRetryDeadlinePassedException` | The reason a job was not retried once its retry deadline passed |
 | `JobExceptionsExhaustedException` | The reason a job was not retried once its exceptions reached `maxExceptions` |
-| `JobTimedOutException` | Recorded as the failure of a job that ran longer than the worker timeout. See [Worker Limits and Shutdown](#worker-limits-and-shutdown) |
+| `JobTimedOutException` | Recorded as the failure of a job that ran longer than its timeout (its own `$timeout`, or the worker's). See [Worker Limits and Shutdown](#worker-limits-and-shutdown) |
 | `SerializationException` | Thrown when a job payload cannot be serialized or deserialized, when an async observer's event cannot be serialized, when `encryption.key` is empty, or when an HMAC signature does not match (tampered payload) |
 | `NoDriverException` | Thrown when a queue interface can't be resolved. For `QueueInterface` and `FailedJobRepositoryInterface` it lists the driver packages to install. For any other queue interface it names the interface that has no binding and tells you to bind it in `module.php` |

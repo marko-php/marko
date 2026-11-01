@@ -13,17 +13,19 @@ interface WorkerInterface
      * so earlier queues are always drained first. The worker sleeps only when every
      * queue is empty. With $once, it processes at most one job across all queues.
      *
-     * $options sets the per-job timeout and the memory and job-count limits after which
-     * the worker returns so a process supervisor can start a fresh one.
+     * $options sets the default job timeout and the limits (memory, job count, run time, extra stop
+     * conditions) after which the worker returns so a process supervisor can start a fresh one.
+     * Stop conditions are checked after every job and after every idle pause.
      *
      * @param list<string>|null $queues Queue names in priority order, or null for the default queue
+     * @return WorkerStopReason Why the worker stopped; queue:work exits with its exitCode()
      */
     public function work(
         ?array $queues = null,
         bool $once = false,
         int $sleep = 3,
         WorkerOptions $options = new WorkerOptions(),
-    ): void;
+    ): WorkerStopReason;
 
     public function stop(): void;
 }

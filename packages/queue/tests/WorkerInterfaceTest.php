@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Queue\WorkerInterface;
 use Marko\Queue\WorkerOptions;
+use Marko\Queue\WorkerStopReason;
 
 describe('WorkerInterface', function () {
     test('defines work method', function () {
@@ -31,7 +32,7 @@ describe('WorkerInterface', function () {
 
         $returnType = $method->getReturnType();
 
-        expect($returnType?->getName())->toBe('void');
+        expect($returnType?->getName())->toBe(WorkerStopReason::class);
     });
 
     test('defines stop method', function () {

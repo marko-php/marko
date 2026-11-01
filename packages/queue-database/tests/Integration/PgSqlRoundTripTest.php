@@ -275,6 +275,7 @@ describe('database queue on PostgreSQL', function (): void {
                 'queue.queue' => 'default',
                 'queue.max_attempts' => 1,
             ])), new FakeClock()),
+            clock: new FakeClock(),
         );
         $worker->work(once: true);
 
