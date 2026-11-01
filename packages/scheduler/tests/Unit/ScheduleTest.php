@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use Marko\Scheduler\Schedule;
 use Marko\Scheduler\ScheduledTask;
+use Marko\Scheduler\Tests\Fixtures\SchedulerFactory;
 
 it('adds task via call method', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(fn (): null => null);
 
     expect($schedule->tasks())->toHaveCount(1);
 });
 
 it('returns ScheduledTask for fluent configuration', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $task = $schedule->call(fn (): null => null);
 
     expect($task)->toBeInstanceOf(ScheduledTask::class);
@@ -25,7 +25,7 @@ it('returns ScheduledTask for fluent configuration', function (): void {
 });
 
 it('finds due tasks at given time', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(fn (): string => 'every minute')->everyMinute();
 
     $now = new DateTimeImmutable('2026-06-15 14:30:00');
@@ -36,7 +36,7 @@ it('finds due tasks at given time', function (): void {
 });
 
 it('excludes non-due tasks', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     // Daily at midnight - won't be due at 14:30
     $schedule->call(fn (): string => 'daily')->daily();
 
@@ -47,7 +47,7 @@ it('excludes non-due tasks', function (): void {
 });
 
 it('detects every minute task as always due', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(fn (): null => null)->everyMinute();
 
     $time1 = new DateTimeImmutable('2026-06-15 00:00:00');
@@ -60,7 +60,7 @@ it('detects every minute task as always due', function (): void {
 });
 
 it('detects hourly task due at top of hour', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(fn (): null => null)->hourly();
 
     $topOfHour = new DateTimeImmutable('2026-06-15 14:00:00');
@@ -71,7 +71,7 @@ it('detects hourly task due at top of hour', function (): void {
 });
 
 it('detects daily task due at midnight', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(fn (): null => null)->daily();
 
     $midnight = new DateTimeImmutable('2026-06-15 00:00:00');
@@ -82,7 +82,7 @@ it('detects daily task due at midnight', function (): void {
 });
 
 it('returns empty array when no tasks are due', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(fn (): null => null)->cron('0 0 1 1 *'); // Only Jan 1 at midnight
 
     $now = new DateTimeImmutable('2026-06-15 14:30:00');
@@ -91,7 +91,7 @@ it('returns empty array when no tasks are due', function (): void {
 });
 
 it('handles multiple due tasks', function (): void {
-    $schedule = new Schedule();
+    $schedule = SchedulerFactory::schedule();
     $schedule->call(fn (): string => 'task1')->everyMinute();
     $schedule->call(fn (): string => 'task2')->everyMinute();
     $schedule->call(fn (): string => 'task3')->daily(); // Not due at 14:30

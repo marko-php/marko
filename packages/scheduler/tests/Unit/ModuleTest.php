@@ -3,16 +3,23 @@
 declare(strict_types=1);
 
 use Marko\Clock\SystemClock;
+use Marko\Core\Command\CommandDefinition;
+use Marko\Core\Command\CommandRegistry;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
+use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Module\ManifestParser;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Path\ProjectPaths;
+use Marko\Scheduler\Command\RunBackgroundCommand;
 use Marko\Scheduler\Command\RunScheduleCommand;
 use Marko\Scheduler\Command\ScheduleWorkCommand;
+use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
+use Marko\Scheduler\Process\ProcOpenBackgroundCommandLauncher;
 use Marko\Scheduler\Schedule;
+use Marko\Scheduler\Tests\Fixtures\RecordingCommand;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -22,8 +29,12 @@ use Psr\Clock\ClockInterface;
 function bootSchedulerContainer(
     string $basePath,
     ?Closure $appBoot = null,
+    ?CommandRegistry $commandRegistry = null,
 ): Container {
     $container = new Container();
+    // The Application binds the container and the discovered command registry before boot.
+    $container->instance(ContainerInterface::class, $container);
+    $container->instance(CommandRegistry::class, $commandRegistry ?? new CommandRegistry());
     $container->instance(ProjectPaths::class, new ProjectPaths($basePath));
     // marko/clock's module binds the system clock; the scheduler requires it.
     $container->instance(ClockInterface::class, new SystemClock());
@@ -99,4 +110,44 @@ it('resolves schedule:work from the container', function (): void {
     $container = bootSchedulerContainer($this->basePath);
 
     expect($container->get(ScheduleWorkCommand::class))->toBeInstanceOf(ScheduleWorkCommand::class);
+});
+
+it('binds the background command launcher to ProcOpenBackgroundCommandLauncher', function (): void {
+    $container = bootSchedulerContainer($this->basePath);
+
+    expect($container->get(BackgroundCommandLauncherInterface::class))
+        ->toBeInstanceOf(ProcOpenBackgroundCommandLauncher::class);
+});
+
+it('resolves schedule:run-background from the container', function (): void {
+    $container = bootSchedulerContainer($this->basePath);
+
+    expect($container->get(RunBackgroundCommand::class))->toBeInstanceOf(RunBackgroundCommand::class);
+});
+
+it('runs a command scheduled in a module boot callback when schedule:run runs', function (): void {
+    $ran = [];
+    $registry = new CommandRegistry();
+    $registry->register(new CommandDefinition(commandClass: RecordingCommand::class, name: 'app:prune'));
+    $container = bootSchedulerContainer(
+        $this->basePath,
+        function (Schedule $schedule): void {
+            $schedule->command('app:prune', ['--days=30'])->everyMinute();
+        },
+        $registry,
+    );
+    $container->instance(RecordingCommand::class, new RecordingCommand(function (Input $input) use (&$ran): int {
+        $ran[] = $input->getOption('days');
+
+        return 0;
+    }));
+
+    $stream = fopen('php://memory', 'r+');
+    $exitCode = $container->get(RunScheduleCommand::class)
+        ->execute(new Input(['marko', 'schedule:run']), new Output($stream));
+    rewind($stream);
+
+    expect($ran)->toBe(['30'])
+        ->and(stream_get_contents($stream))->toContain('Executed: app:prune --days=30')
+        ->and($exitCode)->toBe(0);
 });

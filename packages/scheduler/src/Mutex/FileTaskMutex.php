@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Marko\Scheduler\Mutex;
 
 use Marko\Scheduler\Exceptions\SchedulerException;
-use Marko\Scheduler\ScheduledTask;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -32,11 +31,9 @@ class FileTaskMutex implements TaskMutexInterface
      * @throws SchedulerException
      */
     public function acquire(
-        ScheduledTask $task,
+        string $name,
         int $expiresAfterSeconds,
     ): bool {
-        $name = $task->mutexName();
-
         if (isset($this->handles[$name])) {
             return false;
         }
@@ -87,10 +84,8 @@ class FileTaskMutex implements TaskMutexInterface
      * @throws SchedulerException
      */
     public function release(
-        ScheduledTask $task,
+        string $name,
     ): void {
-        $name = $task->mutexName();
-
         if (!isset($this->handles[$name])) {
             return;
         }
@@ -107,10 +102,8 @@ class FileTaskMutex implements TaskMutexInterface
      * @throws SchedulerException
      */
     public function exists(
-        ScheduledTask $task,
+        string $name,
     ): bool {
-        $name = $task->mutexName();
-
         if (isset($this->handles[$name])) {
             return true;
         }
@@ -142,9 +135,16 @@ class FileTaskMutex implements TaskMutexInterface
         return $this->clock->now()->getTimestamp();
     }
 
+    /**
+     * @throws SchedulerException When the name is not a safe file name
+     */
     private function path(
         string $name,
     ): string {
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $name) !== 1) {
+            throw SchedulerException::invalidMutexName($name);
+        }
+
         return $this->directory . '/' . $name;
     }
 

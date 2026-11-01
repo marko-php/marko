@@ -8,17 +8,16 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Scheduler\Command\ScheduleWorkCommand;
 use Marko\Scheduler\Mutex\FileTaskMutex;
-use Marko\Scheduler\Schedule;
-use Marko\Scheduler\ScheduleRunner;
+use Marko\Scheduler\Tests\Fixtures\SchedulerFactory;
 use Marko\Testing\Fake\FakeClock;
 
 beforeEach(function (): void {
-    $this->schedule = new Schedule();
+    $this->schedule = SchedulerFactory::schedule();
     $this->clock = new FakeClock('2026-10-05 12:00:30');
     $this->sleeps = [];
     $this->onSleep = null;
     $this->command = new ScheduleWorkCommand(
-        new ScheduleRunner(
+        SchedulerFactory::runner(
             $this->schedule,
             new FileTaskMutex(sys_get_temp_dir() . '/marko-scheduler-unused', $this->clock),
         ),
