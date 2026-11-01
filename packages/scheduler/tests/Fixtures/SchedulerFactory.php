@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Marko\Scheduler\Tests\Fixtures;
 
 use Closure;
+use Marko\Cache\Contracts\LockFactoryInterface;
+use Marko\Cache\Contracts\LockStoreInterface;
+use Marko\Cache\Lock\LockFactory;
+use Marko\Cache\Lock\UsleepSleeper;
 use Marko\Core\Command\CommandDefinition;
 use Marko\Core\Command\CommandRegistry;
 use Marko\Core\Command\CommandRunner;
@@ -12,10 +16,14 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Core\Container\Container;
 use Marko\Core\Exceptions\CommandException;
+use Marko\Scheduler\Mutex\DistributedLockResolver;
+use Marko\Scheduler\Mutex\LockTaskServerClaim;
 use Marko\Scheduler\Mutex\TaskMutexInterface;
+use Marko\Scheduler\Mutex\TaskServerClaimInterface;
 use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
 use Marko\Scheduler\Schedule;
 use Marko\Scheduler\ScheduleRunner;
+use Psr\Clock\ClockInterface;
 
 /**
  * Builds schedules, runners and command registries for scheduler tests.
@@ -58,12 +66,29 @@ class SchedulerFactory
         TaskMutexInterface $taskMutex,
         ?CommandRunner $commandRunner = null,
         ?BackgroundCommandLauncherInterface $backgroundCommandLauncher = null,
+        ?TaskServerClaimInterface $taskServerClaim = null,
     ): ScheduleRunner {
         return new ScheduleRunner(
             $schedule,
             $taskMutex,
             $commandRunner ?? self::commands()[1],
             $backgroundCommandLauncher ?? new RecordingBackgroundCommandLauncher(),
+            $taskServerClaim ?? new LockTaskServerClaim(new DistributedLockResolver(new Container())),
         );
+    }
+
+    /**
+     * A lock resolver whose container holds a LockFactory on $store, as marko/cache and a
+     * driver package would bind them.
+     */
+    public static function lockResolver(
+        LockStoreInterface $store,
+        ClockInterface $clock,
+    ): DistributedLockResolver {
+        $container = new Container();
+        $container->instance(LockStoreInterface::class, $store);
+        $container->instance(LockFactoryInterface::class, new LockFactory($store, $clock, new UsleepSleeper()));
+
+        return new DistributedLockResolver($container);
     }
 }

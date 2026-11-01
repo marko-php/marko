@@ -12,6 +12,7 @@ readonly class ScheduleRunResult
         public int $skipped,
         public int $skippedByCondition = 0,
         public int $launched = 0,
+        public int $skippedByServer = 0,
     ) {}
 
     public function hasFailures(): bool

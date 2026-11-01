@@ -16,6 +16,10 @@ use Marko\Core\Path\ProjectPaths;
 use Marko\Scheduler\Command\RunBackgroundCommand;
 use Marko\Scheduler\Command\RunScheduleCommand;
 use Marko\Scheduler\Command\ScheduleWorkCommand;
+use Marko\Scheduler\Exceptions\SchedulerException;
+use Marko\Scheduler\Mutex\LockTaskMutex;
+use Marko\Scheduler\Mutex\LockTaskServerClaim;
+use Marko\Scheduler\Mutex\TaskServerClaimInterface;
 use Marko\Scheduler\Process\BackgroundCommandLauncherInterface;
 use Marko\Scheduler\Process\ProcOpenBackgroundCommandLauncher;
 use Marko\Scheduler\Schedule;
@@ -151,3 +155,35 @@ it('runs a command scheduled in a module boot callback when schedule:run runs', 
         ->and(stream_get_contents($stream))->toContain('Executed: app:prune --days=30')
         ->and($exitCode)->toBe(0);
 });
+
+it('binds the task server claim to LockTaskServerClaim without needing a lock store', function (): void {
+    $container = bootSchedulerContainer($this->basePath);
+
+    expect($container->get(TaskServerClaimInterface::class))->toBeInstanceOf(LockTaskServerClaim::class)
+        ->and($container->get(RunScheduleCommand::class))->toBeInstanceOf(RunScheduleCommand::class);
+});
+
+it('fails schedule:run up front when an onOneServer task has no lock store bound', function (): void {
+    $container = bootSchedulerContainer(
+        $this->basePath,
+        function (Schedule $schedule): void {
+            $schedule->call(fn (): null => null)->everyMinute()->description('Send digest')->onOneServer();
+        },
+    );
+
+    expect(fn () => $container->get(RunScheduleCommand::class)
+        ->execute(new Input(['marko', 'schedule:run']), new Output(fopen('php://memory', 'r+'))))
+        ->toThrow(
+            SchedulerException::class,
+            "Scheduled task 'Send digest' uses onOneServer(), but no cache lock store can be resolved.",
+        );
+});
+
+it('fails to resolve LockTaskMutex when no lock store is bound', function (): void {
+    $container = bootSchedulerContainer($this->basePath);
+
+    $container->get(LockTaskMutex::class);
+})->throws(
+    SchedulerException::class,
+    'LockTaskMutex is bound to TaskMutexInterface, but no cache lock store can be resolved.',
+);

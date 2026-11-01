@@ -10,8 +10,14 @@
         "marko/clock": "self.version"
     },
     "require-dev": {
+        "marko/cache": "self.version",
+        "marko/cache-redis": "self.version",
+        "marko/redis": "self.version",
         "marko/testing": "self.version",
         "pestphp/pest": "^4.0"
+    },
+    "suggest": {
+        "marko/cache": "Atomic locks for onOneServer() and LockTaskMutex; pair it with marko/cache-redis so the lock is shared by every server"
     },
     "autoload": {
         "psr-4": {
