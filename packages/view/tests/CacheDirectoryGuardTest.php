@@ -103,3 +103,51 @@ it('throws loudly when the cache directory cannot be created', function (): void
     expect(fn (): string => $this->guard->prepare($readOnly . '/views'))
         ->toThrow(InsecureCacheDirectoryException::class, 'Unable to create');
 });
+
+it('leaves a Windows drive cache directory path unchanged instead of prefixing the project root', function (): void {
+    // On a non-Windows host 'C:/cache/views' is created relative to the
+    // working directory, so point it at the temp base to keep the test contained.
+    $workingDirectory = getcwd();
+    chdir($this->base);
+
+    try {
+        $directory = $this->guard->prepare('C:/cache/views');
+    } finally {
+        chdir($workingDirectory);
+    }
+
+    expect($directory)->toBe('C:/cache/views');
+});
+
+it('skips the world-writable check on Windows, where fileperms() does not reflect NTFS ACLs', function (): void {
+    $directory = $this->base . '/windows';
+    mkdir($directory);
+    chmod($directory, 0o777);
+
+    $guard = new readonly class (new ProjectPaths($this->base)) extends CacheDirectoryGuard
+    {
+        protected function isWindows(): bool
+        {
+            return true;
+        }
+    };
+
+    expect($guard->prepare($directory))->toBe($directory);
+});
+
+it('runs the world-writable check when not on Windows', function (): void {
+    $directory = $this->base . '/unix';
+    mkdir($directory);
+    chmod($directory, 0o777);
+
+    $guard = new readonly class (new ProjectPaths($this->base)) extends CacheDirectoryGuard
+    {
+        protected function isWindows(): bool
+        {
+            return false;
+        }
+    };
+
+    expect(fn (): string => $guard->prepare($directory))
+        ->toThrow(InsecureCacheDirectoryException::class, 'world-writable');
+});

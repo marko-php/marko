@@ -146,11 +146,11 @@ return [
 
 Drivers pass the configured value through `CacheDirectoryGuard::prepare()` before handing it to the engine. The guard:
 
-- resolves a relative path against the project root (`ProjectPaths::$base`), never the working directory --- FPM, CGI and mod_php `chdir` into `public/`
+- resolves a relative path against the project root with `ProjectPaths::resolve()`, never the working directory --- FPM, CGI and mod_php `chdir` into `public/`. Unix, Windows drive (`C:\cache`) and UNC paths are absolute and used as-is
 - creates a missing directory with mode `0700`
 - throws `InsecureCacheDirectoryException` when the directory is world-writable or not owned by the user PHP runs as, so another local user cannot plant compiled PHP (the classic pre-created `/tmp/views` attack)
 
-The ownership check requires the `posix` extension; without it only the world-writable check runs. Absolute paths are still allowed, but they must pass the same checks, so a shared `/tmp/views` is refused.
+The ownership check requires the `posix` extension; without it only the world-writable check runs. On Windows both checks are skipped: NTFS ACLs don't map to Unix mode bits, so `fileperms()` reports almost every directory as `0777`. Absolute paths are still allowed, but they must pass the same checks, so a shared `/tmp/views` is refused.
 
 ### Template Functions
 
@@ -389,7 +389,7 @@ use Marko\View\CacheDirectoryGuard;
 public function prepare(string $directory): string;
 ```
 
-Returns the resolved absolute path. Throws `InsecureCacheDirectoryException` when the directory cannot be created, is a file, is world-writable, or is owned by another user.
+Returns the resolved absolute path. Throws `InsecureCacheDirectoryException` when the directory cannot be created, is a file, is world-writable, or is owned by another user. The last two checks don't run on Windows.
 
 ### Exceptions
 
