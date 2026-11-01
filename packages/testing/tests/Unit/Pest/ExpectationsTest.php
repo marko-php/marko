@@ -5,7 +5,9 @@ declare(strict_types=1);
 use Marko\Core\Event\Event;
 use Marko\Mail\Message;
 use Marko\Queue\Job;
+use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeFilesystem;
 use Marko\Testing\Fake\FakeHttpClient;
 use Marko\Testing\Fake\FakeLogger;
 use Marko\Testing\Fake\FakeMailer;
@@ -102,6 +104,41 @@ it('fails toHaveSentRequest when no request matches', function () {
 it('throws clear error when toHaveSentRequest is used on wrong type', function () {
     expect(fn () => expect(new stdClass())->toHaveSentRequest())
         ->toThrow(InvalidArgumentException::class, 'Expected FakeHttpClient');
+});
+
+it('registers toHaveStored expectation for FakeFilesystem', function () {
+    $filesystem = new FakeFilesystem(clock: new FakeClock(), public: false);
+
+    $filesystem->write('avatars/1.png', 'png-bytes');
+
+    expect($filesystem)->toHaveStored('avatars/1.png')
+        ->toHaveStored('/avatars/1.png', 'png-bytes')
+        ->not->toHaveStored('avatars/2.png')
+        ->not->toHaveStored('avatars/1.png', 'other-bytes')
+        ->not->toHaveStored('avatars');
+});
+
+it('fails toHaveStored when nothing is stored at the path', function () {
+    $filesystem = new FakeFilesystem(clock: new FakeClock(), public: false);
+
+    expect(fn () => expect($filesystem)->toHaveStored('avatars/1.png'))
+        ->toThrow(ExpectationFailedException::class, "Expected a file to be stored at 'avatars/1.png' but none was.");
+});
+
+it('fails toHaveStored when the stored contents differ', function () {
+    $filesystem = new FakeFilesystem(clock: new FakeClock(), public: false);
+    $filesystem->write('a.txt', 'actual');
+
+    expect(fn () => expect($filesystem)->toHaveStored('a.txt', 'expected'))
+        ->toThrow(
+            ExpectationFailedException::class,
+            "Expected a file with the given contents to be stored at 'a.txt'",
+        );
+});
+
+it('throws clear error when toHaveStored is used on wrong type', function () {
+    expect(fn () => expect(new stdClass())->toHaveStored('a.txt'))
+        ->toThrow(InvalidArgumentException::class, 'Expected FakeFilesystem');
 });
 
 it('throws clear error when expectation used on wrong type', function () {

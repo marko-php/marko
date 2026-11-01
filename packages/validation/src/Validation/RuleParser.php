@@ -7,19 +7,28 @@ namespace Marko\Validation\Validation;
 use InvalidArgumentException;
 use Marko\Validation\Contracts\NumericAwareRuleInterface;
 use Marko\Validation\Contracts\RuleInterface;
+use Marko\Validation\Rules\After;
+use Marko\Validation\Rules\AfterOrEqual;
 use Marko\Validation\Rules\Alpha;
 use Marko\Validation\Rules\AlphaNumeric;
 use Marko\Validation\Rules\ArrayType;
+use Marko\Validation\Rules\Before;
+use Marko\Validation\Rules\BeforeOrEqual;
 use Marko\Validation\Rules\Between;
 use Marko\Validation\Rules\Boolean;
 use Marko\Validation\Rules\Confirmed;
 use Marko\Validation\Rules\Date;
 use Marko\Validation\Rules\Different;
+use Marko\Validation\Rules\Digits;
+use Marko\Validation\Rules\DigitsBetween;
+use Marko\Validation\Rules\Distinct;
 use Marko\Validation\Rules\Email;
 use Marko\Validation\Rules\File;
 use Marko\Validation\Rules\Image;
 use Marko\Validation\Rules\In;
 use Marko\Validation\Rules\Integer;
+use Marko\Validation\Rules\Json;
+use Marko\Validation\Rules\ListType;
 use Marko\Validation\Rules\Max;
 use Marko\Validation\Rules\MaxSize;
 use Marko\Validation\Rules\Mimes;
@@ -32,8 +41,11 @@ use Marko\Validation\Rules\Numeric;
 use Marko\Validation\Rules\Regex;
 use Marko\Validation\Rules\Required;
 use Marko\Validation\Rules\Same;
+use Marko\Validation\Rules\Size;
 use Marko\Validation\Rules\StringType;
+use Marko\Validation\Rules\Ulid;
 use Marko\Validation\Rules\Url;
+use Marko\Validation\Rules\Uuid;
 
 class RuleParser
 {
@@ -103,7 +115,7 @@ class RuleParser
     }
 
     /**
-     * @param array $rules
+     * @param array<mixed> $rules
      *
      * @return array<RuleInterface>
      */
@@ -134,15 +146,91 @@ class RuleParser
         string $name,
         array $params,
     ): float {
-        $kilobytes = $params[0] ?? null;
+        return $this->number($params[0] ?? null, "The $name rule needs a size in kilobytes, e.g. $name:2048");
+    }
 
-        if ($kilobytes === null || !is_numeric(trim($kilobytes))) {
+    /**
+     * @throws InvalidArgumentException With $message when the parameter is missing or not numeric
+     */
+    private function number(
+        ?string $parameter,
+        string $message,
+    ): float {
+        if ($parameter === null || !is_numeric(trim($parameter))) {
+            throw new InvalidArgumentException($message);
+        }
+
+        return (float) $parameter;
+    }
+
+    /**
+     * @throws InvalidArgumentException With $message when the parameter is missing or not a whole number
+     */
+    private function wholeNumber(
+        ?string $parameter,
+        string $message,
+    ): int {
+        if ($parameter === null || preg_match('/^[0-9]+$/D', trim($parameter)) !== 1) {
+            throw new InvalidArgumentException($message);
+        }
+
+        return (int) $parameter;
+    }
+
+    /**
+     * @param array<?string> $params
+     *
+     * @throws InvalidArgumentException
+     */
+    private function uuid(
+        array $params,
+    ): Uuid {
+        if (!isset($params[0])) {
+            return new Uuid();
+        }
+
+        return new Uuid(
+            $this->wholeNumber($params[0], 'The uuid rule takes a version number from 1 to 8, e.g. uuid:4'),
+        );
+    }
+
+    /**
+     * @param array<?string> $params
+     *
+     * @throws InvalidArgumentException
+     */
+    private function digitsBetween(
+        array $params,
+    ): DigitsBetween {
+        $message = 'The digits_between rule needs a minimum and maximum number of digits, e.g. digits_between:4,6';
+
+        return new DigitsBetween(
+            $this->wholeNumber($params[0] ?? null, $message),
+            $this->wholeNumber($params[1] ?? null, $message),
+        );
+    }
+
+    /**
+     * @param array<?string> $params
+     *
+     * @throws InvalidArgumentException When an option is not strict or ignore_case
+     */
+    private function distinct(
+        array $params,
+    ): Distinct {
+        $options = array_map(static fn (?string $option): string => trim((string) $option), $params);
+        $unknown = array_diff($options, ['strict', 'ignore_case']);
+
+        if ($unknown !== []) {
             throw new InvalidArgumentException(
-                "The $name rule needs a size in kilobytes, e.g. $name:2048",
+                'Unknown distinct option: ' . implode(', ', $unknown) . ' (use strict, ignore_case or both)',
             );
         }
 
-        return (float) $kilobytes;
+        return new Distinct(
+            strict: in_array('strict', $options, true),
+            ignoreCase: in_array('ignore_case', $options, true),
+        );
     }
 
     /**
@@ -190,6 +278,23 @@ class RuleParser
             'mimetypes' => new MimeTypes(...array_map(strval(...), $params)),
             'max_size' => new MaxSize($this->kilobytes($name, $params)),
             'min_size' => new MinSize($this->kilobytes($name, $params)),
+            'uuid' => $this->uuid($params),
+            'ulid' => new Ulid(),
+            'json' => new Json(),
+            'list' => new ListType(),
+            'digits' => new Digits(
+                $this->wholeNumber($params[0] ?? null, 'The digits rule needs a number of digits, e.g. digits:4'),
+            ),
+            'digits_between' => $this->digitsBetween($params),
+            'size' => new Size($this->number($params[0] ?? null, 'The size rule needs a size, e.g. size:10')),
+            'after' => new After((string) ($params[0] ?? '')),
+            'after_or_equal' => new AfterOrEqual((string) ($params[0] ?? '')),
+            'before' => new Before((string) ($params[0] ?? '')),
+            'before_or_equal' => new BeforeOrEqual((string) ($params[0] ?? '')),
+            'distinct' => $this->distinct($params),
+            'enum' => throw new InvalidArgumentException(
+                'The enum rule has no string form: use Enum::of(YourEnum::class) in an array of rules',
+            ),
             default => throw new InvalidArgumentException("Unknown validation rule: $name"),
         };
     }

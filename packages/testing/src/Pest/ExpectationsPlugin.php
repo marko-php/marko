@@ -11,6 +11,7 @@ use Marko\Notification\Contracts\NotifiableInterface;
 use Marko\Testing\Exceptions\AssertionFailedException;
 use Marko\Testing\Fake\FakeBroadcaster;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeFilesystem;
 use Marko\Testing\Fake\FakeGuard;
 use Marko\Testing\Fake\FakeHttpClient;
 use Marko\Testing\Fake\FakeLogger;
@@ -170,6 +171,34 @@ class ExpectationsPlugin implements Bootable
             Assert::assertTrue(
                 $hasPushed,
                 "Expected $jobClass to be pushed to queue but it was not.",
+            );
+
+            return $this;
+        });
+
+        expect()->extend('toHaveStored', function (
+            string $path,
+            ?string $content = null,
+        ): Expectation {
+            $fake = $this->value;
+
+            if (! $fake instanceof FakeFilesystem) {
+                throw new InvalidArgumentException(
+                    'Expected FakeFilesystem, got ' . get_debug_type($fake),
+                );
+            }
+
+            $stored = $fake->isFile($path);
+
+            if ($stored && $content !== null) {
+                $stored = $fake->read($path) === $content;
+            }
+
+            Assert::assertTrue(
+                $stored,
+                $content === null
+                    ? "Expected a file to be stored at '$path' but none was."
+                    : "Expected a file with the given contents to be stored at '$path' but none was.",
             );
 
             return $this;

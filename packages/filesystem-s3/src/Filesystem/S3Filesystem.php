@@ -13,6 +13,8 @@ use Marko\Filesystem\Contracts\FilesystemInterface;
 use Marko\Filesystem\Exceptions\FileNotFoundException;
 use Marko\Filesystem\Exceptions\FilesystemException;
 use Marko\Filesystem\Exceptions\PathException;
+use Marko\Filesystem\Path\BackslashPolicy;
+use Marko\Filesystem\Path\PathNormalizer;
 use Marko\Filesystem\S3\Config\S3Config;
 use Marko\Filesystem\Values\DirectoryEntry;
 use Marko\Filesystem\Values\DirectoryListing;
@@ -75,10 +77,16 @@ readonly class S3Filesystem implements FilesystemInterface
      */
     private const int MAX_TEMPORARY_URL_EXPIRATION = 604800;
 
+    private PathNormalizer $pathNormalizer;
+
     public function __construct(
         private S3Client $client,
         private S3Config $config,
-    ) {}
+    ) {
+        // S3 stores '..' and '\\' literally, but S3-compatible gateways and proxies may resolve
+        // dot-segments or treat backslashes as separators, breaking prefix isolation.
+        $this->pathNormalizer = new PathNormalizer(BackslashPolicy::Reject);
+    }
 
     public function exists(
         string $path,
@@ -532,13 +540,10 @@ readonly class S3Filesystem implements FilesystemInterface
     public function deleteDirectory(
         string $path,
     ): bool {
+        $this->pathNormalizer->normalizeForDeletion($path);
+
         try {
             $prefix = rtrim($this->prefixPath($path), '/') . '/';
-
-            if ($prefix === '/') {
-                return true;
-            }
-
             $continuationToken = null;
 
             do {
@@ -736,42 +741,18 @@ readonly class S3Filesystem implements FilesystemInterface
     private function prefixPath(
         string $path,
     ): string {
-        $this->validatePath($path);
+        $normalized = $this->pathNormalizer->normalize($path);
 
-        $normalized = ltrim($path, '/');
+        // Keep a trailing slash: on S3 'dir/' is the directory marker object, distinct from 'dir'.
+        if ($normalized !== '' && str_ends_with($path, '/')) {
+            $normalized .= '/';
+        }
 
         if ($this->config->prefix === '') {
             return $normalized;
         }
 
         return $this->config->prefix . '/' . $normalized;
-    }
-
-    /**
-     * Reject paths that could escape the configured prefix. S3 itself stores
-     * `..` literally, but S3-compatible gateways and proxies may resolve
-     * dot-segments or treat backslashes as separators, breaking prefix
-     * isolation.
-     *
-     * @throws PathException
-     */
-    private function validatePath(
-        string $path,
-    ): void {
-        if (str_contains($path, "\0")) {
-            throw PathException::invalidPath($path, 'Path contains a NUL byte');
-        }
-
-        if (str_contains($path, '\\')) {
-            throw PathException::invalidPath(
-                $path,
-                'Path contains a backslash, which some S3-compatible services treat as a directory separator',
-            );
-        }
-
-        if (in_array('..', explode('/', $path), true)) {
-            throw PathException::traversalAttempt($path);
-        }
     }
 
     private function stripPrefix(

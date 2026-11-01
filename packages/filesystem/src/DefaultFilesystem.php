@@ -7,14 +7,14 @@ namespace Marko\Filesystem;
 use JsonException;
 use Marko\Filesystem\Contracts\DirectoryListingInterface;
 use Marko\Filesystem\Contracts\FilesystemInterface;
+use Marko\Filesystem\Contracts\FilesystemManagerInterface;
 use Marko\Filesystem\Exceptions\FilesystemException;
-use Marko\Filesystem\Manager\FilesystemManager;
 use Marko\Filesystem\Values\FileInfo;
 
 readonly class DefaultFilesystem implements FilesystemInterface
 {
     public function __construct(
-        private FilesystemManager $manager,
+        private FilesystemManagerInterface $manager,
     ) {}
 
     /**
