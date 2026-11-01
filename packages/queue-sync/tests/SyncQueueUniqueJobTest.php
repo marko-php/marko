@@ -7,8 +7,8 @@ use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Sync\NullFailedJobRepository;
 use Marko\Queue\Sync\SyncQueue;
-use Marko\Queue\Tests\Fixtures\UniqueJobStack;
-use Marko\Queue\Tests\Fixtures\UniqueTestJob;
+use Marko\Queue\Sync\Tests\Fixtures\UniqueJobStack;
+use Marko\Queue\Sync\Tests\Fixtures\UniqueTestJob;
 use Marko\Testing\Fake\FakeConfigRepository;
 
 function uniqueSyncQueue(

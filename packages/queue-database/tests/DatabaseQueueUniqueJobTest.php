@@ -7,9 +7,9 @@ use Marko\Database\PgSql\Query\PgSqlQueryBuilderFactory;
 use Marko\Queue\Database\DatabaseFailedJobRepository;
 use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\SqliteConnection;
+use Marko\Queue\Database\Tests\Fixtures\UniqueJobStack;
+use Marko\Queue\Database\Tests\Fixtures\UniqueTestJob;
 use Marko\Queue\QueueInterface;
-use Marko\Queue\Tests\Fixtures\UniqueJobStack;
-use Marko\Queue\Tests\Fixtures\UniqueTestJob;
 
 function uniqueDatabaseQueue(
     UniqueJobStack $stack,
