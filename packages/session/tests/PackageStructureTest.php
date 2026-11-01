@@ -1,6 +1,8 @@
 <?php
 
 declare(strict_types=1);
+use Marko\Session\Contracts\FlashDataInterface;
+use Marko\Session\Flash\SessionFlashData;
 
 it('has a valid composer.json with correct package name marko/session', function (): void {
     $composerPath = dirname(__DIR__) . '/composer.json';
@@ -100,6 +102,14 @@ it('does not bind SessionInterface from the session interface package', function
     $module = require dirname(__DIR__) . '/module.php';
 
     expect(array_keys($module['singletons'] ?? []))->not->toContain('Marko\\Session\\Contracts\\SessionInterface');
+});
+
+it('binds FlashDataInterface to the session-backed implementation', function (): void {
+    $module = require dirname(__DIR__) . '/module.php';
+
+    expect($module['bindings'])->toBe([
+        FlashDataInterface::class => SessionFlashData::class,
+    ]);
 });
 
 it('does not call setcookie directly', function (): void {

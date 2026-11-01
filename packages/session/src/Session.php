@@ -12,6 +12,7 @@ use Marko\Session\Exceptions\InvalidSessionIdException;
 use Marko\Session\Exceptions\SessionException;
 use Marko\Session\Exceptions\SessionNotStartedException;
 use Marko\Session\Flash\FlashBag;
+use Marko\Session\Flash\SessionFlashData;
 use Override;
 
 class Session implements SessionInterface, ResettableInterface
@@ -83,8 +84,12 @@ class Session implements SessionInterface, ResettableInterface
         }
 
         $this->id = session_id();
-        $this->data = $_SESSION ?? [];
-        $this->loadedData = $this->data;
+        $this->loadedData = $_SESSION ?? [];
+        // Aging the flash data on load (not on access) lets next-request values
+        // expire on the request after, whether or not anything read them. The
+        // snapshot is taken before aging, so aged data counts as a modification
+        // and is persisted.
+        $this->data = SessionFlashData::age($this->loadedData);
         $this->loadedId = $this->id;
         $this->flashBag = new FlashBag($this->data);
         $this->started = true;

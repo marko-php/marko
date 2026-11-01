@@ -14,6 +14,7 @@ use Marko\Inertia\Ssr\SsrClient;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Session\Contracts\SessionInterface;
+use Marko\Validation\Contracts\FlashedFormStateInterface;
 use Marko\Vite\Vite;
 use Override;
 use stdClass;
@@ -28,6 +29,8 @@ class Inertia implements ResettableInterface
         private readonly Vite $vite,
         private readonly SsrClient $ssrClient,
         private readonly SessionInterface $session,
+        // Bound by marko/forms; without it the errors prop stays an empty object
+        private readonly ?FlashedFormStateInterface $formState = null,
     ) {}
 
     /**
@@ -153,6 +156,21 @@ class Inertia implements ResettableInterface
     }
 
     /**
+     * The flashed validation errors (field => messages), or an empty object so
+     * the prop is always `{}` in JSON when there are none.
+     *
+     * @return array<string, array<string>>|stdClass
+     */
+    private function errors(): array|stdClass
+    {
+        if ($this->formState === null || !$this->formState->hasErrors()) {
+            return new stdClass();
+        }
+
+        return $this->formState->errors()->all();
+    }
+
+    /**
      * Resolve props, handling lazy evaluation and partial reloads.
      *
      * @param array<string, mixed> $props
@@ -166,7 +184,7 @@ class Inertia implements ResettableInterface
         // Merge shared data (flash messages first, then shared data)
         $allProps = array_merge(
             [
-                'errors' => new stdClass(),
+                'errors' => $this->errors(),
                 'flash' => $this->session->flash()->all(),
             ],
             $this->shared,

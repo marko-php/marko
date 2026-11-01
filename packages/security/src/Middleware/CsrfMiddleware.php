@@ -29,6 +29,11 @@ class CsrfMiddleware implements MiddlewareInterface
 {
     public const string COOKIE_NAME = 'XSRF-TOKEN';
 
+    /**
+     * The form field the token is read from.
+     */
+    public const string TOKEN_FIELD = '_token';
+
     private const array SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 
     public function __construct(
@@ -73,7 +78,7 @@ class CsrfMiddleware implements MiddlewareInterface
     private function extractToken(
         Request $request,
     ): ?string {
-        $postToken = $request->post('_token');
+        $postToken = $request->post(self::TOKEN_FIELD);
 
         if (is_string($postToken)) {
             return $postToken;

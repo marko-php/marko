@@ -110,6 +110,42 @@ $messages = $this->session->flash()->peek('success');
 $this->session->flash()->has('error'); // false
 ```
 
+### Next-Request Flash Data
+
+`FlashDataInterface` holds structured data --- arrays, numbers, nested input --- for **exactly the next request**. A value `put()` on one request is readable on the next one and gone on the one after, whether or not anything read it. Reads never consume it.
+
+```php
+use Marko\Session\Contracts\FlashDataInterface;
+
+public function __construct(
+    private FlashDataInterface $flashData,
+) {}
+
+// Request 1
+$this->flashData->put('import', ['rows' => 120, 'skipped' => [4, 9]]);
+
+// Request 2: readable any number of times
+$this->flashData->get('import');          // ['rows' => 120, 'skipped' => [4, 9]]
+$this->flashData->has('import');          // true
+$this->flashData->keep('import');         // carry it to request 3 as well
+
+// Request 3 (without keep()): gone
+$this->flashData->get('import', []);      // []
+```
+
+A value is not visible on the request that put it. Values must be `null`, scalars or arrays of them: flashing a closure or any other object throws `InvalidFlashDataException`. `keep()` with no keys keeps every value.
+
+Which one to use:
+
+| | `FlashBag` (`$session->flash()`) | `FlashDataInterface` |
+|---|---|---|
+| Holds | String messages by type | Any serialisable data by key |
+| Lifetime | Until read with `get()` | Exactly the next request, read or not |
+| Reading | `get()` clears, `peek()` doesn't | Never clears |
+| Typical use | "Profile updated." notices | Validation errors and old input ([marko/forms](/docs/packages/forms/)) |
+
+`SessionFlashData` implements it under the reserved session key `_flash_data`. The session ages the data once per request, when it loads in `start()` --- including a lazily started session --- so expiry does not depend on anything reading it. A session without flash data is left unchanged.
+
 ### Session Lifecycle
 
 ```php
@@ -303,6 +339,19 @@ public function has(string $type): bool;
 public function clear(): array;
 ```
 
+### FlashDataInterface
+
+```php
+use Marko\Session\Contracts\FlashDataInterface;
+
+public function put(string $key, mixed $value): void;           // next request only; throws InvalidFlashDataException for objects
+public function get(string $key, mixed $default = null): mixed; // what the previous request flashed; never consumes
+public function has(string $key): bool;
+public function keep(string ...$keys): void;                    // carry values one more request; no keys = all
+```
+
+`marko/session` binds it to `SessionFlashData`. `SessionFlashData::age()` is the aging step `Session::start()` runs on freshly loaded data; a custom `SessionInterface` implementation should run it the same way.
+
 ### SessionHandlerInterface
 
 Extends PHP's native `SessionHandlerInterface` and `SessionUpdateTimestampHandlerInterface`:
@@ -382,3 +431,4 @@ public function gcDivisor(): int;
 | `SessionException` | Base exception for all session errors --- includes `getContext()` and `getSuggestion()` methods |
 | `SessionNotStartedException` | Thrown when accessing session data before calling `start()` |
 | `InvalidSessionIdException` | Thrown when a session ID has an invalid format (must be alphanumeric with hyphens, 32--128 characters) |
+| `InvalidFlashDataException` | Thrown when `FlashDataInterface::put()` gets a closure or other object, naming the nested path |

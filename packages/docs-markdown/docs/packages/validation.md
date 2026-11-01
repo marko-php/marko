@@ -67,7 +67,7 @@ The `ValidationException` includes rich context --- call `errors()` to get the `
 }
 ```
 
-API clients get JSON; browsers get a minimal HTML page with the message. See [Errors and HTTP Exceptions](/docs/packages/routing/#errors-and-http-exceptions). Redirecting back to an HTML form with errors and old input is not built in --- catch the exception in the controller for that.
+API clients get JSON; browsers get a minimal HTML page with the message. See [Errors and HTTP Exceptions](/docs/packages/routing/#errors-and-http-exceptions). To redirect an HTML form back with its errors and old input instead, add the `RedirectBackOnValidationError` middleware from [marko/forms](/docs/packages/forms/).
 
 ### Quick Boolean Check
 
@@ -722,4 +722,16 @@ class ValidationException extends Exception implements HttpExceptionInterface
     public function getHeaders(): array;       // []
     public function getResponseData(): array;  // ['message' => ..., 'errors' => $errors->all()]
 }
+```
+
+### FlashedFormStateInterface
+
+The single reader of the form state a failed submission flashed for the next request. View helpers, Inertia and test assertions all read through it, so none of them knows how the state is stored. Reading never consumes it. `marko/validation` only defines the contract; [marko/forms](/docs/packages/forms/) binds the implementation.
+
+```php
+use Marko\Validation\Contracts\FlashedFormStateInterface;
+
+public function errors(): ValidationErrors;                     // empty when nothing was flashed
+public function hasErrors(): bool;
+public function old(string $key, mixed $default = null): mixed; // dot paths: 'address.city', 'items.0.sku'
 ```

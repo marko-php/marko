@@ -9,6 +9,7 @@
         "marko/core": "self.version",
         "marko/routing": "self.version",
         "marko/session": "self.version",
+        "marko/validation": "self.version",
         "marko/vite": "self.version"
     },
     "require-dev": {

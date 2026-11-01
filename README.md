@@ -250,6 +250,7 @@ Marko ships as composable packages — require only what you need. Every package
 | [view-latte](packages/view-latte/README.md) | Latte template engine integration |
 | [view-twig](packages/view-twig/README.md) | Twig template engine integration |
 | [layout](packages/layout/README.md) | Attribute-driven layout system with slot-based component composition |
+| [forms](packages/forms/README.md) | Redirect back with flashed validation errors and old input, plus form template helpers |
 
 ### Error Handling
 
