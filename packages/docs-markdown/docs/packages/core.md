@@ -604,6 +604,8 @@ ProjectPaths::isAbsolute('\\\\server\\share'); // true
 
 `isAbsolute()` recognizes Unix paths (`/var/cache`), Windows drive paths (`C:\cache` or `C:/cache`) and UNC paths (`\\server\share`) on every OS. A drive-relative path such as `C:cache` is not absolute.
 
+Every framework setting that takes a filesystem path resolves it this way, including `DISCOVERY_CACHE_PATH`, the session, debugbar, page-cache and queue restart-signal paths, the compiled-template cache directory and `rr:serve --config`.
+
 ## API Reference
 
 ### Attributes

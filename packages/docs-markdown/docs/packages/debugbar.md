@@ -90,7 +90,7 @@ Boolean variables accept `true`, `false`, `1`, `0`, `yes`, `no`, `on` and `off` 
 | `route.open` | When false, the toolbar and profiler routes are restricted to `route.allowed_ips`. Set to `true` only on trusted networks. |
 | `route.allowed_ips` | Client IPs allowed to see the toolbar and reach `/_debugbar`. |
 | `route.trusted_proxies` | Reverse-proxy IPs whose `X-Forwarded-For`/`Forwarded` headers are honoured. Empty by default. |
-| `storage.path` | Directory (relative to project root) where request snapshots are written. |
+| `storage.path` | Directory where request snapshots are written. A relative path resolves against the project root; an absolute path (Unix, Windows drive or UNC) is used as given. |
 | `storage.max_files` | Snapshot retention cap. Older files are pruned. |
 | `collectors.*` | Toggle individual collectors. The `config` collector is off by default. |
 | `options.database.slow_threshold_ms` | Queries slower than this are highlighted. |
