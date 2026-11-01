@@ -18,6 +18,7 @@ use Marko\Queue\JobRunner;
 use Marko\Queue\QueueAsyncObserverDispatcher;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\RetryPolicy;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -154,6 +155,7 @@ describe('async observer dispatch through marko/queue', function (): void {
             ),
             $config,
             new JobRunner($container, $jobEnvelope, new FakeEventDispatcher()),
+            new RetryPolicy($config, new FakeClock()),
         )->work(
             once: true,
         );

@@ -23,7 +23,7 @@ class Worker implements WorkerInterface
         private readonly FailedJobHandlerInterface $failedJobHandler,
         private readonly QueueConfig $config,
         private readonly JobRunnerInterface $jobRunner,
-        private readonly BackoffValidator $backoffValidator = new BackoffValidator(),
+        private readonly RetryPolicy $retryPolicy,
         private readonly ProcessControlInterface $processControl = new PcntlProcessControl(),
     ) {}
 
@@ -88,7 +88,7 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * Run one attempt of the job, then delete it, or release or fail it if it threw.
+     * Run one attempt of the job, then delete it, or release or fail it if it threw or asked to be released.
      *
      * With a timeout, a timer fails the job once it runs too long and ends the worker process:
      * a job stuck in a blocking call cannot be stopped safely from inside the process.
@@ -125,13 +125,19 @@ class Worker implements WorkerInterface
             return;
         }
 
-        if ($error === null) {
-            $this->queue->delete($job->id);
+        if ($error !== null) {
+            $this->handleFailedJob($job, $error, $queue);
 
             return;
         }
 
-        $this->handleFailedJob($job, $error, $queue);
+        if ($job->releaseDelay !== null) {
+            $this->handleReleasedJob($job, $queue);
+
+            return;
+        }
+
+        $this->queue->delete($job->id);
     }
 
     /**
@@ -154,6 +160,8 @@ class Worker implements WorkerInterface
             $job->releaseContainer();
         }
 
+        // A timed-out attempt ended in an exception, so it counts toward maxExceptions like one that threw
+        $job->incrementExceptions();
         $exception = JobTimedOutException::exceeded($job::class, $timeout);
 
         try {
@@ -268,37 +276,12 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * Seconds to wait before retrying a job whose latest attempt failed.
+     * Release a job that threw for another attempt, or fail it for good once RetryPolicy says a limit
+     * is reached (retry deadline, maxExceptions, maxAttempts) or its backoff is invalid.
      *
-     * Uses the job's $backoff, then the `queue.backoff` config, then the exponential
-     * curve 2^attempts * 10. A list backoff is indexed by attempt and its last value repeats.
-     *
-     * @throws QueueException When the job's $backoff or the queue.backoff config is invalid
-     */
-    public function backoffFor(
-        JobInterface $job,
-    ): int {
-        $backoff = $job->backoff !== null
-            ? $this->backoffValidator->validate($job->backoff, 'job ' . $job::class)
-            : $this->config->backoff();
-
-        if ($backoff === null) {
-            return (int) pow(2, $job->attempts) * 10;
-        }
-
-        if (is_int($backoff)) {
-            return $backoff;
-        }
-
-        return $backoff[min(max($job->attempts, 1), count($backoff)) - 1];
-    }
-
-    /**
-     * Release a failed job for another attempt, or fail it for good on its last attempt.
-     *
-     * A job whose backoff is invalid cannot be released, so it is failed for good with
-     * both its own error and the backoff error, and the worker keeps running: one bad job class
-     * must not stop every worker. Fix the backoff, then queue:retry the job.
+     * The job's own exception is stored, with the reason it was not retried appended. A job whose
+     * backoff is invalid is failed rather than stopping the worker: one bad job class must not stop
+     * every worker. Fix the backoff, then queue:retry the job.
      *
      * @throws QueueException|SerializationException
      */
@@ -307,28 +290,44 @@ class Worker implements WorkerInterface
         Throwable $e,
         string $queue,
     ): void {
-        $maxAttempts = $job->maxAttempts ?? $this->config->maxAttempts();
+        $decision = $this->retryPolicy->decide($job, $e);
 
-        if ($job->attempts >= $maxAttempts) {
-            $this->failJob($job, $e, $queue);
-
-            return;
-        }
-
-        try {
-            $delay = $this->backoffFor($job);
-        } catch (QueueException $backoffError) {
+        if ($decision->failure !== null) {
             $this->failJob(
                 $job,
                 $e,
                 $queue,
-                "\n\nJob could not be retried: " . $backoffError->getMessage() . ' ' . $backoffError->getContext(),
+                "\n\nJob could not be retried: " . $decision->failure->getMessage() . ' '
+                    . $decision->failure->getContext(),
             );
 
             return;
         }
 
-        $this->queue->release($job, $delay);
+        $this->queue->release($job, (int) $decision->delay);
+    }
+
+    /**
+     * Release a job that asked for it with release() inside handle(), after the delay it asked for.
+     *
+     * A deliberate release is not an exception, so it does not count toward maxExceptions. A job past
+     * its retry deadline, or out of attempts without a deadline, is failed for good instead.
+     *
+     * @throws QueueException|SerializationException
+     */
+    private function handleReleasedJob(
+        JobInterface $job,
+        string $queue,
+    ): void {
+        $decision = $this->retryPolicy->decide($job);
+
+        if ($decision->failure !== null) {
+            $this->failJob($job, $decision->failure, $queue);
+
+            return;
+        }
+
+        $this->queue->release($job, (int) $decision->delay);
     }
 
     /**

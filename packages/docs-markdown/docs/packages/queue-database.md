@@ -87,8 +87,12 @@ The `jobs.attempts` column is the authoritative attempt count. Every reservation
 
 - **A job that throws** is released by the worker. `release()` stores the job the worker hands back in place of the payload it was reserved with, so its attempt count, exception count and retry deadline survive the retry. The job is retried until it has been attempted `maxAttempts` times, then moved to `failed_jobs` and deleted from `jobs`.
 - **A job whose worker dies** (fatal error, OOM, `SIGKILL`) is never released. Once its reservation is older than `queue.retry_after`, the next `pop()` reclaims it, and the lost run still counts as an attempt. If the reclaimed job has already used all its attempts, `pop()` hands it to the [failed-job handler](/docs/packages/queue/#when-a-job-fails-for-good) with a `JobAttemptsExhaustedException` ("exceeded max attempts after worker crash or timeout"), so it is stored in `failed_jobs`, its `failed()` hook runs and `JobFailedEvent` is dispatched. Then `pop()` deletes it and moves on to the next job. This happens after the reserving transaction commits, so `failed()` never runs inside it. A job that always crashes its worker can't loop forever.
+- **A job that releases itself** (calls `release()` inside `handle()`) is stored back by the worker like a job that threw, but its exception count doesn't grow. Its reservation still increments `attempts`.
+- **A job with a [retry deadline](/docs/packages/queue/#retry-deadlines-exception-limits-and-self-release)** is not limited by attempts, so a polling job that releases itself hundreds of times is never failed at pop time for its attempt count. `pop()` fails it with a `JobRetryDeadlinePassedException` once the deadline has passed instead.
 
-`marko queue:retry` resets the attempt count, so a retried job gets its full `maxAttempts` again.
+The pop-time check asks the same `RetryPolicy` as the worker, so the precedence (deadline, then `maxExceptions`, then `maxAttempts`) is identical.
+
+`marko queue:retry` resets the attempt and exception counts and clears the retry deadline, so a retried job gets its full `maxAttempts` again and a fresh deadline.
 
 ### Time and Testing
 
@@ -107,11 +111,20 @@ Because nothing reads the system time directly, delays and reservation expiry ca
 ```php
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Queue\Database\DatabaseQueue;
+use Marko\Queue\RetryPolicy;
 use Marko\Testing\Fake\FakeClock;
 
 it('holds a delayed job until it is due', function (): void {
     $clock = new FakeClock('2026-10-05 12:00:00');
-    $queue = new DatabaseQueue($connection, $envelope, $failedJobHandler, $queryBuilderFactory, $clock, DatabaseTimezoneConfig::fromName('UTC'));
+    $queue = new DatabaseQueue(
+        $connection,
+        $envelope,
+        $failedJobHandler,
+        $queryBuilderFactory,
+        $clock,
+        DatabaseTimezoneConfig::fromName('UTC'),
+        new RetryPolicy($queueConfig, $clock),
+    );
     $queue->later(60, new SendReport());
 
     $clock->travel('+59 seconds');
@@ -171,16 +184,16 @@ Implements `QueueInterface`. The constructor accepts:
 
 - a `ConnectionInterface` connection
 - a `JobEnvelope`
-- a `FailedJobHandlerInterface`, used to fail jobs that exhaust their attempts through crashed reservations
+- a `FailedJobHandlerInterface`, used to fail jobs that exhaust their attempts through crashed reservations or pass their retry deadline
 - a `QueryBuilderFactoryInterface`, used to build the locking reservation query. Its builders must use the same connection as the queue, so the lock is taken inside the queue's transaction. The driver bindings already do this.
 - a `Psr\Clock\ClockInterface`, the source of every timestamp the queue reads or writes
 - a `DatabaseTimezoneConfig` (`database.timezone`), the zone every stored time and cutoff is converted to before it is formatted
+- a `RetryPolicy`, which decides at pop time whether a reclaimed job has reached its retry deadline or used its attempts (the default `maxAttempts` comes from `queue.max_attempts`)
 - an optional table name (`jobs`)
 - an optional default queue name
 - an optional `retryAfter` timeout in seconds
-- an optional default `maxAttempts`
 
-The module factory passes the container's bound clock and `DatabaseTimezoneConfig`, and sets the last three from `queue.queue`, `queue.retry_after` and `queue.max_attempts`.
+The module factory passes the container's bound clock, `DatabaseTimezoneConfig` and `RetryPolicy`, and sets the last two from `queue.queue` and `queue.retry_after`.
 
 `pop()` selects the next available job with `lockForUpdate()->skipLocked()` inside a transaction, then reserves it with an `UPDATE` guarded on `reserved_at`. A job locked by another worker is skipped rather than waited for, so multiple workers can run concurrently without claiming the same job. The connection must implement `TransactionInterface` (the MySQL and PostgreSQL drivers do). Otherwise `pop()` throws `LockException`, because the lock would be released as soon as the `SELECT` finished. Jobs whose `reserved_at` timestamp is older than `retry_after` seconds are treated as crashed and become eligible for re-reservation.
 

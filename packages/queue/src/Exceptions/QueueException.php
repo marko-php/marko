@@ -85,6 +85,16 @@ class QueueException extends MarkoException
         );
     }
 
+    public static function invalidRetryDelay(
+        int $delaySeconds,
+    ): self {
+        return new self(
+            message: 'Invalid retry delay.',
+            context: "A job cannot be released after $delaySeconds seconds; the delay cannot be negative.",
+            suggestion: 'Release with 0 for an immediate retry, or a positive number of seconds.',
+        );
+    }
+
     public static function invalidPushResult(
         string $reason,
     ): self {

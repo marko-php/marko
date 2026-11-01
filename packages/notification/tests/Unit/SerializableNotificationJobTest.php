@@ -21,6 +21,7 @@ use Marko\Queue\JobRunner;
 use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\RetryPolicy;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -376,6 +377,7 @@ describe('SendNotificationJob serialization', function (): void {
                 ),
                 $queueConfig,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
+                new RetryPolicy($queueConfig, new FakeClock()),
             );
             $worker->work(once: true);
 
@@ -530,6 +532,7 @@ describe('SendNotificationJob final failure', function (): void {
                     createNotificationTestEnvelope(),
                     new FakeEventDispatcher(),
                 ),
+                new RetryPolicy(createNotificationTestQueueConfig(), new FakeClock()),
             );
             $stopJob->worker = $worker;
 

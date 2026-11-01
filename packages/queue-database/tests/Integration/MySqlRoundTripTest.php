@@ -14,6 +14,7 @@ use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\PrivateStateJob;
 use Marko\Queue\Database\Tests\Fixtures\QueueTables;
 use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
+use Marko\Queue\Database\Tests\Fixtures\TestRetryPolicy;
 use Marko\Queue\FailedJob;
 use Marko\Queue\JobEnvelope;
 use Marko\Testing\Fake\FakeClock;
@@ -87,6 +88,7 @@ function mysqlQueue(
         queryBuilderFactory: new MySqlQueryBuilderFactory($connection),
         clock: new FakeClock(new DateTimeImmutable($utcInstant)->setTimezone(new DateTimeZone($clockTimezone))),
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
+        retryPolicy: TestRetryPolicy::create(),
     );
 }
 

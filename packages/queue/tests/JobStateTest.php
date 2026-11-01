@@ -28,7 +28,9 @@ describe('JobInterface per-job state', function (): void {
             expect($reflection->hasProperty($property))->toBeTrue();
         }
 
-        foreach (['incrementExceptions', 'setRetryDeadline', 'release', 'clearRelease'] as $method) {
+        foreach (
+            ['incrementExceptions', 'resetExceptions', 'setRetryDeadline', 'clearRetryDeadline', 'release', 'clearRelease'] as $method
+        ) {
             expect($reflection->hasMethod($method))->toBeTrue();
         }
     });
@@ -61,6 +63,22 @@ describe('Job per-job state', function (): void {
         $job->incrementExceptions();
 
         expect($job->exceptions)->toBe(2);
+    });
+
+    it('resets the exception count to zero', function (): void {
+        $job = new JobStateTestJob();
+        $job->incrementExceptions();
+        $job->resetExceptions();
+
+        expect($job->exceptions)->toBe(0);
+    });
+
+    it('clears the retry deadline', function (): void {
+        $job = new JobStateTestJob();
+        $job->setRetryDeadline(new DateTimeImmutable('2026-11-01T06:00:00Z'));
+        $job->clearRetryDeadline();
+
+        expect($job->retryDeadline)->toBeNull();
     });
 
     it('stores the retry deadline it is given', function (): void {

@@ -69,9 +69,19 @@ interface JobInterface
     public function incrementExceptions(): void;
 
     /**
+     * Start the exception count again from zero, as queue:retry does before pushing a failed job back.
+     */
+    public function resetExceptions(): void;
+
+    /**
      * Store the retry deadline captured when the job is dispatched. It is not re-evaluated on later attempts.
      */
     public function setRetryDeadline(DateTimeImmutable $deadline): void;
+
+    /**
+     * Remove the retry deadline, so the next push captures a fresh one, as queue:retry does.
+     */
+    public function clearRetryDeadline(): void;
 
     /**
      * Ask, from inside handle(), to be released back to the queue after the given delay, without throwing.

@@ -51,10 +51,20 @@ abstract class Job implements JobInterface
         $this->exceptions++;
     }
 
+    public function resetExceptions(): void
+    {
+        $this->exceptions = 0;
+    }
+
     public function setRetryDeadline(
         DateTimeImmutable $deadline,
     ): void {
         $this->retryDeadline = $deadline;
+    }
+
+    public function clearRetryDeadline(): void
+    {
+        $this->retryDeadline = null;
     }
 
     /**

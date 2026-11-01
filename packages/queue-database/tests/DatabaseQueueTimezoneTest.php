@@ -10,6 +10,7 @@ use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\SqliteConnection;
 use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
 use Marko\Queue\Database\Tests\Fixtures\TestJob;
+use Marko\Queue\Database\Tests\Fixtures\TestRetryPolicy;
 use Marko\Queue\JobEnvelope;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -48,6 +49,7 @@ function zonedQueue(
         queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
         clock: $clock,
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName($databaseTimezone),
+        retryPolicy: TestRetryPolicy::create(3, $clock),
         retryAfter: $retryAfter,
     );
 }

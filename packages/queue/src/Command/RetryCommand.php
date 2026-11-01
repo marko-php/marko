@@ -74,7 +74,7 @@ readonly class RetryCommand implements CommandInterface
                 continue;
             }
 
-            $job->resetAttempts();
+            $this->resetForRetry($job);
             $this->queue->push($job, $failedJob->queue);
             $this->failedJobRepository->delete($failedJob->id);
             $count++;
@@ -114,7 +114,7 @@ readonly class RetryCommand implements CommandInterface
             return 1;
         }
 
-        $job->resetAttempts();
+        $this->resetForRetry($job);
 
         // Push it back to the queue
         $this->queue->push($job, $failedJob->queue);
@@ -125,6 +125,20 @@ readonly class RetryCommand implements CommandInterface
         $output->writeLine("Job $jobId pushed back to queue.");
 
         return 0;
+    }
+
+    /**
+     * Give a failed job a fresh start: no attempts, no exceptions, no release request, and no retry
+     * deadline, so a RetryUntilInterface job gets a new deadline when it is pushed again instead of
+     * failing straight away on the one it already passed.
+     */
+    private function resetForRetry(
+        JobInterface $job,
+    ): void {
+        $job->resetAttempts();
+        $job->resetExceptions();
+        $job->clearRetryDeadline();
+        $job->clearRelease();
     }
 
     /**
