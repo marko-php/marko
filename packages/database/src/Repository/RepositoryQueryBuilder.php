@@ -31,18 +31,32 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
      */
     private array $relationships = [];
 
+    /**
+     * The table name or alias that qualifies this query's columns in a whereHas() subquery.
+     */
+    private string $tableReference;
+
+    /**
+     * @param RelationshipExistsCompiler|null $relationshipExistsCompiler Builds whereHas()/whereDoesntHave()
+     *     subqueries; Repository::query() and matching() pass one, and those methods throw without it
+     */
     public function __construct(
         private readonly QueryBuilderInterface $queryBuilder,
         private readonly EntityHydrator $hydrator,
         private readonly EntityMetadata $metadata,
         private readonly string $entityClass,
         private readonly ?RelationshipLoader $relationshipLoader = null,
-    ) {}
+        private readonly ?RelationshipExistsCompiler $relationshipExistsCompiler = null,
+    ) {
+        $this->tableReference = $this->metadata->tableName;
+    }
 
     public function table(
         string $table,
+        ?string $alias = null,
     ): static {
-        $this->queryBuilder->table($table);
+        $this->queryBuilder->table($table, $alias);
+        $this->tableReference = $alias ?? $table;
 
         return $this;
     }
@@ -82,6 +96,69 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         array $values,
     ): static {
         $this->queryBuilder->whereIn($column, $values);
+
+        return $this;
+    }
+
+    public function whereNotIn(
+        string $column,
+        array $values,
+    ): static {
+        $this->queryBuilder->whereNotIn($column, $values);
+
+        return $this;
+    }
+
+    public function whereColumn(
+        string $first,
+        string $operator,
+        string $second,
+    ): static {
+        $this->queryBuilder->whereColumn($first, $operator, $second);
+
+        return $this;
+    }
+
+    public function whereExists(
+        callable|QueryBuilderInterface $subquery,
+    ): static {
+        $this->queryBuilder->whereExists($subquery);
+
+        return $this;
+    }
+
+    public function whereNotExists(
+        callable|QueryBuilderInterface $subquery,
+    ): static {
+        $this->queryBuilder->whereNotExists($subquery);
+
+        return $this;
+    }
+
+    /**
+     * @throws RepositoryException When a relationship in the path is not declared on its entity
+     */
+    public function whereHas(
+        string $relation,
+        ?callable $constraint = null,
+    ): static {
+        $this->queryBuilder->whereExists(
+            $this->relationshipSubquery($relation, $constraint, "whereHas('$relation')"),
+        );
+
+        return $this;
+    }
+
+    /**
+     * @throws RepositoryException When a relationship in the path is not declared on its entity
+     */
+    public function whereDoesntHave(
+        string $relation,
+        ?callable $constraint = null,
+    ): static {
+        $this->queryBuilder->whereNotExists(
+            $this->relationshipSubquery($relation, $constraint, "whereDoesntHave('$relation')"),
+        );
 
         return $this;
     }
@@ -375,8 +452,9 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
             if ($this->metadata->getRelationship($topLevel) === null) {
                 throw RepositoryException::unknownRelationship(
                     $this->entityClass,
-                    $this->entityClass,
-                    $name,
+                    $topLevel,
+                    array_keys($this->metadata->getRelationships()),
+                    "with('$name')",
                 );
             }
         }
@@ -448,6 +526,68 @@ class RepositoryQueryBuilder implements EntityQueryBuilderInterface
         $this->eagerLoadRelationships([$entity]);
 
         return $entity;
+    }
+
+    /**
+     * Build the correlated subquery for a (possibly dotted) relationship path.
+     *
+     * The whole path is validated first, so an unknown later segment fails before
+     * anything is built. A dotted path nests: the first relationship's subquery
+     * gets whereHas() for the rest of the path, through a builder scoped to the
+     * related entity and qualified by its generated alias.
+     *
+     * @throws RepositoryException
+     */
+    private function relationshipSubquery(
+        string $path,
+        ?callable $constraint,
+        string $call,
+    ): QueryBuilderInterface {
+        $compiler = $this->relationshipExistsCompiler
+            ?? throw RepositoryException::relationshipFiltersNotConfigured($this->entityClass);
+
+        $compiler->assertRelationshipPath($this->metadata, $path, $call);
+
+        $segments = explode('.', $path, 2);
+        $remainingPath = $segments[1] ?? null;
+
+        return $compiler->compile(
+            $this->metadata,
+            $this->tableReference,
+            $segments[0],
+            $call,
+            function (
+                QueryBuilderInterface $subquery,
+                EntityMetadata $relatedMetadata,
+                string $relatedAlias,
+            ) use (
+                $compiler,
+                $remainingPath,
+                $constraint,
+            ): void {
+                if ($remainingPath === null && $constraint === null) {
+                    return;
+                }
+
+                $scoped = new self(
+                    $subquery,
+                    $this->hydrator,
+                    $relatedMetadata,
+                    $relatedMetadata->entityClass,
+                    null,
+                    $compiler,
+                );
+                $scoped->tableReference = $relatedAlias;
+
+                if ($remainingPath !== null) {
+                    $scoped->whereHas($remainingPath, $constraint);
+
+                    return;
+                }
+
+                $constraint($scoped);
+            },
+        );
     }
 
     /**

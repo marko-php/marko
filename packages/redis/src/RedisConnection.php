@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Marko\Cache\Redis;
+namespace Marko\Redis;
 
-use Marko\Cache\Redis\Exceptions\RedisConnectionException;
+use Marko\Redis\Exceptions\RedisConnectionException;
 use Predis\Client;
 use Predis\ClientInterface;
 use Predis\CommunicationException;
 
-class RedisConnection
+class RedisConnection implements RedisConnectionInterface
 {
     /**
      * Transport schemes: tcp is plain text, tls encrypts the connection and verifies the server
@@ -23,12 +23,11 @@ class RedisConnection
      * @throws RedisConnectionException when the scheme is not one of SCHEMES
      */
     public function __construct(
-        public readonly string $host = '127.0.0.1',
-        public readonly int $port = 6379,
-        public readonly ?string $password = null,
-        public readonly int $database = 0,
-        public readonly string $prefix = 'marko:cache:',
-        public readonly string $scheme = 'tcp',
+        public readonly string $host,
+        public readonly int $port,
+        public readonly ?string $password,
+        public readonly int $database,
+        public readonly string $scheme,
     ) {
         if (!in_array($scheme, self::SCHEMES, true)) {
             throw RedisConnectionException::invalidScheme($scheme, self::SCHEMES);
@@ -102,7 +101,7 @@ class RedisConnection
 
     /**
      * Open the connection eagerly so a refused connection fails here, with
-     * the configured host and port, instead of on the first cache command.
+     * the configured host and port, instead of on the first command.
      *
      * @throws RedisConnectionException
      */

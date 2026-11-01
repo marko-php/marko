@@ -322,6 +322,10 @@
         },
         {
             "type": "path",
+            "url": "packages/redis"
+        },
+        {
+            "type": "path",
             "url": "packages/roadrunner"
         },
         {
@@ -482,6 +486,7 @@
         "marko/queue-rabbitmq": "self.version",
         "marko/queue-sync": "self.version",
         "marko/ratelimiter": "self.version",
+        "marko/redis": "self.version",
         "marko/roadrunner": "self.version",
         "marko/routing": "self.version",
         "marko/scheduler": "self.version",
@@ -629,6 +634,7 @@
             "Marko\\Queue\\Rabbitmq\\Tests\\": "packages/queue-rabbitmq/tests/",
             "Marko\\Queue\\Sync\\Tests\\": "packages/queue-sync/tests/",
             "Marko\\RateLimiter\\Tests\\": "packages/ratelimiter/tests/",
+            "Marko\\Redis\\Tests\\": "packages/redis/tests/",
             "Marko\\Roadrunner\\Tests\\": "packages/roadrunner/tests/",
             "Marko\\Routing\\Tests\\": "packages/routing/tests/",
             "Marko\\Scheduler\\Tests\\": "packages/scheduler/tests/",

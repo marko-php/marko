@@ -13,13 +13,17 @@ composer require marko/routing
 
 ## Configuration
 
-The only setting is the base URL used for absolute URLs from the [URL generator](#named-routes-and-url-generation). It reads `APP_URL`:
+`url` is the base URL used for absolute URLs from the [URL generator](#named-routes-and-url-generation). It reads `APP_URL`. `file_offload` hands [file responses](#file-and-streamed-responses) to the web server; it is off unless you set it:
 
 ```php title="config/routing.php"
 use Marko\Config\Env;
 
 return [
     'url' => Env::string('APP_URL', ''),
+    'file_offload' => [
+        'header' => Env::string('ROUTING_FILE_OFFLOAD_HEADER', ''), // 'X-Sendfile', 'X-Accel-Redirect' or '' (off)
+        'prefix_map' => [], // local path prefix => server path prefix
+    ],
 ];
 ```
 
@@ -155,10 +159,12 @@ A rejected value is treated like a failed constraint: the router tries the next 
 These checks keep values from climbing out of a directory, but they don't make a value a safe filename on their own. When a parameter becomes part of a filesystem path, join it with `SafePath::join()`, which normalises the path and refuses anything that escapes the base directory:
 
 ```php title="AssetController.php"
+use Marko\Routing\File\LocalFileSource;
+use Marko\Routing\Http\FileResponse;
 use Marko\Routing\SafePath;
 
 #[Get('/assets/{path*}')]
-public function show(string $path): Response
+public function show(Request $request, string $path): FileResponse
 {
     $file = SafePath::join('/var/www/app/public/assets', $path);
 
@@ -166,7 +172,7 @@ public function show(string $path): Response
         throw HttpException::notFound();
     }
 
-    return new Response((string) file_get_contents($file));
+    return FileResponse::fromSource($request, new LocalFileSource($file));
 }
 ```
 
@@ -306,7 +312,7 @@ Because session and auth middleware do not run, a custom error page (an `Excepti
 
 ### HEAD and OPTIONS
 
-- **HEAD**: when no `#[Head]` route matches, the GET route for the same path handles the request. The response keeps its status, headers and cookies, but the router always removes the body of a response to a HEAD request (including 404/405 pages). `Response::withoutBody()` does this and preserves the concrete response class; a `StreamingResponse` sends its headers and never opens the stream.
+- **HEAD**: when no `#[Head]` route matches, the GET route for the same path handles the request. The response keeps its status, headers and cookies, but the router always removes the body of a response to a HEAD request (including 404/405 pages). `Response::withoutBody()` does this and preserves the concrete response class; `send()` then skips `sendBody()` on a [streamed response](#file-and-streamed-responses), so a file is never read and an SSE stream is never opened.
 - **OPTIONS**: when no `#[Options]` route matches but the path matches other routes, the router answers `204 No Content` with an `Allow` header (always including `HEAD` when `GET` is allowed, and `OPTIONS`). This automatic response goes through the global middleware marked `#[RunsOnUnmatched]`, so [`marko/cors`](/docs/packages/cors/) turns a browser preflight into a full CORS response. An OPTIONS request to an unknown path gets a 404.
 
 ### Adding Middleware
@@ -551,6 +557,143 @@ $media = $mediaManager->upload(new MediaUpload(
     extension: $avatar->guessExtension() ?? 'bin',
 ));
 ```
+
+### File and Streamed Responses
+
+`Response` holds its body as a string. For a large file or a body generated on the fly, return a response that implements `Marko\Routing\Http\StreamedResponseInterface` instead: its `body()` is `''`, and `Response::send()` emits the headers and then calls `sendBody()`, which writes the body in chunks. Runtimes and middleware check for the interface, so [`marko/page-cache`](/docs/packages/page-cache/) never caches one and [`marko/roadrunner`](/docs/packages/roadrunner/) refuses one loudly instead of sending an empty body.
+
+#### Serving a file
+
+`FileResponse::fromSource()` takes the request and a `FileSourceInterface`. It streams the file in 64 KB chunks without loading it into memory, and answers the request's `Range` and validator headers:
+
+```php title="VideoController.php"
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\File\LocalFileSource;
+use Marko\Routing\Http\ContentDisposition;
+use Marko\Routing\Http\FileResponse;
+use Marko\Routing\Http\Request;
+use Marko\Routing\SafePath;
+
+#[Get('/videos/{name}')]
+public function show(Request $request, string $name): FileResponse
+{
+    $source = new LocalFileSource(SafePath::join('/var/app/storage/videos', $name));
+
+    return FileResponse::fromSource($request, $source);
+}
+
+#[Get('/videos/{name}/download')]
+public function download(Request $request, string $name): FileResponse
+{
+    $source = new LocalFileSource(SafePath::join('/var/app/storage/videos', $name));
+
+    return FileResponse::fromSource($request, $source)
+        ->withDisposition(ContentDisposition::attachment($source->filename()));
+}
+```
+
+Always build a request-derived path with [`SafePath::join()`](#parameter-values-and-filesystem-paths). `LocalFileSource` throws `FileResponseException` when the file is missing, is a directory or is unreadable; check `is_file()` first and throw `HttpException::notFound()` when a missing file is the client's problem.
+
+| Request | Response |
+| --- | --- |
+| Plain `GET` | `200` with the whole file, `Content-Length`, `Content-Type` (detected with `finfo`), `Last-Modified`, a weak `ETag` (size and mtime) and `Accept-Ranges: bytes` |
+| `Range: bytes=0-99`, `bytes=500-` or `bytes=-500` (suffix) | `206 Partial Content` with `Content-Range: bytes 0-99/1234` and that slice. Browsers need this to seek in a `<video>`, and Safari won't play video without it |
+| A range past the end of the file, or a malformed one | `416 Range Not Satisfiable` with `Content-Range: bytes */1234` (`RangeNotSatisfiableException`) |
+| Several ranges (`bytes=0-99,200-299`) | `200` with the whole file. `multipart/byteranges` is not supported |
+| `If-None-Match` with the current ETag, or `If-Modified-Since` not older than the file | `304 Not Modified`, no body |
+| `Range` with an `If-Range` that no longer matches | `200` with the whole file |
+
+`If-None-Match` wins over `If-Modified-Since`. `If-Range` needs a strong match, so an `If-Range` ETag never matches the weak ETag and the client gets the whole file; an `If-Range` date equal to `Last-Modified` allows the range. `Range` is only honoured on `GET`. Override the detected type with `->withHeader('Content-Type', 'video/mp4')`.
+
+#### Files on a filesystem disk
+
+`FilesystemFileSource` serves a file from any [`marko/filesystem`](/docs/packages/filesystem/) disk (local, S3) through `readStream()`. marko/routing only suggests marko/filesystem, so install it and a driver first:
+
+```bash
+composer require marko/filesystem marko/filesystem-local
+```
+
+```php
+use Marko\Routing\File\FilesystemFileSource;
+
+$source = new FilesystemFileSource($this->filesystemManager->disk('videos'), $path);
+
+return FileResponse::fromSource($request, $source);
+```
+
+On a stream that cannot seek, a range is reached by reading and discarding the bytes before it. Implement `FileSourceInterface` yourself for any other storage.
+
+#### Content-Disposition
+
+`ContentDisposition` builds and parses the header. `ContentDisposition::inline($filename)` and `ContentDisposition::attachment($filename)` take an optional filename and throw `ContentDispositionException` for an empty name or one containing CR, LF, NUL, `/` or `\`. `toHeaderValue()` gives the RFC 6266 form: a non-ASCII name is sent as an ASCII fallback plus `filename*=UTF-8''...`:
+
+```php
+ContentDisposition::attachment('Résumé.pdf')->toHeaderValue();
+// attachment; filename="R_sum_.pdf"; filename*=UTF-8''R%C3%A9sum%C3%A9.pdf
+```
+
+`ContentDisposition::fromHeader($value)` parses a header back (preferring `filename*`), and `type()` returns `DispositionType::Inline` or `DispositionType::Attachment`. On a plain `Response`, use `->withHeader('Content-Disposition', $disposition->toHeaderValue())`.
+
+#### Offloading files to the web server
+
+In production, let the web server send the bytes. Set `routing.file_offload` and build file responses with `FileResponseFactory`, which applies it:
+
+```php title="config/routing.php"
+'file_offload' => [
+    'header' => 'X-Accel-Redirect',
+    'prefix_map' => ['/var/app/storage/videos/' => '/protected-videos/'],
+],
+```
+
+```php
+use Marko\Routing\Http\FileResponseFactory;
+
+public function __construct(
+    private FileResponseFactory $fileResponseFactory,
+) {}
+
+#[Get('/videos/{name}')]
+public function show(Request $request, string $name): FileResponse
+{
+    $source = new LocalFileSource(SafePath::join('/var/app/storage/videos', $name));
+
+    return $this->fileResponseFactory->fromSource($request, $source);
+}
+```
+
+With offload on, a `LocalFileSource` response carries `Content-Type`, `Last-Modified` and the offload header with an empty body; the server handles `Range` and `Content-Length`. The prefix map replaces the longest matching local prefix (`/var/app/storage/videos/intro.mp4` becomes `/protected-videos/intro.mp4`, an nginx `internal` location). `X-Accel-Redirect` requires a prefix map; with `X-Sendfile` and an empty map the local path is sent as is. A file outside every mapped prefix throws `FileResponseException`, as does any other header name. Offload is never auto-detected, and other file sources (a remote disk has no local path) are always streamed by PHP. `FileResponse::fromSource()` called without a `FileOffload` never offloads.
+
+#### Streaming generated content
+
+`StreamedResponse` takes a callback that receives the `OutputStreamer` and writes chunks as it produces them:
+
+```php
+use Marko\Routing\Http\OutputStreamer;
+use Marko\Routing\Http\StreamedResponse;
+
+#[Get('/reports/orders.csv')]
+public function export(): StreamedResponse
+{
+    return new StreamedResponse(
+        callback: function (OutputStreamer $outputStreamer): void {
+            $outputStreamer->write("id,total\n");
+
+            foreach ($this->orderRepository->cursor() as $order) {
+                if (!$outputStreamer->write("$order->id,$order->total\n")) {
+                    return; // the client disconnected
+                }
+            }
+        },
+        headers: ['Content-Type' => 'text/csv'],
+    );
+}
+```
+
+`OutputStreamer::prepare()` (called before the body) drains every output buffer, enables implicit flush and lifts the time limit; `write()` echoes and flushes one chunk and returns `false` once `connection_aborted()` reports the client gone. The callback is not called for HEAD requests. In tests, read the body with [`TestResponse::streamedContent()`](/docs/packages/testing/#streamed-and-file-responses).
+
+#### Writing your own streamed response
+
+Extend `AbstractStreamedResponse` and implement `sendBody()`, writing through `$this->outputStreamer()`. A class that implements `StreamedResponseInterface` directly also needs `withOutputStreamer()`, which tests use to swap in a streamer that leaves output buffers alone. Subclasses that still override `send()` keep working, but move the body into `sendBody()` so HEAD handling, page-cache and RoadRunner see the response as streamed.
 
 ### Overriding Vendor Routes
 
@@ -914,11 +1057,132 @@ class Response
 }
 ```
 
-`withoutBody()` empties the body and marks it omitted, keeping status, headers, cookies and the concrete class; the router applies it to every HEAD response. A subclass that writes its own output in `send()` should check `isBodyOmitted()` and send headers only.
+`withoutBody()` empties the body and marks it omitted, keeping status, headers, cookies and the concrete class; the router applies it to every HEAD response. `send()` emits the status and headers through the protected `sendHeaders()`, then calls `sendBody()` for a `StreamedResponseInterface` whose body is not omitted, or echoes `body()` otherwise.
 
 `cookies()` returns the `Cookie` instances attached to the response; `headerLines()` returns the raw `"Name: value"` lines followed by one `Set-Cookie:` line per cookie, without making any SAPI calls --- `send()` uses it internally, and it's also useful for testing. `withHeader()` and `withHeaders()` merge into the existing headers (`withHeaders()` merges its argument over the current set). `withCookie()` replaces an existing cookie that matches on `(name, path, domain)`, or appends a new one otherwise. Every `with*()` method is marked `#[\NoDiscard]` and returns a clone via PHP's `clone` operator rather than `new static(...)`, so a `Response` subclass such as `StreamingResponse` survives decoration intact --- see [Decorating Responses](#decorating-responses). `Response` is deliberately not a `readonly class` for this reason: immutability is enforced by API design (private properties, no setters) rather than the `readonly` keyword.
 
 `json()`, `html()`, and `redirect()` construct with `new self()`, not `new static()`, since a subclass such as `StreamingResponse` has a different constructor signature and cannot accept `(body:, statusCode:, headers:)`.
+
+### StreamedResponseInterface and AbstractStreamedResponse
+
+```php
+use Marko\Routing\Http\AbstractStreamedResponse;
+use Marko\Routing\Http\StreamedResponseInterface;
+
+interface StreamedResponseInterface
+{
+    public function sendBody(): void;                                           // write the body to output
+    public function withOutputStreamer(OutputStreamer $outputStreamer): static; // copy that writes through another streamer
+}
+
+abstract class AbstractStreamedResponse extends Response implements StreamedResponseInterface
+{
+    public function __construct(int $statusCode = 200, array $headers = []);
+    public function withOutputStreamer(OutputStreamer $outputStreamer): static;
+    protected function outputStreamer(): OutputStreamer;
+}
+```
+
+### OutputStreamer
+
+```php
+use Marko\Routing\Http\OutputStreamer;
+
+public function prepare(): void;              // drain output buffers, implicit flush, no time limit
+public function write(string $chunk): bool;   // echo + flush; false once the client disconnected
+public function connectionAborted(): bool;
+```
+
+### StreamedResponse
+
+```php
+use Marko\Routing\Http\StreamedResponse;
+
+public function __construct(callable $callback, int $statusCode = 200, array $headers = []); // callable(OutputStreamer): void
+```
+
+### FileResponse and FileResponseFactory
+
+```php
+use Marko\Routing\Http\FileResponse;
+use Marko\Routing\Http\FileResponseFactory;
+
+// FileResponse extends AbstractStreamedResponse
+public static function fromSource(Request $request, FileSourceInterface $fileSource, ?FileOffload $fileOffload = null): FileResponse; // throws RangeNotSatisfiableException (416)
+public function withDisposition(ContentDisposition $contentDisposition): static;
+public function fileSource(): FileSourceInterface;
+public function byteRange(): ?ByteRange;     // the range being served, null for a full body
+
+// FileResponseFactory applies routing.file_offload
+public function fromSource(Request $request, FileSourceInterface $fileSource): FileResponse;
+```
+
+### File Sources
+
+```php
+use Marko\Routing\File\FileSourceInterface;
+use Marko\Routing\File\FilesystemFileSource;
+use Marko\Routing\File\LocalFileSource;
+
+interface FileSourceInterface
+{
+    public function size(): int;
+    public function lastModified(): int;
+    public function mimeType(): string;
+    public function filename(): string;
+    public function stream(int $offset = 0, ?int $length = null): iterable; // iterable<string>
+}
+
+new LocalFileSource(string $path);                                      // throws FileResponseException when missing/unreadable; path(): string
+new FilesystemFileSource(FilesystemInterface $filesystem, string $path); // needs marko/filesystem
+```
+
+Both read through `Marko\Routing\File\ResourceChunkReader`, which reads a byte range of a stream resource in 64 KB chunks and closes it.
+
+### ByteRange and ConditionalRequest
+
+```php
+use Marko\Routing\Http\ByteRange;
+use Marko\Routing\Http\ConditionalRequest;
+
+public static function fromHeader(?string $range, int $size): ?ByteRange; // null: no header, other unit, multi-range
+public function start(): int;
+public function end(): int;                      // inclusive
+public function length(): int;
+public function contentRange(int $size): string; // "bytes 0-99/1234"
+
+public static function fromRequest(Request $request): ConditionalRequest;
+public static function etagFor(int $size, int $lastModified): string; // W/"<size hex>-<mtime hex>"
+public static function httpDate(int $timestamp): string;
+public function isNotModified(string $etag, int $lastModified): bool;
+public function allowsRange(string $etag, int $lastModified): bool;
+```
+
+### ContentDisposition
+
+```php
+use Marko\Routing\Http\ContentDisposition;
+use Marko\Routing\Http\DispositionType;
+
+public static function inline(?string $filename = null): ContentDisposition;
+public static function attachment(?string $filename = null): ContentDisposition;
+public static function fromHeader(string $value): ContentDisposition;
+public function type(): DispositionType;       // DispositionType::Inline or DispositionType::Attachment
+public function filename(): ?string;
+public function toHeaderValue(): string;
+```
+
+### FileOffload
+
+```php
+use Marko\Routing\Http\FileOffload;
+
+public function __construct(string $header, array $prefixMap = []); // 'X-Sendfile' or 'X-Accel-Redirect'
+public function header(): string;
+public function headerValueFor(string $path): string;
+```
+
+`RoutingConfig::fileOffload()` returns the configured `FileOffload`, or `null` when `routing.file_offload.header` is empty.
 
 ### Cookie
 

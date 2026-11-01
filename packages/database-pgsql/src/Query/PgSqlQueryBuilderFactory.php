@@ -18,6 +18,7 @@ class PgSqlQueryBuilderFactory implements QueryBuilderFactoryInterface
     {
         return new PgSqlQueryBuilder(
             connection: $this->connection,
+            queryBuilderFactory: $this,
         );
     }
 }

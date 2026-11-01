@@ -112,6 +112,7 @@ body:
         - queue-rabbitmq
         - queue-sync
         - ratelimiter
+        - redis
         - roadrunner
         - routing
         - scheduler

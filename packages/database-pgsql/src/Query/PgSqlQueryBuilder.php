@@ -14,12 +14,15 @@ use Marko\Database\PgSql\Exceptions\InsertReturningException;
 use Marko\Database\PgSql\Sql\PgSqlIdentifier;
 use Marko\Database\Query\IdentifierValidator;
 use Marko\Database\Query\JsonPathParser;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Query\UpsertValidator;
 
 class PgSqlQueryBuilder implements QueryBuilderInterface
 {
     private string $table = '';
+
+    private ?string $alias = null;
 
     /**
      * @var array<string>
@@ -32,9 +35,19 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
     private array $wheres = [];
 
     /**
-     * @var array<array{column: string, values: array}>
+     * @var array<array{column: string, values: array, not: bool}>
      */
     private array $whereIns = [];
+
+    /**
+     * @var list<array{first: string, operator: string, second: string}>
+     */
+    private array $whereColumns = [];
+
+    /**
+     * @var list<array{subquery: QueryBuilderInterface, negate: bool}>
+     */
+    private array $whereExists = [];
 
     /**
      * @var array<array{path: string, value: mixed}>
@@ -116,18 +129,34 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
 
     private bool $noWait = false;
 
+    private readonly QueryBuilderFactoryInterface $queryBuilderFactory;
+
+    /**
+     * @param QueryBuilderFactoryInterface|null $queryBuilderFactory Creates the builders whereExists() callables
+     *     receive; a PgSqlQueryBuilderFactory on $connection when omitted
+     */
     public function __construct(
         private readonly ConnectionInterface $connection,
-    ) {}
+        ?QueryBuilderFactoryInterface $queryBuilderFactory = null,
+    ) {
+        $this->queryBuilderFactory = $queryBuilderFactory ?? new PgSqlQueryBuilderFactory($connection);
+    }
 
     /**
      * @throws InvalidColumnException
      */
     public function table(
         string $table,
+        ?string $alias = null,
     ): static {
         IdentifierValidator::assertValidIdentifier($table);
+
+        if ($alias !== null) {
+            IdentifierValidator::assertValidAlias($alias);
+        }
+
         $this->table = $table;
+        $this->alias = $alias;
 
         return $this;
     }
@@ -254,6 +283,68 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         $this->whereIns[] = [
             'column' => $column,
             'values' => $values,
+            'not' => false,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException
+     */
+    public function whereNotIn(
+        string $column,
+        array $values,
+    ): static {
+        IdentifierValidator::assertValidIdentifier($column);
+
+        $this->whereIns[] = [
+            'column' => $column,
+            'values' => $values,
+            'not' => true,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException
+     */
+    public function whereColumn(
+        string $first,
+        string $operator,
+        string $second,
+    ): static {
+        IdentifierValidator::assertValidIdentifier($first);
+        IdentifierValidator::assertValidColumnOperator($operator);
+        IdentifierValidator::assertValidIdentifier($second);
+
+        $this->whereColumns[] = [
+            'first' => $first,
+            'operator' => $operator,
+            'second' => $second,
+        ];
+
+        return $this;
+    }
+
+    public function whereExists(
+        callable|QueryBuilderInterface $subquery,
+    ): static {
+        $this->whereExists[] = [
+            'subquery' => $this->resolveSubquery($subquery),
+            'negate' => false,
+        ];
+
+        return $this;
+    }
+
+    public function whereNotExists(
+        callable|QueryBuilderInterface $subquery,
+    ): static {
+        $this->whereExists[] = [
+            'subquery' => $this->resolveSubquery($subquery),
+            'negate' => true,
         ];
 
         return $this;
@@ -621,7 +712,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
 
         $sql = sprintf(
             'UPDATE %s SET %s',
-            $this->quoteIdentifier($this->table),
+            $this->compileTableReference(),
             implode(', ', $setParts),
         );
 
@@ -636,7 +727,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
 
         $sql = sprintf(
             'DELETE FROM %s',
-            $this->quoteIdentifier($this->table),
+            $this->compileTableReference(),
         );
 
         $sql .= $this->buildWhereClause();
@@ -798,6 +889,36 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
     }
 
     /**
+     * The FROM / UPDATE / DELETE target: the quoted table, plus `AS alias` when table() was given one.
+     */
+    private function compileTableReference(): string
+    {
+        $reference = $this->quoteIdentifier($this->table);
+
+        if ($this->alias !== null) {
+            $reference .= ' AS ' . $this->quoteIdentifier($this->alias);
+        }
+
+        return $reference;
+    }
+
+    /**
+     * A builder passed to whereExists() is used as is; a callable configures a fresh builder on this connection.
+     */
+    private function resolveSubquery(
+        callable|QueryBuilderInterface $subquery,
+    ): QueryBuilderInterface {
+        if ($subquery instanceof QueryBuilderInterface) {
+            return $subquery;
+        }
+
+        $builder = $this->queryBuilderFactory->create();
+        $subquery($builder);
+
+        return $builder;
+    }
+
+    /**
      * Execute an aggregate query and return the raw value or null.
      *
      * Reuses buildWhereClause() so any WHERE conditions are respected.
@@ -811,7 +932,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         $sql = sprintf(
             'SELECT %s FROM %s',
             $aggregateExpr,
-            $this->quoteIdentifier($this->table),
+            $this->compileTableReference(),
         );
 
         $sql .= $this->buildWhereClause();
@@ -954,7 +1075,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
             '%s %s FROM %s',
             $keyword,
             $columns,
-            $this->quoteIdentifier($this->table),
+            $this->compileTableReference(),
         );
 
         $sql .= $this->buildJoinClause();
@@ -1039,7 +1160,7 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         // WHERE IN conditions
         foreach ($this->whereIns as $whereIn) {
             if ($whereIn['values'] === []) {
-                $condition = '1 = 0';
+                $condition = $whereIn['not'] ? '1 = 1' : '1 = 0';
             } else {
                 $placeholders = [];
                 foreach ($whereIn['values'] as $value) {
@@ -1048,8 +1169,9 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
                 }
 
                 $condition = sprintf(
-                    '%s IN (%s)',
+                    '%s %s (%s)',
                     $this->quoteIdentifier($whereIn['column']),
+                    $whereIn['not'] ? 'NOT IN' : 'IN',
                     implode(', ', $placeholders),
                 );
             }
@@ -1075,6 +1197,22 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
         // WHERE NOT NULL conditions
         foreach ($this->whereNotNulls as $column) {
             $condition = sprintf('%s IS NOT NULL', $this->quoteIdentifier($column));
+
+            if (empty($conditions)) {
+                $conditions[] = $condition;
+            } else {
+                $conditions[] = 'AND ' . $condition;
+            }
+        }
+
+        // Column-to-column conditions
+        foreach ($this->whereColumns as $whereColumn) {
+            $condition = sprintf(
+                '%s %s %s',
+                $this->quoteIdentifier($whereColumn['first']),
+                $whereColumn['operator'],
+                $this->quoteIdentifier($whereColumn['second']),
+            );
 
             if (empty($conditions)) {
                 $conditions[] = $condition;
@@ -1123,6 +1261,26 @@ class PgSqlQueryBuilder implements QueryBuilderInterface
                 $conditions[] = $expr;
             } else {
                 $conditions[] = 'AND ' . $expr;
+            }
+        }
+
+        // EXISTS / NOT EXISTS subqueries, with their bindings at this position
+        foreach ($this->whereExists as $exists) {
+            $subqueryBindings = [];
+            $condition = sprintf(
+                '%s (%s)',
+                $exists['negate'] ? 'NOT EXISTS' : 'EXISTS',
+                $exists['subquery']->compileSubquery($subqueryBindings),
+            );
+
+            foreach ($subqueryBindings as $binding) {
+                $this->bindings[] = $binding;
+            }
+
+            if (empty($conditions)) {
+                $conditions[] = $condition;
+            } else {
+                $conditions[] = 'AND ' . $condition;
             }
         }
 

@@ -4,12 +4,21 @@ declare(strict_types=1);
 
 namespace Marko\Cache\Redis\Tests;
 
-use Marko\Cache\Redis\RedisConnection;
+use Marko\Cache\Contracts\CacheInterface;
+use Marko\Cache\Redis\Config\RedisCacheConfig;
+use Marko\Cache\Redis\Driver\RedisCacheDriver;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
+use Marko\Redis\Exceptions\RedisConnectionException;
+use Marko\Redis\RedisConnectionFactory;
+use Marko\Redis\RedisConnectionFactoryInterface;
+use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Psr\Clock\ClockInterface;
 
 /**
+ * Wire the cache-redis module bindings, plus the marko/redis factory, into a container.
+ *
  * @param array<string, mixed> $config
  */
 function createCacheRedisContainer(
@@ -17,15 +26,14 @@ function createCacheRedisContainer(
 ): Container {
     $container = new Container();
     $container->instance(ConfigRepositoryInterface::class, new FakeConfigRepository($config));
+    $container->instance(ClockInterface::class, new FakeClock());
+
+    $container->bind(RedisConnectionFactoryInterface::class, RedisConnectionFactory::class);
 
     $module = require dirname(__DIR__) . '/module.php';
 
     foreach ($module['bindings'] as $id => $implementation) {
         $container->bind($id, $implementation);
-    }
-
-    foreach ($module['singletons'] ?? [] as $id) {
-        $container->singleton($id);
     }
 
     return $container;
@@ -35,66 +43,61 @@ function createCacheRedisContainer(
  * @return array<string, mixed>
  */
 function cacheRedisConfig(
-    ?string $password = 'secret',
+    string $connection = 'cache',
 ): array {
-    return [
-        'cache-redis.host' => 'redis.internal',
-        'cache-redis.port' => 6380,
-        'cache-redis.password' => $password,
-        'cache-redis.database' => 3,
-        'cache-redis.prefix' => 'app:cache:',
-        'cache-redis.scheme' => 'tls',
+    $settings = [
+        'host' => 'redis.internal',
+        'port' => 6380,
+        'password' => 'secret',
+        'database' => 3,
+        'scheme' => 'tls',
     ];
+    $config = [
+        'cache-redis.connection' => $connection,
+        'cache-redis.prefix' => 'app:cache:',
+        'cache.driver' => 'redis',
+        'cache.path' => '/tmp/cache',
+        'cache.default_ttl' => 3600,
+        'encryption.key' => 'test-signing-key',
+        'redis.connections' => ['default' => $settings, 'cache' => $settings],
+    ];
+
+    foreach (['default', 'cache'] as $name) {
+        foreach ($settings as $key => $value) {
+            $config["redis.connections.$name.$key"] = $value;
+        }
+    }
+
+    return $config;
 }
 
 describe('cache-redis module bindings', function (): void {
-    it('ships a cache-redis config file with connection defaults', function (): void {
+    it('ships a cache-redis config file naming a redis connection and a key prefix', function (): void {
         $config = require dirname(__DIR__) . '/config/cache-redis.php';
 
-        expect($config)->toHaveKeys(['host', 'port', 'password', 'database', 'prefix', 'scheme'])
-            ->and($config['port'])->toBeInt()
-            ->and($config['database'])->toBeInt()
-            ->and($config['scheme'])->toBe('tcp');
+        expect($config)->toBe([
+            'connection' => 'default',
+            'prefix' => $config['prefix'],
+        ])->and($config['prefix'])->toBeString();
     });
 
-    it('passes the cache-redis scheme to RedisConnection', function (): void {
-        $connection = createCacheRedisContainer(cacheRedisConfig())->get(RedisConnection::class);
+    it('reads the connection name and prefix from cache-redis config', function (): void {
+        $redisCacheConfig = new RedisCacheConfig(new FakeConfigRepository(cacheRedisConfig()));
 
-        expect($connection->scheme)->toBe('tls');
+        expect($redisCacheConfig->connection())->toBe('cache')
+            ->and($redisCacheConfig->prefix())->toBe('app:cache:');
     });
 
-    it('resolves RedisConnection with values from cache-redis config', function (): void {
-        $connection = createCacheRedisContainer(cacheRedisConfig())->get(RedisConnection::class);
-
-        expect($connection)->toBeInstanceOf(RedisConnection::class)
-            ->and($connection->host)->toBe('redis.internal')
-            ->and($connection->port)->toBe(6380)
-            ->and($connection->password)->toBe('secret')
-            ->and($connection->database)->toBe(3)
-            ->and($connection->prefix)->toBe('app:cache:');
-    });
-
-    it('treats an empty cache-redis password as no password', function (): void {
-        $fromNull = createCacheRedisContainer(cacheRedisConfig(password: null))->get(RedisConnection::class);
-        $fromEmpty = createCacheRedisContainer(cacheRedisConfig(password: ''))->get(RedisConnection::class);
-
-        expect($fromNull->password)->toBeNull()
-            ->and($fromEmpty->password)->toBeNull();
-    });
-
-    it('treats a cache-redis password removed by a null app override as no password', function (): void {
-        $config = cacheRedisConfig();
-        unset($config['cache-redis.password']);
-
-        $connection = createCacheRedisContainer($config)->get(RedisConnection::class);
-
-        expect($connection->password)->toBeNull()
-            ->and($connection->host)->toBe('redis.internal');
-    });
-
-    it('resolves the same RedisConnection instance twice', function (): void {
+    it('resolves CacheInterface to RedisCacheDriver on the configured marko/redis connection', function (): void {
         $container = createCacheRedisContainer(cacheRedisConfig());
 
-        expect($container->get(RedisConnection::class))->toBe($container->get(RedisConnection::class));
+        expect($container->get(CacheInterface::class))->toBeInstanceOf(RedisCacheDriver::class);
+    });
+
+    it('throws a loud error when cache-redis names a connection redis does not configure', function (): void {
+        $container = createCacheRedisContainer(cacheRedisConfig(connection: 'missing'));
+
+        expect(fn () => $container->get(CacheInterface::class))
+            ->toThrow(RedisConnectionException::class, "Redis connection 'missing' is not configured");
     });
 });

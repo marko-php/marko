@@ -15,9 +15,13 @@ describe('QueryBuilderInterface', function (): void {
         $method = $reflection->getMethod('table');
         $params = $method->getParameters();
 
-        expect($params)->toHaveCount(1)
+        expect($params)->toHaveCount(2)
             ->and($params[0]->getName())->toBe('table')
-            ->and($params[0]->getType()?->getName())->toBe('string');
+            ->and($params[0]->getType()?->getName())->toBe('string')
+            ->and($params[1]->getName())->toBe('alias')
+            ->and($params[1]->getType()?->getName())->toBe('string')
+            ->and($params[1]->allowsNull())->toBeTrue()
+            ->and($params[1]->getDefaultValue())->toBeNull();
 
         // Returns self for fluent chaining
         $returnType = $method->getReturnType();

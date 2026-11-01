@@ -48,8 +48,10 @@ describe('QuerySpecification', function (): void {
                 return $this;
             }
 
-            public function table(string $table): static
-            {
+            public function table(
+                string $table,
+                ?string $alias = null,
+            ): static {
                 return $this;
             }
 
@@ -88,6 +90,31 @@ describe('QuerySpecification', function (): void {
             }
 
             public function whereJsonMissing(string $path): static
+            {
+                return $this;
+            }
+
+            public function whereNotIn(
+                string $column,
+                array $values,
+            ): static {
+                return $this;
+            }
+
+            public function whereColumn(
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function whereExists(callable|QueryBuilderInterface $subquery): static
+            {
+                return $this;
+            }
+
+            public function whereNotExists(callable|QueryBuilderInterface $subquery): static
             {
                 return $this;
             }
@@ -321,8 +348,10 @@ describe('QuerySpecification', function (): void {
                 return $this;
             }
 
-            public function table(string $table): static
-            {
+            public function table(
+                string $table,
+                ?string $alias = null,
+            ): static {
                 return $this;
             }
 
@@ -361,6 +390,31 @@ describe('QuerySpecification', function (): void {
             }
 
             public function whereJsonMissing(string $path): static
+            {
+                return $this;
+            }
+
+            public function whereNotIn(
+                string $column,
+                array $values,
+            ): static {
+                return $this;
+            }
+
+            public function whereColumn(
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function whereExists(callable|QueryBuilderInterface $subquery): static
+            {
+                return $this;
+            }
+
+            public function whereNotExists(callable|QueryBuilderInterface $subquery): static
             {
                 return $this;
             }

@@ -324,12 +324,16 @@ MySQL commits implicitly before any DDL statement (`CREATE`, `ALTER`, `DROP`, `T
 
 | Method | Description |
 |---|---|
-| `table(string $table): static` | Set the target table |
+| `table(string $table, ?string $alias = null): static` | Set the target table, optionally aliased (`table AS alias`) |
 | `select(string ...$columns): static` | Choose columns to return |
 | `selectRaw(string $expression, array $bindings = []): static` | Append a raw SQL expression to the SELECT list |
 | `where(string $column, string $operator, mixed $value): static` | Add a WHERE condition |
 | `orWhere(string $column, string $operator, mixed $value): static` | Add an OR WHERE condition |
 | `whereIn(string $column, array $values): static` | Add a WHERE IN condition |
+| `whereNotIn(string $column, array $values): static` | Add a WHERE NOT IN condition (an empty list matches every row) |
+| `whereColumn(string $first, string $operator, string $second): static` | Compare two columns; both sides are identifiers, never bindings |
+| `whereExists(callable\|QueryBuilderInterface $subquery): static` | Add a WHERE EXISTS subquery (a builder, or a callable that configures a fresh one) |
+| `whereNotExists(callable\|QueryBuilderInterface $subquery): static` | Add a WHERE NOT EXISTS subquery |
 | `whereNull(string $column): static` | Add a WHERE IS NULL condition |
 | `whereNotNull(string $column): static` | Add a WHERE IS NOT NULL condition |
 | `whereRaw(string $expression, array $bindings = []): static` | Add a raw SQL WHERE condition, AND-combined with other conditions |

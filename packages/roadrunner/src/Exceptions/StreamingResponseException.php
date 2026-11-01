@@ -12,9 +12,9 @@ class StreamingResponseException extends MarkoException
         string $responseClass,
     ): self {
         return new self(
-            message: "Cannot bridge a streaming response ($responseClass) to PSR-7 for RoadRunner.",
-            context: 'The RoadRunner PSR-7 HTTP worker buffers the full response body and has no way to emit a live stream through this bridge.',
-            suggestion: 'Do not return a streaming response from a route handler when serving requests through the RoadRunner driver.',
+            message: "Cannot bridge a streamed response ($responseClass) to PSR-7 for RoadRunner.",
+            context: 'The response implements StreamedResponseInterface (an SSE stream, a StreamedResponse or a FileResponse), so its body() is empty; the RoadRunner PSR-7 worker only sends a buffered body.',
+            suggestion: 'Serve streamed and file responses through PHP-FPM or the dev server, or return a plain Response with the full body when running under RoadRunner.',
         );
     }
 }
