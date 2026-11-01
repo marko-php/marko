@@ -73,6 +73,14 @@ it('has .env.example with placeholder values', function (): void {
         ->toContain('APP_URL=');
 });
 
+it('lists an empty URL_SIGNING_KEY in .env.example with a generation hint', function (): void {
+    $content = file_get_contents(__DIR__ . '/../.env.example');
+
+    expect($content)
+        ->toMatch('/^URL_SIGNING_KEY=$/m')
+        ->toContain('random_bytes(32)');
+});
+
 it('has empty app/ directory with .gitkeep', function (): void {
     $gitkeepPath = __DIR__ . '/../app/.gitkeep';
 
