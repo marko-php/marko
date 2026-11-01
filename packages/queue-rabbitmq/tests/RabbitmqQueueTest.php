@@ -12,6 +12,8 @@ use Marko\Queue\Rabbitmq\Exchange\ExchangeType;
 use Marko\Queue\Rabbitmq\RabbitmqConnection;
 use Marko\Queue\Rabbitmq\RabbitmqQueue;
 use Marko\Queue\Rabbitmq\Tests\Fixtures\TestJob;
+use Marko\Queue\Tests\Fixtures\UniqueJobStack;
+use Marko\Queue\Tests\Fixtures\UniqueTestJob;
 use Marko\Testing\Fake\FakeConfigRepository;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
@@ -1470,5 +1472,32 @@ test(
         expect($republished->attempts)->toBe(1)
             ->and($republished->exceptions)->toBe(1)
             ->and($republished->retryDeadline?->format(DATE_ATOM))->toBe('2026-11-01T06:00:00+00:00');
+    },
+);
+
+test(
+    'it publishes one message for duplicate unique-job pushes and releases the lock from the consumed payload',
+    function (): void {
+        $stack = new UniqueJobStack();
+        $channel = createMockChannel();
+        $queue = $stack->wrap(createPoisonTestQueue($channel, $stack->jobEnvelope));
+        $first = new UniqueTestJob();
+
+        $pushed = $queue->push($first);
+        $skipped = $queue->push(new UniqueTestJob());
+
+        /** @var AMQPMessage $published */
+        $published = callsTo($channel, 'basic_publish')[0]['msg'];
+        $channel->basicGetMessages = [rabbitmqMessage($published->getBody(), ['job_id' => $pushed->id], 1)];
+        $consumed = $queue->pop();
+
+        expect($pushed->pushed)->toBeTrue()
+            ->and($skipped->pushed)->toBeFalse()
+            ->and(callsTo($channel, 'basic_publish'))->toHaveCount(1)
+            ->and($consumed->uniqueLockOwner)->toBe($first->uniqueLockOwner);
+
+        $stack->jobRunner()->run($consumed);
+
+        expect($stack->lockIsFree($first))->toBeTrue();
     },
 );

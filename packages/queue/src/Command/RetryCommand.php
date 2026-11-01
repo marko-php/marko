@@ -13,6 +13,7 @@ use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
+use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
 
 /** @noinspection PhpUnused */
@@ -75,7 +76,15 @@ readonly class RetryCommand implements CommandInterface
             }
 
             $this->resetForRetry($job);
-            $this->queue->push($job, $failedJob->queue);
+            $result = $this->queue->push($job, $failedJob->queue);
+
+            if (!$result->pushed) {
+                $output->writeLine($this->notPushedMessage($failedJob->id, $result));
+                $skipped++;
+
+                continue;
+            }
+
             $this->failedJobRepository->delete($failedJob->id);
             $count++;
         }
@@ -115,11 +124,15 @@ readonly class RetryCommand implements CommandInterface
         }
 
         $this->resetForRetry($job);
+        $result = $this->queue->push($job, $failedJob->queue);
 
-        // Push it back to the queue
-        $this->queue->push($job, $failedJob->queue);
+        // A skipped push queued nothing, so the failed-job row is all that is left of the job
+        if (!$result->pushed) {
+            $output->writeLine($this->notPushedMessage($jobId, $result));
 
-        // Delete from failed jobs
+            return 1;
+        }
+
         $this->failedJobRepository->delete($jobId);
 
         $output->writeLine("Job $jobId pushed back to queue.");
@@ -151,6 +164,14 @@ readonly class RetryCommand implements CommandInterface
         FailedJob $failedJob,
     ): mixed {
         return unserialize($this->jobEnvelope->verifyAndUnwrap($failedJob->payload));
+    }
+
+    private function notPushedMessage(
+        string $jobId,
+        PushResult $result,
+    ): string {
+        return "Job $jobId was not pushed back to queue: $result->skipReason "
+            . 'Its failed-job record is kept; retry it again later.';
     }
 
     private function notRetryableMessage(

@@ -721,3 +721,45 @@ it('resets the retried container-aware job attempts before it runs again', funct
 
     expect($retried->attemptsWhenHandled)->toBe(1);
 });
+
+/**
+ * A queue whose every push is skipped, as the unique-job plugin skips a duplicate.
+ */
+class SkippingRetryQueue extends RetryRoundTripQueue
+{
+    public function push(
+        JobInterface $job,
+        ?string $queue = null,
+    ): PushResult {
+        return PushResult::skipped('Unique job lock "unique-job:TestRetryJob:1" is held.');
+    }
+}
+
+it('keeps the failed-job row and reports the reason when the retry push is skipped', function (): void {
+    $repository = Helpers::createStubFailedJobRepository([createFailedJob('held-job')]);
+    $command = new RetryCommand($repository, new SkippingRetryQueue(), createRetryCommandEnvelope());
+
+    ['output' => $output, 'stream' => $stream] = Helpers::createOutputStream();
+    $exitCode = $command->execute(new Input(['marko', 'queue:retry', 'held-job']), $output);
+
+    expect($exitCode)->toBe(1)
+        ->and(Helpers::getOutputContent($stream))
+        ->toContain('Job held-job was not pushed back to queue')
+        ->toContain('Unique job lock "unique-job:TestRetryJob:1" is held.')
+        ->and($repository->deletedIds)->toBe([]);
+});
+
+it('keeps the failed-job rows of skipped pushes when retrying all', function (): void {
+    $repository = Helpers::createStubFailedJobRepository([createFailedJob('job-1'), createFailedJob('job-2')]);
+    $command = new RetryCommand($repository, new SkippingRetryQueue(), createRetryCommandEnvelope());
+
+    ['output' => $output, 'stream' => $stream] = Helpers::createOutputStream();
+    $exitCode = $command->execute(new Input(['marko', 'queue:retry', '--all']), $output);
+
+    expect($exitCode)->toBe(1)
+        ->and(Helpers::getOutputContent($stream))
+        ->toContain('Job job-1 was not pushed back to queue')
+        ->toContain('0 jobs pushed back to queue.')
+        ->toContain('2 jobs skipped.')
+        ->and($repository->deletedIds)->toBe([]);
+});

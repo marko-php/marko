@@ -5,6 +5,7 @@
     "type": "library",
     "require": {
         "php": "^8.5",
+        "marko/cache": "self.version",
         "marko/clock": "self.version",
         "marko/core": "self.version",
         "marko/encryption": "self.version"
@@ -13,6 +14,7 @@
         "ext-pcntl": "Required for queue:work job timeouts and graceful SIGTERM/SIGINT shutdown"
     },
     "require-dev": {
+        "marko/cache-array": "self.version",
         "marko/testing": "self.version",
         "pestphp/pest": "^4.0"
     },

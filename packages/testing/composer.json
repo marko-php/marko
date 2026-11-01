@@ -6,6 +6,7 @@
     "require": {
         "php": "^8.5",
         "marko/core": "self.version",
+        "marko/cache": "self.version",
         "marko/clock": "self.version",
         "marko/broadcasting": "self.version",
         "marko/config": "self.version",
@@ -24,6 +25,7 @@
         "ext-fileinfo": "*"
     },
     "require-dev": {
+        "marko/cache-array": "self.version",
         "marko/database": "self.version",
         "marko/filesystem-local": "self.version",
         "marko/forms": "self.version",

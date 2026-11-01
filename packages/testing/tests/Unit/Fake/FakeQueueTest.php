@@ -2,10 +2,17 @@
 
 declare(strict_types=1);
 
+use Marko\Cache\Lock\LockFactory;
+use Marko\Cache\Lock\UsleepSleeper;
+use Marko\Cache\Memory\Lock\ArrayLockStore;
+use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Job;
 use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\UniqueJobInterface;
+use Marko\Queue\UniqueUntil;
 use Marko\Testing\Exceptions\AssertionFailedException;
+use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeQueue;
 
 it('implements QueueInterface', function () {
@@ -241,4 +248,110 @@ it('asserts nothing was pushed', function () {
     $queue->push($job, 'default');
 
     expect(fn () => $queue->assertNothingPushed())->toThrow(AssertionFailedException::class);
+});
+
+/**
+ * A unique job keyed by $key, released when it completes.
+ */
+class FakeQueueUniqueJob extends Job implements UniqueJobInterface
+{
+    public function __construct(
+        private readonly string $key = '42',
+    ) {}
+
+    public function handle(): void {}
+
+    public function uniqueId(): string
+    {
+        return $this->key;
+    }
+
+    public function uniqueFor(): int
+    {
+        return 60;
+    }
+
+    public function uniqueUntil(): UniqueUntil
+    {
+        return UniqueUntil::Processed;
+    }
+}
+
+function fakeQueueWithArrayLocks(): FakeQueue
+{
+    $clock = new FakeClock();
+
+    return new FakeQueue(new LockFactory(new ArrayLockStore($clock), $clock, new UsleepSleeper()));
+}
+
+it('skips a duplicate unique job through the unique-job push plugin', function () {
+    $queue = fakeQueueWithArrayLocks();
+
+    $first = $queue->push(new FakeQueueUniqueJob());
+    $second = $queue->push(new FakeQueueUniqueJob());
+    $later = $queue->later(30, new FakeQueueUniqueJob());
+
+    expect($first->pushed)->toBeTrue()
+        ->and($second->pushed)->toBeFalse()
+        ->and($second->skipReason)->toContain('unique-job:' . FakeQueueUniqueJob::class . ':42')
+        ->and($later->pushed)->toBeFalse()
+        ->and($queue->pushed)->toHaveCount(1)
+        ->and($queue->skipped)->toHaveCount(2)
+        ->and($queue->skipped[0]['reason'])->toBe($second->skipReason);
+});
+
+it('throws when a unique job is pushed to a FakeQueue without a lock factory', function () {
+    $queue = new FakeQueue();
+
+    expect(fn () => $queue->push(new FakeQueueUniqueJob()))
+        ->toThrow(QueueException::class, 'no lock driver is bound');
+});
+
+it('pushes jobs that are not unique without a lock factory', function () {
+    $queue = new FakeQueue();
+    $job = new class () extends Job
+    {
+        public function handle(): void {}
+    };
+
+    expect($queue->push($job)->pushed)->toBeTrue();
+});
+
+it('asserts a job class was pushed exactly once', function () {
+    $queue = fakeQueueWithArrayLocks();
+    $queue->push(new FakeQueueUniqueJob());
+    $queue->push(new FakeQueueUniqueJob());
+
+    $queue->assertPushedOnce(FakeQueueUniqueJob::class);
+
+    $queue->push(new FakeQueueUniqueJob('43'));
+
+    expect(fn () => $queue->assertPushedOnce(FakeQueueUniqueJob::class))
+        ->toThrow(
+            AssertionFailedException::class,
+            'Expected 1 ' . FakeQueueUniqueJob::class . ' jobs pushed but got 2.',
+        );
+});
+
+it('fails assertPushedOnce when the job class was never pushed', function () {
+    expect(fn () => fakeQueueWithArrayLocks()->assertPushedOnce(FakeQueueUniqueJob::class))
+        ->toThrow(AssertionFailedException::class);
+});
+
+it('asserts a job class was skipped', function () {
+    $queue = fakeQueueWithArrayLocks();
+    $queue->push(new FakeQueueUniqueJob());
+
+    expect(fn () => $queue->assertSkipped(FakeQueueUniqueJob::class))
+        ->toThrow(AssertionFailedException::class);
+
+    $queue->push(new FakeQueueUniqueJob());
+
+    $queue->assertSkipped(FakeQueueUniqueJob::class);
+    $queue->assertSkipped(FakeQueueUniqueJob::class, fn (FakeQueueUniqueJob $job) => $job->uniqueId() === '42');
+
+    expect(fn () => $queue->assertSkipped(
+        FakeQueueUniqueJob::class,
+        fn (FakeQueueUniqueJob $job) => $job->uniqueId() === '99',
+    ))->toThrow(AssertionFailedException::class);
 });
