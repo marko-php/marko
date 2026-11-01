@@ -76,6 +76,13 @@ return [
         'throttle_seconds' => 60,   // at most one reset link per user in this window
     ],
 
+    'verification' => [
+        'verify_route' => 'verification.verify', // the route NAME verification links are signed for
+        'notice_route' => '/email/verify',        // where unverified browsers are redirected
+        'expire_seconds' => 3600,                // how long a verification link stays valid
+        'throttle_seconds' => 60,                // at most one verification link per user in this window
+    ],
+
     'password_confirmation' => [
         'timeout_seconds' => 10800,       // a confirmation stays valid for 3 hours
         'route' => '/confirm-password',   // where unconfirmed browsers are redirected
@@ -91,7 +98,7 @@ Each guard's `driver` picks how it is built. `session` is built in. The shipped 
 
 Each guard's `provider` names an entry in `providers`. See [User Providers](#user-providers).
 
-See [Remember Me](#remember-me) for what each `remember` option controls, [Login Throttling](#login-throttling) for `throttle`, [Password Reset](#password-reset) for `password_reset`, [Password Confirmation](#password-confirmation) for `password_confirmation`, and [Validation Rules](#validation-rules) for the `password` rule keys.
+See [Remember Me](#remember-me) for what each `remember` option controls, [Login Throttling](#login-throttling) for `throttle`, [Password Reset](#password-reset) for `password_reset`, [Email Verification](#email-verification) for `verification`, [Password Confirmation](#password-confirmation) for `password_confirmation`, and [Validation Rules](#validation-rules) for the `password` rule keys.
 
 ### Password Hashing
 
@@ -974,6 +981,240 @@ Resolving the persister happens on every request, before the user is looked up, 
 
 `expire_seconds` or `throttle_seconds` below `1` throws an `AuthException` when the broker reads it.
 
+## Email Verification
+
+Email verification lets a route require a verified email address. `EmailVerifierInterface` (bound to `EmailVerifier`) sends and checks verification links, and `EnsureEmailVerifiedMiddleware` keeps unverified users out. Your app supplies the routes, the pages and the email.
+
+`EmailVerifier` doesn't add any crypto or storage of its own. It reuses:
+
+- [routing](/docs/packages/routing/)'s `UrlSignerInterface` to sign links, so `routing.signing.key` must be set;
+- [`UserPersisterInterface`](#saving-changed-users) to save the verified user;
+- [marko/ratelimiter](/docs/packages/ratelimiter/)'s `RateLimiterInterface` to throttle resends, which needs a cache driver.
+
+`sendVerificationLink($user)` signs a link to the route named `verification.verify_route`. The link expires after `verification.expire_seconds` and carries two query parameters:
+
+- `id`: the user's auth identifier;
+- `hash`: the SHA-256 hash of `getEmailForVerification()`, so links sent before an email change stop working.
+
+Each user gets at most one link every `verification.throttle_seconds`. The method returns a `VerificationLinkStatus`:
+
+- `Sent`;
+- `Throttled`, when a link was sent too recently and nothing was sent;
+- `AlreadyVerified`, when the user is already verified and nothing was sent.
+
+`verify(Request $request)` acts on the logged-in user of the default guard, so put the verify route behind `AuthMiddleware`. In order, it:
+
+1. checks the URL signature with `UrlSignerInterface::assertValidSignature()`;
+2. compares `id` and `hash` with the user using `hash_equals()`;
+3. calls `markEmailAsVerified()` with the time from `ClockInterface`;
+4. saves the user through the persister of the guard's user provider;
+5. dispatches [`EmailVerifiedEvent`](#emailverifiedevent).
+
+It returns `VerificationStatus::Verified`. A link that fails any check throws routing's `InvalidSignatureException`, which renders as a 403. That covers a tampered or expired link (`isExpired()` tells the two apart), a link sent to another user, and a link sent before the email changed. Verifying a user who is already verified returns `VerificationStatus::AlreadyVerified` without saving or dispatching anything.
+
+### Setting Up Email Verification
+
+1. Implement `MustVerifyEmailInterface` on your user entity. It extends `AuthenticatableInterface` with `hasVerifiedEmail()`, `markEmailAsVerified()` and `getEmailForVerification()`. A nullable `email_verified_at` column is the usual backing.
+2. Bind a [`UserPersisterInterface`](#saving-changed-users) that saves the entity.
+3. Bind a `VerificationNotifierInterface` that delivers the link. No default ships, so resolving `EmailVerifierInterface` without one fails loudly.
+4. Set `routing.signing.key` (`URL_SIGNING_KEY`, at least 32 bytes), and install a cache driver for the throttle.
+
+```php title="app/web/Entity/User.php"
+use DateTimeImmutable;
+use Marko\Authentication\MustVerifyEmailInterface;
+use Marko\Notification\Contracts\NotifiableInterface;
+
+class User implements MustVerifyEmailInterface, NotifiableInterface
+{
+    public ?DateTimeImmutable $emailVerifiedAt = null;
+
+    // ...the AuthenticatableInterface and NotifiableInterface methods
+
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->emailVerifiedAt !== null;
+    }
+
+    public function markEmailAsVerified(
+        DateTimeImmutable $verifiedAt,
+    ): void {
+        $this->emailVerifiedAt = $verifiedAt;
+    }
+
+    public function getEmailForVerification(): string
+    {
+        return $this->email;
+    }
+}
+```
+
+### Sending the Verification Link
+
+`EmailVerifier` hands the user and the finished signed URL to your `VerificationNotifierInterface`, so you own the message. This one queues the email through [marko/notification](/docs/packages/notification/):
+
+```php title="app/web/Auth/VerifyEmailNotification.php"
+use Marko\Mail\Message;
+use Marko\Notification\Contracts\NotifiableInterface;
+use Marko\Notification\Contracts\NotificationInterface;
+
+class VerifyEmailNotification implements NotificationInterface
+{
+    public function __construct(
+        private string $url,
+    ) {}
+
+    public function channels(
+        NotifiableInterface $notifiable,
+    ): array {
+        return ['mail'];
+    }
+
+    public function toMail(
+        NotifiableInterface $notifiable,
+    ): Message {
+        return Message::create()
+            ->subject('Verify your email address')
+            ->html("<p><a href=\"$this->url\">Verify your email address</a>. The link expires in an hour.</p>");
+    }
+
+    public function toDatabase(
+        NotifiableInterface $notifiable,
+    ): array {
+        return [];
+    }
+}
+```
+
+```php title="app/web/Auth/QueuedVerificationNotifier.php"
+use App\Web\Entity\User;
+use Marko\Authentication\Contracts\VerificationNotifierInterface;
+use Marko\Authentication\MustVerifyEmailInterface;
+use Marko\Notification\Contracts\NotificationSenderInterface;
+
+class QueuedVerificationNotifier implements VerificationNotifierInterface
+{
+    public function __construct(
+        private NotificationSenderInterface $notificationSender,
+    ) {}
+
+    public function send(
+        MustVerifyEmailInterface $user,
+        string $url,
+    ): void {
+        /** @var User $user */
+        $this->notificationSender->queue($user, new VerifyEmailNotification($url));
+    }
+}
+```
+
+```php title="app/web/module.php"
+use App\Web\Auth\QueuedVerificationNotifier;
+use App\Web\Auth\UserPersister;
+use Marko\Authentication\Contracts\UserPersisterInterface;
+use Marko\Authentication\Contracts\VerificationNotifierInterface;
+
+return [
+    'bindings' => [
+        UserPersisterInterface::class => UserPersister::class,
+        VerificationNotifierInterface::class => QueuedVerificationNotifier::class,
+    ],
+];
+```
+
+Send the first link right after registration, e.g. from your registration controller or an observer on your own "user registered" event:
+
+```php
+$this->emailVerifier->sendVerificationLink($user);
+```
+
+### Handling the Verification Requests
+
+The verify route must have the name in `verification.verify_route`. Its path must not have `{id}` or `{hash}` placeholders, because `verify()` reads both from the query string. The notice page, at `verification.notice_route`, tells the user to check their inbox and offers a resend button:
+
+```php title="app/web/Controller/EmailVerificationController.php"
+use Marko\Authentication\Contracts\EmailVerifierInterface;
+use Marko\Authentication\EmailVerification\CurrentVerifiableUser;
+use Marko\Authentication\EmailVerification\VerificationLinkStatus;
+use Marko\Authentication\Middleware\AuthMiddleware;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
+use Marko\Routing\Attributes\Post;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
+
+#[Middleware(AuthMiddleware::class)]
+class EmailVerificationController
+{
+    public function __construct(
+        private EmailVerifierInterface $emailVerifier,
+        private CurrentVerifiableUser $currentUser,
+    ) {}
+
+    #[Get('/email/verify')]
+    public function notice(): Response
+    {
+        // Render "Check your inbox" with a resend form posting to /email/verification-notification
+    }
+
+    #[Post('/email/verification-notification')]
+    public function resend(): Response
+    {
+        $status = $this->emailVerifier->sendVerificationLink($this->currentUser->get());
+
+        return match ($status) {
+            VerificationLinkStatus::Sent => Response::redirect('/email/verify?sent=1'),
+            VerificationLinkStatus::Throttled => Response::redirect('/email/verify?throttled=1'),
+            VerificationLinkStatus::AlreadyVerified => Response::redirect('/dashboard'),
+        };
+    }
+
+    #[Get('/email/verify/confirm', name: 'verification.verify')]
+    public function verify(
+        Request $request,
+    ): Response {
+        // Verified or AlreadyVerified; a bad link throws InvalidSignatureException (403)
+        $this->emailVerifier->verify($request);
+
+        return Response::redirect('/dashboard?verified=1');
+    }
+}
+```
+
+`CurrentVerifiableUser::get()` returns the default guard's logged-in user as a `MustVerifyEmailInterface`. To show your own page for a bad link, catch `InvalidSignatureException` and check `isExpired()`.
+
+### Requiring a Verified Email
+
+Add `EnsureEmailVerifiedMiddleware` after `AuthMiddleware`:
+
+```php title="app/web/Controller/DashboardController.php"
+use Marko\Authentication\Middleware\AuthMiddleware;
+use Marko\Authentication\Middleware\EnsureEmailVerifiedMiddleware;
+use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
+use Marko\Routing\Http\Response;
+
+class DashboardController
+{
+    #[Get('/dashboard')]
+    #[Middleware([AuthMiddleware::class, EnsureEmailVerifiedMiddleware::class])]
+    public function index(): Response
+    {
+        // Only users with a verified email reach here
+    }
+}
+```
+
+For a user who isn't verified:
+
+- a browser request is redirected to `verification.notice_route`;
+- a request that wants JSON gets a `403` `EmailNotVerifiedException`: `{"message": "Your email address is not verified."}`.
+
+Misconfiguration is never let through quietly:
+
+- a logged-in user whose class doesn't implement `MustVerifyEmailInterface` throws an `AuthException`;
+- a guest throws `UnauthenticatedException`;
+- `expire_seconds` or `throttle_seconds` below `1` throws an `AuthException` when it is read.
+
 ## Password Confirmation
 
 Sensitive pages, such as two-factor setup or account deletion, can ask a signed-in user to re-enter their password when they haven't done so recently. Three interfaces make this up, each bound by default:
@@ -1203,6 +1444,10 @@ Authenticated users are redirected to a configured path (default: `/`).
 
 Asks for the password again before sensitive routes. See [Password Confirmation](#protecting-routes).
 
+### EnsureEmailVerifiedMiddleware
+
+Keeps users without a verified email out of a route. See [Email Verification](#requiring-a-verified-email).
+
 ## Events
 
 The auth package dispatches [events](/docs/packages/events/) during the authentication lifecycle. Create observers to react to these events.
@@ -1297,6 +1542,27 @@ class NotifyPasswordResetObserver
         $user = $event->getUser();
 
         // Send confirmation email, invalidate other sessions, etc.
+    }
+}
+```
+
+### EmailVerifiedEvent
+
+Dispatched by `EmailVerifier::verify()` after the verified user is saved (see [Email Verification](#email-verification)). Verifying an already verified user doesn't dispatch it again:
+
+```php title="WelcomeVerifiedUserObserver.php"
+use Marko\Authentication\Event\EmailVerifiedEvent;
+use Marko\Core\Attributes\Observer;
+
+#[Observer(EmailVerifiedEvent::class)]
+class WelcomeVerifiedUserObserver
+{
+    public function handle(
+        EmailVerifiedEvent $event,
+    ): void {
+        $user = $event->getUser(); // MustVerifyEmailInterface
+
+        // Send a welcome email, unlock features, etc.
     }
 }
 ```
@@ -1486,6 +1752,36 @@ public function deleteExpired(DateTimeImmutable $before): int;
 public function send(CanResetPasswordInterface $user, string $token): void;
 ```
 
+### MustVerifyEmailInterface
+
+Extends `AuthenticatableInterface`:
+
+```php
+public function hasVerifiedEmail(): bool;
+public function markEmailAsVerified(DateTimeImmutable $verifiedAt): void;
+public function getEmailForVerification(): string;
+```
+
+### EmailVerifierInterface
+
+```php
+public function sendVerificationLink(MustVerifyEmailInterface $user): VerificationLinkStatus; // Sent | Throttled | AlreadyVerified
+public function verify(Request $request): VerificationStatus; // Verified | AlreadyVerified; throws InvalidSignatureException
+```
+
+### VerificationNotifierInterface
+
+```php
+public function send(MustVerifyEmailInterface $user, string $url): void;
+```
+
+### CurrentVerifiableUser
+
+```php
+public function get(): MustVerifyEmailInterface; // throws UnauthenticatedException for a guest, AuthException for another user type
+public function guardName(): string;
+```
+
 ### PasswordVerifierInterface
 
 ```php
@@ -1530,6 +1826,10 @@ public function pull(string $default): string;
 ### PasswordConfirmationRequiredException
 
 Extends `HttpException` (423). Thrown by `RequirePasswordConfirmationMiddleware` for a request that wants JSON.
+
+### EmailNotVerifiedException
+
+Extends `HttpException` (403). Thrown by `EnsureEmailVerifiedMiddleware` for a request that wants JSON.
 
 ### TooManyPasswordConfirmationAttemptsException
 

@@ -205,6 +205,17 @@ class AuthException extends Exception
         );
     }
 
+    public static function userCannotVerifyEmail(
+        string $guard,
+        string $userClass,
+    ): self {
+        return new self(
+            message: "User class '$userClass' on guard '$guard' does not implement Marko\\Authentication\\MustVerifyEmailInterface",
+            context: 'Email verification (EnsureEmailVerifiedMiddleware, EmailVerifierInterface) needs to read and mark the logged-in user\'s verification state',
+            suggestion: "Implement MustVerifyEmailInterface on $userClass (e.g. backed by a nullable email_verified_at column), or remove EnsureEmailVerifiedMiddleware from routes this guard's users reach",
+        );
+    }
+
     public static function corruptPasswordResetToken(
         string $key,
     ): self {

@@ -6,6 +6,7 @@ use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
 use Marko\Authentication\Contracts\CookieJarInterface;
+use Marko\Authentication\Contracts\EmailVerifierInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\IntendedUrlInterface;
 use Marko\Authentication\Contracts\LoginChallengeInterface;
@@ -18,6 +19,8 @@ use Marko\Authentication\Contracts\PasswordVerifierInterface;
 use Marko\Authentication\Contracts\ResetLinkNotifierInterface;
 use Marko\Authentication\Contracts\UserPersisterInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
+use Marko\Authentication\Contracts\VerificationNotifierInterface;
+use Marko\Authentication\EmailVerification\EmailVerifier;
 use Marko\Authentication\Guard\GuardDriverRegistry;
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
 use Marko\Authentication\Hashing\HashManagerPasswordHasher;
@@ -230,12 +233,22 @@ it('binds the password verifier, password confirmation and intended URL', functi
         ->and($config['bindings'][IntendedUrlInterface::class])->toBe(IntendedUrl::class);
 });
 
-it('ships no default UserPersisterInterface or ResetLinkNotifierInterface binding', function () {
+it('binds the email verifier', function () {
     $config = require dirname(__DIR__, 2) . '/module.php';
 
-    expect($config['bindings'])->not->toHaveKey(UserPersisterInterface::class)
-        ->and($config['bindings'])->not->toHaveKey(ResetLinkNotifierInterface::class);
+    expect($config['bindings'][EmailVerifierInterface::class])->toBe(EmailVerifier::class);
 });
+
+it(
+    'ships no default UserPersisterInterface, ResetLinkNotifierInterface or VerificationNotifierInterface binding',
+    function () {
+        $config = require dirname(__DIR__, 2) . '/module.php';
+    
+        expect($config['bindings'])->not->toHaveKey(UserPersisterInterface::class)
+            ->and($config['bindings'])->not->toHaveKey(ResetLinkNotifierInterface::class)
+            ->and($config['bindings'])->not->toHaveKey(VerificationNotifierInterface::class);
+    }
+);
 
 it('builds AuthManager with a LoginChallengeResolver so guards get their configured challenges', function () {
     $config = require dirname(__DIR__, 2) . '/module.php';

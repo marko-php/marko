@@ -152,6 +152,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Email Verification
+    |--------------------------------------------------------------------------
+    |
+    | EmailVerifier signs links to the route named 'verify_route' (a route
+    | name, not a path); each link expires after expire_seconds, and one user
+    | gets at most one link every throttle_seconds. Both must be 1 or more.
+    | EnsureEmailVerifiedMiddleware redirects an unverified browser to
+    | 'notice_route' (a URL path your app serves) and gives a JSON request
+    | a 403.
+    |
+    */
+    'verification' => [
+        'verify_route' => 'verification.verify',
+        'notice_route' => '/email/verify',
+        'expire_seconds' => 3600,
+        'throttle_seconds' => 60,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Password Confirmation
     |--------------------------------------------------------------------------
     |

@@ -370,6 +370,46 @@ readonly class AuthConfig
     }
 
     /**
+     * The name of the route EmailVerifierInterface signs verification links for.
+     *
+     * @throws ConfigNotFoundException
+     */
+    public function verificationVerifyRoute(): string
+    {
+        return $this->config->getString('authentication.verification.verify_route');
+    }
+
+    /**
+     * The URL path EnsureEmailVerifiedMiddleware redirects unverified browsers to.
+     *
+     * @throws ConfigNotFoundException
+     */
+    public function verificationNoticeRoute(): string
+    {
+        return $this->config->getString('authentication.verification.notice_route');
+    }
+
+    /**
+     * How long a verification link stays valid, in seconds.
+     *
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function verificationExpireSeconds(): int
+    {
+        return $this->positiveInt('authentication.verification.expire_seconds');
+    }
+
+    /**
+     * The minimum time between two verification links for one user, in seconds.
+     *
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function verificationThrottleSeconds(): int
+    {
+        return $this->positiveInt('authentication.verification.throttle_seconds');
+    }
+
+    /**
      * @throws AuthException|ConfigNotFoundException
      */
     private function positiveInt(
