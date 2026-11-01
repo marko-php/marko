@@ -1,0 +1,11 @@
+{
+    "name": "app/shop",
+    "description": "Fixture application module with templates for the view:cache integration test",
+    "type": "marko-module",
+    "license": "MIT",
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

@@ -228,6 +228,27 @@ marko view:cache
 
 The command lists templates with `TemplateResolverInterface::all()` and compiles each through the driver's `TemplatePrecompilerInterface`. Every template is attempted; each failure is printed with its file and line, and the command exits with `1` when any template fails. When the installed driver binds no precompiler, the command fails with `NoDriverException`.
 
+Both official drivers bind a precompiler: [`marko/view-latte`](/docs/packages/view-latte/#precompiling-templates) and [`marko/view-twig`](/docs/packages/view-twig/#precompiling-templates). Only the template that wins resolution is compiled, because that is the one rendering uses: an `app/` override is compiled and the module template it shadows is skipped. A template whose source changed since it was last compiled is compiled again, even with `auto_refresh` off.
+
+#### Deploying to production
+
+Run `view:cache` on every deploy, after [`discovery:cache`](/docs/packages/core/#deploying-to-production), and turn `auto_refresh` off so rendering stops checking every template's modification time:
+
+```bash
+marko discovery:cache
+marko view:cache
+```
+
+```php title="config/view.php"
+return [
+    'auto_refresh' => false, // templates are compiled by view:cache on deploy
+];
+```
+
+With `auto_refresh` off, an edited template is only picked up by the next `view:cache`, so keep it `true` in development.
+
+Run `view:cache` in the release step, on the server at the path the app runs from. Both engines key compiled files by the template's absolute path, so templates compiled during an image build at a different path are not reused at runtime: they are compiled again on first use.
+
 `view:clear` removes every compiled template from `view.cache_directory` and keeps the directory:
 
 ```bash
