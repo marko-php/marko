@@ -13,13 +13,18 @@ composer require marko/routing
 
 ## Configuration
 
-`url` is the base URL used for absolute URLs from the [URL generator](#named-routes-and-url-generation). It reads `APP_URL`. `file_offload` hands [file responses](#file-and-streamed-responses) to the web server; it is off unless you set it:
+`url` is the base URL used for absolute URLs from the [URL generator](#named-routes-and-url-generation). It reads `APP_URL`. `signing` holds the key for [signed URLs](#signed-urls). `file_offload` hands [file responses](#file-and-streamed-responses) to the web server; it is off unless you set it:
 
 ```php title="config/routing.php"
 use Marko\Config\Env;
 
 return [
     'url' => Env::string('APP_URL', ''),
+    'signing' => [
+        'key' => Env::string('URL_SIGNING_KEY', ''),                   // required to sign or validate; at least 32 bytes
+        'previous_keys' => Env::list('URL_SIGNING_PREVIOUS_KEYS', []), // retired keys that still validate
+        'ignored_parameters' => [],                                    // query parameters left out of the signature
+    ],
     'file_offload' => [
         'header' => Env::string('ROUTING_FILE_OFFLOAD_HEADER', ''), // 'X-Sendfile', 'X-Accel-Redirect' or '' (off)
         'prefix_map' => [], // local path prefix => server path prefix
@@ -29,6 +34,7 @@ return [
 
 ```bash title=".env"
 APP_URL=https://example.com
+URL_SIGNING_KEY=  # generate with: php -r "echo bin2hex(random_bytes(32));"
 ```
 
 The base URL is never guessed from the request's `Host` header: that header is client-controlled, and it does not exist in CLI commands or queue jobs.
@@ -244,6 +250,70 @@ Each of these throws a `UrlGenerationException`:
 Templates get the same generator through `route()` in [Latte](/docs/packages/view-latte/) and [Twig](/docs/packages/view-twig/).
 
 Route names must be unique across the application. A duplicate name throws `RouteConflictException` at boot, naming both `Controller::action()` locations.
+
+### Signed URLs
+
+A signed URL can't be tampered with, and can expire. Use one for links that leave the app: email verification, one-click unsubscribe or approve links, time-limited share links. Inject `UrlSignerInterface`:
+
+```php title="NewsletterMailer.php"
+use DateTimeImmutable;
+use Marko\Routing\Signing\UrlSignerInterface;
+
+class NewsletterMailer
+{
+    public function __construct(
+        private UrlSignerInterface $urlSigner,
+    ) {}
+
+    public function unsubscribeLink(int $subscriberId): string
+    {
+        return $this->urlSigner->signedRoute('newsletter.unsubscribe', ['id' => $subscriberId]);
+        // https://example.com/newsletter/7/unsubscribe?signature=3f1c...
+    }
+
+    public function shareLink(string $token): string
+    {
+        return $this->urlSigner->signedRoute(
+            'share.show',
+            ['token' => $token],
+            expiresAt: new DateTimeImmutable('+24 hours'),
+        );
+        // https://example.com/share/abc?expires=1793534400&signature=9a2e...
+    }
+}
+```
+
+Protect the route with `ValidSignatureMiddleware`:
+
+```php title="NewsletterController.php"
+use Marko\Routing\Middleware\ValidSignatureMiddleware;
+
+#[Get('/newsletter/{id:\d+}/unsubscribe', name: 'newsletter.unsubscribe')]
+#[Middleware(ValidSignatureMiddleware::class)]
+public function unsubscribe(int $id): Response { /* ... */ }
+```
+
+A missing, tampered or expired signature throws `InvalidSignatureException`, an `HttpException` that renders as 403 with the message `This link is invalid.` or `This link has expired.`. To check a signature yourself, call `$urlSigner->hasValidSignature($request)` (returns a `bool`) or `$urlSigner->assertValidSignature($request)` (throws).
+
+- `signedRoute()` builds an absolute URL by default. With `absolute: false` it returns a path, signed for the host of `APP_URL`, so it only validates there.
+- `sign($url, $expiresAt)` signs a URL you built yourself, e.g. on a tenant's own host: `$urlSigner->sign('https://acme.example.com/share/abc')`. The URL must not already carry `signature` or `expires`, or a `#fragment`.
+- The HMAC-SHA256 signature covers the scheme, host, path, query string and expiry. A link signed for one host doesn't validate on another. Query parameters are sorted first, so reordering them doesn't break a link; adding, removing or changing one does. Signatures are compared with `hash_equals()`.
+- Query parameters listed in `signing.ignored_parameters` are left out of the signature, so a link still validates when an email client or tracker appends them (`['utm_source', 'utm_medium', 'fbclid']`). `#[Middleware]` takes class names only, so this list is global.
+- Expiry is checked against `Psr\Clock\ClockInterface` from [marko/clock](/docs/packages/clock/), so tests can freeze time with `FakeClock`.
+- The request's scheme comes from the server's `HTTPS` / `REQUEST_SCHEME` variables and its host from the `Host` header; `X-Forwarded-*` headers are ignored. Behind a proxy that terminates TLS, have the web server set `HTTPS=on` (e.g. `fastcgi_param HTTPS on;`), or `https://` links fail to validate.
+
+Templates get `signedRoute()` in [Latte](/docs/packages/view-latte/) and [Twig](/docs/packages/view-twig/), with the same arguments.
+
+#### The signing key
+
+`signing.key` (`URL_SIGNING_KEY`) is required and must be at least 32 bytes. Signing or validating with an empty or short key throws `UrlSigningException`; the signer never falls back to another key. Use a dedicated key rather than `ENCRYPTION_KEY`: one key, one purpose.
+
+To rotate the key without breaking links already sent, move the old key to `URL_SIGNING_PREVIOUS_KEYS` (comma-separated) and set a new `URL_SIGNING_KEY`. New links are always signed with the current key. Links signed with a previous key keep validating until you remove it.
+
+```bash title=".env"
+URL_SIGNING_KEY=new-key...
+URL_SIGNING_PREVIOUS_KEYS=old-key...
+```
 
 ### Route Prefixes
 
@@ -927,6 +997,21 @@ interface UrlGeneratorInterface
 ```
 
 Bound to `UrlGenerator` as a singleton.
+
+### UrlSignerInterface
+
+```php
+interface UrlSignerInterface
+{
+    public function signedRoute(string $name, array $parameters = [], ?DateTimeImmutable $expiresAt = null, bool $absolute = true): string;
+    public function sign(string $url, ?DateTimeImmutable $expiresAt = null): string;
+    public function hasValidSignature(Request $request): bool;
+    /** @throws InvalidSignatureException */
+    public function assertValidSignature(Request $request): void;
+}
+```
+
+Bound to `HmacUrlSigner` as a singleton. `InvalidSignatureException::invalid()` and `::expired()` build the two 403 errors, and `isExpired()` tells them apart.
 
 ### RouteCollection
 

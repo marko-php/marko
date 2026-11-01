@@ -26,6 +26,38 @@ readonly class RoutingConfig
     }
 
     /**
+     * Key that signs URLs (`routing.signing.key`); empty when none is configured.
+     *
+     * @throws ConfigNotFoundException
+     */
+    public function signingKey(): string
+    {
+        return $this->config->getString('routing.signing.key');
+    }
+
+    /**
+     * Retired signing keys that still validate links signed before a rotation.
+     *
+     * @return array<mixed>
+     * @throws ConfigNotFoundException
+     */
+    public function signingPreviousKeys(): array
+    {
+        return $this->config->getArray('routing.signing.previous_keys');
+    }
+
+    /**
+     * Query parameters left out of the signature, e.g. tracking parameters added by email clients.
+     *
+     * @return list<string>
+     * @throws ConfigNotFoundException
+     */
+    public function signingIgnoredParameters(): array
+    {
+        return array_values(array_map(strval(...), $this->config->getArray('routing.signing.ignored_parameters')));
+    }
+
+    /**
      * The configured file offload, or null when routing.file_offload.header is empty.
      *
      * @throws ConfigNotFoundException|FileResponseException

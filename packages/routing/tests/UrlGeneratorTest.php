@@ -182,7 +182,7 @@ describe('module.php', function (): void {
     it('binds UrlGeneratorInterface as a singleton in module.php', function (): void {
         $module = require dirname(__DIR__) . '/module.php';
 
-        expect($module['singletons'])->toBe([UrlGeneratorInterface::class => UrlGenerator::class]);
+        expect($module['singletons'])->toMatchArray([UrlGeneratorInterface::class => UrlGenerator::class]);
     });
 
     it('requires marko/config', function (): void {

@@ -192,7 +192,7 @@ readonly class MoneyFunctionProvider implements TemplateFunctionProviderInterfac
 - Output is escaped like any other value. Set `isSafeHtml: true` only when the callable returns HTML you built yourself; Latte then prints it through `Latte\Runtime\Html`, Twig through `is_safe => ['html']`.
 - Names must start with a letter and contain only letters, digits and `_`; anything else throws `ViewProviderException`.
 - Two providers registering the same name throw `ViewProviderException` naming both classes. To change a function, replace its provider with a [Preference](/docs/packages/core/) instead of registering the name again.
-- Providers are resolved through the container, so they can inject any service. `route()` is served this way by `RouteFunctionProvider`.
+- Providers are resolved through the container, so they can inject any service. `route()` is served this way by `RouteFunctionProvider`, and `signedRoute()` by `SignedRouteFunctionProvider` (see [Signed URLs](/docs/packages/routing/#signed-urls)).
 
 ### Shared View Data
 
