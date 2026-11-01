@@ -15,6 +15,7 @@ use Marko\AdminAuth\Repository\AdminUserRepository;
 use Marko\AdminAuth\Repository\PermissionRepository;
 use Marko\AdminAuth\Repository\RoleRepository;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
+use Marko\Authentication\Hashing\PasswordVerifier;
 use Marko\Core\Command\ErrorOutput;
 use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
@@ -207,6 +208,7 @@ class AdminAuthSchema
             userRepository: self::adminUserRepository($connection),
             roleRepository: self::roleRepository($connection),
             passwordHasher: $passwordHasher,
+            passwordVerifier: new PasswordVerifier($passwordHasher),
         );
     }
 

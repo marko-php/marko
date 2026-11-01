@@ -11,11 +11,14 @@ use Marko\AdminAuth\Entity\Permission;
 use Marko\AdminAuth\Entity\Role;
 use Marko\AdminAuth\Repository\AdminUserRepositoryInterface;
 use Marko\AdminAuth\Repository\RoleRepositoryInterface;
+use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
+use Marko\Authentication\Contracts\PasswordVerifierInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authentication\Guard\SessionGuard;
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
 use Marko\Authentication\Hashing\HashManagerPasswordHasher;
+use Marko\Authentication\Hashing\PasswordVerifier;
 use Marko\Database\Entity\Entity;
 use Marko\Database\Entity\EntityCollection;
 use Marko\Hashing\Config\HashConfig;
@@ -177,6 +180,82 @@ class SpyPasswordHasher implements PasswordHasherInterface
     }
 }
 
+/**
+ * Spy verifier: records every check (user and password) and answers with a fixed result.
+ */
+class SpyPasswordVerifier implements PasswordVerifierInterface
+{
+    /** @var array<int, array{user: ?AuthenticatableInterface, password: string}> */
+    public array $checks = [];
+
+    public function __construct(
+        private readonly bool $verifyReturn = false,
+    ) {}
+
+    public function verify(
+        ?AuthenticatableInterface $user,
+        string $password,
+    ): bool {
+        $this->checks[] = ['user' => $user, 'password' => $password];
+
+        return $user !== null && $this->verifyReturn;
+    }
+}
+
+it('validates credentials through PasswordVerifierInterface', function (
+    bool $verifierResult,
+): void {
+    $user = createTestAdminUser();
+    $verifier = new SpyPasswordVerifier(verifyReturn: $verifierResult);
+    $provider = new AdminUserProvider(createMockUserRepo(), createMockRoleRepo(), new SpyPasswordHasher(), $verifier);
+
+    $result = $provider->validateCredentials($user, ['password' => 'secret']);
+
+    expect($result)->toBe($verifierResult)
+        ->and($verifier->checks)->toBe([['user' => $user, 'password' => 'secret']]);
+})->with([
+    'valid password' => [true],
+    'invalid password' => [false],
+]);
+
+it('checks the password of an unknown user through PasswordVerifierInterface with no user', function (): void {
+    $verifier = new SpyPasswordVerifier(verifyReturn: true);
+    $hasher = new SpyPasswordHasher(verifyReturn: true);
+    $provider = new AdminUserProvider(createMockUserRepo(), createMockRoleRepo(), $hasher, $verifier);
+
+    $result = $provider->retrieveByCredentials(['email' => 'nobody@example.com', 'password' => 'guess']);
+
+    expect($result)->toBeNull()
+        ->and($verifier->checks)->toBe([['user' => null, 'password' => 'guess']])
+        ->and($hasher->checkCount())->toBe(0);
+});
+
+it('checks a non-string password through PasswordVerifierInterface with no user', function (): void {
+    $verifier = new SpyPasswordVerifier(verifyReturn: true);
+    $hasher = new SpyPasswordHasher(verifyReturn: true);
+    $provider = new AdminUserProvider(createMockUserRepo(), createMockRoleRepo(), $hasher, $verifier);
+
+    $result = $provider->validateCredentials(createTestAdminUser(), ['password' => ['secret']]);
+
+    expect($result)->toBeFalse()
+        ->and($verifier->checks)->toBe([['user' => null, 'password' => '']])
+        ->and($hasher->checkCount())->toBe(0);
+});
+
+it('rejects wrong and accepts right admin passwords end to end with real hashing', function (): void {
+    $hasher = new BcryptPasswordHasher(cost: 4);
+    $user = createTestAdminUser(password: $hasher->hash('secret'));
+    $provider = new AdminUserProvider(
+        createMockUserRepo(),
+        createMockRoleRepo(),
+        $hasher,
+        new PasswordVerifier($hasher),
+    );
+
+    expect($provider->validateCredentials($user, ['password' => 'secret']))->toBeTrue()
+        ->and($provider->validateCredentials($user, ['password' => 'wrong']))->toBeFalse();
+});
+
 it('implements UserProviderInterface', function (): void {
     $reflection = new ReflectionClass(AdminUserProvider::class);
 
@@ -190,7 +269,7 @@ it('retrieves admin user by id via retrieveById', function (): void {
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveById(1);
 
@@ -204,7 +283,7 @@ it('returns null from retrieveById when user not found', function (): void {
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveById(999);
 
@@ -218,7 +297,7 @@ it('returns null from retrieveById when user is inactive', function (): void {
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveById(1);
 
@@ -232,7 +311,7 @@ it('retrieves admin user by email credentials via retrieveByCredentials', functi
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveByCredentials(['email' => 'admin@example.com', 'password' => 'secret']);
 
@@ -246,7 +325,7 @@ it('returns null from retrieveByCredentials when email not found', function (): 
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveByCredentials(['email' => 'nonexistent@example.com', 'password' => 'secret']);
 
@@ -260,7 +339,7 @@ it('validates credentials using PasswordHasherInterface', function (): void {
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->validateCredentials($user, ['password' => 'plain_password']);
 
@@ -274,7 +353,7 @@ it('returns false from validateCredentials when password is wrong', function ():
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher(verifyReturn: false);
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->validateCredentials($user, ['password' => 'wrong_password']);
 
@@ -283,7 +362,12 @@ it('returns false from validateCredentials when password is wrong', function ():
 
 it('runs a dummy password check when the email is unknown', function (): void {
     $hasher = new SpyPasswordHasher();
-    $provider = new AdminUserProvider(createMockUserRepo(), createMockRoleRepo(), $hasher);
+    $provider = new AdminUserProvider(
+        createMockUserRepo(),
+        createMockRoleRepo(),
+        $hasher,
+        new PasswordVerifier($hasher),
+    );
 
     $result = $provider->retrieveByCredentials(['email' => 'nobody@example.com', 'password' => 'guess']);
 
@@ -295,7 +379,7 @@ it('runs a dummy password check when the email is unknown', function (): void {
 it('runs a dummy password check when the user is inactive', function (): void {
     $hasher = new SpyPasswordHasher();
     $userRepo = createMockUserRepo(findByEmailReturn: createTestAdminUser(isActive: '0'));
-    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher);
+    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveByCredentials(['email' => 'admin@example.com', 'password' => 'guess']);
 
@@ -307,7 +391,7 @@ it('runs a dummy password check when the user is inactive', function (): void {
 it('does not run a dummy password check when an active user is found', function (): void {
     $hasher = new SpyPasswordHasher();
     $userRepo = createMockUserRepo(findByEmailReturn: createTestAdminUser());
-    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher);
+    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveByCredentials(['email' => 'admin@example.com', 'password' => 'guess']);
 
@@ -320,7 +404,7 @@ it('performs exactly one password check per failed login whether or not the acco
 ): void {
     $hasher = new SpyPasswordHasher(verifyReturn: false);
     $userRepo = createMockUserRepo(findByEmailReturn: $storedUser);
-    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher);
+    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher, new PasswordVerifier($hasher));
     $guard = new SessionGuard(test()->createStub(SessionInterface::class), $provider);
 
     $result = $guard->attempt(['email' => 'admin@example.com', 'password' => 'guess']);
@@ -337,7 +421,12 @@ it('returns null from retrieveByCredentials when the email is not a string', fun
     mixed $email,
 ): void {
     $hasher = new SpyPasswordHasher();
-    $provider = new AdminUserProvider(createMockUserRepo(), createMockRoleRepo(), $hasher);
+    $provider = new AdminUserProvider(
+        createMockUserRepo(),
+        createMockRoleRepo(),
+        $hasher,
+        new PasswordVerifier($hasher),
+    );
 
     $result = $provider->retrieveByCredentials(['email' => $email, 'password' => 'guess']);
 
@@ -351,7 +440,12 @@ it('returns null from retrieveByCredentials when the email is not a string', fun
 
 it('runs the dummy check with an empty password when the password is not a string', function (): void {
     $hasher = new SpyPasswordHasher();
-    $provider = new AdminUserProvider(createMockUserRepo(), createMockRoleRepo(), $hasher);
+    $provider = new AdminUserProvider(
+        createMockUserRepo(),
+        createMockRoleRepo(),
+        $hasher,
+        new PasswordVerifier($hasher),
+    );
 
     $result = $provider->retrieveByCredentials(['email' => 'nobody@example.com', 'password' => ['guess']]);
 
@@ -363,7 +457,12 @@ it('returns false from validateCredentials when the password is not a string', f
     mixed $password,
 ): void {
     $hasher = new SpyPasswordHasher(verifyReturn: true);
-    $provider = new AdminUserProvider(createMockUserRepo(), createMockRoleRepo(), $hasher);
+    $provider = new AdminUserProvider(
+        createMockUserRepo(),
+        createMockRoleRepo(),
+        $hasher,
+        new PasswordVerifier($hasher),
+    );
 
     $result = $provider->validateCredentials(createTestAdminUser(), ['password' => $password]);
 
@@ -379,7 +478,7 @@ it('returns false from validateCredentials when the password is not a string', f
 it('rejects array-valued login fields through the guard without a TypeError', function (): void {
     $hasher = new SpyPasswordHasher(verifyReturn: true);
     $userRepo = createMockUserRepo(findByEmailReturn: createTestAdminUser());
-    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher);
+    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher, new PasswordVerifier($hasher));
     $guard = new SessionGuard(test()->createStub(SessionInterface::class), $provider);
 
     expect($guard->attempt(['email' => ['admin@example.com'], 'password' => 'secret']))->toBeFalse()
@@ -426,7 +525,7 @@ it('loads roles and permissions when retrieving a user', function (): void {
     ]);
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveById(1);
 
@@ -447,7 +546,7 @@ it('retrieves user by remember token via retrieveByRememberToken', function (): 
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveByRememberToken(1, 'valid_token_123');
 
@@ -459,7 +558,12 @@ it('retrieves user by remember token via retrieveByRememberToken', function (): 
 it('returns null from retrieveByRememberToken when the stored token does not match', function (): void {
     $user = createTestAdminUser(rememberToken: 'valid_token_123');
 
-    $provider = new AdminUserProvider(createMockUserRepo(findReturn: $user), createMockRoleRepo(), createMockHasher());
+    $provider = new AdminUserProvider(
+        createMockUserRepo(findReturn: $user),
+        createMockRoleRepo(),
+        createMockHasher(),
+        new PasswordVerifier(createMockHasher()),
+    );
 
     expect($provider->retrieveByRememberToken(1, 'forged_token'))->toBeNull();
 });
@@ -467,7 +571,12 @@ it('returns null from retrieveByRememberToken when the stored token does not mat
 it('returns null from retrieveByRememberToken when the user has no stored token', function (): void {
     $user = createTestAdminUser();
 
-    $provider = new AdminUserProvider(createMockUserRepo(findReturn: $user), createMockRoleRepo(), createMockHasher());
+    $provider = new AdminUserProvider(
+        createMockUserRepo(findReturn: $user),
+        createMockRoleRepo(),
+        createMockHasher(),
+        new PasswordVerifier(createMockHasher()),
+    );
 
     expect($provider->retrieveByRememberToken(1, ''))->toBeNull();
 });
@@ -479,7 +588,7 @@ it('updates remember token via updateRememberToken', function (): void {
     $roleRepo = createMockRoleRepo();
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $expiresAt = new DateTimeImmutable('2030-01-01 00:00:00');
     $provider->updateRememberToken($user, 'new_remember_token', $expiresAt);
@@ -494,7 +603,7 @@ it('rehashes and saves the password when the bcrypt cost has been raised', funct
     $user = createTestAdminUser(password: new BcryptPasswordHasher(cost: 4)->hash('secret'));
     $userRepo = createMockUserRepo();
     $hasher = new BcryptPasswordHasher(cost: 5);
-    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher);
+    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher, new PasswordVerifier($hasher));
 
     $provider->rehashPasswordIfNeeded($user, ['password' => 'secret']);
 
@@ -508,7 +617,12 @@ it('leaves an up-to-date password hash alone', function (): void {
     $hash = new BcryptPasswordHasher(cost: 4)->hash('secret');
     $user = createTestAdminUser(password: $hash);
     $userRepo = createMockUserRepo();
-    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), new BcryptPasswordHasher(cost: 4));
+    $provider = new AdminUserProvider(
+        $userRepo,
+        createMockRoleRepo(),
+        new BcryptPasswordHasher(cost: 4),
+        new PasswordVerifier(new BcryptPasswordHasher(cost: 4)),
+    );
 
     $provider->rehashPasswordIfNeeded($user, ['password' => 'secret']);
 
@@ -520,7 +634,12 @@ it('does not rehash when the password is not a string', function (): void {
     $hash = new BcryptPasswordHasher(cost: 4)->hash('secret');
     $user = createTestAdminUser(password: $hash);
     $userRepo = createMockUserRepo();
-    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), new BcryptPasswordHasher(cost: 5));
+    $provider = new AdminUserProvider(
+        $userRepo,
+        createMockRoleRepo(),
+        new BcryptPasswordHasher(cost: 5),
+        new PasswordVerifier(new BcryptPasswordHasher(cost: 5)),
+    );
 
     $provider->rehashPasswordIfNeeded($user, ['password' => ['secret']]);
 
@@ -539,7 +658,7 @@ it('upgrades a bcrypt user to argon2id on login when marko/hashing uses the argo
         'hashing.hashers.argon2id.threads' => 1,
     ]));
     $hasher = new HashManagerPasswordHasher(new HashManager($config, new HasherFactory($config)));
-    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher);
+    $provider = new AdminUserProvider($userRepo, createMockRoleRepo(), $hasher, new PasswordVerifier($hasher));
     $session = new FakeSession();
     $session->start();
     $guard = new SessionGuard($session, $provider);
@@ -581,7 +700,7 @@ it('loads the same permission set as the per-role implementation', function (): 
     $userRepo = createMockUserRepo(findReturn: $user, rolesReturn: [$editorRole]);
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveById(1);
 
@@ -625,7 +744,7 @@ it('deduplicates permission keys shared across roles', function (): void {
     $userRepo = createMockUserRepo(findReturn: $user, rolesReturn: [$editorRole, $moderatorRole]);
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveById(1);
 
@@ -659,7 +778,7 @@ it('sets roles and unique permission keys on the authenticated user', function (
     $userRepo = createMockUserRepo(findReturn: $user, rolesReturn: [$editorRole]);
     $hasher = createMockHasher();
 
-    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher);
+    $provider = new AdminUserProvider($userRepo, $roleRepo, $hasher, new PasswordVerifier($hasher));
 
     $result = $provider->retrieveById(1);
 
