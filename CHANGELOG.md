@@ -8,6 +8,80 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.12.0] - 2026-11-01
+
+### Breaking Changes
+* feat: gate before hooks, policy-level before and an ability-checked event by @markshust in https://github.com/marko-php/marko/pull/571
+* feat!: add remember, add, pull and forever to the cache by @markshust in https://github.com/marko-php/marko/pull/572
+* feat!: add marko/redis shared connection package and move cache-redis onto it by @markshust in https://github.com/marko-php/marko/pull/573
+* feat!: engine-agnostic template functions, shared view data and precompile contract by @markshust in https://github.com/marko-php/marko/pull/577
+* feat!: streamed and file responses with http range support by @markshust in https://github.com/marko-php/marko/pull/578
+* feat!: relationship existence filters with exists, column comparison and not-in query primitives by @markshust in https://github.com/marko-php/marko/pull/579
+* feat!: queue job contract changes (per-job state, release(JobInterface), PushResult, shared JobRunner) by @markshust in https://github.com/marko-php/marko/pull/580
+* feat!: log handler contract, handler stacking and a stdout/stderr stream handler by @markshust in https://github.com/marko-php/marko/pull/581
+* feat!: schedule console commands and run them in the background by @markshust in https://github.com/marko-php/marko/pull/582
+* feat!: end a user's other sessions and remember-me devices by @markshust in https://github.com/marko-php/marko/pull/587
+* feat!: job failure hook, one final-failure path, and job lifecycle events by @markshust in https://github.com/marko-php/marko/pull/591
+* feat: run scheduled tasks on one server with onOneServer() and a lock-backed TaskMutex by @markshust in https://github.com/marko-php/marko/pull/592
+* feat!: queue retry deadline (RetryUntilInterface), maxExceptions and self-release by @markshust in https://github.com/marko-php/marko/pull/597
+* feat!: per-job timeout, worker --max-time, and one worker stop-reason mechanism by @markshust in https://github.com/marko-php/marko/pull/602
+* feat!: redis queue driver (marko/queue-redis) by @markshust in https://github.com/marko-php/marko/pull/603
+* feat!: queue:restart for graceful worker restarts after deploys by @markshust in https://github.com/marko-php/marko/pull/605
+* feat: make marko/cache optional for marko/queue by @markshust in https://github.com/marko-php/marko/pull/607
+* refactor!: set the module loader once in the latte and twig engine factories by @markshust in https://github.com/marko-php/marko/pull/628
+* refactor!: move SleeperInterface into marko/core by @markshust in https://github.com/marko-php/marko/pull/629
+* feat: detect changes to the discovery environment variables in the config cache by @markshust in https://github.com/marko-php/marko/pull/630
+* fix: resolve a relative cache path against the project root by @markshust in https://github.com/marko-php/marko/pull/631
+* feat!: log queue worker output through LoggerInterface instead of error_log() by @markshust in https://github.com/marko-php/marko/pull/633
+### New Features
+* feat: scheduler time helpers, per-task time zones and when/skip conditions by @markshust in https://github.com/marko-php/marko/pull/568
+* feat: notification sender interface and FakeNotificationSender by @markshust in https://github.com/marko-php/marko/pull/569
+* feat: format, size, date comparison, distinct and enum validation rules by @markshust in https://github.com/marko-php/marko/pull/570
+* feat: filesystem fake, swappable disks via FilesystemManagerInterface and shared path rules by @markshust in https://github.com/marko-php/marko/pull/574
+* feat: password reset broker with hashed, expiring tokens by @markshust in https://github.com/marko-php/marko/pull/575
+* feat: production config caching through discovery:cache by @markshust in https://github.com/marko-php/marko/pull/576
+* feat: implicit and presence-aware validation rules by @markshust in https://github.com/marko-php/marko/pull/583
+* feat: password confirmation middleware for sensitive routes by @markshust in https://github.com/marko-php/marko/pull/584
+* feat: exists and unique validation rules for entities (marko/validation-database) by @markshust in https://github.com/marko-php/marko/pull/585
+* feat: session, auth, download and json validation assertions for http tests by @markshust in https://github.com/marko-php/marko/pull/586
+* feat: atomic cache locks with redis, file and array stores by @markshust in https://github.com/marko-php/marko/pull/588
+* feat: login challenge hook and two-factor authentication package by @markshust in https://github.com/marko-php/marko/pull/589
+* feat: current password and password strength validation rules by @markshust in https://github.com/marko-php/marko/pull/590
+* feat: passkey (webauthn) sign-in and management package (marko/authentication-passkey) by @markshust in https://github.com/marko-php/marko/pull/593
+* feat: latte and twig template precompilers for view:cache by @markshust in https://github.com/marko-php/marko/pull/594
+* feat: signed and temporary signed urls with a valid-signature middleware by @markshust in https://github.com/marko-php/marko/pull/595
+* feat: unique queue jobs (UniqueJobInterface) that skip duplicate dispatches by @markshust in https://github.com/marko-php/marko/pull/596
+* feat: add marko/forms with redirect-back flash of validation errors and old input by @markshust in https://github.com/marko-php/marko/pull/598
+* feat: email verification with signed links and a verified middleware by @markshust in https://github.com/marko-php/marko/pull/599
+* feat: flashed validation-error and old-input assertions on TestResponse by @markshust in https://github.com/marko-php/marko/pull/600
+* feat: register only named packages with bin/register-packagist.sh by @markshust in https://github.com/marko-php/marko/pull/606
+* feat: list URL_SIGNING_KEY in the skeleton .env.example by @markshust in https://github.com/marko-php/marko/pull/622
+* feat: serve file and streamed responses through the roadrunner bridge by @markshust in https://github.com/marko-php/marko/pull/626
+* feat: add FakeUserPersister to marko/testing by @markshust in https://github.com/marko-php/marko/pull/627
+* feat: database-backed password reset token repository (marko/authentication-database) by @markshust in https://github.com/marko-php/marko/pull/635
+* feat: cache-backed restart signal for queue workers on several hosts by @markshust in https://github.com/marko-php/marko/pull/637
+* feat: ship marko/log with the file and stream handlers in the skeleton by @markshust in https://github.com/marko-php/marko/pull/642
+* feat: throw when a failed job can't be stored instead of only logging it by @markshust in https://github.com/marko-php/marko/pull/643
+### Bug Fixes
+* fix: render validation redirects through http exception responders by @markshust in https://github.com/marko-php/marko/pull/604
+* fix: accept the compiled-template cache directory on windows by @markshust in https://github.com/marko-php/marko/pull/623
+* fix: declare health's optional packages and fail loudly when one is missing by @markshust in https://github.com/marko-php/marko/pull/634
+* fix: resolve relative local disk roots against the project root by @markshust in https://github.com/marko-php/marko/pull/638
+* fix: make flaky detached devserver and amphp sse stream timeout tests deterministic by @markshust in https://github.com/marko-php/marko/pull/639
+### Documentation
+* docs: remove the markotalk example from the readme and docs by @markshust in https://github.com/marko-php/marko/pull/645
+### Refactoring
+* refactor: verify admin passwords through PasswordVerifierInterface by @markshust in https://github.com/marko-php/marko/pull/624
+* refactor: resolve configured paths through ProjectPaths by @markshust in https://github.com/marko-php/marko/pull/632
+### Testing
+* test: derive the root composer.json package set from packages/ by @markshust in https://github.com/marko-php/marko/pull/625
+### CI
+* ci: label a pr breaking only for a ! title or BREAKING CHANGE: footer by @markshust in https://github.com/marko-php/marko/pull/644
+* ci: bump checkout to v7, setup-node to v7 and composer-install to v4 by @markshust in https://github.com/marko-php/marko/pull/646
+### Maintenance
+* chore: tests never read documentation by @markshust in https://github.com/marko-php/marko/pull/530
+
+
 ## [0.11.0] - 2026-10-06
 
 ### Breaking Changes
