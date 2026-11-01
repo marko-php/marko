@@ -63,6 +63,23 @@ class ExpensiveService
 
 For persistent caching, use `marko/cache-file` or `marko/cache-redis`.
 
+### Atomic Locks
+
+The package also binds `LockStoreInterface` to `Marko\Cache\Memory\Lock\ArrayLockStore` as a singleton, so [atomic locks](/docs/packages/cache/#atomic-locks) work through `LockFactoryInterface`. Its scope is `LockScope::Process`: locks live in memory and exclude callers **in the same PHP process only**. Use it in tests, and use `marko/cache-redis` for real cross-worker exclusion. Construct it with a `FakeClock` to expire locks without sleeping:
+
+```php
+use Marko\Cache\Memory\Lock\ArrayLockStore;
+use Marko\Testing\Fake\FakeClock;
+
+$clock = new FakeClock('2026-01-01 12:00:00 UTC');
+$store = new ArrayLockStore($clock);
+
+$store->acquire('video-pipeline:42', 'owner-a', 30);
+$clock->travel('+30 seconds');
+
+$store->currentOwner('video-pipeline:42'); // null: the lock expired
+```
+
 ### Time and Expiry
 
 The driver reads the current time through the PSR-20 `ClockInterface` from [`marko/clock`](/docs/packages/clock/), which the container injects. In tests, construct it with a [`FakeClock`](/docs/packages/testing/#fakeclock) and call `travel()` to cross a TTL boundary exactly, without `sleep()`:
