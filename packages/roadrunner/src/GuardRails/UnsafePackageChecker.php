@@ -63,7 +63,7 @@ readonly class UnsafePackageChecker
 
         return sprintf(
             "Package '%s' was acknowledged via config key '%s' and is allowed to boot, but it remains incompatible with a long-running worker: it streams a response for the life of the connection via ob_end_flush()/flush(). "
-                . 'The boot-time check is only a courtesy — the real protection is the per-request bridge, which throws when a streamed response (StreamedResponseInterface) reaches it under this worker. Expect a loud 500 on any SSE route, not a silently truncated stream.',
+                . 'The boot-time check is only a courtesy — the real protection is the per-request bridge, which throws when a server-sent events response (Content-Type: text/event-stream) reaches it under this worker. Expect a loud 500 on any SSE route, not a silently truncated stream.',
             self::SSE_PACKAGE,
             self::ACKNOWLEDGED_UNSAFE_PACKAGES_CONFIG_KEY,
         );

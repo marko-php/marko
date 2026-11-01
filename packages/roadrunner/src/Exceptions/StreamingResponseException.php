@@ -8,13 +8,13 @@ use Marko\Core\Exceptions\MarkoException;
 
 class StreamingResponseException extends MarkoException
 {
-    public static function unsupported(
+    public static function serverSentEvents(
         string $responseClass,
     ): self {
         return new self(
-            message: "Cannot bridge a streamed response ($responseClass) to PSR-7 for RoadRunner.",
-            context: 'The response implements StreamedResponseInterface (an SSE stream, a StreamedResponse or a FileResponse), so its body() is empty; the RoadRunner PSR-7 worker only sends a buffered body.',
-            suggestion: 'Serve streamed and file responses through PHP-FPM or the dev server, or return a plain Response with the full body when running under RoadRunner.',
+            message: "Cannot serve a server-sent events response ($responseClass) under RoadRunner.",
+            context: 'The response declares Content-Type: text/event-stream. Server-sent events keep the connection open for its whole life, but the RoadRunner PSR-7 worker collects the full body before it answers and must then return to the accept loop, so the stream would never reach the client.',
+            suggestion: 'Serve server-sent events routes through PHP-FPM or the dev server (e.g. a separate FPM pool behind the same proxy). File downloads and StreamedResponse bodies do work under RoadRunner.',
         );
     }
 }
