@@ -6,9 +6,15 @@ use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
+use Marko\Authentication\Contracts\PasswordResetBrokerInterface;
+use Marko\Authentication\Contracts\PasswordResetTokenRepositoryInterface;
+use Marko\Authentication\Contracts\ResetLinkNotifierInterface;
+use Marko\Authentication\Contracts\UserPersisterInterface;
 use Marko\Authentication\Guard\GuardDriverRegistry;
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
 use Marko\Authentication\Hashing\HashManagerPasswordHasher;
+use Marko\Authentication\PasswordReset\CachePasswordResetTokenRepository;
+use Marko\Authentication\PasswordReset\PasswordResetBroker;
 use Marko\Authentication\Token\RememberTokenManager;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Module\ModuleManifest;
@@ -184,4 +190,19 @@ it('registers the guard driver registry as a singleton', function () {
     $config = require $modulePath;
 
     expect($config['singletons'])->toContain(GuardDriverRegistry::class);
+});
+
+it('binds the password reset broker and the cache token repository', function () {
+    $config = require dirname(__DIR__, 2) . '/module.php';
+
+    expect($config['bindings'][PasswordResetBrokerInterface::class])->toBe(PasswordResetBroker::class)
+        ->and($config['bindings'][PasswordResetTokenRepositoryInterface::class])
+        ->toBe(CachePasswordResetTokenRepository::class);
+});
+
+it('ships no default UserPersisterInterface or ResetLinkNotifierInterface binding', function () {
+    $config = require dirname(__DIR__, 2) . '/module.php';
+
+    expect($config['bindings'])->not->toHaveKey(UserPersisterInterface::class)
+        ->and($config['bindings'])->not->toHaveKey(ResetLinkNotifierInterface::class);
 });
