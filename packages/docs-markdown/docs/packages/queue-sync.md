@@ -76,7 +76,7 @@ Implements all methods from `QueueInterface`. See [marko/queue](/docs/packages/q
 | Method | Description |
 |---|---|
 | `__construct(JobRunnerInterface $jobRunner, FailedJobHandlerInterface $failedJobHandler, QueueConfig $config)` | Autowired. Every job runs through the runner, and a job that throws goes through the failed-job handler. |
-| `push(JobInterface $job, ?string $queue = null): PushResult` | Execute the job immediately through the `JobRunner` and return a pushed `PushResult` with its ID. Container-aware jobs get the container and job envelope first, and release them afterwards. On failure, hands the job to the failed-job handler, then throws `JobFailedException`. |
+| `push(JobInterface $job, ?string $queue = null): PushResult` | Execute the job immediately through the `JobRunner` and return a pushed `PushResult` with its ID. Container-aware jobs get the container and job envelope first, and release them afterwards. On failure, hands the job to the failed-job handler, then throws `JobFailedException`, or the handler's `FailedJobNotStoredException` when a bound repository can't store the job. |
 | `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Ignores the delay and executes immediately via `push()`. |
 | `pop(?string $queue = null, bool $block = false): ?JobInterface` | Always returns `null` --- no jobs are ever queued. |
 | `size(?string $queue = null): int` | Always returns `0`. |

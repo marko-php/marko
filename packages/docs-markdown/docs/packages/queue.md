@@ -397,6 +397,22 @@ A job fails for good when its last attempt throws or times out, when it reaches 
 
 The caller then deletes the job from its queue.
 
+#### When a Failed Job Cannot Be Stored
+
+If the failed-job repository throws while storing the job (the `failed_jobs` table is missing, the database is down), the failure isn't recorded anywhere, so `FailedJobHandler` throws a `FailedJobNotStoredException` (a `QueueException`) instead of logging and carrying on. Its message names the job class and id. Its context names the queue, the job's own exception and the storage error, and the storage error is its `getPrevious()`. Then:
+
+- `failed()` isn't called and `JobFailedEvent` isn't dispatched, so `failed()` never runs twice for one job.
+- The caller doesn't delete the job. It stays in its queue (still reserved, for drivers that reserve), so once its reservation expires (`queue.retry_after`) it is popped again and failed again, this time stored if the store works.
+
+How each caller reacts:
+
+| Caller | What happens |
+|--------|--------------|
+| Worker (last attempt, timeout limits, invalid backoff, retry limits) | The worker stops. It [logs](#worker-logs) the exception at `critical` level (`Worker stopping: ...`, with the job, the cause and the suggestion) and throws it out of `work()`, so `queue:work` prints the error and exits with status `1`. It doesn't pull more jobs while the store is broken: every later final failure would fail the same way. Your supervisor restarts the worker; fix the store and the job is failed again on its own. |
+| Worker, job timeout | The exception is logged at `critical` level instead of thrown, because the timeout runs inside the alarm signal handler, and the worker exits with status `1` as it does after every timeout. |
+| Database and Redis drivers, failing a job at pop time | `pop()` throws the exception and leaves the job reserved. The worker treats it like the case above: it stops instead of logging a [pop failure](#running-the-worker) and polling again. |
+| Sync driver | `push()` throws the `FailedJobNotStoredException` instead of `JobFailedException`. `NullFailedJobRepository` never throws, so this only happens when you bind your own repository. |
+
 Implement `FailableJobInterface` to put domain state back when a job gives up, so records don't stay stuck in an in-progress state:
 
 ```php
@@ -577,7 +593,7 @@ marko queue:work --queue=high,default,low --sleep=1
 | `--max-jobs` | Exit after processing this many jobs (default `0`, no limit) |
 | `--max-time` | Exit after the current job once the worker has run this many seconds (default `0`, no limit) |
 
-If popping a job throws (for example, the broker is unreachable), the worker [logs](#worker-logs) the error, sleeps for `--sleep` seconds and polls again, so a pop failure doesn't stop the worker. With `--once` the error is thrown instead.
+If popping a job throws (for example, the broker is unreachable), the worker [logs](#worker-logs) the error, sleeps for `--sleep` seconds and polls again, so a pop failure doesn't stop the worker. With `--once` the error is thrown instead. The one exception is a `FailedJobNotStoredException`, thrown when a driver fails a job at pop time and can't store it: the worker [stops](#when-a-failed-job-cannot-be-stored).
 
 #### Worker Logs
 
@@ -588,6 +604,7 @@ The worker and `FailedJobHandler` log through Marko's `LoggerInterface` from [`m
 | `info` | `Worker stopping: ...`, once per run, with the [stop reason](#stop-reasons-and-exit-codes) |
 | `warning` | A job sets a timeout but `ext-pcntl` is not loaded, so it can't be enforced |
 | `error` | A pop failed and the worker will retry, a job exceeded its timeout, a timed-out job could not be released or failed, or a job's `failed()` threw |
+| `critical` | `Worker stopping: ...`, when a failed job [could not be stored](#when-a-failed-job-cannot-be-stored) |
 
 To send worker logs somewhere else, bind your own `LoggerInterface` implementation or add a handler (see [`marko/log`](/docs/packages/log/)). In tests, pass a `FakeLogger` from [`marko/testing`](/docs/packages/testing/) to `Worker` and `FailedJobHandler` and assert on its entries.
 
@@ -653,6 +670,8 @@ Every way the worker stops goes through one mechanism. `work()` returns a `Worke
 | `RestartRequested` | A restart of every worker was requested | `0` |
 | `Signal` | SIGTERM or SIGINT arrived (or `stop()` was called) | `0` |
 | `TimedOut` | A job exceeded its timeout | `1` (`Worker::EXIT_TIMED_OUT`) |
+
+A failed job that [can't be stored](#when-a-failed-job-cannot-be-stored) isn't a stop reason: `work()` throws the `FailedJobNotStoredException`, and `queue:work` exits with status `1`.
 
 The memory, job-count and run-time limits are stop conditions: classes that implement `WorkerStopConditionInterface`. `WorkerOptions::buildStopConditions()` builds `MaxJobsStopCondition`, `MemoryStopCondition` and `MaxTimeStopCondition` from the limits that are on. The worker checks every condition after each job and after each idle pause, with a `WorkerRunState` (when the worker started, the jobs processed so far and the memory in use), and stops with the first reason a condition returns.
 
@@ -1034,7 +1053,7 @@ use Marko\Queue\JobInterface;
 public function handle(JobInterface $job, string $queue, Throwable $exception, string $note = ''): void;
 ```
 
-Bound to `FailedJobHandler`, which is constructed with the failed-job repository, the `JobEnvelope`, the `JobRunnerInterface`, the `EventDispatcherInterface`, the clock and the `LoggerInterface`. `$note` is appended to the stored exception text. The handler never touches the queue: the caller deletes the job. See [When a Job Fails for Good](#when-a-job-fails-for-good).
+Bound to `FailedJobHandler`, which is constructed with the failed-job repository, the `JobEnvelope`, the `JobRunnerInterface`, the `EventDispatcherInterface`, the clock and the `LoggerInterface`. `$note` is appended to the stored exception text. The handler never touches the queue: the caller deletes the job. When the repository can't store the job, `handle()` throws `FailedJobNotStoredException` without calling `failed()` or dispatching the event, and the caller must not delete the job. See [When a Job Fails for Good](#when-a-job-fails-for-good).
 
 ### FailableJobInterface
 
@@ -1173,6 +1192,7 @@ Implements `Marko\Core\Event\AsyncObserverDispatcherInterface` and is bound to i
 |-----------|-------------|
 | `QueueException` | Base exception for all queue errors --- includes `getContext()` and `getSuggestion()` methods |
 | `JobFailedException` | Thrown when a job fails during execution |
+| `FailedJobNotStoredException` | Thrown by `FailedJobHandler` when the failed-job repository can't store a job that failed for good, with the storage error as `getPrevious()`. See [When a Failed Job Cannot Be Stored](#when-a-failed-job-cannot-be-stored) |
 | `JobAttemptsExhaustedException` | The reason a job without a retry deadline was not retried once it used its `maxAttempts`. Passed to `failed()` and `JobFailedEvent` for a job that released itself on its last attempt, and when the database driver fails a job whose attempts were all reserved by workers that crashed or timed out |
 | `JobRetryDeadlinePassedException` | The reason a job was not retried once its retry deadline passed |
 | `JobExceptionsExhaustedException` | The reason a job was not retried once its exceptions reached `maxExceptions` |

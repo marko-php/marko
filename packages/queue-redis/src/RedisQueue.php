@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Queue\Redis;
 
+use Marko\Queue\Exceptions\FailedJobNotStoredException;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\JobEnvelope;
@@ -74,7 +75,10 @@ class RedisQueue implements QueueInterface
     }
 
     /**
-     * @throws RedisConnectionException|RedisQueueException|SerializationException
+     * A job failed here that the failed-job repository cannot store stays reserved, and the handler's
+     * FailedJobNotStoredException is thrown; the job is failed again once the reservation expires.
+     *
+     * @throws FailedJobNotStoredException|RedisConnectionException|RedisQueueException|SerializationException
      */
     public function pop(
         ?string $queue = null,

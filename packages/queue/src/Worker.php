@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Queue;
 
 use Marko\Log\Contracts\LoggerInterface;
+use Marko\Queue\Exceptions\FailedJobNotStoredException;
 use Marko\Queue\Exceptions\JobTimedOutException;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
@@ -32,8 +33,13 @@ class Worker implements WorkerInterface
     ) {}
 
     /**
+     * A failed job the failed-job repository cannot store ends the run: the worker logs the
+     * FailedJobNotStoredException at critical level and throws it, so queue:work exits with status 1 instead
+     * of pulling more jobs while the failed-job store is broken. The job is left in its queue and is failed
+     * again once its reservation expires.
+     *
      * @param list<string>|null $queues Queue names in priority order, or null for the default queue
-     * @throws QueueException|SerializationException
+     * @throws FailedJobNotStoredException|QueueException|SerializationException
      */
     public function work(
         ?array $queues = null,
@@ -54,6 +60,9 @@ class Worker implements WorkerInterface
             while (true) {
                 try {
                     [$job, $queue] = $this->popNextJob($queueNames);
+                } catch (FailedJobNotStoredException $e) {
+                    // A driver failed a job at pop time and could not store it: the store is broken, so stop
+                    throw $e;
                 } catch (Throwable $e) {
                     // A pop failure (an unreachable broker, a driver error) must not kill a long-running
                     // worker: report it, wait, and poll again. A single --once run reports it loudly instead.
@@ -94,6 +103,10 @@ class Worker implements WorkerInterface
                     return $this->stopWith($reason);
                 }
             }
+        } catch (FailedJobNotStoredException $e) {
+            $this->reportFailedJobNotStored($e);
+
+            throw $e;
         } finally {
             $this->processControl->stopListening();
         }
@@ -170,6 +183,9 @@ class Worker implements WorkerInterface
      * threw. This runs inside the pcntl alarm handler, so a FailableJobInterface job's failed()
      * runs in signal context too. The process then exits with EXIT_TIMED_OUT so its supervisor
      * starts a fresh worker.
+     *
+     * A FailedJobNotStoredException is logged at critical level rather than thrown: an exception thrown
+     * from the signal handler would surface inside the interrupted job. The process exits either way.
      */
     private function handleTimeout(
         JobInterface $job,
@@ -189,6 +205,8 @@ class Worker implements WorkerInterface
 
         try {
             $this->handleFailedJob($job, $exception, $queue);
+        } catch (FailedJobNotStoredException $e) {
+            $this->reportFailedJobNotStored($e);
         } catch (Throwable $e) {
             $this->logger->error(sprintf(
                 '[marko/queue] Could not release or fail timed-out job %s: %s: %s',
@@ -361,6 +379,21 @@ class Worker implements WorkerInterface
     }
 
     /**
+     * Log a failed job that could not be stored at critical level, with its context and suggestion, so the
+     * reason the worker stopped reaches the logs as well as queue:work's output.
+     */
+    private function reportFailedJobNotStored(
+        FailedJobNotStoredException $e,
+    ): void {
+        $this->logger->critical(sprintf(
+            '[marko/queue] Worker stopping: %s %s %s',
+            $e->getMessage(),
+            $e->getContext(),
+            $e->getSuggestion(),
+        ));
+    }
+
+    /**
      * Release a job that threw for another attempt, or fail it for good once RetryPolicy says a limit
      * is reached (retry deadline, maxExceptions, maxAttempts) or its backoff is invalid.
      *
@@ -417,9 +450,9 @@ class Worker implements WorkerInterface
 
     /**
      * Hand the job to the failed-job handler (store it, call failed(), dispatch JobFailedEvent),
-     * then delete it from the queue.
+     * then delete it from the queue. A job the handler could not store is not deleted.
      *
-     * @throws SerializationException
+     * @throws FailedJobNotStoredException|SerializationException
      */
     private function failJob(
         JobInterface $job,

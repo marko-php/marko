@@ -10,6 +10,8 @@ use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Log\LogLevel;
 use Marko\Queue\ContainerAwareJobInterface;
 use Marko\Queue\Event\JobFailedEvent;
+use Marko\Queue\Exceptions\FailedJobNotStoredException;
+use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\FailableJobInterface;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobHandler;
@@ -167,8 +169,9 @@ class HandlerCleanupService {}
 function createLoggingFailedJobHandler(
     ArrayObject $log = new ArrayObject(),
     ContainerInterface $container = new Container(),
+    ?LoggingFailedJobRepository $repository = null,
 ): array {
-    $repository = new LoggingFailedJobRepository($log);
+    $repository ??= new LoggingFailedJobRepository($log);
     $events = new LoggingEventDispatcher($log);
     $envelope = createFailedJobHandlerEnvelope();
     $logger = new FakeLogger();
@@ -330,4 +333,50 @@ describe('FailedJobHandler', function (): void {
                 ->and($job->failedCalled)->toBeTrue();
         },
     );
+
+    it(
+        'throws FailedJobNotStoredException naming the job, with the storage error as previous, when storing fails',
+        function (): void {
+            $log = new ArrayObject();
+            ['handler' => $handler, 'events' => $events, 'logger' => $logger] = createLoggingFailedJobHandler(
+                $log,
+                repository: new ThrowingFailedJobRepository(),
+            );
+            $job = new HandlerFailableJob($log);
+            $job->setId('job-store-broken');
+            $storageError = null;
+            $thrown = null;
+
+            try {
+                $handler->handle($job, 'emails', new RuntimeException('smtp down'));
+            } catch (FailedJobNotStoredException $e) {
+                $thrown = $e;
+                $storageError = $e->getPrevious();
+            }
+
+            expect($thrown)->toBeInstanceOf(QueueException::class)
+                ->and($thrown->getMessage())->toContain(HandlerFailableJob::class)
+                ->and($thrown->getMessage())->toContain('job-store-broken')
+                ->and($thrown->getContext())->toContain('emails')
+                ->and($thrown->getContext())->toContain('smtp down')
+                ->and($thrown->getContext())->toContain('failed_jobs table is gone')
+                ->and($thrown->getSuggestion())->not->toBe('')
+                ->and($storageError)->toBeInstanceOf(RuntimeException::class)
+                ->and($storageError?->getMessage())->toBe('failed_jobs table is gone')
+                ->and($job->failedWith)->toBe([])
+                ->and($events->events)->toBe([])
+                ->and($logger->entries)->toBe([]);
+        },
+    );
 });
+
+/**
+ * Failed-job repository whose store() always throws, like a database that lost its failed_jobs table.
+ */
+class ThrowingFailedJobRepository extends LoggingFailedJobRepository
+{
+    public function store(FailedJob $failedJob): void
+    {
+        throw new RuntimeException('failed_jobs table is gone');
+    }
+}

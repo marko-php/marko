@@ -7,6 +7,7 @@ namespace Marko\Queue;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Log\Contracts\LoggerInterface;
 use Marko\Queue\Event\JobFailedEvent;
+use Marko\Queue\Exceptions\FailedJobNotStoredException;
 use Marko\Queue\Exceptions\SerializationException;
 use Psr\Clock\ClockInterface;
 use Throwable;
@@ -26,7 +27,10 @@ class FailedJobHandler implements FailedJobHandlerInterface
      * A failed() hook that throws is logged with the job's class and id and does not stop the
      * event or the caller: one broken cleanup must not take down a long-running worker.
      *
-     * @throws SerializationException
+     * A job that cannot be stored is a real error, so it throws instead: failed() is not called and the
+     * event is not dispatched, so failed() never runs twice for a job that is failed again later.
+     *
+     * @throws FailedJobNotStoredException|SerializationException
      */
     public function handle(
         JobInterface $job,
@@ -50,7 +54,7 @@ class FailedJobHandler implements FailedJobHandlerInterface
      * recorded, with a placeholder payload of its class and the serialization error, so the
      * caller can delete it and keep running. queue:retry refuses that row.
      *
-     * @throws SerializationException
+     * @throws FailedJobNotStoredException|SerializationException
      */
     private function store(
         JobInterface $job,
@@ -71,13 +75,19 @@ class FailedJobHandler implements FailedJobHandlerInterface
                 . 'Job class ' . $job::class . ': ' . $serializationError->getMessage();
         }
 
-        $this->failedJobRepository->store(new FailedJob(
+        $failedJob = new FailedJob(
             id: $job->id,
             queue: $queue,
             payload: $this->jobEnvelope->wrap($serialized),
             exception: $exception,
             failedAt: $this->clock->now(),
-        ));
+        );
+
+        try {
+            $this->failedJobRepository->store($failedJob);
+        } catch (Throwable $storageError) {
+            throw FailedJobNotStoredException::failedJobNotStored($job::class, $job->id, $queue, $e, $storageError);
+        }
     }
 
     /**

@@ -16,6 +16,7 @@ use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
 use Marko\Queue\Database\Tests\Fixtures\TestJob;
 use Marko\Queue\Database\Tests\Fixtures\TestRetryPolicy;
 use Marko\Queue\Event\JobFailedEvent;
+use Marko\Queue\Exceptions\FailedJobNotStoredException;
 use Marko\Queue\Exceptions\JobAttemptsExhaustedException;
 use Marko\Queue\Exceptions\JobRetryDeadlinePassedException;
 use Marko\Queue\JobEnvelope;
@@ -285,4 +286,91 @@ describe('DatabaseQueue retry deadline at pop time', function (): void {
 
         expect($queue->pop()?->exceptions)->toBe(1);
     });
+});
+
+/**
+ * A queue (max 1 attempt) whose failed-job handler stores into the connection's failed_jobs table and runs
+ * failed() with a container that holds the recorder.
+ *
+ * @return array{queue: DatabaseQueue, recorder: FailedHookRecorder, events: FakeEventDispatcher}
+ */
+function notStoredAttemptsQueue(
+    SqliteConnection $connection,
+): array {
+    $recorder = new FailedHookRecorder($connection);
+    $container = new Container();
+    $container->instance(FailedHookRecorder::class, $recorder);
+    $events = new FakeEventDispatcher();
+    $queue = new DatabaseQueue(
+        connection: $connection,
+        jobEnvelope: attemptsEnvelope(),
+        failedJobHandler: TestFailedJobHandler::create(
+            new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC')),
+            attemptsEnvelope(),
+            new FakeClock(),
+            $events,
+            $container,
+        ),
+        queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
+        clock: new FakeClock(),
+        databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
+        retryPolicy: TestRetryPolicy::create(1),
+    );
+
+    return ['queue' => $queue, 'recorder' => $recorder, 'events' => $events];
+}
+
+describe('DatabaseQueue when a crash-exhausted job cannot be stored', function (): void {
+    it(
+        'throws FailedJobNotStoredException from pop() and leaves the job reserved, without calling failed()',
+        function (): void {
+            $connection = SqliteConnection::withQueueTables();
+            ['queue' => $queue, 'recorder' => $recorder, 'events' => $events] = notStoredAttemptsQueue($connection);
+            $id = $queue->push(new FailableCrashJob('crashy'), 'emails')->id;
+            $queue->pop('emails');
+            expireReservation($connection, $id);
+            $connection->execute('ALTER TABLE failed_jobs RENAME TO failed_jobs_gone');
+            $thrown = null;
+
+            try {
+                $queue->pop('emails');
+            } catch (FailedJobNotStoredException $e) {
+                $thrown = $e;
+            }
+
+            $row = jobsRow($connection, $id);
+
+            expect($thrown)->not->toBeNull()
+                ->and($thrown->getMessage())->toContain(FailableCrashJob::class . " (id $id)")
+                ->and($thrown->getContext())->toContain('exceeded max attempts after worker crash or timeout')
+                ->and($thrown->getPrevious())->not->toBeNull()
+                ->and($row)->not->toBeNull()
+                ->and($row['reserved_at'])->not->toBeNull()
+                ->and($recorder->calls)->toBe([])
+                ->and($events->dispatched(JobFailedEvent::class))->toBe([]);
+        },
+    );
+
+    it(
+        'fails the job again, calling failed() once, after the store works and the reservation expires',
+        function (): void {
+            $connection = SqliteConnection::withQueueTables();
+            ['queue' => $queue, 'recorder' => $recorder] = notStoredAttemptsQueue($connection);
+            $failedJobs = new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC'));
+            $id = $queue->push(new FailableCrashJob('crashy'), 'emails')->id;
+            $queue->pop('emails');
+            expireReservation($connection, $id);
+            $connection->execute('ALTER TABLE failed_jobs RENAME TO failed_jobs_gone');
+
+            expect(fn () => $queue->pop('emails'))->toThrow(FailedJobNotStoredException::class);
+
+            $connection->execute('ALTER TABLE failed_jobs_gone RENAME TO failed_jobs');
+            expireReservation($connection, $id);
+
+            expect($queue->pop('emails'))->toBeNull()
+                ->and(jobsRow($connection, $id))->toBeNull()
+                ->and($failedJobs->find($id))->not->toBeNull()
+                ->and($recorder->calls)->toHaveCount(1);
+        },
+    );
 });

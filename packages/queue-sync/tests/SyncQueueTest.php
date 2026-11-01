@@ -11,8 +11,10 @@ use Marko\Queue\ContainerAwareJobInterface;
 use Marko\Queue\Event\JobFailedEvent;
 use Marko\Queue\Event\JobProcessedEvent;
 use Marko\Queue\Event\JobProcessingEvent;
+use Marko\Queue\Exceptions\FailedJobNotStoredException;
 use Marko\Queue\Exceptions\JobFailedException;
 use Marko\Queue\FailableJobInterface;
+use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobHandler;
 use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\Job;
@@ -390,3 +392,53 @@ it('SyncQueue handles job exceptions properly', function (): void {
         ->and(fn () => $queue->later(60, $job))
         ->toThrow(JobFailedException::class);
 });
+
+/**
+ * Failed-job repository whose store() throws the given error.
+ */
+class SyncUnwritableFailedJobRepository extends NullFailedJobRepository
+{
+    public function __construct(
+        private readonly Throwable $error,
+    ) {}
+
+    public function store(FailedJob $failedJob): void
+    {
+        throw $this->error;
+    }
+}
+
+it(
+    'throws FailedJobNotStoredException instead of JobFailedException when the failed job cannot be stored',
+    function (): void {
+        $events = new FakeEventDispatcher();
+        $jobEnvelope = createSyncQueueJobEnvelope();
+        $storageError = new RuntimeException('failed-job store is down');
+        $queue = createSyncQueue(
+            events: $events,
+            failedJobHandler: new FailedJobHandler(
+                new SyncUnwritableFailedJobRepository($storageError),
+                $jobEnvelope,
+                new JobRunner(new Container(), $jobEnvelope, $events),
+                $events,
+                new FakeClock(),
+                logger: new FakeLogger(),
+            ),
+        );
+        $job = new SyncFailableJob();
+        $thrown = null;
+
+        try {
+            $queue->push($job, 'emails');
+        } catch (FailedJobNotStoredException $e) {
+            $thrown = $e;
+        }
+
+        expect($thrown)->not->toBeNull()
+            ->and($thrown->getMessage())->toContain(SyncFailableJob::class . " (id $job->id)")
+            ->and($thrown->getContext())->toContain('sync job failed')
+            ->and($thrown->getPrevious())->toBe($storageError)
+            ->and($job->failedWith)->toBe([])
+            ->and($events->dispatched(JobFailedEvent::class))->toBe([]);
+    },
+);
