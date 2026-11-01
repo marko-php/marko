@@ -5,14 +5,18 @@ declare(strict_types=1);
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
 use Marko\Authentication\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\UserPersisterInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authentication\Event\LoginEvent;
 use Marko\Authentication\Exceptions\AuthException;
 use Marko\Authentication\Guard\GuardDriverRegistry;
 use Marko\Authentication\Guard\SessionGuard;
 use Marko\Authentication\Tests\Fixtures\BoundProviderResolver;
+use Marko\Authentication\Tests\Fixtures\RecordingUserPersister;
 use Marko\Authentication\Tests\Fixtures\StatelessFakeGuard;
+use Marko\Authentication\Tests\Fixtures\VersionedUser;
 use Marko\Authentication\Token\RememberTokenManager;
+use Marko\Authentication\UserPersisterResolver;
 use Marko\Authentication\UserProviderResolver;
 use Marko\Core\Container\Container;
 use Marko\Core\Contracts\ResettableInterface;
@@ -26,6 +30,8 @@ use Marko\Testing\Fake\FakeSession;
 use Marko\Testing\Fake\FakeUserProvider;
 
 class PerGuardAdminProvider extends FakeUserProvider {}
+
+class ManagerAdminPersister extends RecordingUserPersister {}
 
 test('auth manager exists', function (): void {
     expect(class_exists(AuthManager::class))->toBeTrue();
@@ -773,5 +779,61 @@ describe('per-guard user providers', function (): void {
 
         expect($this->manager->guard('admin')->user())->toBe($this->admin)
             ->and($this->manager->guard('session')->check())->toBeFalse();
+    });
+});
+
+describe('logoutOtherDevices', function (): void {
+    beforeEach(function (): void {
+        $this->user = new VersionedUser(id: 42);
+        $this->session = new FakeSession();
+        $this->session->start();
+        $this->boundPersister = new RecordingUserPersister();
+        $this->adminPersister = new ManagerAdminPersister();
+        $config = new AuthConfig(new FakeConfigRepository([
+            'authentication.remember.cookie.prefix' => 'remember_',
+            'authentication.default.guard' => 'web',
+            'authentication.guards' => [
+                'web' => ['driver' => 'session'],
+                'admin' => ['driver' => 'session', 'provider' => 'admins'],
+                'api' => ['driver' => 'token'],
+            ],
+            'authentication.providers' => ['admins' => ['persister' => ManagerAdminPersister::class]],
+        ]));
+        $container = new Container();
+        $container->instance(UserPersisterInterface::class, $this->boundPersister);
+        $container->instance(ManagerAdminPersister::class, $this->adminPersister);
+
+        $this->manager = new AuthManager(
+            config: $config,
+            session: $this->session,
+            providerResolver: BoundProviderResolver::for(new FakeUserProvider([42 => $this->user])),
+            eventDispatcher: new FakeEventDispatcher(),
+            cookieJar: new FakeCookieJar(),
+            rememberTokenManager: new RememberTokenManager(new FakeClock()),
+            guardDriverRegistry: StatelessFakeGuard::tokenDriverRegistry(),
+            userPersisterResolver: new UserPersisterResolver($config, $container),
+        );
+    });
+
+    it('ends other sessions on the default guard, saving through the bound persister', function (): void {
+        $this->manager->guard()->login($this->user);
+
+        $this->manager->logoutOtherDevices($this->user);
+
+        expect($this->boundPersister->persisted)->toBe([$this->user])
+            ->and($this->session->get('auth_web_session_version'))->toBe($this->user->getSessionVersion())
+            ->and($this->manager->guard()->user())->toBe($this->user);
+    });
+
+    it("saves through the persister of the named guard's provider", function (): void {
+        $this->manager->logoutOtherDevices($this->user, 'admin');
+
+        expect($this->adminPersister->persisted)->toBe([$this->user])
+            ->and($this->boundPersister->persisted)->toBe([]);
+    });
+
+    it('throws for a guard that cannot log out other devices', function (): void {
+        expect(fn () => $this->manager->logoutOtherDevices($this->user, 'api'))
+            ->toThrow(AuthException::class, "Guard 'api' cannot log out other devices");
     });
 });

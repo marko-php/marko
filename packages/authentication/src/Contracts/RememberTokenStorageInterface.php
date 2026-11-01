@@ -56,6 +56,18 @@ interface RememberTokenStorageInterface
     ): void;
 
     /**
+     * Delete every token the guard issued to one user, except the device whose
+     * selector is $exceptSelector (logging out other devices).
+     *
+     * @return int Number of tokens deleted
+     */
+    public function deleteAllForUser(
+        string $guard,
+        int|string $userId,
+        ?string $exceptSelector = null,
+    ): int;
+
+    /**
      * Clear all expired remember tokens from storage.
      *
      * @return int Number of tokens cleared
