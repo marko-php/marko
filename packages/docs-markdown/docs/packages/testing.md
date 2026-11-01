@@ -3,9 +3,9 @@ title: marko/testing
 description: Reusable fakes with built-in assertions that eliminate test boilerplate.
 ---
 
-Testing utilities for Marko — reusable fakes with built-in assertions that eliminate test boilerplate. This package provides in-memory fakes for the core Marko contracts: events, broadcasting, mail, notifications, queues, sessions, cookies, logging, config, authentication, guards, HTTP clients, encryption, the clock, and console confirmations. Each fake records interactions and exposes assertion methods so your tests stay focused on behavior rather than mock setup. An in-process HTTP test client (`TestClient`) sends requests through your real routes, middleware and controllers for feature tests. Pest expectation extensions (`toHaveDispatched`, `toHaveBroadcast`, `toHaveSent`, `toHaveNotified`, `toHavePushed`, `toHaveLogged`, `toHaveAttempted`, `toBeAuthenticated`, `toHaveStatus`, `toHaveJsonPath`) are included for fluent assertions.
+Testing utilities for Marko — reusable fakes with built-in assertions that eliminate test boilerplate. This package provides in-memory fakes for the core Marko contracts: events, broadcasting, mail, notifications, queues, sessions, cookies, logging, config, authentication, guards, HTTP clients, encryption, the clock, filesystems, and console confirmations. Each fake records interactions and exposes assertion methods so your tests stay focused on behavior rather than mock setup. An in-process HTTP test client (`TestClient`) sends requests through your real routes, middleware and controllers for feature tests. Pest expectation extensions (`toHaveDispatched`, `toHaveBroadcast`, `toHaveSent`, `toHaveNotified`, `toHavePushed`, `toHaveStored`, `toHaveLogged`, `toHaveAttempted`, `toBeAuthenticated`, `toHaveStatus`, `toHaveJsonPath`) are included for fluent assertions.
 
-Available fakes: `FakeEventDispatcher`, `FakeBroadcaster`, `FakeMailer`, `FakeNotificationSender`, `FakeQueue`, `FakeSession`, `FakeCookieJar`, `FakeLogger`, `FakeConfigRepository`, `FakeAuthenticatable`, `FakeUserProvider`, `FakeGuard`, `FakeHttpClient`, `FakeEncryptor`, `FakeClock`, `FakeSleeper`, `FakeConfirmationPrompter`.
+Available fakes: `FakeEventDispatcher`, `FakeBroadcaster`, `FakeMailer`, `FakeNotificationSender`, `FakeQueue`, `FakeSession`, `FakeCookieJar`, `FakeLogger`, `FakeConfigRepository`, `FakeAuthenticatable`, `FakeUserProvider`, `FakeGuard`, `FakeHttpClient`, `FakeEncryptor`, `FakeClock`, `FakeFilesystem`, `FakeSleeper`, `FakeConfirmationPrompter`.
 
 ## Installation
 
@@ -259,6 +259,40 @@ $clock->assertNowIs('2026-06-01 09:00:00 UTC');
 ```
 
 `travel()` accepts any `DateTimeImmutable::modify()` string; a malformed modifier throws `DateMalformedStringException`. With no argument, the fake is frozen at the moment it was created.
+
+### FakeFilesystem
+
+`FakeFilesystem` implements `FilesystemInterface` from [`marko/filesystem`](/docs/packages/filesystem/) in memory, so tests check what code writes to a disk or a bucket without touching the real filesystem or S3. Both constructor arguments are required: the clock that stamps `lastModified` (a `FakeClock` keeps it exact) and the visibility of new files when a write passes no `visibility` option.
+
+Put it in front of the code under test with [`FilesystemManagerInterface::useDisk()`](/docs/packages/filesystem/#replacing-a-disk). Replace a named disk, or pass `null` for the default disk (which `FilesystemInterface` forwards to):
+
+```php
+use Marko\Filesystem\Contracts\FilesystemManagerInterface;
+use Marko\Testing\Fake\FakeClock;
+use Marko\Testing\Fake\FakeFilesystem;
+
+$fake = new FakeFilesystem(clock: new FakeClock(), public: false);
+$container->get(FilesystemManagerInterface::class)->useDisk('s3', $fake);
+
+// ... run the code under test ...
+
+$fake->assertExists('avatars/1.png');
+$fake->assertMissing('avatars/tmp.png');
+$fake->assertContent('reports/2026.csv', "id,total\n1,42\n");
+$fake->assertDirectoryEmpty('uploads/pending');
+$fake->assertWrittenCount(2);
+$fake->written; // ['avatars/1.png', 'reports/2026.csv']
+$fake->clear();
+```
+
+It behaves like a real driver, and one contract test suite runs against it and the local driver:
+
+- `read()`, `readStream()`, `info()`, `size()`, `lastModified()`, `mimeType()`, `copy()`, `move()`, `setVisibility()` and `visibility()` throw `FileNotFoundException` for a missing file.
+- Paths follow the shared [path rules](/docs/packages/filesystem/#path-rules), with backslashes rejected (the strictest driver rule, so a path that passes here works on every disk). `deleteDirectory('/')` throws `PathException::rootDeletion()`.
+- Writing a file creates its parent directories, and a directory stays after its last file is deleted. Directories report `public` visibility, as a local `0755` directory does.
+- `mimeType()` detects the type from the contents with `finfo`.
+
+`$written` lists the destination of every call that stored contents (`write`, `writeStream`, `append`, `copy`, `move`); `assertWrittenCount()` counts it. Reads, deletes, visibility changes and directory creation are not writes. Assertions normalize the path the same way, so `/avatars/1.png` and `avatars/1.png` match.
 
 ### FakeSleeper
 
@@ -733,6 +767,8 @@ expect($mailer)->toHaveSent(fn (Message $m) => $m->to === 'user@example.com');
 expect($notifications)->toHaveNotified($user, OrderShippedNotification::class);
 expect($notifications)->toHaveNotified($user, OrderShippedNotification::class, fn ($n, array $channels) => $channels === ['mail']);
 expect($queue)->toHavePushed(SendEmailJob::class);
+expect($filesystem)->toHaveStored('avatars/1.png');
+expect($filesystem)->toHaveStored('avatars/1.png', $pngBytes);
 expect($logger)->toHaveLogged('Payment failed');
 expect($logger)->toHaveLogged('Payment failed', LogLevel::Error);
 expect($http)->toHaveSentRequest();
@@ -983,6 +1019,22 @@ public function travel(string $modifier): void;
 public function travelTo(DateTimeImmutable|string $now): void;
 public function assertNowIs(DateTimeImmutable|string $expected): void;
 ```
+
+### FakeFilesystem
+
+Implements every `FilesystemInterface` method, plus:
+
+```php
+public function __construct(ClockInterface $clock, bool $public);
+public function assertExists(string $path): void;
+public function assertMissing(string $path): void;
+public function assertContent(string $path, string $expected): void;
+public function assertDirectoryEmpty(string $path): void;
+public function assertWrittenCount(int $expected): void;
+public function clear(): void;
+```
+
+Recorded write destinations are in the public `$written` property.
 
 ### FakeSleeper
 
