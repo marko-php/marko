@@ -114,6 +114,7 @@ $errors->count();             // total error count across all fields
 | Min | `min:5` | Minimum value (int/float, or numeric string with `numeric`/`integer`), minimum length (string), or minimum count (array). Fails for a file --- use `min_size` |
 | Max | `max:255` | Maximum value (int/float, or numeric string with `numeric`/`integer`), maximum length (string), or maximum count (array). Fails for a file --- use `max_size` |
 | Between | `between:1,100` | Value range (int/float, or numeric string with `numeric`/`integer`), length range (string), or count range (array). Fails for a file --- use `min_size`/`max_size` |
+| Size | `size:10` | Exact value (int/float, or numeric string with `numeric`/`integer`), exact length (string), or exact count (array). Fails for a file --- use `min_size:n\|max_size:n` |
 | In | `in:draft,published` | Must be one of the listed values; numeric strings are compared numerically |
 | NotIn | `not_in:admin,root` | Must not be one of the listed values; numeric strings are compared numerically |
 | Same | `same:other_field` | Must match another field (a dot path; see [wildcards](#validating-arrays-with-wildcards)) |
@@ -121,13 +122,29 @@ $errors->count();             // total error count across all fields
 | Confirmed | `confirmed` | Must have a matching `_confirmation` field next to it (`account.password` checks `account.password_confirmation`) |
 | Regex | `regex:/^\d{3}$/` | Must match the pattern |
 | Date | `date` or `date:Y-m-d` | Must be a valid date |
+| After | `after:today` or `after:starts_at` | A date later than a date or another field (see [Comparing Dates](#comparing-dates)) |
+| AfterOrEqual | `after_or_equal:starts_at` | A date no earlier than a date or another field |
+| Before | `before:2027-01-01` or `before:ends_at` | A date earlier than a date or another field |
+| BeforeOrEqual | `before_or_equal:ends_at` | A date no later than a date or another field |
+| Uuid | `uuid` or `uuid:4` | A UUID in 8-4-4-4-12 hex form, either case; with a version (1--8), that version and the RFC 9562 variant |
+| Ulid | `ulid` | A 26-character ULID (Crockford base32, either case) |
+| Json | `json` | A string that is valid JSON |
+| Digits | `digits:4` | Exactly this many digits: a string of `0`--`9` only, or a non-negative integer (`0123` has 4) |
+| DigitsBetween | `digits_between:4,6` | A number of digits within the range, inclusive |
 | Array | `array` | Must be an array |
+| List | `list` | An array whose keys are `0, 1, 2, ...` in order (`array_is_list`) |
+| Distinct | `distinct`, `distinct:strict`, `distinct:ignore_case` | No other value under the same wildcard key is equal (see [Distinct Values](#distinct-values)) |
+| Enum | `Enum::of(Status::class)` (no string form) | A case of a backed enum, or its backing value (see [Enums](#enums)) |
 | File | `file` | Must be an uploaded file that arrived without an upload error |
 | Image | `image` | Must be a JPEG, PNG, GIF or WebP image, judged from its contents (never SVG) |
 | Mimes | `mimes:jpg,png,pdf` | The extension for the file's sniffed MIME type must be listed (`jpeg` and `jpg` are the same) |
 | MimeTypes | `mimetypes:image/*,application/pdf` | The sniffed MIME type must be listed; `type/*` matches any subtype except `image/svg+xml` |
 | MaxSize | `max_size:2048` | File size at most this many kilobytes (1 KB = 1024 bytes) |
 | MinSize | `min_size:1` | File size at least this many kilobytes |
+
+Rules that take a number (`size`, `digits`, `digits_between`, `max_size`, `min_size`) throw `InvalidArgumentException` when it is missing or not a number, as do `after`/`before` without a reference and `uuid` with a version outside 1--8.
+
+Not built in yet: presence rules such as `sometimes`, `present`, `prohibited`, `accepted` and the `required_if` family ([#562](https://github.com/marko-php/marko/issues/562)), the database rules `exists` and `unique` ([#563](https://github.com/marko-php/marko/issues/563)), and `current_password` and password strength rules ([#561](https://github.com/marko-php/marko/issues/561)). Until then, write a [custom rule](#custom-rules).
 
 ### Numeric-Aware Rules
 
@@ -148,7 +165,58 @@ $errors = $this->validator->validate(
 
 Numeric mode applies whether the rules are a string, an array, or rule objects (`[new Numeric(), new Min(8)]`). A size rule object built on its own measures strings by length; call `asNumeric()` (or pass `numeric: true` to the constructor) to compare numeric strings by value.
 
+`Size` follows the same numeric mode: `integer|size:10` accepts `"10"`, while `string|size:10` requires ten characters.
+
 `In` and `NotIn` compare numeric strings numerically: `in:1,2,3` accepts `"2"` even though it is not strictly identical to the integer `2`.
+
+### Comparing Dates
+
+`after`, `before`, `after_or_equal` and `before_or_equal` take one reference: another field or a date. When a field of that name (a dot path) is present in the data, the value is compared with that field; otherwise the reference is read as a date that `strtotime()` understands. Both sides are parsed like the `date` rule, so a `DateTimeInterface` value works too:
+
+```php
+$this->validator->validate($input, [
+    'starts_at' => 'required|date|after_or_equal:today',
+    'ends_at' => 'required|date|after:starts_at',
+    'items.*.ends_at' => 'required|date|after:items.*.starts_at', // compared within each row
+]);
+// "The ends_at field must be a date after starts_at."
+```
+
+A `*` in the reference is replaced by the current row's index, exactly as for [`same` and `different`](#cross-field-rules-inside-rows). The rule fails when the value, or the referenced field's value, is not a date.
+
+A reference that is neither a date nor a field present in the data throws `InvalidArgumentException` instead of passing, so a typo such as `after:starts_att` or `after:tomorow` is caught. That also means the referenced field must be in the data whenever the compared field has a value: give it `required`, or make sure the client always sends the key (an explicit `null` counts as present and simply fails the comparison).
+
+### Distinct Values
+
+`distinct` belongs on a wildcard key and fails every value that another item under the same key repeats:
+
+```php
+$errors = $this->validator->validate(
+    ['items' => [['sku' => 'A1'], ['sku' => 'B2'], ['sku' => 'A1']]],
+    ['items.*.sku' => 'required|distinct'],
+);
+// items.0.sku and items.2.sku: "The items.0.sku field has a duplicate value."
+```
+
+By default numbers compare by value (`1`, `"1"` and `"01"` are duplicates) and other scalars by their string form. `distinct:strict` compares with `===`, `distinct:ignore_case` lowercases strings first, and `distinct:strict,ignore_case` does both. With nested wildcards (`orders.*.lines.*.sku`) every matched value is compared with every other. `distinct` on a key without a `*` throws `InvalidArgumentException`.
+
+### Enums
+
+`Enum` accepts a case of a backed enum, given as the case itself or its backing value. An int-backed enum also accepts an integer string such as `"2"`, since form input arrives as strings. There is no `enum:` rule string --- a class name inside a rule string is the kind of hidden magic Marko avoids --- so pass the rule object in an array:
+
+```php
+use App\Blog\Enums\PostStatus;
+use Marko\Validation\Rules\Enum;
+
+$this->validator->validate($input, [
+    'status' => ['required', Enum::of(PostStatus::class)],
+    'public_status' => ['required', Enum::of(PostStatus::class)->except(PostStatus::Archived)],
+    'draft_status' => ['required', Enum::of(PostStatus::class)->only(PostStatus::Draft, PostStatus::Review)],
+]);
+// "The status field must be one of: 'draft', 'review', 'published', 'archived'."
+```
+
+`only()` and `except()` return a new rule and leave the original unchanged. `Enum::of()` throws `InvalidArgumentException` for a pure enum (its cases have no value to validate) or a class that is not an enum, and `only()`/`except()` throw for a case of another enum.
 
 ### Validating URLs
 
@@ -376,7 +444,7 @@ interface WildcardAwareRuleInterface extends RuleInterface
 }
 ```
 
-Implement it on a custom rule that refers to another field which may contain `*`. Before checking each concrete field, the validator passes the rules key and the indexes its wildcards matched (`['3']` for `items.3.sku_check` under `items.*.sku_check`), and uses the rule it returns. `Same` and `Different` implement it; throw `InvalidArgumentException` when the referenced field has more `*` than there are indexes.
+Implement it on a custom rule that refers to another field which may contain `*`. Before checking each concrete field, the validator passes the rules key and the indexes its wildcards matched (`['3']` for `items.3.sku_check` under `items.*.sku_check`), and uses the rule it returns. `Same`, `Different`, `After`, `Before`, `AfterOrEqual`, `BeforeOrEqual` and `Distinct` implement it; throw `InvalidArgumentException` when the referenced field has more `*` than there are indexes.
 
 ### NumericAwareRuleInterface
 
@@ -387,7 +455,7 @@ interface NumericAwareRuleInterface extends RuleInterface
 }
 ```
 
-Implement it on a custom size rule whose meaning for a numeric string depends on the field's other rules. When a field's rules include `numeric` or `integer`, the parser replaces each such rule with the one `asNumeric()` returns. `Min`, `Max`, and `Between` implement it (see [Numeric-Aware Rules](#numeric-aware-rules)).
+Implement it on a custom size rule whose meaning for a numeric string depends on the field's other rules. When a field's rules include `numeric` or `integer`, the parser replaces each such rule with the one `asNumeric()` returns. `Min`, `Max`, `Between`, and `Size` implement it (see [Numeric-Aware Rules](#numeric-aware-rules)).
 
 ### ValidationErrors
 
