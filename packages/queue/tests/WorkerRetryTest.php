@@ -173,6 +173,7 @@ function createWorkerRetryWorker(
         $config,
         $runner,
         new RetryPolicy($config, $clock),
+        clock: new FakeClock(),
     );
 
     return ['worker' => $worker, 'failed' => $failed, 'events' => $events];

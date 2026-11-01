@@ -62,13 +62,16 @@ class WorkCommand implements CommandInterface
 
         $output->writeLine('Processing jobs from queue...');
 
-        $this->worker->work(queues: $queues, once: $once, sleep: $sleep, options: $options);
+        $reason = $this->worker->work(queues: $queues, once: $once, sleep: $sleep, options: $options);
 
-        return 0;
+        return $reason->exitCode();
     }
 
     /**
-     * Build the worker limits from --timeout (default queue.timeout), --memory and --max-jobs.
+     * Build the worker limits from --timeout (default queue.timeout), --memory, --max-jobs and --max-time.
+     *
+     * This is the composition root for the worker's stop conditions: WorkerOptions builds the built-in
+     * ones from these limits, and any extra condition is passed through its stopConditions.
      *
      * @throws QueueException When a value is not a non-negative integer, or the timeout is not below retry_after
      */
@@ -80,6 +83,7 @@ class WorkCommand implements CommandInterface
             timeout: $timeout === null ? $this->config->timeout() : $this->parseLimit('timeout', $timeout),
             memory: $this->parseLimit('memory', $input->getOption('memory') ?? '0'),
             maxJobs: $this->parseLimit('max-jobs', $input->getOption('max-jobs') ?? '0'),
+            maxTime: $this->parseLimit('max-time', $input->getOption('max-time') ?? '0'),
         );
 
         // A job still running when its reservation expires would be handed to a second worker

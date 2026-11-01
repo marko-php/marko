@@ -63,6 +63,31 @@ class QueueException extends MarkoException
         );
     }
 
+    public static function jobTimeoutNotBelowRetryAfter(
+        string $jobClass,
+        int $timeout,
+        int $retryAfter,
+    ): self {
+        return new self(
+            message: "Job '$jobClass' has a {$timeout}s timeout, which is not below queue.retry_after"
+                . " ({$retryAfter}s), so the worker failed it without running it.",
+            context: 'A job still running when retry_after expires is reclaimed and handed to another worker,'
+                . ' so it would run twice at once.',
+            suggestion: "Raise queue.retry_after above $timeout seconds (leave a few seconds of margin),"
+                . " or lower the job's \$timeout, then queue:retry the job.",
+        );
+    }
+
+    public static function invalidStopCondition(
+        string $type,
+    ): self {
+        return new self(
+            message: 'Invalid stop condition for the queue worker.',
+            context: "WorkerOptions::\$stopConditions must hold only WorkerStopConditionInterface objects; got $type.",
+            suggestion: 'Pass objects that implement Marko\Queue\WorkerStopConditionInterface.',
+        );
+    }
+
     public static function invalidBackoff(
         string $source,
         string $reason,

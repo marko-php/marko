@@ -297,6 +297,7 @@ describe('Integration Tests', function (): void {
             $config,
             new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
+            clock: new FakeClock(),
         );
 
         // 1. Push the job to the queue
@@ -496,6 +497,7 @@ describe('Integration Tests', function (): void {
                 $config,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new RetryPolicy($config, new FakeClock()),
+                clock: new FakeClock(),
             );
             $worker->work(once: true);
 
@@ -584,6 +586,7 @@ describe('Integration Tests', function (): void {
                 $config,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new RetryPolicy($config, new FakeClock()),
+                clock: new FakeClock(),
             );
             $worker->work(once: true);
 
@@ -632,6 +635,7 @@ describe('Integration Tests', function (): void {
             new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             processControl: $processControl,
+            clock: new FakeClock(),
         );
 
         // Push a job to the queue
@@ -725,6 +729,7 @@ describe('Integration Tests', function (): void {
             $queueConfig,
             new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($queueConfig, new FakeClock()),
+            clock: new FakeClock(),
         );
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);

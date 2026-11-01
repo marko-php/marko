@@ -350,6 +350,7 @@ describe('DispatchWebhookJob final failure', function (): void {
                     new FakeEventDispatcher(),
                 ),
                 new RetryPolicy(SerializableWebhookJobTestHelpers::queueConfig(), new FakeClock()),
+                clock: new FakeClock(),
             );
             $stopJob->worker = $worker;
 
@@ -627,6 +628,7 @@ describe('DispatchWebhookJob serialization', function (): void {
                 $queueConfig,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new RetryPolicy($queueConfig, new FakeClock()),
+                clock: new FakeClock(),
             );
             $worker->work(once: true);
 
@@ -736,6 +738,7 @@ describe('DispatchWebhookJob serialization', function (): void {
             $queueConfig,
             new JobRunner($container, $envelope, new FakeEventDispatcher()),
             new RetryPolicy($queueConfig, new FakeClock()),
+            clock: new FakeClock(),
         );
         $worker->work(once: true);
 
