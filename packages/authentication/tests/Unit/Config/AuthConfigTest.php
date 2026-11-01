@@ -42,6 +42,51 @@ describe('password reset', function (): void {
     });
 });
 
+describe('password confirmation', function (): void {
+    it('loads the password confirmation timeout, route and throttle', function (): void {
+        $config = new AuthConfig(new FakeConfigRepository([
+            'authentication.password_confirmation.timeout_seconds' => 900,
+            'authentication.password_confirmation.route' => '/user/confirm-password',
+            'authentication.password_confirmation.throttle.max_attempts' => 3,
+            'authentication.password_confirmation.throttle.decay_seconds' => 120,
+        ]));
+
+        expect($config->passwordConfirmationTimeoutSeconds())->toBe(900)
+            ->and($config->passwordConfirmationRoute())->toBe('/user/confirm-password')
+            ->and($config->passwordConfirmationThrottleMaxAttempts())->toBe(3)
+            ->and($config->passwordConfirmationThrottleDecaySeconds())->toBe(120);
+    });
+
+    it('rejects a password confirmation number below one', function (string $key, string $method): void {
+        $config = new AuthConfig(new FakeConfigRepository([
+            "authentication.password_confirmation.$key" => 0,
+        ]));
+
+        expect(fn () => $config->$method())
+            ->toThrow(
+                AuthException::class,
+                "authentication.password_confirmation.$key must be a positive integer, got 0",
+            );
+    })->with([
+        ['timeout_seconds', 'passwordConfirmationTimeoutSeconds'],
+        ['throttle.max_attempts', 'passwordConfirmationThrottleMaxAttempts'],
+        ['throttle.decay_seconds', 'passwordConfirmationThrottleDecaySeconds'],
+    ]);
+
+    it('ships password confirmation defaults in the package config file', function (): void {
+        $defaults = require dirname(__DIR__, 3) . '/config/authentication.php';
+
+        expect($defaults['password_confirmation'])->toBe([
+            'timeout_seconds' => 10800,
+            'route' => '/confirm-password',
+            'throttle' => [
+                'max_attempts' => 5,
+                'decay_seconds' => 60,
+            ],
+        ]);
+    });
+});
+
 it('creates AuthConfig class', function () {
     $config = new AuthConfig(new FakeConfigRepository());
 

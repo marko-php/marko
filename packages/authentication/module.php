@@ -6,17 +6,23 @@ use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
 use Marko\Authentication\Contracts\CookieJarInterface;
 use Marko\Authentication\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\IntendedUrlInterface;
 use Marko\Authentication\Contracts\LoginThrottleInterface;
+use Marko\Authentication\Contracts\PasswordConfirmationInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
 use Marko\Authentication\Contracts\PasswordResetBrokerInterface;
 use Marko\Authentication\Contracts\PasswordResetTokenRepositoryInterface;
+use Marko\Authentication\Contracts\PasswordVerifierInterface;
 use Marko\Authentication\Contracts\RememberTokenStorageInterface;
 use Marko\Authentication\Cookie\RequestCookieJar;
 use Marko\Authentication\Guard\GuardDriverRegistry;
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
 use Marko\Authentication\Hashing\HashManagerPasswordHasher;
+use Marko\Authentication\Hashing\PasswordVerifier;
 use Marko\Authentication\Http\CurrentRequest;
+use Marko\Authentication\Http\IntendedUrl;
 use Marko\Authentication\Middleware\QueuedCookiesMiddleware;
+use Marko\Authentication\PasswordConfirmation\PasswordConfirmation;
 use Marko\Authentication\PasswordReset\CachePasswordResetTokenRepository;
 use Marko\Authentication\PasswordReset\PasswordResetBroker;
 use Marko\Authentication\Throttle\LoginThrottle;
@@ -89,6 +95,9 @@ return [
         // only they know how to save their user entity and what the reset email says.
         PasswordResetBrokerInterface::class => PasswordResetBroker::class,
         PasswordResetTokenRepositoryInterface::class => CachePasswordResetTokenRepository::class,
+        PasswordVerifierInterface::class => PasswordVerifier::class,
+        PasswordConfirmationInterface::class => PasswordConfirmation::class,
+        IntendedUrlInterface::class => IntendedUrl::class,
         GuardInterface::class => function (ContainerInterface $container): GuardInterface {
             return $container->get(AuthManager::class)->guard();
         },

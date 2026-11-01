@@ -133,4 +133,26 @@ return [
         'expire_seconds' => 3600,
         'throttle_seconds' => 60,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password Confirmation
+    |--------------------------------------------------------------------------
+    |
+    | RequirePasswordConfirmationMiddleware lets a request through when the
+    | user confirmed their password within timeout_seconds. Otherwise a
+    | browser is redirected to 'route' (a URL path your app serves) and a
+    | JSON request gets a 423. One user may make max_attempts confirmation
+    | attempts within decay_seconds; a correct password resets the count.
+    | All numbers must be 1 or more.
+    |
+    */
+    'password_confirmation' => [
+        'timeout_seconds' => 10800, // 3 hours
+        'route' => '/confirm-password',
+        'throttle' => [
+            'max_attempts' => 5,
+            'decay_seconds' => 60,
+        ],
+    ],
 ];

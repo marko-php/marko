@@ -5,14 +5,20 @@ declare(strict_types=1);
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
 use Marko\Authentication\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\IntendedUrlInterface;
+use Marko\Authentication\Contracts\PasswordConfirmationInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
 use Marko\Authentication\Contracts\PasswordResetBrokerInterface;
 use Marko\Authentication\Contracts\PasswordResetTokenRepositoryInterface;
+use Marko\Authentication\Contracts\PasswordVerifierInterface;
 use Marko\Authentication\Contracts\ResetLinkNotifierInterface;
 use Marko\Authentication\Contracts\UserPersisterInterface;
 use Marko\Authentication\Guard\GuardDriverRegistry;
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
 use Marko\Authentication\Hashing\HashManagerPasswordHasher;
+use Marko\Authentication\Hashing\PasswordVerifier;
+use Marko\Authentication\Http\IntendedUrl;
+use Marko\Authentication\PasswordConfirmation\PasswordConfirmation;
 use Marko\Authentication\PasswordReset\CachePasswordResetTokenRepository;
 use Marko\Authentication\PasswordReset\PasswordResetBroker;
 use Marko\Authentication\Token\RememberTokenManager;
@@ -198,6 +204,14 @@ it('binds the password reset broker and the cache token repository', function ()
     expect($config['bindings'][PasswordResetBrokerInterface::class])->toBe(PasswordResetBroker::class)
         ->and($config['bindings'][PasswordResetTokenRepositoryInterface::class])
         ->toBe(CachePasswordResetTokenRepository::class);
+});
+
+it('binds the password verifier, password confirmation and intended URL', function () {
+    $config = require dirname(__DIR__, 2) . '/module.php';
+
+    expect($config['bindings'][PasswordVerifierInterface::class])->toBe(PasswordVerifier::class)
+        ->and($config['bindings'][PasswordConfirmationInterface::class])->toBe(PasswordConfirmation::class)
+        ->and($config['bindings'][IntendedUrlInterface::class])->toBe(IntendedUrl::class);
 });
 
 it('ships no default UserPersisterInterface or ResetLinkNotifierInterface binding', function () {
