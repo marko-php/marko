@@ -35,6 +35,33 @@ readonly class AuthConfig
     }
 
     /**
+     * The provider a guard authenticates against: its `provider` key, falling back to
+     * authentication.default.provider. Null means neither is set, so the app's
+     * bindings (UserProviderInterface, UserPersisterInterface) serve the guard.
+     *
+     * @param array<string, mixed> $guardConfig
+     * @throws AuthException
+     */
+    public function guardProviderName(
+        string $guard,
+        array $guardConfig,
+    ): ?string {
+        $providerName = array_key_exists('provider', $guardConfig)
+            ? $guardConfig['provider']
+            : $this->defaultProviderOrNull();
+
+        if ($providerName === null) {
+            return null;
+        }
+
+        if (!is_string($providerName) || $providerName === '') {
+            throw AuthException::invalidGuardProvider($guard);
+        }
+
+        return $providerName;
+    }
+
+    /**
      * @return array<string, array<string, mixed>>
      */
     public function guards(): array

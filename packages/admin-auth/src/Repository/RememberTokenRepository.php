@@ -89,6 +89,27 @@ class RememberTokenRepository extends Repository implements RememberTokenStorage
         );
     }
 
+    public function deleteAllForUser(
+        string $guard,
+        int|string $userId,
+        ?string $exceptSelector = null,
+    ): int {
+        $sql = sprintf(
+            'DELETE FROM %s WHERE %s = ? AND %s = ?',
+            $this->table(),
+            $this->column('guard'),
+            $this->column('user_id'),
+        );
+        $bindings = [$guard, (string) $userId];
+
+        if ($exceptSelector !== null) {
+            $sql .= sprintf(' AND %s <> ?', $this->column('selector'));
+            $bindings[] = $exceptSelector;
+        }
+
+        return $this->connection->execute($sql, $bindings);
+    }
+
     public function clearExpiredTokens(): int
     {
         $now = $this->hydrator->toDatabaseValue($this->now(), $this->metadata->properties['expiresAt']);

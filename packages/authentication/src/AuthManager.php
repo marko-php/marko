@@ -8,6 +8,7 @@ use Marko\Authentication\Config\AuthConfig;
 use Marko\Authentication\Contracts\CookieJarInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\LoginThrottleInterface;
+use Marko\Authentication\Contracts\OtherDeviceLogoutInterface;
 use Marko\Authentication\Contracts\RememberTokenStorageInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authentication\Exceptions\AuthException;
@@ -45,6 +46,7 @@ class AuthManager implements ResettableInterface
         private readonly ?LoginThrottleInterface $loginThrottle = null,
         private readonly ?RememberTokenStorageInterface $rememberTokenStorage = null,
         private readonly ?CurrentRequest $currentRequest = null,
+        private readonly ?UserPersisterResolver $userPersisterResolver = null,
     ) {}
 
     /**
@@ -119,7 +121,7 @@ class AuthManager implements ResettableInterface
         }
 
         if ($driver === 'session') {
-            return $this->createSessionGuard($name, $provider);
+            return $this->createSessionGuard($name, $guardConfig, $provider);
         }
 
         if ($driver === 'token') {
@@ -134,10 +136,12 @@ class AuthManager implements ResettableInterface
     }
 
     /**
-     * @throws ConfigNotFoundException
+     * @param array<string, mixed> $guardConfig
+     * @throws AuthException|ConfigNotFoundException
      */
     private function createSessionGuard(
         string $name,
+        array $guardConfig,
         UserProviderInterface $provider,
     ): SessionGuard {
         return new SessionGuard(
@@ -151,6 +155,8 @@ class AuthManager implements ResettableInterface
             loginThrottle: $this->loginThrottle,
             rememberTokenStorage: $this->rememberTokenStorage,
             currentRequest: $this->currentRequest,
+            userPersisterResolver: $this->userPersisterResolver,
+            providerName: $this->config->guardProviderName($name, $guardConfig),
         );
     }
 
@@ -196,6 +202,26 @@ class AuthManager implements ResettableInterface
     public function logout(): void
     {
         $this->guard()->logout();
+    }
+
+    /**
+     * End the user's other sessions and remember-me devices on a guard (default: the
+     * default guard), keeping the current session and remember token. Typically called
+     * after the user changed or reset their password.
+     *
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function logoutOtherDevices(
+        AuthenticatableInterface $user,
+        ?string $guard = null,
+    ): void {
+        $guardInstance = $this->guard($guard);
+
+        if (!$guardInstance instanceof OtherDeviceLogoutInterface) {
+            throw AuthException::otherDeviceLogoutUnsupported($guardInstance->getName(), $guardInstance::class);
+        }
+
+        $guardInstance->logoutOtherDevices($user);
     }
 
     /**

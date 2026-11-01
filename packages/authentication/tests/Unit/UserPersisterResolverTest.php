@@ -85,6 +85,30 @@ it('throws when the provider is not defined in authentication.providers', functi
         ->toThrow(UserPersisterException::class, "User provider 'admins' is not defined in authentication.providers");
 });
 
+it('resolves a guard provider by name like forProvider', function (): void {
+    $resolver = userPersisterResolver(
+        ['authentication.providers' => ['admins' => ['persister' => ResolverAdminPersister::class]]],
+        new RecordingUserPersister(),
+    );
+
+    expect($resolver->forGuardProvider('admin', 'admins'))->toBe($resolver->forProvider('admins'));
+});
+
+it('uses the UserPersisterInterface binding for a guard that names no provider', function (): void {
+    $bound = new RecordingUserPersister();
+
+    $resolver = userPersisterResolver(['authentication.providers' => ['admins' => []]], $bound);
+
+    expect($resolver->forGuardProvider('web', null))->toBe($bound);
+});
+
+it('throws naming the guard when a guard without a provider has no bound persister', function (): void {
+    $resolver = userPersisterResolver([]);
+
+    expect(fn () => $resolver->forGuardProvider('web', null))
+        ->toThrow(UserPersisterException::class, "No user persister is configured for guard 'web'");
+});
+
 it('accepts a user that implements the feature interface', function (): void {
     $resolver = userPersisterResolver([]);
 

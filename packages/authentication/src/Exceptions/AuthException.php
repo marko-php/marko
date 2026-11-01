@@ -43,6 +43,27 @@ class AuthException extends Exception
         );
     }
 
+    public static function sessionVersionUnpersistable(
+        string $guard,
+    ): self {
+        return new self(
+            message: "Guard '$guard' cannot end other sessions: it has no user persister to save the new session version",
+            context: "SessionGuard '$guard' was constructed without a UserPersisterResolver, and the user implements HasSessionVersionInterface",
+            suggestion: 'Resolve the guard through AuthManager (or GuardInterface), or pass userPersisterResolver when constructing SessionGuard yourself',
+        );
+    }
+
+    public static function otherDeviceLogoutUnsupported(
+        string $guard,
+        string $guardClass,
+    ): self {
+        return new self(
+            message: "Guard '$guard' cannot log out other devices",
+            context: "$guardClass does not implement Marko\\Authentication\\Contracts\\OtherDeviceLogoutInterface. Stateless guards keep no sessions to end",
+            suggestion: 'Call logoutOtherDevices() on a session guard, or revoke the credentials a stateless guard checks (e.g. API tokens) instead',
+        );
+    }
+
     public static function rememberTokenNotStored(
         string $guard,
         string $provider,

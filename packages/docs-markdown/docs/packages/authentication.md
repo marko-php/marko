@@ -176,6 +176,47 @@ public function logout(): Response
 
 `logout()` removes the user from the session, clears the remember token (with [per-device tokens](#per-device-tokens), only the current device's), and regenerates the session ID (deleting the old session), so the logged-out session ID cannot be reused on a shared machine. Other session data (for example, another guard's login) is kept; call `$session->destroy()` yourself if you want to discard everything. With [marko/security](/docs/packages/security/) installed, the CSRF token is also rotated on every login and logout.
 
+### Logging Out Other Devices
+
+After a password change or [reset](#password-reset), sign the user out everywhere except the device they're using:
+
+```php
+$this->authManager->logoutOtherDevices($user);          // the default guard
+$this->authManager->logoutOtherDevices($user, 'admin'); // a named guard
+```
+
+`SessionGuard` implements `OtherDeviceLogoutInterface`, and `AuthManager::logoutOtherDevices()` throws an `AuthException` for a guard that doesn't (stateless guards keep no sessions; revoke their tokens instead). When you hold a guard directly, check `$guard instanceof OtherDeviceLogoutInterface` first. The current session and remember-me cookie are kept when they belong to `$user`; it then dispatches [`OtherDevicesLoggedOutEvent`](#otherdevicesloggedoutevent).
+
+**Remember-me devices** are always ended. With [per-device tokens](#per-device-tokens), every token the guard issued to the user is deleted except the current device's (`RememberTokenStorageInterface::deleteAllForUser()`). Without them, the user's single column token is rotated when the current device holds it (keeping its expiry), or cleared otherwise, so no other device's cookie matches it again.
+
+**Sessions** are ended only when the user entity implements `HasSessionVersionInterface`. Session handlers have no per-user index, so the guard versions sessions instead: it copies the user's session version into the session at login (`auth_{guard}_session_version`) and logs out a session whose copy no longer matches, on that session's next request. `logoutOtherDevices()` stores a random new version on the user, saves it through the [user persister](#saving-changed-users) of the guard's provider, and moves the current session to it. This works with every session driver:
+
+```php title="app/web/Entity/User.php"
+use Marko\Authentication\HasSessionVersionInterface;
+use Marko\Database\Attributes\Column;
+
+class User implements HasSessionVersionInterface
+{
+    #[Column('session_version')]
+    public string $sessionVersion = '';
+
+    // ... AuthenticatableInterface methods
+
+    public function getSessionVersion(): string
+    {
+        return $this->sessionVersion;
+    }
+
+    public function setSessionVersion(
+        string $version,
+    ): void {
+        $this->sessionVersion = $version;
+    }
+}
+```
+
+An empty version means it was never changed, so sessions started before you added the column stay valid until other devices are first logged out. A user without the interface only has its remember-me devices ended: its other sessions stay logged in until they expire.
+
 ### Making Users Authenticatable
 
 Your user model must implement `AuthenticatableInterface`:
@@ -552,7 +593,7 @@ When a `RememberTokenStorageInterface` implementation is bound, every session gu
 - A later request looks the row up by guard and selector and compares the validator's hash with `hash_equals()`. An unknown selector clears the cookie; a wrong validator (a tampered cookie) is rejected and the row is left alone.
 - On success only the validator is rotated, as a compare-and-swap on the stored hash: of two requests racing with the same cookie, one logs in and the other is treated as a guest. The selector and the expiry are kept, so the [lifetime is fixed](#how-it-works) from the original login.
 - An expired row, or one whose user no longer exists, is deleted along with the cookie.
-- `logout()` deletes only the current device's row. The user's other devices stay remembered, and a remember-me login on one device never rotates another device's token.
+- `logout()` deletes only the current device's row. The user's other devices stay remembered, and a remember-me login on one device never rotates another device's token. To end them too, use [`logoutOtherDevices()`](#logging-out-other-devices).
 
 Without a binding, guards fall back to the single-column token described below. A cookie issued by that path (`{user id}|{token}`) is still honored after you install per-device storage: on its next use the column token is cleared and the device moves to its own row, so remembered users are not logged out by the upgrade.
 
@@ -1026,6 +1067,28 @@ class NotifyPasswordResetObserver
 }
 ```
 
+### OtherDevicesLoggedOutEvent
+
+Dispatched by `SessionGuard::logoutOtherDevices()` after the user's other sessions and remember-me devices are ended (see [Logging Out Other Devices](#logging-out-other-devices)):
+
+```php title="NotifyOtherDevicesLoggedOutObserver.php"
+use Marko\Authentication\Event\OtherDevicesLoggedOutEvent;
+use Marko\Core\Attributes\Observer;
+
+#[Observer(OtherDevicesLoggedOutEvent::class)]
+class NotifyOtherDevicesLoggedOutObserver
+{
+    public function handle(
+        OtherDevicesLoggedOutEvent $event,
+    ): void {
+        $user = $event->getUser();
+        $guard = $event->getGuard();
+
+        // Tell the user their other devices were signed out
+    }
+}
+```
+
 ## API Reference
 
 ### AuthManager
@@ -1038,6 +1101,7 @@ public function user(): ?AuthenticatableInterface;
 public function id(): int|string|null;
 public function attempt(array $credentials): bool;
 public function logout(): void;
+public function logoutOtherDevices(AuthenticatableInterface $user, ?string $guard = null): void; // throws AuthException for a guard without OtherDeviceLogoutInterface
 public function reset(): void;
 ```
 
@@ -1064,6 +1128,23 @@ Extends `GuardInterface`:
 
 ```php
 public function getChallenge(): string;
+```
+
+### OtherDeviceLogoutInterface
+
+Implemented by `SessionGuard`:
+
+```php
+public function logoutOtherDevices(AuthenticatableInterface $user): void;
+```
+
+### HasSessionVersionInterface
+
+Extends `AuthenticatableInterface`:
+
+```php
+public function getSessionVersion(): string; // '' when never changed
+public function setSessionVersion(string $version): void;
 ```
 
 ### UnauthenticatedException
@@ -1113,6 +1194,7 @@ public function persist(AuthenticatableInterface $user): void;
 
 ```php
 public function forProvider(string $providerName): UserPersisterInterface;
+public function forGuardProvider(string $guard, ?string $providerName): UserPersisterInterface; // null: the UserPersisterInterface binding
 public function assertUserSupports(AuthenticatableInterface $user, string $interface, string $providerName): void;
 ```
 
@@ -1205,7 +1287,10 @@ if (strlen($password) > BcryptPasswordHasher::MAX_PASSWORD_BYTES || str_contains
 
 ```php
 public function login(AuthenticatableInterface $user, bool $remember = false): void;
+public function logoutOtherDevices(AuthenticatableInterface $user): void;
 ```
+
+If you construct a `SessionGuard` by hand, pass `userPersisterResolver` (and the guard's `providerName`) for `logoutOtherDevices()` to save a new session version; without it, the call throws an `AuthException` for a user implementing `HasSessionVersionInterface`.
 
 ### LoginThrottleInterface
 
@@ -1260,6 +1345,7 @@ public function store(RememberTokenRecord $token): void;
 public function findBySelector(string $guard, string $selector): ?RememberTokenRecord;
 public function rotateValidator(string $guard, string $selector, string $currentValidatorHash, string $newValidatorHash): bool;
 public function deleteBySelector(string $guard, string $selector): void;
+public function deleteAllForUser(string $guard, int|string $userId, ?string $exceptSelector = null): int;
 public function clearExpiredTokens(): int;
 public function clearAllTokens(): int;
 ```

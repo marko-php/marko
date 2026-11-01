@@ -64,6 +64,23 @@ class InMemoryRememberTokenStorage implements RememberTokenStorageInterface
         unset($this->tokens["$guard:$selector"]);
     }
 
+    public function deleteAllForUser(
+        string $guard,
+        int|string $userId,
+        ?string $exceptSelector = null,
+    ): int {
+        $deleted = 0;
+
+        foreach ($this->tokensFor($guard, $userId) as $token) {
+            if ($token->selector !== $exceptSelector) {
+                unset($this->tokens["$guard:$token->selector"]);
+                $deleted++;
+            }
+        }
+
+        return $deleted;
+    }
+
     public function clearExpiredTokens(): int
     {
         $now = $this->clock->now();

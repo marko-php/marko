@@ -22,6 +22,7 @@ use Marko\Authentication\PasswordReset\PasswordResetBroker;
 use Marko\Authentication\Throttle\LoginThrottle;
 use Marko\Authentication\Throttle\NullLoginThrottle;
 use Marko\Authentication\Token\RememberTokenManager;
+use Marko\Authentication\UserPersisterResolver;
 use Marko\Authentication\UserProviderResolver;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Core\Container\ContainerInterface;
@@ -83,6 +84,7 @@ return [
                     ? $container->get(RememberTokenStorageInterface::class)
                     : null,
                 currentRequest: $container->get(CurrentRequest::class),
+                userPersisterResolver: $container->get(UserPersisterResolver::class),
             );
         },
         // Apps bind UserPersisterInterface and ResetLinkNotifierInterface themselves:

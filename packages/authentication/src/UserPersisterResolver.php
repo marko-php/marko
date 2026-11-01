@@ -43,6 +43,29 @@ class UserPersisterResolver
     }
 
     /**
+     * The persister for a guard's users. A guard that names no provider (no `provider`
+     * key and no authentication.default.provider) uses the app's UserPersisterInterface
+     * binding, as its users come from the UserProviderInterface binding.
+     *
+     * @throws UserPersisterException|ConfigNotFoundException
+     */
+    public function forGuardProvider(
+        string $guard,
+        ?string $providerName,
+    ): UserPersisterInterface {
+        if ($providerName !== null) {
+            return $this->forProvider($providerName);
+        }
+
+        if (!$this->container->has(UserPersisterInterface::class)) {
+            throw UserPersisterException::noGuardPersister($guard);
+        }
+
+        /** @var UserPersisterInterface */
+        return $this->container->get(UserPersisterInterface::class);
+    }
+
+    /**
      * Check that a user from $providerName implements the feature interface a feature
      * changes it through, e.g. CanResetPasswordInterface.
      *
