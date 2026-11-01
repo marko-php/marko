@@ -83,7 +83,14 @@ The `.env.example` ships with:
 ```env
 APP_ENV=local
 APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+# Signed URLs (marko/routing). At least 32 bytes; do not reuse ENCRYPTION_KEY.
+# Generate with: php -r 'echo bin2hex(random_bytes(32));'
+URL_SIGNING_KEY=
 ```
+
+`URL_SIGNING_KEY` is empty on purpose: generate a value per environment before you sign URLs (see [Signed URLs](/docs/packages/routing/#signed-urls)). Signing with an empty key throws `UrlSigningException`.
 
 See the [Configuration guide](/docs/getting-started/configuration/) for adding database, cache, and other environment variables.
 
