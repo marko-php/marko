@@ -58,6 +58,29 @@ The scheduler provides shorthand methods for common frequencies:
 | `daily()` | `0 0 * * *` | At midnight |
 | `weekly()` | `0 0 * * 0` | Sunday at midnight |
 | `monthly()` | `0 0 1 * *` | First day of the month at midnight |
+| `dailyAt('03:30')` / `at('03:30')` | `30 3 * * *` | Every day at 03:30 |
+| `twiceDaily(1, 13)` | `0 1,13 * * *` | Every day at 01:00 and 13:00 |
+| `weeklyOn(1, '08:00')` | `0 8 * * 1` | Mondays at 08:00 |
+| `monthlyOn(15, '14:20')` | `20 14 15 * *` | The 15th of every month at 14:20 |
+
+Times are 24-hour `HH:MM`. An invalid time, day or hour throws `SchedulerException`.
+
+## Time Zones and Conditions
+
+Use `timezone()` to match a task against wall-clock time in a specific zone, and `when()` / `skip()` to decide at run time whether a due task should run:
+
+```php
+use Marko\Scheduler\Schedule;
+
+$schedule->call(function () {
+    // Prune old records...
+})->dailyAt('03:30')
+    ->timezone('Europe/Berlin')
+    ->description('Prune old records')
+    ->skip(fn (): bool => $maintenanceMode->isEnabled());
+```
+
+A condition-skipped task prints `Skipped (condition): {description}` and never takes the overlap mutex. Daylight saving changes can skip or repeat a run in the transition hour --- see the [package reference](/docs/packages/scheduler/#time-zones) for the exact rules.
 
 ## Custom Cron Expressions
 
