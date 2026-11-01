@@ -36,7 +36,7 @@ return [
 ];
 ```
 
-The `path` can be absolute or relative to the project root. Directories are created automatically on first write. Setting `public` to `true` makes new files world-readable by default.
+A relative `path` resolves against the project root (`ProjectPaths->base`), not the process working directory, so it lands in the same place under the CLI, PHP-FPM, CGI, and Apache `mod_php` (which run from `public/`). Absolute paths --- Unix (`/var/storage`), Windows drive (`C:\storage`), and UNC (`\\server\share`) --- are used as-is. Directories are created automatically on first write. Setting `public` to `true` makes new files world-readable by default.
 
 ## Usage
 
