@@ -386,6 +386,10 @@
         },
         {
             "type": "path",
+            "url": "packages/validation-database"
+        },
+        {
+            "type": "path",
             "url": "packages/view"
         },
         {
@@ -505,6 +509,7 @@
         "marko/translation": "self.version",
         "marko/translation-file": "self.version",
         "marko/validation": "self.version",
+        "marko/validation-database": "self.version",
         "marko/view": "self.version",
         "marko/view-latte": "self.version",
         "marko/view-twig": "self.version",
@@ -654,6 +659,7 @@
             "Marko\\Translation\\Tests\\": "packages/translation/tests/",
             "Marko\\Translation\\File\\Tests\\": "packages/translation-file/tests/",
             "Marko\\Validation\\Tests\\": "packages/validation/tests/",
+            "Marko\\Validation\\Database\\Tests\\": "packages/validation-database/tests/",
             "Marko\\View\\Tests\\": "packages/view/tests/",
             "Marko\\View\\Latte\\Tests\\": "packages/view-latte/tests/",
             "Marko\\View\\Twig\\Tests\\": "packages/view-twig/tests/",

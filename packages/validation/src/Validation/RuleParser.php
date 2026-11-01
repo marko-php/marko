@@ -332,6 +332,12 @@ class RuleParser
             'enum' => throw new InvalidArgumentException(
                 'The enum rule has no string form: use Enum::of(YourEnum::class) in an array of rules',
             ),
+            'exists', 'unique' => throw new InvalidArgumentException(
+                "The $name rule has no string form, because it would name a table and columns that the entity's "
+                . 'metadata already knows: inject Marko\\Validation\\Rules\\RecordRules and use '
+                . ($name === 'exists' ? 'RecordRules::exists(YourEntity::class)' : "RecordRules::unique(YourEntity::class, 'property')")
+                . ' in an array of rules (needs marko/validation-database)',
+            ),
             default => throw new InvalidArgumentException("Unknown validation rule: $name"),
         };
     }

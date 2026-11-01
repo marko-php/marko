@@ -1,0 +1,31 @@
+{
+    "name": "marko/validation-database",
+    "description": "Entity-backed Exists and Unique validation rules for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "self.version",
+        "marko/database": "self.version",
+        "marko/validation": "self.version"
+    },
+    "require-dev": {
+        "marko/database-mysql": "self.version",
+        "marko/database-pgsql": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Validation\\Database\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Validation\\Database\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

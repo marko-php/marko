@@ -140,6 +140,7 @@ body:
         - translation
         - translation-file
         - validation
+        - validation-database
         - view
         - view-latte
         - view-twig
