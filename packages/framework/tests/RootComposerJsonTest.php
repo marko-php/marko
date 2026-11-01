@@ -46,6 +46,7 @@ $allPackages = [
     'marko/http-guzzle',
     'marko/log',
     'marko/log-file',
+    'marko/log-stream',
     'marko/mail',
     'marko/mail-log',
     'marko/mail-smtp',

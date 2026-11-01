@@ -158,6 +158,7 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 |---------|------|-------------|
 | `marko/log` | Interface | `LoggerInterface`, formatters, log levels |
 | `marko/log-file` | Driver | File-based logging with rotation |
+| `marko/log-stream` | Driver | stdout/stderr logging for containers |
 
 ### Database
 

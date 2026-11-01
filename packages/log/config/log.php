@@ -5,7 +5,11 @@ declare(strict_types=1);
 use Marko\Config\Env;
 
 return [
-    'driver' => Env::string('LOG_DRIVER', 'file'),
+    // Handlers that receive every record, in order: 'file' (marko/log-file), 'stream' (marko/log-stream).
+    // Several stack, e.g. LOG_HANDLERS=file,stream. Each handler package adds its name to 'handler_map'.
+    'handlers' => Env::list('LOG_HANDLERS', ['file']),
+    // 'line' (human-readable, the format below) or 'json' (one JSON object per line).
+    'formatter' => Env::string('LOG_FORMATTER', 'line'),
     'path' => Env::string('LOG_PATH', 'storage/logs'),
     'level' => Env::string('LOG_LEVEL', 'debug'),
     'channel' => Env::string('LOG_CHANNEL', 'app'),

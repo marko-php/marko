@@ -105,7 +105,7 @@ it('has default log.php config file', function () {
     $config = require $configPath;
 
     expect($config)->toBeArray()
-        ->and($config)->toHaveKey('driver')
+        ->and($config)->toHaveKey('handlers')
         ->and($config)->toHaveKey('path')
         ->and($config)->toHaveKey('level');
 });

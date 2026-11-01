@@ -47,6 +47,7 @@
         "marko/encryption-openssl": "OpenSSL-based encryption driver (AES-256-GCM)",
         "marko/http-guzzle": "Guzzle-based HTTP client driver",
         "marko/log-file": "File-based log driver (with log rotation)",
+        "marko/log-stream": "Stream log driver (stdout/stderr, for containers and supervisors)",
         "marko/translation-file": "File-based translation driver (PHP array files per locale)",
         "marko/notification-database": "Database-backed notification driver",
         "marko/page-cache-file": "File-based page cache driver",

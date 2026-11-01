@@ -6,22 +6,126 @@ use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Log\Config\LogConfig;
 use Marko\Log\Exceptions\InvalidLogConfigException;
 use Marko\Log\Exceptions\InvalidLogLevelException;
+use Marko\Log\Exceptions\NoDriverException;
 use Marko\Log\Formatter\LineFormatter;
 use Marko\Log\LogLevel;
+use Marko\Log\Tests\Fixtures\RecordingHandler;
+use Marko\Log\Tests\Fixtures\SecondRecordingHandler;
 use Marko\Testing\Fake\FakeConfigRepository;
 
-it('reads driver from config without fallback', function (): void {
+it('reads the configured handlers in order, resolved through the handler map', function (): void {
     $config = new LogConfig(new FakeConfigRepository([
-        'log.driver' => 'database',
+        'log.handlers' => ['stream', 'file'],
+        'log.handler_map' => [
+            'file' => RecordingHandler::class,
+            'stream' => SecondRecordingHandler::class,
+        ],
     ]));
 
-    expect($config->driver())->toBe('database');
+    expect($config->handlers())->toBe([
+        'stream' => SecondRecordingHandler::class,
+        'file' => RecordingHandler::class,
+    ]);
 });
 
-it('throws when driver is not configured', function (): void {
+it('throws when handlers is not configured', function (): void {
+    $config = new LogConfig(new FakeConfigRepository([
+        'log.handler_map' => ['file' => RecordingHandler::class],
+    ]));
+
+    expect(fn () => $config->handlers())
+        ->toThrow(ConfigNotFoundException::class);
+});
+
+it('throws listing the installed handlers when the handler list is empty', function (): void {
+    $config = new LogConfig(new FakeConfigRepository([
+        'log.handlers' => [],
+        'log.handler_map' => [
+            'file' => RecordingHandler::class,
+            'stream' => SecondRecordingHandler::class,
+        ],
+    ]));
+
+    expect(fn () => $config->handlers())
+        ->toThrow(InvalidLogConfigException::class, "'log.handlers' is empty");
+
+    try {
+        $config->handlers();
+    } catch (InvalidLogConfigException $exception) {
+        expect($exception->getContext())->toContain('file, stream');
+    }
+});
+
+it('throws listing the installed handlers for an unknown handler name', function (): void {
+    $config = new LogConfig(new FakeConfigRepository([
+        'log.handlers' => ['file', 'syslog'],
+        'log.handler_map' => [
+            'file' => RecordingHandler::class,
+            'stream' => SecondRecordingHandler::class,
+        ],
+    ]));
+
+    expect(fn () => $config->handlers())
+        ->toThrow(InvalidLogConfigException::class, "Unknown log handler 'syslog'");
+
+    try {
+        $config->handlers();
+    } catch (InvalidLogConfigException $exception) {
+        expect($exception->getContext())->toContain('file, stream');
+    }
+});
+
+it('throws when a handler name is listed twice', function (): void {
+    $config = new LogConfig(new FakeConfigRepository([
+        'log.handlers' => ['file', 'file'],
+        'log.handler_map' => ['file' => RecordingHandler::class],
+    ]));
+
+    expect(fn () => $config->handlers())
+        ->toThrow(InvalidLogConfigException::class, "Log handler 'file' is listed more than once");
+});
+
+it('throws when a handlers entry is not a non-empty string', function (): void {
+    $config = new LogConfig(new FakeConfigRepository([
+        'log.handlers' => [''],
+        'log.handler_map' => ['file' => RecordingHandler::class],
+    ]));
+
+    expect(fn () => $config->handlers())
+        ->toThrow(InvalidLogConfigException::class);
+});
+
+it('throws NoDriverException when no handler package is installed', function (): void {
+    $config = new LogConfig(new FakeConfigRepository([
+        'log.handlers' => ['file'],
+    ]));
+
+    expect(fn () => $config->handlers())
+        ->toThrow(NoDriverException::class);
+});
+
+it('throws when a handler map entry is not a LogHandlerInterface class', function (): void {
+    $config = new LogConfig(new FakeConfigRepository([
+        'log.handlers' => ['file'],
+        'log.handler_map' => ['file' => stdClass::class],
+    ]));
+
+    expect(fn () => $config->handlers())
+        ->toThrow(InvalidLogConfigException::class, "Log handler 'file' maps to stdClass");
+});
+
+it('reads formatter from config without fallback', function (): void {
+    $config = new LogConfig(new FakeConfigRepository([
+        'log.formatter' => 'json',
+    ]));
+
+    expect($config->formatter())->toBe('json');
+});
+
+it('throws when formatter is not configured', function (): void {
     $config = new LogConfig(new FakeConfigRepository());
 
-    expect(fn () => $config->driver())
+    expect(fn () => $config->formatter())
         ->toThrow(ConfigNotFoundException::class);
 });
 
@@ -144,7 +248,10 @@ it('config file contains all required keys with defaults', function (): void {
     $config = require $configPath;
 
     expect($config)->toBeArray()
-        ->and($config)->toHaveKey('driver')
+        ->and($config)->not->toHaveKey('driver')
+        ->and($config)->not->toHaveKey('handler_map')
+        ->and($config['handlers'])->toBe(['file'])
+        ->and($config['formatter'])->toBe('line')
         ->and($config)->toHaveKey('path')
         ->and($config)->toHaveKey('level')
         ->and($config)->toHaveKey('channel')
@@ -226,8 +333,8 @@ it('throws when escape_newlines is not configured', function (): void {
 });
 
 it('uses FakeConfigRepository in LogConfigTest', function (): void {
-    $repo = new FakeConfigRepository(['log.driver' => 'file']);
+    $repo = new FakeConfigRepository(['log.channel' => 'app']);
     $config = new LogConfig($repo);
 
-    expect($config->driver())->toBe('file');
+    expect($config->channel())->toBe('app');
 });

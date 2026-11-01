@@ -3,7 +3,7 @@ title: marko/log-file
 description: File-based logging driver --- writes log messages to disk with daily or size-based rotation.
 ---
 
-File-based logging driver --- writes log messages to disk with daily or size-based rotation. Implements `LoggerInterface` from [`marko/log`](/docs/packages/log/) by writing formatted log lines to files. It supports daily rotation (one file per day) and size-based rotation (new file when size limit is reached). Messages below the configured minimum level are silently skipped. All settings come from `config/log.php`.
+File-based logging driver --- writes log messages to disk with daily or size-based rotation. This package provides `FileLogHandler`, a [`marko/log`](/docs/packages/log/) handler that appends formatted records to files. It supports daily rotation (one file per day) and size-based rotation (new file when the size limit is reached). The shared `Logger` in `marko/log` applies the level threshold and builds each record; this package only writes it. All settings come from `config/log.php`.
 
 ## Installation
 
@@ -13,24 +13,38 @@ composer require marko/log-file
 
 This automatically installs `marko/log`.
 
-## Usage
+## Configuration
 
-### Automatic via Binding
+The package adds the `file` handler to `log.handler_map`, which makes `file` a valid name in `LOG_HANDLERS`. `file` is the default, so installing the package is enough:
 
-Bind the logger interface in your `module.php`:
+```php title="config/log.php"
+<?php
 
-```php title="module.php"
-use Marko\Log\Contracts\LoggerInterface;
-use Marko\Log\File\Driver\FileLogger;
+declare(strict_types=1);
+
+use Marko\Log\File\Handler\FileLogHandler;
 
 return [
-    'bindings' => [
-        LoggerInterface::class => FileLogger::class,
+    'handler_map' => [
+        'file' => FileLogHandler::class,
     ],
 ];
 ```
 
-Then inject `LoggerInterface` anywhere:
+The handler reads these [`marko/log` settings](/docs/packages/log/#configuration):
+
+| Key | Env | Default | Description |
+|---|---|---|---|
+| `path` | `LOG_PATH` | `storage/logs` | Directory where log files are written |
+| `max_file_size` | `LOG_MAX_FILE_SIZE` | `10485760` | Size limit for `SizeRotation` (10 MB) |
+| `file_mode` | --- | `0600` | Mode applied to newly created log files |
+| `dir_mode` | --- | `0700` | Mode applied to a newly created log directory |
+
+To write files and stream to stderr at the same time, install [`marko/log-stream`](/docs/packages/log-stream/) too and set `LOG_HANDLERS=file,stream`. In containers, prefer `LOG_HANDLERS=stream`: files inside a container fill its ephemeral disk, and nothing collects them.
+
+## Usage
+
+Inject `LoggerInterface` anywhere:
 
 ```php
 use Marko\Log\Contracts\LoggerInterface;
@@ -77,20 +91,25 @@ var/log/app.2.log
 
 ### Time and Testing
 
-`FileLogger` stamps each record, and `DailyRotation` picks the day's file, from the PSR-20 `Psr\Clock\ClockInterface` bound by [`marko/clock`](/docs/packages/clock/), never the system time directly. Freeze it with [`FakeClock`](/docs/packages/testing/#fakeclock) to test record times and the midnight rollover exactly:
+The `Logger` stamps each record, and `DailyRotation` picks the day's file, from the PSR-20 `Psr\Clock\ClockInterface` bound by [`marko/clock`](/docs/packages/clock/), never the system time directly. Freeze it with [`FakeClock`](/docs/packages/testing/#fakeclock) to test record times and the midnight rollover exactly:
 
 ```php
-use Marko\Log\File\Driver\FileLogger;
+use Marko\Log\File\Handler\FileLogHandler;
+use Marko\Log\File\Rotation\DailyRotation;
 use Marko\Log\Formatter\LineFormatter;
+use Marko\Log\Logger;
 use Marko\Log\LogLevel;
 use Marko\Testing\Fake\FakeClock;
 
 $clock = new FakeClock('2026-01-21 23:59:59');
-$logger = new FileLogger(
-    path: $dir,
+$logger = new Logger(
+    handlers: [new FileLogHandler(
+        path: $dir,
+        formatter: new LineFormatter(),
+        rotation: new DailyRotation($clock),
+    )],
     channel: 'app',
     minimumLevel: LogLevel::Debug,
-    formatter: new LineFormatter(),
     clock: $clock,
 );
 
@@ -99,9 +118,18 @@ $clock->travel('+1 second');
 $logger->info('After midnight');  // app-2026-01-22.log, [2026-01-22 00:00:00]
 ```
 
+### Upgrading from 0.11
+
+The logger moved into `marko/log`, and this package now provides only the file handler:
+
+- `FileLogger` and `FileLoggerFactory` are removed. `LoggerInterface` is bound by `marko/log` to `Marko\Log\Logger`, which sends records to `FileLogHandler`. Code that constructed `FileLogger` directly builds a `Logger` with a `FileLogHandler`, as in the example above. A Preference or subclass of `FileLogger` moves to `FileLogHandler` (the write step) or `Logger` (threshold and record building).
+- This module no longer binds `LoggerInterface`, so remove any `LoggerInterface::class => FileLogger::class` binding from your `module.php`.
+- `log.driver` and `LOG_DRIVER` are gone. Use `log.handlers` and `LOG_HANDLERS` (default `file`). A leftover `driver` key in your `config/log.php` is ignored, so delete it.
+- `FileLogHandler` names the file after each record's channel, so the constructor no longer takes `$channel`, `$minimumLevel` or `$clock`, and `$rotation` is required.
+
 ## Customization
 
-The module binds `RotationStrategyInterface` to `DailyRotation`, resolved by the container, so the logger factory picks up a replacement. Replace the rotation strategy via Preference:
+The module binds `RotationStrategyInterface` to `DailyRotation`, resolved by the container, so the handler picks up a replacement. Replace the rotation strategy via Preference:
 
 ```php
 use Marko\Core\Attributes\Preference;
@@ -120,32 +148,23 @@ class CustomRotation extends SizeRotation
 
 ## API Reference
 
-### FileLogger
+### FileLogHandler
 
-Implements `LoggerInterface`. See [`marko/log`](/docs/packages/log/) for the full method list.
+Implements `LogHandlerInterface` from [`marko/log`](/docs/packages/log/).
 
 ```php
-public function emergency(string $message, array $context = []): void;
-public function alert(string $message, array $context = []): void;
-public function critical(string $message, array $context = []): void;
-public function error(string $message, array $context = []): void;
-public function warning(string $message, array $context = []): void;
-public function notice(string $message, array $context = []): void;
-public function info(string $message, array $context = []): void;
-public function debug(string $message, array $context = []): void;
-public function log(LogLevel $level, string $message, array $context = []): void;
+use Marko\Log\LogRecord;
+
+public function handle(LogRecord $record): void;
 ```
 
 The constructor accepts the following parameters:
 
 | Parameter | Type | Description |
 |---|---|---|
-| `$path` | `string` | Directory where log files are written |
-| `$channel` | `string` | Channel name used in filenames and log output |
-| `$minimumLevel` | `LogLevel` | Messages below this level are skipped |
-| `$formatter` | `LogFormatterInterface` | Formats log records into strings |
-| `$clock` | `ClockInterface` | PSR-20 clock that stamps each record |
-| `$rotation` | `?RotationStrategyInterface` | Rotation strategy (defaults to `DailyRotation` on the same clock) |
+| `$path` | `string` | Directory where log files are written (`log.path`) |
+| `$formatter` | `LogFormatterInterface` | Formats log records into strings (`log.formatter`) |
+| `$rotation` | `RotationStrategyInterface` | Picks the file for each record's channel |
 | `$fileMode` | `int` | Mode applied to newly created log files (default `0600`, from `log.file_mode`) |
 | `$dirMode` | `int` | Mode applied to a newly created log directory (default `0700`, from `log.dir_mode`) |
 
@@ -167,3 +186,8 @@ interface RotationStrategyInterface
 
 - `DailyRotation` --- Date-stamped filenames from the injected `ClockInterface`, rotates automatically each day
 - `SizeRotation` --- Numbered filenames, rotates when file exceeds max size (default: 10 MB)
+
+## Related Packages
+
+- [`marko/log`](/docs/packages/log/) --- the logger, handler contract and formatters
+- [`marko/log-stream`](/docs/packages/log-stream/) --- stderr/stdout handler for containers, installable alongside this one

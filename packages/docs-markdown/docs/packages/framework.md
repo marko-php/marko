@@ -86,6 +86,7 @@ composer require marko/log marko/log-file
 |---|---|
 | [`marko/log`](/docs/packages/log/) | Logging abstraction layer |
 | [`marko/log-file`](/docs/packages/log-file/) | File-based logging driver |
+| [`marko/log-stream`](/docs/packages/log-stream/) | Stream logging driver (stdout/stderr), for containers |
 
 ### Filesystem
 

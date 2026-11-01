@@ -54,7 +54,7 @@ docs/           # Documentation site content
 - **Session**: session (interface), session-file, session-database
 - **Filesystem**: filesystem (interface), filesystem-local, filesystem-s3
 - **Errors**: errors (interface), errors-simple, errors-advanced
-- **Log**: log (interface), log-file
+- **Log**: log (interface + shared logger), log-file, log-stream
 - **Encryption**: encryption (interface), encryption-openssl
 - **Auth**: authentication, authentication-token, authorization
 - **Admin**: admin, admin-auth, admin-api, admin-panel
