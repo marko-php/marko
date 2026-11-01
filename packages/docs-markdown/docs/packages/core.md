@@ -507,6 +507,8 @@ Recompiling on every deploy covers new code in existing modules (which the finge
 
 Under a long-running worker such as [`marko/roadrunner`](/docs/packages/roadrunner/) the application boots once per worker, so the cache only shortens worker start-up.
 
+Choose log handlers for the environment before you build the cache: `stream` for containers and PaaS, `file` for servers you SSH into --- see [Logging in Production](/docs/guides/logging/#logging-in-production).
+
 With a view driver installed, run `marko view:cache` after `discovery:cache` and set `view.auto_refresh` to `false` in production --- see [deploying views to production](/docs/packages/view/#deploying-to-production).
 
 #### Adding a section to the discovery cache

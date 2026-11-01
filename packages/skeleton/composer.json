@@ -6,7 +6,10 @@
     "require": {
         "php": "^8.5",
         "marko/env": "*",
-        "marko/framework": "*"
+        "marko/framework": "*",
+        "marko/log": "*",
+        "marko/log-file": "*",
+        "marko/log-stream": "*"
     },
     "require-dev": {
         "marko/devserver": "*",

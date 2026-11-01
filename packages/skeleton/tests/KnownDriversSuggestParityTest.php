@@ -58,6 +58,11 @@ test('it includes marko/page-cache-entity as an optional add-on', function (): v
 });
 
 test('it does not move any view, database, cache, etc. drivers into require or require-dev', function (): void {
+    // The log handlers are the one deliberate exception: the skeleton ships
+    // logging out of the box (marko/queue requires marko/log), and both
+    // handlers coexist, selected by LOG_HANDLERS.
+    $shippedDrivers = ['marko/log-file', 'marko/log-stream'];
+
     $composer = json_decode(
         file_get_contents(__DIR__ . '/../composer.json'),
         associative: true,
@@ -73,6 +78,10 @@ test('it does not move any view, database, cache, etc. drivers into require or r
     foreach ($knownDriversFiles as $knownDriversPath) {
         $drivers = require $knownDriversPath;
         foreach ($drivers as $package => $description) {
+            if (in_array($package, $shippedDrivers, true)) {
+                continue;
+            }
+
             expect($require)->not->toContain($package);
         }
     }

@@ -7,7 +7,7 @@ Marko's logging system separates the logging contract from where records are wri
 
 ## Setup
 
-Install the contracts package and a handler package:
+Apps created from [`marko/skeleton`](/docs/packages/skeleton/) already have `marko/log`, `marko/log-file` and `marko/log-stream`, with `LOG_HANDLERS=file` in `.env.example`. Otherwise, install the contracts package and a handler package:
 
 ```bash
 composer require marko/log marko/log-file
@@ -207,6 +207,17 @@ LOG_FORMATTER=json
 ```
 
 Each listed handler receives every record, in order. JSON output keeps exceptions, nested context and multi-line messages on one line, which log collectors such as CloudWatch, Loki and Datadog parse without extra configuration. Under PHP-FPM, set `catch_workers_output = yes` in the pool so worker stderr reaches the container output. Under RoadRunner keep the default `php://stderr` target: stdout carries RoadRunner's worker protocol, and a `php://stdout` target throws. See [`marko/log-stream`](/docs/packages/log-stream/) for details.
+
+## Logging in Production
+
+Pick handlers by where the app runs, not by what is installed:
+
+- **Containers and PaaS** (Docker, Kubernetes, Fly, Cloud Run, Heroku and similar) --- `LOG_HANDLERS=stream`. The platform collects stdout/stderr, so add `LOG_FORMATTER=json` for its log collector.
+- **Servers you SSH into** --- `LOG_HANDLERS=file`. `marko/log-file` rotates the files (see [File Rotation](#file-rotation)); schedule `marko log:clear` to prune old ones.
+- **Both** --- `LOG_HANDLERS=file,stream` writes every record to each.
+- **RoadRunner** --- `marko/log-stream` must target stderr (the default `LOG_STREAM_TARGET=php://stderr`). Stdout carries RoadRunner's worker protocol.
+
+Config is compiled into the [discovery cache](/docs/packages/core/#deploying-to-production), so run `marko discovery:cache` again after changing `LOG_HANDLERS`.
 
 ## Customization
 

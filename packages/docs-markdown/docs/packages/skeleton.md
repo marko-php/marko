@@ -68,6 +68,9 @@ marko up
 |---|---|
 | [`marko/framework`](/docs/packages/framework/) | Metapackage bundling core, routing, CLI, errors, config, hashing, validation |
 | [`marko/env`](/docs/packages/env/) | Environment variable loading (read in config files with [`Env`](/docs/packages/config/#environment-variables)) |
+| [`marko/log`](/docs/packages/log/) | `LoggerInterface` and the shared logger (also required by [`marko/queue`](/docs/packages/queue/)) |
+| [`marko/log-file`](/docs/packages/log-file/) | `file` log handler: writes rotated files to `storage/logs` |
+| [`marko/log-stream`](/docs/packages/log-stream/) | `stream` log handler: writes to stderr, for containers and PaaS |
 
 ### Dev Dependencies
 
@@ -88,9 +91,16 @@ APP_URL=http://localhost:8000
 # Signed URLs (marko/routing). At least 32 bytes; do not reuse ENCRYPTION_KEY.
 # Generate with: php -r 'echo bin2hex(random_bytes(32));'
 URL_SIGNING_KEY=
+
+# Logging (marko/log). Both handlers ship: file writes to storage/logs (rotated),
+# stream writes to stderr. Containers and PaaS use stream (the platform collects
+# stderr); file,stream writes to both.
+LOG_HANDLERS=file
 ```
 
 `URL_SIGNING_KEY` is empty on purpose: generate a value per environment before you sign URLs (see [Signed URLs](/docs/packages/routing/#signed-urls)). Signing with an empty key throws `UrlSigningException`.
+
+`LOG_HANDLERS=file` suits local development: records go to `storage/logs`. Both handler packages are installed, so switching is a configuration change, not a `composer require` --- see [Logging in Production](/docs/guides/logging/#logging-in-production).
 
 See the [Configuration guide](/docs/getting-started/configuration/) for adding database, cache, and other environment variables.
 
