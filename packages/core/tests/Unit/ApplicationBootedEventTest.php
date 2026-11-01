@@ -134,8 +134,9 @@ describe('ApplicationBooted event', function (): void {
         $live = applicationBootedApplication($this->project['base']);
         $live->initialize(false);
         $payload = new DiscoveryCompiler($live->container)->compile($live->modules);
-        // marko/routing is autoloadable here but not installed as a module, so add its section by hand.
+        // marko/routing is autoloadable here but not installed as a module, so add its sections by hand.
         $payload['sections']['routes'] = [];
+        $payload['sections']['http_exception_responders'] = [];
         $live->container->get(DiscoveryCache::class)->write($payload);
         unset($GLOBALS[$this->project['key']], $GLOBALS[$this->project['key'] . '.zeta']);
 

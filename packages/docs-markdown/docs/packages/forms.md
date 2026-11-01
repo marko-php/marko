@@ -3,9 +3,9 @@ title: marko/forms
 description: Server-rendered form round trips --- redirect back with flashed validation errors and old input, plus csrf_field(), old() and errors() template helpers.
 ---
 
-Server-rendered form round trips for Marko. A form posts, validation fails, the user is redirected back, and the form shows each field's errors with the previous input filled in. `marko/forms` provides each step once: the `RedirectBackOnValidationError` middleware, next-request storage for the errors and old input, and template helpers that work in Latte and Twig alike.
+Server-rendered form round trips for Marko. A form posts, validation fails, the user is redirected back, and the form shows each field's errors with the previous input filled in. `marko/forms` provides each step once: the `ValidationErrorResponder`, next-request storage for the errors and old input, and template helpers that work in Latte and Twig alike.
 
-Nothing is automatic: a route opts in with the middleware. JSON requests are left alone and keep getting the `422` response from [marko/validation](/docs/packages/validation/#throw-on-failure).
+Installing the package is the opt-in: every route that throws `ValidationException` for an HTML request gets the redirect back. JSON requests are left alone and keep getting the `422` response from [marko/validation](/docs/packages/validation/#throw-on-failure).
 
 ## Installation
 
@@ -28,7 +28,7 @@ return [
         'current_password',
     ],
 
-    // Where RedirectBackOnValidationError sends the user when the request has
+    // Where ValidationErrorResponder sends the user when the request has
     // no Referer, or one from another origin. Must be a path on this site.
     'fallback_redirect' => '/',
 ];
@@ -40,12 +40,10 @@ Both keys are required. `fallback_redirect` must start with a single `/`; anythi
 
 ### A Complete Form
 
-The controller validates with `validateOrFail()` and opts into the middleware. On success it redirects as usual. On failure the middleware catches the `ValidationException`:
+The controller validates with `validateOrFail()`. On success it redirects as usual. On failure `ValidationErrorResponder` turns the `ValidationException` into the redirect back; the controller needs nothing extra:
 
 ```php title="app/account/src/Controller/RegisterController.php"
-use Marko\Forms\Middleware\RedirectBackOnValidationError;
 use Marko\Routing\Attributes\Get;
-use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
@@ -66,7 +64,6 @@ class RegisterController
     }
 
     #[Post('/register')]
-    #[Middleware(RedirectBackOnValidationError::class)]
     public function store(
         Request $request,
     ): Response {
@@ -139,19 +136,19 @@ it('sends the registration form back with errors', function (): void {
 });
 ```
 
-### What the Middleware Does
+### What the Responder Does
 
-When the controller throws `ValidationException`, `RedirectBackOnValidationError`:
+`ValidationErrorResponder` is an [HTTP exception responder](/docs/packages/routing/#http-exception-responders): the routing pipeline asks it before rendering an HTTP exception. When a controller or middleware throws `ValidationException`, it:
 
-1. Rethrows it if the request wants JSON (`Request::wantsJson()`), so API clients get the `422` JSON response.
+1. Passes (returns `null`) if the request wants JSON (`Request::wantsJson()`) or sends a JSON body (`Request::isJson()`), so API clients get the `422` JSON response.
 2. Flashes the errors and `$request->post()` for the next request, leaving out the `_token` CSRF field, uploaded files and every `never_flash` field.
 3. Redirects with `303 See Other` to the `Referer` --- only when it has the request's host and port --- and otherwise to `fallback_redirect`. Only the Referer's path and query are used.
 
 The scheme is not compared, so a site behind a TLS-terminating proxy (the app sees `http`, the browser sends an `https` Referer) still redirects back. A Referer from another host, another port, or with a non-HTTP scheme goes to the fallback.
 
-The middleware needs a session: it must run inside `SessionMiddleware`. On a route without one it throws `FormsSessionUnavailableException` on every request, so the mistake shows up immediately. Other exceptions pass through untouched.
+It also passes on a route without a session (one that excludes `SessionMiddleware`), so a stateless route keeps the `422` response, and on every other HTTP exception. The redirect is built at the depth the exception was thrown, so it still flows back out through every middleware: `SessionMiddleware` saves the flashed state, and headers added by outer middleware are kept.
 
-Apply it to a whole controller by putting `#[Middleware(RedirectBackOnValidationError::class)]` on the class.
+To handle validation failures differently, register your own responder with a higher priority, or replace this one with a `#[Preference]`.
 
 ### Template Helpers
 
@@ -177,7 +174,7 @@ The helpers read the state of the request the user was redirected to. On a reque
 
 ### Flashing Manually
 
-To flash errors and input without the middleware, for example after a check that does not go through the validator, use `FlashedFormStateWriter`:
+To flash errors and input without a `ValidationException`, for example after a check that does not go through the validator, use `FlashedFormStateWriter`:
 
 ```php
 use Marko\Forms\FlashedFormStateWriter;
@@ -197,7 +194,7 @@ $this->flashedFormStateWriter->flash(
 return Response::redirect('/checkout', 303);
 ```
 
-It applies the same exclusions as the middleware: `_token`, uploaded files and `never_flash` fields are left out.
+It applies the same exclusions as the responder: `_token`, uploaded files and `never_flash` fields are left out.
 
 ### Reading Flashed State
 
@@ -222,19 +219,20 @@ Reading never consumes the state. It is stored with [next-request flash data](/d
 
 | Exception | When |
 |-----------|------|
-| `FormsSessionUnavailableException` | `RedirectBackOnValidationError` runs on a route without a session |
 | `FormsException` | A `never_flash` entry is not a non-empty string, `fallback_redirect` is not a local path, or a template writes to `$old` |
 | `InvalidFlashDataException` | The flashed input holds an object other than an uploaded file (from [marko/session](/docs/packages/session/#exceptions)) |
 | `ConfigNotFoundException` | `forms.never_flash` or `forms.fallback_redirect` is missing |
 
 ## API Reference
 
-### RedirectBackOnValidationError
+### ValidationErrorResponder
+
+`#[HttpExceptionResponder]` that redirects a failed HTML form back with its errors and old input flashed.
 
 ```php
-use Marko\Forms\Middleware\RedirectBackOnValidationError;
+use Marko\Forms\ValidationErrorResponder;
 
-public function handle(Request $request, callable $next): Response;
+public function respond(HttpExceptionInterface $exception, Request $request): ?Response;
 ```
 
 ### FlashedFormStateWriter
@@ -289,6 +287,7 @@ public function fallbackRedirect(): string;
 
 ## Related Packages
 
+- [`marko/routing`](/docs/packages/routing/) --- asks `ValidationErrorResponder` before rendering an HTTP exception
 - [`marko/validation`](/docs/packages/validation/) --- throws `ValidationException` and defines `FlashedFormStateInterface`
 - [`marko/session`](/docs/packages/session/) --- next-request flash data the form state is stored in
 - [`marko/security`](/docs/packages/security/) --- CSRF tokens for `csrf_field()` and `csrf_token()`

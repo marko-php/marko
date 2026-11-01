@@ -163,7 +163,7 @@ $this->inertia->flash('notice', [
 
 ### Validation Errors
 
-The `errors` prop carries the validation errors a failed form submission flashed, read through [`FlashedFormStateInterface`](/docs/packages/validation/#flashedformstateinterface). Install [marko/forms](/docs/packages/forms/) and add its `RedirectBackOnValidationError` middleware to the route that handles the form: a failed submission is redirected back with `303`, and the page it lands on gets the errors:
+The `errors` prop carries the validation errors a failed form submission flashed, read through [`FlashedFormStateInterface`](/docs/packages/validation/#flashedformstateinterface). Install [marko/forms](/docs/packages/forms/): a failed submission is redirected back with `303`, and the page it lands on gets the errors:
 
 ```json
 {

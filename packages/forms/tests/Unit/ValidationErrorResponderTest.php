@@ -2,28 +2,31 @@
 
 declare(strict_types=1);
 
-use Marko\Forms\Exceptions\FormsSessionUnavailableException;
-use Marko\Forms\Middleware\RedirectBackOnValidationError;
 use Marko\Forms\Tests\Fixtures\FormsHarness;
+use Marko\Forms\ValidationErrorResponder;
+use Marko\Routing\Attributes\HttpExceptionResponder;
+use Marko\Routing\Exceptions\HttpException;
+use Marko\Routing\Http\HttpExceptionResponderInterface;
 use Marko\Routing\Http\Request;
-use Marko\Routing\Http\Response;
 use Marko\Routing\Http\UploadedFile;
-use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Testing\Fake\FakeSession;
 use Marko\Validation\Exceptions\ValidationException;
+use Marko\Validation\Validation\ValidationErrors;
 
-describe('RedirectBackOnValidationError', function (): void {
-    it('is a middleware', function (): void {
-        expect(new FormsHarness()->middleware)->toBeInstanceOf(MiddlewareInterface::class);
+describe('ValidationErrorResponder', function (): void {
+    it('is a discoverable HTTP exception responder', function (): void {
+        $attributes = new ReflectionClass(ValidationErrorResponder::class)->getAttributes(
+            HttpExceptionResponder::class,
+        );
+
+        expect(new FormsHarness()->responder)->toBeInstanceOf(HttpExceptionResponderInterface::class)
+            ->and($attributes)->toHaveCount(1);
     });
 
-    it('passes a successful response through untouched', function (): void {
+    it('passes on HTTP exceptions other than ValidationException', function (): void {
         $harness = new FormsHarness();
-        $response = new Response('ok');
 
-        $result = $harness->middleware->handle(FormsHarness::post(), fn (): Response => $response);
-
-        expect($result)->toBe($response);
+        expect($harness->responder->respond(HttpException::notFound(), FormsHarness::post()))->toBeNull();
     });
 
     it('redirects a failed POST back to the same-origin Referer with 303', function (): void {
@@ -34,8 +37,8 @@ describe('RedirectBackOnValidationError', function (): void {
             ['HTTP_REFERER' => 'https://example.com/register?plan=pro'],
         ));
 
-        expect($response->statusCode())->toBe(303)
-            ->and($response->headers()['Location'])->toBe('/register?plan=pro');
+        expect($response?->statusCode())->toBe(303)
+            ->and($response?->headers()['Location'])->toBe('/register?plan=pro');
     });
 
     it('flashes the errors and old input for the next request', function (): void {
@@ -93,8 +96,8 @@ describe('RedirectBackOnValidationError', function (): void {
 
         $response = $harness->failValidation(FormsHarness::post(headers: ['HTTP_REFERER' => $referer]));
 
-        expect($response->statusCode())->toBe(303)
-            ->and($response->headers()['Location'])->toBe('/home');
+        expect($response?->statusCode())->toBe(303)
+            ->and($response?->headers()['Location'])->toBe('/home');
     })->with([
         'other host' => 'https://evil.example/register',
         'subdomain' => 'https://evil.example.com/register',
@@ -110,8 +113,8 @@ describe('RedirectBackOnValidationError', function (): void {
 
         $response = $harness->failValidation(FormsHarness::post());
 
-        expect($response->statusCode())->toBe(303)
-            ->and($response->headers()['Location'])->toBe('/home');
+        expect($response?->statusCode())->toBe(303)
+            ->and($response?->headers()['Location'])->toBe('/home');
     });
 
     it('redirects to the fallback when the request has no Host', function (): void {
@@ -122,7 +125,7 @@ describe('RedirectBackOnValidationError', function (): void {
 
         $response = $harness->failValidation($request);
 
-        expect($response->headers()['Location'])->toBe('/home');
+        expect($response?->headers()['Location'])->toBe('/home');
     });
 
     it(
@@ -134,7 +137,7 @@ describe('RedirectBackOnValidationError', function (): void {
                 headers: ['HTTP_REFERER' => $referer, 'HTTP_HOST' => $host],
             ));
 
-            expect($response->headers()['Location'])->toBe('/register');
+            expect($response?->headers()['Location'])->toBe('/register');
         },
     )->with([
         'case' => ['https://EXAMPLE.com/register', 'example.COM'],
@@ -150,49 +153,42 @@ describe('RedirectBackOnValidationError', function (): void {
             headers: ['HTTP_REFERER' => 'https://example.com//evil.example/x'],
         ));
 
-        expect($response->headers()['Location'])->toBe('/evil.example/x');
+        expect($response?->headers()['Location'])->toBe('/evil.example/x');
     });
 
-    it('rethrows for requests that want JSON so they get the 422 response', function (): void {
+    it(
+        'passes for requests that want JSON or send JSON so they get the 422 response',
+        function (array $headers): void {
+            $harness = new FormsHarness();
+
+            $response = $harness->failValidation(FormsHarness::post(['name' => 'Ann'], $headers));
+            $harness->nextRequest();
+
+            expect($response)->toBeNull()
+                ->and($harness->state->hasErrors())->toBeFalse();
+        },
+    )->with([
+        'accepts json' => [['HTTP_ACCEPT' => 'application/json']],
+        'json body' => [['CONTENT_TYPE' => 'application/json']],
+    ]);
+
+    it('passes when the route has no session', function (): void {
         $harness = new FormsHarness();
-        $request = FormsHarness::post(['name' => 'Ann'], ['HTTP_ACCEPT' => 'application/json']);
+        $responder = new ValidationErrorResponder(new FakeSession(), $harness->writer, $harness->config);
+        $exception = ValidationException::withErrors(new ValidationErrors(['email' => ['Required.']]));
 
-        try {
-            $harness->failValidation($request);
-            $this->fail('Expected ValidationException');
-        } catch (ValidationException $exception) {
-            expect($exception->getStatusCode())->toBe(422);
-        }
-
-        $harness->nextRequest();
-
-        expect($harness->state->hasErrors())->toBeFalse();
+        expect($responder->respond($exception, FormsHarness::post()))->toBeNull();
     });
-
-    it('lets other exceptions through', function (): void {
-        $harness = new FormsHarness();
-
-        $harness->middleware->handle(FormsHarness::post(), fn (): Response => throw new RuntimeException('boom'));
-    })->throws(RuntimeException::class, 'boom');
-
-    it('throws a helpful exception when no session is available', function (): void {
-        $harness = new FormsHarness();
-        $middleware = new RedirectBackOnValidationError(new FakeSession(), $harness->writer, $harness->config);
-
-        $middleware->handle(FormsHarness::post(), fn (): Response => new Response('ok'));
-    })->throws(
-        FormsSessionUnavailableException::class,
-        'RedirectBackOnValidationError cannot handle POST /register: no session is available.',
-    );
 
     it('works with a session that is armed but not started yet', function (): void {
         $harness = new FormsHarness();
         $session = new FakeSession();
         $session->arm();
-        $middleware = new RedirectBackOnValidationError($session, $harness->writer, $harness->config);
+        $responder = new ValidationErrorResponder($session, $harness->writer, $harness->config);
+        $exception = ValidationException::withErrors(new ValidationErrors(['email' => ['Required.']]));
 
-        $response = $middleware->handle(FormsHarness::post(), fn (): Response => new Response('ok'));
+        $response = $responder->respond($exception, FormsHarness::post());
 
-        expect($response->body())->toBe('ok');
+        expect($response?->statusCode())->toBe(303);
     });
 });

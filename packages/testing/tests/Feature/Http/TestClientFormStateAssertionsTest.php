@@ -28,7 +28,7 @@ function failedContactSubmission(
         'email' => 'not-an-email',
         'password' => 'hunter22',
         'address' => ['street' => '1 Main St'],
-    ]);
+    ], ['Referer' => 'https://localhost/contact']);
 }
 
 describe('assertSessionHasErrors', function (): void {

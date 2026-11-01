@@ -6,8 +6,8 @@ namespace Marko\Forms\Tests\Fixtures;
 
 use Marko\Forms\Config\FormsConfig;
 use Marko\Forms\FlashedFormStateWriter;
-use Marko\Forms\Middleware\RedirectBackOnValidationError;
 use Marko\Forms\SessionFlashedFormState;
+use Marko\Forms\ValidationErrorResponder;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Session\Flash\SessionFlashData;
@@ -32,7 +32,7 @@ class FormsHarness
 
     public SessionFlashedFormState $state;
 
-    public RedirectBackOnValidationError $middleware;
+    public ValidationErrorResponder $responder;
 
     /**
      * @param array<string, mixed> $config
@@ -49,7 +49,7 @@ class FormsHarness
         ], $config)));
         $this->writer = new FlashedFormStateWriter($this->flashData, $this->config);
         $this->state = new SessionFlashedFormState($this->flashData, $this->session);
-        $this->middleware = new RedirectBackOnValidationError($this->session, $this->writer, $this->config);
+        $this->responder = new ValidationErrorResponder($this->session, $this->writer, $this->config);
     }
 
     /**
@@ -62,18 +62,15 @@ class FormsHarness
     }
 
     /**
-     * Run a request through the middleware with a controller that fails validation.
+     * Ask the responder to handle a failed validation for the request.
      *
      * @param array<string, array<string>> $errors
      */
     public function failValidation(
         Request $request,
         array $errors = ['email' => ['The email field is required.']],
-    ): Response {
-        return $this->middleware->handle(
-            $request,
-            fn (): Response => throw ValidationException::withErrors(new ValidationErrors($errors)),
-        );
+    ): ?Response {
+        return $this->responder->respond(ValidationException::withErrors(new ValidationErrors($errors)), $request);
     }
 
     /**

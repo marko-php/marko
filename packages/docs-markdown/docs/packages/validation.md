@@ -67,7 +67,7 @@ The `ValidationException` includes rich context --- call `errors()` to get the `
 }
 ```
 
-API clients get JSON; browsers get a minimal HTML page with the message. See [Errors and HTTP Exceptions](/docs/packages/routing/#errors-and-http-exceptions). To redirect an HTML form back with its errors and old input instead, add the `RedirectBackOnValidationError` middleware from [marko/forms](/docs/packages/forms/).
+API clients get JSON; browsers get a minimal HTML page with the message. See [Errors and HTTP Exceptions](/docs/packages/routing/#errors-and-http-exceptions). To redirect HTML forms back with their errors and old input instead, install [marko/forms](/docs/packages/forms/): its `ValidationErrorResponder` takes over for every non-JSON request.
 
 ### Quick Boolean Check
 
