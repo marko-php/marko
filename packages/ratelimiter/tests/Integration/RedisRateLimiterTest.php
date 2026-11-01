@@ -8,6 +8,7 @@ use Marko\Cache\Redis\Config\RedisCacheConfig;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
 use Marko\Cache\Signer\CacheValueSigner;
 use Marko\Clock\SystemClock;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Core\Support\ErrorCapture;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\RateLimiter\RateLimiter;
@@ -105,11 +106,14 @@ function createRateLimiterRedisCache(
             'cache-redis.connection' => 'integration',
             'cache-redis.prefix' => 'marko:test:' . bin2hex(random_bytes(6)) . ':',
         ])),
-        new CacheConfig(new FakeConfigRepository([
-            'cache.path' => '/tmp/cache',
-            'cache.default_ttl' => 3600,
-            'cache.driver' => 'redis',
-        ])),
+        new CacheConfig(
+            new FakeConfigRepository([
+                'cache.path' => '/tmp/cache',
+                'cache.default_ttl' => 3600,
+                'cache.driver' => 'redis',
+            ]),
+            new ProjectPaths(),
+        ),
         new CacheValueSigner(new EncryptionConfig(new FakeConfigRepository([
             'encryption.key' => 'integration-signing-key',
         ]))),

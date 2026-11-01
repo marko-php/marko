@@ -18,6 +18,7 @@ use Marko\Cache\Tests\Support\LockStoreContract;
 use Marko\Cache\Tests\Support\LockStoreHarness;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -45,7 +46,11 @@ function fileLockTestStorage(
 ): FileEntryStorage {
     $config = new FakeConfigRepository(fileLockTestConfig($path));
 
-    return new FileEntryStorage(new CacheConfig($config), $clock, new CacheValueSigner(new EncryptionConfig($config)));
+    return new FileEntryStorage(
+        new CacheConfig($config, new ProjectPaths()),
+        $clock,
+        new CacheValueSigner(new EncryptionConfig($config)),
+    );
 }
 
 function fileLockTestRemove(
@@ -218,7 +223,7 @@ describe('FileLockStore', function (): void {
     it('keeps lock records apart from cache entries of the same name', function (): void {
         $config = new FakeConfigRepository(fileLockTestConfig($this->path));
         $driver = new FileCacheDriver(
-            new CacheConfig($config),
+            new CacheConfig($config, new ProjectPaths()),
             $this->clock,
             new CacheValueSigner(new EncryptionConfig($config)),
             new CacheOperations(),

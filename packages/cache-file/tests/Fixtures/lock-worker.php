@@ -18,6 +18,7 @@ use Marko\Cache\Lock\LockFactory;
 use Marko\Cache\Lock\UsleepSleeper;
 use Marko\Cache\Signer\CacheValueSigner;
 use Marko\Clock\SystemClock;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Testing\Fake\FakeConfigRepository;
 
@@ -28,11 +29,14 @@ require $autoload;
 
 $clock = new SystemClock();
 $store = new FileLockStore(new FileEntryStorage(
-    new CacheConfig(new FakeConfigRepository([
-        'cache.path' => $cachePath,
-        'cache.default_ttl' => 3600,
-        'cache.driver' => 'file',
-    ])),
+    new CacheConfig(
+        new FakeConfigRepository([
+            'cache.path' => $cachePath,
+            'cache.default_ttl' => 3600,
+            'cache.driver' => 'file',
+        ]),
+        new ProjectPaths(),
+    ),
     $clock,
     new CacheValueSigner(new EncryptionConfig(new FakeConfigRepository([
         'encryption.key' => $signingKey,

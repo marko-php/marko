@@ -204,6 +204,7 @@ $this->rateLimiter->clear("login:$email");
 ```php
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
+use Marko\Core\Path\ProjectPaths;
 use Marko\RateLimiter\RateLimiter;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -211,7 +212,7 @@ use Marko\Testing\Fake\FakeConfigRepository;
 it('counts retry after down and then resets the window', function (): void {
     $clock = new FakeClock('2026-01-01 12:00:00 UTC');
     $cache = new ArrayCacheDriver(
-        new CacheConfig(new FakeConfigRepository(['cache.default_ttl' => 3600])),
+        new CacheConfig(new FakeConfigRepository(['cache.default_ttl' => 3600]), new ProjectPaths()),
         $clock,
     );
     $rateLimiter = new RateLimiter($cache, $clock);

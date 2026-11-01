@@ -35,7 +35,7 @@ return [
 ];
 ```
 
-The `path` directory is created automatically if it does not exist.
+The `path` directory is created automatically if it does not exist. A relative `path` resolves against the project root (`ProjectPaths::resolve()`), not the current working directory, so it lands in the same place under the CLI and under PHP-FPM, CGI or mod_php, which `chdir()` into `public/`. Absolute paths, including Windows `C:\...` paths, are used as configured.
 
 ## Usage
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
+use Marko\Core\Path\ProjectPaths;
 use Marko\RateLimiter\ClientIpKeyResolver;
 use Marko\RateLimiter\ClientIpResolver;
 use Marko\RateLimiter\Config\RateLimiterConfig;
@@ -13,6 +14,7 @@ use Marko\RateLimiter\Contracts\RateLimitKeyResolverInterface;
 use Marko\RateLimiter\Exceptions\ClientIpException;
 use Marko\RateLimiter\Middleware\RateLimitMiddleware;
 use Marko\RateLimiter\RateLimiter;
+
 use Marko\RateLimiter\RateLimitResult;
 
 use function Marko\RateLimiter\Tests\createTaggedResponse;
@@ -96,11 +98,14 @@ function createRealRateLimiter(): RateLimiter
 {
     $clock = new FakeClock();
 
-    return new RateLimiter(new ArrayCacheDriver(new CacheConfig(new FakeConfigRepository([
-        'cache.path' => '/tmp/cache',
-        'cache.default_ttl' => 3600,
-        'cache.driver' => 'array',
-    ])), $clock, new CacheOperations()), $clock);
+    return new RateLimiter(new ArrayCacheDriver(new CacheConfig(
+        new FakeConfigRepository([
+            'cache.path' => '/tmp/cache',
+            'cache.default_ttl' => 3600,
+            'cache.driver' => 'array',
+        ]),
+        new ProjectPaths(),
+    ), $clock, new CacheOperations()), $clock);
 }
 
 function createRoutedRequest(

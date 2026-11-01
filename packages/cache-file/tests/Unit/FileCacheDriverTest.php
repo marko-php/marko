@@ -13,6 +13,7 @@ use Marko\Cache\Exceptions\TamperedCacheValueException;
 use Marko\Cache\File\Driver\FileCacheDriver;
 use Marko\Cache\File\Exceptions\FileCacheException;
 use Marko\Cache\Signer\CacheValueSigner;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -50,11 +51,14 @@ function createTestCacheConfig(
     string $path,
     int $defaultTtl = 3600,
 ): CacheConfig {
-    return new CacheConfig(new FakeConfigRepository([
-        'cache.path' => $path,
-        'cache.default_ttl' => $defaultTtl,
-        'cache.driver' => 'file',
-    ]));
+    return new CacheConfig(
+        new FakeConfigRepository([
+            'cache.path' => $path,
+            'cache.default_ttl' => $defaultTtl,
+            'cache.driver' => 'file',
+        ]),
+        new ProjectPaths(),
+    );
 }
 
 /**

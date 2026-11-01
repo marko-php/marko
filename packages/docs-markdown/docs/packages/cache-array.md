@@ -88,12 +88,13 @@ The driver reads the current time through the PSR-20 `ClockInterface` from [`mar
 use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 
 $clock = new FakeClock('2026-01-01 12:00:00 UTC');
 $cache = new ArrayCacheDriver(
-    new CacheConfig(new FakeConfigRepository(['cache.default_ttl' => 3600])),
+    new CacheConfig(new FakeConfigRepository(['cache.default_ttl' => 3600]), new ProjectPaths()),
     $clock,
     new CacheOperations(),
 );

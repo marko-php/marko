@@ -9,6 +9,7 @@ use Marko\Authentication\PasswordReset\CachePasswordResetTokenRepository;
 use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 
@@ -18,11 +19,14 @@ use Marko\Testing\Fake\FakeConfigRepository;
 function cacheResetTokenRepository(): array
 {
     $clock = new FakeClock('2026-06-01 12:00:00');
-    $cache = new ArrayCacheDriver(new CacheConfig(new FakeConfigRepository([
-        'cache.path' => sys_get_temp_dir(),
-        'cache.default_ttl' => 3600,
-        'cache.driver' => 'array',
-    ])), $clock, new CacheOperations());
+    $cache = new ArrayCacheDriver(new CacheConfig(
+        new FakeConfigRepository([
+            'cache.path' => sys_get_temp_dir(),
+            'cache.default_ttl' => 3600,
+            'cache.driver' => 'array',
+        ]),
+        new ProjectPaths(),
+    ), $clock, new CacheOperations());
     $authConfig = new AuthConfig(new FakeConfigRepository([
         'authentication.password_reset.expire_seconds' => 600,
     ]));

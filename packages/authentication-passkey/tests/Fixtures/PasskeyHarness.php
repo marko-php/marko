@@ -34,6 +34,7 @@ use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\Core\Container\Container;
 use Marko\Core\Event\Event;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Entity\EntityHydrator;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\RateLimiter\Contracts\RateLimitKeyResolverInterface;
@@ -166,11 +167,14 @@ class PasskeyHarness
             clock: $this->clock,
         );
 
-        $cache = new ArrayCacheDriver(new CacheConfig(new FakeConfigRepository([
-            'cache.path' => sys_get_temp_dir(),
-            'cache.default_ttl' => 3600,
-            'cache.driver' => 'array',
-        ])), $this->clock, new CacheOperations());
+        $cache = new ArrayCacheDriver(new CacheConfig(
+            new FakeConfigRepository([
+                'cache.path' => sys_get_temp_dir(),
+                'cache.default_ttl' => 3600,
+                'cache.driver' => 'array',
+            ]),
+            new ProjectPaths(),
+        ), $this->clock, new CacheOperations());
         $this->rateLimiter = new RateLimiter($cache, $this->clock);
         $this->passwordConfirmation = new PasswordConfirmation(
             passwordVerifier: new PasswordVerifier(new BcryptPasswordHasher(cost: 4)),
