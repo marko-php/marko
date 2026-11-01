@@ -28,6 +28,7 @@ use Marko\Queue\Sync\SyncQueue;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 use RuntimeException;
 use Throwable;
 
@@ -55,6 +56,7 @@ function createSyncQueue(
             $runner,
             $events,
             new FakeClock(),
+            logger: new FakeLogger(),
         ),
         new QueueConfig(new FakeConfigRepository(['queue.queue' => 'default'])),
     );

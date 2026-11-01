@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Core\Container\Container;
 use Marko\Encryption\Config\EncryptionConfig;
+use Marko\Log\LogLevel;
 use Marko\Queue\Exceptions\JobTimedOutException;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\FailableJobInterface;
@@ -32,6 +33,7 @@ use Marko\Queue\WorkerStopReason;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 
 /**
  * In-memory queue that records pops, deletes and releases in order.
@@ -201,7 +203,7 @@ function limitsJob(
 }
 
 /**
- * @return array{worker: LimitsTestWorker, failed: StubFailedJobRepository}
+ * @return array{worker: LimitsTestWorker, failed: StubFailedJobRepository, logger: FakeLogger}
  */
 function createLimitsWorker(
     QueueInterface $queue,
@@ -209,6 +211,7 @@ function createLimitsWorker(
     FakeClock $clock = new FakeClock(),
 ): array {
     $failed = Helpers::createStubFailedJobRepository();
+    $logger = new FakeLogger();
 
     $envelope = new JobEnvelope(
         new EncryptionConfig(new FakeConfigRepository(['encryption.key' => 'worker-limits-key'])),
@@ -221,6 +224,7 @@ function createLimitsWorker(
             new JobRunner(new Container(), $envelope, new FakeEventDispatcher()),
             new FakeEventDispatcher(),
             new FakeClock(),
+            $logger,
         ),
         new QueueConfig(new FakeConfigRepository([
             'queue.queue' => 'default',
@@ -232,32 +236,21 @@ function createLimitsWorker(
             'queue.queue' => 'default',
             'queue.max_attempts' => 3,
         ])), new FakeClock()),
+        logger: $logger,
         processControl: $processControl,
         clock: $clock,
     );
 
-    return ['worker' => $worker, 'failed' => $failed];
+    return ['worker' => $worker, 'failed' => $failed, 'logger' => $logger];
 }
 
 /**
- * Point PHP's error log at a temp file for the callback and return what was logged.
+ * Every message the worker logged through the fake logger, one per line.
  */
-function captureLimitsErrorLog(
-    callable $callback,
+function limitsLogged(
+    FakeLogger $logger,
 ): string {
-    $file = tempnam(sys_get_temp_dir(), 'marko-worker-limits-log');
-    $previous = ini_set('error_log', $file);
-
-    try {
-        $callback();
-    } finally {
-        ini_set('error_log', (string) $previous);
-    }
-
-    $logged = (string) file_get_contents($file);
-    unlink($file);
-
-    return $logged;
+    return implode("\n", array_column($logger->entries, 'message'));
 }
 
 describe('Worker job timeout', function (): void {
@@ -287,9 +280,10 @@ describe('Worker job timeout', function (): void {
             limitsJob('slow', fn () => $process->fireTimer()),
             limitsJob('next'),
         ]);
-        ['worker' => $worker, 'failed' => $failed] = createLimitsWorker($queue, $process);
+        ['worker' => $worker, 'failed' => $failed, 'logger' => $logger] = createLimitsWorker($queue, $process);
 
-        $logged = captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 5)));
+        $worker->work(options: new WorkerOptions(timeout: 5));
+        $logged = limitsLogged($logger);
 
         expect($failed->find('slow'))->not->toBeNull()
             ->and($failed->find('slow')->exception)->toContain(
@@ -306,7 +300,7 @@ describe('Worker job timeout', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('slow', fn () => $process->fireTimer(), maxAttempts: 3)]);
         ['worker' => $worker, 'failed' => $failed] = createLimitsWorker($queue, $process);
 
-        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 5)));
+        $worker->work(options: new WorkerOptions(timeout: 5));
 
         expect($queue->log)->toBe(['pop:slow', 'release:slow:15'])
             ->and($failed->count())->toBe(0)
@@ -319,7 +313,7 @@ describe('Worker job timeout', function (): void {
         $queue = new LimitsRecordingQueue([$job]);
         ['worker' => $worker] = createLimitsWorker($queue, $process);
 
-        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 5)));
+        $worker->work(options: new WorkerOptions(timeout: 5));
 
         expect($job->exceptions)->toBe(1);
     });
@@ -330,7 +324,7 @@ describe('Worker job timeout', function (): void {
         $queue = new LimitsRecordingQueue([$job]);
         ['worker' => $worker] = createLimitsWorker($queue, $process);
 
-        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 5)));
+        $worker->work(options: new WorkerOptions(timeout: 5));
 
         expect($job->failedWith)->toHaveCount(1)
             ->and($job->failedWith[0])->toBeInstanceOf(JobTimedOutException::class)
@@ -343,7 +337,7 @@ describe('Worker job timeout', function (): void {
         $job = limitsJob('slow', fn () => $process->fireTimer(), maxAttempts: 3);
         ['worker' => $worker] = createLimitsWorker(new LimitsRecordingQueue([$job]), $process);
 
-        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 5)));
+        $worker->work(options: new WorkerOptions(timeout: 5));
 
         expect($job->failedWith)->toBe([]);
     });
@@ -381,10 +375,7 @@ describe('Worker memory and job limits', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('a'), limitsJob('b'), limitsJob('c')]);
         ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl());
 
-        $reason = null;
-        captureLimitsErrorLog(function () use ($worker, &$reason): void {
-            $reason = $worker->work(options: new WorkerOptions(maxJobs: 2));
-        });
+        $reason = $worker->work(options: new WorkerOptions(maxJobs: 2));
 
         expect($queue->log)->toBe(['pop:a', 'delete:a', 'pop:b', 'delete:b'])
             ->and($queue->size())->toBe(1)
@@ -398,10 +389,7 @@ describe('Worker memory and job limits', function (): void {
             new FakeProcessControl(memoryBytes: 128 * 1024 * 1024),
         );
 
-        $reason = null;
-        captureLimitsErrorLog(function () use ($worker, &$reason): void {
-            $reason = $worker->work(options: new WorkerOptions(memory: 128));
-        });
+        $reason = $worker->work(options: new WorkerOptions(memory: 128));
 
         expect($queue->log)->toBe(['pop:a', 'delete:a'])
             ->and($reason)->toBe(WorkerStopReason::Memory);
@@ -415,10 +403,7 @@ describe('Worker memory and job limits', function (): void {
             $process->memoryBytes = 128 * 1024 * 1024;
         };
 
-        $reason = null;
-        captureLimitsErrorLog(function () use ($worker, &$reason): void {
-            $reason = $worker->work(options: new WorkerOptions(memory: 128));
-        });
+        $reason = $worker->work(options: new WorkerOptions(memory: 128));
 
         expect($reason)->toBe(WorkerStopReason::Memory)
             ->and($worker->pauses)->toBe(1);
@@ -516,7 +501,7 @@ describe('Worker per-job timeout', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('job-1', timeout: $jobTimeout)]);
         ['worker' => $worker] = createLimitsWorker($queue, $process);
 
-        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 30)));
+        $worker->work(options: new WorkerOptions(timeout: 30));
 
         expect($process->calls)->toContain("startTimer:$jobTimeout")
             ->and($process->calls)->not->toContain('startTimer:30');
@@ -530,7 +515,7 @@ describe('Worker per-job timeout', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('job-1')]);
         ['worker' => $worker] = createLimitsWorker($queue, $process);
 
-        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 30)));
+        $worker->work(options: new WorkerOptions(timeout: 30));
 
         expect($process->calls)->toContain('startTimer:30');
     });
@@ -540,7 +525,7 @@ describe('Worker per-job timeout', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('job-1', timeout: 0)]);
         ['worker' => $worker] = createLimitsWorker($queue, $process);
 
-        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 30)));
+        $worker->work(options: new WorkerOptions(timeout: 30));
 
         expect($process->calls)->toBe(['listen', 'stopListening']);
     });
@@ -550,7 +535,7 @@ describe('Worker per-job timeout', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('slow', fn () => $process->fireTimer(), timeout: 10)]);
         ['worker' => $worker, 'failed' => $failed] = createLimitsWorker($queue, $process);
 
-        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 30)));
+        $worker->work(options: new WorkerOptions(timeout: 30));
 
         expect($failed->find('slow')->exception)->toContain("Job 'LimitsCallbackJob' exceeded the 10-second timeout.")
             ->and($process->terminatedWith)->toBe(Worker::EXIT_TIMED_OUT);
@@ -565,7 +550,7 @@ describe('Worker per-job timeout', function (): void {
         $queue = new LimitsRecordingQueue([$job, limitsJob('next')]);
         ['worker' => $worker, 'failed' => $failed] = createLimitsWorker($queue, $process);
 
-        captureLimitsErrorLog(fn () => $worker->work());
+        $worker->work();
 
         $stored = $failed->find('long')?->exception;
 
@@ -585,21 +570,30 @@ describe('Worker per-job timeout', function (): void {
 
     it('warns when a job sets a timeout but ext-pcntl is not loaded', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('job-1', timeout: 10)]);
-        ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl(supported: false));
+        ['worker' => $worker, 'logger' => $logger] = createLimitsWorker(
+            $queue,
+            new FakeProcessControl(supported: false),
+        );
 
-        $logged = captureLimitsErrorLog(fn () => $worker->work());
+        $worker->work();
+        $logged = limitsLogged($logger);
 
         expect($logged)->toContain(
             "[marko/queue] Job 'LimitsCallbackJob' sets a 10-second timeout, but ext-pcntl is not loaded",
         )
+            ->and($logger->entriesForLevel(LogLevel::Warning))->toHaveCount(1)
             ->and($queue->log)->toContain('delete:job-1');
     });
 
     it('does not warn about ext-pcntl for a job without a timeout', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('job-1')]);
-        ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl(supported: false));
+        ['worker' => $worker, 'logger' => $logger] = createLimitsWorker(
+            $queue,
+            new FakeProcessControl(supported: false),
+        );
 
-        $logged = captureLimitsErrorLog(fn () => $worker->work());
+        $worker->work();
+        $logged = limitsLogged($logger);
 
         expect($logged)->not->toContain('ext-pcntl');
     });
@@ -613,12 +607,10 @@ describe('Worker --max-time', function (): void {
             limitsJob('b', fn () => $clock->travel('+3600 seconds')),
             limitsJob('c'),
         ]);
-        ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl(), $clock);
+        ['worker' => $worker, 'logger' => $logger] = createLimitsWorker($queue, new FakeProcessControl(), $clock);
 
-        $reason = null;
-        $logged = captureLimitsErrorLog(function () use ($worker, &$reason): void {
-            $reason = $worker->work(options: new WorkerOptions(maxTime: 3600));
-        });
+        $reason = $worker->work(options: new WorkerOptions(maxTime: 3600));
+        $logged = limitsLogged($logger);
 
         expect($reason)->toBe(WorkerStopReason::MaxTime)
             ->and($queue->log)->toBe(['pop:a', 'delete:a', 'pop:b', 'delete:b'])
@@ -631,10 +623,7 @@ describe('Worker --max-time', function (): void {
         ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl(), $clock);
         $worker->onPause = fn () => $clock->travel('+30 seconds');
 
-        $reason = null;
-        captureLimitsErrorLog(function () use ($worker, &$reason): void {
-            $reason = $worker->work(options: new WorkerOptions(maxTime: 60));
-        });
+        $reason = $worker->work(options: new WorkerOptions(maxTime: 60));
 
         expect($reason)->toBe(WorkerStopReason::MaxTime)
             ->and($worker->pauses)->toBe(2)
@@ -650,13 +639,11 @@ describe('Worker restart signal', function (): void {
             limitsJob('b', fn () => $signal->request()),
             limitsJob('c'),
         ]);
-        ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl());
+        ['worker' => $worker, 'logger' => $logger] = createLimitsWorker($queue, new FakeProcessControl());
         $options = new WorkerOptions(stopConditions: [new RestartSignalStopCondition($signal)]);
 
-        $reason = null;
-        $logged = captureLimitsErrorLog(function () use ($worker, $options, &$reason): void {
-            $reason = $worker->work(options: $options);
-        });
+        $reason = $worker->work(options: $options);
+        $logged = limitsLogged($logger);
 
         expect($reason)->toBe(WorkerStopReason::RestartRequested)
             ->and($reason->exitCode())->toBe(0)
@@ -673,10 +660,7 @@ describe('Worker restart signal', function (): void {
         ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl());
         $options = new WorkerOptions(stopConditions: [new RestartSignalStopCondition($signal)]);
 
-        $reason = null;
-        captureLimitsErrorLog(function () use ($worker, $options, &$reason): void {
-            $reason = $worker->work(options: $options);
-        });
+        $reason = $worker->work(options: $options);
 
         // The test worker stops itself at the first idle pause, so both jobs ran
         expect($reason)->toBe(WorkerStopReason::Signal)
@@ -694,10 +678,7 @@ describe('Worker restart signal', function (): void {
         };
         $options = new WorkerOptions(stopConditions: [new RestartSignalStopCondition($signal)]);
 
-        $reason = null;
-        captureLimitsErrorLog(function () use ($worker, $options, &$reason): void {
-            $reason = $worker->work(options: $options);
-        });
+        $reason = $worker->work(options: $options);
 
         expect($reason)->toBe(WorkerStopReason::RestartRequested)
             ->and($worker->pauses)->toBe(2)
@@ -706,14 +687,41 @@ describe('Worker restart signal', function (): void {
 });
 
 describe('Worker stop reasons', function (): void {
+    it('logs the stop line at info level through the injected logger', function (): void {
+        ['worker' => $worker, 'logger' => $logger] = createLimitsWorker(
+            new LimitsRecordingQueue([]),
+            new FakeProcessControl(),
+        );
+
+        $worker->work(once: true);
+
+        $logger->assertLogged('[marko/queue] Worker stopping: ' . WorkerStopReason::Once->message(), LogLevel::Info);
+        expect($logger->entries)->toHaveCount(1);
+    });
+
+    it('logs a timed-out job and its stop line through the injected logger', function (): void {
+        $process = new FakeProcessControl();
+        $queue = new LimitsRecordingQueue([limitsJob('slow', fn () => $process->fireTimer())]);
+        ['worker' => $worker, 'logger' => $logger] = createLimitsWorker($queue, $process);
+
+        $worker->work(options: new WorkerOptions(timeout: 5));
+
+        $errors = array_column($logger->entriesForLevel(LogLevel::Error), 'message');
+
+        expect($errors)->toHaveCount(1)
+            ->and($errors[0])->toStartWith("[marko/queue] Job 'LimitsCallbackJob' exceeded the 5-second timeout.");
+        $logger->assertLogged(
+            '[marko/queue] Worker stopping: ' . WorkerStopReason::TimedOut->message(),
+            LogLevel::Info,
+        );
+    });
+
     it('returns Once after one job with --once', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('a'), limitsJob('b')]);
-        ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl());
+        ['worker' => $worker, 'logger' => $logger] = createLimitsWorker($queue, new FakeProcessControl());
 
-        $reason = null;
-        $logged = captureLimitsErrorLog(function () use ($worker, &$reason): void {
-            $reason = $worker->work(once: true);
-        });
+        $reason = $worker->work(once: true);
+        $logged = limitsLogged($logger);
 
         expect($reason)->toBe(WorkerStopReason::Once)
             ->and($logged)->toContain('[marko/queue] Worker stopping: ' . WorkerStopReason::Once->message());
@@ -722,10 +730,7 @@ describe('Worker stop reasons', function (): void {
     it('returns Once when --once finds every queue empty', function (): void {
         ['worker' => $worker] = createLimitsWorker(new LimitsRecordingQueue([]), new FakeProcessControl());
 
-        $reason = null;
-        captureLimitsErrorLog(function () use ($worker, &$reason): void {
-            $reason = $worker->work(once: true);
-        });
+        $reason = $worker->work(once: true);
 
         expect($reason)->toBe(WorkerStopReason::Once);
     });
@@ -733,12 +738,10 @@ describe('Worker stop reasons', function (): void {
     it('returns Signal after SIGTERM, once the current job is done', function (): void {
         $process = new FakeProcessControl();
         $queue = new LimitsRecordingQueue([limitsJob('a', fn () => $process->sendTerminationSignal())]);
-        ['worker' => $worker] = createLimitsWorker($queue, $process);
+        ['worker' => $worker, 'logger' => $logger] = createLimitsWorker($queue, $process);
 
-        $reason = null;
-        $logged = captureLimitsErrorLog(function () use ($worker, &$reason): void {
-            $reason = $worker->work();
-        });
+        $reason = $worker->work();
+        $logged = limitsLogged($logger);
 
         expect($reason)->toBe(WorkerStopReason::Signal)
             ->and($logged)->toContain('[marko/queue] Worker stopping: ' . WorkerStopReason::Signal->message());
@@ -747,12 +750,10 @@ describe('Worker stop reasons', function (): void {
     it('returns TimedOut when a job exceeds its timeout, logging the stop once', function (): void {
         $process = new FakeProcessControl();
         $queue = new LimitsRecordingQueue([limitsJob('slow', fn () => $process->fireTimer())]);
-        ['worker' => $worker] = createLimitsWorker($queue, $process);
+        ['worker' => $worker, 'logger' => $logger] = createLimitsWorker($queue, $process);
 
-        $reason = null;
-        $logged = captureLimitsErrorLog(function () use ($worker, &$reason): void {
-            $reason = $worker->work(options: new WorkerOptions(timeout: 5));
-        });
+        $reason = $worker->work(options: new WorkerOptions(timeout: 5));
+        $logged = limitsLogged($logger);
 
         expect($reason)->toBe(WorkerStopReason::TimedOut)
             ->and(substr_count($logged, '[marko/queue] Worker stopping: '))->toBe(1)
@@ -761,9 +762,10 @@ describe('Worker stop reasons', function (): void {
 
     it('logs exactly one stop line per run', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('a'), limitsJob('b')]);
-        ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl());
+        ['worker' => $worker, 'logger' => $logger] = createLimitsWorker($queue, new FakeProcessControl());
 
-        $logged = captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(maxJobs: 1)));
+        $worker->work(options: new WorkerOptions(maxJobs: 1));
+        $logged = limitsLogged($logger);
 
         expect(substr_count($logged, '[marko/queue] Worker stopping: '))->toBe(1)
             ->and($logged)->toContain('[marko/queue] Worker stopping: ' . WorkerStopReason::MaxJobs->message());
@@ -787,10 +789,7 @@ describe('Worker stop reasons', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('a'), limitsJob('b'), limitsJob('c')]);
         ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl(memoryBytes: 1024), $clock);
 
-        $reason = null;
-        captureLimitsErrorLog(function () use ($worker, $condition, &$reason): void {
-            $reason = $worker->work(options: new WorkerOptions(stopConditions: [$condition]));
-        });
+        $reason = $worker->work(options: new WorkerOptions(stopConditions: [$condition]));
 
         expect($reason)->toBe(WorkerStopReason::RestartRequested)
             ->and($condition->states)->toHaveCount(2)

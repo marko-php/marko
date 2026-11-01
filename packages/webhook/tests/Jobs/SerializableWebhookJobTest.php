@@ -25,6 +25,7 @@ use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 use Marko\Testing\Fake\FakeQueue;
 use Marko\Webhook\Contracts\WebhookAttemptRepositoryInterface;
 use Marko\Webhook\Contracts\WebhookDispatcherInterface;
@@ -343,6 +344,7 @@ describe('DispatchWebhookJob final failure', function (): void {
                     ),
                     new FakeEventDispatcher(),
                     new FakeClock(),
+                    logger: new FakeLogger(),
                 ),
                 SerializableWebhookJobTestHelpers::queueConfig(),
                 new JobRunner(
@@ -352,6 +354,7 @@ describe('DispatchWebhookJob final failure', function (): void {
                 ),
                 new RetryPolicy(SerializableWebhookJobTestHelpers::queueConfig(), new FakeClock()),
                 clock: new FakeClock(),
+                logger: new FakeLogger(),
             );
             $stopJob->worker = $worker;
 
@@ -626,11 +629,13 @@ describe('DispatchWebhookJob serialization', function (): void {
                     new JobRunner($container, $envelope, new FakeEventDispatcher()),
                     new FakeEventDispatcher(),
                     new FakeClock(),
+                    logger: new FakeLogger(),
                 ),
                 $queueConfig,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new RetryPolicy($queueConfig, new FakeClock()),
                 clock: new FakeClock(),
+                logger: new FakeLogger(),
             );
             $worker->work(once: true);
 
@@ -737,11 +742,13 @@ describe('DispatchWebhookJob serialization', function (): void {
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $queueConfig,
             new JobRunner($container, $envelope, new FakeEventDispatcher()),
             new RetryPolicy($queueConfig, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
         $worker->work(once: true);
 

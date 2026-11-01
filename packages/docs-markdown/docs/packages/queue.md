@@ -28,6 +28,8 @@ composer require marko/cache marko/cache-redis
 
 Without it, every other job works as usual, and pushing a unique job throws a `QueueException` telling you what to install. The [cache restart signal](#workers-on-several-hosts), for workers on several hosts, needs `marko/cache` too.
 
+`marko/queue` requires [`marko/log`](/docs/packages/log/): the worker writes its stop lines, timeouts and failures through `LoggerInterface`, so install a log handler such as [`marko/log-file`](/docs/packages/log-file/) or [`marko/log-stream`](/docs/packages/log-stream/). See [Worker Logs](#worker-logs).
+
 `marko/queue` requires [`marko/encryption`](/docs/packages/encryption/) and a non-empty `encryption.key` in your config. Job payloads are HMAC-signed when enqueued and verified before deserialization; if the key is empty or the signature does not match, a `SerializationException` is thrown loudly.
 
 ```php title="config/encryption.php"
@@ -71,6 +73,11 @@ This release changes the queue contracts once for the per-job features built on 
 1. **Custom `WorkerInterface` implementations** (and test doubles) return a [`WorkerStopReason`](#stop-reasons-and-exit-codes) from `work()` instead of `void`. `queue:work` exits with that reason's `exitCode()`.
 2. **Code that constructs `Worker` by hand** passes a PSR-20 `ClockInterface` after the `RetryPolicy`: `new Worker($queue, $failedJobHandler, $config, $jobRunner, $retryPolicy, $clock)`. The worker reads `--max-time` and the start time for stop conditions from it. Containers that autowire the worker need no change.
 3. **Jobs that set `$timeout`** now get it: the worker uses the job's `$timeout` instead of `--timeout` / `queue.timeout`, whether it is shorter or longer. A job whose `$timeout` is not below `queue.retry_after` is failed without running. Raise `retry_after` before deploying if any job needs a longer timeout. See [Per-Job Timeouts](#per-job-timeouts).
+
+#### Upgrading: worker logs go through `LoggerInterface`
+
+1. **Apps using `marko/queue`** now need a [`marko/log`](/docs/packages/log/) handler package, because the worker resolves `LoggerInterface`. Install [`marko/log-file`](/docs/packages/log-file/) (the default `file` handler) or [`marko/log-stream`](/docs/packages/log-stream/) with `LOG_HANDLERS=stream` to keep worker lines on STDERR as before. Without a handler, resolving the worker throws `NoDriverException`. See [Worker Logs](#worker-logs).
+2. **Code that constructs `Worker` by hand** passes a `LoggerInterface` after the clock: `new Worker($queue, $failedJobHandler, $config, $jobRunner, $retryPolicy, $clock, $logger)`. **Code that constructs `FailedJobHandler` by hand** passes it last: `new FailedJobHandler($failedJobs, $envelope, $jobRunner, $eventDispatcher, $clock, $logger)`. Containers that autowire them need no change.
 
 #### Upgrading: `queue:restart`
 
@@ -417,7 +424,7 @@ class RegenerateTranscript extends Job implements FailableJobInterface
 
 - `failed()` runs once, on the final failure only. It doesn't run on an attempt that is released for a retry, and `queue:retry` doesn't call it.
 - A `ContainerAwareJobInterface` job has its container while `failed()` runs, through `JobRunner::withContainer()`, so it can resolve the same services as `handle()`.
-- If `failed()` throws, the error is written to PHP's error log with the job class and id, `JobFailedEvent` is still dispatched, and the worker keeps running.
+- If `failed()` throws, the error is [logged](#worker-logs) at `error` level with the job class and id, `JobFailedEvent` is still dispatched, and the worker keeps running.
 - On a [timeout](#worker-limits-and-shutdown), `failed()` runs inside the alarm signal handler, just before the worker process exits. Keep it short.
 - Under the database driver, `failed()` gets a `JobAttemptsExhaustedException`, because no exception was thrown: the workers died.
 
@@ -570,7 +577,19 @@ marko queue:work --queue=high,default,low --sleep=1
 | `--max-jobs` | Exit after processing this many jobs (default `0`, no limit) |
 | `--max-time` | Exit after the current job once the worker has run this many seconds (default `0`, no limit) |
 
-If popping a job throws (for example, the broker is unreachable), the worker writes the error to PHP's error log (STDERR for `queue:work`), sleeps for `--sleep` seconds and polls again, so a pop failure doesn't stop the worker. With `--once` the error is thrown instead.
+If popping a job throws (for example, the broker is unreachable), the worker [logs](#worker-logs) the error, sleeps for `--sleep` seconds and polls again, so a pop failure doesn't stop the worker. With `--once` the error is thrown instead.
+
+#### Worker Logs
+
+The worker and `FailedJobHandler` log through Marko's `LoggerInterface` from [`marko/log`](/docs/packages/log/), so worker output goes wherever your `log.handlers` send it: `storage/logs` with [`marko/log-file`](/docs/packages/log-file/) (the default handler), or STDERR/STDOUT with [`marko/log-stream`](/docs/packages/log-stream/). Under a process supervisor or in a container, `LOG_HANDLERS=stream` puts worker logs in the supervisor's output; `LOG_HANDLERS=file,stream` writes both. Every line starts with `[marko/queue]`:
+
+| Level | Line |
+|-------|------|
+| `info` | `Worker stopping: ...`, once per run, with the [stop reason](#stop-reasons-and-exit-codes) |
+| `warning` | A job sets a timeout but `ext-pcntl` is not loaded, so it can't be enforced |
+| `error` | A pop failed and the worker will retry, a job exceeded its timeout, a timed-out job could not be released or failed, or a job's `failed()` threw |
+
+To send worker logs somewhere else, bind your own `LoggerInterface` implementation or add a handler (see [`marko/log`](/docs/packages/log/)). In tests, pass a `FakeLogger` from [`marko/testing`](/docs/packages/testing/) to `Worker` and `FailedJobHandler` and assert on its entries.
 
 ### Worker Limits and Shutdown
 
@@ -619,11 +638,11 @@ class RenderVideo extends Job
 
 A job's timeout must also stay below `queue.retry_after`, for the same reason as the worker's: a job still running when its reservation expires is handed to a second worker. `queue:work` only knows the worker's timeout when it starts, so the worker checks each job's own `$timeout` when it pops the job. A job whose `$timeout` is not below `retry_after` is [failed for good](#when-a-job-fails-for-good) without running, with a `QueueException` that says to raise `queue.retry_after`. Raise `retry_after` above your longest job timeout (with a few seconds of margin), then `queue:retry` the job.
 
-Without `ext-pcntl`, a job that sets a timeout still runs, but the worker writes a warning to PHP's error log each time, because the timeout can't be enforced.
+Without `ext-pcntl`, a job that sets a timeout still runs, but the worker [logs](#worker-logs) a warning each time, because the timeout can't be enforced.
 
 #### Stop Reasons and Exit Codes
 
-Every way the worker stops goes through one mechanism. `work()` returns a `WorkerStopReason`, the worker writes one line to PHP's error log (STDERR for `queue:work`), such as `[marko/queue] Worker stopping: ran for the --max-time limit.`, and `queue:work` exits with the reason's `exitCode()`:
+Every way the worker stops goes through one mechanism. `work()` returns a `WorkerStopReason`, the worker [logs](#worker-logs) one `info` line, such as `[marko/queue] Worker stopping: ran for the --max-time limit.`, and `queue:work` exits with the reason's `exitCode()`:
 
 | Reason | When | Exit code |
 |--------|------|-----------|
@@ -791,17 +810,21 @@ use Marko\Queue\RetryPolicy;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 
 it('records when a job failed', function (): void {
     $clock = new FakeClock('2026-03-01 09:15:00 UTC');
     $events = new FakeEventDispatcher();
+    $logger = new FakeLogger();
     $runner = new JobRunner($container, $envelope, $events);
     $worker = new Worker(
         $queue,
-        new FailedJobHandler($failedJobs, $envelope, $runner, $events, $clock),
+        new FailedJobHandler($failedJobs, $envelope, $runner, $events, $clock, $logger),
         $config,
         $runner,
         new RetryPolicy($config, $clock),
+        $clock,
+        $logger,
     );
 
     $worker->work(once: true);
@@ -1011,7 +1034,7 @@ use Marko\Queue\JobInterface;
 public function handle(JobInterface $job, string $queue, Throwable $exception, string $note = ''): void;
 ```
 
-Bound to `FailedJobHandler`, which is constructed with the failed-job repository, the `JobEnvelope`, the `JobRunnerInterface`, the `EventDispatcherInterface` and the clock. `$note` is appended to the stored exception text. The handler never touches the queue: the caller deletes the job. See [When a Job Fails for Good](#when-a-job-fails-for-good).
+Bound to `FailedJobHandler`, which is constructed with the failed-job repository, the `JobEnvelope`, the `JobRunnerInterface`, the `EventDispatcherInterface`, the clock and the `LoggerInterface`. `$note` is appended to the stored exception text. The handler never touches the queue: the caller deletes the job. See [When a Job Fails for Good](#when-a-job-fails-for-good).
 
 ### FailableJobInterface
 

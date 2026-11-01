@@ -23,6 +23,7 @@ use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 use Marko\Testing\Fake\FakeQueue;
 
 class OrderShipped extends Event
@@ -152,11 +153,13 @@ describe('async observer dispatch through marko/queue', function (): void {
                 new JobRunner($container, $jobEnvelope, new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $config,
             new JobRunner($container, $jobEnvelope, new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         )->work(
             once: true,
         );

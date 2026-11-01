@@ -34,6 +34,7 @@ use Marko\Queue\UniqueUntil;
 use Marko\Queue\Worker;
 use Marko\Queue\WorkerOptions;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeLogger;
 
 /**
  * A job that is not unique.
@@ -90,6 +91,7 @@ function uniqueWorker(
         new RetryPolicy($config, $stack->clock),
         $stack->clock,
         processControl: $processControl,
+        logger: new FakeLogger(),
     );
 }
 
@@ -327,14 +329,7 @@ describe('unique job lock release', function (): void {
         $processControl->checkLock = fn (): bool => $stack->lockIsFree($job);
         $queue->push($job);
 
-        $previousErrorLog = ini_set('error_log', tempnam(sys_get_temp_dir(), 'unique-job-timeout-'));
-
-        try {
-            uniqueWorker($stack, $queue, $processControl)->work(options: new WorkerOptions(timeout: 5));
-        } finally {
-            unlink((string) ini_get('error_log'));
-            ini_set('error_log', (string) $previousErrorLog);
-        }
+        uniqueWorker($stack, $queue, $processControl)->work(options: new WorkerOptions(timeout: 5));
 
         expect($processControl->terminatedWith)->toBe(Worker::EXIT_TIMED_OUT)
             ->and($processControl->lockFreeAtExit)->toBeTrue();

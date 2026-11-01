@@ -30,6 +30,7 @@ use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 
 /*
  * These tests run against a real PostgreSQL server. They are skipped (with the reason)
@@ -265,6 +266,7 @@ describe('database queue on PostgreSQL', function (): void {
                 new JobRunner(new Container(), pgsqlEnvelope(), new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             new QueueConfig(new FakeConfigRepository([
                 'queue.queue' => 'default',
@@ -276,6 +278,7 @@ describe('database queue on PostgreSQL', function (): void {
                 'queue.max_attempts' => 1,
             ])), new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
         $worker->work(once: true);
 

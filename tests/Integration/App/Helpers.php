@@ -46,6 +46,8 @@ const INTEGRATION_MODULES = [
     'encryption-openssl',
     'errors',
     'errors-simple',
+    'log',
+    'log-file',
     'queue',
     'queue-database',
     'ratelimiter',
@@ -537,7 +539,7 @@ function databaseTestingProject(): string
 /**
  * Packages the queue/session tables fixture needs besides its database
  * driver: marko/queue-database and marko/session-database with what they
- * require. The driver (database-pgsql or database-mysql) is added per run.
+ * require, plus marko/log-file so the queue worker's logger can resolve. The driver (database-pgsql or database-mysql) is added per run.
  */
 const QUEUE_SESSION_MODULES = [
     'clock',
@@ -546,6 +548,8 @@ const QUEUE_SESSION_MODULES = [
     'database',
     'encryption',
     'encryption-openssl',
+    'log',
+    'log-file',
     'queue',
     'queue-database',
     'routing',

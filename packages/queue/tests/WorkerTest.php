@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Core\Container\ContainerInterface;
 use Marko\Encryption\Config\EncryptionConfig;
+use Marko\Log\LogLevel;
 use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\ContainerAwareJobInterface;
 use Marko\Queue\Event\JobFailedEvent;
@@ -26,6 +27,7 @@ use Marko\Queue\WorkerInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 
 function createWorkerTestEnvelope(
     string $key = 'test-key-for-worker',
@@ -345,11 +347,13 @@ describe('Worker', function (): void {
                 new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);
@@ -452,11 +456,13 @@ describe('Worker', function (): void {
                 new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
 
         $worker->work(once: true);
@@ -553,11 +559,13 @@ describe('Worker', function (): void {
                 new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
 
         $worker->work(once: true);
@@ -594,11 +602,13 @@ describe('Worker', function (): void {
                 new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
         StopTestHelper::$worker = $worker;
 
@@ -692,11 +702,13 @@ describe('Worker', function (): void {
                 new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
 
         // With once=true, worker should process exactly one job and return
@@ -776,11 +788,13 @@ describe('Worker', function (): void {
                 new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
 
         // With once=true and no jobs, worker should return immediately
@@ -884,11 +898,13 @@ describe('Worker', function (): void {
                 new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $config,
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
 
         // Process jobs (once each)
@@ -1003,11 +1019,13 @@ describe('Worker', function (): void {
                     new JobRunner($container, $envelope, new FakeEventDispatcher()),
                     new FakeEventDispatcher(),
                     new FakeClock(),
+                    logger: new FakeLogger(),
                 ),
                 $config,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new RetryPolicy($config, new FakeClock()),
                 clock: new FakeClock(),
+                logger: new FakeLogger(),
             );
             $worker->work(once: true);
 
@@ -1128,11 +1146,13 @@ function runFailingJobOnce(
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new FakeEventDispatcher(),
             $clock,
+            logger: new FakeLogger(),
         ),
         createTestQueueConfig(['queue.max_attempts' => $configMaxAttempts]),
         new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
         new RetryPolicy(createTestQueueConfig(['queue.max_attempts' => $configMaxAttempts]), new FakeClock()),
         clock: new FakeClock(),
+        logger: new FakeLogger(),
     );
     $worker->work(once: true);
 
@@ -1389,6 +1409,7 @@ class PauseRecordingWorker extends Worker
         QueueConfig $config,
         private readonly RecordingLog $log,
         private readonly int $stopAfterPauses = 1,
+        FakeLogger $logger = new FakeLogger(),
     ) {
         $runner = new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher());
 
@@ -1400,11 +1421,13 @@ class PauseRecordingWorker extends Worker
                 $runner,
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                $logger,
             ),
             $config,
             $runner,
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
+            logger: $logger,
         );
     }
 
@@ -1777,11 +1800,13 @@ function runJobsOnLastAttempt(
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new FakeEventDispatcher(),
             new FakeClock(),
+            logger: new FakeLogger(),
         ),
         createTestQueueConfig(),
         new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
         new RetryPolicy(createTestQueueConfig(), new FakeClock()),
         clock: new FakeClock(),
+        logger: new FakeLogger(),
     );
     $stopJob->worker = $worker;
 
@@ -1900,11 +1925,13 @@ function runJobsOnFirstAttempt(
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new FakeEventDispatcher(),
             new FakeClock(),
+            logger: new FakeLogger(),
         ),
         createTestQueueConfig($configValues),
         new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
         new RetryPolicy(createTestQueueConfig($configValues), new FakeClock()),
         clock: new FakeClock(),
+        logger: new FakeLogger(),
     );
     $stopJob->worker = $worker;
 
@@ -2050,27 +2077,6 @@ class FailingPopQueue extends MultiQueueRecordingQueue
     }
 }
 
-/**
- * Point PHP's error log at a temp file for the callback and return what was logged.
- */
-function captureWorkerErrorLog(
-    callable $callback,
-): string {
-    $file = tempnam(sys_get_temp_dir(), 'marko-worker-log');
-    $previous = ini_set('error_log', $file);
-
-    try {
-        $callback();
-    } finally {
-        ini_set('error_log', (string) $previous);
-    }
-
-    $logged = (string) file_get_contents($file);
-    unlink($file);
-
-    return $logged;
-}
-
 describe('Worker pop failures', function (): void {
     it('keeps running when pop() throws, then processes the next job', function (): void {
         $log = new RecordingLog();
@@ -2083,7 +2089,7 @@ describe('Worker pop failures', function (): void {
             stopAfterPauses: 2,
         );
 
-        captureWorkerErrorLog(fn () => $worker->work(sleep: 7));
+        $worker->work(sleep: 7);
 
         expect($log->entries)->toBe([
             'sleep:7',
@@ -2096,16 +2102,22 @@ describe('Worker pop failures', function (): void {
 
     it('logs the pop failure with the exception class and message', function (): void {
         $log = new RecordingLog();
+        $logger = new FakeLogger();
         $worker = new PauseRecordingWorker(
             new FailingPopQueue([], $log),
             createTestFailedJobRepository(),
             createTestQueueConfig(),
             $log,
+            logger: $logger,
         );
 
-        $logged = captureWorkerErrorLog(fn () => $worker->work());
+        $worker->work();
 
-        expect($logged)->toContain('Worker could not pop a job')
+        $errors = $logger->entriesForLevel(LogLevel::Error);
+        $logged = $errors[0]['message'] ?? '';
+
+        expect($errors)->toHaveCount(1)
+            ->and($logged)->toContain('Worker could not pop a job')
             ->and($logged)->toContain('RuntimeException: Broker connection lost');
     });
 
@@ -2166,11 +2178,13 @@ describe('Worker and JobRunner', function (): void {
                 $runner,
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             createTestQueueConfig(),
             $runner,
             new RetryPolicy(createTestQueueConfig(), new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         )->work(once: true);
 
         expect($runner->ran)->toBe([$job])
@@ -2190,11 +2204,13 @@ describe('Worker and JobRunner', function (): void {
                 new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             createTestQueueConfig(['queue.max_attempts' => 3]),
             new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy(createTestQueueConfig(['queue.max_attempts' => 3]), new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         )->work(once: true);
 
         expect($queue->releasedJobs)->toBe([$job])
@@ -2232,7 +2248,7 @@ class FailableFailingJob extends Job implements FailableJobInterface
  * Run the worker over the jobs (each with the given prior attempts) until the trailing stop job runs.
  *
  * @param list<JobInterface> $jobs
- * @return array{queue: SequenceRecordingQueue, events: FakeEventDispatcher}
+ * @return array{queue: SequenceRecordingQueue, events: FakeEventDispatcher, logger: FakeLogger}
  */
 function runFailableJobs(
     array $jobs,
@@ -2252,6 +2268,7 @@ function runFailableJobs(
     $queue = new SequenceRecordingQueue([...$jobs, $stopJob]);
     $events = new FakeEventDispatcher();
     $runner = new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), new FakeEventDispatcher());
+    $logger = new FakeLogger();
 
     $worker = new Worker(
         $queue,
@@ -2261,17 +2278,19 @@ function runFailableJobs(
             $runner,
             $events,
             new FakeClock(),
+            $logger,
         ),
         createTestQueueConfig(['queue.max_attempts' => $maxAttempts]),
         $runner,
         new RetryPolicy(createTestQueueConfig(['queue.max_attempts' => $maxAttempts]), new FakeClock()),
         clock: new FakeClock(),
+        logger: $logger,
     );
     $stopJob->worker = $worker;
 
     $worker->work();
 
-    return ['queue' => $queue, 'events' => $events];
+    return ['queue' => $queue, 'events' => $events, 'logger' => $logger];
 }
 
 describe('Worker failure hook', function (): void {
@@ -2321,11 +2340,8 @@ describe('Worker failure hook', function (): void {
     it('logs a throwing failed(), still dispatches JobFailedEvent, and keeps processing jobs', function (): void {
         $broken = new FailableFailingJob(failedThrows: true);
         $next = new FailableFailingJob();
-        $result = [];
-
-        $logged = captureWorkerErrorLog(function () use ($broken, $next, &$result): void {
-            $result = runFailableJobs([$broken, $next], priorAttempts: 2);
-        });
+        $result = runFailableJobs([$broken, $next], priorAttempts: 2);
+        $logged = implode("\n", array_column($result['logger']->entriesForLevel(LogLevel::Error), 'message'));
 
         expect($logged)->toContain('FailableFailingJob')
             ->and($logged)->toContain('job-0')

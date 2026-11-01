@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Queue;
 
+use Marko\Log\Contracts\LoggerInterface;
 use Marko\Queue\Exceptions\JobTimedOutException;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
@@ -26,6 +27,7 @@ class Worker implements WorkerInterface
         private readonly JobRunnerInterface $jobRunner,
         private readonly RetryPolicy $retryPolicy,
         private readonly ClockInterface $clock,
+        private readonly LoggerInterface $logger,
         private readonly ProcessControlInterface $processControl = new PcntlProcessControl(),
     ) {}
 
@@ -188,7 +190,7 @@ class Worker implements WorkerInterface
         try {
             $this->handleFailedJob($job, $exception, $queue);
         } catch (Throwable $e) {
-            error_log(sprintf(
+            $this->logger->error(sprintf(
                 '[marko/queue] Could not release or fail timed-out job %s: %s: %s',
                 $job->id,
                 $e::class,
@@ -196,7 +198,7 @@ class Worker implements WorkerInterface
             ));
         }
 
-        error_log('[marko/queue] ' . $exception->getMessage());
+        $this->logger->error('[marko/queue] ' . $exception->getMessage());
 
         // terminate() does not return, so the stop is logged here rather than when work() returns
         $this->stopWith(WorkerStopReason::TimedOut);
@@ -231,7 +233,7 @@ class Worker implements WorkerInterface
         }
 
         if (!$this->processControl->isSupported()) {
-            error_log(sprintf(
+            $this->logger->warning(sprintf(
                 "[marko/queue] Job '%s' sets a %d-second timeout, but ext-pcntl is not loaded,"
                     . ' so the timeout is not enforced. Install ext-pcntl to enforce job timeouts.',
                 $job::class,
@@ -267,12 +269,12 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * Log why the worker is stopping, as one line in PHP's error log (STDERR for a CLI worker).
+     * Log why the worker is stopping, as one info line through the injected logger.
      */
     private function stopWith(
         WorkerStopReason $reason,
     ): WorkerStopReason {
-        error_log('[marko/queue] Worker stopping: ' . $reason->message());
+        $this->logger->info('[marko/queue] Worker stopping: ' . $reason->message());
 
         return $reason;
     }
@@ -346,12 +348,12 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * Log a failed pop to PHP's error log (STDERR for a CLI worker) so it is visible without stopping the worker.
+     * Log a failed pop as an error so it is visible without stopping the worker.
      */
     private function reportPopFailure(
         Throwable $e,
     ): void {
-        error_log(sprintf(
+        $this->logger->error(sprintf(
             '[marko/queue] Worker could not pop a job, retrying after the sleep interval: %s: %s',
             $e::class,
             $e->getMessage(),

@@ -23,6 +23,7 @@ use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 
 /**
  * A polling job: it releases itself while the remote engine is busy, and throws when a step in
@@ -170,11 +171,12 @@ function createWorkerRetryWorker(
 
     $worker = new Worker(
         $queue,
-        new FailedJobHandler($failed, $envelope, $runner, $events, $clock),
+        new FailedJobHandler($failed, $envelope, $runner, $events, $clock, logger: new FakeLogger()),
         $config,
         $runner,
         new RetryPolicy($config, $clock),
         clock: new FakeClock(),
+        logger: new FakeLogger(),
     );
 
     return ['worker' => $worker, 'failed' => $failed, 'events' => $events];
