@@ -29,7 +29,7 @@ jobs:
           --health-retries 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -40,7 +40,7 @@ jobs:
           ini-values: memory_limit=2G
 
       - name: Install dependencies
-        uses: ramsey/composer-install@v3
+        uses: ramsey/composer-install@v4
 
       # Excludes integration-destructive: that group deletes vendor/ and composer.lock,
       # runs `composer update`, and re-runs the whole suite in a subprocess. It verifies
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -64,7 +64,7 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        uses: ramsey/composer-install@v3
+        uses: ramsey/composer-install@v4
 
       - name: PHP_CodeSniffer
         run: vendor/bin/phpcs --standard=phpcs.xml
@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -92,7 +92,7 @@ jobs:
           ini-values: memory_limit=2G
 
       - name: Install dependencies
-        uses: ramsey/composer-install@v3
+        uses: ramsey/composer-install@v4
 
       - name: PHPStan
         run: composer phpstan
@@ -196,7 +196,7 @@ jobs:
       MARKO_INTEGRATION_REQUIRED: '1'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -207,7 +207,7 @@ jobs:
           ini-values: memory_limit=2G
 
       - name: Install dependencies
-        uses: ramsey/composer-install@v3
+        uses: ramsey/composer-install@v4
 
       # Service containers cannot mount tests/Integration/postgres-init, so the
       # database the local compose file creates on startup is created here.

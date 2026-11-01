@@ -27,7 +27,7 @@ jobs:
           --health-retries 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -38,7 +38,7 @@ jobs:
           ini-values: memory_limit=2G
 
       - name: Install dependencies
-        uses: ramsey/composer-install@v3
+        uses: ramsey/composer-install@v4
 
       # Without this, packages/roadrunner's end-to-end suite finds no `rr`
       # binary on this runner and every one of its security-critical
