@@ -120,7 +120,7 @@ The arguments match `UrlGeneratorInterface::route(string $name, array $parameter
 marko view:cache
 ```
 
-It builds an environment with `TwigEngineFactory`, the same factory as rendering, and loads the template through the module loader, so the compiled file lands under the key rendering looks up: the template's resolved absolute path. A `Twig\Error\SyntaxError` is rethrown as `TemplatePrecompileException` with the template name, file and line. A broken template fails the command with its file and line:
+It builds an environment with `TwigEngineFactory::createWithAutoRefresh()`, from the same factory as rendering, and loads the template. The factory gives every environment it builds the module loader, so the compiled file lands under the key rendering looks up: the template's resolved absolute path. A `Twig\Error\SyntaxError` is rethrown as `TemplatePrecompileException` with the template name, file and line. A broken template fails the command with its file and line:
 
 ```text
 Template 'blog::post/show' failed to compile: Unknown "notATag" tag.
@@ -186,6 +186,8 @@ views/
 | `render(string $template, array $data = []): Response` | Render a template and return an HTTP response |
 | `renderToString(string $template, array $data = []): string` | Render a template and return the raw HTML string |
 | `TwigTemplatePrecompiler::precompile(string $template): void` | Compile one template into the cache; throws `TemplatePrecompileException` on a syntax error |
+| `TwigEngineFactory::create(): Environment` | Build an environment that loads `module::path` templates and reloads compiled templates per `auto_refresh` |
+| `TwigEngineFactory::createWithAutoRefresh(): Environment` | Build the same environment with auto reload always on |
 
 ### Template Functions
 

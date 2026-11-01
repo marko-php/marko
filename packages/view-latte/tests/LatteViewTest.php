@@ -7,6 +7,7 @@ use Latte\Engine;
 use Latte\RuntimeException;
 use Marko\Routing\Http\Response;
 use Marko\View\Latte\LatteView;
+use Marko\View\Latte\ModuleLoader;
 use Marko\View\Latte\Tests\Fixtures\SiteDataProvider;
 use Marko\View\Latte\Tests\Fixtures\ViewProviders;
 use Marko\View\TemplateResolverInterface;
@@ -15,9 +16,8 @@ use Marko\View\ViewInterface;
 describe('LatteView', function (): void {
     test('implements ViewInterface', function (): void {
         $engine = $this->createStub(Engine::class);
-        $resolver = $this->createStub(TemplateResolverInterface::class);
 
-        $view = new LatteView($engine, $resolver, ViewProviders::merger());
+        $view = new LatteView($engine, ViewProviders::merger());
 
         expect($view)->toBeInstanceOf(ViewInterface::class);
     });
@@ -37,7 +37,8 @@ describe('LatteView', function (): void {
             ->with('test::page')
             ->willReturn($templatePath);
 
-        $view = new LatteView($engine, $resolver, ViewProviders::merger());
+        $engine->setLoader(new ModuleLoader($resolver));
+        $view = new LatteView($engine, ViewProviders::merger());
         $response = $view->render('test::page');
 
         expect($response)->toBeInstanceOf(Response::class)
@@ -65,7 +66,8 @@ describe('LatteView', function (): void {
             ->with('test::content')
             ->willReturn($templatePath);
 
-        $view = new LatteView($engine, $resolver, ViewProviders::merger());
+        $engine->setLoader(new ModuleLoader($resolver));
+        $view = new LatteView($engine, ViewProviders::merger());
         $html = $view->renderToString('test::content');
 
         expect($html)->toBeString()
@@ -91,7 +93,8 @@ describe('LatteView', function (): void {
             ->with('test::greeting')
             ->willReturn($templatePath);
 
-        $view = new LatteView($engine, $resolver, ViewProviders::merger());
+        $engine->setLoader(new ModuleLoader($resolver));
+        $view = new LatteView($engine, ViewProviders::merger());
         $html = $view->renderToString('test::greeting', [
             'name' => 'World',
             'message' => 'Welcome!',
@@ -119,7 +122,8 @@ describe('LatteView', function (): void {
             ->with('blog::post/show')
             ->willReturn($templatePath);
 
-        $view = new LatteView($engine, $resolver, ViewProviders::merger());
+        $engine->setLoader(new ModuleLoader($resolver));
+        $view = new LatteView($engine, ViewProviders::merger());
         $html = $view->renderToString('blog::post/show');
 
         expect($html)->toBe('<div>Resolved!</div>');
@@ -145,7 +149,8 @@ describe('LatteView', function (): void {
             ->with('test::invalid')
             ->willReturn($templatePath);
 
-        $view = new LatteView($engine, $resolver, ViewProviders::merger());
+        $engine->setLoader(new ModuleLoader($resolver));
+        $view = new LatteView($engine, ViewProviders::merger());
 
         expect(fn () => $view->render('test::invalid'))
             ->toThrow(CompileException::class);
@@ -171,7 +176,8 @@ describe('LatteView', function (): void {
             ->with('blog::article')
             ->willReturn($templatePath);
 
-        $view = new LatteView($engine, $resolver, ViewProviders::merger());
+        $engine->setLoader(new ModuleLoader($resolver));
+        $view = new LatteView($engine, ViewProviders::merger());
         $html = $view->renderToString('blog::article', ['title' => 'Custom Extension']);
 
         expect($html)->toBe('<article>Custom Extension</article>');
@@ -207,7 +213,8 @@ describe('LatteView', function (): void {
                 default => throw new Exception("Unknown template: $template"),
             });
 
-        $view = new LatteView($engine, $resolver, ViewProviders::merger());
+        $engine->setLoader(new ModuleLoader($resolver));
+        $view = new LatteView($engine, ViewProviders::merger());
         $html = $view->renderToString('blog::post/index', [
             'items' => ['First', 'Second', 'Third'],
         ]);
@@ -235,7 +242,8 @@ describe('LatteView', function (): void {
             ->with('blog::parent')
             ->willReturn($templatePath);
 
-        $view = new LatteView($engine, $resolver, ViewProviders::merger());
+        $engine->setLoader(new ModuleLoader($resolver));
+        $view = new LatteView($engine, ViewProviders::merger());
 
         expect(fn () => $view->renderToString('blog::parent'))
             ->toThrow(RuntimeException::class, 'must use module namespace format');
@@ -256,7 +264,8 @@ describe('LatteView', function (): void {
         $resolver = $this->createStub(TemplateResolverInterface::class);
         $resolver->method('resolve')->willReturn($templatePath);
 
-        $view = new LatteView($engine, $resolver, ViewProviders::merger([SiteDataProvider::class]));
+        $engine->setLoader(new ModuleLoader($resolver));
+        $view = new LatteView($engine, ViewProviders::merger([SiteDataProvider::class]));
 
         expect($view->renderToString('test::page', ['title' => 'Home']))->toBe('Marko|Home')
             ->and($view->render('test::page', ['title' => 'Home'])->body())->toBe('Marko|Home')

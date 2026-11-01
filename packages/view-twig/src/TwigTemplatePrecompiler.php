@@ -35,9 +35,7 @@ class TwigTemplatePrecompiler implements TemplatePrecompilerInterface
         TwigEngineFactory $engineFactory,
         private TemplateResolverInterface $resolver,
     ) {
-        $this->environment = $engineFactory->create();
-        $this->environment->enableAutoReload();
-        $this->environment->setLoader(new ModuleLoader($resolver));
+        $this->environment = $engineFactory->createWithAutoRefresh();
     }
 
     /**

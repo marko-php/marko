@@ -89,6 +89,21 @@ describe('FileRestartSignal', function (): void {
         expect(is_file($absolute))->toBeTrue();
     });
 
+    it('uses a UNC path as given instead of prefixing the project root', function (): void {
+        // On a non-Windows host the UNC path is a plain relative filename, so
+        // using it as given lands in the cwd rather than under the project root.
+        $originalCwd = getcwd();
+        chdir($this->root);
+
+        try {
+            createFileRestartSignal('/nonexistent-project-root', '\\\\server\\share\\restart')->request();
+        } finally {
+            chdir($originalCwd);
+        }
+
+        expect(is_file($this->root . '/\\\\server\\share\\restart'))->toBeTrue();
+    });
+
     it('shares the token between instances that point at the same file', function (): void {
         $deploy = createFileRestartSignal($this->root);
         $worker = createFileRestartSignal($this->root);

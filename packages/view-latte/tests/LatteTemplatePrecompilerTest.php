@@ -13,7 +13,6 @@ use Marko\View\Latte\LatteEngineFactory;
 use Marko\View\Latte\LatteTemplatePrecompiler;
 use Marko\View\Latte\LatteView;
 use Marko\View\Latte\LatteViewConfig;
-use Marko\View\Latte\ModuleLoader;
 use Marko\View\Latte\Tests\Fixtures\ViewProviders;
 use Marko\View\ModuleTemplateResolver;
 use Marko\View\TemplatePrecompilerInterface;
@@ -61,14 +60,17 @@ function lattePrecompileProject(
     ]));
     $latteViewConfig = new LatteViewConfig(new ConfigRepository(['view' => ['strict_types' => true]]));
 
+    $resolver = new ModuleTemplateResolver(new ModuleRepository($manifests), $viewConfig(false));
+
     return [
         'root' => $root,
-        'resolver' => new ModuleTemplateResolver(new ModuleRepository($manifests), $viewConfig(false)),
+        'resolver' => $resolver,
         'factory' => fn (bool $autoRefresh): LatteEngineFactory => new LatteEngineFactory(
             $viewConfig($autoRefresh),
             $latteViewConfig,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            $resolver,
         ),
     ];
 }
@@ -112,7 +114,7 @@ describe('LatteTemplatePrecompiler', function (): void {
                 $project['root'] . '/vendor/resources/views/post/show.latte',
                 '<h1>Edited {$title}</h1>',
             );
-            $view = new LatteView($project['factory'](false)->create(), $project['resolver'], ViewProviders::merger());
+            $view = new LatteView($project['factory'](false)->create(), ViewProviders::merger());
 
             expect($view->renderToString('blog::post/show', ['title' => 'Hello']))->toBe('<h1>Compiled Hello</h1>');
 
@@ -127,7 +129,6 @@ describe('LatteTemplatePrecompiler', function (): void {
         // An earlier deploy at the same path left a compiled file behind. It is
         // written without loading its class, as a separate process would have.
         $earlier = $project['factory'](false)->create();
-        $earlier->setLoader(new ModuleLoader($project['resolver']));
         file_put_contents($earlier->getCacheFile('blog::post/show'), $earlier->compile('blog::post/show'));
 
         file_put_contents($file, '<h1>New {$title}</h1>');

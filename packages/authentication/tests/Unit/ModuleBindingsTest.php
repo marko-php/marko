@@ -217,12 +217,51 @@ it('registers the guard driver registry as a singleton', function () {
     expect($config['singletons'])->toContain(GuardDriverRegistry::class);
 });
 
-it('binds the password reset broker and the cache token repository', function () {
+it('binds the password reset broker', function () {
     $config = require dirname(__DIR__, 2) . '/module.php';
 
-    expect($config['bindings'][PasswordResetBrokerInterface::class])->toBe(PasswordResetBroker::class)
-        ->and($config['bindings'][PasswordResetTokenRepositoryInterface::class])
-        ->toBe(CachePasswordResetTokenRepository::class);
+    expect($config['bindings'][PasswordResetBrokerInterface::class])->toBe(PasswordResetBroker::class);
+});
+
+it('uses the cache token repository when marko/authentication-database is not loaded', function () {
+    $config = require dirname(__DIR__, 2) . '/module.php';
+    $binding = $config['bindings'][PasswordResetTokenRepositoryInterface::class];
+
+    $cacheRepository = $this->createStub(CachePasswordResetTokenRepository::class);
+    $modules = new ModuleRepository([new ModuleManifest(name: 'marko/authentication', version: '1.0.0')]);
+
+    $container = $this->createStub(ContainerInterface::class);
+    $container->method('has')->willReturn(true);
+    $container->method('get')->willReturnCallback(
+        fn (string $id): object => match ($id) {
+            ModuleRepositoryInterface::class => $modules,
+            CachePasswordResetTokenRepository::class => $cacheRepository,
+        },
+    );
+
+    expect($binding($container))->toBe($cacheRepository);
+});
+
+it('uses the database token repository when marko/authentication-database is loaded', function () {
+    $config = require dirname(__DIR__, 2) . '/module.php';
+    $binding = $config['bindings'][PasswordResetTokenRepositoryInterface::class];
+
+    $databaseRepository = $this->createStub(PasswordResetTokenRepositoryInterface::class);
+    $modules = new ModuleRepository([
+        new ModuleManifest(name: 'marko/authentication', version: '1.0.0'),
+        new ModuleManifest(name: 'marko/authentication-database', version: '1.0.0'),
+    ]);
+
+    $container = $this->createStub(ContainerInterface::class);
+    $container->method('has')->willReturn(true);
+    $container->method('get')->willReturnCallback(
+        fn (string $id): object => match ($id) {
+            ModuleRepositoryInterface::class => $modules,
+            'Marko\\Authentication\\Database\\Repository\\DatabasePasswordResetTokenRepository' => $databaseRepository,
+        },
+    );
+
+    expect($binding($container))->toBe($databaseRepository);
 });
 
 it('binds the password verifier, password confirmation and intended URL', function () {

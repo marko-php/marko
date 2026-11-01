@@ -66,9 +66,10 @@ describe('View Integration', function (): void {
             $latteViewConfig,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            $templateResolver,
         );
         $engine = $engineFactory->create();
-        $view = new LatteView($engine, $templateResolver, ViewProviders::merger());
+        $view = new LatteView($engine, ViewProviders::merger());
 
         // Render a template
         $response = $view->render('blog::post/show', [
@@ -145,9 +146,8 @@ describe('View Integration', function (): void {
             ViewInterface::class,
             function (Container $c): ViewInterface {
                 $engine = $c->get(LatteEngineFactory::class)->create();
-                $resolver = $c->get(TemplateResolverInterface::class);
 
-                return new LatteView($engine, $resolver, $c->get(ViewDataMerger::class));
+                return new LatteView($engine, $c->get(ViewDataMerger::class));
             },
         );
 
@@ -212,9 +212,10 @@ describe('View Integration', function (): void {
             $latteViewConfig,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            $templateResolver,
         );
         $engine = $engineFactory->create();
-        $view = new LatteView($engine, $templateResolver, ViewProviders::merger());
+        $view = new LatteView($engine, ViewProviders::merger());
 
         // Try to render a nonexistent template
         try {

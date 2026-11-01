@@ -10,10 +10,10 @@ use Marko\AuthenticationTwoFactor\Event\RecoveryCodeUsedEvent;
 use Marko\AuthenticationTwoFactor\Event\TwoFactorDisabledEvent;
 use Marko\AuthenticationTwoFactor\Event\TwoFactorEnabledEvent;
 use Marko\AuthenticationTwoFactor\Exceptions\TwoFactorException;
-use Marko\AuthenticationTwoFactor\Tests\Fixtures\RecordingUserPersister;
 use Marko\AuthenticationTwoFactor\Tests\Fixtures\TwoFactorHarness;
 use Marko\Core\Container\Container;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeUserPersister;
 
 it('implements TwoFactorManagerInterface', function (): void {
     expect(new TwoFactorHarness()->manager())->toBeInstanceOf(TwoFactorManagerInterface::class);
@@ -33,7 +33,7 @@ describe('enable', function (): void {
             ->and(array_unique($setup->recoveryCodes))->toHaveCount(8)
             ->and($harness->user->getTwoFactorRecoveryCodes())
             ->toBe(array_map(fn (string $code): string => hash('sha256', $code), $setup->recoveryCodes))
-            ->and($harness->persister->persisted)->toBe([$harness->user])
+            ->and($harness->persister->persisted())->toBe([$harness->user])
             ->and($harness->events->dispatched)->toBeEmpty();
     });
 
@@ -87,7 +87,7 @@ describe('confirm', function (): void {
     it('activates two-factor with a valid first code and dispatches TwoFactorEnabledEvent', function (): void {
         $harness = new TwoFactorHarness();
         $harness->manager()->enable($harness->user, 'ada@example.com');
-        $harness->persister->persisted = [];
+        $harness->persister->clear();
 
         $confirmed = $harness->manager()->confirm($harness->user, $harness->currentCode());
 
@@ -95,7 +95,7 @@ describe('confirm', function (): void {
             ->and($harness->manager()->isEnabled($harness->user))->toBeTrue()
             ->and($harness->user->getTwoFactorConfirmedAt()?->getTimestamp())->toBe(1700000000)
             ->and($harness->user->getTwoFactorLastUsedStep())->toBe(intdiv(1700000000, 30))
-            ->and($harness->persister->persisted)->toBe([$harness->user])
+            ->and($harness->persister->persisted())->toBe([$harness->user])
             ->and($harness->events->dispatched(TwoFactorEnabledEvent::class))->toHaveCount(1);
     });
 
@@ -116,11 +116,11 @@ describe('confirm', function (): void {
     it('rejects a wrong code and leaves two-factor inactive', function (): void {
         $harness = new TwoFactorHarness();
         $harness->manager()->enable($harness->user, 'ada@example.com');
-        $harness->persister->persisted = [];
+        $harness->persister->clear();
 
         expect($harness->manager()->confirm($harness->user, '000000'))->toBeFalse()
             ->and($harness->manager()->isEnabled($harness->user))->toBeFalse()
-            ->and($harness->persister->persisted)->toBeEmpty()
+            ->and($harness->persister->persisted())->toBeEmpty()
             ->and($harness->events->dispatched)->toBeEmpty();
     });
 
@@ -145,7 +145,7 @@ describe('verify', function (): void {
 
         expect($harness->manager()->verify($harness->user, $harness->currentCode()))->toBeTrue()
             ->and($harness->user->getTwoFactorLastUsedStep())->toBe(intdiv(1700000030, 30))
-            ->and($harness->persister->persisted)->toBe([$harness->user]);
+            ->and($harness->persister->persisted())->toBe([$harness->user]);
     });
 
     it('rejects a replayed TOTP code', function (): void {
@@ -165,7 +165,7 @@ describe('verify', function (): void {
             ->and($harness->user->getTwoFactorRecoveryCodes())->toHaveCount(7)
             ->and($harness->user->getTwoFactorRecoveryCodes())->not->toContain(hash('sha256', $codes[2]))
             ->and($harness->user->getTwoFactorRecoveryCodes())->not->toContain($codes[0])
-            ->and($harness->persister->persisted)->toBe([$harness->user])
+            ->and($harness->persister->persisted())->toBe([$harness->user])
             ->and($harness->manager()->verify($harness->user, $codes[2]))->toBeFalse();
     });
 
@@ -193,7 +193,7 @@ describe('verify', function (): void {
         $harness->enableTwoFactor();
 
         expect($harness->manager()->verify($harness->user, 'abcde-12345'))->toBeFalse()
-            ->and($harness->persister->persisted)->toBeEmpty();
+            ->and($harness->persister->persisted())->toBeEmpty();
     });
 
     it('throws for a user without two-factor enabled', function (): void {
@@ -214,7 +214,7 @@ describe('regenerateRecoveryCodes', function (): void {
             ->and(array_intersect($new, $old))->toBeEmpty()
             ->and($harness->user->getTwoFactorRecoveryCodes())
             ->toBe(array_map(fn (string $code): string => hash('sha256', $code), $new))
-            ->and($harness->persister->persisted)->toBe([$harness->user])
+            ->and($harness->persister->persisted())->toBe([$harness->user])
             ->and($harness->manager()->verify($harness->user, $old[0]))->toBeFalse();
     });
 
@@ -237,7 +237,7 @@ describe('disable', function (): void {
             ->and($harness->user->getTwoFactorConfirmedAt())->toBeNull()
             ->and($harness->user->getTwoFactorLastUsedStep())->toBeNull()
             ->and($harness->manager()->isEnabled($harness->user))->toBeFalse()
-            ->and($harness->persister->persisted)->toBe([$harness->user])
+            ->and($harness->persister->persisted())->toBe([$harness->user])
             ->and($harness->events->dispatched(TwoFactorDisabledEvent::class))->toHaveCount(1);
     });
 
@@ -271,9 +271,9 @@ describe('persistence per guard', function (): void {
 
         $harness->manager()->enable($harness->user, 'ada@example.com', 'admin');
 
-        expect($harness->persister->persisted)->toBeEmpty()
-            ->and($harness->container->get(AdminUserPersister::class)->persisted)->toBe([$harness->user]);
+        expect($harness->persister->persisted())->toBeEmpty()
+            ->and($harness->container->get(AdminUserPersister::class)->persisted())->toBe([$harness->user]);
     });
 });
 
-class AdminUserPersister extends RecordingUserPersister {}
+class AdminUserPersister extends FakeUserPersister {}

@@ -209,6 +209,32 @@ it('creates directory on open', function (): void {
     expect(is_dir($this->sessionPath))->toBeTrue();
 });
 
+it('uses a UNC session path as given instead of prefixing the project root', function (): void {
+    // On a non-Windows host the UNC path is a plain relative directory name, so
+    // using it as given lands in the cwd rather than under the project root.
+    $workDir = getSessionTestPath();
+    mkdir($workDir);
+    $uncPath = '\\\\server\\share\\sessions';
+    $handler = new FileSessionHandler(
+        createSessionConfig($uncPath),
+        $this->clock,
+        new ProjectPaths('/nonexistent-project-root'),
+    );
+    $originalCwd = getcwd();
+    chdir($workDir);
+
+    try {
+        $handler->open($uncPath, 'PHPSESSID');
+    } finally {
+        chdir($originalCwd);
+    }
+
+    expect(is_dir($workDir . '/' . $uncPath))->toBeTrue();
+
+    rmdir($workDir . '/' . $uncPath);
+    rmdir($workDir);
+});
+
 it('returns true on open', function (): void {
     expect($this->handler->open($this->sessionPath, 'PHPSESSID'))->toBeTrue();
 });

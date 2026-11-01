@@ -8,6 +8,7 @@ use Marko\View\CacheDirectoryGuard;
 use Marko\View\Latte\Extensions\SlotExtension;
 use Marko\View\Latte\LatteEngineFactory;
 use Marko\View\Latte\LatteViewConfig;
+use Marko\View\Latte\Tests\Fixtures\PathTemplateResolver;
 use Marko\View\Latte\Tests\Fixtures\ViewProviders;
 use Marko\View\ViewConfig;
 
@@ -126,6 +127,7 @@ describe('SlotExtension', function (): void {
             $latteViewConfig,
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $engine = $factory->create();
 

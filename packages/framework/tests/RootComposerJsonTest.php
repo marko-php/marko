@@ -5,92 +5,60 @@ declare(strict_types=1);
 $rootComposerPath = dirname(__DIR__, 3) . '/composer.json';
 $rootComposer = json_decode(file_get_contents($rootComposerPath), true);
 
-$allPackages = [
-    'marko/admin',
-    'marko/admin-api',
-    'marko/admin-auth',
-    'marko/admin-panel',
-    'marko/admin-panel-latte',
-    'marko/admin-panel-twig',
-    'marko/amphp',
-    'marko/api',
-    'marko/authentication',
-    'marko/authentication-token',
-    'marko/authorization',
-    'marko/cache',
-    'marko/cache-array',
-    'marko/cache-file',
-    'marko/cache-redis',
-    'marko/cli',
-    'marko/config',
-    'marko/core',
-    'marko/cors',
-    'marko/database',
-    'marko/database-mysql',
-    'marko/database-pgsql',
-    'marko/database-readwrite',
-    'marko/devserver',
-    'marko/encryption',
-    'marko/encryption-openssl',
-    'marko/env',
-    'marko/errors',
-    'marko/errors-advanced',
-    'marko/errors-simple',
-    'marko/filesystem',
-    'marko/filesystem-local',
-    'marko/filesystem-s3',
-    'marko/framework',
-    'marko/hashing',
-    'marko/health',
-    'marko/http',
-    'marko/http-guzzle',
-    'marko/log',
-    'marko/log-file',
-    'marko/log-stream',
-    'marko/mail',
-    'marko/mail-log',
-    'marko/mail-smtp',
-    'marko/media',
-    'marko/media-gd',
-    'marko/media-imagick',
-    'marko/notification',
-    'marko/notification-database',
-    'marko/pagination',
-    'marko/pubsub',
-    'marko/pubsub-pgsql',
-    'marko/pubsub-redis',
-    'marko/queue',
-    'marko/queue-database',
-    'marko/queue-rabbitmq',
-    'marko/queue-sync',
-    'marko/ratelimiter',
-    'marko/routing',
-    'marko/scheduler',
-    'marko/search',
-    'marko/security',
-    'marko/session',
-    'marko/session-database',
-    'marko/session-file',
-    'marko/sse',
-    'marko/testing',
-    'marko/translation',
-    'marko/translation-file',
-    'marko/validation',
-    'marko/view',
-    'marko/view-latte',
-    'marko/view-twig',
-    'marko/webhook',
-];
+$packagesRoot = dirname(__DIR__, 2);
+
+// Every monorepo package, keyed by directory name, derived from packages/*/composer.json
+// so a new package is covered without editing this test.
+$packageComposers = [];
+
+foreach (glob($packagesRoot . '/*/composer.json') as $packageComposerPath) {
+    $packageComposers[basename(dirname($packageComposerPath))] = json_decode(
+        file_get_contents($packageComposerPath),
+        true,
+    );
+}
+
+ksort($packageComposers);
+
+// The root requires every library package. The skeleton (type:project) is the template
+// `composer create-project` copies, not a dependency, so it is not required.
+$allPackages = array_values(array_map(
+    fn (array $composer): string => $composer['name'],
+    array_filter(
+        $packageComposers,
+        fn (array $composer): bool => ($composer['type'] ?? 'library') !== 'project',
+    ),
+));
+
+it('finds the monorepo packages to check', function () use ($allPackages): void {
+    expect($allPackages)->not->toBeEmpty()
+        ->and($allPackages)->toContain('marko/framework');
+});
 
 it(
-    'adds a require section entry for all 73 marko packages set to self.version',
+    'requires every library package in packages/ at self.version, in require or require-dev',
     function () use ($rootComposer, $allPackages): void {
         expect($rootComposer)->toHaveKey('require');
 
+        // Dev-only tools (marko/debugbar) sit in require-dev; everything else in require.
+        $rootRequires = $rootComposer['require'] + ($rootComposer['require-dev'] ?? []);
+
         foreach ($allPackages as $package) {
-            expect($rootComposer['require'])->toHaveKey($package)
-                ->and($rootComposer['require'][$package])->toBe('self.version');
+            expect($rootRequires)->toHaveKey($package)
+                ->and($rootRequires[$package])->toBe('self.version');
         }
+    },
+);
+
+it(
+    'requires no marko package twice or one that is missing from packages/',
+    function () use ($rootComposer, $allPackages): void {
+        $isMarkoPackage = fn (string $package): bool => str_starts_with($package, 'marko/');
+        $required = array_filter(array_keys($rootComposer['require']), $isMarkoPackage);
+        $requiredDev = array_filter(array_keys($rootComposer['require-dev'] ?? []), $isMarkoPackage);
+
+        expect(array_values(array_intersect($required, $requiredDev)))->toBe([])
+            ->and(array_values(array_diff([...$required, ...$requiredDev], $allPackages)))->toBe([]);
     },
 );
 
@@ -102,15 +70,15 @@ it(
 );
 
 it(
-    'adds repositories section with path repos for all 73 packages',
-    function () use ($rootComposer, $allPackages): void {
+    'has a path repository for every directory in packages/',
+    function () use ($rootComposer, $packageComposers): void {
         expect($rootComposer)->toHaveKey('repositories');
 
         $repoUrls = array_column($rootComposer['repositories'], 'url');
 
-        foreach ($allPackages as $package) {
-            $packageName = str_replace('marko/', '', $package);
-            expect(in_array("packages/$packageName", $repoUrls, true))->toBeTrue();
+        foreach (array_keys($packageComposers) as $directory) {
+            expect(in_array("packages/$directory", $repoUrls, true))
+                ->toBeTrue("Root composer.json has no path repository for packages/$directory");
         }
 
         foreach ($rootComposer['repositories'] as $repo) {

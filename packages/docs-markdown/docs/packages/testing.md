@@ -3,9 +3,9 @@ title: marko/testing
 description: Reusable fakes with built-in assertions that eliminate test boilerplate.
 ---
 
-Testing utilities for Marko — reusable fakes with built-in assertions that eliminate test boilerplate. This package provides in-memory fakes for the core Marko contracts: events, broadcasting, mail, notifications, queues, sessions, cookies, logging, config, authentication, guards, HTTP clients, encryption, the clock, filesystems, and console confirmations. Each fake records interactions and exposes assertion methods so your tests stay focused on behavior rather than mock setup. An in-process HTTP test client (`TestClient`) sends requests through your real routes, middleware and controllers for feature tests. Pest expectation extensions (`toHaveDispatched`, `toHaveBroadcast`, `toHaveSent`, `toHaveNotified`, `toHavePushed`, `toHaveStored`, `toHaveLogged`, `toHaveAttempted`, `toBeAuthenticated`, `toHaveStatus`, `toHaveJsonPath`, `toHaveSession`, `toHaveSessionErrors`) are included for fluent assertions.
+Testing utilities for Marko — reusable fakes with built-in assertions that eliminate test boilerplate. This package provides in-memory fakes for the core Marko contracts: events, broadcasting, mail, notifications, queues, sessions, cookies, logging, config, authentication, guards, HTTP clients, encryption, the clock, filesystems, and console confirmations. Each fake records interactions and exposes assertion methods so your tests stay focused on behavior rather than mock setup. An in-process HTTP test client (`TestClient`) sends requests through your real routes, middleware and controllers for feature tests. Pest expectation extensions (`toHaveDispatched`, `toHaveBroadcast`, `toHaveSent`, `toHaveNotified`, `toHavePushed`, `toHaveStored`, `toHaveLogged`, `toHaveAttempted`, `toHavePersisted`, `toBeAuthenticated`, `toHaveStatus`, `toHaveJsonPath`, `toHaveSession`, `toHaveSessionErrors`) are included for fluent assertions.
 
-Available fakes: `FakeEventDispatcher`, `FakeBroadcaster`, `FakeMailer`, `FakeNotificationSender`, `FakeQueue`, `FakeSession`, `FakeCookieJar`, `FakeLogger`, `FakeConfigRepository`, `FakeAuthenticatable`, `FakeUserProvider`, `FakeGuard`, `FakeHttpClient`, `FakeEncryptor`, `FakeClock`, `FakeFilesystem`, `FakeSleeper`, `FakeConfirmationPrompter`.
+Available fakes: `FakeEventDispatcher`, `FakeBroadcaster`, `FakeMailer`, `FakeNotificationSender`, `FakeQueue`, `FakeSession`, `FakeCookieJar`, `FakeLogger`, `FakeConfigRepository`, `FakeAuthenticatable`, `FakeUserProvider`, `FakeUserPersister`, `FakeGuard`, `FakeHttpClient`, `FakeEncryptor`, `FakeClock`, `FakeFilesystem`, `FakeSleeper`, `FakeConfirmationPrompter`.
 
 ## Installation
 
@@ -373,6 +373,31 @@ expect($valid)->toBeTrue(); // Default validator always returns true
 $provider->updateRememberToken($user, 'new-token', new DateTimeImmutable('+30 days'));
 expect($provider->lastRememberTokenUpdate['token'])->toBe('new-token');
 ```
+
+### FakeUserPersister
+
+`FakeUserPersister` implements `UserPersisterInterface` from [`marko/authentication`](/docs/packages/authentication/#saving-changed-users). It records every user that password reset, email verification, two-factor or `logoutOtherDevices()` asks it to save, and saves nothing. Users are matched by class and auth identifier, not object identity, so a reloaded entity matches the one the code persisted:
+
+```php
+use Marko\Authentication\Contracts\UserPersisterInterface;
+use Marko\Testing\Fake\FakeAuthenticatable;
+use Marko\Testing\Fake\FakeUserPersister;
+
+$persister = new FakeUserPersister();
+$container->instance(UserPersisterInterface::class, $persister);
+
+$persister->assertNothingPersisted();
+
+$user = new FakeAuthenticatable(id: 1);
+$persister->persist($user);
+
+$persister->assertPersisted($user);
+expect($persister->persisted())->toBe([$user]); // every call, in order
+
+$persister->clear();
+```
+
+To fake one provider's persister (`authentication.providers.<name>.persister`), name an empty subclass in the config, e.g. `class AdminPersister extends FakeUserPersister {}`.
 
 ### FakeHttpClient
 
@@ -884,6 +909,8 @@ expect($logger)->toHaveLogged('Payment failed');
 expect($logger)->toHaveLogged('Payment failed', LogLevel::Error);
 expect($http)->toHaveSentRequest();
 expect($http)->toHaveSentRequest(fn (RecordedRequest $r) => $r->url === 'https://api.example.com/orders');
+expect($persister)->toHavePersisted();
+expect($persister)->toHavePersisted($user);
 
 // TestResponse
 expect($response)->toHaveStatus(201);
@@ -1064,6 +1091,20 @@ public function updateRememberToken(AuthenticatableInterface $user, ?string $tok
 ```
 
 `rehashPasswordIfNeeded()` stores no hash; it appends each call to the public `rehashChecks` array (`['user' => ..., 'credentials' => ...]`), so a test can assert `SessionGuard::attempt()` asked for a rehash.
+
+### FakeUserPersister
+
+```php
+public function persist(AuthenticatableInterface $user): void;
+public function persisted(): array;
+public function wasPersisted(AuthenticatableInterface $user): bool;
+public function assertPersisted(AuthenticatableInterface $user): void;
+public function assertNothingPersisted(): void;
+public function clear(): void;
+public static function describe(AuthenticatableInterface $user): string;
+```
+
+`persisted()` lists every saved user in call order; a user saved twice appears twice. `wasPersisted()` and `assertPersisted()` match by class and `getAuthIdentifier()` (compared as strings). The assertions throw `AssertionFailedException`. `describe()` formats a user as `[Class#id]` for failure messages.
 
 ### FakeGuard
 

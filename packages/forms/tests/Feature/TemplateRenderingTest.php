@@ -18,13 +18,14 @@ use Marko\Validation\Validation\ValidationErrors;
 use Marko\View\Discovery\ViewProviderCacheContributor;
 use Marko\View\Latte\Extensions\TemplateFunctionExtension as LatteTemplateFunctionExtension;
 use Marko\View\Latte\LatteView;
+use Marko\View\Latte\ModuleLoader as LatteModuleLoader;
 use Marko\View\TemplateResolverInterface;
+use Marko\View\Twig\ModuleLoader as TwigModuleLoader;
 use Marko\View\Twig\TemplateFunctionExtension as TwigTemplateFunctionExtension;
 use Marko\View\Twig\TwigView;
 use Marko\View\ViewDataMerger;
 use Marko\View\ViewInterface;
 use Twig\Environment;
-use Twig\Loader\ArrayLoader;
 
 /**
  * The container a cached boot builds once marko/forms' providers are discovered.
@@ -88,22 +89,18 @@ function formsViews(
     $container = formsViewContainer($formState);
 
     $latte = new Engine();
+    $latte->setLoader(new LatteModuleLoader(formsTemplateResolver($templates['latte'], 'latte')));
     $latte->addExtension($container->get(LatteTemplateFunctionExtension::class));
 
-    $twig = new Environment(new ArrayLoader(), ['autoescape' => 'html']);
+    $twig = new Environment(
+        new TwigModuleLoader(formsTemplateResolver($templates['twig'], 'twig')),
+        ['autoescape' => 'html'],
+    );
     $twig->addExtension($container->get(TwigTemplateFunctionExtension::class));
 
     return [
-        'latte' => new LatteView(
-            $latte,
-            formsTemplateResolver($templates['latte'], 'latte'),
-            $container->get(ViewDataMerger::class),
-        ),
-        'twig' => new TwigView(
-            $twig,
-            formsTemplateResolver($templates['twig'], 'twig'),
-            $container->get(ViewDataMerger::class),
-        ),
+        'latte' => new LatteView($latte, $container->get(ViewDataMerger::class)),
+        'twig' => new TwigView($twig, $container->get(ViewDataMerger::class)),
     ];
 }
 

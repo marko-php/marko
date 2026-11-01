@@ -26,7 +26,7 @@ class FileRestartSignal implements RestartSignalInterface
         $path = $config->restartSignal();
 
         // Resolve against the project root, never getcwd(), which depends on where the command was started
-        $this->path = str_starts_with($path, '/') ? $path : $paths->base . '/' . $path;
+        $this->path = $paths->resolve($path);
     }
 
     /**

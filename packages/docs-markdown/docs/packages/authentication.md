@@ -779,7 +779,7 @@ Tokens are keyed by the user's auth identifier, not their email, so changing an 
 1. Implement `CanResetPasswordInterface` on your user entity. It extends `AuthenticatableInterface` with `setAuthPassword()` and `getEmailForPasswordReset()`.
 2. Bind a [`UserPersisterInterface`](#saving-changed-users) that saves the entity.
 3. Bind a `ResetLinkNotifierInterface` that delivers the link.
-4. Install a persistent cache driver, such as [marko/cache-file](/docs/packages/cache-file/) or [marko/cache-redis](/docs/packages/cache-redis/). Both the default token repository, `CachePasswordResetTokenRepository`, and the throttle keep their data in the cache.
+4. Install a persistent cache driver, such as [marko/cache-file](/docs/packages/cache-file/) or [marko/cache-redis](/docs/packages/cache-redis/). Both the default token repository, `CachePasswordResetTokenRepository`, and the throttle keep their data in the cache. To keep reset tokens in a database table instead, so they survive cache flushes, install [marko/authentication-database](/docs/packages/authentication-database/).
 
 ```php title="app/web/Entity/User.php"
 use Marko\Authentication\CanResetPasswordInterface;
@@ -962,13 +962,13 @@ The credentials array goes straight to `UserProviderInterface::retrieveByCredent
 
 ### Clearing Expired Reset Tokens
 
-`CachePasswordResetTokenRepository` stores each token with `expire_seconds` as its cache lifetime, so the cache drops expired tokens by itself. A repository that keeps tokens elsewhere, such as a database table, needs the cleanup command run on a schedule:
+`CachePasswordResetTokenRepository` stores each token with `expire_seconds` as its cache lifetime, so the cache drops expired tokens by itself. A repository that keeps tokens elsewhere, such as the `password_reset_tokens` table of [marko/authentication-database](/docs/packages/authentication-database/), needs the cleanup command run on a schedule:
 
 ```bash
 marko auth:clear-reset-tokens
 ```
 
-It calls `PasswordResetTokenRepositoryInterface::deleteExpired()` with the current time minus `expire_seconds`. To store tokens elsewhere, bind your own `PasswordResetTokenRepositoryInterface`. It only stores data: expiry, hash comparison and single use stay in the broker, so every storage behaves the same.
+It calls `PasswordResetTokenRepositoryInterface::deleteExpired()` with the current time minus `expire_seconds`. Installing marko/authentication-database swaps the cache repository for its database one. To store tokens anywhere else, bind your own `PasswordResetTokenRepositoryInterface` in an app module. It only stores data: expiry, hash comparison and single use stay in the broker, so every storage behaves the same.
 
 ### Misconfiguration
 

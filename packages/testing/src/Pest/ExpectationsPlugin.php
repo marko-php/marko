@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Testing\Pest;
 
 use InvalidArgumentException;
+use Marko\Authentication\AuthenticatableInterface;
 use Marko\Broadcasting\Channel;
 use Marko\Log\LogLevel;
 use Marko\Notification\Contracts\NotifiableInterface;
@@ -18,6 +19,7 @@ use Marko\Testing\Fake\FakeLogger;
 use Marko\Testing\Fake\FakeMailer;
 use Marko\Testing\Fake\FakeNotificationSender;
 use Marko\Testing\Fake\FakeQueue;
+use Marko\Testing\Fake\FakeUserPersister;
 use Marko\Testing\Fake\Http\RecordedRequest;
 use Marko\Testing\Http\TestClient;
 use Marko\Testing\Http\TestResponse;
@@ -281,6 +283,32 @@ class ExpectationsPlugin implements Bootable
                 Assert::assertTrue(
                     $found,
                     'Expected an authentication attempt matching the callback but none matched.',
+                );
+            }
+
+            return $this;
+        });
+
+        expect()->extend('toHavePersisted', function (
+            ?AuthenticatableInterface $user = null,
+        ): Expectation {
+            $fake = $this->value;
+
+            if (! $fake instanceof FakeUserPersister) {
+                throw new InvalidArgumentException(
+                    'Expected FakeUserPersister, got ' . get_debug_type($fake),
+                );
+            }
+
+            if ($user === null) {
+                Assert::assertNotEmpty(
+                    $fake->persisted(),
+                    'Expected at least one user to be persisted but none were.',
+                );
+            } else {
+                Assert::assertTrue(
+                    $fake->wasPersisted($user),
+                    'Expected ' . FakeUserPersister::describe($user) . ' to be persisted but it was not.',
                 );
             }
 

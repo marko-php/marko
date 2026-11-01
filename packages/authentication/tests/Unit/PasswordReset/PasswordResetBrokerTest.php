@@ -16,7 +16,6 @@ use Marko\Authentication\PasswordReset\ResetStatus;
 use Marko\Authentication\Tests\Fixtures\EmailUserProvider;
 use Marko\Authentication\Tests\Fixtures\InMemoryPasswordResetTokenRepository;
 use Marko\Authentication\Tests\Fixtures\RecordingResetLinkNotifier;
-use Marko\Authentication\Tests\Fixtures\RecordingUserPersister;
 use Marko\Authentication\Tests\Fixtures\ResettableUser;
 use Marko\Authentication\UserPersisterResolver;
 use Marko\Authentication\UserProviderResolver;
@@ -30,8 +29,9 @@ use Marko\Testing\Fake\FakeAuthenticatable;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeUserPersister;
 
-class ProviderSpecificUserPersister extends RecordingUserPersister {}
+class ProviderSpecificUserPersister extends FakeUserPersister {}
 
 /**
  * Everything a PasswordResetBroker test needs, wired to in-memory collaborators.
@@ -44,7 +44,7 @@ class PasswordResetHarness
 
     public RecordingResetLinkNotifier $notifier;
 
-    public RecordingUserPersister $persister;
+    public FakeUserPersister $persister;
 
     public FakeEventDispatcher $events;
 
@@ -64,7 +64,7 @@ class PasswordResetHarness
         $this->clock = new FakeClock('2026-06-01 12:00:00');
         $this->tokens = new InMemoryPasswordResetTokenRepository();
         $this->notifier = new RecordingResetLinkNotifier();
-        $this->persister = new RecordingUserPersister();
+        $this->persister = new FakeUserPersister();
         $this->events = new FakeEventDispatcher();
         $this->user = new ResettableUser(id: 7, email: 'ada@example.com');
         $this->container = new Container();
@@ -191,7 +191,7 @@ it('resets the password, persists the user, deletes the token and dispatches Pas
 
     expect($status)->toBe(ResetStatus::PasswordReset)
         ->and(password_verify('new-secret-password', $harness->user->getAuthPassword()))->toBeTrue()
-        ->and($harness->persister->persisted)->toBe([$harness->user])
+        ->and($harness->persister->persisted())->toBe([$harness->user])
         ->and($harness->tokens->find(7))->toBeNull()
         ->and($events)->toHaveCount(1)
         ->and($events[0]->getUser())->toBe($harness->user);
@@ -208,7 +208,7 @@ it('rejects reusing a token that already reset the password', function (): void 
 
     expect($status)->toBe(ResetStatus::InvalidToken)
         ->and(password_verify('new-secret-password', $harness->user->getAuthPassword()))->toBeTrue()
-        ->and($harness->persister->persisted)->toHaveCount(1);
+        ->and($harness->persister->persisted())->toHaveCount(1);
 });
 
 it('rejects a wrong token without changing the password', function (): void {
@@ -220,7 +220,7 @@ it('rejects a wrong token without changing the password', function (): void {
 
     expect($status)->toBe(ResetStatus::InvalidToken)
         ->and($harness->user->getAuthPassword())->toBe('old-hash')
-        ->and($harness->persister->persisted)->toBe([])
+        ->and($harness->persister->persisted())->toBe([])
         ->and($harness->tokens->find(7))->not->toBeNull()
         ->and($harness->events->dispatched(PasswordResetEvent::class))->toBe([]);
 });
@@ -289,8 +289,8 @@ it('persists through the persister named in the provider config instead of the c
 
     $broker->reset(['email' => 'ada@example.com'], $harness->sentToken(), 'new-secret-password');
 
-    expect($providerPersister->persisted)->toBe([$harness->user])
-        ->and($harness->persister->persisted)->toBe([]);
+    expect($providerPersister->persisted())->toBe([$harness->user])
+        ->and($harness->persister->persisted())->toBe([]);
 });
 
 it('looks users up through the provider named by password_reset.provider', function (): void {

@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 use Marko\Routing\Http\Response;
 use Marko\View\TemplateResolverInterface;
+use Marko\View\Twig\ModuleLoader;
 use Marko\View\Twig\Tests\Fixtures\SiteDataProvider;
 use Marko\View\Twig\Tests\Fixtures\ViewProviders;
 use Marko\View\Twig\TwigView;
 use Twig\Environment;
 use Twig\Error\RuntimeError;
-use Twig\Loader\ArrayLoader;
 
 describe('TwigView', function (): void {
-    function makeTwigEnv(bool $strictVariables = false): Environment
-    {
-        $loader = new ArrayLoader();
-
-        return new Environment($loader, [
+    function makeTwigEnv(
+        TemplateResolverInterface $resolver,
+        bool $strictVariables = false,
+    ): Environment {
+        return new Environment(new ModuleLoader($resolver), [
             'autoescape' => 'html',
             'strict_variables' => $strictVariables,
         ]);
@@ -40,9 +40,9 @@ describe('TwigView', function (): void {
         file_put_contents($templatePath, '<h1>Hello World</h1>');
 
         $resolver = makeTwigResolver(['test::hello' => $templatePath]);
-        $env = makeTwigEnv();
+        $env = makeTwigEnv($resolver);
 
-        $view = new TwigView($env, $resolver, ViewProviders::merger());
+        $view = new TwigView($env, ViewProviders::merger());
         $response = $view->render('test::hello');
 
         expect($response)->toBeInstanceOf(Response::class)
@@ -62,9 +62,9 @@ describe('TwigView', function (): void {
         file_put_contents($templatePath, '<p>Test content</p>');
 
         $resolver = makeTwigResolver(['test::content' => $templatePath]);
-        $env = makeTwigEnv();
+        $env = makeTwigEnv($resolver);
 
-        $view = new TwigView($env, $resolver, ViewProviders::merger());
+        $view = new TwigView($env, ViewProviders::merger());
         $html = $view->renderToString('test::content');
 
         expect($html)->toBeString()
@@ -82,9 +82,9 @@ describe('TwigView', function (): void {
         file_put_contents($templatePath, '<h1>Hello {{ name }}</h1><p>{{ message }}</p>');
 
         $resolver = makeTwigResolver(['test::greeting' => $templatePath]);
-        $env = makeTwigEnv();
+        $env = makeTwigEnv($resolver);
 
-        $view = new TwigView($env, $resolver, ViewProviders::merger());
+        $view = new TwigView($env, ViewProviders::merger());
         $html = $view->renderToString('test::greeting', [
             'name' => 'World',
             'message' => 'Welcome!',
@@ -113,9 +113,9 @@ describe('TwigView', function (): void {
             'blog::post/index' => $listPath,
             'blog::post/item' => $itemPath,
         ]);
-        $env = makeTwigEnv();
+        $env = makeTwigEnv($resolver);
 
-        $view = new TwigView($env, $resolver, ViewProviders::merger());
+        $view = new TwigView($env, ViewProviders::merger());
         $html = $view->renderToString('blog::post/index', [
             'items' => ['First', 'Second', 'Third'],
         ]);
@@ -134,9 +134,9 @@ describe('TwigView', function (): void {
         file_put_contents($templatePath, '<div>{{ content }}</div>');
 
         $resolver = makeTwigResolver(['test::xss' => $templatePath]);
-        $env = makeTwigEnv();
+        $env = makeTwigEnv($resolver);
 
-        $view = new TwigView($env, $resolver, ViewProviders::merger());
+        $view = new TwigView($env, ViewProviders::merger());
         $html = $view->renderToString('test::xss', [
             'content' => "<script>alert('xss')</script>",
         ]);
@@ -156,9 +156,9 @@ describe('TwigView', function (): void {
         file_put_contents($templatePath, '<p>{{ undefined_var }}</p>');
 
         $resolver = makeTwigResolver(['test::strict' => $templatePath]);
-        $env = makeTwigEnv(strictVariables: true);
+        $env = makeTwigEnv($resolver, strictVariables: true);
 
-        $view = new TwigView($env, $resolver, ViewProviders::merger());
+        $view = new TwigView($env, ViewProviders::merger());
 
         expect(fn () => $view->renderToString('test::strict'))
             ->toThrow(RuntimeError::class);
@@ -174,8 +174,7 @@ describe('TwigView', function (): void {
         file_put_contents($templatePath, '{{ siteName }}|{{ title }}');
 
         $view = new TwigView(
-            makeTwigEnv(),
-            makeTwigResolver(['test::shared' => $templatePath]),
+            makeTwigEnv(makeTwigResolver(['test::shared' => $templatePath])),
             ViewProviders::merger([SiteDataProvider::class]),
         );
 

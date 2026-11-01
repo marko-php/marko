@@ -31,6 +31,7 @@ use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeCookieJar;
 use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeSession;
+use Marko\Testing\Fake\FakeUserPersister;
 use Marko\Testing\Fake\FakeUserProvider;
 use OTPHP\TOTP;
 
@@ -47,7 +48,7 @@ class TwoFactorHarness
 
     public FakeEventDispatcher $events;
 
-    public RecordingUserPersister $persister;
+    public FakeUserPersister $persister;
 
     public TwoFactorUser $user;
 
@@ -69,7 +70,7 @@ class TwoFactorHarness
         $this->session = new FakeSession();
         $this->session->start();
         $this->events = new FakeEventDispatcher();
-        $this->persister = new RecordingUserPersister();
+        $this->persister = new FakeUserPersister();
         $this->user = new TwoFactorUser(id: 7);
         $this->container = new Container();
         $this->container->instance(UserProviderInterface::class, new FakeUserProvider([7 => $this->user]));
@@ -169,7 +170,7 @@ class TwoFactorHarness
         $this->manager()->confirm($this->user, $this->currentCode());
         // Move past the step confirm() used so the next code is not a replay
         $this->clock->travel('+30 seconds');
-        $this->persister->persisted = [];
+        $this->persister->clear();
         $this->events->clear();
 
         return $setup->recoveryCodes;

@@ -10,6 +10,7 @@ use Marko\AdminAuth\Repository\AdminUserRepositoryInterface;
 use Marko\AdminAuth\Repository\RoleRepositoryInterface;
 use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
+use Marko\Authentication\Contracts\PasswordVerifierInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Database\Exceptions\EntityException;
 
@@ -19,6 +20,7 @@ readonly class AdminUserProvider implements UserProviderInterface
         private AdminUserRepositoryInterface $userRepository,
         private RoleRepositoryInterface $roleRepository,
         private PasswordHasherInterface $passwordHasher,
+        private PasswordVerifierInterface $passwordVerifier,
     ) {}
 
     /**
@@ -55,7 +57,7 @@ readonly class AdminUserProvider implements UserProviderInterface
 
         if ($user === null || $user->isActive !== '1') {
             // Pay for a password check anyway, so response timing does not reveal which accounts exist
-            $this->passwordHasher->verifyDummy($this->passwordFrom($credentials) ?? '');
+            $this->passwordVerifier->verify(null, $this->passwordFrom($credentials) ?? '');
 
             return null;
         }
@@ -73,12 +75,12 @@ readonly class AdminUserProvider implements UserProviderInterface
 
         if ($password === null) {
             // Same cost as a real check, so a malformed password does not single out existing accounts
-            $this->passwordHasher->verifyDummy('');
+            $this->passwordVerifier->verify(null, '');
 
             return false;
         }
 
-        return $this->passwordHasher->verify($password, $user->getAuthPassword());
+        return $this->passwordVerifier->verify($user, $password);
     }
 
     public function rehashPasswordIfNeeded(

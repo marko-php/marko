@@ -6,6 +6,9 @@ use Marko\Core\Path\ProjectPaths;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\View\CacheDirectoryGuard;
 use Marko\View\Exceptions\InsecureCacheDirectoryException;
+use Marko\View\TemplateResolverInterface;
+use Marko\View\Twig\ModuleLoader;
+use Marko\View\Twig\Tests\Fixtures\PathTemplateResolver;
 use Marko\View\Twig\Tests\Fixtures\ViewProviders;
 use Marko\View\Twig\TwigEngineFactory;
 use Marko\View\Twig\TwigViewConfig;
@@ -32,6 +35,7 @@ describe('TwigEngineFactory', function (): void {
             makeTwigViewConfig(),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
 
         expect($factory->create())->toBeInstanceOf(Environment::class);
@@ -43,6 +47,7 @@ describe('TwigEngineFactory', function (): void {
             makeTwigViewConfig(['view.cache_directory' => $cacheDir]),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
 
         expect($factory->create()->getCache())->toBe($cacheDir);
@@ -53,11 +58,13 @@ describe('TwigEngineFactory', function (): void {
             makeTwigViewConfig(['view.auto_refresh' => true]),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $factoryFalse = new TwigEngineFactory(
             makeTwigViewConfig(['view.auto_refresh' => false]),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
 
         expect($factoryTrue->create()->isAutoReload())->toBeTrue()
@@ -69,11 +76,13 @@ describe('TwigEngineFactory', function (): void {
             makeTwigViewConfig(['view.strict_variables' => true]),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $factoryFalse = new TwigEngineFactory(
             makeTwigViewConfig(['view.strict_variables' => false]),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
 
         expect($factoryTrue->create()->isStrictVariables())->toBeTrue()
@@ -85,6 +94,7 @@ describe('TwigEngineFactory', function (): void {
             makeTwigViewConfig(['view.autoescape' => 'js']),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $env = $factory->create();
 
@@ -97,11 +107,13 @@ describe('TwigEngineFactory', function (): void {
             makeTwigViewConfig(['view.debug' => true]),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
         $factoryFalse = new TwigEngineFactory(
             makeTwigViewConfig(['view.debug' => false]),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
 
         expect($factoryTrue->create()->isDebug())->toBeTrue()
@@ -113,6 +125,7 @@ describe('TwigEngineFactory', function (): void {
             makeTwigViewConfig(['view.charset' => 'ISO-8859-1']),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         );
 
         expect($factory->create()->getCharset())->toBe('ISO-8859-1');
@@ -138,6 +151,7 @@ describe('TwigEngineFactory cache directory hardening', function (): void {
             makeTwigViewConfig(['view.cache_directory' => 'storage/views']),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths($this->base)),
+            new PathTemplateResolver(),
         );
 
         expect($factory->create()->getCache())->toBe($this->base . '/storage/views')
@@ -153,9 +167,54 @@ describe('TwigEngineFactory cache directory hardening', function (): void {
             makeTwigViewConfig(['view.cache_directory' => $shared]),
             ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths($this->base)),
+            new PathTemplateResolver(),
         );
 
         expect(fn (): Environment => $factory->create())
             ->toThrow(InsecureCacheDirectoryException::class, 'world-writable');
+    });
+});
+
+describe('TwigEngineFactory template loading', function (): void {
+    beforeEach(function (): void {
+        $this->root = sys_get_temp_dir() . '/twig-loader-' . bin2hex(random_bytes(8));
+        mkdir($this->root . '/cache', 0o700, true);
+        file_put_contents($this->root . '/show.twig', '<h1>{{ title }}</h1>');
+
+        $this->resolver = $this->createStub(TemplateResolverInterface::class);
+        $this->resolver->method('resolve')->willReturnMap([['blog::post/show', $this->root . '/show.twig']]);
+
+        $this->factoryFor = fn (bool $autoRefresh): TwigEngineFactory => new TwigEngineFactory(
+            makeTwigViewConfig([
+                'view.cache_directory' => $this->root . '/cache',
+                'view.auto_refresh' => $autoRefresh,
+            ]),
+            ViewProviders::extension(),
+            new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            $this->resolver,
+        );
+    });
+
+    afterEach(function (): void {
+        foreach (array_reverse(glob($this->root . '/{,*/,*/*/,*/*/*/}*', GLOB_BRACE | GLOB_MARK)) as $path) {
+            str_ends_with($path, '/') ? rmdir($path) : unlink($path);
+        }
+
+        rmdir($this->root);
+    });
+
+    test('it loads module-namespaced templates through a ModuleLoader on the template resolver', function (): void {
+        $environment = ($this->factoryFor)(false)->create();
+
+        expect($environment->getLoader())->toBeInstanceOf(ModuleLoader::class)
+            ->and($environment->render('blog::post/show', ['title' => 'Hello']))->toBe('<h1>Hello</h1>');
+    });
+
+    test('it builds an auto-reloading environment even when view.auto_refresh is off', function (): void {
+        $environment = ($this->factoryFor)(false)->createWithAutoRefresh();
+
+        expect($environment->isAutoReload())->toBeTrue()
+            ->and($environment->getLoader())->toBeInstanceOf(ModuleLoader::class)
+            ->and($environment->render('blog::post/show', ['title' => 'Hello']))->toBe('<h1>Hello</h1>');
     });
 });

@@ -56,6 +56,33 @@ describe('ServeCommand', function (): void {
         Helpers::removeTempProjectDir($tempDir);
     });
 
+    it('uses a UNC config path as given instead of prefixing the project root', function (): void {
+        // On a non-Windows host the UNC path is a plain relative filename, so
+        // using it as given lands in the cwd rather than under the project root.
+        $workDir = Helpers::tempProjectDir();
+        $projectDir = Helpers::tempProjectDir();
+        $uncPath = '\\\\server\\share\\rr.yaml';
+        $processRunner = new FakeProcessRunner();
+        $command = Helpers::serveCommand(
+            processRunner: $processRunner,
+            paths: new ProjectPaths($projectDir),
+        );
+        $originalCwd = getcwd();
+        chdir($workDir);
+
+        try {
+            $command->execute(new Input(['marko', 'rr:serve', '--config=' . $uncPath]), Helpers::output());
+        } finally {
+            chdir($originalCwd);
+        }
+
+        expect($processRunner->lastCommand)->toEndWith(' serve -c ' . escapeshellarg($uncPath))
+            ->and(file_exists($workDir . '/' . $uncPath))->toBeTrue();
+
+        Helpers::removeTempProjectDir($workDir);
+        Helpers::removeTempProjectDir($projectDir);
+    });
+
     it('refuses to overwrite an existing rr yaml', function (): void {
         $tempDir = Helpers::tempProjectDir();
         $existingContents = "# hand-tuned config, do not touch\n";

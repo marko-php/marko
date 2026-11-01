@@ -16,6 +16,7 @@ use Marko\Authentication\Contracts\PasswordResetTokenRepositoryInterface;
 use Marko\Authentication\Contracts\PasswordVerifierInterface;
 use Marko\Authentication\Contracts\RememberTokenStorageInterface;
 use Marko\Authentication\Cookie\RequestCookieJar;
+use Marko\Authentication\Database\Repository\DatabasePasswordResetTokenRepository;
 use Marko\Authentication\EmailVerification\EmailVerifier;
 use Marko\Authentication\Guard\GuardDriverRegistry;
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
@@ -42,21 +43,23 @@ use Marko\RateLimiter\Contracts\RateLimitKeyResolverInterface;
 use Marko\Session\Contracts\SessionInterface;
 use Psr\Clock\ClockInterface;
 
+// Whether a module is installed, for defaults a sibling package replaces when present.
+$moduleLoaded = static fn (ContainerInterface $container, string $name): bool => $container->has(
+    ModuleRepositoryInterface::class,
+) && array_any(
+    $container->get(ModuleRepositoryInterface::class)->all(),
+    fn (ModuleManifest $module): bool => $module->name === $name,
+);
+
 return [
     // Load after the session drivers so QueuedCookiesMiddleware runs inside SessionMiddleware.
     'sequence' => [
         'after' => ['marko/session-file', 'marko/session-database'],
     ],
     'bindings' => [
-        PasswordHasherInterface::class => function (ContainerInterface $container): PasswordHasherInterface {
+        PasswordHasherInterface::class => function (ContainerInterface $container) use ($moduleLoaded): PasswordHasherInterface {
             // With marko/hashing loaded, its driver config (HASH_DRIVER) governs login passwords too
-            if (
-                $container->has(ModuleRepositoryInterface::class)
-                && array_any(
-                    $container->get(ModuleRepositoryInterface::class)->all(),
-                    fn (ModuleManifest $module): bool => $module->name === 'marko/hashing',
-                )
-            ) {
+            if ($moduleLoaded($container, 'marko/hashing')) {
                 return $container->get(HashManagerPasswordHasher::class);
             }
 
@@ -101,7 +104,18 @@ return [
         // only they know how to save their user entity and what the emails say.
         EmailVerifierInterface::class => EmailVerifier::class,
         PasswordResetBrokerInterface::class => PasswordResetBroker::class,
-        PasswordResetTokenRepositoryInterface::class => CachePasswordResetTokenRepository::class,
+        // Reset tokens live in the cache unless marko/authentication-database is installed. Its repository is
+        // chosen here, not bound in its own module.php, because two vendor modules binding one interface is a
+        // binding conflict. An app module binding the interface still overrides both.
+        PasswordResetTokenRepositoryInterface::class => function (
+            ContainerInterface $container,
+        ) use ($moduleLoaded): PasswordResetTokenRepositoryInterface {
+            if ($moduleLoaded($container, 'marko/authentication-database')) {
+                return $container->get(DatabasePasswordResetTokenRepository::class);
+            }
+
+            return $container->get(CachePasswordResetTokenRepository::class);
+        },
         PasswordVerifierInterface::class => PasswordVerifier::class,
         PasswordConfirmationInterface::class => PasswordConfirmation::class,
         IntendedUrlInterface::class => IntendedUrl::class,

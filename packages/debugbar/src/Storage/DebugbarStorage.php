@@ -179,11 +179,7 @@ class DebugbarStorage
     {
         $path = $this->configString('debugbar.storage.path', 'storage/debugbar');
 
-        if ($this->isAbsolutePath($path)) {
-            return rtrim($path, '/');
-        }
-
-        return rtrim($this->paths->base, '/').'/'.trim($path, '/');
+        return rtrim($this->paths->resolve($path), '/');
     }
 
     /**
@@ -258,11 +254,6 @@ class DebugbarStorage
     private function validId(string $id): bool
     {
         return preg_match('/^[a-f0-9]{12,40}$/', $id) === 1;
-    }
-
-    private function isAbsolutePath(string $path): bool
-    {
-        return str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1;
     }
 
     private function configString(

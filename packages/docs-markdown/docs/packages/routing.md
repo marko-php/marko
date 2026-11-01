@@ -630,7 +630,7 @@ $media = $mediaManager->upload(new MediaUpload(
 
 ### File and Streamed Responses
 
-`Response` holds its body as a string. For a large file or a body generated on the fly, return a response that implements `Marko\Routing\Http\StreamedResponseInterface` instead: its `body()` is `''`, and `Response::send()` emits the headers and then calls `sendBody()`, which writes the body in chunks. Runtimes and middleware check for the interface, so [`marko/page-cache`](/docs/packages/page-cache/) never caches one and [`marko/roadrunner`](/docs/packages/roadrunner/) refuses one loudly instead of sending an empty body.
+`Response` holds its body as a string. For a large file or a body generated on the fly, return a response that implements `Marko\Routing\Http\StreamedResponseInterface` instead: its `body()` is `''`, and `Response::send()` emits the headers and then calls `sendBody()`, which writes the body in chunks. Runtimes and middleware check for the interface, so [`marko/page-cache`](/docs/packages/page-cache/) never caches one and [`marko/roadrunner`](/docs/packages/roadrunner/#file-downloads-and-streamed-responses) collects its body into a PSR-7 stream instead of reading the empty `body()`.
 
 #### Serving a file
 

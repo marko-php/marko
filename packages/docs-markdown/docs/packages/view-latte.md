@@ -117,7 +117,7 @@ The arguments match `UrlGeneratorInterface::route(string $name, array $parameter
 marko view:cache
 ```
 
-It builds an engine with `LatteEngineFactory`, the same factory as rendering, and calls `Latte\Engine::warmupCache()` through the module loader, so the compiled file lands under the key rendering looks up: the template's resolved absolute path. A `Latte\CompileException` is rethrown as `TemplatePrecompileException` with the template name, file and line. A broken template fails the command with its file and line:
+It builds an engine with `LatteEngineFactory::createWithAutoRefresh()`, from the same factory as rendering, and calls `Latte\Engine::warmupCache()`. The factory gives every engine it builds the module loader, so the compiled file lands under the key rendering looks up: the template's resolved absolute path. A `Latte\CompileException` is rethrown as `TemplatePrecompileException` with the template name, file and line. A broken template fails the command with its file and line:
 
 ```text
 Template 'blog::post/show' failed to compile: Unexpected tag {notATag} (on line 2 at column 4)
@@ -183,6 +183,8 @@ views/
 | `render(string $template, array $data = []): Response` | Render a template and return an HTTP response |
 | `renderToString(string $template, array $data = []): string` | Render a template and return the raw HTML string |
 | `LatteTemplatePrecompiler::precompile(string $template): void` | Compile one template into the cache; throws `TemplatePrecompileException` on a syntax error |
+| `LatteEngineFactory::create(): Engine` | Build an engine that loads `module::path` templates and refreshes compiled templates per `auto_refresh` |
+| `LatteEngineFactory::createWithAutoRefresh(): Engine` | Build the same engine with auto-refresh always on |
 
 ### Template Functions
 
