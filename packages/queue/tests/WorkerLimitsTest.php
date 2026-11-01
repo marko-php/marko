@@ -19,9 +19,11 @@ use Marko\Queue\RetryPolicy;
 use Marko\Queue\StopCondition\MaxJobsStopCondition;
 use Marko\Queue\StopCondition\MaxTimeStopCondition;
 use Marko\Queue\StopCondition\MemoryStopCondition;
+use Marko\Queue\StopCondition\RestartSignalStopCondition;
 use Marko\Queue\Tests\Command\Helpers;
 use Marko\Queue\Tests\Command\StubFailedJobRepository;
 use Marko\Queue\Tests\Fixtures\FakeProcessControl;
+use Marko\Queue\Tests\Fixtures\InMemoryRestartSignal;
 use Marko\Queue\Worker;
 use Marko\Queue\WorkerOptions;
 use Marko\Queue\WorkerRunState;
@@ -634,6 +636,69 @@ describe('Worker --max-time', function (): void {
         });
 
         expect($reason)->toBe(WorkerStopReason::MaxTime)
+            ->and($worker->pauses)->toBe(2)
+            ->and($queue->log)->toBe(['pop:empty', 'pop:empty']);
+    });
+});
+
+describe('Worker restart signal', function (): void {
+    it('exits after the current job once a restart is requested, logging the restart', function (): void {
+        $signal = new InMemoryRestartSignal();
+        $queue = new LimitsRecordingQueue([
+            limitsJob('a'),
+            limitsJob('b', fn () => $signal->request()),
+            limitsJob('c'),
+        ]);
+        ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl());
+        $options = new WorkerOptions(stopConditions: [new RestartSignalStopCondition($signal)]);
+
+        $reason = null;
+        $logged = captureLimitsErrorLog(function () use ($worker, $options, &$reason): void {
+            $reason = $worker->work(options: $options);
+        });
+
+        expect($reason)->toBe(WorkerStopReason::RestartRequested)
+            ->and($reason->exitCode())->toBe(0)
+            ->and($queue->log)->toBe(['pop:a', 'delete:a', 'pop:b', 'delete:b'])
+            ->and($logged)->toContain(
+                '[marko/queue] Worker stopping: ' . WorkerStopReason::RestartRequested->message(),
+            );
+    });
+
+    it('ignores a restart requested before the worker started', function (): void {
+        $signal = new InMemoryRestartSignal();
+        $signal->request();
+        $queue = new LimitsRecordingQueue([limitsJob('a'), limitsJob('b')]);
+        ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl());
+        $options = new WorkerOptions(stopConditions: [new RestartSignalStopCondition($signal)]);
+
+        $reason = null;
+        captureLimitsErrorLog(function () use ($worker, $options, &$reason): void {
+            $reason = $worker->work(options: $options);
+        });
+
+        // The test worker stops itself at the first idle pause, so both jobs ran
+        expect($reason)->toBe(WorkerStopReason::Signal)
+            ->and($queue->log)->toBe(['pop:a', 'delete:a', 'pop:b', 'delete:b', 'pop:empty']);
+    });
+
+    it('picks up a restart requested while the worker is idle', function (): void {
+        $signal = new InMemoryRestartSignal();
+        $queue = new LimitsRecordingQueue([]);
+        ['worker' => $worker] = createLimitsWorker($queue, new FakeProcessControl());
+        $worker->onPause = function () use ($worker, $signal): void {
+            if ($worker->pauses === 2) {
+                $signal->request();
+            }
+        };
+        $options = new WorkerOptions(stopConditions: [new RestartSignalStopCondition($signal)]);
+
+        $reason = null;
+        captureLimitsErrorLog(function () use ($worker, $options, &$reason): void {
+            $reason = $worker->work(options: $options);
+        });
+
+        expect($reason)->toBe(WorkerStopReason::RestartRequested)
             ->and($worker->pauses)->toBe(2)
             ->and($queue->log)->toBe(['pop:empty', 'pop:empty']);
     });

@@ -8,10 +8,14 @@ use Marko\Core\Command\Input;
 use Marko\Queue\Command\WorkCommand;
 use Marko\Queue\ProcessControlInterface;
 use Marko\Queue\QueueConfig;
+use Marko\Queue\RestartSignalInterface;
+use Marko\Queue\StopCondition\RestartSignalStopCondition;
 use Marko\Queue\Tests\Command\Helpers;
 use Marko\Queue\Tests\Fixtures\FakeProcessControl;
+use Marko\Queue\Tests\Fixtures\InMemoryRestartSignal;
 use Marko\Queue\WorkerInterface;
 use Marko\Queue\WorkerOptions;
+use Marko\Queue\WorkerRunState;
 use Marko\Queue\WorkerStopReason;
 use Marko\Testing\Fake\FakeConfigRepository;
 
@@ -57,8 +61,9 @@ function createWorkCommand(
     WorkerInterface $worker,
     QueueConfig $config,
     ProcessControlInterface $processControl = new FakeProcessControl(),
+    RestartSignalInterface $restartSignal = new InMemoryRestartSignal(),
 ): WorkCommand {
-    return new WorkCommand($worker, $config, $processControl);
+    return new WorkCommand($worker, $config, $processControl, $restartSignal);
 }
 
 /**
@@ -311,6 +316,40 @@ describe('queue:work exit code', function (): void {
         );
 
         expect($exitCode)->toBe(1);
+    });
+});
+
+describe('queue:work restart signal', function (): void {
+    it('passes a restart signal stop condition to the worker', function (): void {
+        $worker = new CapturingWorker();
+
+        executeWorkCommand(createWorkCommand($worker, createWorkCommandConfig()));
+
+        expect($worker->options?->stopConditions)->toHaveCount(1)
+            ->and($worker->options?->stopConditions[0])->toBeInstanceOf(RestartSignalStopCondition::class);
+    });
+
+    it('stops the worker only for a restart requested after queue:work started', function (): void {
+        $worker = new CapturingWorker();
+        $signal = new InMemoryRestartSignal('requested-at-last-deploy');
+        $state = new WorkerRunState(new DateTimeImmutable(), 0, 0);
+
+        executeWorkCommand(createWorkCommand($worker, createWorkCommandConfig(), restartSignal: $signal));
+        $condition = $worker->options?->stopConditions[0];
+
+        expect($condition?->check($state))->toBeNull();
+
+        $signal->request();
+
+        expect($condition?->check($state))->toBe(WorkerStopReason::RestartRequested);
+    });
+
+    it('exits with status 0 when the worker stopped for a restart', function (): void {
+        ['exitCode' => $exitCode] = executeWorkCommand(
+            createWorkCommand(new CapturingWorker(WorkerStopReason::RestartRequested), createWorkCommandConfig()),
+        );
+
+        expect($exitCode)->toBe(0);
     });
 });
 

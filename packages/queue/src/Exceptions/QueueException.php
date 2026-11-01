@@ -157,4 +157,27 @@ class QueueException extends MarkoException
                 . ' for a job that was not queued.',
         );
     }
+
+    public static function restartSignalNotWritable(
+        string $path,
+        string $reason,
+    ): self {
+        return new self(
+            message: "Could not write the queue restart signal to '$path'.",
+            context: $reason,
+            suggestion: 'Make sure the directory of queue.restart_signal can be created and written by the user'
+                . ' that runs queue:restart, or point queue.restart_signal (QUEUE_RESTART_SIGNAL) at a writable path.',
+        );
+    }
+
+    public static function restartSignalNotReadable(
+        string $path,
+        string $reason,
+    ): self {
+        return new self(
+            message: "Could not read the queue restart signal at '$path'.",
+            context: "$reason Workers cannot tell whether a restart was requested.",
+            suggestion: 'Make sure the user that runs queue:work can read the queue.restart_signal file.',
+        );
+    }
 }

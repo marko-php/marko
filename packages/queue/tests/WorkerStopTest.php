@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Marko\Queue\StopCondition\MaxJobsStopCondition;
 use Marko\Queue\StopCondition\MaxTimeStopCondition;
 use Marko\Queue\StopCondition\MemoryStopCondition;
+use Marko\Queue\StopCondition\RestartSignalStopCondition;
+use Marko\Queue\Tests\Fixtures\InMemoryRestartSignal;
 use Marko\Queue\Worker;
 use Marko\Queue\WorkerRunState;
 use Marko\Queue\WorkerStopConditionInterface;
@@ -92,5 +94,34 @@ describe('MaxTimeStopCondition', function (): void {
         $clock->travel('+1 second');
 
         expect($condition->check(stopState()))->toBe(WorkerStopReason::MaxTime);
+    });
+});
+
+describe('RestartSignalStopCondition', function (): void {
+    it('implements WorkerStopConditionInterface', function (): void {
+        expect(new RestartSignalStopCondition(new InMemoryRestartSignal()))
+            ->toBeInstanceOf(WorkerStopConditionInterface::class);
+    });
+
+    it('keeps working until a restart is requested after it was created', function (): void {
+        $signal = new InMemoryRestartSignal();
+        $condition = new RestartSignalStopCondition($signal);
+
+        expect($condition->check(stopState()))->toBeNull();
+
+        $signal->request();
+
+        expect($condition->check(stopState()))->toBe(WorkerStopReason::RestartRequested);
+    });
+
+    it('ignores a restart requested before it was created', function (): void {
+        $signal = new InMemoryRestartSignal('requested-at-last-deploy');
+        $condition = new RestartSignalStopCondition($signal);
+
+        expect($condition->check(stopState()))->toBeNull();
+
+        $signal->request();
+
+        expect($condition->check(stopState()))->toBe(WorkerStopReason::RestartRequested);
     });
 });

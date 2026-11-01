@@ -11,6 +11,8 @@ use Marko\Core\Command\Output;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\ProcessControlInterface;
 use Marko\Queue\QueueConfig;
+use Marko\Queue\RestartSignalInterface;
+use Marko\Queue\StopCondition\RestartSignalStopCondition;
 use Marko\Queue\WorkerInterface;
 use Marko\Queue\WorkerOptions;
 
@@ -24,6 +26,7 @@ class WorkCommand implements CommandInterface
         private readonly WorkerInterface $worker,
         private readonly QueueConfig $config,
         private readonly ProcessControlInterface $processControl,
+        private readonly RestartSignalInterface $restartSignal,
     ) {}
 
     public function execute(
@@ -71,7 +74,9 @@ class WorkCommand implements CommandInterface
      * Build the worker limits from --timeout (default queue.timeout), --memory, --max-jobs and --max-time.
      *
      * This is the composition root for the worker's stop conditions: WorkerOptions builds the built-in
-     * ones from these limits, and any extra condition is passed through its stopConditions.
+     * ones from these limits, and any extra condition is passed through its stopConditions. The restart
+     * signal condition reads the current token here, so only a queue:restart issued after this worker
+     * started stops it.
      *
      * @throws QueueException When a value is not a non-negative integer, or the timeout is not below retry_after
      */
@@ -84,6 +89,7 @@ class WorkCommand implements CommandInterface
             memory: $this->parseLimit('memory', $input->getOption('memory') ?? '0'),
             maxJobs: $this->parseLimit('max-jobs', $input->getOption('max-jobs') ?? '0'),
             maxTime: $this->parseLimit('max-time', $input->getOption('max-time') ?? '0'),
+            stopConditions: [new RestartSignalStopCondition($this->restartSignal)],
         );
 
         // A job still running when its reservation expires would be handed to a second worker
