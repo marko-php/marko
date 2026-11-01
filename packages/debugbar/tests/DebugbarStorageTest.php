@@ -108,3 +108,21 @@ it('writes profiles readable by the owner only inside an owner-only directory', 
         ->and(fileperms($directory.'/'.$id.'.json') & 0777)->toBe(0600)
         ->and(fileperms($directory.'/'.$id.'.summary.json') & 0777)->toBe(0600);
 });
+
+it('uses Windows drive and UNC storage paths unchanged', function (string $path): void {
+    $config = new ConfigRepository(['debugbar' => ['storage' => ['path' => $path]]]);
+    $storage = new DebugbarStorage($config, new ProjectPaths('/srv/app'));
+
+    expect($storage->directory())->toBe($path);
+})->with([
+    'windows drive with backslash' => 'C:\\app\\storage\\debugbar',
+    'windows drive with forward slash' => 'C:/app/storage/debugbar',
+    'unc share' => '\\\\server\\share\\debugbar',
+]);
+
+it('resolves a relative storage path against the project base path', function (): void {
+    $config = new ConfigRepository(['debugbar' => ['storage' => ['path' => 'storage/debugbar/']]]);
+    $storage = new DebugbarStorage($config, new ProjectPaths('/srv/app'));
+
+    expect($storage->directory())->toBe('/srv/app/storage/debugbar');
+});

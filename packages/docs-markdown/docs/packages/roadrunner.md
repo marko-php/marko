@@ -23,7 +23,7 @@ marko rr:serve
 
 On first run, `rr:serve` writes a default `.rr.yaml` next to your project root (skipped if one already exists) and starts the server. The generated config points `server.command` at `php vendor/marko/roadrunner/worker.php` — the thin bootstrap script this package ships that boots your application once and then serves every subsequent request from the same process.
 
-Pass `--config` to use a config file at a different path:
+Pass `--config` to use a config file at a different path. A relative path resolves against the project root; an absolute path (Unix, Windows drive or UNC) is used as given:
 
 ```bash
 marko rr:serve --config=config/rr.production.yaml

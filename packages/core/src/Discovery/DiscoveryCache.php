@@ -50,24 +50,12 @@ class DiscoveryCache
     /**
      * Returns the absolute path to the cache file.
      *
-     * A leading '/' (Unix) or a Windows drive letter (e.g. 'C:\') indicates an absolute path;
+     * Absolute paths (Unix, Windows drive or UNC) are used unchanged;
      * relative paths are resolved against the project base.
      */
     private function resolveCachePath(): string
     {
-        $path = $this->discoveryEnvironment->cachePath();
-
-        if ($this->isAbsolutePath($path)) {
-            return $path;
-        }
-
-        return $this->projectPaths->base . '/' . $path;
-    }
-
-    private function isAbsolutePath(
-        string $path,
-    ): bool {
-        return str_starts_with($path, '/') || (strlen($path) >= 3 && ctype_alpha($path[0]) && $path[1] === ':');
+        return $this->projectPaths->resolve($this->discoveryEnvironment->cachePath());
     }
 
     /**
@@ -386,9 +374,7 @@ class DiscoveryCache
             $result[] = new CachedModule(
                 name: $record['name'],
                 version: $record['version'],
-                path: $this->isAbsolutePath($record['path'])
-                    ? $record['path']
-                    : $this->projectPaths->base . '/' . $record['path'],
+                path: $this->projectPaths->resolve($record['path']),
                 source: $record['source'],
                 require: $record['require'],
                 autoload: $record['autoload'],
