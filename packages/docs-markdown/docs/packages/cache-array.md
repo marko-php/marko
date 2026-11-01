@@ -68,6 +68,7 @@ For persistent caching, use `marko/cache-file` or `marko/cache-redis`.
 The driver reads the current time through the PSR-20 `ClockInterface` from [`marko/clock`](/docs/packages/clock/), which the container injects. In tests, construct it with a [`FakeClock`](/docs/packages/testing/#fakeclock) and call `travel()` to cross a TTL boundary exactly, without `sleep()`:
 
 ```php
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Memory\Driver\ArrayCacheDriver;
 use Marko\Testing\Fake\FakeClock;
@@ -77,6 +78,7 @@ $clock = new FakeClock('2026-01-01 12:00:00 UTC');
 $cache = new ArrayCacheDriver(
     new CacheConfig(new FakeConfigRepository(['cache.default_ttl' => 3600])),
     $clock,
+    new CacheOperations(),
 );
 
 $cache->set('report', $report, ttl: 300);
@@ -101,5 +103,11 @@ Implements all methods from `CacheInterface`. See [marko/cache](/docs/packages/c
 | `setMultiple(array $values, ?int $ttl = null): bool` | Store multiple values at once |
 | `deleteMultiple(array $keys): bool` | Remove multiple entries at once |
 | `increment(string $key, int $ttl): int` | Atomically increment an integer counter; TTL applied only on first increment |
+| `add(string $key, mixed $value, ?int $ttl = null): bool` | Store a value only if the key is absent or expired; `false` when an unexpired value exists |
+| `remember(string $key, ?int $ttl, callable $callback): mixed` | Return the cached value, or compute and store it on a miss (delegates to [`CacheOperations`](/docs/packages/cache/#cacheoperations)) |
+| `pull(string $key, mixed $default = null): mixed` | Get a value and delete it (delegates to `CacheOperations`) |
+| `forever(string $key, mixed $value): bool` | Store a value with no expiry (delegates to `CacheOperations`) |
+
+`add()` checks and writes the in-process store with nothing in between, so it is atomic within the process. The store itself is per-process, so use `marko/cache-file` or `marko/cache-redis` when `add()` must be atomic across requests.
 
 TTL behavior: a positive TTL sets an expiration timestamp relative to the injected clock. A `null` TTL falls back to the configured `default_ttl`. A TTL of `0` or less means the entry never expires. Expired entries are lazily purged on the next read.

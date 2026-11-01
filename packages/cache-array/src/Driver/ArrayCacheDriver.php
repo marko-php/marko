@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Cache\Memory\Driver;
 
 use Marko\Cache\CacheItem;
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
@@ -33,6 +34,7 @@ class ArrayCacheDriver implements CacheInterface
     public function __construct(
         private readonly CacheConfig $config,
         private readonly ClockInterface $clock,
+        private readonly CacheOperations $operations,
     ) {}
 
     /**
@@ -212,6 +214,55 @@ class ArrayCacheDriver implements CacheInterface
         $this->storage[$key]['value']++;
 
         return $this->storage[$key]['value'];
+    }
+
+    /**
+     * Set-if-absent. The store lives in this process and nothing can suspend
+     * between the check and the write, so no other caller can interleave.
+     *
+     * @throws InvalidKeyException
+     */
+    public function add(
+        string $key,
+        mixed $value,
+        ?int $ttl = null,
+    ): bool {
+        if ($this->has($key)) {
+            return false;
+        }
+
+        return $this->set($key, $value, $ttl);
+    }
+
+    /**
+     * @throws InvalidKeyException
+     */
+    public function remember(
+        string $key,
+        ?int $ttl,
+        callable $callback,
+    ): mixed {
+        return $this->operations->remember($this, $key, $ttl, $callback);
+    }
+
+    /**
+     * @throws InvalidKeyException
+     */
+    public function pull(
+        string $key,
+        mixed $default = null,
+    ): mixed {
+        return $this->operations->pull($this, $key, $default);
+    }
+
+    /**
+     * @throws InvalidKeyException
+     */
+    public function forever(
+        string $key,
+        mixed $value,
+    ): bool {
+        return $this->operations->forever($this, $key, $value);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
@@ -23,7 +24,7 @@ function createArrayCacheTestConfig(
 beforeEach(function (): void {
     $this->config = createArrayCacheTestConfig();
     $this->clock = new FakeClock('2026-01-01 12:00:00 UTC');
-    $this->driver = new ArrayCacheDriver($this->config, $this->clock);
+    $this->driver = new ArrayCacheDriver($this->config, $this->clock, new CacheOperations());
 });
 
 it('implements CacheInterface', function (): void {
@@ -232,8 +233,8 @@ it('stores same object reference', function (): void {
 });
 
 it('is isolated per instance', function (): void {
-    $driver1 = new ArrayCacheDriver($this->config, $this->clock);
-    $driver2 = new ArrayCacheDriver($this->config, $this->clock);
+    $driver1 = new ArrayCacheDriver($this->config, $this->clock, new CacheOperations());
+    $driver2 = new ArrayCacheDriver($this->config, $this->clock, new CacheOperations());
 
     $driver1->set('key', 'value1');
 
@@ -278,7 +279,7 @@ it('expires an entry one second after its ttl on the clock', function (): void {
 });
 
 it('expires an entry stored with the default ttl relative to the clock', function (): void {
-    $driver = new ArrayCacheDriver(createArrayCacheTestConfig(defaultTtl: 30), $this->clock);
+    $driver = new ArrayCacheDriver(createArrayCacheTestConfig(defaultTtl: 30), $this->clock, new CacheOperations());
     $driver->set('key', 'value');
 
     $this->clock->travel('+30 seconds');
@@ -324,4 +325,93 @@ it('keeps counting within the window without moving the expiry', function (): vo
 
     expect($this->driver->increment('counter', 60))->toBe(2)
         ->and($this->driver->getItem('counter')->expiresAt()->getTimestamp())->toBe($expiresAt);
+});
+
+it('stores a value with add when the key is absent', function (): void {
+    expect($this->driver->add('key', 'value', 60))->toBeTrue()
+        ->and($this->driver->get('key'))->toBe('value');
+});
+
+it('returns false from add and keeps the value when the key exists and is unexpired', function (): void {
+    $this->driver->set('key', 'original', 60);
+
+    expect($this->driver->add('key', 'new', 60))->toBeFalse()
+        ->and($this->driver->get('key'))->toBe('original');
+});
+
+it('returns true from add once the existing key has expired', function (): void {
+    $this->driver->set('key', 'original', 60);
+    $this->clock->travel('+61 seconds');
+
+    expect($this->driver->add('key', 'new', 60))->toBeTrue()
+        ->and($this->driver->get('key'))->toBe('new');
+});
+
+it('applies the default ttl when add is given a null ttl', function (): void {
+    $this->driver->add('key', 'value');
+
+    expect($this->driver->getItem('key')->expiresAt()->getTimestamp())
+        ->toBe($this->clock->now()->getTimestamp() + 3600);
+});
+
+it('stores the value with no expiry when add is given a ttl of 0', function (): void {
+    $this->driver->add('key', 'value', 0);
+    $this->clock->travel('+10 years');
+
+    expect($this->driver->getItem('key')->expiresAt())->toBeNull()
+        ->and($this->driver->get('key'))->toBe('value');
+});
+
+it('validates the key on add', function (): void {
+    expect(fn (): bool => $this->driver->add('', 'value'))->toThrow(InvalidKeyException::class);
+});
+
+it('delegates remember, pull and forever to CacheOperations', function (): void {
+    $operations = new class () extends CacheOperations
+    {
+        /** @var list<list<mixed>> */
+        public array $calls = [];
+
+        public function remember(
+            CacheInterface $cache,
+            string $key,
+            ?int $ttl,
+            callable $callback,
+        ): mixed {
+            $this->calls[] = ['remember', $cache, $key, $ttl];
+
+            return null;
+        }
+
+        public function pull(
+            CacheInterface $cache,
+            string $key,
+            mixed $default,
+        ): mixed {
+            $this->calls[] = ['pull', $cache, $key, $default];
+
+            return null;
+        }
+
+        public function forever(
+            CacheInterface $cache,
+            string $key,
+            mixed $value,
+        ): bool {
+            $this->calls[] = ['forever', $cache, $key, $value];
+
+            return true;
+        }
+    };
+    $driver = new ArrayCacheDriver($this->config, $this->clock, $operations);
+
+    $driver->remember('a', 60, fn (): string => 'computed');
+    $driver->pull('a', 'default');
+    $driver->forever('b', 'value');
+
+    expect($operations->calls)->toBe([
+        ['remember', $driver, 'a', 60],
+        ['pull', $driver, 'a', 'default'],
+        ['forever', $driver, 'b', 'value'],
+    ]);
 });

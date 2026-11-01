@@ -120,6 +120,10 @@ Implements all methods from `CacheInterface`. See [`marko/cache`](/docs/packages
 | `setMultiple(array $values, ?int $ttl = null): bool` | Store multiple key-value pairs at once |
 | `deleteMultiple(array $keys): bool` | Remove multiple entries at once |
 | `increment(string $key, int $ttl): int` | Atomically increment an integer counter and apply its TTL in one step; an existing TTL is never reset |
+| `add(string $key, mixed $value, ?int $ttl = null): bool` | Atomically store a value only if the key is absent (`SET ... NX`); `false` when it exists |
+| `remember(string $key, ?int $ttl, callable $callback): mixed` | Return the cached value, or compute and store it on a miss (delegates to [`CacheOperations`](/docs/packages/cache/#cacheoperations)) |
+| `pull(string $key, mixed $default = null): mixed` | Get a value and delete it (delegates to `CacheOperations`) |
+| `forever(string $key, mixed $value): bool` | Store a value with no expiry (delegates to `CacheOperations`) |
 
 ### RedisConnection
 
@@ -136,6 +140,7 @@ Implements all methods from `CacheInterface`. See [`marko/cache`](/docs/packages
 - Values are serialized with PHP's `serialize()`, wrapped in an HMAC-SHA256 envelope, and stored as Redis strings. Reads verify the HMAC before deserializing; tampered or corrupted entries throw `TamperedCacheValueException`.
 - The HMAC covers the prefixed Redis key as well as the value, so someone with write access to Redis can't move a validly signed value from one key to another: the moved value throws `TamperedCacheValueException`. Values signed by a release before key binding and [HKDF subkeys](/docs/packages/cache/#cachevaluesigner) throw too, so run `marko cache:clear` when you deploy that upgrade.
 - A `null` TTL falls back to `default_ttl` from config. A TTL greater than `0` uses Redis `SETEX` for native expiration. A TTL of `0` or less means the entry never expires.
+- `add()` sends one `SET key envelope NX EX ttl` (no `EX` for a TTL of `0`), writing the same signed envelope as `set()` under the prefixed key. Redis does the check and the write atomically, so of any number of clients exactly one gets `true`.
 - `increment()` runs `INCR` and `EXPIRE` together in one Lua script (`EVAL`), so a crash can never leave a counter without an expiry. The TTL is set when the key is created (count reaches `1`), and is restored if the key somehow has none. Subsequent increments do not reset it, so the window stays fixed.
 - Counters are plain integers, not signed envelopes, because Redis writes them itself. `get()`, `getItem()` and `getMultiple()` return them as `int`, which is what [`marko/ratelimiter`](/docs/packages/ratelimiter/) relies on. Only values that are entirely an optional `-` followed by digits are read this way. They are never passed to `unserialize()`, and every other value must still carry a valid HMAC.
 - `clear()` removes only keys matching the configured prefix --- other Redis data is not affected. It walks the keyspace with `SCAN` in batches rather than `KEYS`, so clearing a large database does not block Redis. Glob characters in the prefix are escaped, so the prefix always matches literally.

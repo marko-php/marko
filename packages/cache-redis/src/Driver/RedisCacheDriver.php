@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Cache\Redis\Driver;
 
 use Marko\Cache\CacheItem;
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
@@ -44,6 +45,7 @@ readonly class RedisCacheDriver implements CacheInterface
         private CacheConfig $config,
         private CacheValueSigner $cacheValueSigner,
         private ClockInterface $clock,
+        private CacheOperations $operations,
     ) {}
 
     /**
@@ -253,6 +255,63 @@ readonly class RedisCacheDriver implements CacheInterface
             $this->prefixKey($key),
             $ttl,
         );
+    }
+
+    /**
+     * Set-if-absent in one atomic SET ... NX, storing the same signed envelope
+     * set() writes. A TTL of 0 stores the key with no expiry.
+     *
+     * @throws InvalidKeyException|TamperedCacheValueException
+     */
+    public function add(
+        string $key,
+        mixed $value,
+        ?int $ttl = null,
+    ): bool {
+        $this->validateKey($key);
+
+        $ttl ??= $this->config->defaultTtl();
+        $prefixedKey = $this->prefixKey($key);
+        $envelope = $this->cacheValueSigner->wrap(serialize($value), $prefixedKey);
+        $client = $this->connection->client();
+
+        // Redis replies OK when the key was set and nil when NX found it present.
+        $reply = $ttl > 0
+            ? $client->set($prefixedKey, $envelope, 'EX', $ttl, 'NX')
+            : $client->set($prefixedKey, $envelope, 'NX');
+
+        return $reply !== null;
+    }
+
+    /**
+     * @throws InvalidKeyException|TamperedCacheValueException
+     */
+    public function remember(
+        string $key,
+        ?int $ttl,
+        callable $callback,
+    ): mixed {
+        return $this->operations->remember($this, $key, $ttl, $callback);
+    }
+
+    /**
+     * @throws InvalidKeyException|TamperedCacheValueException
+     */
+    public function pull(
+        string $key,
+        mixed $default = null,
+    ): mixed {
+        return $this->operations->pull($this, $key, $default);
+    }
+
+    /**
+     * @throws InvalidKeyException|TamperedCacheValueException
+     */
+    public function forever(
+        string $key,
+        mixed $value,
+    ): bool {
+        return $this->operations->forever($this, $key, $value);
     }
 
     /**

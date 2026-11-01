@@ -79,6 +79,36 @@ it('checks cache read/write via CacheHealthCheck', function (): void {
         ): int {
             return 1;
         }
+
+        public function add(
+            string $key,
+            mixed $value,
+            ?int $ttl = null,
+        ): bool {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function remember(
+            string $key,
+            ?int $ttl,
+            callable $callback,
+        ): mixed {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function pull(
+            string $key,
+            mixed $default = null,
+        ): mixed {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function forever(
+            string $key,
+            mixed $value,
+        ): bool {
+            throw new RuntimeException('Not implemented');
+        }
     };
 
     $check = new CacheHealthCheck($cache);
@@ -153,6 +183,36 @@ it('returns unhealthy status when cache write fails', function (): void {
             int $ttl,
         ): int {
             return 1;
+        }
+
+        public function add(
+            string $key,
+            mixed $value,
+            ?int $ttl = null,
+        ): bool {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function remember(
+            string $key,
+            ?int $ttl,
+            callable $callback,
+        ): mixed {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function pull(
+            string $key,
+            mixed $default = null,
+        ): mixed {
+            throw new RuntimeException('Not implemented');
+        }
+
+        public function forever(
+            string $key,
+            mixed $value,
+        ): bool {
+            throw new RuntimeException('Not implemented');
         }
     };
 

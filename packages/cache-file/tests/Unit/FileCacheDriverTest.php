@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Composer\Autoload\ClassLoader;
+use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
@@ -85,7 +87,7 @@ beforeEach(function (): void {
     $this->config = createTestCacheConfig($this->cachePath);
     $this->clock = new FakeClock('2026-01-01 12:00:00 UTC');
     $this->signer = createTestCacheSigner();
-    $this->driver = new FileCacheDriver($this->config, $this->clock, $this->signer);
+    $this->driver = new FileCacheDriver($this->config, $this->clock, $this->signer, new CacheOperations());
 });
 
 afterEach(function (): void {
@@ -204,7 +206,7 @@ it('does not expire items with zero ttl', function (): void {
 it('uses default ttl when not specified', function (): void {
     $cachePath = getCacheTestPath();
     $config = createTestCacheConfig($cachePath, 30);
-    $driver = new FileCacheDriver($config, $this->clock, createTestCacheSigner());
+    $driver = new FileCacheDriver($config, $this->clock, createTestCacheSigner(), new CacheOperations());
     $driver->set('key', 'value');
 
     $this->clock->travel('+30 seconds');
@@ -305,7 +307,7 @@ it('throws exception for key with invalid characters', function (): void {
 it('creates cache directory if not exists', function (): void {
     $newPath = sys_get_temp_dir() . '/marko-cache-new-' . bin2hex(random_bytes(8));
     $config = createTestCacheConfig($newPath);
-    $driver = new FileCacheDriver($config, $this->clock, createTestCacheSigner());
+    $driver = new FileCacheDriver($config, $this->clock, createTestCacheSigner(), new CacheOperations());
 
     $driver->set('key', 'value');
 
@@ -510,7 +512,12 @@ it('throws FileCacheException with the OS reason when the cache directory cannot
     $blocker = $this->cachePath . '/not-a-directory';
     file_put_contents($blocker, 'x');
 
-    $driver = new FileCacheDriver(createTestCacheConfig($blocker . '/cache'), $this->clock, $this->signer);
+    $driver = new FileCacheDriver(
+        createTestCacheConfig($blocker . '/cache'),
+        $this->clock,
+        $this->signer,
+        new CacheOperations(),
+    );
 
     try {
         $driver->set('key', 'value');
@@ -692,7 +699,12 @@ it('treats a signed cache file copied to another cache key as a miss', function 
 });
 
 it('treats a cache file signed with a different key as a miss', function (): void {
-    $otherDriver = new FileCacheDriver($this->config, $this->clock, createTestCacheSigner('some-other-key'));
+    $otherDriver = new FileCacheDriver(
+        $this->config,
+        $this->clock,
+        createTestCacheSigner('some-other-key'),
+        new CacheOperations(),
+    );
     $otherDriver->set('key', 'value');
 
     expect($this->driver->get('key'))->toBeNull();
@@ -721,7 +733,7 @@ it('resets the counter when incrementing an unsigned legacy cache file', functio
 });
 
 it('throws TamperedCacheValueException on write when no signing key is configured', function (): void {
-    $driver = new FileCacheDriver($this->config, $this->clock, createTestCacheSigner(''));
+    $driver = new FileCacheDriver($this->config, $this->clock, createTestCacheSigner(''), new CacheOperations());
 
     expect(fn () => $driver->set('key', 'value'))
         ->toThrow(TamperedCacheValueException::class, 'the encryption key is empty')
@@ -731,9 +743,143 @@ it('throws TamperedCacheValueException on write when no signing key is configure
 
 it('throws TamperedCacheValueException on read when no signing key is configured', function (): void {
     $this->driver->set('key', 'value');
-    $driver = new FileCacheDriver($this->config, $this->clock, createTestCacheSigner(''));
+    $driver = new FileCacheDriver($this->config, $this->clock, createTestCacheSigner(''), new CacheOperations());
 
     expect(fn () => $driver->get('key'))
         ->toThrow(TamperedCacheValueException::class, 'the encryption key is empty')
         ->and(file_exists(cacheEntryPath($this->cachePath, 'key')))->toBeTrue();
+});
+
+it('stores a value with add when the key is absent (file driver)', function (): void {
+    expect($this->driver->add('key', 'value', 60))->toBeTrue()
+        ->and($this->driver->get('key'))->toBe('value');
+});
+
+it('returns false from add and keeps the value when the key exists and is unexpired (file driver)', function (): void {
+    $this->driver->set('key', 'original', 60);
+
+    expect($this->driver->add('key', 'new', 60))->toBeFalse()
+        ->and($this->driver->get('key'))->toBe('original');
+});
+
+it('returns true from add once the existing key has expired (file driver)', function (): void {
+    $this->driver->set('key', 'original', 60);
+    $this->clock->travel('+61 seconds');
+
+    expect($this->driver->add('key', 'new', 60))->toBeTrue()
+        ->and($this->driver->get('key'))->toBe('new');
+});
+
+it('returns true from add over a tampered entry without unserializing it (file driver)', function (): void {
+    mkdir($this->cachePath, 0755, true);
+    file_put_contents($this->cachePath . '/' . hash('xxh128', 'key') . '.cache', serialize('planted'));
+
+    expect($this->driver->add('key', 'value', 60))->toBeTrue()
+        ->and($this->driver->get('key'))->toBe('value');
+});
+
+it('applies the default ttl when add is given a null ttl (file driver)', function (): void {
+    $this->driver->add('key', 'value');
+
+    expect($this->driver->getItem('key')->expiresAt()->getTimestamp())
+        ->toBe($this->clock->now()->getTimestamp() + 3600);
+});
+
+it('stores the value with no expiry when add is given a ttl of 0 (file driver)', function (): void {
+    $this->driver->add('key', 'value', 0);
+    $this->clock->travel('+10 years');
+
+    expect($this->driver->getItem('key')->expiresAt())->toBeNull()
+        ->and($this->driver->get('key'))->toBe('value');
+});
+
+it('validates the key on add (file driver)', function (): void {
+    expect(fn (): bool => $this->driver->add('invalid/key', 'value'))->toThrow(InvalidKeyException::class);
+});
+
+it('lets exactly one of several concurrent processes add the same key (file driver)', function (): void {
+    $autoload = dirname((new ReflectionClass(ClassLoader::class))->getFileName(), 2) . '/autoload.php';
+    $worker = dirname(__DIR__) . '/Fixtures/add-worker.php';
+    $startAt = (string) (microtime(true) + 0.5);
+    $processes = [];
+
+    foreach (range(1, 6) as $i) {
+        $process = proc_open(
+            [PHP_BINARY, $worker, $autoload, $this->cachePath, 'file-cache-test-signing-key', $startAt, "worker-$i"],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+        );
+
+        expect($process)->toBeResource();
+        $processes[$i] = [$process, $pipes];
+    }
+
+    $results = [];
+
+    foreach ($processes as $i => [$process, $pipes]) {
+        $output = stream_get_contents($pipes[1]);
+        $errors = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        expect(proc_close($process))->toBe(0, "worker $i failed: $errors")
+            ->and($output)->toBeIn(['0', '1']);
+
+        $results[$i] = $output;
+    }
+
+    $winners = array_keys($results, '1', true);
+
+    expect($winners)->toHaveCount(1)
+        ->and($this->driver->get('once'))->toBe('worker-' . $winners[0]);
+});
+
+it('delegates remember, pull and forever to CacheOperations (file driver)', function (): void {
+    $operations = new class () extends CacheOperations
+    {
+        /** @var list<list<mixed>> */
+        public array $calls = [];
+
+        public function remember(
+            CacheInterface $cache,
+            string $key,
+            ?int $ttl,
+            callable $callback,
+        ): mixed {
+            $this->calls[] = ['remember', $cache, $key, $ttl];
+
+            return null;
+        }
+
+        public function pull(
+            CacheInterface $cache,
+            string $key,
+            mixed $default,
+        ): mixed {
+            $this->calls[] = ['pull', $cache, $key, $default];
+
+            return null;
+        }
+
+        public function forever(
+            CacheInterface $cache,
+            string $key,
+            mixed $value,
+        ): bool {
+            $this->calls[] = ['forever', $cache, $key, $value];
+
+            return true;
+        }
+    };
+    $driver = new FileCacheDriver($this->config, $this->clock, $this->signer, $operations);
+
+    $driver->remember('a', 60, fn (): string => 'computed');
+    $driver->pull('a', 'default');
+    $driver->forever('b', 'value');
+
+    expect($operations->calls)->toBe([
+        ['remember', $driver, 'a', 60],
+        ['pull', $driver, 'a', 'default'],
+        ['forever', $driver, 'b', 'value'],
+    ]);
 });
