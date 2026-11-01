@@ -55,6 +55,7 @@ body:
         - api
         - authentication
         - authentication-token
+        - authentication-two-factor
         - authorization
         - broadcasting
         - broadcasting-amphp

@@ -309,6 +309,7 @@ Marko ships as composable packages — require only what you need. Every package
 |---------|-------------|
 | [authentication](packages/authentication/README.md) | Guard-based authentication |
 | [authentication-token](packages/authentication-token/README.md) | Token/API authentication |
+| [authentication-two-factor](packages/authentication-two-factor/README.md) | Two-factor authentication (TOTP + recovery codes) |
 | [authorization](packages/authorization/README.md) | Policy-based authorization |
 | [hashing](packages/hashing/README.md) | Password hashing |
 | [security](packages/security/README.md) | Security utilities and middleware |

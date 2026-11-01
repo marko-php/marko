@@ -46,6 +46,10 @@
         },
         {
             "type": "path",
+            "url": "packages/authentication-two-factor"
+        },
+        {
+            "type": "path",
             "url": "packages/authorization"
         },
         {
@@ -426,6 +430,7 @@
         "marko/api": "self.version",
         "marko/authentication": "self.version",
         "marko/authentication-token": "self.version",
+        "marko/authentication-two-factor": "self.version",
         "marko/authorization": "self.version",
         "marko/broadcasting": "self.version",
         "marko/broadcasting-amphp": "self.version",
@@ -575,6 +580,7 @@
             "Marko\\Api\\Tests\\": "packages/api/tests/",
             "Marko\\Authentication\\Tests\\": "packages/authentication/tests/",
             "Marko\\AuthenticationToken\\Tests\\": "packages/authentication-token/tests/",
+            "Marko\\AuthenticationTwoFactor\\Tests\\": "packages/authentication-two-factor/tests/",
             "Marko\\Authorization\\Tests\\": "packages/authorization/tests/",
             "Marko\\Broadcasting\\Tests\\": "packages/broadcasting/tests/",
             "Marko\\Broadcasting\\Amphp\\Tests\\": "packages/broadcasting-amphp/tests/",
