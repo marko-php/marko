@@ -74,3 +74,28 @@ it('stores page cache files outside the public directory when using the default 
 
     cleanupPageCacheDir($projectBase);
 });
+
+it('uses a UNC path as-is instead of prefixing the project base directory', function (): void {
+    // Run from a scratch directory: on a non-Windows host the UNC path is a
+    // relative filename, so writing to it as-is lands under the cwd.
+    $workDir = sys_get_temp_dir() . '/marko-unc-cwd-' . bin2hex(random_bytes(8));
+    $baseDir = sys_get_temp_dir() . '/marko-base-' . bin2hex(random_bytes(8));
+    mkdir($workDir, 0755, true);
+    mkdir($baseDir, 0755, true);
+    $originalCwd = getcwd();
+    chdir($workDir);
+
+    try {
+        $uncPath = '\\\\server\\share\\page-cache';
+        $driver = createPageCacheFileDriverWithPaths($uncPath, 3600, new ProjectPaths($baseDir));
+
+        $driver->store(createTestRequest(), new Response(body: 'Hello'), new CachePolicy(ttl: 3600, tags: []));
+
+        expect(is_dir($workDir . '/' . $uncPath . '/pages'))->toBeTrue()
+            ->and(is_dir($baseDir . '/' . $uncPath))->toBeFalse();
+    } finally {
+        chdir($originalCwd);
+        cleanupPageCacheDir($workDir);
+        cleanupPageCacheDir($baseDir);
+    }
+});

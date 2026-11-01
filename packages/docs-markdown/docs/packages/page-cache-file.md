@@ -29,7 +29,7 @@ return [
 ];
 ```
 
-The `path` directory and its subdirectories are created automatically if they do not exist.
+A relative `path` resolves against the project root; an absolute path (Unix, Windows drive or UNC) is used as given. The `path` directory and its subdirectories are created automatically if they do not exist.
 
 `default_ttl` is used when a `#[Cacheable]` attribute has `ttl: 0`. When the effective TTL is `0` (for example `PAGE_CACHE_TTL=0`), the page is stored with no expiry and served until it is purged by tag or URL or cleared with `marko page-cache:clear`. A `PAGE_CACHE_TTL` that is not a non-negative integer (`abc`, `1h`, `1.5`, `-1`) fails config load with a `ConfigException` instead of silently becoming `0`. See [Cache Lifetime (TTL)](/docs/packages/page-cache/#cache-lifetime-ttl).
 

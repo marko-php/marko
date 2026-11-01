@@ -20,7 +20,9 @@ use Marko\Core\Path\ProjectPaths;
  *
  * compile() runs the same ConfigDiscovery as a live boot, over the enabled
  * modules and the root config directory, while Env records every variable
- * the config files read. ConfigCacheSection stores those names with a hash
+ * the config files read (including MARKO_ENV, APP_ENV and the
+ * DISCOVERY_CACHE_* variables that config/discovery.php reads through
+ * marko/core's DiscoveryEnvironment). ConfigCacheSection stores those names with a hash
  * of their values, and a cached boot fails loudly when one has changed.
  */
 readonly class ConfigCacheContributor implements DiscoveryCacheContributorInterface

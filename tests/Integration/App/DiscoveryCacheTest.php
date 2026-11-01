@@ -7,6 +7,7 @@ use Marko\Authorization\Discovery\GateHookCacheContributor;
 use Marko\Authorization\GateHookRegistry;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Discovery\ConfigCacheContributor;
+use Marko\Config\Exceptions\ConfigCacheException;
 use Marko\Core\Application;
 use Marko\Core\Discovery\CachedDiscovery;
 use Marko\Core\Module\ModuleManifest;
@@ -102,7 +103,8 @@ it('routes identically with the discovery cache warm and cold', function (): voi
     $coldRoutes = discoveryCacheRoutes($cold);
     $coldResponses = discoveryCacheResponses($cold);
 
-    $result = runIntegrationCommand($cold, 'discovery:cache');
+    // Built in the environment it boots in: a changed APP_ENV fails the cached boot (#618)
+    $result = withIntegrationAppEnv('production', fn (): array => runIntegrationCommand($cold, 'discovery:cache'));
     expect($result['exitCode'])->toBe(0, $result['output']);
 
     $warm = withIntegrationAppEnv('production', function (): Application {
@@ -129,12 +131,6 @@ it('routes identically with the discovery cache warm and cold', function (): voi
 })->issue(173);
 
 it('loads config from the discovery cache on a warm boot and live again after discovery:clear', function (): void {
-    $cold = $this->app;
-    $coldConfig = $cold->container->get(ConfigRepositoryInterface::class)->all();
-
-    $result = runIntegrationCommand($cold, 'discovery:cache');
-    expect($result['exitCode'])->toBe(0, $result['output']);
-
     $bootProduction = fn (): Application => withIntegrationAppEnv('production', function (): Application {
         $app = Application::boot($this->project);
         restore_error_handler();
@@ -143,12 +139,21 @@ it('loads config from the discovery cache on a warm boot and live again after di
         return $app;
     });
 
+    $liveConfig = $bootProduction()->container->get(ConfigRepositoryInterface::class)->all();
+
+    // Built in the environment it boots in: a changed APP_ENV fails the cached boot (#618)
+    $result = withIntegrationAppEnv(
+        'production',
+        fn (): array => runIntegrationCommand($this->app, 'discovery:cache'),
+    );
+    expect($result['exitCode'])->toBe(0, $result['output']);
+
     $warm = $bootProduction();
     $warmCachedDiscovery = $warm->container->get(CachedDiscovery::class);
 
     expect($warmCachedDiscovery->isCached())->toBeTrue()
-        ->and($warmCachedDiscovery->section(ConfigCacheContributor::KEY)['values'])->toBe($coldConfig)
-        ->and($warm->container->get(ConfigRepositoryInterface::class)->all())->toBe($coldConfig);
+        ->and($warmCachedDiscovery->section(ConfigCacheContributor::KEY)['values'])->toBe($liveConfig)
+        ->and($warm->container->get(ConfigRepositoryInterface::class)->all())->toBe($liveConfig);
 
     $result = runIntegrationCommand($warm, 'discovery:clear');
     expect($result['exitCode'])->toBe(0, $result['output']);
@@ -156,5 +161,26 @@ it('loads config from the discovery cache on a warm boot and live again after di
     $live = $bootProduction();
 
     expect($live->container->get(CachedDiscovery::class)->isCached())->toBeFalse()
-        ->and($live->container->get(ConfigRepositoryInterface::class)->all())->toBe($coldConfig);
+        ->and($live->container->get(ConfigRepositoryInterface::class)->all())->toBe($liveConfig);
 })->issue(556);
+
+it('fails the cached boot naming APP_ENV when the cache was built in another environment', function (): void {
+    $result = withIntegrationAppEnv('staging', fn (): array => runIntegrationCommand($this->app, 'discovery:cache'));
+    expect($result['exitCode'])->toBe(0, $result['output']);
+
+    $thrown = null;
+
+    try {
+        withIntegrationAppEnv('production', fn (): Application => Application::boot($this->project));
+    } catch (ConfigCacheException $exception) {
+        $thrown = $exception;
+    } finally {
+        // The failed boot leaves its bootstrap exception handler installed; hand control back to PHPUnit
+        restore_exception_handler();
+    }
+
+    expect($thrown)->toBeInstanceOf(ConfigCacheException::class)
+        ->and($thrown?->getMessage())->toBe(
+            'Environment variables changed since the discovery cache was built: APP_ENV',
+        );
+})->issue(618);

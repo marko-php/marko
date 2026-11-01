@@ -35,9 +35,7 @@ readonly class FileSessionHandler implements SessionHandlerInterface
 
         // Resolve against the project root, never getcwd(): FPM, CGI and
         // mod_php chdir into public/ before running the front controller.
-        if (!str_starts_with($path, '/')) {
-            $path = $paths->base . '/' . $path;
-        }
+        $path = $paths->resolve($path);
 
         $publicDirectory = $this->normalize($paths->base . '/public');
         $normalized = $this->normalize($path);

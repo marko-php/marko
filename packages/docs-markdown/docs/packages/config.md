@@ -374,7 +374,7 @@ Store a class name instead and resolve it through the container where you use it
 
 ### Environment variables are fixed when the cache is built
 
-Config files run once, during `discovery:cache`, so every value they read from the environment is fixed at that moment. To keep that from going unnoticed, `Env` records every variable a config file reads while the cache is compiled, and the `config` section stores those names with a hash of their values. On a cached boot the hashes are recomputed from the current environment (no file reads). If any differ, boot throws `ConfigCacheException`, a `DiscoveryCacheException`, naming the changed variables:
+Config files run once, during `discovery:cache`, so every value they read from the environment is fixed at that moment. To keep that from going unnoticed, every variable a config file reads while the cache is compiled is recorded, and the `config` section stores those names with a hash of their values. That covers reads through `Env` and the variables the core-owned `config/discovery.php` reads through `DiscoveryEnvironment`: `MARKO_ENV`, `APP_ENV`, `DISCOVERY_CACHE_ENABLED` and `DISCOVERY_CACHE_PATH`. On a cached boot the hashes are recomputed from the current environment (no file reads). If any differ, boot throws `ConfigCacheException`, a `DiscoveryCacheException`, naming the changed variables:
 
 ```text
 Environment variables changed since the discovery cache was built: DB_PASSWORD, MAIL_HOST
@@ -383,7 +383,7 @@ Environment variables changed since the discovery cache was built: DB_PASSWORD, 
 Run `marko discovery:cache` again after changing an environment variable. Config is never rebuilt silently and stale values are never used.
 
 - `.env` is still loaded on a cached boot: the boot gate reads `APP_ENV` and `DISCOVERY_CACHE_ENABLED` before the cache is loaded. What a cached boot skips is evaluating config files.
-- Only reads through `Env` are tracked. A config file that reads `$_ENV[...]` or `getenv()` directly has its value fixed without any check, which is one more reason to [read environment variables with `Env`](#environment-variables).
+- Reads through `Env`, `AppEnvironment` and `DiscoveryEnvironment` are tracked. A config file that reads `$_ENV[...]` or `getenv()` directly has its value fixed without any check, which is one more reason to [read environment variables with `Env`](#environment-variables).
 - The cache file holds resolved values, including secrets such as database passwords and app keys. `discovery:cache` writes it with mode `0600` (readable and writable by its owner only). Keep it out of version control and build artifacts you share.
 
 ### What marks the cache as stale
@@ -466,7 +466,7 @@ public static function isRecording(): bool
 public static function valueHashes(array $names): array
 ```
 
-`startRecording()` throws `ConfigException` when already recording, and `stopRecording()` when not recording. `stopRecording()` returns the names read since `startRecording()`, once each, in first-read order. `valueHashes()` returns a hash of each variable's current value keyed by name. An unset and an empty variable hash alike, because every reader treats both as unset.
+`startRecording()` throws `ConfigException` when already recording, and `stopRecording()` when not recording. `stopRecording()` returns the names read since `startRecording()`, once each, in first-read order. That includes variables read through `Env` and through the `marko/core` readers (`AppEnvironment`, `DiscoveryEnvironment`), because `Env` records into core's [`EnvironmentVariables`](/docs/packages/core/#environmentvariables). `valueHashes()` returns a hash of each variable's current value keyed by name. An empty variable hashes differently from an unset one: `Env` reads both as unset, but `DiscoveryEnvironment` does not (an empty `DISCOVERY_CACHE_ENABLED` disables the cache).
 
 ### ConfigLoader
 

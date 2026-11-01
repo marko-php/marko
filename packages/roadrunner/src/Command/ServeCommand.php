@@ -57,8 +57,6 @@ readonly class ServeCommand implements CommandInterface
     {
         $configOption = $input->getOption('config') ?? self::DEFAULT_CONFIG_FILE;
 
-        return str_starts_with($configOption, '/')
-            ? $configOption
-            : $this->paths->base . '/' . $configOption;
+        return $this->paths->resolve($configOption);
     }
 }
