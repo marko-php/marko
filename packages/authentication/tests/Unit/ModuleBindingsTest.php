@@ -243,11 +243,11 @@ it(
     'ships no default UserPersisterInterface, ResetLinkNotifierInterface or VerificationNotifierInterface binding',
     function () {
         $config = require dirname(__DIR__, 2) . '/module.php';
-    
+
         expect($config['bindings'])->not->toHaveKey(UserPersisterInterface::class)
             ->and($config['bindings'])->not->toHaveKey(ResetLinkNotifierInterface::class)
             ->and($config['bindings'])->not->toHaveKey(VerificationNotifierInterface::class);
-    }
+    },
 );
 
 it('builds AuthManager with a LoginChallengeResolver so guards get their configured challenges', function () {

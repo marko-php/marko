@@ -150,12 +150,12 @@ it(
     'sends a signed link with the user id and a SHA-256 hash of the email that expires after expire_seconds',
     function (): void {
         $harness = new EmailVerifierHarness();
-    
+
         $status = $harness->verifier()->sendVerificationLink($harness->user);
-    
+
         $url = $harness->notifier->sent[0]['url'];
         parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
-    
+
         expect($status)->toBe(VerificationLinkStatus::Sent)
             ->and($harness->notifier->sent[0]['user'])->toBe($harness->user)
             ->and($url)->toStartWith('https://example.com/email/verify/confirm?')
@@ -163,7 +163,7 @@ it(
             ->and($query['hash'])->toBe(hash('sha256', 'ada@example.com'))
             ->and($query['expires'])->toBe((string) ($harness->clock->now()->getTimestamp() + 3600))
             ->and($query['signature'])->toMatch('/^[0-9a-f]{64}$/');
-    }
+    },
 );
 
 it('verifies and persists the user from a valid link', function (): void {
@@ -240,14 +240,14 @@ it(
         $harness->verifier()->verify($harness->click($url));
         $verifiedAt = $harness->user->emailVerifiedAt;
         $harness->clock->travel('+5 minutes');
-    
+
         $status = $harness->verifier()->verify($harness->click($url));
-    
+
         expect($status)->toBe(VerificationStatus::AlreadyVerified)
             ->and($harness->user->emailVerifiedAt)->toBe($verifiedAt)
             ->and($harness->persister->persisted)->toHaveCount(1)
             ->and($harness->events->dispatched)->toHaveCount(1);
-    }
+    },
 );
 
 it('throttles resends for the same user within throttle_seconds', function (): void {
@@ -301,8 +301,8 @@ it(
         $harness = new EmailVerifierHarness();
         $request = $harness->click($harness->sendLink());
         $harness->guard->setUser(new FakeAuthenticatable(id: 7));
-    
+
         expect(fn () => $harness->verifier()->verify($request))
             ->toThrow(AuthException::class, 'does not implement Marko\Authentication\MustVerifyEmailInterface');
-    }
+    },
 );
