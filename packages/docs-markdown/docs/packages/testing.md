@@ -3,7 +3,7 @@ title: marko/testing
 description: Reusable fakes with built-in assertions that eliminate test boilerplate.
 ---
 
-Testing utilities for Marko — reusable fakes with built-in assertions that eliminate test boilerplate. This package provides in-memory fakes for the core Marko contracts: events, broadcasting, mail, notifications, queues, sessions, cookies, logging, config, authentication, guards, HTTP clients, encryption, the clock, filesystems, and console confirmations. Each fake records interactions and exposes assertion methods so your tests stay focused on behavior rather than mock setup. An in-process HTTP test client (`TestClient`) sends requests through your real routes, middleware and controllers for feature tests. Pest expectation extensions (`toHaveDispatched`, `toHaveBroadcast`, `toHaveSent`, `toHaveNotified`, `toHavePushed`, `toHaveStored`, `toHaveLogged`, `toHaveAttempted`, `toBeAuthenticated`, `toHaveStatus`, `toHaveJsonPath`) are included for fluent assertions.
+Testing utilities for Marko — reusable fakes with built-in assertions that eliminate test boilerplate. This package provides in-memory fakes for the core Marko contracts: events, broadcasting, mail, notifications, queues, sessions, cookies, logging, config, authentication, guards, HTTP clients, encryption, the clock, filesystems, and console confirmations. Each fake records interactions and exposes assertion methods so your tests stay focused on behavior rather than mock setup. An in-process HTTP test client (`TestClient`) sends requests through your real routes, middleware and controllers for feature tests. Pest expectation extensions (`toHaveDispatched`, `toHaveBroadcast`, `toHaveSent`, `toHaveNotified`, `toHavePushed`, `toHaveStored`, `toHaveLogged`, `toHaveAttempted`, `toBeAuthenticated`, `toHaveStatus`, `toHaveJsonPath`, `toHaveSession`, `toHaveSessionErrors`) are included for fluent assertions.
 
 Available fakes: `FakeEventDispatcher`, `FakeBroadcaster`, `FakeMailer`, `FakeNotificationSender`, `FakeQueue`, `FakeSession`, `FakeCookieJar`, `FakeLogger`, `FakeConfigRepository`, `FakeAuthenticatable`, `FakeUserProvider`, `FakeGuard`, `FakeHttpClient`, `FakeEncryptor`, `FakeClock`, `FakeFilesystem`, `FakeSleeper`, `FakeConfirmationPrompter`.
 
@@ -638,6 +638,37 @@ it('logs the user in and out', function (): void {
 - `$client->assertAuthenticated(?string $guard = null)`, `$client->assertGuest(?string $guard = null)`: the real guard from `AuthManager::guard($guard)` (the default guard when `null`), with its cached user cleared, so it reads the session
 - `$client->assertAuthenticatedAs($user, ?string $guard = null)`: compares `getAuthIdentifier()`, not object identity, so a fresh instance of the same user passes
 
+#### Flashed validation errors and old input
+
+After a failed form submission that [marko/forms](/docs/packages/forms/) redirects back, assert which fields have errors and which input was flashed to refill the form. These assertions read through [`FlashedFormStateInterface`](/docs/packages/validation/#flashedformstateinterface), the same reader the `$errors` and `old()` template helpers use, inside the same session probe, so they see exactly what the redirected-to page will see. They need marko/forms installed (it binds the interface). Reading doesn't consume the flash: the next request still sees the errors.
+
+```php
+it('sends the form back with errors and the old input', function (): void {
+    $this->http->post('/register', [
+        'name' => '',
+        'email' => 'not-an-email',
+        'password' => 'hunter22',
+    ])
+        ->assertRedirect()
+        ->assertSessionHasErrors(['name', 'email' => 'must be a valid email'])
+        ->assertSessionDoesntHaveErrors('password')
+        ->assertSessionHasInput('email', 'not-an-email')
+        ->assertSessionMissingInput('password');
+});
+
+it('accepts a valid registration', function (): void {
+    $this->http->post('/register', $validRegistration)
+        ->assertRedirect('/welcome')
+        ->assertSessionHasNoErrors();
+});
+```
+
+- `assertSessionHasErrors(array|string $fields = [])`: each field has at least one flashed error; with no fields, there is at least one error. A `'field' => 'text'` entry also requires one of the field's messages to contain `text`. Fields are the keys `ValidationErrors` uses, so nested fields are dot paths such as `address.city`
+- `assertSessionHasNoErrors()`: no errors were flashed at all
+- `assertSessionDoesntHaveErrors(array|string $fields)`: none of the fields has a flashed error
+- `assertSessionHasInput($field, $value = null)`: input was flashed at the dot path `$field`. With `$value`, the flashed value must be identical (`===`); a `Closure` is called with it instead and must return `true`
+- `assertSessionMissingInput($field)`: nothing was flashed at `$field`. Use it to check that fields in `forms.never_flash`, such as `password`, are never sent back
+
 Session assertions work only on the client's latest response. Once the client has sent another request, an earlier response is stale and its session assertions throw `TestClientException`, so they never quietly read newer state. A `TestResponse` you build yourself (`new TestResponse($response)`) has no session, and its session assertions throw `TestClientException` too.
 
 :::note
@@ -837,6 +868,7 @@ expect($http)->toHaveSentRequest(fn (RecordedRequest $r) => $r->url === 'https:/
 expect($response)->toHaveStatus(201);
 expect($response)->toHaveJsonPath('data.status', 'live');
 expect($response)->toHaveSession('plan', 'pro');
+expect($response)->toHaveSessionErrors(['name', 'email' => 'valid email']);
 
 // FakeGuard, or a TestClient (through the session, like assertAuthenticated())
 expect($guard)->toBeAuthenticated();
@@ -1167,6 +1199,7 @@ public function call(string $method, string $uri, array $data = [], array $heade
 public function __construct(TestClient $client);
 public function ensureLatest(int $requestSequence): void; // throws TestClientException for a stale response
 public function sessionData(): array;                     // raw session data the next request would see
+public function formState(Closure $read): mixed;           // $read(FlashedFormStateInterface) against the next request's flashed form state
 public function user(?string $guard = null): ?AuthenticatableInterface; // throws TestClientException for a stateless guard
 ```
 
@@ -1228,6 +1261,11 @@ public function assertDownload(?string $filename = null): static;
 public function assertSessionHas(string $key, mixed $value = null): static;
 public function assertSessionMissing(string $key): static;
 public function assertSessionHasFlash(string $type, ?string $message = null): static;
+public function assertSessionHasErrors(array|string $fields = []): static;
+public function assertSessionHasNoErrors(): static;
+public function assertSessionDoesntHaveErrors(array|string $fields): static;
+public function assertSessionHasInput(string $field, mixed $value = null): static;
+public function assertSessionMissingInput(string $field): static;
 ```
 
 ### TestDatabase

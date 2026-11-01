@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Marko\Validation\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Validation\Contracts\FlashedFormStateInterface;
 use Marko\Validation\Contracts\RecordLookupInterface;
 
 /**
  * Thrown by the container when a validation interface has no binding: for RecordLookupInterface (the Exists and
- * Unique rules) it names the driver packages to install.
+ * Unique rules) it names the driver packages to install, and for FlashedFormStateInterface it names marko/forms.
  */
 class NoDriverException extends MarkoException
 {
@@ -25,6 +26,17 @@ class NoDriverException extends MarkoException
     public static function noDriverInstalled(
         ?string $interface = null,
     ): self {
+        if ($interface === FlashedFormStateInterface::class) {
+            return new self(
+                message: 'No flashed form state reader installed.',
+                context: "Attempted to resolve $interface, which reads the validation errors and old input a failed "
+                    . 'form submission flashed, but no implementation is bound.',
+                suggestion: "Install marko/forms, which provides it:\n"
+                    . "  Install: composer require marko/forms\n"
+                    . '  Docs: https://marko.build/docs/packages/forms/',
+            );
+        }
+
         if ($interface !== null && !in_array($interface, self::DRIVER_CONTRACTS, true)) {
             return new self(
                 message: "No implementation is bound for $interface.",

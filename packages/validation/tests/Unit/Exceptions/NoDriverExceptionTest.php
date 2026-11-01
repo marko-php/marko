@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Core\Container\Container;
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Validation\Contracts\FlashedFormStateInterface;
 use Marko\Validation\Contracts\RecordLookupInterface;
 use Marko\Validation\Contracts\RuleInterface;
 use Marko\Validation\Exceptions\NoDriverException;
@@ -25,6 +26,20 @@ describe('NoDriverException', function (): void {
 
         expect($exception->getMessage())->toBe('No implementation is bound for ' . RuleInterface::class . '.')
             ->and($exception->getSuggestion())->not->toContain('marko/validation-database');
+    });
+
+    it('tells you to install marko/forms when no flashed form state reader is bound', function (): void {
+        $exception = NoDriverException::noDriverInstalled(FlashedFormStateInterface::class);
+
+        expect($exception->getMessage())->toBe('No flashed form state reader installed.')
+            ->and($exception->getContext())->toContain(FlashedFormStateInterface::class)
+            ->and($exception->getSuggestion())->toContain('composer require marko/forms')
+            ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/forms/');
+    });
+
+    it('is thrown by the container when FlashedFormStateInterface is resolved without marko/forms', function (): void {
+        expect(fn () => new Container()->get(FlashedFormStateInterface::class))
+            ->toThrow(NoDriverException::class, 'No flashed form state reader installed.');
     });
 
     it('is thrown by the container when RecordRules is resolved without a driver', function (): void {

@@ -125,6 +125,20 @@ The same template in Twig:
 
 The password fields are never refilled: `password` and `password_confirmation` are in `never_flash`.
 
+### Testing a Form
+
+The [HTTP test client](/docs/packages/testing/#flashed-validation-errors-and-old-input) asserts on the flashed errors and old input through `FlashedFormStateInterface`, without consuming them:
+
+```php
+it('sends the registration form back with errors', function (): void {
+    $this->http->post('/register', ['name' => '', 'email' => 'not-an-email', 'password' => 'short'])
+        ->assertRedirect()
+        ->assertSessionHasErrors(['name', 'email', 'password' => 'at least 12'])
+        ->assertSessionHasInput('email', 'not-an-email')
+        ->assertSessionMissingInput('password');
+});
+```
+
 ### What the Middleware Does
 
 When the controller throws `ValidationException`, `RedirectBackOnValidationError`:
@@ -280,3 +294,4 @@ public function fallbackRedirect(): string;
 - [`marko/security`](/docs/packages/security/) --- CSRF tokens for `csrf_field()` and `csrf_token()`
 - [`marko/view`](/docs/packages/view/) --- template function and view data providers
 - [`marko/inertia`](/docs/packages/inertia/) --- fills its `errors` prop from the flashed errors
+- [`marko/testing`](/docs/packages/testing/) --- `assertSessionHasErrors()` and the other flashed form state assertions

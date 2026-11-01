@@ -377,5 +377,25 @@ class ExpectationsPlugin implements Bootable
 
             return $this;
         });
+
+        expect()->extend('toHaveSessionErrors', function (
+            array|string $fields = [],
+        ): Expectation {
+            $response = $this->value;
+
+            if (! $response instanceof TestResponse) {
+                throw new InvalidArgumentException(
+                    'Expected TestResponse, got ' . get_debug_type($response),
+                );
+            }
+
+            try {
+                $response->assertSessionHasErrors($fields);
+            } catch (AssertionFailedException $e) {
+                Assert::fail($e->getMessage());
+            }
+
+            return $this;
+        });
     }
 }

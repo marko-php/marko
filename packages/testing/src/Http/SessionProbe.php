@@ -12,6 +12,7 @@ use Marko\Session\Config\SessionConfig;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Exceptions\InvalidSessionIdException;
 use Marko\Testing\Exceptions\TestClientException;
+use Marko\Validation\Contracts\FlashedFormStateInterface;
 use Psr\Container\ContainerExceptionInterface;
 
 /**
@@ -60,6 +61,24 @@ class SessionProbe
     public function sessionData(): array
     {
         return $this->probe(static fn (SessionInterface $session): array => $session->all());
+    }
+
+    /**
+     * Run $read against the flashed form state (validation errors and old input) the
+     * next request would see, read through the bound FlashedFormStateInterface
+     * (marko/forms provides it). Reading does not consume the flash.
+     *
+     * @template T
+     * @param Closure(FlashedFormStateInterface): T $read
+     * @return T
+     * @throws TestClientException|ContainerExceptionInterface
+     */
+    public function formState(
+        Closure $read,
+    ): mixed {
+        return $this->probe(fn (): mixed => $read(
+            $this->client->application()->container->get(FlashedFormStateInterface::class),
+        ));
     }
 
     /**

@@ -1,0 +1,15 @@
+{
+    "name": "marko/forms",
+    "description": "Fixture stub for marko/forms used by the marko/testing HTTP test client fixture",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "marko/session": "self.version",
+        "marko/validation": "self.version"
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

@@ -15,7 +15,10 @@ use Marko\Routing\Http\StreamedResponseInterface;
 use Marko\Session\Flash\FlashBag;
 use Marko\Testing\Exceptions\AssertionFailedException;
 use Marko\Testing\Exceptions\TestClientException;
+use Marko\Validation\Contracts\FlashedFormStateInterface;
+use Marko\Validation\Validation\ValidationErrors;
 use Psr\Container\ContainerExceptionInterface;
+use stdClass;
 
 /**
  * The response to a {@see TestClient} request, with assertions.
@@ -627,6 +630,146 @@ class TestResponse
     }
 
     /**
+     * Asserts the next request would see a flashed validation error for each field, or any
+     * flashed error when no fields are given. A list entry names a field (a dot path such as
+     * `address.city`); a `field => text` entry also requires one of the field's messages to
+     * contain that text. Reads through FlashedFormStateInterface without consuming the flash.
+     *
+     * @param array<int|string, string>|string $fields
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface
+     */
+    public function assertSessionHasErrors(
+        array|string $fields = [],
+    ): static {
+        $errors = $this->flashedErrors();
+        $fields = (array) $fields;
+
+        if ($fields === [] && $errors->isEmpty()) {
+            $this->fail('Expected flashed validation errors but there were none.');
+        }
+
+        foreach ($fields as $key => $value) {
+            $field = is_int($key) ? $value : $key;
+            $messages = $errors->get($field);
+
+            if ($messages === []) {
+                $this->fail(
+                    "Expected a flashed validation error for [$field] but there was none. "
+                    . ($errors->isEmpty()
+                        ? 'No validation errors were flashed.'
+                        : "The fields with errors were {$this->export($errors->keys())}."),
+                );
+            }
+
+            if (
+                is_string($key)
+                && !array_any($messages, static fn (string $message): bool => str_contains($message, $value))
+            ) {
+                $this->fail(
+                    "Expected a flashed validation error for [$field] containing [$value] but its errors were "
+                    . $this->export($messages) . '.',
+                );
+            }
+        }
+
+        return $this->passed();
+    }
+
+    /**
+     * Asserts the next request would see no flashed validation errors at all.
+     *
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface
+     */
+    public function assertSessionHasNoErrors(): static
+    {
+        $errors = $this->flashedErrors();
+
+        if ($errors->isNotEmpty()) {
+            $this->fail('Expected no flashed validation errors but there were: ' . $this->export($errors->all()));
+        }
+
+        return $this->passed();
+    }
+
+    /**
+     * Asserts the next request would see no flashed validation error for any of $fields.
+     *
+     * @param list<string>|string $fields
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface
+     */
+    public function assertSessionDoesntHaveErrors(
+        array|string $fields,
+    ): static {
+        $errors = $this->flashedErrors();
+
+        foreach ((array) $fields as $field) {
+            if ($errors->has($field)) {
+                $this->fail(
+                    "Expected no flashed validation error for [$field] but it has {$this->export($errors->get($field))}.",
+                );
+            }
+        }
+
+        return $this->passed();
+    }
+
+    /**
+     * Asserts the next request would see flashed old input at $field (a dot path). With
+     * $value, the flashed value must be identical (===) to it; a Closure is called with the
+     * flashed value instead and must return true.
+     *
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface
+     */
+    public function assertSessionHasInput(
+        string $field,
+        mixed $value = null,
+    ): static {
+        [$flashed, $actual] = $this->flashedInput($field);
+
+        if (!$flashed) {
+            $this->fail("Expected the session to have flashed input [$field] but it does not.");
+        }
+
+        if ($value instanceof Closure) {
+            if ($value($actual) !== true) {
+                $this->fail(
+                    "Expected flashed input [$field] to pass the callback but it was {$this->export($actual)}.",
+                );
+            }
+
+            return $this->passed();
+        }
+
+        if ($value !== null && $actual !== $value) {
+            $this->fail(
+                "Expected flashed input [$field] to be {$this->export($value)} but it was {$this->export($actual)}.",
+            );
+        }
+
+        return $this->passed();
+    }
+
+    /**
+     * Asserts the next request would see no flashed old input at $field (a dot path), e.g.
+     * that a password was never flashed back into the form.
+     *
+     * @throws AssertionFailedException|TestClientException|ContainerExceptionInterface
+     */
+    public function assertSessionMissingInput(
+        string $field,
+    ): static {
+        [$flashed, $actual] = $this->flashedInput($field);
+
+        if ($flashed) {
+            $this->fail(
+                "Expected the session not to have flashed input [$field] but it was {$this->export($actual)}.",
+            );
+        }
+
+        return $this->passed();
+    }
+
+    /**
      * The raw session data the client's next request would see.
      *
      * @return array<string, mixed>
@@ -634,13 +777,54 @@ class TestResponse
      */
     private function sessionData(): array
     {
+        return $this->latestSessionProbe()->sessionData();
+    }
+
+    /**
+     * The validation errors the client's next request would see flashed.
+     *
+     * @throws TestClientException|ContainerExceptionInterface
+     */
+    private function flashedErrors(): ValidationErrors
+    {
+        return $this->latestSessionProbe()->formState(
+            static fn (FlashedFormStateInterface $state): ValidationErrors => $state->errors(),
+        );
+    }
+
+    /**
+     * Whether the client's next request would see flashed old input at $field, and its value.
+     *
+     * @return array{0: bool, 1: mixed}
+     * @throws TestClientException|ContainerExceptionInterface
+     */
+    private function flashedInput(
+        string $field,
+    ): array {
+        return $this->latestSessionProbe()->formState(
+            static function (FlashedFormStateInterface $state) use ($field): array {
+                $missing = new stdClass();
+                $value = $state->old($field, $missing);
+
+                return $value === $missing ? [false, null] : [true, $value];
+            },
+        );
+    }
+
+    /**
+     * The client's session probe, once this response is known to be the client's latest.
+     *
+     * @throws TestClientException
+     */
+    private function latestSessionProbe(): SessionProbe
+    {
         if ($this->sessionProbe === null) {
             throw TestClientException::responseWithoutClient();
         }
 
         $this->sessionProbe->ensureLatest($this->requestSequence);
 
-        return $this->sessionProbe->sessionData();
+        return $this->sessionProbe;
     }
 
     /**
