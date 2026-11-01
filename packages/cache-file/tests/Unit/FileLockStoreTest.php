@@ -49,7 +49,7 @@ function fileLockTestStorage(
     return new FileEntryStorage(
         new CacheConfig($config, new ProjectPaths()),
         $clock,
-        new CacheValueSigner(new EncryptionConfig($config))
+        new CacheValueSigner(new EncryptionConfig($config)),
     );
 }
 
