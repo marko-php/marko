@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Integration\Fixture\Job\AlwaysFailingJob;
 use Marko\Integration\Fixture\Job\InvalidBackoffJob;
+use Marko\Integration\Fixture\Job\PollingJob;
 use Marko\Integration\Fixture\Job\PrivatePropertyJob;
 use Marko\Integration\Fixture\Job\RecordingJob;
 use Marko\Queue\FailedJobRepositoryInterface;
@@ -122,3 +123,35 @@ it('fails a job with an invalid backoff instead of stopping the worker', functio
         ->and(file_get_contents($marker))->toBe('next job ran')
         ->and($queue->size())->toBe(0);
 })->issue(234);
+
+it(
+    'keeps a self-releasing job with a retry deadline past max_attempts and fails it on its first exception',
+    function (): void {
+        $container = $this->app->container;
+        $connection = $container->get(ConnectionInterface::class);
+        $failedJobs = $container->get(FailedJobRepositoryInterface::class);
+        $job = new PollingJob(throwOn: 6);
+        $container->get(QueueInterface::class)->push($job);
+
+        // The push plugin captured the deadline once, before the job was stored
+        expect($job->retryDeadline)->not->toBeNull();
+
+        // max_attempts is 3 (Fixture/config/queue.php); the deadline lifts that limit.
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $result = runIntegrationCommand($this->app, 'queue:work', ['--once']);
+
+            expect($result['exitCode'])->toBe(0, $result['output'])
+                ->and($connection->query('SELECT attempts FROM jobs'))->toBe([['attempts' => $attempt]])
+                ->and($failedJobs->count())->toBe(0);
+        }
+
+        $result = runIntegrationCommand($this->app, 'queue:work', ['--once']);
+        $failed = $failedJobs->all();
+
+        expect($result['exitCode'])->toBe(0, $result['output'])
+            ->and($connection->query('SELECT id FROM jobs'))->toBe([])
+            ->and($failed)->toHaveCount(1)
+            ->and($failed[0]->exception)->toContain('PollingJob failed on attempt 6')
+            ->toContain('threw 1 of its 1 allowed exceptions');
+    },
+)->issue(536);

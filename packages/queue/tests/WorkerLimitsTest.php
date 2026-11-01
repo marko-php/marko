@@ -15,6 +15,7 @@ use Marko\Queue\JobRunner;
 use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\RetryPolicy;
 use Marko\Queue\Tests\Command\Helpers;
 use Marko\Queue\Tests\Command\StubFailedJobRepository;
 use Marko\Queue\Tests\Fixtures\FakeProcessControl;
@@ -201,6 +202,10 @@ function createLimitsWorker(
             'queue.max_attempts' => 3,
         ])),
         new JobRunner(new Container(), $envelope, new FakeEventDispatcher()),
+        new RetryPolicy(new QueueConfig(new FakeConfigRepository([
+            'queue.queue' => 'default',
+            'queue.max_attempts' => 3,
+        ])), new FakeClock()),
         processControl: $processControl,
     );
 
@@ -279,6 +284,17 @@ describe('Worker job timeout', function (): void {
         expect($queue->log)->toBe(['pop:slow', 'release:slow:15'])
             ->and($failed->count())->toBe(0)
             ->and($process->terminatedWith)->toBe(1);
+    });
+
+    it('counts a timed-out attempt as an exception toward maxExceptions', function (): void {
+        $process = new FakeProcessControl();
+        $job = limitsJob('slow', fn () => $process->fireTimer(), maxAttempts: 3);
+        $queue = new LimitsRecordingQueue([$job]);
+        ['worker' => $worker] = createLimitsWorker($queue, $process);
+
+        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 5)));
+
+        expect($job->exceptions)->toBe(1);
     });
 
     it('calls failed() with the timeout exception when the job times out on its last attempt', function (): void {

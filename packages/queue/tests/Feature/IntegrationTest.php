@@ -18,6 +18,7 @@ use Marko\Queue\JobRunner;
 use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\RetryPolicy;
 use Marko\Queue\Sync\NullFailedJobRepository;
 use Marko\Queue\Sync\SyncQueue;
 use Marko\Queue\Tests\Fixtures\FakeProcessControl;
@@ -295,6 +296,7 @@ describe('Integration Tests', function (): void {
             ),
             $config,
             new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
+            new RetryPolicy($config, new FakeClock()),
         );
 
         // 1. Push the job to the queue
@@ -493,6 +495,7 @@ describe('Integration Tests', function (): void {
                 ),
                 $config,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
+                new RetryPolicy($config, new FakeClock()),
             );
             $worker->work(once: true);
 
@@ -580,6 +583,7 @@ describe('Integration Tests', function (): void {
                 ),
                 $config,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
+                new RetryPolicy($config, new FakeClock()),
             );
             $worker->work(once: true);
 
@@ -626,6 +630,7 @@ describe('Integration Tests', function (): void {
             ),
             $config,
             new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
+            new RetryPolicy($config, new FakeClock()),
             processControl: $processControl,
         );
 
@@ -719,6 +724,7 @@ describe('Integration Tests', function (): void {
             ),
             $queueConfig,
             new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
+            new RetryPolicy($queueConfig, new FakeClock()),
         );
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);

@@ -19,11 +19,13 @@ use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\PrivateStateJob;
 use Marko\Queue\Database\Tests\Fixtures\QueueTables;
 use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
+use Marko\Queue\Database\Tests\Fixtures\TestRetryPolicy;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobHandler;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobRunner;
 use Marko\Queue\QueueConfig;
+use Marko\Queue\RetryPolicy;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -116,7 +118,7 @@ function pgsqlQueue(
         queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
         clock: $clock,
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
-        maxAttempts: $maxAttempts,
+        retryPolicy: TestRetryPolicy::create($maxAttempts, $clock),
     );
 }
 
@@ -201,6 +203,49 @@ describe('database queue on PostgreSQL', function (): void {
         },
     );
 
+    it(
+        'keeps reserving a job with a retry deadline past queue.max_attempts, keeping its exception count, on PostgreSQL',
+        function (): void {
+            ['connection' => $connection, 'skipReason' => $skipReason] = pgsqlQueueConnection();
+
+            if ($connection === null) {
+                $this->markTestSkipped($skipReason);
+            }
+
+            $clock = new FakeClock('2026-10-31T12:00:00Z');
+            $queue = pgsqlQueue($connection, $clock, maxAttempts: 2);
+            $job = new PrivateStateJob('secret', 'shared');
+            $job->setRetryDeadline(new DateTimeImmutable('2026-10-31T18:00:00Z'));
+            $id = $queue->push($job)->id;
+
+            for ($attempt = 1; $attempt <= 5; $attempt++) {
+                $popped = $queue->pop();
+                $popped->incrementAttempts();
+
+                if ($attempt === 2) {
+                    $popped->incrementExceptions();
+                }
+
+                $queue->release($popped);
+                $clock->travel('+1 minute');
+            }
+
+            $popped = $queue->pop();
+
+            expect($popped?->id)->toBe($id)
+                ->and($popped->attempts)->toBe(5)
+                ->and($popped->exceptions)->toBe(1);
+
+            $popped->incrementAttempts();
+            $queue->release($popped, 7 * 3600);
+            $clock->travel('+7 hours');
+
+            expect($queue->pop())->toBeNull()
+                ->and(new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC'))
+                    ->find($id)?->exception)->toContain('passed its retry deadline');
+        },
+    );
+
     it('round-trips a failed job through failed_jobs and queue:retry on PostgreSQL', function (): void {
         ['connection' => $connection, 'skipReason' => $skipReason] = pgsqlQueueConnection();
 
@@ -226,6 +271,10 @@ describe('database queue on PostgreSQL', function (): void {
                 'queue.max_attempts' => 1,
             ])),
             new JobRunner(new Container(), pgsqlEnvelope(), new FakeEventDispatcher()),
+            new RetryPolicy(new QueueConfig(new FakeConfigRepository([
+                'queue.queue' => 'default',
+                'queue.max_attempts' => 1,
+            ])), new FakeClock()),
         );
         $worker->work(once: true);
 

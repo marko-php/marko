@@ -52,8 +52,10 @@ This release changes the queue contracts once for the per-job features built on 
 1. **Code that reads the return value of `push()` or `later()`** gets a [`PushResult`](#pushresult) instead of a string. Replace `$id = $queue->push($job);` with `$id = $queue->push($job)->id;`, and check `$result->pushed` where a skipped push matters. `WebhookQueue::push()` returns the `PushResult` too.
 2. **Code that calls `QueueInterface::release()`** passes the job instead of its ID: `$queue->release($job, $delay)`. The driver stores that job as it is, so pass the job you popped and ran, not a fresh copy.
 3. **Custom `QueueInterface` implementations** (drivers and test doubles) change `push()` and `later()` to return `PushResult` (`PushResult::pushed($id)`) and `release()` to take `JobInterface $job` and store it.
-4. **Jobs that implement `JobInterface` directly**, without extending `Job`, add the [per-job state](#per-job-state) properties and methods. Jobs that extend `Job` need no change, and jobs already queued by the old release unserialize with the new fields at their defaults.
-5. **Code that constructs `Worker`, `SyncQueue`, `DatabaseQueue` or `JobRunner` by hand** wires in the new [failed-job handler](#when-a-job-fails-for-good) and an event dispatcher. `JobRunner` takes an `EventDispatcherInterface` as its third argument. `Worker` takes a `FailedJobHandlerInterface` in place of the failed-job repository and no longer takes the envelope or the clock: `new Worker($queue, $failedJobHandler, $config, $jobRunner)`. `SyncQueue` takes `($jobRunner, $failedJobHandler, $queueConfig)`, and `DatabaseQueue` takes `failedJobHandler:` in place of `failedJobRepository:`. Build the handler with `new FailedJobHandler($failedJobs, $envelope, $jobRunner, $eventDispatcher, $clock)`. Containers that autowire them need no change.
+4. **Jobs that implement `JobInterface` directly**, without extending `Job`, add the [per-job state](#per-job-state) properties and methods, including `resetExceptions()` and `clearRetryDeadline()`. Jobs that extend `Job` need no change, and jobs already queued by the old release unserialize with the new fields at their defaults.
+5. **Code that constructs `Worker`, `SyncQueue`, `DatabaseQueue` or `JobRunner` by hand** wires in the new [failed-job handler](#when-a-job-fails-for-good), an event dispatcher and the [`RetryPolicy`](#retrypolicy). `JobRunner` takes an `EventDispatcherInterface` as its third argument. `Worker` takes a `FailedJobHandlerInterface` in place of the failed-job repository, no longer takes the envelope or the clock, and takes a `RetryPolicy` in place of the optional `BackoffValidator`: `new Worker($queue, $failedJobHandler, $config, $jobRunner, new RetryPolicy($config, $clock))`. `SyncQueue` takes `($jobRunner, $failedJobHandler, $queueConfig)`, and `DatabaseQueue` takes `failedJobHandler:` in place of `failedJobRepository:` and `retryPolicy:` in place of `maxAttempts:` (the default comes from `queue.max_attempts` through the policy). Build the handler with `new FailedJobHandler($failedJobs, $envelope, $jobRunner, $eventDispatcher, $clock)`. Containers that autowire them need no change.
+6. **Code that called `Worker::backoffFor()`** calls `RetryPolicy::backoffFor()` instead. It takes the same job and returns the same delay.
+7. **A job that calls `release()` inside `handle()`** is now released by the worker after the delay it asked for instead of being deleted. See [Retry Deadlines, Exception Limits and Self-Release](#retry-deadlines-exception-limits-and-self-release).
 
 ## Usage
 
@@ -135,7 +137,7 @@ A negative delay, an empty or keyed array, or a list with a negative or non-int 
 
 The failed job's payload keeps the `backoff` value it was dispatched with. `marko queue:retry <id>` runs it again with that same value: fine if it succeeds, but if it throws again it goes straight back to the failed jobs. After fixing the property, dispatch the job again so the new value applies.
 
-On a job's last attempt the backoff isn't read, so an invalid value there doesn't add a backoff error to the failed job. `Worker::backoffFor()` itself still throws `QueueException` for an invalid value.
+On a job's last attempt the backoff isn't read, so an invalid value there doesn't add a backoff error to the failed job. `RetryPolicy::backoffFor()` itself still throws `QueueException` for an invalid value.
 
 ### Per-Job State
 
@@ -145,11 +147,72 @@ Besides `maxAttempts` and `backoff`, every job carries this state. `Job` gives e
 |--------|------------------|---------|
 | `?int $timeout` | `null` | Seconds one attempt of this job may run, or `null` for the worker's timeout. Override with `public protected(set) ?int $timeout = 120;` |
 | `?int $maxExceptions` | `null` | Attempts that may end in an exception before the job fails, or `null` for no exception limit. Override with `public protected(set) ?int $maxExceptions = 1;` |
-| `int $exceptions` | `0` | Attempts that ended in an exception, counted by `incrementExceptions()` |
-| `?DateTimeImmutable $retryDeadline` | `null` | The retry deadline captured when the job is dispatched, stored with `setRetryDeadline()`. It is not re-evaluated on later attempts |
+| `int $exceptions` | `0` | Attempts that ended in an exception, counted by `incrementExceptions()`. `resetExceptions()` sets it back to `0` |
+| `?DateTimeImmutable $retryDeadline` | `null` | The retry deadline captured when the job is dispatched, stored with `setRetryDeadline()`. It is not re-evaluated on later attempts. `clearRetryDeadline()` removes it |
 | `?int $releaseDelay` | `null` | Seconds to wait before running again, set when `handle()` calls `release()`. `clearRelease()` resets it to `null` |
 
-`release(int $delaySeconds = 0)` records a release request without throwing; a negative delay throws `QueueException`. `JobRunner` counts exceptions and clears a leftover release request at the start of each attempt. The worker does not act on `timeout`, `maxExceptions`, `retryDeadline` or `releaseDelay` yet: they are part of the contract so that drivers keep them across retries, ready for the queue features that read them.
+`release(int $delaySeconds = 0)` records a release request without throwing; a negative delay throws `QueueException`. `JobRunner` counts exceptions and clears a leftover release request at the start of each attempt. The worker acts on `maxExceptions`, `retryDeadline` and `releaseDelay` as described in the next section. It does not act on `timeout` yet: that field is part of the contract so that drivers keep it across retries, ready for the per-job timeout feature.
+
+### Retry Deadlines, Exception Limits and Self-Release
+
+Counting attempts is the wrong measure for a job that polls or waits on something. A job that checks an external render engine every 30 seconds may run hundreds of times while the engine is busy, and that is expected. One real exception, on the other hand, means it is broken. Three features express that.
+
+**Self-release.** Call `release($seconds)` inside `handle()` to run the job again later without throwing. When `handle()` returns, the worker releases the job after that delay instead of deleting it. A release is not an exception, so it doesn't count toward `maxExceptions`. It is still an attempt, so without a retry deadline the job fails once it runs out of attempts.
+
+**Retry deadline.** Implement `RetryUntilInterface` to retry until a time instead of for a number of attempts. While the deadline is ahead, the attempt limit is ignored, so the job may release itself as often as it needs:
+
+```php
+use DateTimeImmutable;
+use Marko\Queue\Job;
+use Marko\Queue\RetryUntilInterface;
+
+class WaitForRender extends Job implements RetryUntilInterface
+{
+    // The first real exception fails the job; releases don't count
+    public protected(set) ?int $maxExceptions = 1;
+
+    public function __construct(
+        private string $renderId,
+    ) {}
+
+    public function retryUntil(): DateTimeImmutable
+    {
+        return new DateTimeImmutable('+6 hours');
+    }
+
+    public function handle(): void
+    {
+        if ($this->renderIsBusy()) {
+            $this->release(30);
+
+            return;
+        }
+
+        // Store the finished render...
+    }
+
+    private function renderIsBusy(): bool
+    {
+        // Ask the render engine about $this->renderId...
+        return false;
+    }
+}
+```
+
+`retryUntil()` is called **once**, when the job is pushed, and the result is stored on the job with `setRetryDeadline()`. A queue serializes the whole job, so calling it on every attempt would push "6 hours from now" forward each time and the deadline would never arrive. The capture is a `#[Before]` plugin on `QueueInterface::push()` and `later()` (`Marko\Queue\Plugin\RetryDeadlinePlugin`), so it works the same on every driver. A job that already has a deadline keeps it.
+
+**Exception limit.** `maxExceptions` caps the attempts that end in an exception, separately from releases. `JobRunner` counts them in `exceptions`, and the count survives retries because the driver stores the job the worker hands back. A timed-out attempt counts as an exception too. With `maxExceptions = 1`, the first exception fails the job.
+
+**Precedence.** `RetryPolicy` (see [RetryPolicy](#retrypolicy)) decides whether a job that threw or released itself runs again. The worker and the database driver's pop-time check both ask it, so the order is the same everywhere:
+
+1. The retry deadline has passed (`now >= retryDeadline`): fail with `JobRetryDeadlinePassedException`.
+2. `exceptions >= maxExceptions`: fail with `JobExceptionsExhaustedException`.
+3. The job has no retry deadline and `attempts >= maxAttempts` (or `queue.max_attempts`): fail with `JobAttemptsExhaustedException`.
+4. Otherwise release it after the delay it asked for with `release()`, or else its [backoff](#retry-backoff).
+
+A job that threw is failed with its own exception, and the reason it wasn't retried is appended to the stored exception text. A job that released itself has no exception of its own, so it is failed with the limit exception. Either way it goes through [the failed-job handler](#when-a-job-fails-for-good), so `failed()` runs and `JobFailedEvent` is dispatched. The worker reads the time through the injected `Psr\Clock\ClockInterface`, so a [`FakeClock`](/docs/packages/testing/#fakeclock) controls deadlines in tests.
+
+`queue:retry` resets the attempt and exception counts and clears the retry deadline and any release request, so a retried `RetryUntilInterface` job gets a fresh deadline when it is pushed again. The [sync driver](/docs/packages/queue-sync/) runs a job once, right away, so it ignores a release request.
 
 #### Implementing `JobInterface` Directly
 
@@ -196,9 +259,19 @@ class CustomJob implements JobInterface
         $this->exceptions++;
     }
 
+    public function resetExceptions(): void
+    {
+        $this->exceptions = 0;
+    }
+
     public function setRetryDeadline(DateTimeImmutable $deadline): void
     {
         $this->retryDeadline = $deadline;
+    }
+
+    public function clearRetryDeadline(): void
+    {
+        $this->retryDeadline = null;
     }
 
     public function release(int $delaySeconds = 0): void
@@ -290,7 +363,7 @@ If a job that has used up its attempts still can't be serialized (for example, i
 
 ### When a Job Fails for Good
 
-A job fails for good when its last attempt throws or times out, when its backoff is invalid so it can't be retried, when the [database driver](/docs/packages/queue-database/#retries-and-attempt-counting) finds its attempts used up by workers that crashed, and when it throws under the [sync driver](/docs/packages/queue-sync/). Every one of those paths goes through `FailedJobHandlerInterface` (bound to `FailedJobHandler`), which in order:
+A job fails for good when its last attempt throws or times out, when it reaches its retry deadline or `maxExceptions` (see [Retry Deadlines, Exception Limits and Self-Release](#retry-deadlines-exception-limits-and-self-release)), when its backoff is invalid so it can't be retried, when the [database driver](/docs/packages/queue-database/#retries-and-attempt-counting) finds its attempts used up by workers that crashed, and when it throws under the [sync driver](/docs/packages/queue-sync/). Every one of those paths goes through `FailedJobHandlerInterface` (bound to `FailedJobHandler`), which in order:
 
 1. stores the job in the failed-job store, with its exception and an [argument-free trace](#failed-job-traces)
 2. calls `failed()` if the job implements `FailableJobInterface`
@@ -487,7 +560,7 @@ When an async observer fires, `QueueAsyncObserverDispatcher` serializes the even
 | Command | Description |
 |---------|-------------|
 | `marko queue:failed` | List failed jobs |
-| `marko queue:retry <id>` | Retry a failed job (resets attempt counter so the job gets its full `maxAttempts`) |
+| `marko queue:retry <id>` | Retry a failed job (resets its attempt and exception counts so it gets its full `maxAttempts` and `maxExceptions`, and clears its retry deadline so a fresh one is captured on push) |
 | `marko queue:retry --all` | Retry every failed job. Rows whose payload could not be serialized are skipped and reported, and the command returns exit code 1 if any were skipped |
 | `marko queue:clear` | Clear all jobs from a queue |
 | `marko queue:status` | Show queue size |
@@ -500,6 +573,7 @@ When an async observer fires, `QueueAsyncObserverDispatcher` serializes the even
 use Marko\Queue\Event\JobFailedEvent;
 use Marko\Queue\FailedJobHandler;
 use Marko\Queue\JobRunner;
+use Marko\Queue\RetryPolicy;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeEventDispatcher;
@@ -508,7 +582,13 @@ it('records when a job failed', function (): void {
     $clock = new FakeClock('2026-03-01 09:15:00 UTC');
     $events = new FakeEventDispatcher();
     $runner = new JobRunner($container, $envelope, $events);
-    $worker = new Worker($queue, new FailedJobHandler($failedJobs, $envelope, $runner, $events, $clock), $config, $runner);
+    $worker = new Worker(
+        $queue,
+        new FailedJobHandler($failedJobs, $envelope, $runner, $events, $clock),
+        $config,
+        $runner,
+        new RetryPolicy($config, $clock),
+    );
 
     $worker->work(once: true);
 
@@ -619,12 +699,37 @@ public function setId(string $id): void;
 public function incrementAttempts(): void;
 public function resetAttempts(): void;
 public function incrementExceptions(): void;
+public function resetExceptions(): void;
 public function setRetryDeadline(DateTimeImmutable $deadline): void;
+public function clearRetryDeadline(): void;
 public function release(int $delaySeconds = 0): void;
 public function clearRelease(): void;
 public function serialize(): string;
 public static function unserialize(string $data): static;
 ```
+
+### RetryUntilInterface
+
+```php
+use Marko\Queue\RetryUntilInterface;
+
+public function retryUntil(): DateTimeImmutable; // called once, when the job is pushed
+```
+
+### RetryPolicy
+
+```php
+use Marko\Queue\JobInterface;
+use Marko\Queue\RetryDecision;
+use Marko\Queue\RetryPolicy;
+
+public function decide(JobInterface $job, ?Throwable $e = null): RetryDecision; // $e null = the job released itself
+public function limitReached(JobInterface $job): ?QueueException; // the limit reached, in precedence order, or null
+public function maxAttemptsFor(JobInterface $job): int; // the job's maxAttempts, or queue.max_attempts
+public function backoffFor(JobInterface $job): int; // throws QueueException for an invalid backoff
+```
+
+Constructed with the `QueueConfig` and the clock. `decide()` returns a readonly `RetryDecision`: `shouldRelease()` is `true` with `$delay` set, or `false` with `$failure` holding the limit exception (or the backoff error). See [Retry Deadlines, Exception Limits and Self-Release](#retry-deadlines-exception-limits-and-self-release).
 
 ### JobRunnerInterface
 
@@ -672,7 +777,7 @@ public function work(
 public function stop(): void;
 ```
 
-The built-in `Worker` also exposes `backoffFor(JobInterface $job): int`, which returns the retry delay for a job whose latest attempt failed.
+The built-in `Worker` asks [`RetryPolicy`](#retrypolicy) whether a job that threw or released itself runs again, and after what delay.
 
 ### FailedJobRepositoryInterface
 
@@ -735,7 +840,9 @@ Implements `Marko\Core\Event\AsyncObserverDispatcherInterface` and is bound to i
 |-----------|-------------|
 | `QueueException` | Base exception for all queue errors --- includes `getContext()` and `getSuggestion()` methods |
 | `JobFailedException` | Thrown when a job fails during execution |
-| `JobAttemptsExhaustedException` | Passed to `failed()` and `JobFailedEvent` when the database driver fails a job whose attempts were all reserved by workers that crashed or timed out |
+| `JobAttemptsExhaustedException` | The reason a job without a retry deadline was not retried once it used its `maxAttempts`. Passed to `failed()` and `JobFailedEvent` for a job that released itself on its last attempt, and when the database driver fails a job whose attempts were all reserved by workers that crashed or timed out |
+| `JobRetryDeadlinePassedException` | The reason a job was not retried once its retry deadline passed |
+| `JobExceptionsExhaustedException` | The reason a job was not retried once its exceptions reached `maxExceptions` |
 | `JobTimedOutException` | Recorded as the failure of a job that ran longer than the worker timeout. See [Worker Limits and Shutdown](#worker-limits-and-shutdown) |
 | `SerializationException` | Thrown when a job payload cannot be serialized or deserialized, when an async observer's event cannot be serialized, when `encryption.key` is empty, or when an HMAC signature does not match (tampered payload) |
 | `NoDriverException` | Thrown when a queue interface can't be resolved. For `QueueInterface` and `FailedJobRepositoryInterface` it lists the driver packages to install. For any other queue interface it names the interface that has no binding and tells you to bind it in `module.php` |

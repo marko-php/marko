@@ -14,8 +14,10 @@ use Marko\Queue\Database\Tests\Fixtures\FailedHookRecorder;
 use Marko\Queue\Database\Tests\Fixtures\SqliteConnection;
 use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
 use Marko\Queue\Database\Tests\Fixtures\TestJob;
+use Marko\Queue\Database\Tests\Fixtures\TestRetryPolicy;
 use Marko\Queue\Event\JobFailedEvent;
 use Marko\Queue\Exceptions\JobAttemptsExhaustedException;
+use Marko\Queue\Exceptions\JobRetryDeadlinePassedException;
 use Marko\Queue\JobEnvelope;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
@@ -31,6 +33,7 @@ function attemptsEnvelope(): JobEnvelope
 function attemptsQueue(
     SqliteConnection $connection,
     int $maxAttempts = 3,
+    FakeClock $clock = new FakeClock(),
 ): DatabaseQueue {
     return new DatabaseQueue(
         connection: $connection,
@@ -38,12 +41,12 @@ function attemptsQueue(
         failedJobHandler: TestFailedJobHandler::create(
             new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC')),
             attemptsEnvelope(),
-            new FakeClock(),
+            $clock,
         ),
         queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
-        clock: new FakeClock(),
+        clock: $clock,
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
-        maxAttempts: $maxAttempts,
+        retryPolicy: TestRetryPolicy::create($maxAttempts, $clock),
     );
 }
 
@@ -173,7 +176,7 @@ describe('DatabaseQueue attempt persistence', function (): void {
             queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
             clock: new FakeClock(),
             databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
-            maxAttempts: 1,
+            retryPolicy: TestRetryPolicy::create(1),
         );
         $id = $queue->push(new FailableCrashJob('crashy'), 'emails')->id;
 
@@ -214,5 +217,72 @@ describe('DatabaseQueue attempt persistence', function (): void {
         expireReservation($connection, $id);
 
         expect($queue->pop()?->attempts)->toBe(1);
+    });
+});
+
+describe('DatabaseQueue retry deadline at pop time', function (): void {
+    it(
+        'does not fail a job with a deadline that released itself more than queue.max_attempts times',
+        function (): void {
+            $connection = SqliteConnection::withQueueTables();
+            $clock = new FakeClock('2026-10-31 12:00:00');
+            $queue = attemptsQueue($connection, maxAttempts: 3, clock: $clock);
+            $job = new TestJob('polling');
+            $job->setRetryDeadline(new DateTimeImmutable('2026-10-31 18:00:00'));
+            $id = $queue->push($job)->id;
+
+            for ($attempt = 1; $attempt <= 10; $attempt++) {
+                $popped = $queue->pop();
+
+                expect($popped?->id)->toBe($id);
+
+                // The worker counts the attempt, the job releases itself, and the queue stores it
+                $popped->incrementAttempts();
+                $popped->release(0);
+                $queue->release($popped);
+                $clock->travel('+1 minute');
+            }
+
+            $popped = $queue->pop();
+
+            expect($popped?->id)->toBe($id)
+                ->and($popped->attempts)->toBe(10)
+                ->and(jobsRow($connection, $id)['attempts'])->toBe(11);
+        },
+    );
+
+    it('fails a popped job whose retry deadline has passed through the failed-job handler', function (): void {
+        $connection = SqliteConnection::withQueueTables();
+        $clock = new FakeClock('2026-10-31 12:00:00');
+        $queue = attemptsQueue($connection, clock: $clock);
+        $failedJobRepository = new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC'));
+        $job = new TestJob('polling');
+        $job->setRetryDeadline(new DateTimeImmutable('2026-10-31 12:30:00'));
+        $id = $queue->push($job)->id;
+
+        $popped = $queue->pop();
+        $popped->incrementAttempts();
+        $queue->release($popped, 3600);
+        $clock->travel('+1 hour');
+
+        expect($queue->pop())->toBeNull()
+            ->and(jobsRow($connection, $id))->toBeNull()
+            ->and($failedJobRepository->find($id)?->exception)->toContain(JobRetryDeadlinePassedException::class)
+            ->and($failedJobRepository->find($id)?->exception)->toContain('passed its retry deadline');
+    });
+
+    it('keeps the exception count of a job released after an exception', function (): void {
+        $connection = SqliteConnection::withQueueTables();
+        $queue = attemptsQueue($connection);
+        $job = new TestJob('polling');
+        $job->setRetryDeadline(new DateTimeImmutable('+1 day'));
+        $queue->push($job);
+
+        $popped = $queue->pop();
+        $popped->incrementAttempts();
+        $popped->incrementExceptions();
+        $queue->release($popped);
+
+        expect($queue->pop()?->exceptions)->toBe(1);
     });
 });

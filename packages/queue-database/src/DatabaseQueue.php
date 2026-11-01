@@ -11,12 +11,14 @@ use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Exceptions\LockException;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Queue\Exceptions\JobAttemptsExhaustedException;
+use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
 use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\RetryPolicy;
 use Psr\Clock\ClockInterface;
 use Random\RandomException;
 
@@ -34,12 +36,15 @@ use Random\RandomException;
  * - release() stores the job the worker hands back, whose attempts the worker
  *   has already incremented to the column value, so the count and every other
  *   piece of per-job state (exceptions, retry deadline) survive the round trip.
- * - A popped job whose earlier reservations already reach its max attempts
- *   (job maxAttempts, or the queue default) is failed through the
- *   FailedJobHandlerInterface (stored, its failed() hook called, JobFailedEvent
- *   dispatched) and deleted instead of being returned, so a job that always
- *   crashes its worker cannot be retried forever. This happens after the
- *   reserving transaction commits, so failed() never runs inside it.
+ * - A popped job that has already reached a RetryPolicy limit is failed
+ *   through the FailedJobHandlerInterface (stored, its failed() hook called,
+ *   JobFailedEvent dispatched) and deleted instead of being returned: a job
+ *   past its retry deadline, or one whose earlier reservations reach its max
+ *   attempts (job maxAttempts, or queue.max_attempts), so a job that always
+ *   crashes its worker cannot be retried forever. A job with a retry deadline
+ *   is not limited by attempts, so a polling job that releases itself many
+ *   times is not failed here. This happens after the reserving transaction
+ *   commits, so failed() never runs inside it.
  *
  * Reservation: pop() selects the next job with the query builder's
  * lockForUpdate()->skipLocked() inside a transaction, so concurrent workers
@@ -64,10 +69,10 @@ readonly class DatabaseQueue implements QueueInterface
         private QueryBuilderFactoryInterface $queryBuilderFactory,
         private ClockInterface $clock,
         private DatabaseTimezoneConfig $databaseTimezoneConfig,
+        private RetryPolicy $retryPolicy,
         private string $table = 'jobs',
         private string $defaultQueue = 'default',
         private int $retryAfter = 90,
-        private int $maxAttempts = 3,
     ) {}
 
     /**
@@ -178,14 +183,14 @@ readonly class DatabaseQueue implements QueueInterface
                 return null;
             }
 
-            $maxAttempts = $job->maxAttempts ?? $this->maxAttempts;
+            $failure = $this->retryPolicy->limitReached($job);
 
-            if ($job->attempts < $maxAttempts) {
+            if ($failure === null) {
                 return $job;
             }
 
-            // Its earlier reservations used up every attempt without completing: fail it, then try the next job
-            $this->failExhaustedJob($job, $queueName, $maxAttempts);
+            // A limit was reached before this attempt could start: fail the job, then try the next one
+            $this->failExhaustedJob($job, $queueName, $failure);
         }
     }
 
@@ -238,7 +243,11 @@ readonly class DatabaseQueue implements QueueInterface
     }
 
     /**
-     * Fail a job whose attempts were all reserved by workers that crashed or timed out, then delete it.
+     * Fail a popped job that reached a RetryPolicy limit before this attempt started, then delete it.
+     *
+     * The worker fails a job that threw or released itself on its last attempt, so a job that runs out of
+     * attempts here had them all reserved by workers that crashed or timed out; it is failed with that
+     * explanation. A job past its retry deadline is failed with the deadline error.
      *
      * The row is still reserved, so no other worker picks it up while it is being failed.
      *
@@ -247,13 +256,17 @@ readonly class DatabaseQueue implements QueueInterface
     private function failExhaustedJob(
         JobInterface $job,
         string $queueName,
-        int $maxAttempts,
+        QueueException $failure,
     ): void {
-        $this->failedJobHandler->handle(
-            $job,
-            $queueName,
-            JobAttemptsExhaustedException::afterCrashedReservations($job->id, $job->attempts, $maxAttempts),
-        );
+        if ($failure instanceof JobAttemptsExhaustedException) {
+            $failure = JobAttemptsExhaustedException::afterCrashedReservations(
+                (string) $job->id,
+                $job->attempts,
+                $this->retryPolicy->maxAttemptsFor($job),
+            );
+        }
+
+        $this->failedJobHandler->handle($job, $queueName, $failure);
         $this->delete($job->id);
     }
 

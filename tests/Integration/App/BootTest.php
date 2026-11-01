@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
+use Marko\Core\Plugin\PluginInterceptedInterface;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\PgSql\Connection\PgSqlConnection;
 use Marko\Queue\Database\DatabaseQueue;
@@ -31,10 +32,14 @@ it('boots the fixture application with every installed module', function (): voi
 
 it('resolves the real driver bindings from module wiring', function (): void {
     $container = $this->app->container;
+    $queue = $container->get(QueueInterface::class);
+
+    // marko/queue's push plugins (RetryDeadlinePlugin) wrap every queue driver in an interceptor
+    expect($queue)->toBeInstanceOf(PluginInterceptedInterface::class)
+        ->and($queue->getPluginTarget())->toBeInstanceOf(DatabaseQueue::class);
 
     expect($container->get(ConnectionInterface::class))->toBeInstanceOf(PgSqlConnection::class)
         ->and($container->get(CacheInterface::class))->toBeInstanceOf(RedisCacheDriver::class)
-        ->and($container->get(QueueInterface::class))->toBeInstanceOf(DatabaseQueue::class)
         ->and($container->get(SessionInterface::class))->toBeInstanceOf(Session::class)
         ->and($container->get(SessionHandlerInterface::class))->toBeInstanceOf(DatabaseSessionHandler::class);
 });

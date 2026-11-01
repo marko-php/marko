@@ -13,6 +13,7 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\RetryPolicy;
 use Psr\Clock\ClockInterface;
 
 return [
@@ -27,9 +28,9 @@ return [
                 queryBuilderFactory: $container->get(QueryBuilderFactoryInterface::class),
                 clock: $container->get(ClockInterface::class),
                 databaseTimezoneConfig: $container->get(DatabaseTimezoneConfig::class),
+                retryPolicy: $container->get(RetryPolicy::class),
                 defaultQueue: $config->queue(),
                 retryAfter: $config->retryAfter(),
-                maxAttempts: $config->maxAttempts(),
             );
         },
         FailedJobRepositoryInterface::class => DatabaseFailedJobRepository::class,

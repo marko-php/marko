@@ -21,6 +21,7 @@ use Marko\Queue\JobRunner;
 use Marko\Queue\PushResult;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\RetryPolicy;
 use Marko\Queue\Tests\Command\Helpers;
 use Marko\Queue\Tests\Command\StubFailedJobRepository;
 use Marko\Queue\Worker;
@@ -233,6 +234,39 @@ it('resets a retried job\'s attempts to zero before re-queuing', function (): vo
 
     expect($pushedJob->attempts)->toBe(0);
 });
+
+it(
+    'resets a retried job\'s exception count, retry deadline and release request before re-queuing',
+    function (string $mode): void {
+        $envelope = createRetryCommandEnvelope();
+        $job = new TestRetryJob('test-data');
+        $job->incrementAttempts();
+        $job->incrementExceptions();
+        $job->setRetryDeadline(new DateTimeImmutable('2024-01-01 11:00:00'));
+        $job->release(30);
+        $failedJob = new FailedJob(
+            id: 'failed-job-002',
+            queue: 'default',
+            payload: $envelope->wrap($job->serialize()),
+            exception: 'Test exception',
+            failedAt: new DateTimeImmutable('2024-01-01 12:00:00'),
+        );
+        $queue = Helpers::createStubQueue();
+        $command = new RetryCommand(Helpers::createStubFailedJobRepository([$failedJob]), $queue, $envelope);
+        ['output' => $output] = Helpers::createOutputStream();
+        $argv = $mode === 'all' ? ['marko', 'queue:retry', '--all'] : ['marko', 'queue:retry', 'failed-job-002'];
+
+        $command->execute(new Input($argv), $output);
+
+        /** @var TestRetryJob $pushedJob */
+        $pushedJob = $queue->pushedJobs[0]['job'];
+
+        expect($pushedJob->attempts)->toBe(0)
+            ->and($pushedJob->exceptions)->toBe(0)
+            ->and($pushedJob->retryDeadline)->toBeNull()
+            ->and($pushedJob->releaseDelay)->toBeNull();
+    },
+)->with(['single', 'all']);
 
 class RetryFailableJob extends Job implements FailableJobInterface
 {
@@ -620,6 +654,10 @@ function createRetryWorker(
             'queue.max_attempts' => 1,
         ])),
         new JobRunner($container, createRetryCommandEnvelope(), new FakeEventDispatcher()),
+        new RetryPolicy(new QueueConfig(new FakeConfigRepository([
+            'queue.queue' => 'default',
+            'queue.max_attempts' => 1,
+        ])), new FakeClock()),
     );
 }
 

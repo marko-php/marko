@@ -14,6 +14,7 @@ use Marko\Queue\Database\Tests\Fixtures\InMemoryFailedJobRepository;
 use Marko\Queue\Database\Tests\Fixtures\SqliteConnection;
 use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
 use Marko\Queue\Database\Tests\Fixtures\TestJob;
+use Marko\Queue\Database\Tests\Fixtures\TestRetryPolicy;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\QueueInterface;
@@ -41,8 +42,8 @@ function createTestQueue(
         ),
         clock: $clock,
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
+        retryPolicy: TestRetryPolicy::create($maxAttempts, $clock),
         retryAfter: $retryAfter,
-        maxAttempts: $maxAttempts,
     );
 }
 
