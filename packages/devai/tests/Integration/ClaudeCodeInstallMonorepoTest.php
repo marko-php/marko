@@ -104,6 +104,15 @@ function integMonorepoRunner(string $listOutput = ''): CommandRunnerInterface
             if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
             }
+            if ($cmd === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'list') {
+                // The mode-contrast test runs an external install, which verifies the plugins.
+                $plugins = array_map(
+                    static fn (string $id): array => ['id' => $id, 'scope' => 'project', 'enabled' => true],
+                    ['marko-skills@marko', 'marko-lsp@marko', 'marko-mcp@marko'],
+                );
+
+                return ['exitCode' => 0, 'stdout' => (string) json_encode($plugins), 'stderr' => ''];
+            }
 
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }

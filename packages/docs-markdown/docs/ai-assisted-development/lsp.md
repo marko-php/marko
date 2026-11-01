@@ -11,7 +11,7 @@ Start it with:
 marko lsp:serve
 ```
 
-The server speaks JSON-RPC over stdio. For Claude Code, the `marko-lsp` plugin (shipped via the `marko` marketplace at `packages/claude-plugins/plugins/marko-lsp/`) registers the server through its `.lsp.json` and a POSIX shim at `bin/marko-lsp` that locates `vendor/bin/marko` and execs `marko lsp:serve`. `marko/devai` writes the marketplace registration into `.claude/settings.json` (`extraKnownMarketplaces.marko` + `enabledPlugins`), and Claude Code installs the plugin on first folder-trust prompt.
+The server speaks JSON-RPC over stdio. For Claude Code, the `marko-lsp` plugin (shipped via the `marko` marketplace at `packages/claude-plugins/plugins/marko-lsp/`) registers the server through its `.lsp.json` and a POSIX shim at `bin/marko-lsp` that locates `vendor/bin/marko` and execs `marko lsp:serve`. `marko/devai` writes the marketplace registration into `.claude/settings.json` (`extraKnownMarketplaces.marko` + `enabledPlugins`) and installs the plugin with `claude plugin install marko-lsp@marko --scope project`, failing loudly if it does not show up in `claude plugin list`. Teammates who clone the repo get the plugin at Claude Code's folder-trust prompt; if they skip that prompt, they run the same install command and restart Claude Code.
 
 ## Wired LSP methods
 

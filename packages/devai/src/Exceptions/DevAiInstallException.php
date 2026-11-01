@@ -21,6 +21,31 @@ class DevAiInstallException extends MarkoException
         );
     }
 
+    /**
+     * @param list<string> $missingPlugins plugin ids `claude plugin list` did not report as enabled
+     * @param list<string> $allPlugins every plugin id devai installs, for the copy-paste fix
+     */
+    public static function claudePluginsNotInstalled(
+        array $missingPlugins,
+        array $allPlugins,
+        string $details,
+    ): static {
+        $commands = array_map(
+            static fn (string $plugin): string => '  claude plugin install ' . $plugin . ' --scope project',
+            $allPlugins,
+        );
+
+        $missing = implode(', ', $missingPlugins);
+
+        return new static(
+            message: 'Claude Code plugins enabled in .claude/settings.json but not installed: ' . $missing,
+            context: 'While verifying the claude-code agent install with `claude plugin list`'
+                . ($details === '' ? '' : ":\n" . $details),
+            suggestion: "Install the plugins from the project root:\n" . implode("\n", $commands)
+                . "\nThen restart Claude Code so it loads the Marko MCP server, LSP and skills.",
+        );
+    }
+
     public static function npmRequiredForLspDeps(): static
     {
         return new static(

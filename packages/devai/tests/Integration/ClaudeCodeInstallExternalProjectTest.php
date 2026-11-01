@@ -46,6 +46,9 @@ function integExternalRunnerWithLsp(
             if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
             }
+            if ($cmd === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'list') {
+                return ['exitCode' => 0, 'stdout' => integExternalPluginListJson(), 'stderr' => ''];
+            }
             if ($cmd === 'npm') {
                 return ['exitCode' => $this->npmExitCode, 'stdout' => '', 'stderr' => ''];
             }
@@ -93,16 +96,39 @@ function integRemoveTempDir(string $dir): void
 }
 
 /**
- * Build a fake CommandRunnerInterface for integration tests.
- * Captures all calls; returns empty stdout by default, or listOutput for "claude mcp list".
+ * `claude plugin list --json` output with the given marko plugins enabled for
+ * this project (all three by default).
+ *
+ * @param list<string> $enabled
  */
-function integExternalRunner(string $listOutput = ''): CommandRunnerInterface
-{
-    return new class ($listOutput) implements CommandRunnerInterface
+function integExternalPluginListJson(
+    array $enabled = ['marko-skills@marko', 'marko-lsp@marko', 'marko-mcp@marko'],
+): string {
+    return (string) json_encode(array_map(
+        static fn (string $id): array => ['id' => $id, 'scope' => 'project', 'enabled' => true],
+        $enabled,
+    ));
+}
+
+/**
+ * Build a fake CommandRunnerInterface for integration tests.
+ * Captures all calls; returns empty stdout by default, listOutput for "claude mcp list",
+ * and pluginListJson for "claude plugin list --json".
+ */
+function integExternalRunner(
+    string $listOutput = '',
+    ?string $pluginListJson = null,
+    bool $claudeOnPath = true,
+): CommandRunnerInterface {
+    return new class ($listOutput, $pluginListJson ?? integExternalPluginListJson(), $claudeOnPath) implements CommandRunnerInterface
     {
         public array $calls = [];
 
-        public function __construct(public string $listOutput) {}
+        public function __construct(
+            public string $listOutput,
+            private string $pluginListJson,
+            private bool $claudeOnPath,
+        ) {}
 
         public function run(
             string $cmd,
@@ -112,6 +138,9 @@ function integExternalRunner(string $listOutput = ''): CommandRunnerInterface
             if ($cmd === 'claude' && ($args[0] ?? '') === 'mcp' && ($args[1] ?? '') === 'list') {
                 return ['exitCode' => 0, 'stdout' => $this->listOutput, 'stderr' => ''];
             }
+            if ($cmd === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'list') {
+                return ['exitCode' => 0, 'stdout' => $this->pluginListJson, 'stderr' => ''];
+            }
 
             return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
         }
@@ -120,7 +149,11 @@ function integExternalRunner(string $listOutput = ''): CommandRunnerInterface
         {
             // Report claude and intelephense as present so existing tests don't
             // trigger the npm-required exception path (they don't test LSP deps).
-            return in_array($binary, ['claude', 'intelephense'], true);
+            return match ($binary) {
+                'claude' => $this->claudeOnPath,
+                'intelephense' => true,
+                default => false,
+            };
         }
     };
 }
@@ -639,4 +672,56 @@ describe('--skip-lsp-deps integration (external project)', function (): void {
                 ->and($data['enabledPlugins']['marko-mcp@marko'])->toBeTrue();
         },
     );
+});
+
+// ---------------------------------------------------------------------------
+// Explicit plugin install + verification (external-project fixture)
+// ---------------------------------------------------------------------------
+
+describe('claude code plugin install (external project)', function (): void {
+    beforeEach(function (): void {
+        $this->root = integExternalTempDir();
+    });
+
+    afterEach(function (): void {
+        integRemoveTempDir($this->root);
+    });
+
+    it('installs the three marko plugins at project scope and verifies them', function (): void {
+        $runner = integExternalRunner();
+
+        $result = integExternalRunInstall($this->root, runner: $runner);
+
+        $pluginCalls = array_values(array_map(
+            fn ($call) => $call[1],
+            array_filter($runner->calls, fn ($call) => $call[0] === 'claude' && ($call[1][0] ?? '') === 'plugin'),
+        ));
+        expect($result['status'])->toBe('installed')
+            ->and($pluginCalls)->toBe([
+                ['plugin', 'install', 'marko-skills@marko', '--scope', 'project'],
+                ['plugin', 'install', 'marko-lsp@marko', '--scope', 'project'],
+                ['plugin', 'install', 'marko-mcp@marko', '--scope', 'project'],
+                ['plugin', 'list', '--json'],
+            ]);
+    });
+
+    it('fails the install loudly when a plugin is still missing after installing', function (): void {
+        $runner = integExternalRunner(pluginListJson: integExternalPluginListJson(['marko-skills@marko']));
+
+        expect(fn () => integExternalRunInstall($this->root, runner: $runner))
+            ->toThrow(DevAiInstallException::class, 'marko-lsp@marko, marko-mcp@marko');
+    });
+
+    it('logs a warning instead of failing when the claude CLI is not on PATH', function (): void {
+        $runner = integExternalRunner(claudeOnPath: false);
+
+        $result = integExternalRunInstall($this->root, runner: $runner);
+
+        $warnings = array_values(array_filter(
+            $result['log'] ?? [],
+            fn (string $line): bool => str_starts_with($line, '[claude-code] WARNING: claude CLI not found on PATH'),
+        ));
+        expect($result['status'])->toBe('installed')
+            ->and($warnings)->toHaveCount(1);
+    });
 });

@@ -7,6 +7,7 @@ use Marko\DevAi\Contract\AgentInterface;
 use Marko\DevAi\Exceptions\DevAiInstallException;
 use Marko\DevAi\Installation\EnsureResult;
 use Marko\DevAi\Installation\IntelephenseEnsurerInterface;
+use Marko\DevAi\Process\CommandRunnerInterface;
 
 // ---------------------------------------------------------------------------
 // Basic identity
@@ -475,5 +476,218 @@ describe('lsp deps', function (): void {
         (new ClaudeCodeAgent(devaiRunner()))->install(devaiContext(), $this->root);
 
         expect(file_exists($this->root . '/.claude/settings.json'))->toBeTrue();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// install() — explicit plugin install + verification
+// ---------------------------------------------------------------------------
+
+/**
+ * A CommandRunner double for the `claude plugin` flow. `claude plugin list --json`
+ * reports $listed (plugin id => enabled). `claude plugin install` overwrites
+ * .claude/settings.json the way the real CLI does (2-space indent, its own key
+ * order) so tests can prove devai rewrites it afterwards.
+ *
+ * @param array<string, bool> $listed
+ */
+function claudePluginRunner(
+    string $projectRoot,
+    array $listed = ['marko-skills@marko' => true, 'marko-lsp@marko' => true, 'marko-mcp@marko' => true],
+    bool $claudeOnPath = true,
+    int $listExitCode = 0,
+): CommandRunnerInterface {
+    return new class ($projectRoot, $listed, $claudeOnPath, $listExitCode) implements CommandRunnerInterface
+    {
+        /** @var list<array{command: string, args: list<string>}> */
+        public array $calls = [];
+
+        /** @var list<string> settings.json content seen at each `plugin install` call */
+        public array $settingsAtInstall = [];
+
+        /**
+         * @param array<string, bool> $listed
+         */
+        public function __construct(
+            private string $projectRoot,
+            private array $listed,
+            private bool $claudeOnPath,
+            private int $listExitCode,
+        ) {}
+
+        public function run(
+            string $command,
+            array $args = [],
+        ): array {
+            $this->calls[] = ['command' => $command, 'args' => $args];
+            if ($command === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'install') {
+                $path = $this->projectRoot . '/.claude/settings.json';
+                $this->settingsAtInstall[] = is_file($path) ? (string) file_get_contents($path) : '';
+                file_put_contents(
+                    $path,
+                    "{\n  \"enabledPlugins\": {\n    \"" . ($args[2] ?? '') . "\": true\n  }\n}\n",
+                );
+
+                return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if ($command === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'list') {
+                $plugins = [];
+                foreach ($this->listed as $id => $enabled) {
+                    $plugins[] = ['id' => $id, 'scope' => 'project', 'enabled' => $enabled];
+                }
+
+                return [
+                    'exitCode' => $this->listExitCode,
+                    'stdout' => $this->listExitCode === 0 ? (string) json_encode($plugins) : '',
+                    'stderr' => $this->listExitCode === 0 ? '' : 'plugin list exploded',
+                ];
+            }
+
+            return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
+        }
+
+        public function isOnPath(string $binary): bool
+        {
+            return $binary === 'claude' && $this->claudeOnPath;
+        }
+
+        /**
+         * @return list<list<string>>
+         */
+        public function pluginCalls(string $subcommand): array
+        {
+            $matches = [];
+            foreach ($this->calls as $call) {
+                if ($call['command'] === 'claude' && ($call['args'][0] ?? '') === 'plugin' && ($call['args'][1] ?? '') === $subcommand) {
+                    $matches[] = $call['args'];
+                }
+            }
+
+            return $matches;
+        }
+    };
+}
+
+describe('plugin installation', function (): void {
+    beforeEach(function (): void {
+        $this->root = devaiTempDir();
+    });
+
+    afterEach(function (): void {
+        devaiRemoveDir($this->root);
+    });
+
+    it('installs all three marko plugins at project scope for an external project', function (): void {
+        $runner = claudePluginRunner($this->root);
+
+        (new ClaudeCodeAgent($runner))->install(devaiContext(), $this->root);
+
+        expect($runner->pluginCalls('install'))->toBe([
+            ['plugin', 'install', 'marko-skills@marko', '--scope', 'project'],
+            ['plugin', 'install', 'marko-lsp@marko', '--scope', 'project'],
+            ['plugin', 'install', 'marko-mcp@marko', '--scope', 'project'],
+        ]);
+    });
+
+    it('writes the marketplace into settings before installing so the CLI can resolve it', function (): void {
+        $runner = claudePluginRunner($this->root);
+
+        (new ClaudeCodeAgent($runner))->install(devaiContext(), $this->root);
+
+        $first = json_decode($runner->settingsAtInstall[0], true);
+        expect($first['extraKnownMarketplaces']['marko']['source']['source'])->toBe('github');
+    });
+
+    it('rewrites settings.json after the CLI install so the output stays stable', function (): void {
+        $runner = claudePluginRunner($this->root);
+
+        (new ClaudeCodeAgent($runner))->install(devaiContext(), $this->root);
+
+        $content = (string) file_get_contents($this->root . '/.claude/settings.json');
+        $data = json_decode($content, true);
+        expect($content)->toBe(json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES))
+            ->and($data['extraKnownMarketplaces']['marko']['source']['repo'])->toBe('marko-php/marko')
+            ->and($data['enabledPlugins'])->toBe([
+                'marko-skills@marko' => true,
+                'marko-lsp@marko' => true,
+                'marko-mcp@marko' => true,
+            ]);
+    });
+
+    it('verifies the install with claude plugin list --json after installing', function (): void {
+        $runner = claudePluginRunner($this->root);
+
+        (new ClaudeCodeAgent($runner))->install(devaiContext(), $this->root);
+
+        $pluginCalls = array_values(array_filter(
+            $runner->calls,
+            fn (array $call): bool => $call['command'] === 'claude' && ($call['args'][0] ?? '') === 'plugin',
+        ));
+        expect(end($pluginCalls)['args'])->toBe(['plugin', 'list', '--json']);
+    });
+
+    it('throws a loud exception naming the missing plugin when verification fails', function (): void {
+        $runner = claudePluginRunner($this->root, ['marko-skills@marko' => true, 'marko-lsp@marko' => true]);
+
+        try {
+            (new ClaudeCodeAgent($runner))->install(devaiContext(), $this->root);
+            $this->fail('Expected DevAiInstallException');
+        } catch (DevAiInstallException $e) {
+            expect($e->getMessage())->toContain('marko-mcp@marko')
+                ->and($e->getMessage())->not->toContain('marko-lsp@marko')
+                ->and($e->getSuggestion())->toContain('claude plugin install marko-skills@marko --scope project')
+                ->and($e->getSuggestion())->toContain('claude plugin install marko-lsp@marko --scope project')
+                ->and($e->getSuggestion())->toContain('claude plugin install marko-mcp@marko --scope project')
+                ->and($e->getSuggestion())->toContain('restart Claude Code');
+        }
+    });
+
+    it('treats a plugin that is listed but not enabled for this project as missing', function (): void {
+        $runner = claudePluginRunner($this->root, [
+            'marko-skills@marko' => false,
+            'marko-lsp@marko' => true,
+            'marko-mcp@marko' => true,
+        ]);
+
+        expect(fn () => (new ClaudeCodeAgent($runner))->install(devaiContext(), $this->root))
+            ->toThrow(DevAiInstallException::class, 'marko-skills@marko');
+    });
+
+    it('throws when claude plugin list itself fails', function (): void {
+        $runner = claudePluginRunner($this->root, listExitCode: 1);
+
+        try {
+            (new ClaudeCodeAgent($runner))->install(devaiContext(), $this->root);
+            $this->fail('Expected DevAiInstallException');
+        } catch (DevAiInstallException $e) {
+            expect($e->getContext())->toContain('plugin list exploded');
+        }
+    });
+
+    it('warns instead of throwing when the claude CLI is not on PATH', function (): void {
+        $runner = claudePluginRunner($this->root, [], claudeOnPath: false);
+        $agent = new ClaudeCodeAgent($runner);
+
+        $agent->install(devaiContext(), $this->root);
+
+        $notices = $agent->takeNotices();
+        expect($runner->pluginCalls('install'))->toBe([])
+            ->and($runner->pluginCalls('list'))->toBe([])
+            ->and($notices)->toHaveCount(1)
+            ->and($notices[0])->toContain('claude CLI not found on PATH')
+            ->and($notices[0])->toContain('claude plugin install marko-mcp@marko --scope project')
+            ->and($agent->takeNotices())->toBe([]);
+    });
+
+    it('leaves the monorepo local marketplace to the folder-trust prompt', function (): void {
+        mkdir($this->root . '/packages/claude-plugins', 0755, true);
+        $runner = claudePluginRunner($this->root, []);
+        $agent = new ClaudeCodeAgent($runner);
+
+        $agent->install(devaiContext(), $this->root);
+
+        expect($runner->pluginCalls('install'))->toBe([])
+            ->and($runner->pluginCalls('list'))->toBe([])
+            ->and($agent->takeNotices())->toBe([]);
     });
 });
