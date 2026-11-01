@@ -9,9 +9,17 @@
         "marko/config": "self.version",
         "marko/routing": "self.version"
     },
+    "suggest": {
+        "marko/cache": "Needed by CacheHealthCheck (cache read/write check); install a cache driver too",
+        "marko/database": "Needed by DatabaseHealthCheck (database connectivity check); install a database driver too",
+        "marko/filesystem": "Needed by FilesystemHealthCheck (filesystem write/delete check); install a filesystem driver too"
+    },
     "require-dev": {
-        "pestphp/pest": "^4.0",
-        "marko/testing": "self.version"
+        "marko/cache": "self.version",
+        "marko/database": "self.version",
+        "marko/filesystem": "self.version",
+        "marko/testing": "self.version",
+        "pestphp/pest": "^4.0"
     },
     "autoload": {
         "psr-4": {

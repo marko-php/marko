@@ -201,6 +201,12 @@ class Container implements ContainerInterface
             throw CircularDependencyException::forChain([...array_keys($this->resolving), $id]);
         }
 
+        if (!class_exists($id)) {
+            $requiredBy = array_key_last($this->resolving);
+
+            throw BindingException::classNotFound($id, $requiredBy !== null ? (string) $requiredBy : null);
+        }
+
         $reflectionClass = new ReflectionClass($id);
         $constructor = $reflectionClass->getConstructor();
 
