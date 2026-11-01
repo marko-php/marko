@@ -5,7 +5,7 @@ description: Static analysis library that indexes Marko modules into a cached sy
 
 Static analysis library that indexes Marko modules — attributes, configs, templates, and translations — into a cached symbol table. `codeindexer` is the shared foundation that powers Marko's AI development tooling: `marko/mcp` (the MCP server) and `marko/lsp` (the language server) both build on its index rather than re-parsing the project themselves.
 
-It walks every module discovered under `vendor/`, `modules/`, and `app/`, parses their PHP attributes (`#[Observer]`, `#[Plugin]`, `#[Preference]`, `#[Command]`, route attributes) plus config/template/translation files, and writes the result to a single on-disk cache. The cache is lazy-loaded and auto-rebuilt when stale, so reads are cheap.
+It walks every module discovered under `vendor/`, `modules/`, and `app/`, parses their PHP attributes (`#[Observer]`, `#[Plugin]`, `#[Preference]`, `#[Command]`, route attributes) plus config/template/translation files, adds the config keys defined in the project-root `config/` directory, and writes the result to a single on-disk cache. The cache is lazy-loaded and auto-rebuilt when stale, so reads are cheap.
 
 ## Installation
 
@@ -49,7 +49,7 @@ class MyTool
 
 ### Rebuilding the index
 
-The running MCP/LSP server re-checks staleness on **every read** — there is no TTL window. Any addition, edit, or deletion under `app/` or `modules/` is visible to tooling on the very next tool call, with no server restart or manual rebuild. You can also force a clean rebuild from the CLI:
+The running MCP/LSP server re-checks staleness on **every read** — there is no TTL window. Any addition, edit, or deletion under `app/`, `modules/`, or the project-root `config/`, and any `composer require`, `update`, or `remove`, is visible to tooling on the very next tool call, with no server restart or manual rebuild. You can also force a clean rebuild from the CLI:
 
 ```bash
 marko indexer:rebuild
@@ -57,9 +57,14 @@ marko indexer:rebuild
 
 This writes the cache to `.marko/index.cache` and reports the number of modules, observers, plugins, commands, routes, config keys, templates, and translations indexed.
 
-:::note[On-read self-refresh covers `app/` and `modules/`; vendor needs an explicit rebuild]
-The running MCP/LSP server re-checks staleness on every read — there is no TTL window. Additions, edits, and deletions under `app/` and `modules/` are picked up automatically; the very next tool call sees the updated index. **Vendor is excluded** from the on-read check: new or removed packages installed via `composer require` / `composer update` are not detected until you run `marko indexer:rebuild`. Use `marko indexer:rebuild` for three scenarios: a forced clean rebuild, warming a cold cache (e.g. after a fresh clone or a `devai:install`), or picking up vendor changes. It is not needed for routine development under `app/` or `modules/`.
+:::note[What the on-read staleness check covers]
+- **`app/`, `modules/`, and the project-root `config/`**: every file is tracked. A file newer than the cache, or a file added or deleted since the last build, marks the index stale.
+- **Composer packages in `vendor/`**: tracked through Composer's own state file. The cache records the mtime and size of `vendor/composer/installed.json` (falling back to `composer.lock` when it is missing), which Composer rewrites on every `composer require`, `update`, and `remove`. A change marks the index stale, so new packages appear and removed ones disappear on the next read.
+
+Hand edits to individual files inside `vendor/` are not tracked. Use `marko indexer:rebuild` for those, to force a clean rebuild, or to warm a cold cache (e.g. after a fresh clone or a `devai:install`). It is not needed for routine development or after Composer commands.
 :::
+
+Config keys from the project-root `config/` directory are recorded with the module name `project` (`IndexCache::ROOT_CONFIG_MODULE`), so tooling such as `marko-lsp` recognizes app-level keys and overrides.
 
 ## API Reference
 
@@ -71,7 +76,7 @@ The concrete indexer. Holds both the raw key/value cache and the high-level symb
 |--------|---------|-------------|
 | `build()` | `void` | Scan all modules and write the cache file |
 | `load()` | `bool` | Load the cache from disk; `false` if missing/stale |
-| `isStale()` | `bool` | Whether any source file is newer than the cache |
+| `isStale()` | `bool` | Whether a tracked file changed, was added or was removed, or Composer state changed, since the cache was built |
 | `getModules()` | `list<ModuleInfo>` | Every discovered module |
 | `getObservers()` | `list<ObserverEntry>` | All `#[Observer]` registrations |
 | `getPlugins()` | `list<PluginEntry>` | All `#[Plugin]` registrations |
