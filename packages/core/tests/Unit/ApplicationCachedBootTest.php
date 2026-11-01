@@ -67,7 +67,7 @@ function cachedBootApplication(
 
 /**
  * Compile the cache from a live boot. marko/routing is autoloadable in this monorepo but not
- * installed as a module here, so its 'routes' section is added by hand.
+ * installed as a module here, so its 'routes' and 'http_exception_responders' sections are added by hand.
  */
 function cachedBootCompile(
     string $base,
@@ -76,6 +76,7 @@ function cachedBootCompile(
     $live->initialize(false);
     $payload = new DiscoveryCompiler($live->container)->compile($live->modules);
     $payload['sections']['routes'] = [];
+    $payload['sections']['http_exception_responders'] = [];
     $live->container->get(DiscoveryCache::class)->write($payload);
 }
 

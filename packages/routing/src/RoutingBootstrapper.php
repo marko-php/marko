@@ -10,9 +10,14 @@ use Marko\Core\Discovery\CachedDiscovery;
 use Marko\Core\Discovery\ClassFileParser;
 use Marko\Core\Exceptions\DiscoveryCacheException;
 use Marko\Core\Module\ModuleManifest;
+use Marko\Routing\Discovery\HttpExceptionResponderCacheContributor;
+use Marko\Routing\Discovery\HttpExceptionResponderDefinition;
+use Marko\Routing\Discovery\HttpExceptionResponderDiscovery;
+use Marko\Routing\Exceptions\HttpExceptionResponderException;
 use Marko\Routing\Exceptions\RouteConflictException;
 use Marko\Routing\Exceptions\RouteException;
 use Marko\Routing\Http\ExceptionRenderer;
+use Marko\Routing\Http\HttpExceptionResponderRegistry;
 use Marko\Routing\Middleware\MiddlewareInterface;
 use Psr\Container\ContainerExceptionInterface;
 use ReflectionException;
@@ -22,6 +27,10 @@ readonly class RoutingBootstrapper
     private RouteCollector $routeCollector;
 
     private RouteCacheContributor $routeCache;
+
+    private HttpExceptionResponderDiscovery $responderDiscovery;
+
+    private HttpExceptionResponderCacheContributor $responderCache;
 
     /**
      * @param array<ModuleManifest> $modules
@@ -34,6 +43,8 @@ readonly class RoutingBootstrapper
     ) {
         $this->routeCollector = new RouteCollector($preferenceRegistry, $classFileParser);
         $this->routeCache = new RouteCacheContributor($this->routeCollector);
+        $this->responderDiscovery = new HttpExceptionResponderDiscovery($classFileParser);
+        $this->responderCache = new HttpExceptionResponderCacheContributor($this->responderDiscovery);
     }
 
     /**
@@ -43,7 +54,7 @@ readonly class RoutingBootstrapper
      * CachedDiscovery); otherwise every module is scanned.
      *
      * @param array<class-string<MiddlewareInterface>> $globalMiddleware
-     * @throws RouteException|RouteConflictException|ReflectionException|ContainerExceptionInterface|DiscoveryCacheException
+     * @throws RouteException|RouteConflictException|ReflectionException|ContainerExceptionInterface|DiscoveryCacheException|HttpExceptionResponderException
      */
     public function boot(
         array $globalMiddleware = [],
@@ -58,6 +69,13 @@ readonly class RoutingBootstrapper
         // inspects routes (e.g. PageCacheMiddleware) share one memoized instance.
         $matcher = new RouteMatcher($routes);
         $this->container->instance(RouteMatcherInterface::class, $matcher);
+
+        // Register the HTTP exception responders before the renderer is resolved,
+        // so the container injects them into ExceptionRenderer (or its Preference).
+        $this->container->instance(
+            HttpExceptionResponderRegistry::class,
+            new HttpExceptionResponderRegistry($this->container, $this->loadResponders()),
+        );
 
         // Create and register Router. The renderer is resolved through the
         // container so an app-level #[Preference] on ExceptionRenderer applies.
@@ -93,6 +111,24 @@ readonly class RoutingBootstrapper
                 }
             }
         }
+    }
+
+    /**
+     * The #[HttpExceptionResponder] definitions, from the discovery cache when
+     * this boot used it, otherwise from a scan of every module.
+     *
+     * @return array<int, HttpExceptionResponderDefinition>
+     * @throws ContainerExceptionInterface|DiscoveryCacheException|HttpExceptionResponderException
+     */
+    private function loadResponders(): array
+    {
+        $section = $this->container->get(CachedDiscovery::class)->section(HttpExceptionResponderCacheContributor::KEY);
+
+        if ($section !== null) {
+            return $this->responderCache->hydrate($section);
+        }
+
+        return $this->responderDiscovery->discoverAll($this->modules);
     }
 
     /**

@@ -12,7 +12,7 @@ return [
         'current_password',
     ],
 
-    // Where RedirectBackOnValidationError sends the user when the request has
+    // Where ValidationErrorResponder sends the user when the request has
     // no Referer, or one from another origin. Must be a path on this site.
     'fallback_redirect' => '/',
 ];

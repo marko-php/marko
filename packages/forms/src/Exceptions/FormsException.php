@@ -25,7 +25,7 @@ class FormsException extends MarkoException
     ): self {
         return new self(
             message: "forms.fallback_redirect must be a path on this site, got '$path'",
-            context: 'RedirectBackOnValidationError redirects there when the request has no same-origin Referer',
+            context: 'ValidationErrorResponder redirects there when the request has no same-origin Referer',
             suggestion: "Set forms.fallback_redirect in config/forms.php to a path starting with a single '/', for example '/'",
         );
     }

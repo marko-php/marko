@@ -6,6 +6,8 @@ namespace Marko\Routing\Http;
 
 use JsonException;
 use Marko\Core\Exceptions\HttpExceptionInterface;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Turns an HttpExceptionInterface into a Response.
@@ -16,18 +18,33 @@ use Marko\Core\Exceptions\HttpExceptionInterface;
  * getResponseData() is shown — never its message or trace — in every
  * environment.
  *
+ * Before rendering it asks the #[HttpExceptionResponder] classes in priority
+ * order; the first one that returns a Response handles the exception (for
+ * example marko/forms redirecting a failed HTML form back). With no
+ * responders, or when every responder passes, the default rendering runs.
+ *
  * Replace it with a #[Preference] to render branded pages; override
  * renderHtml() or renderJson() to change one format only.
  */
 class ExceptionRenderer
 {
+    public function __construct(
+        private readonly ?HttpExceptionResponderRegistry $responders = null,
+    ) {}
+
     /**
-     * @throws JsonException
+     * @throws JsonException|ContainerExceptionInterface|NotFoundExceptionInterface
      */
     public function render(
         HttpExceptionInterface $exception,
         Request $request,
     ): Response {
+        $response = $this->responders?->respond($exception, $request);
+
+        if ($response !== null) {
+            return $response;
+        }
+
         $statusCode = $exception->getStatusCode();
         $data = $exception->getResponseData();
         $message = $data['message'] ?? null;

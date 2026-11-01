@@ -903,6 +903,38 @@ Only `getResponseData()` reaches the client. The exception message, file, and tr
 
 `ExceptionRenderer` renders JSON when the request's `Accept` header contains `application/json` or a `+json` type (for example `application/problem+json`), or when there is no `Accept` header and the `Content-Type` is JSON. The body is the response data with a `message` key guaranteed. Otherwise it renders a minimal HTML page showing the status and message. The exception's headers are added in both cases.
 
+#### HTTP exception responders
+
+A responder answers some HTTP exceptions with a response of its own instead of the error page --- for example [marko/forms](/docs/packages/forms/) redirects a failed HTML form back with its errors flashed. Implement `HttpExceptionResponderInterface` and mark the class with `#[HttpExceptionResponder]`; it is discovered in any module's `src/`. Return a `Response` to handle the exception, or `null` to pass:
+
+```php title="app/billing/src/Http/SubscriptionExpiredResponder.php"
+use App\Billing\Exceptions\SubscriptionExpiredException;
+use Marko\Core\Exceptions\HttpExceptionInterface;
+use Marko\Routing\Attributes\HttpExceptionResponder;
+use Marko\Routing\Http\HttpExceptionResponderInterface;
+use Marko\Routing\Http\Request;
+use Marko\Routing\Http\Response;
+
+#[HttpExceptionResponder(priority: 10)]
+class SubscriptionExpiredResponder implements HttpExceptionResponderInterface
+{
+    public function respond(
+        HttpExceptionInterface $exception,
+        Request $request,
+    ): ?Response {
+        if (!$exception instanceof SubscriptionExpiredException || $request->wantsJson()) {
+            return null;
+        }
+
+        return Response::redirect('/billing', 303);
+    }
+}
+```
+
+`ExceptionRenderer` asks the responders highest `priority` first (default `0`; equal priorities keep module load order); the first non-null response wins, and when every responder passes it renders as usual. Responders run where the exception is rendered, so their response still flows back out through every middleware. Each responder is built once, through the container, on the first HTTP exception, so it can inject its dependencies. A class with the attribute that does not implement the interface throws `HttpExceptionResponderException` at boot. Responders are stored in the [route cache](#route-cache) along with the routes.
+
+A `#[Preference]` for `ExceptionRenderer` that declares its own constructor must accept the `HttpExceptionResponderRegistry` and pass it to `parent::__construct()`, or responders are skipped.
+
 #### Custom error pages
 
 Replace `ExceptionRenderer` with a `#[Preference]` to render branded pages. Override `renderHtml()` to change only the HTML output, `renderJson()` for JSON, or `render()` for both:
@@ -929,7 +961,7 @@ class BrandedExceptionRenderer extends ExceptionRenderer
 
 ### Route Cache
 
-Without a cache, every boot finds routes by reading, tokenizing and loading every PHP file under every module's `src/` --- controllers or not. `marko/routing` declares `RouteCacheContributor` as a [discovery cache contributor](/docs/packages/core/#adding-a-section-to-the-discovery-cache), so `marko discovery:cache` also stores every route: method, path (with any `#[RoutePrefix]` applied), controller, action, middleware, name and `#[WithoutMiddleware]` exclusions, including routes a `#[Preference]` inherits from the controller it replaces.
+Without a cache, every boot finds routes by reading, tokenizing and loading every PHP file under every module's `src/` --- controllers or not. `marko/routing` declares `RouteCacheContributor` as a [discovery cache contributor](/docs/packages/core/#adding-a-section-to-the-discovery-cache), so `marko discovery:cache` also stores every route: method, path (with any `#[RoutePrefix]` applied), controller, action, middleware, name and `#[WithoutMiddleware]` exclusions, including routes a `#[Preference]` inherits from the controller it replaces. Its `HttpExceptionResponderCacheContributor` stores the discovered [HTTP exception responders](#http-exception-responders) the same way.
 
 A production boot from the cache rebuilds the same routes in the same order, so [precedence](#route-precedence), names and URL generation are unchanged. No source file is scanned, and a controller class loads only when a request matches one of its routes. Excluded middleware is still checked against each route's stack at boot.
 
@@ -1351,13 +1383,35 @@ interface HttpExceptionInterface extends Throwable
 ```php
 use Marko\Routing\Http\ExceptionRenderer;
 
-public function render(HttpExceptionInterface $exception, Request $request): Response;
+public function __construct(?HttpExceptionResponderRegistry $responders = null);
+public function render(HttpExceptionInterface $exception, Request $request): Response; // asks the responders first
 public function wantsJson(Request $request): bool;
 protected function renderJson(int $statusCode, array $data): Response;
 protected function renderHtml(int $statusCode, array $data): Response;
 ```
 
 `Marko\Routing\Http\HttpStatus::reasonPhrase(int $statusCode): string` returns the standard reason phrase (`419` → `Page Expired`).
+
+### HttpExceptionResponderInterface
+
+```php
+use Marko\Routing\Http\HttpExceptionResponderInterface;
+
+public function respond(HttpExceptionInterface $exception, Request $request): ?Response; // null passes
+```
+
+Register an implementation with `#[HttpExceptionResponder(priority: 0)]` (`Marko\Routing\Attributes\HttpExceptionResponder`).
+
+### HttpExceptionResponderRegistry
+
+The discovered responders, highest priority first. `RoutingBootstrapper` registers it in the container.
+
+```php
+use Marko\Routing\Http\HttpExceptionResponderRegistry;
+
+public function responders(): array; // list<HttpExceptionResponderInterface>
+public function respond(HttpExceptionInterface $exception, Request $request): ?Response;
+```
 
 ### Parameter Resolution
 

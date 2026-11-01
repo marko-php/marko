@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Marko\Forms\Middleware;
+namespace Marko\Forms;
 
+use Marko\Core\Exceptions\HttpExceptionInterface;
 use Marko\Forms\Config\FormsConfig;
 use Marko\Forms\Exceptions\FormsException;
-use Marko\Forms\Exceptions\FormsSessionUnavailableException;
-use Marko\Forms\FlashedFormStateWriter;
+use Marko\Routing\Attributes\HttpExceptionResponder;
+use Marko\Routing\Http\HttpExceptionResponderInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
-use Marko\Routing\Middleware\MiddlewareInterface;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Exceptions\InvalidFlashDataException;
 use Marko\Validation\Exceptions\ValidationException;
@@ -20,14 +20,14 @@ use Marko\Validation\Exceptions\ValidationException;
  * the errors and the submitted input, then redirect back (303) so the form
  * shows them.
  *
- * Requests that want JSON are left alone: the exception is rethrown, so the
- * routing pipeline renders its 422 response. The redirect goes to the Referer
- * only when it has the request's origin; otherwise to forms.fallback_redirect.
- *
- * Opt in per route or group with #[Middleware(RedirectBackOnValidationError::class)].
- * It must run inside SessionMiddleware.
+ * It answers every route once marko/forms is installed. It passes (returns
+ * null, so the routing pipeline renders its 422 response) for any other
+ * exception, for requests that want JSON or send a JSON body, and for routes
+ * without a session. The redirect goes to the Referer only when it has the
+ * request's origin; otherwise to forms.fallback_redirect.
  */
-readonly class RedirectBackOnValidationError implements MiddlewareInterface
+#[HttpExceptionResponder]
+readonly class ValidationErrorResponder implements HttpExceptionResponderInterface
 {
     private const array DEFAULT_PORTS = [80, 443];
 
@@ -38,27 +38,24 @@ readonly class RedirectBackOnValidationError implements MiddlewareInterface
     ) {}
 
     /**
-     * @throws FormsSessionUnavailableException|FormsException|InvalidFlashDataException|ValidationException
+     * @throws FormsException|InvalidFlashDataException
      */
-    public function handle(
+    public function respond(
+        HttpExceptionInterface $exception,
         Request $request,
-        callable $next,
-    ): Response {
-        if (!$this->session->isAvailable()) {
-            throw FormsSessionUnavailableException::forRequest($request->method(), $request->path());
+    ): ?Response {
+        if (
+            !$exception instanceof ValidationException
+            || $request->wantsJson()
+            || $request->isJson()
+            || !$this->session->isAvailable()
+        ) {
+            return null;
         }
 
-        try {
-            return $next($request);
-        } catch (ValidationException $exception) {
-            if ($request->wantsJson()) {
-                throw $exception;
-            }
+        $this->writer->flash($exception->errors(), $request->post());
 
-            $this->writer->flash($exception->errors(), $request->post());
-
-            return Response::redirect($this->redirectTarget($request), 303);
-        }
+        return Response::redirect($this->redirectTarget($request), 303);
     }
 
     /**

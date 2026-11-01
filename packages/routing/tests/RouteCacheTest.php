@@ -13,6 +13,7 @@ use Marko\Core\Exceptions\DiscoveryCacheException;
 use Marko\Core\Module\ManifestParser;
 use Marko\Core\Module\ModuleDiscovery;
 use Marko\Core\Module\ModuleManifest;
+use Marko\Routing\Discovery\HttpExceptionResponderCacheContributor;
 use Marko\Routing\Exceptions\RouteException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\RouteCacheContributor;
@@ -309,10 +310,12 @@ describe('route discovery cache', function (): void {
         routeCacheCleanup($this->project['base']);
     });
 
-    it('declares the route contributor in module.php', function (): void {
+    it('declares the route and responder contributors in module.php', function (): void {
         $module = require dirname(__DIR__) . '/module.php';
 
-        expect($module['discovery'])->toBe([RouteCacheContributor::class]);
+        expect($module['discovery'])->toBe(
+            [RouteCacheContributor::class, HttpExceptionResponderCacheContributor::class],
+        );
     });
 
     it(

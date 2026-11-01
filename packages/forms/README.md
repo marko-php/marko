@@ -11,12 +11,9 @@ composer require marko/forms
 ## Quick Example
 
 ```php
-use Marko\Forms\Middleware\RedirectBackOnValidationError;
-use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
 
 #[Post('/register')]
-#[Middleware(RedirectBackOnValidationError::class)]
 public function store(Request $request): Response
 {
     // On failure: 303 back to the form with the errors and old input flashed

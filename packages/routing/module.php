@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Routing\Discovery\HttpExceptionResponderCacheContributor;
 use Marko\Routing\RouteCacheContributor;
 use Marko\Routing\Signing\HmacUrlSigner;
 use Marko\Routing\Signing\UrlSignerInterface;
@@ -15,5 +16,6 @@ return [
     ],
     'discovery' => [
         RouteCacheContributor::class,
+        HttpExceptionResponderCacheContributor::class,
     ],
 ];
