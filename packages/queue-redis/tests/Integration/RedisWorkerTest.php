@@ -6,14 +6,17 @@ use Marko\Core\Command\Input;
 use Marko\Core\Command\Output;
 use Marko\Queue\Command\FailedCommand;
 use Marko\Queue\Command\QueueClearCommand;
+use Marko\Queue\Command\RestartCommand;
 use Marko\Queue\Command\RetryCommand;
 use Marko\Queue\Command\StatusCommand;
+use Marko\Queue\Command\WorkCommand;
 use Marko\Queue\FailedJob;
 use Marko\Queue\Plugin\RetryDeadlinePlugin;
 use Marko\Queue\Redis\Tests\Fixtures\AlwaysFailingJob;
 use Marko\Queue\Redis\Tests\Fixtures\DeadlineJob;
 use Marko\Queue\Redis\Tests\Fixtures\IntegrationRedis;
 use Marko\Queue\Redis\Tests\Fixtures\QueueHarness;
+use Marko\Queue\Redis\Tests\Fixtures\RestartingJob;
 use Marko\Queue\Redis\Tests\Fixtures\TestJob;
 use Marko\Queue\WorkerInterface;
 
@@ -32,6 +35,8 @@ beforeEach(function (): void {
     TestJob::$handled = [];
     AlwaysFailingJob::$handled = 0;
     DeadlineJob::$handled = 0;
+    RestartingJob::$handled = 0;
+    RestartingJob::$onHandle = null;
     $this->harnesses = [];
     $this->harness = function (array $config = []): QueueHarness {
         return $this->harnesses[] = new QueueHarness($config);
@@ -260,5 +265,25 @@ describe('RedisQueue with a blocking worker', function (): void {
         $harness->container->get(WorkerInterface::class)->work(queues: ['high', 'default', 'low'], once: true);
 
         expect(microtime(true) - $start)->toBeLessThan(1.0);
+    });
+});
+
+describe('queue:restart with the Redis queue', function (): void {
+    it('stops queue:work with exit code 0 after its current job once queue:restart is issued', function (): void {
+        $harness = ($this->harness)();
+        $harness->queue()->push(new RestartingJob());
+        $harness->queue()->push(new RestartingJob());
+        RestartingJob::$onHandle = static fn () => runRedisQueueCommand(
+            $harness,
+            RestartCommand::class,
+            'queue:restart',
+        );
+
+        // --max-jobs bounds the run, so a worker that ignored the restart would process both jobs, not hang
+        [$exitCode] = runRedisQueueCommand($harness, WorkCommand::class, 'queue:work', ['--sleep=0', '--max-jobs=2']);
+
+        expect($exitCode)->toBe(0)
+            ->and(RestartingJob::$handled)->toBe(1)
+            ->and($harness->queue()->size())->toBe(1);
     });
 });

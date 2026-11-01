@@ -54,6 +54,7 @@ class QueueHarness
             'queue.retry_after' => 90,
             'queue.timeout' => 0,
             'queue.max_attempts' => 3,
+            'queue.restart_signal' => $this->restartSignalPath(),
             'queue-redis.connection' => IntegrationRedis::CONNECTION,
             'queue-redis.prefix' => $this->prefix,
             'queue-redis.block_for' => 0,
@@ -90,10 +91,22 @@ class QueueHarness
     }
 
     /**
-     * Delete every key under this harness's prefix.
+     * The queue:restart signal file of this harness, unique like its prefix.
+     */
+    public function restartSignalPath(): string
+    {
+        return sys_get_temp_dir() . '/' . rtrim($this->prefix, ':') . '-restart';
+    }
+
+    /**
+     * Delete every key under this harness's prefix, and its restart signal file.
      */
     public function flush(): void
     {
+        if (is_file($this->restartSignalPath())) {
+            unlink($this->restartSignalPath());
+        }
+
         $client = $this->client();
         $cursor = '0';
 
