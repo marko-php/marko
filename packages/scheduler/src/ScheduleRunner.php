@@ -14,6 +14,8 @@ use Throwable;
  * Runs the tasks that are due at a given time. Shared by schedule:run and schedule:work.
  *
  * A failing task is reported and counted but does not stop the remaining due tasks.
+ * A due task whose when()/skip() conditions do not allow the run is skipped before its
+ * overlap mutex is acquired; a condition that throws counts as a failure of that task.
  * Tasks marked withoutOverlapping() are skipped while their mutex is held.
  */
 readonly class ScheduleRunner
@@ -43,9 +45,27 @@ readonly class ScheduleRunner
         $executed = 0;
         $failed = 0;
         $skipped = 0;
+        $skippedByCondition = 0;
 
         foreach ($dueTasks as $index => $task) {
             $description = $task->getDescription() ?? 'Task ' . ($index + 1);
+
+            try {
+                $passesConditions = $task->passesConditions();
+            } catch (Throwable $e) {
+                $output->writeLine("Failed: $description - " . $e->getMessage());
+                $failed++;
+
+                continue;
+            }
+
+            if (!$passesConditions) {
+                $output->writeLine("Skipped (condition): $description");
+                $skippedByCondition++;
+
+                continue;
+            }
+
             $preventsOverlapping = $task->preventsOverlapping();
 
             if ($preventsOverlapping
@@ -78,7 +98,12 @@ readonly class ScheduleRunner
             $output->writeLine("$failed scheduled $noun failed.");
         }
 
-        return new ScheduleRunResult(executed: $executed, failed: $failed, skipped: $skipped);
+        return new ScheduleRunResult(
+            executed: $executed,
+            failed: $failed,
+            skipped: $skipped,
+            skippedByCondition: $skippedByCondition,
+        );
     }
 
     /**

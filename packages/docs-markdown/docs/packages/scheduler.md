@@ -3,7 +3,7 @@ title: marko/scheduler
 description: Fluent task scheduler with cron expression support — define recurring tasks in PHP and run them with a single cron entry.
 ---
 
-Fluent task scheduler with cron expression support --- define recurring tasks in PHP and run them with a single cron entry. Register closures on the `Schedule` with human-readable frequency methods (`daily()`, `hourly()`, `everyFiveMinutes()`) or raw cron expressions. A single system cron entry runs `schedule:run` every minute, and the scheduler determines which tasks are due. No per-task crontab entries needed. Long-running tasks can be protected from overlapping runs, and `schedule:work` runs the scheduler in the foreground where no cron daemon is available.
+Fluent task scheduler with cron expression support --- define recurring tasks in PHP and run them with a single cron entry. Register closures on the `Schedule` with human-readable frequency methods (`daily()`, `dailyAt('03:30')`, `everyFiveMinutes()`) or raw cron expressions, optionally in their own time zone and behind `when()`/`skip()` conditions. A single system cron entry runs `schedule:run` every minute, and the scheduler determines which tasks are due. No per-task crontab entries needed. Long-running tasks can be protected from overlapping runs, and `schedule:work` runs the scheduler in the foreground where no cron daemon is available.
 
 ## Installation
 
@@ -50,6 +50,61 @@ $schedule->call($callback)->daily();
 $schedule->call($callback)->weekly();
 $schedule->call($callback)->monthly();
 ```
+
+### Times of Day
+
+To run at a time other than midnight, pass a 24-hour `HH:MM` time:
+
+```php
+$schedule->call($callback)->dailyAt('03:30');        // 30 3 * * *
+$schedule->call($callback)->at('03:30');             // alias of dailyAt()
+$schedule->call($callback)->twiceDaily(1, 13);       // 0 1,13 * * *
+$schedule->call($callback)->twiceDaily(1, 13, 15);   // 15 1,13 * * *
+$schedule->call($callback)->weeklyOn(1, '08:00');    // Mondays: 0 8 * * 1
+$schedule->call($callback)->monthlyOn(15, '14:20');  // 15th: 20 14 15 * *
+```
+
+Each helper compiles to a 5-field cron expression, so `getExpression()` returns the same string you would get from `cron()`. The arguments are explicit; there are no default times.
+
+`weeklyOn()` takes `0` (Sunday) to `6` (Saturday), and `7` is also accepted as Sunday. `monthlyOn()` takes `1` to `31`; a month without that day (for example the 31st in April) has no run. `twiceDaily()` takes two different hours (0-23) and a minute that defaults to `0`.
+
+A malformed time (`'3pm'`, `'03:3'`), an hour or minute out of range, a day of week outside 0-7, a day of month outside 1-31 or the same `twiceDaily()` hour twice throws `SchedulerException`, which names the method and the value it was given.
+
+### Time Zones
+
+By default a task matches against the time it is checked at, in that time's own zone (the zone of the injected clock, normally PHP's default time zone). Call `timezone()` to match against wall-clock time in another zone:
+
+```php
+$schedule->call(function () {
+    // Send the morning report...
+})->dailyAt('09:00')->timezone('America/New_York')->description('Morning report');
+```
+
+`timezone()` takes an IANA zone name or a `DateTimeZone`. An unknown zone name throws `SchedulerException`. The zone is not part of the cron expression: `isDue()` converts the time it is given into the task's zone before matching, so `getExpression()` and the overlap mutex name stay the same.
+
+Because matching uses wall-clock time in the task's zone, daylight saving changes have these effects:
+
+- **Spring forward:** a time the clocks skip (for example `02:30` in `America/New_York` on the day clocks jump from 02:00 to 03:00) does not exist that day, so the task does not run that day.
+- **Fall back:** a time inside the repeated hour (for example `01:30` on the day clocks go back from 02:00 to 01:00) happens twice, so the task runs twice. `withoutOverlapping()` does not prevent the second run, because the first one has already finished.
+
+To avoid both, schedule outside the transition hour (usually 01:00-03:00 local time) or use `timezone('UTC')`.
+
+### Conditions
+
+`when()` runs a due task only if its closure returns `true`. `skip()` skips a due task if its closure returns `true`:
+
+```php
+$schedule->call(function () {
+    // Poll the engine for finished calls...
+})->everyMinute()
+    ->description('Poll engine calls')
+    ->when(fn (): bool => $config->getString('engine.driver') === 'modal')
+    ->skip(fn (): bool => $maintenance->isEnabled());
+```
+
+Both can be called more than once, and every condition must allow the run. Conditions are evaluated each time the task is due, at run time, not when the task is registered. A condition must return a `bool`; any other return value throws `SchedulerException`.
+
+The runner checks conditions after the task is due and before it acquires the overlap mutex, so a skipped task never takes the mutex. A skipped task prints `Skipped (condition): {description}` and is counted in `ScheduleRunResult::$skippedByCondition`, separately from the overlap skips counted in `$skipped`. A condition that throws (or returns a non-`bool`) counts as a failure of that task: it prints `Failed: {description} - {message}`, makes the run exit `1`, and the remaining due tasks still run.
 
 ### Custom Cron Expressions
 
@@ -108,8 +163,8 @@ The `schedule:run` command checks all registered tasks and executes those that a
 
 | Exit code | Meaning |
 |-----------|---------|
-| `0` | Every due task succeeded or was skipped as still running (or no tasks were due) |
-| `1` | At least one task threw an exception |
+| `0` | Every due task succeeded or was skipped (still running, or by a condition), or no tasks were due |
+| `1` | At least one task, or one of its conditions, threw an exception |
 
 The non-zero exit code makes failures visible to cron mail and monitoring tools.
 
@@ -228,7 +283,17 @@ public function hourly(): self;
 public function daily(): self;
 public function weekly(): self;
 public function monthly(): self;
+public function dailyAt(string $time): self;
+public function at(string $time): self;
+public function twiceDaily(int $firstHour, int $secondHour, int $minute = 0): self;
+public function weeklyOn(int $dayOfWeek, string $time): self;
+public function monthlyOn(int $dayOfMonth, string $time): self;
 public function cron(string $expression): self;
+public function timezone(DateTimeZone|string $timezone): self;
+public function getTimezone(): ?DateTimeZone;
+public function when(Closure $condition): self;
+public function skip(Closure $condition): self;
+public function passesConditions(): bool;
 public function description(string $description): self;
 public function withoutOverlapping(int $expiresAfterMinutes = 1440): self;
 public function preventsOverlapping(): bool;
@@ -241,7 +306,7 @@ public function isDue(DateTimeInterface $now): bool;
 public function run(): mixed;
 ```
 
-`mutexName()` throws `SchedulerException` when the task has no description. `withoutOverlapping()` throws `SchedulerException` when the expiry is below 1 minute.
+`mutexName()` throws `SchedulerException` when the task has no description. `withoutOverlapping()` throws `SchedulerException` when the expiry is below 1 minute. The time helpers throw `SchedulerException` for an invalid time, day or hour, `timezone()` for an unknown zone name, and `passesConditions()` when a condition returns something other than a `bool` (an exception thrown by a condition propagates as is).
 
 ### ScheduleRunner
 
@@ -257,7 +322,8 @@ public function run(DateTimeInterface $now, Output $output): ScheduleRunResult;
 ```php
 public int $executed;
 public int $failed;
-public int $skipped;
+public int $skipped;            // skipped because a previous run still holds the mutex
+public int $skippedByCondition; // skipped by a when()/skip() condition
 public function hasFailures(): bool;
 ```
 

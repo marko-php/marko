@@ -9,6 +9,7 @@ use Marko\Scheduler\Mutex\TaskMutexInterface;
 use Marko\Scheduler\Schedule;
 use Marko\Scheduler\ScheduledTask;
 use Marko\Scheduler\ScheduleRunner;
+use Marko\Scheduler\ScheduleRunResult;
 use Marko\Testing\Fake\FakeClock;
 
 beforeEach(function (): void {
@@ -179,4 +180,137 @@ it('throws before running anything when an overlapping task has no description',
     }
 
     expect($executed)->toBeFalse();
+});
+
+it('skips a task whose when() condition is false and counts it separately', function (): void {
+    $executed = false;
+    $this->schedule->call(function () use (&$executed): void {
+        $executed = true;
+    })->everyMinute()->description('Poll engine')->when(fn (): bool => false);
+
+    $result = $this->runner->run($this->now, $this->output);
+
+    expect($executed)->toBeFalse()
+        ->and($result->executed)->toBe(0)
+        ->and($result->skipped)->toBe(0)
+        ->and($result->skippedByCondition)->toBe(1)
+        ->and($result->hasFailures())->toBeFalse()
+        ->and(($this->outputContent)())->toContain('Skipped (condition): Poll engine');
+});
+
+it('skips a task whose skip() condition is true and counts it separately', function (): void {
+    $executed = false;
+    $this->schedule->call(function () use (&$executed): void {
+        $executed = true;
+    })->everyMinute()->description('Prune')->skip(fn (): bool => true);
+
+    $result = $this->runner->run($this->now, $this->output);
+
+    expect($executed)->toBeFalse()
+        ->and($result->skippedByCondition)->toBe(1)
+        ->and(($this->outputContent)())->toContain('Skipped (condition): Prune');
+});
+
+it('runs a task whose conditions allow it', function (): void {
+    $executed = false;
+    $this->schedule->call(function () use (&$executed): void {
+        $executed = true;
+    })->everyMinute()->description('Poll engine')->when(fn (): bool => true)->skip(fn (): bool => false);
+
+    $result = $this->runner->run($this->now, $this->output);
+
+    expect($executed)->toBeTrue()
+        ->and($result->executed)->toBe(1)
+        ->and($result->skippedByCondition)->toBe(0);
+});
+
+it('does not evaluate conditions of a task that is not due', function (): void {
+    $evaluated = false;
+    $this->schedule->call(fn (): null => null)->cron('30 * * * *')->when(function () use (&$evaluated): bool {
+        $evaluated = true;
+
+        return true;
+    });
+
+    $this->runner->run($this->now, $this->output);
+
+    expect($evaluated)->toBeFalse();
+});
+
+it('checks conditions before acquiring the overlap mutex', function (): void {
+    $this->schedule->call(fn (): null => null)
+        ->everyMinute()
+        ->description('Conditional import')
+        ->withoutOverlapping()
+        ->when(fn (): bool => false);
+    $recordingMutex = new class () implements TaskMutexInterface
+    {
+        public int $acquired = 0;
+
+        public function acquire(
+            ScheduledTask $task,
+            int $expiresAfterSeconds,
+        ): bool {
+            $this->acquired++;
+
+            return true;
+        }
+
+        public function release(
+            ScheduledTask $task,
+        ): void {}
+
+        public function exists(
+            ScheduledTask $task,
+        ): bool {
+            return false;
+        }
+    };
+
+    $result = new ScheduleRunner($this->schedule, $recordingMutex)->run($this->now, $this->output);
+
+    expect($recordingMutex->acquired)->toBe(0)
+        ->and($result->skippedByCondition)->toBe(1);
+});
+
+it('counts a throwing condition as a failure and keeps running the next task', function (): void {
+    $ranAfterFailure = false;
+    $broken = $this->schedule->call(fn (): null => null)
+        ->everyMinute()
+        ->description('Broken condition')
+        ->withoutOverlapping()
+        ->when(function (): never {
+            throw new RuntimeException('Config missing');
+        });
+    $this->schedule->call(function () use (&$ranAfterFailure): void {
+        $ranAfterFailure = true;
+    })->everyMinute()->description('Healthy task');
+
+    $result = $this->runner->run($this->now, $this->output);
+
+    expect($ranAfterFailure)->toBeTrue()
+        ->and($result->failed)->toBe(1)
+        ->and($result->executed)->toBe(1)
+        ->and($result->skippedByCondition)->toBe(0)
+        ->and($result->hasFailures())->toBeTrue()
+        ->and(($this->outputContent)())->toContain('Failed: Broken condition - Config missing')
+        ->and($this->mutex->exists($broken))->toBeFalse();
+});
+
+it('counts a condition returning a non-bool as a failure', function (): void {
+    $this->schedule->call(fn (): null => null)
+        ->everyMinute()
+        ->description('Sloppy condition')
+        ->when(fn (): int => 1);
+
+    $result = $this->runner->run($this->now, $this->output);
+
+    expect($result->failed)->toBe(1)
+        ->and(($this->outputContent)())->toContain('Failed: Sloppy condition - A when() condition');
+});
+
+it('defaults skippedByCondition to zero for existing callers', function (): void {
+    $result = new ScheduleRunResult(executed: 1, failed: 0, skipped: 2);
+
+    expect($result->skippedByCondition)->toBe(0);
 });

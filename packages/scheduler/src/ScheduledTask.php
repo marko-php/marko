@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Marko\Scheduler;
 
 use Closure;
+use DateInvalidTimeZoneException;
+use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use Marko\Scheduler\Exceptions\SchedulerException;
 
 class ScheduledTask
@@ -15,6 +18,14 @@ class ScheduledTask
     private ?string $description = null;
 
     private ?int $overlapExpiresAfterMinutes = null;
+
+    private ?DateTimeZone $timezone = null;
+
+    /** @var array<Closure> */
+    private array $whenConditions = [];
+
+    /** @var array<Closure> */
+    private array $skipConditions = [];
 
     public function __construct(
         private readonly Closure $callback,
@@ -81,6 +92,168 @@ class ScheduledTask
         $this->expression = '0 0 1 * *';
 
         return $this;
+    }
+
+    /**
+     * Run once a day at a 24-hour HH:MM time, e.g. dailyAt('03:30').
+     *
+     * @throws SchedulerException When the time is malformed or out of range
+     */
+    public function dailyAt(
+        string $time,
+    ): self {
+        [$hour, $minute] = $this->parseTime('dailyAt', $time);
+        $this->expression = "$minute $hour * * *";
+
+        return $this;
+    }
+
+    /**
+     * Alias of dailyAt().
+     *
+     * @throws SchedulerException When the time is malformed or out of range
+     */
+    public function at(
+        string $time,
+    ): self {
+        [$hour, $minute] = $this->parseTime('at', $time);
+        $this->expression = "$minute $hour * * *";
+
+        return $this;
+    }
+
+    /**
+     * Run twice a day, at $firstHour and $secondHour, both at $minute past the hour.
+     *
+     * @throws SchedulerException When an hour or the minute is out of range, or both hours are the same
+     */
+    public function twiceDaily(
+        int $firstHour,
+        int $secondHour,
+        int $minute = 0,
+    ): self {
+        $this->assertHour('twiceDaily', $firstHour);
+        $this->assertHour('twiceDaily', $secondHour);
+        $this->assertMinute('twiceDaily', $minute);
+
+        if ($firstHour === $secondHour) {
+            throw SchedulerException::duplicateHour('twiceDaily', $firstHour);
+        }
+
+        $this->expression = "$minute $firstHour,$secondHour * * *";
+
+        return $this;
+    }
+
+    /**
+     * Run once a week on $dayOfWeek (0 = Sunday ... 6 = Saturday; 7 is also Sunday) at a 24-hour HH:MM time.
+     *
+     * @throws SchedulerException When the day of week or the time is invalid
+     */
+    public function weeklyOn(
+        int $dayOfWeek,
+        string $time,
+    ): self {
+        if ($dayOfWeek < 0 || $dayOfWeek > 7) {
+            throw SchedulerException::invalidDayOfWeek('weeklyOn', $dayOfWeek);
+        }
+
+        [$hour, $minute] = $this->parseTime('weeklyOn', $time);
+        $dayOfWeek %= 7;
+        $this->expression = "$minute $hour * * $dayOfWeek";
+
+        return $this;
+    }
+
+    /**
+     * Run once a month on $dayOfMonth (1-31) at a 24-hour HH:MM time. Months without that day are skipped.
+     *
+     * @throws SchedulerException When the day of month or the time is invalid
+     */
+    public function monthlyOn(
+        int $dayOfMonth,
+        string $time,
+    ): self {
+        if ($dayOfMonth < 1 || $dayOfMonth > 31) {
+            throw SchedulerException::invalidDayOfMonth('monthlyOn', $dayOfMonth);
+        }
+
+        [$hour, $minute] = $this->parseTime('monthlyOn', $time);
+        $this->expression = "$minute $hour $dayOfMonth * *";
+
+        return $this;
+    }
+
+    /**
+     * Match the schedule against wall-clock time in this zone instead of the zone of the time it is checked at.
+     *
+     * @throws SchedulerException When the zone name is unknown
+     */
+    public function timezone(
+        DateTimeZone|string $timezone,
+    ): self {
+        if (is_string($timezone)) {
+            try {
+                $timezone = new DateTimeZone($timezone);
+            } catch (DateInvalidTimeZoneException) {
+                throw SchedulerException::unknownTimezone($timezone);
+            }
+        }
+
+        $this->timezone = $timezone;
+
+        return $this;
+    }
+
+    public function getTimezone(): ?DateTimeZone
+    {
+        return $this->timezone;
+    }
+
+    /**
+     * Only run when $condition returns true. Every when() and skip() condition must allow the run.
+     */
+    public function when(
+        Closure $condition,
+    ): self {
+        $this->whenConditions[] = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Do not run when $condition returns true. Every when() and skip() condition must allow the run.
+     */
+    public function skip(
+        Closure $condition,
+    ): self {
+        $this->skipConditions[] = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Evaluate the when() and skip() conditions now.
+     *
+     * An exception thrown by a condition propagates to the caller.
+     *
+     * @throws SchedulerException When a condition returns something other than a bool
+     */
+    public function passesConditions(): bool
+    {
+        foreach ($this->whenConditions as $condition) {
+            if (!$this->evaluateCondition('when', $condition)) {
+                return false;
+            }
+        }
+
+        foreach ($this->skipConditions as $condition) {
+            if ($this->evaluateCondition('skip', $condition)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function cron(
@@ -161,11 +334,82 @@ class ScheduledTask
     public function isDue(
         DateTimeInterface $now,
     ): bool {
+        if ($this->timezone !== null) {
+            $now = DateTimeImmutable::createFromInterface($now)->setTimezone($this->timezone);
+        }
+
         return CronExpression::matches($this->expression, $now);
     }
 
     public function run(): mixed
     {
         return ($this->callback)();
+    }
+
+    /**
+     * @return array{int, int} hour and minute
+     *
+     * @throws SchedulerException When the time is malformed or out of range
+     */
+    private function parseTime(
+        string $method,
+        string $time,
+    ): array {
+        if (!preg_match('/^(\d{1,2}):(\d{2})$/', $time, $matches)) {
+            throw SchedulerException::invalidTime($method, $time);
+        }
+
+        $hour = (int) $matches[1];
+        $minute = (int) $matches[2];
+
+        if ($hour > 23 || $minute > 59) {
+            throw SchedulerException::invalidTime($method, $time);
+        }
+
+        return [$hour, $minute];
+    }
+
+    /**
+     * @throws SchedulerException
+     */
+    private function assertHour(
+        string $method,
+        int $hour,
+    ): void {
+        if ($hour < 0 || $hour > 23) {
+            throw SchedulerException::invalidHour($method, $hour);
+        }
+    }
+
+    /**
+     * @throws SchedulerException
+     */
+    private function assertMinute(
+        string $method,
+        int $minute,
+    ): void {
+        if ($minute < 0 || $minute > 59) {
+            throw SchedulerException::invalidMinute($method, $minute);
+        }
+    }
+
+    /**
+     * @throws SchedulerException When the condition returns something other than a bool
+     */
+    private function evaluateCondition(
+        string $method,
+        Closure $condition,
+    ): bool {
+        $result = $condition();
+
+        if (!is_bool($result)) {
+            $taskLabel = $this->description !== null
+                ? "'$this->description'"
+                : "with expression '$this->expression'";
+
+            throw SchedulerException::conditionMustReturnBool($method, $taskLabel, get_debug_type($result));
+        }
+
+        return $result;
     }
 }
