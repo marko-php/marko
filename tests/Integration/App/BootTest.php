@@ -34,7 +34,7 @@ it('resolves the real driver bindings from module wiring', function (): void {
     $container = $this->app->container;
     $queue = $container->get(QueueInterface::class);
 
-    // marko/queue's push plugins (RetryDeadlinePlugin) wrap every queue driver in an interceptor
+    // marko/queue's push plugins (RetryDeadlinePlugin, UniqueJobPushPlugin) wrap every queue driver in an interceptor
     expect($queue)->toBeInstanceOf(PluginInterceptedInterface::class)
         ->and($queue->getPluginTarget())->toBeInstanceOf(DatabaseQueue::class);
 

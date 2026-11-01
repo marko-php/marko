@@ -105,6 +105,27 @@ $queue->assertNothingPushed();
 $queue->assertNotPushed(ProcessPaymentJob::class);
 ```
 
+`FakeQueue` runs every push through the same [unique-job plugin](/docs/packages/queue/#unique-jobs) the container puts on `QueueInterface`, so a duplicate `UniqueJobInterface` job is skipped and recorded in `$skipped`. Build it with `FakeQueue::withLockFactory()` to push unique jobs; [`marko/cache-array`](/docs/packages/cache-array/)'s `ArrayLockStore` keeps the locks in memory. Without one, pushing a unique job throws a `QueueException`, as it does in an app with no lock driver. Jobs that aren't unique never need it:
+
+```php
+use Marko\Cache\Lock\LockFactory;
+use Marko\Cache\Lock\UsleepSleeper;
+use Marko\Cache\Memory\Lock\ArrayLockStore;
+use Marko\Testing\Fake\FakeClock;
+use Marko\Testing\Fake\FakeQueue;
+
+$clock = new FakeClock();
+$queue = FakeQueue::withLockFactory(new LockFactory(new ArrayLockStore($clock), $clock, new UsleepSleeper()));
+
+$queue->push(new ProposeStyleJob(studioId: 42));
+$queue->push(new ProposeStyleJob(studioId: 42)); // skipped: the lock is held
+
+$queue->assertPushedOnce(ProposeStyleJob::class);
+$queue->assertSkipped(ProposeStyleJob::class, fn ($job) => $job->studioId === 42);
+```
+
+Bind either the plugin-wrapped real queue or a `FakeQueue` in a test container, not a `FakeQueue` the container also wraps: the container's plugin takes the lock first, and the fake's own check then sees it held.
+
 ### FakeSession
 
 ```php
@@ -941,11 +962,16 @@ public function size(?string $queue = null): int;
 public function clear(?string $queue = null): int;
 public function delete(string $jobId): bool;
 public function release(JobInterface $job, int $delay = 0): bool; // stores the given job and delay on its pushed entry
+public static function withLockFactory(LockFactoryInterface $lockFactory): FakeQueue; // needed only to push unique jobs
 public function assertPushed(string $jobClass, ?callable $callback = null): void;
+public function assertPushedOnce(string $jobClass): void; // exactly one pushed; skipped duplicates don't count
+public function assertSkipped(string $jobClass, ?callable $callback = null): void;
 public function assertNotPushed(string $jobClass): void;
 public function assertPushedCount(int $expected): void;
 public function assertNothingPushed(): void;
 ```
+
+`$pushed` lists the queued jobs (`job`, `queue`, `delay`, `id`) and `$skipped` the skipped ones (`job`, `queue`, `delay`, `reason`).
 
 ### FakeSession
 

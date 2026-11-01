@@ -30,6 +30,11 @@ abstract class Job implements JobInterface
 
     public private(set) ?int $releaseDelay = null;
 
+    /**
+     * The owner token of a UniqueJobInterface job's lock, set when it is pushed.
+     */
+    public private(set) ?string $uniqueLockOwner = null;
+
     public function setId(
         string $id,
     ): void {
@@ -85,6 +90,15 @@ abstract class Job implements JobInterface
     public function clearRelease(): void
     {
         $this->releaseDelay = null;
+    }
+
+    /**
+     * Store the owner token of the unique-job lock taken when this job is pushed.
+     */
+    public function setUniqueLockOwner(
+        string $owner,
+    ): void {
+        $this->uniqueLockOwner = $owner;
     }
 
     public function serialize(): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Queue\Exceptions;
 
+use Marko\Cache\Contracts\LockFactoryInterface;
 use Marko\Core\Exceptions\MarkoException;
 
 class QueueException extends MarkoException
@@ -92,6 +93,32 @@ class QueueException extends MarkoException
             message: 'Invalid retry delay.',
             context: "A job cannot be released after $delaySeconds seconds; the delay cannot be negative.",
             suggestion: 'Release with 0 for an immediate retry, or a positive number of seconds.',
+        );
+    }
+
+    public static function invalidUniqueFor(
+        string $jobClass,
+        int $seconds,
+    ): self {
+        return new self(
+            message: "Invalid uniqueFor() for unique job $jobClass.",
+            context: "uniqueFor() returned $seconds; the unique-job lock must expire after at least 1 second,"
+                . ' or a crashed job would block every later push of it forever.',
+            suggestion: 'Return the most seconds the job may stay queued and running, e.g. 3600 for one hour.',
+        );
+    }
+
+    public static function noLockDriver(
+        string $jobClass,
+        MarkoException $previous,
+    ): self {
+        return new self(
+            message: "Unique job $jobClass cannot be pushed: no lock driver is bound.",
+            context: 'A UniqueJobInterface job takes an atomic lock through ' . LockFactoryInterface::class
+                . ' (marko/cache), which needs the LockStoreInterface a cache driver ships. Resolving it failed: '
+                . $previous->getMessage(),
+            suggestion: $previous->getSuggestion(),
+            previous: $previous,
         );
     }
 

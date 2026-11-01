@@ -19,6 +19,8 @@ composer require marko/queue
 
 Note: You typically install a driver package (like `marko/queue-database`) which requires this automatically.
 
+`marko/queue` also requires [`marko/cache`](/docs/packages/cache/) for the `LockFactoryInterface` behind [unique jobs](#unique-jobs). Only unique jobs need a cache driver to provide the lock store.
+
 `marko/queue` requires [`marko/encryption`](/docs/packages/encryption/) and a non-empty `encryption.key` in your config. Job payloads are HMAC-signed when enqueued and verified before deserialization; if the key is empty or the signature does not match, a `SerializationException` is thrown loudly.
 
 ```php title="config/encryption.php"
@@ -439,7 +441,7 @@ readonly class RegistrationService
 }
 ```
 
-`push()` and `later()` return a `PushResult`. When the job was queued, `$result->pushed` is `true` and `$result->id` holds the job ID. When it was not, `$result->pushed` is `false`, `$result->id` is `null`, and `$result->skipReason` says why. The built-in drivers always queue the job. A `#[Before]` plugin on `push()` can return `PushResult::skipped('...')` to stop it:
+`push()` and `later()` return a `PushResult`. When the job was queued, `$result->pushed` is `true` and `$result->id` holds the job ID. When it was not, `$result->pushed` is `false`, `$result->id` is `null`, and `$result->skipReason` says why. The built-in drivers always queue the job; a push is skipped by a `#[Before]` plugin on `push()` that returns `PushResult::skipped('...')`, such as the one behind [unique jobs](#unique-jobs):
 
 ```php
 $result = $this->queue->push(new SendWelcomeEmail('user@example.com'));
@@ -448,6 +450,66 @@ if ($result->pushed) {
     $this->logger->info("Queued job $result->id");
 }
 ```
+
+### Unique Jobs
+
+A job that implements `Marko\Queue\UniqueJobInterface` is queued at most once per unique id. A second push while the first is pending returns a skipped `PushResult` and queues nothing, so a double click, a scheduler that fires again or a retry that re-dispatches can't start the same work twice:
+
+```php
+use Marko\Queue\Job;
+use Marko\Queue\UniqueJobInterface;
+use Marko\Queue\UniqueUntil;
+
+class ProposeStyleJob extends Job implements UniqueJobInterface
+{
+    public function __construct(
+        public readonly int $studioId,
+    ) {}
+
+    public function handle(): void
+    {
+        // ...
+    }
+
+    public function uniqueId(): string
+    {
+        return (string) $this->studioId;
+    }
+
+    public function uniqueFor(): int
+    {
+        return 3600; // the lock expires after one hour at most
+    }
+
+    public function uniqueUntil(): UniqueUntil
+    {
+        return UniqueUntil::Processed;
+    }
+}
+```
+
+```php
+$this->queue->push(new ProposeStyleJob(42)); // pushed
+$result = $this->queue->push(new ProposeStyleJob(42)); // skipped
+
+$result->pushed;     // false
+$result->skipReason; // Unique job lock "unique-job:App\Jobs\ProposeStyleJob:42" is held: ...
+```
+
+Pushing takes the atomic lock `unique-job:{class}:{uniqueId}` through [`LockFactoryInterface`](/docs/packages/cache/#atomic-locks), and the lock's owner token travels in the job payload (`$uniqueLockOwner`), so whichever process runs the job can release it. `uniqueUntil()` decides when:
+
+| `UniqueUntil` | Lock released | A copy can be queued |
+|---------------|---------------|----------------------|
+| `Processing` | when a worker starts the job (`JobProcessingEvent`) | while the job runs |
+| `Processed` | when the job completes (`JobProcessedEvent`) or fails for the last time (`JobFailedEvent`) | only after it finishes |
+
+- A retry is not a final failure, so the lock stays held while the job waits for its next attempt. A `Processed` job that calls `release()` from `handle()` keeps its lock too.
+- Every final failure goes through `FailedJobHandler`, so the lock is released for a job that runs out of attempts in the worker, times out (before the worker exits), is failed at pop time by the database driver after crashed reservations, or fails in the sync driver.
+- `uniqueFor()` is the lock's lifetime in seconds and must be greater than 0, or the push throws a `QueueException`: a lock that never expires would block the job forever after a crash. Once it expires, the job can be pushed again even if the first copy never ran. The same happens when the driver throws while storing the job: the lock was already taken, so it stays held until it expires.
+- Uniqueness lives in `marko/queue`, as the `UniqueJobPushPlugin` (a `#[Before]` plugin on `QueueInterface::push()` and `later()`, with `sortOrder` 100 so it takes the lock after `RetryDeadlinePlugin` and the other push plugins have run) and three lifecycle observers, so every driver gets it with no driver code. Code that builds a driver by hand, outside the container, skips the plugin.
+- The lock reaches as far as the lock store does: install [`marko/cache-redis`](/docs/packages/cache-redis/) when workers or web servers run on more than one host. [`marko/cache-file`](/docs/packages/cache-file/) locks one host and [`marko/cache-array`](/docs/packages/cache-array/) one process.
+- With no lock store bound, pushing a unique job throws a `QueueException` naming `LockFactoryInterface` and the cache drivers that provide one. Uniqueness never quietly turns off. Jobs that aren't unique never touch the lock store, so an app without a cache driver can still queue them.
+- A job that implements `JobInterface` directly, without extending `Job`, also declares `public ?string $uniqueLockOwner { get; }` and `setUniqueLockOwner(string $owner): void`.
 
 ### Named Queues
 
@@ -560,8 +622,8 @@ When an async observer fires, `QueueAsyncObserverDispatcher` serializes the even
 | Command | Description |
 |---------|-------------|
 | `marko queue:failed` | List failed jobs |
-| `marko queue:retry <id>` | Retry a failed job (resets its attempt and exception counts so it gets its full `maxAttempts` and `maxExceptions`, and clears its retry deadline so a fresh one is captured on push) |
-| `marko queue:retry --all` | Retry every failed job. Rows whose payload could not be serialized are skipped and reported, and the command returns exit code 1 if any were skipped |
+| `marko queue:retry <id>` | Retry a failed job (resets its attempt and exception counts so it gets its full `maxAttempts` and `maxExceptions`, and clears its retry deadline so a fresh one is captured on push). When the push is skipped, for example because a copy of a [unique job](#unique-jobs) is already queued, the failed-job row is kept, the skip reason is printed and the command returns exit code 1 |
+| `marko queue:retry --all` | Retry every failed job. Rows whose payload could not be serialized, and rows whose push was skipped, are kept and reported, and the command returns exit code 1 if any were skipped |
 | `marko queue:clear` | Clear all jobs from a queue |
 | `marko queue:status` | Show queue size |
 
@@ -679,6 +741,34 @@ public static function skipped(string $reason): PushResult;
 ```
 
 A readonly value object. The constructor throws `QueueException` when the fields contradict each other (pushed without an ID, or skipped without a reason).
+
+### UniqueJobInterface
+
+```php
+use Marko\Queue\UniqueJobInterface;
+use Marko\Queue\UniqueUntil;
+
+// extends JobInterface
+public ?string $uniqueLockOwner { get; } // the lock's owner token, set when the job is pushed
+public function uniqueId(): string;
+public function uniqueFor(): int; // lock lifetime in seconds, > 0
+public function uniqueUntil(): UniqueUntil; // UniqueUntil::Processing or UniqueUntil::Processed
+public function setUniqueLockOwner(string $owner): void;
+```
+
+`Job` provides `$uniqueLockOwner` and `setUniqueLockOwner()`. See [Unique Jobs](#unique-jobs).
+
+### UniqueJobLocks
+
+```php
+use Marko\Queue\UniqueJobLocks;
+
+public function lockName(UniqueJobInterface $job): string; // unique-job:{class}:{uniqueId}
+public function acquire(UniqueJobInterface $job): bool; // takes the lock once and stores its owner on the job
+public function release(UniqueJobInterface $job): void; // releases it when the job's owner still holds it
+```
+
+The shared helper behind `UniqueJobPushPlugin` and the release observers. It resolves `LockFactoryInterface` on first use, so constructing it never needs a lock store.
 
 ### JobInterface
 

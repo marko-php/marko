@@ -12,6 +12,7 @@
     },
     "require-dev": {
         "pestphp/pest": "^4.0",
+        "marko/cache-array": "self.version",
         "marko/testing": "self.version"
     },
     "autoload": {

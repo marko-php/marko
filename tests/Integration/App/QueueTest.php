@@ -8,6 +8,7 @@ use Marko\Integration\Fixture\Job\InvalidBackoffJob;
 use Marko\Integration\Fixture\Job\PollingJob;
 use Marko\Integration\Fixture\Job\PrivatePropertyJob;
 use Marko\Integration\Fixture\Job\RecordingJob;
+use Marko\Integration\Fixture\Job\UniqueRecordingJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\QueueInterface;
 
@@ -155,3 +156,26 @@ it(
             ->toContain('threw 1 of its 1 allowed exceptions');
     },
 )->issue(536);
+
+it('skips a duplicate unique job with a Redis lock and releases it once the worker runs the job', function (): void {
+    $queue = $this->app->container->get(QueueInterface::class);
+    $connection = $this->app->container->get(ConnectionInterface::class);
+    $marker = $this->project . '/storage/unique-job.txt';
+    // Redis outlives the fixture project, so every run takes its own lock
+    $key = bin2hex(random_bytes(8));
+
+    $first = $queue->push(new UniqueRecordingJob($key, $marker));
+    $duplicate = $queue->push(new UniqueRecordingJob($key, $marker));
+    $rows = $connection->query('SELECT id FROM jobs');
+
+    $result = runIntegrationCommand($this->app, 'queue:work', ['--once']);
+    $afterRun = $queue->push(new UniqueRecordingJob($key, $marker));
+
+    expect($first->pushed)->toBeTrue()
+        ->and($duplicate->pushed)->toBeFalse()
+        ->and($duplicate->skipReason)->toContain("unique-job:" . UniqueRecordingJob::class . ":$key")
+        ->and($rows)->toHaveCount(1)
+        ->and($result['exitCode'])->toBe(0, $result['output'])
+        ->and(file_get_contents($marker))->toBe("unique job $key ran")
+        ->and($afterRun->pushed)->toBeTrue();
+})->issue(534);
