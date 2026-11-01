@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 use Marko\Core\Container\Container;
 use Marko\Encryption\Config\EncryptionConfig;
+use Marko\Queue\Exceptions\JobTimedOutException;
 use Marko\Queue\Exceptions\QueueException;
+use Marko\Queue\FailableJobInterface;
+use Marko\Queue\FailedJobHandler;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
@@ -19,6 +22,7 @@ use Marko\Queue\Worker;
 use Marko\Queue\WorkerOptions;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 
 /**
  * In-memory queue that records pops, deletes and releases in order.
@@ -100,9 +104,12 @@ class LimitsRecordingQueue implements QueueInterface
 /**
  * Job that runs a callback in handle(), so a test can fire a signal or the timer mid-job.
  */
-class LimitsCallbackJob extends Job
+class LimitsCallbackJob extends Job implements FailableJobInterface
 {
     public protected(set) ?int $maxAttempts = 1;
+
+    /** @var list<Throwable> */
+    public array $failedWith = [];
 
     public protected(set) array|int|null $backoff = 15;
 
@@ -118,6 +125,11 @@ class LimitsCallbackJob extends Job
         if ($this->during !== null) {
             ($this->during)();
         }
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        $this->failedWith[] = $exception;
     }
 }
 
@@ -177,14 +189,18 @@ function createLimitsWorker(
     );
     $worker = new LimitsTestWorker(
         $queue,
-        $failed,
+        new FailedJobHandler(
+            $failed,
+            $envelope,
+            new JobRunner(new Container(), $envelope, new FakeEventDispatcher()),
+            new FakeEventDispatcher(),
+            new FakeClock(),
+        ),
         new QueueConfig(new FakeConfigRepository([
             'queue.queue' => 'default',
             'queue.max_attempts' => 3,
         ])),
-        $envelope,
-        new JobRunner(new Container(), $envelope),
-        new FakeClock(),
+        new JobRunner(new Container(), $envelope, new FakeEventDispatcher()),
         processControl: $processControl,
     );
 
@@ -263,6 +279,30 @@ describe('Worker job timeout', function (): void {
         expect($queue->log)->toBe(['pop:slow', 'release:slow:15'])
             ->and($failed->count())->toBe(0)
             ->and($process->terminatedWith)->toBe(1);
+    });
+
+    it('calls failed() with the timeout exception when the job times out on its last attempt', function (): void {
+        $process = new FakeProcessControl();
+        $job = limitsJob('slow', fn () => $process->fireTimer());
+        $queue = new LimitsRecordingQueue([$job]);
+        ['worker' => $worker] = createLimitsWorker($queue, $process);
+
+        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 5)));
+
+        expect($job->failedWith)->toHaveCount(1)
+            ->and($job->failedWith[0])->toBeInstanceOf(JobTimedOutException::class)
+            ->and($job->failedWith[0]->getMessage())->toContain('exceeded the 5-second timeout')
+            ->and($process->terminatedWith)->toBe(Worker::EXIT_TIMED_OUT);
+    });
+
+    it('does not call failed() on a timed-out attempt that is released for a retry', function (): void {
+        $process = new FakeProcessControl();
+        $job = limitsJob('slow', fn () => $process->fireTimer(), maxAttempts: 3);
+        ['worker' => $worker] = createLimitsWorker(new LimitsRecordingQueue([$job]), $process);
+
+        captureLimitsErrorLog(fn () => $worker->work(options: new WorkerOptions(timeout: 5)));
+
+        expect($job->failedWith)->toBe([]);
     });
 });
 

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Marko\Core\Event\AsyncObserverDispatcherInterface;
+use Marko\Queue\FailedJobHandler;
+use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobRunner;
 use Marko\Queue\JobRunnerInterface;
@@ -24,6 +26,12 @@ describe('queue module.php', function (): void {
         $module = require dirname(__DIR__) . '/module.php';
 
         expect($module['bindings'][JobEnvelope::class])->toBe(JobEnvelope::class);
+    });
+
+    it('binds FailedJobHandlerInterface to FailedJobHandler', function (): void {
+        $module = require dirname(__DIR__) . '/module.php';
+
+        expect($module['bindings'][FailedJobHandlerInterface::class])->toBe(FailedJobHandler::class);
     });
 
     it('binds JobRunnerInterface to JobRunner', function (): void {

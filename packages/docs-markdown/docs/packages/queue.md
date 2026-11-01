@@ -53,7 +53,7 @@ This release changes the queue contracts once for the per-job features built on 
 2. **Code that calls `QueueInterface::release()`** passes the job instead of its ID: `$queue->release($job, $delay)`. The driver stores that job as it is, so pass the job you popped and ran, not a fresh copy.
 3. **Custom `QueueInterface` implementations** (drivers and test doubles) change `push()` and `later()` to return `PushResult` (`PushResult::pushed($id)`) and `release()` to take `JobInterface $job` and store it.
 4. **Jobs that implement `JobInterface` directly**, without extending `Job`, add the [per-job state](#per-job-state) properties and methods. Jobs that extend `Job` need no change, and jobs already queued by the old release unserialize with the new fields at their defaults.
-5. **Code that constructs `Worker` or `SyncQueue` by hand** passes a `JobRunnerInterface` in place of the container: `new Worker($queue, $failedJobs, $config, $envelope, new JobRunner($container, $envelope), $clock)` and `new SyncQueue(new JobRunner($container, $envelope))`. Containers that autowire them need no change.
+5. **Code that constructs `Worker`, `SyncQueue`, `DatabaseQueue` or `JobRunner` by hand** wires in the new [failed-job handler](#when-a-job-fails-for-good) and an event dispatcher. `JobRunner` takes an `EventDispatcherInterface` as its third argument. `Worker` takes a `FailedJobHandlerInterface` in place of the failed-job repository and no longer takes the envelope or the clock: `new Worker($queue, $failedJobHandler, $config, $jobRunner)`. `SyncQueue` takes `($jobRunner, $failedJobHandler, $queueConfig)`, and `DatabaseQueue` takes `failedJobHandler:` in place of `failedJobRepository:`. Build the handler with `new FailedJobHandler($failedJobs, $envelope, $jobRunner, $eventDispatcher, $clock)`. Containers that autowire them need no change.
 
 ## Usage
 
@@ -282,10 +282,62 @@ If a job that has used up its attempts still can't be serialized (for example, i
 
 1. A `ContainerAwareJobInterface` job gets the container and the `JobEnvelope`.
 2. Any release request left over from an earlier attempt is cleared, and `attempts` is incremented.
-3. `handle()` runs. If it throws, `incrementExceptions()` is called and the exception is rethrown.
-4. A container-aware job's `releaseContainer()` runs, whether `handle()` returned or threw.
+3. `JobProcessingEvent` is dispatched.
+4. `handle()` runs. If it throws, `incrementExceptions()` is called and the exception is rethrown. If it returns, `JobProcessedEvent` is dispatched.
+5. A container-aware job's `releaseContainer()` runs, whether `handle()` returned or threw.
 
-`withContainer(JobInterface $job, callable $callback): mixed` does steps 1 and 4 around any callback and returns its result. Use it to call something else on a container-aware job with the container in place.
+`withContainer(JobInterface $job, callable $callback): mixed` does steps 1 and 5 around any callback and returns its result. Use it to call something else on a container-aware job with the container in place.
+
+### When a Job Fails for Good
+
+A job fails for good when its last attempt throws or times out, when its backoff is invalid so it can't be retried, when the [database driver](/docs/packages/queue-database/#retries-and-attempt-counting) finds its attempts used up by workers that crashed, and when it throws under the [sync driver](/docs/packages/queue-sync/). Every one of those paths goes through `FailedJobHandlerInterface` (bound to `FailedJobHandler`), which in order:
+
+1. stores the job in the failed-job store, with its exception and an [argument-free trace](#failed-job-traces)
+2. calls `failed()` if the job implements `FailableJobInterface`
+3. dispatches `JobFailedEvent`
+
+The caller then deletes the job from its queue.
+
+Implement `FailableJobInterface` to put domain state back when a job gives up, so records don't stay stuck in an in-progress state:
+
+```php
+use Marko\Queue\FailableJobInterface;
+use Marko\Queue\Job;
+use Throwable;
+
+class RegenerateTranscript extends Job implements FailableJobInterface
+{
+    public function __construct(
+        private int $videoId,
+    ) {}
+
+    public function handle(): void
+    {
+        // ... regenerate the transcript
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        // Put the video back to "needs review" so it doesn't stay "regenerating" forever
+    }
+}
+```
+
+- `failed()` runs once, on the final failure only. It doesn't run on an attempt that is released for a retry, and `queue:retry` doesn't call it.
+- A `ContainerAwareJobInterface` job has its container while `failed()` runs, through `JobRunner::withContainer()`, so it can resolve the same services as `handle()`.
+- If `failed()` throws, the error is written to PHP's error log with the job class and id, `JobFailedEvent` is still dispatched, and the worker keeps running.
+- On a [timeout](#worker-limits-and-shutdown), `failed()` runs inside the alarm signal handler, just before the worker process exits. Keep it short.
+- Under the database driver, `failed()` gets a `JobAttemptsExhaustedException`, because no exception was thrown: the workers died.
+
+#### Job Lifecycle Events
+
+| Event | Dispatched by | When | Properties |
+|-------|---------------|------|------------|
+| `Marko\Queue\Event\JobProcessingEvent` | `JobRunner` | after the attempt is counted, just before `handle()` | `job`, `jobClass`, `jobId` |
+| `Marko\Queue\Event\JobProcessedEvent` | `JobRunner` | after `handle()` returns without throwing | `job`, `jobClass`, `jobId` |
+| `Marko\Queue\Event\JobFailedEvent` | `FailedJobHandler` | after the job is stored and `failed()` has run | `job`, `jobClass`, `jobId`, `queue`, `exception` |
+
+The worker and the sync driver both run jobs through `JobRunner`, so the processing events fire for every driver. Observe them with a regular `#[Observer]`. An observer of `JobProcessingEvent` or `JobProcessedEvent` that throws fails the attempt, like an exception from `handle()`. Keep those observers synchronous: an async observer queues a job, and running that job fires the event again, without end.
 
 ### Dispatching Jobs
 
@@ -367,7 +419,7 @@ Run `queue:work` under a process supervisor (systemd, Supervisor, a container re
 marko queue:work --timeout=60 --memory=128 --max-jobs=1000
 ```
 
-- **Timeout** --- when a job runs longer than `--timeout` seconds, the worker fails that attempt with a `JobTimedOutException` (`Job '...' exceeded the 60-second timeout.`). The job is released for another attempt with its backoff, or recorded in the failed-job store on its last attempt, like a job that threw. The worker then logs the timeout and exits with status `1` (`Worker::EXIT_TIMED_OUT`): a job stuck in a blocking call can't be stopped safely inside the process, so the supervisor starts a fresh one.
+- **Timeout** --- when a job runs longer than `--timeout` seconds, the worker fails that attempt with a `JobTimedOutException` (`Job '...' exceeded the 60-second timeout.`). The job is released for another attempt with its backoff, or [failed for good](#when-a-job-fails-for-good) on its last attempt, like a job that threw. The worker then logs the timeout and exits with status `1` (`Worker::EXIT_TIMED_OUT`): a job stuck in a blocking call can't be stopped safely inside the process, so the supervisor starts a fresh one.
 - **Memory and job count** --- with `--memory` or `--max-jobs`, the worker finishes the current job, then returns and `queue:work` exits with status `0`, so leaks never build up to an out-of-memory crash.
 - **SIGTERM / SIGINT** --- the worker finishes the job it is running, then exits, so a deploy or `docker stop` doesn't cut a job off halfway.
 
@@ -387,7 +439,7 @@ The worker reaches signals, the timer, memory usage and process exit through `Pr
 
 ### Failed Job Traces
 
-The `exception` text stored for a failed job holds the exception message and a stack trace in `getTraceAsString()` format, **without call arguments**. Arguments can hold passwords or tokens, and with `zend.exception_ignore_args=Off` (the PHP development default) `getTraceAsString()` would include them, so the worker builds the trace from file, line, class and function only.
+The `exception` text stored for a failed job holds the exception message and a stack trace in `getTraceAsString()` format, **without call arguments**. Arguments can hold passwords or tokens, and with `zend.exception_ignore_args=Off` (the PHP development default) `getTraceAsString()` would include them, so `FailedJobHandler` builds the trace from file, line, class and function only.
 
 ### Queue Priority
 
@@ -442,20 +494,26 @@ When an async observer fires, `QueueAsyncObserverDispatcher` serializes the even
 
 ### Time and Testing
 
-The worker reads the current time from the injected `Psr\Clock\ClockInterface` ([`marko/clock`](/docs/packages/clock/)) and stamps `FailedJob::$failedAt` with it, rather than calling `new DateTimeImmutable()`. In a test, pass a [`FakeClock`](/docs/packages/testing/#fakeclock) to freeze that time:
+`FailedJobHandler` reads the current time from the injected `Psr\Clock\ClockInterface` ([`marko/clock`](/docs/packages/clock/)) and stamps `FailedJob::$failedAt` with it, rather than calling `new DateTimeImmutable()`. In a test, pass a [`FakeClock`](/docs/packages/testing/#fakeclock) to freeze that time, and a [`FakeEventDispatcher`](/docs/packages/testing/) to see the lifecycle events:
 
 ```php
+use Marko\Queue\Event\JobFailedEvent;
+use Marko\Queue\FailedJobHandler;
 use Marko\Queue\JobRunner;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
+use Marko\Testing\Fake\FakeEventDispatcher;
 
 it('records when a job failed', function (): void {
     $clock = new FakeClock('2026-03-01 09:15:00 UTC');
-    $worker = new Worker($queue, $failedJobs, $config, $envelope, new JobRunner($container, $envelope), $clock);
+    $events = new FakeEventDispatcher();
+    $runner = new JobRunner($container, $envelope, $events);
+    $worker = new Worker($queue, new FailedJobHandler($failedJobs, $envelope, $runner, $events, $clock), $config, $runner);
 
     $worker->work(once: true);
 
     expect($failedJobs->find($jobId)?->failedAt)->toEqual($clock->now());
+    $events->assertDispatched(JobFailedEvent::class);
 });
 ```
 
@@ -578,7 +636,26 @@ public function run(JobInterface $job): void; // rethrows whatever handle() thro
 public function withContainer(JobInterface $job, callable $callback): mixed;
 ```
 
-Bound to `JobRunner`, which is constructed with the container and the `JobEnvelope`. See [Running One Attempt](#running-one-attempt).
+Bound to `JobRunner`, which is constructed with the container, the `JobEnvelope` and the `EventDispatcherInterface`. See [Running One Attempt](#running-one-attempt).
+
+### FailedJobHandlerInterface
+
+```php
+use Marko\Queue\FailedJobHandlerInterface;
+use Marko\Queue\JobInterface;
+
+public function handle(JobInterface $job, string $queue, Throwable $exception, string $note = ''): void;
+```
+
+Bound to `FailedJobHandler`, which is constructed with the failed-job repository, the `JobEnvelope`, the `JobRunnerInterface`, the `EventDispatcherInterface` and the clock. `$note` is appended to the stored exception text. The handler never touches the queue: the caller deletes the job. See [When a Job Fails for Good](#when-a-job-fails-for-good).
+
+### FailableJobInterface
+
+```php
+use Marko\Queue\FailableJobInterface;
+
+public function failed(Throwable $exception): void;
+```
 
 ### WorkerInterface
 
@@ -658,6 +735,7 @@ Implements `Marko\Core\Event\AsyncObserverDispatcherInterface` and is bound to i
 |-----------|-------------|
 | `QueueException` | Base exception for all queue errors --- includes `getContext()` and `getSuggestion()` methods |
 | `JobFailedException` | Thrown when a job fails during execution |
+| `JobAttemptsExhaustedException` | Passed to `failed()` and `JobFailedEvent` when the database driver fails a job whose attempts were all reserved by workers that crashed or timed out |
 | `JobTimedOutException` | Recorded as the failure of a job that ran longer than the worker timeout. See [Worker Limits and Shutdown](#worker-limits-and-shutdown) |
 | `SerializationException` | Thrown when a job payload cannot be serialized or deserialized, when an async observer's event cannot be serialized, when `encryption.key` is empty, or when an HMAC signature does not match (tampered payload) |
 | `NoDriverException` | Thrown when a queue interface can't be resolved. For `QueueInterface` and `FailedJobRepositoryInterface` it lists the driver packages to install. For any other queue interface it names the interface that has no binding and tells you to bind it in `module.php` |

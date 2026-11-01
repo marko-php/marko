@@ -9,6 +9,7 @@ use Marko\Queue\Database\DatabaseFailedJobRepository;
 use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\InMemoryFailedJobRepository;
 use Marko\Queue\Database\Tests\Fixtures\SqliteConnection;
+use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
 use Marko\Queue\Database\Tests\Fixtures\TestJob;
 use Marko\Queue\FailedJob;
 use Marko\Queue\JobEnvelope;
@@ -31,7 +32,13 @@ function backtickQuotedQueue(
         jobEnvelope: new JobEnvelope(new EncryptionConfig(new FakeConfigRepository([
             'encryption.key' => 'test-hmac-key-for-queue-database',
         ]))),
-        failedJobRepository: new InMemoryFailedJobRepository(),
+        failedJobHandler: TestFailedJobHandler::create(
+            new InMemoryFailedJobRepository(),
+            new JobEnvelope(new EncryptionConfig(new FakeConfigRepository([
+                'encryption.key' => 'test-hmac-key-for-queue-database',
+            ]))),
+            new FakeClock('2026-10-05 12:00:00'),
+        ),
         queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
         clock: new FakeClock('2026-10-05 12:00:00'),
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),

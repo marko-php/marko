@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
+use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilderFactory;
@@ -16,16 +18,20 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\QueueInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Psr\Clock\ClockInterface;
 
 /**
- * Build a container wired with only the queue-database module bindings.
+ * Build a container wired with the queue-database module bindings, plus the marko/queue bindings
+ * (the failed-job handler and job runner) that every app using a queue driver also has.
  */
 function queueDatabaseModuleContainer(
     SqliteConnection $connection,
     array $queueConfig = [],
 ): Container {
     $container = new Container();
+    $container->instance(ContainerInterface::class, $container);
+    $container->instance(EventDispatcherInterface::class, new FakeEventDispatcher());
     $container->instance(ConnectionInterface::class, $connection);
     $container->instance(QueryBuilderFactoryInterface::class, new PgSqlQueryBuilderFactory($connection));
     $container->instance(ClockInterface::class, new FakeClock());
@@ -40,9 +46,10 @@ function queueDatabaseModuleContainer(
         ...$queueConfig,
     ]));
 
+    $queueModule = require dirname(__DIR__, 2) . '/queue/module.php';
     $module = require dirname(__DIR__) . '/module.php';
 
-    foreach ($module['bindings'] as $interface => $implementation) {
+    foreach ([...$queueModule['bindings'], ...$module['bindings']] as $interface => $implementation) {
         $container->bind($interface, $implementation);
     }
 

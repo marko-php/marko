@@ -8,17 +8,28 @@ use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\ContainerAwareJobInterface;
+use Marko\Queue\Event\JobFailedEvent;
+use Marko\Queue\Event\JobProcessedEvent;
+use Marko\Queue\Event\JobProcessingEvent;
 use Marko\Queue\Exceptions\JobFailedException;
+use Marko\Queue\FailableJobInterface;
+use Marko\Queue\FailedJobHandler;
+use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
 use Marko\Queue\JobRunner;
 use Marko\Queue\JobRunnerInterface;
 use Marko\Queue\PushResult;
+use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
+use Marko\Queue\Sync\NullFailedJobRepository;
 use Marko\Queue\Sync\SyncQueue;
+use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use RuntimeException;
+use Throwable;
 
 function createSyncQueueJobEnvelope(): JobEnvelope
 {
@@ -30,10 +41,57 @@ function createSyncQueueJobEnvelope(): JobEnvelope
 function createSyncQueue(
     ?ContainerInterface $container = null,
     ?JobEnvelope $jobEnvelope = null,
+    FakeEventDispatcher $events = new FakeEventDispatcher(),
+    ?FailedJobHandlerInterface $failedJobHandler = null,
 ): SyncQueue {
     $jobEnvelope ??= createSyncQueueJobEnvelope();
+    $runner = new JobRunner($container ?? new Container(), $jobEnvelope, $events);
 
-    return new SyncQueue(new JobRunner($container ?? new Container(), $jobEnvelope));
+    return new SyncQueue(
+        $runner,
+        $failedJobHandler ?? new FailedJobHandler(
+            new NullFailedJobRepository(),
+            $jobEnvelope,
+            $runner,
+            $events,
+            new FakeClock(),
+        ),
+        new QueueConfig(new FakeConfigRepository(['queue.queue' => 'default'])),
+    );
+}
+
+class SyncFailableJob extends Job implements FailableJobInterface
+{
+    /** @var list<Throwable> */
+    public array $failedWith = [];
+
+    public function handle(): void
+    {
+        throw new RuntimeException('sync job failed');
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        $this->failedWith[] = $exception;
+    }
+}
+
+/**
+ * Failed-job handler double that records every call.
+ */
+class RecordingSyncFailedJobHandler implements FailedJobHandlerInterface
+{
+    /** @var list<array{job: JobInterface, queue: string, exception: Throwable}> */
+    public array $handled = [];
+
+    public function handle(
+        JobInterface $job,
+        string $queue,
+        Throwable $exception,
+        string $note = '',
+    ): void {
+        $this->handled[] = ['job' => $job, 'queue' => $queue, 'exception' => $exception];
+    }
 }
 
 class ContainerAwareCaptureJob extends Job implements ContainerAwareJobInterface
@@ -171,7 +229,11 @@ it('runs the job through the JobRunner it is given', function (): void {
         }
     };
 
-    new SyncQueue($runner)->push($job);
+    new SyncQueue(
+        $runner,
+        new RecordingSyncFailedJobHandler(),
+        new QueueConfig(new FakeConfigRepository(['queue.queue' => 'default'])),
+    )->push($job);
 
     expect($runner->ran)->toBe([$job]);
 });
@@ -188,6 +250,67 @@ it('counts the exception on a job that fails under SyncQueue', function (): void
     expect(fn () => createSyncQueue()->push($job))->toThrow(JobFailedException::class)
         ->and($job->exceptions)->toBe(1)
         ->and($job->attempts)->toBe(1);
+});
+
+it('calls failed() on a job that fails under SyncQueue and still throws JobFailedException', function (): void {
+    $job = new SyncFailableJob();
+
+    expect(fn () => createSyncQueue()->push($job))->toThrow(JobFailedException::class, 'sync job failed')
+        ->and($job->failedWith)->toHaveCount(1)
+        ->and($job->failedWith[0])->toBeInstanceOf(RuntimeException::class)
+        ->and($job->failedWith[0]->getMessage())->toBe('sync job failed');
+});
+
+it('dispatches JobFailedEvent with the exception when a job fails under SyncQueue', function (): void {
+    $events = new FakeEventDispatcher();
+    $job = new SyncFailableJob();
+
+    expect(fn () => createSyncQueue(events: $events)->push($job, 'emails'))->toThrow(JobFailedException::class);
+
+    $failed = $events->dispatched(JobFailedEvent::class);
+
+    expect($failed)->toHaveCount(1)
+        ->and($failed[0]->job)->toBe($job)
+        ->and($failed[0]->queue)->toBe('emails')
+        ->and($failed[0]->exception->getMessage())->toBe('sync job failed');
+});
+
+it('hands a failing job to the failed-job handler on the default queue when none is given', function (): void {
+    $handler = new RecordingSyncFailedJobHandler();
+    $job = new SyncFailableJob();
+
+    expect(fn () => createSyncQueue(failedJobHandler: $handler)->push($job))->toThrow(JobFailedException::class);
+
+    expect($handler->handled)->toHaveCount(1)
+        ->and($handler->handled[0]['job'])->toBe($job)
+        ->and($handler->handled[0]['queue'])->toBe('default')
+        ->and($handler->handled[0]['exception']->getMessage())->toBe('sync job failed');
+});
+
+it('does not hand a job that succeeds to the failed-job handler', function (): void {
+    $handler = new RecordingSyncFailedJobHandler();
+    $job = new class () extends Job
+    {
+        public function handle(): void {}
+    };
+
+    createSyncQueue(failedJobHandler: $handler)->push($job);
+
+    expect($handler->handled)->toBe([]);
+});
+
+it('dispatches JobProcessingEvent and JobProcessedEvent around a job run under SyncQueue', function (): void {
+    $events = new FakeEventDispatcher();
+    $job = new class () extends Job
+    {
+        public function handle(): void {}
+    };
+
+    createSyncQueue(events: $events)->push($job);
+
+    expect($events->dispatched(JobProcessingEvent::class))->toHaveCount(1)
+        ->and($events->dispatched(JobProcessedEvent::class))->toHaveCount(1)
+        ->and($events->dispatched(JobProcessedEvent::class)[0]->job)->toBe($job);
 });
 
 it('later executes job immediately', function (): void {

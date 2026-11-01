@@ -13,6 +13,7 @@ use Marko\Queue\Database\DatabaseFailedJobRepository;
 use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\PrivateStateJob;
 use Marko\Queue\Database\Tests\Fixtures\QueueTables;
+use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
 use Marko\Queue\FailedJob;
 use Marko\Queue\JobEnvelope;
 use Marko\Testing\Fake\FakeClock;
@@ -76,7 +77,13 @@ function mysqlQueue(
         jobEnvelope: new JobEnvelope(
             new EncryptionConfig(new FakeConfigRepository(['encryption.key' => 'mysql-test-key'])),
         ),
-        failedJobRepository: new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC')),
+        failedJobHandler: TestFailedJobHandler::create(
+            new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC')),
+            new JobEnvelope(
+                new EncryptionConfig(new FakeConfigRepository(['encryption.key' => 'mysql-test-key'])),
+            ),
+            new FakeClock(new DateTimeImmutable($utcInstant)->setTimezone(new DateTimeZone($clockTimezone))),
+        ),
         queryBuilderFactory: new MySqlQueryBuilderFactory($connection),
         clock: new FakeClock(new DateTimeImmutable($utcInstant)->setTimezone(new DateTimeZone($clockTimezone))),
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),

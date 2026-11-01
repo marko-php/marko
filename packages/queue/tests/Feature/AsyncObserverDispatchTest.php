@@ -11,6 +11,7 @@ use Marko\Core\Event\ObserverRegistry;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\FailedJob;
+use Marko\Queue\FailedJobHandler;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobRunner;
@@ -20,6 +21,7 @@ use Marko\Queue\QueueInterface;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeQueue;
 
 class OrderShipped extends Event
@@ -143,11 +145,15 @@ describe('async observer dispatch through marko/queue', function (): void {
 
         new Worker(
             $inbox,
-            $failedJobRepository,
+            new FailedJobHandler(
+                $failedJobRepository,
+                $jobEnvelope,
+                new JobRunner($container, $jobEnvelope, new FakeEventDispatcher()),
+                new FakeEventDispatcher(),
+                new FakeClock(),
+            ),
             $config,
-            $jobEnvelope,
-            new JobRunner($container, $jobEnvelope),
-            new FakeClock(),
+            new JobRunner($container, $jobEnvelope, new FakeEventDispatcher()),
         )->work(
             once: true,
         );

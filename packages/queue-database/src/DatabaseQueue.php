@@ -10,9 +10,9 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Exceptions\LockException;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
+use Marko\Queue\Exceptions\JobAttemptsExhaustedException;
 use Marko\Queue\Exceptions\SerializationException;
-use Marko\Queue\FailedJob;
-use Marko\Queue\FailedJobRepositoryInterface;
+use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobInterface;
 use Marko\Queue\PushResult;
@@ -35,9 +35,11 @@ use Random\RandomException;
  *   has already incremented to the column value, so the count and every other
  *   piece of per-job state (exceptions, retry deadline) survive the round trip.
  * - A popped job whose earlier reservations already reach its max attempts
- *   (job maxAttempts, or the queue default) is moved to the failed-job store
- *   instead of being returned, so a job that always crashes its worker cannot
- *   be retried forever.
+ *   (job maxAttempts, or the queue default) is failed through the
+ *   FailedJobHandlerInterface (stored, its failed() hook called, JobFailedEvent
+ *   dispatched) and deleted instead of being returned, so a job that always
+ *   crashes its worker cannot be retried forever. This happens after the
+ *   reserving transaction commits, so failed() never runs inside it.
  *
  * Reservation: pop() selects the next job with the query builder's
  * lockForUpdate()->skipLocked() inside a transaction, so concurrent workers
@@ -58,7 +60,7 @@ readonly class DatabaseQueue implements QueueInterface
     public function __construct(
         private ConnectionInterface $connection,
         private JobEnvelope $jobEnvelope,
-        private FailedJobRepositoryInterface $failedJobRepository,
+        private FailedJobHandlerInterface $failedJobHandler,
         private QueryBuilderFactoryInterface $queryBuilderFactory,
         private ClockInterface $clock,
         private DatabaseTimezoneConfig $databaseTimezoneConfig,
@@ -167,27 +169,34 @@ readonly class DatabaseQueue implements QueueInterface
     ): ?JobInterface {
         $queueName = $queue ?? $this->defaultQueue;
 
-        // A false result means the reserved job had exhausted its attempts through
-        // crashed reservations and was moved to the failed-job store; try the next one.
-        do {
-            $result = $this->connection instanceof TransactionInterface
-                ? $this->connection->transaction(fn (): JobInterface|false|null => $this->reserveNext($queueName))
+        while (true) {
+            $job = $this->connection instanceof TransactionInterface
+                ? $this->connection->transaction(fn (): ?JobInterface => $this->reserveNext($queueName))
                 : $this->reserveNext($queueName);
-        } while ($result === false);
 
-        return $result;
+            if ($job === null) {
+                return null;
+            }
+
+            $maxAttempts = $job->maxAttempts ?? $this->maxAttempts;
+
+            if ($job->attempts < $maxAttempts) {
+                return $job;
+            }
+
+            // Its earlier reservations used up every attempt without completing: fail it, then try the next job
+            $this->failExhaustedJob($job, $queueName, $maxAttempts);
+        }
     }
 
     /**
-     * Reserve the next available job.
+     * Reserve the next available job, or return null when none is available.
      *
-     * @return JobInterface|false|null the reserved job, null when none is available, or
-     *                                 false when the reserved job was moved to failed jobs
      * @throws LockException|SerializationException
      */
     private function reserveNext(
         string $queueName,
-    ): JobInterface|false|null {
+    ): ?JobInterface {
         $now = $this->clock->now();
         $reclaimCutoff = $this->secondsAfter($now, -$this->retryAfter);
 
@@ -225,34 +234,26 @@ readonly class DatabaseQueue implements QueueInterface
         $job = $this->unwrapJob($row['payload'], (int) $row['attempts']);
         $job->setId($row['id']);
 
-        $maxAttempts = $job->maxAttempts ?? $this->maxAttempts;
-
-        if ($job->attempts >= $maxAttempts) {
-            $this->failExhaustedJob($job, $row['queue'], $maxAttempts, $now);
-
-            return false;
-        }
-
         return $job;
     }
 
     /**
+     * Fail a job whose attempts were all reserved by workers that crashed or timed out, then delete it.
+     *
+     * The row is still reserved, so no other worker picks it up while it is being failed.
+     *
      * @throws SerializationException
      */
     private function failExhaustedJob(
         JobInterface $job,
         string $queueName,
         int $maxAttempts,
-        DateTimeImmutable $now,
     ): void {
-        $this->failedJobRepository->store(new FailedJob(
-            id: $job->id,
-            queue: $queueName,
-            payload: $this->jobEnvelope->wrap($job->serialize()),
-            exception: "Job $job->id exceeded max attempts after worker crash or timeout: "
-                . "$job->attempts of $maxAttempts attempts were reserved without being completed or released.",
-            failedAt: $now,
-        ));
+        $this->failedJobHandler->handle(
+            $job,
+            $queueName,
+            JobAttemptsExhaustedException::afterCrashedReservations($job->id, $job->attempts, $maxAttempts),
+        );
         $this->delete($job->id);
     }
 

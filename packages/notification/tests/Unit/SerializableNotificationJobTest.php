@@ -12,6 +12,7 @@ use Marko\Notification\Job\SendNotificationJob;
 use Marko\Notification\NotificationManager;
 use Marko\Notification\NotificationSender;
 use Marko\Queue\FailedJob;
+use Marko\Queue\FailedJobHandler;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\Job;
 use Marko\Queue\JobEnvelope;
@@ -23,6 +24,7 @@ use Marko\Queue\QueueInterface;
 use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 
 class TestNotifiable implements NotifiableInterface
 {
@@ -365,11 +367,15 @@ describe('SendNotificationJob serialization', function (): void {
             // Drive through Worker::work() — NOT a manual setContainer() call
             $worker = new Worker(
                 $workerQueue,
-                $failedRepository,
+                new FailedJobHandler(
+                    $failedRepository,
+                    $envelope,
+                    new JobRunner($container, $envelope, new FakeEventDispatcher()),
+                    new FakeEventDispatcher(),
+                    new FakeClock(),
+                ),
                 $queueConfig,
-                $envelope,
-                new JobRunner($container, $envelope),
-                clock: new FakeClock(),
+                new JobRunner($container, $envelope, new FakeEventDispatcher()),
             );
             $worker->work(once: true);
 
@@ -507,11 +513,23 @@ describe('SendNotificationJob final failure', function (): void {
 
             $worker = new Worker(
                 $queue,
-                $failedRepository,
+                new FailedJobHandler(
+                    $failedRepository,
+                    createNotificationTestEnvelope(),
+                    new JobRunner(
+                        createUnserializableNotificationContainer(),
+                        createNotificationTestEnvelope(),
+                        new FakeEventDispatcher(),
+                    ),
+                    new FakeEventDispatcher(),
+                    new FakeClock(),
+                ),
                 createNotificationTestQueueConfig(),
-                createNotificationTestEnvelope(),
-                new JobRunner(createUnserializableNotificationContainer(), createNotificationTestEnvelope()),
-                clock: new FakeClock(),
+                new JobRunner(
+                    createUnserializableNotificationContainer(),
+                    createNotificationTestEnvelope(),
+                    new FakeEventDispatcher(),
+                ),
             );
             $stopJob->worker = $worker;
 

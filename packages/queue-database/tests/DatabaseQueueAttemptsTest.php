@@ -2,17 +2,24 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Container\Container;
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilderFactory;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Database\DatabaseFailedJobRepository;
 use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\Database\Tests\Fixtures\AlwaysFailingJob;
+use Marko\Queue\Database\Tests\Fixtures\FailableCrashJob;
+use Marko\Queue\Database\Tests\Fixtures\FailedHookRecorder;
 use Marko\Queue\Database\Tests\Fixtures\SqliteConnection;
+use Marko\Queue\Database\Tests\Fixtures\TestFailedJobHandler;
 use Marko\Queue\Database\Tests\Fixtures\TestJob;
+use Marko\Queue\Event\JobFailedEvent;
+use Marko\Queue\Exceptions\JobAttemptsExhaustedException;
 use Marko\Queue\JobEnvelope;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 
 function attemptsEnvelope(): JobEnvelope
 {
@@ -28,7 +35,11 @@ function attemptsQueue(
     return new DatabaseQueue(
         connection: $connection,
         jobEnvelope: attemptsEnvelope(),
-        failedJobRepository: new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC')),
+        failedJobHandler: TestFailedJobHandler::create(
+            new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC')),
+            attemptsEnvelope(),
+            new FakeClock(),
+        ),
         queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
         clock: new FakeClock(),
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
@@ -141,6 +152,45 @@ describe('DatabaseQueue attempt persistence', function (): void {
             ->and($failedJob->queue)->toBe('emails')
             ->and($failedJob->exception)->toContain('exceeded max attempts after worker crash or timeout')
             ->and(unserialize(attemptsEnvelope()->verifyAndUnwrap($failedJob->payload))->message)->toBe('crashy');
+    });
+
+    it('calls failed() and dispatches JobFailedEvent for a job exhausted by crashed reservations', function (): void {
+        $connection = SqliteConnection::withQueueTables();
+        $recorder = new FailedHookRecorder($connection);
+        $container = new Container();
+        $container->instance(FailedHookRecorder::class, $recorder);
+        $events = new FakeEventDispatcher();
+        $queue = new DatabaseQueue(
+            connection: $connection,
+            jobEnvelope: attemptsEnvelope(),
+            failedJobHandler: TestFailedJobHandler::create(
+                new DatabaseFailedJobRepository($connection, DatabaseTimezoneConfig::fromName('UTC')),
+                attemptsEnvelope(),
+                new FakeClock(),
+                $events,
+                $container,
+            ),
+            queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
+            clock: new FakeClock(),
+            databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
+            maxAttempts: 1,
+        );
+        $id = $queue->push(new FailableCrashJob('crashy'), 'emails')->id;
+
+        $queue->pop('emails');
+        expireReservation($connection, $id);
+
+        expect($queue->pop('emails'))->toBeNull()
+            ->and($recorder->calls)->toHaveCount(1)
+            ->and($recorder->calls[0]['message'])->toBe('crashy')
+            ->and($recorder->calls[0]['exception'])->toBeInstanceOf(JobAttemptsExhaustedException::class)
+            ->and($recorder->calls[0]['exception']->getMessage())
+            ->toBe("Job $id exceeded max attempts after worker crash or timeout: "
+                . '1 of 1 attempts were reserved without being completed or released.')
+            ->and($recorder->calls[0]['inTransaction'])->toBeFalse()
+            ->and($events->dispatched(JobFailedEvent::class))->toHaveCount(1)
+            ->and($events->dispatched(JobFailedEvent::class)[0]->queue)->toBe('emails')
+            ->and($events->dispatched(JobFailedEvent::class)[0]->jobId)->toBe($id);
     });
 
     it('returns the next available job after failing a crash-exhausted one', function (): void {

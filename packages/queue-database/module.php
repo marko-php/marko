@@ -8,6 +8,7 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Queue\Database\DatabaseFailedJobRepository;
 use Marko\Queue\Database\DatabaseQueue;
+use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\QueueConfig;
@@ -22,7 +23,7 @@ return [
             return new DatabaseQueue(
                 connection: $container->get(ConnectionInterface::class),
                 jobEnvelope: $container->get(JobEnvelope::class),
-                failedJobRepository: $container->get(FailedJobRepositoryInterface::class),
+                failedJobHandler: $container->get(FailedJobHandlerInterface::class),
                 queryBuilderFactory: $container->get(QueryBuilderFactoryInterface::class),
                 clock: $container->get(ClockInterface::class),
                 databaseTimezoneConfig: $container->get(DatabaseTimezoneConfig::class),

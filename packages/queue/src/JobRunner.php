@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Marko\Queue;
 
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Event\EventDispatcherInterface;
+use Marko\Queue\Event\JobProcessedEvent;
+use Marko\Queue\Event\JobProcessingEvent;
 use Throwable;
 
 class JobRunner implements JobRunnerInterface
@@ -12,11 +15,16 @@ class JobRunner implements JobRunnerInterface
     public function __construct(
         private readonly ContainerInterface $container,
         private readonly JobEnvelope $jobEnvelope,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {}
 
     /**
      * Any release request left on the job from an earlier attempt is cleared first, so release()
      * inside handle() is the only thing that sets releaseDelay for this attempt.
+     *
+     * JobProcessingEvent is dispatched once the attempt is counted, just before handle(), and
+     * JobProcessedEvent once handle() returns without throwing. Both run while a container-aware
+     * job still holds its container.
      *
      * @throws Throwable
      */
@@ -26,6 +34,7 @@ class JobRunner implements JobRunnerInterface
         $this->withContainer($job, function () use ($job): void {
             $job->clearRelease();
             $job->incrementAttempts();
+            $this->eventDispatcher->dispatch(new JobProcessingEvent($job));
 
             try {
                 $job->handle();
@@ -34,6 +43,8 @@ class JobRunner implements JobRunnerInterface
 
                 throw $e;
             }
+
+            $this->eventDispatcher->dispatch(new JobProcessedEvent($job));
         });
     }
 
