@@ -17,6 +17,7 @@ use Marko\Authorization\Contracts\GateInterface;
 use Marko\Authorization\Gate;
 use Marko\Authorization\Middleware\AuthorizationMiddleware;
 use Marko\Authorization\PolicyRegistry;
+use Marko\Authorization\Tests\Support\GateHooks;
 use Marko\Core\Container\Container;
 use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Routing\Http\Request;
@@ -25,6 +26,7 @@ use Marko\Routing\RouteCollection;
 use Marko\Routing\RouteDefinition;
 use Marko\Routing\RouteMatcher;
 use Marko\Routing\Router;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeGuard;
 use Marko\Testing\Fake\FakeUserProvider;
 use Psr\Clock\ClockInterface;
@@ -162,6 +164,8 @@ function createChallengeRouter(
     $gate = new Gate(
         guard: $guard,
         policyRegistry: new PolicyRegistry(),
+        gateHookRegistry: GateHooks::registry(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
     $gate->define('view-reports', fn (?AuthorizableInterface $user): bool => true);
 

@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
+use Marko\Authorization\Contracts\GateHookInterface;
+use Marko\Authorization\Discovery\GateHookCacheContributor;
+use Marko\Authorization\GateHookRegistry;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Discovery\ConfigCacheContributor;
 use Marko\Core\Application;
 use Marko\Core\Discovery\CachedDiscovery;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Database\Entity\EntityCacheContributor;
+use Marko\Integration\Fixture\Auth\IntegrationGateHook;
 use Marko\Integration\Fixture\Entity\Author;
 use Marko\Routing\RouteCollection;
 use Marko\Routing\RouteDefinition;
@@ -115,6 +119,12 @@ it('routes identically with the discovery cache warm and cold', function (): voi
         ->toBe(array_map(fn (ModuleManifest $m): string => $m->name, $cold->modules))
         ->and(discoveryCacheRoutes($warm))->toBe($coldRoutes)
         ->and($cachedDiscovery->section(EntityCacheContributor::KEY))->toContain(Author::class)
+        ->and($cachedDiscovery->section(GateHookCacheContributor::KEY))
+        ->toBe([['className' => IntegrationGateHook::class, 'priority' => 10]])
+        ->and(array_map(
+            fn (GateHookInterface $hook): string => $hook::class,
+            $warm->container->get(GateHookRegistry::class)->hooks(),
+        ))->toBe([IntegrationGateHook::class])
         ->and(discoveryCacheResponses($warm))->toBe($coldResponses);
 })->issue(173);
 

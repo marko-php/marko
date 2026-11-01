@@ -10,6 +10,8 @@ use Marko\Authorization\Exceptions\AuthorizationException;
 use Marko\Authorization\Exceptions\PolicyException;
 use Marko\Authorization\Gate;
 use Marko\Authorization\PolicyRegistry;
+use Marko\Authorization\Tests\Support\GateHooks;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeGuard;
 
 // Entity classes for policy integration tests
@@ -105,6 +107,8 @@ function createIntegrationGate(
     return new Gate(
         guard: $guard ?? new FakeGuard(name: 'integration-test', attemptResult: false),
         policyRegistry: $registry ?? new PolicyRegistry(),
+        gateHookRegistry: GateHooks::registry(),
+        eventDispatcher: new FakeEventDispatcher(),
     );
 }
 

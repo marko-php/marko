@@ -7,18 +7,28 @@ namespace Marko\Authorization;
 use Marko\Authentication\Contracts\AbilityScopedGuardInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authorization\Contracts\GateInterface;
+use Marko\Authorization\Contracts\PolicyBeforeInterface;
+use Marko\Authorization\Event\AbilityCheckedEvent;
+use Marko\Authorization\Event\AbilityDecisionSource;
 use Marko\Authorization\Exceptions\AuthorizationException;
 use Marko\Authorization\Exceptions\PolicyException;
+use Marko\Core\Event\EventDispatcherInterface;
 
 /**
- * Decides abilities through gate closures, then registered policies, and
- * denies anything undefined.
+ * Decides abilities in a fixed order:
  *
- * When the guard is an AbilityScopedGuardInterface (the token guard), an
- * authenticated user's credential must also grant the ability: a token
- * scoped to ['posts:read'] is denied 'posts:delete' even when the user's
- * closure or policy would allow it. Guests are not affected, so closures
- * and policies that allow guests keep working.
+ * 1. When the guard is an AbilityScopedGuardInterface (the token guard), an
+ *    authenticated user's credential must grant the ability: a token scoped
+ *    to ['posts:read'] is denied 'posts:delete' whatever else would allow it.
+ *    Guests are not affected, so closures and policies that allow guests keep
+ *    working.
+ * 2. #[GateHook] classes, highest priority first; the first non-null result wins.
+ * 3. Closures registered with define().
+ * 4. The registered policy: its PolicyBeforeInterface::before() when it has
+ *    one, then the ability method.
+ * 5. Anything undefined is denied.
+ *
+ * Every decision is announced with an AbilityCheckedEvent.
  */
 class Gate implements GateInterface
 {
@@ -28,6 +38,8 @@ class Gate implements GateInterface
     public function __construct(
         private readonly GuardInterface $guard,
         private readonly PolicyRegistry $policyRegistry,
+        private readonly GateHookRegistry $gateHookRegistry,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {}
 
     public function define(
@@ -49,35 +61,37 @@ class Gate implements GateInterface
         // A scoped credential (an API token) can only narrow the user's authority
         if ($user !== null && $this->guard instanceof AbilityScopedGuardInterface
             && !$this->guard->hasAbility($ability)) {
-            return false;
+            return $this->decide($user, $ability, $arguments, false, AbilityDecisionSource::TokenScope);
         }
 
-        // Check explicit gate closures first
+        foreach ($this->gateHookRegistry->hooks() as $hook) {
+            $result = $hook->before($user, $ability, $arguments);
+
+            if ($result !== null) {
+                return $this->decide(
+                    $user,
+                    $ability,
+                    $arguments,
+                    $result,
+                    AbilityDecisionSource::GateHook,
+                    $hook::class,
+                );
+            }
+        }
+
         if (isset($this->abilities[$ability])) {
-            return (bool) ($this->abilities[$ability])($user, ...$arguments);
+            $result = (bool) ($this->abilities[$ability])($user, ...$arguments);
+
+            return $this->decide($user, $ability, $arguments, $result, AbilityDecisionSource::Closure);
         }
 
-        // Check if first argument is an object with a registered policy
-        if ($arguments !== [] && is_object($arguments[0])) {
-            $entity = $arguments[0];
-            $policyClass = $this->policyRegistry->resolve($entity::class);
+        $policyClass = $this->resolvePolicyClass($arguments);
 
-            if ($policyClass !== null) {
-                return $this->callPolicy($policyClass, $ability, $user, $arguments);
-            }
+        if ($policyClass !== null) {
+            return $this->callPolicy($policyClass, $ability, $user, $arguments);
         }
 
-        // Check if first argument is a class string with a registered policy
-        if ($arguments !== [] && is_string($arguments[0]) && class_exists($arguments[0])) {
-            $policyClass = $this->policyRegistry->resolve($arguments[0]);
-
-            if ($policyClass !== null) {
-                return $this->callPolicy($policyClass, $ability, $user, $arguments);
-            }
-        }
-
-        // Deny by default for undefined abilities
-        return false;
+        return $this->decide($user, $ability, $arguments, false, AbilityDecisionSource::DefaultDeny);
     }
 
     /**
@@ -129,7 +143,28 @@ class Gate implements GateInterface
     }
 
     /**
-     * @param array<int, mixed> $arguments
+     * The policy registered for the first argument: an entity object or a class string.
+     *
+     * @param array<mixed> $arguments
+     */
+    private function resolvePolicyClass(
+        array $arguments,
+    ): ?string {
+        $subject = $arguments[0] ?? null;
+
+        if (is_object($subject)) {
+            return $this->policyRegistry->resolve($subject::class);
+        }
+
+        if (is_string($subject) && class_exists($subject)) {
+            return $this->policyRegistry->resolve($subject);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<mixed> $arguments
      * @throws PolicyException
      */
     private function callPolicy(
@@ -138,6 +173,7 @@ class Gate implements GateInterface
         ?AuthorizableInterface $user,
         array $arguments,
     ): bool {
+        // Checked before the policy-level before(), so it never hides a missing method
         if (!$this->policyRegistry->hasAbility($policyClass, $ability)) {
             throw PolicyException::missingMethod(
                 policyClass: $policyClass,
@@ -147,11 +183,54 @@ class Gate implements GateInterface
 
         $policy = new $policyClass();
 
-        return (bool) $policy->{$ability}($user, ...$arguments);
+        if ($policy instanceof PolicyBeforeInterface) {
+            $result = $policy->before($user, $ability, $arguments);
+
+            if ($result !== null) {
+                return $this->decide(
+                    $user,
+                    $ability,
+                    $arguments,
+                    $result,
+                    AbilityDecisionSource::PolicyBefore,
+                    $policyClass,
+                );
+            }
+        }
+
+        $result = (bool) $policy->{$ability}($user, ...$arguments);
+
+        return $this->decide($user, $ability, $arguments, $result, AbilityDecisionSource::Policy, $policyClass);
     }
 
     /**
-     * @param array<int, mixed> $arguments
+     * Announce the decision and return it.
+     *
+     * @param array<mixed> $arguments
+     * @param class-string|null $decidedBy
+     */
+    private function decide(
+        ?AuthorizableInterface $user,
+        string $ability,
+        array $arguments,
+        bool $result,
+        AbilityDecisionSource $source,
+        ?string $decidedBy = null,
+    ): bool {
+        $this->eventDispatcher->dispatch(new AbilityCheckedEvent(
+            user: $user,
+            ability: $ability,
+            arguments: $arguments,
+            result: $result,
+            source: $source,
+            decidedBy: $decidedBy,
+        ));
+
+        return $result;
+    }
+
+    /**
+     * @param array<mixed> $arguments
      */
     private function resolveResourceName(
         array $arguments,

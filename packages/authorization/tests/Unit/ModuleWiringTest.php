@@ -12,17 +12,23 @@ use Marko\Authorization\Contracts\GateInterface;
 use Marko\Authorization\Gate;
 use Marko\Authorization\Middleware\AuthorizationMiddleware;
 use Marko\Authorization\PolicyRegistry;
+use Marko\Authorization\Tests\Support\GateHooks;
 use Marko\Config\ConfigRepository;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
+use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Module\DependencyResolver;
 use Marko\Core\Module\GlobalMiddlewareResolver;
 use Marko\Core\Module\ModuleManifest;
+use Marko\Core\Module\ModuleRepository;
+use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\Routing\Exceptions\HttpException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Testing\Fake\FakeAuthenticatable;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeEventDispatcher;
 use Marko\Testing\Fake\FakeGuard;
 use RuntimeException;
 
@@ -112,6 +118,9 @@ it('resolves the gate and runs the middleware with the shipped config', function
 
     $module = authorizationModule();
     $container = new Container();
+    $container->instance(ContainerInterface::class, $container);
+    $container->instance(ModuleRepositoryInterface::class, new ModuleRepository([]));
+    $container->instance(EventDispatcherInterface::class, new FakeEventDispatcher());
     $container->instance(AuthManager::class, $authManager);
     $container->instance(ConfigRepositoryInterface::class, new ConfigRepository([
         'authorization' => require dirname(__DIR__, 2) . '/config/authorization.php',
@@ -160,7 +169,12 @@ it('builds the middleware with the guard configured for authorization', function
         }
     };
 
-    $gate = new Gate(guard: $apiGuard, policyRegistry: new PolicyRegistry());
+    $gate = new Gate(
+        guard: $apiGuard,
+        policyRegistry: new PolicyRegistry(),
+        gateHookRegistry: GateHooks::registry(),
+        eventDispatcher: new FakeEventDispatcher(),
+    );
     $gate->define('edit', fn (): bool => true);
 
     $container = new Container();

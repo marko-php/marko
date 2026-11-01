@@ -3,7 +3,7 @@ title: marko/authorization
 description: Gates, policies, and the #[Can] attribute -- control who can do what with expressive, testable authorization checks.
 ---
 
-Gates, policies, and the `#[Can]` attribute --- control who can do what with expressive, testable authorization checks. Define abilities with closures via the Gate, or organize them into policy classes mapped to entities. Use `#[Can]` on controllers or their methods to enforce permissions through middleware that runs on every route once the package is installed. Denials throw `AuthorizationException` with clear context.
+Gates, policies, and the `#[Can]` attribute --- control who can do what with expressive, testable authorization checks. Define abilities with closures via the Gate, or organize them into policy classes mapped to entities. Use `#[Can]` on controllers or their methods to enforce permissions through middleware that runs on every route once the package is installed. Gate hooks answer every check first (an admin bypass in one class), and every decision is dispatched as an event for auditing. Denials throw `AuthorizationException` with clear context.
 
 ## Installation
 
@@ -107,6 +107,125 @@ Check against the policy by passing the entity:
 ```php
 $this->gate->authorize('update', $post);
 ```
+
+### How the Gate Decides
+
+Every check runs the same steps in this order. The first step that gives an answer decides:
+
+1. **Token scope.** When the authorization guard is the token guard, the user's API token must grant the ability. A token scoped to `['read']` is denied `delete`, and nothing below can change that (see [API Token Abilities](#api-token-abilities)).
+2. **Gate hooks.** Each `#[GateHook]` class, highest priority first.
+3. **Closures** registered with `define()`.
+4. **The policy** for the first argument: its `before()` method if it implements `PolicyBeforeInterface`, then the ability method.
+5. **Default deny.** Nothing defined the ability, so it is denied.
+
+### Gate Hooks (Admin Bypass)
+
+A gate hook answers a check before any closure or policy runs. Use one when a rule applies to every ability, such as "admins can do everything". Your policies then only describe the normal rules.
+
+Implement `GateHookInterface` and mark the class with `#[GateHook]`. Hooks are discovered at boot from every module's `src/` directory, like `#[Observer]` classes. They're built through the container, so they can inject dependencies:
+
+```php
+use Marko\Authorization\Attributes\GateHook;
+use Marko\Authorization\AuthorizableInterface;
+use Marko\Authorization\Contracts\GateHookInterface;
+
+#[GateHook(priority: 100)]
+class AdminBypass implements GateHookInterface
+{
+    public function before(
+        ?AuthorizableInterface $user,
+        string $ability,
+        array $arguments,
+    ): ?bool {
+        // null means "no opinion": the next hook, closure or policy decides
+        return $user instanceof User && $user->isAdmin() ? true : null;
+    }
+}
+```
+
+`before()` returns:
+
+- `true` to allow the ability
+- `false` to deny it
+- `null` to fall through to the next hook, then to closures and policies
+
+Hooks run highest `priority` first (the default is `0`), and the first non-null result wins. `$user` is `null` for a guest, so handle guests explicitly. `$arguments` holds the arguments passed to the check, such as the entity.
+
+A few rules:
+
+- A hook can't widen a scoped API token. An admin whose token only grants `read` is still denied `delete`, because the token scope is checked first.
+- Hooks apply to closures and policies alike. A hook that returns `true` allows an ability even when the policy has no method for it.
+- A hook never hides a mistake. If every hook returns `null` and the policy has no method for the ability, the check still throws `PolicyException`.
+- There are no "after" hooks that change a result. To audit decisions, observe [`AbilityCheckedEvent`](#auditing-ability-checks) instead.
+
+### Policy-Level Before
+
+A policy can implement `PolicyBeforeInterface` to run a check for its own abilities only. It runs after every gate hook returned `null` and before the ability method, with the same `true`/`false`/`null` meaning:
+
+```php
+use Marko\Authorization\AuthorizableInterface;
+use Marko\Authorization\Contracts\PolicyBeforeInterface;
+
+class SoundPolicy implements PolicyBeforeInterface
+{
+    public function before(
+        ?AuthorizableInterface $user,
+        string $ability,
+        array $arguments,
+    ): ?bool {
+        // Default-library sounds are never editable here
+        return $arguments[0] instanceof Sound && $arguments[0]->isDefaultLibrary ? false : null;
+    }
+
+    public function update(
+        ?AuthorizableInterface $user,
+        Sound $sound,
+    ): bool {
+        return $user !== null && $user->getAuthIdentifier() === $sound->ownerId;
+    }
+}
+```
+
+`before()` only runs for abilities the policy has a method for. Checking a missing ability still throws `PolicyException`.
+
+Policies are created with `new`, without dependency injection. A policy-level `before()` can only use the user and the arguments. Use a gate hook when the check needs a service.
+
+### Auditing Ability Checks
+
+After every decision the Gate dispatches `Marko\Authorization\Event\AbilityCheckedEvent`. Observers can see the decision but can't change it. The event carries:
+
+- `user`: the user, or `null` for a guest
+- `ability` and `arguments`: what was checked
+- `result`: the decision
+- `source`: an `AbilityDecisionSource` case (`TokenScope`, `GateHook`, `PolicyBefore`, `Closure`, `Policy` or `DefaultDeny`)
+- `decidedBy`: the hook or policy class that decided, or `null` for the token scope, a closure or the default deny
+
+Observe it like any other event:
+
+```php
+use Marko\Authorization\Event\AbilityCheckedEvent;
+use Marko\Authorization\Event\AbilityDecisionSource;
+use Marko\Core\Attributes\Observer;
+use Marko\Log\Contracts\LoggerInterface;
+
+#[Observer(event: AbilityCheckedEvent::class)]
+readonly class LogAdminBypass
+{
+    public function __construct(
+        private LoggerInterface $logger,
+    ) {}
+
+    public function handle(
+        AbilityCheckedEvent $event,
+    ): void {
+        if ($event->source === AbilityDecisionSource::GateHook) {
+            $this->logger->info("'$event->ability' decided by $event->decidedBy");
+        }
+    }
+}
+```
+
+A check that throws `PolicyException` dispatches no event.
 
 ### The #[Can] Attribute
 
@@ -323,6 +442,52 @@ interface GateInterface
     public function denies(string $ability, mixed ...$arguments): bool;
     public function authorize(string $ability, mixed ...$arguments): bool;
     public function policy(string $entityClass, string $policyClass): void;
+}
+```
+
+### GateHookInterface and #[GateHook]
+
+```php
+#[GateHook(priority: 0)]  // Targets classes; higher priority runs first
+
+interface GateHookInterface
+{
+    public function before(?AuthorizableInterface $user, string $ability, array $arguments): ?bool;
+}
+```
+
+`Marko\Authorization\GateHookRegistry::hooks()` returns the discovered hooks in run order. The `marko discovery:cache` command stores them under the `gate_hooks` key, so a cached boot skips the scan. A `#[GateHook]` class that doesn't implement `GateHookInterface` throws `GateHookException` at discovery.
+
+### PolicyBeforeInterface
+
+```php
+interface PolicyBeforeInterface
+{
+    public function before(?AuthorizableInterface $user, string $ability, array $arguments): ?bool;
+}
+```
+
+### AbilityCheckedEvent
+
+```php
+class AbilityCheckedEvent extends Event
+{
+    public readonly ?AuthorizableInterface $user;
+    public readonly string $ability;
+    public readonly array $arguments;
+    public readonly bool $result;
+    public readonly AbilityDecisionSource $source;
+    public readonly ?string $decidedBy;
+}
+
+enum AbilityDecisionSource: string
+{
+    case TokenScope = 'token_scope';
+    case GateHook = 'gate_hook';
+    case PolicyBefore = 'policy_before';
+    case Closure = 'closure';
+    case Policy = 'policy';
+    case DefaultDeny = 'default_deny';
 }
 ```
 
