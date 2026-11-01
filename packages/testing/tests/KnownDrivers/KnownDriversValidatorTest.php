@@ -48,6 +48,24 @@ it('fails skeleton assertion when skeleton has a suggest key but is missing a kn
         ->toThrow(AssertionFailedError::class, "missing known driver 'marko/cache-memcached'");
 });
 
+it('counts a known driver the skeleton requires as covered without a suggest entry', function (): void {
+    // Suggesting a package the skeleton already requires does nothing, so a
+    // shipped driver is listed in require only.
+    $knownDriversPath = __DIR__ . '/fixtures/known-drivers.php';
+    $skeletonComposerPath = __DIR__ . '/fixtures/skeleton-with-required-driver-composer.json';
+
+    expect(fn () => KnownDriversValidator::assertSkeletonSuggestContainsAll($knownDriversPath, $skeletonComposerPath))
+        ->not->toThrow(Throwable::class);
+});
+
+it('fails skeleton assertion when a required known driver is also suggested', function (): void {
+    $knownDriversPath = __DIR__ . '/fixtures/known-drivers.php';
+    $skeletonComposerPath = __DIR__ . '/fixtures/skeleton-required-and-suggested-driver-composer.json';
+
+    expect(fn () => KnownDriversValidator::assertSkeletonSuggestContainsAll($knownDriversPath, $skeletonComposerPath))
+        ->toThrow(AssertionFailedError::class, 'remove its redundant suggest entry');
+});
+
 it('skips skeleton assertion when skeleton composer.json has no suggest key yet', function (): void {
     $knownDriversPath = __DIR__ . '/fixtures/known-drivers.php';
     $skeletonComposerPath = __DIR__ . '/fixtures/skeleton-without-suggest-composer.json';

@@ -6,7 +6,10 @@
     "require": {
         "php": "^8.5",
         "marko/env": "*",
-        "marko/framework": "*"
+        "marko/framework": "*",
+        "marko/log": "*",
+        "marko/log-file": "*",
+        "marko/log-stream": "*"
     },
     "require-dev": {
         "marko/devserver": "*",
@@ -47,8 +50,6 @@
         "marko/authentication-token": "Token-based authentication driver (signed token sessions)",
         "marko/encryption-openssl": "OpenSSL-based encryption driver (AES-256-GCM)",
         "marko/http-guzzle": "Guzzle-based HTTP client driver",
-        "marko/log-file": "File-based log driver (with log rotation)",
-        "marko/log-stream": "Stream log driver (stdout/stderr, for containers and supervisors)",
         "marko/translation-file": "File-based translation driver (PHP array files per locale)",
         "marko/notification-database": "Database-backed notification driver",
         "marko/page-cache-file": "File-based page cache driver",

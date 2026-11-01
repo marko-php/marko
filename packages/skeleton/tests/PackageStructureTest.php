@@ -25,6 +25,26 @@ it('requires marko/env', function (): void {
     expect($composer['require'])->toHaveKey('marko/env');
 });
 
+it('requires marko/log with both the file and stream handlers', function (): void {
+    // marko/queue requires marko/log, and marko/log writes nowhere without a
+    // handler package, so a fresh app ships logging out of the box. The two
+    // handlers coexist: LOG_HANDLERS picks which ones receive records.
+    $composer = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
+
+    expect($composer['require'])->toHaveKey('marko/log')
+        ->and($composer['require'])->toHaveKey('marko/log-file')
+        ->and($composer['require'])->toHaveKey('marko/log-stream');
+});
+
+it('defaults LOG_HANDLERS to file in .env.example and explains stream for containers', function (): void {
+    $content = file_get_contents(__DIR__ . '/../.env.example');
+
+    expect($content)
+        ->toMatch('/^LOG_HANDLERS=file$/m')
+        ->toContain('stream')
+        ->toContain('file,stream');
+});
+
 it('requires marko/devserver as a dev dependency', function (): void {
     $composer = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
 

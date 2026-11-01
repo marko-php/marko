@@ -67,9 +67,22 @@ class KnownDriversValidator
 
         /** @var array<string, string> $suggest */
         $suggest = $composerJson['suggest'];
+        /** @var array<string, string> $require */
+        $require = $composerJson['require'] ?? [];
         $drivers = self::readKnownDrivers($knownDriversPath);
 
         foreach ($drivers as $packageName => $description) {
+            // A driver the skeleton ships is covered by require; suggesting it too would do nothing.
+            if (array_key_exists($packageName, $require)) {
+                Assert::assertArrayNotHasKey(
+                    $packageName,
+                    $suggest,
+                    "Skeleton requires known driver '$packageName'; remove its redundant suggest entry.",
+                );
+
+                continue;
+            }
+
             Assert::assertArrayHasKey(
                 $packageName,
                 $suggest,

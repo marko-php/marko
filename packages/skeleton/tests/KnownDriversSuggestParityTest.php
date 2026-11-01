@@ -2,31 +2,41 @@
 
 declare(strict_types=1);
 
-test('it lists every driver from every known-drivers.php file in skeleton suggest', function (): void {
+test('it lists every driver from every known-drivers.php file in skeleton suggest or require', function (): void {
+    // A driver the skeleton ships is covered by require; suggesting it too would do nothing.
     $knownDriversFiles = glob(__DIR__ . '/../../*/known-drivers.php');
-    $skeletonSuggest = json_decode(
+    $composer = json_decode(
         file_get_contents(__DIR__ . '/../composer.json'),
         associative: true,
-    )['suggest'] ?? [];
+    );
+    $covered = array_merge($composer['suggest'] ?? [], $composer['require'] ?? []);
 
     foreach ($knownDriversFiles as $knownDriversPath) {
         $drivers = require $knownDriversPath;
         foreach ($drivers as $package => $description) {
-            expect($skeletonSuggest)->toHaveKey($package);
+            expect($covered)->toHaveKey($package);
         }
     }
 });
 
 test('it preserves descriptions verbatim between known-drivers.php and skeleton suggest', function (): void {
     $knownDriversFiles = glob(__DIR__ . '/../../*/known-drivers.php');
-    $skeletonSuggest = json_decode(
+    $composer = json_decode(
         file_get_contents(__DIR__ . '/../composer.json'),
         associative: true,
-    )['suggest'] ?? [];
+    );
+    $skeletonSuggest = $composer['suggest'] ?? [];
+    $skeletonRequire = $composer['require'] ?? [];
 
     foreach ($knownDriversFiles as $knownDriversPath) {
         $drivers = require $knownDriversPath;
         foreach ($drivers as $package => $description) {
+            if (array_key_exists($package, $skeletonRequire)) {
+                expect($skeletonSuggest)->not->toHaveKey($package);
+
+                continue;
+            }
+
             expect($skeletonSuggest)->toHaveKey($package)
                 ->and($skeletonSuggest[$package])->toBe($description);
         }
@@ -58,6 +68,11 @@ test('it includes marko/page-cache-entity as an optional add-on', function (): v
 });
 
 test('it does not move any view, database, cache, etc. drivers into require or require-dev', function (): void {
+    // The log handlers are the one deliberate exception: the skeleton ships
+    // logging out of the box (marko/queue requires marko/log), and both
+    // handlers coexist, selected by LOG_HANDLERS.
+    $shippedDrivers = ['marko/log-file', 'marko/log-stream'];
+
     $composer = json_decode(
         file_get_contents(__DIR__ . '/../composer.json'),
         associative: true,
@@ -73,6 +88,10 @@ test('it does not move any view, database, cache, etc. drivers into require or r
     foreach ($knownDriversFiles as $knownDriversPath) {
         $drivers = require $knownDriversPath;
         foreach ($drivers as $package => $description) {
+            if (in_array($package, $shippedDrivers, true)) {
+                continue;
+            }
+
             expect($require)->not->toContain($package);
         }
     }
