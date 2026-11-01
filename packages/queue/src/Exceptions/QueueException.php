@@ -133,6 +133,19 @@ class QueueException extends MarkoException
         );
     }
 
+    public static function lockPackageNotInstalled(
+        string $jobClass,
+    ): self {
+        return new self(
+            message: "Unique job $jobClass cannot be pushed: marko/cache is not installed.",
+            context: 'A UniqueJobInterface job takes an atomic lock through ' . LockFactoryInterface::class
+                . ', which marko/cache provides. marko/queue only suggests marko/cache, so it is not installed'
+                . ' unless your app requires it.',
+            suggestion: 'Run `composer require marko/cache marko/cache-redis` (marko/cache-redis shares the lock'
+                . ' across servers; marko/cache-file locks one host).',
+        );
+    }
+
     public static function noLockDriver(
         string $jobClass,
         MarkoException $previous,

@@ -14,8 +14,9 @@ use Marko\Queue\Exceptions\QueueException;
  * Takes and releases the lock of a UniqueJobInterface job. The push plugin and the lifecycle
  * observers share it, so every driver gets the same uniqueness without driver code.
  *
- * LockFactoryInterface is resolved on first use, never on construction: an app without a
- * cache driver can still push and run jobs that are not unique.
+ * LockFactoryInterface is resolved on first use, never on construction: marko/cache is only a
+ * suggestion of marko/queue, so an app without it (or without a cache driver) can still push
+ * and run jobs that are not unique.
  */
 class UniqueJobLocks
 {
@@ -89,6 +90,10 @@ class UniqueJobLocks
             return $this->lockFactory;
         }
 
+        if (!$this->lockContractInstalled()) {
+            throw QueueException::lockPackageNotInstalled($job::class);
+        }
+
         try {
             $this->lockFactory = $this->container->get(LockFactoryInterface::class);
         } catch (CacheNoDriverException $e) {
@@ -96,5 +101,13 @@ class UniqueJobLocks
         }
 
         return $this->lockFactory;
+    }
+
+    /**
+     * Whether marko/cache, which owns LockFactoryInterface, is installed.
+     */
+    protected function lockContractInstalled(): bool
+    {
+        return interface_exists(LockFactoryInterface::class);
     }
 }

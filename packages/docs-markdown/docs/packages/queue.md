@@ -20,7 +20,13 @@ composer require marko/queue
 
 Note: You typically install a driver package (like `marko/queue-database`) which requires this automatically.
 
-`marko/queue` also requires [`marko/cache`](/docs/packages/cache/) for the `LockFactoryInterface` behind [unique jobs](#unique-jobs). Only unique jobs need a cache driver to provide the lock store.
+[Unique jobs](#unique-jobs) need [`marko/cache`](/docs/packages/cache/) (for `LockFactoryInterface`) plus a cache driver that provides the lock store. These are jobs you opt into with `UniqueJobInterface` so that a duplicate push is skipped; ordinary jobs don't need it. `marko/queue` only suggests `marko/cache`, so install it yourself if you use unique jobs:
+
+```bash
+composer require marko/cache marko/cache-redis
+```
+
+Without it, every other job works as usual, and pushing a unique job throws a `QueueException` telling you what to install.
 
 `marko/queue` requires [`marko/encryption`](/docs/packages/encryption/) and a non-empty `encryption.key` in your config. Job payloads are HMAC-signed when enqueued and verified before deserialization; if the key is empty or the signature does not match, a `SerializationException` is thrown loudly.
 
@@ -464,7 +470,15 @@ if ($result->pushed) {
 
 ### Unique Jobs
 
-A job that implements `Marko\Queue\UniqueJobInterface` is queued at most once per unique id. A second push while the first is pending returns a skipped `PushResult` and queues nothing, so a double click, a scheduler that fires again or a retry that re-dispatches can't start the same work twice:
+"Unique" here describes a kind of job you opt into. It doesn't mean every job is different. Every pushed job gets its own id, and by default the same work can be queued as many times as you push it: push `SendInvoiceEmail(42)` twice and it runs twice. That's the right behaviour for most jobs.
+
+Some work should never be queued twice at once, such as re-indexing a product or regenerating a report. A job that implements `Marko\Queue\UniqueJobInterface` is queued at most once per unique id. A second push while the first is pending returns a skipped `PushResult` and queues nothing, so a double click, a scheduler that fires again or a retry that re-dispatches can't start the same work twice.
+
+Only these jobs need [`marko/cache`](/docs/packages/cache/). Checking "is a copy already queued?" safely across processes takes an atomic lock, and the lock comes from `marko/cache`. `marko/queue` only suggests that package, so install it (plus a lock-capable driver, ideally [`marko/cache-redis`](/docs/packages/cache-redis/) across servers) before you use unique jobs:
+
+```bash
+composer require marko/cache marko/cache-redis
+```
 
 ```php
 use Marko\Queue\Job;
@@ -519,7 +533,7 @@ Pushing takes the atomic lock `unique-job:{class}:{uniqueId}` through [`LockFact
 - `uniqueFor()` is the lock's lifetime in seconds and must be greater than 0, or the push throws a `QueueException`: a lock that never expires would block the job forever after a crash. Once it expires, the job can be pushed again even if the first copy never ran. The same happens when the driver throws while storing the job: the lock was already taken, so it stays held until it expires.
 - Uniqueness lives in `marko/queue`, as the `UniqueJobPushPlugin` (a `#[Before]` plugin on `QueueInterface::push()` and `later()`, with `sortOrder` 100 so it takes the lock after `RetryDeadlinePlugin` and the other push plugins have run) and three lifecycle observers, so every driver gets it with no driver code. Code that builds a driver by hand, outside the container, skips the plugin.
 - The lock reaches as far as the lock store does: install [`marko/cache-redis`](/docs/packages/cache-redis/) when workers or web servers run on more than one host. [`marko/cache-file`](/docs/packages/cache-file/) locks one host and [`marko/cache-array`](/docs/packages/cache-array/) one process.
-- With no lock store bound, pushing a unique job throws a `QueueException` naming `LockFactoryInterface` and the cache drivers that provide one. Uniqueness never quietly turns off. Jobs that aren't unique never touch the lock store, so an app without a cache driver can still queue them.
+- Without `marko/cache` installed, pushing a unique job throws a `QueueException` telling you to `composer require marko/cache marko/cache-redis`. With `marko/cache` but no lock store bound, it throws a `QueueException` naming `LockFactoryInterface` and the cache drivers that provide one. Uniqueness never quietly turns off. Jobs that aren't unique never touch the lock store, so an app without `marko/cache` can still queue them.
 - A job that implements `JobInterface` directly, without extending `Job`, also declares `public ?string $uniqueLockOwner { get; }` and `setUniqueLockOwner(string $owner): void`.
 
 ### Named Queues
