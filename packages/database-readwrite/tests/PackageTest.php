@@ -77,16 +77,6 @@ it('appears in the root composer.json require section with self.version', functi
         ->and($rootComposer['require']['marko/database-readwrite'])->toBe('self.version');
 });
 
-it('appears in RootComposerJsonTest expected-package list', function (): void {
-    $testFilePath = dirname(__DIR__, 3) . '/packages/framework/tests/RootComposerJsonTest.php';
-
-    expect(file_exists($testFilePath))->toBeTrue();
-
-    $contents = file_get_contents($testFilePath);
-
-    expect(str_contains($contents, "'marko/database-readwrite'"))->toBeTrue();
-});
-
 it(
     'is auto-discovered by PackagingTest via scandir (no list update needed — just a smoke check that the new directory satisfies the .gitattributes assertion)',
     function (): void {

@@ -276,6 +276,30 @@ describe('DiscoveryCache', function (): void {
     );
 
     it(
+        'uses Windows drive and UNC cache_path values unchanged',
+        function (string $cachePath): void {
+            $_ENV['DISCOVERY_CACHE_PATH'] = $cachePath;
+            $cache = new DiscoveryCache(new ProjectPaths('/srv/app'), new DiscoveryEnvironment());
+
+            expect($cache->path())->toBe($cachePath);
+        },
+    )->with([
+        'windows drive with backslash' => 'C:\\app\\discovery.php',
+        'windows drive with forward slash' => 'C:/app/discovery.php',
+        'unc share' => '\\\\server\\share\\discovery.php',
+    ]);
+
+    it(
+        'resolves a drive-relative cache_path against the project base path',
+        function (): void {
+            $_ENV['DISCOVERY_CACHE_PATH'] = 'C:discovery.php';
+            $cache = new DiscoveryCache(new ProjectPaths('/srv/app'), new DiscoveryEnvironment());
+
+            expect($cache->path())->toBe('/srv/app/C:discovery.php');
+        },
+    );
+
+    it(
         'throws DiscoveryCacheException when the cache file content is not a PHP array',
         function (): void {
             $setup = makeCacheSetup($this->tmpDir);

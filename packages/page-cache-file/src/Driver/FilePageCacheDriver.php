@@ -384,18 +384,7 @@ readonly class FilePageCacheDriver implements PageCacheInterface
      */
     private function resolvedPath(): string
     {
-        $path = $this->pageCache->path();
-
-        if ($this->isAbsolutePath($path)) {
-            return rtrim($path, '/');
-        }
-
-        return rtrim($this->paths->base, '/') . '/' . trim($path, '/');
-    }
-
-    private function isAbsolutePath(string $path): bool
-    {
-        return str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1;
+        return rtrim($this->paths->resolve($this->pageCache->path()), '/');
     }
 
     /**
