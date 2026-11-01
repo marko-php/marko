@@ -43,6 +43,49 @@ function removeHttpAppSessions(): void
 }
 
 /**
+ * The fixture project whose boot installs global handlers: the real
+ * marko/errors-simple module wiring registers an error handler and an
+ * exception handler from its boot callback.
+ */
+function errorsAppPath(): string
+{
+    return __DIR__ . '/fixtures/errors-app';
+}
+
+/**
+ * PHP's error and exception handler stacks, bottom first, read without
+ * changing them (PHP has no getter, so each handler is popped and pushed back).
+ *
+ * @return array{errorHandlers: list<mixed>, exceptionHandlers: list<mixed>}
+ */
+function globalHandlerStacks(): array
+{
+    $read = static function (Closure $set, Closure $restore): array {
+        $handlers = [];
+
+        while (($handler = $set(null)) !== null) {
+            $restore();
+            $handlers[] = $handler;
+            $restore();
+        }
+
+        $restore();
+        $handlers = array_reverse($handlers);
+
+        foreach ($handlers as $handler) {
+            $set($handler);
+        }
+
+        return $handlers;
+    };
+
+    return [
+        'errorHandlers' => $read(set_error_handler(...), restore_error_handler(...)),
+        'exceptionHandlers' => $read(set_exception_handler(...), restore_exception_handler(...)),
+    ];
+}
+
+/**
  * The fixture project the TestDatabase tests boot: an app module that binds
  * an in-memory recording connection the way a driver package would.
  */

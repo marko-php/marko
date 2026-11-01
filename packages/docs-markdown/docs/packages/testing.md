@@ -502,6 +502,17 @@ $client->withCookie('locale', 'nl')->get('/')->assertSee('Welkom');
 
 Use `TestClient::forApplication($app)` to wrap an `Application` you booted yourself. `TestClient::boot()` throws when the base path does not exist.
 
+### Shutdown after each test
+
+Booting runs every module's `boot` callback, and an errors module ([marko/errors-simple](/docs/packages/errors-simple/) or [marko/errors-advanced](/docs/packages/errors-advanced/)) uses it to install a global error handler and exception handler. Left in place, they would make PHPUnit report every HTTP test as risky ("did not remove its own error handlers") and pile up within a process.
+
+`marko/testing` owns the boot, so it owns the teardown. Every application booted by `TestClient::boot()` or `TestDatabase::boot()` is tracked in `Marko\Testing\BootedApplications`, and after each test it calls [`Application::shutdown()`](/docs/packages/core/#shutting-down) on each one. That runs the modules' `shutdown` callbacks, which remove the handlers, so the test leaves the global error and exception handler stacks exactly as it found them. This happens automatically:
+
+- **Pest**: `marko/testing` declares a second Pest plugin, `Marko\Testing\Pest\ShutdownApplicationsPlugin`, which runs the shutdown after every test, plain `it()` tests included. There is nothing to add to `Pest.php`.
+- **PHPUnit**: `Marko\Testing\TestCase::tearDown()` runs it. If you override `tearDown()`, call `parent::tearDown()`.
+
+An application you boot yourself, with `Application::boot()` or for `TestClient::forApplication()`, is not tracked. Call `$app->shutdown()` when the test is done with it.
+
 ### Pest setup
 
 Create one client per test, so state from one test (cookies, `actingAs()`, headers) never reaches the next:
@@ -748,7 +759,7 @@ Database tests need `marko/database` and a driver. `marko/testing` only suggests
 composer require --dev marko/database-pgsql   # or marko/database-mysql
 ```
 
-`TestDatabase::boot($basePath)` boots your application once per process (the same `Application::boot()` that `TestClient::boot()` uses) and applies the committed migrations once with `Migrator::migrate()`. Every later call for the same base path returns the same instance, so a suite pays for boot and migrations once, not once per test. Pair it with one of two isolation strategies:
+`TestDatabase::boot($basePath)` boots your application once per process (the same `Application::boot()` that `TestClient::boot()` uses) and applies the committed migrations once with `Migrator::migrate()`. Every later call for the same base path returns the same instance, so a suite pays for boot and migrations once, not once per test. The application is [shut down](#shutdown-after-each-test) after the test that first booted it, which removes its global error handlers; it stays usable, so later tests keep sharing it. Pair it with one of two isolation strategies:
 
 | Strategy | Per test | Use it for |
 |----------|----------|------------|
@@ -890,7 +901,7 @@ The expectations register automatically. `marko/testing` declares a Pest plugin 
 The expectations need Pest 4 (`composer require --dev pestphp/pest`). The fakes and their `assert*()` methods work with plain PHPUnit.
 
 :::note
-If an expectation such as `toHavePushed` is reported as an undefined method, Pest's plugin list is stale. Run `composer dump-autoload` to regenerate `vendor/pest-plugins.json`, and make sure `pestphp/pest-plugin` is allowed under `config.allow-plugins`.
+If an expectation such as `toHavePushed` is reported as an undefined method, or tests that boot the application are reported as risky, Pest's plugin list is stale. Run `composer dump-autoload` to regenerate `vendor/pest-plugins.json`, and make sure `pestphp/pest-plugin` is allowed under `config.allow-plugins`.
 :::
 
 Use them in tests:
@@ -1349,6 +1360,13 @@ public function seedTable(string $tableName, array $rows): void;
 public function getTableRowCount(string $tableName): int;
 public function assertNotProduction(): void;
 public function assertDisposable(string $operation): void;
+```
+
+### BootedApplications
+
+```php
+public static function track(Application $application): void;
+public static function shutdownAll(): void;
 ```
 
 ### RefreshDatabase

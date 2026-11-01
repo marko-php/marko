@@ -1,0 +1,11 @@
+{
+    "name": "marko/clock",
+    "description": "Fixture stub for marko/clock used by the marko/testing error handler fixture",
+    "type": "marko-module",
+    "license": "MIT",
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

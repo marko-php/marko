@@ -31,6 +31,7 @@ use Marko\Routing\Http\Cookie;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Routing\Http\UploadedFile;
+use Marko\Testing\BootedApplications;
 use Marko\Testing\Exceptions\AssertionFailedException;
 use Marko\Testing\Exceptions\TestClientException;
 use Marko\Testing\Fake\FakeGuard;
@@ -104,16 +105,23 @@ class TestClient
     /**
      * Boot the application at $basePath (the project root holding vendor/, app/ and config/).
      *
+     * The application is shut down after the test (see {@see BootedApplications}), which
+     * removes the global error and exception handlers its boot installed.
+     *
      * @throws ModuleException|CircularDependencyException|BindingConflictException|BindingException|PluginException|PreferenceConflictException|EventException|ContainerExceptionInterface|RouteException|RouteConflictException|CommandException|ReflectionException|RuntimeException|DiscoveryCacheException
      */
     public static function boot(
         string $basePath,
     ): self {
-        return new self(Application::boot($basePath));
+        $application = Application::boot($basePath);
+        BootedApplications::track($application);
+
+        return new self($application);
     }
 
     /**
-     * Send requests through an application that is already booted.
+     * Send requests through an application that is already booted. The caller booted it,
+     * so the caller shuts it down: it is not tracked for the after-test shutdown.
      */
     public static function forApplication(
         Application $application,

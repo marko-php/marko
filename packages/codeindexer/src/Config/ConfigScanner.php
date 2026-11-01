@@ -33,14 +33,26 @@ class ConfigScanner
     /** @return list<ConfigKeyEntry> */
     public function scan(ModuleInfo $module): array
     {
-        $configDir = $module->path . '/config';
+        return $this->scanDirectory($module->path . '/config', $module->name);
+    }
+
+    /**
+     * Scan every `*.php` file directly inside a config directory. Used for module
+     * config dirs and for the project-root `config/` dir, which belongs to no module.
+     *
+     * @return list<ConfigKeyEntry>
+     */
+    public function scanDirectory(
+        string $configDir,
+        string $moduleName,
+    ): array {
         if (!is_dir($configDir)) {
             return [];
         }
 
         $entries = [];
         foreach (glob($configDir . '/*.php') ?: [] as $file) {
-            $entries = [...$entries, ...$this->scanFile($file, $module->name)];
+            $entries = [...$entries, ...$this->scanFile($file, $moduleName)];
         }
 
         return $entries;

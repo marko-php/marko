@@ -63,10 +63,10 @@ Invoke the MCP server from your chosen agent:
 
 ## 5. Code index
 
-The running MCP/LSP servers re-check staleness on every read for `app/` and `modules/`,
-so changes there are reflected on the next tool call with no manual step. Use
-`indexer:rebuild` to pre-warm a cold cache, force a clean rebuild, or refresh after
-`vendor/` or `composer.json` changes (which the on-read check does not cover):
+The running MCP/LSP servers re-check staleness on every read for `app/`, `modules/`,
+the project-root `config/`, and Composer installs (`composer require`, `update`, and
+`remove`), so changes there are reflected on the next tool call with no manual step.
+Use `indexer:rebuild` to pre-warm a cold cache or force a clean rebuild:
 
 - [ ] `marko indexer:rebuild` completes without error and prints module/route/config-key counts
 - [ ] After indexing, asking the agent "List all Marko modules" (which calls the `list_modules` MCP tool) returns the expected modules

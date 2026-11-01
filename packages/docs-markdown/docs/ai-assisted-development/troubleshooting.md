@@ -114,7 +114,7 @@ If the tool is listed but returns no results, the index may be stale. Trigger a 
 marko indexer:rebuild
 ```
 
-The running MCP/LSP server re-checks staleness on every read for `app/` and `modules/` — changes there are visible on the next tool call with no manual rebuild needed. Vendor and Composer changes are not covered by the on-read check; run `marko indexer:rebuild` after modifying `vendor/` or `composer.json`.
+The running MCP/LSP server re-checks staleness on every read for `app/`, `modules/`, the project-root `config/`, and Composer installs — changes there, including `composer require`, `update`, and `remove`, are visible on the next tool call with no manual rebuild needed. Hand edits to files inside `vendor/` are not tracked; run `marko indexer:rebuild` after making one.
 
 ### "Tool not found" when calling query_database
 
@@ -174,7 +174,7 @@ marko lsp:serve
 
 ### Completions appear but are stale or incorrect
 
-The running MCP and LSP servers re-check staleness on every read for `app/` and `modules/`, so completions for code in those directories self-heal without any manual step. If you recently changed `vendor/` or `composer.json`, or you want to force a clean rebuild for any other reason, run:
+The running MCP and LSP servers re-check staleness on every read for `app/`, `modules/`, the project-root `config/`, and Composer installs, so completions self-heal without any manual step, including after `composer require` or `composer update`. If you hand-edited a file inside `vendor/`, or you want to force a clean rebuild for any other reason, run:
 
 ```bash
 marko indexer:rebuild

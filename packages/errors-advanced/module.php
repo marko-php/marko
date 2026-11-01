@@ -28,11 +28,20 @@ return [
             );
         },
     ],
+    // Shared, so the shutdown callback unregisters the instance boot registered
+    'singletons' => [
+        ErrorHandlerInterface::class,
+    ],
     'boot' => function (ContainerInterface $container, BootstrapErrorHandler $bootstrapErrorHandler) {
         // Get the error handler and register it in place of core's bootstrap
         // handler, so the bootstrap handler is not left registered underneath
         $handler = $container->get(ErrorHandlerInterface::class);
         $bootstrapErrorHandler->unregister();
         $handler->register();
+    },
+    // Application::shutdown() runs this (marko/testing does after every test that booted an
+    // application). It pops exactly the handlers boot registered, from the same shared instance.
+    'shutdown' => function (ErrorHandlerInterface $handler): void {
+        $handler->unregister();
     },
 ];
