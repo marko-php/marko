@@ -2,11 +2,42 @@
 
 declare(strict_types=1);
 
-use Marko\Log\Contracts\LoggerInterface;
-use Marko\Log\File\Driver\FileLogger;
+use Marko\Log\Contracts\LogFormatterInterface;
+use Marko\Log\Contracts\LogHandlerInterface;
+use Marko\Log\Exceptions\LogWriteException;
+use Marko\Log\File\Handler\FileLogHandler;
+use Marko\Log\File\Rotation\DailyRotation;
 use Marko\Log\Formatter\LineFormatter;
+use Marko\Log\Logger;
 use Marko\Log\LogLevel;
+use Marko\Log\LogRecord;
 use Marko\Testing\Fake\FakeClock;
+
+/**
+ * A FileLogHandler behind the shared Logger, rotating daily on the clock that stamps the records.
+ */
+function fileLogger(
+    string $path,
+    string $channel,
+    LogLevel $minimumLevel,
+    LogFormatterInterface $formatter,
+    FakeClock $clock,
+    int $fileMode = 0600,
+    int $dirMode = 0700,
+): Logger {
+    return new Logger(
+        handlers: [new FileLogHandler(
+            path: $path,
+            formatter: $formatter,
+            rotation: new DailyRotation($clock),
+            fileMode: $fileMode,
+            dirMode: $dirMode,
+        )],
+        channel: $channel,
+        minimumLevel: $minimumLevel,
+        clock: $clock,
+    );
+}
 
 function createTempLogDir(): string
 {
@@ -34,24 +65,68 @@ function cleanupLogDir(
     rmdir($dir);
 }
 
-it('implements LoggerInterface', function () {
+it('implements LogHandlerInterface', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $handler = new FileLogHandler(
         path: $dir,
-        channel: 'test',
-        minimumLevel: LogLevel::Debug,
         formatter: new LineFormatter(),
-        clock: new FakeClock(),
+        rotation: new DailyRotation(new FakeClock()),
     );
 
-    expect($logger)->toBeInstanceOf(LoggerInterface::class);
+    expect($handler)->toBeInstanceOf(LogHandlerInterface::class);
 
     cleanupLogDir($dir);
 });
 
+it('names the file after the record channel', function () {
+    $dir = createTempLogDir();
+    $handler = new FileLogHandler(
+        path: $dir,
+        formatter: new LineFormatter(),
+        rotation: new DailyRotation(new FakeClock('2026-01-21 09:30:15')),
+    );
+
+    $handler->handle(new LogRecord(
+        level: LogLevel::Info,
+        message: 'Direct',
+        context: [],
+        datetime: new DateTimeImmutable('2026-01-21 09:30:15'),
+        channel: 'billing',
+    ));
+    $content = file_get_contents($dir . '/billing-2026-01-21.log');
+
+    cleanupLogDir($dir);
+
+    expect($content)->toBe("[2026-01-21 09:30:15] billing.INFO: Direct\n");
+});
+
+it('throws LogWriteException when the log directory is not writable', function () {
+    $dir = createTempLogDir();
+    chmod($dir, 0500);
+    $handler = new FileLogHandler(
+        path: $dir,
+        formatter: new LineFormatter(),
+        rotation: new DailyRotation(new FakeClock()),
+    );
+    $record = new LogRecord(
+        level: LogLevel::Info,
+        message: 'Denied',
+        context: [],
+        datetime: new DateTimeImmutable(),
+        channel: 'app',
+    );
+
+    try {
+        expect(fn () => $handler->handle($record))->toThrow(LogWriteException::class);
+    } finally {
+        chmod($dir, 0700);
+        cleanupLogDir($dir);
+    }
+})->skip(fn () => function_exists('posix_geteuid') && posix_geteuid() === 0, 'root can write to any directory');
+
 it('writes debug log message', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'test',
         minimumLevel: LogLevel::Debug,
@@ -75,7 +150,7 @@ it('writes debug log message', function () {
 
 it('writes info log message', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -96,7 +171,7 @@ it('writes info log message', function () {
 
 it('writes error log message', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -117,7 +192,7 @@ it('writes error log message', function () {
 
 it('writes all log levels', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -151,7 +226,7 @@ it('writes all log levels', function () {
 
 it('respects minimum log level threshold', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Warning,
@@ -179,7 +254,7 @@ it('respects minimum log level threshold', function () {
 
 it('includes context in log output', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -200,7 +275,7 @@ it('includes context in log output', function () {
 
 it('interpolates placeholders in message', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -223,7 +298,7 @@ it('creates log directory if it does not exist', function () {
 
     expect(is_dir($dir))->toBeFalse();
 
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -238,9 +313,9 @@ it('creates log directory if it does not exist', function () {
     cleanupLogDir($dir);
 });
 
-it('uses daily rotation by default', function () {
+it('uses daily rotation', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -261,7 +336,7 @@ it('uses daily rotation by default', function () {
 
 it('appends to existing log file', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -285,7 +360,7 @@ it('appends to existing log file', function () {
 
 it('uses specified channel in log output', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'api',
         minimumLevel: LogLevel::Debug,
@@ -305,7 +380,7 @@ it('uses specified channel in log output', function () {
 
 it('uses log method with LogLevel enum', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -327,7 +402,7 @@ it('uses log method with LogLevel enum', function () {
 it('stamps records with the injected clock', function () {
     $dir = createTempLogDir();
     $clock = new FakeClock('2026-01-21 09:30:15');
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -347,7 +422,7 @@ it('stamps records with the injected clock', function () {
 
 it('creates new log files readable only by the owner by default', function () {
     $dir = createTempLogDir();
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -367,7 +442,7 @@ it('creates new log files readable only by the owner by default', function () {
 it('creates a missing log directory readable only by the owner by default', function () {
     $parent = createTempLogDir();
     $dir = $parent . '/logs';
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -388,7 +463,7 @@ it('creates a missing log directory readable only by the owner by default', func
 it('applies configured file and directory modes', function () {
     $parent = createTempLogDir();
     $dir = $parent . '/logs';
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,
@@ -415,7 +490,7 @@ it('does not change the mode of an existing log file', function () {
     $file = $dir . '/app-2026-01-21.log';
     touch($file);
     chmod($file, 0644);
-    $logger = new FileLogger(
+    $logger = fileLogger(
         path: $dir,
         channel: 'app',
         minimumLevel: LogLevel::Debug,

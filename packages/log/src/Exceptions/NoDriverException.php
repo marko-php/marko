@@ -14,8 +14,8 @@ class NoDriverException extends MarkoException
         $packageList = self::formatDriverList($drivers);
 
         return new self(
-            message: 'No log driver installed.',
-            context: 'Attempted to resolve a logger interface but no implementation is bound.',
+            message: 'No log handler package installed.',
+            context: "Resolved the logger interface, but 'log.handler_map' is empty because no log handler package is installed.",
             suggestion: "Install one of these drivers:\n$packageList",
         );
     }

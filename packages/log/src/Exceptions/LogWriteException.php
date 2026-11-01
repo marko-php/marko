@@ -26,4 +26,15 @@ class LogWriteException extends LogException
             suggestion: 'Make the log directory writable by the PHP process user (e.g. chown it to that user and chmod 700)',
         );
     }
+
+    public static function forStream(
+        string $stream,
+        string $reason = '',
+    ): self {
+        return new self(
+            message: 'Failed to write to log stream',
+            context: "Stream: $stream" . ($reason ? ", Reason: $reason" : ''),
+            suggestion: 'Check that the stream is open and its reader is still running (a closed pipe or a stopped log collector fails every write)',
+        );
+    }
 }

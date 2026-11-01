@@ -6,8 +6,10 @@ namespace Marko\Log\Config;
 
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Config\Exceptions\ConfigNotFoundException;
+use Marko\Log\Contracts\LogHandlerInterface;
 use Marko\Log\Exceptions\InvalidLogConfigException;
 use Marko\Log\Exceptions\InvalidLogLevelException;
+use Marko\Log\Exceptions\NoDriverException;
 use Marko\Log\LogLevel;
 
 readonly class LogConfig
@@ -17,11 +19,46 @@ readonly class LogConfig
     ) {}
 
     /**
+     * The handlers named in 'log.handlers', in order, each resolved to its class through 'log.handler_map'.
+     *
+     * @return array<string, class-string<LogHandlerInterface>> Handler name => handler class
+     * @throws ConfigNotFoundException|InvalidLogConfigException|NoDriverException
+     */
+    public function handlers(): array
+    {
+        $map = $this->handlerMap();
+        $installed = array_keys($map);
+        $handlers = [];
+
+        foreach ($this->config->getArray('log.handlers') as $name) {
+            if (!is_string($name) || $name === '') {
+                throw InvalidLogConfigException::invalidHandlerName($name);
+            }
+
+            if (!isset($map[$name])) {
+                throw InvalidLogConfigException::unknownHandler($name, $installed);
+            }
+
+            if (isset($handlers[$name])) {
+                throw InvalidLogConfigException::duplicateHandler($name);
+            }
+
+            $handlers[$name] = $map[$name];
+        }
+
+        if ($handlers === []) {
+            throw InvalidLogConfigException::noHandlers($installed);
+        }
+
+        return $handlers;
+    }
+
+    /**
      * @throws ConfigNotFoundException
      */
-    public function driver(): string
+    public function formatter(): string
     {
-        return $this->config->getString('log.driver');
+        return $this->config->getString('log.formatter');
     }
 
     /**
@@ -124,6 +161,36 @@ readonly class LogConfig
     public function dirMode(): int
     {
         return $this->mode('log.dir_mode');
+    }
+
+    /**
+     * Each handler package contributes its own 'log.handler_map' entry through its config/log.php, so
+     * the map is absent (not misconfigured) until a handler package is installed.
+     *
+     * @return array<string, class-string<LogHandlerInterface>>
+     * @throws ConfigNotFoundException|InvalidLogConfigException|NoDriverException
+     */
+    private function handlerMap(): array
+    {
+        if (!$this->config->has('log.handler_map')) {
+            throw NoDriverException::noDriverInstalled();
+        }
+
+        $map = [];
+
+        foreach ($this->config->getArray('log.handler_map') as $name => $class) {
+            if (!is_string($class) || !is_subclass_of($class, LogHandlerInterface::class)) {
+                throw InvalidLogConfigException::invalidHandlerClass((string) $name, $class);
+            }
+
+            $map[(string) $name] = $class;
+        }
+
+        if ($map === []) {
+            throw NoDriverException::noDriverInstalled();
+        }
+
+        return $map;
     }
 
     /**

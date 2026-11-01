@@ -37,3 +37,11 @@ it('creates exception for non-writable directory', function () {
         ->and($exception->getContext())->toContain('/var/log')
         ->and($exception->getSuggestion())->toContain('chmod');
 });
+
+it('creates exception for a stream, naming it and the reason', function () {
+    $exception = LogWriteException::forStream('php://stderr', 'Broken pipe');
+
+    expect($exception->getMessage())->toBe('Failed to write to log stream')
+        ->and($exception->getContext())->toBe('Stream: php://stderr, Reason: Broken pipe')
+        ->and($exception->getSuggestion())->toContain('open');
+});

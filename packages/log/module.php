@@ -3,21 +3,19 @@
 declare(strict_types=1);
 
 use Marko\Core\Container\ContainerInterface;
-use Marko\Log\Config\LogConfig;
 use Marko\Log\Contracts\LogFormatterInterface;
-use Marko\Log\Formatter\LineFormatter;
+use Marko\Log\Contracts\LoggerInterface;
+use Marko\Log\Formatter\LogFormatterFactory;
+use Marko\Log\LoggerFactory;
 
 return [
     'bindings' => [
+        // One shared Logger; handler packages (marko/log-file, marko/log-stream, ...) only add handlers.
+        LoggerInterface::class => function (ContainerInterface $container): LoggerInterface {
+            return $container->get(LoggerFactory::class)->create();
+        },
         LogFormatterInterface::class => function (ContainerInterface $container): LogFormatterInterface {
-            $config = $container->get(LogConfig::class);
-
-            return new LineFormatter(
-                format: $config->format(),
-                dateFormat: $config->dateFormat(),
-                escapeNewlines: $config->escapeNewlines(),
-                redactKeys: $config->redactKeys(),
-            );
+            return $container->get(LogFormatterFactory::class)->create();
         },
     ],
 ];

@@ -234,6 +234,10 @@
         },
         {
             "type": "path",
+            "url": "packages/log-stream"
+        },
+        {
+            "type": "path",
             "url": "packages/lsp"
         },
         {
@@ -460,6 +464,7 @@
         "marko/layout": "self.version",
         "marko/log": "self.version",
         "marko/log-file": "self.version",
+        "marko/log-stream": "self.version",
         "marko/lsp": "self.version",
         "marko/mail": "self.version",
         "marko/mail-log": "self.version",
@@ -607,6 +612,7 @@
             "Marko\\Layout\\Tests\\": "packages/layout/tests/",
             "Marko\\Log\\Tests\\": "packages/log/tests/",
             "Marko\\Log\\File\\Tests\\": "packages/log-file/tests/",
+            "Marko\\Log\\Stream\\Tests\\": "packages/log-stream/tests/",
             "Marko\\Lsp\\Tests\\": "packages/lsp/tests/",
             "Marko\\Mail\\Tests\\": "packages/mail/tests/",
             "Marko\\Mail\\Log\\Tests\\": "packages/mail-log/tests/",

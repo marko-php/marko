@@ -866,10 +866,10 @@ PhpStorm flags these as "Property is only written but never read" because it doe
 ```php
 it('throws BindingConflictException when multiple bindings exist', function () {
     $container = new Container();
-    $container->bind(LoggerInterface::class, FileLogger::class);
-    $container->bind(LoggerInterface::class, ConsoleLogger::class);
+    $container->bind(CacheInterface::class, FileCacheDriver::class);
+    $container->bind(CacheInterface::class, RedisCacheDriver::class);
 
-    expect(fn() => $container->resolve(LoggerInterface::class))
+    expect(fn() => $container->resolve(CacheInterface::class))
         ->toThrow(BindingConflictException::class);
 });
 ```
