@@ -147,6 +147,43 @@ class AuthException extends Exception
         );
     }
 
+    /**
+     * @param list<string> $configuredProviders
+     */
+    public static function undefinedNamedProvider(
+        string $provider,
+        array $configuredProviders,
+    ): self {
+        $configured = $configuredProviders === [] ? '(none)' : implode(', ', $configuredProviders);
+
+        return new self(
+            message: "User provider '$provider' is not defined in authentication.providers",
+            context: "A user provider was requested by name. Configured providers: $configured",
+            suggestion: "Add authentication.providers.$provider, or fix the setting that names it (e.g. authentication.password_reset.provider)",
+        );
+    }
+
+    public static function invalidPasswordResetSetting(
+        string $name,
+        int $value,
+    ): self {
+        return new self(
+            message: "authentication.password_reset.$name must be a positive integer, got $value",
+            context: 'While reading the password reset settings from authentication.password_reset',
+            suggestion: "Set authentication.password_reset.$name to 1 or more (seconds)",
+        );
+    }
+
+    public static function corruptPasswordResetToken(
+        string $key,
+    ): self {
+        return new self(
+            message: "The cached password reset token record at '$key' is not a valid token record",
+            context: "CachePasswordResetTokenRepository expected an array with a string 'token_hash' and an int 'created_at'",
+            suggestion: 'Something else wrote to this cache key. Clear the cache entry; the user can request a new reset link',
+        );
+    }
+
     public static function invalidProviderClass(
         string $provider,
         string $class,

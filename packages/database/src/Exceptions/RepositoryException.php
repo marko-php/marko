@@ -112,18 +112,54 @@ class RepositoryException extends MarkoException
     }
 
     /**
-     * @param class-string $repositoryClass
-     * @param class-string $entityClass
+     * @param class-string $entityClass The entity that was expected to declare the relationship
+     * @param list<string> $availableRelationships The relationship names the entity does declare
+     * @param string $call The call that named it, e.g. "with('comments') on repository 'App\PostRepository'"
      */
     public static function unknownRelationship(
-        string $repositoryClass,
         string $entityClass,
+        string $relationshipName,
+        array $availableRelationships,
+        string $call,
+    ): self {
+        $available = $availableRelationships === []
+            ? 'It declares no relationships.'
+            : 'Available relationships: ' . implode(', ', $availableRelationships) . '.';
+
+        return new self(
+            message: "Entity '$entityClass' does not have a relationship named '$relationshipName'. $available",
+            context: "Calling $call",
+            suggestion: 'Check the entity class for #[HasOne], #[HasMany], #[BelongsTo], or #[BelongsToMany] attributes and use the correct property name',
+        );
+    }
+
+    /**
+     * @param class-string $entityClass
+     */
+    public static function relationshipFiltersNotConfigured(
+        string $entityClass,
+    ): self {
+        return new self(
+            message: "The query builder for entity '$entityClass' has no RelationshipExistsCompiler configured",
+            context: 'Calling whereHas() or whereDoesntHave()',
+            suggestion: 'Build the query with Repository::query() or Repository::matching(), or pass a RelationshipExistsCompiler as the sixth RepositoryQueryBuilder constructor argument',
+        );
+    }
+
+    /**
+     * @param class-string $entityClass The entity whose property was expected
+     * @param class-string $declaringClass The entity declaring the relationship
+     */
+    public static function relationshipKeyNotMapped(
+        string $entityClass,
+        string $property,
+        string $declaringClass,
         string $relationshipName,
     ): self {
         return new self(
-            message: "Entity '$entityClass' does not have a relationship named '$relationshipName'",
-            context: "Calling with('$relationshipName') on repository '$repositoryClass'",
-            suggestion: 'Check the entity class for #[HasOne], #[HasMany], or #[BelongsTo] attributes and use the correct property name',
+            message: "Relationship '$relationshipName' on entity '$declaringClass' refers to property '$property', which entity '$entityClass' does not map to a column",
+            context: "Compiling a whereHas()/whereDoesntHave() subquery for relationship '$relationshipName'",
+            suggestion: "Add a #[Column] property '$property' to '$entityClass', or fix the key named in the relationship attribute on '$declaringClass'",
         );
     }
 

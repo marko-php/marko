@@ -1,0 +1,36 @@
+{
+    "name": "marko/redis",
+    "description": "Shared Redis connections for Marko Framework",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/core": "self.version",
+        "marko/config": "self.version",
+        "predis/predis": "^2.0"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "marko/testing": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Redis\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Redis\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

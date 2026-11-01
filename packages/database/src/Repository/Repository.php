@@ -105,7 +105,12 @@ abstract class Repository implements RepositoryInterface
             $topLevel = explode('.', $name, 2)[0];
 
             if ($this->metadata->getRelationship($topLevel) === null) {
-                throw RepositoryException::unknownRelationship(static::class, static::ENTITY_CLASS, $name);
+                throw RepositoryException::unknownRelationship(
+                    static::ENTITY_CLASS,
+                    $topLevel,
+                    array_keys($this->metadata->getRelationships()),
+                    "with('$name') on repository '" . static::class . "'",
+                );
             }
         }
 
@@ -749,6 +754,8 @@ abstract class Repository implements RepositoryInterface
             $this->hydrator,
             $this->metadata,
             static::ENTITY_CLASS,
+            null,
+            new RelationshipExistsCompiler($this->metadataFactory, $this->queryBuilderFactory),
         );
     }
 
@@ -777,6 +784,7 @@ abstract class Repository implements RepositoryInterface
             $this->metadata,
             static::ENTITY_CLASS,
             $this->relationshipLoader,
+            new RelationshipExistsCompiler($this->metadataFactory, $this->queryBuilderFactory),
         );
 
         // Pre-seed call-site relationships (from $repo->with(...)->matching(...))

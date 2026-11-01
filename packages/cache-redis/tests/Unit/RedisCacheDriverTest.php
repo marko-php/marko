@@ -8,10 +8,12 @@ use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\CacheItemInterface;
 use Marko\Cache\Exceptions\InvalidKeyException;
 use Marko\Cache\Exceptions\TamperedCacheValueException;
+use Marko\Cache\Redis\Config\RedisCacheConfig;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
-use Marko\Cache\Redis\RedisConnection;
 use Marko\Cache\Signer\CacheValueSigner;
 use Marko\Encryption\Config\EncryptionConfig;
+use Marko\Redis\RedisConnectionFactoryInterface;
+use Marko\Redis\RedisConnectionInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Predis\Client;
@@ -324,24 +326,11 @@ function createDriver(
     ?CacheOperations $operations = null,
 ): RedisCacheDriver {
     $mockClient ??= createMockClient();
-    $connection = new class ($mockClient, $prefix) extends RedisConnection
-    {
-        public function __construct(
-            private readonly ClientInterface $mockClient,
-            string $prefix,
-        ) {
-            parent::__construct(prefix: $prefix);
-        }
-
-        protected function createClient(): ClientInterface
-        {
-            return $this->mockClient;
-        }
-    };
     $config = createCacheConfig($defaultTtl);
 
     return new RedisCacheDriver(
-        $connection,
+        createRedisCacheConnectionFactory(createRedisCacheMockConnection($mockClient)),
+        createRedisCacheDriverConfig(prefix: $prefix),
         $config,
         createSigner($signingKey),
         $clock ?? new FakeClock(),
@@ -349,10 +338,86 @@ function createDriver(
     );
 }
 
+function createRedisCacheMockConnection(
+    ClientInterface $client,
+): RedisConnectionInterface {
+    return new readonly class ($client) implements RedisConnectionInterface
+    {
+        public function __construct(
+            private ClientInterface $mockClient,
+        ) {}
+
+        public function client(): ClientInterface
+        {
+            return $this->mockClient;
+        }
+
+        public function disconnect(): void {}
+
+        public function isConnected(): bool
+        {
+            return true;
+        }
+    };
+}
+
+/**
+ * A factory that knows one connection name and hands out the given connection for it.
+ */
+function createRedisCacheConnectionFactory(
+    RedisConnectionInterface $connection,
+    string $name = 'default',
+): RedisConnectionFactoryInterface {
+    return new readonly class ($connection, $name) implements RedisConnectionFactoryInterface
+    {
+        public function __construct(
+            private RedisConnectionInterface $redisConnection,
+            private string $name,
+        ) {}
+
+        public function connection(
+            string $name,
+        ): RedisConnectionInterface {
+            if ($name !== $this->name) {
+                throw new RuntimeException("Unexpected Redis connection '$name'");
+            }
+
+            return $this->redisConnection;
+        }
+    };
+}
+
+function createRedisCacheDriverConfig(
+    string $connection = 'default',
+    string $prefix = 'marko:cache:',
+): RedisCacheConfig {
+    return new RedisCacheConfig(new FakeConfigRepository([
+        'cache-redis.connection' => $connection,
+        'cache-redis.prefix' => $prefix,
+    ]));
+}
+
 describe('RedisCacheDriver', function (): void {
     beforeEach(function (): void {
         $this->mockClient = createMockClient();
         $this->driver = createDriver($this->mockClient);
+    });
+
+    it('stores through the marko/redis connection named by cache-redis.connection', function (): void {
+        $mockClient = createMockClient();
+        $driver = new RedisCacheDriver(
+            createRedisCacheConnectionFactory(createRedisCacheMockConnection($mockClient), name: 'cache'),
+            createRedisCacheDriverConfig(connection: 'cache', prefix: 'app:'),
+            createCacheConfig(),
+            createSigner(),
+            new FakeClock(),
+            new CacheOperations(),
+        );
+
+        $driver->set('key', 'value');
+
+        expect($mockClient->storage)->toHaveKey('app:key')
+            ->and($driver->get('key'))->toBe('value');
     });
 
     it('implements CacheInterface', function (): void {

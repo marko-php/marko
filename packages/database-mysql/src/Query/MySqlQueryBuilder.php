@@ -16,12 +16,15 @@ use Marko\Database\MySql\Exceptions\ServerVersionException;
 use Marko\Database\MySql\Sql\MySqlIdentifier;
 use Marko\Database\Query\IdentifierValidator;
 use Marko\Database\Query\JsonPathParser;
+use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Query\UpsertValidator;
 
 class MySqlQueryBuilder implements QueryBuilderInterface
 {
     private string $table = '';
+
+    private ?string $alias = null;
 
     /**
      * @var array<string>
@@ -34,9 +37,19 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     private array $wheres = [];
 
     /**
-     * @var array<array{column: string, values: array}>
+     * @var array<array{column: string, values: array, not: bool}>
      */
     private array $whereIns = [];
+
+    /**
+     * @var list<array{first: string, operator: string, second: string}>
+     */
+    private array $whereColumns = [];
+
+    /**
+     * @var list<array{subquery: QueryBuilderInterface, negate: bool}>
+     */
+    private array $whereExists = [];
 
     /**
      * @var array<array{path: string, value: mixed}>
@@ -120,14 +133,20 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 
     private readonly MySqlServer $server;
 
+    private readonly QueryBuilderFactoryInterface $queryBuilderFactory;
+
     /**
      * @param MySqlServer|null $server The shared server check; built from $connection when omitted
+     * @param QueryBuilderFactoryInterface|null $queryBuilderFactory Creates the builders whereExists() callables
+     *     receive; a MySqlQueryBuilderFactory on $connection and the same server check when omitted
      */
     public function __construct(
         private readonly ConnectionInterface $connection,
         ?MySqlServer $server = null,
+        ?QueryBuilderFactoryInterface $queryBuilderFactory = null,
     ) {
         $this->server = $server ?? new MySqlServer($connection);
+        $this->queryBuilderFactory = $queryBuilderFactory ?? new MySqlQueryBuilderFactory($connection, $this->server);
     }
 
     /**
@@ -135,10 +154,16 @@ class MySqlQueryBuilder implements QueryBuilderInterface
      */
     public function table(
         string $table,
+        ?string $alias = null,
     ): static {
         IdentifierValidator::assertValidIdentifier($table);
 
+        if ($alias !== null) {
+            IdentifierValidator::assertValidAlias($alias);
+        }
+
         $this->table = $table;
+        $this->alias = $alias;
 
         return $this;
     }
@@ -266,6 +291,68 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         $this->whereIns[] = [
             'column' => $column,
             'values' => $values,
+            'not' => false,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException
+     */
+    public function whereNotIn(
+        string $column,
+        array $values,
+    ): static {
+        IdentifierValidator::assertValidIdentifier($column);
+
+        $this->whereIns[] = [
+            'column' => $column,
+            'values' => $values,
+            'not' => true,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidColumnException
+     */
+    public function whereColumn(
+        string $first,
+        string $operator,
+        string $second,
+    ): static {
+        IdentifierValidator::assertValidIdentifier($first);
+        IdentifierValidator::assertValidColumnOperator($operator);
+        IdentifierValidator::assertValidIdentifier($second);
+
+        $this->whereColumns[] = [
+            'first' => $first,
+            'operator' => $operator,
+            'second' => $second,
+        ];
+
+        return $this;
+    }
+
+    public function whereExists(
+        callable|QueryBuilderInterface $subquery,
+    ): static {
+        $this->whereExists[] = [
+            'subquery' => $this->resolveSubquery($subquery),
+            'negate' => false,
+        ];
+
+        return $this;
+    }
+
+    public function whereNotExists(
+        callable|QueryBuilderInterface $subquery,
+    ): static {
+        $this->whereExists[] = [
+            'subquery' => $this->resolveSubquery($subquery),
+            'negate' => true,
         ];
 
         return $this;
@@ -619,7 +706,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 
         $sql = sprintf(
             'UPDATE %s SET %s',
-            $this->quoteIdentifier($this->table),
+            $this->compileTableReference(),
             implode(', ', $sets),
         );
 
@@ -634,7 +721,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 
         $sql = sprintf(
             'DELETE FROM %s',
-            $this->quoteIdentifier($this->table),
+            $this->compileTableReference(),
         );
 
         $sql .= $this->buildWhereClause();
@@ -789,6 +876,36 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     }
 
     /**
+     * The FROM / UPDATE / DELETE target: the quoted table, plus `AS alias` when table() was given one.
+     */
+    private function compileTableReference(): string
+    {
+        $reference = $this->quoteIdentifier($this->table);
+
+        if ($this->alias !== null) {
+            $reference .= ' AS ' . $this->quoteIdentifier($this->alias);
+        }
+
+        return $reference;
+    }
+
+    /**
+     * A builder passed to whereExists() is used as is; a callable configures a fresh builder on this connection.
+     */
+    private function resolveSubquery(
+        callable|QueryBuilderInterface $subquery,
+    ): QueryBuilderInterface {
+        if ($subquery instanceof QueryBuilderInterface) {
+            return $subquery;
+        }
+
+        $builder = $this->queryBuilderFactory->create();
+        $subquery($builder);
+
+        return $builder;
+    }
+
+    /**
      * Execute an aggregate query and return the raw value or null.
      *
      * Reuses buildWhereClause() so any WHERE conditions are respected.
@@ -802,7 +919,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         $sql = sprintf(
             'SELECT %s FROM %s',
             $aggregateExpr,
-            $this->quoteIdentifier($this->table),
+            $this->compileTableReference(),
         );
 
         $sql .= $this->buildWhereClause();
@@ -955,7 +1072,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
             '%s %s FROM %s',
             $keyword,
             implode(', ', $selectParts),
-            $this->quoteIdentifier($this->table),
+            $this->compileTableReference(),
         );
 
         $sql .= $this->buildJoinClause();
@@ -1036,12 +1153,13 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 
         foreach ($this->whereIns as $whereIn) {
             if ($whereIn['values'] === []) {
-                $condition = '1 = 0';
+                $condition = $whereIn['not'] ? '1 = 1' : '1 = 0';
             } else {
                 $placeholders = array_fill(0, count($whereIn['values']), '?');
                 $condition = sprintf(
-                    '%s IN (%s)',
+                    '%s %s (%s)',
                     $this->quoteIdentifier($whereIn['column']),
+                    $whereIn['not'] ? 'NOT IN' : 'IN',
                     implode(', ', $placeholders),
                 );
                 $this->bindings = array_merge($this->bindings, $whereIn['values']);
@@ -1066,6 +1184,21 @@ class MySqlQueryBuilder implements QueryBuilderInterface
 
         foreach ($this->whereNotNulls as $column) {
             $condition = sprintf('%s IS NOT NULL', $this->quoteIdentifier($column));
+
+            if (!empty($conditions)) {
+                $condition = 'AND ' . $condition;
+            }
+
+            $conditions[] = $condition;
+        }
+
+        foreach ($this->whereColumns as $whereColumn) {
+            $condition = sprintf(
+                '%s %s %s',
+                $this->quoteIdentifier($whereColumn['first']),
+                $whereColumn['operator'],
+                $this->quoteIdentifier($whereColumn['second']),
+            );
 
             if (!empty($conditions)) {
                 $condition = 'AND ' . $condition;
@@ -1119,6 +1252,22 @@ class MySqlQueryBuilder implements QueryBuilderInterface
             }
 
             $conditions[] = $expr;
+        }
+
+        foreach ($this->whereExists as $exists) {
+            $subqueryBindings = [];
+            $condition = sprintf(
+                '%s (%s)',
+                $exists['negate'] ? 'NOT EXISTS' : 'EXISTS',
+                $exists['subquery']->compileSubquery($subqueryBindings),
+            );
+            $this->bindings = array_merge($this->bindings, $subqueryBindings);
+
+            if (!empty($conditions)) {
+                $condition = 'AND ' . $condition;
+            }
+
+            $conditions[] = $condition;
         }
 
         foreach ($this->rawWheres as $item) {

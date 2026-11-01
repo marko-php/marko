@@ -33,6 +33,19 @@ class IdentifierValidator
     ];
 
     /**
+     * Operators allowed between two columns (whereColumn).
+     */
+    public const array COLUMN_OPERATORS = [
+        '=',
+        '!=',
+        '<>',
+        '<',
+        '>',
+        '<=',
+        '>=',
+    ];
+
+    /**
      * Known aggregate function names that are allowed in SELECT expressions.
      */
     public const array AGGREGATE_FUNCTIONS = [
@@ -134,6 +147,30 @@ class IdentifierValidator
         if (!in_array($operator, self::OPERATORS, true)) {
             throw InvalidColumnException::invalidOperator($operator);
         }
+    }
+
+    /**
+     * Assert that the given operator may compare two columns.
+     *
+     * @throws InvalidColumnException When the operator is not in COLUMN_OPERATORS
+     */
+    public static function assertValidColumnOperator(
+        string $operator,
+    ): void {
+        if (!in_array($operator, self::COLUMN_OPERATORS, true)) {
+            throw InvalidColumnException::invalidOperator($operator, self::COLUMN_OPERATORS);
+        }
+    }
+
+    /**
+     * Assert that the given string is a valid table alias (a plain identifier).
+     *
+     * @throws InvalidColumnException When the alias is invalid
+     */
+    public static function assertValidAlias(
+        string $alias,
+    ): void {
+        self::validateAlias($alias);
     }
 
     /**

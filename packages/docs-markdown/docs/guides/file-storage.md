@@ -3,7 +3,7 @@ title: File Storage
 description: Store and retrieve files with pluggable backends --- local disk, Amazon S3, or custom drivers.
 ---
 
-Marko's filesystem packages provide a unified API for storing and retrieving files across different backends. Code against `FilesystemInterface` for single-disk usage, or use `FilesystemManager` to work with multiple disks simultaneously. Swap from local storage to S3 by changing configuration --- no application code changes needed.
+Marko's filesystem packages provide a unified API for storing and retrieving files across different backends. Code against `FilesystemInterface` for single-disk usage, or use `FilesystemManagerInterface` to work with multiple disks simultaneously. Swap from local storage to S3 by changing configuration --- no application code changes needed.
 
 ## Setup
 
@@ -217,7 +217,7 @@ This creates `public/storage` pointing to `storage/public`, making files in the 
 
 ## Multiple Disks
 
-Use `FilesystemManager` when you need to work with more than one disk:
+Use `FilesystemManagerInterface` when you need to work with more than one disk:
 
 ```php title="app/blog/Service/MediaService.php"
 <?php
@@ -226,12 +226,12 @@ declare(strict_types=1);
 
 namespace App\Blog\Service;
 
-use Marko\Filesystem\Manager\FilesystemManager;
+use Marko\Filesystem\Contracts\FilesystemManagerInterface;
 
 readonly class MediaService
 {
     public function __construct(
-        private FilesystemManager $filesystemManager,
+        private FilesystemManagerInterface $filesystemManager,
     ) {}
 
     public function upload(string $path, string $contents): void
@@ -261,7 +261,6 @@ The S3 driver provides methods for generating URLs to stored files:
 
 ```php
 use Marko\Filesystem\S3\Filesystem\S3Filesystem;
-use Marko\Filesystem\Manager\FilesystemManager;
 
 /** @var S3Filesystem $s3 */
 $s3 = $this->filesystemManager->disk('s3');

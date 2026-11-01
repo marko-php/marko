@@ -48,8 +48,10 @@ function makeValidationQueryBuilder(): QueryBuilderInterface
 {
     return new class () implements QueryBuilderInterface
     {
-        public function table(string $table): static
-        {
+        public function table(
+            string $table,
+            ?string $alias = null,
+        ): static {
             return $this;
         }
 
@@ -96,6 +98,31 @@ function makeValidationQueryBuilder(): QueryBuilderInterface
         }
 
         public function whereJsonMissing(string $path): static
+        {
+            return $this;
+        }
+
+        public function whereNotIn(
+            string $column,
+            array $values,
+        ): static {
+            return $this;
+        }
+
+        public function whereColumn(
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function whereExists(callable|QueryBuilderInterface $subquery): static
+        {
+            return $this;
+        }
+
+        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
         {
             return $this;
         }
@@ -431,9 +458,10 @@ it('throws when loading undefined relationship name', function (): void {
     // relationship name is passed to Repository::with() before load() is called.
     // This validates that asking to load a non-existent relationship fails loudly.
     $exception = RepositoryException::unknownRelationship(
-        'SomeRepository',
         ValidationUser::class,
         'nonExistent',
+        ['roles'],
+        "with('nonExistent') on repository 'SomeRepository'",
     );
 
     expect($exception)->toBeInstanceOf(RepositoryException::class)
@@ -494,16 +522,18 @@ it('throws when with is called with a relationship name that does not exist on t
     // Use the existing RepositoryException::unknownRelationship path (already implemented in Repository::with())
     // We verify directly that RepositoryException is thrown when using unknown name
     expect(fn () => RepositoryException::unknownRelationship(
-        'SomeRepository',
         ValidationUser::class,
         'nonExistentRelation',
+        ['roles'],
+        "with('nonExistentRelation') on repository 'SomeRepository'",
     ))->not->toThrow(Throwable::class);
 
     // Verify the exception message contains the right info
     $exception = RepositoryException::unknownRelationship(
-        'SomeRepository',
         ValidationUser::class,
         'nonExistentRelation',
+        ['roles'],
+        "with('nonExistentRelation') on repository 'SomeRepository'",
     );
 
     expect($exception)->toBeInstanceOf(RepositoryException::class)
@@ -512,9 +542,10 @@ it('throws when with is called with a relationship name that does not exist on t
 
 it('includes entity class and invalid relationship name in error message', function (): void {
     $exception = RepositoryException::unknownRelationship(
-        'SomeRepository',
         ValidationUser::class,
         'missingRel',
+        ['roles'],
+        "with('missingRel') on repository 'SomeRepository'",
     );
 
     expect($exception->getMessage())->toContain(ValidationUser::class)

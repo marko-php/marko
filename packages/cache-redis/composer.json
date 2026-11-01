@@ -10,7 +10,7 @@
         "marko/cache": "self.version",
         "marko/clock": "self.version",
         "marko/encryption": "self.version",
-        "predis/predis": "^2.0"
+        "marko/redis": "self.version"
     },
     "require-dev": {
         "pestphp/pest": "^4.0",

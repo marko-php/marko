@@ -332,6 +332,7 @@ Marko ships as composable packages — require only what you need. Every package
 |---------|-------------|
 | [api](packages/api/README.md) | REST API foundation |
 | [clock](packages/clock/README.md) | PSR-20 system clock |
+| [redis](packages/redis/README.md) | Shared Redis connections |
 | [validation](packages/validation/README.md) | Input validation |
 | [pagination](packages/pagination/README.md) | Query result pagination |
 | [notification](packages/notification/README.md) | Notification contracts |

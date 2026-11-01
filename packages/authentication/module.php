@@ -8,6 +8,8 @@ use Marko\Authentication\Contracts\CookieJarInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\LoginThrottleInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
+use Marko\Authentication\Contracts\PasswordResetBrokerInterface;
+use Marko\Authentication\Contracts\PasswordResetTokenRepositoryInterface;
 use Marko\Authentication\Contracts\RememberTokenStorageInterface;
 use Marko\Authentication\Cookie\RequestCookieJar;
 use Marko\Authentication\Guard\GuardDriverRegistry;
@@ -15,6 +17,8 @@ use Marko\Authentication\Hashing\BcryptPasswordHasher;
 use Marko\Authentication\Hashing\HashManagerPasswordHasher;
 use Marko\Authentication\Http\CurrentRequest;
 use Marko\Authentication\Middleware\QueuedCookiesMiddleware;
+use Marko\Authentication\PasswordReset\CachePasswordResetTokenRepository;
+use Marko\Authentication\PasswordReset\PasswordResetBroker;
 use Marko\Authentication\Throttle\LoginThrottle;
 use Marko\Authentication\Throttle\NullLoginThrottle;
 use Marko\Authentication\Token\RememberTokenManager;
@@ -81,6 +85,10 @@ return [
                 currentRequest: $container->get(CurrentRequest::class),
             );
         },
+        // Apps bind UserPersisterInterface and ResetLinkNotifierInterface themselves:
+        // only they know how to save their user entity and what the reset email says.
+        PasswordResetBrokerInterface::class => PasswordResetBroker::class,
+        PasswordResetTokenRepositoryInterface::class => CachePasswordResetTokenRepository::class,
         GuardInterface::class => function (ContainerInterface $container): GuardInterface {
             return $container->get(AuthManager::class)->guard();
         },
