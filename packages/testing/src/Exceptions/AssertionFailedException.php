@@ -133,6 +133,16 @@ class AssertionFailedException extends MarkoException
         );
     }
 
+    public static function notStreamedResponse(
+        string $responseClass,
+    ): self {
+        return new self(
+            message: "Expected a streamed response but got $responseClass.",
+            context: 'TestResponse::streamedContent() runs StreamedResponseInterface::sendBody(); this response holds its body in body().',
+            suggestion: 'Read body() for a regular Response, or return a StreamedResponse, FileResponse or other StreamedResponseInterface from the route.',
+        );
+    }
+
     public static function unexpectedGuest(): self
     {
         return new self(

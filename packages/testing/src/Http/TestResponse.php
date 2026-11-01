@@ -7,6 +7,7 @@ namespace Marko\Testing\Http;
 use JsonException;
 use Marko\Routing\Http\Cookie;
 use Marko\Routing\Http\Response;
+use Marko\Routing\Http\StreamedResponseInterface;
 use Marko\Testing\Exceptions\AssertionFailedException;
 use PHPUnit\Framework\Assert;
 
@@ -19,6 +20,8 @@ use PHPUnit\Framework\Assert;
  */
 class TestResponse
 {
+    private ?string $streamedContent = null;
+
     public function __construct(
         private readonly Response $response,
     ) {}
@@ -36,6 +39,43 @@ class TestResponse
     public function body(): string
     {
         return $this->response->body();
+    }
+
+    /**
+     * The body a StreamedResponseInterface writes when sent (body() is '' for those).
+     *
+     * Runs sendBody() once under an output buffer and remembers the result;
+     * '' when the body was omitted (HEAD). assertSee(), assertDontSee(),
+     * assertNoContent() and the JSON assertions read it automatically for
+     * streamed responses.
+     *
+     * @throws AssertionFailedException When the response is not streamed
+     */
+    public function streamedContent(): string
+    {
+        if (!$this->response instanceof StreamedResponseInterface) {
+            throw AssertionFailedException::notStreamedResponse($this->response::class);
+        }
+
+        if ($this->streamedContent !== null) {
+            return $this->streamedContent;
+        }
+
+        if ($this->response->isBodyOmitted()) {
+            return $this->streamedContent = '';
+        }
+
+        $response = $this->response->withOutputStreamer(new BufferedOutputStreamer());
+
+        ob_start();
+
+        try {
+            $response->sendBody();
+        } finally {
+            $this->streamedContent = (string) ob_get_clean();
+        }
+
+        return $this->streamedContent;
     }
 
     /**
@@ -110,8 +150,10 @@ class TestResponse
     {
         $this->assertStatus(204);
 
-        if ($this->body() !== '') {
-            $this->fail('Expected an empty body for a 204 response but it has ' . strlen($this->body()) . ' bytes.');
+        if ($this->content() !== '') {
+            $this->fail(
+                'Expected an empty body for a 204 response but it has ' . strlen($this->content()) . ' bytes.',
+            );
         }
 
         return $this->passed();
@@ -254,7 +296,7 @@ class TestResponse
     public function assertSee(
         string $text,
     ): static {
-        if (!str_contains($this->body(), $text)) {
+        if (!str_contains($this->content(), $text)) {
             $this->fail("Expected the response body to contain [$text] but it did not.");
         }
 
@@ -267,7 +309,7 @@ class TestResponse
     public function assertDontSee(
         string $text,
     ): static {
-        if (str_contains($this->body(), $text)) {
+        if (str_contains($this->content(), $text)) {
             $this->fail("Expected the response body not to contain [$text] but it did.");
         }
 
@@ -405,7 +447,17 @@ class TestResponse
     private function fail(
         string $expectation,
     ): never {
-        throw AssertionFailedException::responseAssertion($expectation, $this->status(), $this->body());
+        throw AssertionFailedException::responseAssertion($expectation, $this->status(), $this->content());
+    }
+
+    /**
+     * The body assertions check: the streamed content for a streamed response, body() otherwise.
+     *
+     * @throws AssertionFailedException
+     */
+    private function content(): string
+    {
+        return $this->response instanceof StreamedResponseInterface ? $this->streamedContent() : $this->body();
     }
 
     /**
@@ -414,9 +466,9 @@ class TestResponse
     private function decodedJson(): mixed
     {
         try {
-            return json_decode($this->body(), true, flags: JSON_THROW_ON_ERROR);
+            return json_decode($this->content(), true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            throw AssertionFailedException::invalidJsonResponse($this->status(), $this->body(), $e->getMessage());
+            throw AssertionFailedException::invalidJsonResponse($this->status(), $this->content(), $e->getMessage());
         }
     }
 

@@ -6,11 +6,12 @@ namespace Marko\Sse;
 
 use JsonException;
 use Marko\Cache\Exceptions\InvalidKeyException;
+use Marko\Routing\Http\AbstractStreamedResponse;
 use Marko\Routing\Http\Response;
 use Override;
 use Random\RandomException;
 
-class StreamingResponse extends Response
+class StreamingResponse extends AbstractStreamedResponse
 {
     /**
      * Extra seconds a connection slot outlives the stream timeout, covering the final poll interval
@@ -25,7 +26,6 @@ class StreamingResponse extends Response
         private ?SseConnectionLimiter $connectionLimiter = null,
     ) {
         parent::__construct(
-            body: '',
             statusCode: $statusCode,
             headers: [
                 'Content-Type' => 'text/event-stream',
@@ -37,6 +37,9 @@ class StreamingResponse extends Response
     }
 
     /**
+     * Takes a connection slot (when limited) before any header is sent, so a full
+     * server can still answer 503; the stream itself is written by sendBody().
+     *
      * @throws JsonException|InvalidKeyException|RandomException
      */
     #[Override]
@@ -64,30 +67,31 @@ class StreamingResponse extends Response
         }
 
         try {
-            if (!headers_sent()) {
-                http_response_code($this->statusCode());
-
-                foreach ($this->headerLines() as $line) {
-                    header($line);
-                }
-            }
-
-            $this->prepareOutput();
-
-            foreach ($this->stream as $chunk) {
-                if ($this->connectionAborted()) {
-                    break;
-                }
-
-                echo $chunk;
-                flush();
-            }
+            parent::send();
         } finally {
-            $this->stream->close();
-
             if ($slot !== null) {
                 $this->connectionLimiter->release($slot);
             }
+        }
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function sendBody(): void
+    {
+        $outputStreamer = $this->outputStreamer();
+
+        try {
+            $outputStreamer->prepare();
+
+            foreach ($this->stream as $chunk) {
+                if (!$outputStreamer->write($chunk)) {
+                    break;
+                }
+            }
+        } finally {
+            $this->stream->close();
         }
     }
 
@@ -107,23 +111,5 @@ class StreamingResponse extends Response
                 'Cache-Control' => 'no-cache',
             ],
         );
-    }
-
-    /**
-     * Disable output buffering and the execution time limit so chunks reach the client as they are produced.
-     */
-    protected function prepareOutput(): void
-    {
-        while (ob_get_level() > 0) {
-            ob_end_flush();
-        }
-
-        ob_implicit_flush(true);
-        set_time_limit(0);
-    }
-
-    protected function connectionAborted(): bool
-    {
-        return connection_aborted() === 1;
     }
 }

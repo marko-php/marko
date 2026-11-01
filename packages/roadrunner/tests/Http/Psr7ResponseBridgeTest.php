@@ -6,8 +6,13 @@ namespace Marko\Roadrunner\Tests\Http;
 
 use Marko\Roadrunner\Exceptions\StreamingResponseException;
 use Marko\Roadrunner\Http\Psr7ResponseBridge;
+use Marko\Routing\File\LocalFileSource;
 use Marko\Routing\Http\Cookie;
+use Marko\Routing\Http\FileResponse;
+use Marko\Routing\Http\OutputStreamer;
+use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Routing\Http\StreamedResponse;
 use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
 
@@ -91,12 +96,25 @@ it('throws when handed a streaming response', function (): void {
         ->toThrow(StreamingResponseException::class);
 });
 
-it('does not require the sse package to be installed', function (): void {
-    $response = new Response(body: 'ok', statusCode: 200);
-    $bridge = new Psr7ResponseBridge(streamingResponseClass: 'Marko\Sse\NotInstalledStreamingResponse');
+it('throws for any streamed response, not only sse', function (): void {
+    $response = new StreamedResponse(function (OutputStreamer $outputStreamer): void {
+        $outputStreamer->write('chunk');
+    });
+    $bridge = new Psr7ResponseBridge();
 
-    $psr7Response = $bridge->bridge($response);
+    expect(fn () => $bridge->bridge($response))
+        ->toThrow(StreamingResponseException::class, StreamedResponse::class);
+});
 
-    expect($psr7Response->getStatusCode())->toBe(200)
-        ->and((string) $psr7Response->getBody())->toBe('ok');
+it('throws for a file response', function (): void {
+    $path = tempnam(sys_get_temp_dir(), 'rr_file_');
+    file_put_contents($path, 'contents');
+    $response = FileResponse::fromSource(new Request(server: ['REQUEST_METHOD' => 'GET']), new LocalFileSource($path));
+    $bridge = new Psr7ResponseBridge();
+
+    try {
+        expect(fn () => $bridge->bridge($response))->toThrow(StreamingResponseException::class);
+    } finally {
+        unlink($path);
+    }
 });
