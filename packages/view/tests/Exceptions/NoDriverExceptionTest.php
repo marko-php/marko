@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Marko\View\Exceptions\NoDriverException;
 use Marko\View\Exceptions\ViewException;
+use Marko\View\TemplatePrecompilerInterface;
+use Marko\View\ViewInterface;
 
 describe('NoDriverException', function (): void {
     it('loads the driver list from known-drivers.php', function (): void {
@@ -86,5 +88,20 @@ describe('NoDriverException', function (): void {
         $exception = NoDriverException::noDriverInstalled();
 
         expect($exception)->toBeInstanceOf(ViewException::class);
+    });
+
+    it('explains a missing template precompiler instead of a missing driver', function (): void {
+        $exception = NoDriverException::noDriverInstalled(TemplatePrecompilerInterface::class);
+
+        expect($exception->getMessage())->toBe('No template precompiler is bound.')
+            ->and($exception->getContext())->toContain(TemplatePrecompilerInterface::class)
+            ->and($exception->getSuggestion())->toContain('marko/view-latte')
+            ->and($exception->getSuggestion())->toContain('marko/view-twig');
+    });
+
+    it('keeps the driver message for other view interfaces', function (): void {
+        $exception = NoDriverException::noDriverInstalled(ViewInterface::class);
+
+        expect($exception->getMessage())->toBe('No view driver installed.');
     });
 });

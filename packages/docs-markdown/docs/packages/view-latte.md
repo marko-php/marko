@@ -100,6 +100,8 @@ The `route()` function builds URLs for [named routes](/docs/packages/routing/#na
 
 The arguments match `UrlGeneratorInterface::route(string $name, array $parameters = [], bool $absolute = false)`. Parameters the path doesn't use become the query string, and `absolute: true` uses `APP_URL`. Output is escaped like any other expression, so `&` in a query string renders as `&amp;` inside an attribute. An unknown name or a missing parameter throws `UrlGenerationException` and fails the render.
 
+`route()` comes from `RouteFunctionProvider` in `marko/view`. Every [template function provider](/docs/packages/view/#template-functions) is registered with Latte by `TemplateFunctionExtension`: a function declared `isSafeHtml` has its result wrapped in `Latte\Runtime\Html` and prints unescaped, every other result is escaped. [Shared view data](/docs/packages/view/#shared-view-data) is merged into every `render()` and `renderToString()` call.
+
 ### Template Organization
 
 All templates must live within at least one directory. No top-level template files.
@@ -159,7 +161,9 @@ views/
 
 | Function | Description |
 |---|---|
-| `route(string $name, array $parameters = [], bool $absolute = false): string` | URL for a named route (`Marko\View\Latte\Extensions\RouteExtension`) |
+| `route(string $name, array $parameters = [], bool $absolute = false): string` | URL for a named route (`Marko\View\Functions\RouteFunctionProvider` in `marko/view`) |
+
+Functions from every other discovered `#[TemplateFunctions]` provider are available the same way.
 
 ### Configuration Options
 

@@ -5,21 +5,23 @@ declare(strict_types=1);
 use Marko\Config\ConfigRepository;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
+use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepository;
 use Marko\Core\Module\ModuleRepositoryInterface;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Routing\Http\Response;
-use Marko\Routing\UrlGeneratorInterface;
 use Marko\View\CacheDirectoryGuard;
 use Marko\View\Exceptions\NoDriverException;
 use Marko\View\Exceptions\TemplateNotFoundException;
 use Marko\View\Latte\LatteEngineFactory;
 use Marko\View\Latte\LatteView;
 use Marko\View\Latte\LatteViewConfig;
+use Marko\View\Latte\Tests\Fixtures\ViewProviders;
 use Marko\View\ModuleTemplateResolver;
 use Marko\View\TemplateResolverInterface;
 use Marko\View\ViewConfig;
+use Marko\View\ViewDataMerger;
 use Marko\View\ViewInterface;
 
 describe('View Integration', function (): void {
@@ -62,11 +64,11 @@ describe('View Integration', function (): void {
         $engineFactory = new LatteEngineFactory(
             $viewConfig,
             $latteViewConfig,
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
         );
         $engine = $engineFactory->create();
-        $view = new LatteView($engine, $templateResolver);
+        $view = new LatteView($engine, $templateResolver, ViewProviders::merger());
 
         // Render a template
         $response = $view->render('blog::post/show', [
@@ -125,7 +127,7 @@ describe('View Integration', function (): void {
         $container = new Container();
         $container->instance(ConfigRepositoryInterface::class, $config);
         $container->instance(ModuleRepositoryInterface::class, $moduleRepository);
-        $container->instance(UrlGeneratorInterface::class, $this->createStub(UrlGeneratorInterface::class));
+        $container->instance(ContainerInterface::class, $container);
 
         // Bind TemplateResolverInterface to ModuleTemplateResolver
         $container->bind(
@@ -145,7 +147,7 @@ describe('View Integration', function (): void {
                 $engine = $c->get(LatteEngineFactory::class)->create();
                 $resolver = $c->get(TemplateResolverInterface::class);
 
-                return new LatteView($engine, $resolver);
+                return new LatteView($engine, $resolver, $c->get(ViewDataMerger::class));
             },
         );
 
@@ -208,11 +210,11 @@ describe('View Integration', function (): void {
         $engineFactory = new LatteEngineFactory(
             $viewConfig,
             $latteViewConfig,
-            $this->createStub(UrlGeneratorInterface::class),
+            ViewProviders::extension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
         );
         $engine = $engineFactory->create();
-        $view = new LatteView($engine, $templateResolver);
+        $view = new LatteView($engine, $templateResolver, ViewProviders::merger());
 
         // Try to render a nonexistent template
         try {

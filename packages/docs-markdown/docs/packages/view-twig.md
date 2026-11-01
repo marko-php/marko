@@ -103,6 +103,8 @@ The `route()` function builds URLs for [named routes](/docs/packages/routing/#na
 
 The arguments match `UrlGeneratorInterface::route(string $name, array $parameters = [], bool $absolute = false)`. Parameters the path doesn't use become the query string, and `true` as the third argument uses `APP_URL`. The function isn't marked safe, so its output is escaped like any other value (`&` renders as `&amp;`). An unknown name or a missing parameter throws `UrlGenerationException`. Twig wraps it in a `Twig\Error\RuntimeError` and the render fails.
 
+`route()` comes from `RouteFunctionProvider` in `marko/view`. Every [template function provider](/docs/packages/view/#template-functions) is registered with Twig by `TemplateFunctionExtension`: a function declared `isSafeHtml` is registered with `is_safe => ['html']` and prints unescaped, every other result is escaped. [Shared view data](/docs/packages/view/#shared-view-data) is merged into every `render()` and `renderToString()` call.
+
 ### Template Organization
 
 All templates must live within at least one directory. No top-level template files.
@@ -162,7 +164,9 @@ views/
 
 | Function | Description |
 |---|---|
-| `route(string $name, array $parameters = [], bool $absolute = false): string` | URL for a named route (`Marko\View\Twig\RouteExtension`) |
+| `route(string $name, array $parameters = [], bool $absolute = false): string` | URL for a named route (`Marko\View\Functions\RouteFunctionProvider` in `marko/view`) |
+
+Functions from every other discovered `#[TemplateFunctions]` provider are available the same way.
 
 ### Configuration Options
 

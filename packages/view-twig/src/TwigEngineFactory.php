@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Marko\View\Twig;
 
-use Marko\Routing\UrlGeneratorInterface;
 use Marko\View\CacheDirectoryGuard;
 use Marko\View\Exceptions\InsecureCacheDirectoryException;
 use Twig\Environment;
@@ -14,7 +13,7 @@ readonly class TwigEngineFactory
 {
     public function __construct(
         private TwigViewConfig $config,
-        private UrlGeneratorInterface $urlGenerator,
+        private TemplateFunctionExtension $templateFunctionExtension,
         private CacheDirectoryGuard $cacheDirectoryGuard,
     ) {}
 
@@ -33,7 +32,7 @@ readonly class TwigEngineFactory
             'debug' => $this->config->debug(),
             'charset' => $this->config->charset(),
         ]);
-        $environment->addExtension(new RouteExtension($this->urlGenerator));
+        $environment->addExtension($this->templateFunctionExtension);
 
         return $environment;
     }

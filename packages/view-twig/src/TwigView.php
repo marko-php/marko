@@ -6,6 +6,7 @@ namespace Marko\View\Twig;
 
 use Marko\Routing\Http\Response;
 use Marko\View\TemplateResolverInterface;
+use Marko\View\ViewDataMerger;
 use Marko\View\ViewInterface;
 use Twig\Environment;
 use Twig\Error\LoaderError;
@@ -17,6 +18,7 @@ class TwigView implements ViewInterface
     public function __construct(
         private Environment $engine,
         private TemplateResolverInterface $resolver,
+        private ViewDataMerger $viewDataMerger,
     ) {
         // Set our custom loader so includes use the same module resolution
         $this->engine->setLoader(new ModuleLoader($resolver));
@@ -43,6 +45,6 @@ class TwigView implements ViewInterface
         string $template,
         array $data = [],
     ): string {
-        return $this->engine->render($template, $data);
+        return $this->engine->render($template, $this->viewDataMerger->merge($data));
     }
 }

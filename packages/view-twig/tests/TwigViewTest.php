@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Marko\Routing\Http\Response;
 use Marko\View\TemplateResolverInterface;
+use Marko\View\Twig\Tests\Fixtures\SiteDataProvider;
+use Marko\View\Twig\Tests\Fixtures\ViewProviders;
 use Marko\View\Twig\TwigView;
 use Twig\Environment;
 use Twig\Error\RuntimeError;
@@ -40,7 +42,7 @@ describe('TwigView', function (): void {
         $resolver = makeTwigResolver(['test::hello' => $templatePath]);
         $env = makeTwigEnv();
 
-        $view = new TwigView($env, $resolver);
+        $view = new TwigView($env, $resolver, ViewProviders::merger());
         $response = $view->render('test::hello');
 
         expect($response)->toBeInstanceOf(Response::class)
@@ -62,7 +64,7 @@ describe('TwigView', function (): void {
         $resolver = makeTwigResolver(['test::content' => $templatePath]);
         $env = makeTwigEnv();
 
-        $view = new TwigView($env, $resolver);
+        $view = new TwigView($env, $resolver, ViewProviders::merger());
         $html = $view->renderToString('test::content');
 
         expect($html)->toBeString()
@@ -82,7 +84,7 @@ describe('TwigView', function (): void {
         $resolver = makeTwigResolver(['test::greeting' => $templatePath]);
         $env = makeTwigEnv();
 
-        $view = new TwigView($env, $resolver);
+        $view = new TwigView($env, $resolver, ViewProviders::merger());
         $html = $view->renderToString('test::greeting', [
             'name' => 'World',
             'message' => 'Welcome!',
@@ -113,7 +115,7 @@ describe('TwigView', function (): void {
         ]);
         $env = makeTwigEnv();
 
-        $view = new TwigView($env, $resolver);
+        $view = new TwigView($env, $resolver, ViewProviders::merger());
         $html = $view->renderToString('blog::post/index', [
             'items' => ['First', 'Second', 'Third'],
         ]);
@@ -134,7 +136,7 @@ describe('TwigView', function (): void {
         $resolver = makeTwigResolver(['test::xss' => $templatePath]);
         $env = makeTwigEnv();
 
-        $view = new TwigView($env, $resolver);
+        $view = new TwigView($env, $resolver, ViewProviders::merger());
         $html = $view->renderToString('test::xss', [
             'content' => "<script>alert('xss')</script>",
         ]);
@@ -156,10 +158,30 @@ describe('TwigView', function (): void {
         $resolver = makeTwigResolver(['test::strict' => $templatePath]);
         $env = makeTwigEnv(strictVariables: true);
 
-        $view = new TwigView($env, $resolver);
+        $view = new TwigView($env, $resolver, ViewProviders::merger());
 
         expect(fn () => $view->renderToString('test::strict'))
             ->toThrow(RuntimeError::class);
+
+        array_map('unlink', glob($templateDir . '/*'));
+        rmdir($templateDir);
+    });
+
+    test('it merges provider view data into render and renderToString, with explicit data winning', function (): void {
+        $templateDir = sys_get_temp_dir() . '/twig-view-test-' . bin2hex(random_bytes(8));
+        mkdir($templateDir, 0755, true);
+        $templatePath = $templateDir . '/shared.html.twig';
+        file_put_contents($templatePath, '{{ siteName }}|{{ title }}');
+
+        $view = new TwigView(
+            makeTwigEnv(),
+            makeTwigResolver(['test::shared' => $templatePath]),
+            ViewProviders::merger([SiteDataProvider::class]),
+        );
+
+        expect($view->renderToString('test::shared', ['title' => 'Home']))->toBe('Marko|Home')
+            ->and($view->render('test::shared', ['title' => 'Home'])->body())->toBe('Marko|Home')
+            ->and($view->renderToString('test::shared', ['title' => 'Home', 'siteName' => 'Mine']))->toBe('Mine|Home');
 
         array_map('unlink', glob($templateDir . '/*'));
         rmdir($templateDir);
