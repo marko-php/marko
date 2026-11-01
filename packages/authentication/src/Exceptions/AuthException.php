@@ -163,14 +163,24 @@ class AuthException extends Exception
         );
     }
 
-    public static function invalidPasswordResetSetting(
-        string $name,
+    public static function invalidPositiveSetting(
+        string $key,
         int $value,
     ): self {
         return new self(
-            message: "authentication.password_reset.$name must be a positive integer, got $value",
-            context: 'While reading the password reset settings from authentication.password_reset',
-            suggestion: "Set authentication.password_reset.$name to 1 or more (seconds)",
+            message: "$key must be a positive integer, got $value",
+            context: "While reading $key from the authentication config",
+            suggestion: "Set $key to 1 or more",
+        );
+    }
+
+    public static function passwordConfirmationNeedsSessionGuard(
+        string $guard,
+    ): self {
+        return new self(
+            message: "RequirePasswordConfirmationMiddleware cannot run on stateless guard '$guard'",
+            context: 'Password confirmation is stored in the session, and a stateless guard (StatelessGuardInterface) keeps no session between requests',
+            suggestion: 'Set authentication.default.guard to a session guard for routes that require password confirmation, or remove RequirePasswordConfirmationMiddleware from API routes',
         );
     }
 
