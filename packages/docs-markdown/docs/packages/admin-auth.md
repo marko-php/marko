@@ -71,6 +71,8 @@ return [
 
 `AdminAuthMiddleware`, the [admin panel](/docs/packages/admin-panel/) login and logout, and the [admin API](/docs/packages/admin-api/) resolve that guard by name through `AdminGuardResolver` (`AuthManager::guard($config->getGuardName())`). Because the `admin` guard has its own provider and its own session key (`auth_admin_user_id`), the admin and frontend logins are separate: a customer logged in on the frontend is a guest in the admin area, and an admin login never logs into the frontend. The package does not bind `UserProviderInterface`, so your frontend provider binding stays in place. See [User Providers](/docs/packages/authentication/#user-providers).
 
+`AdminUserProvider` checks admin passwords through [`PasswordVerifierInterface`](/docs/packages/authentication/#password-confirmation), the same single password check the rest of the framework uses. A login for an unknown or inactive admin, or with a password that isn't a string, still pays for one dummy hash check, so response timing doesn't reveal which admin accounts exist. Rebinding `PasswordVerifierInterface` changes how admin logins are checked too.
+
 Resolve the admin guard in your own admin code the same way:
 
 ```php title="ReportController.php"
