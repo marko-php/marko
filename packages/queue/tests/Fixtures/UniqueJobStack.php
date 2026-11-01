@@ -34,6 +34,7 @@ use Marko\Queue\UniqueJobInterface;
 use Marko\Queue\UniqueJobLocks;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeLogger;
 
 /**
  * The pieces an app wires for unique jobs, the way module discovery wires them: the push
@@ -108,6 +109,7 @@ class UniqueJobStack
             $this->jobRunner(),
             $this->eventDispatcher,
             $this->clock,
+            logger: new FakeLogger(),
         );
     }
 

@@ -12,6 +12,7 @@ use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\PgSql\Query\PgSqlQueryBuilderFactory;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
+use Marko\Log\Contracts\LoggerInterface;
 use Marko\Queue\Command\WorkCommand;
 use Marko\Queue\Database\Tests\Fixtures\AlwaysFailingJob;
 use Marko\Queue\Database\Tests\Fixtures\SqliteConnection;
@@ -23,6 +24,7 @@ use Marko\Queue\WorkerInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -39,6 +41,7 @@ function workerTestContainer(
     $container->instance(ConnectionInterface::class, $connection);
     $container->instance(QueryBuilderFactoryInterface::class, new PgSqlQueryBuilderFactory($connection));
     $container->instance(ClockInterface::class, new FakeClock());
+    $container->instance(LoggerInterface::class, new FakeLogger());
     $container->instance(DatabaseTimezoneConfig::class, DatabaseTimezoneConfig::fromName('UTC'));
     $container->instance(ConfigRepositoryInterface::class, new FakeConfigRepository([
         'encryption.key' => 'worker-regression-key',

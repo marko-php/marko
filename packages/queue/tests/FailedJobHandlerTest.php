@@ -7,6 +7,7 @@ use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\Event;
 use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Encryption\Config\EncryptionConfig;
+use Marko\Log\LogLevel;
 use Marko\Queue\ContainerAwareJobInterface;
 use Marko\Queue\Event\JobFailedEvent;
 use Marko\Queue\FailableJobInterface;
@@ -20,6 +21,7 @@ use Marko\Queue\JobRunner;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 
 function createFailedJobHandlerEnvelope(): JobEnvelope
 {
@@ -155,7 +157,12 @@ class HandlerContainerAwareFailableJob extends Job implements ContainerAwareJobI
 class HandlerCleanupService {}
 
 /**
- * @return array{handler: FailedJobHandler, repository: LoggingFailedJobRepository, events: LoggingEventDispatcher}
+ * @return array{
+ *     handler: FailedJobHandler,
+ *     repository: LoggingFailedJobRepository,
+ *     events: LoggingEventDispatcher,
+ *     logger: FakeLogger,
+ * }
  */
 function createLoggingFailedJobHandler(
     ArrayObject $log = new ArrayObject(),
@@ -164,36 +171,17 @@ function createLoggingFailedJobHandler(
     $repository = new LoggingFailedJobRepository($log);
     $events = new LoggingEventDispatcher($log);
     $envelope = createFailedJobHandlerEnvelope();
+    $logger = new FakeLogger();
     $handler = new FailedJobHandler(
         $repository,
         $envelope,
         new JobRunner($container, $envelope, new FakeEventDispatcher()),
         $events,
         new FakeClock('2026-10-31 09:30:00'),
+        $logger,
     );
 
-    return ['handler' => $handler, 'repository' => $repository, 'events' => $events];
-}
-
-/**
- * Point PHP's error log at a temp file for the callback and return what was logged.
- */
-function captureFailedJobHandlerErrorLog(
-    Closure $callback,
-): string {
-    $logFile = tempnam(sys_get_temp_dir(), 'failed-job-handler-log');
-    $previous = ini_set('error_log', $logFile);
-
-    try {
-        $callback();
-    } finally {
-        ini_set('error_log', $previous === false ? '' : $previous);
-    }
-
-    $logged = (string) file_get_contents($logFile);
-    unlink($logFile);
-
-    return $logged;
+    return ['handler' => $handler, 'repository' => $repository, 'events' => $events, 'logger' => $logger];
 }
 
 describe('FailedJobHandler', function (): void {
@@ -271,15 +259,22 @@ describe('FailedJobHandler', function (): void {
     it(
         'logs a throwing failed() with the job class and id, still dispatches the event, and returns',
         function (): void {
-            ['handler' => $handler, 'events' => $events, 'repository' => $repository] = createLoggingFailedJobHandler();
+            [
+                'handler' => $handler,
+                'events' => $events,
+                'repository' => $repository,
+                'logger' => $logger,
+            ] = createLoggingFailedJobHandler();
             $job = new HandlerFailableJob(failedThrows: true);
             $job->setId('job-9');
 
-            $logged = captureFailedJobHandlerErrorLog(
-                fn () => $handler->handle($job, 'default', new RuntimeException('boom')),
-            );
+            $handler->handle($job, 'default', new RuntimeException('boom'));
 
-            expect($logged)->toContain('HandlerFailableJob')
+            $errors = $logger->entriesForLevel(LogLevel::Error);
+            $logged = $errors[0]['message'] ?? '';
+
+            expect($errors)->toHaveCount(1)
+                ->and($logged)->toContain('HandlerFailableJob')
                 ->and($logged)->toContain('job-9')
                 ->and($logged)->toContain('LogicException: cleanup broke')
                 ->and($events->events)->toHaveCount(1)

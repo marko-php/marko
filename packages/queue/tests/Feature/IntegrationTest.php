@@ -28,6 +28,7 @@ use Marko\Queue\WorkerInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 
 function createIntegrationJobEnvelope(
     string $key = 'test-key-for-integration',
@@ -295,11 +296,13 @@ describe('Integration Tests', function (): void {
                 ),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $config,
             new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
 
         // 1. Push the job to the queue
@@ -495,11 +498,13 @@ describe('Integration Tests', function (): void {
                     new JobRunner($container, $envelope, new FakeEventDispatcher()),
                     new FakeEventDispatcher(),
                     new FakeClock(),
+                    logger: new FakeLogger(),
                 ),
                 $config,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new RetryPolicy($config, new FakeClock()),
                 clock: new FakeClock(),
+                logger: new FakeLogger(),
             );
             $worker->work(once: true);
 
@@ -584,11 +589,13 @@ describe('Integration Tests', function (): void {
                     new JobRunner($container, $envelope, new FakeEventDispatcher()),
                     new FakeEventDispatcher(),
                     new FakeClock(),
+                    logger: new FakeLogger(),
                 ),
                 $config,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new RetryPolicy($config, new FakeClock()),
                 clock: new FakeClock(),
+                logger: new FakeLogger(),
             );
             $worker->work(once: true);
 
@@ -632,12 +639,14 @@ describe('Integration Tests', function (): void {
                 ),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $config,
             new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($config, new FakeClock()),
             processControl: $processControl,
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
 
         // Push a job to the queue
@@ -703,6 +712,7 @@ describe('Integration Tests', function (): void {
                 $syncRunner,
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             createIntegrationQueueConfig(),
         );
@@ -727,11 +737,13 @@ describe('Integration Tests', function (): void {
                 ),
                 new FakeEventDispatcher(),
                 new FakeClock(),
+                logger: new FakeLogger(),
             ),
             $queueConfig,
             new JobRunner(createIntegrationNullContainer(), createIntegrationJobEnvelope(), new FakeEventDispatcher()),
             new RetryPolicy($queueConfig, new FakeClock()),
             clock: new FakeClock(),
+            logger: new FakeLogger(),
         );
 
         expect($worker)->toBeInstanceOf(WorkerInterface::class);

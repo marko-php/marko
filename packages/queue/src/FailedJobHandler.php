@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Queue;
 
 use Marko\Core\Event\EventDispatcherInterface;
+use Marko\Log\Contracts\LoggerInterface;
 use Marko\Queue\Event\JobFailedEvent;
 use Marko\Queue\Exceptions\SerializationException;
 use Psr\Clock\ClockInterface;
@@ -18,6 +19,7 @@ class FailedJobHandler implements FailedJobHandlerInterface
         private readonly JobRunnerInterface $jobRunner,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly ClockInterface $clock,
+        private readonly LoggerInterface $logger,
     ) {}
 
     /**
@@ -88,7 +90,7 @@ class FailedJobHandler implements FailedJobHandlerInterface
         try {
             $this->jobRunner->withContainer($job, static fn () => $job->failed($exception));
         } catch (Throwable $hookError) {
-            error_log(sprintf(
+            $this->logger->error(sprintf(
                 '[marko/queue] failed() of job %s (id %s) threw %s: %s',
                 $job::class,
                 $job->id ?? 'none',

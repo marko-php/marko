@@ -26,6 +26,7 @@ use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 
 class TestNotifiable implements NotifiableInterface
 {
@@ -376,11 +377,13 @@ describe('SendNotificationJob serialization', function (): void {
                     new JobRunner($container, $envelope, new FakeEventDispatcher()),
                     new FakeEventDispatcher(),
                     new FakeClock(),
+                    logger: new FakeLogger(),
                 ),
                 $queueConfig,
                 new JobRunner($container, $envelope, new FakeEventDispatcher()),
                 new RetryPolicy($queueConfig, new FakeClock()),
                 clock: new FakeClock(),
+                logger: new FakeLogger(),
             );
             $worker->work(once: true);
 
@@ -530,6 +533,7 @@ describe('SendNotificationJob final failure', function (): void {
                     ),
                     new FakeEventDispatcher(),
                     new FakeClock(),
+                    logger: new FakeLogger(),
                 ),
                 createNotificationTestQueueConfig(),
                 new JobRunner(
@@ -539,6 +543,7 @@ describe('SendNotificationJob final failure', function (): void {
                 ),
                 new RetryPolicy(createNotificationTestQueueConfig(), new FakeClock()),
                 clock: new FakeClock(),
+                logger: new FakeLogger(),
             );
             $stopJob->worker = $worker;
 

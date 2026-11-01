@@ -12,6 +12,7 @@ use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobEnvelope;
 use Marko\Queue\JobRunner;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -32,6 +33,7 @@ class TestFailedJobHandler
             new JobRunner($container, $jobEnvelope, $eventDispatcher),
             $eventDispatcher,
             $clock,
+            logger: new FakeLogger(),
         );
     }
 }

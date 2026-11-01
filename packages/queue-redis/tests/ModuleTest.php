@@ -6,6 +6,7 @@ use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\EventDispatcherInterface;
+use Marko\Log\Contracts\LoggerInterface;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Redis\RedisFailedJobRepository;
@@ -15,6 +16,7 @@ use Marko\Redis\RedisConnectionFactoryInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 use Psr\Clock\ClockInterface;
 
 describe('queue-redis module', function (): void {
@@ -30,6 +32,7 @@ describe('queue-redis module', function (): void {
         $container->instance(ConfigRepositoryInterface::class, $config);
         $container->instance(EventDispatcherInterface::class, new FakeEventDispatcher());
         $container->instance(ClockInterface::class, new FakeClock());
+        $container->instance(LoggerInterface::class, new FakeLogger());
         $container->instance(RedisConnectionFactoryInterface::class, new RedisConnectionFactory($config));
 
         foreach (['queue', 'queue-redis'] as $package) {

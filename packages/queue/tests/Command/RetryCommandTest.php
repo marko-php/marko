@@ -28,6 +28,7 @@ use Marko\Queue\Worker;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeLogger;
 
 /**
  * A simple test job for retry testing.
@@ -649,6 +650,7 @@ function createRetryWorker(
             new JobRunner($container, createRetryCommandEnvelope(), new FakeEventDispatcher()),
             new FakeEventDispatcher(),
             new FakeClock(),
+            logger: new FakeLogger(),
         ),
         new QueueConfig(new FakeConfigRepository([
             'queue.queue' => 'default',
@@ -660,6 +662,7 @@ function createRetryWorker(
             'queue.max_attempts' => 1,
         ])), new FakeClock()),
         clock: new FakeClock(),
+        logger: new FakeLogger(),
     );
 }
 
