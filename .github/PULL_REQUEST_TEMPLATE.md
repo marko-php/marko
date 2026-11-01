@@ -6,7 +6,7 @@
 
 - [ ] Bug fix
 - [ ] New feature
-- [ ] Breaking change
+- [ ] Breaking change (use `type!:` in the title, e.g. `feat!: ...`)
 - [ ] Docs
 - [ ] Refactor
 
