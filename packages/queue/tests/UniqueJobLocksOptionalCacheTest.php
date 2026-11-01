@@ -20,23 +20,26 @@ describe('marko/cache is optional for marko/queue', function (): void {
             ->and($composer['require-dev'])->toHaveKey('marko/cache');
     });
 
-    it('throws a clear exception telling you to install marko/cache when a unique job is pushed without it', function (): void {
-        $locks = new class (new Container()) extends UniqueJobLocks
-        {
-            protected function lockContractInstalled(): bool
+    it(
+        'throws a clear exception telling you to install marko/cache when a unique job is pushed without it',
+        function (): void {
+            $locks = new class (new Container()) extends UniqueJobLocks
             {
-                return false;
-            }
-        };
+                protected function lockContractInstalled(): bool
+                {
+                    return false;
+                }
+            };
 
-        try {
-            $locks->acquire(new UniqueTestJob());
-            $this->fail('Taking a unique-job lock without marko/cache must throw.');
-        } catch (QueueException $e) {
-            expect($e->getMessage())->toContain('marko/cache is not installed')
-                ->and($e->getMessage())->toContain(UniqueTestJob::class)
-                ->and($e->getSuggestion())->toContain('composer require marko/cache')
-                ->and($e->getSuggestion())->toContain('marko/cache-redis');
-        }
-    });
+            try {
+                $locks->acquire(new UniqueTestJob());
+                $this->fail('Taking a unique-job lock without marko/cache must throw.');
+            } catch (QueueException $e) {
+                expect($e->getMessage())->toContain('marko/cache is not installed')
+                    ->and($e->getMessage())->toContain(UniqueTestJob::class)
+                    ->and($e->getSuggestion())->toContain('composer require marko/cache')
+                    ->and($e->getSuggestion())->toContain('marko/cache-redis');
+            }
+        },
+    );
 });
