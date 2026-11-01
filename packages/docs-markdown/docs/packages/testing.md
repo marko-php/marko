@@ -466,14 +466,14 @@ KnownDriversValidator::assertDocsUrlsResolveToValidPattern(
     __DIR__ . '/../known-drivers.php',
 );
 
-// Assert skeleton composer.json suggest block contains every entry from known-drivers.php
+// Assert skeleton composer.json suggests (or requires) every entry from known-drivers.php
 KnownDriversValidator::assertSkeletonSuggestContainsAll(
     __DIR__ . '/../known-drivers.php',
     __DIR__ . '/../../skeleton/composer.json',
 );
 ```
 
-Both methods check through `PHPUnit\Framework\Assert`, so each checked driver counts as an assertion and a test that only calls the validator is not reported as risky. `assertSkeletonSuggestContainsAll()` skips the test when the skeleton `composer.json` is missing or has no `suggest` block.
+Both methods check through `PHPUnit\Framework\Assert`, so each checked driver counts as an assertion and a test that only calls the validator is not reported as risky. A driver the skeleton requires counts as covered, and the assertion fails if it is also suggested (suggesting a required package does nothing). `assertSkeletonSuggestContainsAll()` skips the test when the skeleton `composer.json` is missing or has no `suggest` block.
 
 ## HTTP Tests
 

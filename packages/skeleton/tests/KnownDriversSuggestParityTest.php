@@ -2,31 +2,41 @@
 
 declare(strict_types=1);
 
-test('it lists every driver from every known-drivers.php file in skeleton suggest', function (): void {
+test('it lists every driver from every known-drivers.php file in skeleton suggest or require', function (): void {
+    // A driver the skeleton ships is covered by require; suggesting it too would do nothing.
     $knownDriversFiles = glob(__DIR__ . '/../../*/known-drivers.php');
-    $skeletonSuggest = json_decode(
+    $composer = json_decode(
         file_get_contents(__DIR__ . '/../composer.json'),
         associative: true,
-    )['suggest'] ?? [];
+    );
+    $covered = array_merge($composer['suggest'] ?? [], $composer['require'] ?? []);
 
     foreach ($knownDriversFiles as $knownDriversPath) {
         $drivers = require $knownDriversPath;
         foreach ($drivers as $package => $description) {
-            expect($skeletonSuggest)->toHaveKey($package);
+            expect($covered)->toHaveKey($package);
         }
     }
 });
 
 test('it preserves descriptions verbatim between known-drivers.php and skeleton suggest', function (): void {
     $knownDriversFiles = glob(__DIR__ . '/../../*/known-drivers.php');
-    $skeletonSuggest = json_decode(
+    $composer = json_decode(
         file_get_contents(__DIR__ . '/../composer.json'),
         associative: true,
-    )['suggest'] ?? [];
+    );
+    $skeletonSuggest = $composer['suggest'] ?? [];
+    $skeletonRequire = $composer['require'] ?? [];
 
     foreach ($knownDriversFiles as $knownDriversPath) {
         $drivers = require $knownDriversPath;
         foreach ($drivers as $package => $description) {
+            if (array_key_exists($package, $skeletonRequire)) {
+                expect($skeletonSuggest)->not->toHaveKey($package);
+
+                continue;
+            }
+
             expect($skeletonSuggest)->toHaveKey($package)
                 ->and($skeletonSuggest[$package])->toBe($description);
         }

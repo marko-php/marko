@@ -100,7 +100,7 @@ Marko could have mechanically derived "which packages are drivers" from on-disk 
 
 1. **Third-party drivers exist.** Anyone can publish a `marko/cache-*` package. The official `known-drivers.php` lists the drivers the interface maintainer supports. It's the curated answer to "which driver should I pick?", not the exhaustive answer to "what driver packages exist on Packagist?"
 2. **Recommendations need a maintainer's voice.** Mechanical derivation can't tell you that `cache-file` is the sensible default and `cache-redis` is the opt-in for distributed deployments. That judgment belongs in `known-drivers.php`.
-3. **CI can mechanically enforce sync.** The [`KnownDriversValidator`](/packages/testing/#knowndriversvalidator) helper compares each interface's `known-drivers.php` against skeleton's `suggest` block. Drift fails the build.
+3. **CI can mechanically enforce sync.** The [`KnownDriversValidator`](/packages/testing/#knowndriversvalidator) helper compares each interface's `known-drivers.php` against skeleton's `suggest` block. Drift fails the build. A driver the skeleton requires (the `marko/log-file` and `marko/log-stream` handlers ship with it) counts as covered and must not also be suggested, since suggesting a required package does nothing.
 
 ## NoDriverException Integration
 
