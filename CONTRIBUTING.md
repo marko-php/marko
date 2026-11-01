@@ -36,7 +36,7 @@ Marko uses [Conventional Commits](https://www.conventionalcommits.org/).
 | `ci` | CI/CD configuration |
 | `chore` | Build, deps, maintenance |
 
-Append `!` for breaking changes: `feat(auth)!: remove legacy driver`.
+Append `!` for breaking changes: `feat(auth)!: remove legacy driver`. A `BREAKING CHANGE:` footer line in the body also marks a change as breaking. A "Breaking changes" heading in the PR description does not, so a section that says "None" never adds the label.
 
 ## Pull Requests
 
@@ -60,6 +60,9 @@ Labels are applied automatically from the PR title prefix:
 | `ci` | `ci` |
 | `chore` | `maintenance` |
 | `type!` | `breaking` (added alongside type label) |
+| `BREAKING CHANGE:` footer line in the body | `breaking` |
+
+A PR title that doesn't follow the commit format fails the **Auto Label PR** check, because an unlabeled PR would land in "Other Changes" in the release notes. The `breaking` label is only ever added automatically, never removed, so maintainers can add it by hand.
 
 ## Release Process (Maintainers)
 

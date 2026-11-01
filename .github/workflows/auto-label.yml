@@ -11,6 +11,12 @@ jobs:
   label:
     runs-on: ubuntu-latest
     steps:
+      # pull_request_target runs the base branch's workflow; check out the base branch (never the
+      # PR head) so the detector script below is the reviewed copy, not one a PR could modify.
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: .github/scripts
+
       - name: Apply labels based on conventional commit prefix
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -25,6 +31,11 @@ jobs:
           # Extract the type prefix from the PR title (case-insensitive)
           # Matches: type:, type(scope):, type!:, type(scope)!:
           TYPE=$(echo "$PR_TITLE" | grep -ioP '^[a-z]+(?=(\([^)]*\))?!?:)' || true)
+
+          if [ -z "$TYPE" ]; then
+            echo "::error title=PR title is not a conventional commit::Use '<type>[(<scope>)][!]: <description>', e.g. 'feat: add redis driver' or 'feat!: change the queue contract'. Types: fix, feat, docs, refactor, test, ci, chore. See CONTRIBUTING.md."
+            exit 1
+          fi
 
           if [ -n "$TYPE" ]; then
             TYPE=$(echo "$TYPE" | tr '[:upper:]' '[:lower:]')
@@ -43,7 +54,10 @@ jobs:
               test)      NEW_LABEL="testing" ;;
               ci)        NEW_LABEL="ci" ;;
               chore)     NEW_LABEL="maintenance" ;;
-              *)         NEW_LABEL="" ;;
+              *)
+                echo "::error title=Unknown PR title type '$TYPE'::Use one of: fix, feat, docs, refactor, test, ci, chore. See CONTRIBUTING.md."
+                exit 1
+                ;;
             esac
 
             if [ -n "$NEW_LABEL" ]; then
@@ -51,15 +65,9 @@ jobs:
             fi
           fi
 
-          # Check for breaking change: type! or BREAKING CHANGE in body
-          IS_BREAKING=false
-          if echo "$PR_TITLE" | grep -qiP '^[a-z]+(\([^)]*\))?!:'; then
-            IS_BREAKING=true
-          fi
-          if echo "$PR_BODY" | grep -qiF 'BREAKING CHANGE'; then
-            IS_BREAKING=true
-          fi
-
-          if [ "$IS_BREAKING" = true ]; then
+          # Breaking change: a "!" after the type, or a "BREAKING CHANGE:" footer (Conventional
+          # Commits). The label is only ever added here, never removed, so a maintainer can add it
+          # by hand to a PR whose title doesn't carry the "!".
+          if [ "$(bash .github/scripts/is-breaking-pr.sh)" = true ]; then
             gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "breaking"
           fi
