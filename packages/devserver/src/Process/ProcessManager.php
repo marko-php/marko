@@ -17,6 +17,9 @@ class ProcessManager
     /** How long to wait for SIGKILL to take effect before failing loudly. */
     private const float KILL_TIMEOUT_SECONDS = 2.0;
 
+    /** How long past the probe window to wait for a detached supervisor to lead its process group before failing loudly. */
+    private const float GROUP_LEADER_TIMEOUT_SECONDS = 10.0;
+
     private const int POLL_INTERVAL_MICROS = 10_000;
 
     /** Words the shell treats as syntax rather than a command to look up. */
@@ -368,11 +371,31 @@ class ProcessManager
             }
 
             if (microtime(true) >= $deadline) {
-                return null;
+                // The PID only leads its group once the supervisor's posix_setsid() ran, which a
+                // loaded machine can delay past the probe window: wait for it, so callers that
+                // signal or check the group (stop(), PidFile) never miss it
+                if ($this->leadsProcessGroup($pid)) {
+                    return null;
+                }
+
+                if (microtime(true) >= $deadline + self::GROUP_LEADER_TIMEOUT_SECONDS) {
+                    return sprintf(
+                        'did not become a process group leader within %s seconds',
+                        self::GROUP_LEADER_TIMEOUT_SECONDS,
+                    );
+                }
             }
 
             usleep(self::POLL_INTERVAL_MICROS);
         }
+    }
+
+    /**
+     * Whether the PID is the leader of its own process group.
+     */
+    private function leadsProcessGroup(int $pid): bool
+    {
+        return @posix_getpgid($pid) === $pid;
     }
 
     /**

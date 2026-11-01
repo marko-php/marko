@@ -125,10 +125,13 @@ describe('AmphpSseServer streaming', function (): void {
     });
 
     it('keeps an idle stream open longer than the HTTP driver stream timeout', function (): void {
-        $this->sse = startSseServer(['heartbeat' => 1], streamTimeout: 2);
+        // amphp checks stream timeouts against a whole-second clock it refreshes once a second, so a
+        // write can expire up to 2s early. A 5s timeout keeps the 1s heartbeat clear of that, even when
+        // the process stalls; the wait still outlasts the latest a heartbeat-less stream would be dropped.
+        $this->sse = startSseServer(['heartbeat' => 1], streamTimeout: 5);
         $client = SseTestClient::get($this->sse['port'], '/stream?channels=shows.42');
         $client->waitFor(":ok\n\n");
-        delay(3.5);
+        delay(7.0);
 
         $this->sse['broadcaster']->broadcast('shows.42', 'seat.sold', [], 'evt-late');
 
