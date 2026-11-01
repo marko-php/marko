@@ -14,6 +14,7 @@ use Marko\View\CacheDirectoryGuard;
 use Marko\View\Functions\RouteFunctionProvider;
 use Marko\View\Twig\TemplateFunctionExtension;
 use Marko\View\Twig\Tests\Fixtures\MarkupFunctionProvider;
+use Marko\View\Twig\Tests\Fixtures\PathTemplateResolver;
 use Marko\View\Twig\Tests\Fixtures\ViewProviders;
 use Marko\View\Twig\TwigEngineFactory;
 use Marko\View\Twig\TwigViewConfig;
@@ -123,6 +124,7 @@ describe('TemplateFunctionExtension', function (): void {
             $config,
             twigRouteExtension(),
             new CacheDirectoryGuard(new ProjectPaths(sys_get_temp_dir())),
+            new PathTemplateResolver(),
         )->create();
         $environment->setLoader(new ArrayLoader(['main' => '{{ route("shows.show", {id: 9}) }}']));
         $html = $environment->render('main');
