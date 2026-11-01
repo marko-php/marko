@@ -97,9 +97,8 @@ class Response
     /**
      * Drop the body but keep status, headers, cookies and the concrete class.
      *
-     * The router applies this to every HEAD response. Subclasses that write
-     * their own output in send() (e.g. a streaming response) must check
-     * isBodyOmitted() and send headers only.
+     * The router applies this to every HEAD response. send() then emits the
+     * headers only, and never calls sendBody() on a StreamedResponseInterface.
      */
     #[NoDiscard]
     public function withoutBody(): static
@@ -191,16 +190,37 @@ class Response
         return $lines;
     }
 
+    /**
+     * Emit the status line, headers and body.
+     *
+     * A StreamedResponseInterface writes its own body through sendBody(),
+     * which is skipped when the body was omitted (HEAD).
+     */
     public function send(): void
     {
-        if (!headers_sent()) {
-            http_response_code($this->statusCode);
+        $this->sendHeaders();
 
-            foreach ($this->headerLines() as $line) {
-                header($line);
+        if ($this instanceof StreamedResponseInterface) {
+            if (!$this->isBodyOmitted()) {
+                $this->sendBody();
             }
+
+            return;
         }
 
         echo $this->body;
+    }
+
+    protected function sendHeaders(): void
+    {
+        if (headers_sent()) {
+            return;
+        }
+
+        http_response_code($this->statusCode);
+
+        foreach ($this->headerLines() as $line) {
+            header($line);
+        }
     }
 }

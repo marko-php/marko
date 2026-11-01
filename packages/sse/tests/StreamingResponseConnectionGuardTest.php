@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Routing\Http\OutputStreamer;
 use Marko\Sse\SseConnectionLimiter;
 use Marko\Sse\SseEvent;
 use Marko\Sse\SseStream;
@@ -9,31 +10,30 @@ use Marko\Sse\StreamingResponse;
 use Marko\Sse\Tests\Support\RecordingCache;
 
 /**
- * StreamingResponse with its output-buffer handling and abort detection replaced, so send()
- * can run inside the test process.
+ * StreamingResponse whose OutputStreamer leaves the output buffers alone and reports the given
+ * abort state, so send() can run inside the test process.
  */
 function guardedStreamingResponse(
     SseStream $stream,
     ?SseConnectionLimiter $connectionLimiter,
     bool $aborted = false,
 ): StreamingResponse {
-    return new class ($stream, $connectionLimiter, $aborted) extends StreamingResponse
+    $outputStreamer = new class ($aborted) extends OutputStreamer
     {
         public function __construct(
-            SseStream $stream,
-            ?SseConnectionLimiter $connectionLimiter,
             private readonly bool $aborted,
-        ) {
-            parent::__construct(stream: $stream, connectionLimiter: $connectionLimiter);
-        }
+        ) {}
 
-        protected function prepareOutput(): void {}
+        public function prepare(): void {}
 
-        protected function connectionAborted(): bool
+        public function connectionAborted(): bool
         {
             return $this->aborted;
         }
     };
+
+    return new StreamingResponse(stream: $stream, connectionLimiter: $connectionLimiter)
+        ->withOutputStreamer($outputStreamer);
 }
 
 function captureSend(StreamingResponse $response): string

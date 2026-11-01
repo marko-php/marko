@@ -6,8 +6,10 @@ use Marko\PageCache\Attributes\Cacheable;
 use Marko\PageCache\CacheabilityChecker;
 use Marko\PageCache\Config\PageCacheConfig;
 use Marko\Routing\Http\Cookie;
+use Marko\Routing\Http\OutputStreamer;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Routing\Http\StreamedResponse;
 use Marko\Routing\MatchedRoute;
 use Marko\Routing\RouteDefinition;
 use Marko\Routing\RouteMatcherInterface;
@@ -173,6 +175,16 @@ it('accepts responses with status code 200 as cacheable', function (): void {
     $response = makeCacheCheckerResponse(200);
 
     expect($checker->isResponseCacheable($response))->toBeTrue();
+});
+
+it('rejects a streamed response as not cacheable even with a cacheable status', function (): void {
+    $checker = makeChecker(makeNullMatcher());
+    $response = new StreamedResponse(function (OutputStreamer $outputStreamer): void {
+        $outputStreamer->write('generated');
+    });
+
+    expect($response->statusCode())->toBe(200)
+        ->and($checker->isResponseCacheable($response))->toBeFalse();
 });
 
 it('rejects responses with status code 500 as not cacheable', function (): void {

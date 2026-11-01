@@ -10,6 +10,7 @@ use Marko\PageCache\Config\PageCacheConfig;
 use Marko\PageCache\Exceptions\PageCacheException;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Routing\Http\StreamedResponseInterface;
 use Marko\Routing\RouteMatcherInterface;
 use ReflectionException;
 use ReflectionMethod;
@@ -48,6 +49,11 @@ readonly class CacheabilityChecker
      */
     public function isResponseCacheable(Response $response): bool
     {
+        // A streamed body is written by sendBody(), never held in body(): caching it would store ''.
+        if ($response instanceof StreamedResponseInterface) {
+            return false;
+        }
+
         if (!in_array($response->statusCode(), $this->config->cacheableStatusCodes(), true)) {
             return false;
         }
