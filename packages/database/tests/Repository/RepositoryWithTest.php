@@ -105,8 +105,10 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
     {
         public function __construct(private readonly array $rows) {}
 
-        public function table(string $table): static
-        {
+        public function table(
+            string $table,
+            ?string $alias = null,
+        ): static {
             return $this;
         }
 
@@ -153,6 +155,31 @@ function makeWithStubBuilder(array $rows = []): QueryBuilderInterface
         }
 
         public function whereJsonMissing(string $path): static
+        {
+            return $this;
+        }
+
+        public function whereNotIn(
+            string $column,
+            array $values,
+        ): static {
+            return $this;
+        }
+
+        public function whereColumn(
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function whereExists(callable|QueryBuilderInterface $subquery): static
+        {
+            return $this;
+        }
+
+        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
         {
             return $this;
         }
@@ -621,8 +648,10 @@ describe('Eager Loading Integration', function (): void {
         {
             public bool $getCalled = false;
 
-            public function table(string $table): static
-            {
+            public function table(
+                string $table,
+                ?string $alias = null,
+            ): static {
                 return $this;
             }
 
@@ -671,6 +700,31 @@ describe('Eager Loading Integration', function (): void {
             }
 
             public function whereJsonMissing(string $path): static
+            {
+                return $this;
+            }
+
+            public function whereNotIn(
+                string $column,
+                array $values,
+            ): static {
+                return $this;
+            }
+
+            public function whereColumn(
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function whereExists(callable|QueryBuilderInterface $subquery): static
+            {
+                return $this;
+            }
+
+            public function whereNotExists(callable|QueryBuilderInterface $subquery): static
             {
                 return $this;
             }
@@ -918,8 +972,10 @@ describe('Eager Loading Integration', function (): void {
         {
             public bool $whereInCalled = false;
 
-            public function table(string $table): static
-            {
+            public function table(
+                string $table,
+                ?string $alias = null,
+            ): static {
                 return $this;
             }
 
@@ -968,6 +1024,31 @@ describe('Eager Loading Integration', function (): void {
             }
 
             public function whereJsonMissing(string $path): static
+            {
+                return $this;
+            }
+
+            public function whereNotIn(
+                string $column,
+                array $values,
+            ): static {
+                return $this;
+            }
+
+            public function whereColumn(
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function whereExists(callable|QueryBuilderInterface $subquery): static
+            {
+                return $this;
+            }
+
+            public function whereNotExists(callable|QueryBuilderInterface $subquery): static
             {
                 return $this;
             }
@@ -1208,8 +1289,10 @@ describe('Eager Loading Integration', function (): void {
         {
             public int $whereInCount = 0;
 
-            public function table(string $table): static
-            {
+            public function table(
+                string $table,
+                ?string $alias = null,
+            ): static {
                 return $this;
             }
 
@@ -1258,6 +1341,31 @@ describe('Eager Loading Integration', function (): void {
             }
 
             public function whereJsonMissing(string $path): static
+            {
+                return $this;
+            }
+
+            public function whereNotIn(
+                string $column,
+                array $values,
+            ): static {
+                return $this;
+            }
+
+            public function whereColumn(
+                string $first,
+                string $operator,
+                string $second,
+            ): static {
+                return $this;
+            }
+
+            public function whereExists(callable|QueryBuilderInterface $subquery): static
+            {
+                return $this;
+            }
+
+            public function whereNotExists(callable|QueryBuilderInterface $subquery): static
             {
                 return $this;
             }

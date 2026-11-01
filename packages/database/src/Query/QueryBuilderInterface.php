@@ -14,12 +14,23 @@ use Marko\Database\Exceptions\UnionShapeMismatchException;
 interface QueryBuilderInterface
 {
     /**
-     * Set the target table for the query.
+     * Set the target table for the query, optionally under an alias.
+     *
+     * With an alias the table compiles as `table AS alias` in SELECT, aggregate,
+     * UPDATE and DELETE queries, and columns are qualified with the alias
+     * (`alias.column`). An alias is required when a correlated subquery reads
+     * the same table as its outer query. On MySQL, DELETE with an alias needs
+     * MySQL 8.0.16 or later.
      *
      * @param string $table The table name
+     * @param string|null $alias A plain identifier to alias the table as
      * @return static For fluent chaining
+     * @throws InvalidColumnException When the table name or alias is not a valid identifier
      */
-    public function table(string $table): static;
+    public function table(
+        string $table,
+        ?string $alias = null,
+    ): static;
 
     /**
      * Set the columns to select.
@@ -97,6 +108,71 @@ interface QueryBuilderInterface
     ): static;
 
     /**
+     * Add a WHERE NOT IN condition.
+     *
+     * An empty $values list matches every row (nothing is excluded).
+     *
+     * @param string $column The column name
+     * @param array $values The values to exclude
+     * @return static For fluent chaining
+     * @throws InvalidColumnException When the column name is invalid
+     */
+    public function whereNotIn(
+        string $column,
+        array $values,
+    ): static;
+
+    /**
+     * Add a WHERE condition comparing two columns (e.g. "posts.author_id = users.id").
+     *
+     * Both sides are validated identifiers (plain or qualified), never bindings.
+     * The operator must be one of =, !=, <>, <, >, <=, >=.
+     *
+     * @param string $first The left-hand column
+     * @param string $operator The comparison operator
+     * @param string $second The right-hand column
+     * @return static For fluent chaining
+     * @throws InvalidColumnException When a column or the operator is invalid
+     */
+    public function whereColumn(
+        string $first,
+        string $operator,
+        string $second,
+    ): static;
+
+    /**
+     * Add a WHERE EXISTS (subquery) condition.
+     *
+     * Pass a builder, or a callable that receives a fresh builder on the same
+     * connection (from QueryBuilderFactoryInterface) and configures it in
+     * place; the callable's return value is ignored. The subquery is compiled
+     * when this query runs, through compileSubquery().
+     *
+     * Position: EXISTS / NOT EXISTS conditions compile after the other regular
+     * where conditions (where, whereIn, whereNotIn, whereNull, whereNotNull,
+     * whereColumn, the JSON wheres) and before whereRaw() conditions. The
+     * subquery's bindings are placed at that same position.
+     *
+     * @param callable(QueryBuilderInterface): mixed|QueryBuilderInterface $subquery
+     * @return static For fluent chaining
+     */
+    public function whereExists(
+        callable|QueryBuilderInterface $subquery,
+    ): static;
+
+    /**
+     * Add a WHERE NOT EXISTS (subquery) condition.
+     *
+     * Same arguments, compile position and binding order as whereExists().
+     *
+     * @param callable(QueryBuilderInterface): mixed|QueryBuilderInterface $subquery
+     * @return static For fluent chaining
+     */
+    public function whereNotExists(
+        callable|QueryBuilderInterface $subquery,
+    ): static;
+
+    /**
      * Add a WHERE IS NULL condition.
      *
      * @param string $column The column name
@@ -165,7 +241,8 @@ interface QueryBuilderInterface
      * Add a raw SQL WHERE condition with optional positional bindings.
      *
      * The expression is AND-combined with any other where conditions, in call
-     * order, after the regular where()/whereIn/whereNull/etc. conditions.
+     * order, after the regular where()/whereIn/whereNull/etc. conditions and
+     * after whereExists()/whereNotExists() conditions.
      *
      * Aggregate methods (count, min, max, sum, avg) honor whereRaw conditions
      * the same way they honor where().
@@ -175,8 +252,8 @@ interface QueryBuilderInterface
      * placeholders and pass values via $bindings.
      *
      * Binding order: bindings from whereRaw() are positioned after any
-     * selectRaw() bindings in the compiled query, in the order whereRaw()
-     * calls were made.
+     * selectRaw() bindings and after every other where binding (including
+     * whereExists() subquery bindings), in the order whereRaw() calls were made.
      *
      * @param string $expression Raw SQL WHERE expression (e.g. "COALESCE(price, base) > ?")
      * @param array  $bindings   Positional bindings for ? placeholders

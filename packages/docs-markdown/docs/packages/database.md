@@ -746,7 +746,35 @@ Use `getEntities()` / `firstEntity()` for typed domain objects. Drop to `get()` 
 
 #### Available filters
 
-`where`, `whereIn`, `whereNull`, `whereNotNull`, `orWhere`, `whereRaw`, `join`, `leftJoin`, `rightJoin`, `orderBy`, `orderByRaw`, `limit`, `offset`, `select`, `selectRaw`. All return `static` for chaining. The escape hatch is `raw(string $sql, array $bindings = [])` for queries the builder can't express.
+`where`, `whereIn`, `whereNotIn`, `whereNull`, `whereNotNull`, `whereColumn`, `whereExists`, `whereNotExists`, `orWhere`, `whereRaw`, `join`, `leftJoin`, `rightJoin`, `orderBy`, `orderByRaw`, `limit`, `offset`, `select`, `selectRaw`. On a repository query, `whereHas` and `whereDoesntHave` filter on relationships (see [Filtering on relationships](#filtering-on-relationships)). All return `static` for chaining. The escape hatch is `raw(string $sql, array $bindings = [])` for queries the builder can't express.
+
+`whereNotIn()` with an empty list matches every row. `whereIn()` with an empty list matches none.
+
+#### Column comparisons, aliases and subqueries
+
+`whereColumn()` compares two columns. Both sides are validated identifiers, never bindings, and the operator must be `=`, `!=`, `<>`, `<`, `>`, `<=` or `>=`:
+
+```php
+$rows = $this->query()->whereColumn('updated_at', '>', 'created_at')->get();
+```
+
+`table()` takes an optional alias. Qualify columns with the alias (`alias.column`) wherever a column is accepted. The alias applies to SELECT queries, aggregates, `update()` and `delete()`. On MySQL, `delete()` with an alias needs MySQL 8.0.16 or later.
+
+`whereExists()` and `whereNotExists()` take a subquery, either a builder or a callable. The callable receives a fresh builder on the same connection and configures it in place; its return value is ignored. Alias the subquery's table when it reads the same table as the outer query:
+
+```php
+use Marko\Database\Query\QueryBuilderInterface;
+
+// Users with at least one published post
+$rows = $this->query()
+    ->whereExists(fn (QueryBuilderInterface $posts) => $posts
+        ->table('posts', 'p')
+        ->whereColumn('p.user_id', '=', 'users.id')
+        ->where('p.status', '=', 'published'))
+    ->get();
+```
+
+Where conditions compile in a fixed order, not in call order: `where`/`orWhere`, `whereIn`/`whereNotIn`, `whereNull`, `whereNotNull`, `whereColumn`, the JSON wheres, then `whereExists`/`whereNotExists`, and `whereRaw` last. Bindings follow the same order, so a subquery's bindings come after every other where binding and before the `whereRaw` bindings.
 
 #### Raw expressions
 
@@ -850,9 +878,51 @@ return $this->query()
 
 Dot-notation loads nested relationships.
 
+#### Filtering on relationships
+
+`whereHas()` keeps rows that have at least one related row; `whereDoesntHave()` keeps rows that have none. The join comes from the relationship attributes (`#[HasOne]`, `#[HasMany]`, `#[BelongsTo]`, `#[BelongsToMany]`), so you never restate foreign keys:
+
+```php
+use Marko\Database\Query\EntityQueryBuilderInterface;
+
+// Posts with at least one comment
+$posts = $this->query()->whereHas('comments')->getEntities();
+
+// Posts whose author is not banned or suspended
+$posts = $this->query()
+    ->whereHas('author', fn (EntityQueryBuilderInterface $q) => $q->whereNotIn('status', ['banned', 'suspended']))
+    ->getEntities();
+
+// Posts without any approved comment
+$posts = $this->query()
+    ->whereDoesntHave('comments', fn (EntityQueryBuilderInterface $q) => $q->where('approved', '=', true))
+    ->getEntities();
+
+// Nested: posts with a comment whose author is verified
+$posts = $this->query()
+    ->whereHas('comments.author', fn (EntityQueryBuilderInterface $q) => $q->where('verified', '=', true))
+    ->getEntities();
+```
+
+Each call compiles to a correlated `EXISTS` (or `NOT EXISTS`) subquery, so a has-many relationship never duplicates the outer rows. A `#[BelongsToMany]` relationship goes through its pivot table.
+
+The constraint receives a query scoped to the related entity: unqualified columns refer to the related table, and it can call `whereHas()` again. Its return value is ignored, so arrow functions work. With a dotted path, the constraint applies to the last relationship.
+
+Related tables get generated aliases (`marko_rel_1`, `marko_rel_2`, ...), so a self-referential relationship (a category and its child categories in the same table) works without extra setup. Don't reference those aliases yourself.
+
+Every segment of a dotted path is validated. An unknown relationship throws `RepositoryException`, and its message lists the relationships the entity does declare. Query specifications receive an `EntityQueryBuilderInterface`, so a spec can call `whereHas()` too.
+
 #### Query builder requirement
 
 `query()` depends on `QueryBuilderFactoryInterface` being injected into the repository. When a driver package (`marko/database-mysql`, `marko/database-pgsql`) is installed, the container wires this automatically. If you construct a repository manually without providing a factory, `query()` throws `RepositoryException::queryBuilderNotConfigured`.
+
+`whereHas()` and `whereDoesntHave()` need the `RelationshipExistsCompiler` that `query()` and `matching()` pass to the `RepositoryQueryBuilder`. A `RepositoryQueryBuilder` you construct yourself without one throws `RepositoryException` when either method is called.
+
+#### Upgrading query builder implementations
+
+`QueryBuilderInterface` gained `whereNotIn()`, `whereColumn()`, `whereExists()` and `whereNotExists()`, and `table()` gained an optional `?string $alias = null` parameter. `EntityQueryBuilderInterface` gained `whereHas()` and `whereDoesntHave()`. A class that implements either interface itself (a custom driver, decorator or test fake) must add them, or PHP refuses to load it. Callers of `table()` need no changes.
+
+`RepositoryException::unknownRelationship()` now takes the entity class, the relationship name, the list of declared relationship names and a description of the call, so its message can list the relationships that exist.
 
 ## Relationships
 
