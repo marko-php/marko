@@ -175,8 +175,10 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
             private array &$capturedWhereIn,
         ) {}
 
-        public function table(string $table): static
-        {
+        public function table(
+            string $table,
+            ?string $alias = null,
+        ): static {
             return $this;
         }
 
@@ -225,6 +227,31 @@ function makeStringPkQueryBuilder(array $rows, array &$capturedWhereIn = []): Qu
         }
 
         public function whereJsonMissing(string $path): static
+        {
+            return $this;
+        }
+
+        public function whereNotIn(
+            string $column,
+            array $values,
+        ): static {
+            return $this;
+        }
+
+        public function whereColumn(
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function whereExists(callable|QueryBuilderInterface $subquery): static
+        {
+            return $this;
+        }
+
+        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
         {
             return $this;
         }

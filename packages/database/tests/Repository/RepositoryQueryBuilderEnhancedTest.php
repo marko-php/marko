@@ -15,6 +15,7 @@ use Marko\Database\Entity\EntityMetadata;
 use Marko\Database\Entity\EntityMetadataFactory;
 use Marko\Database\Entity\RelationshipLoader;
 use Marko\Database\Exceptions\InvalidColumnException;
+use Marko\Database\Exceptions\RepositoryException;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\QueryBuilderInterface;
 use Marko\Database\Query\QuerySpecification;
@@ -101,8 +102,10 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
 
         public function __construct(private readonly array $rows) {}
 
-        public function table(string $table): static
-        {
+        public function table(
+            string $table,
+            ?string $alias = null,
+        ): static {
             return $this;
         }
 
@@ -151,6 +154,31 @@ function makeRqbStubBuilder(array $rows = []): QueryBuilderInterface
         }
 
         public function whereJsonMissing(string $path): static
+        {
+            return $this;
+        }
+
+        public function whereNotIn(
+            string $column,
+            array $values,
+        ): static {
+            return $this;
+        }
+
+        public function whereColumn(
+            string $first,
+            string $operator,
+            string $second,
+        ): static {
+            return $this;
+        }
+
+        public function whereExists(callable|QueryBuilderInterface $subquery): static
+        {
+            return $this;
+        }
+
+        public function whereNotExists(callable|QueryBuilderInterface $subquery): static
         {
             return $this;
         }
@@ -767,4 +795,41 @@ it('delegates upsert from RepositoryQueryBuilder', function (): void {
     $rqb = makeRqb($inner);
 
     expect($rqb->upsert($rows, ['email'], ['name']))->toBe(1);
+});
+
+it('delegates whereNotIn, whereColumn, whereExists and whereNotExists to the inner builder', function (): void {
+    $subquery = $this->createStub(QueryBuilderInterface::class);
+    $inner = $this->createMock(QueryBuilderInterface::class);
+    $inner->expects($this->once())->method('whereNotIn')->with('status', ['a'])->willReturnSelf();
+    $inner->expects($this->once())->method('whereColumn')->with('a', '=', 'b')->willReturnSelf();
+    $inner->expects($this->once())->method('whereExists')->with($subquery)->willReturnSelf();
+    $inner->expects($this->once())->method('whereNotExists')->with($subquery)->willReturnSelf();
+    $rqb = makeRqb($inner);
+
+    expect($rqb->whereNotIn('status', ['a'])->whereColumn('a', '=', 'b')->whereExists($subquery)
+        ->whereNotExists($subquery))->toBe($rqb);
+});
+
+it('passes a table alias through to the inner builder', function (): void {
+    $inner = $this->createMock(QueryBuilderInterface::class);
+    $inner->expects($this->once())->method('table')->with('rqb_users', 'u')->willReturnSelf();
+
+    expect(makeRqb($inner)->table('rqb_users', 'u'))->toBeInstanceOf(RepositoryQueryBuilder::class);
+});
+
+it('throws when whereHas is called without a RelationshipExistsCompiler', function (): void {
+    $rqb = makeRqb(makeRqbStubBuilder());
+
+    expect(fn () => $rqb->whereHas('posts'))
+        ->toThrow(RepositoryException::class, 'has no RelationshipExistsCompiler configured')
+        ->and(fn () => $rqb->whereDoesntHave('posts'))
+        ->toThrow(RepositoryException::class, 'has no RelationshipExistsCompiler configured');
+});
+
+it('lists the available relationships when with() names an unknown one', function (): void {
+    expect(fn () => makeRqb(makeRqbStubBuilder())->with('comments'))->toThrow(
+        RepositoryException::class,
+        "Entity '" . RqbUser::class . "' does not have a relationship named 'comments'. "
+        . 'Available relationships: profile, posts.',
+    );
 });
