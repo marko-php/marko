@@ -6,6 +6,7 @@ use Marko\Core\Module\ModuleManifest;
 use Marko\View\Discovery\ViewProviderDiscovery;
 use Marko\View\Exceptions\ViewProviderException;
 use Marko\View\Functions\RouteFunctionProvider;
+use Marko\View\Functions\SignedRouteFunctionProvider;
 
 /**
  * A module whose src/ holds the given files (relative path => PHP source).
@@ -170,7 +171,9 @@ PHP,
 
         $classes = new ViewProviderDiscovery()->discover([$module]);
 
-        expect($classes->templateFunctionProviders)->toBe([RouteFunctionProvider::class])
+        expect($classes->templateFunctionProviders)->toEqualCanonicalizing(
+            [RouteFunctionProvider::class, SignedRouteFunctionProvider::class],
+        )
             ->and($classes->viewDataProviders)->toBe([]);
     });
 });

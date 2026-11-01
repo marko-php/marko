@@ -103,7 +103,14 @@ The `route()` function builds URLs for [named routes](/docs/packages/routing/#na
 
 The arguments match `UrlGeneratorInterface::route(string $name, array $parameters = [], bool $absolute = false)`. Parameters the path doesn't use become the query string, and `true` as the third argument uses `APP_URL`. The function isn't marked safe, so its output is escaped like any other value (`&` renders as `&amp;`). An unknown name or a missing parameter throws `UrlGenerationException`. Twig wraps it in a `Twig\Error\RuntimeError` and the render fails.
 
-`route()` comes from `RouteFunctionProvider` in `marko/view`. Every [template function provider](/docs/packages/view/#template-functions) is registered with Twig by `TemplateFunctionExtension`: a function declared `isSafeHtml` is registered with `is_safe => ['html']` and prints unescaped, every other result is escaped. [Shared view data](/docs/packages/view/#shared-view-data) is merged into every `render()` and `renderToString()` call.
+`signedRoute()` builds a [signed URL](/docs/packages/routing/#signed-urls) through `UrlSignerInterface`, for links that leave the app, such as an unsubscribe link in an email template. It is absolute by default. Pass a `DateTimeImmutable` view variable as the third argument for a link that expires:
+
+```twig title="resources/views/mail/newsletter.twig"
+<a href="{{ signedRoute('newsletter.unsubscribe', {id: subscriber.id}) }}">Unsubscribe</a>
+<a href="{{ signedRoute('share.show', {token: token}, expiresAt) }}">Open (valid for 24 hours)</a>
+```
+
+`route()` comes from `RouteFunctionProvider` and `signedRoute()` from `SignedRouteFunctionProvider`, both in `marko/view`. Every [template function provider](/docs/packages/view/#template-functions) is registered with Twig by `TemplateFunctionExtension`: a function declared `isSafeHtml` is registered with `is_safe => ['html']` and prints unescaped, every other result is escaped. [Shared view data](/docs/packages/view/#shared-view-data) is merged into every `render()` and `renderToString()` call.
 
 ### Template Organization
 
@@ -165,6 +172,7 @@ views/
 | Function | Description |
 |---|---|
 | `route(string $name, array $parameters = [], bool $absolute = false): string` | URL for a named route (`Marko\View\Functions\RouteFunctionProvider` in `marko/view`) |
+| `signedRoute(string $name, array $parameters = [], ?DateTimeImmutable $expiresAt = null, bool $absolute = true): string` | Signed URL for a named route (`Marko\View\Functions\SignedRouteFunctionProvider` in `marko/view`) |
 
 Functions from every other discovered `#[TemplateFunctions]` provider are available the same way.
 

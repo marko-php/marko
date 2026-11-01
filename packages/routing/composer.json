@@ -6,6 +6,7 @@
     "require": {
         "php": "^8.5",
         "ext-fileinfo": "*",
+        "marko/clock": "self.version",
         "marko/config": "self.version",
         "marko/core": "self.version"
     },

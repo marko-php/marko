@@ -9,6 +9,7 @@ use Marko\View\Discovery\DiscoveredViewProviders;
 use Marko\View\Discovery\ViewProviderCacheContributor;
 use Marko\View\Discovery\ViewProviderDiscovery;
 use Marko\View\Functions\RouteFunctionProvider;
+use Marko\View\Functions\SignedRouteFunctionProvider;
 use Marko\View\Tests\Fixtures\GreetingFunctionProvider;
 
 function discoveredViewProviders(
@@ -47,7 +48,9 @@ describe('DiscoveredViewProviders', function (): void {
             new ModuleManifest(name: 'marko/view', version: '1.0.0', path: dirname(__DIR__, 2)),
         );
 
-        expect($providers->classes()->templateFunctionProviders)->toBe([RouteFunctionProvider::class]);
+        expect($providers->classes()->templateFunctionProviders)->toEqualCanonicalizing(
+            [RouteFunctionProvider::class, SignedRouteFunctionProvider::class],
+        );
     });
 
     it('discovers once per process', function (): void {
