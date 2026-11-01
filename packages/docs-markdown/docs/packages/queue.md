@@ -9,6 +9,7 @@ Queue interfaces and worker infrastructure --- defines how jobs are dispatched a
 
 - `marko/queue-sync` --- Synchronous (development/testing)
 - `marko/queue-database` --- Database-backed
+- `marko/queue-redis` --- Redis (production)
 - `marko/queue-rabbitmq` --- RabbitMQ (production)
 
 ## Installation
@@ -706,6 +707,8 @@ marko queue:work --queue=high,default,low
 
 On every pass the worker pops `high` first, then `default`, then `low`, and processes the first job it finds. After each job it starts again at `high`, so a lower queue only runs when every queue ahead of it is empty. The worker sleeps only when all listed queues are empty. With `--once`, it processes at most one job across all the queues.
 
+The worker lets the driver block (`pop($queue, block: true)`) only when it works a single queue. A driver with blocking pops, such as [`marko/queue-redis`](/docs/packages/queue-redis/#blocking-pop) with `block_for` set, then waits for a job to arrive instead of returning straight away. With several queues it never blocks, because waiting on one queue would hold back jobs arriving on the others. Drivers without blocking pops ignore the flag.
+
 A failed job is recorded with the queue it was popped from, so `queue:failed` shows `low` for a job that failed on the `low` queue.
 
 To work queues from code, pass the list to the worker:
@@ -787,7 +790,7 @@ Queue behavior is controlled by `config/queue.php`:
 
 ```php title="config/queue.php"
 return [
-    'driver'       => 'database',   // 'sync', 'database', or 'rabbitmq'
+    'driver'       => 'database',   // 'sync', 'database', 'redis' or 'rabbitmq'
     'connection'   => 'default',
     'queue'        => 'default',
     'retry_after'  => 90,           // seconds before a reserved-but-unfinished job is reclaimed
@@ -800,7 +803,7 @@ return [
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `driver` | `sync` | Queue backend: `sync`, `database`, or `rabbitmq` |
+| `driver` | `sync` | Queue backend: `sync`, `database`, `redis` or `rabbitmq` |
 | `connection` | `default` | Named connection passed to the driver |
 | `queue` | `default` | Default queue name, used by `push()`, `later()` and `pop()` when no queue is given |
 | `retry_after` | `90` | Seconds after which a reserved job that has not been deleted or released is considered crashed and becomes eligible for re-reservation. The reclaimed reservation still counts as an attempt |
@@ -844,7 +847,7 @@ use Marko\Queue\PushResult;
 
 public function push(JobInterface $job, ?string $queue = null): PushResult;
 public function later(int $delay, JobInterface $job, ?string $queue = null): PushResult;
-public function pop(?string $queue = null): ?JobInterface;
+public function pop(?string $queue = null, bool $block = false): ?JobInterface; // $block: the driver may wait for a job (see Queue Priority)
 public function size(?string $queue = null): int;
 public function clear(?string $queue = null): int;
 public function delete(string $jobId): bool;
@@ -938,6 +941,7 @@ use Marko\Queue\RetryPolicy;
 
 public function decide(JobInterface $job, ?Throwable $e = null): RetryDecision; // $e null = the job released itself
 public function limitReached(JobInterface $job): ?QueueException; // the limit reached, in precedence order, or null
+public function limitReachedOnReservation(JobInterface $job): ?QueueException; // for drivers' pop-time check; attempts exhaustion is reported as crashed reservations
 public function maxAttemptsFor(JobInterface $job): int; // the job's maxAttempts, or queue.max_attempts
 public function backoffFor(JobInterface $job): int; // throws QueueException for an invalid backoff
 ```

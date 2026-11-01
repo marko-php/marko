@@ -135,4 +135,5 @@ Implements `RedisConnectionInterface`.
 ## Related Packages
 
 - [`marko/cache-redis`](/docs/packages/cache-redis/) --- Redis cache driver built on these connections
+- [`marko/queue-redis`](/docs/packages/queue-redis/) --- Redis queue driver built on these connections
 - [`marko/pubsub-redis`](/docs/packages/pubsub-redis/) --- Redis pub/sub on the async amphp client (separate connection settings)

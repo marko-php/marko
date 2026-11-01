@@ -69,6 +69,7 @@ class LimitsRecordingQueue implements QueueInterface
 
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         if ($this->popError !== null) {
             throw $this->popError;

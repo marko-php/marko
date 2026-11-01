@@ -201,7 +201,7 @@ The module factory passes the container's bound clock, `DatabaseTimezoneConfig` 
 |---|---|
 | `push(JobInterface $job, ?string $queue = null): PushResult` | Insert a job for immediate processing. Returns a pushed `PushResult` with the job ID. |
 | `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Insert a job with a delay in seconds. Returns a pushed `PushResult` with the job ID. |
-| `pop(?string $queue = null): ?JobInterface` | Retrieve and reserve the next available job, or `null` if empty. Increments the `attempts` column, syncs the job's attempt count with earlier unreleased reservations, and fails crash-exhausted jobs through the failed-job handler. Runs in a transaction (a savepoint inside a caller's transaction). Throws `LockException` on a connection without transactions. |
+| `pop(?string $queue = null, bool $block = false): ?JobInterface` | Retrieve and reserve the next available job, or `null` if empty. Increments the `attempts` column, syncs the job's attempt count with earlier unreleased reservations, and fails crash-exhausted jobs through the failed-job handler. Runs in a transaction (a savepoint inside a caller's transaction). Throws `LockException` on a connection without transactions. Never blocks: `$block` is ignored. |
 | `size(?string $queue = null): int` | Count pending (unreserved, available) jobs. |
 | `clear(?string $queue = null): int` | Delete all jobs in a queue. Returns the number of deleted rows. |
 | `delete(string $jobId): bool` | Delete a specific job by ID. |

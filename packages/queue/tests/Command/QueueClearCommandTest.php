@@ -44,6 +44,7 @@ function createQueueStub(
 
         public function pop(
             ?string $queue = null,
+            bool $block = false,
         ): ?JobInterface {
             return null;
         }

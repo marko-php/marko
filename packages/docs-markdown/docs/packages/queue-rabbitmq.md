@@ -118,7 +118,7 @@ readonly class OrderProcessor
 |---|---|
 | `push(JobInterface $job, ?string $queue = null): PushResult` | Publish a job as a persistent AMQP message, returning a pushed `PushResult` with the job ID |
 | `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Publish a delayed job via a dead-letter exchange --- `$delay` is in seconds |
-| `pop(?string $queue = null): ?JobInterface` | Consume the next valid message from the queue, or `null` if empty --- rejects messages it can't decode (see [Malformed Messages](#malformed-messages)) |
+| `pop(?string $queue = null, bool $block = false): ?JobInterface` | Consume the next valid message from the queue, or `null` if empty (never blocks; `$block` is ignored) --- rejects messages it can't decode (see [Malformed Messages](#malformed-messages)) |
 | `size(?string $queue = null): int` | Return the number of messages in the queue |
 | `clear(?string $queue = null): int` | Purge all messages from the queue, returning the count removed |
 | `delete(string $jobId): bool` | Acknowledge a consumed message by job ID |

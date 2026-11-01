@@ -330,6 +330,10 @@
         },
         {
             "type": "path",
+            "url": "packages/queue-redis"
+        },
+        {
+            "type": "path",
             "url": "packages/queue-sync"
         },
         {
@@ -508,6 +512,7 @@
         "marko/queue": "self.version",
         "marko/queue-database": "self.version",
         "marko/queue-rabbitmq": "self.version",
+        "marko/queue-redis": "self.version",
         "marko/queue-sync": "self.version",
         "marko/ratelimiter": "self.version",
         "marko/redis": "self.version",
@@ -661,6 +666,7 @@
             "Marko\\Queue\\Tests\\": "packages/queue/tests/",
             "Marko\\Queue\\Database\\Tests\\": "packages/queue-database/tests/",
             "Marko\\Queue\\Rabbitmq\\Tests\\": "packages/queue-rabbitmq/tests/",
+            "Marko\\Queue\\Redis\\Tests\\": "packages/queue-redis/tests/",
             "Marko\\Queue\\Sync\\Tests\\": "packages/queue-sync/tests/",
             "Marko\\RateLimiter\\Tests\\": "packages/ratelimiter/tests/",
             "Marko\\Redis\\Tests\\": "packages/redis/tests/",

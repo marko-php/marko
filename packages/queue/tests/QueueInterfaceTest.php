@@ -73,15 +73,18 @@ describe('QueueInterface', function (): void {
         expect($method->isPublic())->toBeTrue()
             ->and($method->getReturnType()?->allowsNull())->toBeTrue()
             ->and($method->getReturnType()?->getName())->toBe(JobInterface::class)
-            ->and($method->getParameters())->toHaveCount(1);
+            ->and($method->getParameters())->toHaveCount(2);
 
-        $queueParam = $method->getParameters()[0];
+        [$queueParam, $blockParam] = $method->getParameters();
 
         expect($queueParam->getName())->toBe('queue')
             ->and($queueParam->getType()?->allowsNull())->toBeTrue()
             ->and($queueParam->getType()?->getName())->toBe('string')
             ->and($queueParam->isDefaultValueAvailable())->toBeTrue()
-            ->and($queueParam->getDefaultValue())->toBeNull();
+            ->and($queueParam->getDefaultValue())->toBeNull()
+            ->and($blockParam->getName())->toBe('block')
+            ->and($blockParam->getType()?->getName())->toBe('bool')
+            ->and($blockParam->getDefaultValue())->toBeFalse();
     });
 
     it('defines size method', function (): void {

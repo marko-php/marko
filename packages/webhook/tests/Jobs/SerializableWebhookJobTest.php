@@ -270,6 +270,7 @@ final class SerializableWebhookJobTestHelpers
 
             public function pop(
                 ?string $queue = null,
+                bool $block = false,
             ): ?JobInterface {
                 return array_shift($this->jobs);
             }
@@ -569,6 +570,7 @@ describe('DispatchWebhookJob serialization', function (): void {
 
                 public function pop(
                     ?string $queue = null,
+                    bool $block = false,
                 ): ?JobInterface {
                     if ($this->popped) {
                         return null;
@@ -679,6 +681,7 @@ describe('DispatchWebhookJob serialization', function (): void {
 
             public function pop(
                 ?string $queue = null,
+                bool $block = false,
             ): ?JobInterface {
                 if ($this->popped) {
                     return null;

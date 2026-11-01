@@ -233,6 +233,7 @@ Marko ships as composable packages — require only what you need. Every package
 | [queue-sync](packages/queue-sync/README.md) | Synchronous driver (development) |
 | [queue-database](packages/queue-database/README.md) | Database-backed queue |
 | [queue-rabbitmq](packages/queue-rabbitmq/README.md) | RabbitMQ driver |
+| [queue-redis](packages/queue-redis/README.md) | Redis driver |
 
 ### Logging
 

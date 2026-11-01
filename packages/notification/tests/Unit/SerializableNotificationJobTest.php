@@ -291,8 +291,10 @@ describe('SendNotificationJob serialization', function (): void {
                     return PushResult::pushed('notification-job-1');
                 }
 
-                public function pop(?string $queue = null): ?JobInterface
-                {
+                public function pop(
+                    ?string $queue = null,
+                    bool $block = false,
+                ): ?JobInterface {
                     if ($this->popped) {
                         return null;
                     }
@@ -419,8 +421,10 @@ class NotificationFinalFailureQueue implements QueueInterface
         return PushResult::pushed('unused');
     }
 
-    public function pop(?string $queue = null): ?JobInterface
-    {
+    public function pop(
+        ?string $queue = null,
+        bool $block = false,
+    ): ?JobInterface {
         return array_shift($this->jobs);
     }
 

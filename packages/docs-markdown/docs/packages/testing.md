@@ -957,7 +957,7 @@ Filters receive `(NotificationInterface $notification, array $channels)` and ret
 ```php
 public function push(JobInterface $job, ?string $queue = null): PushResult;
 public function later(int $delay, JobInterface $job, ?string $queue = null): PushResult;
-public function pop(?string $queue = null): ?JobInterface;
+public function pop(?string $queue = null, bool $block = false): ?JobInterface; // $block is ignored
 public function size(?string $queue = null): int;
 public function clear(?string $queue = null): int;
 public function delete(string $jobId): bool;

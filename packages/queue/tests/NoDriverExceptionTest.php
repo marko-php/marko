@@ -52,7 +52,8 @@ describe('NoDriverException', function (): void {
         expect($exception->getSuggestion())
             ->toContain('https://marko.build/docs/packages/queue-sync/')
             ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/queue-database/')
-            ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/queue-rabbitmq/');
+            ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/queue-rabbitmq/')
+            ->and($exception->getSuggestion())->toContain('https://marko.build/docs/packages/queue-redis/');
     });
 
     it('lists queue-sync first in the suggestion (matching known-drivers.php order)', function (): void {

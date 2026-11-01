@@ -64,6 +64,7 @@ readonly class SyncQueue implements QueueInterface
 
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         return null;
     }

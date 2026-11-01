@@ -88,6 +88,7 @@ Failed jobs are retried after a backoff delay that you can set per job or in `co
 |---|---|---|
 | `marko/queue-sync` | Synchronous (inline) | Development, testing |
 | `marko/queue-database` | Database table | Small apps, getting started |
+| `marko/queue-redis` | Redis | Production, apps already running Redis |
 | `marko/queue-rabbitmq` | RabbitMQ | Production, high throughput |
 
 ## Next Steps

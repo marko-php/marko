@@ -10,7 +10,6 @@ use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\Exceptions\LockException;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
-use Marko\Queue\Exceptions\JobAttemptsExhaustedException;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\FailedJobHandlerInterface;
@@ -171,6 +170,7 @@ readonly class DatabaseQueue implements QueueInterface
      */
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         $queueName = $queue ?? $this->defaultQueue;
 
@@ -183,7 +183,7 @@ readonly class DatabaseQueue implements QueueInterface
                 return null;
             }
 
-            $failure = $this->retryPolicy->limitReached($job);
+            $failure = $this->retryPolicy->limitReachedOnReservation($job);
 
             if ($failure === null) {
                 return $job;
@@ -245,10 +245,6 @@ readonly class DatabaseQueue implements QueueInterface
     /**
      * Fail a popped job that reached a RetryPolicy limit before this attempt started, then delete it.
      *
-     * The worker fails a job that threw or released itself on its last attempt, so a job that runs out of
-     * attempts here had them all reserved by workers that crashed or timed out; it is failed with that
-     * explanation. A job past its retry deadline is failed with the deadline error.
-     *
      * The row is still reserved, so no other worker picks it up while it is being failed.
      *
      * @throws SerializationException
@@ -258,14 +254,6 @@ readonly class DatabaseQueue implements QueueInterface
         string $queueName,
         QueueException $failure,
     ): void {
-        if ($failure instanceof JobAttemptsExhaustedException) {
-            $failure = JobAttemptsExhaustedException::afterCrashedReservations(
-                (string) $job->id,
-                $job->attempts,
-                $this->retryPolicy->maxAttemptsFor($job),
-            );
-        }
-
         $this->failedJobHandler->handle($job, $queueName, $failure);
         $this->delete($job->id);
     }

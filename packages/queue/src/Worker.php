@@ -323,14 +323,19 @@ class Worker implements WorkerInterface
     /**
      * Pop from each queue in priority order and return the first job found with its queue name.
      *
+     * The driver may block waiting for a job only when the worker has a single queue: blocking on one queue of
+     * a priority list would hold back jobs arriving on the others.
+     *
      * @param list<?string> $queueNames
      * @return array{0: ?JobInterface, 1: ?string}
      */
     private function popNextJob(
         array $queueNames,
     ): array {
+        $block = count($queueNames) === 1;
+
         foreach ($queueNames as $queueName) {
-            $job = $this->queue->pop($queueName);
+            $job = $this->queue->pop($queueName, $block);
 
             if ($job !== null) {
                 return [$job, $queueName];

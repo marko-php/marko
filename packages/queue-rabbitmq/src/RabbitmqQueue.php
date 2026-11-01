@@ -131,6 +131,7 @@ class RabbitmqQueue implements QueueInterface
      */
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         $this->declare($queue);
 

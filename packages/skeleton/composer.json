@@ -31,6 +31,7 @@
         "marko/inertia-vue": "Vue Inertia.js frontend driver",
         "marko/queue-sync": "Synchronous queue driver (recommended; runs jobs inline, no infrastructure)",
         "marko/queue-database": "Database-backed queue driver (production-ready; uses your existing database)",
+        "marko/queue-redis": "Redis queue driver (production-ready; reliable Lua-based pops on the Redis you already run)",
         "marko/queue-rabbitmq": "RabbitMQ queue driver (high-throughput production deployments)",
         "marko/pubsub-redis": "Redis pub/sub driver (recommended; purpose-built for messaging)",
         "marko/pubsub-pgsql": "PostgreSQL LISTEN/NOTIFY pub/sub driver (no additional infrastructure if you already use Postgres)",

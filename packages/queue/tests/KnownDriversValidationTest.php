@@ -7,7 +7,7 @@ use Marko\Testing\KnownDrivers\KnownDriversValidator;
 $knownDriversPath = __DIR__ . '/../known-drivers.php';
 $skeletonComposerPath = __DIR__ . '/../../skeleton/composer.json';
 
-test('it ships a known-drivers.php file listing all three queue drivers', function () use ($knownDriversPath): void {
+test('it ships a known-drivers.php file listing all four queue drivers', function () use ($knownDriversPath): void {
     expect(file_exists($knownDriversPath))->toBeTrue();
 
     $drivers = require $knownDriversPath;
@@ -16,7 +16,8 @@ test('it ships a known-drivers.php file listing all three queue drivers', functi
         ->and(array_keys($drivers))->toContain('marko/queue-sync')
         ->and(array_keys($drivers))->toContain('marko/queue-database')
         ->and(array_keys($drivers))->toContain('marko/queue-rabbitmq')
-        ->and($drivers)->toHaveCount(3);
+        ->and(array_keys($drivers))->toContain('marko/queue-redis')
+        ->and($drivers)->toHaveCount(4);
 });
 
 test(
