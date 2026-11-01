@@ -588,6 +588,22 @@ if (!ErrorCapture::run($reason, fn (): bool => rename($tmp, $path))) {
 
 `run()` returns the call's result and sets `$reason` to the message, or to `null` when nothing was raised. When the call raises several messages, they're joined with `; `. It always restores the previous error handler, even if the call throws. It captures every error level, so wrap only the one call that can fail.
 
+### Resolving Paths Against the Project Root
+
+Resolve a configured path with `ProjectPaths::resolve()`, never against `getcwd()`: FPM, CGI and mod_php `chdir` into `public/` before running the front controller. Absolute paths come back unchanged; relative paths are joined onto the project root.
+
+```php
+use Marko\Core\Path\ProjectPaths;
+
+$paths->resolve('storage/views');   // "/srv/app/storage/views"
+$paths->resolve('/var/cache/views'); // unchanged
+$paths->resolve('C:\\cache\\views');  // unchanged
+
+ProjectPaths::isAbsolute('\\\\server\\share'); // true
+```
+
+`isAbsolute()` recognizes Unix paths (`/var/cache`), Windows drive paths (`C:\cache` or `C:/cache`) and UNC paths (`\\server\share`) on every OS. A drive-relative path such as `C:cache` is not absolute.
+
 ## API Reference
 
 ### Attributes
@@ -657,6 +673,29 @@ class AppEnvironment
 ```
 
 Registered as a shared container instance by `Application`. Pass `$variables` (for example `['APP_ENV' => 'local']`) to read from that array only, instead of the real environment --- useful in tests. See [Application Environment](#application-environment) above.
+
+### ProjectPaths
+
+```php
+use Marko\Core\Path\ProjectPaths;
+
+readonly class ProjectPaths
+{
+    public string $base;
+    public string $vendor;
+    public string $modules;
+    public string $app;
+    public string $config;
+    public string $database;
+
+    public function __construct(?string $basePath = null);
+
+    public function resolve(string $path): string;
+    public static function isAbsolute(string $path): bool;
+}
+```
+
+`$base` defaults to `getcwd()`. See [Resolving Paths Against the Project Root](#resolving-paths-against-the-project-root) above.
 
 ### Contracts
 

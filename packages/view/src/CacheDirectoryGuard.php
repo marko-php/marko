@@ -24,6 +24,10 @@ readonly class CacheDirectoryGuard
      * Resolve the configured directory against the project root, create it
      * with mode 0700 when missing, and refuse it when it is unsafe.
      *
+     * The world-writable and ownership checks are skipped on Windows: NTFS
+     * ACLs don't map to Unix mode bits, so fileperms() reports nearly every
+     * directory as 0777 there and the check would refuse every cache directory.
+     *
      * @throws InsecureCacheDirectoryException
      */
     public function prepare(
@@ -31,11 +35,7 @@ readonly class CacheDirectoryGuard
     ): string {
         // Resolve against the project root, never getcwd(): FPM, CGI and
         // mod_php chdir into public/ before running the front controller.
-        if (!str_starts_with($directory, '/')) {
-            $directory = $this->paths->base . '/' . $directory;
-        }
-
-        $directory = rtrim($directory, '/');
+        $directory = rtrim($this->paths->resolve($directory), '/');
 
         if (file_exists($directory) && !is_dir($directory)) {
             throw InsecureCacheDirectoryException::notADirectory($directory);
@@ -47,6 +47,10 @@ readonly class CacheDirectoryGuard
             && !is_dir($directory)
         ) {
             throw InsecureCacheDirectoryException::cannotCreate($directory, $reason);
+        }
+
+        if ($this->isWindows()) {
+            return $directory;
         }
 
         clearstatcache(true, $directory);
@@ -67,5 +71,13 @@ readonly class CacheDirectoryGuard
         }
 
         return $directory;
+    }
+
+    /**
+     * Whether PHP runs on Windows. Overridable so the Windows branch is testable on any host.
+     */
+    protected function isWindows(): bool
+    {
+        return PHP_OS_FAMILY === 'Windows';
     }
 }
