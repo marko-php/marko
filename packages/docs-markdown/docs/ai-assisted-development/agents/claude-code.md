@@ -47,14 +47,17 @@ Both files are written inside a `<!-- BEGIN/END marko:devai -->` marker block: e
 
 ### Plugin installation
 
-After writing the settings, `devai:install` installs the three plugins itself and checks that they landed:
+After writing the settings, `devai:install` adds the marketplace, installs the three plugins itself and checks that they landed. `<version>` is the ref pinned in `extraKnownMarketplaces.marko` (your installed Marko version, such as `0.12.0`):
 
 ```bash
+claude plugin marketplace add marko-php/marko@<version> --scope project
 claude plugin install marko-skills@marko --scope project
 claude plugin install marko-lsp@marko --scope project
 claude plugin install marko-mcp@marko --scope project
 claude plugin list --json
 ```
+
+The marketplace step is needed because `claude plugin install` does not read `extraKnownMarketplaces`: on a machine that has never seen the `marko` marketplace, installing fails with "not found in marketplace". Adding it again is harmless, and adding a new version repoints it.
 
 If `claude plugin list` does not show all three as enabled for the project, the install fails with an error that lists these commands, so you never end up with the plugins enabled but missing. The `claude` CLI rewrites `.claude/settings.json` when it installs a plugin, so `devai:install` writes its own version back afterwards to keep the file stable.
 

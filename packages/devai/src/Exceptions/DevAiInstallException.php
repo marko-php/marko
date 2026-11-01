@@ -29,11 +29,15 @@ class DevAiInstallException extends MarkoException
         array $missingPlugins,
         array $allPlugins,
         string $details,
+        string $marketplaceSource,
     ): static {
-        $commands = array_map(
-            static fn (string $plugin): string => '  claude plugin install ' . $plugin . ' --scope project',
-            $allPlugins,
-        );
+        $commands = [
+            '  claude plugin marketplace add ' . $marketplaceSource . ' --scope project',
+            ...array_map(
+                static fn (string $plugin): string => '  claude plugin install ' . $plugin . ' --scope project',
+                $allPlugins,
+            ),
+        ];
 
         $missing = implode(', ', $missingPlugins);
 

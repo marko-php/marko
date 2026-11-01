@@ -53,9 +53,10 @@ claude plugin list
 claude mcp list
 ```
 
-If the three `@marko` plugins are missing from `claude plugin list`, or `plugin:marko-mcp:marko` is missing from `claude mcp list`, install them from the project root:
+If the three `@marko` plugins are missing from `claude plugin list`, or `plugin:marko-mcp:marko` is missing from `claude mcp list`, install them from the project root. Replace `<version>` with the `ref` under `extraKnownMarketplaces.marko` in `.claude/settings.json`:
 
 ```bash
+claude plugin marketplace add marko-php/marko@<version> --scope project
 claude plugin install marko-skills@marko --scope project
 claude plugin install marko-lsp@marko --scope project
 claude plugin install marko-mcp@marko --scope project

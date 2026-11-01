@@ -141,6 +141,12 @@ class ClaudeCodeAgent implements AgentInterface, ReportsInstallNoticesInterface
      * projects. The monorepo's local marketplace (source path ".") is left to the
      * trust prompt, as before.
      *
+     * `claude plugin install` does not read extraKnownMarketplaces, so on a machine
+     * that has never seen the marko marketplace it fails with "not found in
+     * marketplace". The marketplace is added explicitly first; re-adding it is a
+     * no-op, and a new ref repoints it. A failed add is not fatal on its own: the
+     * verification below decides.
+     *
      * The CLI rewrites settings.json on every project-scope install, so the settings
      * devai built are written again afterwards to keep the file's output stable.
      *
@@ -165,6 +171,15 @@ class ClaudeCodeAgent implements AgentInterface, ReportsInstallNoticesInterface
         }
 
         $failures = [];
+        $result = $this->commandRunner->run(
+            'claude',
+            ['plugin', 'marketplace', 'add', $this->marketplaceSource(), '--scope', 'project'],
+        );
+        if ($result['exitCode'] !== 0) {
+            $failures[] = '`claude plugin marketplace add ' . $this->marketplaceSource() . '` exited '
+                . $result['exitCode'] . ': ' . trim($result['stderr'] . ' ' . $result['stdout']);
+        }
+
         foreach (self::PLUGINS as $plugin) {
             $result = $this->commandRunner->run('claude', ['plugin', 'install', $plugin, '--scope', 'project']);
             if ($result['exitCode'] !== 0) {
@@ -195,8 +210,21 @@ class ClaudeCodeAgent implements AgentInterface, ReportsInstallNoticesInterface
         $missing = array_values(array_diff(self::PLUGINS, $enabled));
 
         if ($missing !== []) {
-            throw DevAiInstallException::claudePluginsNotInstalled($missing, self::PLUGINS, implode("\n", $details));
+            throw DevAiInstallException::claudePluginsNotInstalled(
+                $missing,
+                self::PLUGINS,
+                implode("\n", $details),
+                $this->marketplaceSource(),
+            );
         }
+    }
+
+    /**
+     * The `claude plugin marketplace add` source for the pinned GitHub marketplace.
+     */
+    private function marketplaceSource(): string
+    {
+        return 'marko-php/marko@' . $this->marketplaceRef;
     }
 
     /**
@@ -228,10 +256,13 @@ class ClaudeCodeAgent implements AgentInterface, ReportsInstallNoticesInterface
      */
     private function installCommands(): array
     {
-        return array_map(
-            static fn (string $plugin): string => "`claude plugin install $plugin --scope project`",
-            self::PLUGINS,
-        );
+        return [
+            '`claude plugin marketplace add ' . $this->marketplaceSource() . ' --scope project`',
+            ...array_map(
+                static fn (string $plugin): string => "`claude plugin install $plugin --scope project`",
+                self::PLUGINS,
+            ),
+        ];
     }
 
     /**

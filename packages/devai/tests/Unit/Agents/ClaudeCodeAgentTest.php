@@ -496,8 +496,9 @@ function claudePluginRunner(
     array $listed = ['marko-skills@marko' => true, 'marko-lsp@marko' => true, 'marko-mcp@marko' => true],
     bool $claudeOnPath = true,
     int $listExitCode = 0,
+    int $marketplaceAddExitCode = 0,
 ): CommandRunnerInterface {
-    return new class ($projectRoot, $listed, $claudeOnPath, $listExitCode) implements CommandRunnerInterface
+    return new class ($projectRoot, $listed, $claudeOnPath, $listExitCode, $marketplaceAddExitCode) implements CommandRunnerInterface
     {
         /** @var list<array{command: string, args: list<string>}> */
         public array $calls = [];
@@ -513,6 +514,7 @@ function claudePluginRunner(
             private array $listed,
             private bool $claudeOnPath,
             private int $listExitCode,
+            private int $marketplaceAddExitCode,
         ) {}
 
         public function run(
@@ -520,6 +522,13 @@ function claudePluginRunner(
             array $args = [],
         ): array {
             $this->calls[] = ['command' => $command, 'args' => $args];
+            if ($command === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'marketplace') {
+                return [
+                    'exitCode' => $this->marketplaceAddExitCode,
+                    'stdout' => '',
+                    'stderr' => $this->marketplaceAddExitCode === 0 ? '' : 'marketplace add exploded',
+                ];
+            }
             if ($command === 'claude' && ($args[0] ?? '') === 'plugin' && ($args[1] ?? '') === 'install') {
                 $path = $this->projectRoot . '/.claude/settings.json';
                 $this->settingsAtInstall[] = is_file($path) ? (string) file_get_contents($path) : '';
@@ -589,6 +598,48 @@ describe('plugin installation', function (): void {
         ]);
     });
 
+    it(
+        'adds the marko marketplace at its pinned ref before installing, since the CLI does not read extraKnownMarketplaces',
+        function (): void {
+            $runner = claudePluginRunner($this->root);
+
+            (new ClaudeCodeAgent($runner, marketplaceRef: '1.2.3'))->install(devaiContext(), $this->root);
+
+            $pluginCalls = array_values(array_map(
+                fn (array $call): array => $call['args'],
+                array_filter(
+                    $runner->calls,
+                    fn (array $call): bool => $call['command'] === 'claude' && ($call['args'][0] ?? '') === 'plugin',
+                ),
+            ));
+            expect($pluginCalls[0])->toBe(
+                ['plugin', 'marketplace', 'add', 'marko-php/marko@1.2.3', '--scope', 'project'],
+            )
+                ->and($pluginCalls[1])->toBe(['plugin', 'install', 'marko-skills@marko', '--scope', 'project']);
+        },
+    );
+
+    it('still installs and verifies when adding the marketplace fails', function (): void {
+        $runner = claudePluginRunner($this->root, marketplaceAddExitCode: 1);
+
+        (new ClaudeCodeAgent($runner))->install(devaiContext(), $this->root);
+
+        expect($runner->pluginCalls('install'))->toHaveCount(3)
+            ->and($runner->pluginCalls('list'))->toHaveCount(1);
+    });
+
+    it('reports the marketplace add failure when verification then fails', function (): void {
+        $runner = claudePluginRunner($this->root, [], marketplaceAddExitCode: 1);
+
+        try {
+            (new ClaudeCodeAgent($runner))->install(devaiContext(), $this->root);
+            $this->fail('Expected DevAiInstallException');
+        } catch (DevAiInstallException $e) {
+            expect($e->getContext())->toContain('claude plugin marketplace add')
+                ->and($e->getContext())->toContain('marketplace add exploded');
+        }
+    });
+
     it('writes the marketplace into settings before installing so the CLI can resolve it', function (): void {
         $runner = claudePluginRunner($this->root);
 
@@ -635,6 +686,7 @@ describe('plugin installation', function (): void {
         } catch (DevAiInstallException $e) {
             expect($e->getMessage())->toContain('marko-mcp@marko')
                 ->and($e->getMessage())->not->toContain('marko-lsp@marko')
+                ->and($e->getSuggestion())->toContain('claude plugin marketplace add marko-php/marko@')
                 ->and($e->getSuggestion())->toContain('claude plugin install marko-skills@marko --scope project')
                 ->and($e->getSuggestion())->toContain('claude plugin install marko-lsp@marko --scope project')
                 ->and($e->getSuggestion())->toContain('claude plugin install marko-mcp@marko --scope project')
@@ -675,6 +727,7 @@ describe('plugin installation', function (): void {
             ->and($runner->pluginCalls('list'))->toBe([])
             ->and($notices)->toHaveCount(1)
             ->and($notices[0])->toContain('claude CLI not found on PATH')
+            ->and($notices[0])->toContain('claude plugin marketplace add marko-php/marko@')
             ->and($notices[0])->toContain('claude plugin install marko-mcp@marko --scope project')
             ->and($agent->takeNotices())->toBe([]);
     });

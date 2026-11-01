@@ -697,7 +697,9 @@ describe('claude code plugin install (external project)', function (): void {
             array_filter($runner->calls, fn ($call) => $call[0] === 'claude' && ($call[1][0] ?? '') === 'plugin'),
         ));
         expect($result['status'])->toBe('installed')
-            ->and($pluginCalls)->toBe([
+            ->and($pluginCalls[0])->toBe(['plugin', 'marketplace', 'add', $pluginCalls[0][3], '--scope', 'project'])
+            ->and($pluginCalls[0][3])->toStartWith('marko-php/marko@')
+            ->and(array_slice($pluginCalls, 1))->toBe([
                 ['plugin', 'install', 'marko-skills@marko', '--scope', 'project'],
                 ['plugin', 'install', 'marko-lsp@marko', '--scope', 'project'],
                 ['plugin', 'install', 'marko-mcp@marko', '--scope', 'project'],
