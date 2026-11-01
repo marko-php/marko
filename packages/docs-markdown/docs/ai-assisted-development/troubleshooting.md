@@ -42,6 +42,28 @@ If running inside a container or mounted volume, ensure the working directory is
 
 ## MCP server problems
 
+### Marko MCP, LSP or skills missing even though settings enable them
+
+In Claude Code, the Marko MCP server, LSP and skills come from three plugins: `marko-mcp@marko`, `marko-lsp@marko` and `marko-skills@marko`. `.claude/settings.json` can list them under `enabledPlugins` while they are not actually installed. This happens when the `claude` CLI was not on your `PATH` during `devai:install` (it prints a warning), or when a teammate cloned the repo and skipped or interrupted Claude Code's one-time folder-trust prompt. The only symptom is that the tools are missing: `search_docs` and the other MCP tools don't exist in the session, there are no LSP diagnostics, and `/marko-skills:*` commands are unknown.
+
+Check from the project root:
+
+```bash
+claude plugin list
+claude mcp list
+```
+
+If the three `@marko` plugins are missing from `claude plugin list`, or `plugin:marko-mcp:marko` is missing from `claude mcp list`, install them from the project root. Replace `<version>` with the `ref` under `extraKnownMarketplaces.marko` in `.claude/settings.json`:
+
+```bash
+claude plugin marketplace add marko-php/marko@<version> --scope project
+claude plugin install marko-skills@marko --scope project
+claude plugin install marko-lsp@marko --scope project
+claude plugin install marko-mcp@marko --scope project
+```
+
+Then restart Claude Code. `claude mcp list` should now show `plugin:marko-mcp:marko` as connected. The MCP entries below assume the server is registered, so start here if it isn't.
+
 ### MCP tools not available on the first session after install
 
 On a brand-new project, `mcp:serve` boots the framework for the first time during the agent's session-init handshake. If the discovery cache and code index have not been compiled yet, this cold-boot can exceed the agent's probe timeout and the MCP server appears unavailable.

@@ -4,7 +4,7 @@ A Claude Code plugin marketplace shipping three plugins (`marko-skills`, `marko-
 
 ## Installation
 
-Users typically do not install this package directly. Running `marko devai:install --agents=claude-code` writes the marketplace registration into the project's `.claude/settings.json` and Claude Code prompts to install on first trust.
+Users typically do not install this package directly. Running `marko devai:install --agents=claude-code` writes the marketplace registration into the project's `.claude/settings.json` and installs the plugins with `claude plugin install`. Teammates who clone the project get them at Claude Code's folder-trust prompt.
 
 For manual installation inside Claude Code:
 

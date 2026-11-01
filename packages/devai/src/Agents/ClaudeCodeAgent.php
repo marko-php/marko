@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\DevAi\Agents;
 
 use Marko\DevAi\Contract\AgentInterface;
+use Marko\DevAi\Contract\ReportsInstallNoticesInterface;
 use Marko\DevAi\Exceptions\DevAiInstallException;
 use Marko\DevAi\Installation\InstallationContext;
 use Marko\DevAi\Installation\IntelephenseEnsurerInterface;
@@ -12,20 +13,28 @@ use Marko\DevAi\Process\CommandRunnerInterface;
 use Marko\DevAi\ValueObject\GuidelinesContent;
 use Marko\DevAi\Writing\GuidelinesWriter;
 
-readonly class ClaudeCodeAgent implements AgentInterface
+class ClaudeCodeAgent implements AgentInterface, ReportsInstallNoticesInterface
 {
     /**
      * Git ref the GitHub plugin marketplace is pinned to when nothing more specific
-     * is known (see AgentRegistry). Claude Code auto-installs marketplace plugins once
-     * a folder is trusted, so tracking the default branch would run whatever lands
-     * on it next on every developer's machine.
+     * is known (see AgentRegistry). Claude Code installs marketplace plugins on this
+     * machine and on every teammate's, so tracking the default branch would run
+     * whatever lands on it next.
      */
     public const string DEFAULT_MARKETPLACE_REF = '0.9.0';
 
+    /**
+     * The Claude Code plugins devai enables and installs, as `name@marketplace` ids.
+     */
+    public const array PLUGINS = ['marko-skills@marko', 'marko-lsp@marko', 'marko-mcp@marko'];
+
+    /** @var list<string> */
+    private array $notices = [];
+
     public function __construct(
-        private CommandRunnerInterface $commandRunner,
-        private ?IntelephenseEnsurerInterface $intelephenseEnsurer = null,
-        private string $marketplaceRef = self::DEFAULT_MARKETPLACE_REF,
+        private readonly CommandRunnerInterface $commandRunner,
+        private readonly ?IntelephenseEnsurerInterface $intelephenseEnsurer = null,
+        private readonly string $marketplaceRef = self::DEFAULT_MARKETPLACE_REF,
     ) {}
 
     public function name(): string
@@ -51,8 +60,20 @@ readonly class ClaudeCodeAgent implements AgentInterface
         string $projectRoot,
     ): void {
         $this->writeGuidelines($ctx->guidelines, $projectRoot);
-        $this->writeSettings($projectRoot, $ctx->force);
+        $settings = $this->writeSettings($projectRoot, $ctx->force);
         $this->ensureLspDeps($ctx->skipLspDeps);
+        $this->installPlugins($projectRoot, $settings);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function takeNotices(): array
+    {
+        $notices = $this->notices;
+        $this->notices = [];
+
+        return $notices;
     }
 
     private function writeGuidelines(
@@ -67,28 +88,181 @@ readonly class ClaudeCodeAgent implements AgentInterface
      * Write (or merge) .claude/settings.json with the Marko marketplace registration
      * and enabled-plugin list. Cleans up any legacy LSP/MCP artifacts.
      *
+     * @return array<string, mixed> the settings that were written
      * @throws DevAiInstallException when the marketplace is already registered and --force is not passed
      */
     private function writeSettings(
         string $projectRoot,
         bool $force,
-    ): void {
+    ): array {
         $this->cleanupLegacyLspFile($projectRoot);
         $this->cleanupLegacyMcpServer();
 
-        $settingsPath = $projectRoot . '/.claude/settings.json';
-        $existing = $this->readExistingSettings($settingsPath);
+        $existing = $this->readExistingSettings($this->settingsPath($projectRoot));
 
         $this->assertNotAlreadyRegistered($existing, $projectRoot, $force);
 
         $merged = $this->mergeSettings($existing, $projectRoot);
+        $this->writeSettingsFile($projectRoot, $merged);
 
+        return $merged;
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     */
+    private function writeSettingsFile(
+        string $projectRoot,
+        array $settings,
+    ): void {
         $claudeDir = $projectRoot . '/.claude';
         if (!is_dir($claudeDir)) {
             mkdir($claudeDir, 0755, true);
         }
 
-        file_put_contents($settingsPath, json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        file_put_contents(
+            $this->settingsPath($projectRoot),
+            json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+        );
+    }
+
+    private function settingsPath(string $projectRoot): string
+    {
+        return $projectRoot . '/.claude/settings.json';
+    }
+
+    /**
+     * Install the Marko plugins with the claude CLI and verify they landed.
+     *
+     * Enabling them in .claude/settings.json is not enough on its own: Claude Code
+     * only installs enabled plugins at the folder-trust prompt, which shows once and
+     * can be skipped, leaving them enabled but never installed (no MCP, LSP or
+     * skills, and no error). Installing explicitly closes that gap for external
+     * projects. The monorepo's local marketplace (source path ".") is left to the
+     * trust prompt, as before.
+     *
+     * `claude plugin install` does not read extraKnownMarketplaces, so on a machine
+     * that has never seen the marko marketplace it fails with "not found in
+     * marketplace". The marketplace is added explicitly first; re-adding it is a
+     * no-op, and a new ref repoints it. A failed add is not fatal on its own: the
+     * verification below decides.
+     *
+     * The CLI rewrites settings.json on every project-scope install, so the settings
+     * devai built are written again afterwards to keep the file's output stable.
+     *
+     * @param array<string, mixed> $settings
+     * @throws DevAiInstallException when `claude plugin list` does not show every plugin enabled
+     */
+    private function installPlugins(
+        string $projectRoot,
+        array $settings,
+    ): void {
+        if ($this->isMonorepo($projectRoot)) {
+            return;
+        }
+
+        if (!$this->commandRunner->isOnPath('claude')) {
+            $this->notices[] = 'claude CLI not found on PATH, so the Marko plugins are enabled in'
+                . ' .claude/settings.json but not installed. Install Claude Code, then run '
+                . implode(', ', $this->installCommands())
+                . ' from the project root and restart Claude Code.';
+
+            return;
+        }
+
+        $failures = [];
+        $result = $this->commandRunner->run(
+            'claude',
+            ['plugin', 'marketplace', 'add', $this->marketplaceSource(), '--scope', 'project'],
+        );
+        if ($result['exitCode'] !== 0) {
+            $failures[] = '`claude plugin marketplace add ' . $this->marketplaceSource() . '` exited '
+                . $result['exitCode'] . ': ' . trim($result['stderr'] . ' ' . $result['stdout']);
+        }
+
+        foreach (self::PLUGINS as $plugin) {
+            $result = $this->commandRunner->run('claude', ['plugin', 'install', $plugin, '--scope', 'project']);
+            if ($result['exitCode'] !== 0) {
+                $failures[] = "`claude plugin install $plugin` exited " . $result['exitCode']
+                    . ': ' . trim($result['stderr'] . ' ' . $result['stdout']);
+            }
+        }
+
+        $this->writeSettingsFile($projectRoot, $settings);
+
+        $this->verifyPluginsInstalled($failures);
+    }
+
+    /**
+     * @param list<string> $installFailures
+     * @throws DevAiInstallException
+     */
+    private function verifyPluginsInstalled(array $installFailures): void
+    {
+        $result = $this->commandRunner->run('claude', ['plugin', 'list', '--json']);
+        $details = $installFailures;
+
+        if ($result['exitCode'] !== 0) {
+            $details[] = '`claude plugin list --json` exited ' . $result['exitCode'] . ': ' . trim($result['stderr']);
+        }
+
+        $enabled = $result['exitCode'] === 0 ? $this->enabledPluginIds($result['stdout']) : [];
+        $missing = array_values(array_diff(self::PLUGINS, $enabled));
+
+        if ($missing !== []) {
+            throw DevAiInstallException::claudePluginsNotInstalled(
+                $missing,
+                self::PLUGINS,
+                implode("\n", $details),
+                $this->marketplaceSource(),
+            );
+        }
+    }
+
+    /**
+     * The `claude plugin marketplace add` source for the pinned GitHub marketplace.
+     */
+    private function marketplaceSource(): string
+    {
+        return 'marko-php/marko@' . $this->marketplaceRef;
+    }
+
+    /**
+     * Plugin ids `claude plugin list --json` reports as enabled. The list also
+     * carries project-scope installs made for other folders (with enabled=false),
+     * so a plugin only counts when it is enabled for this project.
+     *
+     * @return list<string>
+     */
+    private function enabledPluginIds(string $listJson): array
+    {
+        $decoded = json_decode($listJson, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($decoded as $plugin) {
+            if (is_array($plugin) && is_string($plugin['id'] ?? null) && ($plugin['enabled'] ?? false) === true) {
+                $ids[] = $plugin['id'];
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function installCommands(): array
+    {
+        return [
+            '`claude plugin marketplace add ' . $this->marketplaceSource() . ' --scope project`',
+            ...array_map(
+                static fn (string $plugin): string => "`claude plugin install $plugin --scope project`",
+                self::PLUGINS,
+            ),
+        ];
     }
 
     /**
@@ -114,7 +288,7 @@ readonly class ClaudeCodeAgent implements AgentInterface
 
 ## Marko AI tooling
 
-Marko ships task-oriented capabilities through three Claude Code plugins (installed automatically when you trust this project folder):
+Marko ships task-oriented capabilities through three Claude Code plugins (installed by `marko devai:install`; teammates who clone the repo get them at the folder-trust prompt, or by running `claude plugin install <name>@marko --scope project`):
 
 - `marko-skills@marko` — scaffolding skills (e.g. `/marko-skills:create-module`, `/marko-skills:create-plugin`)
 - `marko-lsp@marko` — Marko-aware language server providing real-time diagnostics
@@ -229,9 +403,9 @@ CLAUDE;
             }
         }
         // Add canonical marko plugin entries
-        $currentPlugins['marko-skills@marko'] = true;
-        $currentPlugins['marko-lsp@marko'] = true;
-        $currentPlugins['marko-mcp@marko'] = true;
+        foreach (self::PLUGINS as $plugin) {
+            $currentPlugins[$plugin] = true;
+        }
         $merged['enabledPlugins'] = $currentPlugins;
 
         return $merged;

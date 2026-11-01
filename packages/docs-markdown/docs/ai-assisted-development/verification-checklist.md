@@ -27,7 +27,7 @@ Choose one agent and verify its guidelines file:
 - [ ] `CLAUDE.md` exists in the project root and references `@AGENTS.md`
 - [ ] `AGENTS.md` exists in the project root and includes a `## Package Guidelines` section
 - [ ] `.claude/settings.json` registers `extraKnownMarketplaces.marko` and enables the `marko-mcp@marko` plugin
-- [ ] In Claude Code, run `/mcp` — the `marko-mcp` server appears (it is provided by the `marko-mcp@marko` plugin, not by `claude mcp add`)
+- [ ] In Claude Code, run `/mcp` — the `plugin:marko-mcp:marko` server appears (it is provided by the `marko-mcp@marko` plugin, not by `claude mcp add`)
 
 **Codex:**
 - [ ] `AGENTS.md` exists in the project root

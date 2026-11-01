@@ -3,7 +3,7 @@ title: Claude Code
 description: Set up Marko's AI tooling with Anthropic Claude Code — CLAUDE.md guidelines, Claude Code plugins, MCP tools, and LSP completions.
 ---
 
-[Claude Code](https://claude.ai/code) is Anthropic's official CLI for Claude. `devai:install` gives it full Marko awareness by writing `.claude/settings.json` with the Marko plugin marketplace registration and enabling three Claude Code plugins: `marko-skills`, `marko-lsp`, and `marko-mcp`.
+[Claude Code](https://claude.ai/code) is Anthropic's official CLI for Claude. `devai:install` gives it full Marko awareness by writing `.claude/settings.json` with the Marko plugin marketplace registration, enabling three Claude Code plugins (`marko-skills`, `marko-lsp` and `marko-mcp`), and then installing and verifying them with the `claude` CLI.
 
 ## Prerequisites
 
@@ -39,11 +39,31 @@ Both files are written inside a `<!-- BEGIN/END marko:devai -->` marker block: e
 
 - `extraKnownMarketplaces.marko` — registers the Marko plugin marketplace so Claude Code can fetch plugin metadata.
 
-  This is a named entry under Claude Code's `extraKnownMarketplaces` map. Its `source` tells Claude Code where to read the marketplace manifest (`.claude-plugin/marketplace.json`) from: when run inside the Marko monorepo the source is the local `packages/claude-plugins/plugins` path, and for external projects it is the `marko-php/marko` GitHub repo pinned with a `ref` to a release tag (the installed `marko/devai` version, or `devai.claude_code.marketplace_ref` — see [marko/devai configuration](/docs/packages/devai/#configuration)). Because Claude Code installs these plugins automatically once the folder is trusted, the source never tracks a moving branch. Registering the marketplace does not install anything on its own — it only makes the `@marko` plugins discoverable.
+  This is a named entry under Claude Code's `extraKnownMarketplaces` map. Its `source` tells Claude Code where to read the marketplace manifest (`.claude-plugin/marketplace.json`) from: when run inside the Marko monorepo the source is the local `packages/claude-plugins/plugins` path, and for external projects it is the `marko-php/marko` GitHub repo pinned with a `ref` to a release tag (the installed `marko/devai` version, or `devai.claude_code.marketplace_ref` — see [marko/devai configuration](/docs/packages/devai/#configuration)). Because these plugins get installed on your machine and on every teammate's, the source never tracks a moving branch. Registering the marketplace does not install anything on its own — it only makes the `@marko` plugins discoverable.
 
 - `enabledPlugins` — activates `marko-skills@marko`, `marko-lsp@marko`, and `marko-mcp@marko`.
 
-  Each entry is a `plugin@marketplace` key set to `true`. Listing a plugin here tells Claude Code to install it from the registered marketplace and keep it enabled. On first trust of the project folder, Claude Code reads these entries and fetches the three plugins automatically — wiring the MCP server, the LSP server, and the scaffolding skills in a single step. `devai:install` only ever adds or replaces the `*@marko` entries, so any other plugins you have enabled are preserved.
+  Each entry is a `plugin@marketplace` key set to `true`. Listing a plugin here enables it, but does not install it on its own. `devai:install` only ever adds or replaces the `*@marko` entries, so any other plugins you have enabled are preserved.
+
+### Plugin installation
+
+After writing the settings, `devai:install` adds the marketplace, installs the three plugins itself and checks that they landed. `<version>` is the ref pinned in `extraKnownMarketplaces.marko` (your installed Marko version, such as `0.12.0`):
+
+```bash
+claude plugin marketplace add marko-php/marko@<version> --scope project
+claude plugin install marko-skills@marko --scope project
+claude plugin install marko-lsp@marko --scope project
+claude plugin install marko-mcp@marko --scope project
+claude plugin list --json
+```
+
+The marketplace step is needed because `claude plugin install` does not read `extraKnownMarketplaces`: on a machine that has never seen the `marko` marketplace, installing fails with "not found in marketplace". Adding it again is harmless, and adding a new version repoints it.
+
+If `claude plugin list` does not show all three as enabled for the project, the install fails with an error that lists these commands, so you never end up with the plugins enabled but missing. The `claude` CLI rewrites `.claude/settings.json` when it installs a plugin, so `devai:install` writes its own version back afterwards to keep the file stable.
+
+If the `claude` CLI is not on your `PATH`, `devai:install` skips this step and prints a warning with the same commands. Run them once Claude Code is installed, then restart Claude Code.
+
+Teammates who clone the repo get the plugins from the committed `.claude/settings.json` at Claude Code's folder-trust prompt. That prompt appears once and can be skipped, so if the Marko tools are missing for them, they run the three install commands above (see [Troubleshooting](../troubleshooting/#marko-mcp-lsp-or-skills-missing-even-though-settings-enable-them)). Inside the Marko monorepo, where the marketplace is the local checkout, `devai:install` leaves installation to the folder-trust prompt.
 
 ### Plugins
 
@@ -80,7 +100,7 @@ marko devai:install --force
 
 1. Open Claude Code in your project root.
 2. Confirm `.claude/settings.json` contains `extraKnownMarketplaces.marko` and `enabledPlugins` with all three `@marko` plugins.
-3. Run `/mcp` in Claude Code — the `marko-mcp` server should appear in the list.
+3. Run `/mcp` in Claude Code — the `plugin:marko-mcp:marko` server should appear in the list. (Outside a session, `claude plugin list` should show all three `@marko` plugins and `claude mcp list` should show `plugin:marko-mcp:marko` as connected.)
 4. Ask Claude: `What MCP tools are available from marko-mcp?` — it should enumerate tools like `search_docs`, `find_event_observers`, `validate_module`, `read_log_entries`.
 5. Ask: `Search the Marko docs for routing.` — Claude should call `search_docs` and return results.
 6. Invoke a skill explicitly: `/marko-skills:create-module` — Claude should load the skill and follow the contained workflow.

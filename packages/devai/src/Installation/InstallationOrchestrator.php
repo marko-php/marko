@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\DevAi\Installation;
 
 use DateTimeInterface;
+use Marko\DevAi\Contract\ReportsInstallNoticesInterface;
 use Marko\DevAi\Exceptions\DevAiInstallException;
 use Marko\DevAi\Guidelines\GuidelinesAggregator;
 use Marko\DevAi\Process\CommandRunnerInterface;
@@ -68,8 +69,15 @@ class InstallationOrchestrator
             }
 
             $progress('Configuring agent: ' . $agentName . '…');
-            $agents[$agentName]->install($installCtx, $projectRoot);
+            $agent = $agents[$agentName];
+            $agent->install($installCtx, $projectRoot);
             $this->log[] = "[$agentName] configured";
+
+            if ($agent instanceof ReportsInstallNoticesInterface) {
+                foreach ($agent->takeNotices() as $notice) {
+                    $this->log[] = "[$agentName] WARNING: " . $notice;
+                }
+            }
         }
 
         foreach (GuidelinesWriter::takeNotices() as $notice) {

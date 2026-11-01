@@ -82,7 +82,7 @@ return [
 
 | Key | Default | Effect |
 |-----|---------|--------|
-| `claude_code.marketplace_ref` | `null` | Git tag or commit the Claude Code plugin marketplace (`github: marko-php/marko`) is pinned to. `null` uses the installed `marko/devai` release tag, falling back to a known-good tag (`ClaudeCodeAgent::DEFAULT_MARKETPLACE_REF`) on dev installs. Claude Code installs marketplace plugins automatically once a folder is trusted, so never point this at a branch. |
+| `claude_code.marketplace_ref` | `null` | Git tag or commit the Claude Code plugin marketplace (`github: marko-php/marko`) is pinned to. `null` uses the installed `marko/devai` release tag, falling back to a known-good tag (`ClaudeCodeAgent::DEFAULT_MARKETPLACE_REF`) on dev installs. `devai:install` and Claude Code install the plugins from this ref on every developer's machine, so never point this at a branch. |
 | `guidelines.allow_packages` | `null` | Which third-party (non-`marko/*`) packages may contribute `resources/ai/guidelines.md` to the generated guidelines. `null` includes every installed package; a list such as `['acme/blog']` includes only those; `[]` includes none. `marko/*` packages are always included. |
 
 An invalid value (an empty ref, or an allowlist that is not a list of package names) fails the install with an error naming the key.
