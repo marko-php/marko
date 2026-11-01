@@ -246,6 +246,58 @@ class AuthException extends Exception
         );
     }
 
+    public static function noPendingChallenge(
+        string $guard,
+    ): self {
+        return new self(
+            message: "Guard '$guard' has no pending login challenge to complete",
+            context: 'completeChallenge() was called, but the session holds no pending challenge, or its user no longer exists',
+            suggestion: 'Check hasPendingChallenge() before handling a challenge, and send the user back to the login form when it is false (the session may have expired)',
+        );
+    }
+
+    public static function invalidChallenges(
+        string $guard,
+    ): self {
+        return new self(
+            message: "authentication.guards.$guard.challenges must be a list of class names",
+            context: "While building guard '$guard'",
+            suggestion: "Set authentication.guards.$guard.challenges to a list of LoginChallengeInterface class names, e.g. [TwoFactorLoginChallenge::class]",
+        );
+    }
+
+    public static function invalidChallengeClass(
+        string $guard,
+        string $class,
+    ): self {
+        return new self(
+            message: "Login challenge '$class' on guard '$guard' does not implement LoginChallengeInterface",
+            context: "While resolving authentication.guards.$guard.challenges",
+            suggestion: 'List only classes that implement Marko\Authentication\Contracts\LoginChallengeInterface, and check the class name for typos',
+        );
+    }
+
+    public static function challengeResolverMissing(
+        string $guard,
+    ): self {
+        return new self(
+            message: "Guard '$guard' lists login challenges, but AuthManager has no LoginChallengeResolver",
+            context: 'AuthManager was constructed without a loginChallengeResolver, so it cannot resolve authentication.guards.' . $guard . '.challenges',
+            suggestion: 'Resolve AuthManager from the container (marko/authentication\'s module.php passes one), or pass loginChallengeResolver when constructing it yourself',
+        );
+    }
+
+    public static function challengesNotSupported(
+        string $guard,
+        string $driver,
+    ): self {
+        return new self(
+            message: "Guard '$guard' lists login challenges, but its '$driver' driver does not support them",
+            context: "authentication.guards.$guard.challenges is set, and the guard built by the '$driver' driver does not implement ChallengeableGuardInterface",
+            suggestion: "Remove 'challenges' from authentication.guards.$guard, or use the 'session' driver: stateless guards such as the token guard have no login step to challenge",
+        );
+    }
+
     public function getContext(): string
     {
         return $this->context;

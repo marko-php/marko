@@ -26,6 +26,11 @@ return [
     | built in; the 'token' driver comes from marko/authentication-token.
     | Packages register more drivers with GuardDriverRegistry::extend().
     |
+    | A session guard can list login challenges under 'challenges': class
+    | names implementing LoginChallengeInterface (e.g. the two-factor
+    | package's TwoFactorLoginChallenge). attempt() then holds a user whose
+    | password checks out until each required challenge is completed.
+    |
     */
     'guards' => [
         'session' => [

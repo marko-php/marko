@@ -21,6 +21,7 @@ use Marko\Authentication\Hashing\HashManagerPasswordHasher;
 use Marko\Authentication\Hashing\PasswordVerifier;
 use Marko\Authentication\Http\CurrentRequest;
 use Marko\Authentication\Http\IntendedUrl;
+use Marko\Authentication\LoginChallengeResolver;
 use Marko\Authentication\Middleware\QueuedCookiesMiddleware;
 use Marko\Authentication\PasswordConfirmation\PasswordConfirmation;
 use Marko\Authentication\PasswordReset\CachePasswordResetTokenRepository;
@@ -91,6 +92,7 @@ return [
                     : null,
                 currentRequest: $container->get(CurrentRequest::class),
                 userPersisterResolver: $container->get(UserPersisterResolver::class),
+                loginChallengeResolver: $container->get(LoginChallengeResolver::class),
             );
         },
         // Apps bind UserPersisterInterface and ResetLinkNotifierInterface themselves:

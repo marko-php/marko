@@ -56,7 +56,7 @@ docs/           # Documentation site content
 - **Errors**: errors (interface), errors-simple, errors-advanced
 - **Log**: log (interface + shared logger), log-file, log-stream
 - **Encryption**: encryption (interface), encryption-openssl
-- **Auth**: authentication, authentication-token, authorization
+- **Auth**: authentication, authentication-token, authentication-two-factor, authorization
 - **Admin**: admin, admin-auth, admin-api, admin-panel
 - **Translation**: translation (interface), translation-file
 - **Notification**: notification (interface), notification-database

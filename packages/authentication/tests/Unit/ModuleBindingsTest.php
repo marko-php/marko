@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Config\AuthConfig;
+use Marko\Authentication\Contracts\CookieJarInterface;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Contracts\IntendedUrlInterface;
+use Marko\Authentication\Contracts\LoginChallengeInterface;
+use Marko\Authentication\Contracts\LoginThrottleInterface;
 use Marko\Authentication\Contracts\PasswordConfirmationInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
 use Marko\Authentication\Contracts\PasswordResetBrokerInterface;
@@ -13,6 +17,7 @@ use Marko\Authentication\Contracts\PasswordResetTokenRepositoryInterface;
 use Marko\Authentication\Contracts\PasswordVerifierInterface;
 use Marko\Authentication\Contracts\ResetLinkNotifierInterface;
 use Marko\Authentication\Contracts\UserPersisterInterface;
+use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Authentication\Guard\GuardDriverRegistry;
 use Marko\Authentication\Hashing\BcryptPasswordHasher;
 use Marko\Authentication\Hashing\HashManagerPasswordHasher;
@@ -21,12 +26,23 @@ use Marko\Authentication\Http\IntendedUrl;
 use Marko\Authentication\PasswordConfirmation\PasswordConfirmation;
 use Marko\Authentication\PasswordReset\CachePasswordResetTokenRepository;
 use Marko\Authentication\PasswordReset\PasswordResetBroker;
+use Marko\Authentication\Throttle\NullLoginThrottle;
 use Marko\Authentication\Token\RememberTokenManager;
+use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
+use Marko\Core\Event\EventDispatcherInterface;
 use Marko\Core\Module\ModuleManifest;
 use Marko\Core\Module\ModuleRepository;
 use Marko\Core\Module\ModuleRepositoryInterface;
+use Marko\Session\Contracts\SessionInterface;
+use Marko\Testing\Fake\FakeAuthenticatable;
 use Marko\Testing\Fake\FakeClock;
+use Marko\Testing\Fake\FakeConfigRepository;
+use Marko\Testing\Fake\FakeCookieJar;
+use Marko\Testing\Fake\FakeEventDispatcher;
+use Marko\Testing\Fake\FakeSession;
+use Marko\Testing\Fake\FakeUserProvider;
 use Psr\Clock\ClockInterface;
 
 it('has enabled set to true', function () {
@@ -220,3 +236,44 @@ it('ships no default UserPersisterInterface or ResetLinkNotifierInterface bindin
     expect($config['bindings'])->not->toHaveKey(UserPersisterInterface::class)
         ->and($config['bindings'])->not->toHaveKey(ResetLinkNotifierInterface::class);
 });
+
+it('builds AuthManager with a LoginChallengeResolver so guards get their configured challenges', function () {
+    $config = require dirname(__DIR__, 2) . '/module.php';
+    $session = new FakeSession();
+    $session->start();
+
+    $container = new Container();
+    $container->instance(ContainerInterface::class, $container);
+    $container->instance(ConfigRepositoryInterface::class, new FakeConfigRepository([
+        'authentication.default.guard' => 'web',
+        'authentication.remember.cookie.prefix' => 'remember_',
+        'authentication.guards' => [
+            'web' => ['driver' => 'session', 'challenges' => [ModuleBindingsTestChallenge::class]],
+        ],
+    ]));
+    $container->instance(SessionInterface::class, $session);
+    $container->instance(UserProviderInterface::class, new FakeUserProvider([1 => new FakeAuthenticatable(id: 1)]));
+    $container->instance(EventDispatcherInterface::class, new FakeEventDispatcher());
+    $container->instance(CookieJarInterface::class, new FakeCookieJar());
+    $container->instance(RememberTokenManager::class, new RememberTokenManager(new FakeClock()));
+    $container->instance(LoginThrottleInterface::class, new NullLoginThrottle());
+
+    $guard = $config['bindings'][AuthManager::class]($container)->guard('web');
+
+    expect($guard->attempt(['email' => 'ada@example.com']))->toBeFalse()
+        ->and($guard->pendingChallengeName())->toBe('module_test');
+});
+
+class ModuleBindingsTestChallenge implements LoginChallengeInterface
+{
+    public function requiresChallenge(
+        AuthenticatableInterface $user,
+    ): bool {
+        return true;
+    }
+
+    public function getName(): string
+    {
+        return 'module_test';
+    }
+}

@@ -7,8 +7,9 @@ namespace Marko\Authentication\Guard;
 use DateMalformedStringException;
 use DateTimeImmutable;
 use Marko\Authentication\AuthenticatableInterface;
+use Marko\Authentication\Contracts\ChallengeableGuardInterface;
 use Marko\Authentication\Contracts\CookieJarInterface;
-use Marko\Authentication\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\LoginChallengeInterface;
 use Marko\Authentication\Contracts\LoginThrottleInterface;
 use Marko\Authentication\Contracts\OtherDeviceLogoutInterface;
 use Marko\Authentication\Contracts\RememberTokenStorageInterface;
@@ -32,10 +33,15 @@ use Marko\Session\Contracts\SessionInterface;
 use Override;
 use Random\RandomException;
 
-class SessionGuard implements GuardInterface, OtherDeviceLogoutInterface, ResettableInterface
+class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInterface, ResettableInterface
 {
     private ?AuthenticatableInterface $cachedUser = null;
 
+    private ?AuthenticatableInterface $cachedChallengeUser = null;
+
+    /**
+     * @param list<LoginChallengeInterface> $challenges Checked in order after a successful password check
+     */
     public function __construct(
         private readonly SessionInterface $session,
         public UserProviderInterface $provider {
@@ -53,6 +59,7 @@ class SessionGuard implements GuardInterface, OtherDeviceLogoutInterface, Resett
         private readonly ?CurrentRequest $currentRequest = null,
         private readonly ?UserPersisterResolver $userPersisterResolver = null,
         private readonly ?string $providerName = null,
+        private readonly array $challenges = [],
     ) {}
 
     /**
@@ -342,9 +349,125 @@ class SessionGuard implements GuardInterface, OtherDeviceLogoutInterface, Resett
         $this->provider->rehashPasswordIfNeeded($user, $credentials);
 
         $this->loginThrottle?->clear($this->name, $credentials);
+
+        $challenge = $this->nextRequiredChallenge($user);
+
+        if ($challenge !== null) {
+            $this->startChallenge($user, $challenge);
+
+            return false;
+        }
+
         $this->login($user);
 
         return true;
+    }
+
+    public function hasPendingChallenge(): bool
+    {
+        return $this->session->has($this->getChallengeUserKey());
+    }
+
+    /**
+     * @throws AuthException
+     */
+    public function pendingChallengeUser(): ?AuthenticatableInterface
+    {
+        if ($this->cachedChallengeUser !== null) {
+            return $this->cachedChallengeUser;
+        }
+
+        $id = $this->session->get($this->getChallengeUserKey());
+
+        if ($id === null) {
+            return null;
+        }
+
+        $this->cachedChallengeUser = $this->provider->retrieveById($id);
+
+        return $this->cachedChallengeUser;
+    }
+
+    public function pendingChallengeName(): ?string
+    {
+        $name = $this->session->get($this->getChallengeNameKey());
+
+        return is_string($name) ? $name : null;
+    }
+
+    /**
+     * @throws AuthException|DateMalformedStringException|RandomException
+     */
+    public function completeChallenge(
+        bool $remember = false,
+    ): void {
+        $currentName = $this->pendingChallengeName();
+        $user = $this->pendingChallengeUser();
+
+        if ($currentName === null || $user === null) {
+            $this->cancelChallenge();
+
+            throw AuthException::noPendingChallenge($this->name);
+        }
+
+        $next = $this->nextRequiredChallenge($user, $currentName);
+
+        if ($next !== null) {
+            $this->session->set($this->getChallengeNameKey(), $next->getName());
+
+            return;
+        }
+
+        $this->cancelChallenge();
+        $this->login($user, $remember);
+    }
+
+    public function cancelChallenge(): void
+    {
+        $this->session->remove($this->getChallengeUserKey());
+        $this->session->remove($this->getChallengeNameKey());
+        $this->cachedChallengeUser = null;
+    }
+
+    /**
+     * The first configured challenge after $afterName (or the first of all) that
+     * requires itself for $user.
+     */
+    private function nextRequiredChallenge(
+        AuthenticatableInterface $user,
+        ?string $afterName = null,
+    ): ?LoginChallengeInterface {
+        $challenges = $this->challenges;
+
+        if ($afterName !== null) {
+            $names = array_map(fn (LoginChallengeInterface $challenge): string => $challenge->getName(), $challenges);
+            $position = array_search($afterName, $names, true);
+            $challenges = $position === false ? [] : array_slice($challenges, $position + 1);
+        }
+
+        return array_find(
+            $challenges,
+            fn (LoginChallengeInterface $challenge): bool => $challenge->requiresChallenge($user),
+        );
+    }
+
+    /**
+     * Hold the user at $challenge: they are logged out of this guard and only
+     * the pending user and challenge are stored, under a fresh session ID.
+     *
+     * @throws AuthException
+     */
+    private function startChallenge(
+        AuthenticatableInterface $user,
+        LoginChallengeInterface $challenge,
+    ): void {
+        $this->ensureSessionAvailable();
+        $this->session->remove($this->getSessionKey());
+        $this->cachedUser = null;
+        $this->session->set($this->getChallengeUserKey(), $user->getAuthIdentifier());
+        $this->session->set($this->getChallengeNameKey(), $challenge->getName());
+        $this->session->regenerate();
+        $this->cachedChallengeUser = $user;
     }
 
     /**
@@ -507,6 +630,16 @@ class SessionGuard implements GuardInterface, OtherDeviceLogoutInterface, Resett
         return 'auth_' . $this->name . '_session_version';
     }
 
+    private function getChallengeUserKey(): string
+    {
+        return 'auth_' . $this->name . '_challenge_user_id';
+    }
+
+    private function getChallengeNameKey(): string
+    {
+        return 'auth_' . $this->name . '_challenge_name';
+    }
+
     private function getRememberCookieName(): string
     {
         return $this->rememberCookiePrefix . $this->name;
@@ -557,6 +690,7 @@ class SessionGuard implements GuardInterface, OtherDeviceLogoutInterface, Resett
         $this->session->remove($this->getSessionKey());
         $this->session->remove($this->getSessionVersionKey());
         $this->cachedUser = null;
+        $this->cancelChallenge();
 
         if ($user !== null) {
             // A new session ID, with the old session deleted, so the logged-out ID
@@ -753,5 +887,6 @@ class SessionGuard implements GuardInterface, OtherDeviceLogoutInterface, Resett
     public function reset(): void
     {
         $this->cachedUser = null;
+        $this->cachedChallengeUser = null;
     }
 }
