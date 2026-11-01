@@ -53,11 +53,11 @@ readonly class DateComparison
 
     /**
      * Compare the value with the reference: -1 when it is earlier, 0 when equal, 1 when later,
-     * or null when the value, or the referenced field's value, is not a date.
+     * or null when the value or the reference does not resolve to a date. A reference that is
+     * neither a field present in the data nor a date is null too: the data is client input, so
+     * a missing field is a validation failure, never an exception.
      *
      * @param array<mixed> $data
-     *
-     * @throws InvalidArgumentException When the reference is neither a field in the data nor a date
      */
     public function compare(
         mixed $value,
@@ -75,8 +75,6 @@ readonly class DateComparison
 
     /**
      * @param array<mixed> $data
-     *
-     * @throws InvalidArgumentException
      */
     private function referenceTimestamp(
         array $data,
@@ -85,13 +83,7 @@ readonly class DateComparison
             return DateValue::timestamp(DataPath::get($data, $this->reference));
         }
 
-        $timestamp = str_contains($this->reference, '*') ? null : DateValue::timestamp($this->reference);
-
-        return $timestamp ?? throw new InvalidArgumentException(
-            "The $this->rule:$this->reference rule names neither a date nor a field present in the data. "
-            . "Use a date strtotime() understands ($this->rule:today, $this->rule:2026-01-01) "
-            . "or the dot path of another field ($this->rule:starts_at).",
-        );
+        return str_contains($this->reference, '*') ? null : DateValue::timestamp($this->reference);
     }
 
     /**

@@ -31,9 +31,6 @@ abstract readonly class AbstractDateComparisonRule implements WildcardAwareRuleI
         $this->comparison = new DateComparison($this->name(), $reference);
     }
 
-    /**
-     * @throws InvalidArgumentException When the reference is neither a field in the data nor a date
-     */
     public function passes(
         string $field,
         mixed $value,

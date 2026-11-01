@@ -184,7 +184,7 @@ $this->validator->validate($input, [
 
 A `*` in the reference is replaced by the current row's index, exactly as for [`same` and `different`](#cross-field-rules-inside-rows). The rule fails when the value, or the referenced field's value, is not a date.
 
-A reference that is neither a date nor a field present in the data throws `InvalidArgumentException` instead of passing, so a typo such as `after:starts_att` or `after:tomorow` is caught. That also means the referenced field must be in the data whenever the compared field has a value: give it `required`, or make sure the client always sends the key (an explicit `null` counts as present and simply fails the comparison).
+When the reference is neither a date nor a field present in the data, the rule fails rather than passing: a client that sends `ends_at` but leaves out `starts_at` gets the usual 422 error on `ends_at`, never an exception. The rule cannot see the rest of the rule set, so a misspelled reference (`after:starts_att`, `after:tomorow`) also shows up only as a failing field. Cover each comparison with a test that expects it to pass.
 
 ### Distinct Values
 

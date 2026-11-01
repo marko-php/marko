@@ -95,12 +95,22 @@ describe('against another field', function (): void {
     );
 });
 
-it('throws when the parameter is neither a date nor a field present in the data', function (): void {
-    new After('starts_att')->passes('ends_at', '2026-06-15', ['starts_at' => '2026-06-14']);
-})->throws(
-    InvalidArgumentException::class,
-    'The after:starts_att rule names neither a date nor a field present in the data',
-);
+it('fails, never throws, when the reference is neither a date nor a field present in the data', function (): void {
+    $rule = new After('starts_at');
+
+    expect($rule->passes('ends_at', '2026-06-15', []))->toBeFalse()
+        ->and($rule->message('ends_at', '2026-06-15'))->toBe('The ends_at field must be a date after starts_at.')
+        ->and(new After('starts_att')->passes('ends_at', '2026-06-15', ['starts_at' => '2026-06-14']))->toBeFalse();
+});
+
+it('returns a validation error when the client omits the referenced field', function (): void {
+    $errors = new Validator()->validate(
+        ['ends_at' => '2026-06-15'],
+        ['starts_at' => 'nullable|date', 'ends_at' => 'nullable|date|after:starts_at'],
+    );
+
+    expect($errors->all())->toBe(['ends_at' => ['The ends_at field must be a date after starts_at.']]);
+});
 
 it('throws for an empty parameter', function (): void {
     new AfterOrEqual('');
