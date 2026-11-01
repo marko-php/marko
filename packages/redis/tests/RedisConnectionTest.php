@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Marko\Cache\Redis\Tests;
+namespace Marko\Redis\Tests;
 
-use Marko\Cache\Redis\Exceptions\RedisConnectionException;
-use Marko\Cache\Redis\RedisConnection;
+use Marko\Redis\Exceptions\RedisConnectionException;
+use Marko\Redis\RedisConnection;
+use Marko\Redis\RedisConnectionInterface;
 use Predis\Client;
 use Predis\ClientInterface;
 use Predis\Connection\ConnectionException;
@@ -32,7 +33,7 @@ function createTestableRedisConnection(
         public function __construct(
             private readonly ClientInterface $mockClient,
         ) {
-            parent::__construct();
+            parent::__construct(host: '127.0.0.1', port: 6379, password: null, database: 0, scheme: 'tcp');
         }
 
         protected function createClient(): ClientInterface
@@ -43,6 +44,10 @@ function createTestableRedisConnection(
 }
 
 describe('RedisConnection', function (): void {
+    it('implements RedisConnectionInterface', function (): void {
+        expect(createTestableRedisConnection())->toBeInstanceOf(RedisConnectionInterface::class);
+    });
+
     it(
         'throws RedisConnectionException naming host, port and config file when the connection is refused',
         function (): void {
@@ -50,7 +55,13 @@ describe('RedisConnection', function (): void {
             {
                 public function __construct()
                 {
-                    parent::__construct(host: 'redis.internal', port: 6390);
+                    parent::__construct(
+                        host: 'redis.internal',
+                        port: 6390,
+                        password: null,
+                        database: 0,
+                        scheme: 'tcp',
+                    );
                 }
 
                 protected function createClient(): ClientInterface
@@ -81,7 +92,7 @@ describe('RedisConnection', function (): void {
                 $this->fail('Expected RedisConnectionException');
             } catch (RedisConnectionException $e) {
                 expect($e->getMessage())->toContain('redis.internal:6390')
-                    ->and($e->getSuggestion())->toContain('config/cache-redis.php')
+                    ->and($e->getSuggestion())->toContain('config/redis.php')
                     ->and($e->getSuggestion())->toContain('REDIS_HOST')
                     ->and($e->getPrevious())->not->toBeNull()
                     ->and($connection->isConnected())->toBeFalse();
@@ -89,71 +100,77 @@ describe('RedisConnection', function (): void {
         },
     );
 
-    it('creates RedisConnection with default configuration', function (): void {
-        $connection = new RedisConnection();
-
-        expect($connection)
-            ->toBeInstanceOf(RedisConnection::class)
-            ->and($connection->host)->toBe('127.0.0.1')
-            ->and($connection->port)->toBe(6379)
-            ->and($connection->password)->toBeNull()
-            ->and($connection->database)->toBe(0)
-            ->and($connection->prefix)->toBe('marko:cache:');
-    });
-
-    it('creates RedisConnection with custom host port password and database', function (): void {
+    it('exposes the host, port, password, database and scheme it was created with', function (): void {
         $connection = new RedisConnection(
             host: 'redis.example.com',
             port: 6380,
             password: 'secret',
             database: 2,
-            prefix: 'custom:prefix:',
+            scheme: 'tcp',
         );
 
         expect($connection->host)->toBe('redis.example.com')
             ->and($connection->port)->toBe(6380)
             ->and($connection->password)->toBe('secret')
             ->and($connection->database)->toBe(2)
-            ->and($connection->prefix)->toBe('custom:prefix:');
+            ->and($connection->scheme)->toBe('tcp');
     });
 
-    it('defaults to the plain tcp scheme without TLS context options', function (): void {
-        $parameters = new RedisConnection()->connectionParameters();
+    it('builds plain tcp parameters without TLS context options', function (): void {
+        $connection = new RedisConnection(host: '127.0.0.1', port: 6379, password: null, database: 1, scheme: 'tcp');
 
-        expect($parameters['scheme'])->toBe('tcp')
-            ->and($parameters)->not->toHaveKey('ssl');
+        expect($connection->connectionParameters())->toBe([
+            'scheme' => 'tcp',
+            'host' => '127.0.0.1',
+            'port' => 6379,
+            'database' => 1,
+        ]);
+    });
+
+    it('omits the password from the parameters when it is null', function (): void {
+        $connection = new RedisConnection(host: '127.0.0.1', port: 6379, password: null, database: 0, scheme: 'tcp');
+
+        expect($connection->connectionParameters())->not->toHaveKey('password');
     });
 
     it('builds TLS connection parameters that verify the server certificate and host name', function (): void {
-        $connection = new RedisConnection(host: 'cache.example.com', port: 6380, password: 'secret', scheme: 'tls');
+        $connection = new RedisConnection(
+            host: 'cache.example.com',
+            port: 6380,
+            password: 'secret',
+            database: 0,
+            scheme: 'tls',
+        );
 
-        expect($connection->scheme)->toBe('tls')
-            ->and($connection->connectionParameters())->toBe([
-                'scheme' => 'tls',
-                'host' => 'cache.example.com',
-                'port' => 6380,
-                'database' => 0,
-                'ssl' => [
-                    'verify_peer' => true,
-                    'verify_peer_name' => true,
-                    'peer_name' => 'cache.example.com',
-                ],
-                'password' => 'secret',
-            ]);
+        expect($connection->connectionParameters())->toBe([
+            'scheme' => 'tls',
+            'host' => 'cache.example.com',
+            'port' => 6380,
+            'database' => 0,
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+                'peer_name' => 'cache.example.com',
+            ],
+            'password' => 'secret',
+        ]);
     });
 
     it('throws RedisConnectionException for an unknown scheme', function (): void {
-        expect(fn () => new RedisConnection(scheme: 'rediss'))
-            ->toThrow(RedisConnectionException::class, "Invalid Redis connection scheme 'rediss'");
+        expect(fn () => new RedisConnection(
+            host: '127.0.0.1',
+            port: 6379,
+            password: null,
+            database: 0,
+            scheme: 'rediss',
+        ))->toThrow(RedisConnectionException::class, "Invalid Redis connection scheme 'rediss'");
     });
 
     it('lazily connects on first client call', function (): void {
         $connection = createTestableRedisConnection();
 
-        // Before calling client(), should not be connected
         expect($connection->isConnected())->toBeFalse();
 
-        // Call client() - this should trigger lazy connection
         $client = $connection->client();
 
         expect($connection->isConnected())->toBeTrue()
@@ -163,32 +180,13 @@ describe('RedisConnection', function (): void {
     it('returns same client on subsequent calls', function (): void {
         $connection = createTestableRedisConnection();
 
-        $client1 = $connection->client();
-        $client2 = $connection->client();
-
-        expect($client1)->toBe($client2);
-    });
-
-    it('reports connected status correctly', function (): void {
-        $connection = createTestableRedisConnection();
-
-        // Before connecting, should report not connected
-        expect($connection->isConnected())->toBeFalse();
-
-        // After client() call (which triggers connection), should report connected
-        $connection->client();
-
-        expect($connection->isConnected())->toBeTrue();
+        expect($connection->client())->toBe($connection->client());
     });
 
     it('disconnects and clears client reference', function (): void {
         $connection = createTestableRedisConnection();
 
-        // Connect by requesting a client
         $connection->client();
-        expect($connection->isConnected())->toBeTrue();
-
-        // Disconnect
         $connection->disconnect();
 
         expect($connection->isConnected())->toBeFalse();
@@ -197,16 +195,10 @@ describe('RedisConnection', function (): void {
     it('reconnects after disconnect', function (): void {
         $connection = createTestableRedisConnection();
 
-        // Connect
         $connection->client();
-        expect($connection->isConnected())->toBeTrue();
-
-        // Disconnect
         $connection->disconnect();
-        expect($connection->isConnected())->toBeFalse();
-
-        // Reconnect
         $connection->client();
+
         expect($connection->isConnected())->toBeTrue();
     });
 });

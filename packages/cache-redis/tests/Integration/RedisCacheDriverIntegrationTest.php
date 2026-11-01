@@ -5,12 +5,13 @@ declare(strict_types=1);
 use Marko\Cache\CacheOperations;
 use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\Exceptions\TamperedCacheValueException;
+use Marko\Cache\Redis\Config\RedisCacheConfig;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
-use Marko\Cache\Redis\RedisConnection;
 use Marko\Cache\Signer\CacheValueSigner;
 use Marko\Clock\SystemClock;
 use Marko\Core\Support\ErrorCapture;
 use Marko\Encryption\Config\EncryptionConfig;
+use Marko\Redis\RedisConnectionFactory;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Predis\Client;
 
@@ -72,22 +73,37 @@ function redisDriverIntegrationUnavailable(): bool
     return redisDriverIntegrationUnreachableReason() !== null;
 }
 
-function createIntegrationRedisConnection(
-    ?string $prefix = null,
-): RedisConnection {
-    return new RedisConnection(
-        host: redisDriverIntegrationHost(),
-        port: redisDriverIntegrationPort(),
-        database: 15,
-        prefix: $prefix ?? 'marko:test:' . bin2hex(random_bytes(6)) . ':',
-    );
+/**
+ * A marko/redis factory with one 'integration' connection on database 15.
+ */
+function createIntegrationRedisConnectionFactory(): RedisConnectionFactory
+{
+    $settings = [
+        'host' => redisDriverIntegrationHost(),
+        'port' => redisDriverIntegrationPort(),
+        'password' => null,
+        'database' => 15,
+        'scheme' => 'tcp',
+    ];
+    $config = ['redis.connections' => ['integration' => $settings]];
+
+    foreach ($settings as $key => $value) {
+        $config["redis.connections.integration.$key"] = $value;
+    }
+
+    return new RedisConnectionFactory(new FakeConfigRepository($config));
 }
 
 function createIntegrationRedisDriver(
-    RedisConnection $connection,
+    RedisConnectionFactory $redisConnectionFactory,
+    string $prefix,
 ): RedisCacheDriver {
     return new RedisCacheDriver(
-        $connection,
+        $redisConnectionFactory,
+        new RedisCacheConfig(new FakeConfigRepository([
+            'cache-redis.connection' => 'integration',
+            'cache-redis.prefix' => $prefix,
+        ])),
         new CacheConfig(new FakeConfigRepository([
             'cache.path' => '/tmp/cache',
             'cache.default_ttl' => 3600,
@@ -107,8 +123,10 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
             return;
         }
 
-        $this->connection = createIntegrationRedisConnection();
-        $this->driver = createIntegrationRedisDriver($this->connection);
+        $factory = createIntegrationRedisConnectionFactory();
+        $this->prefix = 'marko:test:' . bin2hex(random_bytes(6)) . ':';
+        $this->connection = $factory->connection('integration');
+        $this->driver = createIntegrationRedisDriver($factory, $this->prefix);
     });
 
     afterEach(function (): void {
@@ -131,7 +149,7 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
 
     it('always leaves a ttl on the key after the first increment', function (): void {
         $client = $this->connection->client();
-        $prefixedKey = $this->connection->prefix . 'counter';
+        $prefixedKey = $this->prefix . 'counter';
 
         expect($this->driver->increment('counter', 60))->toBe(1)
             ->and($client->ttl($prefixedKey))->toBeGreaterThan(0)
@@ -140,7 +158,7 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
 
     it('does not reset the ttl on a subsequent increment against redis', function (): void {
         $client = $this->connection->client();
-        $prefixedKey = $this->connection->prefix . 'counter';
+        $prefixedKey = $this->prefix . 'counter';
 
         $this->driver->increment('counter', 60);
         $client->expire($prefixedKey, 500);
@@ -151,7 +169,7 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
 
     it('restores the ttl of a counter left without one against redis', function (): void {
         $client = $this->connection->client();
-        $prefixedKey = $this->connection->prefix . 'counter';
+        $prefixedKey = $this->prefix . 'counter';
         $client->set($prefixedKey, '7');
 
         expect($this->driver->increment('counter', 60))->toBe(8)
@@ -159,7 +177,7 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
     })->skip(fn (): bool => redisDriverIntegrationUnavailable(), redisDriverIntegrationSkipReason());
 
     it('still rejects a tampered non-integer value from redis', function (): void {
-        $this->connection->client()->set($this->connection->prefix . 'key', serialize('unsigned'));
+        $this->connection->client()->set($this->prefix . 'key', serialize('unsigned'));
 
         expect(fn (): mixed => $this->driver->get('key'))
             ->toThrow(TamperedCacheValueException::class);
@@ -174,7 +192,7 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
     it('rejects a signed value copied to another key in redis', function (): void {
         $client = $this->connection->client();
         $this->driver->set('role-alice', 'admin');
-        $client->set($this->connection->prefix . 'role-bob', $client->get($this->connection->prefix . 'role-alice'));
+        $client->set($this->prefix . 'role-bob', $client->get($this->prefix . 'role-alice'));
 
         expect(fn (): mixed => $this->driver->get('role-bob'))
             ->toThrow(TamperedCacheValueException::class)
@@ -195,7 +213,7 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
         $this->driver->setMultiple($values);
         $this->driver->clear();
 
-        $remaining = $client->scan('0', ['MATCH' => $this->connection->prefix . '*', 'COUNT' => 10000]);
+        $remaining = $client->scan('0', ['MATCH' => $this->prefix . '*', 'COUNT' => 10000]);
         $outsideValue = $client->get($outsideKey);
         $client->del($outsideKey);
 
@@ -206,7 +224,7 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
     })->skip(fn (): bool => redisDriverIntegrationUnavailable(), redisDriverIntegrationSkipReason());
 
     it('lets exactly one of two redis clients add the same key', function (): void {
-        $other = createIntegrationRedisDriver(createIntegrationRedisConnection($this->connection->prefix));
+        $other = createIntegrationRedisDriver(createIntegrationRedisConnectionFactory(), $this->prefix);
 
         expect($this->driver->add('once', 'first', 60))->toBeTrue()
             ->and($other->add('once', 'second', 60))->toBeFalse()
@@ -215,7 +233,7 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
 
     it('returns true from add once the existing key has expired in redis', function (): void {
         $this->driver->set('key', 'original', 60);
-        $this->connection->client()->pexpire($this->connection->prefix . 'key', 1);
+        $this->connection->client()->pexpire($this->prefix . 'key', 1);
         usleep(20_000);
 
         expect($this->driver->add('key', 'new', 60))->toBeTrue()
@@ -228,9 +246,9 @@ describe('RedisCacheDriver against a real Redis server', function (): void {
         $this->driver->add('default-ttl', 'value');
         $this->driver->add('no-expiry', 'value', 0);
 
-        expect($client->ttl($this->connection->prefix . 'default-ttl'))->toBeGreaterThan(3500)
+        expect($client->ttl($this->prefix . 'default-ttl'))->toBeGreaterThan(3500)
             ->toBeLessThanOrEqual(3600)
-            ->and($client->ttl($this->connection->prefix . 'no-expiry'))->toBe(-1)
+            ->and($client->ttl($this->prefix . 'no-expiry'))->toBe(-1)
             ->and($this->driver->get('no-expiry'))->toBe('value');
     })->skip(fn (): bool => redisDriverIntegrationUnavailable(), redisDriverIntegrationSkipReason());
 });
