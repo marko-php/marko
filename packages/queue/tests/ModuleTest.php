@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use Marko\Config\ConfigRepositoryInterface;
+use Marko\Core\Container\Container;
+use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Event\AsyncObserverDispatcherInterface;
+use Marko\Core\Path\ProjectPaths;
 use Marko\Queue\FailedJobHandler;
 use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\FileRestartSignal;
@@ -15,12 +19,21 @@ use Marko\Queue\QueueAsyncObserverDispatcher;
 use Marko\Queue\RestartSignalInterface;
 use Marko\Queue\Worker;
 use Marko\Queue\WorkerInterface;
+use Marko\Testing\Fake\FakeConfigRepository;
 
 describe('queue module.php', function (): void {
-    it('binds RestartSignalInterface to FileRestartSignal', function (): void {
+    it('binds RestartSignalInterface to FileRestartSignal by default', function (): void {
         $module = require dirname(__DIR__) . '/module.php';
+        $container = new Container();
+        $container->instance(ContainerInterface::class, $container);
+        $container->instance(ConfigRepositoryInterface::class, new FakeConfigRepository([
+            'queue.restart_signal_driver' => 'file',
+            'queue.restart_signal' => 'storage/queue/restart',
+        ]));
+        $container->instance(ProjectPaths::class, new ProjectPaths(sys_get_temp_dir()));
 
-        expect($module['bindings'][RestartSignalInterface::class])->toBe(FileRestartSignal::class);
+        expect($module['bindings'][RestartSignalInterface::class]($container))
+            ->toBeInstanceOf(FileRestartSignal::class);
     });
 
     it('binds WorkerInterface to Worker in module.php', function (): void {

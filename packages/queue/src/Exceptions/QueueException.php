@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Queue\Exceptions;
 
+use Marko\Cache\Contracts\CacheInterface;
 use Marko\Cache\Contracts\LockFactoryInterface;
 use Marko\Core\Exceptions\MarkoException;
 
@@ -191,6 +192,73 @@ class QueueException extends MarkoException
             message: "Could not read the queue restart signal at '$path'.",
             context: "$reason Workers cannot tell whether a restart was requested.",
             suggestion: 'Make sure the user that runs queue:work can read the queue.restart_signal file.',
+        );
+    }
+
+    /**
+     * @param list<string> $drivers
+     */
+    public static function unknownRestartSignalDriver(
+        string $driver,
+        array $drivers,
+    ): self {
+        return new self(
+            message: "Unknown queue.restart_signal_driver '$driver'.",
+            context: 'queue.restart_signal_driver picks where queue:restart stores the token every queue:work'
+                . ' watches.',
+            suggestion: "Set queue.restart_signal_driver (QUEUE_RESTART_SIGNAL_DRIVER) to one of: '"
+                . implode("', '", $drivers) . "'. Use 'file' for workers on one host or a shared disk, and 'cache'"
+                . ' for workers on hosts that share nothing.',
+        );
+    }
+
+    public static function restartSignalCachePackageNotInstalled(): self
+    {
+        return new self(
+            message: 'The cache restart signal cannot be used: marko/cache is not installed.',
+            context: "queue.restart_signal_driver is 'cache', which stores the restart token through "
+                . CacheInterface::class . '. marko/queue only suggests marko/cache, so it is not installed unless'
+                . ' your app requires it.',
+            suggestion: 'Run `composer require marko/cache marko/cache-redis` (marko/cache-redis shares the token'
+                . " across hosts), or set queue.restart_signal_driver (QUEUE_RESTART_SIGNAL_DRIVER) to 'file'.",
+        );
+    }
+
+    public static function noRestartSignalCacheDriver(
+        MarkoException $previous,
+    ): self {
+        return new self(
+            message: 'The cache restart signal cannot be used: no cache driver is bound.',
+            context: "queue.restart_signal_driver is 'cache', which stores the restart token through "
+                . CacheInterface::class . ' (marko/cache), so a cache driver must be installed. Resolving it failed: '
+                . $previous->getMessage(),
+            suggestion: $previous->getSuggestion() . "\nWorkers on several hosts need a store they all reach, such"
+                . ' as marko/cache-redis.',
+            previous: $previous,
+        );
+    }
+
+    public static function restartSignalCacheNotWritable(
+        string $key,
+    ): self {
+        return new self(
+            message: "Could not store the queue restart signal in the cache key '$key'.",
+            context: 'The cache driver refused to store the token, so workers would not see the restart.',
+            suggestion: 'Check that the cache store behind marko/cache (e.g. the Redis server of marko/cache-redis)'
+                . ' is reachable and writable by the user that runs queue:restart.',
+        );
+    }
+
+    public static function restartSignalCacheValueInvalid(
+        string $key,
+        string $type,
+    ): self {
+        return new self(
+            message: "The cache key '$key' does not hold a queue restart token.",
+            context: "The key holds a value of type $type; queue:restart stores a non-empty string there, so"
+                . ' something else wrote to the key. Workers cannot tell whether a restart was requested.',
+            suggestion: "Delete the cache key '$key' and run queue:restart again, and keep other code from writing"
+                . ' to that key.',
         );
     }
 }

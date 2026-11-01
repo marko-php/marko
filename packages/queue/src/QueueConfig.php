@@ -50,6 +50,14 @@ readonly class QueueConfig
         return $this->config->getString('queue.restart_signal');
     }
 
+    /**
+     * Where queue:restart stores the restart token: 'file' (FileRestartSignal) or 'cache' (CacheRestartSignal).
+     */
+    public function restartSignalDriver(): string
+    {
+        return $this->config->getString('queue.restart_signal_driver');
+    }
+
     public function maxAttempts(): int
     {
         return $this->config->getInt('queue.max_attempts');

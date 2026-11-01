@@ -54,6 +54,7 @@ class QueueHarness
             'queue.retry_after' => 90,
             'queue.timeout' => 0,
             'queue.max_attempts' => 3,
+            'queue.restart_signal_driver' => 'file',
             'queue.restart_signal' => $this->restartSignalPath(),
             'queue-redis.connection' => IntegrationRedis::CONNECTION,
             'queue-redis.prefix' => $this->prefix,

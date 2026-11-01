@@ -26,7 +26,7 @@ Note: You typically install a driver package (like `marko/queue-database`) which
 composer require marko/cache marko/cache-redis
 ```
 
-Without it, every other job works as usual, and pushing a unique job throws a `QueueException` telling you what to install.
+Without it, every other job works as usual, and pushing a unique job throws a `QueueException` telling you what to install. The [cache restart signal](#workers-on-several-hosts), for workers on several hosts, needs `marko/cache` too.
 
 `marko/queue` requires [`marko/encryption`](/docs/packages/encryption/) and a non-empty `encryption.key` in your config. Job payloads are HMAC-signed when enqueued and verified before deserialization; if the key is empty or the signature does not match, a `SerializationException` is thrown loudly.
 
@@ -74,7 +74,7 @@ This release changes the queue contracts once for the per-job features built on 
 
 #### Upgrading: `queue:restart`
 
-**Code that constructs `WorkCommand` by hand** passes a `RestartSignalInterface` last: `new WorkCommand($worker, $config, $processControl, $restartSignal)`. Containers that autowire the command need no change; `marko/queue` binds the interface to `FileRestartSignal`. See [Restarting Workers After a Deploy](#restarting-workers-after-a-deploy).
+**Code that constructs `WorkCommand` by hand** passes a `RestartSignalInterface` last: `new WorkCommand($worker, $config, $processControl, $restartSignal)`. Containers that autowire the command need no change; `marko/queue` binds the interface to `FileRestartSignal` unless `queue.restart_signal_driver` is `cache`. See [Restarting Workers After a Deploy](#restarting-workers-after-a-deploy).
 
 ## Usage
 
@@ -693,19 +693,34 @@ composer install --no-dev --optimize-autoloader
 php vendor/bin/marko queue:restart
 ```
 
-`FileRestartSignal`, the default implementation, writes the token to the file named by `queue.restart_signal` (`storage/queue/restart` under the project root by default; set `QUEUE_RESTART_SIGNAL` to change it). It writes to a temp file and renames it into place, so a worker never reads a half-written token. Run `queue:restart` as a user that can create and write that file, and run the workers as a user that can read it.
+`queue.restart_signal_driver` picks where the token is stored. It is `file` by default; set `QUEUE_RESTART_SIGNAL_DRIVER` to change it:
 
-**The file signal only reaches workers that see the same file**: workers on the host where `queue:restart` ran, or on hosts that share the directory. On hosts that share no filesystem, run `queue:restart` on every host, or bind your own `RestartSignalInterface` (backed by a shared cache or database, say) in your module's `module.php` or with a Preference:
+| Driver | Implementation | Reaches |
+|--------|----------------|---------|
+| `file` | `FileRestartSignal` | Workers on the host where `queue:restart` ran, or on hosts that share the directory |
+| `cache` | `CacheRestartSignal` | Every worker that reads the same cache store, so every host when the store is [`marko/cache-redis`](/docs/packages/cache-redis/) |
 
-```php
-use Marko\Queue\RestartSignalInterface;
+Any other value fails loudly: resolving `RestartSignalInterface` (so `queue:work` and `queue:restart`) throws a `QueueException` naming the valid drivers. There is no fallback from one driver to the other.
 
-return [
-    'bindings' => [
-        RestartSignalInterface::class => SharedCacheRestartSignal::class,
-    ],
-];
+`FileRestartSignal` writes the token to the file named by `queue.restart_signal` (`storage/queue/restart` under the project root by default; set `QUEUE_RESTART_SIGNAL` to change it). It writes to a temp file and renames it into place, so a worker never reads a half-written token. Run `queue:restart` as a user that can create and write that file, and run the workers as a user that can read it.
+
+##### Workers on several hosts
+
+**The file signal only reaches workers that see the same file.** When workers run on hosts that share no filesystem, store the token in a shared cache instead. Install [`marko/cache`](/docs/packages/cache/) with a driver every host reaches, then pick the cache driver:
+
+```bash
+composer require marko/cache marko/cache-redis
 ```
+
+```bash title=".env"
+QUEUE_RESTART_SIGNAL_DRIVER=cache
+```
+
+Set it on every host, both where `queue:restart` runs and where the workers run. `CacheRestartSignal` stores the token through `CacheInterface::forever()` under the key `queue.restart_signal` (`CacheRestartSignal::KEY`), so it never expires, and a `queue:restart` on any host reaches the workers on all of them. Each host's cache config must point at the same store (for `marko/cache-redis`, the same Redis server, database and `cache-redis.prefix`). [`marko/cache-file`](/docs/packages/cache-file/) only shares the token on one host and [`marko/cache-array`](/docs/packages/cache-array/) never outlives the process, so neither helps across hosts.
+
+`marko/queue` only suggests `marko/cache`. With the `cache` driver chosen but `marko/cache` missing, `queue:work` and `queue:restart` throw a `QueueException` telling you to `composer require marko/cache marko/cache-redis` or switch back to `file`. With `marko/cache` but no cache driver bound, they throw a `QueueException` that names the cache drivers to install. With the `file` driver, `marko/cache` is never touched.
+
+For another store (a database table, say), implement `RestartSignalInterface` yourself and bind it in your module's `module.php` or with a Preference.
 
 ### Failed Job Traces
 
@@ -811,7 +826,8 @@ return [
     'timeout'      => 60,           // seconds one job may run under queue:work; 0 = off
     'max_attempts' => 3,
     'backoff'      => null,         // int, list<int>, or null for 2^attempts * 10 seconds
-    'restart_signal' => 'storage/queue/restart', // QUEUE_RESTART_SIGNAL; the file queue:restart writes to
+    'restart_signal_driver' => 'file', // QUEUE_RESTART_SIGNAL_DRIVER; 'file' or 'cache'
+    'restart_signal' => 'storage/queue/restart', // QUEUE_RESTART_SIGNAL; the file the file driver writes to
 ];
 ```
 
@@ -824,7 +840,8 @@ return [
 | `timeout` | `60` | Seconds one job may run under `queue:work` before it is failed and the worker exits; `0` turns it off. Must be below `retry_after`, and needs `ext-pcntl`. Overridden by `--timeout`. See [Worker Limits and Shutdown](#worker-limits-and-shutdown) |
 | `max_attempts` | `3` | How many times a job is attempted before it is moved to the failed-job store. A job's own `maxAttempts`, when set, takes precedence |
 | `backoff` | `null` | Seconds to wait before retrying a failed job that sets no `backoff` of its own: an `int` (fixed), a `list<int>` (per attempt; the last value repeats), or `null` for `2^attempts * 10` seconds. See [Retry Backoff](#retry-backoff) |
-| `restart_signal` | `storage/queue/restart` | File `queue:restart` writes its token to, relative to the project root (an absolute path is used as given). Set with `QUEUE_RESTART_SIGNAL`. Every worker that should restart must see the same file. See [Restarting Workers After a Deploy](#restarting-workers-after-a-deploy) |
+| `restart_signal_driver` | `file` | Where `queue:restart` stores its token: `file` (`FileRestartSignal`, the `restart_signal` file) or `cache` (`CacheRestartSignal`, needs `marko/cache`). Set with `QUEUE_RESTART_SIGNAL_DRIVER`. Any other value throws. See [Workers on several hosts](#workers-on-several-hosts) |
+| `restart_signal` | `storage/queue/restart` | File the `file` restart signal driver writes its token to, relative to the project root (an absolute path is used as given). Set with `QUEUE_RESTART_SIGNAL`. Every worker that should restart must see the same file. See [Restarting Workers After a Deploy](#restarting-workers-after-a-deploy) |
 
 The `QueueConfig` class provides typed access to these values:
 
@@ -845,6 +862,7 @@ class MyService
         $retryAfter = $this->queueConfig->retryAfter();
         $maxAttempts = $this->queueConfig->maxAttempts();
         $backoff = $this->queueConfig->backoff();
+        $restartSignalDriver = $this->queueConfig->restartSignalDriver();
         $restartSignal = $this->queueConfig->restartSignal();
     }
 }
@@ -1057,7 +1075,17 @@ public function request(): void;     // record a new restart token
 public function current(): ?string;  // the current token, or null if no restart was ever requested
 ```
 
-Bound to `FileRestartSignal` in `module.php`. `queue:restart` calls `request()`; `RestartSignalStopCondition` reads `current()` when it is created and stops the worker with `RestartRequested` once it changes. `FileRestartSignal` throws `QueueException` when it cannot create, write or read the `queue.restart_signal` file. See [Restarting Workers After a Deploy](#restarting-workers-after-a-deploy).
+`module.php` resolves it through `RestartSignalFactory::create()`, which returns `FileRestartSignal` or `CacheRestartSignal` as `queue.restart_signal_driver` says, and throws `QueueException` for an unknown driver, or for `cache` without `marko/cache` or a cache driver. `queue:restart` calls `request()`; `RestartSignalStopCondition` reads `current()` when it is created and stops the worker with `RestartRequested` once it changes. `FileRestartSignal` throws `QueueException` when it cannot create, write or read the `queue.restart_signal` file; `CacheRestartSignal` throws it when the cache refuses the token, or when the `queue.restart_signal` cache key holds something other than a token string. See [Restarting Workers After a Deploy](#restarting-workers-after-a-deploy).
+
+### RestartSignalFactory
+
+```php
+use Marko\Queue\RestartSignalFactory;
+
+public function create(): RestartSignalInterface; // FileRestartSignal for 'file', CacheRestartSignal for 'cache'
+```
+
+`RestartSignalFactory::DRIVER_FILE` and `RestartSignalFactory::DRIVER_CACHE` hold the two driver names. `CacheRestartSignal` is resolved only when the `cache` driver is chosen, so an app without `marko/cache` can still use the `file` driver.
 
 ### FailedJobRepositoryInterface
 
@@ -1085,6 +1113,7 @@ public function retryAfter(): int;
 public function timeout(): int;
 public function maxAttempts(): int;
 public function backoff(): array|int|null; // int, list<int>, or null; throws QueueException when invalid
+public function restartSignalDriver(): string; // 'file' or 'cache', as configured
 public function restartSignal(): string;   // path of the restart signal file, as configured
 ```
 

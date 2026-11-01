@@ -12,11 +12,12 @@
     },
     "suggest": {
         "ext-pcntl": "Required for queue:work job timeouts and graceful SIGTERM/SIGINT shutdown",
-        "marko/cache": "Atomic locks for UniqueJobInterface jobs; pair it with marko/cache-redis so the lock is shared by every server"
+        "marko/cache": "Atomic locks for UniqueJobInterface jobs and the cache restart signal (queue.restart_signal_driver = cache); pair it with marko/cache-redis so locks and restarts are shared by every server"
     },
     "require-dev": {
         "marko/cache": "self.version",
         "marko/cache-array": "self.version",
+        "marko/cache-redis": "self.version",
         "marko/testing": "self.version",
         "pestphp/pest": "^4.0"
     },

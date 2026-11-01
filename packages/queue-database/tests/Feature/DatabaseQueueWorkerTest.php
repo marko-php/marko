@@ -49,6 +49,7 @@ function workerTestContainer(
         'queue.timeout' => 0,
         'queue.max_attempts' => 3,
         // queue:work only reads the signal; a path that never exists means no restart was requested
+        'queue.restart_signal_driver' => 'file',
         'queue.restart_signal' => sys_get_temp_dir() . '/marko-queue-database-restart-' . bin2hex(random_bytes(6)),
         ...$queueConfig,
     ]));
