@@ -20,6 +20,7 @@ const MARKO_TESTING_EXPECTATIONS = [
     'toHaveStatus',
     'toHaveJsonPath',
     'toHaveSession',
+    'toHaveSessionErrors',
 ];
 
 /**

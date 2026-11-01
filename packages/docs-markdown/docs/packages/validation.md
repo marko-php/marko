@@ -726,7 +726,7 @@ class ValidationException extends Exception implements HttpExceptionInterface
 
 ### FlashedFormStateInterface
 
-The single reader of the form state a failed submission flashed for the next request. View helpers, Inertia and test assertions all read through it, so none of them knows how the state is stored. Reading never consumes it. `marko/validation` only defines the contract; [marko/forms](/docs/packages/forms/) binds the implementation.
+The single reader of the form state a failed submission flashed for the next request. View helpers, Inertia and test assertions all read through it, so none of them knows how the state is stored. Reading never consumes it. `marko/validation` only defines the contract; [marko/forms](/docs/packages/forms/) binds the implementation. Without marko/forms, resolving it throws `NoDriverException` naming the package.
 
 ```php
 use Marko\Validation\Contracts\FlashedFormStateInterface;
