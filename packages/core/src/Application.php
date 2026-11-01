@@ -87,6 +87,8 @@ class Application
     /** @var ?Router */
     private ?object $_router = null;
 
+    private bool $shutDown = false;
+
     /** @var Router */
     public object $router {
         get => $this->_router ?? throw new RuntimeException(
@@ -274,6 +276,40 @@ class Application
         $this->eventDispatcher->dispatch(new ApplicationBooted());
 
         // Boot succeeded; the bootstrap handler is only meant to cover boot itself
+        $this->bootstrapErrorHandler->unregister();
+    }
+
+    /**
+     * Undo the global state boot installed, so the process can go on without this application.
+     *
+     * Runs every module's `shutdown` callback (from module.php) in reverse module load order,
+     * the mirror of the boot callbacks, so handlers pushed onto PHP's global stacks come off
+     * in the order they went on. The errors modules unregister their error and exception
+     * handlers here. Then removes the bootstrap error handler if a failed boot left it installed.
+     *
+     * Call it when the application is done but the process is not: marko/testing calls it
+     * after each test that booted one, and a long-running worker can call it before it exits
+     * or reboots. Safe to call more than once; only the first call does anything.
+     *
+     * @throws BindingException|CircularDependencyException|ReflectionException|PluginException|ContainerExceptionInterface
+     */
+    public function shutdown(): void
+    {
+        if ($this->shutDown) {
+            return;
+        }
+
+        $this->shutDown = true;
+
+        // initialize() never ran (or failed before the container existed): nothing booted
+        if (isset($this->container)) {
+            foreach (array_reverse($this->modules) as $module) {
+                if ($module->shutdown !== null) {
+                    $this->container->call($module->shutdown);
+                }
+            }
+        }
+
         $this->bootstrapErrorHandler->unregister();
     }
 

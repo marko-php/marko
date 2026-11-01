@@ -10,7 +10,7 @@ use Closure;
  * Value object representing a discovered module.
  *
  * Combines data from composer.json (name, version, require)
- * with Marko-specific config from module.php (enabled, sequence, bindings, boot).
+ * with Marko-specific config from module.php (enabled, sequence, bindings, boot, shutdown).
  */
 readonly class ModuleManifest
 {
@@ -29,6 +29,7 @@ readonly class ModuleManifest
      * @param string $source Discovery source: vendor, modules, or app
      * @param array<string, string> $autoload PSR-4 autoload configuration from composer.json (namespace => path)
      * @param Closure|null $boot Boot callback to run after bindings are registered (from module.php). Parameters are auto-injected from the container — type-hint any registered dependency, including ContainerInterface.
+     * @param Closure|null $shutdown Shutdown callback run by Application::shutdown() (from module.php), in reverse module load order, to undo what the boot callback set up (global handlers, open resources). Parameters are auto-injected like boot's.
      * @param array<int, class-string> $globalMiddleware Global HTTP middleware classes declared by this module (from module.php). Order across modules follows DependencyResolver (composer require + sequence: { after, before }); order within a module follows array declaration order.
      * @param array<string, mixed> $extra Raw extra data from composer.json (vendor/Marko-specific metadata)
      * @param array<int, class-string> $discovery Discovery cache contributors declared by this module (from module.php); each must implement DiscoveryCacheContributorInterface
@@ -49,5 +50,6 @@ readonly class ModuleManifest
         public array $globalMiddleware = [],
         public array $extra = [],
         public array $discovery = [],
+        public ?Closure $shutdown = null,
     ) {}
 }

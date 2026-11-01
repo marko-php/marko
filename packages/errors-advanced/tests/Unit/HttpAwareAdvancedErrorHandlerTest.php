@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\ErrorsAdvanced\Tests\Unit\HttpAware;
 
+use Closure;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Container\PreferenceRegistry;
@@ -100,6 +101,55 @@ describe('AdvancedErrorHandler container resolution', function (): void {
         expect($active)->toBe($moduleHandler)
             ->and($underneath)->toBe($original)
             ->and($bootstrapErrorHandler->isActive())->toBeFalse();
+    });
+
+    it('removes the handlers its boot callback registered from its shutdown callback', function (): void {
+        $module = require dirname(__DIR__, 2) . '/module.php';
+        $stacks = static function (): array {
+            $read = static function (Closure $set, Closure $restore): array {
+                $handlers = [];
+
+                while (($handler = $set(null)) !== null) {
+                    $restore();
+                    $handlers[] = $handler;
+                    $restore();
+                }
+
+                $restore();
+                $handlers = array_reverse($handlers);
+
+                foreach ($handlers as $handler) {
+                    $set($handler);
+                }
+
+                return $handlers;
+            };
+
+            return [
+                $read(set_error_handler(...), restore_error_handler(...)),
+                $read(set_exception_handler(...), restore_exception_handler(...)),
+            ];
+        };
+        $container = new Container(new PreferenceRegistry());
+        $container->instance(ContainerInterface::class, $container);
+        $container->instance(ClockInterface::class, new FakeClock());
+        $container->instance(BootstrapErrorHandler::class, new BootstrapErrorHandler());
+
+        foreach ($module['bindings'] as $abstract => $concrete) {
+            $container->bind($abstract, $concrete);
+        }
+
+        foreach ($module['singletons'] ?? [] as $abstract) {
+            $container->singleton($abstract);
+        }
+
+        $before = $stacks();
+        $container->call($module['boot']);
+        $booted = $stacks();
+        $container->call($module['shutdown']);
+
+        expect($booted)->not->toBe($before)
+            ->and($stacks())->toBe($before);
     });
 
     it('resolves ErrorHandlerInterface from the module bindings', function (): void {

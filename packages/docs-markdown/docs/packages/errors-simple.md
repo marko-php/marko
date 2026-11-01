@@ -20,7 +20,7 @@ Non-fatal PHP errors (warnings, notices, deprecations) are reported via `error_l
 composer require marko/errors-simple
 ```
 
-The handler registers automatically via module boot --- no configuration required.
+The handler registers automatically via module boot --- no configuration required. `ErrorHandlerInterface` is bound as a singleton, and the module's `shutdown` callback unregisters the handler when [`Application::shutdown()`](/docs/packages/core/#shutting-down) runs (marko/testing does this after every test that booted the application).
 
 ## Usage
 

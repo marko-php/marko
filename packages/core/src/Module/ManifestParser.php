@@ -40,7 +40,7 @@ class ManifestParser
      * Rebuild a manifest from its cached composer data and the module's live module.php.
      *
      * Never reads composer.json. module.php is still required, so its closures
-     * (bindings, boot callbacks) stay live.
+     * (bindings, boot and shutdown callbacks) stay live.
      *
      * @throws ModuleException If module.php has syntax errors or does not return an array
      */
@@ -93,6 +93,7 @@ class ManifestParser
             globalMiddleware: $moduleData['globalMiddleware'] ?? [],
             extra: $extra,
             discovery: $moduleData['discovery'] ?? [],
+            shutdown: $moduleData['shutdown'] ?? null,
         );
     }
 

@@ -24,6 +24,7 @@ use Marko\Database\Migration\Migrator;
 use Marko\Database\Testing\DatabaseTestHelper;
 use Marko\Routing\Exceptions\RouteConflictException;
 use Marko\Routing\Exceptions\RouteException;
+use Marko\Testing\BootedApplications;
 use Marko\Testing\Exceptions\DatabaseTestException;
 use Marko\Testing\Http\TestClient;
 use Psr\Container\ContainerExceptionInterface;
@@ -102,6 +103,10 @@ class TestDatabase
         // Booting reads the project's .env, so the environment is checked
         // after boot and before anything touches the database.
         $application = Application::boot($basePath);
+        // Shut down after this test, even when one of the checks below refuses it. The
+        // application stays shared and usable for later tests; shutting it down only removes
+        // the global error and exception handlers its boot installed.
+        BootedApplications::track($application);
         $booting = new self($application);
         $booting->assertNotProduction();
 

@@ -171,6 +171,7 @@ readonly class ModuleDiscovery
             globalMiddleware: $manifest->globalMiddleware,
             extra: $manifest->extra,
             discovery: $manifest->discovery,
+            shutdown: $manifest->shutdown,
         );
     }
 

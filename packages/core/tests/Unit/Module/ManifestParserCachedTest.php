@@ -82,7 +82,7 @@ describe('ManifestParser cached modules', function (): void {
 
     it('keeps module.php closures live when building a manifest from a cached module', function (): void {
         $dir = cachedManifestModule(
-            "<?php return ['boot' => fn (): string => 'booted', 'bindings' => ['A' => fn (): string => 'b']];",
+            "<?php return ['boot' => fn (): string => 'booted', 'shutdown' => fn (): string => 'shut down', 'bindings' => ['A' => fn (): string => 'b']];",
         );
 
         $manifest = (new ManifestParser())->parseCached(new CachedModule(
@@ -95,6 +95,8 @@ describe('ManifestParser cached modules', function (): void {
 
         expect($manifest->boot)->toBeInstanceOf(Closure::class)
             ->and(($manifest->boot)())->toBe('booted')
+            ->and($manifest->shutdown)->toBeInstanceOf(Closure::class)
+            ->and(($manifest->shutdown)())->toBe('shut down')
             ->and($manifest->bindings['A'])->toBeInstanceOf(Closure::class);
     });
 
