@@ -192,8 +192,9 @@ Implements `QueueInterface`. The constructor accepts:
 - an optional table name (`jobs`)
 - an optional default queue name
 - an optional `retryAfter` timeout in seconds
+- an optional `JobIdGenerator`, which gives each pushed job its id (see [`marko/queue`](/docs/packages/queue/#jobidgenerator))
 
-The module factory passes the container's bound clock, `DatabaseTimezoneConfig` and `RetryPolicy`, and sets the last two from `queue.queue` and `queue.retry_after`.
+The module factory passes the container's bound clock, `DatabaseTimezoneConfig`, `RetryPolicy` and `JobIdGenerator`, and sets the default queue and `retryAfter` from `queue.queue` and `queue.retry_after`.
 
 `pop()` selects the next available job with `lockForUpdate()->skipLocked()` inside a transaction, then reserves it with an `UPDATE` guarded on `reserved_at`. A job locked by another worker is skipped rather than waited for, so multiple workers can run concurrently without claiming the same job. The connection must implement `TransactionInterface` (the MySQL and PostgreSQL drivers do). Otherwise `pop()` throws `LockException`, because the lock would be released as soon as the `SELECT` finished. Jobs whose `reserved_at` timestamp is older than `retry_after` seconds are treated as crashed and become eligible for re-reservation.
 
@@ -201,7 +202,7 @@ The module factory passes the container's bound clock, `DatabaseTimezoneConfig` 
 |---|---|
 | `push(JobInterface $job, ?string $queue = null): PushResult` | Insert a job for immediate processing. Returns a pushed `PushResult` with the job ID. |
 | `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Insert a job with a delay in seconds. Returns a pushed `PushResult` with the job ID. |
-| `pop(?string $queue = null): ?JobInterface` | Retrieve and reserve the next available job, or `null` if empty. Increments the `attempts` column, syncs the job's attempt count with earlier unreleased reservations, and fails crash-exhausted jobs through the failed-job handler. Runs in a transaction (a savepoint inside a caller's transaction). Throws `LockException` on a connection without transactions. |
+| `pop(?string $queue = null, bool $block = false): ?JobInterface` | Retrieve and reserve the next available job, or `null` if empty. Increments the `attempts` column, syncs the job's attempt count with earlier unreleased reservations, and fails crash-exhausted jobs through the failed-job handler. Runs in a transaction (a savepoint inside a caller's transaction). Throws `LockException` on a connection without transactions. Never blocks: `$block` is ignored. |
 | `size(?string $queue = null): int` | Count pending (unreserved, available) jobs. |
 | `clear(?string $queue = null): int` | Delete all jobs in a queue. Returns the number of deleted rows. |
 | `delete(string $jobId): bool` | Delete a specific job by ID. |

@@ -3,7 +3,7 @@ title: marko/queue-sync
 description: Synchronous queue driver — executes jobs immediately during the current request, ideal for development and testing.
 ---
 
-Synchronous queue driver --- executes jobs immediately during the current request, ideal for development and testing. The sync driver runs jobs inline when they are pushed, with no external dependencies or background processes. Delayed jobs execute immediately. Failed jobs throw `JobFailedException` so errors surface instantly during development. Use `marko/queue-database` or `marko/queue-rabbitmq` for production workloads.
+Synchronous queue driver --- executes jobs immediately during the current request, ideal for development and testing. The sync driver runs jobs inline when they are pushed, with no external dependencies or background processes. Delayed jobs execute immediately. Failed jobs throw `JobFailedException` so errors surface instantly during development. Use `marko/queue-database`, `marko/queue-redis` or `marko/queue-rabbitmq` for production workloads.
 
 Implements `QueueInterface` from [marko/queue](/docs/packages/queue/).
 
@@ -78,7 +78,7 @@ Implements all methods from `QueueInterface`. See [marko/queue](/docs/packages/q
 | `__construct(JobRunnerInterface $jobRunner, FailedJobHandlerInterface $failedJobHandler, QueueConfig $config)` | Autowired. Every job runs through the runner, and a job that throws goes through the failed-job handler. |
 | `push(JobInterface $job, ?string $queue = null): PushResult` | Execute the job immediately through the `JobRunner` and return a pushed `PushResult` with its ID. Container-aware jobs get the container and job envelope first, and release them afterwards. On failure, hands the job to the failed-job handler, then throws `JobFailedException`. |
 | `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Ignores the delay and executes immediately via `push()`. |
-| `pop(?string $queue = null): ?JobInterface` | Always returns `null` --- no jobs are ever queued. |
+| `pop(?string $queue = null, bool $block = false): ?JobInterface` | Always returns `null` --- no jobs are ever queued. |
 | `size(?string $queue = null): int` | Always returns `0`. |
 | `clear(?string $queue = null): int` | Always returns `0`. |
 | `delete(string $jobId): bool` | Always returns `true`. |

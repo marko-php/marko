@@ -215,6 +215,7 @@ class StopTestQueue implements QueueInterface
 
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         StopTestHelper::$popCount++;
 
@@ -295,6 +296,7 @@ describe('Worker', function (): void {
 
             public function pop(
                 ?string $queue = null,
+                bool $block = false,
             ): ?JobInterface {
                 if ($this->popped) {
                     return null;
@@ -399,6 +401,7 @@ describe('Worker', function (): void {
 
             public function pop(
                 ?string $queue = null,
+                bool $block = false,
             ): ?JobInterface {
                 if ($this->popped) {
                     return null;
@@ -499,6 +502,7 @@ describe('Worker', function (): void {
 
             public function pop(
                 ?string $queue = null,
+                bool $block = false,
             ): ?JobInterface {
                 if ($this->popped) {
                     return null;
@@ -643,6 +647,7 @@ describe('Worker', function (): void {
 
             public function pop(
                 ?string $queue = null,
+                bool $block = false,
             ): ?JobInterface {
                 $this->popCount++;
 
@@ -727,6 +732,7 @@ describe('Worker', function (): void {
 
             public function pop(
                 ?string $queue = null,
+                bool $block = false,
             ): ?JobInterface {
                 $this->popCount++;
 
@@ -827,6 +833,7 @@ describe('Worker', function (): void {
 
             public function pop(
                 ?string $queue = null,
+                bool $block = false,
             ): ?JobInterface {
                 $this->popCount++;
                 if ($this->popCount > 3) {
@@ -950,8 +957,10 @@ describe('Worker', function (): void {
                     return PushResult::pushed('async-job-1');
                 }
 
-                public function pop(?string $queue = null): ?JobInterface
-                {
+                public function pop(
+                    ?string $queue = null,
+                    bool $block = false,
+                ): ?JobInterface {
                     if ($this->popped) {
                         return null;
                     }
@@ -1049,6 +1058,7 @@ class SingleJobRecordingQueue implements QueueInterface
 
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         if ($this->popped) {
             return null;
@@ -1305,6 +1315,9 @@ class MultiQueueRecordingQueue implements QueueInterface
         private readonly RecordingLog $log,
     ) {}
 
+    /** @var list<array{queue: ?string, block: bool}> */
+    public array $popCalls = [];
+
     public function push(
         JobInterface $job,
         ?string $queue = null,
@@ -1324,8 +1337,10 @@ class MultiQueueRecordingQueue implements QueueInterface
 
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         $this->log->entries[] = 'pop:' . ($queue ?? 'null');
+        $this->popCalls[] = ['queue' => $queue, 'block' => $block];
         $name = $queue ?? 'default';
 
         if (($this->jobs[$name] ?? []) === []) {
@@ -1429,6 +1444,39 @@ function createPauseRecordingWorker(
         $log,
     );
 }
+
+describe('Worker blocking pop', function (): void {
+    it('lets the driver block on the only queue it works', function (): void {
+        $log = new RecordingLog();
+        $queue = new MultiQueueRecordingQueue(['emails' => []], $log);
+
+        createPauseRecordingWorker($queue, $log)->work(queues: ['emails'], once: true);
+
+        expect($queue->popCalls)->toBe([['queue' => 'emails', 'block' => true]]);
+    });
+
+    it('lets the driver block on the default queue when no queues are given', function (): void {
+        $log = new RecordingLog();
+        $queue = new MultiQueueRecordingQueue(['default' => []], $log);
+
+        createPauseRecordingWorker($queue, $log)->work(once: true);
+
+        expect($queue->popCalls)->toBe([['queue' => null, 'block' => true]]);
+    });
+
+    it('never lets the driver block when it works several queues', function (): void {
+        $log = new RecordingLog();
+        $queue = new MultiQueueRecordingQueue(['high' => [], 'default' => [], 'low' => []], $log);
+
+        createPauseRecordingWorker($queue, $log)->work(queues: ['high', 'default', 'low'], once: true);
+
+        expect($queue->popCalls)->toBe([
+            ['queue' => 'high', 'block' => false],
+            ['queue' => 'default', 'block' => false],
+            ['queue' => 'low', 'block' => false],
+        ]);
+    });
+});
 
 describe('Worker priority queues', function (): void {
     it('processes jobs on the high queue before jobs on the low queue', function (): void {
@@ -1591,6 +1639,7 @@ class SequenceRecordingQueue implements QueueInterface
 
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         return array_shift($this->jobs);
     }
@@ -1991,12 +2040,13 @@ class FailingPopQueue extends MultiQueueRecordingQueue
 
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         if ($this->pops++ < $this->failures) {
             throw new RuntimeException('Broker connection lost');
         }
 
-        return parent::pop($queue);
+        return parent::pop($queue, $block);
     }
 }
 

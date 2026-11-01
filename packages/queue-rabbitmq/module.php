@@ -6,6 +6,7 @@ use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobIdGenerator;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Rabbitmq\Exceptions\RabbitmqException;
@@ -23,6 +24,7 @@ return [
                 exchangeConfig: $container->get(ExchangeConfig::class),
                 jobEnvelope: $container->get(JobEnvelope::class),
                 defaultQueue: $container->get(QueueConfig::class)->queue(),
+                jobIdGenerator: $container->get(JobIdGenerator::class),
             );
         },
         FailedJobRepositoryInterface::class => RabbitmqFailedJobRepository::class,

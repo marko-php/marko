@@ -112,6 +112,7 @@ class FakeQueue implements QueueInterface
 
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         foreach ($this->pushed as $index => $entry) {
             if ($entry['queue'] === $queue) {

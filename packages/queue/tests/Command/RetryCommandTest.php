@@ -569,6 +569,7 @@ class RetryRoundTripQueue implements QueueInterface
 
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         return array_shift($this->jobs);
     }

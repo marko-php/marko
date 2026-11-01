@@ -188,6 +188,7 @@ function createInMemoryQueue(): QueueInterface
 
         public function pop(
             ?string $queue = null,
+            bool $block = false,
         ): ?JobInterface {
             $queueName = $queue ?? 'default';
             $now = time();

@@ -106,6 +106,7 @@ class WorkerRetryPersistingQueue implements QueueInterface
 
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         if ($this->stored === null || $this->reserved) {
             return null;

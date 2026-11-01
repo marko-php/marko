@@ -207,6 +207,34 @@ describe('RetryPolicy', function (): void {
     );
 });
 
+describe('RetryPolicy at reservation', function (): void {
+    it('reports attempts used up at reservation as reservations lost to crashed workers', function (): void {
+        $job = attemptRetryPolicyJob(new RetryPolicyTestJob(maxAttempts: 2), 2);
+        $job->setId('job-7');
+
+        $failure = createRetryPolicy()->limitReachedOnReservation($job);
+
+        expect($failure)->toBeInstanceOf(JobAttemptsExhaustedException::class)
+            ->and($failure?->getMessage())->toContain('after worker crash or timeout')
+            ->and($failure?->getMessage())->toContain('2 of 2 attempts');
+    });
+
+    it('reports a passed retry deadline at reservation unchanged', function (): void {
+        $clock = new FakeClock('2026-10-31 12:00:00');
+        $job = attemptRetryPolicyJob(new RetryPolicyTestJob(), 1);
+        $job->setRetryDeadline(new DateTimeImmutable('2026-10-31 11:00:00'));
+
+        expect(createRetryPolicy($clock)->limitReachedOnReservation($job))
+            ->toBeInstanceOf(JobRetryDeadlinePassedException::class);
+    });
+
+    it('returns null at reservation for a job that may still run', function (): void {
+        $job = attemptRetryPolicyJob(new RetryPolicyTestJob(maxAttempts: 3), 2);
+
+        expect(createRetryPolicy()->limitReachedOnReservation($job))->toBeNull();
+    });
+});
+
 describe('RetryDecision', function (): void {
     it('rejects a negative release delay', function (): void {
         RetryDecision::release(-1);

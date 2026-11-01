@@ -17,11 +17,20 @@ use Marko\Queue\Database\Tests\Fixtures\TestJob;
 use Marko\Queue\Database\Tests\Fixtures\TestRetryPolicy;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobIdGenerator;
 use Marko\Queue\QueueInterface;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeConfigRepository;
 use PHPUnit\Framework\MockObject\Stub;
 use Psr\Clock\ClockInterface;
+
+class FixedJobIdGenerator extends JobIdGenerator
+{
+    public function generate(): string
+    {
+        return 'fixed-job-id';
+    }
+}
 
 function createTestQueue(
     ConnectionInterface $connection,
@@ -892,4 +901,26 @@ describe('DatabaseQueue clock', function (): void {
         expect($queue->pop())->toBeNull()
             ->and($failed->find($id)?->failedAt)->toEqual(new DateTimeImmutable('2026-10-05 12:00:31'));
     });
+});
+
+test('it gives a pushed job the id from the injected JobIdGenerator', function (): void {
+    $connection = SqliteConnection::withQueueTables();
+    $clock = new FakeClock('2026-10-05 12:00:00');
+    $queue = new DatabaseQueue(
+        connection: $connection,
+        jobEnvelope: createTestEnvelope(),
+        failedJobHandler: TestFailedJobHandler::create(
+            new InMemoryFailedJobRepository(),
+            createTestEnvelope(),
+            $clock,
+        ),
+        queryBuilderFactory: new PgSqlQueryBuilderFactory($connection),
+        clock: $clock,
+        databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
+        retryPolicy: TestRetryPolicy::create(3, $clock),
+        jobIdGenerator: new FixedJobIdGenerator(),
+    );
+
+    expect($queue->push(new TestJob())->id)->toBe('fixed-job-id')
+        ->and($queue->pop()?->id)->toBe('fixed-job-id');
 });

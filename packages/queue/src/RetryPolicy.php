@@ -13,7 +13,7 @@ use Throwable;
 
 /**
  * Decides whether a job gets another attempt. The Worker and the drivers that check limits at pop time
- * (DatabaseQueue) all ask this class, so the precedence of the limits is coded once:
+ * (DatabaseQueue, RedisQueue) all ask this class, so the precedence of the limits is coded once:
  *
  * 1. a retry deadline that has passed fails the job;
  * 2. then exceptions reaching maxExceptions fail it;
@@ -87,6 +87,29 @@ class RetryPolicy
         }
 
         return null;
+    }
+
+    /**
+     * The limit a job a driver has just reserved had already reached before this attempt started, or null when
+     * it may run. Drivers that check limits at pop time (DatabaseQueue, RedisQueue) fail the job with it.
+     *
+     * The worker fails a job that threw or released itself on its last attempt, so a job that is out of attempts
+     * at reservation had them all reserved by workers that crashed or timed out. Its attempts failure says so.
+     */
+    public function limitReachedOnReservation(
+        JobInterface $job,
+    ): ?QueueException {
+        $failure = $this->limitReached($job);
+
+        if ($failure instanceof JobAttemptsExhaustedException) {
+            return JobAttemptsExhaustedException::afterCrashedReservations(
+                (string) $job->id,
+                $job->attempts,
+                $this->maxAttemptsFor($job),
+            );
+        }
+
+        return $failure;
     }
 
     /**

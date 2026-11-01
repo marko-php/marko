@@ -126,6 +126,7 @@ body:
         - queue
         - queue-database
         - queue-rabbitmq
+        - queue-redis
         - queue-sync
         - ratelimiter
         - redis

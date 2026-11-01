@@ -1,0 +1,40 @@
+{
+    "name": "marko/queue-redis",
+    "description": "Redis queue driver for Marko Framework",
+    "license": "MIT",
+    "type": "marko-module",
+    "require": {
+        "php": "^8.5",
+        "marko/clock": "self.version",
+        "marko/config": "self.version",
+        "marko/core": "self.version",
+        "marko/queue": "self.version",
+        "marko/redis": "self.version",
+        "predis/predis": "^2.0"
+    },
+    "require-dev": {
+        "marko/cache-array": "self.version",
+        "marko/testing": "self.version",
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Queue\\Redis\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Marko\\Queue\\Redis\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

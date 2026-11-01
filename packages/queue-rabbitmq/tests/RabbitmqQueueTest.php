@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobIdGenerator;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\Rabbitmq\Exceptions\RabbitmqException;
 use Marko\Queue\Rabbitmq\Exchange\ExchangeConfig;
@@ -220,6 +221,14 @@ class MockQueueChannel extends AMQPChannel
         ];
 
         return $this->queuePurgeCount;
+    }
+}
+
+class FixedRabbitmqJobIdGenerator extends JobIdGenerator
+{
+    public function generate(): string
+    {
+        return 'fixed-job-id';
     }
 }
 
@@ -1501,3 +1510,14 @@ test(
         expect($stack->lockIsFree($first))->toBeTrue();
     },
 );
+
+test('it gives a pushed job the id from the injected JobIdGenerator', function (): void {
+    $queue = new RabbitmqQueue(
+        createTestableRabbitmqConnection(createMockChannel()),
+        new ExchangeConfig(name: 'test-exchange', type: ExchangeType::Direct),
+        createRabbitmqTestEnvelope(),
+        jobIdGenerator: new FixedRabbitmqJobIdGenerator(),
+    );
+
+    expect($queue->push(new TestJob())->id)->toBe('fixed-job-id');
+});

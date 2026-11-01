@@ -11,6 +11,7 @@ use Marko\Queue\Database\DatabaseQueue;
 use Marko\Queue\FailedJobHandlerInterface;
 use Marko\Queue\FailedJobRepositoryInterface;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobIdGenerator;
 use Marko\Queue\QueueConfig;
 use Marko\Queue\QueueInterface;
 use Marko\Queue\RetryPolicy;
@@ -31,6 +32,7 @@ return [
                 retryPolicy: $container->get(RetryPolicy::class),
                 defaultQueue: $config->queue(),
                 retryAfter: $config->retryAfter(),
+                jobIdGenerator: $container->get(JobIdGenerator::class),
             );
         },
         FailedJobRepositoryInterface::class => DatabaseFailedJobRepository::class,

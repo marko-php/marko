@@ -7,6 +7,7 @@ namespace Marko\Queue\Rabbitmq;
 use Exception;
 use Marko\Queue\Exceptions\SerializationException;
 use Marko\Queue\JobEnvelope;
+use Marko\Queue\JobIdGenerator;
 use Marko\Queue\JobInterface;
 use Marko\Queue\PushResult;
 use Marko\Queue\QueueInterface;
@@ -45,6 +46,7 @@ class RabbitmqQueue implements QueueInterface
         private readonly ExchangeConfig $exchangeConfig,
         private readonly JobEnvelope $jobEnvelope,
         private readonly string $defaultQueue = 'default',
+        private readonly JobIdGenerator $jobIdGenerator = new JobIdGenerator(),
     ) {}
 
     /**
@@ -56,7 +58,7 @@ class RabbitmqQueue implements QueueInterface
     ): PushResult {
         $this->declare($queue);
 
-        $id = $this->generateId();
+        $id = $this->jobIdGenerator->generate();
         $job->setId($id);
 
         $queueName = $queue ?? $this->defaultQueue;
@@ -102,7 +104,7 @@ class RabbitmqQueue implements QueueInterface
             ]),
         );
 
-        $id = $this->generateId();
+        $id = $this->jobIdGenerator->generate();
         $job->setId($id);
 
         $message = new AMQPMessage(
@@ -131,6 +133,7 @@ class RabbitmqQueue implements QueueInterface
      */
     public function pop(
         ?string $queue = null,
+        bool $block = false,
     ): ?JobInterface {
         $this->declare($queue);
 
@@ -434,23 +437,5 @@ class RabbitmqQueue implements QueueInterface
             ExchangeType::Direct, ExchangeType::Topic => $queueName,
             ExchangeType::Fanout, ExchangeType::Headers => '',
         };
-    }
-
-    /**
-     * @throws RandomException
-     */
-    private function generateId(): string
-    {
-        return sprintf(
-            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0x0fff) | 0x4000,
-            random_int(0, 0x3fff) | 0x8000,
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-        );
     }
 }

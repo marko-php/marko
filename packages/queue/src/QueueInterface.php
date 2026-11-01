@@ -23,7 +23,17 @@ interface QueueInterface
         ?string $queue = null,
     ): PushResult;
 
-    public function pop(?string $queue = null): ?JobInterface;
+    /**
+     * Reserve the next job that is ready to run, or return null when there is none.
+     *
+     * With $block true the caller can wait: a driver that supports blocking pops may wait up to its configured
+     * block time for a job to arrive before returning null. A driver without blocking pops returns straight away.
+     * The Worker passes true only when it works a single queue, so waiting on one queue never delays another.
+     */
+    public function pop(
+        ?string $queue = null,
+        bool $block = false,
+    ): ?JobInterface;
 
     public function size(?string $queue = null): int;
 
