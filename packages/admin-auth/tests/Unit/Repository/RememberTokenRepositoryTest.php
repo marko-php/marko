@@ -109,6 +109,30 @@ it('deletes one device token and leaves the others', function (): void {
         ->and($this->repository->findBySelector('admin', 'phone'))->not->toBeNull();
 });
 
+it('deletes every token of one user on a guard except the kept selector', function (): void {
+    $expiresAt = $this->clock->now()->modify('+1 day');
+    $this->repository->store(rememberTokenRecord('laptop', $expiresAt, userId: 7));
+    $this->repository->store(rememberTokenRecord('phone', $expiresAt, userId: 7));
+    $this->repository->store(rememberTokenRecord('tablet', $expiresAt, userId: 7));
+    $this->repository->store(rememberTokenRecord('other-user', $expiresAt, userId: 8));
+    $this->repository->store(rememberTokenRecord('other-guard', $expiresAt, guard: 'session', userId: 7));
+
+    $deleted = $this->repository->deleteAllForUser('admin', 7, exceptSelector: 'laptop');
+
+    expect($deleted)->toBe(2)
+        ->and(array_column($this->connection->rows(), 'selector'))->toBe(['laptop', 'other-user', 'other-guard']);
+});
+
+it('deletes every token of one user on a guard when no selector is kept', function (): void {
+    $expiresAt = $this->clock->now()->modify('+1 day');
+    $this->repository->store(rememberTokenRecord('laptop', $expiresAt, userId: 7));
+    $this->repository->store(rememberTokenRecord('phone', $expiresAt, userId: 7));
+    $this->repository->store(rememberTokenRecord('other-user', $expiresAt, userId: 8));
+
+    expect($this->repository->deleteAllForUser('admin', '7'))->toBe(2)
+        ->and(array_column($this->connection->rows(), 'selector'))->toBe(['other-user']);
+});
+
 it('purges only expired rows', function (): void {
     $this->repository->store(rememberTokenRecord('expired', $this->clock->now()->modify('-1 second')));
     $this->repository->store(rememberTokenRecord('expiring-now', $this->clock->now()));

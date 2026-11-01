@@ -188,6 +188,71 @@ it('expires a cached value after its ttl', function (): void {
 
 Redis enforces TTLs on the server, so with `marko/cache-redis` the clock only anchors the reported `expiresAt()`. Moving a `FakeClock` does not expire Redis keys.
 
+### Atomic Locks
+
+An atomic lock is a mutex that worker processes share: only one owner holds a named lock at a time. A `has()` followed by `set()` is a race. A lock claims the name in one atomic step, so use one when work must never run twice at once, such as advancing one video's pipeline or approving a review that was double-clicked. Inject `LockFactoryInterface`; there is no facade:
+
+```php
+use Marko\Cache\Contracts\LockFactoryInterface;
+
+class AdvancePipeline
+{
+    public function __construct(
+        private LockFactoryInterface $locks,
+    ) {}
+
+    public function handle(
+        int $videoId,
+    ): void {
+        $lock = $this->locks->create("video-pipeline:$videoId", 120);
+
+        if (!$lock->acquire()) {
+            return; // another worker is advancing this video
+        }
+
+        try {
+            // ... the work ...
+        } finally {
+            $lock->release();
+        }
+    }
+}
+```
+
+- **Every lock expires.** The second argument to `create()` is the lock's lifetime in seconds. It must be at least 1, so a holder that crashes can never deadlock the app. Pick the longest time the guarded work can take.
+- **Owner tokens.** `create()` gives each lock a random owner token (`owner()`). `release()` frees the lock only for that owner. It returns `false` when another owner holds the lock or it has expired, so a slow holder can't free a lock someone else claimed after it expired. `forceRelease()` frees it whoever holds it.
+- **Waiting.** `block($waitSeconds)` retries every 250 ms until the lock is acquired. When the wait runs out it throws `Marko\Cache\Exceptions\LockTimeoutException`. This is a different exception from `Marko\Database\Exceptions\LockTimeoutException`, which is about database row locks.
+- **Releasing from another process.** Store `name()` and `owner()`, for example in a job payload. Then `restore($name, $owner)` rebuilds the lock anywhere so you can `release()` it, such as from a job's failure path. A restored lock carries no expiry, so `acquire()` and `block()` on it throw `LockException`.
+
+```php
+use Marko\Cache\Exceptions\LockTimeoutException;
+
+$lock = $this->locks->create('reports:nightly', 600);
+
+try {
+    $lock->block(5);
+} catch (LockTimeoutException) {
+    // still held after 5 seconds
+}
+
+// Later, in another process:
+$this->locks->restore('reports:nightly', $owner)->release();
+```
+
+#### Which Driver Excludes What
+
+Each cache driver binds a `LockStoreInterface`, and its `scope()` reports how far the exclusion reaches:
+
+| Driver | Store | `LockScope` | Excludes |
+|--------|-------|-------------|----------|
+| `marko/cache-redis` | `RedisLockStore` | `Distributed` | processes on every host that shares the Redis server |
+| `marko/cache-file` | `FileLockStore` | `Host` | processes on the same host only |
+| `marko/cache-array` | `ArrayLockStore` | `Process` | callers in the same PHP process only (tests) |
+
+**Only `marko/cache-redis` gives cross-host exclusion.** With the file store, workers on two servers each get the lock. Code that needs cross-host exclusion checks `$locks->scope() === LockScope::Distributed` and throws otherwise, so it never quietly runs on every host.
+
+Locks live alongside the cache entries, so `marko cache:clear` also frees every held lock. An app that installs no cache driver can still bind its own `LockStoreInterface` with a [Preference](/docs/concepts/preferences/). Without any store, resolving `LockFactoryInterface` throws `NoDriverException` with a list of the driver packages.
+
 ## CLI Commands
 
 | Command | Description |
@@ -262,6 +327,50 @@ public function path(): string;
 public function defaultTtl(): int;
 ```
 
+### LockFactoryInterface
+
+```php
+use Marko\Cache\Contracts\LockFactoryInterface;
+use Marko\Cache\Contracts\LockInterface;
+use Marko\Cache\Lock\LockScope;
+
+public function create(string $name, int $seconds): LockInterface;  // fresh random owner; $seconds >= 1
+public function restore(string $name, string $owner): LockInterface; // release-only lock for another process
+public function scope(): LockScope;                                  // the bound store's scope
+```
+
+`marko/cache` binds it to `Marko\Cache\Lock\LockFactory`, which builds `Marko\Cache\Lock\Lock` instances on the bound store.
+
+### LockInterface
+
+```php
+use Marko\Cache\Contracts\LockInterface;
+
+public function acquire(): bool;              // one non-blocking attempt
+public function block(int $waitSeconds): void; // retry until acquired; throws LockTimeoutException
+public function release(): bool;              // false unless this owner holds it
+public function forceRelease(): void;
+public function owner(): string;
+public function name(): string;
+```
+
+`block()` sleeps `Lock::RETRY_INTERVAL_MILLISECONDS` (250) between attempts through `Marko\Cache\Lock\SleeperInterface`, bound to `UsleepSleeper`. Bind your own sleeper in tests so `block()` doesn't really wait.
+
+### LockStoreInterface
+
+The only part a driver implements. Owner tokens, expiry validation, `block()` and `restore()` live once in `Lock` and `LockFactory`.
+
+```php
+use Marko\Cache\Contracts\LockStoreInterface;
+use Marko\Cache\Lock\LockScope;
+
+public function acquire(string $name, string $owner, int $seconds): bool; // atomic set-if-absent with expiry
+public function release(string $name, string $owner): bool;               // atomic compare-and-delete
+public function forceRelease(string $name): void;
+public function currentOwner(string $name): ?string;                      // null when free or expired
+public function scope(): LockScope;                                       // Process, Host or Distributed
+```
+
 ### Exceptions
 
 | Exception | Description |
@@ -269,6 +378,9 @@ public function defaultTtl(): int;
 | `CacheException` | Base exception for all cache errors --- includes `getContext()` and `getSuggestion()` methods |
 | `InvalidKeyException` | Thrown when a cache key is empty or contains reserved characters |
 | `ItemNotFoundException` | Thrown when a requested cache item does not exist |
+| `LockException` | Thrown for an empty lock name or owner, an expiry below 1 second, a negative `block()` wait, or `acquire()` on a restored lock |
+| `LockTimeoutException` | Thrown by `LockInterface::block()` when the lock stays held for the whole wait (not the database row-lock exception of the same short name) |
+| `NoDriverException` | Thrown when a cache interface, or the `LockStoreInterface` behind `LockFactoryInterface`, has no driver bound |
 | `TamperedCacheValueException` | Thrown when `encryption.key` is empty, so cache values can't be signed or verified. The Redis driver also throws it when a stored value's HMAC does not verify |
 
 ### CacheValueSigner

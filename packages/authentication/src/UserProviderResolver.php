@@ -44,16 +44,10 @@ class UserProviderResolver
         string $guard,
         array $guardConfig,
     ): UserProviderInterface {
-        $providerName = array_key_exists('provider', $guardConfig)
-            ? $guardConfig['provider']
-            : $this->config->defaultProviderOrNull();
+        $providerName = $this->config->guardProviderName($guard, $guardConfig);
 
         if ($providerName === null) {
             return $this->defaultProvider();
-        }
-
-        if (!is_string($providerName) || $providerName === '') {
-            throw AuthException::invalidGuardProvider($guard);
         }
 
         return $this->providers[$providerName] ??= $this->resolve($guard, $providerName);

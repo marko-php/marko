@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Marko\Cache\Redis\Tests;
 
 use Marko\Cache\Contracts\CacheInterface;
+use Marko\Cache\Contracts\LockStoreInterface;
+use Marko\Cache\Lock\LockScope;
 use Marko\Cache\Redis\Config\RedisCacheConfig;
 use Marko\Cache\Redis\Driver\RedisCacheDriver;
+use Marko\Cache\Redis\Lock\RedisLockStore;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Core\Container\Container;
 use Marko\Redis\Exceptions\RedisConnectionException;
@@ -92,6 +95,20 @@ describe('cache-redis module bindings', function (): void {
         $container = createCacheRedisContainer(cacheRedisConfig());
 
         expect($container->get(CacheInterface::class))->toBeInstanceOf(RedisCacheDriver::class);
+    });
+
+    it('resolves LockStoreInterface to the distributed RedisLockStore', function (): void {
+        $store = createCacheRedisContainer(cacheRedisConfig())->get(LockStoreInterface::class);
+
+        expect($store)->toBeInstanceOf(RedisLockStore::class)
+            ->and($store->scope())->toBe(LockScope::Distributed);
+    });
+
+    it('throws a loud error when the lock store names a connection redis does not configure', function (): void {
+        $container = createCacheRedisContainer(cacheRedisConfig(connection: 'missing'));
+
+        expect(fn () => $container->get(LockStoreInterface::class))
+            ->toThrow(RedisConnectionException::class, "Redis connection 'missing' is not configured");
     });
 
     it('throws a loud error when cache-redis names a connection redis does not configure', function (): void {

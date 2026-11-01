@@ -20,6 +20,16 @@ class UserPersisterException extends AuthException
         );
     }
 
+    public static function noGuardPersister(
+        string $guard,
+    ): self {
+        return new self(
+            message: "No user persister is configured for guard '$guard'",
+            context: "Guard '$guard' names no user provider, and Marko\\Authentication\\Contracts\\UserPersisterInterface has no container binding",
+            suggestion: 'Implement UserPersisterInterface to save your user entity, then bind it in your module.php',
+        );
+    }
+
     public static function invalidPersisterClass(
         string $provider,
         string $class,
