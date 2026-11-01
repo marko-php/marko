@@ -42,6 +42,12 @@ return [
         'bcrypt' => [
             'cost' => 12,
         ],
+        // App-wide password rules for AuthRules::password()
+        'min' => 8,              // at least this many characters (1 or more)
+        'mixed_case' => false,   // an uppercase and a lowercase letter
+        'letters' => false,      // at least one letter
+        'numbers' => false,      // at least one number
+        'symbols' => false,      // at least one symbol
     ],
 
     'remember' => [
@@ -85,11 +91,11 @@ Each guard's `driver` picks how it is built. `session` is built in. The shipped 
 
 Each guard's `provider` names an entry in `providers`. See [User Providers](#user-providers).
 
-See [Remember Me](#remember-me) for what each `remember` option controls, [Login Throttling](#login-throttling) for `throttle`, [Password Reset](#password-reset) for `password_reset`, and [Password Confirmation](#password-confirmation) for `password_confirmation`.
+See [Remember Me](#remember-me) for what each `remember` option controls, [Login Throttling](#login-throttling) for `throttle`, [Password Reset](#password-reset) for `password_reset`, [Password Confirmation](#password-confirmation) for `password_confirmation`, and [Validation Rules](#validation-rules) for the `password` rule keys.
 
 ### Password Hashing
 
-`PasswordHasherInterface` is bound to `BcryptPasswordHasher`, using `password.bcrypt.cost`. When [marko/hashing](/docs/packages/hashing/) is installed, the binding switches to `HashManagerPasswordHasher` instead, and `config/hashing.php` (`HASH_DRIVER`, `BCRYPT_COST`, the Argon2id settings) governs login passwords; `authentication.password` is then ignored.
+`PasswordHasherInterface` is bound to `BcryptPasswordHasher`, using `password.bcrypt.cost`. When [marko/hashing](/docs/packages/hashing/) is installed, the binding switches to `HashManagerPasswordHasher` instead, and `config/hashing.php` (`HASH_DRIVER`, `BCRYPT_COST`, the Argon2id settings) governs login passwords; `authentication.password.driver` and `.bcrypt` are then ignored. The password rule keys (`min`, `mixed_case`, ...) always apply.
 
 After a successful `attempt()`, `SessionGuard` calls `UserProviderInterface::rehashPasswordIfNeeded()`, which rehashes and saves the password when `needsRehash()` says the stored hash is out of date. Raising the bcrypt cost, or switching `HASH_DRIVER` from `bcrypt` to `argon2id`, therefore upgrades each account on its next login. Under any driver, existing bcrypt hashes keep verifying, with the same 72-byte and NUL-byte rejection as `BcryptPasswordHasher`.
 
@@ -800,16 +806,20 @@ use Marko\Authentication\Contracts\PasswordResetBrokerInterface;
 use Marko\Authentication\Middleware\GuestMiddleware;
 use Marko\Authentication\PasswordReset\ResetLinkStatus;
 use Marko\Authentication\PasswordReset\ResetStatus;
+use Marko\Authentication\Validation\AuthRules;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Validation\Contracts\ValidatorInterface;
 
 #[Middleware(GuestMiddleware::class)]
 class PasswordResetController
 {
     public function __construct(
         private PasswordResetBrokerInterface $passwordResetBroker,
+        private ValidatorInterface $validator,
+        private AuthRules $authRules,
     ) {}
 
     #[Post('/forgot-password')]
@@ -830,7 +840,11 @@ class PasswordResetController
     public function reset(
         Request $request,
     ): Response {
-        // Validate the new password (length, confirmation) before calling the broker.
+        // The same password policy as registration and password change
+        $this->validator->validateOrFail($request->post(), [
+            'password' => ['required', 'confirmed', $this->authRules->password()],
+        ]);
+
         $status = $this->passwordResetBroker->reset(
             ['email' => (string) $request->post('email')],
             (string) $request->post('token'),
@@ -844,6 +858,8 @@ class PasswordResetController
     }
 }
 ```
+
+The broker stores whatever password it is given, so validate it first. `AuthRules::password()` applies the app-wide [password rules](#password-strength).
 
 The credentials array goes straight to `UserProviderInterface::retrieveByCredentials()` on the provider named by `password_reset.provider`, so use whatever keys your provider looks users up by.
 
@@ -953,6 +969,76 @@ class ConfirmPasswordController
 ```
 
 `TooManyPasswordConfirmationAttemptsException` renders as a 429 wherever it is thrown; catch it to show your own message. `timeout_seconds`, `throttle.max_attempts` or `throttle.decay_seconds` below `1` throws an `AuthException` when it is read.
+
+## Validation Rules
+
+Two [validation](/docs/packages/validation/) rules need authentication services, so they live here. `AuthRules` builds them; inject it where you declare rules and pass the rule objects alongside string rules. Neither has a string form.
+
+### Current Password
+
+`currentPassword(?string $guard = null)` returns a `CurrentPassword` rule that passes when the value is the authenticated user's password, for example before changing an email address or password:
+
+```php title="app/web/Controller/PasswordController.php"
+use Marko\Authentication\Validation\AuthRules;
+use Marko\Validation\Contracts\ValidatorInterface;
+
+class PasswordController
+{
+    public function __construct(
+        private ValidatorInterface $validator,
+        private AuthRules $authRules,
+    ) {}
+
+    public function update(
+        array $input,
+    ): void {
+        $this->validator->validateOrFail($input, [
+            'current_password' => ['required', $this->authRules->currentPassword()],
+            'password' => ['required', 'confirmed', $this->authRules->password()],
+        ]);
+
+        // Hash and save the new password
+    }
+}
+```
+
+The check goes through [`PasswordVerifierInterface`](#password-confirmation), the framework's one password check. With no authenticated user the rule fails, after the verifier's dummy hash check. Pass a guard name (`currentPassword('admin')`) to check that guard's user instead of the default guard's. A non-string value fails without being checked.
+
+Like most rules it is skipped for an empty value, so pair it with `required`. A failure reads `The current_password is incorrect.`
+
+### Password Strength
+
+`password()` returns a `Password` rule built from the `authentication.password` config keys, so registration, password change and password reset share one policy:
+
+| Key | Requirement |
+|-----|-------------|
+| `min` | At least this many characters, counted as UTF-8 characters (must be 1 or more) |
+| `mixed_case` | At least one uppercase and one lowercase letter |
+| `letters` | At least one letter |
+| `numbers` | At least one number |
+| `symbols` | At least one symbol: punctuation, a symbol or a space character |
+
+Every key must be present in `config/authentication.php`; a missing key throws a `ConfigNotFoundException` and a `min` below 1 throws an `AuthException`. Letters, cases and numbers include non-ASCII ones (`Ñ`, `ß`, `٣`).
+
+The builder methods `min(int)`, `mixedCase()`, `letters()`, `numbers()` and `symbols()` each return a new rule, so you can tighten the defaults for one form without changing them for any other:
+
+```php
+$this->validator->validateOrFail($input, [
+    'password' => ['required', 'confirmed', $this->authRules->password()->min(16)->symbols()],
+]);
+```
+
+`min()` replaces the configured minimum. There is no global setter: change the policy for the whole app in config.
+
+`Password` implements [`MultiMessageRuleInterface`](/docs/packages/validation/#multimessageruleinterface), so each failed requirement is its own error:
+
+```php
+// With min 10 and numbers required, "short" fails with:
+// The password field must be at least 10 characters.
+// The password field must contain at least one number.
+```
+
+A non-string value fails with `The password field must be a string.` only. Checking a password against known breaches is not built in.
 
 ## Middleware
 
@@ -1260,6 +1346,25 @@ public function confirm(AuthenticatableInterface $user, string $password): bool;
 public function markConfirmed(): void;
 public function isRecentlyConfirmed(): bool;
 ```
+
+### AuthRules
+
+```php
+public function currentPassword(?string $guard = null): CurrentPassword;
+public function password(): Password; // the authentication.password defaults
+```
+
+### Password
+
+```php
+public function min(int $min): self;
+public function mixedCase(): self;
+public function letters(): self;
+public function numbers(): self;
+public function symbols(): self;
+```
+
+Each method returns a new rule. `Password` implements `MultiMessageRuleInterface`; `CurrentPassword` implements `RuleInterface`. See [Validation Rules](#validation-rules).
 
 ### IntendedUrlInterface
 

@@ -11,7 +11,8 @@
         "marko/config": "self.version",
         "marko/ratelimiter": "self.version",
         "marko/routing": "self.version",
-        "marko/session": "self.version"
+        "marko/session": "self.version",
+        "marko/validation": "self.version"
     },
     "require-dev": {
         "marko/cache-array": "self.version",

@@ -6,6 +6,7 @@ namespace Marko\Validation\Validation;
 
 use InvalidArgumentException;
 use Marko\Validation\Contracts\ImplicitRuleInterface;
+use Marko\Validation\Contracts\MultiMessageRuleInterface;
 use Marko\Validation\Contracts\RuleInterface;
 use Marko\Validation\Contracts\ValidatorInterface;
 use Marko\Validation\Contracts\WildcardAwareRuleInterface;
@@ -128,8 +129,16 @@ readonly class Validator implements ValidatorInterface
                 continue;
             }
 
-            if (!$rule->passes($field, $value, $data)) {
-                $errors->add($field, $rule->message($field, $value));
+            if ($rule->passes($field, $value, $data)) {
+                continue;
+            }
+
+            $messages = $rule instanceof MultiMessageRuleInterface
+                ? $rule->messages($field, $value)
+                : [$rule->message($field, $value)];
+
+            foreach ($messages as $message) {
+                $errors->add($field, $message);
             }
         }
     }

@@ -152,10 +152,10 @@ $errors->count();             // total error count across all fields
 | MimeTypes | `mimetypes:image/*,application/pdf` | The sniffed MIME type must be listed; `type/*` matches any subtype except `image/svg+xml` |
 | MaxSize | `max_size:2048` | File size at most this many kilobytes (1 KB = 1024 bytes) |
 | MinSize | `min_size:1` | File size at least this many kilobytes |
+| CurrentPassword | `$authRules->currentPassword()` (no string form) | The signed-in user's password; from [marko/authentication](/docs/packages/authentication/#validation-rules) |
+| Password | `$authRules->password()` (no string form) | Password strength from the app-wide `authentication.password` defaults; from [marko/authentication](/docs/packages/authentication/#validation-rules) |
 
 Rules that take a number (`size`, `digits`, `digits_between`, `max_size`, `min_size`) throw `InvalidArgumentException` when it is missing or not a number, as do `after`/`before` without a reference and `uuid` with a version outside 1--8.
-
-Not built in yet: `current_password` and password strength rules ([#561](https://github.com/marko-php/marko/issues/561)). Until then, write a [custom rule](#custom-rules).
 
 ### Implicit and Presence Rules
 
@@ -504,6 +504,49 @@ $this->validator->validate($input, [
 ]);
 ```
 
+### Rules With Several Messages
+
+A rule that checks several requirements, such as a password strength rule, can implement `MultiMessageRuleInterface` to report each failed requirement as its own error. When it fails, the validator adds every string from `messages()` instead of the single `message()`:
+
+```php
+use Marko\Validation\Contracts\MultiMessageRuleInterface;
+
+class Slug implements MultiMessageRuleInterface
+{
+    public function passes(
+        string $field,
+        mixed $value,
+        array $data,
+    ): bool {
+        return $this->messages($field, $value) === [];
+    }
+
+    public function message(
+        string $field,
+        mixed $value,
+    ): string {
+        return implode(' ', $this->messages($field, $value));
+    }
+
+    public function messages(
+        string $field,
+        mixed $value,
+    ): array {
+        $messages = [];
+
+        if (preg_match('/[A-Z]/', (string) $value)) {
+            $messages[] = "The $field field must be lowercase.";
+        }
+
+        if (str_contains((string) $value, ' ')) {
+            $messages[] = "The $field field must not contain spaces.";
+        }
+
+        return $messages;
+    }
+}
+```
+
 ### Custom Implicit Rules
 
 A custom rule that must run on an empty or absent value implements `ImplicitRuleInterface`. Its `requiresValue()` tells the validator whether the field must hold a value given the data. When it returns `true`, the field's other rules run on the empty value as well; when it returns `false`, only the implicit rules run.
@@ -636,6 +679,17 @@ readonly class RecordRules
     public function unique(string $entityClass, string $property): Unique;
 }
 ```
+
+### MultiMessageRuleInterface
+
+```php
+interface MultiMessageRuleInterface extends RuleInterface
+{
+    public function messages(string $field, mixed $value): array; // list<string>
+}
+```
+
+When the rule fails, the validator adds each message to the field's errors instead of `message()`. `Password` from [marko/authentication](/docs/packages/authentication/#validation-rules) implements it. See [Rules With Several Messages](#rules-with-several-messages).
 
 ### ValidationErrors
 

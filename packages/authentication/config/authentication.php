@@ -66,12 +66,23 @@ return [
     | Configuration for password hashing. The bcrypt driver is recommended
     | for most applications.
     |
+    | The remaining keys are the app-wide password rules that
+    | AuthRules::password() builds: at least 'min' characters (1 or more),
+    | and optionally an uppercase and a lowercase letter ('mixed_case'), a
+    | letter, a number and a symbol. Use the same rule on registration,
+    | password change and password reset so the policy never drifts.
+    |
     */
     'password' => [
         'driver' => 'bcrypt',
         'bcrypt' => [
             'cost' => 12,
         ],
+        'min' => 8,
+        'mixed_case' => false,
+        'letters' => false,
+        'numbers' => false,
+        'symbols' => false,
     ],
 
     /*

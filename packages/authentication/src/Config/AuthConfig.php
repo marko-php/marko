@@ -87,6 +87,56 @@ readonly class AuthConfig
     }
 
     /**
+     * The fewest characters AuthRules::password() accepts by default.
+     *
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function passwordMinLength(): int
+    {
+        return $this->positiveInt('authentication.password.min');
+    }
+
+    /**
+     * Whether AuthRules::password() requires an uppercase and a lowercase letter by default.
+     *
+     * @throws ConfigNotFoundException
+     */
+    public function passwordRequiresMixedCase(): bool
+    {
+        return $this->config->getBool('authentication.password.mixed_case');
+    }
+
+    /**
+     * Whether AuthRules::password() requires a letter by default.
+     *
+     * @throws ConfigNotFoundException
+     */
+    public function passwordRequiresLetters(): bool
+    {
+        return $this->config->getBool('authentication.password.letters');
+    }
+
+    /**
+     * Whether AuthRules::password() requires a number by default.
+     *
+     * @throws ConfigNotFoundException
+     */
+    public function passwordRequiresNumbers(): bool
+    {
+        return $this->config->getBool('authentication.password.numbers');
+    }
+
+    /**
+     * Whether AuthRules::password() requires a symbol by default.
+     *
+     * @throws ConfigNotFoundException
+     */
+    public function passwordRequiresSymbols(): bool
+    {
+        return $this->config->getBool('authentication.password.symbols');
+    }
+
+    /**
      * Remember-me lifetime in minutes.
      *
      * @throws ConfigNotFoundException
