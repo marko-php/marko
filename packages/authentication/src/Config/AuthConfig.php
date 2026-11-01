@@ -70,6 +70,25 @@ readonly class AuthConfig
     }
 
     /**
+     * One guard's entry in authentication.guards. Features that act on a guard's
+     * users by guard name (e.g. two-factor) pass it to guardProviderName().
+     *
+     * @return array<string, mixed>
+     * @throws AuthException|ConfigNotFoundException
+     */
+    public function guardConfig(
+        string $guard,
+    ): array {
+        $guards = $this->guards();
+
+        if (!array_key_exists($guard, $guards)) {
+            throw AuthException::undefinedGuard($guard, array_map(strval(...), array_keys($guards)));
+        }
+
+        return is_array($guards[$guard]) ? $guards[$guard] : [];
+    }
+
+    /**
      * @return array<string, array<string, mixed>>
      */
     public function providers(): array

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Marko\Authentication;
 
 use Marko\Authentication\Config\AuthConfig;
+use Marko\Authentication\Contracts\ChallengeableGuardInterface;
 use Marko\Authentication\Contracts\CookieJarInterface;
 use Marko\Authentication\Contracts\GuardInterface;
+use Marko\Authentication\Contracts\LoginChallengeInterface;
 use Marko\Authentication\Contracts\LoginThrottleInterface;
 use Marko\Authentication\Contracts\OtherDeviceLogoutInterface;
 use Marko\Authentication\Contracts\RememberTokenStorageInterface;
@@ -47,6 +49,7 @@ class AuthManager implements ResettableInterface
         private readonly ?RememberTokenStorageInterface $rememberTokenStorage = null,
         private readonly ?CurrentRequest $currentRequest = null,
         private readonly ?UserPersisterResolver $userPersisterResolver = null,
+        private readonly ?LoginChallengeResolver $loginChallengeResolver = null,
     ) {}
 
     /**
@@ -101,6 +104,10 @@ class AuthManager implements ResettableInterface
      * the built-in session driver. Anything else fails loudly. Each guard
      * gets the user provider its config names (UserProviderResolver).
      *
+     * A guard listing login challenges (authentication.guards.<name>.challenges)
+     * must be built by a driver whose guards implement ChallengeableGuardInterface;
+     * the built-in session guard receives the resolved challenges.
+     *
      * @param array<string, mixed> $guardConfig
      * @throws AuthException|ConfigNotFoundException
      */
@@ -117,11 +124,20 @@ class AuthManager implements ResettableInterface
                 throw AuthException::guardNameMismatch($name, $driver, $guard->getName());
             }
 
+            if (!empty($guardConfig['challenges']) && !$guard instanceof ChallengeableGuardInterface) {
+                throw AuthException::challengesNotSupported($name, $driver);
+            }
+
             return $guard;
         }
 
         if ($driver === 'session') {
-            return $this->createSessionGuard($name, $guardConfig, $provider);
+            return $this->createSessionGuard(
+                $name,
+                $guardConfig,
+                $provider,
+                $this->challengesFor($name, $guardConfig),
+            );
         }
 
         if ($driver === 'token') {
@@ -137,12 +153,34 @@ class AuthManager implements ResettableInterface
 
     /**
      * @param array<string, mixed> $guardConfig
+     * @return list<LoginChallengeInterface>
+     * @throws AuthException
+     */
+    private function challengesFor(
+        string $name,
+        array $guardConfig,
+    ): array {
+        if (empty($guardConfig['challenges'])) {
+            return [];
+        }
+
+        if ($this->loginChallengeResolver === null) {
+            throw AuthException::challengeResolverMissing($name);
+        }
+
+        return $this->loginChallengeResolver->forGuard($name, $guardConfig);
+    }
+
+    /**
+     * @param array<string, mixed> $guardConfig
+     * @param list<LoginChallengeInterface> $challenges
      * @throws AuthException|ConfigNotFoundException
      */
     private function createSessionGuard(
         string $name,
         array $guardConfig,
         UserProviderInterface $provider,
+        array $challenges = [],
     ): SessionGuard {
         return new SessionGuard(
             session: $this->session,
@@ -157,6 +195,7 @@ class AuthManager implements ResettableInterface
             currentRequest: $this->currentRequest,
             userPersisterResolver: $this->userPersisterResolver,
             providerName: $this->config->guardProviderName($name, $guardConfig),
+            challenges: $challenges,
         );
     }
 

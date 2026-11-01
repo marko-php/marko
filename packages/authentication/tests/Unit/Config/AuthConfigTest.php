@@ -276,3 +276,21 @@ describe('remember cookie', function (): void {
         ]);
     });
 });
+
+describe('guardConfig', function (): void {
+    it('returns one guard entry', function (): void {
+        $config = new AuthConfig(new FakeConfigRepository([
+            'authentication.guards' => ['admin' => ['driver' => 'session', 'provider' => 'admins']],
+        ]));
+
+        expect($config->guardConfig('admin'))->toBe(['driver' => 'session', 'provider' => 'admins']);
+    });
+
+    it('throws for an undefined guard', function (): void {
+        $config = new AuthConfig(new FakeConfigRepository([
+            'authentication.guards' => ['web' => ['driver' => 'session']],
+        ]));
+
+        $config->guardConfig('admin');
+    })->throws(AuthException::class, "Guard 'admin' is not defined in authentication.guards");
+});

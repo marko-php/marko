@@ -178,6 +178,55 @@ try {
 
 The throttle limits guesses against one account. To also cap how many accounts one IP can try, add [`#[RateLimit]`](/docs/packages/ratelimiter/) with `RateLimitMiddleware` to your login route.
 
+### Login Challenges
+
+A login challenge is a step a user must complete after their password checks out and before they are logged in, such as a two-factor code. [marko/authentication-two-factor](/docs/packages/authentication-two-factor/) is built on this hook, and passkey-first or other step-up flows can use it too.
+
+List a session guard's challenges in its config, in the order they run:
+
+```php title="config/authentication.php"
+use Marko\AuthenticationTwoFactor\TwoFactorLoginChallenge;
+
+return [
+    'guards' => [
+        'session' => [
+            'driver' => 'session',
+            'provider' => 'users',
+            'challenges' => [TwoFactorLoginChallenge::class],
+        ],
+    ],
+];
+```
+
+Each entry is a class implementing `LoginChallengeInterface`, resolved from the container. When the password is right, `attempt()` asks each challenge whether the user needs it (`requiresChallenge()`). If one does:
+
+1. The user is **not** logged in. The guard stores the pending user ID and the challenge name in the session, under a fresh session ID, and `attempt()` returns `false`.
+2. No `LoginEvent` fires and no remember-me cookie is issued yet.
+3. Your challenge handler calls `completeChallenge()` once the user passes. The guard moves on to the next challenge that requires itself or, when none is left, logs the user in. Only then does `LoginEvent` fire, and only then can a remember cookie be issued (`completeChallenge(remember: true)`).
+
+`SessionGuard` implements `ChallengeableGuardInterface`, so a login controller can tell a wrong password from a pending challenge:
+
+```php
+use Marko\Authentication\AuthManager;
+use Marko\Authentication\Contracts\ChallengeableGuardInterface;
+
+if ($this->authManager->attempt($credentials)) {
+    return Response::redirect('/dashboard');
+}
+
+$guard = $this->authManager->guard();
+
+if ($guard instanceof ChallengeableGuardInterface && $guard->hasPendingChallenge()) {
+    return Response::redirect('/login/challenge');
+}
+
+return new Response('Invalid credentials', 401);
+```
+
+`cancelChallenge()` forgets the pending user (for a "cancel" link), and `logout()` clears a pending challenge too. Guards without `challenges` behave exactly as before.
+
+Calling `login()` or `loginById()` directly bypasses challenges by design: app code that calls them has already decided the user is authenticated (for example right after registration). Challenges only apply to `attempt()`. A guard built by a driver whose guards don't implement `ChallengeableGuardInterface` (such as the token guard) fails loudly if its config lists challenges.
+
 ### Logging Out
 
 ```php
@@ -1314,6 +1363,29 @@ Extends `GuardInterface`:
 ```php
 public function getChallenge(): string;
 ```
+
+### ChallengeableGuardInterface
+
+Extends `GuardInterface`; implemented by `SessionGuard`. See [Login Challenges](#login-challenges).
+
+```php
+public function hasPendingChallenge(): bool;
+public function pendingChallengeUser(): ?AuthenticatableInterface;
+public function pendingChallengeName(): ?string;
+public function completeChallenge(bool $remember = false): void;
+public function cancelChallenge(): void;
+```
+
+`completeChallenge()` throws `AuthException` when no challenge is pending (or the pending user no longer exists).
+
+### LoginChallengeInterface
+
+```php
+public function requiresChallenge(AuthenticatableInterface $user): bool;
+public function getName(): string;
+```
+
+`LoginChallengeResolver` resolves the classes listed in `authentication.guards.<name>.challenges` from the container. An entry that is not a `LoginChallengeInterface` class throws `AuthException`.
 
 ### OtherDeviceLogoutInterface
 
