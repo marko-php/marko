@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Marko\Config\Env;
+
 return [
     'driver' => 'sync',
     'connection' => 'default',
@@ -18,4 +20,8 @@ return [
     // - list<int>: delay per attempt, e.g. [10, 60, 300]; the last value repeats
     // - null: exponential curve of 2^attempts * 10 seconds (20, 40, 80, ...)
     'backoff' => null,
+
+    // File queue:restart writes a new token to; every queue:work exits after its current job once the token
+    // changes. Relative to the project root. All workers must see the same file (one host or a shared disk).
+    'restart_signal' => Env::string('QUEUE_RESTART_SIGNAL', 'storage/queue/restart'),
 ];

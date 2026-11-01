@@ -65,6 +65,10 @@ This release changes the queue contracts once for the per-job features built on 
 2. **Code that constructs `Worker` by hand** passes a PSR-20 `ClockInterface` after the `RetryPolicy`: `new Worker($queue, $failedJobHandler, $config, $jobRunner, $retryPolicy, $clock)`. The worker reads `--max-time` and the start time for stop conditions from it. Containers that autowire the worker need no change.
 3. **Jobs that set `$timeout`** now get it: the worker uses the job's `$timeout` instead of `--timeout` / `queue.timeout`, whether it is shorter or longer. A job whose `$timeout` is not below `queue.retry_after` is failed without running. Raise `retry_after` before deploying if any job needs a longer timeout. See [Per-Job Timeouts](#per-job-timeouts).
 
+#### Upgrading: `queue:restart`
+
+**Code that constructs `WorkCommand` by hand** passes a `RestartSignalInterface` last: `new WorkCommand($worker, $config, $processControl, $restartSignal)`. Containers that autowire the command need no change; `marko/queue` binds the interface to `FileRestartSignal`. See [Restarting Workers After a Deploy](#restarting-workers-after-a-deploy).
+
 ## Usage
 
 ### Creating Jobs
@@ -640,6 +644,54 @@ $worker->work(options: new WorkerOptions(stopConditions: [new MaintenanceStopCon
 
 The worker reaches signals, the timer, memory usage and process exit through `ProcessControlInterface`, bound to `PcntlProcessControl`. Bind your own implementation to change how the worker handles them.
 
+#### Restarting Workers After a Deploy
+
+A running `queue:work` keeps the code it booted with, so after a deploy every worker must be replaced. `queue:restart` asks every worker to exit once its current job is done:
+
+```bash
+marko queue:restart
+# Restart signal sent; workers will exit after their current job.
+```
+
+`queue:restart` records a new random token through `RestartSignalInterface`. `queue:work` reads the current token when it starts and passes a `RestartSignalStopCondition` to the worker through `WorkerOptions::$stopConditions`. Like the other [stop conditions](#stop-reasons-and-exit-codes), it is checked after every job and after every idle pause. Once the token differs from the one the worker started with, the worker stops with `RestartRequested`, logs `[marko/queue] Worker stopping: a worker restart was requested.`, and `queue:work` exits with status `0`. A busy worker finishes its job first; an idle one exits after its current `--sleep` pause.
+
+Workers compare tokens, not timestamps: a restart requested before a worker started never stops it, and clocks that differ between hosts don't matter.
+
+The process supervisor then starts a fresh worker on the new code. With Supervisor, `autorestart=true` restarts it whatever the exit status:
+
+```ini title="/etc/supervisor/conf.d/marko-worker.conf"
+[program:marko-worker]
+command=php /var/www/app/vendor/bin/marko queue:work --max-time=3600
+directory=/var/www/app
+process_name=%(program_name)s_%(process_num)02d
+numprocs=4
+autorestart=true
+stopwaitsecs=90
+user=www-data
+```
+
+With systemd, use `Restart=always`. Then run `queue:restart` as the last step of the deploy, once the new code is in place:
+
+```bash
+# ...copy the new release into place...
+composer install --no-dev --optimize-autoloader
+php vendor/bin/marko queue:restart
+```
+
+`FileRestartSignal`, the default implementation, writes the token to the file named by `queue.restart_signal` (`storage/queue/restart` under the project root by default; set `QUEUE_RESTART_SIGNAL` to change it). It writes to a temp file and renames it into place, so a worker never reads a half-written token. Run `queue:restart` as a user that can create and write that file, and run the workers as a user that can read it.
+
+**The file signal only reaches workers that see the same file**: workers on the host where `queue:restart` ran, or on hosts that share the directory. On hosts that share no filesystem, run `queue:restart` on every host, or bind your own `RestartSignalInterface` (backed by a shared cache or database, say) in your module's `module.php` or with a Preference:
+
+```php
+use Marko\Queue\RestartSignalInterface;
+
+return [
+    'bindings' => [
+        RestartSignalInterface::class => SharedCacheRestartSignal::class,
+    ],
+];
+```
+
 ### Failed Job Traces
 
 The `exception` text stored for a failed job holds the exception message and a stack trace in `getTraceAsString()` format, **without call arguments**. Arguments can hold passwords or tokens, and with `zend.exception_ignore_args=Off` (the PHP development default) `getTraceAsString()` would include them, so `FailedJobHandler` builds the trace from file, line, class and function only.
@@ -742,6 +794,7 @@ return [
     'timeout'      => 60,           // seconds one job may run under queue:work; 0 = off
     'max_attempts' => 3,
     'backoff'      => null,         // int, list<int>, or null for 2^attempts * 10 seconds
+    'restart_signal' => 'storage/queue/restart', // QUEUE_RESTART_SIGNAL; the file queue:restart writes to
 ];
 ```
 
@@ -754,6 +807,7 @@ return [
 | `timeout` | `60` | Seconds one job may run under `queue:work` before it is failed and the worker exits; `0` turns it off. Must be below `retry_after`, and needs `ext-pcntl`. Overridden by `--timeout`. See [Worker Limits and Shutdown](#worker-limits-and-shutdown) |
 | `max_attempts` | `3` | How many times a job is attempted before it is moved to the failed-job store. A job's own `maxAttempts`, when set, takes precedence |
 | `backoff` | `null` | Seconds to wait before retrying a failed job that sets no `backoff` of its own: an `int` (fixed), a `list<int>` (per attempt; the last value repeats), or `null` for `2^attempts * 10` seconds. See [Retry Backoff](#retry-backoff) |
+| `restart_signal` | `storage/queue/restart` | File `queue:restart` writes its token to, relative to the project root (an absolute path is used as given). Set with `QUEUE_RESTART_SIGNAL`. Every worker that should restart must see the same file. See [Restarting Workers After a Deploy](#restarting-workers-after-a-deploy) |
 
 The `QueueConfig` class provides typed access to these values:
 
@@ -774,6 +828,7 @@ class MyService
         $retryAfter = $this->queueConfig->retryAfter();
         $maxAttempts = $this->queueConfig->maxAttempts();
         $backoff = $this->queueConfig->backoff();
+        $restartSignal = $this->queueConfig->restartSignal();
     }
 }
 ```
@@ -965,6 +1020,17 @@ public function check(WorkerRunState $state): ?WorkerStopReason; // null = keep 
 
 The built-in `Worker` asks [`RetryPolicy`](#retrypolicy) whether a job that threw or released itself runs again, and after what delay.
 
+### RestartSignalInterface
+
+```php
+use Marko\Queue\RestartSignalInterface;
+
+public function request(): void;     // record a new restart token
+public function current(): ?string;  // the current token, or null if no restart was ever requested
+```
+
+Bound to `FileRestartSignal` in `module.php`. `queue:restart` calls `request()`; `RestartSignalStopCondition` reads `current()` when it is created and stops the worker with `RestartRequested` once it changes. `FileRestartSignal` throws `QueueException` when it cannot create, write or read the `queue.restart_signal` file. See [Restarting Workers After a Deploy](#restarting-workers-after-a-deploy).
+
 ### FailedJobRepositoryInterface
 
 ```php
@@ -991,6 +1057,7 @@ public function retryAfter(): int;
 public function timeout(): int;
 public function maxAttempts(): int;
 public function backoff(): array|int|null; // int, list<int>, or null; throws QueueException when invalid
+public function restartSignal(): string;   // path of the restart signal file, as configured
 ```
 
 ### ContainerAwareJobInterface

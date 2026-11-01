@@ -22,6 +22,7 @@ use Marko\Queue\RetryPolicy;
 use Marko\Queue\Sync\NullFailedJobRepository;
 use Marko\Queue\Sync\SyncQueue;
 use Marko\Queue\Tests\Fixtures\FakeProcessControl;
+use Marko\Queue\Tests\Fixtures\InMemoryRestartSignal;
 use Marko\Queue\Worker;
 use Marko\Queue\WorkerInterface;
 use Marko\Testing\Fake\FakeClock;
@@ -644,7 +645,7 @@ describe('Integration Tests', function (): void {
         expect($queue->size())->toBe(1);
 
         // Create WorkCommand with our worker
-        $workCommand = new WorkCommand($worker, $config, $processControl);
+        $workCommand = new WorkCommand($worker, $config, $processControl, new InMemoryRestartSignal());
 
         // Create output stream
         $stream = fopen('php://memory', 'r+');

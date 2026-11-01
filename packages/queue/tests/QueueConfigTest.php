@@ -61,6 +61,18 @@ describe('QueueConfig', function (): void {
             ->and($defaults['timeout'])->toBeLessThan($defaults['retry_after']);
     });
 
+    it('loads the restart_signal setting', function (): void {
+        $queueConfig = new QueueConfig(new FakeConfigRepository(['queue.restart_signal' => 'var/queue/restart']));
+
+        expect($queueConfig->restartSignal())->toBe('var/queue/restart');
+    });
+
+    it('ships a restart_signal path relative to the project root', function (): void {
+        $defaults = require dirname(__DIR__) . '/config/queue.php';
+
+        expect($defaults['restart_signal'])->toBe('storage/queue/restart');
+    });
+
     it('loads max_attempts setting', function (): void {
         $config = new FakeConfigRepository([
             'queue.max_attempts' => 5,

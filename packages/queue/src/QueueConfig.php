@@ -42,6 +42,14 @@ readonly class QueueConfig
         return $this->config->getInt('queue.timeout');
     }
 
+    /**
+     * The file FileRestartSignal writes the restart token to; a relative path is resolved against the project root.
+     */
+    public function restartSignal(): string
+    {
+        return $this->config->getString('queue.restart_signal');
+    }
+
     public function maxAttempts(): int
     {
         return $this->config->getInt('queue.max_attempts');
