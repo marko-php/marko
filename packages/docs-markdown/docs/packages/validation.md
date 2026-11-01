@@ -102,7 +102,16 @@ $errors->count();             // total error count across all fields
 | Rule | String Syntax | Description |
 |------|--------------|-------------|
 | Required | `required` | Must be present and non-empty |
-| Nullable | `nullable` | Skips other rules if null/empty |
+| RequiredIf | `required_if:type,video,audio` | Required when another field holds one of the values (see [Implicit Rules](#implicit-and-presence-rules)) |
+| RequiredUnless | `required_unless:status,approved` | Required unless another field holds one of the values |
+| RequiredWith | `required_with:email,phone` | Required when any of the other fields is filled |
+| RequiredWithout | `required_without:email,phone` | Required when any of the other fields is empty or absent |
+| Present | `present` | The key must exist; the value may be empty or `null` |
+| Prohibited | `prohibited` | Must be absent or empty |
+| Accepted | `accepted` | `yes`, `on`, `1`, `true`, `"1"` or `"true"` (a ticked checkbox); an absent key fails |
+| Declined | `declined` | `no`, `off`, `0`, `false`, `"0"` or `"false"`; an absent key fails |
+| Nullable | `nullable` | Skips every rule, implicit ones included, if null/empty |
+| Sometimes | `sometimes` | Skips every rule when the key is absent; validates a present key, even `null` (see [`sometimes` vs `nullable`](#sometimes-vs-nullable)) |
 | String | `string` | Must be a string |
 | Integer | `integer` | Must be an integer |
 | Numeric | `numeric` | Must be numeric |
@@ -145,6 +154,48 @@ $errors->count();             // total error count across all fields
 Rules that take a number (`size`, `digits`, `digits_between`, `max_size`, `min_size`) throw `InvalidArgumentException` when it is missing or not a number, as do `after`/`before` without a reference and `uuid` with a version outside 1--8.
 
 Not built in yet: presence rules such as `sometimes`, `present`, `prohibited`, `accepted` and the `required_if` family ([#562](https://github.com/marko-php/marko/issues/562)), the database rules `exists` and `unique` ([#563](https://github.com/marko-php/marko/issues/563)), and `current_password` and password strength rules ([#561](https://github.com/marko-php/marko/issues/561)). Until then, write a [custom rule](#custom-rules).
+
+### Implicit and Presence Rules
+
+The validator skips an ordinary rule when the value is empty (`null`, a blank string or `[]`), so `email` never complains about a field that was left out. *Implicit* rules are the exception: they run even when the value is empty or the key is absent, because that is the case they exist for.
+
+| Rule | Runs the field's other rules on an empty value? |
+|------|---------------|
+| `required` | Always |
+| `required_if`, `required_unless`, `required_with`, `required_without` | Only when their condition makes the field required |
+| `present`, `prohibited`, `accepted`, `declined` | Never (they check the value themselves) |
+
+```php
+$this->validator->validate($input, [
+    'type' => 'required|in:text,video',
+    'url' => 'required_if:type,video|url',       // checked only when type is video
+    'phone' => 'required_without:email',         // one of the two must be filled
+    'terms' => 'accepted',                       // the checkbox must be ticked
+    'tags' => 'present|array',                   // the key must be sent, even as []
+    'role' => 'prohibited',                      // clients may not set it
+    'items.*.url' => 'required_if:items.*.type,video', // per row: items.2.type for items.2.url
+]);
+```
+
+When `type` is `text`, an empty `url` is skipped entirely. When `type` is `video`, an empty `url` fails `required_if` and every other rule on the field runs too.
+
+`required_if` and `required_unless` compare values as strings: `true`/`false` and `null` read as those words, numbers as their digits, and a boolean field also matches `1`/`0` (`required_if:subscribe,1` matches `true`). An array never matches. `required_with` and `required_without` count a field as filled when it is present and not empty. Their field references are absolute dot paths whose `*` are filled from the current row, as for [`same`](#cross-field-rules-inside-rows).
+
+A `required_if` or `required_unless` without a field and at least one value, or a `required_with`/`required_without` without a field, throws `InvalidArgumentException`.
+
+### `sometimes` vs `nullable`
+
+Both make a field optional, but they ask different questions:
+
+- **`sometimes`** asks *was the key sent?* An absent key skips every rule on the field. A present key is fully validated, including an explicit `null`, so `sometimes|required|email` lets a PATCH request leave `email` out but rejects `"email": null`.
+- **`nullable`** asks *is the value empty?* An empty value (`null`, `''`, `[]`), present or not, skips every rule on the field, implicit ones included. Leave `nullable` off fields with a `required_*` rule: those rules already let the field stay empty when their condition is false.
+
+```php
+$this->validator->validate($input, [
+    'email' => 'sometimes|required|email', // optional key, but never null or invalid when sent
+    'nickname' => 'nullable|string|max:30', // may be null, '' or left out
+]);
+```
 
 ### Numeric-Aware Rules
 
@@ -409,6 +460,50 @@ $this->validator->validate($input, [
 ]);
 ```
 
+### Custom Implicit Rules
+
+A custom rule that must run on an empty or absent value implements `ImplicitRuleInterface`. Its `requiresValue()` tells the validator whether the field must hold a value given the data. When it returns `true`, the field's other rules run on the empty value as well; when it returns `false`, only the implicit rules run.
+
+```php
+use Marko\Validation\Contracts\ImplicitRuleInterface;
+
+class RequiredForCountry implements ImplicitRuleInterface
+{
+    public function __construct(
+        private string $country,
+    ) {}
+
+    public function passes(
+        string $field,
+        mixed $value,
+        array $data,
+    ): bool {
+        return !$this->requiresValue($field, $data) || ($value !== null && $value !== '');
+    }
+
+    public function message(
+        string $field,
+        mixed $value,
+    ): string {
+        return "The $field field is required for $this->country addresses.";
+    }
+
+    public function requiresValue(
+        string $field,
+        array $data,
+    ): bool {
+        return ($data['country'] ?? null) === $this->country;
+    }
+}
+
+// Usage: state is required, and must be two letters, only for US addresses
+$this->validator->validate($input, [
+    'state' => [new RequiredForCountry('US'), 'alpha', 'size:2'],
+]);
+```
+
+A rule that refers to another field which may contain `*` also implements [`WildcardAwareRuleInterface`](#wildcardawareruleinterface).
+
 ## API Reference
 
 ### ValidatorInterface
@@ -435,6 +530,17 @@ interface RuleInterface
 
 Under a wildcard key, `$field` is the concrete path being checked (`items.0.name`).
 
+### ImplicitRuleInterface
+
+```php
+interface ImplicitRuleInterface extends RuleInterface
+{
+    public function requiresValue(string $field, array $data): bool;
+}
+```
+
+The validator always runs an implicit rule, even on an empty value or an absent key. When any implicit rule's `requiresValue()` returns `true`, the field's other rules run on an empty value too. `Required` (always `true`), `RequiredIf`, `RequiredUnless`, `RequiredWith`, `RequiredWithout` (their condition), `Present`, `Prohibited`, `Accepted` and `Declined` (always `false`) implement it. See [Custom Implicit Rules](#custom-implicit-rules).
+
 ### WildcardAwareRuleInterface
 
 ```php
@@ -444,7 +550,7 @@ interface WildcardAwareRuleInterface extends RuleInterface
 }
 ```
 
-Implement it on a custom rule that refers to another field which may contain `*`. Before checking each concrete field, the validator passes the rules key and the indexes its wildcards matched (`['3']` for `items.3.sku_check` under `items.*.sku_check`), and uses the rule it returns. `Same`, `Different`, `After`, `Before`, `AfterOrEqual`, `BeforeOrEqual` and `Distinct` implement it; throw `InvalidArgumentException` when the referenced field has more `*` than there are indexes.
+Implement it on a custom rule that refers to another field which may contain `*`. Before checking each concrete field, the validator passes the rules key and the indexes its wildcards matched (`['3']` for `items.3.sku_check` under `items.*.sku_check`), and uses the rule it returns. `Same`, `Different`, `After`, `Before`, `AfterOrEqual`, `BeforeOrEqual`, `Distinct`, `RequiredIf`, `RequiredUnless`, `RequiredWith` and `RequiredWithout` implement it; throw `InvalidArgumentException` when the referenced field has more `*` than there are indexes.
 
 ### NumericAwareRuleInterface
 

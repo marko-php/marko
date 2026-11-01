@@ -43,12 +43,10 @@ readonly class DateComparison
         string $key,
         array $indexes,
     ): self {
-        $reference = DataPath::fillWildcards($this->reference, $indexes)
-            ?? throw new InvalidArgumentException(
-                "The $this->rule:$this->reference rule has more wildcards than the $key key it validates",
-            );
-
-        return new self($this->rule, $reference);
+        return new self(
+            $this->rule,
+            new FieldReference($this->rule, $this->reference)->forWildcardIndexes($key, $indexes)->path,
+        );
     }
 
     /**
@@ -79,31 +77,10 @@ readonly class DateComparison
     private function referenceTimestamp(
         array $data,
     ): ?int {
-        if ($this->isPresent($data)) {
+        if (DataPath::has($data, $this->reference)) {
             return DateValue::timestamp(DataPath::get($data, $this->reference));
         }
 
         return str_contains($this->reference, '*') ? null : DateValue::timestamp($this->reference);
-    }
-
-    /**
-     * Whether the reference names a key present in the data, even one holding null.
-     *
-     * @param array<mixed> $data
-     */
-    private function isPresent(
-        array $data,
-    ): bool {
-        $value = $data;
-
-        foreach (explode('.', $this->reference) as $segment) {
-            if (!is_array($value) || !array_key_exists($segment, $value)) {
-                return false;
-            }
-
-            $value = $value[$segment];
-        }
-
-        return true;
     }
 }

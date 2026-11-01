@@ -7,16 +7,20 @@ namespace Marko\Validation\Rules;
 use InvalidArgumentException;
 use Marko\Validation\Contracts\RuleInterface;
 use Marko\Validation\Contracts\WildcardAwareRuleInterface;
-use Marko\Validation\Validation\DataPath;
+use Marko\Validation\Validation\FieldReference;
 
 readonly class Same implements WildcardAwareRuleInterface
 {
+    private FieldReference $otherField;
+
     /**
      * @param string $otherField An absolute dot path; a `*` is replaced by the current row's index
      */
     public function __construct(
-        private string $otherField,
-    ) {}
+        string $otherField,
+    ) {
+        $this->otherField = new FieldReference('same', $otherField);
+    }
 
     public function passes(
         string $field,
@@ -27,14 +31,14 @@ readonly class Same implements WildcardAwareRuleInterface
             return true;
         }
 
-        return $value === DataPath::get($data, $this->otherField);
+        return $value === $this->otherField->get($data);
     }
 
     public function message(
         string $field,
         mixed $value,
     ): string {
-        return "The $field field must match the $this->otherField field.";
+        return "The $field field must match the {$this->otherField->path} field.";
     }
 
     /**
@@ -44,11 +48,6 @@ readonly class Same implements WildcardAwareRuleInterface
         string $key,
         array $indexes,
     ): RuleInterface {
-        $otherField = DataPath::fillWildcards($this->otherField, $indexes)
-            ?? throw new InvalidArgumentException(
-                "The same:$this->otherField rule has more wildcards than the $key key it validates",
-            );
-
-        return new self($otherField);
+        return new self($this->otherField->forWildcardIndexes($key, $indexes)->path);
     }
 }

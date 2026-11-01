@@ -7,6 +7,7 @@ namespace Marko\Validation\Validation;
 use InvalidArgumentException;
 use Marko\Validation\Contracts\NumericAwareRuleInterface;
 use Marko\Validation\Contracts\RuleInterface;
+use Marko\Validation\Rules\Accepted;
 use Marko\Validation\Rules\After;
 use Marko\Validation\Rules\AfterOrEqual;
 use Marko\Validation\Rules\Alpha;
@@ -18,6 +19,7 @@ use Marko\Validation\Rules\Between;
 use Marko\Validation\Rules\Boolean;
 use Marko\Validation\Rules\Confirmed;
 use Marko\Validation\Rules\Date;
+use Marko\Validation\Rules\Declined;
 use Marko\Validation\Rules\Different;
 use Marko\Validation\Rules\Digits;
 use Marko\Validation\Rules\DigitsBetween;
@@ -38,10 +40,17 @@ use Marko\Validation\Rules\MinSize;
 use Marko\Validation\Rules\NotIn;
 use Marko\Validation\Rules\Nullable;
 use Marko\Validation\Rules\Numeric;
+use Marko\Validation\Rules\Present;
+use Marko\Validation\Rules\Prohibited;
 use Marko\Validation\Rules\Regex;
 use Marko\Validation\Rules\Required;
+use Marko\Validation\Rules\RequiredIf;
+use Marko\Validation\Rules\RequiredUnless;
+use Marko\Validation\Rules\RequiredWith;
+use Marko\Validation\Rules\RequiredWithout;
 use Marko\Validation\Rules\Same;
 use Marko\Validation\Rules\Size;
+use Marko\Validation\Rules\Sometimes;
 use Marko\Validation\Rules\StringType;
 use Marko\Validation\Rules\Ulid;
 use Marko\Validation\Rules\Url;
@@ -234,6 +243,19 @@ class RuleParser
     }
 
     /**
+     * The parameters as strings.
+     *
+     * @param array<?string> $params
+     *
+     * @return list<string>
+     */
+    private function strings(
+        array $params,
+    ): array {
+        return array_values(array_map(static fn (?string $param): string => (string) $param, $params));
+    }
+
+    /**
      * @throws InvalidArgumentException
      */
     private function parseRule(
@@ -260,6 +282,21 @@ class RuleParser
             'alpha_num' => new AlphaNumeric(),
             'confirmed' => new Confirmed(),
             'nullable' => new Nullable(),
+            'sometimes' => new Sometimes(),
+            'present' => new Present(),
+            'prohibited' => new Prohibited(),
+            'accepted' => new Accepted(),
+            'declined' => new Declined(),
+            'required_if' => new RequiredIf(
+                (string) ($params[0] ?? ''),
+                ...$this->strings(array_slice($params, 1)),
+            ),
+            'required_unless' => new RequiredUnless(
+                (string) ($params[0] ?? ''),
+                ...$this->strings(array_slice($params, 1)),
+            ),
+            'required_with' => new RequiredWith(...$this->strings($params)),
+            'required_without' => new RequiredWithout(...$this->strings($params)),
             'min' => new Min((float) ($params[0] ?? 0)),
             'max' => new Max((float) ($params[0] ?? 0)),
             'between' => new Between(

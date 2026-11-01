@@ -4,28 +4,17 @@ declare(strict_types=1);
 
 namespace Marko\Validation\Rules;
 
-use Marko\Validation\Contracts\RuleInterface;
+use Marko\Validation\Contracts\ImplicitRuleInterface;
+use Marko\Validation\Validation\EmptyValue;
 
-class Required implements RuleInterface
+class Required implements ImplicitRuleInterface
 {
     public function passes(
         string $field,
         mixed $value,
         array $data,
     ): bool {
-        if ($value === null) {
-            return false;
-        }
-
-        if (is_string($value) && trim($value) === '') {
-            return false;
-        }
-
-        if ($value === []) {
-            return false;
-        }
-
-        return true;
+        return !EmptyValue::is($value);
     }
 
     public function message(
@@ -33,5 +22,12 @@ class Required implements RuleInterface
         mixed $value,
     ): string {
         return "The $field field is required.";
+    }
+
+    public function requiresValue(
+        string $field,
+        array $data,
+    ): bool {
+        return true;
     }
 }
