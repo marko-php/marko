@@ -51,6 +51,38 @@ class TestClientException extends MarkoException
         );
     }
 
+    public static function staleResponse(
+        int $requestSequence,
+        int $latestSequence,
+    ): self {
+        return new self(
+            message: 'Cannot assert on the session: this response is stale: a later request has run on the client.',
+            context: "The response is from request #$requestSequence; the client has since sent request #$latestSequence, "
+                . 'which may have changed the session.',
+            suggestion: 'Make session assertions on the latest response, before the client sends another request.',
+        );
+    }
+
+    public static function responseWithoutClient(): self
+    {
+        return new self(
+            message: 'This TestResponse has no session to assert on: it was not returned by a TestClient request.',
+            context: 'Session assertions read the session through the TestClient that sent the request.',
+            suggestion: 'Send the request with TestClient (get(), post(), ...) and assert on the TestResponse it returns.',
+        );
+    }
+
+    public static function statelessGuard(
+        string $guard,
+    ): self {
+        return new self(
+            message: "Guard [$guard] is stateless: it keeps no login state between requests, so there is nothing to assert on.",
+            context: 'A StatelessGuardInterface guard authenticates each request from the credentials it carries.',
+            suggestion: 'Assert on the response of a request that carries (or lacks) the credentials instead, '
+                . 'e.g. assertOk() or assertUnauthorized().',
+        );
+    }
+
     public static function bodyAndData(
         string $method,
         string $uri,

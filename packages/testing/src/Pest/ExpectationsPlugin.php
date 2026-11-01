@@ -19,6 +19,7 @@ use Marko\Testing\Fake\FakeMailer;
 use Marko\Testing\Fake\FakeNotificationSender;
 use Marko\Testing\Fake\FakeQueue;
 use Marko\Testing\Fake\Http\RecordedRequest;
+use Marko\Testing\Http\TestClient;
 use Marko\Testing\Http\TestResponse;
 use Pest\Contracts\Plugins\Bootable;
 use Pest\Expectation;
@@ -327,19 +328,52 @@ class ExpectationsPlugin implements Bootable
             return $this;
         });
 
-        expect()->extend('toBeAuthenticated', function (): Expectation {
-            $fake = $this->value;
+        expect()->extend('toBeAuthenticated', function (
+            ?string $guard = null,
+        ): Expectation {
+            $subject = $this->value;
 
-            if (! $fake instanceof FakeGuard) {
+            if ($subject instanceof TestClient) {
+                try {
+                    $subject->assertAuthenticated($guard);
+                } catch (AssertionFailedException $e) {
+                    Assert::fail($e->getMessage());
+                }
+
+                return $this;
+            }
+
+            if (! $subject instanceof FakeGuard) {
                 throw new InvalidArgumentException(
-                    'Expected FakeGuard, got ' . get_debug_type($fake),
+                    'Expected FakeGuard or TestClient, got ' . get_debug_type($subject),
                 );
             }
 
             Assert::assertTrue(
-                $fake->check(),
+                $subject->check(),
                 'Expected user to be authenticated but no user is set.',
             );
+
+            return $this;
+        });
+
+        expect()->extend('toHaveSession', function (
+            string $key,
+            mixed $value = null,
+        ): Expectation {
+            $response = $this->value;
+
+            if (! $response instanceof TestResponse) {
+                throw new InvalidArgumentException(
+                    'Expected TestResponse, got ' . get_debug_type($response),
+                );
+            }
+
+            try {
+                $response->assertSessionHas($key, $value);
+            } catch (AssertionFailedException $e) {
+                Assert::fail($e->getMessage());
+            }
 
             return $this;
         });
