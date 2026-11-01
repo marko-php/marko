@@ -20,7 +20,7 @@ Configure via the `view` config key. Settings from `marko/view` (`cache_director
 ```php title="config/view.php"
 return [
     'cache_directory' => 'storage/views', // relative to the project root; created 0700
-    'auto_refresh' => true,  // Set false in production
+    'auto_refresh' => true,  // false in production, with view:cache on deploy
     'extension' => '.latte',
     'strict_types' => true,
 ];
@@ -102,6 +102,25 @@ The arguments match `UrlGeneratorInterface::route(string $name, array $parameter
 
 `route()` comes from `RouteFunctionProvider` in `marko/view`. Every [template function provider](/docs/packages/view/#template-functions) is registered with Latte by `TemplateFunctionExtension`: a function declared `isSafeHtml` has its result wrapped in `Latte\Runtime\Html` and prints unescaped, every other result is escaped. [Shared view data](/docs/packages/view/#shared-view-data) is merged into every `render()` and `renderToString()` call.
 
+### Precompiling Templates
+
+`marko view:cache` compiles every template into `view.cache_directory` ahead of time. This package binds `LatteTemplatePrecompiler` as the [`TemplatePrecompilerInterface`](/docs/packages/view/#precompiling-templates) the command uses:
+
+```bash
+marko view:cache
+```
+
+It builds an engine with `LatteEngineFactory`, the same factory as rendering, and calls `Latte\Engine::warmupCache()` through the module loader, so the compiled file lands under the key rendering looks up: the template's resolved absolute path. A `Latte\CompileException` is rethrown as `TemplatePrecompileException` with the template name, file and line. A broken template fails the command with its file and line:
+
+```text
+Template 'blog::post/show' failed to compile: Unexpected tag {notATag} (on line 2 at column 4)
+  in /var/www/app/blog/resources/views/post/show.latte:2
+```
+
+Only the template that wins resolution is compiled, so an `app/` override is compiled and the module template it shadows is skipped. Auto-refresh is always on while precompiling, so a template changed since the last compile is compiled again even when `auto_refresh` is `false`.
+
+In production, run `view:cache` on every deploy, on the server at the path the app runs from, and set `auto_refresh` to `false`. Compiled files are keyed by absolute path, so templates compiled during an image build at another path are not reused. See [deploying to production](/docs/packages/view/#deploying-to-production).
+
 ### Template Organization
 
 All templates must live within at least one directory. No top-level template files.
@@ -148,7 +167,7 @@ views/
 
 ## API Reference
 
-`LatteView` implements `ViewInterface` from [`marko/view`](/docs/packages/view/).
+`LatteView` implements `ViewInterface` and `LatteTemplatePrecompiler` implements `TemplatePrecompilerInterface`, both from [`marko/view`](/docs/packages/view/).
 
 ### Key Methods
 
@@ -156,6 +175,7 @@ views/
 |---|---|
 | `render(string $template, array $data = []): Response` | Render a template and return an HTTP response |
 | `renderToString(string $template, array $data = []): string` | Render a template and return the raw HTML string |
+| `LatteTemplatePrecompiler::precompile(string $template): void` | Compile one template into the cache; throws `TemplatePrecompileException` on a syntax error |
 
 ### Template Functions
 
@@ -170,6 +190,6 @@ Functions from every other discovered `#[TemplateFunctions]` provider are availa
 | Option | Type | Description |
 |---|---|---|
 | `cache_directory` | `string` | Directory for compiled template cache (from `marko/view`). Defaults to `storage/views` under the project root; the factory refuses a directory that is world-writable or owned by another user --- see [compiled-template cache directory](/docs/packages/view/#compiled-template-cache-directory) |
-| `auto_refresh` | `bool` | Recompile templates when source changes --- set `false` in production (from `marko/view`) |
+| `auto_refresh` | `bool` | Recompile templates when source changes --- set `false` in production and run `view:cache` on deploy (from `marko/view`) |
 | `extension` | `string` | Template file extension (default `.latte`) |
 | `strict_types` | `bool` | Enable strict type checking in templates (default `true`) |

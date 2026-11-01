@@ -5,7 +5,9 @@ declare(strict_types=1);
 use Latte\Engine;
 use Marko\Core\Container\ContainerInterface;
 use Marko\View\Latte\LatteEngineFactory;
+use Marko\View\Latte\LatteTemplatePrecompiler;
 use Marko\View\Latte\LatteView;
+use Marko\View\TemplatePrecompilerInterface;
 use Marko\View\ViewInterface;
 
 describe('view-latte module.php', function (): void {
@@ -56,5 +58,12 @@ describe('view-latte module.php', function (): void {
         $result = $closure($container);
 
         expect($result)->toBe($engine);
+    });
+
+    test('it binds TemplatePrecompilerInterface to LatteTemplatePrecompiler for view:cache', function (): void {
+        $module = require dirname(__DIR__) . '/module.php';
+
+        expect($module['bindings'])->toHaveKey(TemplatePrecompilerInterface::class)
+            ->and($module['bindings'][TemplatePrecompilerInterface::class])->toBe(LatteTemplatePrecompiler::class);
     });
 });

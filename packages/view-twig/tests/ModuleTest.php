@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Marko\Core\Container\ContainerInterface;
+use Marko\View\TemplatePrecompilerInterface;
 use Marko\View\Twig\TwigEngineFactory;
+use Marko\View\Twig\TwigTemplatePrecompiler;
 use Marko\View\Twig\TwigView;
 use Marko\View\ViewInterface;
 use Twig\Environment;
@@ -56,5 +58,12 @@ describe('view-twig module.php', function (): void {
         $result = $closure($container);
 
         expect($result)->toBe($engine);
+    });
+
+    test('it binds TemplatePrecompilerInterface to TwigTemplatePrecompiler for view:cache', function (): void {
+        $module = require dirname(__DIR__) . '/module.php';
+
+        expect($module['bindings'])->toHaveKey(TemplatePrecompilerInterface::class)
+            ->and($module['bindings'][TemplatePrecompilerInterface::class])->toBe(TwigTemplatePrecompiler::class);
     });
 });
