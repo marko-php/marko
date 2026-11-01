@@ -7,10 +7,10 @@ use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Environment\AppEnvironment;
 use Marko\Core\Path\ProjectPaths;
+use Marko\Core\Sleep\SleeperInterface;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Database\Config\DatabaseConfig;
-use Marko\Database\Connection\SleeperInterface;
 use Marko\Database\Connection\TransactionBackoff;
-use Marko\Database\Connection\UsleepSleeper;
 use Marko\Database\Diff\DiffCalculator;
 use Marko\Database\Exceptions\SeederException;
 use Marko\Database\Schema\Column;
@@ -108,13 +108,14 @@ it('builds a SeederRunner from module.php that runs outside production', functio
     expect($runner)->toBeInstanceOf(SeederRunner::class);
 });
 
-it('binds SleeperInterface to UsleepSleeper in the module', function (): void {
-    expect(databaseModuleConfig()['bindings'][SleeperInterface::class])->toBe(UsleepSleeper::class);
+it('leaves the SleeperInterface binding to marko/core', function (): void {
+    expect(databaseModuleConfig()['bindings'])->not->toHaveKey(SleeperInterface::class);
 });
 
 it('resolves TransactionBackoff from a container with the database module bindings', function (): void {
     $container = databaseModuleContainer(new AppEnvironment(['APP_ENV' => 'production']));
-    $container->bind(SleeperInterface::class, databaseModuleConfig()['bindings'][SleeperInterface::class]);
+    // marko/core's default binding
+    $container->bind(SleeperInterface::class, UsleepSleeper::class);
     $container->bind(TransactionBackoff::class, databaseModuleConfig()['bindings'][TransactionBackoff::class]);
     $sleeper = new FakeSleeper();
 

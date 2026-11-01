@@ -11,6 +11,8 @@ use Marko\Cache\Tests\Support\ClockAdvancingSleeper;
 use Marko\Cache\Tests\Support\LockStoreContract;
 use Marko\Cache\Tests\Support\LockStoreHarness;
 use Marko\Core\Container\Container;
+use Marko\Core\Sleep\SleeperInterface;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Testing\Fake\FakeClock;
 use Psr\Clock\ClockInterface;
 
@@ -71,6 +73,8 @@ it('holds the lock until the last moment of its expiry', function (): void {
 it('binds one shared ArrayLockStore so every LockFactory sees the same locks', function (): void {
     $container = new Container();
     $container->instance(ClockInterface::class, new FakeClock());
+    // marko/core binds the default sleeper in a real application.
+    $container->bind(SleeperInterface::class, UsleepSleeper::class);
 
     foreach ([dirname(__DIR__, 3) . '/cache/module.php', dirname(__DIR__, 2) . '/module.php'] as $modulePath) {
         $module = require $modulePath;

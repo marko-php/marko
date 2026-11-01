@@ -367,6 +367,28 @@ A command that must not go ahead without a person (a destructive action) checks 
 
 `StdinConfirmationPrompter` is the default implementation, bound by `Application`. To replace it, bind `ConfirmationPrompterInterface` in your module's `module.php`. In tests, use [`FakeConfirmationPrompter`](/docs/packages/testing/#fakeconfirmationprompter) from `marko/testing`.
 
+### Pausing the Current Process
+
+Code that has to wait, such as a cache lock's `block()` retries or the backoff between `transaction()` retries in `marko/database`, sleeps through `Marko\Core\Sleep\SleeperInterface` instead of calling `usleep()` itself. Inject it the same way when your own code waits:
+
+```php title="app/billing/src/Service/GatewayPoller.php"
+use Marko\Core\Sleep\SleeperInterface;
+
+class GatewayPoller
+{
+    public function __construct(
+        private SleeperInterface $sleeper,
+    ) {}
+
+    public function waitBeforeRetry(): void
+    {
+        $this->sleeper->sleep(200); // milliseconds; 0 or less returns at once
+    }
+}
+```
+
+`Marko\Core\Sleep\UsleepSleeper` is the default implementation, bound by `Application`; it blocks the process with `usleep()`. To replace it, bind `SleeperInterface` in your module's `module.php`. In tests, use [`FakeSleeper`](/docs/packages/testing/#fakesleeper) from `marko/testing`, which records each delay instead of sleeping.
+
 ### Discovery Cache
 
 Without a cache, every boot discovers the application from scratch: it scans every `vendor/*/*` package and parses its `composer.json` to find modules, sorts them by dependency, scans every module PHP file for `#[Preference]`, `#[Plugin]`, `#[Observer]`, `#[Command]` and route attributes, resolves global middleware, and (with `marko/database`) scans for entities. Boot cost grows with every class in the app. In production all of this is compiled once into a single PHP file --- the discovery cache --- so a request skips every scan.
@@ -746,6 +768,15 @@ interface UploadedFileInterface
 ```
 
 A file uploaded with a request. [`marko/routing`](/docs/packages/routing/#uploadedfile) implements it as `Marko\Routing\Http\UploadedFile`; packages that only inspect uploads, such as the [file rules in `marko/validation`](/docs/packages/validation/#validating-file-uploads), depend on this contract instead of on routing. Methods that read or move the file throw a `MarkoException` subclass when the upload failed or was moved.
+
+```php
+interface SleeperInterface
+{
+    public function sleep(int $milliseconds): void;
+}
+```
+
+`Marko\Core\Sleep\SleeperInterface` pauses the current process. `Application` binds it to `Marko\Core\Sleep\UsleepSleeper`. See [Pausing the Current Process](#pausing-the-current-process) above.
 
 ### Events
 

@@ -9,6 +9,8 @@ use Marko\Core\Container\BindingRegistry;
 use Marko\Core\Container\Container;
 use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Module\ModuleManifest;
+use Marko\Core\Sleep\SleeperInterface;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Connection\TransactionInterface;
 use Marko\Database\ReadWrite\Connection\ReadWriteConnection;
@@ -122,6 +124,8 @@ function buildReadWriteOverContainer(string $driver): Container
     $container = new Container();
     $container->instance(ContainerInterface::class, $container);
     $container->instance(ConfigRepositoryInterface::class, new SharedOverrideConfigRepository($driver));
+    // marko/core binds the default sleeper in a real application.
+    $container->bind(SleeperInterface::class, UsleepSleeper::class);
 
     $registry = new BindingRegistry($container);
 

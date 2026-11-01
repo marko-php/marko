@@ -6,11 +6,10 @@ use Marko\Core\Container\ContainerInterface;
 use Marko\Core\Discovery\CachedDiscovery;
 use Marko\Core\Environment\AppEnvironment;
 use Marko\Core\Path\ProjectPaths;
+use Marko\Core\Sleep\SleeperInterface;
 use Marko\Database\Config\DatabaseConfig;
-use Marko\Database\Connection\SleeperInterface;
 use Marko\Database\Connection\TransactionBackoff;
 use Marko\Database\Connection\TransactionInterface;
-use Marko\Database\Connection\UsleepSleeper;
 use Marko\Database\Diff\DiffCalculator;
 use Marko\Database\Entity\EntityCacheContributor;
 use Marko\Database\Entity\EntityDiscovery;
@@ -44,9 +43,9 @@ return [
     },
     'bindings' => [
         SeederDiscoveryInterface::class => SeederDiscovery::class,
-        SleeperInterface::class => UsleepSleeper::class,
         // A closure, because Random\Randomizer cannot be autowired (its Engine
-        // parameter is an interface); bind SleeperInterface to change the wait.
+        // parameter is an interface). marko/core binds SleeperInterface; bind
+        // your own sleeper to change the wait.
         TransactionBackoff::class => function (ContainerInterface $container): TransactionBackoff {
             return new TransactionBackoff(
                 sleeper: $container->get(SleeperInterface::class),

@@ -52,6 +52,8 @@ use Marko\Core\Plugin\PluginDefinition;
 use Marko\Core\Plugin\PluginDiscovery;
 use Marko\Core\Plugin\PluginInterceptor;
 use Marko\Core\Plugin\PluginRegistry;
+use Marko\Core\Sleep\SleeperInterface;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Env\EnvLoader;
 use Marko\Routing\Exceptions\RouteConflictException;
 use Marko\Routing\Exceptions\RouteException;
@@ -201,8 +203,9 @@ class Application
         // Register ProjectPaths for dependency injection
         $this->container->instance(ProjectPaths::class, $projectPaths);
 
-        // Core console default, bound before module bindings so a module can replace it
+        // Core defaults, bound before module bindings so a module can replace them
         $this->container->bind(ConfirmationPrompterInterface::class, StdinConfirmationPrompter::class);
+        $this->container->bind(SleeperInterface::class, UsleepSleeper::class);
 
         // Register bindings from all modules
         foreach ($this->modules as $module) {

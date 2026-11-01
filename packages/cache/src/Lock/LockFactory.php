@@ -8,6 +8,7 @@ use Marko\Cache\Contracts\LockFactoryInterface;
 use Marko\Cache\Contracts\LockInterface;
 use Marko\Cache\Contracts\LockStoreInterface;
 use Marko\Cache\Exceptions\LockException;
+use Marko\Core\Sleep\SleeperInterface;
 use Psr\Clock\ClockInterface;
 use Random\RandomException;
 

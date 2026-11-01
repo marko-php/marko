@@ -15,10 +15,10 @@ use Marko\Cache\Config\CacheConfig;
 use Marko\Cache\File\Lock\FileLockStore;
 use Marko\Cache\File\Storage\FileEntryStorage;
 use Marko\Cache\Lock\LockFactory;
-use Marko\Cache\Lock\UsleepSleeper;
 use Marko\Cache\Signer\CacheValueSigner;
 use Marko\Clock\SystemClock;
 use Marko\Core\Path\ProjectPaths;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Encryption\Config\EncryptionConfig;
 use Marko\Testing\Fake\FakeConfigRepository;
 

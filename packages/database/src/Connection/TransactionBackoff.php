@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Marko\Database\Connection;
 
 use Closure;
+use Marko\Core\Sleep\SleeperInterface;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Database\Exceptions\TransactionConflictException;
 use Marko\Database\Exceptions\TransactionException;
 use Random\Randomizer;

@@ -109,7 +109,7 @@ $queue->assertNotPushed(ProcessPaymentJob::class);
 
 ```php
 use Marko\Cache\Lock\LockFactory;
-use Marko\Cache\Lock\UsleepSleeper;
+use Marko\Core\Sleep\UsleepSleeper;
 use Marko\Cache\Memory\Lock\ArrayLockStore;
 use Marko\Testing\Fake\FakeClock;
 use Marko\Testing\Fake\FakeQueue;
@@ -317,7 +317,7 @@ It behaves like a real driver, and one contract test suite runs against it and t
 
 ### FakeSleeper
 
-`FakeSleeper` implements `Marko\Database\Connection\SleeperInterface` from [`marko/database`](/docs/packages/database/) (install it to use this fake). It records each requested delay in milliseconds instead of sleeping, so you can assert the [backoff](/docs/packages/database/#backoff) between `transaction()` retries without waiting for it:
+`FakeSleeper` implements `Marko\Core\Sleep\SleeperInterface` from [`marko/core`](/docs/packages/core/). It records each requested delay in milliseconds instead of sleeping, so you can assert any wait that goes through that contract without waiting for it: the [backoff](/docs/packages/database/#backoff) between `transaction()` retries, or the retries of a cache lock's `block()`. For example, with the database backoff:
 
 ```php
 use Marko\Database\Connection\TransactionBackoff;
