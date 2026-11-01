@@ -9,6 +9,7 @@
         "marko/database": "self.version"
     },
     "require-dev": {
+        "marko/cache-array": "self.version",
         "marko/database-mysql": "self.version",
         "marko/database-pgsql": "self.version",
         "marko/testing": "self.version",
