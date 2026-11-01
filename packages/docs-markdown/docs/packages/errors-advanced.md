@@ -11,7 +11,7 @@ Pretty error pages with syntax-highlighted code, stack traces, and request detai
 composer require marko/errors-advanced
 ```
 
-This replaces the default `marko/errors-simple` handler with a more detailed error display. The package binds `AdvancedErrorHandler` to `ErrorHandlerInterface` and registers it automatically via its `module.php` boot callback.
+This replaces the default `marko/errors-simple` handler with a more detailed error display. The package binds `AdvancedErrorHandler` to `ErrorHandlerInterface` and registers it automatically via its `module.php` boot callback. Like errors-simple, it binds the handler as a singleton and unregisters it from its `shutdown` callback when [`Application::shutdown()`](/docs/packages/core/#shutting-down) runs.
 
 ## Usage
 

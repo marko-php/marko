@@ -13,6 +13,8 @@ use Marko\ErrorsSimple\Environment;
 use Marko\ErrorsSimple\Formatters\BasicHtmlFormatter;
 use Marko\ErrorsSimple\Formatters\TextFormatter;
 use Marko\ErrorsSimple\SimpleErrorHandler;
+use Marko\Testing\Fake\FakeClock;
+use Psr\Clock\ClockInterface;
 
 describe('Package Setup', function () {
     $composerJsonPath = dirname(__DIR__, 2) . '/composer.json';
@@ -91,6 +93,55 @@ describe('Package Setup', function () {
         expect($active)->toBe($moduleHandler)
             ->and($underneath)->toBe($original)
             ->and($bootstrapErrorHandler->isActive())->toBeFalse();
+    });
+
+    it('removes the handlers its boot callback registered from its shutdown callback', function () use ($modulePath) {
+        $module = require $modulePath;
+        $stacks = static function (): array {
+            $read = static function (Closure $set, Closure $restore): array {
+                $handlers = [];
+
+                while (($handler = $set(null)) !== null) {
+                    $restore();
+                    $handlers[] = $handler;
+                    $restore();
+                }
+
+                $restore();
+                $handlers = array_reverse($handlers);
+
+                foreach ($handlers as $handler) {
+                    $set($handler);
+                }
+
+                return $handlers;
+            };
+
+            return [
+                $read(set_error_handler(...), restore_error_handler(...)),
+                $read(set_exception_handler(...), restore_exception_handler(...)),
+            ];
+        };
+        $container = new Container(new PreferenceRegistry());
+        $container->instance(ContainerInterface::class, $container);
+        $container->instance(ClockInterface::class, new FakeClock());
+        $container->instance(BootstrapErrorHandler::class, new BootstrapErrorHandler());
+
+        foreach ($module['bindings'] as $abstract => $concrete) {
+            $container->bind($abstract, $concrete);
+        }
+
+        foreach ($module['singletons'] ?? [] as $abstract) {
+            $container->singleton($abstract);
+        }
+
+        $before = $stacks();
+        $container->call($module['boot']);
+        $booted = $stacks();
+        $container->call($module['shutdown']);
+
+        expect($booted)->not->toBe($before)
+            ->and($stacks())->toBe($before);
     });
 
     it('exports SimpleErrorHandler', function () {

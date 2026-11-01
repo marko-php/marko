@@ -120,6 +120,17 @@ it('fails toHavePushed with an assertion failure when nothing was pushed', funct
 
     expect(str_contains($output, 'fails toHavePushed with an assertion failure when nothing was pushed'))
         ->toBeTrue($output)
-        ->and(str_contains($output, '2 passed'))->toBeTrue($output)
+        ->and(str_contains($output, '3 passed'))->toBeTrue($output)
+        ->and($exitCode)->toBe(0, $output);
+});
+
+it('shuts down an application a plain it() test booted, so the test is not risky', function (): void {
+    ['exitCode' => $exitCode, 'output' => $output] = runFixturePestProject();
+
+    expect(str_contains($output, 'boots an application without leaving its error handlers installed'))
+        ->toBeTrue($output)
+        ->and(str_contains($output, 'did not remove its own error handlers'))->toBeFalse($output)
+        ->and(str_contains($output, 'did not remove its own exception handlers'))->toBeFalse($output)
+        ->and(str_contains($output, 'risky'))->toBeFalse($output)
         ->and($exitCode)->toBe(0, $output);
 });

@@ -103,7 +103,7 @@ Create a directory in `app/` with a `composer.json`:
 app/
   mymodule/
     composer.json    # Required: name, autoload
-    module.php       # Optional: enabled, sequence, bindings, singletons, boot, globalMiddleware, discovery
+    module.php       # Optional: enabled, sequence, bindings, singletons, boot, shutdown, globalMiddleware, discovery
     src/
       MyService.php
 ```
@@ -159,6 +159,26 @@ readonly class CheckWidgetSetup
 ```
 
 Under PHP-FPM every request is a boot, so keep these observers cheap. `marko/authorization` uses this event to [check `#[Can]` routes at boot](/docs/packages/authorization/#cost-on-routes-without-can).
+
+#### Shutting down
+
+A `boot` callback that changes process-wide state (pushes a global error or exception handler, opens a resource) has a matching `shutdown` callback that undoes it. `Application::shutdown()` runs every module's `shutdown` callback in reverse module load order, so handlers come off PHP's stacks in the reverse order they went on. Parameters are auto-injected like `boot`'s:
+
+```php title="module.php"
+return [
+    'singletons' => [
+        ErrorHandlerInterface::class, // shared, so shutdown gets the instance boot registered
+    ],
+    'boot' => function (ErrorHandlerInterface $handler): void {
+        $handler->register();
+    },
+    'shutdown' => function (ErrorHandlerInterface $handler): void {
+        $handler->unregister();
+    },
+];
+```
+
+Call `$app->shutdown()` when the application is done but the PHP process is not. [marko/testing](/docs/packages/testing/#shutdown-after-each-test) does it after every test that booted an application, so the test leaves PHP's error and exception handlers as it found them. A long-running worker can call it before it exits or boots a fresh application. Only the first call does anything. It also removes the [bootstrap error handler](#errors-during-boot) if a failed boot left it installed. Under PHP-FPM there is nothing to call: the process ends with the request.
 
 ### Application Environment
 

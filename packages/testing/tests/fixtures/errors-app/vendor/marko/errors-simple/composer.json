@@ -1,0 +1,11 @@
+{
+    "name": "marko/errors-simple",
+    "description": "Fixture stub for marko/errors-simple used by the marko/testing error handler fixture",
+    "type": "marko-module",
+    "license": "MIT",
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
