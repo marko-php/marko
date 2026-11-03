@@ -158,7 +158,7 @@ class NoStoreMiddleware implements MiddlewareInterface
 }
 ```
 
-Global middleware (sessions, CSRF, security headers, page cache) still wraps everything, including the layout.
+Global middleware (sessions, security headers, page cache) still wraps everything, including the layout. `CsrfMiddleware` from [`marko/security`](/docs/packages/security/) is also `#[RunsInnermost]`: it runs after your route middleware but still wraps the layout.
 
 ## Customization
 

@@ -12,7 +12,11 @@ interface CsrfTokenManagerInterface
     public function get(): string;
 
     /**
-     * Validate a submitted token against the stored token.
+     * Validate a submitted token for the current request.
+     *
+     * CsrfMiddleware checks after the route's own middleware, so a login there
+     * may already have rotated the token: accept the token the request arrived
+     * with too, until the request ends.
      */
     public function validate(string $token): bool;
 
