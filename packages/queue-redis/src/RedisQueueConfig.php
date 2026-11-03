@@ -8,7 +8,8 @@ use Marko\Config\ConfigRepositoryInterface;
 use Marko\Queue\Redis\Exceptions\RedisQueueException;
 
 /**
- * The queue-redis.* config. The reservation timeout is not here: the driver uses queue.retry_after.
+ * The queue-redis.* config. The reservation timeout is not here: the driver uses the queue's
+ * retry_after (queue.queues.<name>.retry_after, else queue.retry_after).
  */
 readonly class RedisQueueConfig
 {

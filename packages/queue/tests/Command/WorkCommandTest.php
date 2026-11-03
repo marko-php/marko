@@ -96,6 +96,7 @@ function createWorkCommandConfig(
     array $values = [],
 ): QueueConfig {
     return new QueueConfig(new FakeConfigRepository(array_merge([
+        'queue.queue' => 'default',
         'queue.retry_after' => 90,
         'queue.timeout' => 60,
     ], $values)));
@@ -430,8 +431,93 @@ describe('queue:work limits', function (): void {
         );
 
         expect($exitCode)->toBe(1)
-            ->and($output)->toContain('The queue worker timeout (90s) must be shorter than queue.retry_after (90s).')
+            ->and($output)->toContain(
+                "The queue worker timeout (90s) must be shorter than queue.retry_after (90s) on queue 'default'.",
+            )
             ->and($output)->toContain('so it would run twice at once')
+            ->and($worker->called)->toBeFalse();
+    });
+
+    it('checks the timeout against the default queue\'s own retry_after when --queue is not given', function (): void {
+        $worker = new CapturingWorker();
+
+        ['exitCode' => $exitCode] = executeWorkCommand(
+            createWorkCommand($worker, createWorkCommandConfig([
+                'queue.queue' => 'engine',
+                'queue.queues' => ['engine' => ['retry_after' => 3900]],
+            ])),
+            ['marko', 'queue:work', '--timeout=3600'],
+        );
+
+        expect($exitCode)->toBe(0)
+            ->and($worker->options?->timeout)->toBe(3600);
+    });
+
+    it('accepts a timeout below the retry_after of every queue in --queue', function (): void {
+        $worker = new CapturingWorker();
+
+        ['exitCode' => $exitCode] = executeWorkCommand(
+            createWorkCommand($worker, createWorkCommandConfig([
+                'queue.retry_after' => 90,
+                'queue.queues' => ['engine' => ['retry_after' => 3900], 'render' => ['retry_after' => 4000]],
+            ])),
+            ['marko', 'queue:work', '--queue=engine,render', '--timeout=3600'],
+        );
+
+        expect($exitCode)->toBe(0)
+            ->and($worker->queues)->toBe(['engine', 'render']);
+    });
+
+    it('refuses a timeout that is not below the retry_after of any queue in --queue', function (): void {
+        $worker = new CapturingWorker();
+
+        ['output' => $output, 'exitCode' => $exitCode] = executeWorkCommand(
+            createWorkCommand($worker, createWorkCommandConfig([
+                'queue.retry_after' => 90,
+                'queue.queues' => ['engine' => ['retry_after' => 3900]],
+            ])),
+            ['marko', 'queue:work', '--queue=engine,default', '--timeout=3600'],
+        );
+
+        expect($exitCode)->toBe(1)
+            ->and($output)->toContain(
+                "The queue worker timeout (3600s) must be shorter than queue.retry_after (90s) on queue 'default'.",
+            )
+            ->and($output)->toContain('queue.queues.default.retry_after')
+            ->and($worker->called)->toBeFalse();
+    });
+
+    it('names the per-queue retry_after key when a queue\'s own retry_after is too short', function (): void {
+        $worker = new CapturingWorker();
+
+        ['output' => $output, 'exitCode' => $exitCode] = executeWorkCommand(
+            createWorkCommand($worker, createWorkCommandConfig([
+                'queue.retry_after' => 3900,
+                'queue.queues' => ['mail' => ['retry_after' => 60]],
+            ])),
+            ['marko', 'queue:work', '--queue=mail', '--timeout=600'],
+        );
+
+        expect($exitCode)->toBe(1)
+            ->and($output)->toContain(
+                'The queue worker timeout (600s) must be shorter than queue.queues.mail.retry_after (60s)'
+                . " on queue 'mail'.",
+            )
+            ->and($worker->called)->toBeFalse();
+    });
+
+    it('reports an invalid per-queue retry_after instead of starting', function (): void {
+        $worker = new CapturingWorker();
+
+        ['output' => $output, 'exitCode' => $exitCode] = executeWorkCommand(
+            createWorkCommand($worker, createWorkCommandConfig([
+                'queue.queues' => ['engine' => ['retry_after' => 'long']],
+            ])),
+            ['marko', 'queue:work', '--queue=engine'],
+        );
+
+        expect($exitCode)->toBe(1)
+            ->and($output)->toContain('Invalid queue.queues.engine.retry_after')
             ->and($worker->called)->toBeFalse();
     });
 

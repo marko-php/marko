@@ -33,6 +33,7 @@ return [
                 defaultQueue: $config->queue(),
                 retryAfter: $config->retryAfter(),
                 jobIdGenerator: $container->get(JobIdGenerator::class),
+                queueRetryAfters: $config->queueRetryAfters(),
             );
         },
         FailedJobRepositoryInterface::class => DatabaseFailedJobRepository::class,

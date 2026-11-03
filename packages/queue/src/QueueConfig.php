@@ -29,9 +29,86 @@ readonly class QueueConfig
         return $this->config->getString('queue.queue');
     }
 
-    public function retryAfter(): int
-    {
+    /**
+     * Seconds a reservation lasts before a job that was neither deleted nor released is reclaimed.
+     *
+     * A queue that sets its own retry_after in queue.queues uses it; every other queue, and a null
+     * queue, uses the global queue.retry_after.
+     *
+     * @throws QueueException When queue.queues or a queue's retry_after is invalid
+     */
+    public function retryAfter(
+        ?string $queue = null,
+    ): int {
+        if ($queue !== null) {
+            $retryAfters = $this->queueRetryAfters();
+
+            if (array_key_exists($queue, $retryAfters)) {
+                return $retryAfters[$queue];
+            }
+        }
+
         return $this->config->getInt('queue.retry_after');
+    }
+
+    /**
+     * The config key the queue's retry_after comes from, for error messages that say what to change.
+     *
+     * @throws QueueException When queue.queues or a queue's retry_after is invalid
+     */
+    public function retryAfterKey(
+        ?string $queue = null,
+    ): string {
+        if ($queue !== null && array_key_exists($queue, $this->queueRetryAfters())) {
+            return "queue.queues.$queue.retry_after";
+        }
+
+        return 'queue.retry_after';
+    }
+
+    /**
+     * The queues that set their own retry_after in queue.queues, keyed by queue name.
+     *
+     * Read as one array rather than by dot-notation key, so a queue name containing a dot works.
+     *
+     * @return array<string, int>
+     * @throws QueueException When queue.queues is not a map of arrays, or a retry_after is not a positive int
+     */
+    public function queueRetryAfters(): array
+    {
+        if (!$this->config->has('queue.queues')) {
+            return [];
+        }
+
+        $queues = $this->config->get('queue.queues');
+
+        if (!is_array($queues)) {
+            throw QueueException::invalidQueueSettings('queue.queues', get_debug_type($queues));
+        }
+
+        $retryAfters = [];
+
+        foreach ($queues as $name => $settings) {
+            $name = (string) $name;
+
+            if (!is_array($settings)) {
+                throw QueueException::invalidQueueSettings("queue.queues.$name", get_debug_type($settings));
+            }
+
+            if (!array_key_exists('retry_after', $settings)) {
+                continue;
+            }
+
+            $retryAfter = $settings['retry_after'];
+
+            if (!is_int($retryAfter) || $retryAfter < 1) {
+                throw QueueException::invalidQueueRetryAfter($name, $retryAfter);
+            }
+
+            $retryAfters[$name] = $retryAfter;
+        }
+
+        return $retryAfters;
     }
 
     /**

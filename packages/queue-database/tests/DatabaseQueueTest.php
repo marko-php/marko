@@ -32,6 +32,9 @@ class FixedJobIdGenerator extends JobIdGenerator
     }
 }
 
+/**
+ * @param array<string, int> $queueRetryAfters
+ */
 function createTestQueue(
     ConnectionInterface $connection,
     ?JobEnvelope $envelope = null,
@@ -39,6 +42,7 @@ function createTestQueue(
     ClockInterface $clock = new FakeClock('2026-10-05 12:00:00'),
     int $maxAttempts = 3,
     ?InMemoryFailedJobRepository $failedJobRepository = null,
+    array $queueRetryAfters = [],
 ): DatabaseQueue {
     return new DatabaseQueue(
         connection: $connection,
@@ -53,6 +57,7 @@ function createTestQueue(
         databaseTimezoneConfig: DatabaseTimezoneConfig::fromName('UTC'),
         retryPolicy: TestRetryPolicy::create($maxAttempts, $clock),
         retryAfter: $retryAfter,
+        queueRetryAfters: $queueRetryAfters,
     );
 }
 
@@ -704,6 +709,25 @@ it(
         expect($queue->pop()?->id)->toBe($id);
     },
 );
+
+it('reclaims a job on a queue with its own retry_after only once that window passes', function (): void {
+    $connection = SqliteConnection::withQueueTables();
+    $clock = new FakeClock('2026-10-05 12:00:00');
+    $queue = createTestQueue($connection, retryAfter: 90, clock: $clock, queueRetryAfters: ['engine' => 3900]);
+    $engineId = $queue->push(new TestJob('render'), 'engine')->id;
+    $defaultId = $queue->push(new TestJob('mail'))->id;
+    $queue->pop('engine');
+    $queue->pop();
+    $clock->travel('+91 seconds');
+
+    $defaultReclaimed = $queue->pop()?->id;
+    $engineWithinWindow = $queue->pop('engine');
+    $clock->travel('+3810 seconds');
+
+    expect($defaultReclaimed)->toBe($defaultId)
+        ->and($engineWithinWindow)->toBeNull()
+        ->and($queue->pop('engine')?->id)->toBe($engineId);
+});
 
 it('selects the next job with FOR UPDATE SKIP LOCKED', function (): void {
     $connection = SqliteConnection::withQueueTables();

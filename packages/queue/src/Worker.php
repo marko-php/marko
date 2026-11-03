@@ -226,8 +226,9 @@ class Worker implements WorkerInterface
     /**
      * Check a job's own timeout before it runs. Returns false when the job was failed instead of run.
      *
-     * The worker's timeout is checked against queue.retry_after when queue:work starts, but a job's own
-     * timeout is only known now. A job that may run past retry_after would be reclaimed and run twice at
+     * The worker's timeout is checked against each queue's retry_after when queue:work starts, but a job's
+     * own timeout is only known now, and it is checked against the retry_after of the queue it was popped
+     * from. A job that may run past retry_after would be reclaimed and run twice at
      * once, so it is failed for good with an error that says to raise retry_after. A timeout that cannot
      * be enforced because ext-pcntl is missing is logged as a warning, and the job runs unprotected.
      *
@@ -238,12 +239,18 @@ class Worker implements WorkerInterface
         int $timeout,
         string $queue,
     ): bool {
-        $retryAfter = $this->config->retryAfter();
+        $retryAfter = $this->config->retryAfter($queue);
 
         if ($timeout >= $retryAfter) {
             $this->failJob(
                 $job,
-                QueueException::jobTimeoutNotBelowRetryAfter($job::class, $timeout, $retryAfter),
+                QueueException::jobTimeoutNotBelowRetryAfter(
+                    $job::class,
+                    $timeout,
+                    $retryAfter,
+                    $queue,
+                    $this->config->retryAfterKey($queue),
+                ),
                 $queue,
             );
 

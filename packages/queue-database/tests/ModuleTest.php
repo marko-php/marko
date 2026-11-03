@@ -138,6 +138,27 @@ test('module factory reclaims reservations after the configured queue.retry_afte
     expect($queue->pop()?->id)->toBe($id);
 });
 
+test('module factory reclaims reservations after a queue\'s own queue.queues retry_after', function (): void {
+    $connection = SqliteConnection::withQueueTables();
+    $queue = queueDatabaseModuleContainer($connection, [
+        'queue.retry_after' => 30,
+        'queue.queues' => ['engine' => ['retry_after' => 3900]],
+    ])->get(QueueInterface::class);
+    $id = $queue->push(new TestJob(), 'engine')->id;
+    $queue->pop('engine');
+
+    $reservedAt = fn (int $secondsAgo) => $connection->execute(
+        'UPDATE jobs SET reserved_at = :reserved_at WHERE id = :id',
+        ['reserved_at' => new DateTimeImmutable("-$secondsAgo seconds")->format('Y-m-d H:i:s'), 'id' => $id],
+    );
+
+    $reservedAt(40);
+    expect($queue->pop('engine'))->toBeNull();
+
+    $reservedAt(4000);
+    expect($queue->pop('engine')?->id)->toBe($id);
+});
+
 test('module factory fails crash-exhausted jobs at the configured queue.max_attempts', function (): void {
     $connection = SqliteConnection::withQueueTables();
     $queue = queueDatabaseModuleContainer($connection, ['queue.max_attempts' => 1])->get(QueueInterface::class);

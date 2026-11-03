@@ -26,7 +26,7 @@ The factory reads these keys from `config/queue.php`:
 | Key | Effect on the database driver |
 |---|---|
 | `queue.queue` | Queue name used by `push()`, `later()` and `pop()` when none is given |
-| `queue.retry_after` | Seconds before a reserved job that was neither deleted nor released is reclaimed |
+| `queue.retry_after` | Seconds before a reserved job that was neither deleted nor released is reclaimed. A queue can set its own with `queue.queues.<name>.retry_after` (see [Per-Queue Retry After](/docs/packages/queue/#per-queue-retry-after)) |
 | `queue.max_attempts` | Default attempt limit for jobs that don't set their own `maxAttempts` |
 
 Jobs are always stored in the `jobs` table (see [Creating the Tables](#creating-the-tables)).
@@ -192,9 +192,10 @@ Implements `QueueInterface`. The constructor accepts:
 - an optional table name (`jobs`)
 - an optional default queue name
 - an optional `retryAfter` timeout in seconds
+- an optional `queueRetryAfters` map of queue name to seconds, which overrides `retryAfter` for those queues
 - an optional `JobIdGenerator`, which gives each pushed job its id (see [`marko/queue`](/docs/packages/queue/#jobidgenerator))
 
-The module factory passes the container's bound clock, `DatabaseTimezoneConfig`, `RetryPolicy` and `JobIdGenerator`, and sets the default queue and `retryAfter` from `queue.queue` and `queue.retry_after`.
+The module factory passes the container's bound clock, `DatabaseTimezoneConfig`, `RetryPolicy` and `JobIdGenerator`, and sets the default queue, `retryAfter` and `queueRetryAfters` from `queue.queue`, `queue.retry_after` and `QueueConfig::queueRetryAfters()` (the queues in `queue.queues` that set a `retry_after`).
 
 `pop()` selects the next available job with `lockForUpdate()->skipLocked()` inside a transaction, then reserves it with an `UPDATE` guarded on `reserved_at`. A job locked by another worker is skipped rather than waited for, so multiple workers can run concurrently without claiming the same job. The connection must implement `TransactionInterface` (the MySQL and PostgreSQL drivers do). Otherwise `pop()` throws `LockException`, because the lock would be released as soon as the `SELECT` finished. Jobs whose `reserved_at` timestamp is older than `retry_after` seconds are treated as crashed and become eligible for re-reservation.
 
