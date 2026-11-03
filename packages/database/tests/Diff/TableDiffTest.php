@@ -9,6 +9,7 @@ use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Schema\Column;
 use Marko\Database\Schema\ForeignKey;
 use Marko\Database\Schema\Index;
+use Marko\Database\Schema\Table;
 use ReflectionClass;
 
 describe('TableDiff', function (): void {
@@ -70,7 +71,7 @@ describe('TableDiff', function (): void {
             columnsToModify: ['title' => new Column(name: 'title', type: 'TEXT')],
         );
 
-        expect($diff->columnsToModifyFrom)->toBe([]);
+        expect($diff->columnsToModifyFrom)->toBeEmpty();
     });
 
     it('returns the previous definition of a modified column', function (): void {
@@ -102,43 +103,34 @@ describe('TableDiff', function (): void {
 
     it('reports isEmpty correctly', function (): void {
         $emptyDiff = new TableDiff(tableName: 'posts');
-        expect($emptyDiff->isEmpty())->toBeTrue();
-
         $diffWithAddColumn = new TableDiff(
             tableName: 'posts',
             columnsToAdd: [new Column(name: 'slug', type: 'VARCHAR')],
         );
-        expect($diffWithAddColumn->isEmpty())->toBeFalse();
-
         $diffWithDropIndex = new TableDiff(
             tableName: 'posts',
             indexesToDrop: [new Index(name: 'idx_old', columns: ['old'])],
         );
-        expect($diffWithDropIndex->isEmpty())->toBeFalse();
+
+        expect($emptyDiff->isEmpty())->toBeTrue()
+            ->and($diffWithAddColumn->isEmpty())->toBeFalse()
+            ->and($diffWithDropIndex->isEmpty())->toBeFalse();
     });
 
     it('reports hasDestructiveChanges correctly', function (): void {
         $emptyDiff = new TableDiff(tableName: 'posts');
-        expect($emptyDiff->hasDestructiveChanges())->toBeFalse();
-
         $diffWithAddColumn = new TableDiff(
             tableName: 'posts',
             columnsToAdd: [new Column(name: 'slug', type: 'VARCHAR')],
         );
-        expect($diffWithAddColumn->hasDestructiveChanges())->toBeFalse();
-
         $diffWithDropColumn = new TableDiff(
             tableName: 'posts',
             columnsToDrop: [new Column(name: 'old', type: 'VARCHAR')],
         );
-        expect($diffWithDropColumn->hasDestructiveChanges())->toBeTrue();
-
         $diffWithDropIndex = new TableDiff(
             tableName: 'posts',
             indexesToDrop: [new Index(name: 'idx_old', columns: ['old'])],
         );
-        expect($diffWithDropIndex->hasDestructiveChanges())->toBeTrue();
-
         $diffWithDropFk = new TableDiff(
             tableName: 'posts',
             foreignKeysToDrop: [
@@ -150,7 +142,12 @@ describe('TableDiff', function (): void {
                 ),
             ],
         );
-        expect($diffWithDropFk->hasDestructiveChanges())->toBeTrue();
+
+        expect($emptyDiff->hasDestructiveChanges())->toBeFalse()
+            ->and($diffWithAddColumn->hasDestructiveChanges())->toBeFalse()
+            ->and($diffWithDropColumn->hasDestructiveChanges())->toBeTrue()
+            ->and($diffWithDropIndex->hasDestructiveChanges())->toBeTrue()
+            ->and($diffWithDropFk->hasDestructiveChanges())->toBeTrue();
     });
 
     it('returns destructive changes list', function (): void {
@@ -193,7 +190,7 @@ describe('TableDiff', function (): void {
     });
 
     it('defaults the current primary key to an empty list', function (): void {
-        expect(new TableDiff(tableName: 'posts')->currentPrimaryKey)->toBe([]);
+        expect(new TableDiff(tableName: 'posts')->currentPrimaryKey)->toBeEmpty();
     });
 
     it('keeps the current primary key out of isEmpty so a key alone is no change', function (): void {
@@ -206,6 +203,33 @@ describe('TableDiff', function (): void {
         ]);
 
         expect(fn () => $diff->assertSupportedPrimaryKeyChange('MySQL'))->not->toThrow(MigrationException::class);
+    });
+
+    it('keeps the current table and current primary key on the destructive-only diff', function (): void {
+        $currentTable = new Table(name: 'posts', columns: [new Column(name: 'id', type: 'int', primaryKey: true)]);
+        $diff = new TableDiff(
+            tableName: 'posts',
+            columnsToDrop: [new Column(name: 'old', type: 'text')],
+            currentPrimaryKey: ['id'],
+            currentTable: $currentTable,
+        );
+
+        $destructive = $diff->destructiveOnly();
+
+        expect($destructive->currentTable)->toBe($currentTable)
+            ->and($destructive->currentPrimaryKey)->toBe(['id']);
+    });
+
+    it('treats a diff whose only content is the current table as empty', function (): void {
+        $diff = new TableDiff(
+            tableName: 'posts',
+            currentTable: new Table(name: 'posts', columns: [new Column(name: 'id', type: 'int')]),
+        );
+
+        expect($diff->isEmpty())->toBeTrue()
+            ->and($diff->hasDestructiveChanges())->toBeFalse()
+            ->and($diff->getDestructiveChanges())->toBeEmpty()
+            ->and($diff->getSummaryLines())->toBeEmpty();
     });
 
     it('accepts dropping every column of the current primary key', function (): void {

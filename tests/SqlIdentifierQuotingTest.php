@@ -13,7 +13,7 @@ require_once __DIR__ . '/Support/SqlIdentifierQuoting/HardCodedIdentifierQuoteDe
  */
 
 /** @var list<string> The driver packages, which own their dialect's quoting rule */
-const SQL_QUOTING_DRIVER_PACKAGES = ['database-mysql', 'database-pgsql'];
+const SQL_QUOTING_DRIVER_PACKAGES = ['database-mysql', 'database-pgsql', 'database-sqlite'];
 
 /**
  * @return list<string>
@@ -29,7 +29,7 @@ function packageSourceFilesOutsideDrivers(): array
         }
 
         foreach (new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS)
+            new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
         ) as $file) {
             if ($file->getExtension() === 'php') {
                 $files[] = $file->getPathname();
@@ -66,7 +66,7 @@ it('finds no hard-coded identifier quoting in package sources', function (): voi
     $files = packageSourceFilesOutsideDrivers();
 
     expect(count($files))->toBeGreaterThan(500)
-        ->and(describeHardCodedQuoting(new HardCodedIdentifierQuoteDetector()->scan($files)))->toBe([]);
+        ->and(describeHardCodedQuoting(new HardCodedIdentifierQuoteDetector()->scan($files)))->toBeEmpty();
 })->issue(338);
 
 it('excludes the database driver packages', function (): void {
@@ -75,15 +75,16 @@ it('excludes the database driver packages', function (): void {
     expect(array_filter(
         $files,
         fn (string $file): bool => str_contains($file, '/packages/database-mysql/')
-            || str_contains($file, '/packages/database-pgsql/'),
-    ))->toBe([])
+            || str_contains($file, '/packages/database-pgsql/')
+            || str_contains($file, '/packages/database-sqlite/'),
+    ))->toBeEmpty()
         ->and(array_filter($files, fn (string $file): bool => str_contains($file, '/packages/database/src/')))
-        ->not->toBe([]);
+        ->not->toBeEmpty();
 })->issue(338);
 
 it('flags backtick and double-quote delimiters in a violating fixture', function (): void {
     $violations = new HardCodedIdentifierQuoteDetector()->scanFile(
-        __DIR__ . '/Fixtures/SqlIdentifierQuoting/violating.php'
+        __DIR__ . '/Fixtures/SqlIdentifierQuoting/violating.php',
     );
 
     expect(array_map(fn (array $violation): int => $violation['line'], $violations))
@@ -92,7 +93,7 @@ it('flags backtick and double-quote delimiters in a violating fixture', function
 
 it('flags delimiters inside interpolated double-quoted strings and heredocs', function (): void {
     $violations = new HardCodedIdentifierQuoteDetector()->scanFile(
-        __DIR__ . '/Fixtures/SqlIdentifierQuoting/violating.php'
+        __DIR__ . '/Fixtures/SqlIdentifierQuoting/violating.php',
     );
 
     expect(array_column($violations, 'literal'))
@@ -101,5 +102,5 @@ it('flags delimiters inside interpolated double-quoted strings and heredocs', fu
 
 it('ignores quote characters in comments and in statements that build no SQL', function (): void {
     expect(new HardCodedIdentifierQuoteDetector()->scanFile(__DIR__ . '/Fixtures/SqlIdentifierQuoting/clean.php'))
-        ->toBe([]);
+        ->toBeEmpty();
 })->issue(338);

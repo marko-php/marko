@@ -27,7 +27,7 @@ class TransactionException extends MarkoException
         return new self(
             message: "Connection '$connectionClass' cannot run pending after-commit callbacks",
             context: 'Running after-commit callbacks queued inside a transaction that is never committed (a RefreshDatabase test)',
-            suggestion: 'Use a connection that implements Marko\Database\Connection\PendingAfterCommitInterface (the pgsql and mysql drivers do), or assert on the callbacks by committing a real transaction',
+            suggestion: 'Use a connection that implements Marko\Database\Connection\PendingAfterCommitInterface (the pgsql, mysql and sqlite drivers do), or assert on the callbacks by committing a real transaction',
         );
     }
 

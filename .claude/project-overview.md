@@ -46,7 +46,7 @@ docs/           # Documentation site content
 ## Package Categories
 
 - **Core**: core, config, env, routing, cli
-- **Database**: database (interface), database-mysql, database-pgsql
+- **Database**: database (interface), database-mysql, database-pgsql, database-sqlite
 - **Cache**: cache (interface), cache-file, cache-array, cache-redis
 - **View**: view (interface), view-latte, view-twig, forms
 - **Mail**: mail (interface), mail-smtp, mail-log

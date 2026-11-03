@@ -294,6 +294,7 @@ PHP;
         }
 
         foreach ($diff->tablesToAlter as $tableName => $tableDiff) {
+            $currentTable = $tableDiff->currentTable;
             $names = [
                 ...$names,
                 (string) $tableName,
@@ -307,6 +308,12 @@ PHP;
                 ...$this->indexNames($tableDiff->indexesToDrop),
                 ...$this->foreignKeyNames($tableDiff->foreignKeysToAdd),
                 ...$this->foreignKeyNames($tableDiff->foreignKeysToDrop),
+                ...($currentTable === null ? [] : [
+                    $currentTable->name,
+                    ...$this->columnNames($currentTable->columns),
+                    ...$this->indexNames($currentTable->indexes),
+                    ...$this->foreignKeyNames($currentTable->foreignKeys),
+                ]),
             ];
         }
 

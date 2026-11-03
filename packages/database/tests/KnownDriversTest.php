@@ -23,6 +23,13 @@ describe('Known Drivers', function (): void {
         expect($keys[1])->toBe('marko/database-mysql');
     });
 
+    it('lists marko/database-sqlite as the third known driver', function (): void {
+        $drivers = (static fn (): array => require __DIR__ . '/../known-drivers.php')();
+        $keys = array_keys($drivers);
+
+        expect($keys[2])->toBe('marko/database-sqlite');
+    });
+
     it('does not list marko/database-readwrite (add-on, not a driver)', function (): void {
         $drivers = (static fn (): array => require __DIR__ . '/../known-drivers.php')();
 

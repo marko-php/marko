@@ -10,7 +10,9 @@ use PDOException;
  * The database could not serialize this transaction against a concurrent one
  * under REPEATABLE READ or SERIALIZABLE isolation (PostgreSQL SQLSTATE
  * 40001, or MariaDB error 1020 "Record has changed since last read" under
- * innodb_snapshot_isolation=ON). MySQL InnoDB reports most of these
+ * innodb_snapshot_isolation=ON, or SQLite result code 517
+ * SQLITE_BUSY_SNAPSHOT when a WAL read transaction cannot upgrade to a
+ * write). MySQL InnoDB reports most of these
  * conflicts as deadlocks (DeadlockException).
  *
  * Retryable: see TransactionConflictException.

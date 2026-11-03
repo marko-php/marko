@@ -11,7 +11,8 @@
     },
     "require-dev": {
         "marko/database-mysql": "self.version",
-        "marko/database-pgsql": "self.version"
+        "marko/database-pgsql": "self.version",
+        "marko/database-sqlite": "self.version"
     },
     "autoload": {
         "psr-4": {

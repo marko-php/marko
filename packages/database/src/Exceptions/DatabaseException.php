@@ -14,6 +14,7 @@ class DatabaseException extends MarkoException
     private const array KNOWN_DRIVERS = [
         'mysql' => 'marko/database-mysql',
         'pgsql' => 'marko/database-pgsql',
+        'sqlite' => 'marko/database-sqlite',
     ];
 
     public static function noDriverInstalled(

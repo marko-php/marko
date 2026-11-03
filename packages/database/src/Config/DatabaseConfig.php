@@ -51,6 +51,19 @@ readonly class DatabaseConfig
     public array $ignoreIndexes;
 
     /**
+     * The raw `sqlite.pragmas` overrides (empty when absent and for other drivers). The sqlite driver
+     * validates the pragma names and values.
+     *
+     * @var array<string, int|string>
+     */
+    public array $sqlitePragmas;
+
+    /**
+     * The `sqlite.create_if_missing` option: whether a missing database file is created (default true).
+     */
+    public bool $sqliteCreateIfMissing;
+
+    /**
      * @throws ConfigurationException
      */
     public function __construct(
@@ -64,55 +77,40 @@ readonly class DatabaseConfig
 
         $config = require $configPath;
 
-        self::validateConfigArray($config);
+        $props = self::properties($config, $paths->base);
 
-        $this->driver = $config['driver'];
-        $this->host = $config['host'];
-        $this->port = $config['port'];
-        $this->database = $config['database'];
-        $this->username = $config['username'];
-        $this->password = $config['password'];
-        $this->sslMode = $config['sslmode'] ?? null;
-        $this->sslRootCert = $config['ssl_ca'] ?? null;
-        $this->sslVerifyServerCert = $config['ssl_verify_server_cert'] ?? ($config['ssl_ca'] ?? null) !== null;
-        $this->sslCert = $config['ssl_cert'] ?? null;
-        $this->sslKey = $config['ssl_key'] ?? null;
-        $this->timezone = DatabaseTimezoneConfig::resolveTimezone(
-            $config['timezone'] ?? DatabaseTimezoneConfig::DEFAULT_TIMEZONE,
-        );
-        $this->ignoreIndexes = array_values($config['migrations']['ignore_indexes'] ?? []);
+        $this->driver = $props['driver'];
+        $this->host = $props['host'];
+        $this->port = $props['port'];
+        $this->database = $props['database'];
+        $this->username = $props['username'];
+        $this->password = $props['password'];
+        $this->sslMode = $props['sslMode'];
+        $this->sslRootCert = $props['sslRootCert'];
+        $this->sslVerifyServerCert = $props['sslVerifyServerCert'];
+        $this->sslCert = $props['sslCert'];
+        $this->sslKey = $props['sslKey'];
+        $this->timezone = $props['timezone'];
+        $this->ignoreIndexes = $props['ignoreIndexes'];
+        $this->sqlitePragmas = $props['sqlitePragmas'];
+        $this->sqliteCreateIfMissing = $props['sqliteCreateIfMissing'];
     }
 
     /**
      * Create a DatabaseConfig from a raw configuration array.
      *
      * @param array<string, mixed> $config
+     * @param string|null $basePath Resolves a relative sqlite database path
      *
      * @throws ConfigurationException
      */
-    public static function fromArray(array $config): self
-    {
-        self::validateConfigArray($config);
+    public static function fromArray(
+        array $config,
+        ?string $basePath = null,
+    ): self {
+        $props = self::properties($config, $basePath);
 
         $instance = (new ReflectionClass(self::class))->newInstanceWithoutConstructor();
-
-        $props = [
-            'driver' => $config['driver'],
-            'host' => $config['host'],
-            'port' => $config['port'],
-            'database' => $config['database'],
-            'username' => $config['username'],
-            'password' => $config['password'],
-            'sslMode' => $config['sslmode'] ?? null,
-            'sslRootCert' => $config['ssl_ca'] ?? null,
-            'sslVerifyServerCert' => $config['ssl_verify_server_cert'] ?? ($config['ssl_ca'] ?? null) !== null,
-            'sslCert' => $config['ssl_cert'] ?? null,
-            'sslKey' => $config['ssl_key'] ?? null,
-            'timezone' => DatabaseTimezoneConfig::resolveTimezone(
-                $config['timezone'] ?? DatabaseTimezoneConfig::DEFAULT_TIMEZONE,
-            ),
-            'ignoreIndexes' => array_values($config['migrations']['ignore_indexes'] ?? []),
-        ];
 
         $reflection = new ReflectionClass($instance);
 
@@ -140,6 +138,62 @@ readonly class DatabaseConfig
     }
 
     /**
+     * Validate the raw config and turn it into the property values.
+     *
+     * @param array<string, mixed> $config
+     * @return array<string, mixed>
+     *
+     * @throws ConfigurationException
+     */
+    private static function properties(
+        array $config,
+        ?string $basePath,
+    ): array {
+        self::validateConfigArray($config);
+
+        $isSqlite = $config['driver'] === 'sqlite';
+        $sqlite = $config['sqlite'] ?? [];
+
+        return [
+            'driver' => $config['driver'],
+            'host' => $isSqlite ? '' : $config['host'],
+            'port' => $isSqlite ? 0 : $config['port'],
+            'database' => $isSqlite ? self::resolveSqlitePath($config['database'], $basePath) : $config['database'],
+            'username' => $isSqlite ? '' : $config['username'],
+            'password' => $isSqlite ? '' : $config['password'],
+            'sslMode' => $config['sslmode'] ?? null,
+            'sslRootCert' => $config['ssl_ca'] ?? null,
+            'sslVerifyServerCert' => $config['ssl_verify_server_cert'] ?? ($config['ssl_ca'] ?? null) !== null,
+            'sslCert' => $config['ssl_cert'] ?? null,
+            'sslKey' => $config['ssl_key'] ?? null,
+            'timezone' => DatabaseTimezoneConfig::resolveTimezone(
+                $config['timezone'] ?? DatabaseTimezoneConfig::DEFAULT_TIMEZONE,
+            ),
+            'ignoreIndexes' => array_values($config['migrations']['ignore_indexes'] ?? []),
+            'sqlitePragmas' => $isSqlite ? $sqlite['pragmas'] ?? [] : [],
+            'sqliteCreateIfMissing' => $isSqlite ? $sqlite['create_if_missing'] ?? true : true,
+        ];
+    }
+
+    /**
+     * @throws ConfigurationException
+     */
+    private static function resolveSqlitePath(
+        string $database,
+        ?string $basePath,
+    ): string {
+        if ($database === ':memory:' || str_starts_with($database, 'file:') || str_starts_with($database, '/')) {
+            return $database;
+        }
+
+        if ($basePath === null) {
+            throw ConfigurationException::relativeSqlitePathWithoutBasePath($database);
+        }
+
+        return $basePath . '/' . $database;
+    }
+
+    /**
      * Validate a database configuration array, throwing ConfigurationException on failure.
      *
      * @param array<string, mixed> $config
@@ -148,12 +202,23 @@ readonly class DatabaseConfig
      */
     private static function validateConfigArray(array $config): void
     {
-        $requiredKeys = ['driver', 'host', 'port', 'database', 'username', 'password'];
+        if (!array_key_exists('driver', $config)) {
+            throw ConfigurationException::missingRequiredKey('driver');
+        }
+
+        $isSqlite = $config['driver'] === 'sqlite';
+        $requiredKeys = $isSqlite
+            ? ['database']
+            : ['host', 'port', 'database', 'username', 'password'];
 
         foreach ($requiredKeys as $key) {
             if (!array_key_exists($key, $config)) {
                 throw ConfigurationException::missingRequiredKey($key);
             }
+        }
+
+        if ($isSqlite) {
+            self::validateSqliteOptions($config['sqlite'] ?? []);
         }
 
         $sslCert = $config['ssl_cert'] ?? null;
@@ -184,6 +249,25 @@ readonly class DatabaseConfig
 
         if (!$isListOfStrings) {
             throw ConfigurationException::invalidIgnoreIndexes();
+        }
+    }
+
+    /**
+     * @throws ConfigurationException
+     */
+    private static function validateSqliteOptions(
+        mixed $sqlite,
+    ): void {
+        if (!is_array($sqlite)) {
+            throw ConfigurationException::invalidSqliteOption('sqlite', 'an array');
+        }
+
+        if (!is_array($sqlite['pragmas'] ?? [])) {
+            throw ConfigurationException::invalidSqliteOption('sqlite.pragmas', 'an array');
+        }
+
+        if (!is_bool($sqlite['create_if_missing'] ?? true)) {
+            throw ConfigurationException::invalidSqliteOption('sqlite.create_if_missing', 'a boolean');
         }
     }
 }

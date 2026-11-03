@@ -96,6 +96,7 @@ class DiffCalculator
             currentPrimaryKey: array_values($this->getColumnNames(
                 array_filter($databaseTable->columns, static fn (Column $column): bool => $column->primaryKey),
             )),
+            currentTable: $databaseTable,
         );
     }
 
@@ -417,16 +418,10 @@ class DiffCalculator
         $foreignKeysToAdd = [];
 
         foreach ($entityForeignKeys as $entityFk) {
-            $found = false;
-
-            foreach ($databaseForeignKeys as $dbFk) {
-                if ($this->foreignKeysMatch($entityFk, $dbFk)) {
-                    $found = true;
-                    break;
-                }
-            }
-
-            if (!$found) {
+            if (!array_any(
+                $databaseForeignKeys,
+                fn (ForeignKey $dbFk): bool => $this->foreignKeysMatch($entityFk, $dbFk),
+            )) {
                 $foreignKeysToAdd[] = $entityFk;
             }
         }
@@ -450,16 +445,10 @@ class DiffCalculator
         $foreignKeysToDrop = [];
 
         foreach ($databaseForeignKeys as $dbFk) {
-            $found = false;
-
-            foreach ($entityForeignKeys as $entityFk) {
-                if ($this->foreignKeysMatch($entityFk, $dbFk)) {
-                    $found = true;
-                    break;
-                }
-            }
-
-            if (!$found) {
+            if (!array_any(
+                $entityForeignKeys,
+                fn (ForeignKey $entityFk): bool => $this->foreignKeysMatch($entityFk, $dbFk),
+            )) {
                 $foreignKeysToDrop[] = $dbFk;
             }
         }

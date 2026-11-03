@@ -8,7 +8,7 @@ Sibling modules are packages that implement the same interface for different bac
 
 | Base Package     | Sibling Implementations                        |
 |------------------|------------------------------------------------|
-| `marko/database` | `marko/database-mysql`, `marko/database-pgsql` |
+| `marko/database` | `marko/database-mysql`, `marko/database-pgsql`, `marko/database-sqlite` |
 | `marko/cache`    | `marko/cache-file`, `marko/cache-redis`        |
 | `marko/view`     | `marko/view-latte`, `marko/view-liquid`        |
 | `marko/queue`    | `marko/queue-rabbitmq`, `marko/queue-sqs`      |

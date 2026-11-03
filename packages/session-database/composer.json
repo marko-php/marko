@@ -12,6 +12,7 @@
     "require-dev": {
         "marko/database-mysql": "self.version",
         "marko/database-pgsql": "self.version",
+        "marko/database-sqlite": "self.version",
         "marko/testing": "self.version",
         "pestphp/pest": "^4.0"
     },

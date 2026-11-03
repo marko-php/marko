@@ -134,7 +134,7 @@ describe('MigrationGenerator', function (): void {
 
         expect($lintCode)->toBe(0)
             ->and($tokenNames)->not->toContain('T_START_HEREDOC')
-            ->and($tokenNames)->not->toContain('T_ECHO')
+            ->not->toContain('T_ECHO')
             ->and($output)->toBe('')
             ->and($executedSql)->toBe([$payload, 'SELECT \'it\'\'s\', \'back\\\\slash\';']);
     });
@@ -178,6 +178,26 @@ describe('MigrationGenerator', function (): void {
         )]),
     ]);
 
+    it(
+        'refuses control characters in current-table names when generating migrations',
+        function (Table $current): void {
+            $diff = new SchemaDiff(
+                tablesToAlter: ['posts' => new TableDiff(tableName: 'posts', currentTable: $current)],
+            );
+
+            expect(fn () => Helpers::generateTestMigration($this->tempDir, $diff))
+                ->toThrow(MigrationException::class, 'contains a control character');
+        },
+    )->with([
+        'table' => fn () => new Table("po\nsts"),
+        'column' => fn () => new Table('posts', [new Column("i\nd", 'int')]),
+        'index' => fn () => new Table('posts', indexes: [new Index("idx\n", ['id'])]),
+        'foreign key' => fn () => new Table(
+            'posts',
+            foreignKeys: [new ForeignKey("fk\n", ['user_id'], 'users', ['id'])],
+        ),
+    ]);
+
     it('shows the control character escaped in the error message', function (): void {
         $diff = new SchemaDiff(tablesToCreate: [new Table("po\nsts")]);
 
@@ -194,7 +214,7 @@ describe('MigrationGenerator', function (): void {
             // Expected
         }
 
-        expect(glob($this->tempDir . '/database/migrations/*.php'))->toBe([]);
+        expect(glob($this->tempDir . '/database/migrations/*.php'))->toBeEmpty();
     });
 
     it('uses $this->execute() for each SQL statement', function (): void {
@@ -462,8 +482,9 @@ describe('MigrationGenerator', function (): void {
             $message = $exception->getMessage() . ' ' . $exception->getContext();
         }
 
-        expect($message)->toContain("'posts'")
-            ->and($message)->toContain('Modify column: title');
+        expect($message)
+            ->toContain("'posts'")
+            ->toContain('Modify column: title');
     });
 
     it('writes no file when it refuses an alter migration', function (): void {
@@ -479,7 +500,7 @@ describe('MigrationGenerator', function (): void {
             // Expected
         }
 
-        expect(glob($this->tempDir . '/database/migrations/*.php'))->toBe([]);
+        expect(glob($this->tempDir . '/database/migrations/*.php'))->toBeEmpty();
     });
 
     it('writes no create migration either when an alter migration in the same diff is refused', function (): void {
@@ -498,7 +519,7 @@ describe('MigrationGenerator', function (): void {
             // Expected
         }
 
-        expect(glob($this->tempDir . '/database/migrations/*.php'))->toBe([]);
+        expect(glob($this->tempDir . '/database/migrations/*.php'))->toBeEmpty();
     });
 
     it('generates migration for drop table operations', function (): void {

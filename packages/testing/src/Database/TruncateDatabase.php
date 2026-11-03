@@ -24,7 +24,8 @@ use Throwable;
  *
  * Only tables of discovered #[Table] entities that exist are truncated. The
  * migrations table and tables created only by hand-written migrations are
- * left alone. Identity sequences restart. Runs only in a testing
+ * left alone. Identity sequences restart (SQLite has no TRUNCATE: rows are
+ * deleted and the AUTOINCREMENT counters reset). Runs only in a testing
  * environment (testing, test), and never inside an open transaction.
  *
  * ```php
@@ -36,6 +37,8 @@ use Throwable;
  */
 readonly class TruncateDatabase
 {
+    public const string SQLITE_SEQUENCE_LOOKUP = "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'sqlite_sequence'";
+
     private const string MIGRATIONS_TABLE = 'migrations';
 
     public function __construct(
@@ -72,6 +75,7 @@ readonly class TruncateDatabase
                 . ' RESTART IDENTITY CASCADE',
             ),
             'mysql' => $this->truncateMySql($tables),
+            'sqlite' => $this->truncateSqlite($tables),
             default => throw DatabaseTestException::unsupportedDriver($driver),
         };
     }
@@ -134,6 +138,41 @@ readonly class TruncateDatabase
             }
         } finally {
             $connection->execute('SET FOREIGN_KEY_CHECKS = 1');
+        }
+
+        return count($tables);
+    }
+
+    /**
+     * SQLite has no TRUNCATE. The foreign_keys pragma is a no-op inside a
+     * transaction, which truncate() has already ruled out. sqlite_sequence
+     * exists only once an AUTOINCREMENT table has been created.
+     *
+     * @param list<string> $tables
+     * @throws ContainerExceptionInterface|Throwable
+     */
+    private function truncateSqlite(
+        array $tables,
+    ): int {
+        $connection = $this->database->connection();
+        $connection->execute('PRAGMA foreign_keys = OFF');
+
+        try {
+            foreach ($tables as $table) {
+                $connection->execute('DELETE FROM ' . $connection->quoteIdentifier($table));
+            }
+
+            if ($connection->query(self::SQLITE_SEQUENCE_LOOKUP) !== []) {
+                $connection->execute(
+                    'DELETE FROM sqlite_sequence WHERE name IN (' . implode(
+                        ', ',
+                        array_fill(0, count($tables), '?'),
+                    ) . ')',
+                    $tables,
+                );
+            }
+        } finally {
+            $connection->execute('PRAGMA foreign_keys = ON');
         }
 
         return count($tables);

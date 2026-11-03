@@ -138,6 +138,10 @@
         },
         {
             "type": "path",
+            "url": "packages/database-sqlite"
+        },
+        {
+            "type": "path",
             "url": "packages/debugbar"
         },
         {
@@ -468,6 +472,7 @@
         "marko/database": "self.version",
         "marko/database-mysql": "self.version",
         "marko/database-pgsql": "self.version",
+        "marko/database-sqlite": "self.version",
         "marko/database-readwrite": "self.version",
         "marko/devai": "self.version",
         "marko/devserver": "self.version",
@@ -622,6 +627,7 @@
             "Marko\\Database\\Tests\\": "packages/database/tests/",
             "Marko\\Database\\MySql\\Tests\\": "packages/database-mysql/tests/",
             "Marko\\Database\\PgSql\\Tests\\": "packages/database-pgsql/tests/",
+            "Marko\\Database\\Sqlite\\Tests\\": "packages/database-sqlite/tests/",
             "Marko\\Database\\ReadWrite\\Tests\\": "packages/database-readwrite/tests/",
             "Marko\\Debugbar\\Tests\\": "packages/debugbar/tests/",
             "Marko\\DevAi\\Tests\\": "packages/devai/tests/",

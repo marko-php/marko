@@ -25,6 +25,12 @@ describe('DatabaseException', function (): void {
             ->and($pgsqlException->getSuggestion())->toContain('marko/database-pgsql');
     });
 
+    it('maps the sqlite driver name to marko/database-sqlite in the missing-driver message', function (): void {
+        $exception = DatabaseException::noDriverInstalled('sqlite');
+
+        expect($exception->getSuggestion())->toContain('composer require marko/database-sqlite');
+    });
+
     it('uses KNOWN_DRIVERS constant instead of DRIVER_PACKAGES', function (): void {
         $reflection = new ReflectionClass(DatabaseException::class);
 

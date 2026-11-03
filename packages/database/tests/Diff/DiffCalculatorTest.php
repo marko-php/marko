@@ -325,6 +325,21 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter['post_tags']->currentPrimaryKey)->toBe(['post_id', 'tag_id']);
     });
 
+    it('carries the database\'s current table on every table diff the calculator builds', function (): void {
+        $databaseTable = new Table(
+            name: 'posts',
+            columns: [new Column(name: 'id', type: 'INT', primaryKey: true)],
+            indexes: [new Index(name: 'idx_manual', columns: ['id'])],
+        );
+
+        $diff = $this->calculator->calculate(
+            ['posts' => new Table(name: 'posts', columns: [new Column(name: 'id', type: 'INT', primaryKey: true)])],
+            ['posts' => $databaseTable],
+        );
+
+        expect($diff->tablesToAlter['posts']->currentTable)->toBe($databaseTable);
+    });
+
     it('detects new indexes', function (): void {
         $entitySchema = [
             'posts' => new Table(
@@ -738,6 +753,7 @@ describe('DiffCalculator', function (): void {
             ->toContain('Modify column: title')
             ->toContain('Add index: idx_slug');
     });
+
     it('adds a unique index when an existing column becomes unique', function (): void {
         $diff = $this->calculator->calculate(
             ['users' => uniqueDiffUsers(new Column(name: 'email', type: 'varchar', unique: true))],
@@ -747,7 +763,7 @@ describe('DiffCalculator', function (): void {
         expect($diff->tablesToAlter['users']->indexesToAdd)->toEqual([
             new Index(name: 'users_email_unique', columns: ['email'], type: IndexType::Unique),
         ])
-            ->and($diff->tablesToAlter['users']->indexesToDrop)->toBe([]);
+            ->and($diff->tablesToAlter['users']->indexesToDrop)->toBeEmpty();
     });
 
     it('drops the unique index when an existing column stops being unique', function (): void {
@@ -762,7 +778,7 @@ describe('DiffCalculator', function (): void {
         );
 
         expect($diff->tablesToAlter['users']->indexesToDrop)->toBe([$databaseIndex])
-            ->and($diff->tablesToAlter['users']->indexesToAdd)->toBe([]);
+            ->and($diff->tablesToAlter['users']->indexesToAdd)->toBeEmpty();
     });
 
     it('keeps an existing single-column unique index of a unique column whatever its name', function (
@@ -785,7 +801,7 @@ describe('DiffCalculator', function (): void {
             ['users' => uniqueDiffUsers(new Column(name: 'email', type: 'varchar', length: 255))],
         );
 
-        expect($diff->tablesToAlter['users']->columnsToModify)->toBe([]);
+        expect($diff->tablesToAlter['users']->columnsToModify)->toBeEmpty();
     });
 
     it('does not derive a unique index for a column that is being added', function (): void {
@@ -795,7 +811,7 @@ describe('DiffCalculator', function (): void {
         );
 
         expect($diff->tablesToAlter['users']->columnsToAdd)->toHaveCount(1)
-            ->and($diff->tablesToAlter['users']->indexesToAdd)->toBe([]);
+            ->and($diff->tablesToAlter['users']->indexesToAdd)->toBeEmpty();
     });
 
     it('does not derive a unique index when the entity declares one on the column', function (): void {
@@ -876,7 +892,7 @@ describe('DiffCalculator', function (): void {
                 )],
             );
 
-            expect($diff->tablesToAlter['users']->indexesToAdd)->toBe([])
+            expect($diff->tablesToAlter['users']->indexesToAdd)->toBeEmpty()
                 ->and($diff->tablesToAlter['users']->indexesToDrop)->toHaveCount(1);
         },
     );

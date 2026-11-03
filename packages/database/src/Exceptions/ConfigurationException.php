@@ -69,4 +69,25 @@ class ConfigurationException extends MarkoException
             suggestion: "Set 'timezone' to a valid PHP timezone identifier such as 'UTC' or 'America/New_York'",
         );
     }
+
+    public static function invalidSqliteOption(
+        string $key,
+        string $expected,
+    ): self {
+        return new self(
+            message: "Database configuration key '$key' must be $expected",
+            context: 'While validating SQLite database configuration',
+            suggestion: "Set 'sqlite' => ['pragmas' => ['busy_timeout' => 5000], 'create_if_missing' => true] in config/database.php",
+        );
+    }
+
+    public static function relativeSqlitePathWithoutBasePath(
+        string $path,
+    ): self {
+        return new self(
+            message: "The relative SQLite database path '$path' cannot be resolved without a base path",
+            context: 'While resolving the SQLite database path',
+            suggestion: 'Pass a base path as the second argument of DatabaseConfig::fromArray(), or use an absolute path, :memory: or a file: URI',
+        );
+    }
 }

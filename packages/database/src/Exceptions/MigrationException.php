@@ -101,6 +101,18 @@ class MigrationException extends MarkoException
         );
     }
 
+    public static function rebuildNeedsCurrentTable(
+        string $table,
+        string $driver,
+    ): self {
+        return new self(
+            message: "Cannot rebuild table '$table' on $driver: the table diff does not carry the current table",
+            context: "While generating SQL to rebuild table '$table'",
+            suggestion: 'Build the diff with DiffCalculator, which records the database\'s current table on every '
+                . 'table diff.',
+        );
+    }
+
     public static function columnChangeNotSupported(
         string $table,
         string $column,
@@ -165,6 +177,62 @@ class MigrationException extends MarkoException
             message: "Migration '$migrationName' is invalid",
             context: "While loading migration '$migrationName'",
             suggestion: 'Migration files must return an instance of Migration class.',
+        );
+    }
+
+    public static function unsupportedIndexType(
+        string $indexName,
+        string $type,
+        string $driver,
+    ): self {
+        return new self(
+            message: "Index '$indexName' is a $type index, which $driver does not support",
+            context: "While generating SQL for index '$indexName'",
+            suggestion: "Remove the $type index from the entity, or create it by hand in a migration and list its "
+                . 'name in #[Table(unmanagedIndexes: [...])] so db:migrate leaves it alone.',
+        );
+    }
+
+    public static function foreignKeyChangeRequiresRebuild(
+        string $table,
+        string $foreignKey,
+        string $driver,
+    ): self {
+        return new self(
+            message: "$driver cannot add or drop foreign key '$foreignKey' on existing table '$table' in place; the change needs a table rebuild",
+            context: "While generating SQL for foreign key '$foreignKey' on '$table'",
+            suggestion: 'This change runs as a table rebuild through generateUp(); do not call the single-statement '
+                . 'foreign key methods for it.',
+        );
+    }
+
+    public static function unsupportedDefaultExpression(
+        string $table,
+        string $column,
+        string $expression,
+        string $driver,
+    ): self {
+        return new self(
+            message: "Column '$table.$column' has the default expression '$expression', which $driver does not support",
+            context: "While generating the default for column '$table.$column'",
+            suggestion: "Use CURRENT_TIMESTAMP, CURRENT_DATE or CURRENT_TIME, or a parenthesised expression $driver "
+                . 'understands.',
+        );
+    }
+
+    public static function nonUtcCurrentTimeDefault(
+        string $table,
+        string $column,
+        string $expression,
+        string $timezone,
+        string $driver,
+    ): self {
+        return new self(
+            message: "Column '$table.$column' defaults to $expression, which $driver always evaluates in UTC, "
+                . "but database.timezone is '$timezone'",
+            context: "While generating the default for column '$table.$column'",
+            suggestion: 'Set database.timezone to UTC, or set the value from application code instead of a column '
+                . 'default.',
         );
     }
 }

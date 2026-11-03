@@ -15,7 +15,7 @@ class DatabaseTestException extends MarkoException
         return new self(
             message: "Database test helpers need marko/database, but '$interface' does not exist.",
             context: 'Booting a TestDatabase (RefreshDatabase or TruncateDatabase)',
-            suggestion: 'Install the database layer and a driver: composer require marko/database-pgsql (or marko/database-mysql).',
+            suggestion: 'Install the database layer and a driver: composer require marko/database-pgsql (or marko/database-mysql or marko/database-sqlite).',
         );
     }
 
@@ -25,7 +25,7 @@ class DatabaseTestException extends MarkoException
         return new self(
             message: "No database driver is installed in the application at $basePath.",
             context: 'TestDatabase::boot() found no binding for Marko\Database\Connection\ConnectionInterface or TransactionInterface',
-            suggestion: 'Install a driver package such as marko/database-pgsql or marko/database-mysql.',
+            suggestion: 'Install a driver package such as marko/database-pgsql, marko/database-mysql or marko/database-sqlite.',
         );
     }
 
@@ -92,7 +92,7 @@ class DatabaseTestException extends MarkoException
         return new self(
             message: "Connection '$connectionClass' cannot run pending after-commit callbacks.",
             context: 'RefreshDatabase::runAfterCommitCallbacks() needs a connection implementing Marko\Database\Connection\PendingAfterCommitInterface.',
-            suggestion: 'Use the marko/database-pgsql or marko/database-mysql driver, or assert on after-commit work with TruncateDatabase and a real commit.',
+            suggestion: 'Use the marko/database-pgsql, marko/database-mysql or marko/database-sqlite driver, or assert on after-commit work with TruncateDatabase and a real commit.',
         );
     }
 
@@ -101,7 +101,7 @@ class DatabaseTestException extends MarkoException
     ): self {
         return new self(
             message: "Cannot truncate while a transaction is open (transaction level $level).",
-            context: 'TruncateDatabase::truncate() was called inside a transaction; MySQL commits implicitly on TRUNCATE.',
+            context: 'TruncateDatabase::truncate() was called inside a transaction; MySQL commits implicitly on TRUNCATE and SQLite ignores the foreign_keys pragma.',
             suggestion: 'Do not combine TruncateDatabase with RefreshDatabase in the same test; call truncate() before begin() or use one strategy per test file.',
         );
     }
@@ -112,7 +112,7 @@ class DatabaseTestException extends MarkoException
         return new self(
             message: "TruncateDatabase does not support the '$driver' driver.",
             context: 'Building the TRUNCATE statements for the entity tables',
-            suggestion: 'Use the pgsql or mysql driver, or use RefreshDatabase, which works with any transactional driver.',
+            suggestion: 'Use the pgsql, mysql or sqlite driver, or use RefreshDatabase, which works with any transactional driver.',
         );
     }
 }

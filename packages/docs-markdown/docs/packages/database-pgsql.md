@@ -335,7 +335,7 @@ Turns a `PDOException` raised by `query()`, `execute()`, `prepare()` or `PgSqlSt
 
 ### PgSqlQueryBuilder
 
-Implements `QueryBuilderInterface`. Fluent builder for PostgreSQL queries.
+Implements `QueryBuilderInterface` by extending the abstract `Marko\Database\Query\SqlQueryBuilder` from `marko/database`. Fluent builder for PostgreSQL queries.
 
 | Method | Description |
 |---|---|

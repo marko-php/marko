@@ -19,6 +19,7 @@
     "suggest": {
         "marko/database-pgsql": "PostgreSQL database driver (recommended; strong JSON, FTS, pgvector support)",
         "marko/database-mysql": "MySQL/MariaDB database driver",
+        "marko/database-sqlite": "SQLite database driver (zero-infrastructure; single file or :memory:)",
         "marko/docs-fts": "Full-text documentation search driver (recommended; SQLite FTS5, zero infrastructure)",
         "marko/filesystem-local": "Local disk filesystem driver (recommended; zero infrastructure)",
         "marko/filesystem-s3": "Amazon S3 filesystem driver (cloud and distributed deployments)",

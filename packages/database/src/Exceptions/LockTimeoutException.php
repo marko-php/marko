@@ -9,7 +9,8 @@ use PDOException;
 /**
  * A statement could not get a row or table lock: it waited longer than the
  * lock timeout, or used noWait() on a row another transaction holds
- * (PostgreSQL SQLSTATE 55P03; MySQL errors 1205 and 3572).
+ * (PostgreSQL SQLSTATE 55P03; MySQL errors 1205 and 3572; SQLite result
+ * codes 5 SQLITE_BUSY and 6 SQLITE_LOCKED once busy_timeout expires).
  *
  * Not a TransactionConflictException, and never retried by
  * TransactionInterface::transaction(): whether to wait and try again, skip

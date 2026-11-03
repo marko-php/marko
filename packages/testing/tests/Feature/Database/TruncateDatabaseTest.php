@@ -112,6 +112,60 @@ describe('TruncateDatabase', function (): void {
             ]);
     });
 
+    it(
+        'deletes every entity table with foreign keys off and resets autoincrement on sqlite when sqlite_sequence exists',
+        function (): void {
+            ['truncate' => $truncate, 'connection' => $connection] = makeTruncateDatabase();
+            $connection->driver = 'sqlite';
+            $connection->results[TruncateDatabase::SQLITE_SEQUENCE_LOOKUP] = [['name' => 'sqlite_sequence']];
+
+            withAppEnv('testing', fn () => $truncate->truncate());
+
+            expect($connection->statements)->toBe([
+                'PRAGMA foreign_keys = OFF',
+                'DELETE FROM "shows"',
+                'DELETE FROM "venues"',
+                TruncateDatabase::SQLITE_SEQUENCE_LOOKUP,
+                'DELETE FROM sqlite_sequence WHERE name IN (?, ?)',
+                'PRAGMA foreign_keys = ON',
+            ]);
+        },
+    );
+
+    it('skips the autoincrement reset on sqlite when sqlite_sequence does not exist', function (): void {
+        ['truncate' => $truncate, 'connection' => $connection] = makeTruncateDatabase();
+        $connection->driver = 'sqlite';
+
+        withAppEnv('testing', fn () => $truncate->truncate());
+
+        expect($connection->statements)->toBe([
+            'PRAGMA foreign_keys = OFF',
+            'DELETE FROM "shows"',
+            'DELETE FROM "venues"',
+            TruncateDatabase::SQLITE_SEQUENCE_LOOKUP,
+            'PRAGMA foreign_keys = ON',
+        ]);
+    });
+
+    it('turns foreign keys back on in sqlite even when a delete fails', function (): void {
+        ['truncate' => $truncate, 'connection' => $connection] = makeTruncateDatabase();
+        $connection->driver = 'sqlite';
+        $connection->failures['"venues"'] = 'database is locked';
+
+        try {
+            withAppEnv('testing', fn () => $truncate->truncate());
+        } catch (RuntimeException $e) {
+            $error = $e->getMessage();
+        }
+
+        expect($error ?? null)->toBe('database is locked')
+            ->and($connection->statements)->toBe([
+                'PRAGMA foreign_keys = OFF',
+                'DELETE FROM "shows"',
+                'PRAGMA foreign_keys = ON',
+            ]);
+    });
+
     it('runs no SQL when there are no entity tables', function (): void {
         ['truncate' => $truncate, 'connection' => $connection, 'introspector' => $introspector] = makeTruncateDatabase();
         $introspector->tables = ['migrations'];
@@ -141,8 +195,8 @@ describe('TruncateDatabase', function (): void {
 
     it('throws for an unsupported driver', function (): void {
         ['truncate' => $truncate, 'connection' => $connection] = makeTruncateDatabase();
-        $connection->driver = 'sqlite';
+        $connection->driver = 'oracle';
 
         withAppEnv('testing', fn () => $truncate->truncate());
-    })->throws(DatabaseTestException::class, "does not support the 'sqlite' driver");
+    })->throws(DatabaseTestException::class, "does not support the 'oracle' driver");
 });
