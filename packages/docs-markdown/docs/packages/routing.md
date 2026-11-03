@@ -543,7 +543,7 @@ $sessionId = $request->cookie('session');
 
 ### Reading JSON Bodies
 
-A request whose `Content-Type` is `application/json` (or any `+json` type, such as `application/vnd.api+json`) has its body decoded once, when the `Request` is built. Read it with `json()`, using dot-notation for nested keys:
+A request whose `Content-Type` is `application/json` (or any `+json` type, such as `application/vnd.api+json`) has its body decoded once, the first time it is read. Read it with `json()`, using dot-notation for nested keys:
 
 ```php
 use Marko\Routing\Attributes\Post;
@@ -1102,7 +1102,7 @@ class Request
 }
 ```
 
-`ip()` returns `REMOTE_ADDR` from the server bag (equivalent to `server('REMOTE_ADDR')`). `cookie()` reads from the request's `$_COOKIE` bag and mirrors the signature of `query()` and `post()`. `withRoute()` returns a new immutable `Request` with the matched controller class and action method attached; `controller()` and `action()` retrieve them. The router attaches route context before invoking middleware, which allows middleware (such as `AdminAuthMiddleware`) to inspect which controller method is handling the request. `withRoute()` carries the uploaded files and the decoded JSON body through unchanged.
+`ip()` returns `REMOTE_ADDR` from the server bag (equivalent to `server('REMOTE_ADDR')`). `cookie()` reads from the request's `$_COOKIE` bag and mirrors the signature of `query()` and `post()`. `withRoute()` returns a new immutable `Request` with the matched controller class and action method attached; `controller()` and `action()` retrieve them. The router attaches route context before invoking middleware, which allows middleware (such as `AdminAuthMiddleware`) to inspect which controller method is handling the request. `withRoute()` carries the uploaded files and the body (read or not) through unchanged.
 
 | Method | Description |
 | --- | --- |
@@ -1114,7 +1114,19 @@ class Request
 | `files($key)` | With no key, every uploaded file keyed like its form field. With a key, that field's files as a list |
 | `hasFile($key)` | Whether at least one file was uploaded for the field (check `isValid()` before using it) |
 
-The constructor accepts a `files` argument (`array<string, UploadedFile|array>`), so a request with uploads can be built without superglobals. `fromGlobals()` normalizes `$_FILES`, including PHP's inverted `name[]` / `name[key]` layout for multi-file and nested inputs, and leaves out inputs submitted without a file (`UPLOAD_ERR_NO_FILE`).
+The constructor accepts a `files` argument (`array<string, UploadedFile|array>`), so a request with uploads can be built without superglobals. Its `body` argument takes a string or a `RequestBody`.
+
+The body is read lazily. `fromGlobals()` does not read `php://input`: `body()`, `json()` and `input()` on a JSON request read it on first access, once, and the clone from `withRoute()` shares it. A request whose body is never read --- a form post, a multipart upload, a `GET` --- never copies it into memory. When a POST declares a `Content-Length` over `post_max_size`, PHP has already discarded `$_POST` and `$_FILES`, so the body is never read: `post()`, `files()` and `input()` on a non-JSON request return empty results, and reading the body (`body()`, or `json()` / `input()` on a JSON request) throws `RequestBodyTooLargeException`, which the pipeline renders as a `413`. An oversized upload therefore reaches your code instead of exhausting `memory_limit`.
+
+```php
+use Marko\Routing\Http\RequestBody;
+
+RequestBody::fromString(string $contents): self;
+RequestBody::fromStream(string $uri, int $declaredLength = 0, int $maxLength = 0): self; // read on first access; 0 = no limit
+RequestBody::fromGlobals(array $server): self;   // php://input, limited to post_max_size for a POST
+public function contents(): string;              // throws RequestBodyTooLargeException over the limit
+public function exceedsLimit(): bool;            // checks the declared length without reading
+``` `fromGlobals()` normalizes `$_FILES`, including PHP's inverted `name[]` / `name[key]` layout for multi-file and nested inputs, and leaves out inputs submitted without a file (`UPLOAD_ERR_NO_FILE`).
 
 ### UploadedFile
 
