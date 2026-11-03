@@ -24,17 +24,18 @@ class JobRunner implements JobRunnerInterface
      *
      * JobProcessingEvent is dispatched once the attempt is counted, just before handle(), and
      * JobProcessedEvent once handle() returns without throwing. Both run while a container-aware
-     * job still holds its container.
+     * job still holds its container. Both carry the queue the job was taken from.
      *
      * @throws Throwable
      */
     public function run(
         JobInterface $job,
+        string $queue,
     ): void {
-        $this->withContainer($job, function () use ($job): void {
+        $this->withContainer($job, function () use ($job, $queue): void {
             $job->clearRelease();
             $job->incrementAttempts();
-            $this->eventDispatcher->dispatch(new JobProcessingEvent($job));
+            $this->eventDispatcher->dispatch(new JobProcessingEvent($job, $queue));
 
             try {
                 $job->handle();
@@ -44,7 +45,7 @@ class JobRunner implements JobRunnerInterface
                 throw $e;
             }
 
-            $this->eventDispatcher->dispatch(new JobProcessedEvent($job));
+            $this->eventDispatcher->dispatch(new JobProcessedEvent($job, $queue));
         });
     }
 

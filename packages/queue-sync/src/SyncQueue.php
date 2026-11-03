@@ -42,11 +42,12 @@ readonly class SyncQueue implements QueueInterface
     ): PushResult {
         $id = bin2hex(random_bytes(16));
         $job->setId($id);
+        $queue ??= $this->config->queue();
 
         try {
-            $this->jobRunner->run($job);
+            $this->jobRunner->run($job, $queue);
         } catch (Throwable $e) {
-            $this->failedJobHandler->handle($job, $queue ?? $this->config->queue(), $e);
+            $this->failedJobHandler->handle($job, $queue, $e);
 
             throw JobFailedException::fromException($job::class, $e);
         }

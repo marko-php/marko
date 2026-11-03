@@ -8,6 +8,8 @@ use Marko\Log\LogLevel;
 use Marko\Queue\AsyncObserverJob;
 use Marko\Queue\ContainerAwareJobInterface;
 use Marko\Queue\Event\JobFailedEvent;
+use Marko\Queue\Event\JobProcessedEvent;
+use Marko\Queue\Event\JobProcessingEvent;
 use Marko\Queue\Exceptions\QueueException;
 use Marko\Queue\FailableJobInterface;
 use Marko\Queue\FailedJob;
@@ -2142,13 +2144,19 @@ class RecordingJobRunner implements JobRunnerInterface
     /** @var list<JobInterface> */
     public array $ran = [];
 
+    /** @var list<string> */
+    public array $queues = [];
+
     public function __construct(
         private readonly bool $fails = false,
     ) {}
 
-    public function run(JobInterface $job): void
-    {
+    public function run(
+        JobInterface $job,
+        string $queue,
+    ): void {
         $this->ran[] = $job;
+        $this->queues[] = $queue;
 
         if ($this->fails) {
             throw new RuntimeException('runner failed the job');
@@ -2188,7 +2196,45 @@ describe('Worker and JobRunner', function (): void {
         )->work(once: true);
 
         expect($runner->ran)->toBe([$job])
+            ->and($runner->queues)->toBe(['default'])
             ->and($queue->deleted)->toBeTrue();
+    });
+
+    it('dispatches the processing events with the queue each job was popped from', function (): void {
+        $log = new RecordingLog();
+        $engineJob = namedJob('engine-job', $log);
+        $defaultJob = namedJob('default-job', $log);
+        $queue = new MultiQueueRecordingQueue(['default' => [], 'engine' => [$engineJob]], $log);
+        $events = new FakeEventDispatcher();
+        $runner = new JobRunner(createNullWorkerContainer(), createWorkerTestEnvelope(), $events);
+        $worker = new Worker(
+            $queue,
+            new FailedJobHandler(
+                createTestFailedJobRepository(),
+                createWorkerTestEnvelope(),
+                $runner,
+                new FakeEventDispatcher(),
+                new FakeClock(),
+                logger: new FakeLogger(),
+            ),
+            createTestQueueConfig(),
+            $runner,
+            new RetryPolicy(createTestQueueConfig(), new FakeClock()),
+            clock: new FakeClock(),
+            logger: new FakeLogger(),
+        );
+
+        $worker->work(queues: ['default', 'engine'], once: true);
+        $queue->push($defaultJob);
+        $worker->work(queues: ['default', 'engine'], once: true);
+
+        $processing = $events->dispatched(JobProcessingEvent::class);
+        $processed = $events->dispatched(JobProcessedEvent::class);
+
+        expect(array_map(fn (JobProcessingEvent $event): array => [$event->job, $event->queue], $processing))
+            ->toBe([[$engineJob, 'engine'], [$defaultJob, 'default']])
+            ->and(array_map(fn (JobProcessedEvent $event): array => [$event->job, $event->queue], $processed))
+            ->toBe([[$engineJob, 'engine'], [$defaultJob, 'default']]);
     });
 
     it('hands the in-memory job, with its counted attempt and exception, to release()', function (): void {

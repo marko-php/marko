@@ -15,11 +15,15 @@ interface JobRunnerInterface
     /**
      * Run one attempt of the job: count the attempt, call handle(), and count an exception
      * before rethrowing it. JobProcessingEvent is dispatched before handle() and JobProcessedEvent
-     * after it returns. A container-aware job holds the container only while it runs.
+     * after it returns, both carrying $queue: the queue the job was taken from (or, for the sync
+     * driver, pushed onto). A container-aware job holds the container only while it runs.
      *
      * @throws Throwable Whatever handle() throws
      */
-    public function run(JobInterface $job): void;
+    public function run(
+        JobInterface $job,
+        string $queue,
+    ): void;
 
     /**
      * Call the callback with the container and job envelope given to a container-aware job,
