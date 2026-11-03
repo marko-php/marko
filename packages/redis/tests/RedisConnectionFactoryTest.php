@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Redis\Tests;
 
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Redis\Exceptions\RedisConnectionException;
 use Marko\Redis\RedisConnection;
 use Marko\Redis\RedisConnectionFactory;
@@ -101,13 +102,13 @@ describe('RedisConnectionFactory', function (): void {
             ->and($factory->connection('empty')->password)->toBeNull();
     });
 
-    it('treats a password removed by a null app override as no password', function (): void {
+    it('fails loudly when a connection has no password key', function (): void {
         $settings = redisConnectionSettings();
         unset($settings['password']);
 
         $factory = new RedisConnectionFactory(redisConfig(['default' => $settings]));
 
-        expect($factory->connection('default')->password)->toBeNull();
+        expect(fn () => $factory->connection('default'))->toThrow(ConfigNotFoundException::class);
     });
 
     it('throws a loud error listing the configured names for an unknown connection', function (): void {

@@ -68,6 +68,31 @@ describe('Config Integration', function (): void {
             ->and($repository->get('database.name'))->toBe('module_b_db');
     });
 
+    it('keeps a key the app config sets to null over a module default of null', function () {
+        $provider = createContainerWithBindings()->get(ConfigServiceProvider::class);
+        $repository = $provider->createRepository(
+            modulePaths: [$this->fixturesPath . '/null-module'],
+            rootConfigPath: $this->fixturesPath . '/null-app-config',
+        );
+
+        expect($repository->has('authentication.remember.cookie.secure'))->toBeTrue()
+            ->and($repository->get('authentication.remember.cookie.secure'))->toBeNull()
+            ->and($repository->get('authentication.remember.cookie.path'))->toBe('/')
+            ->and($repository->has('standalone.secret'))->toBeTrue()
+            ->and($repository->get('standalone.secret'))->toBeNull();
+    });
+
+    it('removes a module key the app config marks with RemoveKey and never stores the marker', function () {
+        $provider = createContainerWithBindings()->get(ConfigServiceProvider::class);
+        $repository = $provider->createRepository(
+            modulePaths: [$this->fixturesPath . '/null-module'],
+            rootConfigPath: $this->fixturesPath . '/null-app-config',
+        );
+
+        expect($repository->getArray('authentication.guards'))->toBe(['web' => 'session'])
+            ->and($repository->getArray('standalone'))->toBe(['secret' => null, 'nested' => ['keep' => true]]);
+    });
+
     it('ConfigRepository injectable via constructor', function () {
         $container = createContainerWithBindings();
 

@@ -16,9 +16,7 @@ return [
         SubscriberInterface::class => PgSqlSubscriber::class,
         PgSqlPubSubConnection::class => static function (ContainerInterface $container): PgSqlPubSubConnection {
             $config = $container->get(ConfigRepositoryInterface::class);
-            // An app config that sets a key to null removes it (ConfigMerger
-            // unsets null overrides), so a missing key also means "libpq default".
-            $sslMode = $config->has(key: 'pubsub-pgsql.sslmode') ? $config->get(key: 'pubsub-pgsql.sslmode') : null;
+            $sslMode = $config->get(key: 'pubsub-pgsql.sslmode');
 
             return new PgSqlPubSubConnection(
                 host: $config->getString(key: 'pubsub-pgsql.host'),

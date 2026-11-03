@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\PubSub\PgSql\Tests;
 
 use Marko\Config\ConfigRepositoryInterface;
+use Marko\Config\Exceptions\ConfigNotFoundException;
 use Marko\Core\Container\Container;
 use Marko\PubSub\Exceptions\PubSubException;
 use Marko\PubSub\PgSql\PgSqlPubSubConnection;
@@ -51,14 +52,21 @@ describe('pubsub-pgsql module bindings', function (): void {
         expect($connection->sslMode)->toBe('verify-full');
     });
 
-    it('treats a missing or empty pubsub-pgsql.sslmode as the libpq default', function (): void {
-        $missing = createPubSubPgSqlContainer(without: ['pubsub-pgsql.sslmode'])
+    it('treats a null or empty pubsub-pgsql.sslmode as the libpq default', function (): void {
+        $null = createPubSubPgSqlContainer(overrides: ['pubsub-pgsql.sslmode' => null])
             ->get(PgSqlPubSubConnection::class);
         $empty = createPubSubPgSqlContainer(overrides: ['pubsub-pgsql.sslmode' => ''])
             ->get(PgSqlPubSubConnection::class);
 
-        expect($missing->sslMode)->toBeNull()
+        expect($null->sslMode)->toBeNull()
             ->and($empty->sslMode)->toBeNull();
+    });
+
+    it('fails loudly when pubsub-pgsql.sslmode is missing from config', function (): void {
+        $container = createPubSubPgSqlContainer(without: ['pubsub-pgsql.sslmode']);
+
+        expect(fn () => $container->get(PgSqlPubSubConnection::class))
+            ->toThrow(ConfigNotFoundException::class);
     });
 
     it('fails loudly on an unknown pubsub-pgsql.sslmode', function (): void {
