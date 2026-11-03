@@ -732,3 +732,10 @@ PHP;
 
     cleanupDirectory($tempDir);
 });
+
+it('declares a Marko module only when composer data sets extra.marko.module to true', function (): void {
+    expect(ModuleDiscovery::declaresMarkoModule(['extra' => ['marko' => ['module' => true]]]))->toBeTrue()
+        ->and(ModuleDiscovery::declaresMarkoModule(['extra' => ['marko' => ['module' => 'true']]]))->toBeFalse()
+        ->and(ModuleDiscovery::declaresMarkoModule(['extra' => ['marko' => []]]))->toBeFalse()
+        ->and(ModuleDiscovery::declaresMarkoModule(['name' => 'aws/aws-sdk-php']))->toBeFalse();
+});

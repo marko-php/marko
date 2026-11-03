@@ -126,3 +126,20 @@ it('respects override priority app over modules over vendor when duplicates exis
     ));
     expect($duplicateCount)->toBe(1);
 });
+
+it('skips vendor packages that are not marked as Marko modules', function () use ($fixtures): void {
+    $walker = new ModuleWalker(new ProjectPaths($fixtures));
+
+    $names = array_map(fn (ModuleInfo $m): string => $m->name, $walker->walk());
+
+    expect($names)->not->toContain('plain/library');
+});
+
+it('indexes app and modules packages without requiring the Marko module flag', function () use ($fixtures): void {
+    $walker = new ModuleWalker(new ProjectPaths($fixtures));
+
+    $names = array_map(fn (ModuleInfo $m): string => $m->name, $walker->walk());
+
+    expect($names)->toContain('app/myapp')
+        ->and($names)->toContain('local/level1');
+});

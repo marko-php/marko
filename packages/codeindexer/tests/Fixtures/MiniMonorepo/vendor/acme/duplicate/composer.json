@@ -5,5 +5,10 @@
         "psr-4": {
             "Acme\\Duplicate\\": "src/"
         }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
     }
 }

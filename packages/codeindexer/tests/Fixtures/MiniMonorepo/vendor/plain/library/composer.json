@@ -1,0 +1,9 @@
+{
+    "name": "plain/library",
+    "description": "Ordinary Composer package that is not a Marko module",
+    "autoload": {
+        "psr-4": {
+            "Plain\\Library\\": "src/"
+        }
+    }
+}

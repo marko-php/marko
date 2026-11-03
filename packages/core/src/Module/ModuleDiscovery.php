@@ -143,8 +143,22 @@ readonly class ModuleDiscovery
             return false;
         }
 
-        return isset($data['extra']['marko']['module'])
-            && $data['extra']['marko']['module'] === true;
+        return self::declaresMarkoModule($data);
+    }
+
+    /**
+     * Check whether decoded composer.json data marks its package as a Marko module.
+     *
+     * The single source of the rule: tools that read composer.json themselves
+     * (such as the code indexer) call this instead of repeating it.
+     *
+     * @param array<mixed> $composerData
+     */
+    public static function declaresMarkoModule(
+        array $composerData,
+    ): bool {
+        return isset($composerData['extra']['marko']['module'])
+            && $composerData['extra']['marko']['module'] === true;
     }
 
     /**

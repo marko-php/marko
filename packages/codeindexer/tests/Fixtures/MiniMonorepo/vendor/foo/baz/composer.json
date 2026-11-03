@@ -5,5 +5,10 @@
         "psr-4": {
             "Foo\\Baz\\": "src/"
         }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
     }
 }
