@@ -40,7 +40,7 @@ The driver also reads `config/queue.php`:
 | Key | Effect on the Redis driver |
 |---|---|
 | `queue.queue` | Queue name used by `push()`, `later()`, `pop()`, `size()` and `clear()` when none is given |
-| `queue.retry_after` | Seconds a reservation lasts. A job reserved by a worker that neither deleted nor released it is put back once it expires |
+| `queue.retry_after` | Seconds a reservation lasts. A job reserved by a worker that neither deleted nor released it is put back once it expires. A queue can set its own with `queue.queues.<name>.retry_after` (see [Per-Queue Retry After](/docs/packages/queue/#per-queue-retry-after)) |
 | `queue.max_attempts` | Default attempt limit for jobs that don't set their own `maxAttempts` |
 
 To keep queue load off your cache database, add a `queue` connection to `config/redis.php` and set `'connection' => 'queue'`.
@@ -96,7 +96,7 @@ The scripts build job keys from the prefix, so the driver needs a single Redis s
 
 1. moves every delayed job that is due to the ready list
 2. moves every reservation that has expired back to the ready list
-3. pops the first ready job, adds it to the reserved set until `now + queue.retry_after`, and increments its `attempts`
+3. pops the first ready job, adds it to the reserved set until `now + retry_after` (the queue's own `retry_after`, else `queue.retry_after`), and increments its `attempts`
 
 A worker that dies mid-job (fatal error, OOM, `SIGKILL`) leaves the job reserved. Once `queue.retry_after` seconds have passed, the next `pop()` puts it back and another worker runs it. Keep `queue.timeout` below `retry_after` --- `queue:work` refuses to start otherwise --- so a job that is still running is never handed to a second worker.
 

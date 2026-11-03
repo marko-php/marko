@@ -203,12 +203,14 @@ function limitsJob(
 }
 
 /**
+ * @param array<string, mixed> $config Overrides for the queue.* config the worker reads
  * @return array{worker: LimitsTestWorker, failed: StubFailedJobRepository, logger: FakeLogger}
  */
 function createLimitsWorker(
     QueueInterface $queue,
     FakeProcessControl $processControl,
     FakeClock $clock = new FakeClock(),
+    array $config = [],
 ): array {
     $failed = Helpers::createStubFailedJobRepository();
     $logger = new FakeLogger();
@@ -230,6 +232,7 @@ function createLimitsWorker(
             'queue.queue' => 'default',
             'queue.max_attempts' => 3,
             'queue.retry_after' => 90,
+            ...$config,
         ])),
         new JobRunner(new Container(), $envelope, new FakeEventDispatcher()),
         new RetryPolicy(new QueueConfig(new FakeConfigRepository([
@@ -567,6 +570,46 @@ describe('Worker per-job timeout', function (): void {
         'equal' => [90],
         'above' => [120],
     ]);
+
+    it('checks a job\'s timeout against the retry_after of the queue it was popped from', function (): void {
+        $ran = false;
+        $process = new FakeProcessControl();
+        $job = limitsJob('render', function () use (&$ran): void {
+            $ran = true;
+        }, timeout: 3600);
+        $queue = new LimitsRecordingQueue([$job]);
+        ['worker' => $worker, 'failed' => $failed] = createLimitsWorker($queue, $process, config: [
+            'queue.queues' => ['engine' => ['retry_after' => 3900]],
+        ]);
+
+        $worker->work(queues: ['engine']);
+
+        expect($ran)->toBeTrue()
+            ->and($failed->find('render'))->toBeNull()
+            ->and($process->calls)->toContain('startTimer:3600');
+    });
+
+    it('fails a job whose timeout is not below its queue\'s own retry_after', function (): void {
+        $ran = false;
+        $process = new FakeProcessControl();
+        $job = limitsJob('mail', function () use (&$ran): void {
+            $ran = true;
+        }, maxAttempts: 3, timeout: 60);
+        $queue = new LimitsRecordingQueue([$job]);
+        ['worker' => $worker, 'failed' => $failed] = createLimitsWorker($queue, $process, config: [
+            'queue.retry_after' => 3900,
+            'queue.queues' => ['mail' => ['retry_after' => 30]],
+        ]);
+
+        $worker->work(queues: ['mail']);
+
+        $stored = $failed->find('mail')?->exception;
+
+        expect($ran)->toBeFalse()
+            ->and($stored)->toContain("Job 'LimitsCallbackJob' has a 60s timeout")
+            ->and($stored)->toContain("queue.queues.mail.retry_after (30s) on queue 'mail'")
+            ->and($job->failedWith[0]->getSuggestion())->toContain('Raise queue.queues.mail.retry_after');
+    });
 
     it('warns when a job sets a timeout but ext-pcntl is not loaded', function (): void {
         $queue = new LimitsRecordingQueue([limitsJob('job-1', timeout: 10)]);

@@ -65,6 +65,10 @@ use Random\RandomException;
  */
 readonly class DatabaseQueue implements QueueInterface
 {
+    /**
+     * @param int $retryAfter Seconds before a reservation that was neither deleted nor released is reclaimed
+     * @param array<string, int> $queueRetryAfters Per-queue overrides of $retryAfter, keyed by queue name
+     */
     public function __construct(
         private ConnectionInterface $connection,
         private JobEnvelope $jobEnvelope,
@@ -77,6 +81,7 @@ readonly class DatabaseQueue implements QueueInterface
         private string $defaultQueue = 'default',
         private int $retryAfter = 90,
         private JobIdGenerator $jobIdGenerator = new JobIdGenerator(),
+        private array $queueRetryAfters = [],
     ) {}
 
     /**
@@ -190,7 +195,7 @@ readonly class DatabaseQueue implements QueueInterface
         string $queueName,
     ): ?JobInterface {
         $now = $this->clock->now();
-        $reclaimCutoff = $this->secondsAfter($now, -$this->retryAfter);
+        $reclaimCutoff = $this->secondsAfter($now, -($this->queueRetryAfters[$queueName] ?? $this->retryAfter));
 
         $row = $this->queryBuilderFactory->create()
             ->table($this->table)

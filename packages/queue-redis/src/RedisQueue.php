@@ -26,7 +26,7 @@ use Random\RandomException;
  *
  * Reliable pop: one Lua script moves due delayed jobs and expired reservations back to ready, pops one job and
  * adds it to the reserved set, atomically. A worker that crashes after the pop leaves the job reserved, and the
- * first pop after the reservation expires (queue.retry_after seconds later) puts it back.
+ * first pop after the reservation expires (the queue's retry_after seconds later) puts it back.
  *
  * Attempt counting works like DatabaseQueue: every reservation increments the attempts field of the job hash,
  * so it counts attempts started, including ones whose worker died. pop() brings the popped job's attempts up to
@@ -258,7 +258,7 @@ class RedisQueue implements QueueInterface
             $this->queueKey($queueName, 'reserved'),
             $this->queueKey($queueName, 'notify'),
             $now,
-            $now + $this->queueConfig->retryAfter(),
+            $now + $this->queueConfig->retryAfter($queueName),
             $this->jobKey(''),
         );
 

@@ -51,32 +51,85 @@ class QueueException extends MarkoException
         );
     }
 
+    /**
+     * @param string $retryAfterKey The config key the queue's retry_after comes from
+     */
     public static function timeoutNotBelowRetryAfter(
         int $timeout,
         int $retryAfter,
+        string $queue,
+        string $retryAfterKey,
     ): self {
         return new self(
-            message: "The queue worker timeout ({$timeout}s) must be shorter than queue.retry_after ({$retryAfter}s).",
+            message: "The queue worker timeout ({$timeout}s) must be shorter than $retryAfterKey ({$retryAfter}s)"
+                . " on queue '$queue'.",
             context: 'A job still running when retry_after expires is reclaimed and handed to another worker,'
                 . ' so it would run twice at once.',
-            suggestion: 'Lower queue.timeout / --timeout, or raise queue.retry_after above it'
+            suggestion: "Lower queue.timeout / --timeout, or raise $retryAfterKey above it"
+                . self::perQueueHint($queue, $retryAfterKey)
                 . ' (leave a few seconds of margin).',
         );
     }
 
+    /**
+     * @param string $retryAfterKey The config key the queue's retry_after comes from
+     */
     public static function jobTimeoutNotBelowRetryAfter(
         string $jobClass,
         int $timeout,
         int $retryAfter,
+        string $queue,
+        string $retryAfterKey,
     ): self {
         return new self(
-            message: "Job '$jobClass' has a {$timeout}s timeout, which is not below queue.retry_after"
-                . " ({$retryAfter}s), so the worker failed it without running it.",
+            message: "Job '$jobClass' has a {$timeout}s timeout, which is not below $retryAfterKey"
+                . " ({$retryAfter}s) on queue '$queue', so the worker failed it without running it.",
             context: 'A job still running when retry_after expires is reclaimed and handed to another worker,'
                 . ' so it would run twice at once.',
-            suggestion: "Raise queue.retry_after above $timeout seconds (leave a few seconds of margin),"
-                . " or lower the job's \$timeout, then queue:retry the job.",
+            suggestion: "Raise $retryAfterKey above $timeout seconds (leave a few seconds of margin)"
+                . self::perQueueHint($queue, $retryAfterKey)
+                . ", or lower the job's \$timeout, then queue:retry the job.",
         );
+    }
+
+    public static function invalidQueueSettings(
+        string $key,
+        string $type,
+    ): self {
+        return new self(
+            message: "Invalid $key in the queue config.",
+            context: "$key must be an array of per-queue settings; got $type.",
+            suggestion: "Set queue.queues to a map of queue name to settings, e.g. 'queues' => ['engine' =>"
+                . " ['retry_after' => 3900]].",
+        );
+    }
+
+    public static function invalidQueueRetryAfter(
+        string $queue,
+        mixed $value,
+    ): self {
+        $got = is_int($value) ? (string) $value : get_debug_type($value);
+
+        return new self(
+            message: "Invalid queue.queues.$queue.retry_after in the queue config.",
+            context: "A queue's retry_after must be a whole number of seconds above zero; got $got.",
+            suggestion: "Set queue.queues.$queue.retry_after to a positive integer, e.g. 3900, or remove it so"
+                . ' the queue uses queue.retry_after.',
+        );
+    }
+
+    /**
+     * When a queue uses the global retry_after, point out that it can have its own instead.
+     */
+    private static function perQueueHint(
+        string $queue,
+        string $retryAfterKey,
+    ): string {
+        if ($retryAfterKey !== 'queue.retry_after') {
+            return '';
+        }
+
+        return ", or give queue '$queue' its own queue.queues.$queue.retry_after";
     }
 
     public static function invalidStopCondition(

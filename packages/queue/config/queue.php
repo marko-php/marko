@@ -10,6 +10,11 @@ return [
     'queue' => 'default',
     'retry_after' => 90,
 
+    // Per-queue settings, keyed by queue name. A queue's retry_after replaces the global one above for that
+    // queue only, e.g. 'engine' => ['retry_after' => 3900] for a queue of hour-long jobs. Every queue a
+    // queue:work pops from must have a retry_after above the worker's timeout.
+    'queues' => [],
+
     // Seconds one job may run under queue:work before it is failed and the worker exits; 0 disables it.
     // Needs ext-pcntl, and must stay below retry_after. Override per worker with --timeout.
     'timeout' => 60,

@@ -175,6 +175,88 @@ describe('QueueConfig', function (): void {
             ->toThrow(QueueException::class, 'Invalid queue backoff in config queue.backoff');
     });
 
+    it('returns a queue\'s own retry_after from queue.queues', function (): void {
+        $config = new QueueConfig(new FakeConfigRepository([
+            'queue.retry_after' => 300,
+            'queue.queues' => ['engine' => ['retry_after' => 3900]],
+        ]));
+
+        expect($config->retryAfter('engine'))->toBe(3900)
+            ->and($config->retryAfterKey('engine'))->toBe('queue.queues.engine.retry_after');
+    });
+
+    it('falls back to the global retry_after for a queue without its own', function (): void {
+        $config = new QueueConfig(new FakeConfigRepository([
+            'queue.retry_after' => 300,
+            'queue.queues' => ['engine' => ['retry_after' => 3900], 'mail' => []],
+        ]));
+
+        expect($config->retryAfter())->toBe(300)
+            ->and($config->retryAfter('default'))->toBe(300)
+            ->and($config->retryAfter('mail'))->toBe(300)
+            ->and($config->retryAfterKey('default'))->toBe('queue.retry_after')
+            ->and($config->retryAfterKey())->toBe('queue.retry_after');
+    });
+
+    it('falls back to the global retry_after when queue.queues is absent', function (): void {
+        $config = new QueueConfig(new FakeConfigRepository(['queue.retry_after' => 120]));
+
+        expect($config->retryAfter('engine'))->toBe(120)
+            ->and($config->queueRetryAfters())->toBe([]);
+    });
+
+    it('lists every queue that sets its own retry_after', function (): void {
+        $config = new QueueConfig(new FakeConfigRepository([
+            'queue.retry_after' => 300,
+            'queue.queues' => ['engine' => ['retry_after' => 3900], 'mail' => [], 'reports' => ['retry_after' => 600]],
+        ]));
+
+        expect($config->queueRetryAfters())->toBe(['engine' => 3900, 'reports' => 600]);
+    });
+
+    it('reads a queue name that contains a dot as one queue', function (): void {
+        $config = new QueueConfig(new FakeConfigRepository([
+            'queue.retry_after' => 300,
+            'queue.queues' => ['video.render' => ['retry_after' => 3900]],
+        ]));
+
+        expect($config->retryAfter('video.render'))->toBe(3900);
+    });
+
+    it('throws QueueException for a per-queue retry_after that is not a positive int', function (mixed $value): void {
+        $config = new QueueConfig(new FakeConfigRepository([
+            'queue.retry_after' => 300,
+            'queue.queues' => ['engine' => ['retry_after' => $value]],
+        ]));
+
+        expect(fn () => $config->retryAfter('engine'))
+            ->toThrow(QueueException::class, 'Invalid queue.queues.engine.retry_after');
+    })->with([
+        'zero' => [0],
+        'negative' => [-5],
+        'string' => ['3900'],
+        'null' => [null],
+    ]);
+
+    it('throws QueueException when queue.queues or a queue entry is not an array', function (mixed $queues): void {
+        $config = new QueueConfig(new FakeConfigRepository([
+            'queue.retry_after' => 300,
+            'queue.queues' => $queues,
+        ]));
+
+        expect(fn () => $config->retryAfter('engine'))->toThrow(QueueException::class, 'Invalid queue.queues');
+    })->with([
+        'queues not an array' => ['engine'],
+        'entry not an array' => [['engine' => 3900]],
+    ]);
+
+    it('ships an empty queues map in config/queue.php', function (): void {
+        $config = require dirname(__DIR__) . '/config/queue.php';
+
+        expect($config)->toHaveKey('queues')
+            ->and($config['queues'])->toBe([]);
+    });
+
     it('ships a null backoff in config/queue.php', function (): void {
         $config = require dirname(__DIR__) . '/config/queue.php';
 

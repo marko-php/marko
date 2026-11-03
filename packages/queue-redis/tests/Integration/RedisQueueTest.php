@@ -229,6 +229,25 @@ describe('RedisQueue reservations', function (): void {
             ->and($job->attempts)->toBe(1);
     });
 
+    it('holds a reservation for the retry_after of the queue the job was popped from', function (): void {
+        $harness = ($this->harness)(['queue.queues' => ['engine' => ['retry_after' => 3900]]]);
+        $queue = $harness->queue();
+        $engineId = $queue->push(new TestJob('render'), 'engine')->id;
+        $defaultId = $queue->push(new TestJob('mail'))->id;
+
+        $queue->pop('engine');
+        $queue->pop();
+        $harness->clock->travel('+90 seconds');
+
+        $defaultReclaimed = $queue->pop()?->id;
+        $engineWithinWindow = $queue->pop('engine');
+        $harness->clock->travel('+3810 seconds');
+
+        expect($defaultReclaimed)->toBe($defaultId)
+            ->and($engineWithinWindow)->toBeNull()
+            ->and($queue->pop('engine')?->id)->toBe($engineId);
+    });
+
     it('fails a job whose attempts were all reserved by crashed workers', function (): void {
         $harness = ($this->harness)(['queue.max_attempts' => 2]);
         $queue = $harness->queue();

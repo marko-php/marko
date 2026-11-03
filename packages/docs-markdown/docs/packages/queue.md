@@ -622,7 +622,7 @@ marko queue:work --timeout=60 --memory=128 --max-jobs=1000 --max-time=3600
 - **Memory, job count and run time** --- with `--memory`, `--max-jobs` or `--max-time`, the worker finishes the current job, then returns and `queue:work` exits with status `0`, so leaks never build up to an out-of-memory crash and every worker is recycled regularly. These limits are checked after every job and after every idle pause, so an idle worker also exits once `--max-time` has passed.
 - **SIGTERM / SIGINT** --- the worker finishes the job it is running, then exits, so a deploy or `docker stop` doesn't cut a job off halfway.
 
-The timeout must be shorter than `queue.retry_after`. Otherwise a job still running when its reservation expires is handed to a second worker and runs twice, so `queue:work` refuses to start and exits with code `1` when `--timeout` (or `queue.timeout`) is not below `retry_after`. Leave a few seconds of margin.
+The timeout must be shorter than `queue.retry_after`. Otherwise a job still running when its reservation expires is handed to a second worker and runs twice, so `queue:work` refuses to start and exits with code `1` when `--timeout` (or `queue.timeout`) is not below `retry_after`. A queue with [its own `retry_after`](#per-queue-retry-after) is checked against that, and the timeout must be below the `retry_after` of every queue in `--queue`. Leave a few seconds of margin.
 
 The timeout and graceful shutdown need the `pcntl` extension. Without it, `queue:work` prints a warning and runs with **no** per-job timeout, and SIGTERM/SIGINT stop the worker immediately, mid-job. `--memory`, `--max-jobs` and `--max-time` work without `pcntl`.
 
@@ -655,7 +655,7 @@ class RenderVideo extends Job
 }
 ```
 
-A job's timeout must also stay below `queue.retry_after`, for the same reason as the worker's: a job still running when its reservation expires is handed to a second worker. `queue:work` only knows the worker's timeout when it starts, so the worker checks each job's own `$timeout` when it pops the job. A job whose `$timeout` is not below `retry_after` is [failed for good](#when-a-job-fails-for-good) without running, with a `QueueException` that says to raise `queue.retry_after`. Raise `retry_after` above your longest job timeout (with a few seconds of margin), then `queue:retry` the job.
+A job's timeout must also stay below `queue.retry_after`, for the same reason as the worker's: a job still running when its reservation expires is handed to a second worker. `queue:work` only knows the worker's timeout when it starts, so the worker checks each job's own `$timeout` when it pops the job. A job whose `$timeout` is not below `retry_after` is [failed for good](#when-a-job-fails-for-good) without running, with a `QueueException` that says to raise `queue.retry_after`. The check uses the `retry_after` of the queue the job was popped from, so a queue of long jobs can have [its own](#per-queue-retry-after). Raise that `retry_after` above your longest job timeout on the queue (with a few seconds of margin), then `queue:retry` the job.
 
 Without `ext-pcntl`, a job that sets a timeout still runs, but the worker [logs](#worker-logs) a warning each time, because the timeout can't be enforced.
 
@@ -867,6 +867,7 @@ return [
     'connection'   => 'default',
     'queue'        => 'default',
     'retry_after'  => 90,           // seconds before a reserved-but-unfinished job is reclaimed
+    'queues'       => [],           // per-queue settings, e.g. ['engine' => ['retry_after' => 3900]]
     'timeout'      => 60,           // seconds one job may run under queue:work; 0 = off
     'max_attempts' => 3,
     'backoff'      => null,         // int, list<int>, or null for 2^attempts * 10 seconds
@@ -881,7 +882,8 @@ return [
 | `connection` | `default` | Named connection passed to the driver |
 | `queue` | `default` | Default queue name, used by `push()`, `later()` and `pop()` when no queue is given |
 | `retry_after` | `90` | Seconds after which a reserved job that has not been deleted or released is considered crashed and becomes eligible for re-reservation. The reclaimed reservation still counts as an attempt |
-| `timeout` | `60` | Seconds one job may run under `queue:work` before it is failed and the worker exits; `0` turns it off. Must be below `retry_after`, and needs `ext-pcntl`. Overridden by `--timeout`. See [Worker Limits and Shutdown](#worker-limits-and-shutdown) |
+| `queues` | `[]` | Per-queue settings, keyed by queue name. A queue's `retry_after` replaces the global `retry_after` for that queue only; it must be a positive integer. See [Per-Queue Retry After](#per-queue-retry-after) |
+| `timeout` | `60` | Seconds one job may run under `queue:work` before it is failed and the worker exits; `0` turns it off. Must be below the `retry_after` of every queue the worker pops from, and needs `ext-pcntl`. Overridden by `--timeout`. See [Worker Limits and Shutdown](#worker-limits-and-shutdown) |
 | `max_attempts` | `3` | How many times a job is attempted before it is moved to the failed-job store. A job's own `maxAttempts`, when set, takes precedence |
 | `backoff` | `null` | Seconds to wait before retrying a failed job that sets no `backoff` of its own: an `int` (fixed), a `list<int>` (per attempt; the last value repeats), or `null` for `2^attempts * 10` seconds. See [Retry Backoff](#retry-backoff) |
 | `restart_signal_driver` | `file` | Where `queue:restart` stores its token: `file` (`FileRestartSignal`, the `restart_signal` file) or `cache` (`CacheRestartSignal`, needs `marko/cache`). Set with `QUEUE_RESTART_SIGNAL_DRIVER`. Any other value throws. See [Workers on several hosts](#workers-on-several-hosts) |
@@ -904,6 +906,7 @@ class MyService
         $connection = $this->queueConfig->connection();
         $defaultQueue = $this->queueConfig->queue();
         $retryAfter = $this->queueConfig->retryAfter();
+        $engineRetryAfter = $this->queueConfig->retryAfter('engine'); // queues.engine.retry_after, else retry_after
         $maxAttempts = $this->queueConfig->maxAttempts();
         $backoff = $this->queueConfig->backoff();
         $restartSignalDriver = $this->queueConfig->restartSignalDriver();
@@ -911,6 +914,36 @@ class MyService
     }
 }
 ```
+
+#### Per-Queue Retry After
+
+`retry_after` is how long a reservation lasts, so it has to outlast the longest job on the queue. When one queue runs hour-long jobs next to a queue of short ones, give that queue its own `retry_after` instead of raising the global one, so a crashed short job is still reclaimed quickly:
+
+```php title="config/queue.php"
+return [
+    'retry_after' => 90,
+    'queues' => [
+        'engine' => ['retry_after' => 3900], // jobs on 'engine' may run up to an hour
+    ],
+];
+```
+
+Every queue without an entry (or with an entry that sets no `retry_after`) uses the global `retry_after`. `QueueConfig::retryAfter('engine')` returns the value for one queue, and `retryAfter()` with no queue returns the global value.
+
+The per-queue value is used everywhere the queue's reservation window matters:
+
+- the Redis and database drivers hold a job reserved for the `retry_after` of the queue it was popped from
+- `queue:work` checks `--timeout` (or `queue.timeout`) against the `retry_after` of every queue in its `--queue` list (or the default queue), and refuses to start if any of them is not above it
+- the worker checks a job's own `$timeout` against the `retry_after` of the queue it was popped from
+
+So a worker for the long queue runs on its own, with a timeout that only that queue allows:
+
+```bash
+marko queue:work --queue=engine --timeout=3600
+marko queue:work --queue=default --timeout=60
+```
+
+A `retry_after` in `queues` that is not a positive integer, or a `queues` entry that is not an array, throws a `QueueException` naming the key.
 
 ## API Reference
 
@@ -1153,7 +1186,9 @@ use Marko\Queue\QueueConfig;
 public function driver(): string;
 public function connection(): string;
 public function queue(): string;
-public function retryAfter(): int;
+public function retryAfter(?string $queue = null): int; // the queue's queues.<name>.retry_after, else retry_after
+public function retryAfterKey(?string $queue = null): string; // the config key that value comes from
+public function queueRetryAfters(): array; // array<string, int>: queues that set their own retry_after
 public function timeout(): int;
 public function maxAttempts(): int;
 public function backoff(): array|int|null; // int, list<int>, or null; throws QueueException when invalid

@@ -47,7 +47,7 @@ class WorkCommand implements CommandInterface
         try {
             // A bad queue.backoff would otherwise surface only when the first job fails, maybe days later
             $this->config->backoff();
-            $options = $this->resolveOptions($input);
+            $options = $this->resolveOptions($input, $queues ?? [$this->config->queue()]);
         } catch (QueueException $e) {
             $output->writeLine('Error: ' . $e->getMessage());
             $output->writeLine($e->getContext());
@@ -78,10 +78,16 @@ class WorkCommand implements CommandInterface
      * signal condition reads the current token here, so only a queue:restart issued after this worker
      * started stops it.
      *
-     * @throws QueueException When a value is not a non-negative integer, or the timeout is not below retry_after
+     * The timeout is checked against the retry_after of every queue the worker pops from, so a queue with
+     * a short reservation window cannot be paired with a timeout that outlives it.
+     *
+     * @param list<string> $queues The queues this worker pops from
+     * @throws QueueException When a value is not a non-negative integer, a queue's retry_after is invalid,
+     *     or the timeout is not below the retry_after of one of the queues
      */
     private function resolveOptions(
         Input $input,
+        array $queues,
     ): WorkerOptions {
         $timeout = $input->getOption('timeout');
         $options = new WorkerOptions(
@@ -93,10 +99,17 @@ class WorkCommand implements CommandInterface
         );
 
         // A job still running when its reservation expires would be handed to a second worker
-        $retryAfter = $this->config->retryAfter();
+        foreach ($queues as $queue) {
+            $retryAfter = $this->config->retryAfter($queue);
 
-        if ($options->timeout > 0 && $options->timeout >= $retryAfter) {
-            throw QueueException::timeoutNotBelowRetryAfter($options->timeout, $retryAfter);
+            if ($options->timeout > 0 && $options->timeout >= $retryAfter) {
+                throw QueueException::timeoutNotBelowRetryAfter(
+                    $options->timeout,
+                    $retryAfter,
+                    $queue,
+                    $this->config->retryAfterKey($queue),
+                );
+            }
         }
 
         return $options;
