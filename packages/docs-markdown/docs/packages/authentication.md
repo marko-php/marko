@@ -768,6 +768,7 @@ The broker:
 
 - creates a token from 64 random bytes, sends it to the user in hex, and stores only its SHA-256 hash with the time it was created;
 - checks a submitted token with `hash_equals()`, rejects it once it is `expire_seconds` old, and deletes it when it is used, so each token works once;
+- answers "is this link still valid?" with `tokenIsValid()`, which applies the same check without deleting or touching the token;
 - returns `ResetLinkStatus::Sent` whether or not the email is registered, and never calls the notifier for an unknown email;
 - throttles link requests to one per `throttle_seconds` through [marko/ratelimiter](/docs/packages/ratelimiter/)'s `RateLimiterInterface`. A request for a known user is throttled per user, one for an unknown email per credentials, so `Throttled` doesn't reveal which emails exist either;
 - hashes the new password with `PasswordHasherInterface`, saves the user through [`UserPersisterInterface`](#saving-changed-users), and dispatches [`PasswordResetEvent`](#passwordresetevent).
@@ -904,6 +905,7 @@ use Marko\Authentication\Middleware\GuestMiddleware;
 use Marko\Authentication\PasswordReset\ResetLinkStatus;
 use Marko\Authentication\PasswordReset\ResetStatus;
 use Marko\Authentication\Validation\AuthRules;
+use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
@@ -933,6 +935,23 @@ class PasswordResetController
         };
     }
 
+    #[Get('/reset-password')]
+    public function showResetForm(
+        Request $request,
+    ): Response {
+        // Read-only: the token stays usable, so the form below can still redeem it
+        $valid = $this->passwordResetBroker->tokenIsValid(
+            ['email' => (string) $request->query('email')],
+            (string) $request->query('token'),
+        );
+
+        if (!$valid) {
+            return Response::redirect('/forgot-password?invalid=1');
+        }
+
+        // Render the new-password form, posting email, token, password and password_confirmation
+    }
+
     #[Post('/reset-password')]
     public function reset(
         Request $request,
@@ -955,6 +974,8 @@ class PasswordResetController
     }
 }
 ```
+
+`tokenIsValid()` lets the page that opens from the email say "this link has expired or was already used" before the user types a new password. It returns `true` only for the user's current token when it is younger than `expire_seconds`, and never deletes or touches the token. An unknown email, a wrong token, a token that was used or replaced by a newer link, and an expired token all return `false`, so it doesn't reveal which emails are registered. It uses the same check as `reset()`, so a link it calls valid is one `reset()` accepts at that moment. Like `reset()`, it throws a `UserPersisterException` when the persister or `CanResetPasswordInterface` is missing (see [Misconfiguration](#misconfiguration)).
 
 The broker stores whatever password it is given, so validate it first. `AuthRules::password()` applies the app-wide [password rules](#password-strength).
 
@@ -1734,6 +1755,7 @@ public function getEmailForPasswordReset(): string;
 
 ```php
 public function sendResetLink(array $credentials): ResetLinkStatus; // Sent | Throttled
+public function tokenIsValid(array $credentials, string $token): bool; // read-only: never deletes the token
 public function reset(array $credentials, string $token, string $newPassword): ResetStatus; // PasswordReset | InvalidToken | InvalidUser
 ```
 

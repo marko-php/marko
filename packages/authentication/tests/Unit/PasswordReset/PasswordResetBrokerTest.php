@@ -305,3 +305,94 @@ it('looks users up through the provider named by password_reset.provider', funct
 
     expect($harness->notifier->sent[0]['user'])->toBe($customer);
 });
+
+it('reports the current unexpired token as valid without consuming it', function (): void {
+    $harness = new PasswordResetHarness();
+    $broker = $harness->broker();
+    $broker->sendResetLink(['email' => 'ada@example.com']);
+    $token = $harness->sentToken();
+    $recordBefore = $harness->tokens->find(7);
+
+    $first = $broker->tokenIsValid(['email' => 'ada@example.com'], $token);
+    $second = $broker->tokenIsValid(['email' => 'ada@example.com'], $token);
+
+    expect($first)->toBeTrue()
+        ->and($second)->toBeTrue()
+        ->and($harness->tokens->find(7))->toEqual($recordBefore)
+        ->and($broker->reset(['email' => 'ada@example.com'], $token, 'new-secret-password'))
+        ->toBe(ResetStatus::PasswordReset);
+});
+
+it('reports a wrong token as invalid and leaves the stored token in place', function (): void {
+    $harness = new PasswordResetHarness();
+    $broker = $harness->broker();
+    $broker->sendResetLink(['email' => 'ada@example.com']);
+
+    expect($broker->tokenIsValid(['email' => 'ada@example.com'], str_repeat('a', 128)))->toBeFalse()
+        ->and($harness->tokens->find(7))->not->toBeNull()
+        ->and($broker->reset(['email' => 'ada@example.com'], $harness->sentToken(), 'new-secret-password'))
+        ->toBe(ResetStatus::PasswordReset);
+});
+
+it('reports a token as valid inside expire_seconds and invalid at it, without deleting it', function (): void {
+    $harness = new PasswordResetHarness();
+    $broker = $harness->broker();
+    $broker->sendResetLink(['email' => 'ada@example.com']);
+    $token = $harness->sentToken();
+
+    $harness->clock->travel('+3599 seconds');
+    $insideWindow = $broker->tokenIsValid(['email' => 'ada@example.com'], $token);
+    $harness->clock->travel('+1 second');
+    $atExpiry = $broker->tokenIsValid(['email' => 'ada@example.com'], $token);
+    $recordAfterCheck = $harness->tokens->find(7);
+
+    expect($insideWindow)->toBeTrue()
+        ->and($atExpiry)->toBeFalse()
+        ->and($recordAfterCheck)->not->toBeNull()
+        ->and($broker->reset(['email' => 'ada@example.com'], $token, 'new-secret-password'))
+        ->toBe(ResetStatus::InvalidToken);
+});
+
+it('reports a token as invalid once it has been used to reset the password', function (): void {
+    $harness = new PasswordResetHarness();
+    $broker = $harness->broker();
+    $broker->sendResetLink(['email' => 'ada@example.com']);
+    $token = $harness->sentToken();
+    $broker->reset(['email' => 'ada@example.com'], $token, 'new-secret-password');
+
+    expect($broker->tokenIsValid(['email' => 'ada@example.com'], $token))->toBeFalse();
+});
+
+it('reports a token as invalid when no reset was requested or the credentials match no user', function (): void {
+    $harness = new PasswordResetHarness();
+    $broker = $harness->broker();
+
+    expect($broker->tokenIsValid(['email' => 'ada@example.com'], str_repeat('a', 128)))->toBeFalse()
+        ->and($broker->tokenIsValid(['email' => 'nobody@example.com'], str_repeat('a', 128)))->toBeFalse();
+});
+
+it('reports an older token as invalid once a newer link replaces it', function (): void {
+    $harness = new PasswordResetHarness();
+    $broker = $harness->broker();
+    $broker->sendResetLink(['email' => 'ada@example.com']);
+    $oldToken = $harness->sentToken();
+    $harness->clock->travel('+61 seconds');
+    $broker->sendResetLink(['email' => 'ada@example.com']);
+
+    expect($broker->tokenIsValid(['email' => 'ada@example.com'], $oldToken))->toBeFalse()
+        ->and($broker->tokenIsValid(['email' => 'ada@example.com'], $harness->sentToken()))->toBeTrue();
+});
+
+it('throws when checking a token for a user that does not implement CanResetPasswordInterface', function (): void {
+    $harness = new PasswordResetHarness(users: ['ada@example.com' => new FakeAuthenticatable(id: 7)]);
+
+    expect(fn () => $harness->broker()->tokenIsValid(['email' => 'ada@example.com'], 'token'))
+        ->toThrow(UserPersisterException::class, 'CanResetPasswordInterface');
+});
+
+it('throws naming the provider when checking a token and no persister can be resolved', function (): void {
+    $harness = new PasswordResetHarness(bindPersister: false);
+
+    expect(fn () => $harness->broker()->tokenIsValid(['email' => 'nobody@example.com'], 'token'))
+        ->toThrow(UserPersisterException::class, "user provider 'users'");
+});

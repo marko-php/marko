@@ -99,6 +99,22 @@ it('stores the hash of the sent token and redeems it once', function (): void {
         ->and($this->connection->rows())->toBe([]);
 });
 
+it('checks a stored token without deleting its row', function (): void {
+    $this->broker->sendResetLink(['identifier' => 7]);
+    $stored = $this->connection->rows();
+
+    $valid = $this->broker->tokenIsValid(['identifier' => 7], $this->notifier->token);
+    $wrong = $this->broker->tokenIsValid(['identifier' => 7], str_repeat('a', 128));
+    $this->clock->travel('+3600 seconds');
+    $expired = $this->broker->tokenIsValid(['identifier' => 7], $this->notifier->token);
+
+    expect($valid)->toBeTrue()
+        ->and($wrong)->toBeFalse()
+        ->and($expired)->toBeFalse()
+        ->and($this->connection->rows())->toBe($stored);
+    $this->persister->assertNothingPersisted();
+});
+
 it('rejects a stored token once it is expire_seconds old', function (): void {
     $this->broker->sendResetLink(['identifier' => 7]);
     $this->clock->travel('+3600 seconds');
