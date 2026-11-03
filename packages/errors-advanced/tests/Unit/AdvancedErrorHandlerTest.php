@@ -304,29 +304,68 @@ describe('AdvancedErrorHandler registration', function (): void {
         expect($handler->handled?->timestamp)->toEqual($clock->now());
     });
 
-    it(
-        'does not swallow warnings: handleError() surfaces a non-fatal warning loudly rather than returning true with no side effect',
-        function (): void {
-            $handler = new TestableAdvancedHandler(
-                clock: new FakeClock(),
-                environment: new Environment(sapi: 'cli', envVars: ['MARKO_ENV' => 'development']),
-            );
+    it('reports a warning as non-fatal without halting execution or clearing output buffers', function (): void {
+        $handler = new TestableAdvancedHandler(
+            clock: new FakeClock(),
+            environment: new Environment(sapi: 'cli', envVars: ['MARKO_ENV' => 'development']),
+        );
 
-            $originalLevel = error_reporting();
-            error_reporting(E_ALL);
+        $originalLevel = error_reporting();
+        error_reporting(E_ALL);
 
-            ob_start();
-            $result = $handler->handleError(E_WARNING, 'Test warning message', '/test/file.php', 42);
-            $output = ob_get_clean();
+        ob_start();
+        echo 'prior output';
+        $result = $handler->handleError(E_WARNING, 'Test warning message', '/test/file.php', 42);
+        $output = ob_get_clean();
 
-            error_reporting($originalLevel);
+        error_reporting($originalLevel);
 
-            // Returns true (handled), produces output (not swallowed)
-            expect($result)->toBeTrue()
-                    ->and($output)->not->toBeEmpty()
-                    ->and($output)->toContain('Test warning message');
-        },
-    );
+        expect($result)->toBeTrue()
+            ->and($output)->toBe('prior output')
+            ->and($handler->buffersClearedCount)->toBe(0)
+            ->and($handler->statusCodeSet)->toBeNull()
+            ->and($handler->nonFatalReports)->toHaveCount(1)
+            ->and($handler->nonFatalReports[0]->severity)->toBe(Severity::Warning)
+            ->and($handler->nonFatalReports[0]->message)->toBe('Test warning message');
+    });
+
+    it('reports a warning in the web SAPI through error_log instead of rendering a page', function (): void {
+        $handler = new class (
+            clock: new FakeClock(),
+            environment: new Environment(sapi: 'fpm-fcgi', envVars: ['MARKO_ENV' => 'production']),
+        ) extends OutputSafeAdvancedErrorHandler
+        {
+            /** @var array<string> */
+            public array $errorLogMessages = [];
+
+            protected function writeToErrorLog(
+                string $message,
+            ): void {
+                $this->errorLogMessages[] = $message;
+            }
+        };
+
+        $originalLevel = error_reporting();
+        error_reporting(E_ALL);
+
+        ob_start();
+        $handler->handleError(
+            E_WARNING,
+            'imagecreatefromstring(): Data is not in a recognized format',
+            '/app/Upload.php',
+            12,
+        );
+        $output = ob_get_clean();
+
+        error_reporting($originalLevel);
+
+        expect($output)->toBe('')
+            ->and($handler->statusCodeSet)->toBeNull()
+            ->and($handler->headersSent)->toBe([])
+            ->and($handler->errorLogMessages)->toBe([
+                '[Warning] imagecreatefromstring(): Data is not in a recognized format in /app/Upload.php:12',
+            ]);
+    });
 
     it('surfaces deprecations and notices without halting execution or clearing output buffers', function (): void {
         $handler = new TestableAdvancedHandler(
@@ -427,7 +466,7 @@ describe('AdvancedErrorHandler registration', function (): void {
     );
 
     it(
-        'boots successfully with errors-advanced as the sole error driver (module bindings load and the booted handler reports E_USER_WARNING loudly)',
+        'boots successfully with errors-advanced as the sole error driver (module bindings load and the booted handler reports E_USER_WARNING as non-fatal)',
         function (): void {
             $modulePath = dirname(__DIR__, 2) . '/module.php';
             $module = require $modulePath;
@@ -487,8 +526,9 @@ describe('AdvancedErrorHandler registration', function (): void {
             $handler->unregister();
 
             expect($result)->toBeTrue()
-                ->and($output)->not->toBeEmpty()
-                ->and($output)->toContain('Boot test warning');
+                ->and($output)->toBe('')
+                ->and($handler->nonFatalReports)->toHaveCount(1)
+                ->and($handler->nonFatalReports[0]->message)->toBe('Boot test warning');
         },
     );
 });

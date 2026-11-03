@@ -139,15 +139,26 @@ class AdvancedErrorHandler implements ErrorHandlerInterface
     protected function handleNonFatal(
         ErrorReport $report,
     ): void {
+        $label = $report->severity->label();
+
         if (!$this->environment->isCli()) {
+            // Rendering a page here would send headers mid-request and leave the
+            // controller's own response without them, so the web SAPI only logs.
+            $this->writeToErrorLog("[$label] $report->message in $report->file:$report->line");
+
             return;
         }
 
         $color = $report->severity->color();
         $reset = "\033[0m";
-        $label = $report->severity->label();
 
         fwrite(STDERR, "$color[$label]$reset $report->message in $report->file:$report->line\n");
+    }
+
+    protected function writeToErrorLog(
+        string $message,
+    ): void {
+        error_log($message);
     }
 
     public function handleError(
@@ -163,7 +174,7 @@ class AdvancedErrorHandler implements ErrorHandlerInterface
         $exception = new ErrorException($message, 0, $level, $file, $line);
         $severity = Severity::fromErrorLevel($level);
 
-        if ($severity === Severity::Deprecated || $severity === Severity::Notice) {
+        if ($severity === Severity::Deprecated || $severity === Severity::Notice || $severity === Severity::Warning) {
             $report = ErrorReport::fromThrowable($exception, $severity, $this->clock->now());
             $this->handleNonFatal($report);
 
