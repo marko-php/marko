@@ -211,16 +211,38 @@ class Response
         echo $this->body;
     }
 
+    /**
+     * Emit the status code, then each header, then one Set-Cookie per cookie.
+     *
+     * Regular headers replace any earlier header of the same name. Set-Cookie
+     * lines never replace one another, so every cookie reaches the client.
+     */
     protected function sendHeaders(): void
     {
-        if (headers_sent()) {
+        if ($this->headersAlreadySent()) {
             return;
         }
 
         http_response_code($this->statusCode);
 
-        foreach ($this->headerLines() as $line) {
-            header($line);
+        foreach ($this->headers as $name => $value) {
+            $this->emitHeader("$name: $value", replace: true);
         }
+
+        foreach ($this->cookies as $cookie) {
+            $this->emitHeader('Set-Cookie: ' . $cookie->toSetCookieString(), replace: false);
+        }
+    }
+
+    protected function headersAlreadySent(): bool
+    {
+        return headers_sent();
+    }
+
+    protected function emitHeader(
+        string $line,
+        bool $replace,
+    ): void {
+        header($line, $replace);
     }
 }

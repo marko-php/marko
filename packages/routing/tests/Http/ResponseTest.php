@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Marko\Routing\Http\Cookie;
 use Marko\Routing\Http\Response;
+use Marko\Routing\Tests\Http\Support\HeaderRecordingResponse;
 
 it('accepts status code, headers, and body', function (): void {
     $response = new Response(
@@ -267,5 +268,56 @@ describe('withoutBody', function (): void {
         $output = ob_get_clean();
 
         expect($output)->toBe('');
+    });
+});
+
+describe('header emission', function (): void {
+    it('emits one set-cookie header per cookie without replacing the previous one', function (): void {
+        $sessionCookie = new Cookie(name: 'marko_session', value: 'abc', path: '/');
+        $rememberCookie = new Cookie(name: 'remember_session', value: 'sel:val', path: '/');
+
+        $response = new HeaderRecordingResponse(body: 'ok')
+            ->withCookie($sessionCookie)
+            ->withCookie($rememberCookie);
+
+        ob_start();
+        $response->send();
+        ob_end_clean();
+
+        expect($response->emitted)->toBe([
+            ['line' => 'Set-Cookie: ' . $sessionCookie->toSetCookieString(), 'replace' => false],
+            ['line' => 'Set-Cookie: ' . $rememberCookie->toSetCookieString(), 'replace' => false],
+        ]);
+    });
+
+    it('emits regular headers replacing any earlier header of the same name', function (): void {
+        $cookie = new Cookie(name: 'session_id', value: 'abc123');
+
+        $response = new HeaderRecordingResponse(
+            body: 'ok',
+            headers: ['Content-Type' => 'text/plain', 'X-Custom-Header' => 'custom-value'],
+        )->withCookie($cookie);
+
+        ob_start();
+        $response->send();
+        ob_end_clean();
+
+        expect($response->emitted)->toBe([
+            ['line' => 'Content-Type: text/plain', 'replace' => true],
+            ['line' => 'X-Custom-Header: custom-value', 'replace' => true],
+            ['line' => 'Set-Cookie: ' . $cookie->toSetCookieString(), 'replace' => false],
+        ]);
+    });
+
+    it('emits no headers once headers have already been sent', function (): void {
+        $response = new HeaderRecordingResponse(body: 'ok')
+            ->withCookie(new Cookie(name: 'a', value: '1'));
+        $response->headersSent = true;
+
+        ob_start();
+        $response->send();
+        ob_end_clean();
+
+        expect($response->emitted)->toBe([]);
     });
 });
