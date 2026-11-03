@@ -449,7 +449,7 @@ If a route excludes middleware that is neither global nor on the route, boot fai
 
 ### Innermost Global Middleware
 
-Global middleware normally wraps every route middleware. A global middleware that turns the controller's result into the final response (layout rendering in [`marko/layout`](/docs/packages/layout/), for example) needs the opposite: it should run directly around the controller, so route middleware sees, and can decorate, the final response. Mark it `#[RunsInnermost]`:
+Global middleware normally wraps every route middleware. A global middleware that turns the controller's result into the final response (layout rendering in [`marko/layout`](/docs/packages/layout/), for example) needs the opposite: it should run directly around the controller, so route middleware sees, and can decorate, the final response. The same holds for a check that should only reach requests the route's own middleware let through, such as `CsrfMiddleware` in [`marko/security`](/docs/packages/security/). Mark it `#[RunsInnermost]`:
 
 ```php title="app/web/src/Http/Middleware/WrapInFrameMiddleware.php"
 use Marko\Routing\Attributes\RunsInnermost;

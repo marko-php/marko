@@ -13,9 +13,13 @@ use Marko\Session\Contracts\SessionInterface;
 
 return [
     // CsrfMiddleware reads the token from the session, so SessionMiddleware
-    // (registered globally by the session drivers) must run first.
+    // (registered globally by the session drivers) must run first. Loading
+    // before marko/layout keeps CsrfMiddleware around LayoutMiddleware when
+    // both run innermost, so a token a layout component issues is mirrored to
+    // the XSRF-TOKEN cookie.
     'sequence' => [
         'after' => ['marko/session-file', 'marko/session-database'],
+        'before' => ['marko/layout'],
     ],
     'bindings' => [
         CsrfTokenManagerInterface::class => function (ContainerInterface $container): CsrfTokenManagerInterface {
@@ -26,11 +30,16 @@ return [
             );
         },
     ],
+    'singletons' => [
+        // Shared, so CsrfMiddleware still accepts the token a request arrived
+        // with after a login in route middleware rotated it.
+        CsrfTokenManagerInterface::class,
+    ],
     // Every matched route is protected; opt a route out with
     // #[WithoutMiddleware(CsrfMiddleware::class)] or
     // #[WithoutMiddleware(SecurityHeadersMiddleware::class)].
-    // SecurityHeadersMiddleware comes first so it wraps CsrfMiddleware and
-    // also decorates the 419 a token mismatch renders.
+    // CsrfMiddleware runs innermost (#[RunsInnermost]), so SecurityHeadersMiddleware
+    // wraps it and also decorates the 419 a token mismatch renders.
     'globalMiddleware' => [
         SecurityHeadersMiddleware::class,
         CsrfMiddleware::class,

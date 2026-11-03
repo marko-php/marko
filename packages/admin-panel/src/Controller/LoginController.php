@@ -12,16 +12,21 @@ use Marko\RateLimiter\Middleware\RateLimitMiddleware;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
+use Marko\Routing\Attributes\WithoutMiddleware;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Security\Contracts\CsrfTokenManagerInterface;
+use Marko\Security\Middleware\CsrfMiddleware;
+use Marko\Security\Middleware\RouteCsrfMiddleware;
 use Marko\View\ViewInterface;
 
 /**
  * Logs admins in and out on the admin guard (admin-auth.guard), never the
  * app's default guard, so only AdminUserProvider users can sign in here.
- * The login and logout POST routes are CSRF-protected by the global
- * CsrfMiddleware that marko/security registers.
+ * The logout POST is CSRF-protected by the global CsrfMiddleware that
+ * marko/security registers. The login POST checks the token with
+ * RouteCsrfMiddleware ahead of the rate limiter instead, so a forged
+ * cross-site login cannot use up a client's attempts.
  *
  * Login is throttled twice: the admin guard's SessionGuard locks out an
  * email for a client after repeated failures (authentication.throttle), and
@@ -52,7 +57,8 @@ readonly class LoginController
     }
 
     #[Post(path: '/admin/login')]
-    #[Middleware(RateLimitMiddleware::class)]
+    #[Middleware([RouteCsrfMiddleware::class, RateLimitMiddleware::class])]
+    #[WithoutMiddleware(CsrfMiddleware::class)]
     #[RateLimit(maxAttempts: 10, decaySeconds: 60, name: 'admin-login')]
     public function authenticate(
         Request $request,

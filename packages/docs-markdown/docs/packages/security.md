@@ -59,6 +59,23 @@ class FormController
 
 The middleware reads the token from the `_token` form field, the `X-CSRF-TOKEN` header, or the `X-XSRF-TOKEN` header. Safe methods (GET, HEAD, OPTIONS) are skipped.
 
+It carries `#[RunsInnermost]`, so it checks the token after the route's own middleware (see [Innermost global middleware](/docs/packages/routing/#innermost-global-middleware)). An auth guard on the route answers a logged out visitor's stale form with its login redirect, not a `419`. When that middleware logs the visitor in, for example from a remember-me cookie, the login rotates the token, and the token the request arrived with is still accepted for that one request.
+
+Route middleware therefore also sees requests that end in a `419`. A route that needs the token checked before its own middleware, for a rate limiter that should only count verified requests, excludes the global check and lists `RouteCsrfMiddleware` where the check belongs. The admin panel's login route does this:
+
+```php
+use Marko\Security\Middleware\CsrfMiddleware;
+use Marko\Security\Middleware\RouteCsrfMiddleware;
+
+#[Middleware([RouteCsrfMiddleware::class, RateLimitMiddleware::class])]
+#[WithoutMiddleware(CsrfMiddleware::class)]
+class ContactController
+```
+
+`#[WithoutMiddleware]` removes middleware by exact class, so `RouteCsrfMiddleware`, a subclass, stays. A `#[Preference]` that replaces `CsrfMiddleware` does not reach `RouteCsrfMiddleware`, so such a route, the admin login included, keeps the shipped check; prefer `RouteCsrfMiddleware` as well if you change how the token is read.
+
+A response that route middleware returns before reaching `CsrfMiddleware`, such as an auth redirect, does not carry a refreshed `XSRF-TOKEN` cookie. The next response that passes through it does.
+
 It never runs on requests that match no route, because it does not carry `#[RunsOnUnmatched]` (see [Which middleware runs](/docs/packages/routing/#which-middleware-runs)). A `POST` to an unknown path gets a `404`, and a `POST` to a GET-only path gets a `405` with `Allow` --- never a `419` token mismatch.
 
 :::caution[Upgrading from per-route CSRF]
@@ -167,7 +184,7 @@ In earlier releases, `SecurityHeadersMiddleware` only ran on routes that declare
 
 ### Token Rotation on Login and Logout
 
-When [marko/authentication](/docs/packages/authentication/) is installed, the token is regenerated on every `LoginEvent` and `LogoutEvent` (by the `RotateCsrfTokenOnLogin` and `RotateCsrfTokenOnLogout` observers). A token issued before login --- including one an attacker learned by planting a session from a sibling subdomain --- stops validating once the victim logs in, and the next person on a shared machine does not inherit the logged-out user's token. Forms rendered before the login or logout must be reloaded to pick up the new token. Without marko/authentication these events are never dispatched, so nothing changes.
+When [marko/authentication](/docs/packages/authentication/) is installed, the token is regenerated on every `LoginEvent` and `LogoutEvent` (by the `RotateCsrfTokenOnLogin` and `RotateCsrfTokenOnLogout` observers). A token issued before login --- including one an attacker learned by planting a session from a sibling subdomain --- stops validating on every request after the one that logged the victim in, and the next person on a shared machine does not inherit the logged-out user's token. Forms rendered before the login or logout must be reloaded to pick up the new token. Without marko/authentication these events are never dispatched, so nothing changes.
 
 ### Using the CSRF Token Manager Directly
 
@@ -228,7 +245,7 @@ use Marko\Security\Exceptions\CsrfTokenMismatchException;
 use Marko\Security\Contracts\CsrfTokenManagerInterface;
 
 public function get(): string;       // Get token, generating one if none exists
-public function validate(string $token): bool;  // Validate against stored token
+public function validate(string $token): bool;  // Validate against the stored token, or the one this request arrived with
 public function regenerate(): string; // Regenerate token, replacing the previous one
 ```
 
@@ -245,6 +262,14 @@ public function __construct(
     SessionConfig $sessionConfig,
 );
 public function handle(Request $request, callable $next): Response;
+```
+
+### RouteCsrfMiddleware
+
+```php
+use Marko\Security\Middleware\RouteCsrfMiddleware;
+
+class RouteCsrfMiddleware extends CsrfMiddleware {} // the same check, at the position a route lists it
 ```
 
 ### CsrfTokenManager

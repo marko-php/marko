@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Contracts\ResettableInterface;
 use Marko\Security\Contracts\CsrfTokenManagerInterface;
 use Marko\Security\CsrfTokenManager;
 use Marko\Security\Exceptions\CsrfTokenMismatchException;
@@ -109,6 +110,61 @@ describe('CsrfTokenManager', function (): void {
         expect($regenerated)->not->toBe($original)
             ->and($session->get('_csrf_token'))->toBe($regenerated)
             ->and($manager->get())->toBe($regenerated);
+    });
+
+    it('keeps accepting the token the request arrived with after a regeneration', function (): void {
+        $session = new FakeSession();
+        $session->set('_csrf_token', 'token-from-the-page');
+        $manager = new CsrfTokenManager(session: $session, encryptor: new FakeEncryptor());
+
+        $manager->regenerate();
+
+        expect($manager->validate('token-from-the-page'))->toBeTrue();
+    });
+
+    it('accepts no token that was issued during the request and then replaced', function (): void {
+        $session = new FakeSession();
+        $session->set('_csrf_token', 'token-from-the-page');
+        $manager = new CsrfTokenManager(session: $session, encryptor: new FakeEncryptor());
+
+        $issuedDuringTheRequest = $manager->regenerate();
+        $manager->regenerate();
+
+        expect($manager->validate($issuedDuringTheRequest))->toBeFalse();
+    });
+
+    it('accepts no replaced token when the request arrived without one', function (): void {
+        $manager = new CsrfTokenManager(session: new FakeSession(), encryptor: new FakeEncryptor());
+
+        $issuedDuringTheRequest = $manager->get();
+        $manager->regenerate();
+
+        expect($manager->validate($issuedDuringTheRequest))->toBeFalse();
+    });
+
+    it('rejects the token the request arrived with once the manager is reset for the next request', function (): void {
+        $session = new FakeSession();
+        $session->set('_csrf_token', 'token-from-the-page');
+        $manager = new CsrfTokenManager(session: $session, encryptor: new FakeEncryptor());
+
+        $manager->regenerate();
+        $manager->reset();
+
+        expect($manager)->toBeInstanceOf(ResettableInterface::class)
+            ->and($manager->validate('token-from-the-page'))->toBeFalse();
+    });
+
+    it('remembers the token the next request arrived with after a reset', function (): void {
+        $session = new FakeSession();
+        $session->set('_csrf_token', 'token-from-the-first-page');
+        $manager = new CsrfTokenManager(session: $session, encryptor: new FakeEncryptor());
+        $manager->regenerate();
+        $manager->reset();
+
+        $session->set('_csrf_token', 'token-from-the-second-page');
+        $manager->regenerate();
+
+        expect($manager->validate('token-from-the-second-page'))->toBeTrue();
     });
 
     it('implements CsrfTokenManagerInterface', function (): void {

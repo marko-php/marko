@@ -8,16 +8,27 @@ use Marko\Admin\Config\AdminConfigInterface;
 use Marko\AdminPanel\Controller\LoginController;
 use Marko\AdminPanel\Tests\Fixtures\FixedAdminGuardResolver;
 use Marko\Authentication\Exceptions\TooManyLoginAttemptsException;
+use Marko\Core\Container\Container;
+use Marko\Core\Container\PreferenceRegistry;
 use Marko\RateLimiter\Attributes\RateLimit;
+use Marko\RateLimiter\Config\RateLimiterConfig;
+use Marko\RateLimiter\Contracts\RateLimiterInterface;
+use Marko\RateLimiter\Contracts\RateLimitKeyResolverInterface;
 use Marko\RateLimiter\Middleware\RateLimitMiddleware;
+use Marko\RateLimiter\RateLimitResult;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\WithoutMiddleware;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Routing\RouteCollection;
+use Marko\Routing\RouteDiscovery;
+use Marko\Routing\RouteMatcher;
+use Marko\Routing\Router;
 use Marko\Security\Contracts\CsrfTokenManagerInterface;
 use Marko\Security\Exceptions\CsrfTokenMismatchException;
 use Marko\Security\Middleware\CsrfMiddleware;
 use Marko\Session\Config\SessionConfig;
+use Marko\Session\Contracts\SessionInterface;
 use Marko\Testing\Fake\FakeAuthenticatable;
 use Marko\Testing\Fake\FakeConfigRepository;
 use Marko\Testing\Fake\FakeGuard;
@@ -115,24 +126,91 @@ function loginCsrfMiddleware(): CsrfMiddleware
     );
 }
 
-it('relies on the global CsrfMiddleware from marko/security for the login and logout routes', function (): void {
-    $securityRoot = dirname((string) new ReflectionClass(CsrfMiddleware::class)->getFileName(), 3);
-    $securityModule = require $securityRoot . '/module.php';
+class CountingRateLimiter implements RateLimiterInterface
+{
+    public int $attempts = 0;
 
-    expect($securityModule['globalMiddleware'])->toContain(CsrfMiddleware::class);
+    public function attempt(
+        string $key,
+        int $maxAttempts,
+        int $decaySeconds,
+    ): RateLimitResult {
+        $this->attempts++;
 
-    foreach (['authenticate', 'logout'] as $action) {
-        $method = new ReflectionMethod(LoginController::class, $action);
-        $routeMiddleware = array_merge(...array_map(
-            fn (ReflectionAttribute $attribute): array => $attribute->newInstance()->middleware,
-            $method->getAttributes(Middleware::class),
-        ));
-
-        expect($routeMiddleware)->not->toContain(CsrfMiddleware::class)
-            ->and($method->getAttributes(WithoutMiddleware::class))->toBeEmpty();
+        return new RateLimitResult(allowed: true, remaining: $maxAttempts - $this->attempts);
     }
 
-    expect(new ReflectionClass(LoginController::class)->getAttributes(WithoutMiddleware::class))->toBeEmpty();
+    public function tooManyAttempts(
+        string $key,
+        int $maxAttempts,
+    ): bool {
+        return false;
+    }
+
+    public function clear(
+        string $key,
+    ): void {}
+}
+
+it('answers a forged login POST with 419 before it uses up a rate limit attempt', function (): void {
+    $routes = new RouteCollection();
+
+    foreach (new RouteDiscovery()->discoverFromClass(LoginController::class) as $route) {
+        $routes->add($route);
+    }
+
+    $session = new FakeSession();
+    $session->start();
+    $rateLimiter = new CountingRateLimiter();
+    $container = new Container(new PreferenceRegistry());
+    $container->instance(CsrfTokenManagerInterface::class, new LoginStubCsrfTokenManager('test-csrf-token'));
+    $container->instance(SessionInterface::class, $session);
+    $container->instance(SessionConfig::class, new SessionConfig(new FakeConfigRepository([
+        'session.cookie.name' => 'marko_session',
+        'session.cookie.path' => '/',
+        'session.cookie.domain' => '',
+        'session.cookie.secure' => true,
+    ])));
+    $container->instance(RateLimitMiddleware::class, new RateLimitMiddleware(
+        rateLimiter: $rateLimiter,
+        rateLimitKeyResolver: new class () implements RateLimitKeyResolverInterface
+        {
+            public function resolve(
+                Request $request,
+            ): string {
+                return '203.0.113.7';
+            }
+        },
+        rateLimiterConfig: new RateLimiterConfig(new FakeConfigRepository()),
+    ));
+    $router = new Router(
+        matcher: new RouteMatcher($routes),
+        container: $container,
+        globalMiddleware: [CsrfMiddleware::class],
+    );
+
+    $response = $router->handle(new Request(
+        server: ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/admin/login', 'HTTP_ACCEPT' => 'application/json'],
+        post: ['email' => 'kira@example.ch', 'password' => 'guess', '_token' => 'forged'],
+    ));
+
+    expect($response->statusCode())->toBe(419)
+        ->and($rateLimiter->attempts)->toBe(0);
+});
+
+it('relies on the global CsrfMiddleware from marko/security for the logout route', function (): void {
+    $securityRoot = dirname((string) new ReflectionClass(CsrfMiddleware::class)->getFileName(), 3);
+    $securityModule = require $securityRoot . '/module.php';
+    $method = new ReflectionMethod(LoginController::class, 'logout');
+    $routeMiddleware = array_merge(...array_map(
+        fn (ReflectionAttribute $attribute): array => $attribute->newInstance()->middleware,
+        $method->getAttributes(Middleware::class),
+    ));
+
+    expect($securityModule['globalMiddleware'])->toContain(CsrfMiddleware::class)
+        ->and($routeMiddleware)->not->toContain(CsrfMiddleware::class)
+        ->and($method->getAttributes(WithoutMiddleware::class))->toBeEmpty()
+        ->and(new ReflectionClass(LoginController::class)->getAttributes(WithoutMiddleware::class))->toBeEmpty();
 });
 
 it('rejects a POST to the admin login route when no CSRF token is supplied', function (): void {
@@ -296,7 +374,7 @@ it('rate limits the admin login POST per client IP with RateLimitMiddleware', fu
     $middleware = $method->getAttributes(Middleware::class)[0]->newInstance();
     $rateLimit = $method->getAttributes(RateLimit::class)[0]->newInstance();
 
-    expect($middleware->middleware)->toBe([RateLimitMiddleware::class])
+    expect($middleware->middleware)->toContain(RateLimitMiddleware::class)
         ->and($rateLimit->maxAttempts)->toBe(10)
         ->and($rateLimit->decaySeconds)->toBe(60)
         ->and($rateLimit->name)->toBe('admin-login');

@@ -121,13 +121,15 @@ final class Helpers
      * session cookie config that defaults to the shipped session.php values.
      *
      * @param array<string, mixed> $sessionCookieConfig
+     * @param class-string<CsrfMiddleware> $middlewareClass
      */
     public static function createCsrfMiddleware(
         CsrfTokenManagerInterface $tokenManager,
         ?SessionInterface $session = null,
         array $sessionCookieConfig = [],
+        string $middlewareClass = CsrfMiddleware::class,
     ): CsrfMiddleware {
-        return new CsrfMiddleware(
+        return new $middlewareClass(
             tokenManager: $tokenManager,
             session: $session ?? self::createResumedSession(),
             sessionConfig: new SessionConfig(new FakeConfigRepository(array_merge([

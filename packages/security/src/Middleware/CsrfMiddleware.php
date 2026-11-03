@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Marko\Security\Middleware;
 
+use Marko\Routing\Attributes\RunsInnermost;
 use Marko\Routing\Exceptions\CookieException;
 use Marko\Routing\Http\Cookie;
 use Marko\Routing\Http\Request;
@@ -24,7 +25,12 @@ use Marko\Session\Contracts\SessionInterface;
  * or the `X-XSRF-TOKEN` header. Whenever the response persists the session,
  * the current token is mirrored to a readable `XSRF-TOKEN` cookie so SPA
  * clients (axios, Inertia) can send it back automatically.
+ *
+ * It runs innermost, after the route's own middleware, so an auth guard
+ * answers a logged out visitor's stale form with its login redirect instead
+ * of a token error.
  */
+#[RunsInnermost]
 class CsrfMiddleware implements MiddlewareInterface
 {
     public const string COOKIE_NAME = 'XSRF-TOKEN';
