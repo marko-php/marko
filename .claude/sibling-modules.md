@@ -294,6 +294,10 @@ Use consistent message formats:
 "Failed to connect to PostgreSQL database '$database' on $host:$port"
 ```
 
+### Unsupported Features
+
+When a sibling cannot do something the shared interface declares, it throws the standard unsupported-feature exception (`UnsupportedFeatureExceptionInterface`), naming the feature and the driver with a suggestion. Siblings use the same wording and the same exception type for the same gap. A silent no-op is allowed only when the method's promise still holds, and is documented in the docblock and docs page. See "Driver Capability (Unsupported Features)" in `code-standards.md`.
+
 ## Planning for Future Siblings
 
 ### Single Implementation Now, Siblings Later
@@ -362,6 +366,7 @@ Before merging sibling module changes:
 | Test approach      | Anonymous class pattern            |
 | Exception messages | Consistent format                  |
 | Aliases            | Same names for computed values     |
+| Unsupported features | Thrown via `UnsupportedFeatureExceptionInterface`; no-ops follow rule 3 and are documented |
 
 ## Anti-Patterns
 

@@ -6,7 +6,7 @@ Zero-infrastructure pub/sub via PostgreSQL LISTEN/NOTIFY -- real-time messaging 
 
 `marko/pubsub-pgsql` implements the `marko/pubsub` contracts using PostgreSQL's native LISTEN/NOTIFY mechanism. `PgSqlPublisher` issues `NOTIFY` and `PgSqlSubscriber` issues `LISTEN` over a persistent async connection powered by `amphp/postgres`. Because PostgreSQL is already a common dependency, this driver lets you add real-time messaging with no additional infrastructure.
 
-Note: PostgreSQL does not support pattern-based subscriptions. Calling `psubscribe()` throws `PubSubException`. Use `marko/pubsub-redis` if you need pattern matching.
+Note: PostgreSQL does not support pattern-based subscriptions. Calling `psubscribe()` throws `UnsupportedPubSubFeatureException` (a `PubSubException`). Use `marko/pubsub-redis` if you need pattern matching.
 
 ## Installation
 
@@ -72,7 +72,7 @@ Implements `SubscriberInterface`. Applies the configured channel prefix and issu
 
 ```php
 public function subscribe(string ...$channels): Subscription;
-public function psubscribe(string ...$patterns): Subscription; // throws PubSubException
+public function psubscribe(string ...$patterns): Subscription; // throws UnsupportedPubSubFeatureException
 ```
 
 ### `PgSqlSubscription`

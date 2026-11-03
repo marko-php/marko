@@ -100,6 +100,27 @@ readonly class ProductService
 
 The **implementation** is wired in `module.php`. To switch from file cache to Redis, change one binding — zero application code changes.
 
+### Unsupported Features
+
+A driver sometimes cannot do something its interface declares (the SQLite driver has no containment operator for object needles in `whereJsonContains()`). Marko handles this one way:
+
+- The method stays on the interface when most drivers can do it.
+- The driver **throws** an exception implementing `Marko\Core\Exceptions\UnsupportedFeatureExceptionInterface`. It exposes `getFeature()`, `getDriver()`, `getContext()` and `getSuggestion()`. Packages whose callers catch their own exception type ship a subclass (for example `UnsupportedMigrationFeatureException`), so existing `catch` blocks keep working.
+- A driver may return a no-op only when the method's promise still holds, and documents it. The sync queue is the one named carve-out: it runs delayed jobs immediately because it exists to execute inline in development.
+- A separate capability check, like `ConnectionInterface::supportsReturning()`, exists only when callers must choose a path before calling.
+
+Catch the interface to handle any driver's gap:
+
+```php
+use Marko\Core\Exceptions\UnsupportedFeatureExceptionInterface;
+
+try {
+    $queue->later(60, $job);
+} catch (UnsupportedFeatureExceptionInterface $exception) {
+    $logger->warning($exception->getFeature() . ' unavailable on ' . $exception->getDriver());
+}
+```
+
 ## Module Composition
 
 Modules can build on each other. An `acme/blog` module might depend on `marko/routing`, `marko/database`, and `marko/view` — but you never wire that manually. Composer handles the dependency graph, and Marko handles the module discovery.

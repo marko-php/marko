@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Marko\Database\Sqlite\Tests\Query;
 
+use Marko\Core\Exceptions\UnsupportedFeatureException;
 use Marko\Database\Config\DatabaseConfig;
 use Marko\Database\Sqlite\Connection\SqliteConnection;
-use Marko\Database\Sqlite\Exceptions\UnsupportedFeatureException;
 use Marko\Database\Sqlite\Query\SqliteQueryBuilder;
 use Marko\Database\Sqlite\Query\SqliteQueryBuilderFactory;
 
@@ -93,6 +93,35 @@ describe('SqliteQueryBuilder JSON', function (): void {
             }
         },
     );
+
+    it(
+        'throws the core UnsupportedFeatureException for an object needle in whereJsonContains on sqlite',
+        function (): void {
+            $builder = new SqliteQueryBuilder(sqliteJsonConnection())->table('users');
+
+            expect(fn () => $builder->whereJsonContains('data', ['a' => 1]))
+                ->toThrow(UnsupportedFeatureException::class);
+        },
+    );
+
+    it('reports whereJsonContains as the feature and SQLite as the driver', function (): void {
+        $builder = new SqliteQueryBuilder(sqliteJsonConnection())->table('users');
+
+        try {
+            $builder->whereJsonContains('data', ['a' => 1]);
+        } catch (UnsupportedFeatureException $exception) {
+            expect($exception->getFeature())->toBe('whereJsonContains() with an object or nested-array needle')
+                ->and($exception->getDriver())->toBe('SQLite');
+
+            return;
+        }
+
+        $this->fail('Expected UnsupportedFeatureException');
+    });
+
+    it('no longer ships a SQLite package-local UnsupportedFeatureException', function (): void {
+        expect(class_exists('Marko\\Database\\Sqlite\\Exceptions\\UnsupportedFeatureException'))->toBeFalse();
+    });
 
     it('filters rows where a json path exists and where it is missing', function (): void {
         $connection = sqliteJsonConnection();

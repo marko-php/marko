@@ -140,7 +140,7 @@ $users = $connection->query(
 
 Through the builder, `whereJson*` path, contains and exists conditions compile to `->`, `->>`, `json_type()` and `json_each()`.
 
-`whereJsonContains` accepts scalar and list needles. An **object needle or a nested-array needle throws** a `Marko\Database\Sqlite\Exceptions\UnsupportedFeatureException`, because SQLite has no containment operator for them and an approximation would return wrong rows silently.
+`whereJsonContains` accepts scalar and list needles. An **object needle or a nested-array needle throws** a `Marko\Core\Exceptions\UnsupportedFeatureException`, because SQLite has no containment operator for them and an approximation would return wrong rows silently.
 
 ### Text Comparison
 

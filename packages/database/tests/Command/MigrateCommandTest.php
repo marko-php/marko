@@ -1232,3 +1232,27 @@ describe('destructive changes', function (): void {
             ->and($generator->generateCalled)->toBeFalse();
     });
 });
+
+it('still lets the migrate command catch a migration capability exception as MigrationException', function (): void {
+    /** @noinspection PhpMissingParentConstructorInspection - Test stub intentionally skips parent */
+    $migrator = new class () extends Migrator
+    {
+        /** @noinspection PhpMissingParentConstructorInspection */
+        public function __construct() {}
+
+        public function getPending(): array
+        {
+            return ['2024_01_01_000000_add_partial_index'];
+        }
+
+        public function migrate(): array
+        {
+            throw MigrationException::partialIndexNotSupported('idx_active', 'MySQL');
+        }
+    };
+
+    ['output' => $output, 'exitCode' => $exitCode] = executeMigrateCommand(createMigrateCommand(migrator: $migrator));
+
+    expect($exitCode)->toBe(1)
+        ->and($output)->toContain("Error: Index 'idx_active' declares a WHERE predicate");
+});

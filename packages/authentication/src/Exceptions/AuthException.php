@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Authentication\Exceptions;
 
 use Exception;
+use Marko\Core\Exceptions\UnsupportedFeature;
 use Throwable;
 
 class AuthException extends Exception
@@ -56,12 +57,14 @@ class AuthException extends Exception
     public static function otherDeviceLogoutUnsupported(
         string $guard,
         string $guardClass,
-    ): self {
-        return new self(
-            message: "Guard '$guard' cannot log out other devices",
-            context: "$guardClass does not implement Marko\\Authentication\\Contracts\\OtherDeviceLogoutInterface. Stateless guards keep no sessions to end",
+    ): UnsupportedAuthFeatureException {
+        return new UnsupportedAuthFeatureException(new UnsupportedFeature(
+            feature: 'logoutOtherDevices()',
+            driver: $guardClass,
             suggestion: 'Call logoutOtherDevices() on a session guard, or revoke the credentials a stateless guard checks (e.g. API tokens) instead',
-        );
+            context: "$guardClass does not implement Marko\\Authentication\\Contracts\\OtherDeviceLogoutInterface. Stateless guards keep no sessions to end",
+            message: "Guard '$guard' cannot log out other devices",
+        ));
     }
 
     public static function rememberTokenNotStored(
@@ -301,12 +304,14 @@ class AuthException extends Exception
     public static function challengesNotSupported(
         string $guard,
         string $driver,
-    ): self {
-        return new self(
-            message: "Guard '$guard' lists login challenges, but its '$driver' driver does not support them",
-            context: "authentication.guards.$guard.challenges is set, and the guard built by the '$driver' driver does not implement ChallengeableGuardInterface",
+    ): UnsupportedAuthFeatureException {
+        return new UnsupportedAuthFeatureException(new UnsupportedFeature(
+            feature: 'login challenges',
+            driver: $driver,
             suggestion: "Remove 'challenges' from authentication.guards.$guard, or use the 'session' driver: stateless guards such as the token guard have no login step to challenge",
-        );
+            context: "authentication.guards.$guard.challenges is set, and the guard built by the '$driver' driver does not implement ChallengeableGuardInterface",
+            message: "Guard '$guard' lists login challenges, but its '$driver' driver does not support them",
+        ));
     }
 
     public function getContext(): string

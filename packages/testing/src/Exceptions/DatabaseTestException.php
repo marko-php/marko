@@ -6,6 +6,7 @@ namespace Marko\Testing\Exceptions;
 
 use Marko\Core\Environment\AppEnvironment;
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Core\Exceptions\UnsupportedFeature;
 
 class DatabaseTestException extends MarkoException
 {
@@ -88,12 +89,14 @@ class DatabaseTestException extends MarkoException
 
     public static function cannotRunPendingAfterCommitCallbacks(
         string $connectionClass,
-    ): self {
-        return new self(
-            message: "Connection '$connectionClass' cannot run pending after-commit callbacks.",
-            context: 'RefreshDatabase::runAfterCommitCallbacks() needs a connection implementing Marko\Database\Connection\PendingAfterCommitInterface.',
+    ): UnsupportedDatabaseTestFeatureException {
+        return new UnsupportedDatabaseTestFeatureException(new UnsupportedFeature(
+            feature: 'pending after-commit callbacks',
+            driver: $connectionClass,
             suggestion: 'Use the marko/database-pgsql, marko/database-mysql or marko/database-sqlite driver, or assert on after-commit work with TruncateDatabase and a real commit.',
-        );
+            context: 'RefreshDatabase::runAfterCommitCallbacks() needs a connection implementing Marko\Database\Connection\PendingAfterCommitInterface.',
+            message: "Connection '$connectionClass' cannot run pending after-commit callbacks.",
+        ));
     }
 
     public static function truncateInsideTransaction(
@@ -108,11 +111,13 @@ class DatabaseTestException extends MarkoException
 
     public static function unsupportedDriver(
         string $driver,
-    ): self {
-        return new self(
-            message: "TruncateDatabase does not support the '$driver' driver.",
-            context: 'Building the TRUNCATE statements for the entity tables',
+    ): UnsupportedDatabaseTestFeatureException {
+        return new UnsupportedDatabaseTestFeatureException(new UnsupportedFeature(
+            feature: 'TruncateDatabase',
+            driver: $driver,
             suggestion: 'Use the pgsql, mysql or sqlite driver, or use RefreshDatabase, which works with any transactional driver.',
-        );
+            context: 'Building the TRUNCATE statements for the entity tables',
+            message: "TruncateDatabase does not support the '$driver' driver.",
+        ));
     }
 }

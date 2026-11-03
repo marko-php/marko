@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Broadcasting\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Core\Exceptions\UnsupportedFeature;
 use Throwable;
 
 class BroadcastException extends MarkoException
@@ -42,12 +43,14 @@ class BroadcastException extends MarkoException
     public static function presenceChannelsUnsupported(
         string $driver,
         string $channel,
-    ): self {
-        return new self(
-            message: "Presence channel '$channel' is not supported by $driver.",
-            context: "The $driver driver cannot track presence channel members",
+    ): UnsupportedBroadcastFeatureException {
+        return new UnsupportedBroadcastFeatureException(new UnsupportedFeature(
+            feature: 'presence channels',
+            driver: $driver,
             suggestion: 'Use a PrivateChannel instead, or switch to the Pusher driver (marko/broadcasting-pusher) for presence channels.',
-        );
+            context: "The $driver driver cannot track presence channel members",
+            message: "Presence channel '$channel' is not supported by $driver.",
+        ));
     }
 
     public static function emptyEventName(): self

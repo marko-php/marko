@@ -11,6 +11,7 @@ use Amp\Postgres\PostgresStatement;
 use Amp\Postgres\PostgresTransaction;
 use Amp\Sql\SqlTransactionIsolation;
 use Marko\PubSub\Exceptions\PubSubException;
+use Marko\PubSub\Exceptions\UnsupportedPubSubFeatureException;
 use Marko\PubSub\PgSql\Driver\PgSqlSubscriber;
 use Marko\PubSub\PgSql\PgSqlPubSubConnection;
 use Marko\PubSub\PubSubConfig;
@@ -196,7 +197,7 @@ it('creates PgSqlSubscriber implementing SubscriberInterface', function (): void
 
 it('subscribes to channels with prefix applied via LISTEN', function (): void {
     $stub = new SubscriberStubPostgresConnection();
-    $subscriber = createPgSqlSubscriberWithStub($stub, 'marko_');
+    $subscriber = createPgSqlSubscriberWithStub($stub);
 
     $subscriber->subscribe('events', 'notifications');
 
@@ -210,4 +211,11 @@ it('throws PubSubException for psubscribe since Postgres does not support patter
 
     expect(fn () => $subscriber->psubscribe('events.*'))
         ->toThrow(PubSubException::class, "Pattern subscriptions are not supported by the 'pgsql' driver");
+});
+
+it('still throws the pattern subscription exception from PgSqlSubscriber psubscribe', function (): void {
+    $subscriber = createPgSqlSubscriberWithStub();
+
+    expect(fn () => $subscriber->psubscribe('events.*'))
+        ->toThrow(UnsupportedPubSubFeatureException::class);
 });

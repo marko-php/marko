@@ -112,6 +112,10 @@ After writing files, expect LSP diagnostics from `marko-lsp` to surface in the s
 - No magic methods — be explicit
 - Use `readonly` where immutability is appropriate, not as a blanket rule
 
+## Driver modules
+
+If the module implements a driver for an interface package, a method the driver cannot support must throw `UnsupportedFeatureException::forDriver()` (or the interface package's `Unsupported{Thing}FeatureException` subclass), naming the feature and driver with a suggestion. Return a no-op only when the method's promise still holds, and document it in the docblock and docs page.
+
 ## What this skill does not cover
 
 - Authoring plugins for the new module — see the `marko-create-plugin` skill

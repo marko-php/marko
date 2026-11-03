@@ -18,6 +18,9 @@ All parameters, return types, and properties require type declarations. Use the 
 ## Loud Errors
 All exceptions extend `MarkoException` with `message`, `context`, `suggestion` named parameters.
 
+## Unsupported Features
+A driver that cannot do what its interface declares throws `UnsupportedFeatureException::forDriver()` (or a package subclass implementing `UnsupportedFeatureExceptionInterface`), naming feature, driver and a suggestion. A silent no-op is allowed only when the method's promise still holds, and it is documented.
+
 ## No Traits
 Use explicit constructor composition instead; traits hide where behavior comes from.
 
