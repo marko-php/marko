@@ -8,6 +8,28 @@ Entries from `0.4.0` onward are generated automatically by `bin/release.sh` from
 
 <!-- new-entries-below — do not remove this marker; bin/release.sh inserts new versions directly below it -->
 
+## [0.13.0] - 2026-11-03
+
+### Breaking Changes
+* feat: expose the queue name on job processing events by @markshust in https://github.com/marko-php/marko/pull/672
+* feat: add read-only password reset token check to the broker by @markshust in https://github.com/marko-php/marko/pull/673
+* fix: keep config keys overridden with null and add an explicit RemoveKey marker by @markshust in https://github.com/marko-php/marko/pull/674
+* feat: accept remember on attempt() and carry it through login challenges by @markshust in https://github.com/marko-php/marko/pull/676
+* feat: per-queue retry_after by @markshust in https://github.com/marko-php/marko/pull/677
+* fix: refuse options a command does not declare, and give --help a meaning by @markshust in https://github.com/marko-php/marko/pull/678
+### New Features
+* feat: add a first-party sqlite database driver by @markshust in https://github.com/marko-php/marko/pull/663
+* feat: standardize how drivers handle unsupported features by @markshust in https://github.com/marko-php/marko/pull/665
+### Bug Fixes
+* fix: rebuild symbol index after composer changes and index root config by @markshust in https://github.com/marko-php/marko/pull/650
+* fix: install and verify claude code plugins in devai:install by @markshust in https://github.com/marko-php/marko/pull/651
+* fix: unregister app error handlers after testing boot by @markshust in https://github.com/marko-php/marko/pull/652
+* fix: keep a failed migration's original exception and harden sqlite batch keys by @markshust in https://github.com/marko-php/marko/pull/669
+* fix: send one set-cookie header per cookie on a response by @markshust in https://github.com/marko-php/marko/pull/670
+* fix: index only marko modules from vendor in codeindexer by @markshust in https://github.com/marko-php/marko/pull/671
+* fix: read the request body lazily and refuse bodies over post_max_size by @markshust in https://github.com/marko-php/marko/pull/675
+
+
 ## [0.12.0] - 2026-11-01
 
 ### Breaking Changes
