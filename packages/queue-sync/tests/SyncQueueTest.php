@@ -177,6 +177,7 @@ it('push executes job immediately', function (): void {
     $job = new class ($executed) extends Job
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private bool &$executed,
         ) {}
 
@@ -283,9 +284,8 @@ it('hands a failing job to the failed-job handler on the default queue when none
     $handler = new RecordingSyncFailedJobHandler();
     $job = new SyncFailableJob();
 
-    expect(fn () => createSyncQueue(failedJobHandler: $handler)->push($job))->toThrow(JobFailedException::class);
-
-    expect($handler->handled)->toHaveCount(1)
+    expect(fn () => createSyncQueue(failedJobHandler: $handler)->push($job))->toThrow(JobFailedException::class)
+        ->and($handler->handled)->toHaveCount(1)
         ->and($handler->handled[0]['job'])->toBe($job)
         ->and($handler->handled[0]['queue'])->toBe('default')
         ->and($handler->handled[0]['exception']->getMessage())->toBe('sync job failed');
@@ -300,7 +300,7 @@ it('does not hand a job that succeeds to the failed-job handler', function (): v
 
     createSyncQueue(failedJobHandler: $handler)->push($job);
 
-    expect($handler->handled)->toBe([]);
+    expect($handler->handled)->toBeEmpty();
 });
 
 it('dispatches JobProcessingEvent and JobProcessedEvent around a job run under SyncQueue', function (): void {
@@ -324,6 +324,7 @@ it('later executes job immediately', function (): void {
     $job = new class ($executed) extends Job
     {
         public function __construct(
+            /** @noinspection PhpPropertyOnlyWrittenInspection - Reference property modifies external variable */
             private bool &$executed,
         ) {}
 
@@ -360,6 +361,27 @@ it('clear returns zero', function (): void {
 
     expect($queue->clear())->toBe(0)
         ->and($queue->clear('custom'))->toBe(0);
+});
+
+it('returns false from release because the sync queue holds no reserved job', function (): void {
+    $queue = createSyncQueue();
+
+    expect($queue->release(new SyncFailableJob()))->toBeFalse()
+        ->and($queue->release(new SyncFailableJob(), 30))->toBeFalse();
+});
+
+it('returns false from delete because the sync queue stores no job', function (): void {
+    $queue = createSyncQueue();
+
+    expect($queue->delete('any-id'))->toBeFalse();
+});
+
+it('still returns null from pop and zero from size and clear', function (): void {
+    $queue = createSyncQueue();
+
+    expect($queue->pop())->toBeNull()
+        ->and($queue->size())->toBe(0)
+        ->and($queue->clear())->toBe(0);
 });
 
 it('push throws JobFailedException on job failure', function (): void {
@@ -438,7 +460,7 @@ it(
             ->and($thrown->getMessage())->toContain(SyncFailableJob::class . " (id $job->id)")
             ->and($thrown->getContext())->toContain('sync job failed')
             ->and($thrown->getPrevious())->toBe($storageError)
-            ->and($job->failedWith)->toBe([])
-            ->and($events->dispatched(JobFailedEvent::class))->toBe([]);
+            ->and($job->failedWith)->toBeEmpty()
+            ->and($events->dispatched(JobFailedEvent::class))->toBeEmpty();
     },
 );

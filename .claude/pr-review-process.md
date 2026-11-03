@@ -257,6 +257,7 @@ Before merging any package PR:
 - [ ] No `final` classes (including exceptions)
 - [ ] No defensive `instanceof` checks on container resolutions
 - [ ] No silent fallbacks (HTML comments, swallowed exceptions, default returns on missing config)
+- [ ] New or changed drivers follow the four driver-capability rules (code-standards "Driver Capability"): unsupported features throw an `UnsupportedFeatureExceptionInterface` type, no-ops keep the method's promise and are documented; `tests/UnsupportedFeatureStandardTest.php` must pass
 - [ ] No pseudo-functionality (in-memory-only stubs pretending to be backed)
 - [ ] Strict types, type declarations everywhere
 - [ ] `module.php` is omitted entirely or kept minimal (no redundant `enabled`, `sequence`, or list-style binding entries)

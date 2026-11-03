@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Database\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Core\Exceptions\UnsupportedFeature;
 
 /**
  * Exception thrown for transaction-related errors.
@@ -13,22 +14,30 @@ class TransactionException extends MarkoException
 {
     public static function connectionDoesNotSupportTransactions(
         string $connectionClass,
-    ): self {
-        return new self(
+    ): UnsupportedTransactionFeatureException {
+        return new UnsupportedTransactionFeatureException(new UnsupportedFeature(
+            feature: 'transactions',
+            driver: $connectionClass,
             message: "Connection '$connectionClass' does not support transactions",
-            context: 'Resolving TransactionInterface returns the shared ConnectionInterface instance, which must also implement TransactionInterface',
-            suggestion: 'Bind ConnectionInterface to a connection that implements TransactionInterface, or bind TransactionInterface explicitly',
-        );
+            context: 'Resolving TransactionInterface returns the shared ConnectionInterface instance, which must '
+                . 'also implement TransactionInterface',
+            suggestion: 'Bind ConnectionInterface to a connection that implements TransactionInterface, or bind '
+                . 'TransactionInterface explicitly',
+        ));
     }
 
     public static function cannotRunPendingAfterCommitCallbacks(
         string $connectionClass,
-    ): self {
-        return new self(
+    ): UnsupportedTransactionFeatureException {
+        return new UnsupportedTransactionFeatureException(new UnsupportedFeature(
+            feature: 'pending after-commit callbacks',
+            driver: $connectionClass,
             message: "Connection '$connectionClass' cannot run pending after-commit callbacks",
-            context: 'Running after-commit callbacks queued inside a transaction that is never committed (a RefreshDatabase test)',
-            suggestion: 'Use a connection that implements Marko\Database\Connection\PendingAfterCommitInterface (the pgsql, mysql and sqlite drivers do), or assert on the callbacks by committing a real transaction',
-        );
+            context: 'Running after-commit callbacks queued inside a transaction that is never committed (a '
+                . 'RefreshDatabase test)',
+            suggestion: 'Use a connection that implements Marko\Database\Connection\PendingAfterCommitInterface (the '
+                . 'pgsql, mysql and sqlite drivers do), or assert on the callbacks by committing a real transaction',
+        ));
     }
 
     public static function invalidAttempts(

@@ -77,12 +77,12 @@ Implements all methods from `QueueInterface`. See [marko/queue](/docs/packages/q
 |---|---|
 | `__construct(JobRunnerInterface $jobRunner, FailedJobHandlerInterface $failedJobHandler, QueueConfig $config)` | Autowired. Every job runs through the runner, and a job that throws goes through the failed-job handler. |
 | `push(JobInterface $job, ?string $queue = null): PushResult` | Execute the job immediately through the `JobRunner` and return a pushed `PushResult` with its ID. Container-aware jobs get the container and job envelope first, and release them afterwards. On failure, hands the job to the failed-job handler, then throws `JobFailedException`, or the handler's `FailedJobNotStoredException` when a bound repository can't store the job. |
-| `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Ignores the delay and executes immediately via `push()`. |
+| `later(int $delay, JobInterface $job, ?string $queue = null): PushResult` | Ignores the delay and executes immediately via `push()`. The sync driver stores nothing and runs every job at push time, so there is nothing to delay. This is the one documented exception to "throw when you can't do it": a development driver whose purpose is inline execution. |
 | `pop(?string $queue = null, bool $block = false): ?JobInterface` | Always returns `null` --- no jobs are ever queued. |
 | `size(?string $queue = null): int` | Always returns `0`. |
 | `clear(?string $queue = null): int` | Always returns `0`. |
-| `delete(string $jobId): bool` | Always returns `true`. |
-| `release(JobInterface $job, int $delay = 0): bool` | Always returns `true`. |
+| `delete(string $jobId): bool` | Always returns `false` --- the sync queue never stores a job, so nothing is deleted. |
+| `release(JobInterface $job, int $delay = 0): bool` | Always returns `false` --- the sync queue never reserves a job, and `QueueInterface::release()` returns `false` when no reserved job matches. |
 
 `module.php` binds `QueueInterface` straight to `SyncQueue`; there is no factory.
 

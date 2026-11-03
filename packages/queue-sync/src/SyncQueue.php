@@ -55,6 +55,9 @@ readonly class SyncQueue implements QueueInterface
     }
 
     /**
+     * The delay is not honored: the sync driver stores nothing and runs every job at push time.
+     * This is the documented carve-out for development drivers whose purpose is inline execution.
+     *
      * @throws FailedJobNotStoredException|JobFailedException|RandomException|SerializationException
      */
     public function later(
@@ -65,6 +68,9 @@ readonly class SyncQueue implements QueueInterface
         return $this->push($job, $queue);
     }
 
+    /**
+     * Always null: the promise holds because no job is ever queued.
+     */
     public function pop(
         ?string $queue = null,
         bool $block = false,
@@ -72,28 +78,41 @@ readonly class SyncQueue implements QueueInterface
         return null;
     }
 
+    /**
+     * Always zero: the promise holds because no job is ever queued.
+     */
     public function size(
         ?string $queue = null,
     ): int {
         return 0;
     }
 
+    /**
+     * Always zero: the promise holds because no job is ever queued, so none can be cleared.
+     */
     public function clear(
         ?string $queue = null,
     ): int {
         return 0;
     }
 
+    /**
+     * Always false: the sync queue never stores a job, so there is nothing to delete.
+     */
     public function delete(
         string $jobId,
     ): bool {
-        return true;
+        return false;
     }
 
+    /**
+     * Always false: QueueInterface::release() returns false when the queue holds no reserved
+     * job with the job's id, and the sync queue never reserves one.
+     */
     public function release(
         JobInterface $job,
         int $delay = 0,
     ): bool {
-        return true;
+        return false;
     }
 }

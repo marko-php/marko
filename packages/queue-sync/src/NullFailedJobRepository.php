@@ -7,6 +7,10 @@ namespace Marko\Queue\Sync;
 use Marko\Queue\FailedJob;
 use Marko\Queue\FailedJobRepositoryInterface;
 
+/**
+ * Discarding failed jobs is safe here: SyncQueue throws JobFailedException on every failure, so
+ * nothing is lost silently, and all(), find(), delete() and count() agree with an always-empty store.
+ */
 class NullFailedJobRepository implements FailedJobRepositoryInterface
 {
     public function store(FailedJob $failedJob): void {}

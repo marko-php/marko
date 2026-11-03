@@ -145,4 +145,4 @@ All methods return the file path to the processed image (written to the system t
 
 | Exception | Thrown When |
 |---|---|
-| `GdProcessingException` | The GD extension is unavailable, the source image cannot be loaded or exceeds the dimension limits, a target size or crop offset is invalid, an unsupported format is requested, or the encode step fails (e.g. write error) |
+| `GdProcessingException` | The GD extension is unavailable, the source image cannot be loaded or exceeds the dimension limits, a target size or crop offset is invalid, an unsupported format is requested (an `UnsupportedGdFeatureException`, which also implements `UnsupportedFeatureExceptionInterface`), or the encode step fails (e.g. write error) |

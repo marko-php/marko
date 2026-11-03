@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\PubSub\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Core\Exceptions\UnsupportedFeature;
 
 class PubSubException extends MarkoException
 {
@@ -41,13 +42,15 @@ class PubSubException extends MarkoException
         );
     }
 
-    public static function patternSubscriptionNotSupported(string $driver): self
+    public static function patternSubscriptionNotSupported(string $driver): UnsupportedPubSubFeatureException
     {
-        return new self(
-            message: "Pattern subscriptions are not supported by the '$driver' driver",
-            context: "While attempting to call psubscribe() on the $driver pub/sub driver",
+        return new UnsupportedPubSubFeatureException(new UnsupportedFeature(
+            feature: 'pattern subscriptions',
+            driver: $driver,
             suggestion: 'Use the Redis driver if you need pattern-based subscriptions',
-        );
+            context: "While attempting to call psubscribe() on the $driver pub/sub driver",
+            message: "Pattern subscriptions are not supported by the '$driver' driver",
+        ));
     }
 
     /**

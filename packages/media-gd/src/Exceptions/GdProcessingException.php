@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\MediaGd\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Core\Exceptions\UnsupportedFeature;
 
 class GdProcessingException extends MarkoException
 {
@@ -80,11 +81,13 @@ class GdProcessingException extends MarkoException
 
     public static function unsupportedFormat(
         string $format,
-    ): self {
-        return new self(
-            message: "Unsupported image format: '$format'",
-            context: 'Converting image format',
+    ): UnsupportedGdFeatureException {
+        return new UnsupportedGdFeatureException(new UnsupportedFeature(
+            feature: "image format '$format'",
+            driver: 'GD',
             suggestion: 'Use one of the supported formats: jpeg, png, gif, webp',
-        );
+            context: 'Converting image format',
+            message: "Unsupported image format: '$format'",
+        ));
     }
 }

@@ -108,7 +108,7 @@ Named constructors for all failure scenarios:
 | `connectionFailed(string $driver, string $reason)` | Driver cannot connect |
 | `subscriptionFailed(string $channel, string $reason)` | Subscribe call fails |
 | `publishFailed(string $channel, string $reason)` | Publish call fails |
-| `patternSubscriptionNotSupported(string $driver)` | `psubscribe()` on a driver that does not support patterns |
+| `patternSubscriptionNotSupported(string $driver)` | `psubscribe()` on a driver that does not support patterns. Returns an `UnsupportedPubSubFeatureException`, which extends `PubSubException` and implements `UnsupportedFeatureExceptionInterface` |
 
 ## Documentation
 

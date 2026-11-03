@@ -185,5 +185,7 @@ use Marko\PubSub\Exceptions\PubSubException;
 PubSubException::connectionFailed(string $driver, string $reason): self;
 PubSubException::subscriptionFailed(string $channel, string $reason): self;
 PubSubException::publishFailed(string $channel, string $reason): self;
-PubSubException::patternSubscriptionNotSupported(string $driver): self;
+PubSubException::patternSubscriptionNotSupported(string $driver): UnsupportedPubSubFeatureException;
 ```
+
+`patternSubscriptionNotSupported()` returns an `UnsupportedPubSubFeatureException`. It extends `PubSubException` and implements `Marko\Core\Exceptions\UnsupportedFeatureExceptionInterface`, so existing `catch (PubSubException)` blocks keep working.

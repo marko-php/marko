@@ -348,6 +348,54 @@ class BindingConflictException extends MarkoException
 
 Use static factory methods for common cases. Include variable values in messages. Always use named parameters.
 
+### Driver Capability (Unsupported Features)
+
+When a driver cannot do something its interface declares, follow four rules:
+
+1. **Keep the method in the base interface** when it is part of what the abstraction promises and most drivers can do it.
+2. **Default: throw loudly** through the standard type, naming the feature and the driver, with a suggestion.
+3. **A no-op is allowed only when the method's promise still holds** (for example `SyncQueue::pop()` returns `null` because nothing is ever queued, or SQLite has no row locks because a write already locks the database). Document it in the driver's docblock and docs page. The one named carve-out: a development driver whose purpose is inline execution (the sync queue) may run delayed work immediately, documented the same way. Anything else that breaks a method's promise throws.
+4. **Add a capability check only when callers must choose a path before calling** (precedent: `ConnectionInterface::supportsReturning()`).
+
+The standard type is `Marko\Core\Exceptions\UnsupportedFeatureExceptionInterface`, with `getFeature()`, `getDriver()`, `getContext()` and `getSuggestion()`. Packages with no base exception type throw `UnsupportedFeatureException::forDriver()`:
+
+```php
+throw UnsupportedFeatureException::forDriver(
+    feature: 'Object containment in whereJsonContains()',
+    driver: 'SQLite',
+    suggestion: 'Use a scalar or list needle, or switch to the MySQL or PostgreSQL driver',
+);
+```
+
+Where callers catch the package exception type, add `Unsupported{Thing}FeatureException extends {Thing}Exception implements UnsupportedFeatureExceptionInterface`. The existing static factory stays and its return type becomes the subclass:
+
+```php
+class UnsupportedMigrationFeatureException extends MigrationException implements UnsupportedFeatureExceptionInterface
+{
+    public function __construct(
+        private readonly UnsupportedFeature $unsupportedFeature,
+    ) {
+        parent::__construct(
+            message: $unsupportedFeature->message(),
+            context: $unsupportedFeature->context(),
+            suggestion: $unsupportedFeature->suggestion,
+        );
+    }
+
+    public function getFeature(): string
+    {
+        return $this->unsupportedFeature->feature;
+    }
+
+    public function getDriver(): string
+    {
+        return $this->unsupportedFeature->driver;
+    }
+}
+```
+
+`tests/UnsupportedFeatureStandardTest.php` enforces this: a hand-written "unsupported" or "not supported" factory that does not return a type implementing the interface fails CI. If the exception is not driver capability (input validation, an environment requirement), add an allowlist entry with a reason in that test.
+
 ## Documentation Standards
 
 ### When to Document

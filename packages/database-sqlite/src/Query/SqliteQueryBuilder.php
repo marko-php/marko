@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Marko\Database\Sqlite\Query;
 
+use Marko\Core\Exceptions\UnsupportedFeature;
+use Marko\Core\Exceptions\UnsupportedFeatureException;
 use Marko\Database\Connection\ConnectionInterface;
 use Marko\Database\Exceptions\InvalidJsonPathException;
 use Marko\Database\Query\JsonPathParser;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Database\Query\SqlQueryBuilder;
 use Marko\Database\Sqlite\Exceptions\InsertReturningException;
-use Marko\Database\Sqlite\Exceptions\UnsupportedFeatureException;
 use Marko\Database\Sqlite\Sql\SqliteIdentifier;
 
 /**
@@ -79,7 +80,15 @@ class SqliteQueryBuilder extends SqlQueryBuilder
             (is_array($value) && !array_is_list($value))
             || array_any($elements, fn (mixed $element): bool => is_array($element) || is_object($element))
         ) {
-            throw UnsupportedFeatureException::jsonObjectContainment();
+            throw UnsupportedFeatureException::fromUnsupportedFeature(new UnsupportedFeature(
+                feature: 'whereJsonContains() with an object or nested-array needle',
+                driver: 'SQLite',
+                suggestion: 'Compare a single path with where(\'column->>key\', \'=\', $value), or use whereRaw() '
+                    . 'with json_extract()',
+                context: 'Compiling whereJsonContains() for SQLite, which has no JSON object containment operator',
+                message: 'whereJsonContains() on the SQLite driver supports a scalar or a list of scalars, not an '
+                    . 'object or nested array',
+            ));
         }
 
         return parent::whereJsonContains($path, $value);

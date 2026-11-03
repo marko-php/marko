@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Database\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Core\Exceptions\UnsupportedFeature;
 
 /**
  * Exception thrown for migration-related errors.
@@ -25,13 +26,15 @@ class MigrationException extends MarkoException
     public static function partialIndexNotSupported(
         string $indexName,
         string $driver,
-    ): self {
-        return new self(
+    ): UnsupportedMigrationFeatureException {
+        return new UnsupportedMigrationFeatureException(new UnsupportedFeature(
+            feature: 'partial indexes',
+            driver: $driver,
             message: "Index '$indexName' declares a WHERE predicate, but $driver does not support partial indexes",
             context: "While generating SQL for index '$indexName'",
             suggestion: "Remove 'where' from the #[Index] attribute, or create the index by hand in a migration and "
                 . 'list its name in #[Table(unmanagedIndexes: [...])] so db:migrate leaves it alone.',
-        );
+        ));
     }
 
     public static function missingPreviousColumn(
@@ -118,13 +121,15 @@ class MigrationException extends MarkoException
         string $column,
         string $driver,
         string $change,
-    ): self {
-        return new self(
+    ): UnsupportedMigrationFeatureException {
+        return new UnsupportedMigrationFeatureException(new UnsupportedFeature(
+            feature: 'in-place column changes',
+            driver: $driver,
             message: "Cannot change the $change of column '$table.$column' in place on $driver",
             context: "While generating SQL to modify column '$table.$column'",
             suggestion: 'Write this change by hand in a migration (for example, add a new column, copy the data and '
                 . 'drop the old one), then run db:migrate again.',
-        );
+        ));
     }
 
     /**
@@ -184,26 +189,31 @@ class MigrationException extends MarkoException
         string $indexName,
         string $type,
         string $driver,
-    ): self {
-        return new self(
+    ): UnsupportedMigrationFeatureException {
+        return new UnsupportedMigrationFeatureException(new UnsupportedFeature(
+            feature: 'this index type',
+            driver: $driver,
             message: "Index '$indexName' is a $type index, which $driver does not support",
             context: "While generating SQL for index '$indexName'",
             suggestion: "Remove the $type index from the entity, or create it by hand in a migration and list its "
                 . 'name in #[Table(unmanagedIndexes: [...])] so db:migrate leaves it alone.',
-        );
+        ));
     }
 
     public static function foreignKeyChangeRequiresRebuild(
         string $table,
         string $foreignKey,
         string $driver,
-    ): self {
-        return new self(
-            message: "$driver cannot add or drop foreign key '$foreignKey' on existing table '$table' in place; the change needs a table rebuild",
+    ): UnsupportedMigrationFeatureException {
+        return new UnsupportedMigrationFeatureException(new UnsupportedFeature(
+            feature: 'in-place foreign key changes',
+            driver: $driver,
+            message: "$driver cannot add or drop foreign key '$foreignKey' on existing table '$table' in place; "
+                . 'the change needs a table rebuild',
             context: "While generating SQL for foreign key '$foreignKey' on '$table'",
             suggestion: 'This change runs as a table rebuild through generateUp(); do not call the single-statement '
                 . 'foreign key methods for it.',
-        );
+        ));
     }
 
     public static function unsupportedDefaultExpression(
@@ -211,13 +221,15 @@ class MigrationException extends MarkoException
         string $column,
         string $expression,
         string $driver,
-    ): self {
-        return new self(
+    ): UnsupportedMigrationFeatureException {
+        return new UnsupportedMigrationFeatureException(new UnsupportedFeature(
+            feature: 'this default expression',
+            driver: $driver,
             message: "Column '$table.$column' has the default expression '$expression', which $driver does not support",
             context: "While generating the default for column '$table.$column'",
             suggestion: "Use CURRENT_TIMESTAMP, CURRENT_DATE or CURRENT_TIME, or a parenthesised expression $driver "
                 . 'understands.',
-        );
+        ));
     }
 
     public static function nonUtcCurrentTimeDefault(
@@ -226,13 +238,15 @@ class MigrationException extends MarkoException
         string $expression,
         string $timezone,
         string $driver,
-    ): self {
-        return new self(
+    ): UnsupportedMigrationFeatureException {
+        return new UnsupportedMigrationFeatureException(new UnsupportedFeature(
+            feature: 'non-UTC current-time defaults',
+            driver: $driver,
             message: "Column '$table.$column' defaults to $expression, which $driver always evaluates in UTC, "
                 . "but database.timezone is '$timezone'",
             context: "While generating the default for column '$table.$column'",
             suggestion: 'Set database.timezone to UTC, or set the value from application code instead of a column '
                 . 'default.',
-        );
+        ));
     }
 }

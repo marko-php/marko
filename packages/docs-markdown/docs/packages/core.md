@@ -618,6 +618,22 @@ throw new MarkoException(
 );
 ```
 
+### Unsupported Features
+
+A driver that cannot do what its interface declares throws `UnsupportedFeatureException::forDriver()`, or a package subclass that also implements `UnsupportedFeatureExceptionInterface`. Both expose `getFeature()`, `getDriver()`, `getContext()` and `getSuggestion()`:
+
+```php
+use Marko\Core\Exceptions\UnsupportedFeatureException;
+
+throw UnsupportedFeatureException::forDriver(
+    feature: 'Object containment in whereJsonContains()',
+    driver: 'SQLite',
+    suggestion: 'Use a scalar or list needle',
+);
+```
+
+See [Modularity](/docs/concepts/modularity/#unsupported-features) for the rules.
+
 ### Capturing PHP Warning Reasons
 
 Many PHP functions (`mkdir()`, `rename()`, `file_put_contents()`, `stream_socket_client()`, `unserialize()`) report failure by returning `false` and raising a warning that holds the only explanation. Don't hide that warning with `@`. Run the call through `Marko\Core\Support\ErrorCapture::run()`, which captures the message instead of emitting it, and put the reason into your exception:

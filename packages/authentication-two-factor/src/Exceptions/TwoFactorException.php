@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\AuthenticationTwoFactor\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Core\Exceptions\UnsupportedFeature;
 
 class TwoFactorException extends MarkoException
 {
@@ -70,12 +71,14 @@ class TwoFactorException extends MarkoException
 
     public static function guardNotChallengeable(
         string $guard,
-    ): self {
-        return new self(
-            message: "Guard '$guard' does not support login challenges",
-            context: 'Two-factor login needs a guard that implements ChallengeableGuardInterface, such as the session guard',
+    ): UnsupportedTwoFactorFeatureException {
+        return new UnsupportedTwoFactorFeatureException(new UnsupportedFeature(
+            feature: 'login challenges',
+            driver: $guard,
             suggestion: "Use a 'session' guard for two-factor logins, or pass the right guard name",
-        );
+            context: 'Two-factor login needs a guard that implements ChallengeableGuardInterface, such as the session guard',
+            message: "Guard '$guard' does not support login challenges",
+        ));
     }
 
     public static function userNotTwoFactorAuthenticatable(

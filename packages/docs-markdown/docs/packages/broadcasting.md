@@ -300,6 +300,8 @@ A shared singleton; authorizers are discovered on first use.
 | `ChannelAuthorizationException` | A private or presence channel has no authorizer, the matching authorizer serves the other channel kind, an authorizer is registered twice for one pattern, or a `#[BroadcastChannel]` class implements neither authorizer interface |
 | `NoDriverException` | `BroadcasterInterface` is resolved with no driver installed |
 
+`presenceChannelsUnsupported()` returns an `UnsupportedBroadcastFeatureException`. It extends `BroadcastException` and implements `Marko\Core\Exceptions\UnsupportedFeatureExceptionInterface`, so existing `catch (BroadcastException)` blocks keep working.
+
 ## Related Packages
 
 - [`marko/broadcasting-amphp`](/docs/packages/broadcasting-amphp/) --- self-hosted async SSE server driver

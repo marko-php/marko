@@ -180,7 +180,7 @@ Implements `SubscriberInterface`. Listens for messages via PostgreSQL `LISTEN`.
 |---|---|
 | `__construct(PgSqlPubSubConnection $pgSqlPubSubConnection, PubSubConfig $pubSubConfig)` | Create a subscriber with a PostgreSQL connection and pub/sub configuration |
 | `subscribe(string ...$channels): Subscription` | Subscribe to one or more channels --- issues a `LISTEN` for each prefixed channel |
-| `psubscribe(string ...$patterns): Subscription` | Always throws `PubSubException` --- pattern subscriptions are not supported by PostgreSQL |
+| `psubscribe(string ...$patterns): Subscription` | Always throws `PubSubException` (an `UnsupportedPubSubFeatureException`, which also implements `UnsupportedFeatureExceptionInterface`) --- pattern subscriptions are not supported by PostgreSQL |
 
 ### PgSqlSubscription
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Marko\Http\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
+use Marko\Core\Exceptions\UnsupportedFeature;
 
 class InvalidRequestOptionException extends MarkoException
 {
@@ -77,13 +78,15 @@ class InvalidRequestOptionException extends MarkoException
         string $key,
         string $driver,
         string $reason,
-    ): self {
-        return new self(
-            message: "HTTP request option '$key' is not supported by $driver.",
-            context: $reason,
+    ): UnsupportedHttpFeatureException {
+        return new UnsupportedHttpFeatureException(new UnsupportedFeature(
+            feature: $key,
+            driver: $driver,
             suggestion: "Use an HTTP client driver that supports '$key', or remove the option. "
                 . 'The option is never silently ignored, because callers rely on it for security.',
-        );
+            context: $reason,
+            message: "HTTP request option '$key' is not supported by $driver.",
+        ));
     }
 
     public static function pinnedRequestFollowsRedirects(): self
