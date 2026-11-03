@@ -5,7 +5,7 @@ description: Entity-driven schema definition with the Data Mapper pattern.
 
 Database abstraction with entity-driven schema, type inference, migrations, and seeders.
 
-**This package has no implementation.** Install `marko/database-mysql` or `marko/database-pgsql` for actual database connectivity.
+**This package has no implementation.** Install `marko/database-mysql`, `marko/database-pgsql` or `marko/database-sqlite` for actual database connectivity.
 
 ## Installation
 
@@ -2068,6 +2068,10 @@ Every driver package binds six interfaces. They fall into two categories:
 
 A wire-compatible variant inherits the parent's `ConnectionInterface` and `ConnectionFactoryInterface` bindings unchanged and overrides the four dialect interfaces.
 
+### Building a query builder
+
+`Marko\Database\Query\SqlQueryBuilder` is an abstract class that holds the dialect-neutral query compilation. The MySQL, PostgreSQL and SQLite builders all extend it, so a new driver or variant can too. A subclass supplies only the dialect parts: `quoteIdentifier()`, `insertAndReturnKey()`, the JSON compilers (`compileJsonPath()`, `compileJsonContains()`, `compileJsonPathExists()`), `buildUpsertConflictClause()` and `compileLockClause()`. It may also override `hashStartsComment()`, `offsetOnlyLimitClause()`, `wrapUnionPart()` and `buildLimitOffsetClause()` where the dialect differs.
+
 ### Implementing `ConnectionInterface`
 
 A class that implements `ConnectionInterface` itself (a new driver, a decorator or a test fake) must implement every method, including `quoteIdentifier()`, or PHP refuses to load it. Keep one quoting rule per driver and use it in the connection, the SQL generator and the query builder, as `MySqlIdentifier` and `PgSqlIdentifier` do. `quoteIdentifier()` must:
@@ -2143,6 +2147,7 @@ For the underlying `boot` callback mechanism, see [Overriding another module's b
 
 - [marko/database-pgsql](/docs/packages/database-pgsql/) — PostgreSQL driver
 - [marko/database-mysql](/docs/packages/database-mysql/) — MySQL driver
+- [marko/database-sqlite](/docs/packages/database-sqlite/) — SQLite driver
 
 ## Read/Write Splitting
 

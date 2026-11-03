@@ -5,135 +5,18 @@ declare(strict_types=1);
 namespace Marko\Database\MySql\Query;
 
 use Marko\Database\Connection\ConnectionInterface;
-use Marko\Database\Connection\TransactionInterface;
-use Marko\Database\Exceptions\InvalidColumnException;
-use Marko\Database\Exceptions\LockException;
+use Marko\Database\Exceptions\InvalidJsonPathException;
 use Marko\Database\Exceptions\QueryException;
-use Marko\Database\Exceptions\UnionShapeMismatchException;
-use Marko\Database\Exceptions\UpsertException;
 use Marko\Database\MySql\Connection\MySqlServer;
 use Marko\Database\MySql\Exceptions\ServerVersionException;
 use Marko\Database\MySql\Sql\MySqlIdentifier;
-use Marko\Database\Query\IdentifierValidator;
 use Marko\Database\Query\JsonPathParser;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
-use Marko\Database\Query\QueryBuilderInterface;
-use Marko\Database\Query\UpsertValidator;
+use Marko\Database\Query\SqlQueryBuilder;
 
-class MySqlQueryBuilder implements QueryBuilderInterface
+class MySqlQueryBuilder extends SqlQueryBuilder
 {
-    private string $table = '';
-
-    private ?string $alias = null;
-
-    /**
-     * @var array<string>
-     */
-    private array $columns = ['*'];
-
-    /**
-     * @var array<array{column: string, operator: string, value: mixed, boolean: string}>
-     */
-    private array $wheres = [];
-
-    /**
-     * @var array<array{column: string, values: array, not: bool}>
-     */
-    private array $whereIns = [];
-
-    /**
-     * @var list<array{first: string, operator: string, second: string}>
-     */
-    private array $whereColumns = [];
-
-    /**
-     * @var list<array{subquery: QueryBuilderInterface, negate: bool}>
-     */
-    private array $whereExists = [];
-
-    /**
-     * @var array<array{path: string, value: mixed}>
-     */
-    private array $whereJsonContains = [];
-
-    /**
-     * @var array<array{path: string, negate: bool}>
-     */
-    private array $whereJsonPaths = [];
-
-    /**
-     * @var array<string>
-     */
-    private array $whereNulls = [];
-
-    /**
-     * @var array<string>
-     */
-    private array $whereNotNulls = [];
-
-    /**
-     * @var array<array{type: string, table: string, first: string, operator: string, second: string}>
-     */
-    private array $joins = [];
-
-    /**
-     * @var array<string>
-     */
-    private array $groups = [];
-
-    /**
-     * @var array{expression: string, bindings: array}|null
-     */
-    private ?array $havingClause = null;
-
-    /**
-     * @var array<array{column: string, direction: string, raw: bool}>
-     */
-    private array $orders = [];
-
-    private bool $distinct = false;
-
-    /**
-     * @var array<array{type: string, builder: QueryBuilderInterface}>
-     */
-    private array $unions = [];
-
-    private ?int $limitValue = null;
-
-    private ?int $offsetValue = null;
-
-    /**
-     * @var list<string>
-     */
-    private array $rawSelects = [];
-
-    /**
-     * @var list<mixed>
-     */
-    private array $rawSelectBindings = [];
-
-    /**
-     * @var list<array{expression: string, bindings: array<int, mixed>}>
-     */
-    private array $rawWheres = [];
-
-    /**
-     * Row lock requested with lockForUpdate() ('update') or sharedLock() ('share').
-     */
-    private ?string $lockMode = null;
-
-    private bool $skipLocked = false;
-
-    private bool $noWait = false;
-
-    /**
-     * @var array<int, mixed>
-     */
-    private array $bindings = [];
-
     private readonly MySqlServer $server;
-
-    private readonly QueryBuilderFactoryInterface $queryBuilderFactory;
 
     /**
      * @param MySqlServer|null $server The shared server check; built from $connection when omitted
@@ -141,733 +24,20 @@ class MySqlQueryBuilder implements QueryBuilderInterface
      *     receive; a MySqlQueryBuilderFactory on $connection and the same server check when omitted
      */
     public function __construct(
-        private readonly ConnectionInterface $connection,
+        ConnectionInterface $connection,
         ?MySqlServer $server = null,
         ?QueryBuilderFactoryInterface $queryBuilderFactory = null,
     ) {
         $this->server = $server ?? new MySqlServer($connection);
-        $this->queryBuilderFactory = $queryBuilderFactory ?? new MySqlQueryBuilderFactory($connection, $this->server);
-    }
 
-    /**
-     * @throws InvalidColumnException
-     */
-    public function table(
-        string $table,
-        ?string $alias = null,
-    ): static {
-        IdentifierValidator::assertValidIdentifier($table);
-
-        if ($alias !== null) {
-            IdentifierValidator::assertValidAlias($alias);
-        }
-
-        $this->table = $table;
-        $this->alias = $alias;
-
-        return $this;
-    }
-
-    public function select(
-        string ...$columns,
-    ): static {
-        $this->columns = $columns;
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function selectRaw(
-        string $expression,
-        array $bindings = [],
-    ): static {
-        IdentifierValidator::assertNoDangerousPatterns($expression, hashStartsComment: true);
-        $this->rawSelects[] = $expression;
-        array_push($this->rawSelectBindings, ...$bindings);
-
-        return $this;
-    }
-
-    public function distinct(): static
-    {
-        $this->distinct = true;
-
-        return $this;
-    }
-
-    /**
-     * @throws UnionShapeMismatchException
-     */
-    public function union(
-        QueryBuilderInterface $other,
-    ): static {
-        $leftCount = $this->getColumnCount();
-        $rightCount = $other->getColumnCount();
-
-        if ($leftCount !== $rightCount) {
-            throw UnionShapeMismatchException::columnCountMismatch($leftCount, $rightCount);
-        }
-
-        $this->unions[] = ['type' => 'UNION', 'builder' => $other];
-
-        return $this;
-    }
-
-    /**
-     * @throws UnionShapeMismatchException
-     */
-    public function unionAll(
-        QueryBuilderInterface $other,
-    ): static {
-        $leftCount = $this->getColumnCount();
-        $rightCount = $other->getColumnCount();
-
-        if ($leftCount !== $rightCount) {
-            throw UnionShapeMismatchException::columnCountMismatch($leftCount, $rightCount);
-        }
-
-        $this->unions[] = ['type' => 'UNION ALL', 'builder' => $other];
-
-        return $this;
-    }
-
-    public function getColumnCount(): int
-    {
-        return count($this->columns);
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function compileSubquery(
-        array &$bindings,
-    ): string {
-        $this->assertNotLocked('union()');
-
-        $savedBindings = $this->bindings;
-        $this->bindings = [];
-        $sql = $this->buildSelectSql();
-        $bindings = array_merge($bindings, $this->bindings);
-        $this->bindings = $savedBindings;
-
-        return $sql;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function where(
-        string $column,
-        string $operator,
-        mixed $value,
-    ): static {
-        if (!JsonPathParser::isJsonPath($column)) {
-            IdentifierValidator::assertValidIdentifier($column);
-        }
-
-        IdentifierValidator::assertValidOperator($operator);
-
-        $this->wheres[] = [
-            'column' => $column,
-            'operator' => $operator,
-            'value' => $value,
-            'boolean' => 'AND',
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function whereIn(
-        string $column,
-        array $values,
-    ): static {
-        IdentifierValidator::assertValidIdentifier($column);
-
-        $this->whereIns[] = [
-            'column' => $column,
-            'values' => $values,
-            'not' => false,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function whereNotIn(
-        string $column,
-        array $values,
-    ): static {
-        IdentifierValidator::assertValidIdentifier($column);
-
-        $this->whereIns[] = [
-            'column' => $column,
-            'values' => $values,
-            'not' => true,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function whereColumn(
-        string $first,
-        string $operator,
-        string $second,
-    ): static {
-        IdentifierValidator::assertValidIdentifier($first);
-        IdentifierValidator::assertValidColumnOperator($operator);
-        IdentifierValidator::assertValidIdentifier($second);
-
-        $this->whereColumns[] = [
-            'first' => $first,
-            'operator' => $operator,
-            'second' => $second,
-        ];
-
-        return $this;
-    }
-
-    public function whereExists(
-        callable|QueryBuilderInterface $subquery,
-    ): static {
-        $this->whereExists[] = [
-            'subquery' => $this->resolveSubquery($subquery),
-            'negate' => false,
-        ];
-
-        return $this;
-    }
-
-    public function whereNotExists(
-        callable|QueryBuilderInterface $subquery,
-    ): static {
-        $this->whereExists[] = [
-            'subquery' => $this->resolveSubquery($subquery),
-            'negate' => true,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function whereNull(
-        string $column,
-    ): static {
-        IdentifierValidator::assertValidIdentifier($column);
-
-        $this->whereNulls[] = $column;
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function whereNotNull(
-        string $column,
-    ): static {
-        IdentifierValidator::assertValidIdentifier($column);
-
-        $this->whereNotNulls[] = $column;
-
-        return $this;
-    }
-
-    public function whereJsonContains(
-        string $path,
-        mixed $value,
-    ): static {
-        $this->whereJsonContains[] = [
-            'path' => $path,
-            'value' => $value,
-        ];
-
-        return $this;
-    }
-
-    public function whereJsonExists(
-        string $path,
-    ): static {
-        $this->whereJsonPaths[] = [
-            'path' => $path,
-            'negate' => false,
-        ];
-
-        return $this;
-    }
-
-    public function whereJsonMissing(
-        string $path,
-    ): static {
-        $this->whereJsonPaths[] = [
-            'path' => $path,
-            'negate' => true,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function orWhere(
-        string $column,
-        string $operator,
-        mixed $value,
-    ): static {
-        if (!JsonPathParser::isJsonPath($column)) {
-            IdentifierValidator::assertValidIdentifier($column);
-        }
-
-        IdentifierValidator::assertValidOperator($operator);
-
-        $this->wheres[] = [
-            'column' => $column,
-            'operator' => $operator,
-            'value' => $value,
-            'boolean' => 'OR',
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function whereRaw(
-        string $expression,
-        array $bindings = [],
-    ): static {
-        IdentifierValidator::assertNoDangerousPatterns($expression, hashStartsComment: true);
-        $this->rawWheres[] = ['expression' => $expression, 'bindings' => $bindings];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function groupBy(
-        string ...$columns,
-    ): static {
-        foreach ($columns as $column) {
-            if (!IdentifierValidator::isValidIdentifier($column) && !preg_match(
-                '/^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$/',
-                $column,
-            )) {
-                throw InvalidColumnException::invalidColumn($column);
-            }
-        }
-
-        $this->groups = array_merge($this->groups, $columns);
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function having(
-        string $expression,
-        array $bindings = [],
-    ): static {
-        IdentifierValidator::assertNoDangerousPatterns($expression, hashStartsComment: true);
-
-        $this->havingClause = [
-            'expression' => $expression,
-            'bindings' => $bindings,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function join(
-        string $table,
-        string $first,
-        string $operator,
-        string $second,
-    ): static {
-        IdentifierValidator::assertValidIdentifier($table);
-        IdentifierValidator::assertValidIdentifier($first);
-        IdentifierValidator::assertValidOperator($operator);
-        IdentifierValidator::assertValidIdentifier($second);
-
-        $this->joins[] = [
-            'type' => 'INNER',
-            'table' => $table,
-            'first' => $first,
-            'operator' => $operator,
-            'second' => $second,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function leftJoin(
-        string $table,
-        string $first,
-        string $operator,
-        string $second,
-    ): static {
-        IdentifierValidator::assertValidIdentifier($table);
-        IdentifierValidator::assertValidIdentifier($first);
-        IdentifierValidator::assertValidOperator($operator);
-        IdentifierValidator::assertValidIdentifier($second);
-
-        $this->joins[] = [
-            'type' => 'LEFT',
-            'table' => $table,
-            'first' => $first,
-            'operator' => $operator,
-            'second' => $second,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function rightJoin(
-        string $table,
-        string $first,
-        string $operator,
-        string $second,
-    ): static {
-        IdentifierValidator::assertValidIdentifier($table);
-        IdentifierValidator::assertValidIdentifier($first);
-        IdentifierValidator::assertValidOperator($operator);
-        IdentifierValidator::assertValidIdentifier($second);
-
-        $this->joins[] = [
-            'type' => 'RIGHT',
-            'table' => $table,
-            'first' => $first,
-            'operator' => $operator,
-            'second' => $second,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function orderBy(
-        string $column,
-        string $direction = 'ASC',
-    ): static {
-        if (!JsonPathParser::isJsonPath($column)) {
-            IdentifierValidator::assertValidIdentifier($column);
-        }
-
-        $direction = strtoupper($direction);
-        if (!in_array($direction, ['ASC', 'DESC'], true)) {
-            $direction = 'ASC';
-        }
-
-        $this->orders[] = [
-            'column' => $column,
-            'direction' => $direction,
-            'raw' => false,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function orderByRaw(
-        string $expression,
-        string $direction = 'ASC',
-    ): static {
-        IdentifierValidator::assertNoDangerousPatterns($expression, hashStartsComment: true);
-
-        $direction = strtoupper($direction);
-        if (!in_array($direction, ['ASC', 'DESC'], true)) {
-            $direction = 'ASC';
-        }
-
-        $this->orders[] = [
-            'column' => $expression,
-            'direction' => $direction,
-            'raw' => true,
-        ];
-
-        return $this;
-    }
-
-    public function limit(
-        int $limit,
-    ): static {
-        $this->limitValue = $limit;
-
-        return $this;
-    }
-
-    public function offset(
-        int $offset,
-    ): static {
-        $this->offsetValue = $offset;
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function get(): array
-    {
-        if (!empty($this->unions)) {
-            $this->assertNotLocked('union()');
-
-            return $this->executeUnion();
-        }
-
-        $this->bindings = [];
-        $sql = $this->buildSelectSql();
-
-        return $this->connection->query($sql, $this->bindings);
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function first(): ?array
-    {
-        $this->limit(1);
-        $results = $this->get();
-
-        return $results[0] ?? null;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function insert(
-        array $data,
-        ?string $primaryKey = null,
-    ): int {
-        $this->bindings = [];
-
-        $columns = array_keys($data);
-        foreach ($columns as $col) {
-            IdentifierValidator::assertValidIdentifier((string) $col);
-        }
-
-        $quotedColumns = array_map(fn ($col) => $this->quoteIdentifier($col), $columns);
-        $placeholders = array_fill(0, count($data), '?');
-
-        $sql = sprintf(
-            'INSERT INTO %s (%s) VALUES (%s)',
-            $this->quoteIdentifier($this->table),
-            implode(', ', $quotedColumns),
-            implode(', ', $placeholders),
+        parent::__construct(
+            $connection,
+            $queryBuilderFactory ?? new MySqlQueryBuilderFactory($connection, $this->server),
         );
-
-        $this->bindings = array_values($data);
-        $this->connection->execute($sql, $this->bindings);
-
-        return $this->connection->lastInsertId();
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function update(
-        array $data,
-    ): int {
-        $this->bindings = [];
-
-        $sets = [];
-        foreach ($data as $column => $value) {
-            IdentifierValidator::assertValidIdentifier((string) $column);
-            $sets[] = sprintf('%s = ?', $this->quoteIdentifier($column));
-            $this->bindings[] = $value;
-        }
-
-        $sql = sprintf(
-            'UPDATE %s SET %s',
-            $this->compileTableReference(),
-            implode(', ', $sets),
-        );
-
-        $sql .= $this->buildWhereClause();
-
-        return $this->connection->execute($sql, $this->bindings);
-    }
-
-    public function delete(): int
-    {
-        $this->bindings = [];
-
-        $sql = sprintf(
-            'DELETE FROM %s',
-            $this->compileTableReference(),
-        );
-
-        $sql .= $this->buildWhereClause();
-
-        return $this->connection->execute($sql, $this->bindings);
-    }
-
-    public function count(?string $column = null): int
-    {
-        $this->assertNotLocked('count()');
-
-        $expr = $column !== null
-            ? 'COUNT(' . $this->quoteIdentifier($column) . ') as aggregate'
-            : 'COUNT(*) as aggregate';
-
-        return (int) $this->runAggregate($expr);
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function min(string $column): int|float|null
-    {
-        $this->assertNotLocked('min()');
-
-        if (!IdentifierValidator::isValidIdentifier($column)) {
-            throw InvalidColumnException::invalidColumn($column);
-        }
-
-        return $this->runAggregate('MIN(' . $this->quoteIdentifier($column) . ') as aggregate');
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function max(string $column): int|float|null
-    {
-        $this->assertNotLocked('max()');
-
-        if (!IdentifierValidator::isValidIdentifier($column)) {
-            throw InvalidColumnException::invalidColumn($column);
-        }
-
-        return $this->runAggregate('MAX(' . $this->quoteIdentifier($column) . ') as aggregate');
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function sum(string $column): int|float|null
-    {
-        $this->assertNotLocked('sum()');
-
-        if (!IdentifierValidator::isValidIdentifier($column)) {
-            throw InvalidColumnException::invalidColumn($column);
-        }
-
-        return $this->runAggregate('SUM(' . $this->quoteIdentifier($column) . ') as aggregate');
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    public function avg(string $column): int|float|null
-    {
-        $this->assertNotLocked('avg()');
-
-        if (!IdentifierValidator::isValidIdentifier($column)) {
-            throw InvalidColumnException::invalidColumn($column);
-        }
-
-        return $this->runAggregate('AVG(' . $this->quoteIdentifier($column) . ') as aggregate');
-    }
-
-    public function raw(
-        string $sql,
-        array $bindings = [],
-    ): array {
-        return $this->connection->query($sql, $bindings);
-    }
-
-    public function lockForUpdate(): static
-    {
-        $this->lockMode = 'update';
-
-        return $this;
-    }
-
-    public function sharedLock(): static
-    {
-        $this->lockMode = 'share';
-
-        return $this;
-    }
-
-    public function skipLocked(): static
-    {
-        $this->skipLocked = true;
-
-        return $this;
-    }
-
-    public function noWait(): static
-    {
-        $this->noWait = true;
-
-        return $this;
-    }
-
-    /**
-     * @throws InvalidColumnException|UpsertException
-     */
-    public function upsert(
-        array $rows,
-        array $uniqueBy,
-        ?array $update = null,
-    ): int {
-        $updateColumns = UpsertValidator::validate($rows, $uniqueBy, $update);
-        $rows = array_values($rows);
-        $columns = array_map('strval', array_keys($rows[0]));
-
-        $bindings = [];
-        foreach ($rows as $row) {
-            foreach ($row as $value) {
-                $bindings[] = $value;
-            }
-        }
-
-        $placeholderRow = '(' . implode(', ', array_fill(0, count($columns), '?')) . ')';
-
-        $sql = sprintf(
-            'INSERT INTO %s (%s) VALUES %s %s',
-            $this->quoteIdentifier($this->table),
-            implode(', ', array_map(fn (string $column): string => $this->quoteIdentifier($column), $columns)),
-            implode(', ', array_fill(0, count($rows), $placeholderRow)),
-            $this->buildUpsertConflictClause(array_values($uniqueBy), $updateColumns),
-        );
-
-        return $this->connection->execute($sql, $bindings);
     }
 
     /**
      * Quote a database identifier through the driver's one quoting rule, MySqlIdentifier.
-     *
-     * @param string $identifier The identifier to quote
-     * @return string The quoted identifier
      */
     protected function quoteIdentifier(
         string $identifier,
@@ -875,126 +45,39 @@ class MySqlQueryBuilder implements QueryBuilderInterface
         return MySqlIdentifier::quote($identifier);
     }
 
-    /**
-     * The FROM / UPDATE / DELETE target: the quoted table, plus `AS alias` when table() was given one.
-     */
-    private function compileTableReference(): string
+    protected function hashStartsComment(): bool
     {
-        $reference = $this->quoteIdentifier($this->table);
-
-        if ($this->alias !== null) {
-            $reference .= ' AS ' . $this->quoteIdentifier($this->alias);
-        }
-
-        return $reference;
+        return true;
     }
 
-    /**
-     * A builder passed to whereExists() is used as is; a callable configures a fresh builder on this connection.
-     */
-    private function resolveSubquery(
-        callable|QueryBuilderInterface $subquery,
-    ): QueryBuilderInterface {
-        if ($subquery instanceof QueryBuilderInterface) {
-            return $subquery;
-        }
-
-        $builder = $this->queryBuilderFactory->create();
-        $subquery($builder);
-
-        return $builder;
+    protected function offsetOnlyLimitClause(): string
+    {
+        return ' LIMIT 18446744073709551615';
     }
 
-    /**
-     * Execute an aggregate query and return the raw value or null.
-     *
-     * Reuses buildWhereClause() so any WHERE conditions are respected.
-     *
-     * @return int|float|null
-     */
-    private function runAggregate(string $aggregateExpr): int|float|null
-    {
-        $this->bindings = [];
+    protected function insertAndReturnKey(
+        string $sql,
+        array $bindings,
+        string $table,
+        string $primaryKey,
+    ): int {
+        $this->connection->execute($sql, $bindings);
 
-        $sql = sprintf(
-            'SELECT %s FROM %s',
-            $aggregateExpr,
-            $this->compileTableReference(),
-        );
-
-        $sql .= $this->buildWhereClause();
-
-        $result = $this->connection->query($sql, $this->bindings);
-        $value = $result[0]['aggregate'] ?? null;
-
-        if ($value === null) {
-            return null;
-        }
-
-        return is_int($value + 0) ? (int) $value : (float) $value;
-    }
-
-    /**
-     * @throws InvalidColumnException
-     */
-    private function executeUnion(): array
-    {
-        $bindings = [];
-
-        // Build left subquery without outer ORDER BY / LIMIT
-        $savedOrders = $this->orders;
-        $savedLimit = $this->limitValue;
-        $savedOffset = $this->offsetValue;
-        $this->orders = [];
-        $this->limitValue = null;
-        $this->offsetValue = null;
-        $this->bindings = [];
-
-        $leftSql = $this->buildSelectSql();
-        $bindings = array_merge($bindings, $this->bindings);
-
-        $this->orders = $savedOrders;
-        $this->limitValue = $savedLimit;
-        $this->offsetValue = $savedOffset;
-
-        $parts = ['(' . $leftSql . ')'];
-
-        foreach ($this->unions as $union) {
-            $rightBindings = [];
-            $rightSql = $union['builder']->compileSubquery($rightBindings);
-            $bindings = array_merge($bindings, $rightBindings);
-            $parts[] = $union['type'];
-            $parts[] = '(' . $rightSql . ')';
-        }
-
-        $sql = implode(' ', $parts);
-        $sql .= $this->buildOrderByClause();
-        $sql .= $this->buildLimitOffsetClause();
-
-        return $this->connection->query($sql, $bindings);
-    }
-
-    /**
-     * Build a MySQL JSON path string (e.g. "$.user.name") from segments.
-     *
-     * @param string[] $segments
-     */
-    private function buildMySqlJsonPath(array $segments): string
-    {
-        return '$.' . implode('.', $segments);
+        return $this->connection->lastInsertId();
     }
 
     /**
      * Compile a JSON path expression to MySQL SQL (JSON_EXTRACT or JSON_UNQUOTE).
+     *
+     * @throws InvalidJsonPathException
      */
-    private function compileJsonExtract(string $expression): string
+    protected function compileJsonPath(string $expression): string
     {
         $path = JsonPathParser::parse($expression);
-        $jsonPath = $this->buildMySqlJsonPath($path->segments);
         $extract = sprintf(
             "JSON_EXTRACT(%s, '%s')",
             $this->quoteIdentifier($path->column),
-            $jsonPath,
+            $this->buildMySqlJsonPath($path->segments),
         );
 
         if ($path->operator === '->>') {
@@ -1005,322 +88,35 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     }
 
     /**
-     * Compile a single SELECT column expression into quoted SQL.
-     *
-     * @throws InvalidColumnException When the expression is invalid
+     * @throws InvalidJsonPathException
      */
-    private function compileColumnExpression(
-        string $expression,
-    ): string {
-        // Split off alias first (AS keyword)
-        $aliasParts = preg_split('/\s+[Aa][Ss]\s+/', $expression, 2);
-        $colPart = trim($aliasParts[0] ?? $expression);
-        $alias = isset($aliasParts[1]) ? trim($aliasParts[1]) : null;
+    protected function compileJsonContains(string $path): string
+    {
+        if (JsonPathParser::isJsonPath($path)) {
+            $parsed = JsonPathParser::parse($path);
 
-        // JSON path in SELECT
-        if (JsonPathParser::isJsonPath($colPart)) {
-            $compiledColumn = $this->compileJsonExtract($colPart);
-
-            if ($alias !== null) {
-                if (!IdentifierValidator::isValidIdentifier($alias)) {
-                    throw InvalidColumnException::invalidAlias($alias);
-                }
-
-                return $compiledColumn . ' AS ' . $this->quoteIdentifier($alias);
-            }
-
-            return $compiledColumn;
+            return sprintf(
+                "JSON_CONTAINS(JSON_EXTRACT(%s, '%s'), ?)",
+                $this->quoteIdentifier($parsed->column),
+                $this->buildMySqlJsonPath($parsed->segments),
+            );
         }
 
-        $parsed = IdentifierValidator::parseSelectExpression($expression);
-        $column = $parsed['column'];
-        $alias = $parsed['alias'];
-
-        $compiledColumn = preg_match('/^(COUNT|SUM|MIN|MAX|AVG)\(/i', $column)
-            ? $column
-            : $this->quoteIdentifier($column);
-
-        if ($alias !== null) {
-            return $compiledColumn . ' AS ' . $this->quoteIdentifier($alias);
-        }
-
-        return $compiledColumn;
+        return sprintf('JSON_CONTAINS(%s, ?)', $this->quoteIdentifier($path));
     }
 
     /**
-     * @throws InvalidColumnException
+     * @throws InvalidJsonPathException
      */
-    private function buildSelectSql(): string
+    protected function compileJsonPathExists(string $path): string
     {
-        $quotedColumns = array_map(function (string $col): string {
-            if ($col === '*') {
-                return '*';
-            }
+        $parsed = JsonPathParser::parse($path);
 
-            return $this->compileColumnExpression($col);
-        }, $this->columns);
-
-        $selectParts = array_merge($quotedColumns, $this->rawSelects);
-
-        foreach ($this->rawSelectBindings as $binding) {
-            $this->bindings[] = $binding;
-        }
-
-        $keyword = $this->distinct ? 'SELECT DISTINCT' : 'SELECT';
-
-        $sql = sprintf(
-            '%s %s FROM %s',
-            $keyword,
-            implode(', ', $selectParts),
-            $this->compileTableReference(),
+        return sprintf(
+            "JSON_CONTAINS_PATH(%s, 'one', '%s')",
+            $this->quoteIdentifier($parsed->column),
+            $this->buildMySqlJsonPath($parsed->segments),
         );
-
-        $sql .= $this->buildJoinClause();
-        $sql .= $this->buildWhereClause();
-        $sql .= $this->buildGroupByClause();
-        $sql .= $this->buildHavingClause();
-        $sql .= $this->buildOrderByClause();
-        $sql .= $this->buildLimitOffsetClause();
-        $sql .= $this->buildLockClause();
-
-        return $sql;
-    }
-
-    private function buildGroupByClause(): string
-    {
-        if (empty($this->groups)) {
-            return '';
-        }
-
-        $columns = array_map(
-            fn (string $col) => $this->quoteIdentifier($col),
-            $this->groups,
-        );
-
-        return ' GROUP BY ' . implode(', ', $columns);
-    }
-
-    private function buildHavingClause(): string
-    {
-        if ($this->havingClause === null) {
-            return '';
-        }
-
-        $this->bindings = array_merge($this->bindings, $this->havingClause['bindings']);
-
-        return ' HAVING ' . $this->havingClause['expression'];
-    }
-
-    private function buildJoinClause(): string
-    {
-        if (empty($this->joins)) {
-            return '';
-        }
-
-        $sql = '';
-        foreach ($this->joins as $join) {
-            $sql .= sprintf(
-                ' %s JOIN %s ON %s %s %s',
-                $join['type'],
-                $this->quoteIdentifier($join['table']),
-                $this->quoteIdentifier($join['first']),
-                $join['operator'],
-                $this->quoteIdentifier($join['second']),
-            );
-        }
-
-        return $sql;
-    }
-
-    private function buildWhereClause(): string
-    {
-        $conditions = [];
-
-        foreach ($this->wheres as $where) {
-            $columnExpr = JsonPathParser::isJsonPath($where['column'])
-                ? $this->compileJsonExtract($where['column'])
-                : $this->quoteIdentifier($where['column']);
-
-            $condition = sprintf('%s %s ?', $columnExpr, $where['operator']);
-            $this->bindings[] = $where['value'];
-
-            if (!empty($conditions)) {
-                $condition = $where['boolean'] . ' ' . $condition;
-            }
-
-            $conditions[] = $condition;
-        }
-
-        foreach ($this->whereIns as $whereIn) {
-            if ($whereIn['values'] === []) {
-                $condition = $whereIn['not'] ? '1 = 1' : '1 = 0';
-            } else {
-                $placeholders = array_fill(0, count($whereIn['values']), '?');
-                $condition = sprintf(
-                    '%s %s (%s)',
-                    $this->quoteIdentifier($whereIn['column']),
-                    $whereIn['not'] ? 'NOT IN' : 'IN',
-                    implode(', ', $placeholders),
-                );
-                $this->bindings = array_merge($this->bindings, $whereIn['values']);
-            }
-
-            if (!empty($conditions)) {
-                $condition = 'AND ' . $condition;
-            }
-
-            $conditions[] = $condition;
-        }
-
-        foreach ($this->whereNulls as $column) {
-            $condition = sprintf('%s IS NULL', $this->quoteIdentifier($column));
-
-            if (!empty($conditions)) {
-                $condition = 'AND ' . $condition;
-            }
-
-            $conditions[] = $condition;
-        }
-
-        foreach ($this->whereNotNulls as $column) {
-            $condition = sprintf('%s IS NOT NULL', $this->quoteIdentifier($column));
-
-            if (!empty($conditions)) {
-                $condition = 'AND ' . $condition;
-            }
-
-            $conditions[] = $condition;
-        }
-
-        foreach ($this->whereColumns as $whereColumn) {
-            $condition = sprintf(
-                '%s %s %s',
-                $this->quoteIdentifier($whereColumn['first']),
-                $whereColumn['operator'],
-                $this->quoteIdentifier($whereColumn['second']),
-            );
-
-            if (!empty($conditions)) {
-                $condition = 'AND ' . $condition;
-            }
-
-            $conditions[] = $condition;
-        }
-
-        foreach ($this->whereJsonContains as $item) {
-            $path = $item['path'];
-            $jsonValue = json_encode($item['value']);
-
-            if (JsonPathParser::isJsonPath($path)) {
-                $parsed = JsonPathParser::parse($path);
-                $jsonPath = $this->buildMySqlJsonPath($parsed->segments);
-                $columnSql = sprintf(
-                    "JSON_CONTAINS(JSON_EXTRACT(%s, '%s'), ?)",
-                    $this->quoteIdentifier($parsed->column),
-                    $jsonPath,
-                );
-            } else {
-                $columnSql = sprintf('JSON_CONTAINS(%s, ?)', $this->quoteIdentifier($path));
-            }
-
-            $this->bindings[] = $jsonValue;
-
-            if (!empty($conditions)) {
-                $columnSql = 'AND ' . $columnSql;
-            }
-
-            $conditions[] = $columnSql;
-        }
-
-        foreach ($this->whereJsonPaths as $item) {
-            $path = $item['path'];
-            $parsed = JsonPathParser::parse($path);
-            $jsonPath = $this->buildMySqlJsonPath($parsed->segments);
-
-            $expr = sprintf(
-                "JSON_CONTAINS_PATH(%s, 'one', '%s')",
-                $this->quoteIdentifier($parsed->column),
-                $jsonPath,
-            );
-
-            if ($item['negate']) {
-                $expr = 'NOT ' . $expr;
-            }
-
-            if (!empty($conditions)) {
-                $expr = 'AND ' . $expr;
-            }
-
-            $conditions[] = $expr;
-        }
-
-        foreach ($this->whereExists as $exists) {
-            $subqueryBindings = [];
-            $condition = sprintf(
-                '%s (%s)',
-                $exists['negate'] ? 'NOT EXISTS' : 'EXISTS',
-                $exists['subquery']->compileSubquery($subqueryBindings),
-            );
-            $this->bindings = array_merge($this->bindings, $subqueryBindings);
-
-            if (!empty($conditions)) {
-                $condition = 'AND ' . $condition;
-            }
-
-            $conditions[] = $condition;
-        }
-
-        foreach ($this->rawWheres as $item) {
-            $expr = $item['expression'];
-            $this->bindings = array_merge($this->bindings, $item['bindings']);
-
-            if (!empty($conditions)) {
-                $expr = 'AND ' . $expr;
-            }
-
-            $conditions[] = $expr;
-        }
-
-        if (empty($conditions)) {
-            return '';
-        }
-
-        return ' WHERE ' . implode(' ', $conditions);
-    }
-
-    private function buildOrderByClause(): string
-    {
-        if (empty($this->orders)) {
-            return '';
-        }
-
-        $orders = array_map(
-            fn ($order) => sprintf(
-                '%s %s',
-                $order['raw'] ? $order['column'] : $this->quoteIdentifier($order['column']),
-                $order['direction'],
-            ),
-            $this->orders,
-        );
-
-        return ' ORDER BY ' . implode(', ', $orders);
-    }
-
-    private function buildLimitOffsetClause(): string
-    {
-        $sql = '';
-
-        if ($this->limitValue !== null) {
-            $sql .= ' LIMIT ' . $this->limitValue;
-        } elseif ($this->offsetValue !== null) {
-            $sql .= ' LIMIT 18446744073709551615';
-        }
-
-        if ($this->offsetValue !== null) {
-            $sql .= ' OFFSET ' . $this->offsetValue;
-        }
-
-        return $sql;
     }
 
     /**
@@ -1334,7 +130,7 @@ class MySqlQueryBuilder implements QueryBuilderInterface
      * @param list<string> $uniqueBy
      * @param list<string> $updateColumns
      */
-    private function buildUpsertConflictClause(
+    protected function buildUpsertConflictClause(
         array $uniqueBy,
         array $updateColumns,
     ): string {
@@ -1357,27 +153,19 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     }
 
     /**
-     * Compile the row-lock clause, appended after LIMIT/OFFSET.
-     *
      * A shared lock compiles to LOCK IN SHARE MODE on both servers. With a
      * SKIP LOCKED / NOWAIT modifier the servers disagree: MySQL accepts the
      * modifier only after FOR SHARE (8.0+), MariaDB only after LOCK IN SHARE
      * MODE (NOWAIT 10.3+, SKIP LOCKED 10.6+). Only that case asks MySqlServer
      * which server this is, so other queries never read the server version.
      *
-     * @throws LockException|QueryException|ServerVersionException
+     * @throws QueryException|ServerVersionException
      */
-    private function buildLockClause(): string
-    {
-        $modifier = $this->buildLockModifier();
-
-        if ($this->lockMode === null) {
-            return '';
-        }
-
-        $this->assertLockInTransaction();
-
-        if ($this->lockMode === 'update') {
+    protected function compileLockClause(
+        string $lockMode,
+        string $modifier,
+    ): string {
+        if ($lockMode === 'update') {
             return ' FOR UPDATE' . $modifier;
         }
 
@@ -1389,50 +177,12 @@ class MySqlQueryBuilder implements QueryBuilderInterface
     }
 
     /**
-     * @throws LockException
-     */
-    private function buildLockModifier(): string
-    {
-        if ($this->skipLocked && $this->noWait) {
-            throw LockException::conflictingModifiers();
-        }
-
-        if ($this->lockMode === null && $this->skipLocked) {
-            throw LockException::modifierWithoutLock('skipLocked');
-        }
-
-        if ($this->lockMode === null && $this->noWait) {
-            throw LockException::modifierWithoutLock('noWait');
-        }
-
-        return match (true) {
-            $this->skipLocked => ' SKIP LOCKED',
-            $this->noWait => ' NOWAIT',
-            default => '',
-        };
-    }
-
-    /**
-     * A lock taken outside a transaction is released as soon as the SELECT
-     * finishes, which is almost always a bug.
+     * Build a MySQL JSON path string (e.g. "$.user.name") from segments.
      *
-     * @throws LockException
+     * @param string[] $segments
      */
-    private function assertLockInTransaction(): void
+    private function buildMySqlJsonPath(array $segments): string
     {
-        if (!$this->connection instanceof TransactionInterface || !$this->connection->inTransaction()) {
-            throw LockException::outsideTransaction($this->table);
-        }
-    }
-
-    /**
-     * @throws LockException
-     */
-    private function assertNotLocked(
-        string $operation,
-    ): void {
-        if ($this->lockMode !== null) {
-            throw LockException::unsupportedOperation($operation);
-        }
+        return '$.' . implode('.', $segments);
     }
 }

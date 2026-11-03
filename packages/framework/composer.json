@@ -18,6 +18,7 @@
         "marko/database": "Database abstraction layer",
         "marko/database-mysql": "MySQL database driver",
         "marko/database-pgsql": "PostgreSQL database driver",
+        "marko/database-sqlite": "SQLite database driver (zero-infrastructure; single file or :memory:)",
         "marko/cache": "Cache abstraction layer",
         "marko/cache-file": "File-based cache driver",
         "marko/session": "Session abstraction layer",

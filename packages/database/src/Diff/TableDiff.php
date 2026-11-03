@@ -8,6 +8,7 @@ use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\Schema\Column;
 use Marko\Database\Schema\ForeignKey;
 use Marko\Database\Schema\Index;
+use Marko\Database\Schema\Table;
 
 readonly class TableDiff
 {
@@ -24,6 +25,9 @@ readonly class TableDiff
      * @param list<string> $currentPrimaryKey The columns of the table's current primary key in the database, in column
      *                                       order; empty when the table has none. Context for the SQL generators,
      *                                       not a change.
+     * @param ?Table $currentTable The table as the database has it now: every column, index (including unmanaged
+     *                             ones) and foreign key. Context for the SQL generators (a table rebuild
+     *                             re-creates all of it), not a change.
      */
     public function __construct(
         public string $tableName,
@@ -36,6 +40,7 @@ readonly class TableDiff
         public array $foreignKeysToDrop = [],
         public array $columnsToModifyFrom = [],
         public array $currentPrimaryKey = [],
+        public ?Table $currentTable = null,
     ) {}
 
     /**
@@ -115,6 +120,8 @@ readonly class TableDiff
             columnsToDrop: $this->columnsToDrop,
             indexesToDrop: $this->indexesToDrop,
             foreignKeysToDrop: $this->foreignKeysToDrop,
+            currentPrimaryKey: $this->currentPrimaryKey,
+            currentTable: $this->currentTable,
         );
     }
 

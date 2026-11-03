@@ -212,7 +212,7 @@ describe('PgSqlGenerator', function (): void {
         $stringDefault = new Column(name: 'status', type: 'string', length: 20, default: 'pending');
         $intDefault = new Column(name: 'count', type: 'integer', default: 0);
         $boolDefault = new Column(name: 'active', type: 'boolean', default: true);
-        $nullDefault = new Column(name: 'notes', type: 'text', nullable: true, default: null);
+        $nullDefault = new Column(name: 'notes', type: 'text', nullable: true);
 
         $stringSql = $this->generator->generateAddColumn('test', $stringDefault);
         $intSql = $this->generator->generateAddColumn('test', $intDefault);
@@ -384,7 +384,7 @@ describe('PgSqlGenerator', function (): void {
 
     it('generates ALTER COLUMN SET NOT NULL and DROP NOT NULL', function (): void {
         // From nullable to non-nullable
-        $newColumn = new Column(name: 'email', type: 'string', length: 255, nullable: false);
+        $newColumn = new Column(name: 'email', type: 'string', length: 255);
         $oldColumn = new Column(name: 'email', type: 'string', length: 255, nullable: true);
 
         $sql = $this->generator->generateModifyColumn('users', $newColumn, $oldColumn);
@@ -393,7 +393,7 @@ describe('PgSqlGenerator', function (): void {
 
         // From non-nullable to nullable
         $newColumn2 = new Column(name: 'email', type: 'string', length: 255, nullable: true);
-        $oldColumn2 = new Column(name: 'email', type: 'string', length: 255, nullable: false);
+        $oldColumn2 = new Column(name: 'email', type: 'string', length: 255);
 
         $sql2 = $this->generator->generateModifyColumn('users', $newColumn2, $oldColumn2);
 
@@ -640,7 +640,7 @@ describe('PgSqlGenerator', function (): void {
             new Column(name: 'email', type: 'string', unique: true),
         ));
 
-        expect($statements)->toBe([]);
+        expect($statements)->toBeEmpty();
     });
 
     it('throws instead of returning an empty ALTER TABLE from generateModifyColumn', function (): void {
@@ -1376,3 +1376,29 @@ function pgsqlLongNameDiff(): SchemaDiff
         [$databaseTable->name => $databaseTable],
     );
 }
+
+describe('PgSqlGenerator with a current table', function (): void {
+    it('leaves pgsql and mysql generator output unchanged', function (): void {
+        $generator = new PgSqlGenerator();
+        $columnsToAdd = [new Column(name: 'slug', type: 'string', length: 100)];
+        $indexesToAdd = [new Index(name: 'idx_slug', columns: ['slug'])];
+        $current = new Table(name: 'posts', columns: [new Column(name: 'id', type: 'integer', primaryKey: true)]);
+
+        $without = new SchemaDiff(tablesToAlter: ['posts' => new TableDiff(
+            tableName: 'posts',
+            columnsToAdd: $columnsToAdd,
+            indexesToAdd: $indexesToAdd,
+        )]);
+        $with = new SchemaDiff(tablesToAlter: [
+            'posts' => new TableDiff(
+                tableName: 'posts',
+                columnsToAdd: $columnsToAdd,
+                indexesToAdd: $indexesToAdd,
+                currentTable: $current,
+            ),
+        ]);
+
+        expect($generator->generateUp($with))->toBe($generator->generateUp($without))
+            ->and($generator->generateDown($with))->toBe($generator->generateDown($without));
+    });
+});

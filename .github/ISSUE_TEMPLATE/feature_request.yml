@@ -66,6 +66,7 @@ body:
         - database-mysql
         - database-pgsql
         - database-readwrite
+        - database-sqlite
         - debugbar
         - devai
         - devserver

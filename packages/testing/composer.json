@@ -27,6 +27,7 @@
     "require-dev": {
         "marko/cache-array": "self.version",
         "marko/database": "self.version",
+        "marko/database-sqlite": "self.version",
         "marko/filesystem-local": "self.version",
         "marko/forms": "self.version",
         "pestphp/pest": "^4.0"

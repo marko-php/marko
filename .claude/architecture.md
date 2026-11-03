@@ -167,6 +167,7 @@ When your code depends on `marko/log` (interface) instead of `marko/log-file` (d
 | `marko/database` | Interface | `ConnectionInterface`, query builder interfaces |
 | `marko/database-mysql` | Driver | MySQL/MariaDB implementation |
 | `marko/database-pgsql` | Driver | PostgreSQL implementation |
+| `marko/database-sqlite` | Driver | SQLite implementation (file or in-memory; table-rebuild ALTERs) |
 | `marko/database-readwrite` | Driver | Read/write split decorator; routes reads to replicas, writes to primary |
 
 ### Caching
@@ -714,7 +715,7 @@ interface ResettableInterface
 
 `reset()` must be non-destructive — it clears the instance's in-memory per-request tracking without destroying anything persisted (e.g. resetting a session service forgets which session it was serving, it does not delete the stored session). A long-running process discovers what to reset via `Container::resolvedInstances(ResettableInterface::class)`, which returns only instances the container has already built — never triggering resolution — instead of requiring a hardcoded list. `resolvedInstances()` lives on the concrete `Container` class, not on `ContainerInterface`.
 
-Current implementors: `Session`, `AuthManager`, `SessionGuard` and `RequestCookieJar` (`marko/authentication`), `CurrentRequest` and `TokenGuard` (`marko/authentication-token`), `ReadWriteConnection` (`marko/database-readwrite`), `MySqlConnection` (`marko/database-mysql`), `PgSqlConnection` (`marko/database-pgsql`), and `Inertia` (`marko/inertia`).
+Current implementors: `Session`, `AuthManager`, `SessionGuard` and `RequestCookieJar` (`marko/authentication`), `CurrentRequest` and `TokenGuard` (`marko/authentication-token`), `ReadWriteConnection` (`marko/database-readwrite`), `MySqlConnection` (`marko/database-mysql`), `PgSqlConnection` (`marko/database-pgsql`), `SqliteConnection` (`marko/database-sqlite`), and `Inertia` (`marko/inertia`).
 
 ### Preferences
 

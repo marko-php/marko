@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Marko\Database\Tests\Feature;
 
+use Marko\Database\Config\DatabaseTimezoneConfig;
 use Marko\Database\Diff\SchemaDiff;
 use Marko\Database\Diff\SqlGeneratorInterface;
 use Marko\Database\Diff\TableDiff;
+use Marko\Database\Exceptions\MigrationException;
 use Marko\Database\MySql\Sql\MySqlGenerator;
 use Marko\Database\PgSql\Sql\PgSqlGenerator;
 use Marko\Database\Schema\Column;
@@ -14,11 +16,13 @@ use Marko\Database\Schema\ForeignKey;
 use Marko\Database\Schema\Index;
 use Marko\Database\Schema\IndexType;
 use Marko\Database\Schema\Table;
+use Marko\Database\Sqlite\Sql\SqliteGenerator;
 
 describe('Driver Parity', function (): void {
     beforeEach(function (): void {
         $this->mysqlGenerator = new MySqlGenerator();
         $this->pgsqlGenerator = new PgSqlGenerator();
+        $this->sqliteGenerator = new SqliteGenerator(DatabaseTimezoneConfig::fromName('UTC'));
     });
 
     it('works identically on MySQL and PostgreSQL for table creation', function (): void {
@@ -178,7 +182,8 @@ describe('Driver Parity', function (): void {
         // Both generators should implement the same interface
         expect($this->mysqlGenerator)
             ->toBeInstanceOf(SqlGeneratorInterface::class)
-            ->and($this->pgsqlGenerator)->toBeInstanceOf(SqlGeneratorInterface::class);
+            ->and($this->pgsqlGenerator)->toBeInstanceOf(SqlGeneratorInterface::class)
+            ->and($this->sqliteGenerator)->toBeInstanceOf(SqlGeneratorInterface::class);
 
         // Both should have all required methods
         $requiredMethods = [
@@ -198,7 +203,8 @@ describe('Driver Parity', function (): void {
         foreach ($requiredMethods as $method) {
             expect(method_exists($this->mysqlGenerator, $method))
                 ->toBeTrue()
-                ->and(method_exists($this->pgsqlGenerator, $method))->toBeTrue();
+                ->and(method_exists($this->pgsqlGenerator, $method))->toBeTrue()
+                ->and(method_exists($this->sqliteGenerator, $method))->toBeTrue();
         }
     });
 
@@ -209,15 +215,59 @@ describe('Driver Parity', function (): void {
         $pgsqlUp = $this->pgsqlGenerator->generateUp($emptyDiff);
 
         expect($mysqlUp)
-            ->toBe([])
-            ->and($pgsqlUp)->toBe([]);
+            ->toBeEmpty()
+            ->and($pgsqlUp)->toBeEmpty();
 
         $mysqlDown = $this->mysqlGenerator->generateDown($emptyDiff);
         $pgsqlDown = $this->pgsqlGenerator->generateDown($emptyDiff);
 
         expect($mysqlDown)
-            ->toBe([])
-            ->and($pgsqlDown)->toBe([]);
+            ->toBeEmpty()
+            ->and($pgsqlDown)->toBeEmpty();
+    });
+
+    it('includes sqlite in the cross-driver parity tests', function (): void {
+        $table = new Table(
+            name: 'users',
+            columns: [
+                new Column(name: 'id', type: 'INT', primaryKey: true, autoIncrement: true),
+                new Column(name: 'name', type: 'VARCHAR', length: 255),
+                new Column(name: 'is_active', type: 'BOOLEAN', default: true),
+            ],
+            indexes: [
+                new Index(name: 'idx_name', columns: ['name'], type: IndexType::Btree),
+            ],
+        );
+        $diff = new SchemaDiff(tablesToCreate: [$table]);
+        $index = new Index(name: 'idx_email', columns: ['email'], type: IndexType::Unique);
+        $foreignKey = new ForeignKey(
+            name: 'fk_author_id',
+            columns: ['author_id'],
+            referencedTable: 'users',
+            referencedColumns: ['id'],
+            onDelete: 'CASCADE',
+        );
+        $up = $this->sqliteGenerator->generateUp($diff);
+
+        // Like PostgreSQL: one CREATE TABLE plus a separate CREATE INDEX, and one DROP TABLE for down
+        expect($up)->toHaveCount(2)
+            ->and($up[0])->toContain('CREATE TABLE')->toContain('"id"')->toContain('DEFAULT 1')
+            ->and($up[1])->toContain('CREATE INDEX')
+            ->and($this->sqliteGenerator->generateDown($diff))->toHaveCount(1)
+            ->and($this->sqliteGenerator->generateDown($diff)[0])->toContain('DROP TABLE')
+            ->and($this->sqliteGenerator->generateUp(new SchemaDiff()))->toBeEmpty()
+            ->and($this->sqliteGenerator->generateAddIndex('users', $index))
+            ->toContain('CREATE UNIQUE INDEX')->toContain('idx_email')
+            // SQLite changes foreign keys and column definitions only by rebuilding the table
+            ->and(fn () => $this->sqliteGenerator->generateAddForeignKey('posts', $foreignKey))
+            ->toThrow(MigrationException::class)
+            ->and(fn () => $this->sqliteGenerator->generateDropForeignKey('posts', 'fk_author_id'))
+            ->toThrow(MigrationException::class)
+            ->and(fn () => $this->sqliteGenerator->generateModifyColumn(
+                'posts',
+                new Column(name: 'title', type: 'varchar', length: 500),
+                new Column(name: 'title', type: 'varchar', nullable: true),
+            ))->toThrow(MigrationException::class);
     });
 
     describe('column modifications', function (): void {

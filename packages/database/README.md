@@ -8,7 +8,7 @@ Entity-driven schema definition with the Data Mapper pattern for the Marko frame
 composer require marko/database
 ```
 
-You typically install a driver package (like `marko/database-pgsql`) which requires this automatically.
+You typically install a driver package (like `marko/database-pgsql` or `marko/database-sqlite`) which requires this automatically.
 
 ## Quick Example
 

@@ -88,7 +88,7 @@ describe('MySqlGenerator', function (): void {
         $generator = new MySqlGenerator();
 
         $oldColumn = new Column(name: 'name', type: 'string', length: 100, nullable: true);
-        $newColumn = new Column(name: 'name', type: 'string', length: 255, nullable: false);
+        $newColumn = new Column(name: 'name', type: 'string', length: 255);
 
         $sql = $generator->generateModifyColumn('users', $newColumn, $oldColumn);
 
@@ -319,7 +319,7 @@ describe('MySqlGenerator', function (): void {
 
         // NULL default (with nullable column)
         $nullDefault = new Table(name: 't', columns: [
-            new Column(name: 'optional', type: 'string', length: 100, nullable: true, default: null),
+            new Column(name: 'optional', type: 'string', length: 100, nullable: true),
         ]);
         $sql = $generator->generateCreateTable($nullDefault);
         expect($sql)->toContain('`optional` VARCHAR(100) NULL');
@@ -1346,5 +1346,31 @@ describe('MySqlGenerator primary key columns on existing tables', function (): v
         expect($statements)->toBe([
             'ALTER TABLE `admin_user_roles` ADD COLUMN `id` INT NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`id`)',
         ]);
+    });
+});
+
+describe('MySqlGenerator with a current table', function (): void {
+    it('leaves pgsql and mysql generator output unchanged', function (): void {
+        $generator = new MySqlGenerator();
+        $columnsToAdd = [new Column(name: 'slug', type: 'string', length: 100)];
+        $indexesToAdd = [new Index(name: 'idx_slug', columns: ['slug'])];
+        $current = new Table(name: 'posts', columns: [new Column(name: 'id', type: 'integer', primaryKey: true)]);
+
+        $without = new SchemaDiff(tablesToAlter: ['posts' => new TableDiff(
+            tableName: 'posts',
+            columnsToAdd: $columnsToAdd,
+            indexesToAdd: $indexesToAdd,
+        )]);
+        $with = new SchemaDiff(tablesToAlter: [
+            'posts' => new TableDiff(
+                tableName: 'posts',
+                columnsToAdd: $columnsToAdd,
+                indexesToAdd: $indexesToAdd,
+                currentTable: $current,
+            ),
+        ]);
+
+        expect($generator->generateUp($with))->toBe($generator->generateUp($without))
+            ->and($generator->generateDown($with))->toBe($generator->generateDown($without));
     });
 });

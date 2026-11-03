@@ -36,6 +36,8 @@ Install these packages as needed for your application:
 composer require marko/database marko/database-mysql
 # or
 composer require marko/database marko/database-pgsql
+# or
+composer require marko/database marko/database-sqlite
 ```
 
 | Package | Description |
@@ -43,6 +45,7 @@ composer require marko/database marko/database-pgsql
 | [`marko/database`](/docs/packages/database/) | Database abstraction layer |
 | [`marko/database-mysql`](/docs/packages/database-mysql/) | MySQL database driver |
 | [`marko/database-pgsql`](/docs/packages/database-pgsql/) | PostgreSQL database driver |
+| [`marko/database-sqlite`](/docs/packages/database-sqlite/) | SQLite database driver |
 
 ### Cache
 

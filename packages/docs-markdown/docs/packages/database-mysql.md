@@ -320,7 +320,7 @@ MySQL commits implicitly before any DDL statement (`CREATE`, `ALTER`, `DROP`, `T
 
 ### Query Builder
 
-`MySqlQueryBuilder` implements `QueryBuilderInterface` with a fluent API:
+`MySqlQueryBuilder` implements `QueryBuilderInterface` with a fluent API. It extends the abstract `Marko\Database\Query\SqlQueryBuilder` from `marko/database`:
 
 | Method | Description |
 |---|---|

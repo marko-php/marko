@@ -11,6 +11,7 @@
         "marko/database": "self.version"
     },
     "require-dev": {
+        "marko/database-sqlite": "self.version",
         "marko/testing": "self.version",
         "pestphp/pest": "^4.0"
     },
