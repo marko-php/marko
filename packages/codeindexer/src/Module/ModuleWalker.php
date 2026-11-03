@@ -7,6 +7,7 @@ namespace Marko\CodeIndexer\Module;
 use Closure;
 use FilesystemIterator;
 use Marko\CodeIndexer\ValueObject\ModuleInfo;
+use Marko\Core\Module\ModuleDiscovery;
 use Marko\Core\Path\ProjectPaths;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -42,14 +43,21 @@ class ModuleWalker
         return array_values($byName);
     }
 
-    /** @return list<ModuleInfo> */
+    /**
+     * Only Marko modules (composer.json extra.marko.module: true, the same rule
+     * core's ModuleDiscovery boots by) are indexed from vendor/. Other Composer
+     * packages hold no attributes, config or translations Marko reads, and some
+     * ship huge generated PHP files that are too costly to parse.
+     *
+     * @return list<ModuleInfo>
+     */
     private function collectVendor(): array
     {
         $results = [];
         $pattern = $this->rootPath . '/vendor/*/*/composer.json';
 
         foreach (glob($pattern) ?: [] as $composerFile) {
-            $info = $this->buildModuleInfo($composerFile);
+            $info = $this->buildModuleInfo($composerFile, requireModuleFlag: true);
             if ($info !== null) {
                 $results[] = $info;
             }
@@ -111,8 +119,10 @@ class ModuleWalker
         return $found;
     }
 
-    private function buildModuleInfo(string $composerFile): ?ModuleInfo
-    {
+    private function buildModuleInfo(
+        string $composerFile,
+        bool $requireModuleFlag = false,
+    ): ?ModuleInfo {
         $contents = file_get_contents($composerFile);
         if ($contents === false) {
             return null;
@@ -120,6 +130,10 @@ class ModuleWalker
 
         $data = json_decode($contents, true);
         if (!is_array($data) || !isset($data['name']) || !is_string($data['name'])) {
+            return null;
+        }
+
+        if ($requireModuleFlag && !ModuleDiscovery::declaresMarkoModule($data)) {
             return null;
         }
 

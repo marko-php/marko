@@ -7,6 +7,8 @@ Static analysis library that indexes Marko modules — attributes, configs, temp
 
 It walks every module discovered under `vendor/`, `modules/`, and `app/`, parses their PHP attributes (`#[Observer]`, `#[Plugin]`, `#[Preference]`, `#[Command]`, route attributes) plus config/template/translation files, adds the config keys defined in the project-root `config/` directory, and writes the result to a single on-disk cache. The cache is lazy-loaded and auto-rebuilt when stale, so reads are cheap.
 
+From `vendor/` it indexes only Marko modules: packages whose `composer.json` sets `extra.marko.module` to `true`, the same rule the framework uses to load modules. Other Composer packages (an SDK, a utility library) are skipped, so large generated files inside them are never parsed. Packages under `modules/` and `app/` are always indexed.
+
 ## Installation
 
 ```bash
