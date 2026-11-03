@@ -92,6 +92,29 @@ readonly class PasswordResetBroker implements PasswordResetBrokerInterface
     /**
      * @throws AuthException|UserPersisterException|ConfigNotFoundException
      */
+    public function tokenIsValid(
+        array $credentials,
+        string $token,
+    ): bool {
+        $providerName = $this->authConfig->passwordResetProvider();
+        // Resolve the persister up front, as reset() does, so a missing one fails on every
+        // check rather than only for registered emails, and before a link is called valid
+        // that reset() could not redeem.
+        $this->userPersisterResolver->forProvider($providerName);
+        $user = $this->resettableUser($providerName, $credentials);
+
+        if ($user === null) {
+            return false;
+        }
+
+        $record = $this->matchingRecord($user, $token);
+
+        return $record !== null && !$this->isExpired($record);
+    }
+
+    /**
+     * @throws AuthException|UserPersisterException|ConfigNotFoundException
+     */
     public function reset(
         array $credentials,
         string $token,
@@ -99,27 +122,22 @@ readonly class PasswordResetBroker implements PasswordResetBrokerInterface
     ): ResetStatus {
         $providerName = $this->authConfig->passwordResetProvider();
         $userPersister = $this->userPersisterResolver->forProvider($providerName);
-        $user = $this->userProviderResolver->forProvider($providerName)->retrieveByCredentials($credentials);
+        $user = $this->resettableUser($providerName, $credentials);
 
         if ($user === null) {
             return ResetStatus::InvalidUser;
         }
 
-        $this->userPersisterResolver->assertUserSupports($user, CanResetPasswordInterface::class, $providerName);
+        $record = $this->matchingRecord($user, $token);
 
-        $userId = $user->getAuthIdentifier();
-        $record = $this->passwordResetTokenRepository->find($userId);
-
-        if ($record === null || !hash_equals($record->tokenHash, hash('sha256', $token))) {
+        if ($record === null) {
             return ResetStatus::InvalidToken;
         }
 
         // Single use: the token is gone before the password changes, whatever happens next.
-        $this->passwordResetTokenRepository->delete($userId);
+        $this->passwordResetTokenRepository->delete($user->getAuthIdentifier());
 
-        $expiresAt = $record->createdAt->getTimestamp() + $this->authConfig->passwordResetExpireSeconds();
-
-        if ($this->clock->now()->getTimestamp() >= $expiresAt) {
+        if ($this->isExpired($record)) {
             return ResetStatus::InvalidToken;
         }
 
@@ -128,6 +146,52 @@ readonly class PasswordResetBroker implements PasswordResetBrokerInterface
         $this->eventDispatcher->dispatch(new PasswordResetEvent($user));
 
         return ResetStatus::PasswordReset;
+    }
+
+    /**
+     * The user matching $credentials, asserted to support password resets, or null when none matches.
+     *
+     * @param array<string, mixed> $credentials
+     * @throws AuthException|UserPersisterException|ConfigNotFoundException
+     */
+    private function resettableUser(
+        string $providerName,
+        array $credentials,
+    ): ?AuthenticatableInterface {
+        $user = $this->userProviderResolver->forProvider($providerName)->retrieveByCredentials($credentials);
+
+        if ($user !== null) {
+            $this->userPersisterResolver->assertUserSupports($user, CanResetPasswordInterface::class, $providerName);
+        }
+
+        return $user;
+    }
+
+    /**
+     * The user's stored token record when $token hashes to it, or null. Does not check expiry.
+     */
+    private function matchingRecord(
+        AuthenticatableInterface $user,
+        string $token,
+    ): ?PasswordResetTokenRecord {
+        $record = $this->passwordResetTokenRepository->find($user->getAuthIdentifier());
+
+        if ($record === null || !hash_equals($record->tokenHash, hash('sha256', $token))) {
+            return null;
+        }
+
+        return $record;
+    }
+
+    /**
+     * @throws ConfigNotFoundException
+     */
+    private function isExpired(
+        PasswordResetTokenRecord $record,
+    ): bool {
+        $expiresAt = $record->createdAt->getTimestamp() + $this->authConfig->passwordResetExpireSeconds();
+
+        return $this->clock->now()->getTimestamp() >= $expiresAt;
     }
 
     /**
