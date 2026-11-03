@@ -101,7 +101,7 @@ describe('JobRunner', function (): void {
     it('increments attempts before handling the job', function (): void {
         $job = new JobRunnerPlainJob();
 
-        new JobRunner(new Container(), createJobRunnerTestEnvelope(), new FakeEventDispatcher())->run($job);
+        new JobRunner(new Container(), createJobRunnerTestEnvelope(), new FakeEventDispatcher())->run($job, 'default');
 
         expect($job->handled)->toBe(1)
             ->and($job->attemptsWhenHandled)->toBe(1)
@@ -113,7 +113,7 @@ describe('JobRunner', function (): void {
         $job = new JobRunnerPlainJob(fails: true);
         $runner = new JobRunner(new Container(), createJobRunnerTestEnvelope(), new FakeEventDispatcher());
 
-        expect(fn () => $runner->run($job))->toThrow(RuntimeException::class, 'plain job failed')
+        expect(fn () => $runner->run($job, 'default'))->toThrow(RuntimeException::class, 'plain job failed')
             ->and($job->exceptions)->toBe(1)
             ->and($job->attempts)->toBe(1);
     });
@@ -121,7 +121,7 @@ describe('JobRunner', function (): void {
     it('does not count a release requested from inside handle() as an exception', function (): void {
         $job = new JobRunnerPlainJob(releaseWith: 30);
 
-        new JobRunner(new Container(), createJobRunnerTestEnvelope(), new FakeEventDispatcher())->run($job);
+        new JobRunner(new Container(), createJobRunnerTestEnvelope(), new FakeEventDispatcher())->run($job, 'default');
 
         expect($job->releaseDelay)->toBe(30)
             ->and($job->exceptions)->toBe(0);
@@ -131,7 +131,7 @@ describe('JobRunner', function (): void {
         $job = new JobRunnerPlainJob();
         $job->release(30);
 
-        new JobRunner(new Container(), createJobRunnerTestEnvelope(), new FakeEventDispatcher())->run($job);
+        new JobRunner(new Container(), createJobRunnerTestEnvelope(), new FakeEventDispatcher())->run($job, 'default');
 
         expect($job->releaseDelayWhenHandled)->toBeNull()
             ->and($job->releaseDelay)->toBeNull();
@@ -143,7 +143,7 @@ describe('JobRunner', function (): void {
             $container = new Container();
             $job = new JobRunnerContainerAwareJob();
 
-            new JobRunner($container, createJobRunnerTestEnvelope(), new FakeEventDispatcher())->run($job);
+            new JobRunner($container, createJobRunnerTestEnvelope(), new FakeEventDispatcher())->run($job, 'default');
 
             expect($job->hadBothWhenHandled)->toBeTrue()
                 ->and($job->releaseCount)->toBe(1)
@@ -156,7 +156,7 @@ describe('JobRunner', function (): void {
         $job = new JobRunnerContainerAwareJob(fails: true);
         $runner = new JobRunner(new Container(), createJobRunnerTestEnvelope(), new FakeEventDispatcher());
 
-        expect(fn () => $runner->run($job))->toThrow(RuntimeException::class, 'container-aware job failed')
+        expect(fn () => $runner->run($job, 'default'))->toThrow(RuntimeException::class, 'container-aware job failed')
             ->and($job->releaseCount)->toBe(1)
             ->and($job->container)->toBeNull()
             ->and($job->exceptions)->toBe(1);
@@ -204,7 +204,7 @@ describe('JobRunner', function (): void {
         $job = new JobRunnerPlainJob();
         $job->setId('job-7');
 
-        new JobRunner(new Container(), createJobRunnerTestEnvelope(), $events)->run($job);
+        new JobRunner(new Container(), createJobRunnerTestEnvelope(), $events)->run($job, 'default');
 
         expect($events->log)->toBe([
             JobProcessingEvent::class . ':job-7:attempt 1',
@@ -228,18 +228,27 @@ describe('JobRunner', function (): void {
             }
         };
 
-        new JobRunner(new Container(), createJobRunnerTestEnvelope(), $events)->run($job);
+        new JobRunner(new Container(), createJobRunnerTestEnvelope(), $events)->run($job, 'default');
 
         expect($job->processingEventsSeen)->toBe(1)
             ->and($events->dispatched(JobProcessingEvent::class)[0]->job)->toBe($job)
             ->and($events->dispatched(JobProcessingEvent::class)[0]->jobClass)->toBe($job::class);
     });
 
+    it('passes the queue it is given to JobProcessingEvent and JobProcessedEvent', function (): void {
+        $events = new FakeEventDispatcher();
+
+        new JobRunner(new Container(), createJobRunnerTestEnvelope(), $events)->run(new JobRunnerPlainJob(), 'engine');
+
+        expect($events->dispatched(JobProcessingEvent::class)[0]->queue)->toBe('engine')
+            ->and($events->dispatched(JobProcessedEvent::class)[0]->queue)->toBe('engine');
+    });
+
     it('does not dispatch JobProcessedEvent when handle() throws', function (): void {
         $events = new FakeEventDispatcher();
         $runner = new JobRunner(new Container(), createJobRunnerTestEnvelope(), $events);
 
-        expect(fn () => $runner->run(new JobRunnerPlainJob(fails: true)))->toThrow(RuntimeException::class);
+        expect(fn () => $runner->run(new JobRunnerPlainJob(fails: true), 'default'))->toThrow(RuntimeException::class);
 
         expect($events->dispatched(JobProcessingEvent::class))->toHaveCount(1)
             ->and($events->dispatched(JobProcessedEvent::class))->toBe([]);
@@ -262,7 +271,7 @@ describe('JobRunner', function (): void {
             }
         };
 
-        new JobRunner(new Container(), createJobRunnerTestEnvelope(), $events)->run($job);
+        new JobRunner(new Container(), createJobRunnerTestEnvelope(), $events)->run($job, 'default');
 
         expect($events->hadContainer)->toBe([true, true])
             ->and($job->container)->toBeNull();

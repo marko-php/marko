@@ -383,6 +383,8 @@ If a job that has used up its attempts still can't be serialized (for example, i
 2. Any release request left over from an earlier attempt is cleared, and `attempts` is incremented.
 3. `JobProcessingEvent` is dispatched.
 4. `handle()` runs. If it throws, `incrementExceptions()` is called and the exception is rethrown. If it returns, `JobProcessedEvent` is dispatched.
+
+`run()` takes the queue name along with the job and passes it to both events. The worker passes the queue it popped the job from. The sync driver passes the queue given to `push()`, or the configured default when none is given.
 5. A container-aware job's `releaseContainer()` runs, whether `handle()` returned or threw.
 
 `withContainer(JobInterface $job, callable $callback): mixed` does steps 1 and 5 around any callback and returns its result. Use it to call something else on a container-aware job with the container in place.
@@ -448,11 +450,11 @@ class RegenerateTranscript extends Job implements FailableJobInterface
 
 | Event | Dispatched by | When | Properties |
 |-------|---------------|------|------------|
-| `Marko\Queue\Event\JobProcessingEvent` | `JobRunner` | after the attempt is counted, just before `handle()` | `job`, `jobClass`, `jobId` |
-| `Marko\Queue\Event\JobProcessedEvent` | `JobRunner` | after `handle()` returns without throwing | `job`, `jobClass`, `jobId` |
+| `Marko\Queue\Event\JobProcessingEvent` | `JobRunner` | after the attempt is counted, just before `handle()` | `job`, `jobClass`, `jobId`, `queue` |
+| `Marko\Queue\Event\JobProcessedEvent` | `JobRunner` | after `handle()` returns without throwing | `job`, `jobClass`, `jobId`, `queue` |
 | `Marko\Queue\Event\JobFailedEvent` | `FailedJobHandler` | after the job is stored and `failed()` has run | `job`, `jobClass`, `jobId`, `queue`, `exception` |
 
-The worker and the sync driver both run jobs through `JobRunner`, so the processing events fire for every driver. Observe them with a regular `#[Observer]`. An observer of `JobProcessingEvent` or `JobProcessedEvent` that throws fails the attempt, like an exception from `handle()`. Keep those observers synchronous: an async observer queues a job, and running that job fires the event again, without end.
+The worker and the sync driver both run jobs through `JobRunner`, so the processing events fire for every driver. All three events carry `queue`, the name of the queue the job was taken from, so one observer can act per queue. Observe them with a regular `#[Observer]`. An observer of `JobProcessingEvent` or `JobProcessedEvent` that throws fails the attempt, like an exception from `handle()`. Keep those observers synchronous: an async observer queues a job, and running that job fires the event again, without end.
 
 ### Dispatching Jobs
 
@@ -1038,7 +1040,7 @@ Constructed with the `QueueConfig` and the clock. `decide()` returns a readonly 
 use Marko\Queue\JobRunnerInterface;
 use Marko\Queue\JobInterface;
 
-public function run(JobInterface $job): void; // rethrows whatever handle() throws
+public function run(JobInterface $job, string $queue): void; // rethrows whatever handle() throws
 public function withContainer(JobInterface $job, callable $callback): mixed;
 ```
 

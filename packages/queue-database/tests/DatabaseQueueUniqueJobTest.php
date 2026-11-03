@@ -46,7 +46,7 @@ describe('DatabaseQueue unique jobs (no driver code)', function (): void {
             ->and($size)->toBe(1)
             ->and($popped->uniqueLockOwner)->toBe($first->uniqueLockOwner);
 
-        $stack->jobRunner()->run($popped);
+        $stack->jobRunner()->run($popped, 'default');
 
         expect($stack->lockIsFree($first))->toBeTrue();
     });

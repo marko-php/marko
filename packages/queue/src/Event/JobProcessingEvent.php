@@ -26,5 +26,6 @@ class JobProcessingEvent extends Event
 
     public function __construct(
         public readonly JobInterface $job,
+        public readonly string $queue,
     ) {}
 }

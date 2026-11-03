@@ -1505,7 +1505,7 @@ test(
             ->and(callsTo($channel, 'basic_publish'))->toHaveCount(1)
             ->and($consumed->uniqueLockOwner)->toBe($first->uniqueLockOwner);
 
-        $stack->jobRunner()->run($consumed);
+        $stack->jobRunner()->run($consumed, 'default');
 
         expect($stack->lockIsFree($first))->toBeTrue();
     },

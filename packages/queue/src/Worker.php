@@ -147,7 +147,7 @@ class Worker implements WorkerInterface
         }
 
         try {
-            $this->jobRunner->run($job);
+            $this->jobRunner->run($job, $queue);
         } catch (Throwable $e) {
             $error = $e;
         } finally {

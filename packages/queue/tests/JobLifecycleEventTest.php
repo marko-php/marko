@@ -17,17 +17,18 @@ class LifecycleEventJob extends Job
 
 describe('job lifecycle events', function (): void {
     it(
-        'exposes the job, its class and its id on JobProcessingEvent and JobProcessedEvent',
+        'exposes the job, its class and id, and the queue on JobProcessingEvent and JobProcessedEvent',
         function (string $eventClass): void {
             $job = new LifecycleEventJob();
             $job->setId('job-1');
 
-            $event = new $eventClass($job);
+            $event = new $eventClass($job, 'engine');
 
             expect($event)->toBeInstanceOf(Event::class)
                 ->and($event->job)->toBe($job)
                 ->and($event->jobClass)->toBe(LifecycleEventJob::class)
-                ->and($event->jobId)->toBe('job-1');
+                ->and($event->jobId)->toBe('job-1')
+                ->and($event->queue)->toBe('engine');
         },
     )->with([JobProcessingEvent::class, JobProcessedEvent::class]);
 

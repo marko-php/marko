@@ -342,7 +342,7 @@ describe('unique job lock release', function (): void {
         $queue->push($job);
         $job->release(10);
 
-        $stack->eventDispatcher->dispatch(new JobProcessedEvent($job));
+        $stack->eventDispatcher->dispatch(new JobProcessedEvent($job, 'default'));
 
         expect($stack->lockIsFree($job))->toBeFalse();
     });

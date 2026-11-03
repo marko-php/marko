@@ -214,8 +214,10 @@ it('runs the job through the JobRunner it is given', function (): void {
         /** @var list<JobInterface> */
         public array $ran = [];
 
-        public function run(JobInterface $job): void
-        {
+        public function run(
+            JobInterface $job,
+            string $queue,
+        ): void {
             $this->ran[] = $job;
         }
 
@@ -315,6 +317,32 @@ it('dispatches JobProcessingEvent and JobProcessedEvent around a job run under S
     expect($events->dispatched(JobProcessingEvent::class))->toHaveCount(1)
         ->and($events->dispatched(JobProcessedEvent::class))->toHaveCount(1)
         ->and($events->dispatched(JobProcessedEvent::class)[0]->job)->toBe($job);
+});
+
+it('dispatches the processing events with the queue the job was pushed onto', function (): void {
+    $events = new FakeEventDispatcher();
+    $job = new class () extends Job
+    {
+        public function handle(): void {}
+    };
+
+    createSyncQueue(events: $events)->push($job, 'agent');
+
+    expect($events->dispatched(JobProcessingEvent::class)[0]->queue)->toBe('agent')
+        ->and($events->dispatched(JobProcessedEvent::class)[0]->queue)->toBe('agent');
+});
+
+it('dispatches the processing events with the configured default queue when none is given', function (): void {
+    $events = new FakeEventDispatcher();
+    $job = new class () extends Job
+    {
+        public function handle(): void {}
+    };
+
+    createSyncQueue(events: $events)->push($job);
+
+    expect($events->dispatched(JobProcessingEvent::class)[0]->queue)->toBe('default')
+        ->and($events->dispatched(JobProcessedEvent::class)[0]->queue)->toBe('default');
 });
 
 it('later executes job immediately', function (): void {
