@@ -1,0 +1,68 @@
+name: Release Announce
+
+# Posts each release to Slack once it is really out: the tag's package split succeeded and
+# Packagist serves the version. #releases gets an @channel mention, #general the same post
+# without it. .github/scripts/release-announce.py does the checks and fails the run (posting
+# nothing) when any of them does not pass; a re-run never posts the same release twice.
+on:
+  workflow_run:
+    workflows: [Split Packages]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag to announce, e.g. 0.13.0
+        required: true
+      target:
+        description: Channels to post to
+        type: choice
+        options: [general, releases, both]
+        default: general
+      preview:
+        description: Print the messages instead of posting them
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  announce:
+    # The split runs for branches as well as tags; only tag runs are releases.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' &&
+       !contains(fromJSON('["main", "develop"]'), github.event.workflow_run.head_branch))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: release-announce-${{ inputs.version || github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
+    env:
+      VERSION: ${{ inputs.version || github.event.workflow_run.head_branch }}
+    steps:
+      # The script lives on the default branch; the changelog is read from the tag itself.
+      - uses: actions/checkout@v7
+
+      - name: Fetch the release tag
+        run: git fetch --depth=1 origin "refs/tags/${VERSION}:refs/tags/${VERSION}"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install Anthropic SDK
+        run: pip install anthropic==2.4.0
+
+      - name: Announce
+        env:
+          TARGET: ${{ inputs.target || 'both' }}
+          PREVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.preview && 'true' || 'false' }}
+          GITHUB_TOKEN: ${{ github.token }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_RELEASES_CHANNEL: ${{ vars.SLACK_RELEASES_CHANNEL }}
+          SLACK_GENERAL_CHANNEL: ${{ vars.SLACK_GENERAL_CHANNEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python .github/scripts/release-announce.py
