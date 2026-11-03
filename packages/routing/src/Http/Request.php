@@ -4,55 +4,54 @@ declare(strict_types=1);
 
 namespace Marko\Routing\Http;
 
-use JsonException;
 use Marko\Routing\Exceptions\MalformedJsonException;
+use Marko\Routing\Exceptions\RequestBodyTooLargeException;
 use Marko\Routing\Exceptions\UploadedFileException;
 use NoDiscard;
 
 readonly class Request
 {
     /**
-     * The decoded JSON body; an empty array when the request is not JSON or has an empty body.
+     * The raw body, read on first access ({@see body()}, {@see json()}), never when the request is built.
      */
-    private mixed $json;
-
-    /**
-     * The decoder error for a malformed JSON body, thrown when the payload is accessed.
-     */
-    private ?string $jsonError;
+    private RequestBody $body;
 
     /**
      * @param array<string, mixed> $server
      * @param array<string, mixed> $query
      * @param array<string, mixed> $post
      * @param array<string, string> $cookies
+     * @param string|RequestBody $body the raw body, or a RequestBody that reads it on first access
      * @param array<string, UploadedFile|array<mixed>> $files uploaded files, keyed like the form fields that sent them
      */
     public function __construct(
         private array $server = [],
         private array $query = [],
         private array $post = [],
-        private string $body = '',
+        string|RequestBody $body = '',
         private ?string $controller = null,
         private ?string $action = null,
         private array $cookies = [],
         private array $files = [],
     ) {
-        [$this->json, $this->jsonError] = $this->decodeJsonBody();
+        $this->body = $body instanceof RequestBody ? $body : RequestBody::fromString($body);
     }
 
     public static function fromGlobals(): self
     {
-        $body = (string) file_get_contents('php://input');
+        // The body is read on first access, so an upload (or any body the app never reads) is not copied into memory
+        $body = RequestBody::fromGlobals($_SERVER);
         $post = $_POST;
 
         // PHP only populates $_POST for POST requests; parse body for PUT/PATCH/DELETE
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-        if ($post === [] && $body !== '' && in_array($method, ['PUT', 'PATCH', 'DELETE'], true)) {
-            $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
-            if (str_contains($contentType, 'application/x-www-form-urlencoded')) {
-                parse_str($body, $post);
-            }
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+        if (
+            $post === []
+            && in_array($method, ['PUT', 'PATCH', 'DELETE'], true)
+            && str_contains($contentType, 'application/x-www-form-urlencoded')
+        ) {
+            parse_str($body->contents(), $post);
         }
 
         return new self(
@@ -120,9 +119,14 @@ readonly class Request
         return $this->cookies[$key] ?? $default;
     }
 
+    /**
+     * The raw request body, read on first access.
+     *
+     * @throws RequestBodyTooLargeException when the request declared a body over post_max_size
+     */
     public function body(): string
     {
-        return $this->body;
+        return $this->body->contents();
     }
 
     /**
@@ -199,23 +203,26 @@ readonly class Request
      * Read the decoded JSON body, or a value from it by dot-notation key (`user.email`).
      *
      * Only JSON requests ({@see isJson()}) are decoded; other requests return an empty
-     * payload. A malformed JSON body throws when it is read, never silently.
+     * payload. The body is read and decoded on first access, once. A malformed JSON body
+     * throws when it is read, never silently.
      *
-     * @throws MalformedJsonException
+     * @throws MalformedJsonException|RequestBodyTooLargeException
      */
     public function json(
         ?string $key = null,
         mixed $default = null,
     ): mixed {
-        if ($this->jsonError !== null) {
-            throw MalformedJsonException::fromBody(strlen($this->body), $this->jsonError);
+        [$json, $jsonError] = $this->isJson() ? $this->body->decodeJson() : [[], null];
+
+        if ($jsonError !== null) {
+            throw MalformedJsonException::fromBody(strlen($this->body->contents()), $jsonError);
         }
 
         if ($key === null) {
-            return $this->json;
+            return $json;
         }
 
-        return self::dataGet($this->json, $key, $default);
+        return self::dataGet($json, $key, $default);
     }
 
     /**
@@ -224,7 +231,7 @@ readonly class Request
      * With no key, returns the query string merged with the body (body values win).
      *
      * @return ($key is null ? array<string, mixed> : mixed)
-     * @throws MalformedJsonException
+     * @throws MalformedJsonException|RequestBodyTooLargeException
      */
     public function input(
         ?string $key = null,
@@ -393,24 +400,8 @@ readonly class Request
     }
 
     /**
-     * @return array{0: mixed, 1: ?string} the decoded payload and the decoder error, if any
-     */
-    private function decodeJsonBody(): array
-    {
-        if (!$this->isJson() || trim($this->body) === '') {
-            return [[], null];
-        }
-
-        try {
-            return [json_decode($this->body, true, flags: JSON_THROW_ON_ERROR), null];
-        } catch (JsonException $e) {
-            return [[], $e->getMessage()];
-        }
-    }
-
-    /**
      * @return array<mixed>
-     * @throws MalformedJsonException
+     * @throws MalformedJsonException|RequestBodyTooLargeException
      */
     private function bodyInput(): array
     {
