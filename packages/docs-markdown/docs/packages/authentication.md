@@ -154,7 +154,7 @@ public function login(
 }
 ```
 
-`attempt()` is [throttled](#login-throttling): once a login identifier is locked out for a client, it throws `TooManyLoginAttemptsException` instead of returning `false`.
+`attempt()` is [throttled](#login-throttling): once a login identifier is locked out for a client, it throws `TooManyLoginAttemptsException` instead of returning `false`. Pass `remember: true` to keep the user signed in with a [remember-me cookie](#remember-me).
 
 ### Login Throttling
 
@@ -207,9 +207,9 @@ return [
 
 Each entry is a class implementing `LoginChallengeInterface`, resolved from the container. When the password is right, `attempt()` asks each challenge whether the user needs it (`requiresChallenge()`). If one does:
 
-1. The user is **not** logged in. The guard stores the pending user ID and the challenge name in the session, under a fresh session ID, and `attempt()` returns `false`.
+1. The user is **not** logged in. The guard stores the pending user ID, the challenge name and the `remember` flag `attempt()` was called with in the session, under a fresh session ID, and `attempt()` returns `false`.
 2. No `LoginEvent` fires and no remember-me cookie is issued yet.
-3. Your challenge handler calls `completeChallenge()` once the user passes. The guard moves on to the next challenge that requires itself or, when none is left, logs the user in. Only then does `LoginEvent` fire, and only then can a remember cookie be issued (`completeChallenge(remember: true)`).
+3. Your challenge handler calls `completeChallenge()` once the user passes. The guard moves on to the next challenge that requires itself or, when none is left, logs the user in. Only then does `LoginEvent` fire (once), and only then is a remember cookie issued. Without an argument, `completeChallenge()` uses the flag stored by `attempt()`, so a "Keep me signed in" checkbox on the password form carries through the challenge; `completeChallenge(remember: true)` or `completeChallenge(remember: false)` overrides it.
 
 `SessionGuard` implements `ChallengeableGuardInterface`, so a login controller can tell a wrong password from a pending challenge:
 
@@ -504,6 +504,7 @@ class JwtGuard implements StatelessGuardInterface
 
     public function attempt(
         array $credentials,
+        bool $remember = false,
     ): bool {
         throw new AuthException(
             message: "Cannot call attempt() on JWT guard '$this->name': it is stateless",
@@ -621,11 +622,10 @@ A feature changes the user through a small interface the entity implements, such
 
 ## Remember Me
 
-Pass `remember: true` when logging a user in to keep them signed in after their session expires:
+Pass `remember: true` to `attempt()` (or `login()`) to keep the user signed in after their session expires:
 
 ```php title="LoginController.php"
 use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Authentication\Contracts\UserProviderInterface;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
@@ -633,7 +633,6 @@ class LoginController
 {
     public function __construct(
         private GuardInterface $guard,
-        private UserProviderInterface $userProvider,
     ) {}
 
     public function login(
@@ -643,18 +642,17 @@ class LoginController
             'email' => $request->post('email'),
             'password' => $request->post('password'),
         ];
-        $user = $this->userProvider->retrieveByCredentials($credentials);
 
-        if ($user === null || !$this->userProvider->validateCredentials($user, $credentials)) {
+        if (!$this->guard->attempt($credentials, remember: $request->post('remember') === '1')) {
             return new Response('Invalid credentials', 401);
         }
-
-        $this->guard->login($user, remember: (bool) $request->post('remember'));
 
         return Response::redirect('/dashboard');
     }
 }
 ```
+
+`attempt($credentials, remember: true)` logs the user in once: the session ID is regenerated once and a single `LoginEvent` fires with `remember: true`. Throttling, password rehashing and [login challenges](#login-challenges) all still apply. When a challenge is pending, the flag is kept with it and the cookie is issued when `completeChallenge()` logs the user in. Wrong credentials never create a remember token.
 
 ### Per-Device Tokens
 
@@ -1620,7 +1618,7 @@ public function useGuard(string $name, GuardInterface $guard): void;
 public function check(): bool;
 public function user(): ?AuthenticatableInterface;
 public function id(): int|string|null;
-public function attempt(array $credentials): bool;
+public function attempt(array $credentials, bool $remember = false): bool;
 public function logout(): void;
 public function logoutOtherDevices(AuthenticatableInterface $user, ?string $guard = null): void; // throws AuthException for a guard without OtherDeviceLogoutInterface
 public function reset(): void;
@@ -1635,7 +1633,7 @@ public function check(): bool;
 public function guest(): bool;
 public function user(): ?AuthenticatableInterface;
 public function id(): int|string|null;
-public function attempt(array $credentials): bool;
+public function attempt(array $credentials, bool $remember = false): bool;
 public function login(AuthenticatableInterface $user): void;
 public function loginById(int|string $id): ?AuthenticatableInterface;
 public function logout(): void;
@@ -1659,7 +1657,7 @@ Extends `GuardInterface`; implemented by `SessionGuard`. See [Login Challenges](
 public function hasPendingChallenge(): bool;
 public function pendingChallengeUser(): ?AuthenticatableInterface;
 public function pendingChallengeName(): ?string;
-public function completeChallenge(bool $remember = false): void;
+public function completeChallenge(?bool $remember = null): void; // null: the flag attempt() was called with
 public function cancelChallenge(): void;
 ```
 

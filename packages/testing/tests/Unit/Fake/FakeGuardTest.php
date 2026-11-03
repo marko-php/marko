@@ -45,6 +45,29 @@ it('records attempt calls with credentials', function (): void {
         ->and($guard->attempts[1])->toBe(['email' => 'other@example.com', 'password' => 'pass']);
 });
 
+it('records the remember flag of each attempt', function (): void {
+    $guard = new FakeGuard();
+
+    $guard->attempt(['email' => 'test@example.com', 'password' => 'secret'], remember: true);
+    $guard->attempt(['email' => 'other@example.com', 'password' => 'pass']);
+
+    expect($guard->attemptRemembers)->toBe([true, false]);
+
+    $guard->assertAttempted(fn (array $credentials, bool $remember): bool => $remember);
+    $guard->clear();
+
+    expect($guard->attemptRemembers)->toBe([]);
+});
+
+it('fails assertAttempted when no attempt matches the remember flag', function (): void {
+    $guard = new FakeGuard();
+
+    $guard->attempt(['email' => 'test@example.com', 'password' => 'secret']);
+
+    expect(fn () => $guard->assertAttempted(fn (array $credentials, bool $remember): bool => $remember))
+        ->toThrow(AssertionFailedException::class);
+});
+
 it('returns configurable attempt result', function (): void {
     $guard = new FakeGuard(attemptResult: false);
 

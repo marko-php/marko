@@ -40,10 +40,11 @@ interface ChallengeableGuardInterface extends GuardInterface
      * Mark the pending challenge as passed. Moves on to the next challenge that
      * requires itself for the user, or logs the user in when none is left.
      *
-     * @param bool $remember Issue a remember-me cookie when the user is logged in
+     * @param bool|null $remember Issue a remember-me cookie when the user is logged in;
+     *                            null keeps the flag the pending login was attempted with
      */
     public function completeChallenge(
-        bool $remember = false,
+        ?bool $remember = null,
     ): void;
 
     /**

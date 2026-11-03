@@ -322,12 +322,16 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
      * throws before the user is looked up, every failure is counted, and a
      * success clears the count.
      *
+     * When a login challenge is required, $remember is stored with the pending
+     * challenge and applied by completeChallenge().
+     *
      * @param array<string, mixed> $credentials
      *
      * @throws AuthException|DateMalformedStringException|RandomException|TooManyLoginAttemptsException
      */
     public function attempt(
         array $credentials,
+        bool $remember = false,
     ): bool {
         $this->loginThrottle?->ensureNotLockedOut($this->name, $credentials);
 
@@ -353,12 +357,12 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
         $challenge = $this->nextRequiredChallenge($user);
 
         if ($challenge !== null) {
-            $this->startChallenge($user, $challenge);
+            $this->startChallenge($user, $challenge, $remember);
 
             return false;
         }
 
-        $this->login($user);
+        $this->login($user, $remember);
 
         return true;
     }
@@ -396,10 +400,12 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
     }
 
     /**
+     * @param bool|null $remember null keeps the flag the pending login was attempted with
+     *
      * @throws AuthException|DateMalformedStringException|RandomException
      */
     public function completeChallenge(
-        bool $remember = false,
+        ?bool $remember = null,
     ): void {
         $currentName = $this->pendingChallengeName();
         $user = $this->pendingChallengeUser();
@@ -418,6 +424,8 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
             return;
         }
 
+        $remember ??= $this->session->get($this->getChallengeRememberKey()) === true;
+
         $this->cancelChallenge();
         $this->login($user, $remember);
     }
@@ -426,6 +434,7 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
     {
         $this->session->remove($this->getChallengeUserKey());
         $this->session->remove($this->getChallengeNameKey());
+        $this->session->remove($this->getChallengeRememberKey());
         $this->cachedChallengeUser = null;
     }
 
@@ -453,19 +462,21 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
 
     /**
      * Hold the user at $challenge: they are logged out of this guard and only
-     * the pending user and challenge are stored, under a fresh session ID.
+     * the pending user, challenge and remember flag are stored, under a fresh session ID.
      *
      * @throws AuthException
      */
     private function startChallenge(
         AuthenticatableInterface $user,
         LoginChallengeInterface $challenge,
+        bool $remember,
     ): void {
         $this->ensureSessionAvailable();
         $this->session->remove($this->getSessionKey());
         $this->cachedUser = null;
         $this->session->set($this->getChallengeUserKey(), $user->getAuthIdentifier());
         $this->session->set($this->getChallengeNameKey(), $challenge->getName());
+        $this->session->set($this->getChallengeRememberKey(), $remember);
         $this->session->regenerate();
         $this->cachedChallengeUser = $user;
     }
@@ -638,6 +649,11 @@ class SessionGuard implements ChallengeableGuardInterface, OtherDeviceLogoutInte
     private function getChallengeNameKey(): string
     {
         return 'auth_' . $this->name . '_challenge_name';
+    }
+
+    private function getChallengeRememberKey(): string
+    {
+        return 'auth_' . $this->name . '_challenge_remember';
     }
 
     private function getRememberCookieName(): string

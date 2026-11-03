@@ -55,12 +55,13 @@ readonly class TwoFactorChallenge
     /**
      * Check a TOTP or recovery code for the pending user, completing the login when it is valid.
      *
-     * @param bool $remember Issue a remember-me cookie when the login completes
+     * @param bool|null $remember Issue a remember-me cookie when the login completes;
+     *                            null keeps the flag the login was attempted with
      * @throws AuthException|ConfigNotFoundException|TooManyTwoFactorAttemptsException|TwoFactorException
      */
     public function verify(
         string $code,
-        bool $remember = false,
+        ?bool $remember = null,
         ?string $guard = null,
     ): bool {
         $challengeableGuard = $this->guard($guard);

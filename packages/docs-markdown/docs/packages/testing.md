@@ -233,6 +233,10 @@ $guard->attempt(['email' => 'user@example.com', 'password' => 'secret']);
 $guard->assertAttempted();
 $guard->assertAttempted(fn (array $creds) => $creds['email'] === 'user@example.com');
 
+// The callback also receives the attempt's remember flag; $guard->attemptRemembers lists them all
+$guard->attempt(['email' => 'user@example.com', 'password' => 'secret'], remember: true);
+$guard->assertAttempted(fn (array $creds, bool $remember) => $remember);
+
 // Simulate logout
 $guard->logout();
 $guard->assertLoggedOut();
@@ -1125,7 +1129,7 @@ public function check(): bool;
 public function guest(): bool;
 public function user(): ?AuthenticatableInterface;
 public function id(): int|string|null;
-public function attempt(array $credentials): bool;
+public function attempt(array $credentials, bool $remember = false): bool;
 public function login(AuthenticatableInterface $user): void;
 public function loginById(int|string $id): ?AuthenticatableInterface;
 public function logout(): void;

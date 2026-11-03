@@ -98,6 +98,29 @@ describe('TwoFactorChallenge', function (): void {
         expect($harness->events->dispatched(LoginEvent::class)[0]->remember)->toBeTrue();
     });
 
+    it('keeps the remember flag given to attempt() when verify() is called without one', function (): void {
+        $harness = new TwoFactorHarness();
+        $harness->enableTwoFactor();
+        $harness->authManager()->attempt(['email' => 'ada@example.com'], remember: true);
+
+        $harness->challenge()->verify($harness->currentCode());
+
+        $logins = $harness->events->dispatched(LoginEvent::class);
+
+        expect($logins)->toHaveCount(1)
+            ->and($logins[0]->remember)->toBeTrue();
+    });
+
+    it('lets verify(remember: false) override the remember flag given to attempt()', function (): void {
+        $harness = new TwoFactorHarness();
+        $harness->enableTwoFactor();
+        $harness->authManager()->attempt(['email' => 'ada@example.com'], remember: true);
+
+        $harness->challenge()->verify($harness->currentCode(), remember: false);
+
+        expect($harness->events->dispatched(LoginEvent::class)[0]->remember)->toBeFalse();
+    });
+
     it('rejects a wrong code and dispatches TwoFactorChallengeFailedEvent', function (): void {
         $harness = new TwoFactorHarness();
         $harness->enableTwoFactor();

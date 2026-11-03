@@ -32,9 +32,11 @@ interface GuardInterface
      * Attempt to authenticate a user using the given credentials.
      *
      * @param array<string, mixed> $credentials
+     * @param bool $remember Keep the user signed in with a remember-me cookie once logged in
      */
     public function attempt(
         array $credentials,
+        bool $remember = false,
     ): bool;
 
     /**

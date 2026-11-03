@@ -308,6 +308,7 @@ it('re-renders the login form as 429 with Retry-After when the login is locked o
     {
         public function attempt(
             array $credentials,
+            bool $remember = false,
         ): bool {
             throw TooManyLoginAttemptsException::lockedOut('admin', 45);
         }
