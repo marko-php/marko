@@ -80,6 +80,7 @@ class PasswordCheckingGuard extends FakeGuard
 {
     public function attempt(
         array $credentials,
+        bool $remember = false,
     ): bool {
         return $credentials['email'] === 'admin@example.com'
             && $credentials['password'] === 'correct-password';

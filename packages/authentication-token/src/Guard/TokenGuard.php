@@ -122,6 +122,7 @@ class TokenGuard implements StatelessGuardInterface, AbilityScopedGuardInterface
      */
     public function attempt(
         array $credentials,
+        bool $remember = false,
     ): bool {
         throw StatelessGuardException::forMethod($this->name, 'attempt');
     }

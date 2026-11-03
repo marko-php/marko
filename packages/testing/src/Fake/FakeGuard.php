@@ -14,6 +14,9 @@ class FakeGuard implements GuardInterface
     /** @var array<array<string, mixed>> */
     public private(set) array $attempts = [];
 
+    /** @var list<bool> The remember flag of each attempt, in the order of $attempts */
+    public private(set) array $attemptRemembers = [];
+
     public private(set) bool $logoutCalled = false;
 
     public ?UserProviderInterface $provider = null {
@@ -54,8 +57,10 @@ class FakeGuard implements GuardInterface
      */
     public function attempt(
         array $credentials,
+        bool $remember = false,
     ): bool {
         $this->attempts[] = $credentials;
+        $this->attemptRemembers[] = $remember;
 
         return $this->attemptResult;
     }
@@ -114,6 +119,8 @@ class FakeGuard implements GuardInterface
     }
 
     /**
+     * @param (callable(array<string, mixed> $credentials, bool $remember): bool)|null $callback
+     *
      * @throws AssertionFailedException
      */
     public function assertAttempted(?callable $callback = null): void
@@ -123,7 +130,10 @@ class FakeGuard implements GuardInterface
         }
 
         if ($callback !== null) {
-            $found = array_any($this->attempts, fn (array $credentials) => $callback($credentials));
+            $found = array_any(
+                array_keys($this->attempts),
+                fn (int $index) => $callback($this->attempts[$index], $this->attemptRemembers[$index]),
+            );
 
             if (!$found) {
                 throw AssertionFailedException::unexpectedEmpty('authentication attempts matching callback');
@@ -154,6 +164,7 @@ class FakeGuard implements GuardInterface
     public function clear(): void
     {
         $this->attempts = [];
+        $this->attemptRemembers = [];
         $this->logoutCalled = false;
         $this->currentUser = null;
     }

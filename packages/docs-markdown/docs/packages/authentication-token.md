@@ -318,7 +318,7 @@ public function hasAbility(string $ability): bool; // [] / NULL / '*' grant ever
 public function extractToken(): ?string;
 public function getName(): string;
 public function getChallenge(): string; // 'Bearer'
-public function attempt(array $credentials): bool; // throws StatelessGuardException
+public function attempt(array $credentials, bool $remember = false): bool; // throws StatelessGuardException
 public function login(AuthenticatableInterface $user): void; // throws StatelessGuardException
 public function loginById(int|string $id): ?AuthenticatableInterface; // throws StatelessGuardException
 public function logout(): void; // throws StatelessGuardException

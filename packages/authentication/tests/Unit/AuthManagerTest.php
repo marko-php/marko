@@ -242,6 +242,31 @@ test('it proxies attempt to default guard', function (): void {
         ->and($manager->check())->toBeTrue();
 });
 
+test('it forwards the remember flag of attempt to the guard', function (): void {
+    $manager = new AuthManager(
+        config: new AuthConfig(new FakeConfigRepository([
+            'authentication.remember.cookie.prefix' => 'remember_',
+            'authentication.default.guard' => 'web',
+            'authentication.guards' => [
+                'web' => ['driver' => 'session', 'provider' => 'users'],
+            ],
+        ])),
+        session: new FakeSession(),
+        providerResolver: BoundProviderResolver::for(new FakeUserProvider()),
+        eventDispatcher: new FakeEventDispatcher(),
+        cookieJar: new FakeCookieJar(),
+        rememberTokenManager: new RememberTokenManager(new FakeClock()),
+        guardDriverRegistry: StatelessFakeGuard::tokenDriverRegistry(),
+    );
+    $guard = new FakeGuard(name: 'web');
+    $manager->useGuard('web', $guard);
+
+    $manager->attempt(['email' => 'test@example.com', 'password' => 'secret'], true);
+    $manager->attempt(['email' => 'other@example.com', 'password' => 'secret']);
+
+    expect($guard->attemptRemembers)->toBe([true, false]);
+});
+
 test('it proxies logout to default guard', function (): void {
     $user = new FakeAuthenticatable(id: 42);
     $configRepo = new FakeConfigRepository([

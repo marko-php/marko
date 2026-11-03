@@ -198,7 +198,7 @@ class LoginController
         if ($this->authManager->attempt([
             'email' => (string) $request->post('email'),
             'password' => (string) $request->post('password'),
-        ])) {
+        ], remember: $request->post('remember') === '1')) {
             return Response::redirect('/dashboard');
         }
 
@@ -217,10 +217,7 @@ class LoginController
             return Response::redirect('/login');
         }
 
-        $verified = $this->twoFactorChallenge->verify(
-            (string) $request->post('code'),
-            remember: $request->post('remember') === '1',
-        );
+        $verified = $this->twoFactorChallenge->verify((string) $request->post('code'));
 
         return $verified
             ? Response::redirect('/dashboard')
@@ -229,7 +226,7 @@ class LoginController
 }
 ```
 
-`verify()` accepts either a 6-digit TOTP code or a recovery code. A valid one calls `completeChallenge()` on the guard, which logs the user in, dispatches `LoginEvent` and, with `remember: true`, issues the remember-me cookie. A remember cookie therefore only ever exists after a completed challenge. A recovery code is spent the moment it is used. `cancel()` abandons the pending login.
+`verify()` accepts either a 6-digit TOTP code or a recovery code. A valid one calls `completeChallenge()` on the guard, which logs the user in, dispatches `LoginEvent` and, when the login was attempted with `remember: true`, issues the remember-me cookie. Pass `remember: true` or `remember: false` to `verify()` to override the flag from `attempt()`. A remember cookie therefore only ever exists after a completed challenge. A recovery code is spent the moment it is used. `cancel()` abandons the pending login.
 
 Every method takes an optional `guard` argument for guards other than `authentication.default.guard`. `verify()` throws `TwoFactorException` when no two-factor challenge is pending on the guard (check `isPending()` first; the session may have expired).
 
@@ -353,7 +350,7 @@ Bound to `TwoFactorManager`. `TwoFactorSetup` has the public properties `secret`
 
 ```php
 public function isPending(?string $guard = null): bool;
-public function verify(string $code, bool $remember = false, ?string $guard = null): bool;
+public function verify(string $code, ?bool $remember = null, ?string $guard = null): bool; // null: the flag attempt() was called with
 public function cancel(?string $guard = null): void;
 ```
 

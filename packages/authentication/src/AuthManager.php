@@ -227,12 +227,14 @@ class AuthManager implements ResettableInterface
      * Attempt to authenticate a user using the given credentials.
      *
      * @param array<string, mixed> $credentials
+     * @param bool $remember Keep the user signed in with a remember-me cookie once logged in
      * @throws AuthException
      */
     public function attempt(
         array $credentials,
+        bool $remember = false,
     ): bool {
-        return $this->guard()->attempt($credentials);
+        return $this->guard()->attempt($credentials, $remember);
     }
 
     /**
