@@ -392,6 +392,41 @@ PHP;
             ->toThrow(MigrationException::class, '2024_01_01_000000_test');
     });
 
+    it('keeps the exception a migration threw as the previous exception', function (): void {
+        $migrationContent = <<<'PHP'
+<?php
+declare(strict_types=1);
+use Marko\Database\Connection\ConnectionInterface;
+use Marko\Database\Migration\Migration;
+return new class () extends Migration {
+    public function up(
+        ConnectionInterface $connection,
+    ): void {
+        throw new \DomainException('Database error');
+    }
+    public function down(ConnectionInterface $connection): void {}
+};
+PHP;
+
+        file_put_contents($this->migrationsPath . '/2024_01_01_000000_test.php', $migrationContent);
+
+        $repository = $this->createStub(MigrationRepository::class);
+        $repository->method('getApplied')->willReturn([]);
+        $repository->method('getNextBatchNumber')->willReturn(1);
+
+        $migrator = new Migrator($this->createStub(ConnectionInterface::class), $repository, $this->paths);
+
+        try {
+            $migrator->migrate();
+            $caught = null;
+        } catch (MigrationException $e) {
+            $caught = $e;
+        }
+
+        expect($caught)->toBeInstanceOf(MigrationException::class)
+            ->and($caught?->getPrevious())->toBeInstanceOf(DomainException::class);
+    });
+
     it('throws MigrationException when migration file not found', function (): void {
         $connection = $this->createStub(ConnectionInterface::class);
 

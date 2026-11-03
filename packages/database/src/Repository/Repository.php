@@ -315,7 +315,9 @@ abstract class Repository implements RepositoryInterface
      * Generated keys: with RETURNING, keys are matched to entities by the row
      * order the server returns (observed on PostgreSQL and MariaDB 10.5+, not
      * documented by either, covered by integration tests); the row count is
-     * checked. Without RETURNING (MySQL), keys are LAST_INSERT_ID() + offset *
+     * checked. On SQLite, which documents RETURNING order as unspecified, the
+     * AUTOINCREMENT keys are sorted ascending first, because one statement
+     * assigns them in increasing insert order. Without RETURNING (MySQL), keys are LAST_INSERT_ID() + offset *
      * @@auto_increment_increment, which assumes the batch got one consecutive
      * block (not guaranteed under innodb_autoinc_lock_mode 2 while a bulk insert
      * runs on the same table). See RepositoryInterface::insertBatch().
@@ -385,8 +387,17 @@ abstract class Repository implements RepositoryInterface
                     throw BatchInsertException::returningRowCountMismatch($expectedCount, $actualCount, $pkColumn);
                 }
 
+                $keys = array_column($returningRows, $pkColumn);
+
+                // SQLite leaves RETURNING row order unspecified. Its generated keys are always AUTOINCREMENT
+                // rowids, which one statement assigns in strictly increasing VALUES order, so ascending key
+                // order is insert order whatever order the rows come back in.
+                if ($isAutoIncrement && $this->connection->driverName() === 'sqlite') {
+                    sort($keys);
+                }
+
                 foreach (array_values($entities) as $offset => $entity) {
-                    $this->assignPrimaryKey($entity, $pkProperty, $returningRows[$offset][$pkColumn]);
+                    $this->assignPrimaryKey($entity, $pkProperty, $keys[$offset]);
                 }
             } else {
                 $assignsKeys = $isAutoIncrement

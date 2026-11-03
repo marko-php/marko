@@ -6,20 +6,33 @@ namespace Marko\Database\Exceptions;
 
 use Marko\Core\Exceptions\MarkoException;
 use Marko\Core\Exceptions\UnsupportedFeature;
+use Marko\Core\Exceptions\UnsupportedFeatureExceptionInterface;
+use Throwable;
 
 /**
  * Exception thrown for migration-related errors.
  */
 class MigrationException extends MarkoException
 {
+    /**
+     * The original exception is kept as previous, and its suggestion replaces the generic one when it has one.
+     */
     public static function migrationFailed(
         string $migrationName,
         string $error,
+        ?Throwable $previous = null,
     ): self {
+        $originalSuggestion = $previous instanceof MarkoException || $previous instanceof UnsupportedFeatureExceptionInterface
+            ? $previous->getSuggestion()
+            : '';
+
         return new self(
             message: "Migration '$migrationName' failed: $error",
             context: "While running migration '$migrationName'",
-            suggestion: 'Fix the migration error and try again. You may need to manually revert partial changes.',
+            suggestion: $originalSuggestion !== ''
+                ? $originalSuggestion
+                : 'Fix the migration error and try again. You may need to manually revert partial changes.',
+            previous: $previous,
         );
     }
 

@@ -9,6 +9,7 @@ use DateTimeZone;
 use Marko\Core\Path\ProjectPaths;
 use Marko\Database\Exceptions\ConfigurationException;
 use ReflectionClass;
+use ReflectionException;
 
 /**
  * Database configuration loaded from config/database.php.
@@ -102,7 +103,7 @@ readonly class DatabaseConfig
      * @param array<string, mixed> $config
      * @param string|null $basePath Resolves a relative sqlite database path
      *
-     * @throws ConfigurationException
+     * @throws ConfigurationException|ReflectionException
      */
     public static function fromArray(
         array $config,

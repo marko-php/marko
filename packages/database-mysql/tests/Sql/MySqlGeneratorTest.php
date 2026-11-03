@@ -222,61 +222,27 @@ describe('MySqlGenerator', function (): void {
         expect($sql)->toBe('ALTER TABLE `posts` DROP FOREIGN KEY `fk_posts_user_id`');
     });
 
-    it('maps Column types to MySQL data types', function (): void {
-        $generator = new MySqlGenerator();
+    it('maps Column types to MySQL data types', function (Column $column, string $expected): void {
+        $table = new Table(name: 't', columns: [$column]);
 
-        // Test integer types
-        $intTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'integer')]);
-        expect($generator->generateCreateTable($intTable))->toContain('`c` INT NOT NULL');
-
-        $bigintTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'bigint')]);
-        expect($generator->generateCreateTable($bigintTable))->toContain('`c` BIGINT NOT NULL');
-
-        $smallintTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'smallint')]);
-        expect($generator->generateCreateTable($smallintTable))->toContain('`c` SMALLINT NOT NULL');
-
-        $tinyintTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'tinyint')]);
-        expect($generator->generateCreateTable($tinyintTable))->toContain('`c` TINYINT NOT NULL');
-
-        // Test string types
-        $stringTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'string', length: 100)]);
-        expect($generator->generateCreateTable($stringTable))->toContain('`c` VARCHAR(100) NOT NULL');
-
-        $textTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'text')]);
-        expect($generator->generateCreateTable($textTable))->toContain('`c` TEXT NOT NULL');
-
-        // Test boolean
-        $boolTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'boolean')]);
-        expect($generator->generateCreateTable($boolTable))->toContain('`c` TINYINT(1) NOT NULL');
-
-        // Test date/time types
-        $datetimeTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'datetime')]);
-        expect($generator->generateCreateTable($datetimeTable))->toContain('`c` DATETIME NOT NULL');
-
-        $dateTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'date')]);
-        expect($generator->generateCreateTable($dateTable))->toContain('`c` DATE NOT NULL');
-
-        $timeTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'time')]);
-        expect($generator->generateCreateTable($timeTable))->toContain('`c` TIME NOT NULL');
-
-        $timestampTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'timestamp')]);
-        expect($generator->generateCreateTable($timestampTable))->toContain('`c` TIMESTAMP NOT NULL');
-
-        // Test decimal/float types
-        $decimalTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'decimal')]);
-        expect($generator->generateCreateTable($decimalTable))->toContain('`c` DECIMAL(10,2) NOT NULL');
-
-        $floatTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'float')]);
-        expect($generator->generateCreateTable($floatTable))->toContain('`c` FLOAT NOT NULL');
-
-        // Test binary types
-        $blobTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'blob')]);
-        expect($generator->generateCreateTable($blobTable))->toContain('`c` BLOB NOT NULL');
-
-        // Test JSON
-        $jsonTable = new Table(name: 't', columns: [new Column(name: 'c', type: 'json')]);
-        expect($generator->generateCreateTable($jsonTable))->toContain('`c` JSON NOT NULL');
-    });
+        expect(new MySqlGenerator()->generateCreateTable($table))->toContain($expected);
+    })->with([
+        'integer' => [new Column(name: 'c', type: 'integer'), '`c` INT NOT NULL'],
+        'bigint' => [new Column(name: 'c', type: 'bigint'), '`c` BIGINT NOT NULL'],
+        'smallint' => [new Column(name: 'c', type: 'smallint'), '`c` SMALLINT NOT NULL'],
+        'tinyint' => [new Column(name: 'c', type: 'tinyint'), '`c` TINYINT NOT NULL'],
+        'string' => [new Column(name: 'c', type: 'string', length: 100), '`c` VARCHAR(100) NOT NULL'],
+        'text' => [new Column(name: 'c', type: 'text'), '`c` TEXT NOT NULL'],
+        'boolean' => [new Column(name: 'c', type: 'boolean'), '`c` TINYINT(1) NOT NULL'],
+        'datetime' => [new Column(name: 'c', type: 'datetime'), '`c` DATETIME NOT NULL'],
+        'date' => [new Column(name: 'c', type: 'date'), '`c` DATE NOT NULL'],
+        'time' => [new Column(name: 'c', type: 'time'), '`c` TIME NOT NULL'],
+        'timestamp' => [new Column(name: 'c', type: 'timestamp'), '`c` TIMESTAMP NOT NULL'],
+        'decimal' => [new Column(name: 'c', type: 'decimal'), '`c` DECIMAL(10,2) NOT NULL'],
+        'float' => [new Column(name: 'c', type: 'float'), '`c` FLOAT NOT NULL'],
+        'blob' => [new Column(name: 'c', type: 'blob'), '`c` BLOB NOT NULL'],
+        'json' => [new Column(name: 'c', type: 'json'), '`c` JSON NOT NULL'],
+    ]);
 
     it('handles AUTO_INCREMENT for serial columns', function (): void {
         $generator = new MySqlGenerator();
@@ -296,40 +262,23 @@ describe('MySqlGenerator', function (): void {
             ->and($sql)->toContain('PRIMARY KEY (`id`)');
     });
 
-    it('generates proper DEFAULT expressions', function (): void {
-        $generator = new MySqlGenerator();
+    it('generates proper DEFAULT expressions', function (Column $column, string $expected): void {
+        $table = new Table(name: 't', columns: [$column]);
 
-        // String default
-        $stringDefault = new Table(name: 't', columns: [
-            new Column(name: 'status', type: 'string', length: 20, default: 'active'),
-        ]);
-        expect($generator->generateCreateTable($stringDefault))->toContain("DEFAULT 'active'");
-
-        // Numeric default
-        $numericDefault = new Table(name: 't', columns: [
-            new Column(name: 'count', type: 'integer', default: 0),
-        ]);
-        expect($generator->generateCreateTable($numericDefault))->toContain('DEFAULT 0');
-
-        // Boolean default
-        $boolDefault = new Table(name: 't', columns: [
-            new Column(name: 'is_active', type: 'boolean', default: true),
-        ]);
-        expect($generator->generateCreateTable($boolDefault))->toContain('DEFAULT 1');
-
-        // NULL default (with nullable column)
-        $nullDefault = new Table(name: 't', columns: [
+        expect(new MySqlGenerator()->generateCreateTable($table))->toContain($expected);
+    })->with([
+        'string' => [new Column(name: 'status', type: 'string', length: 20, default: 'active'), "DEFAULT 'active'"],
+        'numeric' => [new Column(name: 'count', type: 'integer', default: 0), 'DEFAULT 0'],
+        'boolean' => [new Column(name: 'is_active', type: 'boolean', default: true), 'DEFAULT 1'],
+        'null on a nullable column' => [
             new Column(name: 'optional', type: 'string', length: 100, nullable: true),
-        ]);
-        $sql = $generator->generateCreateTable($nullDefault);
-        expect($sql)->toContain('`optional` VARCHAR(100) NULL');
-
-        // Expression default (CURRENT_TIMESTAMP)
-        $expressionDefault = new Table(name: 't', columns: [
+            '`optional` VARCHAR(100) NULL',
+        ],
+        'CURRENT_TIMESTAMP expression' => [
             new Column(name: 'created_at', type: 'datetime', default: 'CURRENT_TIMESTAMP'),
-        ]);
-        expect($generator->generateCreateTable($expressionDefault))->toContain('DEFAULT CURRENT_TIMESTAMP');
-    });
+            'DEFAULT CURRENT_TIMESTAMP',
+        ],
+    ]);
 
     it('generates down SQL that reverses up SQL', function (): void {
         $generator = new MySqlGenerator();

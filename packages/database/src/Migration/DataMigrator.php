@@ -173,7 +173,7 @@ class DataMigrator
         } catch (MigrationException $e) {
             throw $e;
         } catch (Throwable $e) {
-            throw MigrationException::migrationFailed($name, $e->getMessage());
+            throw MigrationException::migrationFailed($name, $e->getMessage(), $e);
         }
     }
 }

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Marko\Core\Exceptions\UnsupportedFeatureException;
 use Marko\Database\Exceptions\MigrationException;
 
 describe('MigrationException', function (): void {
@@ -58,5 +59,31 @@ describe('MigrationException', function (): void {
         expect($exception->getMessage())
             ->toBe("Cannot add primary key columns 'post_id', 'tag_id' to table 'post_tags', which already has a "
                 . "primary key on 'id'");
+    });
+    it('keeps the original exception as previous when a migration fails', function (): void {
+        $original = new RuntimeException('Database error');
+
+        $exception = MigrationException::migrationFailed('2024_01_01_000000_test', 'Database error', $original);
+
+        expect($exception->getPrevious())->toBe($original)
+            ->and($exception->getMessage())->toBe("Migration '2024_01_01_000000_test' failed: Database error");
+    });
+
+    it('uses the original exception suggestion when a failed migration carries one', function (): void {
+        $original = UnsupportedFeatureException::forDriver('partial indexes', 'MySQL', 'Drop the WHERE clause');
+
+        $exception = MigrationException::migrationFailed('2024_01_01_000000_test', $original->getMessage(), $original);
+
+        expect($exception->getSuggestion())->toBe('Drop the WHERE clause');
+    });
+
+    it('keeps the generic suggestion when the original exception has none', function (): void {
+        $exception = MigrationException::migrationFailed(
+            '2024_01_01_000000_test',
+            'Database error',
+            new RuntimeException('Database error'),
+        );
+
+        expect($exception->getSuggestion())->toContain('Fix the migration error');
     });
 });
